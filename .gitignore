@@ -35,3 +35,5 @@ _update/
 # Env / secrets
 .env
 .env.*
+# Added by code-review-graph
+.code-review-graph/

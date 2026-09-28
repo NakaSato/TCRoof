@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.pbxproj.backup*
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved.orig
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Local backups / scratch
+_removed/
+_update/
+*.zip
+
+# Env / secrets
+.env
+.env.*

@@ -1,0 +1,44 @@
+import SwiftUI
+
+extension Color {
+    init(hex: UInt32, opacity: Double = 1) {
+        self.init(.sRGB,
+                  red: Double((hex >> 16) & 0xFF) / 255,
+                  green: Double((hex >> 8) & 0xFF) / 255,
+                  blue: Double(hex & 0xFF) / 255,
+                  opacity: opacity)
+    }
+}
+
+enum Theme {
+    static let navy = Color(hex: 0x16325C)
+    static let primary = Color(hex: 0x1F6FB5)
+    static let primaryLight = Color(hex: 0x2E8FDB)
+    static let teal = Color(hex: 0x27A99A)
+    static let mint = Color(hex: 0x9EE6D6)
+    static let danger = Color(hex: 0xD9453B)
+    static let background = Color(hex: 0xF3F6FA)
+    static let muted = Color(hex: 0x7A8BA3)
+    static let chip = Color(hex: 0x5E9BD0)
+
+    static let headerGradient = LinearGradient(colors: [primary, primaryLight], startPoint: .leading, endPoint: .trailing)
+    static let tealGradient = LinearGradient(colors: [teal, Color(hex: 0x4DB6E0)], startPoint: .leading, endPoint: .trailing)
+    static let pageGradient = LinearGradient(colors: [Color(hex: 0xDCE8F2), background], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
+}
+
+extension View {
+    func cardStyle(padding: CGFloat = 16) -> some View {
+        self.padding(padding)
+            .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: Theme.navy.opacity(0.08), radius: 8, y: 3)
+    }
+}
+
+struct OutlinedFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding(14)
+            .background(.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+    }
+}

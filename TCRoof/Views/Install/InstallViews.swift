@@ -1,0 +1,384 @@
+import SwiftUI
+import SwiftData
+
+struct InstallRecordsView: View {
+    enum Tab: String, CaseIterable, Identifiable {
+        case logs = "บันทึกงานติดตั้ง"
+        case inspection = "ใบตรวจรับงานติดตั้ง (ICL)"
+        var id: String { rawValue }
+    }
+
+    @Query(sort: \Job.installStart) private var jobs: [Job]
+    @State private var tab: Tab = .logs
+    @State private var window: DateWindow = .week
+    @State private var search = ""
+    @State private var showPicker = false
+    @State private var pendingJob: Job?
+    @State private var newLogJob: Job?
+
+    private var filtered: [Job] {
+        jobs.filter { window.overlaps($0.installInterval) && $0.matches(search) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                PageHeader(title: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน", symbol: AppModule.install.symbol) {
+                    HeaderLink(title: "ประวัติบันทึกทั้งหมด") { InstallLogHistoryView() }
+                }
+                Picker("ประเภท", selection: $tab) {
+                    ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
+                if filtered.isEmpty {
+                    ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
+                } else {
+                    LazyVGrid(columns: cardColumns, spacing: 16) {
+                        ForEach(filtered) { job in
+                            switch tab {
+                            case .logs:
+                                JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
+                                    JobInstallLogsView(job: job)
+                                } footer: {
+                                    footer("บันทึกแล้ว \(job.logs.count) รายการ", color: job.logs.isEmpty ? Theme.muted : Theme.teal)
+                                }
+                            case .inspection:
+                                JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
+                                    InspectionView(job: job)
+                                } footer: {
+                                    inspectionFooter(job)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: 1100)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Theme.pageGradient.ignoresSafeArea())
+        .overlay(alignment: .bottomTrailing) {
+            FloatingButton(systemImage: "plus", accessibilityLabel: "เพิ่มบันทึกงานติดตั้ง") { showPicker = true }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPicker, onDismiss: {
+            if let job = pendingJob {
+                pendingJob = nil
+                newLogJob = job
+            }
+        }) {
+            JobPickerSheet(title: "เลือกงานที่จะบันทึก") { pendingJob = $0 }
+        }
+        .sheet(item: $newLogJob) { job in InstallLogFormView(job: job, log: nil) }
+    }
+
+    private func footer(_ text: String, color: Color) -> some View {
+        Label(text, systemImage: "doc.text.image")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(color)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func inspectionFooter(_ job: Job) -> some View {
+        if let inspection = job.inspection {
+            if inspection.submittedAt != nil {
+                footer(inspection.allPassed ? "ตรวจรับแล้ว · ผ่านทุกข้อ" : "ตรวจรับแล้ว · มีข้อไม่ผ่าน",
+                       color: inspection.allPassed ? Color(hex: 0x2E9E5B) : Theme.danger)
+            } else {
+                footer("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", color: .orange)
+            }
+        } else {
+            footer("ยังไม่เริ่มตรวจรับ", color: Theme.muted)
+        }
+    }
+}
+
+// MARK: - Logs of one job
+
+struct JobInstallLogsView: View {
+    let job: Job
+    @State private var showForm = false
+
+    private var logs: [InstallLog] { job.logs.sorted { $0.date > $1.date } }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                let header = isPhone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
+                header {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(job.projectName).font(.title.bold()).foregroundStyle(Theme.navy)
+                        Text("\(job.code) · \(job.installStart.thaiLong) – \(job.installEnd.thaiLong)")
+                            .font(.subheadline).foregroundStyle(Theme.muted)
+                    }
+                    if !isPhone { Spacer() }
+                    NavigationLink { InspectionView(job: job) } label: {
+                        Label("ใบตรวจรับงาน (ICL)", systemImage: "checkmark.seal")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                if logs.isEmpty {
+                    ContentUnavailableView("ยังไม่มีบันทึกงานติดตั้ง", systemImage: "hammer",
+                                           description: Text("กด + เพื่อบันทึกงานประจำวันพร้อมรูปถ่าย"))
+                }
+                ForEach(logs) { log in
+                    NavigationLink { InstallLogDetailView(log: log) } label: { LogCard(log: log, job: job) }
+                        .buttonStyle(.plain)
+                }
+            }
+            .padding(isPhone ? 16 : 24)
+            .frame(maxWidth: 1000)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Theme.pageGradient.ignoresSafeArea())
+        .navigationTitle("บันทึกงานติดตั้ง")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showForm = true } label: { Label("เพิ่มบันทึก", systemImage: "plus") }
+            }
+        }
+        .sheet(isPresented: $showForm) { InstallLogFormView(job: job, log: nil) }
+    }
+}
+
+private struct LogCard: View {
+    let log: InstallLog
+    let job: Job
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(log.date.thaiLong).font(.headline)
+                if let day = job.installDay(on: log.date) {
+                    Text("Day \(day)/\(job.installDays)").font(.caption.bold()).foregroundStyle(Theme.primary)
+                }
+                Spacer()
+                Text(log.recorder)
+                    .font(.caption.bold())
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(.orange.opacity(0.12), in: Capsule())
+                Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
+            }
+            Text(log.detailLines.prefix(3).joined(separator: " · "))
+                .font(.subheadline)
+                .lineLimit(2)
+            let photos = log.sortedPhotos
+            if !photos.isEmpty {
+                let limit = isPhone ? 4 : 6
+                HStack(spacing: 8) {
+                    ForEach(photos.prefix(limit)) { Thumbnail(data: $0.data).frame(width: isPhone ? 56 : 72, height: isPhone ? 56 : 72) }
+                    if photos.count > limit {
+                        Text("+\(photos.count - limit)").font(.headline).foregroundStyle(Theme.muted)
+                    }
+                }
+            }
+        }
+        .foregroundStyle(Theme.navy)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+    }
+}
+
+// MARK: - Log form
+
+struct InstallLogFormView: View {
+    let job: Job
+    let log: InstallLog?
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @AppStorage("userName") private var userName = ""
+
+    @State private var date = Date()
+    @State private var recorder = ""
+    @State private var details = ""
+    @State private var photos: [Data] = []
+    @State private var loaded = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    InfoRow(title: "โครงการ", value: "\(job.code) · \(job.projectName)")
+                    DatePicker("วันที่บันทึก", selection: $date, displayedComponents: .date)
+                    TextField("ผู้บันทึก", text: $recorder)
+                }
+                Section {
+                    TextField("เช่น งานติดตั้ง Pull Box", text: $details, axis: .vertical)
+                        .lineLimit(4...12)
+                } header: {
+                    Text("รายละเอียดงาน")
+                } footer: {
+                    Text("พิมพ์หนึ่งรายการต่อบรรทัด")
+                }
+                Section("รูปภาพงานติดตั้ง") {
+                    PhotoPickerSection(images: $photos)
+                }
+            }
+            .environment(\.locale, ThaiFormat.locale)
+            .navigationTitle(log == nil ? "เพิ่มบันทึกงานติดตั้ง" : "แก้ไขบันทึก")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("บันทึก", action: save)
+                        .bold()
+                        .disabled(details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && photos.isEmpty)
+                }
+            }
+            .onAppear(perform: load)
+        }
+    }
+
+    private func load() {
+        guard !loaded else { return }
+        loaded = true
+        if let log {
+            date = log.date
+            recorder = log.recorder
+            details = log.details
+            photos = log.sortedPhotos.map(\.data)
+        } else {
+            recorder = userName
+            if job.installDay(on: .now) == nil { date = job.installStart }
+        }
+    }
+
+    private func save() {
+        let target: InstallLog
+        if let log {
+            target = log
+            target.date = date
+            target.recorder = recorder
+            target.details = details
+            target.photos.forEach(context.delete)
+        } else {
+            target = InstallLog(date: date, recorder: recorder, details: details)
+            context.insert(target)
+            target.job = job
+            if job.status == .confirmed || job.status == .interested { job.status = .installing }
+        }
+        for data in photos {
+            let photo = PhotoAsset(data: data)
+            context.insert(photo)
+            photo.log = target
+        }
+        try? context.save()
+        dismiss()
+    }
+}
+
+// MARK: - Log detail
+
+struct InstallLogDetailView: View {
+    let log: InstallLog
+    @State private var showEdit = false
+    @State private var exportURLs: [URL] = []
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("วันที่บันทึก").font(.headline)
+                            Spacer()
+                            Text(log.date.thaiLong)
+                        }
+                        Divider()
+                        HStack {
+                            Text("ผู้บันทึก :")
+                            Text(log.recorder)
+                                .bold()
+                                .foregroundStyle(.orange)
+                                .padding(.horizontal, 8).padding(.vertical, 2)
+                                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+                            Spacer()
+                        }
+                    }
+                    .foregroundStyle(Theme.navy)
+                    .cardStyle()
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("รายละเอียด").font(.headline)
+                        ForEach(Array(log.detailLines.enumerated()), id: \.offset) { index, line in
+                            Text("\(index + 1). \(line)")
+                        }
+                        Text("รูปภาพงานติดตั้ง").font(.headline).padding(.top, 12)
+                        if log.photos.isEmpty {
+                            Text("ไม่มีรูปภาพ").foregroundStyle(Theme.muted)
+                        } else {
+                            PhotoGrid(images: log.sortedPhotos.map(\.data), minSize: 160)
+                        }
+                    }
+                    .foregroundStyle(Theme.navy)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .cardStyle()
+                }
+                .padding(24)
+                .frame(maxWidth: 1000)
+                .frame(maxWidth: .infinity)
+            }
+            if !exportURLs.isEmpty {
+                ShareLink(items: exportURLs) {
+                    Label("ดาวน์โหลดไฟล์ทั้งหมด (\(exportURLs.count))", systemImage: "arrow.down.doc.fill")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: 600, minHeight: 54)
+                        .background(Theme.headerGradient, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.white)
+            }
+        }
+        .background(Theme.pageGradient.ignoresSafeArea())
+        .navigationTitle("บันทึกงานติดตั้งและรูป")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showEdit = true } label: { Label("แก้ไข", systemImage: "pencil") }
+            }
+        }
+        .sheet(isPresented: $showEdit, onDismiss: export) {
+            if let job = log.job { InstallLogFormView(job: job, log: log) }
+        }
+        .onAppear(perform: export)
+    }
+
+    private func export() {
+        let prefix = "\(log.job?.code ?? "log")-\(ThaiFormat.short.string(from: log.date).replacingOccurrences(of: " ", with: ""))"
+        exportURLs = ImageUtil.exportFiles(log.sortedPhotos.map(\.data), prefix: prefix)
+    }
+}
+
+struct InstallLogHistoryView: View {
+    @Query(sort: \InstallLog.date, order: .reverse) private var logs: [InstallLog]
+
+    var body: some View {
+        List {
+            if logs.isEmpty {
+                ContentUnavailableView("ยังไม่มีบันทึก", systemImage: "hammer")
+            }
+            ForEach(logs) { log in
+                NavigationLink { InstallLogDetailView(log: log) } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
+                        Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
+                            .font(.caption).foregroundStyle(Theme.muted)
+                        Text(log.detailLines.joined(separator: " · ")).font(.subheadline).lineLimit(1)
+                    }
+                    .foregroundStyle(Theme.navy)
+                }
+            }
+        }
+        .navigationTitle("ประวัติบันทึกทั้งหมด")
+    }
+}

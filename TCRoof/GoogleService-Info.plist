@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBpNUa4DF7hrOBuXY91l_MGZuYY73w4CXc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>707548275348</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tcroof.internal</string>
+	<key>PROJECT_ID</key>
+	<string>tcroof-1564c</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tcroof-1564c.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:707548275348:ios:7e0fb7f4ac830b790cca81</string>
+</dict>
+</plist>

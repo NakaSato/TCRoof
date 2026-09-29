@@ -73,7 +73,7 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
 .delta { font: 500 11px/1 var(--f-num); margin-left: 4px; }
 .delta.up { color: var(--good); } .delta.down { color: var(--warn); }
 .notes { display: grid; gap: 4px; font-size: 13px; }
-.notes div { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 5px 10px; }
+.notes div { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 5px 10px; }
 .foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
 /* drawing */
 .canvas svg * { pointer-events: none; }
@@ -90,7 +90,7 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
 <div class="wrap">
   <header>
     <h1>ผังโครงสร้างแผงบนถัง <span class="pill ok" id="tag">ตัวอย่าง: แบบ กปภ. 40 × 40 ม.</span></h1>
-    <p>ผังนี้วางเองจากแปลนฝาถัง (ช่วงเสา ช่องระบาย ช่องลงถัง) กับมาตรฐานโครงสร้างของทีม ลองเลื่อนแนวแถว กด “หาผังที่ได้แผงมากที่สุด” แตะช่องระบาย เสาสีแดง หรือโต๊ะแผงเพื่อดูเหตุผล หรือเปลี่ยนเป็นโหมด “เอาแผงออก” เพื่อเว้นทางเดิน</p>
+    <p>ผังนี้วางเองจากแปลนฝาถัง (ช่วงเสา ช่องระบาย ช่องลงถัง) กับมาตรฐานโครงสร้างของทีม ลองเลื่อนแนวแถว กด “หาผังที่ได้แผงมากที่สุด” แตะช่องระบาย เสา หรือโต๊ะแผงเพื่อดูเหตุผล ขาโครงสร้างจะไม่ชนสิ่งกีดขวางเลย (ถ้าหลบไม่ได้ ระบบตัดแผงช่องนั้นออก) หรือเปลี่ยนเป็นโหมด “เอาแผงออก” เพื่อเว้นทางเดิน</p>
   </header>
   <div class="main">
     <form class="sheet" id="form" autocomplete="off">
@@ -236,26 +236,42 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
         i = j;
       }
       const row = { k, yFront, yfp, ybp, yBack, blocked, tables: [] };
-      for (const tb of tables) {
-        const xa = cols[tb.i0], xb = cols[tb.i1 - 1] + W, span = xb - xa - 2 * FIX.endOver;
-        const nP = Math.max(2, Math.ceil(span / S.pDX) + 1);
-        let px = Array.from({ length: nP }, (_, q) => xa + FIX.endOver + span * q / (nP - 1)), bad = [], moved = [];
-        if (withPosts) {
-          const f = FIX.footing / 2 + .3;
-          const free = (xx, yl) => xx >= xa && xx <= xb && T.boxes.every(b => !(ov(xx - f, xx + f, b.x, b.x + b.w) && ov(yl - f, yl + f, b.y, b.y + b.h)));
-          const both = xx => free(xx, yfp) && free(xx, ybp);
-          const steps = m => [0, ...Array.from({ length: m }, (_, s) => [(s + 1), -(s + 1)]).flat()];
-          px = px.map(x => { for (const s of steps(30)) { const xx = x + s * .05; if (both(xx)) { if (s) moved.push([x, xx]); return xx; } } bad.push(x); return x; });
-          px.sort((a, b) => a - b);
-          for (let q = 0; q < px.length - 1; q++) if (px[q + 1] - px[q] > S.pDX + 1e-6) {
-            const mid = (px[q] + px[q + 1]) / 2; let c = null;
-            for (const s of steps(20)) { if (both(mid + s * .05)) { c = mid + s * .05; break; } }
-            if (c != null) px.splice(q + 1, 0, c);
-          }
-          for (const x of bad) notes.push({ row: k, x, text: `แถว ${k + 1}: เสาคู่ที่ ${f2(x)} ม. ชนช่องเปิด เลื่อนหลบไม่ได้ภายใน 1.50 ม. ต้องให้วิศวกรตรวจ` });
+      // Posts never touch an obstacle: footing inside the tank and 0.30 m clear of every opening, bays ≤ post spacing,
+      // end cantilever ≤ 1.00 m, front and back post as a pair. A table that cannot be posted loses the module column
+      // where it fails (shortened or split) and is posted again.
+      const fp = FIX.footing / 2, f = fp + .3, MAXC = 1.0;
+      const free = (xx, yl) => xx - fp >= 0 && xx + fp <= T.W && yl - fp >= 0 && yl + fp <= T.H &&
+        T.boxes.every(b => !(ov(xx - f, xx + f, b.x, b.x + b.w) && ov(yl - f, yl + f, b.y, b.y + b.h)));
+      const ok = xx => free(xx, yfp) && free(xx, ybp);
+      const grid = (a, b, prefer) => { if (b < a) return []; const out = [];
+        for (let i = 0; a + i * .05 <= b + 1e-9; i++) { const x = a + i * .05; if (ok(x)) out.push(x); }
+        return out.sort((p, q) => Math.abs(p - prefer) - Math.abs(q - prefer)); };
+      const post = (xa, xb) => {
+        const span = xb - xa - 2 * FIX.endOver, nP = Math.max(2, Math.ceil(span / S.pDX) + 1);
+        const eq = Array.from({ length: nP }, (_, q) => xa + FIX.endOver + span * q / (nP - 1));
+        if (eq.every(ok)) return { px: eq, moved: 0 };
+        const first = grid(xa + .2, xa + MAXC, xa + FIX.endOver); if (!first.length) return { fail: xa + .5 };
+        const px = [first[0]];
+        while (px[px.length - 1] < xb - MAXC - 1e-9) {
+          const last = px[px.length - 1], c = grid(last + .6, Math.min(last + S.pDX, xb - .2), Math.min(last + S.pDX, xb - .2));
+          if (!c.length) return { fail: last + S.pDX / 2 }; px.push(c[0]);
         }
-        row.tables.push({ ...tb, xa, xb, n: tb.i1 - tb.i0, px, bad, moved });
+        const last = px[px.length - 1];
+        if (last < xb - FIX.endOver - .3) { const e = grid(Math.max(last + .6, xb - MAXC), Math.min(last + S.pDX, xb - .2), xb - FIX.endOver); if (e.length) px.push(e[0]); }
+        return { px, moved: px.length };
+      };
+      const queue = tables.map(t => ({ ...t }));
+      while (queue.length) {
+        const tb = queue.shift(), xa = cols[tb.i0], xb = cols[tb.i1 - 1] + W;
+        if (!withPosts) { row.tables.push({ ...tb, xa, xb, n: tb.i1 - tb.i0, px: [], bad: [], moved: [] }); continue; }
+        const r = post(xa, xb);
+        if (r.px) { row.tables.push({ ...tb, xa, xb, n: tb.i1 - tb.i0, px: r.px, bad: [], moved: r.moved ? [1] : [] }); continue; }
+        const c = Math.min(tb.i1 - 1, Math.max(tb.i0, Math.floor((r.fail - cols[0]) / (W + gap))));
+        row.blocked[c] = "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง";
+        notes.push({ row: k, x: r.fail, text: `แถว ${k + 1}: ตัดแผง 1 ช่องที่ x ${f2(cols[c])}–${f2(cols[c] + W)} ม. เพื่อไม่ให้ขาชนสิ่งกีดขวาง` });
+        for (const [a, b] of [[tb.i0, c], [c + 1, tb.i1]]) if (b - a >= 2) queue.push({ i0: a, i1: b });
       }
+      row.tables.sort((a, b) => a.i0 - b.i0);
       rows.push(row);
     }
     return { T, D, cols, rows, notes, ventInfo, n };
@@ -265,7 +281,7 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
     const mods = tabs.reduce((a, t) => a + t.n * FIX.nSlope, 0);
     return { tables: tabs.length, modules: mods, kwp: mods * S.modWp / 1000, posts: tabs.reduce((a, t) => a + t.px.length * 2, 0),
       rail: tabs.reduce((a, t) => a + (t.xb - t.xa) * FIX.rails, 0), clamps: tabs.reduce((a, t) => a + t.px.length * FIX.rails, 0),
-      braces: tabs.reduce((a, t) => a + (t.px.length - 1) * 2, 0), red: L.notes.length };
+      braces: tabs.reduce((a, t) => a + (t.px.length - 1) * 2, 0), red: L.notes.length, onObst: 0 };
   }
 
   // ---- drawing ----
@@ -288,7 +304,8 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
       // modules, including the empty (blocked / removed) slots in remove mode
       for (let i = 0; i < L.n; i++) {
         const cx = L.cols[i], inT = r.tables.some(t => i >= t.i0 && i < t.i1), why = r.blocked[i];
-        if (!inT && !(mode === "remove" && why === "เอาออกเอง")) continue;
+        const isCut = !inT && why && why.startsWith("ตัดแผง");
+        if (!inT && !isCut && !(mode === "remove" && why === "เอาออกเอง")) continue;
         for (let s = 0; s < FIX.nSlope; s++) {
           const ya = r.yBack + s * (S.modL + FIX.modGap) * Math.cos(D.tilt), yb = ya + S.modL * Math.cos(D.tilt);
           const [x, y] = P(cx, ya), cls = inT ? (sel && sel.type === "table" && sel.row === r.k && i >= sel.i0 && i < sel.i1 ? "mod sel" : "mod") : "mod off";
@@ -355,7 +372,7 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
       return `<span class="delta ${dv > 0 ? "up" : "down"}">${dv > 0 ? "+" : ""}${digits ? dv.toFixed(digits) : Math.round(dv)}</span>`; };
     $("stats").innerHTML = [
       [Q.modules, "แผง", "modules", "hl"], [Q.kwp.toFixed(1), "kWp", "kwp", "hl", 1], [Q.tables, "โต๊ะแผง", "tables"], [Q.posts, "เสา / ฐาน", "posts"],
-      [Math.round(Q.rail), "ราง (ม.)", "rail"], [Q.clamps, "rail clamp", "clamps"], [Q.braces, "ค้ำ X", "braces"], [Q.red, "เสาต้องตรวจ", "red"]
+      [Math.round(Q.rail), "ราง (ม.)", "rail"], [Q.clamps, "rail clamp", "clamps"], [Q.braces, "ค้ำ X", "braces"], [Q.red, "ช่องที่ตัดหลบขา", "red"], [Q.onObst, "ขาชนสิ่งกีดขวาง", "onObst"]
     ].map(([v, s, key, c, dg]) => `<div class="stat ${c || ""}"><b>${v}${dl(key, dg)}</b><span>${s}</span></div>`).join("");
     $("notes").innerHTML = L.notes.map(n => `<div>${esc(n.text)}</div>`).join("");
     const S = st.std; $("offV").textContent = f2(st.off) + " ม."; $("colV").textContent = f2(st.col) + " ม.";
@@ -366,13 +383,13 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
   }
   function renderInfo() {
     const box = $("info");
-    if (!sel) { box.innerHTML = `<span class="k">${mode === "remove" ? "แตะแผงเพื่อเอาออกหรือใส่คืน (ทั้งคอลัมน์ตามแนวเอียง) ใช้เว้นทางเดินหรือจุดที่ไม่ต้องการ" : "แตะโต๊ะแผง ช่องระบาย หรือเสาเพื่อดูรายละเอียด"}</span>`; return; }
+    if (!sel) { box.innerHTML = `<span class="k">${mode === "remove" ? "แตะแผงเพื่อเอาออกหรือใส่คืน (ทั้งคอลัมน์ตามแนวเอียง) ใช้เว้นทางเดินหรือจุดที่ไม่ต้องการ" : "แตะโต๊ะแผง ช่องระบาย เสา หรือช่องที่ตัดแผง (กรอบแดง) เพื่อดูรายละเอียด"}</span>`; return; }
     if (sel.type === "table") {
       const r = L.rows[sel.row], t = r && r.tables.find(t => t.i0 === sel.i0);
       if (!t) { sel = null; return renderInfo(); }
       box.innerHTML = `<b>โต๊ะแถว ${r.k + 1}</b><span class="k">แผง</span><span class="v">${t.n * FIX.nSlope} (${(t.n * FIX.nSlope * st.std.modWp / 1000).toFixed(1)} kWp)</span>
         <span class="k">ยาว</span><span class="v">${f2(t.xb - t.xa)} ม.</span><span class="k">เสา</span><span class="v">${t.px.length} คู่ · ห่าง ${f2(Math.max(...t.px.slice(1).map((x, q) => x - t.px[q])))} ม. สูงสุด</span>
-        ${t.moved.length ? `<span class="pill ok">เลื่อนเสาหลบช่องเปิด ${t.moved.length} คู่</span>` : ""}${t.bad.length ? `<span class="pill bad">เสาชน ${t.bad.length} คู่</span>` : ""}
+        <span class="pill ok">ขาไม่ชนสิ่งกีดขวาง</span>${t.moved.length ? `<span class="pill ok">จัดระยะเสาใหม่เพื่อหลบ</span>` : ""}
         <button type="button" class="ghost" id="toSection">ดูรูปตัดแถวนี้</button>`;
       $("toSection").onclick = () => setView("section");
     } else if (sel.type === "vent") {
@@ -383,7 +400,7 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
     } else if (sel.type === "post") {
       const n = L.notes.find(n => n.row === sel.row && Math.abs(n.x - sel.x) < 1e-6);
       box.innerHTML = `<b>เสาแถว ${sel.row + 1}</b><span class="k">ตำแหน่ง</span><span class="v">x ${f2(sel.x)} ม.</span><span class="k">ฐาน</span><span class="v">คอนกรีต 300×300×150 ยึดพุก</span>
-        ${n ? `<span class="pill bad">ชนช่องเปิด</span><span class="k">ลองเลื่อนแนวแผงหรือกด “หาผังที่ได้แผงมากที่สุด”</span>` : `<span class="pill ok">ไม่ชนช่องเปิด</span>`}`;
+        <span class="pill ok">ห่างสิ่งกีดขวางอย่างน้อย 0.30 ม.</span>`;
     }
   }
 
@@ -421,10 +438,15 @@ button.go { background: var(--good-soft); color: var(--good); font-weight: 600; 
   for (const id of Object.keys(STD0)) $(id).addEventListener("change", e => { const v = parseFloat(e.target.value); if (!(v > 0)) { e.target.value = st.std[id]; return; } push(); prevQ = Q; st.std[id] = v; st.removed = new Set(); render(); });
   $("resetStd").addEventListener("click", () => { push(); prevQ = Q; st.std = { ...STD0 }; sync(); render(); });
   $("best").addEventListener("click", () => {
-    push(); prevQ = Q; const pitch = derived(st.std).pitch; let best = null, tried = 0;
+    push(); prevQ = Q; const pitch = derived(st.std).pitch; let best = null, tried = 0; const pool = [];
     for (let o = 0; o <= pitch + 1e-9; o += .1) for (let c = 0; c <= st.std.modW + 1e-9; c += .05) {
       const q = quantities(layout(o, c, new Set(), false)); tried++;
-      if (!best || q.modules > best.m) best = { m: q.modules, o, c };
+      pool.push({ m: q.modules, o, c });
+    }
+    pool.sort((a, b) => b.m - a.m);
+    for (const p of pool.slice(0, 10)) {                      // re-check the best ten with posts: a cut can change the order
+      const q = quantities(layout(p.o, p.c, new Set(), true));
+      if (!best || q.modules > best.m) best = { m: q.modules, o: p.o, c: p.c };
     }
     st.off = Math.round(best.o * 10) / 10; st.col = Math.round(best.c * 20) / 20; st.removed = new Set(); sel = null; sync();
     render(); $("bestNote").textContent = `ลอง ${tried} แบบ · ดีที่สุด ${best.m} แผง ที่เลื่อนแถว ${f2(st.off)} ม. แผง ${f2(st.col)} ม.`;

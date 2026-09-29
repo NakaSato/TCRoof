@@ -129,6 +129,7 @@ def layout_f(G, gap, off, colsh, want_posts=True):
     W, g, D0 = S["mod_w"], S["mod_gap"], None
     pitch = S["post_dy"] + gap
     ix0, iy0, ix1, iy1 = bbox(G["inset"])
+    G["xs0"] = ix0 + colsh
     xs = []; x = ix0 + colsh
     while x + W <= ix1 + 1e-9: xs.append(x); x += W + g
     rows = []; k = 0; vH = S["vent_h"] + S["under_clear"]; tb_ = math.tan(TILT)
@@ -156,41 +157,67 @@ def layout_f(G, gap, off, colsh, want_posts=True):
             while j < len(xs) and ok[j]: j += 1
             if j - i >= 2: tables.append(dict(i0=i, i1=j, xa=xs[i], xb=xs[j - 1] + W, n=j - i))
             i = j
+        cut = []
         if want_posts:
-            f = S["footing"] / 2 + 0.30
-            def free(xx, yl):
-                sq = rect_poly(xx - S["footing"] / 2, yl - S["footing"] / 2, S["footing"], S["footing"])
-                if not all(inside(G["tank"], p) for p in sq): return False
-                big = rect_poly(xx - f, yl - f, 2 * f, 2 * f)
-                return all(not sat(big, o["core"]) for o in G["ops"] if not (o["cb"][2] <= xx - f or o["cb"][0] >= xx + f or o["cb"][3] <= yl - f or o["cb"][1] >= yl + f))
-            for tb in tables:
-                span = tb["xb"] - tb["xa"] - 2 * S["end_over"]; nP = max(2, math.ceil(span / S["post_dx"]) + 1)
-                px = [tb["xa"] + S["end_over"] + span * q / (nP - 1) for q in range(nP)]; bad = []
-                both = lambda xx: tb["xa"] <= xx <= tb["xb"] and free(xx, yfp) and free(xx, ybp)
-                out = []
-                for x in px:
-                    c = next((x + s * 0.05 for s in [0] + [a * d for a in range(1, 31) for d in (1, -1)] if both(x + s * 0.05)), None)
-                    if c is None: bad.append(x); c = x
-                    out.append(c)
-                out.sort(); q = 0
-                while q < len(out) - 1:
-                    if out[q + 1] - out[q] > S["post_dx"] + 1e-6:
-                        m = (out[q] + out[q + 1]) / 2
-                        c = next((m + s * 0.05 for s in [0] + [a * d for a in range(1, 21) for d in (1, -1)] if both(m + s * 0.05)), None)
-                        if c is not None: out.insert(q + 1, c)
-                    q += 1
-                tb["px"], tb["bad"] = out, bad
-        rows.append(dict(k=k, y_front=y_front, yfp=yfp, ybp=ybp, y_back=y_back, tables=tables))
+            tables, cut = place_posts(G, tables, xs, yfp, ybp)
+        rows.append(dict(k=k, y_front=y_front, yfp=yfp, ybp=ybp, y_back=y_back, tables=tables, cut=cut))
         k += 1
     return rows
+
+
+MAX_CANT = 1.0      # m, longest rail cantilever past an end post (standard)
+
+
+def place_posts(G, tables, xs, yfp, ybp):
+    """Posts never touch an obstacle: every footing is inside the tank and 0.30 m clear of every opening, bays <= post_dx,
+    end cantilever <= MAX_CANT. When a table cannot be posted, the module column where it fails is removed (the table is
+    shortened or split) and the rest is posted again. Returns the posted tables and the removed columns."""
+    W, g = S["mod_w"], S["mod_gap"]; fp = S["footing"] / 2; f = fp + 0.30
+    def free(xx, yl):
+        sq = rect_poly(xx - fp, yl - fp, 2 * fp, 2 * fp)
+        if not all(inside(G["tank"], p) for p in sq): return False
+        big = rect_poly(xx - f, yl - f, 2 * f, 2 * f)
+        return all(not sat(big, o["core"]) for o in G["ops"] if not (o["cb"][2] <= xx - f or o["cb"][0] >= xx + f or o["cb"][3] <= yl - f or o["cb"][1] >= yl + f))
+    ok = lambda xx: free(xx, yfp) and free(xx, ybp)            # front and back post share a rafter
+    def grid(a, b, prefer):                                     # free spots in [a, b] every 0.05 m, nearest to `prefer` first
+        if b < a: return []
+        pts = [a + i * 0.05 for i in range(int((b - a) / 0.05 + 1e-6) + 1)]
+        return sorted((x for x in pts if ok(x)), key=lambda x: abs(x - prefer))
+    def post(tb):
+        xa, xb = tb["xa"], tb["xb"]; span = xb - xa - 2 * S["end_over"]
+        nP = max(2, math.ceil(span / S["post_dx"]) + 1)
+        eq = [xa + S["end_over"] + span * q / (nP - 1) for q in range(nP)]
+        if all(ok(x) for x in eq): return eq, None               # the standard spacing already works
+        first = grid(xa + 0.2, xa + MAX_CANT, xa + S["end_over"])
+        if not first: return None, xa + 0.5
+        px = [first[0]]
+        while px[-1] < xb - MAX_CANT - 1e-9:
+            lo, hi = px[-1] + 0.6, min(px[-1] + S["post_dx"], xb - 0.2)
+            cand = grid(lo, hi, hi)                                   # the furthest free spot keeps the posts few
+            if not cand: return None, px[-1] + S["post_dx"] / 2
+            px.append(cand[0])
+        if px[-1] < xb - S["end_over"] - 0.3:                       # end nearer the standard overhang when possible
+            end = grid(max(px[-1] + 0.6, xb - MAX_CANT), min(px[-1] + S["post_dx"], xb - 0.2), xb - S["end_over"])
+            if end: px.append(end[0])
+        return px, None
+    done, cut, queue = [], [], list(tables)
+    while queue:
+        tb = queue.pop(0)
+        px, fail = post(tb)
+        if px is not None:
+            tb["px"], tb["bad"] = px, []; done.append(tb); continue
+        c = min(tb["i1"] - 1, max(tb["i0"], int((fail - xs[0]) // (W + g))))
+        cut.append((c, fail))
+        for a, b in ((tb["i0"], c), (c + 1, tb["i1"])):
+            if b - a >= 2: queue.append(dict(i0=a, i1=b, xa=xs[a], xb=xs[b - 1] + W, n=b - a))
+    done.sort(key=lambda t: t["i0"])
+    return done, cut
 
 
 def strategies(bearing):
     """True south (phi = bearing) and parallel to the wall that faces nearest to south."""
     wall = round(bearing / 90) * 90
-    out = [("หันทิศใต้จริง", bearing, 0.0)]
-    if abs(bearing - wall) > 0.5: out.append(("ขนานผนังถัง", wall, bearing - wall))
-    return out
+    return [("หันทิศใต้จริง", bearing, 0.0), ("ขนานผนังถัง", wall, bearing - wall)]
 
 
 def evaluate(rows, gamma_p, pitch):
@@ -202,21 +229,28 @@ def evaluate(rows, gamma_p, pitch):
     return sum(kw), e, y1, y2
 
 
-def optimise(t):
+def optimise(t, force=None):
+    """force: None = every strategy, or the name of the one to keep."""
     cands = []
     for name, phi, gamma in strategies(SITE["bearing"]):
+        if force and name != force: continue
         G = prepare(t, phi)
         for gap in [round(S["row_gap"] + 0.2 * i, 2) for i in range(0, 11)]:
             pitch = S["post_dy"] + gap
-            best = None
+            coarse = []
             for io in range(int(pitch / 0.2) + 1):
                 for ic in range(int(S["mod_w"] / 0.1) + 1):
                     rows = layout_f(G, gap, io * 0.2, ic * 0.1, want_posts=False)
-                    mods = sum(tb["n"] for r in rows for tb in r["tables"])
-                    if best is None or mods > best[0]: best = (mods, io * 0.2, ic * 0.1, rows)
+                    coarse.append((sum(tb["n"] for r in rows for tb in r["tables"]), io * 0.2, ic * 0.1))
+            coarse.sort(reverse=True)
+            best = None
+            for mods0, off, col in coarse[:10]:                  # re-check the best ten with posts: a cut can change the order
+                rows = layout_f(G, gap, off, col, want_posts=True)
+                mods = sum(tb["n"] for r in rows for tb in r["tables"])
+                if best is None or mods > best[0]: best = (mods, off, col, rows)
             kwp, e, y1, y2 = evaluate(best[3], gamma, pitch)
             cands.append(dict(name=name, phi=phi, gamma=gamma, gap=gap, pitch=pitch, off=best[1], col=best[2], kwp=kwp, mwh=e / 1000,
-                              yf=y1, ys=y2, spec=e / kwp if kwp else 0, G=G))
+                              yf=y1, ys=y2, spec=e / kwp if kwp else 0, G=G, cuts=sum(len(r["cut"]) for r in best[3])))
     return cands
 
 
@@ -237,7 +271,7 @@ def plan_opt(t, c, rows, path, title_extra, W=1100):
         x, y = P(bx, by); sk.rect(x, y, bw * k, bh * k, OPEN, "white", 0.8); sk.circle((x + bw * k / 2, y + bh * k / 2), bw * k * .2, OPEN, None, .6)
     for (bx, by, bw, bh) in hatches:
         x, y = P(bx, by); sk.rect(x, y, bw * k, bh * k, BLACK, "white", 0.9); sk.hatch(x + 1, y + 1, bw * k - 2, bh * k - 2, FAINT, 4)
-    Wm = S["mod_w"]; nt = nm = npost = nbad = 0
+    Wm = S["mod_w"]; nt = nm = npost = nbad = ncut = 0
     for r in rows:
         for tb in r["tables"]:
             nt += 1
@@ -256,6 +290,11 @@ def plan_opt(t, c, rows, path, title_extra, W=1100):
                     sk.poly([Q(p) for p in rect_poly(x - .15, yl - .15, .3, .3)], col, "white", 1.1 if bad else 0.8)
                     cc = Q((x, yl)); sk.rect(cc[0] - 1.5, cc[1] - 1.5, 3, 3, col, col)
             sk.circle(Q((tb["xa"] + 0.15, rails[0])), 2.8, LUG, LUG)
+        for (ci, fx) in r.get("cut", []):
+            if any(tb["i0"] <= ci < tb["i1"] for tb in r["tables"]): continue
+            xa = c["G"]["xs0"] + ci * (Wm + S["mod_gap"])
+            sk.poly([Q(p) for p in rect_poly(xa, r["y_back"], Wm, r["y_front"] - r["y_back"])], LUG, None, 0.9)
+            sk.line(Q((xa, r["y_back"])), Q((xa + Wm, r["y_front"])), 0.6, LUG); ncut += 1
     # north arrow at the true bearing (plan up = bearing B → north is rotated −B from up)
     nx, ny = ox + TW * k + 44, oy + 34; b = math.radians(-SITE["bearing"])
     tip = (nx + 22 * math.sin(b), ny - 22 * math.cos(b)); l = (nx + 7 * math.cos(b), ny + 7 * math.sin(b)); rr = (nx - 7 * math.cos(b), ny - 7 * math.sin(b))
@@ -265,7 +304,7 @@ def plan_opt(t, c, rows, path, title_extra, W=1100):
     rows_txt = [("แนวแถว", c["name"]), ("มุมแผงเทียบทิศใต้", f"{c['gamma']:+.0f}°"), ("มุมเอียง", f"{math.degrees(TILT):.1f}°"),
                 ("ระหว่างแถว (เสาหลังถึงเสาหน้า)", f"{c['gap']:.2f} ม."), ("แผง", f"{nm} แผง · {nm * S['mod_wp'] / 1000:.1f} kWp"),
                 ("โต๊ะ / เสา", f"{nt} / {npost}"), ("พลังงานต่อปี (ประมาณ)", f"{c['mwh']:.0f} MWh"), ("ต่อ kWp", f"{c['spec']:.0f} kWh/kWp"),
-                ("เงาแถวหน้าบังแถวหลัง", f"−{(1 - c['ys'] / c['yf']) * 100:.1f}% ต่อแถว"), ("เสาต้องตรวจ", f"{nbad}")]
+                ("เงาแถวหน้าบังแถวหลัง", f"−{(1 - c['ys'] / c['yf']) * 100:.1f}% ต่อแถว"), ("ขาชนสิ่งกีดขวาง", f"{nbad} (ตัดแผง {ncut} ช่องเพื่อหลบ)")]
     sk.text(c.get("label", "ผลที่เลือก (พลังงานสูงสุด)"), (lx, ly), 9, True); ly += 18
     for a, v in rows_txt: sk.text(a, (lx, ly), 8, False, INK2); sk.text(v, (lx + 265, ly), 8, True, BLACK, "right"); ly += 15
     yb = oy + TH * k + 26
@@ -320,18 +359,16 @@ def compare_chart(cands, chosen, path, W=1100):
 
 if __name__ == "__main__":
     t0 = time.time()
-    cands = optimise(TANK)
-    best = max(cands, key=lambda c: c["mwh"])
+    cands = optimise(TANK)                                        # both orientations, for the comparison chart
+    walls = [c for c in cands if c["name"] == "ขนานผนังถัง"]
+    best = max(walls, key=lambda c: c["mwh"])                     # the team rule: follow the tank's walls
+    best["label"] = "หันตามแนวถัง · พลังงานสูงสุด"
     rows = layout_f(best["G"], best["gap"], best["off"], best["col"], want_posts=True)
     plan_opt(TANK, best, rows, os.path.join(HERE, "tank_mount_opt_plan.png"),
              f"ละติจูด {SITE['lat']:.1f}° · ผนังบนหันทิศ {SITE['bearing']:.0f}° · หน่วย ม.")
     compare_chart(cands, best, os.path.join(HERE, "tank_mount_opt_compare.png"))
-    south = max((c for c in cands if c["name"] == "หันทิศใต้จริง"), key=lambda c: c["mwh"])
-    south["label"] = "บังคับหันทิศใต้จริง (พลังงานสูงสุดของแบบนี้)"
-    rs = layout_f(south["G"], south["gap"], south["off"], south["col"], want_posts=True)
-    plan_opt(TANK, south, rs, os.path.join(HERE, "tank_mount_opt_south.png"),
-             f"ละติจูด {SITE['lat']:.1f}° · ผนังบนหันทิศ {SITE['bearing']:.0f}° · หน่วย ม.")
     for c in cands:
         if int(round(c["gap"] * 10)) % 4 == 3 or c is best:
-            print(f"{c['name']:14s} gap {c['gap']:.1f} off {c['off']:.1f} col {c['col']:.1f}  {c['kwp']:6.1f} kWp  {c['mwh']:6.1f} MWh  {c['spec']:5.0f} kWh/kWp  shade {(1 - c['ys'] / c['yf']) * 100:4.1f}%")
-    print("best", best["name"], best["gap"], round(best["mwh"], 1), "time", round(time.time() - t0, 1), "s")
+            print(f"{c['name']:14s} gap {c['gap']:.1f} off {c['off']:.1f} col {c['col']:.1f}  {c['kwp']:6.1f} kWp  {c['mwh']:6.1f} MWh  cuts {c['cuts']}")
+    bad = sum(len(tb["bad"]) for r in rows for tb in r["tables"])
+    print("best", best["name"], best["gap"], round(best["mwh"], 1), "posts on obstacles", bad, "cuts", [r["cut"] for r in rows if r["cut"]], "time", round(time.time() - t0, 1), "s")

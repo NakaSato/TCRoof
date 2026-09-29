@@ -70,17 +70,21 @@ All in metres, tank frame rotated so south is +y.
      under the panels (counted as "อยู่ใต้แผงได้"); otherwise the columns over it are removed.
    - pipes and ladders are outside the roof and do not block.
 5. **Tables:** each run of at least 2 free columns is one table.
-6. **Posts:** per table, `nPost = ⌈(length − 2·endOver) / postDX⌉ + 1`, equally spaced. Front and back posts share a
-   rafter, so they move **as a pair**. A pair whose footing (+0.30 m) touches an opening slides along the row in
-   0.05 m steps up to 1.5 m; if a slide opens a bay wider than `postDX`, a pair is added in the middle. A pair that
-   cannot be placed is drawn red and listed "ต้องให้วิศวกรตรวจ".
+6. **Posts — legs never touch an obstacle (hard rule).** Every footing must be inside the tank and at least 0.30 m
+   clear of every opening (vent, hatch). Front and back posts share a rafter, so they are placed **as a pair**.
+   Per table: try the standard equal spacing (`nPost = ⌈(length − 2·endOver) / postDX⌉ + 1`); if any pair is not
+   free, place the pairs greedily from the west end on a 0.05 m grid — first pair within 1.00 m of the table end
+   (`maxCantilever`), each next pair at most `postDX` further and at least 0.60 m away, last pair within 1.00 m of the
+   east end. If no free spot exists, the **module column where it fails is removed** (the table is shortened or split)
+   and the parts are posted again. Removed columns are drawn as red outlines with the reason
+   "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง". There are no flagged posts: every drawn leg is clear.
 7. **Quantities** (per table, summed): modules, kWp, posts = footings, rafters, rail length (4 × table length),
    rail clamps (rails × rafters), mid clamps (2 per module joint per module row), end clamps (2 per end per module row),
    X braces (2 per bay), ground lugs (1 per table).
 
-Prototype result on the กปภ. 40 × 40 tank: **7 rows, 13 tables, 394 modules, 236.4 kWp**, 196 posts/footings,
-98 rafters, 905 m of rail, 392 rail clamps, 736 / 104 mid / end clamps, 170 braces, 13 ground lugs; 8 vents stay
-under the panels; 2 post pairs near corner vents need engineering review.
+Prototype result on the กปภ. 40 × 40 tank (first version, before the no-collision rule): 7 rows, 13 tables, 394 modules,
+236.4 kWp; 8 vents stay under the panels. With the rule, the columns next to the corner vents are cut instead of flagged
+(see §3a for the final numbers).
 
 
 ## 3a. Accurate layout: panels face south, best energy per year
@@ -100,14 +104,17 @@ tank is rarely square to the compass and closer rows shade each other.
 
 **Method**
 
-1. **Two orientations** are laid out and compared:
+1. **Orientation — the team rule: rows follow the tank (ขนานผนังถัง).** Panels face the wall side nearest to south;
+   the panel azimuth is the bearing's offset (≤ 45°) and is used in the energy model. True-south rows are still computed
+   for the comparison chart only:
    - **หันทิศใต้จริง** — rows run exactly east–west (panel azimuth 0°). The tank, its setbacks and openings are rotated
      into that frame, so tables sit at an angle to the walls.
    - **ขนานผนังถัง** — rows parallel to the wall that faces closest to south; panel azimuth = the bearing's offset
      (≤ 45°).
 2. **Geometry in any rotation:** module slots, footings and grown openings are polygons; a slot is valid when all its
    corners are inside the inset tank and it does not intersect a grown hatch or a too-low vent (separating axis test);
-   footings must be inside the tank and 0.30 m clear of every opening. Posts still move as front/back pairs.
+   footings must be inside the tank and 0.30 m clear of every opening; posts follow §3 step 6 (no leg on an obstacle,
+   cut a column when needed).
 3. **Sun model, whole year, 15-minute steps (every 3rd day):** NOAA-style sun position from latitude, clear-sky GHI
    (Haurwitz) scaled by 0.72 for Thai haze and clouds, Erbs diffuse split, isotropic sky, albedo 0.20, PR 0.80. It gives
    about 1,450–1,480 kWh/kWp·yr at 17° N, in line with Thai PV yields; the absolute value is ประมาณ, the comparison is what
@@ -116,35 +123,37 @@ tank is rarely square to the compass and closer rows shade each other.
    next row's slope `f = 1 − (pitch / slope) · sin αp / sin(αp + β)`. **Portrait-2 electrical rule:** a shadow over the
    bottom 4 % of the slope drops the whole bottom module's beam (its three bypass substrings all lose their bottom cells);
    past 54 % the top module goes too. The south-most row is unshaded.
-5. **Search:** each orientation × row gap from the standard 2.70 m up to 4.70 m (0.20 m steps) × row offset (0.20 m)
-   × column offset (0.10 m): about 3,000 layouts, 12 s in Python, well under a second in Swift. For each gap the layout with
-   the most modules is kept; then the candidate with the highest **MWh/yr** wins. Row gaps below the standard are never
-   tried (maintenance access and bracing).
+5. **Search:** row gap from the standard 2.70 m up to 4.70 m (0.20 m steps) × row offset (0.20 m) × column offset
+   (0.10 m). Stage 1 counts modules without posts (fast); stage 2 re-runs the ten best with post placement, because a
+   cut column can change the order. For each gap the layout with the most modules is kept; then the gap with the highest
+   **MWh/yr** wins. Row gaps below the standard are never tried (maintenance access and bracing). About 16 s in Python
+   for both orientations; well under a second in Swift.
 
 **Result, กปภ. 40 × 40 tank, 17.0° N, top wall facing 12°:**
 
 | Orientation | Row gap | Modules | kWp | kWh/kWp·yr | Row shading | MWh/yr |
 |---|---|---|---|---|---|---|
-| **ขนานผนังถัง (azimuth +12°)** | 2.70 | 416 | 249.6 | 1,452 | 1.9 % | **362.5** ← chosen |
-| หันทิศใต้จริง | 2.70 | 368 | 220.8 | 1,455 | 1.8 % | 321.3 |
-| ขนานผนังถัง | 3.10 | 370 | 222.0 | 1,467 | 0.8 % | 325.7 |
-| หันทิศใต้จริง | 3.50 | 330 | 198.0 | 1,475 | 0.3 % | 292.1 |
+| **ขนานผนังถัง (azimuth +12°)** | 2.70 | 404 | 242.4 | 1,452 | 1.9 % | **352.0** ← chosen (6 columns cut so no leg touches a vent) |
+| ขนานผนังถัง | 3.10 | 370 | 222.0 | 1,467 | 0.8 % | 325.9 |
+| หันทิศใต้จริง (comparison only) | 2.70 | 368 | 220.8 | 1,455 | 1.8 % | 321.3 |
+| หันทิศใต้จริง (comparison only) | 3.50 | 330 | 198.0 | 1,475 | 0.3 % | 292.1 |
+
+Legs on obstacles in the chosen layout: **0** (198 posts, all footings ≥ 0.30 m from every opening).
 
 What this says:
 
 - Turning the rows 12° to face true south gains only about 0.2 % per kWp but loses 48 modules to the rotated fit, so the
-  wall-parallel layout makes **13 % more energy**. True south wins only when the tank is turned far from the compass
-  (the model decides per tank; the user can force true south).
+  wall-parallel layout makes about **10 % more energy** — which supports the team's rule to follow the tank.
 - The team's 2.70 m row gap costs about 1.9 % to shading at 17° N; wider gaps shade less but remove whole rows. The
   standard gap is the best choice for this tank.
 
-| Chosen (best energy) | Forced true south | Energy by row gap |
+| Chosen (follow the tank, best energy) | True south (comparison only) | Energy by row gap |
 |---|---|---|
 | ![](img/tank_mount_opt_plan.png) | ![](img/tank_mount_opt_south.png) | ![](img/tank_mount_opt_compare.png) |
 
-UI (adds to [`mount-interaction-dev.md`](mount-interaction-dev.md)): a segmented control **พลังงานสูงสุด / หันทิศใต้จริง /
-ขนานผนัง** (default พลังงานสูงสุด), the bearing field with a **วัดด้วยเข็มทิศ** button (CoreLocation heading, true north,
-the device held along the top wall), and the energy tiles (MWh/yr, kWh/kWp, row shading %) next to the module count.
+UI (adds to [`mount-interaction-dev.md`](mount-interaction-dev.md)): rows always follow the tank; the bearing field with
+a **วัดด้วยเข็มทิศ** button (CoreLocation heading, true north, the device held along the top wall) sets the panel azimuth
+for the energy numbers; energy tiles (MWh/yr, kWh/kWp, row shading %) sit next to the module count, and
 "หาผังที่ได้แผงมากที่สุด" becomes **หาผังที่ได้พลังงานมากที่สุด**.
 
 Swift: `SurveyCore/Mounting/SunModel.swift` (sun position, clear-sky, POA, row shading; pure functions, unit-tested

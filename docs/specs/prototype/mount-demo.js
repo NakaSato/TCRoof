@@ -22,9 +22,12 @@ const OUT = process.argv[2] || 'mount-frames'; fs.mkdirSync(OUT, { recursive: tr
     else if (!badShown && t.includes('ต่ำไป')) { badShown = true; await shot('ช่องระบายอีกจุด: ใต้แผงต่ำไป ระบบจึงเว้นแผงเหนือช่องนี้', 3); }
     if (okShown && badShown) break;
   }
-  const bad = await p.$$eval('[data-post]', es => { for (const e of es) { const c = e.getAttribute('cx'); } return es.map(e => e.dataset.post); });
-  // red post: find via notes text, click posts until the info says it collides
-  for (const d of bad) { await clickSel(`[data-post="${d}"]`); if ((await p.textContent('#info')).includes('ชนช่องเปิด')) { await shot('แตะเสาสีแดง: ชนช่องเปิด เลื่อนหลบไม่ได้ ระบบบอกทางแก้', 3); break; } }
+  // a slot cut so that no leg stands on an obstacle: tap the red outline to read why
+  const slots = await p.$$eval('.hit.m', es => es.map(e => [e.dataset.row, e.dataset.col]));
+  for (const [r, c] of slots) { await clickSel(`.hit.m[data-row="${r}"][data-col="${c}"]`);
+    if ((await p.textContent('#info')).includes('ตัดแผงเพื่อไม่ให้ขา')) { await shot('กรอบแดง: ตัดแผงช่องนี้ออก เพราะขาโครงสร้างจะชนช่องระบาย (ขาไม่ชนสิ่งกีดขวางเลย)', 3); break; } }
+  const posts = await p.$$eval('[data-post]', es => es.map(e => e.dataset.post));
+  await clickSel(`[data-post="${posts[3]}"]`); await shot('แตะขาโครงสร้าง: ฐานห่างสิ่งกีดขวางอย่างน้อย 0.30 ม. ทุกต้น', 2);
   for (const v of [0.2, 0.4, 0.6, 0.8, 1.0]) { await slide('off', v); await shot('เลื่อนแนวแถว: จำนวนแผงและวัสดุเปลี่ยนทันที (เลขเขียว/แดงคือส่วนต่าง)', 1); }
   await p.click('#best'); await shot('กด “หาผังที่ได้แผงมากที่สุด”: ลองทุกแนวแล้วเลือกแบบที่ได้แผงมากสุด', 4);
   // select a table in row 3 then its section

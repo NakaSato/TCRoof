@@ -23,9 +23,9 @@ def num(s):
     except ValueError: return None
 
 
-TR_REQ = [("kva", "ขนาด kVA"), ("type", "ชนิด"), ("hv", "แรงดันแรงสูง"), ("lv", "แรงดันแรงต่ำ"), ("vector", "Vector group"),
+TR_REQ = [("kva", "ขนาด kVA"), ("hvSwitch", "อุปกรณ์ตัดตอนแรงสูง"), ("type", "ชนิด"), ("hv", "แรงดันแรงสูง"), ("lv", "แรงดันแรงต่ำ"), ("vector", "Vector group"),
           ("z", "%Z"), ("brand", "ยี่ห้อ"), ("serial", "Serial no."), ("year", "ปีผลิต"), ("cond", "สภาพ")]
-BRK_REQ = [("type", "ชนิด MCCB/ACB"), ("poles", "จำนวนโพล"), ("at", "AT"), ("af", "AF"), ("ka", "IC kA"), ("brand", "ยี่ห้อ"), ("cond", "สภาพ")]
+BRK_REQ = [("type", "ชนิด MCCB/ACB"), ("mount", "Fixed/Draw-out"), ("poles", "จำนวนโพล"), ("at", "AT"), ("af", "AF"), ("ka", "IC kA"), ("brand", "ยี่ห้อ"), ("cond", "สภาพ")]
 GREEN, AMBER = "#2F855A", "#B7791F"
 COND = {"ดี": GREEN, "พอใช้": AMBER, "ชำรุด": RED}
 
@@ -60,7 +60,8 @@ def read_form(form):
             mdbs.append((name, breaker(b, miss, f"A3 TR{i + 1} {name}")))
         if not num(t["kva"]) and not mdbs: continue
         tr = dict(name=f"TR{i + 1}", kva=num(t["kva"]), mdbs=mdbs, feed=j.get(f"tr{i}_feed", "").strip(), loc=j.get(f"tr{i}_feedLoc", ""),
-                  **{k: str(j.get(f"tr{i}_{k}", "")).strip() for k, _ in TR_REQ if k != "kva"}, note=j.get(f"tr{i}_condNote", ""))
+                  **{k: str(j.get(f"tr{i}_{k}", "")).strip() for k, _ in TR_REQ if k != "kva"}, note=j.get(f"tr{i}_condNote", ""),
+                  hvsw=str(j.get(f"tr{i}_hvSwitch", "")).strip())
         gaps = [lab for k, lab in TR_REQ if not (tr["kva"] if k == "kva" else tr[k])]
         if not tr["feed"]: gaps.append("ตู้ MDB ปลายสาย")
         elif mdbs and tr["feed"] not in [n for n, _ in mdbs]: gaps.append(f"ตู้ปลายสาย \"{tr['feed']}\" ไม่ตรงกับชื่อตู้ที่กรอก")
@@ -72,7 +73,7 @@ def read_form(form):
     for k, sec in enumerate(x for x in secs if x["type"] == "panel"):
         v = sec["values"]; name = sec.get("name") or f"ตู้ไฟฟ้า {k + 1}"
         b = {f: v.get(key, "") for f, key in (("type", "breakerType"), ("poles", "breakerPoles"), ("at", "breakerAT"),
-                                              ("af", "breakerAF"), ("ka", "breakerKA"), ("brand", "breakerBrand"))}
+                                              ("af", "breakerAF"), ("ka", "breakerKA"), ("brand", "breakerBrand"), ("mount", "breakerMount"))}
         b.update(cond=v.get("cond", ""), note=v.get("condNote", ""))
         panels.append(dict(name=name, brk=breaker(b, miss, f"B1 {name}"), kw=num(v.get("loadKW")), time=v.get("loadTime", "")))
     inv = sum(num(s["values"].get("inverterCount")) or 0 for s in secs if s["type"] == "inverter")
@@ -118,6 +119,36 @@ def cond_label(sk, x, y, cond, note="", align="left", wrap=False):
         sk.text(f"สภาพ: {q(cond)}", (x, y), 8.5, True, col, align); sk.text(note, (x, y + 14), 8, False, col, align)
     else:
         sk.text(f"สภาพ: {q(cond)}" + (f" — {note}" if note else ""), (x, y), 8.5, True, col, align)
+
+
+def drawout(b):
+    return str(b.get("mount", "")).lower().startswith("draw")
+
+
+def lvbrk(sk, x, y, b, c=DARK):
+    """LV breaker symbol by mounting: fixed = terminals + arc; draw-out = double chevrons above and below the arc.
+    Returns the half-height the caller's lines must stop at (11 fixed, 22 draw-out)."""
+    if not drawout(b):
+        cb(sk, x, y, c=c); return 11
+    sk.arc((x, y), 9, 270, 90, 1.3, c)
+    for cy in (y - 22, y - 16):                                             # pointing up
+        sk.line((x - 5, cy + 5), (x, cy), 1.1, c); sk.line((x, cy), (x + 5, cy + 5), 1.1, c)
+    for cy in (y + 16, y + 22):                                             # pointing down
+        sk.line((x - 5, cy - 5), (x, cy), 1.1, c); sk.line((x, cy), (x + 5, cy - 5), 1.1, c)
+    sk.line((x, y - 22), (x, y - 16), 1.1, c); sk.line((x, y + 16), (x, y + 22), 1.1, c)
+    return 22
+
+
+def mv52(sk, x, y0):
+    """MV draw-out power circuit breaker: box '52' between double chevrons. Occupies y0 .. y0 + 52."""
+    for cy in (y0 + 6, y0 + 11):
+        sk.line((x - 6, cy + 6), (x, cy), 1.3, DARK); sk.line((x, cy), (x + 6, cy + 6), 1.3, DARK)
+    sk.line((x, y0), (x, y0 + 15), 1.3, DARK)
+    sk.rect(x - 13, y0 + 15, 26, 22, DARK, "white", 1.6); sk.text("52", (x, y0 + 26), 10, True, DARK, "center")
+    sk.line((x, y0 + 37), (x, y0 + 52), 1.3, DARK)
+    for cy in (y0 + 41, y0 + 46):
+        sk.line((x - 6, cy - 6), (x, cy), 1.3, DARK); sk.line((x, cy), (x + 6, cy - 6), 1.3, DARK)
+    return y0 + 52
 
 
 def ct(sk, x, y, c=DARK, n=3, lead=22):
@@ -200,7 +231,11 @@ def sld(form, path):
     feed_x, lvb = None, None
     for (t, b0, b1), tx in zip(blocks, txs):
         sk.circle((tx, hb), 2.2, DARK, DARK)
-        y = dof(sk, tx, hb + 4)
+        if t["hvsw"].upper().startswith("VCB"):
+            y = mv52(sk, tx, hb + 2)
+            sk.text("VCB (Draw-out)", (tx + 18, hb + 28), 8)
+        else:
+            y = dof(sk, tx, hb + 4); sk.line((tx, y), (tx, hb + 54), 1.2, DARK); y = hb + 54
         jy = y + 4; sk.line((tx, y), (tx, jy + 22), 1.2, DARK)
         sk.line((tx, jy), (tx - 50, jy), 1.0, DARK); sk.line((tx - 50, jy), (tx - 50, jy + 8), 1.0, DARK)   # lightning arrester
         sk.rect(tx - 56, jy + 8, 12, 22, DARK, "white", 1.0); sk.poly([(tx - 53, jy + 20), (tx - 47, jy + 20), (tx - 50, jy + 27)], DARK, DARK)
@@ -226,8 +261,9 @@ def sld(form, path):
                 feed_x, feed = cx, (t, name, b); sk.line((cx, lvb), (cx, lvb + 210), 1.4, DARK); continue
             dashed_box(sk, cx - 50, lvb + 14, cx + 122, lvb + 146, 0.8)
             sk.text(name, (cx + 12, lvb + 28), 9, True)
-            sk.line((cx, lvb), (cx, lvb + 51), 1.2, DARK); cb(sk, cx, lvb + 62); brk_label(sk, cx + 12, lvb + 62, b)
-            sk.line((cx, lvb + 73), (cx, lvb + 154), 1.2, DARK); sk.poly([(cx - 5, lvb + 154), (cx + 5, lvb + 154), (cx, lvb + 162)], DARK, DARK)
+            h = 22 if drawout(b) else 11
+            sk.line((cx, lvb), (cx, lvb + 62 - h), 1.2, DARK); lvbrk(sk, cx, lvb + 62, b); brk_label(sk, cx + 12, lvb + 62, b)
+            sk.line((cx, lvb + 62 + h), (cx, lvb + 154), 1.2, DARK); sk.poly([(cx - 5, lvb + 154), (cx + 5, lvb + 154), (cx, lvb + 162)], DARK, DARK)
             if name == t["feed"]: sk.text(f"ปลายสาย {t['name']}" + (f" · {t['loc']}" if t["loc"] else ""), (cx + 10, lvb + 160), 7.5, False, INK2)
     # --- expanded MDB: the feed MDB of TR1 (PV connection point, B1 panels)
     bottom = lvb + 180
@@ -236,10 +272,11 @@ def sld(form, path):
         E0 = lvb + 210; E1 = E0 + 290
         dashed_box(sk, 60, E0, W - 60, E1)
         sk.text(f"{name} ({t['name']})" + (f" · {t['loc']}" if t["loc"] else ""), (feed_x + 14, E0 - 10), 10.5, True)
-        sk.line((feed_x, E0), (feed_x, E0 + 29), 1.4, DARK)
-        cb(sk, feed_x, E0 + 40); brk_label(sk, feed_x + 14, E0 + 40, mb)
+        h = 22 if drawout(mb) else 11
+        sk.line((feed_x, E0), (feed_x, E0 + 40 - h), 1.4, DARK)
+        lvbrk(sk, feed_x, E0 + 40, mb); brk_label(sk, feed_x + 14, E0 + 40, mb)
         bus = E0 + 160
-        sk.line((feed_x, E0 + 51), (feed_x, bus), 1.4, DARK)
+        sk.line((feed_x, E0 + 40 + h), (feed_x, bus), 1.4, DARK)
         feeders = d["panels"]; px = W - 320
         f0 = feed_x + 120
         fxs = [f0 + k * min(170, (px - 150 - f0) / max(1, len(feeders) - 1)) for k in range(len(feeders))]
@@ -247,8 +284,9 @@ def sld(form, path):
         sk.line((min(fxs + [feed_x]), bus), (max(right, feed_x), bus), 3.2, DARK); sk.circle((feed_x, bus), 2.4, DARK, DARK)
         for k, (p, x) in enumerate(zip(feeders, fxs)):
             sk.text(str(k + 1), (x, bus - 10), 8.5, False, DARK, "center"); sk.circle((x, bus), 2.4, DARK, DARK)
-            sk.line((x, bus), (x, bus + 28), 1.2, DARK); cb(sk, x, bus + 40); brk_label(sk, x + 12, bus + 40, p["brk"])
-            sk.line((x, bus + 51), (x, E1 + 60), 1.2, DARK)
+            h = 22 if drawout(p["brk"]) else 11
+            sk.line((x, bus), (x, bus + 40 - h), 1.2, DARK); lvbrk(sk, x, bus + 40, p["brk"]); brk_label(sk, x + 12, bus + 40, p["brk"])
+            sk.line((x, bus + 40 + h), (x, E1 + 60), 1.2, DARK)
             sk.rect(x - 14, E1 + 60, 28, 14, None, DARK)
             sk.text(p["name"], (x, E1 + 88), 8.5, True, DARK, "center")
             info = f"โหลด {p['kw']:g} kW" + (f" @{p['time']}" if p["time"] else "") if p["kw"] else "โหลด ?"

@@ -11,7 +11,9 @@ The SLD is generated from the survey form, with no drawing work by the surveyor.
 
 Style for both: PEA HV drawing upstream (HV line, Drop Out Fuse/Disconnecting Switch, PEA meter, drop-out fuse with
 lightning arrester, Δ/Y transformer), Thai MDP drawing downstream (dashed MDB enclosure, arc breakers labelled
-`3P AT/AF`, numbered feeders, black load blocks). CT symbol: a circle on the line with a slash and the CT count (3),
+`3P AT/AF`, numbered feeders, black load blocks). Breaker symbols: LV fixed mount = terminals + arc; LV draw-out power breaker = arc between double chevrons
+(^^ above, vv below); MV draw-out power breaker = box `52` between double chevrons (used when `tr<i>_hvSwitch` = VCB,
+in place of the drop-out fuse). CT symbol: a circle on the line with a slash and the CT count (3),
 signal lead to the right. MDB incomer: the main breaker only, labelled `MCCB,3P` over `AT/AF` (no fuses, lamps, voltmeter or DPM, at the team's request). Existing equipment black, new PV blue, control lines dashed blue.
 
 ## Level 1 — generated from the form (v1)
@@ -31,6 +33,7 @@ print as a red `?` on the drawing and in the missing list under it.
 | Field id | Label | Kind |
 |---|---|---|
 | `trafos[i].kva` (exists) | ขนาด | number, kVA |
+| `tr<i>_hvSwitch` | อุปกรณ์ตัดตอนแรงสูง | choice: Drop Out Fuse / VCB (Draw-out) |
 | `tr<i>_type` | ชนิด | choice: OIL IMMERSED / DRY TYPE / อื่นๆ |
 | `tr<i>_hv`, `tr<i>_lv` | แรงดันด้านแรงสูง / แรงต่ำ | number kV; text (e.g. 230-400) |
 | `tr<i>_vector` | Vector group | text (Dyn11) |
@@ -46,6 +49,7 @@ print as a red `?` on the drawing and in the missing list under it.
 |---|---|---|
 | `name` | ชื่อตู้ตามหน้างาน | text, free (MDP-1, SDB ระบบกรอง, MDB-ADMIN …); no fixed MDB1…MDB6 names |
 | `type` | ชนิดเบรกเกอร์ | choice: MCCB / ACB / อื่นๆ |
+| `mount` | การติดตั้ง | choice: Fixed / Draw-out — picks the symbol |
 | `poles`, `at`, `af`, `ka` | โพล, AT, AF, IC kA | numbers |
 | `brand` | ยี่ห้อ | text |
 | `cond`, `note` | สภาพ, รายละเอียด | ดี / พอใช้ / ชำรุด + text |
@@ -53,7 +57,7 @@ print as a red `?` on the drawing and in the missing list under it.
 `tr<i>_feed` becomes a picker over these names (typing stays allowed); a feed name that matches none is reported.
 
 **B1 ตู้ไฟฟ้าอาคาร** — the section name is the on-site panel name; add `breakerType`, `breakerPoles`, `breakerAF`,
-`breakerKA`, `breakerBrand`, `cond`, `condNote` next to the existing `breakerAT`.
+`breakerKA`, `breakerBrand`, `breakerMount`, `cond`, `condNote` next to the existing `breakerAT`.
 
 Under the drawing, a condition summary counts ดี / พอใช้ / ชำรุด / ยังไม่ระบุ and lists every item that is not ดี, in
 its colour (green / amber / red).

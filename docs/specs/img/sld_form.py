@@ -38,6 +38,15 @@ def breaker(b, miss, where):
     return b
 
 
+def wrap(s, n):
+    """Split a name into lines of about n characters at spaces (Thai names often have few spaces)."""
+    out, cur = [], ""
+    for w in s.split(" "):
+        if cur and len(cur) + 1 + len(w) > n: out.append(cur); cur = w
+        else: cur = f"{cur} {w}".strip()
+    return out + [cur] if cur else out
+
+
 def q(v, unit=""):
     """Value for the drawing; '?' marks a field the surveyor left blank."""
     return f"{v}{unit}" if str(v).strip() else "?"
@@ -182,6 +191,16 @@ def ctrl(sk, pts):
     for a, b in zip(pts, pts[1:]): sk.line(a, b, 0.9, NEW, [4, 3])
 
 
+def inv_ctrl(sk, route, ix, sb):
+    """Export-limit control to the inverters: `route` ends on the right at y = sb + 92; a dashed control bus runs left
+    under the inverter boxes with a stub into each one."""
+    y = sb + 92
+    ctrl(sk, route + [(ix[0] - 10, y)])
+    for x in ix:
+        ctrl(sk, [(x - 10, y), (x - 10, sb + 84)]); sk.circle((x - 10, y), 1.8, NEW, NEW)
+    sk.text("สั่งควบคุมกำลังผลิต", (ix[0] - 26, y), 7.5, False, NEW, "right")
+
+
 def dashed_box(sk, x0, y0, x1, y1, w=0.9):
     for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
         sk.line(a, b, w, DARK, [14, 6])
@@ -193,18 +212,18 @@ def sld(form, path):
     # --- layout first: the sheet grows with the number of transformers, MDBs, B1 panels and inverters
     blocks, bx = [], 120
     for t in d["trs"]:
-        w = max(240, 180 * max(1, len(t["mdbs"])))
+        w = max(270, 120 * max(1, len(t["mdbs"])))
         blocks.append((t, bx, bx + w)); bx += w + 30
-    FSP = 150                                                                 # feeder spacing in the expanded MDB
+    FSP = 105                                                                 # feeder spacing in the expanded MDB
     fx0 = 0
     if blocks:
         t0, b0, b1 = blocks[0]; names = [n for n, _ in t0["mdbs"]]
         k0 = names.index(t0["feed"]) if t0["feed"] in names else 0
-        fx0 = (b0 + b1) / 2 - 90 * (len(names) - 1) + 180 * k0
-    nfeed = len(d["panels"]); last = fx0 + 140 + FSP * (nfeed - 1) if nfeed else fx0
+        fx0 = (b0 + b1) / 2 - 60 * (len(names) - 1) + 120 * k0
+    nfeed = len(d["panels"]); last = fx0 + 110 + FSP * (nfeed - 1) if nfeed else fx0
     show = min(pv["n"], 10) if pv else 0
-    PX = max(980, last + 300 + 35 * (show - 1)) if pv else 0
-    W = max(1300, bx + 60, PX + 35 * (show - 1) + 170 if pv else last + 220)
+    PX = max(900, last + 260 + 30 * (show - 1)) if pv else 0
+    W = max(1300, bx + 60, PX + 30 * (show - 1) + 170 if pv else last + 220)
     sk = Sk(W)
     mode = "ไม่มีข้อมูล PV" if not pv else {"hv": "กันย้อนแรงสูง", "lv": "กันย้อนแรงต่ำ", None: "ยังไม่ระบุกันย้อน"}[pv["level"]]
     title_strip(sk, f"แผนภาพเส้นเดียว — {form['job'].get('projectName', '')}", f"สร้างจากแบบสำรวจ A1 · A3 · B1 · B2 · B4 · B5 · {mode}")
@@ -264,23 +283,23 @@ def sld(form, path):
             sk.text(txt, (tx + 26, t1 - 8 + 14 * k), 9 if bold else 8.5, bold, RED if "?" in txt else DARK)
         cond_label(sk, tx + 26, t1 - 8 + 14 * len(lines), t["cond"], t["note"])
         lvb = t1 + 100
-        cols = [tx - 90 * (len(t["mdbs"]) - 1) + 180 * k for k in range(len(t["mdbs"]))] or [tx]
+        cols = [tx - 60 * (len(t["mdbs"]) - 1) + 120 * k for k in range(len(t["mdbs"]))] or [tx]
         sk.line((tx, t1 + 24 + r), (tx, lvb), 1.4, DARK)
         if len(cols) > 1: sk.line((cols[0], lvb), (cols[-1], lvb), 2.2, DARK)
         for (name, b), cx in zip(t["mdbs"], cols):
             if t is d["trs"][0] and name == t["feed"] and (pv or d["panels"]):
-                feed_x, feed = cx, (t, name, b); sk.line((cx, lvb), (cx, lvb + 210), 1.4, DARK); continue
-            dashed_box(sk, cx - 50, lvb + 14, cx + 122, lvb + 146, 0.8)
-            sk.text(name, (cx + 12, lvb + 28), 9, True)
+                feed_x, feed = cx, (t, name, b); sk.line((cx, lvb), (cx, lvb + 225), 1.4, DARK); continue
+            dashed_box(sk, cx - 14, lvb + 14, cx + 102, lvb + 158, 0.8)
+            for li, part in enumerate(wrap(name, 14)[:2]): sk.text(part, (cx + 10, lvb + 26 + 12 * li), 8.5, True)
             h = 22 if drawout(b) else 11
-            sk.line((cx, lvb), (cx, lvb + 62 - h), 1.2, DARK); lvbrk(sk, cx, lvb + 62, b); brk_label(sk, cx + 12, lvb + 62, b)
-            sk.line((cx, lvb + 62 + h), (cx, lvb + 154), 1.2, DARK); sk.poly([(cx - 5, lvb + 154), (cx + 5, lvb + 154), (cx, lvb + 162)], DARK, DARK)
-            if name == t["feed"]: sk.text(f"ปลายสาย {t['name']}" + (f" · {t['loc']}" if t["loc"] else ""), (cx + 10, lvb + 160), 7.5, False, INK2)
+            sk.line((cx, lvb), (cx, lvb + 74 - h), 1.2, DARK); lvbrk(sk, cx, lvb + 74, b); brk_label(sk, cx + 12, lvb + 74, b)
+            sk.line((cx, lvb + 74 + h), (cx, lvb + 166), 1.2, DARK); sk.poly([(cx - 5, lvb + 166), (cx + 5, lvb + 166), (cx, lvb + 174)], DARK, DARK)
+            if name == t["feed"]: sk.text(f"ปลายสาย {t['name']}" + (f" · {t['loc']}" if t["loc"] else ""), (cx + 8, lvb + 172), 7.5, False, INK2)
     # --- expanded MDB: the feed MDB of TR1 (PV connection point, B1 panels)
-    bottom = lvb + 180
+    bottom = lvb + 195
     if feed_x is not None:
         t, name, mb = feed
-        E0 = lvb + 210; E1 = E0 + 290
+        E0 = lvb + 225; E1 = E0 + 290
         dashed_box(sk, 60, E0, W - 60, E1)
         sk.text(f"{name} ({t['name']})" + (f" · {t['loc']}" if t["loc"] else ""), (feed_x + 14, E0 - 10), 10.5, True)
         h = 22 if drawout(mb) else 11
@@ -289,7 +308,7 @@ def sld(form, path):
         bus = E0 + 160
         sk.line((feed_x, E0 + 40 + h), (feed_x, bus), 1.4, DARK)
         feeders = d["panels"]; px = PX
-        fxs = [feed_x + 140 + FSP * k for k in range(len(feeders))]
+        fxs = [feed_x + 110 + FSP * k for k in range(len(feeders))]
         right = px if pv else (fxs[-1] if fxs else feed_x)
         sk.line((min(fxs + [feed_x]), bus), (max(right, feed_x), bus), 3.2, DARK); sk.circle((feed_x, bus), 2.4, DARK, DARK)
         for k, (p, x) in enumerate(zip(feeders, fxs)):
@@ -298,9 +317,9 @@ def sld(form, path):
             sk.line((x, bus), (x, bus + 40 - h), 1.2, DARK); lvbrk(sk, x, bus + 40, p["brk"]); brk_label(sk, x + 12, bus + 40, p["brk"])
             sk.line((x, bus + 40 + h), (x, E1 + 60), 1.2, DARK)
             sk.rect(x - 14, E1 + 60, 28, 14, None, DARK)
-            sk.text(p["name"], (x, E1 + 88), 8.5, True, DARK, "center")
+            for li, part in enumerate(wrap(p["name"], 14)[:2]): sk.text(part, (x, E1 + 88 + 12 * li), 8.5, True, DARK, "center")
             info = f"โหลด {p['kw']:g} kW" + (f" @{p['time']}" if p["time"] else "") if p["kw"] else "โหลด ?"
-            sk.text(info, (x, E1 + 102), 8, False, RED if "?" in info else INK2, "center")
+            sk.text(info, (x, E1 + 114), 8, False, RED if "?" in info else INK2, "center")
         bottom = E1 + 120
         if pv:
             n = pv["n"]; kw_inv = pv["kwp"] / n; K, V = ASSUME["k"], ASSUME["v"]
@@ -309,9 +328,9 @@ def sld(form, path):
             sk.text("PV", (px, bus - 10), 8.5, True, NEW, "center"); sk.circle((px, bus), 2.4, NEW, NEW)
             sk.line((px, bus), (px, bus + 28), 1.2, NEW); cb(sk, px, bus + 40, c=NEW); brk_label(sk, px - 70, bus + 40, dict(type="MCCB", poles="3", at=a_pv, af=af(a_pv)), NEW, new=True)
             sb = E1 + 50
-            ix = [px - 35 * (show - 1) + 70 * k for k in range(show)]
+            ix = [px - 30 * (show - 1) + 60 * k for k in range(show)]
             sk.line((px, bus + 51), (px, sb), 1.2, NEW); sk.line((ix[0] - 20, sb), (ix[-1] + 20, sb), 3.0, NEW)
-            sk.text("SMDB-PV (ใหม่)", (ix[-1] + 26, sb), 8.5, True, NEW)
+            sk.text("SMDB-PV (ใหม่)", (ix[0] - 26, sb), 8.5, True, NEW, "right")
             for k, x in enumerate(ix):
                 sk.line((x, sb), (x, sb + 18), 1.2, NEW); cb(sk, x, sb + 30, (3, a_inv, af(a_inv)) if k == show - 1 else None, NEW)
                 sk.line((x, sb + 41), (x, sb + 56), 1.2, NEW)
@@ -341,11 +360,10 @@ def sld(form, path):
                 rx, ry = px - 330, E0 + 30
                 relay(sk, rx, ry, 140, "รีเลย์กันย้อน แรงต่ำ", "Zero export")
                 ctrl(sk, [lead, (rx + 40, E0 + 130), (rx + 40, ry + 34)])
-                ctrl(sk, [(rx + 140, ry + 17), (px + 40, ry + 17), (px + 40, trip_y), (px + 10, trip_y)])
+                inv_ctrl(sk, [(rx + 140, ry + 17), (ix[-1] + 72, ry + 17), (ix[-1] + 72, sb + 92)], ix, sb)
             elif relay_box:
                 x0r, y0r, wr = relay_box
-                ctrl(sk, [(x0r, y0r + 17), (40, y0r + 17), (40, E0 - 26), (W - 40, E0 - 26), (W - 40, trip_y), (px + 10, trip_y)])
-            sk.text("สั่งปลด", (px + 44, trip_y - 8), 7.5, False, NEW)
+                inv_ctrl(sk, [(x0r, y0r + 17), (40, y0r + 17), (40, E0 - 26), (W - 40, E0 - 26), (W - 40, sb + 92)], ix, sb)
     # --- values, assumptions, missing
     ty = bottom + 20
     sk.line((14, ty - 10), (W - 14, ty - 10), 0.5, RULE)

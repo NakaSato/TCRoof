@@ -64,6 +64,16 @@ def ctrl(sk, pts):
     for a, b in zip(pts, pts[1:]): sk.line(a, b, 0.9, NEW, [4, 3])
 
 
+def inv_ctrl(sk, route, ix, sb):
+    """Export-limit control to the inverters: `route` ends on the right at y = sb + 92; a dashed control bus runs left
+    under the inverter boxes with a stub into each one."""
+    y = sb + 92
+    ctrl(sk, route + [(ix[0] - 10, y)])
+    for x in ix:
+        ctrl(sk, [(x - 10, y), (x - 10, sb + 84)]); sk.circle((x - 10, y), 1.8, NEW, NEW)
+    sk.text("สั่งควบคุมกำลังผลิต", (ix[0] - 26, y), 7.5, False, NEW, "right")
+
+
 def sld(path, mode):
     """mode: 'none' (existing only) · 'lv' (PV + export limiting at LV) · 'hv' (PV + export limiting at HV)."""
     pv = mode != "none"
@@ -199,7 +209,7 @@ def sld(path, mode):
         sk.line((pvx, bus_y + 51), (pvx, sb), 1.2, NEW)
         ix = [pvx - 35 * (ni - 1) + 70 * k for k in range(ni)]
         sk.line((ix[0] - 20, sb), (ix[-1] + 20, sb), 3.0, NEW)
-        sk.text("SMDB-PV (ใหม่)", (ix[-1] + 26, sb), 8.5, True, NEW)
+        sk.text("SMDB-PV (ใหม่)", (ix[0] - 26, sb), 8.5, True, NEW, "right")
         lx = ix[0] - 26
         for k, x in enumerate(ix):
             sk.line((x, sb), (x, sb + 18), 1.2, NEW)
@@ -232,10 +242,9 @@ def sld(path, mode):
             rx, ry = x0 + 300, B + 40
             relay(sk, rx, ry, 130, "รีเลย์กันย้อน แรงต่ำ", "Zero export · CT ที่เมน")
             ctrl(sk, [(x0 + 10, B + 118), (rx + 40, B + 118), (rx + 40, ry + 34)])
-            ctrl(sk, [(rx + 130, ry + 17), (pvx + 40, ry + 17), (pvx + 40, trip_y), (pvx + 10, trip_y)])
+            inv_ctrl(sk, [(rx + 130, ry + 17), (ix[-1] + 72, ry + 17), (ix[-1] + 72, sb + 92)], ix, sb)
         else:
-            ctrl(sk, [(260, relay_y + 34), (260, B - 14), (bx1 + 30, B - 14), (bx1 + 30, trip_y), (pvx + 10, trip_y)])
-        sk.text("สั่งปลด", (pvx + 44, trip_y - 8), 7.5, False, NEW)
+            inv_ctrl(sk, [(260, relay_y + 34), (260, B - 14), (bx1 + 30, B - 14), (bx1 + 30, sb + 92)], ix, sb)
         rows = [f"กระแสอินเวอร์เตอร์ {fmt(kw_inv)} kW ÷ (1.732 × 400 V) = {i_inv:.1f} A × 1.25 ได้เบรกเกอร์ {a_inv} AT/{af(a_inv)} AF",
                 f"กระแสรวม PV {PV['kwp']} kW = {i_tot:.1f} A × 1.25 ได้เบรกเกอร์ PV {a_pv} AT/{af(a_pv)} AF",
                 f"กำลัง PV ต่อหม้อแปลง {PV['kwp']} kW ÷ {UP['tr_kva']:,} kVA = {PV['kwp'] / UP['tr_kva'] * 100:.0f}%",

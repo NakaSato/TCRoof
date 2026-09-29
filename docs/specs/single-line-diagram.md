@@ -188,16 +188,18 @@ Standard AT: 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500,
   the centre column position, never on top of a feeder label.
 - Each feeder: number above the bus, breaker with `3P AT/AF` to its right, line down through the enclosure edge, cable
   and conduit text rotated −90° left of the line, black load block, load name (bold) and location below.
-- PV incomer: one more numbered column at the right end of the MDB bus (blue), breaker label on its left so the trip
-  line can enter from the right. It drops out of the enclosure to the SMDB-PV bus; one column per inverter below:
+- PV incomer: one more numbered column at the right end of the MDB bus (blue), breaker label on its left. It drops out of the enclosure to the SMDB-PV bus; one column per inverter below:
   breaker (label on the last column only), inverter box (=/~), FTS switch, PV array. Group labels sit left of the first
   column. More than 8 inverters collapse to one column labelled "n × kW". Emergency button right of the last column,
   dashed to the FTS.
-- กันย้อนแรงต่ำ: a blue CT on the main line between the existing CT and the bus; relay box inside the enclosure right
-  of the DP meter; dashed CT → relay → PV breaker ("สั่งปลด").
+- Export limiting controls the inverters, not a breaker: the relay's dashed control line ends on a control bus under
+  the inverter boxes ("สั่งควบคุมกำลังผลิต"), with a stub and dot into every inverter. The riser runs right of the
+  last inverter, clear of its breaker label.
+- กันย้อนแรงต่ำ: a blue CT on the main line between the main breaker and the bus; relay box inside the enclosure;
+  dashed CT → relay → inverters.
 - กันย้อนแรงสูง: blue HV CT on the line between the PEA meter and the second drop-out fuse, VT branching left; relay box
-  left of the HV line labelled with the B4 pole; the trip line runs above the enclosure and down its right side to the
-  PV breaker.
+  left of the HV line labelled with the B4 pole; the control line runs above the enclosure, down its right side and
+  into the inverter control bus.
 - Legend (existing / new PV / control) appears only when PV is drawn.
 - N/G bar and ground rod sit left of feeder 1; the ground text is rotated along the ground conductor.
 - More than 10 feeders: wrap into a second row under the first bus drawn as a continuation (`…ต่อ`), or reduce column
@@ -230,7 +232,7 @@ three modes.
 5. Is 1.25 × rated current the sizing rule the team uses for inverter and PV breakers?
 6. Does PV always get a new breaker on the MDB, or sometimes use the spare breaker (e.g. feeder 6)?
 7. For กันย้อนแรงสูง, what does กฟภ. expect on the SLD (recloser/LBS, relay function 32R, CT/VT ratios)? The prototype
-   trips the PV breaker.
+   sends the relay output to the inverters (power control).
 8. Keep the Thai breaker symbol (arc) everywhere, or allow the IEC symbol as a setting?
 9. Large stations: keep one wide sheet (zoomable in the app) or split the PDF into one page per transformer plus one
    page for the PV-connection MDB?

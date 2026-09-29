@@ -4,16 +4,24 @@
     "capacity": "300",
     "meterNo": "020-123456",
     "trafos": [
-      {"kva": "630", "mdb": ["800", "400", "", "", "", ""]},
-      {"kva": "250", "mdb": ["400", "", "", "", "", ""]}
+      {"kva": "630", "mdb": ["800", "400", "", "", "", ""],
+       "breakers": [
+         {"name": "MDP-1", "type": "ACB", "poles": "3", "at": "800", "af": "800", "ka": "50", "brand": "Schneider", "cond": "ดี"},
+         {"name": "SDB ระบบกรอง", "type": "MCCB", "poles": "3", "at": "400", "af": "400", "ka": "36", "brand": "ABB", "cond": "พอใช้", "note": "ขั้วต่อมีคราบความร้อน"}]},
+      {"kva": "250", "mdb": ["400", "", "", "", "", ""],
+       "breakers": [{"name": "MDB-ADMIN", "type": "MCCB", "poles": "3", "at": "400", "af": "400", "ka": "", "brand": "Mitsubishi", "cond": "ดี"}]}
     ],
-    "tr0_feed": "MDB1", "tr0_feedLoc": "ห้องไฟฟ้า อาคารสูบน้ำ",
-    "tr1_feed": "MDB1", "tr1_feedLoc": "อาคารสำนักงาน"
+    "tr0_feed": "MDP-1", "tr0_feedLoc": "ห้องไฟฟ้า อาคารสูบน้ำ",
+    "tr0_type": "OIL IMMERSED", "tr0_hv": "22", "tr0_lv": "230-400", "tr0_vector": "Dyn11", "tr0_z": "4.14",
+    "tr0_brand": "Tirathai", "tr0_serial": "63-1234", "tr0_year": "2558", "tr0_cond": "พอใช้", "tr0_condNote": "น้ำมันซึมที่วาล์วถ่าย",
+    "tr1_feed": "MDB-ADMIN", "tr1_feedLoc": "อาคารสำนักงาน",
+    "tr1_type": "OIL IMMERSED", "tr1_hv": "22", "tr1_lv": "230-400", "tr1_vector": "", "tr1_z": "",
+    "tr1_brand": "Tirathai", "tr1_serial": "", "tr1_year": "2549", "tr1_cond": ""
   },
   "sections": [
-    {"type": "panel", "name": "ตู้ไฟฟ้า โรงสูบน้ำ", "values": {"breakerAT": "400", "loadKW": "180", "loadTime": "10 น."}},
-    {"type": "panel", "name": "ตู้ไฟฟ้า โรงกรอง", "values": {"breakerAT": "250", "loadKW": "60", "loadTime": "10 น."}},
-    {"type": "panel", "name": "ตู้ไฟฟ้า อาคารสำนักงาน", "values": {"breakerAT": "100", "loadKW": "25", "loadTime": ""}},
+    {"type": "panel", "name": "ตู้ไฟฟ้า โรงสูบน้ำ", "values": {"breakerType": "MCCB", "breakerPoles": "3", "breakerAT": "400", "breakerAF": "400", "breakerKA": "36", "breakerBrand": "Schneider", "cond": "ดี", "loadKW": "180", "loadTime": "10 น."}},
+    {"type": "panel", "name": "ตู้ไฟฟ้า โรงกรอง", "values": {"breakerType": "MCCB", "breakerPoles": "3", "breakerAT": "250", "breakerAF": "250", "breakerKA": "25", "breakerBrand": "LS", "cond": "ชำรุด", "condNote": "ก้านโยกหัก", "loadKW": "60", "loadTime": "10 น."}},
+    {"type": "panel", "name": "ตู้ไฟฟ้า อาคารสำนักงาน", "values": {"breakerType": "MCCB", "breakerPoles": "3", "breakerAT": "100", "breakerAF": "", "breakerKA": "", "breakerBrand": "", "cond": "ดี", "loadKW": "25"}},
     {"type": "inverter", "name": "", "values": {"inverterCount": "3"}},
     {"type": "backfeed", "name": "", "values": {"level": "กันย้อนที่แรงสูง", "pole": "เสาใหม่"}},
     {"type": "fts", "name": "", "values": {"photoFTS": true, "photoEmg": true}}

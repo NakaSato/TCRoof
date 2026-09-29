@@ -20,16 +20,54 @@ signal lead to the right. MDB incomer: the main breaker only, labelled `MCCB,3P`
 |---|---|---|
 | ![](img/sld_form_hv.png) | ![](img/sld_form_lv.png) | ![](img/sld_form_existing.png) |
 
+### Form changes needed (complete breaker, transformer and condition data)
+
+The team requires every breaker and transformer to be fully recorded, with its condition, and every MDB to carry the
+name written on it on site. These fields are **required** (they count in `Progress` and block "complete"); blanks
+print as a red `?` on the drawing and in the missing list under it.
+
+**Transformer (A3, per `tr<i>_`)** — from the nameplate and a visual check:
+
+| Field id | Label | Kind |
+|---|---|---|
+| `trafos[i].kva` (exists) | ขนาด | number, kVA |
+| `tr<i>_type` | ชนิด | choice: OIL IMMERSED / DRY TYPE / อื่นๆ |
+| `tr<i>_hv`, `tr<i>_lv` | แรงดันด้านแรงสูง / แรงต่ำ | number kV; text (e.g. 230-400) |
+| `tr<i>_vector` | Vector group | text (Dyn11) |
+| `tr<i>_z` | %Z | number |
+| `tr<i>_brand`, `tr<i>_serial`, `tr<i>_year` | ยี่ห้อ, Serial no., ปีผลิต | text |
+| `tr<i>_cond` | สภาพ | choice: ดี / พอใช้ / ชำรุด |
+| `tr<i>_condNote` | รายละเอียดสภาพ | text, required when not ดี (e.g. น้ำมันซึม, สนิม, ซิลิกาเจลเปลี่ยนสี) |
+
+**Each MDB under a transformer (A3)** — `Transformer.mdb[k]` stays as the AT for old data; a new optional
+`Transformer.breakers: [BreakerInfo]` (Codable, defaults empty) holds the rest:
+
+| Field | Label | Kind |
+|---|---|---|
+| `name` | ชื่อตู้ตามหน้างาน | text, free (MDP-1, SDB ระบบกรอง, MDB-ADMIN …); no fixed MDB1…MDB6 names |
+| `type` | ชนิดเบรกเกอร์ | choice: MCCB / ACB / อื่นๆ |
+| `poles`, `at`, `af`, `ka` | โพล, AT, AF, IC kA | numbers |
+| `brand` | ยี่ห้อ | text |
+| `cond`, `note` | สภาพ, รายละเอียด | ดี / พอใช้ / ชำรุด + text |
+
+`tr<i>_feed` becomes a picker over these names (typing stays allowed); a feed name that matches none is reported.
+
+**B1 ตู้ไฟฟ้าอาคาร** — the section name is the on-site panel name; add `breakerType`, `breakerPoles`, `breakerAF`,
+`breakerKA`, `breakerBrand`, `cond`, `condNote` next to the existing `breakerAT`.
+
+Under the drawing, a condition summary counts ดี / พอใช้ / ชำรุด / ยังไม่ระบุ and lists every item that is not ดี, in
+its colour (green / amber / red).
+
 ### Field → drawing
 
 | Form field (SurveyCore id) | Section | Drawn as |
 |---|---|---|
 | `meterNo` | A3 | `PEA METER <no>` next to the M symbol |
-| `trafos[i].kva` | A3 | one drop per transformer off the customer HV bus: DOF, LA, cable terminations, Δ/Y, `TR<i+1> <kVA> kVA` |
-| `trafos[i].mdb[0…5]` | A3 | MDB1…MDB6 under the transformer, each a dashed box with its breaker `3P <A>AT/<AF>AF` (AF = next frame) |
+| `trafos[i].kva` + `tr<i>_` nameplate fields | A3 | one drop per transformer off the customer HV bus: DOF, LA, Δ/Y; label: type, kV, vector/%Z, kVA, brand/SN/year, condition |
+| `trafos[i].mdb` + `breakers[k]` | A3 | one dashed box per MDB, titled with its on-site name; breaker `<type>,<poles>P`, AT/AF, IC kA, brand, condition |
 | `tr<i>_feed`, `tr<i>_feedLoc` | A3 | marks the MDB at the cable end, with its location |
 | TR1 `tr0_feed` | A3 | that MDB is drawn expanded: main breaker, busbar, B1 panels as feeders, PV incomer |
-| B1 `name`, `breakerAT`, `loadKW`, `loadTime` | B1 | one feeder per panel: breaker (size not surveyed), load block, `เมน <AT> AT · <kW> kW @<time>` |
+| B1 name, breaker fields, `cond`, `loadKW`, `loadTime` | B1 | one feeder per panel: full breaker label + condition, load block, `โหลด <kW> kW @<time>` |
 | `capacity` (kWp) + sum of B2 `inverterCount` | A1, B2 | PV breaker on the MDB bus, SMDB-PV, one column per inverter (max 6 shown), PV array |
 | B4 `level` | B4 | แรงต่ำ: CT on the MDB incomer + relay in the MDB · แรงสูง: CT/VT after the PEA meter + relay |
 | B4 `pole` (เสาเดิม / เสาใหม่) | B4 | written in the HV relay box |
@@ -47,7 +85,7 @@ Rules:
 
 Swift: `SLDInput(job:)` reads exactly these ids through `Values` (`transformers("trafos")`, `text("tr0_feed")`,
 section `values.number("inverterCount")`, `choice("level")`, `photo("photoFTS")`) and returns `missing` and
-`assumed` lists; `SLDGeometry` places blocks; `SLDDrawings` → `Sketch`. No schema change is needed for level 1.
+`assumed` lists; `SLDGeometry` places blocks; `SLDDrawings` → `Sketch`. Schema change: the fields above, all optional in `Codable` so older jobs still decode.
 
 ## Level 2 — detailed MDP (later, optional inputs)
 

@@ -19,7 +19,7 @@ They are **indicative survey drawings, not construction drawings**. Every sheet 
 
 ### Non-goals (v1)
 - Structural checks (member capacity, load). Geometry only.
-- PV module layout on the roof (planned for v2, see §11).
+- PV module layout on the roof: now its own feature, see [`roof-pv-layout.md`](roof-pv-layout.md).
 - 3D, perspective or editable CAD. DXF export is a stretch goal (§10).
 
 ### Prototype output
@@ -449,4 +449,4 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
    volume be shown at all, or only the roof area used for PV?
 5. **C3 mapping:** confirm that `measA` = rafter spacing, `measC` = purlin spacing, and `measI1`/`measI2` = ground→ridge
    and ground→eave, as the labels suggest.
-6. **v2:** PV module layout on the section and plan (module size, row spacing, setbacks), reusing the same geometry.
+6. **PV layout:** specified in [`roof-pv-layout.md`](roof-pv-layout.md) (rails on purlins, obstacle shade, no L-foot on obstacles).

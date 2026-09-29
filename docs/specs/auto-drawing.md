@@ -113,12 +113,13 @@ public struct RoofInput: Sendable {
     public var shape: RoofShape
     public var across: [Double]        // m, bays perpendicular to the ridge (section direction)
     public var along: [Double]         // m, bays parallel to the ridge (plan only)
-    public var pitch: Double?          // degrees, 0 < pitch ≤ 60
-    public var rise: Double?           // m, alternative to pitch (C3: i1 − i2)
+    public var rise: Double?           // m, from ridgeHeight − eaveHeight − heelDepth (C3: i1 − i2)
+    public var pitch: Double? { … }    // derived: atan(rise / half-span); C3 roofAngle only as fallback
     public var eaveHeight: Double?     // m above ground; nil = draw column stubs only
     public var overhang: Double        // m beyond the outer grid line, default 0
     public var members: [RoofComponent: MemberSpec]
-    public var missing: [String]       // plain labels, e.g. "มุมเอียงหลังคา"
+    public var missing: [String]       // plain labels, e.g. "ความสูงสันหลังคา"
+    public var assumed: [String]       // printed in grey under the drawing, e.g. "ความลึกโครงถักที่เสา 0 ม."
 
     public static func from(_ m: SurveyModule) -> RoofInput?   // .roof, .roofForm, .house; nil for other types
 }
@@ -173,22 +174,28 @@ public enum TankDrawings {
 All new fields are **optional** or have fallbacks, so existing jobs keep working. Anything a drawing needs but
 doesn't have goes into `missing` and shows as a prompt, never as a crash or a wrong drawing.
 
-### 5.1 New fields
+### 5.1 New fields: sizes and distances only
 
-| Section | Field id | Label | Kind | Req. | Notes |
+**Rule: the surveyor enters only what can be measured on site, meaning distances (ม.) and member sizes.**
+There are no new choice questions such as roof angle, truss type, frame type or ridge direction. Everything else is
+derived (§5.2). Where a value can't be derived it is **assumed** and printed in grey under the drawing
+("ค่าสมมติ: …"), so nobody mistakes it for a measurement.
+
+| Section | Field id | Label | Kind | Req. | What it's used for |
 |---|---|---|---|---|---|
-| C1 | `roofAngle` | มุมเอียงหลังคา | `.number("องศา")` | yes | Needed for the section |
-| C1 | `eaveHeight` | ความสูงชายคาจากพื้น | `.number("ม.")` | no | Columns drawn only when set |
-| C1 | `overhang` | ระยะชายคายื่น | `.number("ม.")` | no | Default 0 |
-| C1 | `ridgeDir` | แนวสันหลังคาในแปลน | `.choice(["แนวนอน","แนวตั้ง"])` | no | Default derived from `sheetDir` (§5.2) |
-| C1 | `frameType` | ระบบโครงหลังคา | `.choice(["จันทัน (ไม่มีโครงถัก)","โครงถัก"])` | no | Default โครงถัก when span > 8 m and a web member is entered |
-| C1 | `trussType` | รูปแบบโครงถัก | `.choice(["Howe","Pratt","Warren"])` | no | `when: frameType == โครงถัก`; default Howe |
-| C1 | `heelDepth` | ความลึกโครงถักที่ปลาย (heel) | `.number("ม.")` | no | Default 0.5 m steel, 0 = triangular truss |
-| C1 | `compTop`, `compBottom`, `compVertical`, `compDiagonal` | ขื่อบน / ขื่อล่าง / ตัวตั้ง / ตัวทแยง | `.member` (size only) | no | Fallbacks: ขื่อบน ← `comp2` จันทัน, ขื่อล่าง ← `comp4` ขื่อ, ตัวตั้ง ← `comp7` ดั้ง, ตัวทแยง ← `comp5` ค้ำยัน |
-| C2 | `roofAngle`, `eaveHeight` | as C1 | | yes / no | Span from `buildingWidth` (cm) |
-| D1 | `tankShape` | รูปทรงถัง | `.choice(["สี่เหลี่ยม","ทรงกลม"])` | no | Default สี่เหลี่ยม |
-| D1 | `tankDiameter` | เส้นผ่านศูนย์กลาง | `.number("ม.")` | when ทรงกลม | `when:` visibility |
-| D1 | `tankAboveGround` | ความสูงพ้นดิน | `.number("ม.")` | when กึ่งฝัง | |
+| C1, C2 | `eaveHeight` | ความสูงชายคา (พื้น → ใต้ขื่อที่เสา) | `.number("ม.")` | yes | Column height; base of the rise |
+| C1, C2 | `ridgeHeight` | ความสูงสันหลังคา (พื้น → หลังคาที่สัน) | `.number("ม.")` | yes | Rise → pitch |
+| C1 | `overhang` | ระยะชายคายื่นจากเสา | `.number("ม.")` | no | Rafter tail; default 0 |
+| C1 | `heelDepth` | ความลึกโครงถักที่เสา (ขื่อบน ↔ ขื่อล่าง) | `.number("ม.")` | no | Truss heel; default 0 (triangular) |
+| C1 | `compTop` | ขื่อบน (ขนาด) | `.member` | no | Falls back to `comp2` จันทัน |
+| C1 | `compBottom` | ขื่อล่าง (ขนาด) | `.member` | no | Falls back to `comp4` ขื่อ |
+| C1 | `compVertical` | ตัวตั้ง (ขนาด) | `.member` | no | Falls back to `comp7` ดั้ง (king post only) |
+| C1 | `compDiagonal` | ตัวทแยง (ขนาด) | `.member` | no | Falls back to `comp5` ค้ำยัน |
+| D1 | `tankDiameter` | เส้นผ่านศูนย์กลาง (ถังกลม) | `.number("ม.")` | no | Filled means a round tank; the spans are then not needed |
+| D1 | `tankAboveGround` | ความสูงส่วนที่พ้นดิน | `.number("ม.")` | no | Ground line in the section |
+
+Removed from the earlier draft: `roofAngle` (C1/C2), `ridgeDir`, `frameType`, `trussType`, `tankShape`.
+C3 keeps its existing `roofAngle` only as a fallback. It already has the heights `measI1`/`measI2`.
 
 New non-countable field kinds place the drawings inside the form (`FieldSpec.countable` returns false for them):
 
@@ -200,16 +207,27 @@ case tankDrawing      // replaces nothing; sits after D1 "ข้อมูลถ�
 Switches to update: `FieldView.body`, `FieldSpec.countable`, `WebBackup` (line ~88, `case .plan, .diagram, .note`),
 and any exporter switching on `FieldKind`.
 
-### 5.2 Mapping survey answers → input
+### 5.2 Derived values
 
-| Input | C1 roof | C2 roofForm | C3 house |
-|---|---|---|---|
-| shape | `roofShape` | `roofShape` | `roofShape` |
-| across / along | `spansX`/`spansY`, oriented by ridge | `[buildingWidth/100]` / `[buildingLength/100]` | `[buildingWidth/100]` / `[buildingLength/100]` |
-| ridge direction | `ridgeDir`, else ⟂ to `sheetDir` (sheets run down the slope), else along the longer side | along the longer side | along the longer side |
-| pitch / rise | `roofAngle` | `roofAngle` | `roofAngle`, else rise = (`measI1` − `measI2`)/100 |
-| eaveHeight | `eaveHeight` | `eaveHeight` | `measI2`/100 |
-| members | `comp1…7` ("size @spacing") | `size1…7` + `space1…7` (cm) | purlin: steel/wood purlin f×g + `measC`; rafter: f×g + `measA` |
+| Value | Derived from | Fallback (shown as ค่าสมมติ) |
+|---|---|---|
+| Span `B` (across the ridge) and length along it | C1: `spansX`/`spansY`, oriented by the ridge. C2/C3: `buildingWidth`/`buildingLength` ÷ 100 | — (required) |
+| Ridge direction | ⟂ to the existing `sheetDir` (sheets run down the slope) | Along the longer side of the plan |
+| Rise `R` | `ridgeHeight − eaveHeight − heelDepth`. C3: `(measI1 − measI2)/100` | C3 only: `roofAngle` |
+| Pitch `θ` | `atan(R / (B/2))` for gable/hip, `atan(R / B)` for shed. `R < 0.05 m` means flat | — |
+| Shape | `roofShape` (existing). A flat rise overrides it to flat | Gable |
+| Frame type | **Truss** when a bottom chord and at least one web member are entered; otherwise rafter frame (จันทัน + ขื่อ + ดั้ง + ค้ำยัน) | — |
+| Truss pattern | Verticals + diagonals → **Howe**. Diagonals only → **Warren**. Verticals only → verticals with no diagonals, plus the note "ไม่ได้ระบุตัวทแยง" | — |
+| Panels per half `n` | `round(L / purlin spacing)`, so purlins sit on nodes | Purlin spacing 1.0 m |
+| Heel depth | `heelDepth` | 0 (triangular truss) |
+| Overhang | `overhang` | 0 |
+| Tank outline | `tankDiameter` filled → circle; else `Σ spansX × Σ spansY` | — |
+| Tank setting | `tankAboveGround ≥ tankHeight` → above ground; `0` → buried; in between → partly buried | Existing `tankPos` choice, else above ground |
+
+Checks shown next to the fields (numbers only, no extra questions):
+- ridge ≤ eave → "ความสูงสันต้องมากกว่าชายคา"
+- derived pitch > 45° or < 3° on a pitched shape → "ตรวจความสูงอีกครั้ง (มุม ≈ x°)"
+- `tankAboveGround > tankHeight` → "ส่วนพ้นดินสูงกว่าถัง"
 
 Numbers are read through `NumberInput.value`, so "1,200", "50 ซม." and Thai digits work.
 
@@ -232,8 +250,7 @@ Spacing: `@1.00M` → 1.0 m; C2 `"100"` → 1.0 m. Values ≤ 0.2 m or > 12 m ar
 
 Notation: `B = Σ across`, `θ = pitch`, `h = B/2` (gable), `E = eaveHeight ?? 0`, `o = overhang`.
 
-**Rise:** `R = rise ?? h·tanθ` (shed: `B·tanθ`). If both pitch and rise are given and disagree by > 10%, use pitch
-and add a warning line under the drawing.
+**Rise and pitch:** `R` comes from the measured heights (§5.2), and `θ = atan(R / h)` (shed: `atan(R / B)`). For C3, when both the heights and `roofAngle` are given and disagree by > 10%, the heights win and a warning line goes under the drawing.
 
 **Gable / hip (section):**
 - Roof line (0,E) → (h, E+R) → (B, E), extended by `o` along the slope at each end (drops `o·sinθ`).
@@ -250,14 +267,15 @@ and add a warning line under the drawing.
 **Curved:** arc through (0,E), (h,E+R), (B,E). Purlins are spaced by arc length.
 **Hip (plan only):** hip lines at 45° from each corner. Ridge length = `along − across` (0 means a pyramid).
 
-**Truss (frameType = โครงถัก)**, see prototype `truss_howe.png`:
+**Truss** (derived when a bottom chord and web members are entered, §5.2), see prototype `truss_howe.png`:
 - **Chords:** bottom chord (ขื่อล่าง) (0,E)–(B,E). Top chord (ขื่อบน) (0,E+d)→(h,E+d+R)→(B,E+d), where `d = heelDepth`.
   Depth at mid-span is `d + R`.
 - **Panels:** `n = max(2, round(L/s))` panels per half, so each panel's slope length equals the purlin spacing and
   **every purlin sits on a node**. Node x-positions are `i·h/n`, for i = 0…n.
 - **Web**, per half, mirrored:
   - Howe: verticals at every node; diagonals bottom(i) → top(i+1), rising toward the ridge.
-  - Pratt: verticals at every node; diagonals top(i) → bottom(i+1).
+  - Pratt: verticals at every node; diagonals top(i) → bottom(i+1). The geometry supports it, but it is never
+    auto-selected, because it can't be told apart from Howe by sizes alone.
   - Warren: king post only, plus zig-zag diagonals alternating bottom/top.
   - When `d = 0`, the heel vertical and a zero-length first diagonal are dropped.
 - **Nodes:** a node is any point where a web member meets a chord, plus the two supports. Each node gets a
@@ -340,7 +358,7 @@ Matches the existing `Drawings.plan` look, so the pages read as one set:
 | `PDFReport/ReportLayout.swift` | `planSection` (roof, tank): add the section drawing under the plan, with a page break when it doesn't fit. `formSection` (C2/C3): replace `Drawings.truss()` with the section when available, otherwise keep truss |
 | `ExcelExport` | **v1: no change.** v2: rasterise via `PDFRenderer.png` into a new anchor in `template_meta.json` (needs a free cell range on sheets หลังคาทั่วไป R / บ่อน้ำใส, see open question Q3) |
 | `SolarSurveyWeb/survey-app.html` | Parity later. The web version can port the geometry, or read `Sketch.svg()` output |
-| `Progress.swift` / `Validation.swift` | `missingGroups` includes `RoofInput.missing` / `TankInput.missing`, so the export sheet lists "ข้อมูลไม่พอวาดรูปตัด: มุมเอียงหลังคา" |
+| `Progress.swift` / `Validation.swift` | `missingGroups` includes `RoofInput.missing` / `TankInput.missing`, so the export sheet lists "ข้อมูลไม่พอวาดรูปตัด: ความสูงสันหลังคา" |
 
 Feature flag: `SurveySettings.autoDrawings` (default **on** in Debug, **off** in Release until the PDF is signed off).
 
@@ -352,7 +370,9 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
    - `MemberSpec.parse` covers every row of §5.3.
    - Spacing parses, including values that should be rejected.
    - `RoofInput.from` works for C1, C2 and C3 sample modules.
-   - Missing lists are correct when pitch, spans or members are absent.
+   - Missing lists are correct when heights, spans or members are absent.
+   - Derivation (§5.2): eave 4.0 + ridge 6.644 + heel 0.5 on B = 16 → θ = 15.0°; verticals + diagonals → Howe;
+     diagonals only → Warren; no web → rafter frame; ridge ≤ eave → missing "ความสูงสันหลังคา"
 2. **Geometry** (exact numbers):
    - B = 16, θ = 15°, s = 1.0 → R = 2.144, L = 8.282, purlins at t = 0…8 m (9) plus one at the ridge (last gap 0.28 > 0.25), so 10 per slope
    - shed, flat, curved and hip ridge length
@@ -389,7 +409,7 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
 
 1. **C1 overhang:** in C1, are the first and last `spansX`/`spansY` values (e.g. 1.5 in "1.5,4,4,4,4,1.5")
    overhangs or real bays? If they are always overhangs, `overhang` can be derived and the new field dropped.
-2. **Ridge direction:** is it safe to infer it from `sheetDir` for station roofs, or should `ridgeDir` be required?
+2. **Ridge direction:** it is inferred from `sheetDir`, else the longer side. Is that always right for station roofs? (There is deliberately no extra question.)
 3. **Excel:** is there space on the NO.224 roof/tank sheets for a section image, or should the section be PDF-only?
 4. **Tank dimensions:** are D1 spans outside dimensions (most likely, since they come from the plan)? Should the
    volume be shown at all, or only the roof area used for PV?

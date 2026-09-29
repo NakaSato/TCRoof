@@ -24,7 +24,7 @@ They are **indicative survey drawings, not construction drawings**. Every sheet 
 
 ### Prototype output
 
-Rendered from sample data by the Python prototypes in `docs/specs/img/` (`draw.py`, `truss.py`), which follow
+Rendered from sample data by the Python prototypes in `docs/specs/img/` (`draw.py`, `truss.py`, `tank_plan.py`), which follow
 this spec. The Swift implementation should match them.
 
 | Truss section (Howe) + details + schedule | Truss types (Pratt, Warren) |
@@ -34,6 +34,8 @@ this spec. The Swift implementation should match them.
 | ![](img/framing_plan.png) | ![](img/tank.png) |
 | **Tank roof plan, กปภ. style (64 × 40 m)** | **Side by side with the original กปภ. sheet** |
 | ![](img/tank_pwa.png) | ![](img/tank_compare.png) |
+| **Second sheet: 40 × 40 m, cross vents, separate ladders, section marks** | |
+| ![](img/tank_40x40_compare.png) | |
 
 **How the surveyor's input becomes the layout** (numbers 1–6 link each form field to what it draws):
 
@@ -320,15 +322,17 @@ Notation: `B = Σ across`, `θ = pitch`, `h = B/2` (gable), `E = eaveHeight ?? 0
   - partly buried: at `H − aboveGround`
 - Summary: roof area `L·W` or `πD²/4`; gross volume = area·H, labelled "ปริมาตรภายนอกโดยประมาณ".
 
-**Tank roof plan in the กปภ. drawing style** (prototype `img/tank_pwa.png`, matching the PWA sheet 64.00 × 40.00 = 16 × 10 @ 4.00):
+**Tank roof plan in the กปภ. drawing style.** The prototype `img/tank_plan.py` reproduces two กปภ. sheets from survey input:
+64.00 × 40.00 (16 × 10 @ 4.00, box vents, pipes) and 40.00 × 40.00 (10 × 10 @ 4.00, cross vents, ladders apart from hatches, section marks 1 and 2).
 - **Outline and grid:** a double wall line; the beam/bay grid dashed from `spansX`/`spansY`; bay dimensions
   "4.00" per bay plus the total "64.00" on the top and left.
 - **Openings** are typed, so each gets the right symbol and label:
 
   | Type | Symbol | Default size | How it's placed |
   |---|---|---|---|
-  | ช่องระบายอากาศ | square + inner square + circle | 1.5 m | **Tap bay cells** on the auto-drawn grid; centred in the cell |
-  | ช่องลงถัง (+ บันไดลงถัง) | square on the inner wall + ladder outside | 1.2 m | Pick the wall, then enter the distance along it (ม.) |
+  | ช่องระบายอากาศ | box (square + inner square + circle) or cross (mushroom vent on a column head). Style set once per tank | 1.5 m | **Tap bay cells** on the auto-drawn grid; centred in the cell |
+  | ช่องลงถัง | square on the inner wall | 1.2 m | Pick the wall, then enter the distance along it (ม.) |
+  | บันไดขึ้นถัง | small box outside the wall | — | Pick the wall, then enter the distance along it. **Separate from hatches**: on the 40 × 40 sheet the ladders are not at the hatches |
   | ท่อ (ท่อน้ำใส / ท่อเชื่อมถัง / ท่อน้ำล้น) | stub through the wall, coupling, open end | Ø entered in มม. | Pick the wall, then enter the distance along it and the diameter |
   | สิ่งกีดขวางอื่น | hatched rectangle (existing) | as entered | x, y, w, h (existing obstacle editor) |
 
@@ -338,8 +342,11 @@ Notation: `B = Σ across`, `θ = pitch`, `h = B/2` (gable), `E = eaveHeight ?? 0
   and the summary gives m² and kWp (m² ÷ 6, the constant the TCRoof survey form already uses).
   - Setbacks are assumed values (1.0 m from the edge, 0.5 m around openings) and are printed as ค่าสมมติ.
   - A settings screen can change them later.
-- **Schema:** `obst` rows gain a `kind` (`vent`, `hatch`, `pipe`, `other`; old rows read as `other`), plus
-  `edge`/`along`/`diameter` for hatches and pipes. `Obstacle` stays `Codable`, and the new keys are optional.
+- **Schema:** `obst` rows gain a `kind` (`vent`, `hatch`, `ladder`, `pipe`, `other`; old rows read as `other`), plus
+  `edge`/`along`/`diameter` for hatches, ladders and pipes. `Obstacle` stays `Codable`, and the new keys are optional.
+- **Beams** are drawn as a double dashed band, 0.30 m wide (assumed), on every grid line, as on the sheets.
+- **Section marks 1–1 and 2–2** are placed at `sectionX` / `sectionY`, two optional distances in ม. Without them
+  the marks go at the centre lines. The tank section drawing is titled to match ("รูปตัด 1–1").
 
 **Guards:**
 - Reject (return `nil` plus a missing reason) when `B ≤ 0`, `θ ∉ (0, 60]`, or any number is non-finite.

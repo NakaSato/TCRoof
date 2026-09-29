@@ -450,11 +450,12 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     // new, all optional
     public var kind: OpeningKind?          // nil ⇒ .other
     public var cell: GridCell?             // .vent placed by tap
-    public var edge: WallEdge?             // .hatch / .pipe
+    public var edge: WallEdge?             // .hatch / .ladder / .pipe
     public var along: String?              // m along the wall from its start (top/bottom: from left; left/right: from top)
     public var diameter: String?           // mm, pipes
 }
-public enum OpeningKind: String, Codable, Sendable { case vent, hatch, pipe, other }
+public enum OpeningKind: String, Codable, Sendable { case vent, hatch, ladder, pipe, other }
+public enum VentStyle: String, Codable, Sendable { case box, cross }   // per tank: value `ventStyle` (choice, default box)
 public struct GridCell: Codable, Hashable, Sendable { public var row: Int; public var col: Int }
 public enum WallEdge: String, Codable, Sendable { case top, bottom, left, right }
 ```
@@ -495,6 +496,8 @@ public struct TankInput: Sendable {
     cell is outside the grid is dropped with a warning.
   - `.hatch`: a square of `S.hatchSize` against the wall, offset 0.15 m inside, centred at `along`. Top and
     bottom walls measure from the left; left and right walls measure from the top.
+  - `.ladder`: a zero-area point just outside the wall at `along`. It is drawn only, and not subtracted from the
+    usable area, because it sits outside the roof.
   - `.pipe`: zero-area box at the wall point. `diameter` comes from `NumberInput.value`.
   - `.other` / `nil`: the existing x, y, w, h fields, parsed with `NumberInput.value`.
 
@@ -533,12 +536,16 @@ public enum TankDrawings {
 ```
 
 `roofPlan` also returns its `DrawingTransform`. The editor uses it to turn a tap into a `GridCell` (§9.2).
-The symbols follow `img/tank_pwa.png`:
+The symbols follow `img/tank_pwa.png` and `img/tank_40x40.png`. Beams are drawn as a double dashed band
+(`beamWidth` 0.30 m, assumed) on each inner grid line. Section marks 1–1 and 2–2 go at `sectionX`/`sectionY`, or at the
+centre lines when those are empty.
 
 | Kind | Symbol |
 |---|---|
 | vent | square + inner square at 64% + circle at r = 0.2·size |
-| hatch | plain square, plus a 6 × 8 pt ladder outside the wall |
+| vent `.cross` | plus-shaped column head with flange ticks at the four ends and a small centre circle (40 × 40 sheet) |
+| hatch | square with light diagonal hatch (no ladder implied) |
+| ladder | 6 × 8 pt box outside the wall, labelled "บันไดขึ้นถัง" |
 | pipe | 26 × 8 pt stub outside the wall, a 4 × 10 pt coupling, and an open circle at the end |
 
 Labels are grouped by type and placed on a free side. The summary strip reads:
@@ -549,7 +556,7 @@ Labels are grouped by type and placed on a free side. The summary strip reads:
 ```swift
 public struct DrawingSettings: Codable, Equatable, Sendable {
     public var purlinSpacing = 1.0           // m, when not entered
-    public var ventSize = 1.5, hatchSize = 1.2   // m
+    public var ventSize = 1.5, hatchSize = 1.2, beamWidth = 0.30   // m
     public var edgeSetback = 1.0, openingSetback = 0.5   // m
     public var m2PerKWp = 6.0                // same constant as TCRoof SurveyForm
     public static var current = DrawingSettings()   // set once from SurveySettings at launch (Swift 5 mode)
@@ -599,6 +606,9 @@ after the structure group.
 ```swift
 N("tankDiameter", "เส้นผ่านศูนย์กลาง (ถังกลม)", "ม.", optional: true),
 N("tankAboveGround", "ความสูงส่วนที่พ้นดิน", "ม.", optional: true),
+N("sectionX", "ตำแหน่งรูปตัด 1–1 (ระยะจากขอบซ้าย)", "ม.", optional: true),
+N("sectionY", "ตำแหน่งรูปตัด 2–2 (ระยะจากขอบบน)", "ม.", optional: true),
+C("ventStyle", "สัญลักษณ์ช่องระบายอากาศ", ["กล่อง", "กากบาท"], optional: true),   // describes the object, default กล่อง
 ```
 
 Then, in the `planFields(tank: true)` group, replace `FieldSpec("plan", "แปลน", .plan(tank: true))` with
@@ -758,7 +768,7 @@ final class RoofTests: XCTestCase {
 }
 
 final class TankTests: XCTestCase {
-    func pwa() -> SurveyModule {                        // the กปภ. sheet: 64 × 40, 20 vents, 8 hatches, 6 pipes
+    func pwa() -> SurveyModule {                        // the กปภ. sheet: 64 × 40, 20 vents, 8 hatches (ladders at 6 of them)
         var m = SurveyModule(type: .tank)
         m.values["spansX"] = .text("16@4"); m.values["spansY"] = .text("10@4"); m.values["tankHeight"] = .text("4.5")
         var o: [Obstacle] = []
@@ -776,6 +786,24 @@ final class TankTests: XCTestCase {
         XCTAssertEqual(g.input.openings.filter { $0.kind == .vent }.count, 20)
         XCTAssertEqual(g.usableArea, 2180, accuracy: 30)     // prototype: 2,180 m² at 0.5 m step
     }
+    func testSecondSheet() throws {                     // 40 × 40, 12 cross vents, 6 hatches, 3 separate ladders
+        var m = SurveyModule(type: .tank)
+        m.values["spansX"] = .text("10@4"); m.values["spansY"] = .text("10@4")
+        m.values["ventStyle"] = .choice("กากบาท", other: "")
+        var o: [Obstacle] = []
+        for r in [0, 4, 9] { for c in [0, 4, 5, 9] { var x = Obstacle(); x.kind = .vent; x.cell = GridCell(row: r, col: c); o.append(x) } }
+        for (e, a) in [(WallEdge.top, "10.2"), (.top, "29.6"), (.bottom, "10.2"), (.bottom, "29.6"), (.left, "21.7"), (.right, "21.7")] {
+            var x = Obstacle(); x.kind = .hatch; x.edge = e; x.along = a; o.append(x)
+        }
+        for (e, a) in [(WallEdge.left, "6.4"), (.left, "33.4"), (.right, "33.4")] {
+            var x = Obstacle(); x.kind = .ladder; x.edge = e; x.along = a; o.append(x)
+        }
+        m.values["obst"] = .obstacles(o)
+        let g = TankGeometry.compute(try XCTUnwrap(TankInput.from(m)), settings: DrawingSettings())
+        XCTAssertEqual(g.roofArea, 1600)
+        XCTAssertEqual(g.input.openings.filter { $0.kind == .ladder }.count, 3)
+        XCTAssertEqual(g.usableArea, 1341, accuracy: 25)     // prototype: 1,341 m² at 0.5 m step
+    }
     func testRoundAndSetting() {
         var m = SurveyModule(type: .tank)
         m.values["tankDiameter"] = .text("10"); m.values["tankHeight"] = .text("5"); m.values["tankAboveGround"] = .text("2")
@@ -792,7 +820,7 @@ final class TankTests: XCTestCase {
   2. C1 Howe truss
   3. C1 Warren truss
   4. C3 house
-  5. PWA tank 64 × 40
+  5. PWA tank 64 × 40 and PWA tank 40 × 40 (cross vents, ladders, section marks)
   6. round tank partly buried
 - Compare each with `Fixtures/drawings/<name>.svg` (add the folder to the test target's resources).
 - `RECORD_SNAPSHOTS=1` rewrites the files.
@@ -813,7 +841,7 @@ final class TankTests: XCTestCase {
 | 1 | `Spans`, `parseSpans` delegate, `MemberSpec`, `DrawingSettings` + tests | `swift test` passes; old plans unchanged |
 | 2 | `RoofInput`, `RoofGeometry` (rafter + truss + schedule) + tests | Numbers in §11 pass |
 | 3 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails` + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` visually |
-| 4 | `Obstacle` fields, `WebBackup`, `TankInput`, `TankGeometry`, `TankDrawings` + tests/snapshots | PWA fixture gives 2,560 m², 20 vents, about 2,180 m² |
+| 4 | `Obstacle` fields, `WebBackup`, `TankInput`, `TankGeometry`, `TankDrawings` + tests/snapshots | 64 × 40 fixture: 2,560 m², 20 vents, about 2,180 m². 40 × 40 fixture: 1,600 m², 12 cross vents, about 1,341 m² |
 | 5 | Schema fields and kinds, `DrawingField`, `TankPlanEditor` (tap to place) | iPad: fill C1/D1 from the PWA sheet and see the drawings live |
 | 6 | `ReportLayout` integration, `missingGroups`, `autoDrawings` flag | PDF pages match the prototypes; export sheet lists drawing gaps |
 | 7 | Framing plan overlay | Matches `img/framing_plan.png` |

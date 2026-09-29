@@ -12,7 +12,10 @@ The SLD is generated from the survey form, with no drawing work by the surveyor.
 Style for both: PEA HV drawing upstream (HV line, Drop Out Fuse/Disconnecting Switch, PEA meter, drop-out fuse with
 lightning arrester, Δ/Y transformer), Thai MDP drawing downstream (dashed MDB enclosure, arc breakers labelled
 `3P AT/AF`, numbered feeders, black load blocks). CT symbol: a circle on the line with a slash and the CT count (3),
-signal lead to the right. Existing equipment black, new PV blue, control lines dashed blue.
+signal lead to the right. MDB incomer (from the team's MDB drawing, `img/sld_meters.py`): two taps above the main
+breaker, each through `FUSE X 3`; the first feeds pilot lamps R Y B and `VS` → `V 0-500V`, the second feeds the
+`DPM`, whose current comes from the CT under the main breaker; main breaker labelled `MCCB,3P` over `AT/AF`. In level 1
+these meters are drawn as standard and listed as ค่าสมมติ because the form does not survey them. Existing equipment black, new PV blue, control lines dashed blue.
 
 ## Level 1 — generated from the form (v1)
 

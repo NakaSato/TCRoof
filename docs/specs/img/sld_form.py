@@ -8,6 +8,7 @@ Run from docs/specs/img/: writes sld_form_hv.png, sld_form_lv.png, sld_form_exis
 import copy, json, math, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 exec(open(os.path.join(HERE, "draw.py")).read().split("# ---------------------------------------------------------------- roof section")[0])
+exec(open(os.path.join(HERE, "sld_meters.py")).read())
 
 NEW = BLUE
 STD_AT = [16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200]
@@ -50,6 +51,7 @@ def read_form(form):
         assumed.append(f"PV ต่อที่ตู้ {trs[0]['feed'] or 'MDB'} (ตู้ปลายสายของ TR1) · PF 1 · เบรกเกอร์ {ASSUME['k']} × กระแส")
     elif kwp or inv:
         miss.append("A1 ขนาดติดตั้ง kWp" if not kwp else "B2 จำนวนอินเวอร์เตอร์")
+    assumed.append("เครื่องวัดหน้าตู้ MDB (FUSE X 3, หลอด R Y B, VS + V 0-500V, DPM, CT) วาดตามแบบมาตรฐาน ไม่ได้สำรวจ")
     if panels: assumed.append("ตู้ไฟฟ้าอาคาร (B1) รับไฟจากตู้ปลายสายของ TR1 · ขนาดเบรกเกอร์ในตู้ MDB ไม่ได้สำรวจ")
     return dict(meter=j.get("meterNo", ""), trs=trs, panels=panels, pv=pv, miss=miss, assumed=assumed)
 
@@ -174,13 +176,15 @@ def sld(form, path):
     bottom = lvb + 130
     if feed_x is not None:
         t, name, a = feed
-        E0 = lvb + 150; E1 = E0 + 190
+        E0 = lvb + 150; E1 = E0 + 290
         dashed_box(sk, 60, E0, W - 60, E1)
         sk.text(f"{name} ({t['name']})" + (f" · {t['loc']}" if t["loc"] else ""), (feed_x + 14, E0 - 10), 10.5, True)
-        sk.line((feed_x, E0), (feed_x, E0 + 18), 1.4, DARK)
-        cb(sk, feed_x, E0 + 30, (3, a, af(a)))
-        bus = E0 + 100
-        sk.line((feed_x, E0 + 41), (feed_x, bus), 1.4, DARK)
+        sk.line((feed_x, E0), (feed_x, E0 + 99), 1.4, DARK)
+        cb(sk, feed_x, E0 + 110); mccb_label(sk, feed_x + 14, E0 + 110, a, af(a))
+        incomer_meters(sk, feed_x, E0 + 50, E0 + 80, E0 + 144)
+        ct(sk, feed_x, E0 + 144, DARK, lead=0); sk.text("CT", (feed_x - 14, E0 + 144), 8.5, False, DARK, "right")
+        bus = E0 + 196
+        sk.line((feed_x, E0 + 121), (feed_x, bus), 1.4, DARK)
         feeders = d["panels"]; px = W - 320
         f0 = feed_x + 120
         fxs = [f0 + k * min(170, (px - 150 - f0) / max(1, len(feeders) - 1)) for k in range(len(feeders))]
@@ -230,11 +234,11 @@ def sld(form, path):
             bottom = max(bottom, sb + 200)
             trip_y = bus + 40
             if pv["level"] == "lv":
-                lead = ct(sk, feed_x, E0 + 70, NEW, lead=16)
-                sk.text("CT กันย้อน (ใหม่)", (feed_x - 14, E0 + 70), 8, False, NEW, "right")
-                rx, ry = px - 330, E0 + 20
+                lead = ct(sk, feed_x, E0 + 168, NEW, lead=16)
+                sk.text("CT กันย้อน (ใหม่)", (feed_x - 14, E0 + 168), 8, False, NEW, "right")
+                rx, ry = px - 330, E0 + 100
                 relay(sk, rx, ry, 140, "รีเลย์กันย้อน แรงต่ำ", "Zero export")
-                ctrl(sk, [lead, (rx + 40, E0 + 70), (rx + 40, ry + 34)])
+                ctrl(sk, [lead, (rx + 40, E0 + 168), (rx + 40, ry + 34)])
                 ctrl(sk, [(rx + 140, ry + 17), (px + 40, ry + 17), (px + 40, trip_y), (px + 10, trip_y)])
             elif relay_box:
                 x0r, y0r, wr = relay_box

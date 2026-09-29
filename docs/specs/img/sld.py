@@ -4,6 +4,7 @@ Run from docs/specs/img/: writes sld_existing.png, sld_pv_lv.png, sld_pv_hv.png.
 import math, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 exec(open(os.path.join(HERE, "draw.py")).read().split("# ---------------------------------------------------------------- roof section")[0])
+exec(open(os.path.join(HERE, "sld_meters.py")).read())
 
 NEW = BLUE
 STD_AT = [16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200]
@@ -14,7 +15,7 @@ V, K = 400.0, 1.25          # assumed: 400/230 V system, breaker = 1.25 x rated 
 UP = dict(grid_kv="22", meter_at="hv", meter_no="", arrester=True,          # sample = the PEA HV drawing the user shared
           tr_name="TR1", tr_type="OIL IMMERSED TYPE", vector="Dyn11", z=4.14, tr_kva=630, pole="เสา 22 kV หน้าสถานี")
 MDB = dict(
-    name="MDP", ic_ka=25, main=(3, 300, 400), ct="300/5A", dp="DP2", pilot="3x6A",
+    name="MDP", ic_ka=25, main=(3, 300, 400), ct="300/5A", dp="DPM", pilot="FUSE X 3",
     busbar="4x300A. Cu. BUSBAR W/GROUND BUS",
     feeders=[  # poles, AT, AF, cable, conduit, load, location  (load "SPARE" = spare breaker)
         (3, 100, 100, "4x50,1x10-IEC01", "IN WIRE WAY", "LC11", "1st FL."),
@@ -146,31 +147,20 @@ def sld(path, mode):
     B = max(y + 40, gy + 62)                                                 # enclosure top
     sk.line((x0, y), (x0, B), 2.2, DARK, [10, 3, 2, 3])
     # ---------------- MDB enclosure (dashed)
-    bx0, bx1, by1 = 40, W - 100, B + 290
+    bx0, bx1, by1 = 40, W - 100, B + 310
     for a, b in (((bx0, B), (bx1, B)), ((bx1, B), (bx1, by1)), ((bx1, by1), (bx0, by1)), ((bx0, by1), (bx0, B))):
         sk.line(a, b, 0.9, DARK, [14, 6])
     sk.text(MDB["name"], (bx0 + 8, B - 10), 11, True, DARK)
     sk.text(f"IC ไม่น้อยกว่า {MDB['ic_ka']} kA", (bx0 + 12, B + 16), 8.5)
-    sk.line((x0, B), (x0, B + 32), 2.2, DARK, [10, 3, 2, 3]); sk.circle((x0, B + 32), 2.2, DARK, DARK)
-    sk.line((x0, B + 32), (x0, B + 45), 1.6, DARK)
-    cb(sk, x0, B + 56, MDB["main"])
-    bus_y = B + 140 + (20 if mode == "lv" else 0)
-    sk.line((x0, B + 67), (x0, bus_y), 1.6, DARK)
-    if MDB["pilot"]:                                                         # fuse → pilot lamps; DP meter from CTs
-        sk.line((x0, B + 32), (x0 + 110, B + 32), 0.9, DARK)
-        sk.rect(x0 + 110, B + 26, 40, 12, DARK, "white", 0.9); sk.text(MDB["pilot"], (x0 + 130, B + 19), 8, False, DARK, "center")
-        sk.line((x0 + 150, B + 32), (x0 + 250, B + 32), 0.9, DARK)
-        sk.circle((x0 + 258, B + 32), 7, DARK, "white", 0.9)
-        sk.line((x0 + 253, B + 27), (x0 + 263, B + 37), 0.8, DARK); sk.line((x0 + 263, B + 27), (x0 + 253, B + 37), 0.8, DARK)
-        sk.text("x3", (x0 + 270, B + 32), 8.5)
-    if MDB["dp"]:
-        sk.line((x0 + 200, B + 32), (x0 + 200, B + 70), 0.9, DARK)
-        sk.rect(x0 + 186, B + 70, 28, 18, DARK, "white", 0.9); sk.text("DP", (x0 + 200, B + 79), 8, True, DARK, "center")
-        sk.text(MDB["dp"], (x0 + 220, B + 79), 8.5)
-        sk.line((x0 + 200, B + 88), (x0 + 200, B + 102), 0.9, DARK); sk.line((x0 + 200, B + 102), (x0 + 10, B + 102), 0.9, DARK)
+    sk.line((x0, B), (x0, B + 50), 2.2, DARK, [10, 3, 2, 3])
+    sk.line((x0, B + 50), (x0, B + 99), 1.6, DARK)
+    cb(sk, x0, B + 110); mccb_label(sk, x0 + 14, B + 110, MDB["main"][1], MDB["main"][2])
+    bus_y = B + 196
+    sk.line((x0, B + 121), (x0, bus_y), 1.6, DARK)
+    incomer_meters(sk, x0, B + 50, B + 80, B + 144, lamps=bool(MDB["pilot"]), dpm=bool(MDB["dp"]))
     if MDB["ct"]:
-        ct(sk, x0, B + 102, DARK)
-        sk.text("3xCT", (x0 - 14, B + 96), 8.5, False, DARK, "right"); sk.text(MDB["ct"], (x0 - 14, B + 108), 8.5, False, DARK, "right")
+        ct(sk, x0, B + 144, DARK)
+        sk.text("CT", (x0 - 14, B + 138), 8.5, False, DARK, "right"); sk.text(MDB["ct"], (x0 - 14, B + 150), 8.5, False, DARK, "right")
     # ---------------- feeders
     feeders = MDB["feeders"]; n = len(feeders); fx0, fx1 = 170, 800
     xs = [fx0 + i * (fx1 - fx0) / (n - 1) for i in range(n)]
@@ -241,11 +231,11 @@ def sld(path, mode):
         # export limiting
         trip_y = bus_y + 40
         if mode == "lv":
-            ct(sk, x0, B + 128, NEW)
-            sk.text("CT กันย้อน (ใหม่)", (x0 - 14, B + 128), 8, False, NEW, "right")
-            rx, ry = x0 + 320, B + 50
+            ct(sk, x0, B + 168, NEW)
+            sk.text("CT กันย้อน (ใหม่)", (x0 - 14, B + 168), 8, False, NEW, "right")
+            rx, ry = x0 + 370, B + 100
             relay(sk, rx, ry, 130, "รีเลย์กันย้อน แรงต่ำ", "Zero export · CT ที่เมน")
-            ctrl(sk, [(x0 + 10, B + 128), (rx + 40, B + 128), (rx + 40, ry + 34)])
+            ctrl(sk, [(x0 + 10, B + 168), (rx + 40, B + 168), (rx + 40, ry + 34)])
             ctrl(sk, [(rx + 130, ry + 17), (pvx + 40, ry + 17), (pvx + 40, trip_y), (pvx + 10, trip_y)])
         else:
             ctrl(sk, [(260, relay_y + 34), (260, B - 14), (bx1 + 30, B - 14), (bx1 + 30, trip_y), (pvx + 10, trip_y)])

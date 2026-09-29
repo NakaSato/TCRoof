@@ -1,7 +1,7 @@
 # Auto 2D Drawings: Roof Structure & Tank Size
 
 **Status:** Draft · **Owner:** TCRoof · **Module:** `SolarSurveyKit` (SurveyCore / SurveyUI / PDFReport / ExcelExport)
-**Date:** 2026-09-29 · **Swift implementation spec:** [`auto-drawing-swift.md`](auto-drawing-swift.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
+**Date:** 2026-09-29 · **Swift implementation spec:** [`auto-drawing-swift.md`](auto-drawing-swift.md) · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
 
 ## 1. Goal
 

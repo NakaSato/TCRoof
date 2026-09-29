@@ -10,12 +10,12 @@ DIVIDE_Y = None                             # no dividing wall on this tank
 VENT = 1.5                                  # ช่องระบายอากาศ (ม.)
 VENT_ROWS, VENT_COLS = [0, 3, 6, 9], [0, 4, 8, 12, 15]   # tapped cells (row, col)
 HATCH = 1.2                                 # ช่องลงถัง (ม.) — each with a ladder บันไดลงถัง
-HATCH_EDGE = [("top", 14.4), ("top", 46.4), ("bottom", 14.4), ("bottom", 46.4), ("left", 18.0), ("left", 22.0), ("right", 18.0), ("right", 22.0)]
+HATCH_EDGE = [("top", 14.3), ("top", 46.0), ("bottom", 14.1), ("bottom", 45.7), ("left", 18.0), ("left", 22.0), ("right", 18.2), ("right", 22.2)]
 HATCH_BIG = None
 RAIL_EDGE = None
 PIPES = [("left", 14.0, "ท่อเชื่อมถังน้ำใส Ø600 มม."), ("left", 26.0, "ท่อเชื่อมถังน้ำใส Ø600 มม."),
          ("right", 14.0, "ท่อน้ำใส Ø700 มม."), ("right", 26.0, "ท่อน้ำใส Ø700 มม."),
-         ("right", 17.0, "ท่อน้ำล้น Ø500 มม."), ("right", 23.0, "ท่อน้ำล้น Ø500 มม.")]
+         ("right", 17.0, "ท่อน้ำล้น Ø500 มม. ปลายท่อปิดตะแกรงกันแมลง"), ("right", 23.0, "ท่อน้ำล้น Ø500 มม. ปลายท่อปิดตะแกรงกันแมลง")]
 SET_EDGE, SET_OPEN = 1.0, 0.5               # ค่าสมมติ: ระยะเว้นขอบ / รอบช่องเปิด
 M2_PER_KWP = 6.0                            # same constant as TCRoof survey form
 
@@ -24,7 +24,7 @@ def tank_plan(path):
     TW, TH = sum(BX), sum(BY)
     W = 1000; sk = Sk(W)
     title_strip(sk, "แปลนฝาถังน้ำใส — D1.1 ถังน้ำใส 1", "หน่วย: ม. · มาตราส่วนโดยประมาณ")
-    padL, padT, padR = 230, 110, 150
+    padL, padT, padR = 230, 110, 250
     k = min((W - padL - padR) / TW, 520 / TH)
     w, h = TW * k, TH * k
     ox, oy = padL + ((W - padL - padR) - w) / 2, padT

@@ -32,8 +32,8 @@ this spec. The Swift implementation should match them.
 | ![](img/truss_howe.png) | ![](img/truss_variants.png) |
 | **Framing plan** | **Tank plan + section** |
 | ![](img/framing_plan.png) | ![](img/tank.png) |
-| **Tank roof plan, กปภ. style (64 × 40 m)** | |
-| ![](img/tank_pwa.png) | |
+| **Tank roof plan, กปภ. style (64 × 40 m)** | **Side by side with the original กปภ. sheet** |
+| ![](img/tank_pwa.png) | ![](img/tank_compare.png) |
 
 ## 2. Library decision
 

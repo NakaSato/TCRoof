@@ -47,8 +47,11 @@ def cb(sk, x, y, label=None, lx=None, c=DARK):
         sk.text(f"{f}AF", (lx + 16, y + 7), 8.5, False, c)
 
 
-def ct(sk, x, y, c):
-    for dy in (-5, 0, 5): sk.arc((x, y + dy), 5, 90, 270, 1.0, c)
+def ct(sk, x, y, c, n=3):
+    """CT: circle on the line, slash with the CT count (signal lead drawn by the caller from x + 10)."""
+    sk.circle((x, y), 10, c, "white", 1.1)
+    sk.line((x, y - 10), (x, y + 10), 1.2, c)
+    sk.line((x - 5, y + 5), (x + 3, y - 3), 1.0, c); sk.text(str(n), (x + 6, y - 2), 8.5, True, c, "center")
 
 
 def relay(sk, x, y, w, t1, t2):
@@ -98,7 +101,7 @@ def sld(path, mode):
     sk.line((x0, y), (x0, y2 - 2), 1.2, DARK)
     if mode == "hv":
         cy = y + 22
-        sk.circle((x0, cy), 6, NEW, None, 1.2)                               # HV CT
+        ct(sk, x0, cy, NEW)                                                  # HV CT
         sk.line((x0, cy + 16), (x0 - 40, cy + 16), 0.9, NEW)                 # VT branch
         sk.circle((x0 - 46, cy + 16), 6, NEW, None, 1.1); sk.circle((x0 - 56, cy + 16), 6, NEW, None, 1.1)
         sk.text("CT/VT แรงสูง (ใหม่)", (x0 + 14, cy), 8, False, NEW)
@@ -164,7 +167,7 @@ def sld(path, mode):
         sk.line((x0 + 200, B + 32), (x0 + 200, B + 70), 0.9, DARK)
         sk.rect(x0 + 186, B + 70, 28, 18, DARK, "white", 0.9); sk.text("DP", (x0 + 200, B + 79), 8, True, DARK, "center")
         sk.text(MDB["dp"], (x0 + 220, B + 79), 8.5)
-        sk.line((x0 + 200, B + 88), (x0 + 200, B + 102), 0.9, DARK); sk.line((x0 + 200, B + 102), (x0 + 12, B + 102), 0.9, DARK)
+        sk.line((x0 + 200, B + 88), (x0 + 200, B + 102), 0.9, DARK); sk.line((x0 + 200, B + 102), (x0 + 10, B + 102), 0.9, DARK)
     if MDB["ct"]:
         ct(sk, x0, B + 102, DARK)
         sk.text("3xCT", (x0 - 14, B + 96), 8.5, False, DARK, "right"); sk.text(MDB["ct"], (x0 - 14, B + 108), 8.5, False, DARK, "right")
@@ -238,11 +241,11 @@ def sld(path, mode):
         # export limiting
         trip_y = bus_y + 40
         if mode == "lv":
-            ct(sk, x0, B + 125, NEW)
-            sk.text("CT กันย้อน (ใหม่)", (x0 - 14, B + 125), 8, False, NEW, "right")
+            ct(sk, x0, B + 128, NEW)
+            sk.text("CT กันย้อน (ใหม่)", (x0 - 14, B + 128), 8, False, NEW, "right")
             rx, ry = x0 + 320, B + 50
             relay(sk, rx, ry, 130, "รีเลย์กันย้อน แรงต่ำ", "Zero export · CT ที่เมน")
-            ctrl(sk, [(x0 + 6, B + 125), (rx + 40, B + 125), (rx + 40, ry + 34)])
+            ctrl(sk, [(x0 + 10, B + 128), (rx + 40, B + 128), (rx + 40, ry + 34)])
             ctrl(sk, [(rx + 130, ry + 17), (pvx + 40, ry + 17), (pvx + 40, trip_y), (pvx + 10, trip_y)])
         else:
             ctrl(sk, [(260, relay_y + 34), (260, B - 14), (bx1 + 30, B - 14), (bx1 + 30, trip_y), (pvx + 10, trip_y)])

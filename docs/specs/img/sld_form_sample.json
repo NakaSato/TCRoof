@@ -1,0 +1,21 @@
+{
+  "job": {
+    "projectName": "สถานีผลิตน้ำ (ตัวอย่าง)",
+    "capacity": "300",
+    "meterNo": "020-123456",
+    "trafos": [
+      {"kva": "630", "mdb": ["800", "400", "", "", "", ""]},
+      {"kva": "250", "mdb": ["400", "", "", "", "", ""]}
+    ],
+    "tr0_feed": "MDB1", "tr0_feedLoc": "ห้องไฟฟ้า อาคารสูบน้ำ",
+    "tr1_feed": "MDB1", "tr1_feedLoc": "อาคารสำนักงาน"
+  },
+  "sections": [
+    {"type": "panel", "name": "ตู้ไฟฟ้า โรงสูบน้ำ", "values": {"breakerAT": "400", "loadKW": "180", "loadTime": "10 น."}},
+    {"type": "panel", "name": "ตู้ไฟฟ้า โรงกรอง", "values": {"breakerAT": "250", "loadKW": "60", "loadTime": "10 น."}},
+    {"type": "panel", "name": "ตู้ไฟฟ้า อาคารสำนักงาน", "values": {"breakerAT": "100", "loadKW": "25", "loadTime": ""}},
+    {"type": "inverter", "name": "", "values": {"inverterCount": "3"}},
+    {"type": "backfeed", "name": "", "values": {"level": "กันย้อนที่แรงสูง", "pole": "เสาใหม่"}},
+    {"type": "fts", "name": "", "values": {"photoFTS": true, "photoEmg": true}}
+  ]
+}

@@ -15,7 +15,7 @@ V, K = 400.0, 1.25          # assumed: 400/230 V system, breaker = 1.25 x rated 
 UP = dict(grid_kv="22", meter_at="hv", meter_no="", arrester=True,          # sample = the PEA HV drawing the user shared
           tr_name="TR1", tr_type="OIL IMMERSED TYPE", vector="Dyn11", z=4.14, tr_kva=630, pole="เสา 22 kV หน้าสถานี")
 MDB = dict(
-    name="MDP", ic_ka=25, main=(3, 300, 400), ct="300/5A", dp="DPM", pilot="FUSE X 3",
+    name="MDP", ic_ka=25, main=(3, 300, 400), pilot=True,
     busbar="4x300A. Cu. BUSBAR W/GROUND BUS",
     feeders=[  # poles, AT, AF, cable, conduit, load, location  (load "SPARE" = spare breaker)
         (3, 100, 100, "4x50,1x10-IEC01", "IN WIRE WAY", "LC11", "1st FL."),
@@ -157,10 +157,7 @@ def sld(path, mode):
     cb(sk, x0, B + 110); mccb_label(sk, x0 + 14, B + 110, MDB["main"][1], MDB["main"][2])
     bus_y = B + 196
     sk.line((x0, B + 121), (x0, bus_y), 1.6, DARK)
-    incomer_meters(sk, x0, B + 50, B + 80, B + 144, lamps=bool(MDB["pilot"]), dpm=bool(MDB["dp"]))
-    if MDB["ct"]:
-        ct(sk, x0, B + 144, DARK)
-        sk.text("CT", (x0 - 14, B + 138), 8.5, False, DARK, "right"); sk.text(MDB["ct"], (x0 - 14, B + 150), 8.5, False, DARK, "right")
+    incomer_meters(sk, x0, B + 50, B + 80, B + 144, lamps=bool(MDB["pilot"]))
     # ---------------- feeders
     feeders = MDB["feeders"]; n = len(feeders); fx0, fx1 = 170, 800
     xs = [fx0 + i * (fx1 - fx0) / (n - 1) for i in range(n)]

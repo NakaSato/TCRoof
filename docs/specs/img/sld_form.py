@@ -51,7 +51,7 @@ def read_form(form):
         assumed.append(f"PV ต่อที่ตู้ {trs[0]['feed'] or 'MDB'} (ตู้ปลายสายของ TR1) · PF 1 · เบรกเกอร์ {ASSUME['k']} × กระแส")
     elif kwp or inv:
         miss.append("A1 ขนาดติดตั้ง kWp" if not kwp else "B2 จำนวนอินเวอร์เตอร์")
-    assumed.append("เครื่องวัดหน้าตู้ MDB (FUSE X 3, หลอด R Y B, VS + V 0-500V, DPM, CT) วาดตามแบบมาตรฐาน ไม่ได้สำรวจ")
+    assumed.append("หลอด R Y B และ VS + V 0-500V หน้าตู้ MDB วาดตามแบบมาตรฐาน ไม่ได้สำรวจ")
     if panels: assumed.append("ตู้ไฟฟ้าอาคาร (B1) รับไฟจากตู้ปลายสายของ TR1 · ขนาดเบรกเกอร์ในตู้ MDB ไม่ได้สำรวจ")
     return dict(meter=j.get("meterNo", ""), trs=trs, panels=panels, pv=pv, miss=miss, assumed=assumed)
 
@@ -182,7 +182,6 @@ def sld(form, path):
         sk.line((feed_x, E0), (feed_x, E0 + 99), 1.4, DARK)
         cb(sk, feed_x, E0 + 110); mccb_label(sk, feed_x + 14, E0 + 110, a, af(a))
         incomer_meters(sk, feed_x, E0 + 50, E0 + 80, E0 + 144)
-        ct(sk, feed_x, E0 + 144, DARK, lead=0); sk.text("CT", (feed_x - 14, E0 + 144), 8.5, False, DARK, "right")
         bus = E0 + 196
         sk.line((feed_x, E0 + 121), (feed_x, bus), 1.4, DARK)
         feeders = d["panels"]; px = W - 320

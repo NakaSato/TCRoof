@@ -37,3 +37,4 @@ _update/
 .env.*
 # Added by code-review-graph
 .code-review-graph/
+__pycache__/

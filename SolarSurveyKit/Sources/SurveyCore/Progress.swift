@@ -38,16 +38,8 @@ public extension Job {
     var finalCompletion: Completion { Schema.final.completion(values) }
     var completion: Completion { modules.reduce(coverCompletion + finalCompletion) { $0 + $1.completion } }
     var photoCount: Int { allPhotos.count }
-    /// Everything still required and empty, as "section: field" lines (transformer photos grouped per transformer).
-    var missingItems: [String] {
-        var out = transformerGaps
-        for g in [Schema.info, Schema.site, Schema.electrical, Schema.flood] {
-            out += g.missing(values).filter { !$0.id.hasPrefix("tr") || $0.id == "trafos" }.map { "หน้าปก: " + $0.label }
-        }
-        for m in modules { out += m.spec.groups.flatMap { $0.missing(m.values) }.map { m.title + ": " + $0.label } }
-        out += Schema.final.missing(values).map { "สรุปผล: " + $0.label }
-        return out
-    }
+    /// Everything still to fill or fix, as "page: item" lines — the same list the export sheet shows.
+    var missingItems: [String] { missingGroups.flatMap { g in g.items.map { g.title + ": " + $0 } } }
     /// Key facts of a section in one line, for the one-page summary.
     func facts(_ m: SurveyModule) -> String {
         let d = m.values

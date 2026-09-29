@@ -123,4 +123,9 @@ public extension Job {
     }
 
     var missingCount: Int { missingGroups.reduce(0) { $0 + $1.items.count } }
+
+    /// Signatures still blank on the final page; a report without both isn't ready to hand to กปภ.
+    var missingSignatures: [String] {
+        Schema.final.fields.filter { if case .signature = $0.kind { return !$0.isFilled(values) } else { return false } }.map(\.plainLabel)
+    }
 }

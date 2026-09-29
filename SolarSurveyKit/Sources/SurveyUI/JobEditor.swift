@@ -430,13 +430,15 @@ struct JobEditorView: View {
         }
     }
 
-    /// Warns before an export while required answers are missing, listing them per page.
+    /// Warns before a PDF export while required answers or signatures are missing, listing them per page.
     func checked(_ go: @escaping () -> Void) {
         let groups = job.missingGroups
         let photos = PhotoGap(model: model, job: job)
+        let unsigned = job.missingSignatures
         guard !groups.isEmpty || photos.missing > 0 else { return go() }
-        let lines = (photos.missing > 0 ? [photos.message] : []) + groups.map { "\($0.title): \($0.items.count) รายการ" }
-        pendingExport = PendingExport(gaps: lines, target: groups.first?.target, go: go)
+        let lines = (unsigned.isEmpty ? [] : ["PDF ที่ส่ง กปภ. ยังไม่มี" + unsigned.joined(separator: " และ")])
+            + (photos.missing > 0 ? [photos.message] : []) + groups.map { "\($0.title): \($0.items.count) รายการ" }
+        pendingExport = PendingExport(gaps: lines, target: unsigned.isEmpty ? groups.first?.target : .final, go: go)
     }
 
     func page(for target: MissingGroup.Target) -> Page {

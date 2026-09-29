@@ -41,4 +41,19 @@ final class ValidationTests: XCTestCase {
         XCTAssertTrue(info.contains { $0.hasPrefix("ตัวเลขไม่ถูกต้อง") })
         XCTAssertFalse(info.contains { $0.hasPrefix("*") })
     }
+
+    func testMissingItemsFollowGroups() {
+        let j = Job.new(template: JobTemplate.all[0])
+        XCTAssertEqual(j.missingItems.count, j.missingCount)
+        XCTAssertTrue(j.missingItems.contains { $0.hasPrefix("E1 สรุปผลและลงนาม: ผลการประเมิน") })
+    }
+
+    func testMissingSignatures() {
+        var j = Job.new(template: JobTemplate.all[0])
+        XCTAssertEqual(j.missingSignatures.count, 2)
+        j.values["surveyorSign"] = .photo(Photo(fileName: "s.png", width: 10, height: 10))
+        XCTAssertEqual(j.missingSignatures, ["ลายเซ็นผู้ประสานงาน / เจ้าของสถานที่"])
+        j.values["customerSign"] = .photo(Photo(fileName: "c.png", width: 10, height: 10))
+        XCTAssertTrue(j.missingSignatures.isEmpty)
+    }
 }

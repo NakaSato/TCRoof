@@ -45,6 +45,9 @@ struct ExportSheet: View {
     /// Export held back until the user confirms it may go out without the photos this device lacks.
     @State private var pendingGo: PendingGo?
     struct PendingGo: Identifiable { let id = UUID(); let gap: PhotoGap; let go: () -> Void }
+    /// PDF export held back while the report still lacks a signature.
+    @State private var pendingUnsigned: PendingUnsigned?
+    struct PendingUnsigned: Identifiable { let id = UUID(); let names: [String]; let go: () -> Void }
 
     private var selected: [Format] {
         let set = Set(stored.split(separator: ",").map(String.init))
@@ -58,6 +61,7 @@ struct ExportSheet: View {
     private var driveKinds: [DriveSync.Kind] { selected.compactMap(\.driveKind) }
     private var canShare: Bool { selected.contains(where: \.shareable) }
     private var canDrive: Bool { !driveKinds.isEmpty || selected.contains(.photos) }
+    private var pdfSelected: Bool { selected.contains(where: \.isPDF) }
 
     var body: some View {
         NavigationStack {
@@ -66,6 +70,8 @@ struct ExportSheet: View {
                     statusSection(job)
                     let gap = PhotoGap(model: model, job: job)
                     if gap.missing > 0 || model.photoFetch[jobID]?.running == true { photoSection(gap) }
+                    let unsigned = job.missingSignatures
+                    if pdfSelected && !unsigned.isEmpty { signatureSection(unsigned) }
                     let groups = job.missingGroups
                     if !groups.isEmpty { missingSection(groups) }
                 }
@@ -88,6 +94,11 @@ struct ExportSheet: View {
             Button("ส่งออกต่อ") { let go = p.go; pendingGo = nil; go() }
             Button("ยกเลิก", role: .cancel) { pendingGo = nil }
         } message: { p in Text(p.gap.message) }
+        .alert("รายงานยังไม่มีลายเซ็น", isPresented: Binding(get: { pendingUnsigned != nil }, set: { if !$0 { pendingUnsigned = nil } }), presenting: pendingUnsigned) { p in
+            Button("ไปลงนาม") { pendingUnsigned = nil; dismiss(); goTo(.final) }
+            Button("ส่งออกเป็นฉบับร่าง") { let go = p.go; pendingUnsigned = nil; go() }
+            Button("ยกเลิก", role: .cancel) { pendingUnsigned = nil }
+        } message: { p in Text("ยังขาด" + p.names.joined(separator: " และ") + "\nPDF ที่ส่ง กปภ. ต้องมีลายเซ็นทั้งสองฝ่าย") }
         .sheet(item: $shared) { s in ShareSheet(items: s.urls).presentationDetents([.medium, .large]) }
         .sheet(item: $preview) { p in PDFPreview(item: p) }
     }
@@ -133,10 +144,21 @@ struct ExportSheet: View {
         }
     }
 
+    /// A PDF is selected but the report isn't signed by both sides yet.
+    func signatureSection(_ names: [String]) -> some View {
+        Section {
+            Label("PDF ยังไม่มีลายเซ็น", systemImage: "signature").font(.headline).foregroundStyle(.red)
+            ForEach(names, id: \.self) { Text("• " + $0).font(.callout) }
+            Button { dismiss(); goTo(.final) } label: { Label("ไปลงนามที่หน้า E1", systemImage: "arrow.right.circle") }
+                .font(.callout)
+        } footer: {
+            Text("ส่งออกเป็นฉบับร่างได้ แต่ PDF ที่ส่ง กปภ. ต้องมีลายเซ็นทั้งวิศวกรผู้สำรวจและผู้ประสานงาน")
+        }
+    }
+
     /// Every required answer still missing, grouped by editor page; each group opens its page.
     func missingSection(_ groups: [MissingGroup]) -> some View {
         let count = groups.reduce(0) { $0 + $1.items.count }
-        let unsigned = groups.first { $0.target == .final }?.items.contains { $0.hasPrefix("ลายเซ็น") } ?? false
         return Section {
             Label("ยังขาด \(count) รายการ", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(.orange)
             ForEach(groups) { g in
@@ -153,8 +175,7 @@ struct ExportSheet: View {
                 }
             }
         } footer: {
-            Text(unsigned ? "รายงานยังไม่มีลายเซ็น ส่งออกเป็นฉบับร่างได้ แต่ไม่ควรส่งให้ กปภ. เป็นฉบับจริง"
-                          : "ส่งออกต่อได้ แต่รายงานจะขาดข้อมูลเหล่านี้")
+            Text("ส่งออกต่อได้ แต่รายงานจะขาดข้อมูลเหล่านี้")
         }
     }
 
@@ -277,6 +298,12 @@ struct ExportSheet: View {
         if gap.missing == 0 { go() } else { pendingGo = PendingGo(gap: gap, go: go) }
     }
 
+    /// Runs `go`, first asking before a PDF leaves without both signatures.
+    func confirmSigned(pdf: Bool, _ go: @escaping () -> Void) {
+        let names = pdf ? model.job(jobID)?.missingSignatures ?? [] : []
+        if names.isEmpty { go() } else { pendingUnsigned = PendingUnsigned(names: names, go: go) }
+    }
+
     func fetchPhotos() {
         run("กำลังดาวน์โหลดรูปจาก Google Drive…") {
             if !model.google.isSignedIn { try await model.google.signIn() }
@@ -288,7 +315,7 @@ struct ExportSheet: View {
         }
     }
 
-    func share() { confirmPhotos(doShare) }
+    func share() { confirmSigned(pdf: pdfSelected) { confirmPhotos(doShare) } }
     func doShare() {
         guard let job = model.job(jobID) else { return }
         let formats = selected.filter(\.shareable)
@@ -313,7 +340,7 @@ struct ExportSheet: View {
         }
     }
 
-    func saveToDrive() { confirmPhotos(doSaveToDrive) }
+    func saveToDrive() { confirmSigned(pdf: selected.contains(.report)) { confirmPhotos(doSaveToDrive) } }
     func doSaveToDrive() {
         guard let job = model.job(jobID) else { return }
         let kinds = driveKinds, photos = selected.contains(.photos)

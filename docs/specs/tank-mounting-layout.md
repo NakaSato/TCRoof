@@ -3,7 +3,7 @@
 **Status:** Draft for development, 2026-09-29
 **Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-interaction-dev.md`](tank-interaction-dev.md)),
 types in [`auto-drawing-swift.md`](auto-drawing-swift.md) §8
-**Prototype:** `img/tank_mount.py` (run from `img/`) → `tank_mount_plan.png`, `tank_mount_section.png`, `tank_mount_front.png`
+**Interaction dev spec:** [`mount-interaction-dev.md`](mount-interaction-dev.md) · **Interactive prototype:** `prototype/mount-layout.html` · **Prototype:** `img/tank_mount.py` (run from `img/`) → `tank_mount_plan.png`, `tank_mount_section.png`, `tank_mount_front.png`
 **Reference sheets (team standard):** `img/ref_mount_section.png`, `img/ref_mount_front.png`, `img/ref_mount_plan.png`
 
 The surveyor already enters the tank (bays, vents, hatches, ladders). This feature places the PV mounting structure

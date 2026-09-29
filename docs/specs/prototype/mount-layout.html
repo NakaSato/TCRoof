@@ -1,0 +1,437 @@
+<title>ผังโครงสร้างแผงบนถัง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Layout: same drafting table as the tank editor. Controls left, live layout right, quantities under it.
+   The drawing is a paper document and keeps its light paper in both themes. */
+:root {
+  --bg: #eef1f0; --panel: #ffffff; --field: #fbfcfb; --ink: #1d2826; --muted: #5d6b68; --line: #d3dbd8;
+  --accent: #1f4e79; --accent-soft: #e3ecf5; --good: #2f855a; --good-soft: #dcefe3; --warn: #b3372e; --warn-soft: #fbe9e7;
+  --doc: #ffffff; --doc-ink: #1b1b1b; --doc-grid: #9aa6a3; --doc-soft: #6a6a6a; --doc-mod: #1f4e79; --doc-modfill: #e8eff7;
+  --doc-open: #8a8a8a; --doc-clamp: #2ead4b; --doc-lug: #e0433a; --doc-sel: #f0a020; --doc-hover: rgba(240, 160, 32, .18);
+  --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
+  --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
+.wrap { max-width: 1520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 80ch; }
+.main { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); padding: 0; margin-bottom: 2px; }
+.sec { border-top: 1px solid var(--line); padding-top: 12px; }
+label { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 90px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+input[type=range] { padding: 0; accent-color: var(--accent); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 12px; color: var(--muted); }
+button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 9px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+button.go { background: var(--good-soft); color: var(--good); font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.val { font: 500 12px/1 var(--f-num); color: var(--accent); }
+.board { display: grid; gap: 10px; min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.tools .spacer { flex: 1 1 0; }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 50px; }
+.info b { font-weight: 600; }
+.info .k { color: var(--muted); font-size: 12px; }
+.info .v { font-family: var(--f-num); font-size: 13px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--warn-soft); color: var(--warn); }
+.canvas { background: var(--doc); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 80vh; }
+.canvas svg { display: block; width: 100%; height: auto; font-family: var(--f-draw); user-select: none; -webkit-user-select: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+.stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.stat.hl { background: var(--good-soft); border-color: transparent; }
+.stat.hl b, .stat.hl span { color: var(--good); }
+.delta { font: 500 11px/1 var(--f-num); margin-left: 4px; }
+.delta.up { color: var(--good); } .delta.down { color: var(--warn); }
+.notes { display: grid; gap: 4px; font-size: 13px; }
+.notes div { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 5px 10px; }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+/* drawing */
+.canvas svg * { pointer-events: none; }
+.canvas svg .hit { pointer-events: all; cursor: pointer; }
+.d-t { fill: var(--doc-ink); font-size: 13px; }
+.d-s { fill: var(--doc-soft); font-size: 12px; }
+.d-b { font-weight: 600; }
+.mod { fill: var(--doc-modfill); stroke: var(--doc-mod); stroke-width: .8; }
+.mod.off { fill: none; stroke: var(--doc-lug); stroke-dasharray: 3 2; }
+.mod.sel { fill: #fde9c4; }
+.hit.m:hover + .mod, .mod.hov { fill: #fde9c4; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ผังโครงสร้างแผงบนถัง <span class="pill ok" id="tag">ตัวอย่าง: แบบ กปภ. 40 × 40 ม.</span></h1>
+    <p>ผังนี้วางเองจากแปลนฝาถัง (ช่วงเสา ช่องระบาย ช่องลงถัง) กับมาตรฐานโครงสร้างของทีม ลองเลื่อนแนวแถว กด “หาผังที่ได้แผงมากที่สุด” แตะช่องระบาย เสาสีแดง หรือโต๊ะแผงเพื่อดูเหตุผล หรือเปลี่ยนเป็นโหมด “เอาแผงออก” เพื่อเว้นทางเดิน</p>
+  </header>
+  <div class="main">
+    <form class="sheet" id="form" autocomplete="off">
+      <fieldset>
+        <legend>ถัง</legend>
+        <div class="seg" role="group" aria-label="ถังตัวอย่าง">
+          <button type="button" data-preset="t40" aria-pressed="true">40 × 40</button>
+          <button type="button" data-preset="t64" aria-pressed="false">64 × 40</button>
+        </div>
+        <label>ทิศเหนือของแปลนถังอยู่
+          <select id="north"><option value="top">ด้านบน</option><option value="right">ด้านขวา</option><option value="bottom">ด้านล่าง</option><option value="left">ด้านซ้าย</option></select>
+        </label>
+        <label>ความสูงช่องระบาย (ม.)<input class="num" id="ventH" inputmode="decimal"></label>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>จัดแนวผัง</legend>
+        <label>เลื่อนแนวแถวไปทางเหนือ <span class="val" id="offV"></span><input type="range" id="off" min="0" max="5.5" step="0.1"></label>
+        <label>เลื่อนแนวแผงไปทางตะวันออก <span class="val" id="colV"></span><input type="range" id="col" min="0" max="1.15" step="0.05"></label>
+        <button type="button" class="go" id="best">หาผังที่ได้แผงมากที่สุด</button>
+        <div class="hint" id="bestNote">ลองทุกแนวแถวทีละ 0.10 ม. และแนวแผงทีละ 0.05 ม.</div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>มาตรฐานโครงสร้าง</legend>
+        <div class="row">
+          <label>แผง ยาว × กว้าง (ม.)<input class="num" id="modL"></label>
+          <label>&nbsp;<input class="num" id="modW"></label>
+          <label>W/แผง<input class="num" id="modWp"></label>
+        </div>
+        <div class="row">
+          <label>เสาหน้า (ม.)<input class="num" id="hF"></label>
+          <label>เสาหลัง (ม.)<input class="num" id="hB"></label>
+          <label>หน้า–หลัง (ม.)<input class="num" id="pDY"></label>
+        </div>
+        <div class="row">
+          <label>ระหว่างแถว (ม.)<input class="num" id="gap"></label>
+          <label>เสาตามแถว ≤ (ม.)<input class="num" id="pDX"></label>
+        </div>
+        <div class="hint" id="stdNote"></div>
+        <button type="button" class="ghost" id="resetStd">คืนค่ามาตรฐาน</button>
+      </fieldset>
+    </form>
+
+    <section class="board">
+      <div class="tools">
+        <div class="seg" role="group" aria-label="โหมด">
+          <button type="button" data-mode="inspect" aria-pressed="true">ดูรายละเอียด</button>
+          <button type="button" data-mode="remove" aria-pressed="false">เอาแผงออก / ใส่คืน</button>
+        </div>
+        <button type="button" class="ghost" id="undo">↶ ย้อนกลับ</button>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="มุมมอง">
+          <button type="button" data-view="plan" aria-pressed="true">แปลน</button>
+          <button type="button" data-view="section" aria-pressed="false">รูปตัดแถวที่เลือก</button>
+        </div>
+      </div>
+      <div class="info" id="info"></div>
+      <div class="canvas"><svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ผังโครงสร้างแผง"></svg></div>
+      <div class="stats" id="stats"></div>
+      <div class="notes" id="notes"></div>
+      <div class="foot"><span id="assumed"></span><span>สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง</span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const f2 = v => (Math.round(v * 100) / 100).toFixed(2);
+  const fmt = v => v.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  const TANKS = {
+    t40: { tag: "ตัวอย่าง: แบบ กปภ. 40 × 40 ม.", bx: Array(10).fill(4), by: Array(10).fill(4), vent: 1.5, hatch: 1.2,
+      vents: [[0,0],[0,4],[0,5],[0,9],[4,0],[4,4],[4,5],[4,9],[9,0],[9,4],[9,5],[9,9]],
+      hatches: [["top",10.2],["top",29.6],["bottom",10.2],["bottom",29.6],["left",21.7],["right",21.7]] },
+    t64: { tag: "ตัวอย่าง: แบบ กปภ. 64 × 40 ม.", bx: Array(16).fill(4), by: Array(10).fill(4), vent: 1.5, hatch: 1.2,
+      vents: [0,3,6,9].flatMap(r => [0,4,8,12,15].map(c => [r, c])),
+      hatches: [["top",14.3],["top",46],["bottom",14.1],["bottom",45.7],["left",18],["left",22],["right",18.2],["right",22.2]] }
+  };
+  const STD0 = { modL: 2.28, modW: 1.13, modWp: 600, hF: 1.0, hB: 2.0, pDY: 2.8, gap: 2.7, pDX: 2.7 };
+  const FIX = { nSlope: 2, modGap: 0.02, endOver: 0.4, frontOver: 0.46, rails: 4, footing: 0.3, edge: 1.0, openClear: 0.5, underClear: 0.1 };
+
+  let st = { preset: "t40", north: "top", ventH: "1.00", off: 0, col: 0, std: { ...STD0 }, removed: new Set() };
+  let mode = "inspect", view = "plan", sel = null, prevQ = null, undo = [];
+  const snap = () => JSON.stringify({ ...st, removed: [...st.removed] });
+  const push = () => { undo.push(snap()); if (undo.length > 100) undo.shift(); $("undo").disabled = false; };
+
+  // ---- tank in the layout frame (rotated so north is up, south is +y) ----
+  function tankFrame() {
+    const t = TANKS[st.preset], ex = a => a.reduce((o, v) => (o.push(o[o.length - 1] + v), o), [0]);
+    const xs = ex(t.bx), ys = ex(t.by), TW = xs[xs.length - 1], TH = ys[ys.length - 1];
+    let boxes = [];
+    for (const [r, c] of t.vents) boxes.push({ kind: "vent", x: (xs[c] + xs[c + 1]) / 2 - t.vent / 2, y: (ys[r] + ys[r + 1]) / 2 - t.vent / 2, w: t.vent, h: t.vent });
+    for (const [e, d] of t.hatches) { const H = t.hatch;
+      boxes.push({ kind: "hatch", ...( { top: { x: d - H / 2, y: .15 }, bottom: { x: d - H / 2, y: TH - H - .15 }, left: { x: .15, y: d - H / 2 }, right: { x: TW - H - .15, y: d - H / 2 } }[e]), w: H, h: H }); }
+    // rotate: returns W, H of the frame and boxes/grid in it
+    const rot = { top: 0, left: 1, bottom: 2, right: 3 }[st.north];   // clockwise quarter turns that bring north to the top
+    let W = TW, H = TH, gx = xs, gy = ys;
+    if (rot % 2) { W = TH; H = TW; }
+    // grid lines in the rotated frame
+    const gridX = rot % 2 ? ys : xs, gridY = rot % 2 ? xs : ys;
+    const rb = boxes.map(b => { let o = { ...b }, w0 = TW, h0 = TH;
+      for (let i = 0; i < rot; i++) { const nx = h0 - o.y - o.h, ny = o.x; [o.x, o.y, o.w, o.h] = [nx, ny, o.h, o.w]; [w0, h0] = [h0, w0]; }
+      return o; });
+    return { W, H, boxes: rb, gridX, gridY, rot };
+  }
+
+  // ---- layout (same rules as img/tank_mount.py) ----
+  function derived(S) {
+    const tilt = Math.atan((S.hB - S.hF) / S.pDY), slope = FIX.nSlope * S.modL + (FIX.nSlope - 1) * FIX.modGap;
+    const backOver = slope - S.pDY / Math.cos(tilt) - FIX.frontOver;
+    return { tilt, slope, backOver, fPlan: FIX.frontOver * Math.cos(tilt), bPlan: backOver * Math.cos(tilt), depth: slope * Math.cos(tilt), pitch: S.pDY + S.gap };
+  }
+  const ov = (a0, a1, b0, b1) => a0 < b1 && b0 < a1;
+  function layout(off, colShift, removed, withPosts = true) {
+    const S = st.std, D = derived(S), T = tankFrame(), e = FIX.edge, oc = FIX.openClear, vH = parseFloat(st.ventH) || 1.0;
+    const W = S.modW, gap = FIX.modGap;
+    const n = Math.max(0, Math.floor((T.W - 2 * e - colShift + gap) / (W + gap)));
+    const x0 = e + colShift;                                   // west edge + the east shift the user chose
+    const cols = Array.from({ length: n }, (_, i) => x0 + i * (W + gap));
+    const rows = [], notes = [], ventInfo = new Map();
+    for (let k = 0; ; k++) {
+      const yFront = T.H - e - off - k * D.pitch, yfp = yFront - D.fPlan, ybp = yfp - S.pDY, yBack = ybp - D.bPlan;
+      if (yBack < e) break;
+      const blocked = cols.map(() => null);
+      for (const b of T.boxes) {
+        if (!ov(yBack, yFront, b.y - oc, b.y + b.h + oc)) continue;
+        let why = null;
+        if (b.kind === "hatch") why = "ช่องลงถัง: เว้นให้เข้าถึงได้";
+        else {
+          const hMin = S.hF + (yfp - Math.min(b.y + b.h, yFront)) * Math.tan(D.tilt);
+          const ok = hMin >= vH + FIX.underClear;
+          ventInfo.set(b, { row: k, hMin, ok });
+          if (!ok) why = `ช่องระบาย: ใต้แผงสูง ${f2(hMin)} ม. ต่ำกว่า ${f2(vH + FIX.underClear)} ม.`;
+        }
+        if (why) cols.forEach((cx, i) => { if (ov(cx, cx + W, b.x - oc, b.x + b.w + oc)) blocked[i] = blocked[i] || why; });
+      }
+      cols.forEach((_, i) => { if (!blocked[i] && removed.has(k + ":" + i)) blocked[i] = "เอาออกเอง"; });
+      const tables = [];
+      for (let i = 0; i < n;) {
+        if (blocked[i]) { i++; continue; }
+        let j = i; while (j < n && !blocked[j]) j++;
+        if (j - i >= 2) tables.push({ i0: i, i1: j });
+        i = j;
+      }
+      const row = { k, yFront, yfp, ybp, yBack, blocked, tables: [] };
+      for (const tb of tables) {
+        const xa = cols[tb.i0], xb = cols[tb.i1 - 1] + W, span = xb - xa - 2 * FIX.endOver;
+        const nP = Math.max(2, Math.ceil(span / S.pDX) + 1);
+        let px = Array.from({ length: nP }, (_, q) => xa + FIX.endOver + span * q / (nP - 1)), bad = [], moved = [];
+        if (withPosts) {
+          const f = FIX.footing / 2 + .3;
+          const free = (xx, yl) => xx >= xa && xx <= xb && T.boxes.every(b => !(ov(xx - f, xx + f, b.x, b.x + b.w) && ov(yl - f, yl + f, b.y, b.y + b.h)));
+          const both = xx => free(xx, yfp) && free(xx, ybp);
+          const steps = m => [0, ...Array.from({ length: m }, (_, s) => [(s + 1), -(s + 1)]).flat()];
+          px = px.map(x => { for (const s of steps(30)) { const xx = x + s * .05; if (both(xx)) { if (s) moved.push([x, xx]); return xx; } } bad.push(x); return x; });
+          px.sort((a, b) => a - b);
+          for (let q = 0; q < px.length - 1; q++) if (px[q + 1] - px[q] > S.pDX + 1e-6) {
+            const mid = (px[q] + px[q + 1]) / 2; let c = null;
+            for (const s of steps(20)) { if (both(mid + s * .05)) { c = mid + s * .05; break; } }
+            if (c != null) px.splice(q + 1, 0, c);
+          }
+          for (const x of bad) notes.push({ row: k, x, text: `แถว ${k + 1}: เสาคู่ที่ ${f2(x)} ม. ชนช่องเปิด เลื่อนหลบไม่ได้ภายใน 1.50 ม. ต้องให้วิศวกรตรวจ` });
+        }
+        row.tables.push({ ...tb, xa, xb, n: tb.i1 - tb.i0, px, bad, moved });
+      }
+      rows.push(row);
+    }
+    return { T, D, cols, rows, notes, ventInfo, n };
+  }
+  function quantities(L) {
+    const tabs = L.rows.flatMap(r => r.tables), S = st.std;
+    const mods = tabs.reduce((a, t) => a + t.n * FIX.nSlope, 0);
+    return { tables: tabs.length, modules: mods, kwp: mods * S.modWp / 1000, posts: tabs.reduce((a, t) => a + t.px.length * 2, 0),
+      rail: tabs.reduce((a, t) => a + (t.xb - t.xa) * FIX.rails, 0), clamps: tabs.reduce((a, t) => a + t.px.length * FIX.rails, 0),
+      braces: tabs.reduce((a, t) => a + (t.px.length - 1) * 2, 0), red: L.notes.length };
+  }
+
+  // ---- drawing ----
+  let L, Q, K;
+  function planSVG() {
+    const T = L.T, k = Math.min(900 / T.W, 760 / T.H), ox = 60, oy = 50, w = T.W * k, h = T.H * k;
+    K = { k, ox, oy };
+    const P = (x, y) => [ox + x * k, oy + y * k], o = [];
+    const R = (x, y, ww, hh, attr) => o.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" ${attr}/>`);
+    const Ln = (a, b, attr) => o.push(`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" ${attr}/>`);
+    R(ox, oy, w, h, `fill="none" stroke="var(--doc-ink)" stroke-width="1.8"`); R(ox + 4, oy + 4, w - 8, h - 8, `fill="none" stroke="var(--doc-ink)" stroke-width=".6"`);
+    for (const x of T.gridX.slice(1, -1)) Ln(P(x, 0), P(x, T.H), `stroke="var(--doc-grid)" stroke-dasharray="4 3" stroke-width=".6"`);
+    for (const y of T.gridY.slice(1, -1)) Ln(P(0, y), P(T.W, y), `stroke="var(--doc-grid)" stroke-dasharray="4 3" stroke-width=".6"`);
+    // openings (drawn under the modules; vents that fit under the panels stay visible through the light fill)
+    T.boxes.forEach((b, i) => { const [x, y] = P(b.x, b.y);
+      R(x, y, b.w * k, b.h * k, `fill="${b.kind === "hatch" ? "url(#hatch)" : "var(--doc)"}" stroke="var(--doc-open)" stroke-width="1"`);
+      if (b.kind === "vent") o.push(`<circle cx="${(x + b.w * k / 2).toFixed(1)}" cy="${(y + b.h * k / 2).toFixed(1)}" r="${(b.w * k * .2).toFixed(1)}" fill="none" stroke="var(--doc-open)"/>`); });
+    const S = st.std, D = L.D, W = S.modW;
+    for (const r of L.rows) {
+      // modules, including the empty (blocked / removed) slots in remove mode
+      for (let i = 0; i < L.n; i++) {
+        const cx = L.cols[i], inT = r.tables.some(t => i >= t.i0 && i < t.i1), why = r.blocked[i];
+        if (!inT && !(mode === "remove" && why === "เอาออกเอง")) continue;
+        for (let s = 0; s < FIX.nSlope; s++) {
+          const ya = r.yBack + s * (S.modL + FIX.modGap) * Math.cos(D.tilt), yb = ya + S.modL * Math.cos(D.tilt);
+          const [x, y] = P(cx, ya), cls = inT ? (sel && sel.type === "table" && sel.row === r.k && i >= sel.i0 && i < sel.i1 ? "mod sel" : "mod") : "mod off";
+          R(x, y, W * k, (yb - ya) * k, `class="${cls}"`);
+        }
+      }
+      for (const t of r.tables) {
+        const rails = [.12, .38, .62, .88].map(f => r.yBack + D.depth * f);
+        for (const yy of rails) Ln(P(t.xa, yy), P(t.xb, yy), `stroke="var(--doc-ink)" stroke-width=".8"`);
+        for (const x of t.px) { Ln(P(x, r.yBack), P(x, r.yFront), `stroke="var(--doc-ink)" stroke-width=".8"`);
+          for (const yy of rails) { const c = P(x, yy); o.push(`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="1.8" fill="var(--doc-clamp)"/>`); } }
+        for (const x of t.px) for (const yl of [r.yfp, r.ybp]) { const c = P(x, yl), f = Math.max(5, FIX.footing * k), bad = t.bad.includes(x), col = bad ? "var(--doc-lug)" : "var(--doc-ink)";
+          R(c[0] - f / 2, c[1] - f / 2, f, f, `fill="var(--doc)" stroke="${col}" stroke-width="${bad ? 1.4 : .9}"`); R(c[0] - 1.5, c[1] - 1.5, 3, 3, `fill="${col}"`);
+          if (bad) o.push(`<circle cx="${c[0]}" cy="${c[1]}" r="9" fill="none" stroke="var(--doc-lug)"/>`); }
+        const lg = P(t.xa + .15, rails[0]); o.push(`<circle cx="${lg[0]}" cy="${lg[1]}" r="3" fill="var(--doc-lug)"/>`);
+      }
+    }
+    // selection outlines
+    if (sel && sel.type === "vent") { const b = sel.box, [x, y] = P(b.x, b.y); R(x - 4, y - 4, b.w * k + 8, b.h * k + 8, `fill="none" stroke="var(--doc-sel)" stroke-width="2"`); }
+    if (sel && sel.type === "post") { const c = P(sel.x, sel.y); o.push(`<circle cx="${c[0]}" cy="${c[1]}" r="12" fill="none" stroke="var(--doc-sel)" stroke-width="2"/>`); }
+    // hit targets: modules (per slot), vents, posts
+    for (const r of L.rows) for (let i = 0; i < L.n; i++) {
+      const [x, y] = P(L.cols[i], r.yBack); R(x, y, W * k, D.depth * k, `class="hit m" data-row="${r.k}" data-col="${i}" fill="transparent"`); }
+    T.boxes.forEach((b, i) => { if (b.kind !== "vent") return; const [x, y] = P(b.x, b.y); R(x - 3, y - 3, b.w * k + 6, b.h * k + 6, `class="hit" data-vent="${i}" fill="transparent"`); });
+    for (const r of L.rows) for (const t of r.tables) for (const x of t.px) for (const yl of [r.yfp, r.ybp]) {
+      const c = P(x, yl); o.push(`<circle class="hit" data-post="${r.k}|${x}|${yl}" cx="${c[0]}" cy="${c[1]}" r="8" fill="transparent"/>`); }
+    // north arrow + scale note
+    o.push(`<path d="M${ox + w + 30},${oy + 10} l-7,18 h14 z" fill="var(--doc-ink)"/><text x="${ox + w + 30}" y="${oy + 42}" class="d-t d-b" text-anchor="middle">N</text>`);
+    o.push(`<text x="${ox}" y="${oy + h + 26}" class="d-s">${f2(T.W)} × ${f2(T.H)} ม. · ${L.rows.length} แถว ระยะแถว ${f2(D.pitch)} ม. · มุมเอียง ${(D.tilt * 180 / Math.PI).toFixed(1)}° หันทิศใต้${T.rot ? " · แปลนหมุนให้ทิศเหนืออยู่ด้านบน" : ""}</text>`);
+    const defs = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--doc-open)" stroke-width="1"/></pattern></defs>`;
+    return { html: defs + o.join(""), W: ox + w + 70, H: oy + h + 44 };
+  }
+  function sectionSVG() {
+    const S = st.std, D = L.D, r = L.rows[sel && sel.row != null ? sel.row : 0] || L.rows[0];
+    if (!r) return { html: `<text x="20" y="40" class="d-t">ไม่มีแถว</text>`, W: 600, H: 80 };
+    const k = 120, gy = 330, x0 = 140, X = m => x0 + m * k, Y = hh => gy - hh * k, o = [];
+    const Ln = (a, b, c, d, sw, col = "var(--doc-ink)") => o.push(`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${col}" stroke-width="${sw}"/>`);
+    o.push(`<text x="20" y="28" class="d-t d-b">รูปตัดแถวที่ ${r.k + 1} (มองจากทิศตะวันออก ทิศใต้อยู่ซ้าย)</text>`);
+    Ln(40, gy, 1040, gy, 1.4);
+    // positions measured from the front post (south, left)
+    const xf = X(0), xb = X(S.pDY);
+    for (const [xp, hh] of [[xf, S.hF], [xb, S.hB]]) { o.push(`<rect x="${xp - 18}" y="${gy - 18}" width="36" height="18" fill="var(--doc)" stroke="var(--doc-ink)"/>`); Ln(xp, gy - 18, xp, Y(hh), 3); }
+    const fx = xf - D.fPlan * k, fy = Y(S.hF - FIX.frontOver * Math.sin(D.tilt)), bx = xb + D.bPlan * k, by = Y(S.hB + D.backOver * Math.sin(D.tilt));
+    Ln(fx, fy, bx, by, 2.4); Ln(fx - 6 * Math.sin(D.tilt), fy - 8, bx - 6 * Math.sin(D.tilt), by - 8, 5, "var(--doc-mod)");
+    Ln(xf, gy - 18, xf + 1.0 * k, Y(S.hF + 1.0 * Math.tan(D.tilt)), 1.3); Ln(xb, gy - 18, xb + .8 * k, Y(S.hB + .8 * Math.tan(D.tilt)), 1.3);
+    // vents that sit in this row, placed by their plan position
+    for (const [b, v] of L.ventInfo) { if (v.row !== r.k) continue;
+      const d0 = r.yfp - (b.y + b.h), d1 = r.yfp - b.y, vH = parseFloat(st.ventH) || 1, col = v.ok ? "var(--doc-clamp)" : "var(--doc-lug)";
+      o.push(`<rect x="${X(d0)}" y="${Y(vH)}" width="${(d1 - d0) * k}" height="${vH * .6 * k}" fill="none" stroke="${col}" stroke-width="1.4"/>`);
+      o.push(`<text x="${X((d0 + d1) / 2)}" y="${Y(vH) - 10}" class="d-s" text-anchor="middle" fill="${col}">ช่องระบาย · ใต้แผง ${f2(v.hMin)} ม. ${v.ok ? "ผ่าน" : "ไม่ผ่าน"}</text>`); break; }
+    const dim = (a, b, yy, t) => { Ln(a, yy, b, yy, .7); Ln(a, yy - 5, a, yy + 5, .7); Ln(b, yy - 5, b, yy + 5, .7); o.push(`<text x="${(a + b) / 2}" y="${yy - 8}" class="d-t" text-anchor="middle">${t}</text>`); };
+    dim(xf, xb, gy + 40, f2(S.pDY)); dim(xb, X(S.pDY + S.gap), gy + 40, f2(S.gap) + " (ถึงแถวถัดไป)");
+    o.push(`<text x="${xf - 30}" y="${Y(S.hF / 2)}" class="d-t" text-anchor="end">${f2(S.hF)}</text><text x="${xb + 30}" y="${Y(S.hB / 2)}" class="d-t">${f2(S.hB)}</text>`);
+    o.push(`<text x="40" y="${gy + 84}" class="d-s">แผง ${FIX.nSlope} แผงตามแนวเอียง ยาว ${f2(D.slope)} ม. · มุม ${(D.tilt * 180 / Math.PI).toFixed(1)}° · ยื่นหน้า ${f2(FIX.frontOver)} ยื่นหลัง ${f2(D.backOver)} ม.</text>`);
+    return { html: o.join(""), W: 1080, H: gy + 100 };
+  }
+
+  // ---- render ----
+  function render() {
+    L = layout(st.off, st.col, st.removed); Q = quantities(L);
+    const d = view === "plan" ? planSVG() : sectionSVG();
+    $("svg").setAttribute("viewBox", `0 0 ${d.W.toFixed(0)} ${d.H.toFixed(0)}`); $("svg").innerHTML = d.html;
+    const dl = (key, digits = 0) => { if (!prevQ) return ""; const dv = Q[key] - prevQ[key]; if ((digits ? +dv.toFixed(digits) : Math.round(dv)) === 0) return "";
+      return `<span class="delta ${dv > 0 ? "up" : "down"}">${dv > 0 ? "+" : ""}${digits ? dv.toFixed(digits) : Math.round(dv)}</span>`; };
+    $("stats").innerHTML = [
+      [Q.modules, "แผง", "modules", "hl"], [Q.kwp.toFixed(1), "kWp", "kwp", "hl", 1], [Q.tables, "โต๊ะแผง", "tables"], [Q.posts, "เสา / ฐาน", "posts"],
+      [Math.round(Q.rail), "ราง (ม.)", "rail"], [Q.clamps, "rail clamp", "clamps"], [Q.braces, "ค้ำ X", "braces"], [Q.red, "เสาต้องตรวจ", "red"]
+    ].map(([v, s, key, c, dg]) => `<div class="stat ${c || ""}"><b>${v}${dl(key, dg)}</b><span>${s}</span></div>`).join("");
+    $("notes").innerHTML = L.notes.map(n => `<div>${esc(n.text)}</div>`).join("");
+    const S = st.std; $("offV").textContent = f2(st.off) + " ม."; $("colV").textContent = f2(st.col) + " ม.";
+    $("stdNote").textContent = `มุมเอียง ${(L.D.tilt * 180 / Math.PI).toFixed(1)}° · ระยะแถว ${f2(L.D.pitch)} ม. · ลึกโต๊ะ ${f2(L.D.depth)} ม.`;
+    $("assumed").textContent = `ค่าสมมติ: เว้นขอบ ${FIX.edge} ม. · รอบช่องเปิด ${FIX.openClear} ม. · ใต้แผงเหนือช่องระบายเผื่อ ${FIX.underClear} ม. · รางยื่นเลยเสาริม ${FIX.endOver} ม.`;
+    $("undo").disabled = !undo.length;
+    renderInfo();
+  }
+  function renderInfo() {
+    const box = $("info");
+    if (!sel) { box.innerHTML = `<span class="k">${mode === "remove" ? "แตะแผงเพื่อเอาออกหรือใส่คืน (ทั้งคอลัมน์ตามแนวเอียง) ใช้เว้นทางเดินหรือจุดที่ไม่ต้องการ" : "แตะโต๊ะแผง ช่องระบาย หรือเสาเพื่อดูรายละเอียด"}</span>`; return; }
+    if (sel.type === "table") {
+      const r = L.rows[sel.row], t = r && r.tables.find(t => t.i0 === sel.i0);
+      if (!t) { sel = null; return renderInfo(); }
+      box.innerHTML = `<b>โต๊ะแถว ${r.k + 1}</b><span class="k">แผง</span><span class="v">${t.n * FIX.nSlope} (${(t.n * FIX.nSlope * st.std.modWp / 1000).toFixed(1)} kWp)</span>
+        <span class="k">ยาว</span><span class="v">${f2(t.xb - t.xa)} ม.</span><span class="k">เสา</span><span class="v">${t.px.length} คู่ · ห่าง ${f2(Math.max(...t.px.slice(1).map((x, q) => x - t.px[q])))} ม. สูงสุด</span>
+        ${t.moved.length ? `<span class="pill ok">เลื่อนเสาหลบช่องเปิด ${t.moved.length} คู่</span>` : ""}${t.bad.length ? `<span class="pill bad">เสาชน ${t.bad.length} คู่</span>` : ""}
+        <button type="button" class="ghost" id="toSection">ดูรูปตัดแถวนี้</button>`;
+      $("toSection").onclick = () => setView("section");
+    } else if (sel.type === "vent") {
+      const v = L.ventInfo.get(L.T.boxes[sel.idx]);
+      box.innerHTML = v ? `<b>ช่องระบายใต้แถว ${v.row + 1}</b><span class="k">ใต้แผงต่ำสุด</span><span class="v">${f2(v.hMin)} ม.</span><span class="k">ต้องการ</span><span class="v">${f2((parseFloat(st.ventH) || 1) + FIX.underClear)} ม.</span>
+        <span class="pill ${v.ok ? "ok" : "bad"}">${v.ok ? "วางแผงคร่อมได้" : "ต่ำไป จึงเว้นแผงเหนือช่องนี้"}</span>`
+        : `<b>ช่องระบาย</b><span class="k">ไม่มีแผงเหนือช่องนี้ (อยู่ในระยะเว้นขอบหรือระหว่างแถว)</span>`;
+    } else if (sel.type === "post") {
+      const n = L.notes.find(n => n.row === sel.row && Math.abs(n.x - sel.x) < 1e-6);
+      box.innerHTML = `<b>เสาแถว ${sel.row + 1}</b><span class="k">ตำแหน่ง</span><span class="v">x ${f2(sel.x)} ม.</span><span class="k">ฐาน</span><span class="v">คอนกรีต 300×300×150 ยึดพุก</span>
+        ${n ? `<span class="pill bad">ชนช่องเปิด</span><span class="k">ลองเลื่อนแนวแผงหรือกด “หาผังที่ได้แผงมากที่สุด”</span>` : `<span class="pill ok">ไม่ชนช่องเปิด</span>`}`;
+    }
+  }
+
+  // ---- interactions ----
+  $("svg").addEventListener("click", e => {
+    const h = e.target.closest(".hit");
+    if (!h) { sel = null; render(); return; }
+    if (h.dataset.vent != null) { sel = { type: "vent", idx: +h.dataset.vent, box: L.T.boxes[+h.dataset.vent] }; render(); return; }
+    if (h.dataset.post) { const [row, x, y] = h.dataset.post.split("|").map(Number); sel = { type: "post", row, x, y }; render(); return; }
+    if (h.dataset.row != null) {
+      const row = +h.dataset.row, col = +h.dataset.col, r = L.rows[row];
+      if (mode === "remove") {
+        const key = row + ":" + col, why = r.blocked[col];
+        if (why && why !== "เอาออกเอง") { $("info").innerHTML = `<b>เอาแผงช่องนี้ไม่ได้</b><span class="pill bad">${esc(why)}</span>`; return; }
+        prevQ = Q; push(); st.removed.has(key) ? st.removed.delete(key) : st.removed.add(key); render(); return;
+      }
+      const t = r.tables.find(t => col >= t.i0 && col < t.i1);
+      sel = t ? { type: "table", row, i0: t.i0, i1: t.i1 } : null;
+      if (!t && r.blocked[col]) { render(); $("info").innerHTML = `<b>ไม่มีแผงตรงนี้</b><span class="pill bad">${esc(r.blocked[col])}</span>`; return; }
+      render();
+    }
+  });
+  function setView(v) { view = v; document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v))); render(); }
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+  document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; sel = null;
+    document.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.mode === mode))); render(); }));
+  document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => { push(); prevQ = null; st.preset = b.dataset.preset; st.removed = new Set(); st.off = 0; st.col = 0; sel = null;
+    document.querySelectorAll("[data-preset]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.preset === st.preset))); $("tag").textContent = TANKS[st.preset].tag; sync(); render(); }));
+  $("north").addEventListener("change", e => { push(); prevQ = Q; st.north = e.target.value; st.removed = new Set(); sel = null; render(); });
+  $("ventH").addEventListener("change", e => { push(); prevQ = Q; st.ventH = e.target.value; render(); });
+  for (const id of ["off", "col"]) {
+    $(id).addEventListener("pointerdown", () => { push(); prevQ = Q; });
+    $(id).addEventListener("input", e => { st[id] = parseFloat(e.target.value); st.removed = new Set(); sel = null; render(); });
+  }
+  for (const id of Object.keys(STD0)) $(id).addEventListener("change", e => { const v = parseFloat(e.target.value); if (!(v > 0)) { e.target.value = st.std[id]; return; } push(); prevQ = Q; st.std[id] = v; st.removed = new Set(); render(); });
+  $("resetStd").addEventListener("click", () => { push(); prevQ = Q; st.std = { ...STD0 }; sync(); render(); });
+  $("best").addEventListener("click", () => {
+    push(); prevQ = Q; const pitch = derived(st.std).pitch; let best = null, tried = 0;
+    for (let o = 0; o <= pitch + 1e-9; o += .1) for (let c = 0; c <= st.std.modW + 1e-9; c += .05) {
+      const q = quantities(layout(o, c, new Set(), false)); tried++;
+      if (!best || q.modules > best.m) best = { m: q.modules, o, c };
+    }
+    st.off = Math.round(best.o * 10) / 10; st.col = Math.round(best.c * 20) / 20; st.removed = new Set(); sel = null; sync();
+    render(); $("bestNote").textContent = `ลอง ${tried} แบบ · ดีที่สุด ${best.m} แผง ที่เลื่อนแถว ${f2(st.off)} ม. แผง ${f2(st.col)} ม.`;
+  });
+  $("undo").addEventListener("click", () => { if (!undo.length) return; prevQ = Q; const o = JSON.parse(undo.pop()); o.removed = new Set(o.removed); st = o; sel = null; sync(); render(); });
+  $("form").addEventListener("submit", e => e.preventDefault());
+  function sync() { $("north").value = st.north; $("ventH").value = st.ventH; $("off").value = st.off; $("col").value = st.col; for (const id of Object.keys(STD0)) $(id).value = st.std[id]; }
+  sync(); render();
+})();
+</script>

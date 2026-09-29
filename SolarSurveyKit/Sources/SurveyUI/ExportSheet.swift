@@ -6,8 +6,8 @@ import DriveSync
 /// One place to export a survey: readiness check, pick the files, then share them or save them to Google Drive.
 struct ExportSheet: View {
     let jobID: UUID
-    /// Closes the sheet and jumps to the section with the missing transformer photos.
-    let fixGaps: () -> Void
+    /// Closes the sheet and opens the editor page that still has gaps.
+    let goTo: (MissingGroup.Target) -> Void
 
     enum Format: String, CaseIterable, Identifiable {
         case report, summary, excel, data, photos
@@ -61,7 +61,8 @@ struct ExportSheet: View {
             List {
                 if let job = model.job(jobID) {
                     statusSection(job)
-                    if !job.transformerGaps.isEmpty { gapsSection(job.transformerGaps) }
+                    let groups = job.missingGroups
+                    if !groups.isEmpty { missingSection(groups) }
                 }
                 formatsSection
                 if let job = model.job(jobID) { driveSection(job) }
@@ -97,16 +98,29 @@ struct ExportSheet: View {
         }
     }
 
-    func gapsSection(_ gaps: [String]) -> some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("ภาพหม้อแปลงยังไม่ครบ", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(.orange)
-                ForEach(gaps, id: \.self) { Text($0).font(.callout) }
-                Button { dismiss(); fixGaps() } label: { Label("ไปถ่ายให้ครบ", systemImage: "camera") }
-                    .buttonStyle(.bordered).tint(.orange).padding(.top, 2)
+    /// Every required answer still missing, grouped by editor page; each group opens its page.
+    func missingSection(_ groups: [MissingGroup]) -> some View {
+        let count = groups.reduce(0) { $0 + $1.items.count }
+        let unsigned = groups.first { $0.target == .final }?.items.contains { $0.hasPrefix("ลายเซ็น") } ?? false
+        return Section {
+            Label("ยังขาด \(count) รายการ", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(.orange)
+            ForEach(groups) { g in
+                DisclosureGroup {
+                    ForEach(Array(g.items.enumerated()), id: \.offset) { Text("• " + $0.element).font(.callout) }
+                    Button { dismiss(); goTo(g.target) } label: { Label("ไปกรอกหัวข้อนี้", systemImage: "arrow.right.circle") }
+                        .font(.callout)
+                } label: {
+                    HStack {
+                        Text(g.title).font(.callout.weight(.semibold))
+                        Spacer()
+                        Text("\(g.items.count)").font(.caption.monospacedDigit()).foregroundStyle(.orange)
+                    }
+                }
             }
-            .padding(.vertical, 4)
-        } footer: { Text("ส่งออกต่อได้ แต่รายงานจะขาดภาพเหล่านี้") }
+        } footer: {
+            Text(unsigned ? "รายงานยังไม่มีลายเซ็น ส่งออกเป็นฉบับร่างได้ แต่ไม่ควรส่งให้ กปภ. เป็นฉบับจริง"
+                          : "ส่งออกต่อได้ แต่รายงานจะขาดข้อมูลเหล่านี้")
+        }
     }
 
     var formatsSection: some View {

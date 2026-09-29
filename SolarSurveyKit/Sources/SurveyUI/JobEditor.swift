@@ -21,7 +21,7 @@ struct JobEditorView: View {
     @State private var sidebarVisible = true
     @State private var collapsed: Set<SectionCategory> = []
     @State private var pendingExport: PendingExport?
-    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let go: () -> Void }
+    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target; let go: () -> Void }
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(job: Job) { _job = State(initialValue: job) }
@@ -58,12 +58,12 @@ struct JobEditorView: View {
         .sheet(item: $preview) { p in PDFPreview(item: p) }
         // a Drive save stores the folder link on the model's copy — take it back so the next edit keeps it
         .sheet(isPresented: $showExport, onDismiss: { if let d = model.job(job.id)?.drive { job.drive = d } }) {
-            ExportSheet(jobID: job.id) { select(.electrical) }.environment(model)
+            ExportSheet(jobID: job.id) { select(page(for: $0)) }.environment(model)
         }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
-        .alert("ภาพหม้อแปลงยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in
-            Button("ไปถ่ายให้ครบ") { page = .electrical; pendingExport = nil }
+        .alert("ข้อมูลยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in
+            Button("ไปกรอกให้ครบ") { let t = p.target; pendingExport = nil; select(page(for: t)) }
             Button("ส่งออกต่อ") { let go = p.go; pendingExport = nil; go() }
             Button("ยกเลิก", role: .cancel) { pendingExport = nil }
         } message: { p in Text(p.gaps.joined(separator: "\n")) }
@@ -393,15 +393,27 @@ struct JobEditorView: View {
             }
             .overlay(alignment: .topTrailing) {
                 // the export sheet explains the gap; this dot just says there is one
-                if !job.transformerGaps.isEmpty { Circle().fill(.orange).frame(width: 8, height: 8).offset(x: 4, y: -2) }
+                if !job.missingGroups.isEmpty { Circle().fill(.orange).frame(width: 8, height: 8).offset(x: 4, y: -2) }
             }
         }
     }
 
-    /// Transformer photos are compulsory: warn before any export while some are missing.
+    /// Warns before an export while required answers are missing, listing them per page.
     func checked(_ go: @escaping () -> Void) {
-        let gaps = job.transformerGaps
-        if gaps.isEmpty { go() } else { pendingExport = PendingExport(gaps: gaps, go: go) }
+        let groups = job.missingGroups
+        guard let first = groups.first else { return go() }
+        pendingExport = PendingExport(gaps: groups.map { "\($0.title): \($0.items.count) รายการ" }, target: first.target, go: go)
+    }
+
+    func page(for target: MissingGroup.Target) -> Page {
+        switch target {
+        case .info: return .info
+        case .site: return .site
+        case .electrical: return .electrical
+        case .flood: return .flood
+        case .module(let id): return .module(id)
+        case .final: return .final
+        }
     }
 
     /// Runs an export on the next run-loop turn so the busy overlay shows first.

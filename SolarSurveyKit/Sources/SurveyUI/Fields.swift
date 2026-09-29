@@ -54,9 +54,15 @@ struct FieldView: View {
     @ViewBuilder var control: some View {
         switch spec.kind {
         case .text(let ph):
-            TextField(ph.isEmpty ? spec.label : ph, text: textBinding)
-                .textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
-                .keyboardType(spec.id == "phone" ? .phonePad : .default)
+            if spec.id == "date" {
+                DateInput(text: textBinding)
+            } else if spec.id == "gps" {
+                GPSInput(text: textBinding)
+            } else {
+                TextField(ph.isEmpty ? spec.label : ph, text: textBinding)
+                    .textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
+                    .keyboardType(spec.id == "phone" ? .phonePad : .default)
+            }
         case .member(let component):
             MemberPicker(value: textBinding, component: component)
         case .pick(let list, let unit):
@@ -81,10 +87,21 @@ struct FieldView: View {
                 Text(unit).foregroundStyle(.secondary)
             }
         case .number(let unit):
-            HStack {
-                TextField("0", text: textBinding).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                    .foregroundStyle(Paper.value).frame(maxWidth: 200)
-                Text(unit).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    TextField("0", text: numberBinding).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                        .foregroundStyle(Paper.value).frame(maxWidth: 200)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(badNumber ? Color.red : Color.clear, lineWidth: 1.5))
+                    Text(unit).foregroundStyle(.secondary)
+                }
+                if badNumber {
+                    HStack(spacing: 8) {
+                        Text("อ่านเป็นตัวเลขไม่ได้").font(.caption).foregroundStyle(.red)
+                        if !cleanedNumber.isEmpty {
+                            Button("แก้เป็น \(cleanedNumber)") { values[spec.id] = .text(cleanedNumber) }.font(.caption)
+                        }
+                    }
+                }
             }
         case .textarea:
             TextField(spec.label, text: textBinding, axis: .vertical).lineLimit(3...8).textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
@@ -136,6 +153,16 @@ struct FieldView: View {
     var textBinding: Binding<String> {
         Binding(get: { values.text(spec.id) }, set: { values[spec.id] = $0.isEmpty ? nil : .text($0) })
     }
+    /// Number fields keep only the number: commas, units and Thai digits are cleaned as they are typed.
+    var numberBinding: Binding<String> {
+        Binding(get: { values.text(spec.id) }, set: {
+            let c = NumberInput.clean($0)
+            values[spec.id] = c.isEmpty ? nil : .text(c)
+        })
+    }
+    /// A stored value that isn't a number (typed before clean-up existed, or imported).
+    var badNumber: Bool { !NumberInput.isValid(values.text(spec.id)) }
+    var cleanedNumber: String { NumberInput.clean(values.text(spec.id)) }
     var otherBinding: Binding<String> {
         Binding(get: { values.other(spec.id) }, set: { values[spec.id] = .choice("อื่นๆ", other: $0) })
     }
@@ -214,7 +241,7 @@ struct ObstaclesEditor: View {
     }
     func bind(_ id: UUID, _ kp: WritableKeyPath<Obstacle, String>) -> Binding<String> {
         Binding(get: { items.first { $0.id == id }?[keyPath: kp] ?? "" },
-                set: { v in if let i = items.firstIndex(where: { $0.id == id }) { items[i][keyPath: kp] = v } })
+                set: { v in if let i = items.firstIndex(where: { $0.id == id }) { items[i][keyPath: kp] = kp == \Obstacle.label ? v : NumberInput.clean(v) } })
     }
 }
 
@@ -249,7 +276,7 @@ struct TransformersEditor: View {
     }
     func kva(_ id: UUID) -> Binding<String> {
         Binding(get: { items.first { $0.id == id }?.kva ?? "" },
-                set: { v in if let i = items.firstIndex(where: { $0.id == id }) { items[i].kva = v } })
+                set: { v in if let i = items.firstIndex(where: { $0.id == id }) { items[i].kva = NumberInput.clean(v) } })
     }
     func mdb(_ id: UUID, _ k: Int) -> Binding<String> {
         Binding(get: {
@@ -258,7 +285,7 @@ struct TransformersEditor: View {
         }, set: { v in
             guard let i = items.firstIndex(where: { $0.id == id }) else { return }
             while items[i].mdb.count <= k { items[i].mdb.append("") }
-            items[i].mdb[k] = v
+            items[i].mdb[k] = NumberInput.clean(v)
         })
     }
 }

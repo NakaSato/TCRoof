@@ -35,6 +35,10 @@ this spec. The Swift implementation should match them.
 | **Tank roof plan, กปภ. style (64 × 40 m)** | **Side by side with the original กปภ. sheet** |
 | ![](img/tank_pwa.png) | ![](img/tank_compare.png) |
 
+**How the surveyor's input becomes the layout** (numbers 1–6 link each form field to what it draws):
+
+![](img/input_to_layout.png)
+
 ## 2. Library decision
 
 **No new dependency.** Build on the drawing model that already exists in `SurveyCore/Sketch.swift`:

@@ -1,64 +1,102 @@
-# Auto Single Line Diagram (SLD)
+# Auto Single Line Diagram (SLD) — existing system
 
-**Status:** Draft, 2026-09-29 · **Prototype:** `img/sld.py` → `img/sld.png` · **Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline, same rules)
+**Status:** Draft, 2026-09-29 · **Prototype:** `img/sld_existing.py` → `img/sld_existing.png` (run from `img/`) ·
+**Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline, same rules)
 
-The PWA survey already holds most of what a PV interconnection SLD needs. This feature draws it from those answers, marks
-existing equipment in black and new PV equipment in blue, and sizes the PV breakers.
+**Scope:** the waterworks' existing electrical system only, from the PEA supply down to the MDB feeders. No PV, no
+inverters, no export relay. The drawing follows the style of a Thai MDP drawing: dashed MDB enclosure, breakers drawn
+as an arc with `3P AT/AF`, CT and DP meter with pilot lamps, numbered feeders, cable text written along each feeder and
+black load blocks.
 
-![](img/sld.png)
+![](img/sld_existing.png)
 
-## Inputs, all already in the form
+Sample values come from the MDP sheet the team shared. The transformer size (250 kVA) is a sample.
 
-| Drawn item | Source field | Section |
+## Inputs
+
+The surveyor copies what is written on the panel nameplate, the breakers and the cables: sizes and text only, no
+choices to design.
+
+### Upstream (A3, exists today)
+
+| Drawn item | Field | Note |
 |---|---|---|
-| Grid voltage | new optional `gridKV` (default 22 kV, printed as ค่าสมมติ) | A3 |
-| Transformer(s), kVA | `trafos[i].kva` | A3 |
-| MDB per transformer + main breaker AT | `trafos[i].mdb[j]` | A3 |
-| PEA meter number | `meterNo` | A3 |
-| Where PV connects | `tr{i}_feed` (e.g. MDB1) | A3 |
-| Existing feeders: name, AT, load kW | each B1 ตู้ไฟฟ้าอาคาร: `name`, `breakerAT`, `loadKW` | B1 |
-| Inverter count | B2 `inverterCount` | B2 |
-| PV size | A1 `capacity` (kWp) | A1 |
-| Export limiting: LV or HV, pole | B4 `level`, `pole` | B4 |
-| FTS and emergency button | B5 present (photos taken) | B5 |
+| Grid voltage | new optional `gridKV` | default 22 kV, printed as ค่าสมมติ when blank |
+| Transformer name, kVA | `trafos[i].kva` (+ name `TR1`…, derived from order) | |
+| PEA meter number | `meterNo` | |
 
-Nothing new is asked except the optional grid voltage; the surveyor still enters only sizes and distances.
+### MDB schedule (new, one per MDB in A3)
 
-## Derived values
+| Field | Type | Example | Drawn as |
+|---|---|---|---|
+| `name` | text | MDP | label at the top-right of the enclosure |
+| `icKA` | number (kA) | 25 | `IC ไม่น้อยกว่า 25 kA` |
+| `main` | poles, AT, AF | 3, 300, 400 | main breaker |
+| `ctRatio` | text | 300/5A | `3xCT 300/5A`; hidden when blank |
+| `meterName` | text | DP2 | DP box fed from the CTs; hidden when blank |
+| `pilotLamps` | bool + fuse text | yes, 3x6A | fuse → ⊗ x3 |
+| `busbar` | text | 4x300A. Cu. BUSBAR W/GROUND BUS | label above the bus |
+| `feeders[]` | rows (below) | 6 rows | numbered columns |
+| `ground` | text | 1x35-IEC01 ø20 PVC. | N/G bar, ground conductor, ground rod |
 
-| Value | Rule | Example (prototype) |
+### Feeder row
+
+| Field | Type | Example |
 |---|---|---|
-| kW per inverter | capacity ÷ inverterCount | 500 ÷ 5 = 100 kW |
-| Inverter current | kW × 1000 ÷ (√3 × 400 V), PF 1 | 144.3 A |
-| Inverter breaker | next standard AT ≥ 1.25 × current | 200 AT |
-| PV incomer breaker | same rule on the total | 721.7 A → 1,000 AT |
-| PV share of transformer | kW ÷ kVA | 50% |
-| Export relay position | B4 level: แรงต่ำ → CT on the LV main, relay trips the PV incomer; แรงสูง → relay on the HV side at the pole | LV |
+| `poles` | 1 / 2 / 3 | 3 |
+| `at`, `af` | number | 100, 100 |
+| `cable` | text | 4x50,1x10-IEC01 |
+| `conduit` | text | ø50mm. UPVC / IN WIRE WAY |
+| `load` | text | LC11 |
+| `location` | text | 1st FL. |
+| `spare` | bool | a spare row draws the breaker and `SPARE`, no cable or load |
 
-Standard AT list: 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800, 1000, 1250, 1600,
-2000, 2500, 3200. Checks printed under the diagram (not errors): PV kW > 100% of transformer kVA; PV incomer AT above
-the MDB main AT; bus rating to be confirmed by an engineer.
+Numbers are typed with the same `NumberInput` rules as the rest of the form. Feeder order is the order entered; the
+number above each column is its position.
+
+## Derived values and checks (printed under the diagram, never errors)
+
+| Value | Rule | Example |
+|---|---|---|
+| Transformer full-load current | kVA × 1000 ÷ (1.732 × 400 V) | 250 kVA → 361 A |
+| Main vs transformer | note when main AT > full-load current × 1.25 or < 0.8 × | 300 AT vs 361 A, no note |
+| AT ≤ AF | note on any breaker where AT > AF | |
+| Feeder count | total, in use, spare | 6 (5 + 1 spare) |
+| Sum of feeder AT | in-use feeders only, shown for reference (diversity not applied) | 430 AT |
 
 ## Layout rules
 
-- Top to bottom: grid → drop-out fuse → transformer (two circles) → PEA meter → export CT → main breaker → MDB busbar.
-- Existing feeders hang left on the bus, each a breaker plus a load arrow labelled with name and kW.
-- The PV incomer hangs right, feeding the SMDB-PV bus. Below it, one column per inverter: breaker, inverter box (=/~),
-  FTS switch, PV array. More than 8 inverters collapse to one column labelled "n × kW".
-- Several transformers: one column per transformer, each with its own MDB bus; PV attaches to the `feed` MDB only.
-- Control links (CT → relay → PV breaker trip, emergency button → FTS) are dashed blue lines routed around labels.
-- Legend: existing / new PV / control. Notes: assumptions (400/230 V, PF 1, 1.25 factor, no cable sizes).
+- Top to bottom, centre column: grid ▽ → drop-out fuse → transformer (two circles) → PEA kWh meter → dash-dot line
+  into the enclosure → main breaker → CT → busbar.
+- Pilot lamps and DP meter branch right from the incoming line above the main breaker; the CT signal line returns to
+  the DP box.
+- Busbar spans the feeder columns; columns are spaced evenly across the enclosure. The incoming line joins the bus at
+  the centre column position, never on top of a feeder label.
+- Each feeder: number above the bus, breaker with `3P AT/AF` to its right, line down through the enclosure edge, cable
+  and conduit text rotated −90° left of the line, black load block, load name (bold) and location below.
+- N/G bar and ground rod sit left of feeder 1; the ground text is rotated along the ground conductor.
+- More than 10 feeders: wrap into a second row under the first bus drawn as a continuation (`…ต่อ`), or reduce column
+  spacing down to a minimum 60 pt, whichever keeps labels readable.
+- Several MDBs on one transformer: one enclosure per MDB side by side, fed from a common LV line. One diagram page per
+  transformer.
+- Footer: assumptions (400/230 V, sample values) and the standard line "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง".
 
 ## Swift
 
-`SurveyCore/Drawing/SLDInput.swift` (Job → input, missing, assumed), `SLDGeometry.swift` (columns, buses, ratings),
-`SLDDrawings.swift` (→ `Sketch`). It is a job-level drawing, so it goes on its own PDF page after A3 and as a preview
-card on the A3 page. Tests: breaker sizing for the table above; 1 and 3 transformers; 1, 5 and 12 inverters; LV vs HV
-relay placement; snapshot SVGs.
+| File (`SurveyCore/Drawing/`) | Contents |
+|---|---|
+| `SLDInput.swift` | `struct SLDInput { gridKV; transformers: [TransformerInput] }`, `struct MDBSchedule`, `struct FeederRow`, `Breaker(poles, at, af)`; `init(job:)`, `missing`, `assumed` |
+| `SLDGeometry.swift` | column x positions, bus extent, enclosure rect, checks (`[SLDNote]`) |
+| `SLDDrawings.swift` | `SLDGeometry → Sketch`; symbols `breaker`, `ct`, `lamp`, `meter`, `groundRod` as `DrawOp` helpers |
+
+Schema: add `mdbs: [MDBSchedule]` to each A3 transformer entry, all fields optional so older jobs decode. UI: an MDB
+editor under A3 with a feeder table (add / reorder / mark spare). PDF: its own page after A3, plus a preview card on
+the A3 page. Tests: the sample above (6 feeders, 1 spare), 1 and 14 feeders, blank CT/DP (hidden), two MDBs, AT > AF
+note, and snapshot SVGs.
 
 ## Open questions
 
-1. Is 1.25 × rated current the sizing rule the team uses for inverter and PV breakers?
-2. Does PV always connect at the MDB named in `feed`, or sometimes at a new SMDB fed from the MDB?
-3. For HV export limiting (B4 แรงสูง), what equipment does กฟภ. expect on the SLD (recloser, relay type)?
-4. Should cable sizes appear in v1? That needs cable lengths (inverter → SMDB → MDB), which the form doesn't ask yet.
+1. One MDB per diagram, or should one transformer with several MDBs share a page?
+2. Is the "main vs transformer current" note useful, or should the SLD show values only?
+3. Do SMDBs downstream of the MDB (LC11 etc.) need their own sub-diagram later, or does the load block end the drawing?
+4. Keep the Thai breaker symbol (arc) everywhere, or allow the IEC symbol as a setting?

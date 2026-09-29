@@ -79,6 +79,11 @@ its colour (green / amber / red).
 
 Rules:
 
+- The sheet grows sideways with the equipment: each transformer block is 180 pt per MDB (min 240), the expanded MDB
+  spaces B1 feeders 150 pt apart, the PV group sits right of the last feeder with 70 pt per inverter (up to 10 drawn).
+  Stress test `img/sld_form_large.json` → `sld_form_large.png`: 3 transformers, 9 MDBs, 8 feeders, 8 inverters, about
+  4,700 × 3,200 px. Above an A3-landscape ratio the PDF should split pages (open question 9).
+
 - PV and B1 panels hang from **TR1's `tr0_feed` MDB** (assumption, printed). Other MDBs are drawn compact.
 - PV breakers: inverter and total current at 400 V, PF 1, × 1.25, next standard AT; AF = next frame.
 - If A1 or B2 is blank, only the existing system is drawn. If one of them is filled and the other is blank, that goes
@@ -227,3 +232,5 @@ three modes.
 7. For กันย้อนแรงสูง, what does กฟภ. expect on the SLD (recloser/LBS, relay function 32R, CT/VT ratios)? The prototype
    trips the PV breaker.
 8. Keep the Thai breaker symbol (arc) everywhere, or allow the IEC symbol as a setting?
+9. Large stations: keep one wide sheet (zoomable in the app) or split the PDF into one page per transformer plus one
+   page for the PV-connection MDB?

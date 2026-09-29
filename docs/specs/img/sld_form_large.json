@@ -1,0 +1,356 @@
+{
+ "job": {
+  "projectName": "สถานีผลิตน้ำขนาดใหญ่ (ทดสอบ layout)",
+  "capacity": "800",
+  "meterNo": "020-987654",
+  "trafos": [
+   {
+    "kva": "1600",
+    "mdb": [
+     "2500",
+     "800",
+     "630",
+     "400",
+     "",
+     ""
+    ],
+    "breakers": [
+     {
+      "name": "MDB-1 อาคารสูบน้ำแรงสูง",
+      "type": "ACB",
+      "mount": "Draw-out",
+      "poles": "3",
+      "at": "2500",
+      "af": "2500",
+      "ka": "65",
+      "brand": "Schneider",
+      "cond": "ดี",
+      "note": ""
+     },
+     {
+      "name": "DB-HL2",
+      "type": "ACB",
+      "mount": "Draw-out",
+      "poles": "3",
+      "at": "800",
+      "af": "800",
+      "ka": "50",
+      "brand": "ABB",
+      "cond": "พอใช้",
+      "note": "มีฝุ่นสะสม"
+     },
+     {
+      "name": "ตู้ MCC-1",
+      "type": "MCCB",
+      "mount": "Fixed",
+      "poles": "3",
+      "at": "630",
+      "af": "630",
+      "ka": "50",
+      "brand": "Mitsubishi",
+      "cond": "ดี",
+      "note": ""
+     },
+     {
+      "name": "LP-OFFICE",
+      "type": "MCCB",
+      "mount": "Fixed",
+      "poles": "3",
+      "at": "400",
+      "af": "400",
+      "ka": "36",
+      "brand": "LS",
+      "cond": "ชำรุด",
+      "note": "ฝาตู้ปิดไม่สนิท"
+     }
+    ]
+   },
+   {
+    "kva": "1000",
+    "mdb": [
+     "1600",
+     "630",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "breakers": [
+     {
+      "name": "MDB-2",
+      "type": "ACB",
+      "mount": "Draw-out",
+      "poles": "3",
+      "at": "1600",
+      "af": "1600",
+      "ka": "65",
+      "brand": "Schneider",
+      "cond": "ดี",
+      "note": ""
+     },
+     {
+      "name": "SDB เครื่องกรอง",
+      "type": "MCCB",
+      "mount": "Fixed",
+      "poles": "3",
+      "at": "630",
+      "af": "630",
+      "ka": "50",
+      "brand": "ABB",
+      "cond": "ดี",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "kva": "500",
+    "mdb": [
+     "800",
+     "400",
+     "250",
+     "",
+     "",
+     ""
+    ],
+    "breakers": [
+     {
+      "name": "MDB-3 บ้านพัก",
+      "type": "MCCB",
+      "mount": "Fixed",
+      "poles": "3",
+      "at": "800",
+      "af": "800",
+      "ka": "50",
+      "brand": "Schneider",
+      "cond": "พอใช้",
+      "note": "ขั้วต่อหลวม"
+     },
+     {
+      "name": "DB-PUMP3",
+      "type": "MCCB",
+      "mount": "Fixed",
+      "poles": "3",
+      "at": "400",
+      "af": "400",
+      "ka": "36",
+      "brand": "",
+      "cond": "",
+      "note": ""
+     },
+     {
+      "name": "DB-LAB",
+      "type": "MCCB",
+      "mount": "Fixed",
+      "poles": "3",
+      "at": "250",
+      "af": "250",
+      "ka": "25",
+      "brand": "LS",
+      "cond": "ดี",
+      "note": ""
+     }
+    ]
+   }
+  ],
+  "tr0_feed": "MDB-1 อาคารสูบน้ำแรงสูง",
+  "tr0_feedLoc": "ห้องไฟฟ้า 1",
+  "tr1_feed": "MDB-2",
+  "tr1_feedLoc": "ห้องไฟฟ้า 2",
+  "tr2_feed": "MDB-3 บ้านพัก",
+  "tr2_feedLoc": "โซนบ้านพัก",
+  "tr0_hvSwitch": "VCB",
+  "tr0_type": "OIL IMMERSED",
+  "tr0_hv": "22",
+  "tr0_lv": "230-400",
+  "tr0_vector": "Dyn11",
+  "tr0_z": "6",
+  "tr0_brand": "Tirathai",
+  "tr0_serial": "16-0001",
+  "tr0_year": "2560",
+  "tr0_cond": "ดี",
+  "tr0_condNote": "",
+  "tr1_hvSwitch": "VCB",
+  "tr1_type": "OIL IMMERSED",
+  "tr1_hv": "22",
+  "tr1_lv": "230-400",
+  "tr1_vector": "Dyn11",
+  "tr1_z": "6",
+  "tr1_brand": "ABB",
+  "tr1_serial": "10-2233",
+  "tr1_year": "2555",
+  "tr1_cond": "พอใช้",
+  "tr1_condNote": "ซิลิกาเจลเปลี่ยนสี",
+  "tr2_hvSwitch": "Drop Out Fuse",
+  "tr2_type": "OIL IMMERSED",
+  "tr2_hv": "22",
+  "tr2_lv": "230-400",
+  "tr2_vector": "Dyn11",
+  "tr2_z": "4",
+  "tr2_brand": "QTC",
+  "tr2_serial": "05-7788",
+  "tr2_year": "2550",
+  "tr2_cond": "ชำรุด",
+  "tr2_condNote": "น้ำมันรั่ว ตัวถังเป็นสนิม"
+ },
+ "sections": [
+  {
+   "type": "panel",
+   "name": "โรงสูบน้ำแรงสูง 1",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "630",
+    "breakerAF": "630",
+    "breakerKA": "50",
+    "breakerBrand": "ABB",
+    "cond": "ดี",
+    "condNote": "",
+    "loadKW": "250",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "โรงสูบน้ำแรงสูง 2",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "630",
+    "breakerAF": "630",
+    "breakerKA": "50",
+    "breakerBrand": "ABB",
+    "cond": "ดี",
+    "condNote": "",
+    "loadKW": "240",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "โรงสูบน้ำแรงต่ำ",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "400",
+    "breakerAF": "400",
+    "breakerKA": "36",
+    "breakerBrand": "Schneider",
+    "cond": "พอใช้",
+    "condNote": "มีเสียงดัง",
+    "loadKW": "150",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "โรงกรอง",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "250",
+    "breakerAF": "250",
+    "breakerKA": "25",
+    "breakerBrand": "LS",
+    "cond": "ดี",
+    "condNote": "",
+    "loadKW": "60",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "ถังตกตะกอน",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "160",
+    "breakerAF": "250",
+    "breakerKA": "25",
+    "breakerBrand": "LS",
+    "cond": "ดี",
+    "condNote": "",
+    "loadKW": "30",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "อาคารเคมี",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "100",
+    "breakerAF": "100",
+    "breakerKA": "25",
+    "breakerBrand": "Mitsubishi",
+    "cond": "ชำรุด",
+    "condNote": "ก้านโยกหัก",
+    "loadKW": "20",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "อาคารสำนักงาน",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "100",
+    "breakerAF": "100",
+    "breakerKA": "",
+    "breakerBrand": "",
+    "cond": "ดี",
+    "condNote": "",
+    "loadKW": "25",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "panel",
+   "name": "ไฟถนน",
+   "values": {
+    "breakerType": "MCCB",
+    "breakerMount": "Fixed",
+    "breakerPoles": "3",
+    "breakerAT": "63",
+    "breakerAF": "100",
+    "breakerKA": "18",
+    "breakerBrand": "Schneider",
+    "cond": "ดี",
+    "condNote": "",
+    "loadKW": "8",
+    "loadTime": "10 น."
+   }
+  },
+  {
+   "type": "inverter",
+   "name": "",
+   "values": {
+    "inverterCount": "8"
+   }
+  },
+  {
+   "type": "backfeed",
+   "name": "",
+   "values": {
+    "level": "กันย้อนที่แรงสูง",
+    "pole": "เสาเดิม"
+   }
+  },
+  {
+   "type": "fts",
+   "name": "",
+   "values": {
+    "photoFTS": true,
+    "photoEmg": true
+   }
+  }
+ ]
+}

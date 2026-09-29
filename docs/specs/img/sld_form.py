@@ -190,7 +190,22 @@ def dashed_box(sk, x0, y0, x1, y1, w=0.9):
 # ---------------------------------------------------------------- drawing
 def sld(form, path):
     d = read_form(form); pv = d["pv"]; kv = ASSUME["grid_kv"]
-    W = 1300; sk = Sk(W)
+    # --- layout first: the sheet grows with the number of transformers, MDBs, B1 panels and inverters
+    blocks, bx = [], 120
+    for t in d["trs"]:
+        w = max(240, 180 * max(1, len(t["mdbs"])))
+        blocks.append((t, bx, bx + w)); bx += w + 30
+    FSP = 150                                                                 # feeder spacing in the expanded MDB
+    fx0 = 0
+    if blocks:
+        t0, b0, b1 = blocks[0]; names = [n for n, _ in t0["mdbs"]]
+        k0 = names.index(t0["feed"]) if t0["feed"] in names else 0
+        fx0 = (b0 + b1) / 2 - 90 * (len(names) - 1) + 180 * k0
+    nfeed = len(d["panels"]); last = fx0 + 140 + FSP * (nfeed - 1) if nfeed else fx0
+    show = min(pv["n"], 10) if pv else 0
+    PX = max(980, last + 300 + 35 * (show - 1)) if pv else 0
+    W = max(1300, bx + 60, PX + 35 * (show - 1) + 170 if pv else last + 220)
+    sk = Sk(W)
     mode = "ไม่มีข้อมูล PV" if not pv else {"hv": "กันย้อนแรงสูง", "lv": "กันย้อนแรงต่ำ", None: "ยังไม่ระบุกันย้อน"}[pv["level"]]
     title_strip(sk, f"แผนภาพเส้นเดียว — {form['job'].get('projectName', '')}", f"สร้างจากแบบสำรวจ A1 · A3 · B1 · B2 · B4 · B5 · {mode}")
     # --- HV service: line → DOF/DS → PEA meter → [HV CT/VT + relay] → customer HV bus
@@ -222,10 +237,6 @@ def sld(form, path):
         relay(sk, 70, cy - 8, 170, "รีเลย์กันย้อน แรงสูง", pv["pole"] or "เสา (ไม่ระบุ)")
         ctrl(sk, [(xs - 10, cy), (240, cy)]); ctrl(sk, [(xs - 62, cy + 20), (240, cy + 20)])
     # --- transformer blocks (A3)
-    blocks, bx = [], 120
-    for t in d["trs"]:
-        w = max(240, 180 * max(1, len(t["mdbs"])))
-        blocks.append((t, bx, bx + w)); bx += w + 30
     txs = [(b0 + b1) / 2 for _, b0, b1 in blocks]
     sk.line((min(txs + [xs]), hb), (max(txs + [xs]), hb), 1.4, DARK)
     feed_x, lvb = None, None
@@ -277,9 +288,8 @@ def sld(form, path):
         lvbrk(sk, feed_x, E0 + 40, mb); brk_label(sk, feed_x + 14, E0 + 40, mb)
         bus = E0 + 160
         sk.line((feed_x, E0 + 40 + h), (feed_x, bus), 1.4, DARK)
-        feeders = d["panels"]; px = W - 320
-        f0 = feed_x + 120
-        fxs = [f0 + k * min(170, (px - 150 - f0) / max(1, len(feeders) - 1)) for k in range(len(feeders))]
+        feeders = d["panels"]; px = PX
+        fxs = [feed_x + 140 + FSP * k for k in range(len(feeders))]
         right = px if pv else (fxs[-1] if fxs else feed_x)
         sk.line((min(fxs + [feed_x]), bus), (max(right, feed_x), bus), 3.2, DARK); sk.circle((feed_x, bus), 2.4, DARK, DARK)
         for k, (p, x) in enumerate(zip(feeders, fxs)):
@@ -298,7 +308,7 @@ def sld(form, path):
             a_inv, a_pv = at(i_inv * K), at(i_tot * K)
             sk.text("PV", (px, bus - 10), 8.5, True, NEW, "center"); sk.circle((px, bus), 2.4, NEW, NEW)
             sk.line((px, bus), (px, bus + 28), 1.2, NEW); cb(sk, px, bus + 40, c=NEW); brk_label(sk, px - 70, bus + 40, dict(type="MCCB", poles="3", at=a_pv, af=af(a_pv)), NEW, new=True)
-            sb = E1 + 50; show = min(n, 6)
+            sb = E1 + 50
             ix = [px - 35 * (show - 1) + 70 * k for k in range(show)]
             sk.line((px, bus + 51), (px, sb), 1.2, NEW); sk.line((ix[0] - 20, sb), (ix[-1] + 20, sb), 3.0, NEW)
             sk.text("SMDB-PV (ใหม่)", (ix[-1] + 26, sb), 8.5, True, NEW)
@@ -315,7 +325,7 @@ def sld(form, path):
                 for tt in (0.33, 0.66): sk.line((x - 14 + 28 * tt, sb + 126), (x - 14 + 28 * tt, sb + 148), 0.6, NEW)
                 sk.line((x - 14, sb + 137), (x + 14, sb + 137), 0.6, NEW)
             lx = ix[0] - 26
-            sk.text(f"อินเวอร์เตอร์ {n} × {fmt(kw_inv)} kW" + (" (แสดง 6)" if n > 6 else ""), (lx, sb + 70), 8.5, False, NEW, "right")
+            sk.text(f"อินเวอร์เตอร์ {n} × {fmt(kw_inv)} kW" + (f" (แสดง {show})" if n > show else ""), (lx, sb + 70), 8.5, False, NEW, "right")
             if pv["fts"]: sk.text("ตู้ FTS (ตัดวงจร DC)", (lx, sb + 110), 8.5, False, NEW, "right")
             sk.text(f"แผง PV รวม {pv['kwp']:,.0f} kWp", (lx, sb + 137), 8.5, False, NEW, "right")
             if pv["fts"]:
@@ -384,4 +394,5 @@ if __name__ == "__main__":
     ex = copy.deepcopy(form); ex["job"]["capacity"] = ""
     ex["sections"] = [s for s in ex["sections"] if s["type"] == "panel"]
     sld(ex, os.path.join(HERE, "sld_form_existing.png"))
+    sld(json.load(open(os.path.join(HERE, "sld_form_large.json"))), os.path.join(HERE, "sld_form_large.png"))
     print("ok")

@@ -82,6 +82,75 @@ Prototype result on the กปภ. 40 × 40 tank: **7 rows, 13 tables, 394 modul
 98 rafters, 905 m of rail, 392 rail clamps, 736 / 104 mid / end clamps, 170 braces, 13 ground lugs; 8 vents stay
 under the panels; 2 post pairs near corner vents need engineering review.
 
+
+## 3a. Accurate layout: panels face south, best energy per year
+
+The first version filled the roof with as many modules as fit, rows parallel to the tank walls. The accurate version
+(`img/tank_mount_opt.py`) makes the panels face **true south** and chooses the layout by **annual energy**, because the
+tank is rarely square to the compass and closer rows shade each other.
+
+**Two more site inputs (measurements, not design choices):**
+
+| Field | Source | Default |
+|---|---|---|
+| `tankBearing` — the direction the plan's top wall faces, ° from true north | compass on site (the iPhone/iPad compass can fill it) | 0° (= `planNorth` ด้านบน) |
+| latitude | the survey GPS (`gps`, A1) | — (required for the energy model) |
+
+`planNorth` (4 directions) stays as a quick fallback; the bearing replaces it when entered.
+
+**Method**
+
+1. **Two orientations** are laid out and compared:
+   - **หันทิศใต้จริง** — rows run exactly east–west (panel azimuth 0°). The tank, its setbacks and openings are rotated
+     into that frame, so tables sit at an angle to the walls.
+   - **ขนานผนังถัง** — rows parallel to the wall that faces closest to south; panel azimuth = the bearing's offset
+     (≤ 45°).
+2. **Geometry in any rotation:** module slots, footings and grown openings are polygons; a slot is valid when all its
+   corners are inside the inset tank and it does not intersect a grown hatch or a too-low vent (separating axis test);
+   footings must be inside the tank and 0.30 m clear of every opening. Posts still move as front/back pairs.
+3. **Sun model, whole year, 15-minute steps (every 3rd day):** NOAA-style sun position from latitude, clear-sky GHI
+   (Haurwitz) scaled by 0.72 for Thai haze and clouds, Erbs diffuse split, isotropic sky, albedo 0.20, PR 0.80. It gives
+   about 1,450–1,480 kWh/kWp·yr at 17° N, in line with Thai PV yields; the absolute value is ประมาณ, the comparison is what
+   matters.
+4. **Row-to-row shading** in the rows' own plane: profile angle `tan αp = tan α / cos(γs − γp)`, shaded share of the
+   next row's slope `f = 1 − (pitch / slope) · sin αp / sin(αp + β)`. **Portrait-2 electrical rule:** a shadow over the
+   bottom 4 % of the slope drops the whole bottom module's beam (its three bypass substrings all lose their bottom cells);
+   past 54 % the top module goes too. The south-most row is unshaded.
+5. **Search:** each orientation × row gap from the standard 2.70 m up to 4.70 m (0.20 m steps) × row offset (0.20 m)
+   × column offset (0.10 m): about 3,000 layouts, 12 s in Python, well under a second in Swift. For each gap the layout with
+   the most modules is kept; then the candidate with the highest **MWh/yr** wins. Row gaps below the standard are never
+   tried (maintenance access and bracing).
+
+**Result, กปภ. 40 × 40 tank, 17.0° N, top wall facing 12°:**
+
+| Orientation | Row gap | Modules | kWp | kWh/kWp·yr | Row shading | MWh/yr |
+|---|---|---|---|---|---|---|
+| **ขนานผนังถัง (azimuth +12°)** | 2.70 | 416 | 249.6 | 1,452 | 1.9 % | **362.5** ← chosen |
+| หันทิศใต้จริง | 2.70 | 368 | 220.8 | 1,455 | 1.8 % | 321.3 |
+| ขนานผนังถัง | 3.10 | 370 | 222.0 | 1,467 | 0.8 % | 325.7 |
+| หันทิศใต้จริง | 3.50 | 330 | 198.0 | 1,475 | 0.3 % | 292.1 |
+
+What this says:
+
+- Turning the rows 12° to face true south gains only about 0.2 % per kWp but loses 48 modules to the rotated fit, so the
+  wall-parallel layout makes **13 % more energy**. True south wins only when the tank is turned far from the compass
+  (the model decides per tank; the user can force true south).
+- The team's 2.70 m row gap costs about 1.9 % to shading at 17° N; wider gaps shade less but remove whole rows. The
+  standard gap is the best choice for this tank.
+
+| Chosen (best energy) | Forced true south | Energy by row gap |
+|---|---|---|
+| ![](img/tank_mount_opt_plan.png) | ![](img/tank_mount_opt_south.png) | ![](img/tank_mount_opt_compare.png) |
+
+UI (adds to [`mount-interaction-dev.md`](mount-interaction-dev.md)): a segmented control **พลังงานสูงสุด / หันทิศใต้จริง /
+ขนานผนัง** (default พลังงานสูงสุด), the bearing field with a **วัดด้วยเข็มทิศ** button (CoreLocation heading, true north,
+the device held along the top wall), and the energy tiles (MWh/yr, kWh/kWp, row shading %) next to the module count.
+"หาผังที่ได้แผงมากที่สุด" becomes **หาผังที่ได้พลังงานมากที่สุด**.
+
+Swift: `SurveyCore/Mounting/SunModel.swift` (sun position, clear-sky, POA, row shading; pure functions, unit-tested
+against the Python numbers above), `MountLayout` gains `orientation`, polygon geometry (`Polygon.sat`, `contains`), and
+`MountOptimizer` runs the search off the main thread.
+
 ## 4. Drawings
 
 | Sheet | Content |
@@ -110,9 +179,11 @@ exceeds `postDX` unless flagged; snapshot SVGs of the three sheets.
 
 ## 6. Open questions
 
-1. Must posts land on the tank's columns or beams (4.00 m grid) rather than anywhere on the slab? If so, the post
+1. Accept the energy model assumptions (clear-sky × 0.72, PR 0.80, portrait-2 shading rule) or supply a measured TMY / PVsyst yield to calibrate?
+
+2. Must posts land on the tank's columns or beams (4.00 m grid) rather than anywhere on the slab? If so, the post
    spacing along the row should snap to the bay grid instead of ≤ 2.70 m.
-2. Is the row gap (2.70 m) fixed, or should it follow a shading rule (e.g. no shade at 9:00–15:00 on 21 December)?
-3. Walkways: does the team need a maintenance path to every hatch and between tables (width?), beyond the 0.5 m clearance?
-4. Vent heights: one value per tank, or per vent (box vents vs mushroom vents)?
-5. Grounding: one lug per table as drawn, plus ground plates at the tank edge (detail H) — how many and where?
+3. Is the row gap (2.70 m) fixed, or should it follow a shading rule (e.g. no shade at 9:00–15:00 on 21 December)?
+4. Walkways: does the team need a maintenance path to every hatch and between tables (width?), beyond the 0.5 m clearance?
+5. Vent heights: one value per tank, or per vent (box vents vs mushroom vents)?
+6. Grounding: one lug per table as drawn, plus ground plates at the tank edge (detail H) — how many and where?

@@ -22,6 +22,17 @@ They are **indicative survey drawings, not construction drawings**. Every sheet 
 - PV module layout on the roof (planned for v2, see §11).
 - 3D, perspective or editable CAD. DXF export is a stretch goal (§10).
 
+### Prototype output
+
+Rendered from sample data by the Python prototypes in `docs/specs/img/` (`draw.py`, `truss.py`), which follow
+this spec. The Swift implementation should match them.
+
+| Truss section (Howe) + details + schedule | Truss types (Pratt, Warren) |
+|---|---|
+| ![](img/truss_howe.png) | ![](img/truss_variants.png) |
+| **Framing plan** | **Tank plan + section** |
+| ![](img/framing_plan.png) | ![](img/tank.png) |
+
 ## 2. Library decision
 
 **No new dependency.** Build on the drawing model that already exists in `SurveyCore/Sketch.swift`:
@@ -170,6 +181,10 @@ doesn't have goes into `missing` and shows as a prompt, never as a crash or a wr
 | C1 | `eaveHeight` | ความสูงชายคาจากพื้น | `.number("ม.")` | no | Columns drawn only when set |
 | C1 | `overhang` | ระยะชายคายื่น | `.number("ม.")` | no | Default 0 |
 | C1 | `ridgeDir` | แนวสันหลังคาในแปลน | `.choice(["แนวนอน","แนวตั้ง"])` | no | Default derived from `sheetDir` (§5.2) |
+| C1 | `frameType` | ระบบโครงหลังคา | `.choice(["จันทัน (ไม่มีโครงถัก)","โครงถัก"])` | no | Default โครงถัก when span > 8 m and a web member is entered |
+| C1 | `trussType` | รูปแบบโครงถัก | `.choice(["Howe","Pratt","Warren"])` | no | `when: frameType == โครงถัก`; default Howe |
+| C1 | `heelDepth` | ความลึกโครงถักที่ปลาย (heel) | `.number("ม.")` | no | Default 0.5 m steel, 0 = triangular truss |
+| C1 | `compTop`, `compBottom`, `compVertical`, `compDiagonal` | ขื่อบน / ขื่อล่าง / ตัวตั้ง / ตัวทแยง | `.member` (size only) | no | Fallbacks: ขื่อบน ← `comp2` จันทัน, ขื่อล่าง ← `comp4` ขื่อ, ตัวตั้ง ← `comp7` ดั้ง, ตัวทแยง ← `comp5` ค้ำยัน |
 | C2 | `roofAngle`, `eaveHeight` | as C1 | | yes / no | Span from `buildingWidth` (cm) |
 | D1 | `tankShape` | รูปทรงถัง | `.choice(["สี่เหลี่ยม","ทรงกลม"])` | no | Default สี่เหลี่ยม |
 | D1 | `tankDiameter` | เส้นผ่านศูนย์กลาง | `.number("ม.")` | when ทรงกลม | `when:` visibility |
@@ -234,6 +249,38 @@ and add a warning line under the drawing.
 **Flat (คอนกรีต):** slab 0.15 m thick at E, with columns, no purlins. The note shows the slab thickness as assumed.
 **Curved:** arc through (0,E), (h,E+R), (B,E). Purlins are spaced by arc length.
 **Hip (plan only):** hip lines at 45° from each corner. Ridge length = `along − across` (0 means a pyramid).
+
+**Truss (frameType = โครงถัก)**, see prototype `truss_howe.png`:
+- **Chords:** bottom chord (ขื่อล่าง) (0,E)–(B,E). Top chord (ขื่อบน) (0,E+d)→(h,E+d+R)→(B,E+d), where `d = heelDepth`.
+  Depth at mid-span is `d + R`.
+- **Panels:** `n = max(2, round(L/s))` panels per half, so each panel's slope length equals the purlin spacing and
+  **every purlin sits on a node**. Node x-positions are `i·h/n`, for i = 0…n.
+- **Web**, per half, mirrored:
+  - Howe: verticals at every node; diagonals bottom(i) → top(i+1), rising toward the ridge.
+  - Pratt: verticals at every node; diagonals top(i) → bottom(i+1).
+  - Warren: king post only, plus zig-zag diagonals alternating bottom/top.
+  - When `d = 0`, the heel vertical and a zero-length first diagonal are dropped.
+- **Nodes:** a node is any point where a web member meets a chord, plus the two supports. Each node gets a
+  gusset marker (hexagon 6.4 pt). A plain chord splice point is not a node.
+- **Supports:** columns at x = 0 and x = B only. Interior grid lines are drawn as reference lines without columns,
+  unless open question Q1 says otherwise.
+- **Detail callouts:** circle A at the left support/heel and circle B at the ridge. Two inset panels below the
+  section, "ไม่ได้มาตราส่วน", drawn by fixed templates (`TrussDetails.eave`, `.ridge`). Each panel shows:
+  - Detail A: column, cap plate and anchors, heel gusset with bolts, bottom and top chords, first web members,
+    purlins with angle cleats, sheet line, fascia.
+  - Detail B: ridge gusset, king post, the first diagonals, a pair of ridge purlins, ridge cap, bottom-chord splice.
+
+  Labels use the entered member sizes.
+- **Member schedule** (per truss), a table under the details:
+  - purlin count = `2(n+1)`
+  - top chord length = `2(L + o)`
+  - bottom chord length = `B`
+  - Σ vertical lengths and count
+  - Σ diagonal lengths and count
+  - king post length = `d + R`
+  - gusset count = node count
+
+  Steel weight (kg) comes in v2 from a section-weight table keyed by the size string.
 
 **Framing plan overlay** (on top of `Drawings.plan`):
 - Ridge line (dash-dot, bold) on the centre line of `across`.
@@ -310,6 +357,8 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
    - B = 16, θ = 15°, s = 1.0 → R = 2.144, L = 8.282, purlins at t = 0…8 m (9) plus one at the ridge (last gap 0.28 > 0.25), so 10 per slope
    - shed, flat, curved and hip ridge length
    - tank volumes: 12×8×4.5 = 432; circle D = 10, H = 5 → 392.7
+   - Howe truss B = 16, θ = 15°, d = 0.5, s = 1.0 → n = 8 per half, 17 verticals, 16 diagonals, 34 nodes,
+     top chord 2(8.282 + o), king post 2.644
 3. **Invariants**, run for 50 generated inputs:
    - every op lies inside `0…width × 0…height`
    - no NaN or ∞
@@ -332,6 +381,7 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
 | M3 | Schema fields/kinds; editor preview (`Fields.swift`) | M2 |
 | M4 | PDF integration (`ReportLayout`) behind flag | M3 |
 | M5 | `TankGeometry` + `TankDrawings` + D1 fields + PDF | M1 |
+| M2b | Truss geometry (Howe/Pratt/Warren), eave/ridge detail templates, member schedule | M2 |
 | M6 | Framing plan overlay (C1/C2) | M2 |
 | M7 (stretch) | Excel image anchor; DXF R12 export (`Sketch` → ASCII DXF, about 150 lines, no library) | M4 |
 

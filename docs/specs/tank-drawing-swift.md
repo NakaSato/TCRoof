@@ -6,7 +6,7 @@
 document does not repeat them. It defines the feature as the user sees it on iPad and iPhone, and what "done" means.
 **Visual reference:** `img/tank_plan.py` → `img/tank_pwa.png` (64 × 40 m), `img/tank_40x40.png` (40 × 40 m), `img/tank.png`
 (plan + section); interactive prototype `prototype/tank-layout.html`
-**Targets:** `SolarSurveyKit` in the TCRoof app, iOS 17+, `TARGETED_DEVICE_FAMILY = 1,2`. **New dependencies:** none
+**Interaction dev spec:** [`tank-interaction-dev.md`](tank-interaction-dev.md) · **Targets:** `SolarSurveyKit` in the TCRoof app, iOS 17+, `TARGETED_DEVICE_FAMILY = 1,2`. **New dependencies:** none
 
 | กปภ. 64 × 40 (box vents, hatches) | กปภ. 40 × 40 (cross vents, ladders apart) |
 |---|---|

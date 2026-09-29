@@ -2,108 +2,120 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
 <style>
-/* Layout: drafting-table split. Input sheet on the left, live drawing on the right; stacks on phones. */
+/* Layout: drafting table. Input sheet left, live drawing right with a tool strip; stacks on phones.
+   The drawing itself is a paper document: it keeps its light paper in both themes. */
 :root {
-  --bg: #eef1f0;
-  --panel: #ffffff;
-  --paper: #fbfcfb;
-  --ink: #1d2826;
-  --muted: #5d6b68;
-  --line: #d3dbd8;
-  --grid: #8a9895;
-  --accent: #1f4e79;
-  --accent-soft: #e3ecf5;
-  --usable: #dcebd3;
-  --usable-ink: #3f6b2e;
-  --warn: #b3372e;
-  --warn-soft: #fbe9e7;
-  --hover: rgba(31, 78, 121, .14);
+  --bg: #eef1f0; --panel: #ffffff; --field: #fbfcfb; --ink: #1d2826; --muted: #5d6b68; --line: #d3dbd8;
+  --accent: #1f4e79; --accent-soft: #e3ecf5; --usable: #dcebd3; --usable-ink: #3f6b2e;
+  --warn: #b3372e; --warn-soft: #fbe9e7;
+  --doc: #ffffff; --doc-ink: #1b1b1b; --doc-grid: #7c8a87; --doc-soft: #6a6a6a; --doc-green: #e2efda;
+  --doc-sel: #1f6fd1; --doc-hover: rgba(31, 111, 209, .16);
   --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
   --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
   --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #121716; --panel: #1a2120; --paper: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
-    --grid: #6f7e7b; --accent: #8db8e3; --accent-soft: #1d2c3a; --usable: #22361d; --usable-ink: #9fcf88;
-    --warn: #f08a80; --warn-soft: #3a1f1c; --hover: rgba(141, 184, 227, .18); color-scheme: dark;
+    --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --accent: #8db8e3; --accent-soft: #1d2c3a; --usable: #22361d; --usable-ink: #9fcf88; --warn: #f08a80; --warn-soft: #3a1f1c;
+    color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #121716; --panel: #1a2120; --paper: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
-  --grid: #6f7e7b; --accent: #8db8e3; --accent-soft: #1d2c3a; --usable: #22361d; --usable-ink: #9fcf88;
-  --warn: #f08a80; --warn-soft: #3a1f1c; --hover: rgba(141, 184, 227, .18); color-scheme: dark;
+  --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #8db8e3; --accent-soft: #1d2c3a; --usable: #22361d; --usable-ink: #9fcf88; --warn: #f08a80; --warn-soft: #3a1f1c;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
-.wrap { max-width: 1480px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
-header h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: .01em; text-wrap: balance; }
-header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
-.main { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.wrap { max-width: 1520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 78ch; }
+.main { display: grid; grid-template-columns: minmax(290px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
 
 .sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
-@media (min-width: 901px) { .sheet { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; } }
-fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
-legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; padding: 0; margin-bottom: 2px; }
+@media (min-width: 921px) { .sheet { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; } }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); padding: 0; margin-bottom: 2px; }
 .sec { border-top: 1px solid var(--line); padding-top: 12px; }
-label { display: grid; gap: 3px; font-size: 13px; }
+label { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
-.row > * { flex: 1 1 110px; min-width: 0; }
-input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+.row > * { flex: 1 1 100px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
 input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
 input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-input.bad { border-color: var(--warn); background: var(--warn-soft); }
 .hint { font-size: 12px; color: var(--muted); }
 button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
-button:hover { border-color: var(--accent); }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
 button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
-button.x { background: transparent; color: var(--muted); padding: 7px 8px; flex: 0 0 auto; }
-button.x:hover { color: var(--warn); border-color: var(--warn); }
-.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px 6px; }
+button.danger { background: var(--warn-soft); color: var(--warn); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px 8px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .list { display: grid; gap: 6px; }
-.item { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
-.item.pipe { grid-template-columns: 1.1fr .9fr .8fr auto; }
+.item { display: grid; grid-template-columns: 1fr .8fr auto; gap: 6px; align-items: center; border-radius: 6px; }
+.item.pipe { grid-template-columns: 1fr .7fr .7fr auto; }
 .item.pipe .type { grid-column: 1 / -2; }
-.count { font-family: var(--f-num); font-size: 12px; color: var(--accent); }
+.item.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count { font-family: var(--f-num); font-size: 12px; color: var(--accent); margin-left: 4px; }
 details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 details[open] summary { margin-bottom: 8px; }
 
-.board { display: grid; gap: 12px; min-width: 0; }
+.board { display: grid; gap: 10px; min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.tools .seg { flex: 0 1 auto; }
+.tools .spacer { flex: 1 1 0; }
+.tools .grp { display: flex; gap: 4px; }
+.tools .grp button { min-width: 36px; }
+.zoomv { font: 500 12px/1 var(--f-num); color: var(--muted); min-width: 44px; text-align: center; align-self: center; }
+.inspector { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 52px; }
+.inspector .hint { align-self: center; }
+.inspector label { flex: 0 1 140px; }
+.inspector b { align-self: center; font-weight: 600; }
 .stats { display: flex; flex-wrap: wrap; gap: 8px; }
-.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 120px; flex: 1 1 120px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; flex: 1 1 110px; min-width: 0; }
 .stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
 .stat span { font-size: 12px; color: var(--muted); }
 .stat.hl { background: var(--usable); border-color: transparent; }
 .stat.hl b, .stat.hl span { color: var(--usable-ink); }
-.drawing { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
-.drawing svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--f-draw); }
+.canvas { position: relative; background: var(--doc); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 78vh; touch-action: pan-x pan-y; }
+.canvas svg { display: block; height: auto; font-family: var(--f-draw); user-select: none; -webkit-user-select: none; }
+.canvas[data-mode="vent"] svg { cursor: cell; }
+.canvas[data-mode="wall"] svg { cursor: crosshair; }
+.menu { position: absolute; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.18); padding: 6px; display: grid; gap: 4px; min-width: 170px; }
+.menu .t { font-size: 12px; color: var(--muted); padding: 2px 4px 4px; }
+.menu button { text-align: left; }
 .msgs { display: grid; gap: 4px; }
 .msg { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 6px 10px; }
+.note { font-size: 13px; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 6px 10px; }
 .foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
-.tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: 2px; }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: 3px; }
+@media (prefers-reduced-motion: no-preference) { .canvas { scroll-behavior: smooth; } }
 
-/* drawing tokens */
-.d-wall { fill: none; stroke: var(--ink); }
-.d-beam { stroke: var(--grid); stroke-dasharray: 4 3; stroke-width: .6; }
-.d-usable { fill: var(--usable); }
-.d-sym { fill: var(--paper); stroke: var(--ink); }
-.d-ink { fill: var(--ink); }
-.d-muted { fill: var(--muted); }
-.d-line { stroke: var(--ink); fill: none; }
-.d-cell { fill: transparent; cursor: pointer; }
-.d-cell:hover { fill: var(--hover); }
-.d-hatchfill { stroke: var(--grid); stroke-width: .6; }
-.d-bad { fill: var(--warn); }
-@media (prefers-reduced-motion: no-preference) { .d-cell { transition: fill .12s; } }
+/* drawing (document colours, same in both themes) */
+.d-t { fill: var(--doc-ink); font-size: 14px; }
+.d-s { fill: var(--doc-soft); font-size: 12.5px; }
+.d-b { font-weight: 600; }
+.d-line { stroke: var(--doc-ink); fill: none; }
+.d-grid { stroke: var(--doc-grid); fill: none; stroke-dasharray: 4 3; stroke-width: .7; }
+.d-green { fill: var(--doc-green); }
+.d-sym { stroke: var(--doc-ink); fill: var(--doc); stroke-width: 1; }
+.canvas svg * { pointer-events: none; }
+.canvas svg .d-cellhit, .canvas svg .d-open, .canvas svg .d-open * { pointer-events: all; }
+.d-cellhit { fill: transparent; }
+.canvas[data-mode="vent"] .d-cellhit:hover { fill: var(--doc-hover); }
+.d-open { cursor: pointer; }
+.d-open.sel .d-sym, .d-open.sel .d-line { stroke: var(--doc-sel); stroke-width: 2; }
+.d-halo { fill: none; stroke: var(--doc-sel); stroke-width: 1.5; stroke-dasharray: 3 2; }
 </style>
 
 <div class="wrap">
   <header>
     <h1>ผังฝาถังน้ำใส <span class="tag" id="exampleTag">ตัวอย่าง: แบบ กปภ. 40 × 40 ม.</span></h1>
-    <p>ผังนี้สร้างจากสิ่งที่กรอกทางซ้ายเท่านั้น กรอกระยะช่วงเสา แตะช่องบนแปลนเพื่อวางช่องระบายอากาศ แล้วใส่ช่องลงถัง บันได และท่อเป็นระยะตามผนัง ผังและพื้นที่ติดแผงจะคำนวณใหม่ทันทีที่แก้</p>
+    <p>ลองใช้แบบเดียวกับในแอป: กรอกแค่ขนาดและระยะ แล้วผังฝาถัง รูปตัด และพื้นที่ติดแผงจะวาดใหม่ทันที เลือกโหมดด้านบนภาพ: <b>ช่องระบาย</b> แตะช่องเพื่อวางหรือลบ · <b>ที่ผนัง</b> แตะริมผนังเพื่อเพิ่มช่องลงถัง บันได หรือท่อ · <b>เลือก</b> แตะช่องเปิดเพื่อแก้ หรือลากไปตามผนัง</p>
   </header>
 
   <div class="main">
@@ -118,49 +130,61 @@ details[open] summary { margin-bottom: 8px; }
       </fieldset>
 
       <fieldset class="sec">
-        <legend>1 · ระยะช่วงเสา (ม.)</legend>
+        <legend>ขนาดถัง (ม.)</legend>
         <div class="row">
-          <label>แนวนอน<input class="num" id="bx" placeholder="เช่น 10@4 หรือ 4,4,4"></label>
-          <label>แนวตั้ง<input class="num" id="by" placeholder="เช่น 10@4"></label>
+          <label>ช่วงเสาแนวยาว<input class="num" id="bx" placeholder="เช่น 10@4 หรือ 4,4,4"></label>
+          <label>ช่วงเสาแนวกว้าง<input class="num" id="by" placeholder="เช่น 10@4"></label>
         </div>
-        <div class="hint">พิมพ์ <b>10@4</b> แทน 4 สิบครั้งได้ ใส่ระยะต่างกันได้ เช่น 1.5, 3@4, 1.5</div>
+        <div class="row">
+          <label>ความสูงถัง<input class="num" id="height" inputmode="decimal" placeholder="เช่น 4.5"></label>
+          <label>ส่วนพ้นดิน<input class="num" id="above" inputmode="decimal" placeholder="ว่าง = บนดิน"></label>
+        </div>
+        <div class="hint">พิมพ์ <b>10@4</b> แทน 4 สิบครั้งได้ ใส่ระยะต่างกันได้ เช่น 1.5, 3@4, 1.5 · ส่วนพ้นดิน 0 = ฝังดินทั้งถัง</div>
       </fieldset>
 
       <fieldset class="sec">
-        <legend>2 · ช่องระบายอากาศ <span class="count" id="ventCount"></span></legend>
-        <div class="hint">แตะช่องบนแปลนเพื่อวาง แตะซ้ำเพื่อลบ</div>
+        <legend>ช่องระบายอากาศ <span class="count" id="ventCount"></span></legend>
         <div class="row">
           <div class="seg" role="group" aria-label="สัญลักษณ์ช่องระบายอากาศ">
             <button type="button" data-vs="box" aria-pressed="false">กล่อง</button>
             <button type="button" data-vs="cross" aria-pressed="true">กากบาท</button>
           </div>
-          <label>ขนาด (ม.)<input class="num" id="ventSize" inputmode="decimal"></label>
+          <button type="button" class="ghost" id="clearVents">ลบทั้งหมด</button>
         </div>
-        <button type="button" class="ghost" id="clearVents">ลบช่องระบายอากาศทั้งหมด</button>
+        <div class="hint">ใช้โหมด “ช่องระบาย” แล้วแตะช่องบนแปลน</div>
       </fieldset>
 
       <fieldset class="sec">
-        <legend>3 · ช่องลงถัง <span class="count" id="hatchCount"></span></legend>
+        <legend>ช่องลงถัง <span class="count" id="hatchCount"></span></legend>
         <div class="list" id="hatches"></div>
-        <div class="row"><button type="button" id="addHatch">+ เพิ่มช่องลงถัง</button>
-          <label>ขนาด (ม.)<input class="num" id="hatchSize" inputmode="decimal"></label></div>
+        <button type="button" id="addHatch">+ เพิ่มช่องลงถัง</button>
       </fieldset>
-
       <fieldset class="sec">
-        <legend>4 · บันไดขึ้นถัง <span class="count" id="ladderCount"></span></legend>
+        <legend>บันไดขึ้นถัง <span class="count" id="ladderCount"></span></legend>
         <div class="list" id="ladders"></div>
         <button type="button" id="addLadder">+ เพิ่มบันได</button>
       </fieldset>
-
       <fieldset class="sec">
-        <legend>5 · ท่อผ่านผนัง <span class="count" id="pipeCount"></span></legend>
+        <legend>ท่อผ่านผนัง <span class="count" id="pipeCount"></span></legend>
         <div class="list" id="pipes"></div>
         <button type="button" id="addPipe">+ เพิ่มท่อ</button>
       </fieldset>
 
       <fieldset class="sec">
+        <legend>ตำแหน่งรูปตัด (ม.)</legend>
+        <div class="row">
+          <label>1–1 ห่างขอบซ้าย<input class="num" id="secX" inputmode="decimal" placeholder="ว่าง = กึ่งกลาง"></label>
+          <label>2–2 ห่างขอบบน<input class="num" id="secY" inputmode="decimal" placeholder="ว่าง = กึ่งกลาง"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="sec">
         <details>
-          <summary>ค่าสมมติที่ใช้คำนวณพื้นที่ติดแผง</summary>
+          <summary>ค่าสมมติ (แก้ได้)</summary>
+          <div class="row">
+            <label>ช่องระบาย (ม.)<input class="num" id="ventSize" inputmode="decimal"></label>
+            <label>ช่องลงถัง (ม.)<input class="num" id="hatchSize" inputmode="decimal"></label>
+          </div>
           <div class="row">
             <label>เว้นจากขอบถัง (ม.)<input class="num" id="setEdge" inputmode="decimal"></label>
             <label>เว้นรอบช่องเปิด (ม.)<input class="num" id="setOpen" inputmode="decimal"></label>
@@ -170,11 +194,44 @@ details[open] summary { margin-bottom: 8px; }
       </fieldset>
     </form>
 
-    <section class="board" aria-label="ผลลัพธ์">
-      <div class="stats" id="stats"></div>
+    <section class="board" aria-label="ผังที่วาดอัตโนมัติ">
+      <div class="tools">
+        <div class="seg" role="group" aria-label="โหมด">
+          <button type="button" data-mode="vent" aria-pressed="true">ช่องระบาย</button>
+          <button type="button" data-mode="wall" aria-pressed="false">ที่ผนัง</button>
+          <button type="button" data-mode="select" aria-pressed="false">เลือก</button>
+        </div>
+        <div class="grp">
+          <button type="button" class="ghost" id="undo" title="ย้อนกลับ (⌘Z)" aria-label="ย้อนกลับ">↶</button>
+          <button type="button" class="ghost" id="redo" title="ทำซ้ำ (⇧⌘Z)" aria-label="ทำซ้ำ">↷</button>
+        </div>
+        <div class="grp">
+          <button type="button" class="ghost" id="zoomOut" aria-label="ซูมออก">−</button>
+          <span class="zoomv" id="zoomV">100%</span>
+          <button type="button" class="ghost" id="zoomIn" aria-label="ซูมเข้า">+</button>
+          <button type="button" class="ghost" id="zoomFit">พอดี</button>
+        </div>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="มุมมอง">
+          <button type="button" data-view="plan" aria-pressed="true">แปลน</button>
+          <button type="button" data-view="section" aria-pressed="false">รูปตัด</button>
+        </div>
+        <button type="button" class="ghost" id="greenT" aria-pressed="true">พื้นที่ติดแผง</button>
+      </div>
+
+      <div class="inspector" id="insp"></div>
       <div class="msgs" id="msgs"></div>
-      <div class="drawing"><svg id="svg" role="img" aria-label="แปลนฝาถังน้ำใสที่สร้างจากข้อมูลที่กรอก"></svg></div>
-      <div class="foot"><span id="assumed"></span><span>ภาพต้นแบบสำหรับ TCRoof · สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง</span></div>
+
+      <div class="canvas" id="canvas" data-mode="vent">
+        <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="แปลนฝาถัง"></svg>
+        <div class="menu" id="menu" hidden></div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div class="foot">
+        <span id="assumed"></span>
+        <span>สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง</span>
+      </div>
     </section>
   </div>
 </div>
@@ -182,314 +239,557 @@ details[open] summary { margin-bottom: 8px; }
 <script>
 (function () {
   const WALLS = [["top", "ผนังบน"], ["bottom", "ผนังล่าง"], ["left", "ผนังซ้าย"], ["right", "ผนังขวา"]];
+  const WALLNAME = Object.fromEntries(WALLS);
   const PIPE_TYPES = [["clear", "ท่อน้ำใส"], ["link", "ท่อเชื่อมถังน้ำใส"], ["overflow", "ท่อน้ำล้น"]];
+  const PIPENAME = Object.fromEntries(PIPE_TYPES);
+  const KIND = { hatch: "ช่องลงถัง", ladder: "บันไดขึ้นถัง", pipe: "ท่อ" };
   const PRESETS = {
-    t40: {
-      tag: "ตัวอย่าง: แบบ กปภ. 40 × 40 ม.", bx: "10@4", by: "10@4", ventStyle: "cross", vent: "1.5", hatch: "1.2",
+    t40: { tag: "ตัวอย่าง: แบบ กปภ. 40 × 40 ม.", bx: "10@4", by: "10@4", height: "4.5", above: "", ventStyle: "cross", secX: "19", secY: "14",
       vents: [[0,0],[0,4],[0,5],[0,9],[4,0],[4,4],[4,5],[4,9],[9,0],[9,4],[9,5],[9,9]],
       hatches: [["top","10.2"],["top","29.6"],["bottom","10.2"],["bottom","29.6"],["left","21.7"],["right","21.7"]],
-      ladders: [["left","6.4"],["left","33.4"],["right","33.4"]], pipes: []
-    },
-    t64: {
-      tag: "ตัวอย่าง: แบบ กปภ. 64 × 40 ม.", bx: "16@4", by: "10@4", ventStyle: "box", vent: "1.5", hatch: "1.2",
+      ladders: [["left","6.4"],["left","33.4"],["right","33.4"]], pipes: [] },
+    t64: { tag: "ตัวอย่าง: แบบ กปภ. 64 × 40 ม.", bx: "16@4", by: "10@4", height: "4.5", above: "1.5", ventStyle: "box", secX: "", secY: "",
       vents: [0,3,6,9].flatMap(r => [0,4,8,12,15].map(c => [r, c])),
       hatches: [["top","14.3"],["top","46"],["bottom","14.1"],["bottom","45.7"],["left","18"],["left","22"],["right","18.2"],["right","22.2"]],
       ladders: [["top","14.3"],["top","46"],["bottom","14.1"],["bottom","45.7"],["left","22"],["right","22.2"]],
-      pipes: [["left","14","600","link"],["left","26","600","link"],["right","14","700","clear"],["right","26","700","clear"],["right","17","500","overflow"],["right","23","500","overflow"]]
-    },
-    blank: { tag: "", bx: "", by: "", ventStyle: "box", vent: "1.5", hatch: "1.2", vents: [], hatches: [], ladders: [], pipes: [] }
+      pipes: [["left","14","600","link"],["left","26","600","link"],["right","14","700","clear"],["right","26","700","clear"],["right","17","500","overflow"],["right","23","500","overflow"]] },
+    blank: { tag: "", bx: "", by: "", height: "", above: "", ventStyle: "box", secX: "", secY: "", vents: [], hatches: [], ladders: [], pipes: [] }
   };
-
   const $ = id => document.getElementById(id);
-  let S;
+  const SVGNS = "http://www.w3.org/2000/svg";
 
-  // ---- parsing (same rules as Spans.parse / NumberInput in the Swift spec) ----
-  const thai = s => s.replace(/[๐-๙]/g, d => String(d.charCodeAt(0) - 0x0E50));
-  function num(s) {
-    s = thai(String(s ?? "")).replace(/,/g, "");
-    const m = s.match(/-?\d+(?:\.\d+)?/);
-    return m ? parseFloat(m[0]) : NaN;
-  }
+  // ---------- parsing (Spans.parse / number cleaning as in the Swift spec) ----------
+  const thai = s => String(s ?? "").replace(/[๐-๙]/g, d => String(d.charCodeAt(0) - 0x0E50));
+  function num(s) { const m = thai(s).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; }
   function spans(s) {
     const out = [];
-    for (const t of thai(String(s || "")).split(/[,\s/]+/).filter(Boolean)) {
+    for (const t of thai(s).split(/[,\s/]+/).filter(Boolean)) {
       const at = t.indexOf("@");
-      if (at > 0) {
-        const n = parseInt(t.slice(0, at), 10), d = num(t.slice(at + 1));
-        if (n > 0 && n <= 200 && d > 0) for (let i = 0; i < n; i++) out.push(d);
-      } else {
-        const d = num(t);
-        if (d > 0) out.push(d);
-      }
+      if (at > 0) { const n = parseInt(t.slice(0, at), 10), d = num(t.slice(at + 1)); if (n > 0 && n <= 200 && d > 0) for (let i = 0; i < n; i++) out.push(d); }
+      else { const d = num(t); if (d > 0) out.push(d); }
     }
     return out;
   }
   const edges = sp => sp.reduce((a, v) => (a.push(a[a.length - 1] + v), a), [0]);
   const f2 = v => (Math.round(v * 100) / 100).toFixed(2);
-  const fmt = v => { const r = Math.round(v * 100) / 100; return Number.isInteger(r) ? String(r) : String(r); };
+  const r05 = v => Math.round(v * 20) / 20;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmtN = v => v.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-  // ---- form ----
+  // ---------- state + undo ----------
+  let S, undoStack = [], redoStack = [], mode = "vent", view = "plan", zoom = 1, showGreen = true, sel = null, hintZoomShown = false;
+  const snap = () => JSON.stringify({ ...S, vents: [...S.vents] });
+  const restore = j => { const o = JSON.parse(j); o.vents = new Set(o.vents); S = o; };
+  function commit(fn) { undoStack.push(snap()); if (undoStack.length > 150) undoStack.shift(); redoStack = []; fn(); }
+  function undo() { if (!undoStack.length) return; redoStack.push(snap()); restore(undoStack.pop()); sel = null; syncForm(); buildLists(); render(); }
+  function redo() { if (!redoStack.length) return; undoStack.push(snap()); restore(redoStack.pop()); sel = null; syncForm(); buildLists(); render(); }
+
   function load(name) {
     const p = PRESETS[name];
-    S = {
-      preset: name, bx: p.bx, by: p.by, ventStyle: p.ventStyle, vent: p.vent, hatch: p.hatch,
+    S = { preset: name, bx: p.bx, by: p.by, height: p.height, above: p.above, ventStyle: p.ventStyle, secX: p.secX, secY: p.secY,
+      vent: "1.5", hatch: "1.2", setEdge: "1", setOpen: "0.5", m2: "6",
       vents: new Set(p.vents.map(([r, c]) => r + "," + c)),
       hatches: p.hatches.map(([edge, along]) => ({ edge, along })),
       ladders: p.ladders.map(([edge, along]) => ({ edge, along })),
-      pipes: p.pipes.map(([edge, along, dia, type]) => ({ edge, along, dia, type })),
-      setEdge: "1", setOpen: "0.5", m2: "6"
-    };
+      pipes: p.pipes.map(([edge, along, dia, type]) => ({ edge, along, dia, type })) };
+    undoStack = []; redoStack = []; sel = null;
     $("exampleTag").textContent = p.tag; $("exampleTag").hidden = !p.tag;
     document.querySelectorAll("[data-preset]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.preset === name)));
-    for (const k of ["bx", "by", "setEdge", "setOpen", "m2"]) $(k).value = S[k];
-    $("ventSize").value = S.vent; $("hatchSize").value = S.hatch;
-    buildLists(); render();
+    syncForm(); buildLists(); render();
+  }
+  const FIELDS = { bx: "bx", by: "by", height: "height", above: "above", secX: "secX", secY: "secY", ventSize: "vent", hatchSize: "hatch", setEdge: "setEdge", setOpen: "setOpen", m2: "m2" };
+  function syncForm() {
+    for (const [id, k] of Object.entries(FIELDS)) $(id).value = S[k];
+    document.querySelectorAll("[data-vs]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vs === S.ventStyle)));
+  }
+  // typing: one undo step per field focus
+  let typing = null;
+  for (const [id, k] of Object.entries(FIELDS)) {
+    $(id).addEventListener("input", e => { if (typing !== id) { undoStack.push(snap()); redoStack = []; typing = id; } S[k] = e.target.value; render(); });
+    $(id).addEventListener("blur", () => { typing = null; });
   }
 
+  // ---------- openings list (left sheet) ----------
   function wallSelect(value, onChange) {
-    const s = document.createElement("select");
-    s.setAttribute("aria-label", "ผนัง");
-    for (const [v, t] of WALLS) { const o = new Option(t, v); o.selected = v === value; s.add(o); }
-    s.addEventListener("change", () => onChange(s.value));
-    return s;
+    const s = document.createElement("select"); s.setAttribute("aria-label", "ผนัง");
+    s.innerHTML = WALLS.map(([v, t]) => `<option value="${v}"${v === value ? " selected" : ""}>${t}</option>`).join("");
+    s.addEventListener("change", () => onChange(s.value)); return s;
   }
   function numInput(value, label, ph, onInput) {
-    const i = document.createElement("input");
-    i.className = "num"; i.value = value; i.placeholder = ph; i.inputMode = "decimal"; i.setAttribute("aria-label", label);
-    i.addEventListener("input", () => onInput(i.value));
-    return i;
+    const i = document.createElement("input"); i.className = "num"; i.inputMode = "decimal"; i.value = value; i.placeholder = ph; i.setAttribute("aria-label", label);
+    let started = false;
+    i.addEventListener("input", () => { if (!started) { undoStack.push(snap()); redoStack = []; started = true; } onInput(i.value); });
+    i.addEventListener("blur", () => { started = false; }); return i;
   }
-  function removeBtn(onClick) {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "x"; b.textContent = "✕"; b.setAttribute("aria-label", "ลบรายการ");
-    b.addEventListener("click", onClick);
-    return b;
-  }
+  function removeBtn(onClick) { const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = "ลบ"; b.addEventListener("click", onClick); return b; }
   function buildLists() {
-    for (const [key, host] of [["hatches", "hatches"], ["ladders", "ladders"]]) {
-      const el = $(host); el.textContent = "";
-      S[key].forEach((it, idx) => {
-        const row = document.createElement("div"); row.className = "item";
-        row.append(wallSelect(it.edge, v => { it.edge = v; render(); }),
-                   numInput(it.along, "ระยะตามผนัง (ม.)", "ระยะ ม.", v => { it.along = v; render(); }),
-                   removeBtn(() => { S[key].splice(idx, 1); buildLists(); render(); }));
-        el.append(row);
+    for (const kind of ["hatches", "ladders", "pipes"]) {
+      const host = $(kind); host.innerHTML = "";
+      const k1 = kind.slice(0, -1).replace("hatche", "hatch");
+      S[kind].forEach((it, idx) => {
+        const row = document.createElement("div"); row.className = "item" + (kind === "pipes" ? " pipe" : "");
+        if (sel && sel.kind === k1 && sel.idx === idx) row.classList.add("sel");
+        if (kind === "pipes") {
+          const t = document.createElement("select"); t.className = "type"; t.setAttribute("aria-label", "ชนิดท่อ");
+          t.innerHTML = PIPE_TYPES.map(([v, n]) => `<option value="${v}"${v === it.type ? " selected" : ""}>${n}</option>`).join("");
+          t.addEventListener("change", () => commit(() => { it.type = t.value; render(); }));
+          row.append(t);
+        }
+        row.append(wallSelect(it.edge, v => commit(() => { it.edge = v; render(); })));
+        row.append(numInput(it.along, "ระยะตามผนัง (ม.)", "ระยะ ม.", v => { it.along = v; render(); }));
+        if (kind === "pipes") row.append(numInput(it.dia, "เส้นผ่านศูนย์กลาง (มม.)", "Ø มม.", v => { it.dia = v; render(); }));
+        row.append(removeBtn(() => commit(() => { S[kind].splice(idx, 1); sel = null; buildLists(); render(); })));
+        row.addEventListener("focusin", () => { if (!(sel && sel.kind === k1 && sel.idx === idx)) { sel = { kind: k1, idx }; markListSel(); render(); } });
+        host.append(row);
       });
     }
-    const el = $("pipes"); el.textContent = "";
-    S.pipes.forEach((it, idx) => {
-      const row = document.createElement("div"); row.className = "item pipe";
-      const t = document.createElement("select"); t.className = "type"; t.setAttribute("aria-label", "ชนิดท่อ");
-      for (const [v, n] of PIPE_TYPES) { const o = new Option(n, v); o.selected = v === it.type; t.add(o); }
-      t.addEventListener("change", () => { it.type = t.value; render(); });
-      row.append(t, removeBtn(() => { S.pipes.splice(idx, 1); buildLists(); render(); }),
-                 wallSelect(it.edge, v => { it.edge = v; render(); }),
-                 numInput(it.along, "ระยะตามผนัง (ม.)", "ระยะ ม.", v => { it.along = v; render(); }),
-                 numInput(it.dia, "เส้นผ่านศูนย์กลาง (มม.)", "Ø มม.", v => { it.dia = v; render(); }));
-      el.append(row);
-    });
   }
-
-  document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => load(b.dataset.preset)));
-  document.querySelectorAll("[data-vs]").forEach(b => b.addEventListener("click", () => { S.ventStyle = b.dataset.vs; render(); }));
-  for (const k of ["bx", "by", "setEdge", "setOpen", "m2"]) $(k).addEventListener("input", e => { S[k] = e.target.value; render(); });
-  $("ventSize").addEventListener("input", e => { S.vent = e.target.value; render(); });
-  $("hatchSize").addEventListener("input", e => { S.hatch = e.target.value; render(); });
-  $("clearVents").addEventListener("click", () => { S.vents.clear(); render(); });
-  $("addHatch").addEventListener("click", () => { S.hatches.push({ edge: "top", along: "" }); buildLists(); render(); focusLast("hatches"); });
-  $("addLadder").addEventListener("click", () => { S.ladders.push({ edge: "left", along: "" }); buildLists(); render(); focusLast("ladders"); });
-  $("addPipe").addEventListener("click", () => { S.pipes.push({ edge: "right", along: "", dia: "", type: "clear" }); buildLists(); render(); focusLast("pipes"); });
-  $("form").addEventListener("submit", e => e.preventDefault());
-  function focusLast(host) { const ins = $(host).querySelectorAll("input"); if (ins.length) ins[ins.length - (host === "pipes" ? 2 : 1)].focus(); }
-
-  $("svg").addEventListener("click", e => {
-    const c = e.target.closest(".d-cell"); if (!c) return;
-    const key = c.dataset.r + "," + c.dataset.c;
-    S.vents.has(key) ? S.vents.delete(key) : S.vents.add(key);
-    if (S.preset !== "blank") { $("exampleTag").textContent = "แก้จากตัวอย่าง"; }
-    render();
-  });
-
-  // ---- geometry + drawing ----
-  function render() {
-    document.querySelectorAll("[data-vs]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vs === S.ventStyle)));
-    const BX = spans(S.bx), BY = spans(S.by);
-    $("bx").classList.toggle("bad", S.bx.trim() !== "" && !BX.length);
-    $("by").classList.toggle("bad", S.by.trim() !== "" && !BY.length);
-    const msgs = [];
-    const svg = $("svg");
-    if (!BX.length || !BY.length) {
-      svg.setAttribute("viewBox", "0 0 1000 300");
-      svg.innerHTML = `<text x="500" y="140" text-anchor="middle" class="d-muted" font-size="18">กรอกระยะช่วงเสาแนวนอนและแนวตั้งเพื่อสร้างผัง</text>
-        <text x="500" y="170" text-anchor="middle" class="d-muted" font-size="14">เช่น 10@4 และ 10@4</text>`;
-      $("stats").innerHTML = ""; $("msgs").innerHTML = ""; $("assumed").textContent = "";
-      ["ventCount", "hatchCount", "ladderCount", "pipeCount"].forEach(id => $(id).textContent = "");
-      return;
+  function markListSel() {
+    for (const kind of ["hatches", "ladders", "pipes"]) {
+      const k1 = kind === "hatches" ? "hatch" : kind.slice(0, -1);
+      [...$(kind).children].forEach((row, idx) => row.classList.toggle("sel", !!sel && sel.kind === k1 && sel.idx === idx));
     }
-    const TW = BX.reduce((a, b) => a + b, 0), TH = BY.reduce((a, b) => a + b, 0);
-    const xs = edges(BX), ys = edges(BY);
-    const V = num(S.vent) > 0 ? num(S.vent) : 1.5, HS = num(S.hatch) > 0 ? num(S.hatch) : 1.2;
-    const setE = num(S.setEdge) >= 0 ? num(S.setEdge) : 1, setO = num(S.setOpen) >= 0 ? num(S.setOpen) : 0.5, m2 = num(S.m2) > 0 ? num(S.m2) : 6;
-    const wallLen = e => (e === "top" || e === "bottom") ? TW : TH;
-    const wallName = e => WALLS.find(w => w[0] === e)[1];
+  }
+  const listOf = k => k === "hatch" ? S.hatches : k === "ladder" ? S.ladders : S.pipes;
 
-    // resolve openings (metres, y down from the top-left corner)
+  // ---------- geometry ----------
+  function compute() {
+    const BX = spans(S.bx), BY = spans(S.by);
+    const TW = BX.reduce((a, b) => a + b, 0), TH = BY.reduce((a, b) => a + b, 0);
+    const missing = [];
+    if (!BX.length) missing.push("ช่วงเสาแนวยาว"); if (!BY.length) missing.push("ช่วงเสาแนวกว้าง");
+    const vs = num(S.vent) > 0 ? num(S.vent) : 1.5, hs = num(S.hatch) > 0 ? num(S.hatch) : 1.2;
+    const eS = num(S.setEdge) >= 0 ? num(S.setEdge) : 1, oS = num(S.setOpen) >= 0 ? num(S.setOpen) : .5, m2 = num(S.m2) > 0 ? num(S.m2) : 6;
+    const warn = [];
+    if (missing.length) return { missing, warn };
+    const xs = edges(BX), ys = edges(BY);
+    const wallLen = e => (e === "top" || e === "bottom") ? TW : TH;
+    const along = (it, what) => {
+      const a = num(it.along), L = wallLen(it.edge);
+      if (!(a >= 0)) { warn.push(`${what} (${WALLNAME[it.edge]}): ยังไม่ได้ใส่ระยะ`); return null; }
+      if (a > L) { warn.push(`${what} (${WALLNAME[it.edge]}) ระยะ ${a} เกินความยาวผนัง ${f2(L)} ม. ใช้ ${f2(L)}`); return L; }
+      return a;
+    };
     const vents = [];
     for (const key of S.vents) {
       const [r, c] = key.split(",").map(Number);
-      if (r >= BY.length || c >= BX.length) continue;
+      if (r >= BY.length || c >= BX.length) { warn.push(`ช่องระบายแถว ${r + 1} คอลัมน์ ${c + 1} อยู่นอกตาราง จึงไม่วาด`); continue; }
       const cx = (xs[c] + xs[c + 1]) / 2, cy = (ys[r] + ys[r + 1]) / 2;
-      vents.push({ x: cx - V / 2, y: cy - V / 2, w: V, h: V, cx, cy });
+      vents.push({ r, c, x: cx - vs / 2, y: cy - vs / 2, w: vs, h: vs, cx, cy });
     }
-    const dropped = S.vents.size - vents.length;
-    if (dropped > 0) msgs.push(`ช่องระบายอากาศ ${dropped} จุดอยู่นอกกริดใหม่ จึงไม่แสดง`);
-    function onWall(it, s, kind) {
-      const d = num(it.along);
-      if (!(d >= 0)) return null;
-      if (d > wallLen(it.edge)) { msgs.push(`${kind}ที่${wallName(it.edge)} ระยะ ${fmt(d)} ม. เกินความยาวผนัง ${fmt(wallLen(it.edge))} ม.`); return null; }
-      const i = 0.15;
-      return { top: { x: d - s / 2, y: i }, bottom: { x: d - s / 2, y: TH - s - i }, left: { x: i, y: d - s / 2 }, right: { x: TW - s - i, y: d - s / 2 } }[it.edge];
-    }
-    const hatches = S.hatches.map(it => { const p = onWall(it, HS, "ช่องลงถัง"); return p && { ...p, w: HS, h: HS, edge: it.edge }; }).filter(Boolean);
-    const ladders = S.ladders.map(it => { const d = num(it.along); if (!(d >= 0)) return null; if (d > wallLen(it.edge)) { msgs.push(`บันไดที่${wallName(it.edge)} ระยะ ${fmt(d)} ม. เกินความยาวผนัง`); return null; } return { edge: it.edge, d }; }).filter(Boolean);
-    const pipes = S.pipes.map(it => { const d = num(it.along); if (!(d >= 0)) return null; if (d > wallLen(it.edge)) { msgs.push(`ท่อที่${wallName(it.edge)} ระยะ ${fmt(d)} ม. เกินความยาวผนัง`); return null; }
-      const dia = num(it.dia); return { edge: it.edge, d, dia: dia > 0 ? dia : null, type: it.type }; }).filter(Boolean);
+    const hatches = S.hatches.map((it, idx) => {
+      const a = along(it, "ช่องลงถัง"); if (a == null) return null; const i = .15;
+      let x, y;
+      if (it.edge === "top") { x = a - hs / 2; y = i; } else if (it.edge === "bottom") { x = a - hs / 2; y = TH - i - hs; }
+      else if (it.edge === "left") { x = i; y = a - hs / 2; } else { x = TW - i - hs; y = a - hs / 2; }
+      return { idx, edge: it.edge, a, x, y, w: hs, h: hs };
+    }).filter(Boolean);
+    const pt = (edge, a) => edge === "top" ? [a, 0] : edge === "bottom" ? [a, TH] : edge === "left" ? [0, a] : [TW, a];
+    const ladders = S.ladders.map((it, idx) => { const a = along(it, "บันได"); return a == null ? null : { idx, edge: it.edge, a, p: pt(it.edge, a) }; }).filter(Boolean);
+    const pipes = S.pipes.map((it, idx) => { const a = along(it, PIPENAME[it.type] || "ท่อ"); return a == null ? null : { idx, edge: it.edge, a, p: pt(it.edge, a), dia: num(it.dia), type: it.type }; }).filter(Boolean);
 
-    // usable area raster (0.25 m), merged into runs
-    const step = TW * TH > 6000 ? 0.5 : 0.25;
-    const nx = Math.round(TW / step), ny = Math.round(TH / step);
-    const blocks = vents.concat(hatches).map(b => [b.x - setO, b.y - setO, b.x + b.w + setO, b.y + b.h + setO]);
-    for (const p of pipes) {
-      const r = setO + (p.dia ? p.dia / 2000 : 0);
-      const px = p.edge === "left" ? 0 : p.edge === "right" ? TW : p.d, py = p.edge === "top" ? 0 : p.edge === "bottom" ? TH : p.d;
-      blocks.push([px - r, py - r, px + r, py + r]);
-    }
+    // usable area: 0.25 m raster, free cells merged into horizontal runs
+    const st = .25, nx = Math.round(TW / st), ny = Math.round(TH / st);
+    const boxes = [...vents, ...hatches].map(b => [b.x - oS, b.y - oS, b.x + b.w + oS, b.y + b.h + oS]);
+    const circ = pipes.map(p => [p.p[0], p.p[1], oS + (p.dia > 0 ? p.dia / 2000 : 0)]);
     let free = 0; const runs = [];
     for (let j = 0; j < ny; j++) {
-      let start = -1;
+      const y = (j + .5) * st; let run = -1;
       for (let i = 0; i <= nx; i++) {
         let ok = false;
         if (i < nx) {
-          const x0 = i * step, y0 = j * step, x1 = x0 + step, y1 = y0 + step;
-          ok = x0 >= setE - 1e-9 && y0 >= setE - 1e-9 && x1 <= TW - setE + 1e-9 && y1 <= TH - setE + 1e-9 &&
-               !blocks.some(b => x1 > b[0] && x0 < b[2] && y1 > b[1] && y0 < b[3]);
+          const x = (i + .5) * st;
+          ok = x >= eS && x <= TW - eS && y >= eS && y <= TH - eS;
+          if (ok) for (const b of boxes) if (x > b[0] && x < b[2] && y > b[1] && y < b[3]) { ok = false; break; }
+          if (ok) for (const c of circ) if ((x - c[0]) ** 2 + (y - c[1]) ** 2 < c[2] ** 2) { ok = false; break; }
         }
-        if (ok) { free++; if (start < 0) start = i; }
-        else if (start >= 0) { runs.push([start * step, j * step, (i - start) * step, step]); start = -1; }
+        if (ok) { free++; if (run < 0) run = i; }
+        else if (run >= 0) { runs.push([run * st, j * st, (i - run) * st, st]); run = -1; }
       }
     }
-    const usable = free * step * step;
+    const usable = free * st * st;
+    const H = num(S.height), A = S.above === "" ? NaN : num(S.above);
+    let setting = "above", setNote = "";
+    if (!(H > 0)) setNote = "ใส่ความสูงถังเพื่อวาดรูปตัด";
+    else if (Number.isNaN(A)) { setting = "above"; }
+    else if (A <= 0) setting = "buried";
+    else if (A >= H) { setting = "above"; if (A > H) warn.push("ส่วนพ้นดินสูงกว่าถัง"); }
+    else setting = "partly";
+    const secX = num(S.secX) >= 0 && num(S.secX) <= TW ? num(S.secX) : TW / 2;
+    const secY = num(S.secY) >= 0 && num(S.secY) <= TH ? num(S.secY) : TH / 2;
+    return { missing, warn, BX, BY, TW, TH, xs, ys, vs, hs, eS, oS, m2, vents, hatches, ladders, pipes, runs, usable, H, A, setting, setNote, secX, secY };
+  }
 
-    // layout
-    const W = 1000, padL = 150, padR = 190, padT = 96, maxH = 560;
-    const k = Math.min((W - padL - padR) / TW, maxH / TH);
-    const w = TW * k, h = TH * k, ox = padL + ((W - padL - padR) - w) / 2, oy = padT;
-    const X = x => ox + x * k, Y = y => oy + y * k;
-    let o = "";
+  // ---------- drawing ----------
+  let G = null, T = null;   // geometry, transform
+  function planSVG(g) {
+    const k = Math.min(760 / g.TW, 700 / g.TH), w = g.TW * k, h = g.TH * k;
+    const mL = 270, mT = 140, mR = 230, mB = 100;
+    const ox = mL, oy = mT, W = mL + w + mR, Hh = mT + h + mB;
+    T = { k, ox, oy, W, H: Hh };
+    const P = (x, y) => [ox + x * k, oy + y * k];
+    const o = [];
+    const t = (s, x, y, cls = "d-t", anchor = "start", extra = "") => o.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${cls}" text-anchor="${anchor}" dominant-baseline="middle"${extra}>${esc(s)}</text>`);
+    const L = (x1, y1, x2, y2, cls = "d-line", sw = 1, extra = "") => o.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="${cls}" stroke-width="${sw}"${extra}/>`);
+    const R = (x, y, ww, hh, cls, sw = 1, extra = "") => o.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" class="${cls}" stroke-width="${sw}"${extra}/>`);
+
     // usable area
-    o += `<g class="d-usable">` + runs.map(r => `<rect x="${X(r[0]).toFixed(1)}" y="${Y(r[1]).toFixed(1)}" width="${(r[2] * k + .4).toFixed(1)}" height="${(r[3] * k + .4).toFixed(1)}"/>`).join("") + `</g>`;
-    // wall + beams (0.30 m bands)
-    o += `<rect class="d-wall" x="${ox}" y="${oy}" width="${w}" height="${h}" stroke-width="1.6"/>`;
-    o += `<rect class="d-wall" x="${ox + 3}" y="${oy + 3}" width="${w - 6}" height="${h - 6}" stroke-width=".6"/>`;
-    const bw = .15;
-    for (const x of xs.slice(1, -1)) for (const dx of [-bw, bw]) o += `<line class="d-beam" x1="${X(x + dx)}" y1="${oy}" x2="${X(x + dx)}" y2="${oy + h}"/>`;
-    for (const y of ys.slice(1, -1)) for (const dy of [-bw, bw]) o += `<line class="d-beam" x1="${ox}" y1="${Y(y + dy)}" x2="${ox + w}" y2="${Y(y + dy)}"/>`;
+    if (showGreen) { o.push(`<g class="d-green">`); for (const r of g.runs) R(ox + r[0] * k, oy + r[1] * k, r[2] * k + .3, r[3] * k + .3, "d-green", 0); o.push(`</g>`); }
+    // bay panels (dashed, inset by half a beam) like the sheet
+    const bw = .15 * k;
+    for (let j = 0; j < g.BY.length; j++) for (let i = 0; i < g.BX.length; i++)
+      R(ox + g.xs[i] * k + bw, oy + g.ys[j] * k + bw, g.BX[i] * k - 2 * bw, g.BY[j] * k - 2 * bw, "d-grid", .7);
+    // cell hit targets (vent mode)
+    o.push(`<g id="cells">`);
+    for (let j = 0; j < g.BY.length; j++) for (let i = 0; i < g.BX.length; i++)
+      o.push(`<rect class="d-cellhit" data-r="${j}" data-c="${i}" x="${(ox + g.xs[i] * k).toFixed(1)}" y="${(oy + g.ys[j] * k).toFixed(1)}" width="${(g.BX[i] * k).toFixed(1)}" height="${(g.BY[j] * k).toFixed(1)}"/>`);
+    o.push(`</g>`);
+    // walls (double line)
+    R(ox, oy, w, h, "d-line", 1.8); R(ox + 4, oy + 4, w - 8, h - 8, "d-line", .7);
+
     // vents
-    for (const v of vents) {
-      const s = v.w * k, cx = X(v.cx), cy = Y(v.cy);
-      if (S.ventStyle === "box") {
-        o += `<rect class="d-sym" x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" stroke-width=".9"/>`;
-        o += `<rect class="d-line" x="${cx - s * .32}" y="${cy - s * .32}" width="${s * .64}" height="${s * .64}" stroke-width=".6"/>`;
-        o += `<circle class="d-line" cx="${cx}" cy="${cy}" r="${s * .2}" stroke-width=".6"/>`;
-      } else {
+    const labelsR = [], labelsL = [];
+    const vrows = {};
+    for (const v of g.vents) {
+      const [cx, cy] = P(v.cx, v.cy), s = v.w * k;
+      o.push(`<g>`);
+      if (S.ventStyle === "cross") {
         const a = s * .5, b = s * .17;
-        const pts = [[-b,-a],[b,-a],[b,-b],[a,-b],[a,b],[b,b],[b,a],[-b,a],[-b,b],[-a,b],[-a,-b],[-b,-b]].map(([px, py]) => `${cx + px},${cy + py}`).join(" ");
-        o += `<polygon class="d-sym" points="${pts}" stroke-width=".9"/>`;
-        for (const t of [-1, 1]) {
-          o += `<line class="d-line" x1="${cx + t * a}" y1="${cy - b * 1.6}" x2="${cx + t * a}" y2="${cy + b * 1.6}" stroke-width="1.4"/>`;
-          o += `<line class="d-line" x1="${cx - b * 1.6}" y1="${cy + t * a}" x2="${cx + b * 1.6}" y2="${cy + t * a}" stroke-width="1.4"/>`;
-        }
-        o += `<circle class="d-line" cx="${cx}" cy="${cy}" r="${s * .12}" stroke-width=".6"/>`;
+        o.push(`<path class="d-sym" d="M${cx - b},${cy - a}H${cx + b}V${cy - b}H${cx + a}V${cy + b}H${cx + b}V${cy + a}H${cx - b}V${cy + b}H${cx - a}V${cy - b}H${cx - b}Z"/>`);
+        for (const [dx, dy, hz] of [[0, -a, 1], [0, a, 1], [-a, 0, 0], [a, 0, 0]])
+          hz ? L(cx - b - 2, cy + dy, cx + b + 2, cy + dy, "d-line", 1.4) : L(cx + dx, cy - b - 2, cx + dx, cy + b + 2, "d-line", 1.4);
+        o.push(`<circle class="d-sym" cx="${cx}" cy="${cy}" r="${(s * .1).toFixed(1)}"/>`);
+      } else {
+        R(cx - s / 2, cy - s / 2, s, s, "d-sym", 1); R(cx - s * .32, cy - s * .32, s * .64, s * .64, "d-sym", .8);
+        o.push(`<circle class="d-sym" cx="${cx}" cy="${cy}" r="${(s * .2).toFixed(1)}"/>`);
       }
+      o.push(`</g>`);
+      (vrows[v.r] = vrows[v.r] || []).push(v);
     }
+    for (const r of Object.keys(vrows)) { const vv = vrows[r].sort((a, b) => b.cx - a.cx)[0]; const [x, y] = P(vv.cx + vv.w / 2, vv.cy); labelsR.push({ y, x0: x, text: "ช่องระบายอากาศ" }); }
+
     // hatches
-    for (const hh of hatches) {
-      const x = X(hh.x), y = Y(hh.y), s = hh.w * k;
-      o += `<rect class="d-sym" x="${x}" y="${y}" width="${s}" height="${s}" stroke-width="1"/>`;
-      for (let t = 4; t < s * 2; t += 4) {
-        const x1 = x + Math.max(0, t - s), y1 = y + Math.min(t, s), x2 = x + Math.min(t, s), y2 = y + Math.max(0, t - s);
-        o += `<line class="d-hatchfill" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-      }
+    for (const hh of g.hatches) {
+      const [x, y] = P(hh.x, hh.y), s = hh.w * k, on = sel && sel.kind === "hatch" && sel.idx === hh.idx;
+      o.push(`<g class="d-open${on ? " sel" : ""}" data-kind="hatch" data-idx="${hh.idx}">`);
+      R(x, y, s, s, "d-sym", 1.1); R(x + 3, y + 3, s - 6, s - 6, "d-line", .6);
+      if (on) R(x - 5, y - 5, s + 10, s + 10, "d-halo", 1.5);
+      o.push(`</g>`);
+      const cy = y + s / 2;
+      if (hh.edge === "left") labelsL.push({ y: cy, x0: x, text: "ช่องลงถัง" }); else labelsR.push({ y: cy, x0: x + s, text: "ช่องลงถัง" });
     }
-    // ladders (outside the wall)
-    for (const l of ladders) {
-      if (l.edge === "top" || l.edge === "bottom") o += `<rect class="d-sym" x="${X(l.d) - 3}" y="${l.edge === "top" ? oy - 12 : oy + h + 4}" width="6" height="8" stroke-width=".9"/>`;
-      else o += `<rect class="d-sym" x="${l.edge === "left" ? ox - 12 : ox + w + 4}" y="${Y(l.d) - 3}" width="8" height="6" stroke-width=".9"/>`;
+    // ladders
+    for (const ld of g.ladders) {
+      const [px, py] = P(ld.p[0], ld.p[1]), on = sel && sel.kind === "ladder" && sel.idx === ld.idx;
+      let bx, by, bw2 = 7, bh2 = 10;
+      if (ld.edge === "left") { bx = px - 10; by = py - 5; } else if (ld.edge === "right") { bx = px + 3; by = py - 5; }
+      else if (ld.edge === "top") { bx = py, bw2 = 10, bh2 = 7; bx = px - 5; by = py - 10; } else { bw2 = 10; bh2 = 7; bx = px - 5; by = py + 3; }
+      o.push(`<g class="d-open${on ? " sel" : ""}" data-kind="ladder" data-idx="${ld.idx}">`);
+      R(bx - 6, by - 6, bw2 + 12, bh2 + 12, "d-cellhit", 0); R(bx, by, bw2, bh2, "d-sym", 1.1);
+      if (on) R(bx - 5, by - 5, bw2 + 10, bh2 + 10, "d-halo", 1.5);
+      o.push(`</g>`);
+      const item = { y: by + bh2 / 2, x0: ld.edge === "left" ? bx : bx + bw2, text: "บันไดขึ้นถัง" };
+      (ld.edge === "left" ? labelsL : labelsR).push(item);
     }
     // pipes
-    const pipeName = t => PIPE_TYPES.find(p => p[0] === t)[1];
-    for (const p of pipes) {
-      const lab = pipeName(p.type) + (p.dia ? ` Ø${fmt(p.dia)} มม.` : "");
-      if (p.edge === "left" || p.edge === "right") {
-        const x = p.edge === "left" ? ox : ox + w, y = Y(p.d), s = p.edge === "left" ? -1 : 1;
-        o += `<rect class="d-sym" x="${Math.min(x, x + s * 26)}" y="${y - 4}" width="26" height="8" stroke-width=".9"/>`;
-        o += `<rect class="d-ink" x="${x + s * 10 - 2}" y="${y - 5}" width="4" height="10"/>`;
-        o += `<circle class="d-sym" cx="${x + s * 26}" cy="${y}" r="4" stroke-width=".9"/>`;
-        o += `<text x="${x + s * 34}" y="${y + 4}" font-size="10" class="d-ink" text-anchor="${s < 0 ? "end" : "start"}">${esc(lab)}</text>`;
-      } else {
-        const y = p.edge === "top" ? oy : oy + h, x = X(p.d), s = p.edge === "top" ? -1 : 1;
-        o += `<rect class="d-sym" x="${x - 4}" y="${Math.min(y, y + s * 26)}" width="8" height="26" stroke-width=".9"/>`;
-        o += `<circle class="d-sym" cx="${x}" cy="${y + s * 26}" r="4" stroke-width=".9"/>`;
-        o += `<text x="${x + 8}" y="${y + s * 34}" font-size="10" class="d-ink">${esc(lab)}</text>`;
+    for (const pp of g.pipes) {
+      const [px, py] = P(pp.p[0], pp.p[1]), on = sel && sel.kind === "pipe" && sel.idx === pp.idx;
+      const dir = pp.edge === "left" ? [-1, 0] : pp.edge === "right" ? [1, 0] : pp.edge === "top" ? [0, -1] : [0, 1];
+      const ex = px + dir[0] * 30, ey = py + dir[1] * 30;
+      o.push(`<g class="d-open${on ? " sel" : ""}" data-kind="pipe" data-idx="${pp.idx}">`);
+      L(px - dir[1] * 4 - dir[0] * 4, py - dir[0] * 4 - dir[1] * 4, ex - dir[1] * 4, ey - dir[0] * 4, "d-line", 1);
+      L(px + dir[1] * 4 - dir[0] * 4, py + dir[0] * 4 - dir[1] * 4, ex + dir[1] * 4, ey + dir[0] * 4, "d-line", 1);
+      const cxm = px + dir[0] * 15, cym = py + dir[1] * 15;
+      R(cxm - (dir[0] ? 2 : 6), cym - (dir[0] ? 6 : 2), dir[0] ? 4 : 12, dir[0] ? 12 : 4, "d-sym", 1);
+      o.push(`<circle class="d-sym" cx="${ex}" cy="${ey}" r="4"/>`);
+      R(Math.min(px, ex) - 8, Math.min(py, ey) - 8, Math.abs(ex - px) + 16, Math.abs(ey - py) + 16, "d-cellhit", 0);
+      if (on) R(Math.min(px, ex) - 6, Math.min(py, ey) - 8, Math.abs(ex - px) + 12, Math.abs(ey - py) + 16, "d-halo", 1.5);
+      o.push(`</g>`);
+      const txt = `${PIPENAME[pp.type] || "ท่อ"}${pp.dia > 0 ? " Ø" + pp.dia + " มม." : ""}`;
+      if (pp.edge === "left") labelsL.push({ y: py, x0: ex - 4, text: txt }); else if (pp.edge === "right") labelsR.push({ y: py, x0: ex + 4, text: txt });
+      else labelsR.push({ y: py, x0: px + 6, text: txt });
+    }
+    // labels: right column and left column, nudged apart
+    const place = (arr, side) => {
+      arr.sort((a, b) => a.y - b.y); let last = -1e9, lastText = "", lastY = 0;
+      for (const it of arr) {
+        const xl = side === "R" ? ox + w + 80 : ox - 70;
+        if (it.text === lastText && it.y - lastY < 16) { L(it.x0, it.y, side === "R" ? xl - 4 : xl + 4, last, "d-line", .6); continue; }   // same label nearby: share it
+        const y = Math.max(it.y, last + 17); last = y; lastText = it.text; lastY = it.y;
+        L(it.x0, it.y, side === "R" ? xl - 4 : xl + 4, y, "d-line", .6);
+        t(it.text, xl, y, "d-s", side === "R" ? "start" : "end");
       }
-    }
-    // tap targets (on top)
-    o += `<g>`;
-    for (let r = 0; r < BY.length; r++) for (let c = 0; c < BX.length; c++) {
-      o += `<rect class="d-cell" data-r="${r}" data-c="${c}" x="${X(xs[c]) + 1}" y="${Y(ys[r]) + 1}" width="${BX[c] * k - 2}" height="${BY[r] * k - 2}"><title>แถว ${r + 1} คอลัมน์ ${c + 1}</title></rect>`;
-    }
-    o += `</g>`;
-    // dimensions
-    const dy = oy - 34;
-    o += `<line class="d-line" x1="${ox}" y1="${dy}" x2="${ox + w}" y2="${dy}" stroke-width=".7"/>`;
-    for (const x of xs) o += `<line class="d-line" x1="${X(x) - 2.5}" y1="${dy + 2.5}" x2="${X(x) + 2.5}" y2="${dy - 2.5}" stroke-width=".9"/>`;
-    const showBays = BX.length <= 24 && Math.min(...BX) * k > 26;
-    if (showBays) BX.forEach((a, i) => o += `<text x="${X(xs[i] + a / 2)}" y="${dy - 6}" font-size="9" text-anchor="middle" class="d-ink">${f2(a)}</text>`);
-    o += `<line class="d-line" x1="${ox}" y1="${dy - 22}" x2="${ox + w}" y2="${dy - 22}" stroke-width=".7"/>`;
-    o += `<text x="${ox + w / 2}" y="${dy - 28}" font-size="12" font-weight="600" text-anchor="middle" class="d-ink">${f2(TW)}</text>`;
-    const dx = ox - 64;
-    o += `<line class="d-line" x1="${dx}" y1="${oy}" x2="${dx}" y2="${oy + h}" stroke-width=".7"/>`;
-    for (const y of ys) o += `<line class="d-line" x1="${dx - 2.5}" y1="${Y(y) + 2.5}" x2="${dx + 2.5}" y2="${Y(y) - 2.5}" stroke-width=".9"/>`;
-    if (BY.length <= 24 && Math.min(...BY) * k > 26) BY.forEach((a, i) => o += `<text transform="translate(${dx - 6} ${Y(ys[i] + a / 2)}) rotate(-90)" font-size="9" text-anchor="middle" class="d-ink">${f2(a)}</text>`);
-    o += `<line class="d-line" x1="${dx - 22}" y1="${oy}" x2="${dx - 22}" y2="${oy + h}" stroke-width=".7"/>`;
-    o += `<text transform="translate(${dx - 28} ${oy + h / 2}) rotate(-90)" font-size="12" font-weight="600" text-anchor="middle" class="d-ink">${f2(TH)}</text>`;
-    // title + legend
-    o += `<text x="20" y="30" font-size="15" font-weight="600" class="d-ink">แปลนฝาถังน้ำใส</text>`;
-    o += `<text x="${W - 20}" y="30" font-size="11" text-anchor="end" class="d-muted">หน่วย: ม. · มาตราส่วนโดยประมาณ</text>`;
-    const ly = oy + h + 40;
-    o += `<rect x="${ox}" y="${ly - 7}" width="16" height="12" class="d-usable"/><text x="${ox + 22}" y="${ly + 3}" font-size="11" class="d-ink">พื้นที่ติดตั้งแผงได้ (ประมาณ)</text>`;
-    o += `<rect x="${ox + 210}" y="${ly - 6}" width="11" height="11" class="d-sym" stroke-width=".9"/><text x="${ox + 228}" y="${ly + 3}" font-size="11" class="d-ink">ช่องลงถัง</text>`;
-    o += `<rect x="${ox + 300}" y="${ly - 4}" width="6" height="8" class="d-sym" stroke-width=".9"/><text x="${ox + 312}" y="${ly + 3}" font-size="11" class="d-ink">บันไดขึ้นถัง</text>`;
-    o += `<text x="${ox + 400}" y="${ly + 3}" font-size="11" class="d-muted">แตะช่องบนแปลนเพื่อวางหรือลบช่องระบายอากาศ</text>`;
-    svg.setAttribute("viewBox", `0 0 ${W} ${ly + 20}`);
-    svg.innerHTML = o;
+    };
+    place(labelsR, "R"); place(labelsL, "L");
 
-    // stats + counts
-    $("ventCount").textContent = `· ${vents.length} จุด`;
-    $("hatchCount").textContent = `· ${hatches.length} จุด`;
-    $("ladderCount").textContent = `· ${ladders.length} จุด`;
-    $("pipeCount").textContent = `· ${pipes.length} ท่อ`;
-    const stat = (v, l, hl) => `<div class="stat${hl ? " hl" : ""}"><b>${v}</b><span>${l}</span></div>`;
-    $("stats").innerHTML =
-      stat(`${fmt(TW)} × ${fmt(TH)}`, `ขนาดถัง (ม.) · ${BX.length} × ${BY.length} ช่อง`) +
-      stat(Math.round(TW * TH).toLocaleString("th-TH"), "หลังคาถัง (ม²)") +
-      stat(`${vents.length} / ${hatches.length}`, "ช่องระบายอากาศ / ช่องลงถัง") +
-      stat(Math.round(usable).toLocaleString("th-TH"), "พื้นที่ติดแผงได้ (ม²)", true) +
-      stat(Math.round(usable / m2).toLocaleString("th-TH"), "ขนาดระบบโดยประมาณ (kWp)", true);
-    $("msgs").innerHTML = msgs.map(m => `<div class="msg">${esc(m)}</div>`).join("");
-    $("assumed").textContent = `ค่าสมมติ: เว้นขอบ ${fmt(setE)} ม. · รอบช่องเปิด ${fmt(setO)} ม. · ${fmt(m2)} ม²/kWp · คานกว้าง 0.30 ม.`;
+    // section marks with view arrows
+    const mark = (n, x, y, arrowUp) => {
+      o.push(`<path d="M${x - 6},${y - 9}L${x + 6},${y - 9}L${x},${y - 20}Z" fill="var(--doc-ink)"/>`);
+      o.push(`<circle cx="${x}" cy="${y}" r="10" fill="var(--doc)" stroke="var(--doc-ink)" stroke-width="1"/>`);
+      t(String(n), x, y + .5, "d-t d-b", "middle");
+    };
+    { const [cx] = P(g.secX, 0);
+      L(cx, oy - 10, cx, oy - 38, "d-line", 1); L(cx, oy - 38, cx - 14, oy - 38, "d-line", 1); mark(1, cx - 24, oy - 38);
+      L(cx, oy + h + 10, cx, oy + h + 38, "d-line", 1); L(cx, oy + h + 38, cx - 14, oy + h + 38, "d-line", 1); mark(1, cx - 24, oy + h + 38); }
+    { const [, cy] = P(0, g.secY);
+      L(ox - 10, cy, ox - 36, cy, "d-line", 1); L(ox - 36, cy, ox - 36, cy - 14, "d-line", 1); mark(2, ox - 36, cy - 24);
+      L(ox + w + 10, cy, ox + w + 40, cy, "d-line", 1); L(ox + w + 40, cy, ox + w + 40, cy - 14, "d-line", 1); mark(2, ox + w + 40, cy - 24); }
+
+    // dimensions: top chain + total, left chain + total (horizontal text like the sheet)
+    const dy = oy - 76;
+    L(ox, dy, ox + w, dy, "d-line", .6);
+    for (const x of g.xs) L(ox + x * k - 3, dy + 3, ox + x * k + 3, dy - 3, "d-line", .9);
+    if (g.BX.length <= 40) g.BX.forEach((b, i) => t(f2(b), ox + (g.xs[i] + b / 2) * k, dy - 8, "d-s", "middle"));
+    L(ox, dy - 24, ox + w, dy - 24, "d-line", .6); L(ox, dy - 28, ox, dy - 20, "d-line", .8); L(ox + w, dy - 28, ox + w, dy - 20, "d-line", .8);
+    t(f2(g.TW), ox + w / 2, dy - 33, "d-t d-b", "middle");
+    const dx = ox - 170;
+    L(dx, oy, dx, oy + h, "d-line", .6);
+    for (const y of g.ys) L(dx - 3, oy + y * k + 3, dx + 3, oy + y * k - 3, "d-line", .9);
+    if (g.BY.length <= 40) g.BY.forEach((b, j) => t(f2(b), dx - 6, oy + (g.ys[j] + b / 2) * k, "d-s", "end"));
+    L(dx - 44, oy, dx - 44, oy + h, "d-line", .6);
+    t(f2(g.TH), dx - 50, oy + h / 2, "d-t d-b", "end");
+
+    // summary line inside the sheet
+    t(`ขนาด ${f2(g.TW)} × ${f2(g.TH)} ม. · หลังคาถัง ${fmtN(g.TW * g.TH)} ม² · ช่องระบายอากาศ ${g.vents.length} · ช่องลงถัง ${g.hatches.length} · พื้นที่ติดตั้งได้ประมาณ ${fmtN(g.usable)} ม²`, W / 2, Hh - 22, "d-t d-b", "middle");
+    return { html: o.join(""), W, H: Hh };
   }
+
+  function sectionSVG(g) {
+    if (!(g.H > 0)) return null;
+    const one = (title, span, cols, y0) => {
+      const k = Math.min(760 / span, 170 / g.H), w = span * k, hh = g.H * k, ox = 150, oy = y0 + 60, o = [];
+      const t = (s, x, y, cls = "d-t", a = "start") => o.push(`<text x="${x}" y="${y}" class="${cls}" text-anchor="${a}" dominant-baseline="middle">${esc(s)}</text>`);
+      const L = (a, b, c, d, sw = 1, dash = "") => o.push(`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" class="d-line" stroke-width="${sw}"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`);
+      t(title, ox, y0 + 18, "d-t d-b");
+      // ground line
+      let gy = oy + hh, cover = 0;
+      if (g.setting === "buried") { gy = oy; cover = .5 * k; }
+      else if (g.setting === "partly") gy = oy + (g.H - g.A) * k;
+      if (g.setting !== "above") {
+        o.push(`<pattern id="soil${y0}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="var(--doc-grid)" stroke-width="1"/></pattern>`);
+        o.push(`<rect x="${ox - 60}" y="${gy - cover}" width="${w + 120}" height="${oy + hh + 14 - gy + cover}" fill="url(#soil${y0})" opacity=".55"/>`);
+      }
+      L(ox - 70, gy - cover, ox + w + 70, gy - cover, 1.4); t(g.setting === "above" ? "ระดับดิน" : g.setting === "buried" ? "ระดับดินเหนือฝาถัง" : "ระดับดิน", ox + w + 74, gy - cover, "d-s");
+      // tank body
+      const wt = Math.max(3, .3 * k);
+      o.push(`<rect x="${ox}" y="${oy}" width="${w}" height="${hh}" fill="var(--doc)" stroke="var(--doc-ink)" stroke-width="1.6"/>`);
+      o.push(`<rect x="${ox + wt}" y="${oy + wt}" width="${w - 2 * wt}" height="${hh - 2 * wt}" fill="none" stroke="var(--doc-ink)" stroke-width=".7"/>`);
+      // columns at grid lines
+      for (const c of cols.slice(1, -1)) { const x = ox + c * k; o.push(`<rect x="${x - wt / 2}" y="${oy + wt}" width="${wt}" height="${hh - 2 * wt}" fill="var(--doc-grid)" opacity=".5"/>`); }
+      // dims
+      L(ox, oy + hh + 28, ox + w, oy + hh + 28, .6); L(ox, oy + hh + 24, ox, oy + hh + 32, .8); L(ox + w, oy + hh + 24, ox + w, oy + hh + 32, .8);
+      t(f2(span), ox + w / 2, oy + hh + 40, "d-t d-b", "middle");
+      L(ox - 30, oy, ox - 30, oy + hh, .6); L(ox - 34, oy, ox - 26, oy, .8); L(ox - 34, oy + hh, ox - 26, oy + hh, .8);
+      t(`H ${f2(g.H)}`, ox - 36, oy + hh / 2, "d-t d-b", "end");
+      if (g.setting === "partly") { L(ox + w + 30, gy, ox + w + 30, oy, .6); t(`พ้นดิน ${f2(g.A)}`, ox + w + 36, (gy + oy) / 2, "d-s"); }
+      return { html: o.join(""), h: hh + 120 };
+    };
+    const a = one(`รูปตัด 1–1 (ตัดที่ ${f2(g.secX)} ม. จากขอบซ้าย)`, g.TH, g.ys, 10);
+    const b = one(`รูปตัด 2–2 (ตัดที่ ${f2(g.secY)} ม. จากขอบบน)`, g.TW, g.xs, 10 + a.h);
+    const note = { buried: "ฝังดินทั้งถัง (ดินกลบ 0.50 ม. ค่าสมมติ)", partly: `ฝังดินบางส่วน พ้นดิน ${f2(g.A)} ม.`, above: "ตั้งบนดิน" }[g.setting];
+    const W = 1100, H = 10 + a.h + b.h + 30;
+    return { html: a.html + b.html + `<text x="150" y="${H - 14}" class="d-s" dominant-baseline="middle">${esc(note)} · ปริมาตรภายนอกโดยประมาณ ${fmtN(g.TW * g.TH * g.H)} ม³</text>`, W, H };
+  }
+
+  // ---------- render ----------
+  function render() {
+    const g = compute(); G = g;
+    const svg = $("svg"), msgs = [];
+    $("ventCount").textContent = S.vents.size || ""; $("hatchCount").textContent = S.hatches.length || "";
+    $("ladderCount").textContent = S.ladders.length || ""; $("pipeCount").textContent = S.pipes.length || "";
+    $("undo").disabled = !undoStack.length; $("redo").disabled = !redoStack.length;
+    if (g.missing.length) {
+      svg.setAttribute("viewBox", "0 0 800 160"); svg.style.width = "100%";
+      svg.innerHTML = `<text x="400" y="80" text-anchor="middle" class="d-t" dominant-baseline="middle">ใส่ ${esc(g.missing.join(" และ "))} เพื่อวาดผัง</text>`;
+      $("stats").innerHTML = ""; $("msgs").innerHTML = ""; renderInspector(); return;
+    }
+    let d;
+    if (view === "plan") { d = planSVG(g); svg.setAttribute("aria-label", "แปลนฝาถัง"); }
+    else { d = sectionSVG(g) || { html: `<text x="400" y="80" text-anchor="middle" class="d-t" dominant-baseline="middle">ใส่ความสูงถังเพื่อวาดรูปตัด</text>`, W: 800, H: 160 }; svg.setAttribute("aria-label", "รูปตัดถัง"); }
+    svg.setAttribute("viewBox", `0 0 ${d.W.toFixed(0)} ${d.H.toFixed(0)}`);
+    svg.innerHTML = d.html;
+    applyZoom();
+    for (const w of g.warn) msgs.push(`<div class="msg">${esc(w)}</div>`);
+    $("msgs").innerHTML = msgs.join("");
+    const kwp = g.usable / g.m2;
+    $("stats").innerHTML = [
+      [`${+f2(g.TW)} × ${+f2(g.TH)}`, "ขนาด (ม.)"], [fmtN(g.TW * g.TH), "หลังคาถัง (ม²)"],
+      [String(g.vents.length), "ช่องระบายอากาศ"], [String(g.hatches.length), "ช่องลงถัง"], [String(g.ladders.length), "บันได"], [String(g.pipes.length), "ท่อ"],
+      [fmtN(g.usable), "ติดแผงได้ (ม²)", "hl"], [`≈ ${fmtN(kwp)}`, "kWp", "hl"]
+    ].map(([b, s, c]) => `<div class="stat ${c || ""}"><b>${b}</b><span>${s}</span></div>`).join("");
+    $("assumed").textContent = `ค่าสมมติ: ช่องระบาย ${f2(g.vs)} ม. · ช่องลงถัง ${f2(g.hs)} ม. · เว้นจากขอบ ${g.eS} ม. · เว้นรอบช่องเปิด ${g.oS} ม. · ${g.m2} ม²/kWp · ตาราง 0.25 ม.`;
+    renderInspector();
+  }
+
+  function renderInspector() {
+    const box = $("insp");
+    if (sel) {
+      const arr = listOf(sel.kind), it = arr[sel.idx];
+      if (!it) { sel = null; return renderInspector(); }
+      box.innerHTML = "";
+      const title = document.createElement("b"); title.textContent = sel.kind === "pipe" ? (PIPENAME[it.type] || "ท่อ") : KIND[sel.kind]; box.append(title);
+      const wl = document.createElement("label"); wl.textContent = "ผนัง"; wl.append(wallSelect(it.edge, v => commit(() => { it.edge = v; buildLists(); render(); }))); box.append(wl);
+      const al = document.createElement("label"); al.textContent = "ระยะตามผนัง (ม.)"; al.append(numInput(it.along, "ระยะตามผนัง", "ม.", v => { it.along = v; buildLists(); render(); })); box.append(al);
+      if (sel.kind === "pipe") { const dl = document.createElement("label"); dl.textContent = "Ø (มม.)"; dl.append(numInput(it.dia, "เส้นผ่านศูนย์กลาง", "มม.", v => { it.dia = v; buildLists(); render(); })); box.append(dl); }
+      const del = document.createElement("button"); del.type = "button"; del.className = "danger"; del.textContent = "ลบ";
+      del.addEventListener("click", () => commit(() => { arr.splice(sel.idx, 1); sel = null; buildLists(); render(); }));
+      const done = document.createElement("button"); done.type = "button"; done.className = "ghost"; done.textContent = "เสร็จ";
+      done.addEventListener("click", () => { sel = null; markListSel(); render(); });
+      box.append(del, done);
+      const h = document.createElement("span"); h.className = "hint"; h.textContent = sel.kind === "ladder" || sel.kind === "hatch" || sel.kind === "pipe" ? "ลากบนแปลนเพื่อเลื่อนตามผนังได้ (ปัดทีละ 0.05 ม.)" : ""; box.append(h);
+      return;
+    }
+    const tips = { vent: "แตะช่องบนแปลนเพื่อวางช่องระบายอากาศ แตะซ้ำเพื่อลบ", wall: "แตะริมผนังด้านใน เพื่อเพิ่มช่องลงถัง บันได หรือท่อ ตรงจุดนั้น", select: "แตะช่องลงถัง บันได หรือท่อ เพื่อแก้ระยะ หรือลากไปตามผนัง" };
+    box.innerHTML = `<span class="hint">${view === "section" ? "รูปตัดดูได้อย่างเดียว แก้ความสูงและส่วนพ้นดินทางซ้าย" : tips[mode]}</span>`;
+  }
+
+  // ---------- zoom ----------
+  function applyZoom() {
+    const svg = $("svg"), c = $("canvas");
+    const vb = svg.viewBox.baseVal; if (!vb || !vb.width) return;
+    const fit = c.clientWidth - 2;
+    svg.style.width = Math.max(320, fit * zoom) + "px";
+    $("zoomV").textContent = Math.round(zoom * 100) + "%";
+  }
+  function setZoom(z, cx, cy) {
+    const c = $("canvas"), old = zoom; zoom = Math.max(.5, Math.min(6, z));
+    const r = c.getBoundingClientRect();
+    const px = (cx ?? r.left + c.clientWidth / 2) - r.left, py = (cy ?? r.top + c.clientHeight / 2) - r.top;
+    const fx = (c.scrollLeft + px) / old, fy = (c.scrollTop + py) / old;
+    applyZoom();
+    c.style.scrollBehavior = "auto"; c.scrollLeft = fx * zoom - px; c.scrollTop = fy * zoom - py; c.style.scrollBehavior = "";
+  }
+  $("zoomIn").addEventListener("click", () => setZoom(zoom * 1.5));
+  $("zoomOut").addEventListener("click", () => setZoom(zoom / 1.5));
+  $("zoomFit").addEventListener("click", () => setZoom(1));
+  $("canvas").addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY); } }, { passive: false });
+  $("svg").addEventListener("dblclick", e => { e.preventDefault(); setZoom(zoom > 1.2 ? 1 : 2, e.clientX, e.clientY); });
+  window.addEventListener("resize", applyZoom);
+
+  // ---------- pointer → metres ----------
+  function toMetres(e) {
+    const svg = $("svg"), p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const q = p.matrixTransform(svg.getScreenCTM().inverse());
+    return { sx: q.x, sy: q.y, x: (q.x - T.ox) / T.k, y: (q.y - T.oy) / T.k, pxPerM: T.k * svg.getScreenCTM().a };
+  }
+  function nearestWall(m) {
+    const g = G, d = [["top", m.y, m.x], ["bottom", g.TH - m.y, m.x], ["left", m.x, m.y], ["right", g.TW - m.x, m.y]];
+    d.sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]));
+    const [edge, dist, along] = d[0];
+    const L = edge === "top" || edge === "bottom" ? g.TW : g.TH;
+    return { edge, dist, along: r05(Math.max(0, Math.min(L, along))) };
+  }
+
+  // ---------- interactions on the plan ----------
+  const menu = $("menu");
+  function hideMenu() { menu.hidden = true; }
+  function showMenu(e, wall) {
+    const c = $("canvas"), r = c.getBoundingClientRect();
+    menu.innerHTML = `<div class="t">${WALLNAME[wall.edge]} · ระยะ ${f2(wall.along)} ม.</div>`;
+    for (const [kind, label] of [["hatch", "+ ช่องลงถัง"], ["ladder", "+ บันไดขึ้นถัง"], ["pipe", "+ ท่อผ่านผนัง"]]) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+      b.addEventListener("click", () => {
+        commit(() => {
+          const it = kind === "pipe" ? { edge: wall.edge, along: String(wall.along), dia: "", type: "clear" } : { edge: wall.edge, along: String(wall.along) };
+          listOf(kind).push(it); sel = { kind, idx: listOf(kind).length - 1 };
+        });
+        hideMenu(); if (mode !== "select") setMode("select"); buildLists(); render();
+      });
+      menu.append(b);
+    }
+    const x = b => document.createElement("button");
+    const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "ghost"; cancel.textContent = "ยกเลิก"; cancel.addEventListener("click", hideMenu); menu.append(cancel);
+    menu.hidden = false;
+    let left = e.clientX - r.left + c.scrollLeft + 8, top = e.clientY - r.top + c.scrollTop + 8;
+    left = Math.min(left, c.scrollLeft + c.clientWidth - 190);
+    menu.style.left = left + "px"; menu.style.top = top + "px";
+    menu.querySelector("button").focus();
+  }
+
+  let drag = null;
+  $("svg").addEventListener("pointerdown", e => {
+    if (view !== "plan" || !G || G.missing.length) return;
+    const og = e.target.closest(".d-open");
+    if (mode === "select" && og) {
+      const kind = og.dataset.kind, idx = +og.dataset.idx;
+      sel = { kind, idx }; markListSel();
+      drag = { kind, idx, before: snap(), moved: false, id: e.pointerId };
+      $("svg").setPointerCapture(e.pointerId);
+      render(); e.preventDefault();
+    }
+  });
+  $("svg").addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const m = toMetres(e), it = listOf(drag.kind)[drag.idx]; if (!it) return;
+    const L = it.edge === "top" || it.edge === "bottom" ? G.TW : G.TH;
+    const a = r05(Math.max(0, Math.min(L, it.edge === "top" || it.edge === "bottom" ? m.x : m.y)));
+    if (String(a) !== String(it.along)) { it.along = String(a); drag.moved = true; render(); }
+  });
+  const endDrag = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (drag.moved) { undoStack.push(drag.before); redoStack = []; buildLists(); render(); }
+    drag = null;
+  };
+  $("svg").addEventListener("pointerup", endDrag); $("svg").addEventListener("pointercancel", endDrag);
+
+  let zoomHint = "";
+  $("svg").addEventListener("click", e => {
+    if (view !== "plan" || !G || G.missing.length || drag) return;
+    hideMenu();
+    const m = toMetres(e);
+    if (mode === "vent") {
+      // find the bay from the tap position, so leader lines or symbols on top never block it
+      const find = (ed, v) => { for (let i = 0; i < ed.length - 1; i++) if (v >= ed[i] && v < ed[i + 1]) return i; return -1; };
+      const r = find(G.ys, m.y), c = find(G.xs, m.x); if (r < 0 || c < 0) return;
+      const size = Math.min(G.BX[c], G.BY[r]) * m.pxPerM;
+      if (size < 28 && zoom < 6) { setZoom(Math.min(6, zoom * Math.max(2, 32 / size)), e.clientX, e.clientY); showZoomHint(); return; }
+      commit(() => { const key = r + "," + c; S.vents.has(key) ? S.vents.delete(key) : S.vents.add(key); });
+      render();
+    } else if (mode === "wall") {
+      const w = nearestWall(m), tol = 18 / m.pxPerM;
+      if (w.dist <= tol && w.dist >= -tol * 2) showMenu(e, w);
+    } else if (mode === "select") {
+      if (!e.target.closest(".d-open")) { sel = null; markListSel(); render(); }
+    }
+  });
+  function showZoomHint() {
+    if (hintZoomShown) return; hintZoomShown = true;
+    const n = document.createElement("div"); n.className = "note"; n.textContent = "ช่องเล็กเกินไปสำหรับนิ้ว จึงซูมเข้าให้ก่อน แตะอีกครั้งเพื่อวางช่องระบาย";
+    $("msgs").prepend(n); setTimeout(() => n.remove(), 4000);
+  }
+
+  // ---------- controls ----------
+  function setMode(m) {
+    mode = m; $("canvas").dataset.mode = m; hideMenu();
+    if (m !== "select") { sel = null; markListSel(); }
+    document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+    render();
+  }
+  document.querySelectorAll("button[data-mode]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+    view = b.dataset.view; hideMenu();
+    document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.view === view)));
+    render();
+  }));
+  $("greenT").addEventListener("click", () => { showGreen = !showGreen; $("greenT").setAttribute("aria-pressed", String(showGreen)); render(); });
+  document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => load(b.dataset.preset)));
+  document.querySelectorAll("[data-vs]").forEach(b => b.addEventListener("click", () => commit(() => { S.ventStyle = b.dataset.vs; syncForm(); render(); })));
+  $("clearVents").addEventListener("click", () => { if (S.vents.size) commit(() => { S.vents.clear(); render(); }); });
+  const add = (kind, it) => { commit(() => { listOf(kind).push(it); sel = { kind, idx: listOf(kind).length - 1 }; }); buildLists(); render(); const ins = $(kind === "hatch" ? "hatches" : kind + "s").querySelectorAll("input"); if (ins.length) ins[ins.length - (kind === "pipe" ? 2 : 1)].focus(); };
+  $("addHatch").addEventListener("click", () => add("hatch", { edge: "top", along: "" }));
+  $("addLadder").addEventListener("click", () => add("ladder", { edge: "left", along: "" }));
+  $("addPipe").addEventListener("click", () => add("pipe", { edge: "right", along: "", dia: "", type: "clear" }));
+  $("undo").addEventListener("click", undo); $("redo").addEventListener("click", redo);
+  $("form").addEventListener("submit", e => e.preventDefault());
+  document.addEventListener("keydown", e => {
+    const inField = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "");
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !inField) { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+    else if ((e.metaKey || e.ctrlKey) && (e.key === "=" || e.key === "+")) { e.preventDefault(); setZoom(zoom * 1.5); }
+    else if ((e.metaKey || e.ctrlKey) && e.key === "-") { e.preventDefault(); setZoom(zoom / 1.5); }
+    else if ((e.metaKey || e.ctrlKey) && e.key === "0") { e.preventDefault(); setZoom(1); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && sel && !inField) { e.preventDefault(); commit(() => { listOf(sel.kind).splice(sel.idx, 1); sel = null; }); buildLists(); render(); }
+    else if (e.key === "Escape") { hideMenu(); if (sel) { sel = null; markListSel(); render(); } }
+  });
 
   load("t40");
 })();

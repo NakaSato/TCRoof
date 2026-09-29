@@ -3,7 +3,8 @@
 **Companion to:** [`auto-drawing.md`](auto-drawing.md), which covers the design, drawing standard and prototype images.
 **Package:** `SolarSurveyKit` (targets `SurveyCore`, `SurveyUI`, `PDFReport`).
 **Swift:** 5.9 tools, iOS 17 / macOS 14 (as in `Package.swift`). No new dependencies.
-**Reference output:** `docs/specs/img/*.png`, rendered by the Python prototypes in the same folder. The Swift output
+**Reference output:** `docs/specs/img/*.png`, rendered by the Python prototypes in the same folder, and the
+interactive tank prototype `docs/specs/prototype/tank-layout.html`, whose parsing, placement and 0.25 m raster match §2 and §8. The Swift output
 should match them. The same inputs must give the same geometry, down to the numbers in the tests (§10).
 
 ---
@@ -784,7 +785,7 @@ final class TankTests: XCTestCase {
         let g = TankGeometry.compute(try XCTUnwrap(TankInput.from(pwa())), settings: DrawingSettings())
         XCTAssertEqual(g.roofArea, 2560)
         XCTAssertEqual(g.input.openings.filter { $0.kind == .vent }.count, 20)
-        XCTAssertEqual(g.usableArea, 2180, accuracy: 30)     // prototype: 2,180 m² at 0.5 m step
+        XCTAssertEqual(g.usableArea, 2222, accuracy: 10)     // 0.25 m raster (interactive prototype); the 0.5 m images show 2,180
     }
     func testSecondSheet() throws {                     // 40 × 40, 12 cross vents, 6 hatches, 3 separate ladders
         var m = SurveyModule(type: .tank)
@@ -802,7 +803,7 @@ final class TankTests: XCTestCase {
         let g = TankGeometry.compute(try XCTUnwrap(TankInput.from(m)), settings: DrawingSettings())
         XCTAssertEqual(g.roofArea, 1600)
         XCTAssertEqual(g.input.openings.filter { $0.kind == .ladder }.count, 3)
-        XCTAssertEqual(g.usableArea, 1341, accuracy: 25)     // prototype: 1,341 m² at 0.5 m step
+        XCTAssertEqual(g.usableArea, 1363, accuracy: 10)     // 0.25 m raster; the 0.5 m image shows 1,341
     }
     func testRoundAndSetting() {
         var m = SurveyModule(type: .tank)
@@ -841,7 +842,7 @@ final class TankTests: XCTestCase {
 | 1 | `Spans`, `parseSpans` delegate, `MemberSpec`, `DrawingSettings` + tests | `swift test` passes; old plans unchanged |
 | 2 | `RoofInput`, `RoofGeometry` (rafter + truss + schedule) + tests | Numbers in §11 pass |
 | 3 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails` + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` visually |
-| 4 | `Obstacle` fields, `WebBackup`, `TankInput`, `TankGeometry`, `TankDrawings` + tests/snapshots | 64 × 40 fixture: 2,560 m², 20 vents, about 2,180 m². 40 × 40 fixture: 1,600 m², 12 cross vents, about 1,341 m² |
+| 4 | `Obstacle` fields, `WebBackup`, `TankInput`, `TankGeometry`, `TankDrawings` + tests/snapshots | 64 × 40 fixture: 2,560 m², 20 vents, 2,222 m² usable. 40 × 40 fixture: 1,600 m², 12 cross vents, 1,363 m² usable (0.25 m raster) |
 | 5 | Schema fields and kinds, `DrawingField`, `TankPlanEditor` (tap to place) | iPad: fill C1/D1 from the PWA sheet and see the drawings live |
 | 6 | `ReportLayout` integration, `missingGroups`, `autoDrawings` flag | PDF pages match the prototypes; export sheet lists drawing gaps |
 | 7 | Framing plan overlay | Matches `img/framing_plan.png` |

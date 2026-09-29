@@ -1,0 +1,496 @@
+<title>ผังฝาถังน้ำใส</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Layout: drafting-table split. Input sheet on the left, live drawing on the right; stacks on phones. */
+:root {
+  --bg: #eef1f0;
+  --panel: #ffffff;
+  --paper: #fbfcfb;
+  --ink: #1d2826;
+  --muted: #5d6b68;
+  --line: #d3dbd8;
+  --grid: #8a9895;
+  --accent: #1f4e79;
+  --accent-soft: #e3ecf5;
+  --usable: #dcebd3;
+  --usable-ink: #3f6b2e;
+  --warn: #b3372e;
+  --warn-soft: #fbe9e7;
+  --hover: rgba(31, 78, 121, .14);
+  --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
+  --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121716; --panel: #1a2120; --paper: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --grid: #6f7e7b; --accent: #8db8e3; --accent-soft: #1d2c3a; --usable: #22361d; --usable-ink: #9fcf88;
+    --warn: #f08a80; --warn-soft: #3a1f1c; --hover: rgba(141, 184, 227, .18); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121716; --panel: #1a2120; --paper: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --grid: #6f7e7b; --accent: #8db8e3; --accent-soft: #1d2c3a; --usable: #22361d; --usable-ink: #9fcf88;
+  --warn: #f08a80; --warn-soft: #3a1f1c; --hover: rgba(141, 184, 227, .18); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
+.wrap { max-width: 1480px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: .01em; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.main { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+@media (min-width: 901px) { .sheet { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; } }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; padding: 0; margin-bottom: 2px; }
+.sec { border-top: 1px solid var(--line); padding-top: 12px; }
+label { display: grid; gap: 3px; font-size: 13px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 110px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input.bad { border-color: var(--warn); background: var(--warn-soft); }
+.hint { font-size: 12px; color: var(--muted); }
+button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+button.x { background: transparent; color: var(--muted); padding: 7px 8px; flex: 0 0 auto; }
+button.x:hover { color: var(--warn); border-color: var(--warn); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px 6px; }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.list { display: grid; gap: 6px; }
+.item { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+.item.pipe { grid-template-columns: 1.1fr .9fr .8fr auto; }
+.item.pipe .type { grid-column: 1 / -2; }
+.count { font-family: var(--f-num); font-size: 12px; color: var(--accent); }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details[open] summary { margin-bottom: 8px; }
+
+.board { display: grid; gap: 12px; min-width: 0; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 120px; flex: 1 1 120px; }
+.stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.stat.hl { background: var(--usable); border-color: transparent; }
+.stat.hl b, .stat.hl span { color: var(--usable-ink); }
+.drawing { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+.drawing svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--f-draw); }
+.msgs { display: grid; gap: 4px; }
+.msg { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 6px 10px; }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: 2px; }
+
+/* drawing tokens */
+.d-wall { fill: none; stroke: var(--ink); }
+.d-beam { stroke: var(--grid); stroke-dasharray: 4 3; stroke-width: .6; }
+.d-usable { fill: var(--usable); }
+.d-sym { fill: var(--paper); stroke: var(--ink); }
+.d-ink { fill: var(--ink); }
+.d-muted { fill: var(--muted); }
+.d-line { stroke: var(--ink); fill: none; }
+.d-cell { fill: transparent; cursor: pointer; }
+.d-cell:hover { fill: var(--hover); }
+.d-hatchfill { stroke: var(--grid); stroke-width: .6; }
+.d-bad { fill: var(--warn); }
+@media (prefers-reduced-motion: no-preference) { .d-cell { transition: fill .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ผังฝาถังน้ำใส <span class="tag" id="exampleTag">ตัวอย่าง: แบบ กปภ. 40 × 40 ม.</span></h1>
+    <p>ผังนี้สร้างจากสิ่งที่กรอกทางซ้ายเท่านั้น กรอกระยะช่วงเสา แตะช่องบนแปลนเพื่อวางช่องระบายอากาศ แล้วใส่ช่องลงถัง บันได และท่อเป็นระยะตามผนัง ผังและพื้นที่ติดแผงจะคำนวณใหม่ทันทีที่แก้</p>
+  </header>
+
+  <div class="main">
+    <form class="sheet" id="form" autocomplete="off">
+      <fieldset>
+        <legend>เริ่มจาก</legend>
+        <div class="seg" role="group" aria-label="ข้อมูลเริ่มต้น">
+          <button type="button" data-preset="t40" aria-pressed="true">แบบ 40 × 40</button>
+          <button type="button" data-preset="t64" aria-pressed="false">แบบ 64 × 40</button>
+          <button type="button" data-preset="blank" aria-pressed="false">ว่าง</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend>1 · ระยะช่วงเสา (ม.)</legend>
+        <div class="row">
+          <label>แนวนอน<input class="num" id="bx" placeholder="เช่น 10@4 หรือ 4,4,4"></label>
+          <label>แนวตั้ง<input class="num" id="by" placeholder="เช่น 10@4"></label>
+        </div>
+        <div class="hint">พิมพ์ <b>10@4</b> แทน 4 สิบครั้งได้ ใส่ระยะต่างกันได้ เช่น 1.5, 3@4, 1.5</div>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend>2 · ช่องระบายอากาศ <span class="count" id="ventCount"></span></legend>
+        <div class="hint">แตะช่องบนแปลนเพื่อวาง แตะซ้ำเพื่อลบ</div>
+        <div class="row">
+          <div class="seg" role="group" aria-label="สัญลักษณ์ช่องระบายอากาศ">
+            <button type="button" data-vs="box" aria-pressed="false">กล่อง</button>
+            <button type="button" data-vs="cross" aria-pressed="true">กากบาท</button>
+          </div>
+          <label>ขนาด (ม.)<input class="num" id="ventSize" inputmode="decimal"></label>
+        </div>
+        <button type="button" class="ghost" id="clearVents">ลบช่องระบายอากาศทั้งหมด</button>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend>3 · ช่องลงถัง <span class="count" id="hatchCount"></span></legend>
+        <div class="list" id="hatches"></div>
+        <div class="row"><button type="button" id="addHatch">+ เพิ่มช่องลงถัง</button>
+          <label>ขนาด (ม.)<input class="num" id="hatchSize" inputmode="decimal"></label></div>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend>4 · บันไดขึ้นถัง <span class="count" id="ladderCount"></span></legend>
+        <div class="list" id="ladders"></div>
+        <button type="button" id="addLadder">+ เพิ่มบันได</button>
+      </fieldset>
+
+      <fieldset class="sec">
+        <legend>5 · ท่อผ่านผนัง <span class="count" id="pipeCount"></span></legend>
+        <div class="list" id="pipes"></div>
+        <button type="button" id="addPipe">+ เพิ่มท่อ</button>
+      </fieldset>
+
+      <fieldset class="sec">
+        <details>
+          <summary>ค่าสมมติที่ใช้คำนวณพื้นที่ติดแผง</summary>
+          <div class="row">
+            <label>เว้นจากขอบถัง (ม.)<input class="num" id="setEdge" inputmode="decimal"></label>
+            <label>เว้นรอบช่องเปิด (ม.)<input class="num" id="setOpen" inputmode="decimal"></label>
+            <label>ม² ต่อ 1 kWp<input class="num" id="m2" inputmode="decimal"></label>
+          </div>
+        </details>
+      </fieldset>
+    </form>
+
+    <section class="board" aria-label="ผลลัพธ์">
+      <div class="stats" id="stats"></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="drawing"><svg id="svg" role="img" aria-label="แปลนฝาถังน้ำใสที่สร้างจากข้อมูลที่กรอก"></svg></div>
+      <div class="foot"><span id="assumed"></span><span>ภาพต้นแบบสำหรับ TCRoof · สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง</span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const WALLS = [["top", "ผนังบน"], ["bottom", "ผนังล่าง"], ["left", "ผนังซ้าย"], ["right", "ผนังขวา"]];
+  const PIPE_TYPES = [["clear", "ท่อน้ำใส"], ["link", "ท่อเชื่อมถังน้ำใส"], ["overflow", "ท่อน้ำล้น"]];
+  const PRESETS = {
+    t40: {
+      tag: "ตัวอย่าง: แบบ กปภ. 40 × 40 ม.", bx: "10@4", by: "10@4", ventStyle: "cross", vent: "1.5", hatch: "1.2",
+      vents: [[0,0],[0,4],[0,5],[0,9],[4,0],[4,4],[4,5],[4,9],[9,0],[9,4],[9,5],[9,9]],
+      hatches: [["top","10.2"],["top","29.6"],["bottom","10.2"],["bottom","29.6"],["left","21.7"],["right","21.7"]],
+      ladders: [["left","6.4"],["left","33.4"],["right","33.4"]], pipes: []
+    },
+    t64: {
+      tag: "ตัวอย่าง: แบบ กปภ. 64 × 40 ม.", bx: "16@4", by: "10@4", ventStyle: "box", vent: "1.5", hatch: "1.2",
+      vents: [0,3,6,9].flatMap(r => [0,4,8,12,15].map(c => [r, c])),
+      hatches: [["top","14.3"],["top","46"],["bottom","14.1"],["bottom","45.7"],["left","18"],["left","22"],["right","18.2"],["right","22.2"]],
+      ladders: [["top","14.3"],["top","46"],["bottom","14.1"],["bottom","45.7"],["left","22"],["right","22.2"]],
+      pipes: [["left","14","600","link"],["left","26","600","link"],["right","14","700","clear"],["right","26","700","clear"],["right","17","500","overflow"],["right","23","500","overflow"]]
+    },
+    blank: { tag: "", bx: "", by: "", ventStyle: "box", vent: "1.5", hatch: "1.2", vents: [], hatches: [], ladders: [], pipes: [] }
+  };
+
+  const $ = id => document.getElementById(id);
+  let S;
+
+  // ---- parsing (same rules as Spans.parse / NumberInput in the Swift spec) ----
+  const thai = s => s.replace(/[๐-๙]/g, d => String(d.charCodeAt(0) - 0x0E50));
+  function num(s) {
+    s = thai(String(s ?? "")).replace(/,/g, "");
+    const m = s.match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : NaN;
+  }
+  function spans(s) {
+    const out = [];
+    for (const t of thai(String(s || "")).split(/[,\s/]+/).filter(Boolean)) {
+      const at = t.indexOf("@");
+      if (at > 0) {
+        const n = parseInt(t.slice(0, at), 10), d = num(t.slice(at + 1));
+        if (n > 0 && n <= 200 && d > 0) for (let i = 0; i < n; i++) out.push(d);
+      } else {
+        const d = num(t);
+        if (d > 0) out.push(d);
+      }
+    }
+    return out;
+  }
+  const edges = sp => sp.reduce((a, v) => (a.push(a[a.length - 1] + v), a), [0]);
+  const f2 = v => (Math.round(v * 100) / 100).toFixed(2);
+  const fmt = v => { const r = Math.round(v * 100) / 100; return Number.isInteger(r) ? String(r) : String(r); };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---- form ----
+  function load(name) {
+    const p = PRESETS[name];
+    S = {
+      preset: name, bx: p.bx, by: p.by, ventStyle: p.ventStyle, vent: p.vent, hatch: p.hatch,
+      vents: new Set(p.vents.map(([r, c]) => r + "," + c)),
+      hatches: p.hatches.map(([edge, along]) => ({ edge, along })),
+      ladders: p.ladders.map(([edge, along]) => ({ edge, along })),
+      pipes: p.pipes.map(([edge, along, dia, type]) => ({ edge, along, dia, type })),
+      setEdge: "1", setOpen: "0.5", m2: "6"
+    };
+    $("exampleTag").textContent = p.tag; $("exampleTag").hidden = !p.tag;
+    document.querySelectorAll("[data-preset]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.preset === name)));
+    for (const k of ["bx", "by", "setEdge", "setOpen", "m2"]) $(k).value = S[k];
+    $("ventSize").value = S.vent; $("hatchSize").value = S.hatch;
+    buildLists(); render();
+  }
+
+  function wallSelect(value, onChange) {
+    const s = document.createElement("select");
+    s.setAttribute("aria-label", "ผนัง");
+    for (const [v, t] of WALLS) { const o = new Option(t, v); o.selected = v === value; s.add(o); }
+    s.addEventListener("change", () => onChange(s.value));
+    return s;
+  }
+  function numInput(value, label, ph, onInput) {
+    const i = document.createElement("input");
+    i.className = "num"; i.value = value; i.placeholder = ph; i.inputMode = "decimal"; i.setAttribute("aria-label", label);
+    i.addEventListener("input", () => onInput(i.value));
+    return i;
+  }
+  function removeBtn(onClick) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "x"; b.textContent = "✕"; b.setAttribute("aria-label", "ลบรายการ");
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  function buildLists() {
+    for (const [key, host] of [["hatches", "hatches"], ["ladders", "ladders"]]) {
+      const el = $(host); el.textContent = "";
+      S[key].forEach((it, idx) => {
+        const row = document.createElement("div"); row.className = "item";
+        row.append(wallSelect(it.edge, v => { it.edge = v; render(); }),
+                   numInput(it.along, "ระยะตามผนัง (ม.)", "ระยะ ม.", v => { it.along = v; render(); }),
+                   removeBtn(() => { S[key].splice(idx, 1); buildLists(); render(); }));
+        el.append(row);
+      });
+    }
+    const el = $("pipes"); el.textContent = "";
+    S.pipes.forEach((it, idx) => {
+      const row = document.createElement("div"); row.className = "item pipe";
+      const t = document.createElement("select"); t.className = "type"; t.setAttribute("aria-label", "ชนิดท่อ");
+      for (const [v, n] of PIPE_TYPES) { const o = new Option(n, v); o.selected = v === it.type; t.add(o); }
+      t.addEventListener("change", () => { it.type = t.value; render(); });
+      row.append(t, removeBtn(() => { S.pipes.splice(idx, 1); buildLists(); render(); }),
+                 wallSelect(it.edge, v => { it.edge = v; render(); }),
+                 numInput(it.along, "ระยะตามผนัง (ม.)", "ระยะ ม.", v => { it.along = v; render(); }),
+                 numInput(it.dia, "เส้นผ่านศูนย์กลาง (มม.)", "Ø มม.", v => { it.dia = v; render(); }));
+      el.append(row);
+    });
+  }
+
+  document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => load(b.dataset.preset)));
+  document.querySelectorAll("[data-vs]").forEach(b => b.addEventListener("click", () => { S.ventStyle = b.dataset.vs; render(); }));
+  for (const k of ["bx", "by", "setEdge", "setOpen", "m2"]) $(k).addEventListener("input", e => { S[k] = e.target.value; render(); });
+  $("ventSize").addEventListener("input", e => { S.vent = e.target.value; render(); });
+  $("hatchSize").addEventListener("input", e => { S.hatch = e.target.value; render(); });
+  $("clearVents").addEventListener("click", () => { S.vents.clear(); render(); });
+  $("addHatch").addEventListener("click", () => { S.hatches.push({ edge: "top", along: "" }); buildLists(); render(); focusLast("hatches"); });
+  $("addLadder").addEventListener("click", () => { S.ladders.push({ edge: "left", along: "" }); buildLists(); render(); focusLast("ladders"); });
+  $("addPipe").addEventListener("click", () => { S.pipes.push({ edge: "right", along: "", dia: "", type: "clear" }); buildLists(); render(); focusLast("pipes"); });
+  $("form").addEventListener("submit", e => e.preventDefault());
+  function focusLast(host) { const ins = $(host).querySelectorAll("input"); if (ins.length) ins[ins.length - (host === "pipes" ? 2 : 1)].focus(); }
+
+  $("svg").addEventListener("click", e => {
+    const c = e.target.closest(".d-cell"); if (!c) return;
+    const key = c.dataset.r + "," + c.dataset.c;
+    S.vents.has(key) ? S.vents.delete(key) : S.vents.add(key);
+    if (S.preset !== "blank") { $("exampleTag").textContent = "แก้จากตัวอย่าง"; }
+    render();
+  });
+
+  // ---- geometry + drawing ----
+  function render() {
+    document.querySelectorAll("[data-vs]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vs === S.ventStyle)));
+    const BX = spans(S.bx), BY = spans(S.by);
+    $("bx").classList.toggle("bad", S.bx.trim() !== "" && !BX.length);
+    $("by").classList.toggle("bad", S.by.trim() !== "" && !BY.length);
+    const msgs = [];
+    const svg = $("svg");
+    if (!BX.length || !BY.length) {
+      svg.setAttribute("viewBox", "0 0 1000 300");
+      svg.innerHTML = `<text x="500" y="140" text-anchor="middle" class="d-muted" font-size="18">กรอกระยะช่วงเสาแนวนอนและแนวตั้งเพื่อสร้างผัง</text>
+        <text x="500" y="170" text-anchor="middle" class="d-muted" font-size="14">เช่น 10@4 และ 10@4</text>`;
+      $("stats").innerHTML = ""; $("msgs").innerHTML = ""; $("assumed").textContent = "";
+      ["ventCount", "hatchCount", "ladderCount", "pipeCount"].forEach(id => $(id).textContent = "");
+      return;
+    }
+    const TW = BX.reduce((a, b) => a + b, 0), TH = BY.reduce((a, b) => a + b, 0);
+    const xs = edges(BX), ys = edges(BY);
+    const V = num(S.vent) > 0 ? num(S.vent) : 1.5, HS = num(S.hatch) > 0 ? num(S.hatch) : 1.2;
+    const setE = num(S.setEdge) >= 0 ? num(S.setEdge) : 1, setO = num(S.setOpen) >= 0 ? num(S.setOpen) : 0.5, m2 = num(S.m2) > 0 ? num(S.m2) : 6;
+    const wallLen = e => (e === "top" || e === "bottom") ? TW : TH;
+    const wallName = e => WALLS.find(w => w[0] === e)[1];
+
+    // resolve openings (metres, y down from the top-left corner)
+    const vents = [];
+    for (const key of S.vents) {
+      const [r, c] = key.split(",").map(Number);
+      if (r >= BY.length || c >= BX.length) continue;
+      const cx = (xs[c] + xs[c + 1]) / 2, cy = (ys[r] + ys[r + 1]) / 2;
+      vents.push({ x: cx - V / 2, y: cy - V / 2, w: V, h: V, cx, cy });
+    }
+    const dropped = S.vents.size - vents.length;
+    if (dropped > 0) msgs.push(`ช่องระบายอากาศ ${dropped} จุดอยู่นอกกริดใหม่ จึงไม่แสดง`);
+    function onWall(it, s, kind) {
+      const d = num(it.along);
+      if (!(d >= 0)) return null;
+      if (d > wallLen(it.edge)) { msgs.push(`${kind}ที่${wallName(it.edge)} ระยะ ${fmt(d)} ม. เกินความยาวผนัง ${fmt(wallLen(it.edge))} ม.`); return null; }
+      const i = 0.15;
+      return { top: { x: d - s / 2, y: i }, bottom: { x: d - s / 2, y: TH - s - i }, left: { x: i, y: d - s / 2 }, right: { x: TW - s - i, y: d - s / 2 } }[it.edge];
+    }
+    const hatches = S.hatches.map(it => { const p = onWall(it, HS, "ช่องลงถัง"); return p && { ...p, w: HS, h: HS, edge: it.edge }; }).filter(Boolean);
+    const ladders = S.ladders.map(it => { const d = num(it.along); if (!(d >= 0)) return null; if (d > wallLen(it.edge)) { msgs.push(`บันไดที่${wallName(it.edge)} ระยะ ${fmt(d)} ม. เกินความยาวผนัง`); return null; } return { edge: it.edge, d }; }).filter(Boolean);
+    const pipes = S.pipes.map(it => { const d = num(it.along); if (!(d >= 0)) return null; if (d > wallLen(it.edge)) { msgs.push(`ท่อที่${wallName(it.edge)} ระยะ ${fmt(d)} ม. เกินความยาวผนัง`); return null; }
+      const dia = num(it.dia); return { edge: it.edge, d, dia: dia > 0 ? dia : null, type: it.type }; }).filter(Boolean);
+
+    // usable area raster (0.25 m), merged into runs
+    const step = TW * TH > 6000 ? 0.5 : 0.25;
+    const nx = Math.round(TW / step), ny = Math.round(TH / step);
+    const blocks = vents.concat(hatches).map(b => [b.x - setO, b.y - setO, b.x + b.w + setO, b.y + b.h + setO]);
+    for (const p of pipes) {
+      const r = setO + (p.dia ? p.dia / 2000 : 0);
+      const px = p.edge === "left" ? 0 : p.edge === "right" ? TW : p.d, py = p.edge === "top" ? 0 : p.edge === "bottom" ? TH : p.d;
+      blocks.push([px - r, py - r, px + r, py + r]);
+    }
+    let free = 0; const runs = [];
+    for (let j = 0; j < ny; j++) {
+      let start = -1;
+      for (let i = 0; i <= nx; i++) {
+        let ok = false;
+        if (i < nx) {
+          const x0 = i * step, y0 = j * step, x1 = x0 + step, y1 = y0 + step;
+          ok = x0 >= setE - 1e-9 && y0 >= setE - 1e-9 && x1 <= TW - setE + 1e-9 && y1 <= TH - setE + 1e-9 &&
+               !blocks.some(b => x1 > b[0] && x0 < b[2] && y1 > b[1] && y0 < b[3]);
+        }
+        if (ok) { free++; if (start < 0) start = i; }
+        else if (start >= 0) { runs.push([start * step, j * step, (i - start) * step, step]); start = -1; }
+      }
+    }
+    const usable = free * step * step;
+
+    // layout
+    const W = 1000, padL = 150, padR = 190, padT = 96, maxH = 560;
+    const k = Math.min((W - padL - padR) / TW, maxH / TH);
+    const w = TW * k, h = TH * k, ox = padL + ((W - padL - padR) - w) / 2, oy = padT;
+    const X = x => ox + x * k, Y = y => oy + y * k;
+    let o = "";
+    // usable area
+    o += `<g class="d-usable">` + runs.map(r => `<rect x="${X(r[0]).toFixed(1)}" y="${Y(r[1]).toFixed(1)}" width="${(r[2] * k + .4).toFixed(1)}" height="${(r[3] * k + .4).toFixed(1)}"/>`).join("") + `</g>`;
+    // wall + beams (0.30 m bands)
+    o += `<rect class="d-wall" x="${ox}" y="${oy}" width="${w}" height="${h}" stroke-width="1.6"/>`;
+    o += `<rect class="d-wall" x="${ox + 3}" y="${oy + 3}" width="${w - 6}" height="${h - 6}" stroke-width=".6"/>`;
+    const bw = .15;
+    for (const x of xs.slice(1, -1)) for (const dx of [-bw, bw]) o += `<line class="d-beam" x1="${X(x + dx)}" y1="${oy}" x2="${X(x + dx)}" y2="${oy + h}"/>`;
+    for (const y of ys.slice(1, -1)) for (const dy of [-bw, bw]) o += `<line class="d-beam" x1="${ox}" y1="${Y(y + dy)}" x2="${ox + w}" y2="${Y(y + dy)}"/>`;
+    // vents
+    for (const v of vents) {
+      const s = v.w * k, cx = X(v.cx), cy = Y(v.cy);
+      if (S.ventStyle === "box") {
+        o += `<rect class="d-sym" x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" stroke-width=".9"/>`;
+        o += `<rect class="d-line" x="${cx - s * .32}" y="${cy - s * .32}" width="${s * .64}" height="${s * .64}" stroke-width=".6"/>`;
+        o += `<circle class="d-line" cx="${cx}" cy="${cy}" r="${s * .2}" stroke-width=".6"/>`;
+      } else {
+        const a = s * .5, b = s * .17;
+        const pts = [[-b,-a],[b,-a],[b,-b],[a,-b],[a,b],[b,b],[b,a],[-b,a],[-b,b],[-a,b],[-a,-b],[-b,-b]].map(([px, py]) => `${cx + px},${cy + py}`).join(" ");
+        o += `<polygon class="d-sym" points="${pts}" stroke-width=".9"/>`;
+        for (const t of [-1, 1]) {
+          o += `<line class="d-line" x1="${cx + t * a}" y1="${cy - b * 1.6}" x2="${cx + t * a}" y2="${cy + b * 1.6}" stroke-width="1.4"/>`;
+          o += `<line class="d-line" x1="${cx - b * 1.6}" y1="${cy + t * a}" x2="${cx + b * 1.6}" y2="${cy + t * a}" stroke-width="1.4"/>`;
+        }
+        o += `<circle class="d-line" cx="${cx}" cy="${cy}" r="${s * .12}" stroke-width=".6"/>`;
+      }
+    }
+    // hatches
+    for (const hh of hatches) {
+      const x = X(hh.x), y = Y(hh.y), s = hh.w * k;
+      o += `<rect class="d-sym" x="${x}" y="${y}" width="${s}" height="${s}" stroke-width="1"/>`;
+      for (let t = 4; t < s * 2; t += 4) {
+        const x1 = x + Math.max(0, t - s), y1 = y + Math.min(t, s), x2 = x + Math.min(t, s), y2 = y + Math.max(0, t - s);
+        o += `<line class="d-hatchfill" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      }
+    }
+    // ladders (outside the wall)
+    for (const l of ladders) {
+      if (l.edge === "top" || l.edge === "bottom") o += `<rect class="d-sym" x="${X(l.d) - 3}" y="${l.edge === "top" ? oy - 12 : oy + h + 4}" width="6" height="8" stroke-width=".9"/>`;
+      else o += `<rect class="d-sym" x="${l.edge === "left" ? ox - 12 : ox + w + 4}" y="${Y(l.d) - 3}" width="8" height="6" stroke-width=".9"/>`;
+    }
+    // pipes
+    const pipeName = t => PIPE_TYPES.find(p => p[0] === t)[1];
+    for (const p of pipes) {
+      const lab = pipeName(p.type) + (p.dia ? ` Ø${fmt(p.dia)} มม.` : "");
+      if (p.edge === "left" || p.edge === "right") {
+        const x = p.edge === "left" ? ox : ox + w, y = Y(p.d), s = p.edge === "left" ? -1 : 1;
+        o += `<rect class="d-sym" x="${Math.min(x, x + s * 26)}" y="${y - 4}" width="26" height="8" stroke-width=".9"/>`;
+        o += `<rect class="d-ink" x="${x + s * 10 - 2}" y="${y - 5}" width="4" height="10"/>`;
+        o += `<circle class="d-sym" cx="${x + s * 26}" cy="${y}" r="4" stroke-width=".9"/>`;
+        o += `<text x="${x + s * 34}" y="${y + 4}" font-size="10" class="d-ink" text-anchor="${s < 0 ? "end" : "start"}">${esc(lab)}</text>`;
+      } else {
+        const y = p.edge === "top" ? oy : oy + h, x = X(p.d), s = p.edge === "top" ? -1 : 1;
+        o += `<rect class="d-sym" x="${x - 4}" y="${Math.min(y, y + s * 26)}" width="8" height="26" stroke-width=".9"/>`;
+        o += `<circle class="d-sym" cx="${x}" cy="${y + s * 26}" r="4" stroke-width=".9"/>`;
+        o += `<text x="${x + 8}" y="${y + s * 34}" font-size="10" class="d-ink">${esc(lab)}</text>`;
+      }
+    }
+    // tap targets (on top)
+    o += `<g>`;
+    for (let r = 0; r < BY.length; r++) for (let c = 0; c < BX.length; c++) {
+      o += `<rect class="d-cell" data-r="${r}" data-c="${c}" x="${X(xs[c]) + 1}" y="${Y(ys[r]) + 1}" width="${BX[c] * k - 2}" height="${BY[r] * k - 2}"><title>แถว ${r + 1} คอลัมน์ ${c + 1}</title></rect>`;
+    }
+    o += `</g>`;
+    // dimensions
+    const dy = oy - 34;
+    o += `<line class="d-line" x1="${ox}" y1="${dy}" x2="${ox + w}" y2="${dy}" stroke-width=".7"/>`;
+    for (const x of xs) o += `<line class="d-line" x1="${X(x) - 2.5}" y1="${dy + 2.5}" x2="${X(x) + 2.5}" y2="${dy - 2.5}" stroke-width=".9"/>`;
+    const showBays = BX.length <= 24 && Math.min(...BX) * k > 26;
+    if (showBays) BX.forEach((a, i) => o += `<text x="${X(xs[i] + a / 2)}" y="${dy - 6}" font-size="9" text-anchor="middle" class="d-ink">${f2(a)}</text>`);
+    o += `<line class="d-line" x1="${ox}" y1="${dy - 22}" x2="${ox + w}" y2="${dy - 22}" stroke-width=".7"/>`;
+    o += `<text x="${ox + w / 2}" y="${dy - 28}" font-size="12" font-weight="600" text-anchor="middle" class="d-ink">${f2(TW)}</text>`;
+    const dx = ox - 64;
+    o += `<line class="d-line" x1="${dx}" y1="${oy}" x2="${dx}" y2="${oy + h}" stroke-width=".7"/>`;
+    for (const y of ys) o += `<line class="d-line" x1="${dx - 2.5}" y1="${Y(y) + 2.5}" x2="${dx + 2.5}" y2="${Y(y) - 2.5}" stroke-width=".9"/>`;
+    if (BY.length <= 24 && Math.min(...BY) * k > 26) BY.forEach((a, i) => o += `<text transform="translate(${dx - 6} ${Y(ys[i] + a / 2)}) rotate(-90)" font-size="9" text-anchor="middle" class="d-ink">${f2(a)}</text>`);
+    o += `<line class="d-line" x1="${dx - 22}" y1="${oy}" x2="${dx - 22}" y2="${oy + h}" stroke-width=".7"/>`;
+    o += `<text transform="translate(${dx - 28} ${oy + h / 2}) rotate(-90)" font-size="12" font-weight="600" text-anchor="middle" class="d-ink">${f2(TH)}</text>`;
+    // title + legend
+    o += `<text x="20" y="30" font-size="15" font-weight="600" class="d-ink">แปลนฝาถังน้ำใส</text>`;
+    o += `<text x="${W - 20}" y="30" font-size="11" text-anchor="end" class="d-muted">หน่วย: ม. · มาตราส่วนโดยประมาณ</text>`;
+    const ly = oy + h + 40;
+    o += `<rect x="${ox}" y="${ly - 7}" width="16" height="12" class="d-usable"/><text x="${ox + 22}" y="${ly + 3}" font-size="11" class="d-ink">พื้นที่ติดตั้งแผงได้ (ประมาณ)</text>`;
+    o += `<rect x="${ox + 210}" y="${ly - 6}" width="11" height="11" class="d-sym" stroke-width=".9"/><text x="${ox + 228}" y="${ly + 3}" font-size="11" class="d-ink">ช่องลงถัง</text>`;
+    o += `<rect x="${ox + 300}" y="${ly - 4}" width="6" height="8" class="d-sym" stroke-width=".9"/><text x="${ox + 312}" y="${ly + 3}" font-size="11" class="d-ink">บันไดขึ้นถัง</text>`;
+    o += `<text x="${ox + 400}" y="${ly + 3}" font-size="11" class="d-muted">แตะช่องบนแปลนเพื่อวางหรือลบช่องระบายอากาศ</text>`;
+    svg.setAttribute("viewBox", `0 0 ${W} ${ly + 20}`);
+    svg.innerHTML = o;
+
+    // stats + counts
+    $("ventCount").textContent = `· ${vents.length} จุด`;
+    $("hatchCount").textContent = `· ${hatches.length} จุด`;
+    $("ladderCount").textContent = `· ${ladders.length} จุด`;
+    $("pipeCount").textContent = `· ${pipes.length} ท่อ`;
+    const stat = (v, l, hl) => `<div class="stat${hl ? " hl" : ""}"><b>${v}</b><span>${l}</span></div>`;
+    $("stats").innerHTML =
+      stat(`${fmt(TW)} × ${fmt(TH)}`, `ขนาดถัง (ม.) · ${BX.length} × ${BY.length} ช่อง`) +
+      stat(Math.round(TW * TH).toLocaleString("th-TH"), "หลังคาถัง (ม²)") +
+      stat(`${vents.length} / ${hatches.length}`, "ช่องระบายอากาศ / ช่องลงถัง") +
+      stat(Math.round(usable).toLocaleString("th-TH"), "พื้นที่ติดแผงได้ (ม²)", true) +
+      stat(Math.round(usable / m2).toLocaleString("th-TH"), "ขนาดระบบโดยประมาณ (kWp)", true);
+    $("msgs").innerHTML = msgs.map(m => `<div class="msg">${esc(m)}</div>`).join("");
+    $("assumed").textContent = `ค่าสมมติ: เว้นขอบ ${fmt(setE)} ม. · รอบช่องเปิด ${fmt(setO)} ม. · ${fmt(m2)} ม²/kWp · คานกว้าง 0.30 ม.`;
+  }
+
+  load("t40");
+})();
+</script>

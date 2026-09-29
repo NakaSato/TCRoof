@@ -65,6 +65,15 @@ public final class JobStore: @unchecked Sendable {
 
     public func data(of photo: Photo, in job: UUID) -> Data? { try? Data(contentsOf: url(of: photo, in: job)) }
 
+    /// False for a photo taken on another device whose file hasn't been downloaded here.
+    public func hasPhoto(_ photo: Photo, in job: UUID) -> Bool { fm.fileExists(atPath: url(of: photo, in: job).path) }
+
+    /// Stores the bytes of a photo taken on another device under the reference the job already holds.
+    public func writePhoto(_ data: Data, for photo: Photo, in job: UUID) throws {
+        try fm.createDirectory(at: photosFolder(job), withIntermediateDirectories: true)
+        try data.write(to: url(of: photo, in: job), options: .atomic)
+    }
+
     /// Removes photo files no longer referenced by the job (after a photo is replaced or deleted).
     @discardableResult
     public func purgeUnusedPhotos(of job: Job) -> Int {

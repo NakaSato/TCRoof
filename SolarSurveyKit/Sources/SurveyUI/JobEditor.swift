@@ -21,7 +21,7 @@ struct JobEditorView: View {
     @State private var sidebarVisible = true
     @State private var collapsed: Set<SectionCategory> = []
     @State private var pendingExport: PendingExport?
-    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target; let go: () -> Void }
+    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; let go: () -> Void }
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(job: Job) { _job = State(initialValue: job) }
@@ -49,6 +49,10 @@ struct JobEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .onChange(of: job) { _, new in model.update(new) }
+        // the Drive link changes elsewhere (export sheet, another device) — take it so the next edit doesn't drop it
+        .onChange(of: model.job(job.id)?.drive) { _, d in if let d, d != job.drive { job.drive = d } }
+        // photos taken on another iPad: fetch them from Drive now, and again when that iPad uploads more
+        .task(id: model.job(job.id)?.drive?.photoFiles?.count ?? 0) { await model.fetchMissingPhotos(job.id) }
         .onDisappear { model.flush(job.id) }
         #if DEBUG
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
@@ -63,7 +67,7 @@ struct JobEditorView: View {
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .alert("ข้อมูลยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in
-            Button("ไปกรอกให้ครบ") { let t = p.target; pendingExport = nil; select(page(for: t)) }
+            if let t = p.target { Button("ไปกรอกให้ครบ") { pendingExport = nil; select(page(for: t)) } }
             Button("ส่งออกต่อ") { let go = p.go; pendingExport = nil; go() }
             Button("ยกเลิก", role: .cancel) { pendingExport = nil }
         } message: { p in Text(p.gaps.joined(separator: "\n")) }
@@ -177,6 +181,7 @@ struct JobEditorView: View {
                 Label("\(job.photoCount)", systemImage: "photo")
             }
             .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            photoStatus
             if let next = nextIncomplete, next.page != page {
                 Button { select(next.page) } label: {
                     Label("ไปต่อ: \(next.code) \(next.title)", systemImage: "arrow.right.circle.fill")
@@ -187,6 +192,21 @@ struct JobEditorView: View {
             }
         }
         .padding(.vertical, 6)
+    }
+
+    /// Download progress, or how many photos are still only on another device.
+    @ViewBuilder var photoStatus: some View {
+        let gap = PhotoGap(model: model, job: job)
+        if let f = model.photoFetch[job.id], f.running {
+            HStack(spacing: 6) {
+                ProgressView(value: Double(f.done + f.failed), total: Double(f.total)).frame(width: 60)
+                Text("กำลังดึงรูปจาก Drive \(f.done)/\(f.total)")
+            }
+            .font(.caption).foregroundStyle(.secondary)
+        } else if gap.missing > 0 {
+            Label("รูป \(gap.missing) รูปยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash")
+                .font(.caption).foregroundStyle(.orange)
+        }
     }
 
     func groupHeader(_ g: SidebarGroup) -> some View {
@@ -401,8 +421,10 @@ struct JobEditorView: View {
     /// Warns before an export while required answers are missing, listing them per page.
     func checked(_ go: @escaping () -> Void) {
         let groups = job.missingGroups
-        guard let first = groups.first else { return go() }
-        pendingExport = PendingExport(gaps: groups.map { "\($0.title): \($0.items.count) รายการ" }, target: first.target, go: go)
+        let photos = PhotoGap(model: model, job: job)
+        guard !groups.isEmpty || photos.missing > 0 else { return go() }
+        let lines = (photos.missing > 0 ? [photos.message] : []) + groups.map { "\($0.title): \($0.items.count) รายการ" }
+        pendingExport = PendingExport(gaps: lines, target: groups.first?.target, go: go)
     }
 
     func page(for target: MissingGroup.Target) -> Page {
@@ -470,6 +492,22 @@ struct StatusMark: View {
                 .frame(width: 15, height: 15)
             }
         }
+    }
+}
+
+/// Photos a job refers to that this device doesn't have, and why.
+struct PhotoGap {
+    let missing: Int
+    /// Saved to Drive by the iPad that took them, so they can be downloaded here.
+    let onDrive: Int
+    @MainActor init(model: SurveyModel, job: Job) {
+        missing = model.missingPhotos(job).count
+        onDrive = model.downloadablePhotos(job).count
+    }
+    var message: String {
+        var s = "มีรูป \(missing) รูปที่ยังไม่อยู่ในเครื่องนี้ รายงานจะไม่มีรูปเหล่านี้"
+        if missing > onDrive { s += "\n\(missing - onDrive) รูปยังไม่ได้บันทึกขึ้น Google Drive — ให้เครื่องที่ถ่ายบันทึกรูปภาพลง Drive ก่อน" }
+        return s
     }
 }
 

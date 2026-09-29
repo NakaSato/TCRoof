@@ -6,6 +6,17 @@ final class SurveyCoreTests: XCTestCase {
         JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("ss-" + UUID().uuidString))
     }
 
+    /// A job synced from another iPad refers to photos whose files aren't here until they are downloaded.
+    func testPhotoFromAnotherDevice() throws {
+        let store = tmpStore(), job = UUID()
+        let p = Photo(fileName: UUID().uuidString + ".jpg", width: 10, height: 10)
+        XCTAssertFalse(store.hasPhoto(p, in: job))
+        XCTAssertNil(store.data(of: p, in: job))
+        try store.writePhoto(Data([1, 2, 3]), for: p, in: job)
+        XCTAssertTrue(store.hasPhoto(p, in: job))
+        XCTAssertEqual(store.data(of: p, in: job), Data([1, 2, 3]))
+    }
+
     func testNewJobAndProgress() throws {
         var j = Job.new(template: JobTemplate.all[0])
         XCTAssertEqual(j.modules.map(\.type), [.panel, .inverter, .water, .backfeed, .fts, .roof])

@@ -128,7 +128,8 @@ public final class SurveyModel {
     /// Host-supplied name of a linked job ("TC-0012 · สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
     @ObservationIgnored public var linkedJobLabel: ((String) -> String?)?
 
-    /// A job changed on another device; replaces the local copy as is (its photos stay on the device that took them).
+    /// A job changed on another device; replaces the local copy as is.
+    /// Photo files don't travel with it — the editor downloads them from Drive (`fetchMissingPhotos`).
     public func applyRemote(_ job: Job) {
         pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
         if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job } else { jobs.insert(job, at: 0) }
@@ -153,11 +154,58 @@ public final class SurveyModel {
     }
 
     public func image(_ p: Photo, in job: UUID) -> UIImage? {
+        _ = photoRevision  // views showing an empty frame look again once a download lands
         let key = "\(job.uuidString)/\(p.fileName)" as NSString
         if let i = cache.object(forKey: key) { return i }
         guard let d = store.data(of: p, in: job), let i = UIImage(data: d) else { return nil }
         cache.setObject(i, forKey: key)
         return i
+    }
+
+    // MARK: photos taken on another device
+
+    /// Progress of downloading one job's missing photos from Drive.
+    public struct PhotoFetch: Equatable, Sendable {
+        public var total = 0, done = 0, failed = 0
+        public var error: String?
+        public var running: Bool { done + failed < total }
+    }
+    public private(set) var photoFetch: [UUID: PhotoFetch] = [:]
+    private var photoRevision = 0
+
+    /// Photos the job refers to whose files aren't on this device (taken on another iPad).
+    public func missingPhotos(_ job: Job) -> [Photo] { job.allPhotos.filter { !store.hasPhoto($0, in: job.id) } }
+
+    /// The missing photos that the device which took them already saved to Drive, with their Drive file ids.
+    public func downloadablePhotos(_ job: Job) -> [(photo: Photo, fileID: String)] {
+        let files = job.drive?.photoFiles ?? [:]
+        return missingPhotos(job).compactMap { p in files[p.id.uuidString].map { (p, $0) } }
+    }
+
+    /// Downloads the job's missing photos from its Drive folder, four at a time. Does nothing while signed out.
+    public func fetchMissingPhotos(_ id: UUID) async {
+        guard photoFetch[id]?.running != true, google.isSignedIn, let job = job(id) else { return }
+        let todo = downloadablePhotos(job)
+        guard !todo.isEmpty else { return }
+        photoFetch[id] = PhotoFetch(total: todo.count)
+        let client = DriveClient(tokens: google), store = self.store
+        await withTaskGroup(of: String?.self) { group in
+            var next = todo.makeIterator()
+            func start() -> Bool {
+                guard let (p, fileID) = next.next() else { return false }
+                group.addTask {
+                    do { try store.writePhoto(try await client.download(fileID), for: p, in: id); return nil }
+                    catch { return error.localizedDescription }
+                }
+                return true
+            }
+            for _ in 0..<4 { if !start() { break } }
+            for await failure in group {
+                if let failure { photoFetch[id]?.failed += 1; photoFetch[id]?.error = failure }
+                else { photoFetch[id]?.done += 1; photoRevision += 1 }
+                _ = start()
+            }
+        }
     }
 
     /// Satellite picture centred on the job's GPS, stored like any other photo.

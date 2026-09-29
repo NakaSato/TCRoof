@@ -42,6 +42,9 @@ struct ExportSheet: View {
     @State private var preview: PDFPreviewItem?
     /// GoogleAuth reads the keychain and isn't observable — mirror its state here.
     @State private var signedIn = false
+    /// Export held back until the user confirms it may go out without the photos this device lacks.
+    @State private var pendingGo: PendingGo?
+    struct PendingGo: Identifiable { let id = UUID(); let gap: PhotoGap; let go: () -> Void }
 
     private var selected: [Format] {
         let set = Set(stored.split(separator: ",").map(String.init))
@@ -61,6 +64,8 @@ struct ExportSheet: View {
             List {
                 if let job = model.job(jobID) {
                     statusSection(job)
+                    let gap = PhotoGap(model: model, job: job)
+                    if gap.missing > 0 || model.photoFetch[jobID]?.running == true { photoSection(gap) }
                     let groups = job.missingGroups
                     if !groups.isEmpty { missingSection(groups) }
                 }
@@ -78,6 +83,11 @@ struct ExportSheet: View {
             .interactiveDismissDisabled(busy != nil)
         }
         .onAppear { signedIn = model.google.isSignedIn }
+        .alert("รูปยังไม่ครบในเครื่องนี้", isPresented: Binding(get: { pendingGo != nil }, set: { if !$0 { pendingGo = nil } }), presenting: pendingGo) { p in
+            if p.gap.onDrive > 0 { Button("ดาวน์โหลดรูปก่อน") { pendingGo = nil; fetchPhotos() } }
+            Button("ส่งออกต่อ") { let go = p.go; pendingGo = nil; go() }
+            Button("ยกเลิก", role: .cancel) { pendingGo = nil }
+        } message: { p in Text(p.gap.message) }
         .sheet(item: $shared) { s in ShareSheet(items: s.urls).presentationDetents([.medium, .large]) }
         .sheet(item: $preview) { p in PDFPreview(item: p) }
     }
@@ -95,6 +105,31 @@ struct ExportSheet: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    /// Photos taken on another iPad: download progress, or a button to fetch the ones already on Drive.
+    func photoSection(_ gap: PhotoGap) -> some View {
+        let fetch = model.photoFetch[jobID]
+        return Section {
+            if let f = fetch, f.running {
+                ProgressView(value: Double(f.done + f.failed), total: Double(f.total)) {
+                    Text("กำลังดาวน์โหลดรูปจาก Google Drive \(f.done)/\(f.total)").font(.callout)
+                }
+            } else {
+                Label("มีรูป \(gap.missing) รูปที่ยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash").font(.headline).foregroundStyle(.orange)
+                if gap.onDrive > 0 {
+                    Button { fetchPhotos() } label: { Label("ดาวน์โหลด \(gap.onDrive) รูปจาก Google Drive", systemImage: "icloud.and.arrow.down") }
+                        .disabled(busy != nil)
+                }
+                if let e = fetch?.error, fetch?.failed ?? 0 > 0 {
+                    Text("ดาวน์โหลดไม่สำเร็จ \(fetch!.failed) รูป: \(e)").font(.caption).foregroundStyle(.red)
+                }
+            }
+        } footer: {
+            Text(gap.missing > gap.onDrive
+                 ? "\(gap.missing - gap.onDrive) รูปยังไม่ได้บันทึกขึ้น Google Drive — ให้เครื่องที่ถ่ายส่งออก \"รูปภาพ\" ลง Drive ก่อน แล้วเปิดงานนี้อีกครั้ง"
+                 : "รูปถ่ายจากเครื่องอื่น ถ้าส่งออกตอนนี้รายงานจะไม่มีรูปเหล่านี้")
         }
     }
 
@@ -235,7 +270,26 @@ struct ExportSheet: View {
         }
     }
 
-    func share() {
+    /// Runs `go` at once, or after the user agrees to export without the photos this device lacks.
+    func confirmPhotos(_ go: @escaping () -> Void) {
+        guard let job = model.job(jobID) else { return }
+        let gap = PhotoGap(model: model, job: job)
+        if gap.missing == 0 { go() } else { pendingGo = PendingGo(gap: gap, go: go) }
+    }
+
+    func fetchPhotos() {
+        run("กำลังดาวน์โหลดรูปจาก Google Drive…") {
+            if !model.google.isSignedIn { try await model.google.signIn() }
+            signedIn = true
+            await model.fetchMissingPhotos(jobID)
+            if let f = model.photoFetch[jobID], f.failed > 0 {
+                throw DriveFailure(message: "ดาวน์โหลดรูปไม่สำเร็จ \(f.failed) รูป" + (f.error.map { ": " + $0 } ?? ""))
+            }
+        }
+    }
+
+    func share() { confirmPhotos(doShare) }
+    func doShare() {
         guard let job = model.job(jobID) else { return }
         let formats = selected.filter(\.shareable)
         log = []
@@ -259,7 +313,8 @@ struct ExportSheet: View {
         }
     }
 
-    func saveToDrive() {
+    func saveToDrive() { confirmPhotos(doSaveToDrive) }
+    func doSaveToDrive() {
         guard let job = model.job(jobID) else { return }
         let kinds = driveKinds, photos = selected.contains(.photos)
         log = []

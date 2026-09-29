@@ -27,6 +27,12 @@ struct PhotoField: View {
             if let p = photo, let img = model.image(p, in: jobID) {
                 Image(uiImage: img).resizable().scaledToFit()
                     .onTapGesture { showFull = true }
+            } else if photo != nil {
+                // taken on another iPad and not downloaded yet — don't offer to fill the frame again
+                VStack(spacing: 8) {
+                    Image(systemName: "icloud.and.arrow.down").font(.system(size: 28)).foregroundStyle(.secondary)
+                    Text("รูปนี้ถ่ายจากเครื่องอื่น ยังไม่อยู่ในเครื่องนี้").font(.callout).foregroundStyle(.secondary)
+                }
             } else {
                 VStack(spacing: 10) {
                     Image(systemName: "photo.badge.plus").font(.system(size: 30)).foregroundStyle(.secondary)
@@ -167,7 +173,7 @@ struct SignatureField: View {
             ZStack {
                 Rectangle().fill(Color.white)
                 if let p = photo, let img = model.image(p, in: jobID) { Image(uiImage: img).resizable().scaledToFit().padding(6) }
-                else { Text("แตะเพื่อเซ็นชื่อ").foregroundStyle(.secondary) }
+                else { Text(photo == nil ? "แตะเพื่อเซ็นชื่อ" : "ลายเซ็นอยู่บนเครื่องอื่น").foregroundStyle(.secondary) }
             }
             .frame(maxWidth: 320).frame(height: 110)
             .overlay(Rectangle().stroke(Color.secondary.opacity(0.4)))

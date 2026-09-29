@@ -154,9 +154,9 @@ public extension FieldSpec {
     }
 }
 
-/// "1.5,4,4" → [1.5, 4, 4]
+/// "1.5,4,4" → [1.5, 4, 4]; "4ม., ๔" and "4 m" read too.
 public func parseSpans(_ s: String) -> [Double] {
-    s.split { ",/ \t".contains($0) }.compactMap { Double($0) }.filter { $0 > 0 }
+    s.split { ",/ \t".contains($0) }.compactMap { NumberInput.value(String($0)) }.filter { $0 > 0 }
 }
 
 /// Number formatting as on the forms: no trailing ".0".

@@ -42,6 +42,18 @@ final class ValidationTests: XCTestCase {
         XCTAssertFalse(info.contains { $0.hasPrefix("*") })
     }
 
+    func testNumbersSavedBeforeCleanUpStillCount() {
+        var v = Values()
+        v["floodDepth"] = .text("1,200")
+        XCTAssertEqual(v.number("floodDepth"), 1200)
+        v["floodDepth"] = .text("50 ซม.")
+        XCTAssertEqual(v.number("floodDepth"), 50)
+        v["floodHistory"] = .choice("เคย", other: "")
+        XCTAssertEqual(Schema.recommendedEquipHeight(v), 100)
+        XCTAssertEqual(parseSpans("1.5ม., 4 m, ๔"), [1.5, 4, 4])
+        XCTAssertNil(v.number("missing"))
+    }
+
     func testMissingItemsFollowGroups() {
         let j = Job.new(template: JobTemplate.all[0])
         XCTAssertEqual(j.missingItems.count, j.missingCount)

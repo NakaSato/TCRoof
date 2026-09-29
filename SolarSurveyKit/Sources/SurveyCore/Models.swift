@@ -103,7 +103,7 @@ public struct Values: Codable, Hashable, Sendable {
             for s in suffixes { storage["tr\(j)_\(s)"] = storage["tr\(j + 1)_\(s)"] }
         }
     }
-    public func number(_ id: String) -> Double? { Double(text(id).trimmingCharacters(in: .whitespaces)) }
+    public func number(_ id: String) -> Double? { NumberInput.value(text(id)) }
     /// Every photo referenced by these answers (for copying, deleting and counting).
     public var allPhotos: [Photo] {
         storage.values.flatMap { v -> [Photo] in

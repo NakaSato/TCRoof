@@ -115,7 +115,7 @@ public enum Drawings {
         o.append(.line(Pt(dx - 16, oy), Pt(dx - 16, oy + h), width: 0.6, color: .black))
         o.append(.text(fmt(TH), at: Pt(dx - 22, oy + h / 2), size: 9, bold: true, align: .center, angle: -90))
         for ob in v.obstacles("obst") {
-            guard let x = Double(ob.x), let y = Double(ob.y), let ow = Double(ob.w), let oh = Double(ob.h), ow > 0, oh > 0 else { continue }
+            guard let x = NumberInput.value(ob.x), let y = NumberInput.value(ob.y), let ow = NumberInput.value(ob.w), let oh = NumberInput.value(ob.h), ow > 0, oh > 0 else { continue }
             let r = Box(ox + x * k, oy + y * k, ow * k, oh * k)
             o.append(.rect(r, stroke: nil, fill: .white)); o.append(.hatch(r, color: .red)); o.append(.rect(r, stroke: .red, fill: nil, width: 1))
             if !ob.label.isEmpty { o.append(.text("\(ob.label) \(fmt(ow))x\(fmt(oh))", at: Pt(r.maxX + 3, r.maxY - 3), size: 8, color: .dark)) }

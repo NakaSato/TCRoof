@@ -27,6 +27,9 @@ public enum NumberInput {
         return out
     }
 
+    /// The number in `s` after clean-up, so values saved before typing was cleaned still count.
+    public static func value(_ s: String) -> Double? { Double(clean(s)) }
+
     /// Empty, or text `Double` can read.
     public static func isValid(_ s: String) -> Bool {
         let t = s.trimmingCharacters(in: .whitespaces)

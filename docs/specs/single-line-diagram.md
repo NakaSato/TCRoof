@@ -1,6 +1,6 @@
 # Auto Single Line Diagram (SLD)
 
-**Status:** Draft, 2026-09-29 · **Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline, same rules)
+**Status:** Draft, 2026-09-29 · **Swift dev spec:** [`single-line-diagram-swift.md`](single-line-diagram-swift.md) · **Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline, same rules)
 
 The SLD is generated from the survey form, with no drawing work by the surveyor. It has two levels:
 

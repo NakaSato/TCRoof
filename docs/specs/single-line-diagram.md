@@ -81,8 +81,8 @@ number above each column is its position.
 
 | Value | Rule | Example |
 |---|---|---|
-| Transformer full-load current | kVA × 1000 ÷ (1.732 × 400 V) | 250 kVA → 361 A |
-| Main vs transformer | note when main AT > full-load current × 1.25 or < 0.8 × | 300 AT vs 361 A, no note |
+| Transformer full-load current | kVA × 1000 ÷ (1.732 × 400 V) | 630 kVA → 909 A |
+| Main vs transformer | note when main AT > full-load current × 1.25 or < 0.8 × | 300 AT vs 909 A → note (sample drawings are from different stations) |
 | AT ≤ AF | note on any breaker where AT > AF | |
 | Feeder count | total, in use, spare | 6 (5 + 1 spare) |
 | Sum of feeder AT | in-use feeders only, shown for reference (diversity not applied) | 430 AT |

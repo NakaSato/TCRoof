@@ -135,12 +135,14 @@ def tank_plan(cfg, path, W=1000):
         if axis == "x":   # cut line at x = pos, bubbles top/bottom
             for yb, up in ((oy - 32, True), (oy + h + 32, False)):
                 cx = P(pos, 0)[0]
+                sk.poly([(cx - 22, yb - 9), (cx - 10, yb - 9), (cx - 16, yb - 19)], BLACK, BLACK, 0.8)   # view arrow
                 sk.circle((cx - 16, yb), 10, BLACK, "white", 0.9); sk.text(str(n), (cx - 16, yb), 9, True, BLACK, "center")
                 sk.line((cx, yb), (cx, oy - 6 if up else oy + h + 6), 1.0, BLACK)
                 sk.line((cx - 6, yb), (cx, yb), 1.0, BLACK)
         else:             # cut line at y = pos, bubbles left/right
             for xb in (ox - 60, ox + w + 60):
                 cy = P(0, pos)[1]
+                sk.poly([(xb - 6, cy - 25), (xb + 6, cy - 25), (xb, cy - 35)], BLACK, BLACK, 0.8)       # view arrow
                 sk.circle((xb, cy - 16), 10, BLACK, "white", 0.9); sk.text(str(n), (xb, cy - 16), 9, True, BLACK, "center")
                 sk.line((xb, cy), (ox - 6 if xb < ox else ox + w + 6, cy), 1.0, BLACK)
                 sk.line((xb, cy - 6), (xb, cy), 1.0, BLACK)
@@ -155,9 +157,9 @@ def tank_plan(cfg, path, W=1000):
     dx = ox - 150
     sk.line((dx, oy), (dx, oy + h), 0.6)
     for y in ys: sk.line((dx - 2, oy + y * k + 2), (dx + 2, oy + y * k - 2), 0.8)
-    for i, a_ in enumerate(BY): sk.text(f"{a_:.2f}", (dx - 8, oy + (ys[i] + a_ / 2) * k), 7, False, BLACK, "center", -90)
-    sk.line((dx - 20, oy), (dx - 20, oy + h), 0.6)
-    sk.text(f"{TH:.2f}", (dx - 28, oy + h / 2), 8.5, True, BLACK, "center", -90)
+    for i, a_ in enumerate(BY): sk.text(f"{a_:.2f}", (dx - 6, oy + (ys[i] + a_ / 2) * k), 7, False, BLACK, "right")
+    sk.line((dx - 44, oy), (dx - 44, oy + h), 0.6)
+    sk.text(f"{TH:.2f}", (dx - 50, oy + h / 2), 8.5, True, BLACK, "right")
 
     # legend + summary
     ly = oy + h + (70 if cfg.get("section_marks") else 24)

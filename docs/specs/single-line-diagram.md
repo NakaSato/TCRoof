@@ -15,7 +15,7 @@ black load blocks.
 | PV + กันย้อนแรงต่ำ | B4 level = แรงต่ำ | ![](img/sld_pv_lv.png) |
 | PV + กันย้อนแรงสูง | B4 level = แรงสูง | ![](img/sld_pv_hv.png) |
 
-Sample values come from the MDP sheet the team shared. The transformer (250 kVA) and PV (120 kWp, 4 × 30 kW) are
+Sample values come from the MDP sheet the team shared. The upstream values come from the PEA HV drawing (a different station). PV (120 kWp, 4 × 30 kW) are
 samples.
 
 ## Inputs
@@ -23,13 +23,21 @@ samples.
 The surveyor copies what is written on the panel nameplate, the breakers and the cables: sizes and text only, no
 choices to design.
 
-### Upstream (A3, exists today)
+### Upstream (A3)
 
-| Drawn item | Field | Note |
-|---|---|---|
-| Grid voltage | new optional `gridKV` | default 22 kV, printed as ค่าสมมติ when blank |
-| Transformer name, kVA | `trafos[i].kva` (+ name `TR1`…, derived from order) | |
-| PEA meter number | `meterNo` | |
+Drawn in the style of the PEA HV drawing: HV line with poles → Drop Out Fuse/Disconnecting Switch → PEA meter (HV
+metering) → Drop Out Fuse with lightning arrester (E1) → cable terminations → transformer (Δ/Y) with tank ground E1
+and neutral ground E2.
+
+| Drawn item | Field | Example | Note |
+|---|---|---|---|
+| Grid voltage | `gridKV` | 22 | default 22 kV, printed as ค่าสมมติ when blank |
+| Metering side | `meterAt` = HV / LV | HV | HV: meter "M" between the two drop-out fuses; LV: kWh meter after the transformer |
+| PEA meter number | `meterNo` (exists) | | optional |
+| Lightning arrester | `arrester` yes/no | yes | |
+| Transformer name, kVA | `trafos[i].kva` (exists), name from order | TR1, 630 | |
+| Transformer type | text from nameplate | OIL IMMERSED TYPE | |
+| Vector group, impedance | text, number (%) | Dyn11, 4.14 | |
 
 ### MDB schedule (new, one per MDB in A3)
 
@@ -89,8 +97,7 @@ Standard AT: 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500,
 
 ## Layout rules
 
-- Top to bottom, centre column: grid ▽ → drop-out fuse → transformer (two circles) → PEA kWh meter → dash-dot line
-  into the enclosure → main breaker → CT → busbar.
+- Top to bottom, centre column: the upstream chain above → dash-dot line into the enclosure → main breaker → CT → busbar.
 - Pilot lamps and DP meter branch right from the incoming line above the main breaker; the CT signal line returns to
   the DP box.
 - Busbar spans the feeder columns; columns are spaced evenly across the enclosure. The incoming line joins the bus at
@@ -104,7 +111,7 @@ Standard AT: 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500,
   dashed to the FTS.
 - กันย้อนแรงต่ำ: a blue CT on the main line between the existing CT and the bus; relay box inside the enclosure right
   of the DP meter; dashed CT → relay → PV breaker ("สั่งปลด").
-- กันย้อนแรงสูง: blue HV CT on the line between the drop-out fuse and the transformer, VT branching left; relay box
+- กันย้อนแรงสูง: blue HV CT on the line between the PEA meter and the second drop-out fuse, VT branching left; relay box
   left of the HV line labelled with the B4 pole; the trip line runs above the enclosure and down its right side to the
   PV breaker.
 - Legend (existing / new PV / control) appears only when PV is drawn.

@@ -11,7 +11,8 @@ FRAMES = [100, 160, 250, 400, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000
 V, K = 400.0, 1.25          # assumed: 400/230 V system, breaker = 1.25 x rated current
 
 # ---- survey input (sample = the MDP sheet the user shared; transformer and PV sizes are sample values) ----
-UP = dict(grid_kv="22", tr_name="TR1", tr_kva=250, meter_no="PEA 12-345678", pole="เสา 22 kV หน้าสถานี")
+UP = dict(grid_kv="22", meter_at="hv", meter_no="", arrester=True,          # sample = the PEA HV drawing the user shared
+          tr_name="TR1", tr_type="OIL IMMERSED TYPE", vector="Dyn11", z=4.14, tr_kva=630, pole="เสา 22 kV หน้าสถานี")
 MDB = dict(
     name="MDP", ic_ka=25, main=(3, 300, 400), ct="300/5A", dp="DP2", pilot="3x6A",
     busbar="4x300A. Cu. BUSBAR W/GROUND BUS",
@@ -66,29 +67,81 @@ def sld(path, mode):
     sub = {"none": "ระบบไฟฟ้าเดิม · ไม่มีระบบ PV", "lv": "ระบบเดิม + PV · กันย้อนแรงต่ำ", "hv": "ระบบเดิม + PV · กันย้อนแรงสูง"}[mode]
     title_strip(sk, f"แผนภาพเส้นเดียว — {MDB['name']}", f"สร้างจากแบบสำรวจ A1 · A3 · B2 · B4 · B5 · ตาราง MDB · {sub}")
     x0 = 470
-    # ---------------- upstream (A3): grid → drop-out fuse → [HV CT/VT] → transformer → PEA meter
-    sk.poly([(x0 - 9, 50), (x0 + 9, 50), (x0, 63)], DARK, None, 1.2)
-    sk.text(f"ระบบจำหน่าย กฟภ. {UP['grid_kv']} kV", (x0 + 16, 54), 8.5, True)
-    sk.line((x0, 63), (x0, 78), 1.4, DARK)
-    sk.rect(x0 - 4, 78, 8, 16, DARK, "white", 1.1); sk.text("ดรอปเอาท์ฟิวส์", (x0 + 14, 86), 8)
-    y = 94
+    # ---------------- upstream (A3), style of the PEA HV drawing: HV line → DOF/DS → PEA meter → DOF + LA → transformer
+    kv = UP["grid_kv"]; hy = 62
+    sk.line((x0 - 420, hy), (x0 + 420, hy), 1.2, DARK)
+    for px in (x0 - 330, x0, x0 + 330): sk.rect(px - 4, hy - 4, 8, 8, INK2, FAINT, 0.6)
+    for bx in (x0 - 190, x0 + 190):
+        sk.line((bx - 8, hy + 8), (bx - 2, hy - 8), 0.9, DARK); sk.arc((bx + 6, hy), 8, 110, 250, 0.9, DARK)
+    for lx in (x0 - 165, x0 + 165): sk.text(f"PEA {kv}kV", (lx, hy - 12), 9, False, DARK, "center")
+
+    def dof(yt, label):
+        sk.circle((x0, yt), 2.2, DARK, "white", 0.9)
+        sk.line((x0 - 5, yt + 4), (x0 + 5, yt + 20), 1.2, DARK); sk.arc((x0 + 5, yt + 17), 3, 270, 90, 1.0, DARK)
+        sk.line((x0, yt + 20), (x0, yt + 24), 1.2, DARK)
+        sk.text(label, (x0 + 14, yt + 11), 8.5)
+        return yt + 24
+
+    sk.line((x0, hy), (x0, 80), 1.2, DARK)
+    y = dof(82, "Drop Out Fuse/Disconnecting Switch")
+    if UP["meter_at"] == "hv":                                               # HV metering (PEA meter before the transformer)
+        sk.line((x0, y), (x0, y + 8), 1.2, DARK)
+        sk.rect(x0 - 4, y + 8, 8, 8, INK2, FAINT, 0.6)
+        sk.line((x0, y + 16), (x0, y + 24), 1.2, DARK)
+        sk.circle((x0, y + 34), 10, DARK, "white", 1.1); sk.text("M", (x0, y + 34), 7.5, True, DARK, "center")
+        ctrl_pts = [(x0 + 4, y + 12), (x0 + 16, y + 12), (x0 + 16, y + 34), (x0 + 10, y + 34)]
+        for a, b in zip(ctrl_pts, ctrl_pts[1:]): sk.line(a, b, 0.8, DARK)
+        sk.text(f"PEA METER {UP['meter_no']}".strip(), (x0 + 22, y + 48), 8.5)
+        y += 44
+    relay_y = None
+    y2 = y + 76                                                              # second drop-out fuse
+    sk.line((x0, y), (x0, y2 - 2), 1.2, DARK)
     if mode == "hv":
-        sk.line((x0, y), (x0, y + 40), 1.4, DARK)
-        sk.circle((x0, y + 14), 6, NEW, None, 1.2)                           # HV CT
-        sk.line((x0, y + 28), (x0 - 40, y + 28), 0.9, NEW)                   # VT branch
-        sk.circle((x0 - 46, y + 28), 6, NEW, None, 1.1); sk.circle((x0 - 56, y + 28), 6, NEW, None, 1.1)
-        sk.text("CT/VT แรงสูง (ใหม่)", (x0 + 14, y + 14), 8, False, NEW)
-        relay(sk, 180, y + 4, 160, "รีเลย์กันย้อน แรงสูง", f"ติดตั้งที่{UP['pole']}")
-        ctrl(sk, [(x0 - 6, y + 14), (340, y + 14)]); ctrl(sk, [(x0 - 62, y + 28), (340, y + 28)])
-        y += 40
-    sk.line((x0, y), (x0, y + 10), 1.4, DARK)
-    sk.circle((x0, y + 22), 12, DARK, None, 1.3); sk.circle((x0, y + 40), 12, DARK, None, 1.3)
-    sk.text(f"{UP['tr_name']} {UP['tr_kva']:,} kVA · {UP['grid_kv']} kV/400-230 V", (x0 + 20, y + 31), 8.5, True)
-    sk.line((x0, y + 52), (x0, y + 64), 1.4, DARK)
-    sk.circle((x0, y + 75), 11, DARK, "white", 1.2); sk.text("kWh", (x0, y + 75), 6.5, True, DARK, "center")
-    sk.text(f"มิเตอร์ กฟภ. {UP['meter_no']}", (x0 + 18, y + 75), 8)
-    B = y + 106                                                              # enclosure top
-    sk.line((x0, y + 86), (x0, B), 2.2, DARK, [10, 3, 2, 3])
+        cy = y + 22
+        sk.circle((x0, cy), 6, NEW, None, 1.2)                               # HV CT
+        sk.line((x0, cy + 16), (x0 - 40, cy + 16), 0.9, NEW)                 # VT branch
+        sk.circle((x0 - 46, cy + 16), 6, NEW, None, 1.1); sk.circle((x0 - 56, cy + 16), 6, NEW, None, 1.1)
+        sk.text("CT/VT แรงสูง (ใหม่)", (x0 + 14, cy), 8, False, NEW)
+        relay_y = cy - 10
+        relay(sk, 180, relay_y, 160, "รีเลย์กันย้อน แรงสูง", f"ติดตั้งที่{UP['pole']}")
+        ctrl(sk, [(x0 - 6, cy), (340, cy)]); ctrl(sk, [(x0 - 62, cy + 16), (340, cy + 16)])
+    y = dof(y2, "DROP OUT FUSE")
+    jy = y + 4
+    sk.line((x0, y), (x0, jy + 22), 1.2, DARK)
+    if UP["arrester"]:                                                       # lightning arrester → E1
+        sk.line((x0, jy), (x0 - 60, jy), 1.0, DARK); sk.line((x0 - 60, jy), (x0 - 60, jy + 10), 1.0, DARK)
+        sk.rect(x0 - 66, jy + 10, 12, 26, DARK, "white", 1.0)
+        sk.line((x0 - 60, jy + 13), (x0 - 60, jy + 30), 0.8, DARK); sk.poly([(x0 - 63, jy + 26), (x0 - 57, jy + 26), (x0 - 60, jy + 33)], DARK, DARK)
+        sk.text("Lightning Arrester", (x0 - 72, jy + 22), 7.5, False, DARK, "right")
+        sk.line((x0 - 60, jy + 36), (x0 - 60, jy + 46), 1.0, DARK)
+        for i, wdt in enumerate((12, 8, 4)): sk.line((x0 - 60 - wdt / 2, jy + 46 + i * 3), (x0 - 60 + wdt / 2, jy + 46 + i * 3), 1.0, DARK)
+        sk.text("E1", (x0 - 72, jy + 48), 8, False, DARK, "right")
+    for ay in (jy + 20, jy + 30):                                            # cable terminations
+        sk.poly([(x0 - 6, ay), (x0 + 6, ay), (x0, ay + 9)], DARK, DARK)
+    t1 = jy + 62; r = 17
+    sk.line((x0, jy + 39), (x0, t1 - r), 1.2, DARK)
+    sk.circle((x0, t1), r, DARK, None, 1.2); sk.circle((x0, t1 + 24), r, DARK, None, 1.2)
+    sk.poly([(x0 - 7, t1 + 4), (x0 + 7, t1 + 4), (x0, t1 - 8)], DARK, None, 0.9)       # delta
+    sk.line((x0, t1 + 26), (x0, t1 + 34), 0.9, DARK)                                  # wye
+    sk.line((x0, t1 + 26), (x0 - 6, t1 + 20), 0.9, DARK); sk.line((x0, t1 + 26), (x0 + 6, t1 + 20), 0.9, DARK)
+    for i, s in enumerate((f"{UP['tr_name']} {UP['tr_type']}", f"{kv}k/230-400 V", f"{UP['vector']}, Z={UP['z']}%", f"{UP['tr_kva']:,} kVA")):
+        sk.text(s, (x0 + 28, t1 - 8 + i * 15), 9 if i == 0 else 8.5, i == 0)
+    gy = t1 + 66                                                              # tank → E1, neutral → E2
+    sk.circle((x0 - r, t1), 1.8, DARK, "white", 0.8)
+    for (sx, sy, gx2, name) in ((x0 - r, t1, x0 - 115, "E1"), (x0 - 12, t1 + 24, x0 - 75, "E2")):
+        sk.line((sx, sy), (gx2, sy), 0.9, DARK); sk.line((gx2, sy), (gx2, gy), 0.9, DARK)
+        for i, wdt in enumerate((12, 8, 4)): sk.line((gx2 - wdt / 2, gy + i * 3), (gx2 + wdt / 2, gy + i * 3), 1.0, DARK)
+        sk.text(name, (gx2 - 10, gy + 2), 8, False, DARK, "right")
+    sk.text("GROUND ROD", (x0 - 95, gy + 18), 8, False, DARK, "center")
+    sk.text("( EXISTING )", (x0 - 95, gy + 30), 8, False, DARK, "center")
+    y = t1 + 24 + r
+    if UP["meter_at"] == "lv":
+        sk.line((x0, y), (x0, y + 12), 1.4, DARK)
+        sk.circle((x0, y + 23), 11, DARK, "white", 1.2); sk.text("kWh", (x0, y + 23), 6.5, True, DARK, "center")
+        sk.text(f"PEA METER {UP['meter_no']}".strip(), (x0 + 18, y + 23), 8)
+        y += 34
+    B = max(y + 40, gy + 62)                                                 # enclosure top
+    sk.line((x0, y), (x0, B), 2.2, DARK, [10, 3, 2, 3])
     # ---------------- MDB enclosure (dashed)
     bx0, bx1, by1 = 40, W - 100, B + 290
     for a, b in (((bx0, B), (bx1, B)), ((bx1, B), (bx1, by1)), ((bx1, by1), (bx0, by1)), ((bx0, by1), (bx0, B))):
@@ -192,7 +245,7 @@ def sld(path, mode):
             ctrl(sk, [(x0 + 6, B + 125), (rx + 40, B + 125), (rx + 40, ry + 34)])
             ctrl(sk, [(rx + 130, ry + 17), (pvx + 40, ry + 17), (pvx + 40, trip_y), (pvx + 10, trip_y)])
         else:
-            ctrl(sk, [(260, 94 + 38), (260, B - 14), (bx1 + 30, B - 14), (bx1 + 30, trip_y), (pvx + 10, trip_y)])
+            ctrl(sk, [(260, relay_y + 34), (260, B - 14), (bx1 + 30, B - 14), (bx1 + 30, trip_y), (pvx + 10, trip_y)])
         sk.text("สั่งปลด", (pvx + 44, trip_y - 8), 7.5, False, NEW)
         rows = [f"กระแสอินเวอร์เตอร์ {fmt(kw_inv)} kW ÷ (1.732 × 400 V) = {i_inv:.1f} A × 1.25 ได้เบรกเกอร์ {a_inv} AT/{af(a_inv)} AF",
                 f"กระแสรวม PV {PV['kwp']} kW = {i_tot:.1f} A × 1.25 ได้เบรกเกอร์ PV {a_pv} AT/{af(a_pv)} AF",
@@ -213,7 +266,7 @@ def sld(path, mode):
         sk.line((130, ny), (156, ny), 1.4, NEW); sk.text("อุปกรณ์ใหม่ (PV)", (162, ny), 8.5, False, NEW)
         sk.line((280, ny), (306, ny), 0.9, NEW, [4, 3]); sk.text("สายสัญญาณควบคุม", (312, ny), 8.5, False, NEW)
         ny += 18
-    note = "ค่าสมมติ: 400/230 V · PF 1 · เบรกเกอร์ 1.25 × กระแส · ขนาดสาย PV ยังไม่รวม" if pv else "หม้อแปลง 250 kVA เป็นค่าตัวอย่าง · ส่วนอื่นตามแบบ MDP ที่ส่งมา"
+    note = "ค่าสมมติ: 400/230 V · PF 1 · เบรกเกอร์ 1.25 × กระแส · ขนาดสาย PV ยังไม่รวม" if pv else "ค่าตัวอย่างตามแบบแรงสูงและแบบ MDP ที่ส่งมา (คนละสถานี)"
     sk.text(note, (14, ny), 8, False, INK2)
     sk.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง", (W - 14, ny), 8, False, RED, "right")
     sk.render(ny + 14, path)

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Notification — คอมโพเนนต์การแจ้งเตือน</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+</style>
+</helmet>
+<div class="g" style="width: 480px; height: 532px; box-sizing: border-box; padding: 20px; background: #F3F6FA"><section role="dialog" aria-label="การแจ้งเตือน" style="position:relative;width:440px;background:#FFFFFF;border:1px solid #77889E;border-radius:16px;box-shadow:0 3px 8px rgba(0,0,0,0.15);overflow:hidden;color:#16325C">
+<div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;border-bottom:1px solid #77889E"><b style="font-size:18px">การแจ้งเตือน</b><span style="{{pillSt}}">{{unreadTxt}}</span>
+<button onClick="{{readAll}}" style="margin-left:auto;min-height:44px;padding:0 10px;border:0;background:none;color:#1F6FB5;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">อ่านทั้งหมด</button>
+<button onClick="{{cNt}}" aria-label="ปิด" style="width:44px;height:44px;border-radius:8px;border:1px solid #DDE4ED;background:#fff;color:#16325C;font-size:20px;cursor:pointer;font-family:inherit">×</button></div>
+<div style="padding:10px 16px 6px;font-size:12px;font-weight:700;color:#5B6B82;background:#F3F6FA;border-bottom:1px solid #DDE4ED">วันนี้ · 30/9/2569</div>
+<a href="iPadHome.dc.html" style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid #DDE4ED;text-decoration:none;color:#16325C;{{u1Bg}}"><span style="width:40px;height:40px;border-radius:8px;background:#E3EEF8;color:#1F6FB5;display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="5" width="12" height="15" rx="2"></rect><path d="M9 4h6v3H9zM9 11h6M9 14.5h6M9 18h4"></path></svg></span><div style="flex-grow:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;line-height:22px">นัดสำรวจ 09:30</b><span style="margin-left:auto;font-size:12px;color:#5B6B82;white-space:nowrap">อีก 9 ชม.</span></div><div style="font-size:14px;line-height:21px;color:#5B6B82">NO.224 กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1 · ต.หนองบัว อ.เมือง</div></div><sc-if value="{{u1}}" hint-placeholder-val="{{false}}"><span style="width:10px;height:10px;border-radius:50%;background:#1F6FB5;flex:none;margin-top:6px" aria-label="ยังไม่อ่าน"></span></sc-if></a>
+<a href="#" style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid #DDE4ED;text-decoration:none;color:#16325C;"><span style="width:40px;height:40px;border-radius:8px;background:#E3EEF8;color:#16325C;display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4M8 14h3M13 14h3M8 17h3"></path></svg></span><div style="flex-grow:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;line-height:22px">ติดตั้ง Day 2/5</b><span style="margin-left:auto;font-size:12px;color:#5B6B82;white-space:nowrap">08:00</span></div><div style="font-size:14px;line-height:21px;color:#5B6B82">TC-0012 · ทีม A · 120 kWp · จ.ตัวอย่าง</div></div></a>
+<a href="iPadHome.dc.html" style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid #DDE4ED;text-decoration:none;color:#16325C;"><span style="width:40px;height:40px;border-radius:8px;background:#FFF4E5;color:#B45309;display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"></path><path d="M12 11v5M12 18v.5"></path></svg></span><div style="flex-grow:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;line-height:22px">รอซิงก์ 2 งาน</b><span style="margin-left:auto;font-size:12px;color:#5B6B82;white-space:nowrap">23:05</span></div><div style="font-size:14px;line-height:21px;color:#5B6B82">ยังไม่ได้บันทึกขึ้น Google Drive · แตะเพื่อซิงก์ตอนมีสัญญาณ</div></div></a>
+<div style="padding:10px 16px 6px;font-size:12px;font-weight:700;color:#5B6B82;background:#F3F6FA;border-bottom:1px solid #DDE4ED">ก่อนหน้า</div>
+<a href="iPadHome.dc.html" style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid #DDE4ED;text-decoration:none;color:#16325C;"><span style="width:40px;height:40px;border-radius:8px;background:#E2EFDA;color:#3B7420;display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="8"></circle><path d="M8.5 12.5l2.3 2.3 4.7-5"></path></svg></span><div style="flex-grow:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;line-height:22px">บันทึกขึ้น Drive แล้ว</b><span style="margin-left:auto;font-size:12px;color:#5B6B82;white-space:nowrap">29/9 16:42</span></div><div style="font-size:14px;line-height:21px;color:#5B6B82">NO.120 การประปาวัดชัย · 24 ภาพ</div></div></a>
+<div style="display:flex;align-items:center;justify-content:center;height:48px;font-size:14px;font-weight:700;color:#1F6FB5">ดูการแจ้งเตือนทั้งหมด</div>
+</section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":480,"height":532}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const open = st.nt === undefined ? true : st.nt, read = !!st.read;
+    const n = read ? 0 : 1;
+    return {
+      isNt: open, tNt: () => this.setState({ nt: !open }), cNt: () => this.setState({ nt: false }), readAll: () => this.setState({ read: true }),
+      unread: n, u1: !read, u1Bg: read ? '' : 'background:#F3F8FD',
+      badgeSt: n ? 'position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#D9453B;color:#FFFFFF;font-size:12px;font-weight:700;display:grid;place-items:center' : 'display:none',
+      bellSt: open ? 'border:2px solid #1F6FB5;background:#E3EEF8' : '',
+      unreadTxt: n ? 'ยังไม่อ่าน ' + n : 'อ่านครบแล้ว',
+      pillSt: 'font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;' + (n ? 'background:#E3EEF8;color:#1F6FB5' : 'background:#E2EFDA;color:#3B7420')
+    };
+  }
+}
+</script>
+</body>
+</html>

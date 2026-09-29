@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8"><title>TCRoof — หน้าหลัก</title><style>/* GRoof / TCRoof wizard shell — values from InspectionView (InspectionViews.swift), Components.swift, Theme.swift */
+.g, .g * { box-sizing: border-box; }
+.g {
+  --navy: #16325C; --primary: #1F6FB5; --primary-light: #2E8FDB; --teal: #27A99A; --mint: #9EE6D6;
+  --danger: #D9453B; --background: #F3F6FA; --muted: #7A8BA3; --text-2: #5B6B82;
+  font-family: -apple-system, "SF Pro Text", Sarabun, system-ui, sans-serif; color: var(--navy); background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+.g svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* header: headerGradient, bottom corners 15 */
+.g-head { flex: none; display: flex; align-items: center; gap: 14px; padding: 18px 24px; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); border-radius: 0 0 15px 15px; color: #FFFFFF; }
+.g-close { width: 36px; height: 36px; border-radius: 8px; background: #FFFFFF; color: var(--primary); display: grid; place-items: center; border: 0; flex: none; }
+.g-close svg { stroke-width: 2.5; width: 18px; height: 18px; }
+.g-head .t { font-size: 20px; line-height: 25px; font-weight: 700; }
+.g-head .s { font-size: 15px; line-height: 20px; opacity: .92; }
+
+/* progress: "3/11" · step name · capsules (gradient = current/past, mint = complete, grey = todo) */
+.g-prog { flex: none; padding: 14px 24px; display: flex; flex-direction: column; gap: 10px; }
+.g-prog .row { display: flex; justify-content: space-between; font-size: 15px; color: var(--navy); }
+.g-prog .row b { font-weight: 700; }
+.g-caps { display: flex; gap: 6px; }
+.g-caps i { flex: 1; height: 8px; border-radius: 4px; background: rgba(142,142,147,0.25); }
+.g-caps i.cur { background: linear-gradient(90deg, #1F6FB5, #2E8FDB); }
+.g-caps i.ok { background: var(--mint); }
+
+/* step body (maxWidth 760, padding 24, spacing 20) */
+.g-body { flex-grow: 1; overflow: hidden; padding: 4px 24px 24px; display: flex; flex-direction: column; gap: 20px; }
+.g-sec { font-size: 20px; line-height: 25px; font-weight: 600; color: var(--navy); }
+.g-hint { display: flex; gap: 6px; align-items: flex-start; font-size: 15px; line-height: 20px; color: var(--muted); }
+.g-hint svg { width: 17px; height: 17px; margin-top: 1px; }
+.g-sep { height: 1px; background: rgba(22,50,92,0.12); }
+
+/* FieldLabel: headline navy + red * */
+.g-field { display: flex; flex-direction: column; gap: 8px; }
+.g-label { display: flex; align-items: baseline; gap: 8px; font-size: 17px; line-height: 22px; font-weight: 600; color: var(--navy); }
+.g-label .req { color: var(--danger); }
+.g-label .aside { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--muted); }
+/* OutlinedFieldStyle: padding 14, radius 10, navy 45% stroke */
+.g-input { display: flex; align-items: center; min-height: 50px; padding: 14px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); border-radius: 10px; font-size: 17px; line-height: 22px; color: var(--navy); }
+.g-input.focus { border: 2px solid var(--primary); padding: 13px; }
+.g-input .ph { color: var(--muted); }
+.g-input .unit { margin-left: auto; padding-left: 10px; font-size: 20px; color: var(--muted); }
+.g-input.calc { background: rgba(158,230,214,0.3); }
+.g-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.g-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+
+/* ChoiceButton: minHeight 54, radius 10; selected mint (ไม่ผ่าน/ไม่ใช่: danger 25%) */
+.g-choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; }
+.g-choices.wrap { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.g-choice { min-height: 54px; display: grid; place-items: center; padding: 0 10px; text-align: center; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.5); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-choice.on { background: var(--mint); border-color: rgba(22,50,92,0.2); }
+.g-choice.no { background: rgba(217,69,59,0.25); border-color: rgba(22,50,92,0.2); }
+
+/* photo: อัปโหลด | กล้อง, thumbnails with x */
+.g-photobtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.g-pbtn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); font-size: 16px; font-weight: 600; color: var(--navy); }
+.g-pbtn svg { color: var(--primary); }
+.g-thumbs { display: flex; gap: 12px; flex-wrap: wrap; }
+.g-thumb { width: 84px; height: 84px; border-radius: 8px; background: #C9D6E3; position: relative; }
+.g-thumb .x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #FFFFFF; display: grid; place-items: center; }
+.g-thumb .x svg { width: 12px; height: 12px; stroke-width: 3; }
+.g-thumb .tag { position: absolute; left: 4px; bottom: 4px; font-size: 11px; line-height: 16px; background: rgba(255,255,255,0.92); padding: 0 6px; border-radius: 4px; }
+.g-nophoto { min-height: 80px; display: grid; place-items: center; background: #FFFFFF; border: 1px dashed rgba(122,139,163,0.5); border-radius: 10px; font-size: 15px; color: var(--muted); }
+.g-hasphoto { min-height: 50px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-crit { font-size: 15px; line-height: 20px; color: var(--danger); }
+
+/* bottom bar: บันทึก (outlined) + ‹ › gradient 120×56 */
+.g-bar { flex: none; display: flex; gap: 16px; padding: 16px 24px 28px; background: #FFFFFF; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.g-save { flex-grow: 1; min-height: 56px; border-radius: 12px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.6); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-nav { width: 120px; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); color: #FFFFFF; display: grid; place-items: center; }
+.g-nav svg { width: 22px; height: 22px; stroke-width: 2.75; }
+.g-nav.off { background: rgba(142,142,147,0.4); }
+.g-go { flex-grow: 1; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #27A99A, #4DB6E0); color: #FFFFFF; font-size: 17px; font-weight: 600; }
+
+/* StepSummaryRow */
+.g-sum { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; background: #FFFFFF; border-radius: 12px; text-decoration: none; color: var(--navy); }
+.g-sum .n { flex-grow: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+.g-sum .n small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.g-sum .ok { color: #2E9E5B; }
+.g-sum .miss { color: var(--danger); }
+.g-sum .chev { color: var(--muted); }
+</style></head><body style="margin:0">
+
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+</style>
+
+<div class="g" style="position: relative; width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden; background: #F3F6FA">
+<header style="margin:28px 63px 0;border:1px solid #77889E;border-radius:16px;background:#FFFFFF;color:#16325C;overflow:hidden;box-shadow:0 3px 8px rgba(22,50,92,0.08)">
+<div style="display:flex;align-items:stretch;height:92px">
+<div style="display:flex;align-items:center;gap:14px;padding:0 24px;width:300px;box-sizing:border-box;flex:none"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxMjU3QzkiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMEEyNDU4Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzdW5HbG93IiBjeD0iMC41IiBjeT0iMC41IiByPSIwLjUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRkQ2NkIiIHN0b3Atb3BhY2l0eT0iMC42Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGRDY2QiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJwYW5lbCIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM1MkI4RkYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMUE2RkUwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGNsaXBQYXRoIGlkPSJyb29mQ2xpcCI+CiAgICAgIDxwYXRoIGQ9Ik0zMjIgMzcyIEw3MDIgMzcyIEw4MTIgNTk2IEwyMTIgNTk2IFoiLz4KICAgIDwvY2xpcFBhdGg+CiAgPC9kZWZzPgoKICA8cmVjdCB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiBmaWxsPSJ1cmwoI2JnKSIvPgoKICA8IS0tIHN1biAtLT4KICA8Y2lyY2xlIGN4PSI3NzAiIGN5PSIyMzYiIHI9IjIwMCIgZmlsbD0idXJsKCNzdW5HbG93KSIvPgogIDxjaXJjbGUgY3g9Ijc3MCIgY3k9IjIzNiIgcj0iODgiIGZpbGw9IiNGRkM1M0QiLz4KCiAgPCEtLSBob3VzZSB3YWxsIC0tPgogIDxyZWN0IHg9IjI2MiIgeT0iNTk2IiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjIyNCIgZmlsbD0iI0U4RUVGOCIvPgogIDxyZWN0IHg9IjQ1MiIgeT0iNjgwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE0MCIgcng9IjEyIiBmaWxsPSIjMEEyNDU4Ii8+CiAgPHJlY3QgeD0iMzEyIiB5PSI2NTAiIHdpZHRoPSI5MCIgaGVpZ2h0PSI4MCIgcng9IjEwIiBmaWxsPSIjOUZDM0YyIi8+CiAgPHJlY3QgeD0iNjIyIiB5PSI2NTAiIHdpZHRoPSI5MCIgaGVpZ2h0PSI4MCIgcng9IjEwIiBmaWxsPSIjOUZDM0YyIi8+CgogIDwhLS0gcm9vZiBmcmFtZSAtLT4KICA8cGF0aCBkPSJNMzAyIDM1MiBMNzIyIDM1MiBMODUyIDYxNiBMMTcyIDYxNiBaIiBmaWxsPSIjRkZGRkZGIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CgogIDwhLS0gc29sYXIgYXJyYXkgb24gcm9vZiBmYWNlIC0tPgogIDxnIGNsaXAtcGF0aD0idXJsKCNyb29mQ2xpcCkiPgogICAgPHJlY3QgeD0iMjAwIiB5PSIzNjAiIHdpZHRoPSI2MjQiIGhlaWdodD0iMjUwIiBmaWxsPSJ1cmwoI3BhbmVsKSIvPgogICAgPGcgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjEwIiBmaWxsPSJub25lIj4KICAgICAgPCEtLSBob3Jpem9udGFsIHJvd3MgLS0+CiAgICAgIDxsaW5lIHgxPSIxNTAiIHkxPSI0NDYiIHgyPSI4NzQiIHkyPSI0NDYiLz4KICAgICAgPGxpbmUgeDE9IjE1MCIgeTE9IjUyMiIgeDI9Ijg3NCIgeTI9IjUyMiIvPgogICAgICA8IS0tIGNvbnZlcmdpbmcgY29sdW1ucyAocGVyc3BlY3RpdmUpIC0tPgogICAgICA8bGluZSB4MT0iNDE3IiB5MT0iMzcyIiB4Mj0iMzYyIiB5Mj0iNTk2Ii8+CiAgICAgIDxsaW5lIHgxPSI1MTIiIHkxPSIzNzIiIHgyPSI1MTIiIHkyPSI1OTYiLz4KICAgICAgPGxpbmUgeDE9IjYwNyIgeTE9IjM3MiIgeDI9IjY2MiIgeTI9IjU5NiIvPgogICAgPC9nPgogICAgPCEtLSBzaGVlbiAtLT4KICAgIDxwYXRoIGQ9Ik0zMjIgMzcyIEw0NzAgMzcyIEwzMDAgNTk2IEwyMTIgNTk2IFoiIGZpbGw9IiNGRkZGRkYiIG9wYWNpdHk9IjAuMTIiLz4KICA8L2c+Cjwvc3ZnPgo=" alt="TCRoof" style="width:48px;height:48px;border-radius:11px;flex:none;display:block"><div><div style="font-size:22px;line-height:28px;font-weight:700;color:#16325C">TCRoof</div><div style="font-size:14px;line-height:20px;color:#5B6B82">ระบบงานติดตั้งโซลาร์รูฟ</div></div></div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 20px;border-left:1px solid #77889E;width:auto;box-sizing:border-box;flex:none;flex:1"><span style="font-size:12px;line-height:16px;color:#5B6B82;font-weight:700">ผู้ใช้งาน</span><span style="font-size:19px;line-height:26px;font-weight:700">wit.chanthawat</span><span style="font-size:14px;line-height:20px;color:#5B6B82">วิศวกรสำรวจ</span></div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 20px;border-left:1px solid #77889E;width:160px;box-sizing:border-box;flex:none;"><span style="font-size:12px;line-height:16px;color:#5B6B82;font-weight:700">วันที่</span><span style="font-size:19px;line-height:26px;font-weight:700;font-variant-numeric:tabular-nums">30/9/2569</span><span style="font-size:14px;line-height:20px;color:#5B6B82">วันพุธ</span></div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 20px;border-left:1px solid #77889E;width:110px;box-sizing:border-box;flex:none;"><span style="font-size:12px;line-height:16px;color:#5B6B82;font-weight:700">เวลา</span><span style="font-size:19px;line-height:26px;font-weight:700;font-variant-numeric:tabular-nums">00:10</span><span style="font-size:14px;line-height:20px;color:#5B6B82">น.</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:0 20px;border-left:1px solid #77889E;flex:none"><button aria-label="การแจ้งเตือน" onClick="" style="position:relative;width:44px;height:44px;border-radius:8px;border:1px solid #77889E;background:#FFFFFF;color:#16325C;display:grid;place-items:center;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg><span style="position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#D9453B;color:#FFFFFF;font-size:12px;font-weight:700;display:grid;place-items:center">1</span></button><button aria-label="ตั้งค่า" style="position:relative;width:44px;height:44px;border-radius:8px;border:1px solid #77889E;background:#FFFFFF;color:#16325C;display:grid;place-items:center;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button></div>
+</div>
+<div style="display:flex;align-items:stretch;height:56px;border-top:1px solid #77889E;background:#E2EFDA">
+<div style="display:flex;align-items:center;padding:0 24px;width:300px;box-sizing:border-box;flex:none"><span style="font-size:15px;line-height:20px;font-weight:700;color:#1F2E24">สถานะวันนี้</span></div>
+<div style="display:flex;flex:1;border-left:1px solid #77889E;background:#FFFFFF"><div style="flex:1;display:flex;align-items:center;gap:10px;padding:0 18px;border-left:1px solid #DDE4ED"><b style="font-size:26px;line-height:32px;color:#1F6FB5;font-variant-numeric:tabular-nums">2</b><span style="font-size:14px;line-height:20px;color:#5B6B82;white-space:nowrap">นัดสำรวจวันนี้</span></div><div style="flex:1;display:flex;align-items:center;gap:10px;padding:0 18px;border-left:1px solid #DDE4ED"><b style="font-size:26px;line-height:32px;color:#16325C;font-variant-numeric:tabular-nums">4</b><span style="font-size:14px;line-height:20px;color:#5B6B82;white-space:nowrap">งานสำรวจยังขาด</span></div><div style="flex:1;display:flex;align-items:center;gap:10px;padding:0 18px;border-left:1px solid #DDE4ED"><b style="font-size:26px;line-height:32px;color:#B45309;font-variant-numeric:tabular-nums">2</b><span style="font-size:14px;line-height:20px;color:#5B6B82;white-space:nowrap">รอซิงก์</span></div></div>
+<div style="display:flex;align-items:center;gap:8px;padding:0 24px;border-left:1px solid #77889E;width:470px;box-sizing:border-box;flex:none;background:#FFFFFF"><span style="font-size:12px;line-height:16px;color:#5B6B82;font-weight:700;white-space:nowrap">งานถัดไป</span><span style="font-size:15px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="font-variant-numeric:tabular-nums">09:30</b> · NO.224 กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1</span></div>
+</div>
+</header>
+<main style="flex-grow:1;padding:24px 63px 28px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:238px;gap:24px 24px;align-content:start">
+<div style="display:flex;align-items:center;gap:24px;min-height:238px;padding:0 40px 0 36px;border-radius:16px;background:#FFFFFF;box-shadow:0 3px 8px rgba(22,50,92,0.08);text-decoration:none;color:#16325C;box-sizing:border-box">
+<div style="flex-grow:1;min-width:0"><div style="font-size:30px;line-height:44px;font-weight:700;color:#16325C">สำรวจหน้างาน</div><div style="font-size:19px;line-height:28px;color:#5B6B82;margin-top:4px">นัดหมาย เก็บข้อมูลหลังคาและระบบไฟฟ้า</div></div>
+<div style="position:relative;width:120px;height:120px;flex:none"><div style="position:absolute;left:0;top:6px;width:104px;height:108px;border-radius:16px;background:#E3EEF8;transform:rotate(-10deg)"></div><div style="position:absolute;left:14px;top:4px;width:106px;height:108px;border-radius:16px;background:#1F6FB5;transform:rotate(6deg);display:grid;place-items:center;box-shadow:0 3px 8px rgba(22,50,92,0.08)"><div style="transform:rotate(-6deg)"><svg viewBox="0 0 24 24" style="width:56px;height:56px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><rect x="5.5" y="4.5" width="13" height="16" rx="2.5" fill="#fff" stroke="none"></rect><rect x="9" y="3" width="6" height="3.5" rx="1.2" fill="#fff" stroke="#1F6FB5" stroke-width="1.6"></rect><path d="M8.5 10.5h7M8.5 13.5h7M8.5 16.5h5" stroke="#1F6FB5" stroke-width="1.8"></path></svg></div></div></div>
+</div><div style="display:flex;align-items:center;gap:24px;min-height:238px;padding:0 40px 0 36px;border-radius:16px;background:#FFFFFF;box-shadow:0 3px 8px rgba(22,50,92,0.08);text-decoration:none;color:#16325C;box-sizing:border-box">
+<div style="flex-grow:1;min-width:0"><div style="font-size:30px;line-height:44px;font-weight:700;color:#16325C">แผนก่อสร้าง<br>และเอกสาร</div><div style="font-size:19px;line-height:28px;color:#5B6B82;margin-top:4px">ปฏิทินทีมติดตั้งและเอกสารโครงการ</div></div>
+<div style="position:relative;width:120px;height:120px;flex:none"><div style="position:absolute;left:0;top:6px;width:104px;height:108px;border-radius:16px;background:#E3EEF8;transform:rotate(-10deg)"></div><div style="position:absolute;left:14px;top:4px;width:106px;height:108px;border-radius:16px;background:#1F6FB5;transform:rotate(6deg);display:grid;place-items:center;box-shadow:0 3px 8px rgba(22,50,92,0.08)"><div style="transform:rotate(-6deg)"><svg viewBox="0 0 24 24" style="width:56px;height:56px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="5" width="16" height="15" rx="2.5" fill="#fff" stroke="none"></rect><rect x="4" y="5" width="16" height="4" rx="2" fill="#fff" stroke="none"></rect><g fill="#1F6FB5" stroke="none"><circle cx="8" cy="12.5" r="1"></circle><circle cx="12" cy="12.5" r="1"></circle><circle cx="16" cy="12.5" r="1"></circle><circle cx="8" cy="16" r="1"></circle><circle cx="12" cy="16" r="1"></circle><circle cx="16" cy="16" r="1"></circle></g><path d="M4 9.5h16" stroke="#1F6FB5" stroke-width="1.4"></path></svg></div></div></div>
+</div><div style="display:flex;align-items:center;gap:24px;min-height:238px;padding:0 40px 0 36px;border-radius:16px;background:#FFFFFF;box-shadow:0 3px 8px rgba(22,50,92,0.08);text-decoration:none;color:#16325C;box-sizing:border-box">
+<div style="flex-grow:1;min-width:0"><div style="font-size:30px;line-height:44px;font-weight:700;color:#16325C">สแกนอุปกรณ์</div><div style="font-size:19px;line-height:28px;color:#5B6B82;margin-top:4px">สแกนซีเรียลแผงและอินเวอร์เตอร์</div></div>
+<div style="position:relative;width:120px;height:120px;flex:none"><div style="position:absolute;left:0;top:6px;width:104px;height:108px;border-radius:16px;background:#E3EEF8;transform:rotate(-10deg)"></div><div style="position:absolute;left:14px;top:4px;width:106px;height:108px;border-radius:16px;background:#1F6FB5;transform:rotate(6deg);display:grid;place-items:center;box-shadow:0 3px 8px rgba(22,50,92,0.08)"><div style="transform:rotate(-6deg)"><svg viewBox="0 0 24 24" style="width:56px;height:56px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"></path><path d="M8.5 9v6M10.5 9v6M12.5 9v6M14 9v6M15.5 9v6" stroke-width="1.4"></path></svg></div></div></div>
+</div><div style="display:flex;align-items:center;gap:24px;min-height:238px;padding:0 40px 0 36px;border-radius:16px;background:#FFFFFF;box-shadow:0 3px 8px rgba(22,50,92,0.08);text-decoration:none;color:#16325C;box-sizing:border-box">
+<div style="flex-grow:1;min-width:0"><div style="font-size:30px;line-height:44px;font-weight:700;color:#16325C">บันทึกงานติดตั้ง<br>และใบตรวจรับงาน</div><div style="font-size:19px;line-height:28px;color:#5B6B82;margin-top:4px">บันทึกประจำวันและใบตรวจรับ (ICL)</div></div>
+<div style="position:relative;width:120px;height:120px;flex:none"><div style="position:absolute;left:0;top:6px;width:104px;height:108px;border-radius:16px;background:#E3EEF8;transform:rotate(-10deg)"></div><div style="position:absolute;left:14px;top:4px;width:106px;height:108px;border-radius:16px;background:#1F6FB5;transform:rotate(6deg);display:grid;place-items:center;box-shadow:0 3px 8px rgba(22,50,92,0.08)"><div style="transform:rotate(-6deg)"><svg viewBox="0 0 24 24" style="width:56px;height:56px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" fill="#fff" stroke="none"></path><path d="M3.5 10h17" stroke="#1F6FB5" stroke-width="1.4"></path></svg></div></div></div>
+</div><a href="iPadHome.dc.html" style="display:flex;align-items:center;gap:24px;min-height:238px;padding:0 40px 0 36px;border-radius:16px;background:#FFFFFF;box-shadow:0 3px 8px rgba(22,50,92,0.08);text-decoration:none;color:#16325C;box-sizing:border-box">
+<div style="flex-grow:1;min-width:0"><div style="font-size:30px;line-height:44px;font-weight:700;color:#16325C">การประปา<br>ส่วนภูมิภาค</div><div style="font-size:19px;line-height:28px;color:#5B6B82;margin-top:4px">Excel / PDF / Drive</div></div>
+<div style="position:relative;width:120px;height:120px;flex:none"><div style="position:absolute;left:0;top:6px;width:104px;height:108px;border-radius:16px;background:#E3EEF8;transform:rotate(-10deg)"></div><div style="position:absolute;left:14px;top:4px;width:106px;height:108px;border-radius:16px;background:#1F6FB5;transform:rotate(6deg);display:grid;place-items:center;box-shadow:0 3px 8px rgba(22,50,92,0.08)"><div style="transform:rotate(-6deg)"><svg viewBox="0 0 24 24" style="width:56px;height:56px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 3.5c3.5 4.5 6 7.6 6 10.8a6 6 0 0 1-12 0c0-3.2 2.5-6.3 6-10.8z" fill="#fff" stroke="none"></path></svg></div></div></div>
+</a>
+</main>
+
+</div>
+</body></html>

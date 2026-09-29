@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import SurveyUI
 
 enum AppModule: String, CaseIterable, Identifiable {
     case survey, plan, scan, install, pwa
@@ -49,9 +50,12 @@ enum AppModule: String, CaseIterable, Identifiable {
 
 struct HomeView: View {
     @AppStorage("userName") private var userName = ""
+    @AppStorage("notifications.read") private var readRaw = ""
+    @Environment(GoogleSession.self) private var session
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State private var showSettings = false
     @State private var showNotifications = false
+    @State private var showAllNotifications = false
 
     private var todaysJobs: [Job] {
         jobs.filter { $0.installDay(on: .now) != nil || $0.surveyDate.isToday }
@@ -61,7 +65,8 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 header
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: isPhone ? 280 : 340), spacing: 20)], spacing: 20) {
+                LazyVGrid(columns: isPhone ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 24), count: 2),
+                          spacing: isPhone ? 20 : 24) {
                     ForEach(AppModule.allCases) { module in
                         NavigationLink { module.destination } label: { ModuleCard(module: module) }
                             .buttonStyle(.plain)
@@ -70,54 +75,60 @@ struct HomeView: View {
                 todaySection
             }
             .padding(isPhone ? 20 : 32)
-            .frame(maxWidth: 1100)
+            .frame(maxWidth: 1240)
             .frame(maxWidth: .infinity)
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showNotifications) { NotificationsView(jobs: todaysJobs) }
+        #if DEBUG
+        // `-homeNotifications YES` opens the bell panel for simulator checks
+        .task { if UserDefaults.standard.bool(forKey: "homeNotifications") { try? await Task.sleep(for: .seconds(1)); showNotifications = true } }
+        #endif
+        .sheet(isPresented: $showAllNotifications) {
+            NotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: sync)
+        }
     }
+
+    // MARK: header
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(userName.isEmpty ? "สวัสดี" : "สวัสดี, \(userName)")
-                    .font(.system(size: isPhone ? 28 : 36, weight: .bold))
-                    .foregroundStyle(Theme.navy)
-                TimelineView(.everyMinute) { context in
-                    Text(context.date.thaiLongTime)
-                        .font(.title3)
-                        .foregroundStyle(Theme.navy.opacity(0.8))
-                }
-            }
-            Spacer()
-            HStack(spacing: 12) {
-                circleButton("bell", badge: todaysJobs.count, label: "การแจ้งเตือน") { showNotifications = true }
-                circleButton("gearshape", label: "ตั้งค่า") { showSettings = true }
-            }
+        let survey = session.survey
+        let stats: [HomeHeader<NotificationPanel>.Stat] = [
+            .init(label: "นัดสำรวจวันนี้", value: jobs.filter { $0.surveyDate.isToday }.count, color: Theme.primary),
+            .init(label: "งานสำรวจยังขาด", value: survey.jobs.filter { !$0.completion.isComplete }.count, color: Theme.navy),
+            .init(label: "รอซิงก์", value: survey.jobsToSync.count, color: Theme.pending),
+        ]
+        let items = notifications, read = readIDs
+        return HomeHeader(userName: userName, stats: stats, next: nextAppointment,
+                          unread: items.filter { !read.contains($0.id) }.count,
+                          showNotifications: $showNotifications, openSettings: { showSettings = true }) {
+            NotificationPanel(items: items, read: read, markRead: markRead, sync: sync,
+                              close: { showNotifications = false },
+                              showAll: { showNotifications = false; showAllNotifications = true })
         }
     }
 
-    private func circleButton(_ symbol: String, badge: Int = 0, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundStyle(Theme.navy)
-                .frame(width: 48, height: 48)
-                .background(.white, in: Circle())
-                .overlay(alignment: .topTrailing) {
-                    if badge > 0 {
-                        Text("\(badge)")
-                            .font(.caption2.bold())
-                            .foregroundStyle(.white)
-                            .frame(minWidth: 18, minHeight: 18)
-                            .background(Theme.danger, in: Circle())
-                    }
-                }
+    /// "09:30 · TC-0012 ชื่อโครงการ" — today's first survey appointment still ahead.
+    private var nextAppointment: String {
+        guard let j = jobs.filter({ $0.surveyDate.isToday && $0.surveyDate > .now }).min(by: { $0.surveyDate < $1.surveyDate }) else {
+            return "ไม่มีนัดวันนี้"
         }
-        .accessibilityLabel(label)
+        return j.surveyDate.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)) + " · \(j.code) \(j.projectName)"
     }
+
+    // MARK: notifications
+
+    private var notifications: [AppNotification] { AppNotification.list(jobs: todaysJobs, survey: session.survey) }
+    private var readIDs: Set<String> { Set(readRaw.split(separator: "\n").map(String.init)) }
+
+    /// Marks these read; ids no longer shown are dropped so the stored list stays small.
+    private func markRead(_ list: [AppNotification]) {
+        let shown = Set(notifications.map(\.id))
+        readRaw = readIDs.intersection(shown).union(list.map(\.id)).sorted().joined(separator: "\n")
+    }
+
+    private func sync() { session.survey.cloudPush?() }
 
     private var todaySection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -178,20 +189,20 @@ private struct ModuleCard: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Text(module.subtitle)
                     .font(.subheadline)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             ModuleIllustration(symbol: module.symbol, size: isPhone ? 84 : 110)
         }
         .padding(isPhone ? 18 : 24)
         .frame(minHeight: isPhone ? 120 : 150)
-        .background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: Theme.navy.opacity(0.08), radius: 10, y: 4)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .cardShadow()
         .contentShape(Rectangle())
     }
 }
 
-// MARK: - Settings & notifications
+// MARK: - Settings
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -244,37 +255,6 @@ struct SettingsView: View {
                     session.signOut()
                 }
             }
-        }
-    }
-}
-
-struct NotificationsView: View {
-    let jobs: [Job]
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if jobs.isEmpty {
-                    Text("ไม่มีการแจ้งเตือน").foregroundStyle(Theme.muted)
-                }
-                ForEach(jobs) { job in
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let day = job.installDay(on: .now) {
-                            Label("ติดตั้งวันที่ \(day)/\(job.installDays) — ทีม \(job.team.rawValue)", systemImage: "hammer.fill")
-                                .foregroundStyle(Theme.primary)
-                        } else {
-                            Label("นัดสำรวจหน้างานวันนี้", systemImage: "list.clipboard.fill")
-                                .foregroundStyle(Theme.teal)
-                        }
-                        Text("\(job.code) · \(job.projectName)").font(.subheadline)
-                        Text(job.address).font(.caption).foregroundStyle(Theme.muted)
-                    }
-                }
-            }
-            .navigationTitle("การแจ้งเตือน")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("ปิด") { dismiss() } } }
         }
     }
 }

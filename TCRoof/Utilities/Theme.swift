@@ -21,6 +21,19 @@ enum Theme {
     static let muted = Color(hex: 0x7A8BA3)
     static let chip = Color(hex: 0x5E9BD0)
 
+    // design system "TCRoof Survey" (docs/ui/tcroof-home)
+    static let surface = Color.white
+    static let inkMuted = Color(hex: 0x5B6B82)
+    static let borderControl = Color(hex: 0x77889E)
+    static let borderSubtle = Color(hex: 0xDDE4ED)
+    static let primarySoft = Color(hex: 0xE3EEF8)
+    static let paperBand = Color(hex: 0xE2EFDA)
+    static let paperInk = Color(hex: 0x1F2E24)
+    static let paperTickStrong = Color(hex: 0x4E7F2E)
+    static let pending = Color(hex: 0xB45309)
+    static let pendingSoft = Color(hex: 0xFDF1E4)
+    static let unreadRow = Color(hex: 0xF3F8FD)
+
     static let headerGradient = LinearGradient(colors: [primary, primaryLight], startPoint: .leading, endPoint: .trailing)
     static let tealGradient = LinearGradient(colors: [teal, Color(hex: 0x4DB6E0)], startPoint: .leading, endPoint: .trailing)
     static let pageGradient = LinearGradient(colors: [Color(hex: 0xDCE8F2), background], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
@@ -32,6 +45,8 @@ extension View {
             .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .shadow(color: Theme.navy.opacity(0.08), radius: 8, y: 3)
     }
+    /// `shadow-card`: y 3, blur 8, navy 8%.
+    func cardShadow() -> some View { shadow(color: Theme.navy.opacity(0.08), radius: 8, y: 3) }
 }
 
 struct OutlinedFieldStyle: TextFieldStyle {

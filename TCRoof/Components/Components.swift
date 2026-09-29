@@ -8,13 +8,13 @@ struct ModuleIllustration: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.16)
-                .fill(Theme.primaryLight.opacity(0.25))
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Theme.primarySoft)
                 .frame(width: size * 0.62, height: size * 0.75)
                 .rotationEffect(.degrees(-14))
                 .offset(x: -size * 0.12)
-            RoundedRectangle(cornerRadius: size * 0.16)
-                .fill(Theme.headerGradient)
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Theme.primary)
                 .frame(width: size * 0.62, height: size * 0.75)
                 .rotationEffect(.degrees(6))
             Image(systemName: symbol)

@@ -130,10 +130,10 @@ def sld(path, mode):
         sk.line((x0 - 60, jy + 36), (x0 - 60, jy + 46), 1.0, DARK)
         for i, wdt in enumerate((12, 8, 4)): sk.line((x0 - 60 - wdt / 2, jy + 46 + i * 3), (x0 - 60 + wdt / 2, jy + 46 + i * 3), 1.0, DARK)
         sk.text("E1", (x0 - 72, jy + 48), 8, False, DARK, "right")
-    for ay in (jy + 20, jy + 30):                                            # cable terminations
+    for ay in (jy + 12, jy + 22, jy + 32):                                   # cable terminations (3)
         sk.poly([(x0 - 6, ay), (x0 + 6, ay), (x0, ay + 9)], DARK, DARK)
     t1 = jy + 62; r = 17
-    sk.line((x0, jy + 39), (x0, t1 - r), 1.2, DARK)
+    sk.line((x0, jy + 41), (x0, t1 - r), 1.2, DARK)
     sk.circle((x0, t1), r, DARK, None, 1.2); sk.circle((x0, t1 + 24), r, DARK, None, 1.2)
     sk.poly([(x0 - 7, t1 + 4), (x0 + 7, t1 + 4), (x0, t1 - 8)], DARK, None, 0.9)       # delta
     sk.line((x0, t1 + 26), (x0, t1 + 34), 0.9, DARK)                                  # wye

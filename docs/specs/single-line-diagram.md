@@ -12,8 +12,8 @@ The SLD is generated from the survey form, with no drawing work by the surveyor.
 Style for both: PEA HV drawing upstream (HV line, Drop Out Fuse/Disconnecting Switch, PEA meter, drop-out fuse with
 lightning arrester, Δ/Y transformer), Thai MDP drawing downstream (dashed MDB enclosure, arc breakers labelled
 `3P AT/AF`, numbered feeders, black load blocks). Breaker symbols: LV fixed mount = terminals + arc; LV draw-out power breaker = arc between double chevrons
-(^^ above, vv below); MV draw-out power breaker = box `52` between double chevrons (used when `tr<i>_hvSwitch` = VCB,
-in place of the drop-out fuse). CT symbol: a circle on the line with a slash and the CT count (3),
+(^^ above, vv below). The HV side of each transformer is always a drop-out fuse (no VCB/52), then the
+lightning arrester and three cable-termination triangles. CT symbol: a circle on the line with a slash and the CT count (3),
 signal lead to the right. MDB incomer: the main breaker only, labelled `MCCB,3P` over `AT/AF` (no fuses, lamps, voltmeter or DPM, at the team's request). Existing equipment black, new PV blue, control lines dashed blue.
 
 ## Level 1 — generated from the form (v1)
@@ -33,7 +33,6 @@ print as a red `?` on the drawing and in the missing list under it.
 | Field id | Label | Kind |
 |---|---|---|
 | `trafos[i].kva` (exists) | ขนาด | number, kVA |
-| `tr<i>_hvSwitch` | อุปกรณ์ตัดตอนแรงสูง | choice: Drop Out Fuse / VCB (Draw-out) |
 | `tr<i>_type` | ชนิด | choice: OIL IMMERSED / DRY TYPE / อื่นๆ |
 | `tr<i>_hv`, `tr<i>_lv` | แรงดันด้านแรงสูง / แรงต่ำ | number kV; text (e.g. 230-400) |
 | `tr<i>_vector` | Vector group | text (Dyn11) |

@@ -23,7 +23,7 @@ def num(s):
     except ValueError: return None
 
 
-TR_REQ = [("kva", "ขนาด kVA"), ("hvSwitch", "อุปกรณ์ตัดตอนแรงสูง"), ("type", "ชนิด"), ("hv", "แรงดันแรงสูง"), ("lv", "แรงดันแรงต่ำ"), ("vector", "Vector group"),
+TR_REQ = [("kva", "ขนาด kVA"), ("type", "ชนิด"), ("hv", "แรงดันแรงสูง"), ("lv", "แรงดันแรงต่ำ"), ("vector", "Vector group"),
           ("z", "%Z"), ("brand", "ยี่ห้อ"), ("serial", "Serial no."), ("year", "ปีผลิต"), ("cond", "สภาพ")]
 BRK_REQ = [("type", "ชนิด MCCB/ACB"), ("mount", "Fixed/Draw-out"), ("poles", "จำนวนโพล"), ("at", "AT"), ("af", "AF"), ("ka", "IC kA"), ("brand", "ยี่ห้อ"), ("cond", "สภาพ")]
 GREEN, AMBER = "#2F855A", "#B7791F"
@@ -69,8 +69,7 @@ def read_form(form):
             mdbs.append((name, breaker(b, miss, f"A3 TR{i + 1} {name}")))
         if not num(t["kva"]) and not mdbs: continue
         tr = dict(name=f"TR{i + 1}", kva=num(t["kva"]), mdbs=mdbs, feed=j.get(f"tr{i}_feed", "").strip(), loc=j.get(f"tr{i}_feedLoc", ""),
-                  **{k: str(j.get(f"tr{i}_{k}", "")).strip() for k, _ in TR_REQ if k != "kva"}, note=j.get(f"tr{i}_condNote", ""),
-                  hvsw=str(j.get(f"tr{i}_hvSwitch", "")).strip())
+                  **{k: str(j.get(f"tr{i}_{k}", "")).strip() for k, _ in TR_REQ if k != "kva"}, note=j.get(f"tr{i}_condNote", ""))
         gaps = [lab for k, lab in TR_REQ if not (tr["kva"] if k == "kva" else tr[k])]
         if not tr["feed"]: gaps.append("ตู้ MDB ปลายสาย")
         elif mdbs and tr["feed"] not in [n for n, _ in mdbs]: gaps.append(f"ตู้ปลายสาย \"{tr['feed']}\" ไม่ตรงกับชื่อตู้ที่กรอก")
@@ -146,18 +145,6 @@ def lvbrk(sk, x, y, b, c=DARK):
         sk.line((x - 5, cy - 5), (x, cy), 1.1, c); sk.line((x, cy), (x + 5, cy - 5), 1.1, c)
     sk.line((x, y - 22), (x, y - 16), 1.1, c); sk.line((x, y + 16), (x, y + 22), 1.1, c)
     return 22
-
-
-def mv52(sk, x, y0):
-    """MV draw-out power circuit breaker: box '52' between double chevrons. Occupies y0 .. y0 + 52."""
-    for cy in (y0 + 6, y0 + 11):
-        sk.line((x - 6, cy + 6), (x, cy), 1.3, DARK); sk.line((x, cy), (x + 6, cy + 6), 1.3, DARK)
-    sk.line((x, y0), (x, y0 + 15), 1.3, DARK)
-    sk.rect(x - 13, y0 + 15, 26, 22, DARK, "white", 1.6); sk.text("52", (x, y0 + 26), 10, True, DARK, "center")
-    sk.line((x, y0 + 37), (x, y0 + 52), 1.3, DARK)
-    for cy in (y0 + 41, y0 + 46):
-        sk.line((x - 6, cy - 6), (x, cy), 1.3, DARK); sk.line((x, cy), (x + 6, cy - 6), 1.3, DARK)
-    return y0 + 52
 
 
 def ct(sk, x, y, c=DARK, n=3, lead=22):
@@ -261,18 +248,14 @@ def sld(form, path):
     feed_x, lvb = None, None
     for (t, b0, b1), tx in zip(blocks, txs):
         sk.circle((tx, hb), 2.2, DARK, DARK)
-        if t["hvsw"].upper().startswith("VCB"):
-            y = mv52(sk, tx, hb + 2)
-            sk.text("VCB (Draw-out)", (tx + 18, hb + 28), 8)
-        else:
-            y = dof(sk, tx, hb + 4); sk.line((tx, y), (tx, hb + 54), 1.2, DARK); y = hb + 54
+        y = dof(sk, tx, hb + 4)
         jy = y + 4; sk.line((tx, y), (tx, jy + 22), 1.2, DARK)
         sk.line((tx, jy), (tx - 50, jy), 1.0, DARK); sk.line((tx - 50, jy), (tx - 50, jy + 8), 1.0, DARK)   # lightning arrester
         sk.rect(tx - 56, jy + 8, 12, 22, DARK, "white", 1.0); sk.poly([(tx - 53, jy + 20), (tx - 47, jy + 20), (tx - 50, jy + 27)], DARK, DARK)
         sk.line((tx - 50, jy + 30), (tx - 50, jy + 38), 1.0, DARK); ground(sk, tx - 50, jy + 38, "LA")
-        for ay in (jy + 20, jy + 30): sk.poly([(tx - 6, ay), (tx + 6, ay), (tx, ay + 9)], DARK, DARK)
+        for ay in (jy + 12, jy + 22, jy + 32): sk.poly([(tx - 6, ay), (tx + 6, ay), (tx, ay + 9)], DARK, DARK)
         t1 = jy + 60; r = 17
-        sk.line((tx, jy + 39), (tx, t1 - r), 1.2, DARK)
+        sk.line((tx, jy + 41), (tx, t1 - r), 1.2, DARK)
         sk.circle((tx, t1), r, DARK, None, 1.2); sk.circle((tx, t1 + 24), r, DARK, None, 1.2)
         sk.poly([(tx - 7, t1 + 4), (tx + 7, t1 + 4), (tx, t1 - 8)], DARK, None, 0.9)
         sk.line((tx, t1 + 26), (tx, t1 + 34), 0.9, DARK); sk.line((tx, t1 + 26), (tx - 6, t1 + 20), 0.9, DARK); sk.line((tx, t1 + 26), (tx + 6, t1 + 20), 0.9, DARK)

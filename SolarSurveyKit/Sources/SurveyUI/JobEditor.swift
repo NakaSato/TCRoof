@@ -19,6 +19,7 @@ struct JobEditorView: View {
     @State private var error: String?
     @State private var confirmDelete: SurveyModule?
     @State private var sidebarVisible = true
+    @State private var collapsed: Set<SectionCategory> = []
     @State private var pendingExport: PendingExport?
     struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let go: () -> Void }
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -74,60 +75,151 @@ struct JobEditorView: View {
 
     // MARK: sidebar
 
+    /// One entry in the sidebar: code badge, short title, and how much of it is filled.
+    struct SidebarItem: Identifiable {
+        let page: Page
+        let code: String
+        let title: String
+        let completion: Completion
+        var module: SurveyModule? = nil
+        var id: Page { page }
+    }
+    struct SidebarGroup: Identifiable {
+        let category: SectionCategory
+        let items: [SidebarItem]
+        var id: SectionCategory { category }
+    }
+
+    /// Sections in workbook order, grouped by category (A general, B–D added sections, E sign-off).
+    var sidebarGroups: [SidebarGroup] {
+        let general = SidebarGroup(category: .general, items: [
+            SidebarItem(page: .info, code: "A1", title: "ข้อมูลโครงการ", completion: Schema.info.completion(job.values)),
+            SidebarItem(page: .site, code: "A2", title: "ภาพสถานที่ติดตั้ง", completion: Schema.site.completion(job.values)),
+            SidebarItem(page: .electrical, code: "A3", title: "มิเตอร์ หม้อแปลง และตู้ MDB", completion: Schema.electrical.completion(job.values)),
+            SidebarItem(page: .flood, code: "A4", title: "ประวัติน้ำท่วม", completion: Schema.flood.completion(job.values)),
+        ])
+        let added = job.sectionsByCategory.map { g in
+            SidebarGroup(category: g.category, items: g.sections.map {
+                SidebarItem(page: .module($0.id), code: $0.number, title: $0.module.title, completion: $0.module.completion, module: $0.module)
+            })
+        }
+        let final = SidebarGroup(category: .summary, items: [SidebarItem(page: .final, code: "E1", title: "สรุปผลและลงนาม", completion: job.finalCompletion)])
+        return [general] + added + [final]
+    }
+
+    /// First section with required fields still empty — the header's "continue" shortcut.
+    var nextIncomplete: SidebarItem? {
+        sidebarGroups.flatMap(\.items).first { $0.completion.total > 0 && !$0.completion.isComplete }
+    }
+
+    func category(of p: Page) -> SectionCategory? {
+        switch p {
+        case .summary: return nil
+        case .info, .site, .electrical, .flood: return .general
+        case .final: return .summary
+        case .module(let id): return job.modules.first { $0.id == id }?.spec.category
+        }
+    }
+
     var sidebar: some View {
-        List(selection: Binding(get: { compact ? nil : Optional(page) }, set: { if let p = $0 { select(p) } })) {
+        let groups = sidebarGroups
+        return List(selection: Binding(get: { compact ? nil : Optional(page) }, set: { if let p = $0 { select(p) } })) {
+            Section { sidebarHeader }.listRowBackground(Color(uiColor: .systemBackground))
             Section {
-                HStack(spacing: 12) {
-                    ProgressRing(value: job.completion.fraction, size: 44)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo)").font(.headline)
-                        Text("กรอกแล้ว \(job.completion.filled)/\(job.completion.total) · รูป \(job.photoCount)").font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 4)
+                row(SidebarItem(page: .summary, code: "", title: "สรุปภาพรวม 1 หน้า", completion: Completion()), symbol: "doc.text.magnifyingglass")
             }
-            Section {
-                row(.summary, "สรุปภาพรวม 1 หน้า", "doc.text.magnifyingglass", Completion())
-            }
-            Section(SectionCategory.general.heading) {
-                row(.info, "A1 ข้อมูลโครงการ", "doc.text", Schema.info.completion(job.values))
-                row(.site, "A2 ภาพสถานที่ติดตั้ง", "map", Schema.site.completion(job.values))
-                row(.electrical, "A3 มิเตอร์ หม้อแปลง และตู้ MDB", "bolt", Schema.electrical.completion(job.values))
-                row(.flood, "A4 ประวัติน้ำท่วม", "water.waves", Schema.flood.completion(job.values))
-            }
-            ForEach(job.sectionsByCategory) { group in
-                Section(group.category.heading) {
-                    ForEach(group.sections) { item in
-                        let m = item.module
-                        row(.module(m.id), item.title, icon(m.type), m.completion)
-                            .contextMenu {
-                                Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
-                                Button(role: .destructive) { confirmDelete = m } label: { Label("ลบหัวข้อ", systemImage: "trash") }
-                            }
-                            .swipeActions { Button(role: .destructive) { confirmDelete = m } label: { Label("ลบ", systemImage: "trash") } }
-                    }
-                }
-            }
-            Section {
-                Menu {
-                    ForEach([SectionCategory.electrical, .roof, .water]) { cat in
-                        Section(cat.heading) {
-                            ForEach(ModuleType.byCode.filter { $0.category == cat }) { t in
-                                Button { add(t) } label: { Label(t.code + " " + Schema.spec(t).label + "  (แผ่น " + Schema.spec(t).sheet + ")", systemImage: icon(t)) }
-                            }
+            ForEach(groups) { g in
+                Section(isExpanded: expanded(g.category)) {
+                    ForEach(g.items) { item in
+                        if let m = item.module {
+                            row(item)
+                                .contextMenu {
+                                    Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
+                                    Button(role: .destructive) { confirmDelete = m } label: { Label("ลบหัวข้อ", systemImage: "trash") }
+                                }
+                                .swipeActions { Button(role: .destructive) { confirmDelete = m } label: { Label("ลบ", systemImage: "trash") } }
+                        } else {
+                            row(item)
                         }
                     }
-                } label: { Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus.circle.fill").font(.body.weight(.semibold)) }
-                if !job.stationOverflow.isEmpty {
-                    Label("หัวข้อระบบไฟฟ้าเกินช่องในแผ่นงาน — Excel จะเพิ่มแผ่น \"ระบบไฟฟ้า (2)\" ให้อัตโนมัติ", systemImage: "info.circle")
-                        .font(.caption).foregroundStyle(.secondary)
+                } header: {
+                    groupHeader(g)
                 }
-            }
-            Section(SectionCategory.summary.heading) {
-                row(.final, "E1 สรุปผลและลงนาม", "signature", job.finalCompletion)
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(Paper.page)
+        .safeAreaInset(edge: .bottom) { sidebarFooter }
+        // keep the open section visible when "next" or "continue" jumps into a collapsed group
+        .onChange(of: page) { _, p in if let c = category(of: p) { collapsed.remove(c) } }
+    }
+
+    func expanded(_ c: SectionCategory) -> Binding<Bool> {
+        Binding(get: { !collapsed.contains(c) }, set: { open in withAnimation { if open { collapsed.remove(c) } else { collapsed.insert(c) } } })
+    }
+
+    var sidebarHeader: some View {
+        let c = job.completion
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo)").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                    Text(job.projectName.isEmpty ? "(ยังไม่ได้ตั้งชื่อโครงการ)" : job.projectName).font(.headline).lineLimit(2)
+                }
+                Spacer(minLength: 8)
+                Text("\(c.percent)%").font(.title2.bold()).monospacedDigit().foregroundStyle(c.isComplete ? Paper.tick : .primary)
+            }
+            ProgressView(value: c.fraction).tint(c.isComplete ? Paper.tick : .accentColor)
+            HStack {
+                Text("กรอกแล้ว \(c.filled)/\(c.total)")
+                Spacer()
+                Label("\(job.photoCount)", systemImage: "photo")
+            }
+            .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            if let next = nextIncomplete, next.page != page {
+                Button { select(next.page) } label: {
+                    Label("ไปต่อ: \(next.code) \(next.title)", systemImage: "arrow.right.circle.fill")
+                        .font(.subheadline.weight(.semibold)).lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    func groupHeader(_ g: SidebarGroup) -> some View {
+        let done = g.items.filter(\.completion.isComplete).count
+        return HStack {
+            Text(g.category.heading)
+            Spacer()
+            Text("\(done)/\(g.items.count)").monospacedDigit()
+                .foregroundStyle(done == g.items.count ? Paper.tick : .secondary)
+        }
+    }
+
+    var sidebarFooter: some View {
+        VStack(spacing: 8) {
+            if !job.stationOverflow.isEmpty {
+                Label("หัวข้อระบบไฟฟ้าเกินช่องในแผ่นงาน — Excel จะเพิ่มแผ่น \"ระบบไฟฟ้า (2)\" ให้อัตโนมัติ", systemImage: "info.circle")
+                    .font(.caption2).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Menu {
+                ForEach([SectionCategory.electrical, .roof, .water]) { cat in
+                    Section(cat.heading) {
+                        ForEach(ModuleType.byCode.filter { $0.category == cat }) { t in
+                            Button { add(t) } label: { Label(t.code + " " + Schema.spec(t).label + "  (แผ่น " + Schema.spec(t).sheet + ")", systemImage: icon(t)) }
+                        }
+                    }
+                }
+            } label: {
+                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.body.weight(.semibold)).frame(maxWidth: .infinity)
+            }
+            .menuStyle(.button).buttonStyle(.bordered).controlSize(.large)
+        }
+        .padding(12)
+        .background(.bar)
     }
 
     func select(_ p: Page) {
@@ -135,18 +227,31 @@ struct JobEditorView: View {
         if compact { withAnimation { sidebarVisible = false } }
     }
 
-    func row(_ p: Page, _ title: String, _ symbol: String, _ c: Completion) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol).frame(width: 22).foregroundStyle(Color.accentColor)
-            Text(title).lineLimit(2)
-            Spacer(minLength: 4)
-            if c.total > 0 {
-                Text("\(c.filled)/\(c.total)").font(.caption.monospacedDigit())
-                    .foregroundStyle(c.isComplete ? Paper.tick : .secondary)
-                if c.isComplete { Image(systemName: "checkmark.circle.fill").foregroundStyle(Paper.tick) }
+    /// Code badge, one-line title, status mark; finished sections step back so open work stands out.
+    func row(_ item: SidebarItem, symbol: String? = nil) -> some View {
+        let c = item.completion
+        let selected = !compact && page == item.page
+        return HStack(spacing: 10) {
+            Group {
+                if let symbol { Image(systemName: symbol).font(.caption.weight(.bold)) }
+                else { Text(item.code).font(.caption.weight(.bold)).monospacedDigit() }
             }
+            .foregroundStyle(selected ? Color.white : Paper.ink)
+            .frame(minWidth: 38, minHeight: 22)
+            .padding(.horizontal, 2)
+            .background(selected ? Color.accentColor : Paper.band, in: RoundedRectangle(cornerRadius: 6))
+            Text(item.title).lineLimit(1)
+                .fontWeight(selected ? .semibold : .regular)
+                .foregroundStyle(selected ? Color.accentColor : c.isComplete ? .secondary : .primary)
+            Spacer(minLength: 4)
+            StatusMark(completion: c)
         }
-        .tag(p)
+        .tag(item.page)
+        // own selection look: the system one turns solid blue while the list has focus and hides the badge and status
+        .listRowBackground(selected ? Color.accentColor.opacity(0.14) : Color(uiColor: .systemBackground))
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(c.total > 0 ? "กรอกแล้ว \(c.filled) จาก \(c.total)" : "")
+        .help(item.code + " " + item.title)
     }
 
     func icon(_ t: ModuleType) -> String {
@@ -263,7 +368,7 @@ struct JobEditorView: View {
     }
 
     var pages: [Page] {
-        [.summary, .info, .site, .electrical, .flood] + job.sectionsByCategory.flatMap { $0.sections.map { Page.module($0.id) } } + [.final]
+        [.summary] + sidebarGroups.flatMap { $0.items.map(\.page) }
     }
     @ViewBuilder var nextButton: some View {
         if let i = pages.firstIndex(of: page), i + 1 < pages.count {
@@ -329,6 +434,30 @@ struct JobEditorView: View {
         if page == .module(m.id) { page = .info }
         job.modules.removeAll { $0.id == m.id }
         confirmDelete = nil
+    }
+}
+
+/// Sidebar status: empty circle, partial ring with count, or a green check.
+struct StatusMark: View {
+    let completion: Completion
+    var body: some View {
+        let c = completion
+        if c.total == 0 {
+            EmptyView()
+        } else if c.isComplete {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Paper.tick)
+        } else if c.filled == 0 {
+            Circle().strokeBorder(Color.secondary.opacity(0.45), lineWidth: 1.5).frame(width: 17, height: 17)
+        } else {
+            HStack(spacing: 5) {
+                Text("\(c.filled)/\(c.total)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                ZStack {
+                    Circle().stroke(Color.secondary.opacity(0.25), lineWidth: 2.5)
+                    Circle().trim(from: 0, to: c.fraction).stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round)).rotationEffect(.degrees(-90))
+                }
+                .frame(width: 15, height: 15)
+            }
+        }
     }
 }
 

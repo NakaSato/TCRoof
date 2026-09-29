@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>PWA Solar Survey — รายการงานสำรวจ (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+</style>
+</helmet>
+<div class="g" style="width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head" style="padding:22px 63px 26px">
+<div style="flex-grow:1"><div style="font-size:30px;line-height:36px;font-weight:700">PWA Solar Survey</div><div class="s">การประปาส่วนภูมิภาค · แบบสำรวจเพื่อออกแบบ (เบื้องต้น) · วิศวกร สมชาย</div></div>
+<div style="display:flex;align-items:center;gap:8px;width:330px;height:46px;padding:0 14px;border-radius:12px;background:rgba(255,255,255,0.95);color:#5B6B82;font-size:15px"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span>ค้นหาเลขที่ ชื่อโครงการ สถานที่…</span></div>
+<button onClick="{{doSync}}" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.14);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"></path><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"></path></svg>{{syncBtn}}</button>
+<a href="iPadA1.dc.html" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 18px;border-radius:12px;background:#fff;color:#1F6FB5;font-size:16px;font-weight:700;text-decoration:none">+ งานสำรวจใหม่</a>
+</header>
+<div style="flex-grow:1;overflow:hidden;display:flex;justify-content:center;padding-top:20px">
+<main style="width:1240px;display:flex;flex-direction:column;gap:16px">
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px"><button onClick="{{fAll}}" style="{{sAll}}"><b style="font-size:26px;line-height:30px">{{nAll}}</b><span style="font-size:14px;font-weight:600">ทั้งหมด</span><span style="font-size:12px;font-weight:400;color:#5B6B82">งานในเครื่องนี้</span></button><button onClick="{{fDoing}}" style="{{sDoing}}"><b style="font-size:26px;line-height:30px">{{nDoing}}</b><span style="font-size:14px;font-weight:600">กำลังสำรวจ</span><span style="font-size:12px;font-weight:400;color:#5B6B82">ยังไม่ครบ 13 ขั้น</span></button><button onClick="{{fDraft}}" style="{{sDraft}}"><b style="font-size:26px;line-height:30px">{{nDraft}}</b><span style="font-size:14px;font-weight:600">ร่าง</span><span style="font-size:12px;font-weight:400;color:#5B6B82">ยังไม่ตั้งชื่อ / เลขที่</span></button><button onClick="{{fSync}}" style="{{sSync}}"><b style="font-size:26px;line-height:30px">{{nSync}}</b><span style="font-size:14px;font-weight:600">รอซิงก์</span><span style="font-size:12px;font-weight:400;color:#5B6B82">ยังไม่ขึ้นคลาวด์</span></button></div>
+<div style="display:flex;align-items:center;gap:10px"><b style="font-size:18px">{{listTitle}}</b><span style="font-size:14px;color:#5B6B82">{{listCount}}</span><span style="margin-left:auto;font-size:13px;color:#5B6B82">เรียงตาม</span><div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#E9EEF5"><span style="min-height:30px;padding:0 12px;display:flex;align-items:center;border-radius:8px;background:#fff;font-size:13px;font-weight:700;box-shadow:0 1px 3px rgba(22,50,92,0.2)">แก้ไขล่าสุด</span><span style="min-height:30px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#5B6B82">เลขที่</span><span style="min-height:30px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#5B6B82">ความคืบหน้า</span></div></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-content:start"><sc-for list="{{jobs}}" as="j" hint-placeholder-count="6"><a href="{{j.href}}" style="display:flex;flex-direction:column;gap:10px;min-width:0;background:#fff;border:1px solid {{j.bd}};border-radius:14px;padding:14px 16px 12px;text-decoration:none;color:#16325C;box-shadow:0 1px 3px rgba(22,50,92,0.06)">
+<div style="display:flex;align-items:flex-start;gap:12px">
+<div style="flex-grow:1;min-width:0;line-height:20px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:#5B6B82">{{j.noTxt}}</span><span style="{{j.badge}}">{{j.badgeTxt}}</span></div>
+<div style="font-size:17px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{{j.nameSt}}">{{j.title}}</div>
+<div style="font-size:13px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{j.sub}}</div></div>
+<svg viewBox="0 0 52 52" style="width:52px;height:52px;flex:none"><circle cx="26" cy="26" r="22" fill="none" stroke="#E6EBF1" stroke-width="5"></circle><circle cx="26" cy="26" r="22" fill="none" stroke="{{j.ring}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{j.dash}}" transform="rotate(-90 26 26)"></circle><text x="26" y="30.5" font-size="13" font-weight="700" text-anchor="middle" fill="#16325C">{{j.pct}}%</text></svg></div>
+<div style="display:flex;gap:3px"><sc-for list="{{j.caps}}" as="c" hint-placeholder-count="13"><i style="{{c.st}}"></i></sc-for></div>
+<div style="display:flex;align-items:center;gap:8px;min-height:38px;border-radius:10px;background:{{j.nextBg}};padding:0 10px"><span style="font-size:12px;color:#5B6B82;white-space:nowrap">ทำต่อ {{j.stepTxt}}</span><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{j.nxt}}</b><span style="margin-left:auto;font-size:18px;color:#1F6FB5">›</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{j.tags}}" as="g" hint-placeholder-count="3"><span style="font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:rgba(158,230,214,0.45);color:#16325C">{{g.t}}</span></sc-for></div>
+<div style="display:flex;align-items:center;gap:6px;border-top:1px solid rgba(22,50,92,0.1);padding-top:9px;font-size:13px;color:#5B6B82"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;width:16px;height:16px"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>{{j.date}} · {{j.time}}</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;width:16px;height:16px"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M21 16l-5-5-8 8"></path></svg>{{j.photos}}</span><span style="{{j.syncSt}}">{{j.syncTxt}}</span></div>
+</a></sc-for></div>
+</main></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const f = st.f || 'All', synced = !!st.synced;
+    const RAW = [{"id": "224", "no": "224", "name": "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1", "place": "ต.หนองบัว อ.เมือง จ.ตัวอย่าง", "kwp": 120, "pct": 72, "date": "29/9/2569", "time": "23:05", "photos": 31, "sync": "pending", "caps": "ok ok ok ok ok ok ok ok ok ok miss cur -", "nxt": "D1 ถังน้ำใส", "nstep": 12, "href": "iPadD1.dc.html", "miss": 3, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×2", "D ถังน้ำใส ×1"]}, {"id": "120", "no": "120", "name": "การประปาวัดชัย", "place": "สถานีผลิตน้ำวัดชัย", "kwp": 250, "pct": 84, "date": "29/9/2569", "time": "16:40", "photos": 24, "sync": "ok", "caps": "ok ok ok ok ok ok ok ok ok ok ok ok cur", "nxt": "E1 สรุปผลและลงนาม", "nstep": 13, "href": "iPadA1.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1", "D ถังน้ำใส ×1"]}, {"id": "111", "no": "111", "name": "", "place": "", "kwp": 0, "pct": 13, "date": "29/9/2569", "time": "14:12", "photos": 0, "sync": "ok", "caps": "ok cur - - - - - - - - - - -", "nxt": "A2 ภาพสถานที่ติดตั้ง", "nstep": 2, "href": "iPadA2.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1"]}, {"id": "d1", "no": "", "name": "", "place": "", "kwp": 0, "pct": 20, "date": "29/9/2569", "time": "11:30", "photos": 2, "sync": "pending", "caps": "ok ok cur - - - - - - - - - -", "nxt": "A3 หม้อแปลง · MDB", "nstep": 3, "href": "iPadA3.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1"]}, {"id": "d2", "no": "", "name": "", "place": "", "kwp": 0, "pct": 2, "date": "29/9/2569", "time": "10:02", "photos": 0, "sync": "ok", "caps": "cur - - - - - - - - - - - -", "nxt": "A1 ข้อมูลโครงการ", "nstep": 1, "href": "iPadA1.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1"]}, {"id": "d3", "no": "", "name": "", "place": "", "kwp": 0, "pct": 1, "date": "29/9/2569", "time": "09:48", "photos": 0, "sync": "ok", "caps": "cur - - - - - - - - - - - -", "nxt": "A1 ข้อมูลโครงการ", "nstep": 1, "href": "iPadA1.dc.html", "miss": 0, "tags": ["C หลังคา ×1"]}];
+    const jobsAll = RAW.map(j => ({ ...j, sync: synced ? 'ok' : j.sync }));
+    const isDraft = j => !j.name;
+    const test = { All: () => true, Doing: j => j.pct < 100 && !isDraft(j), Draft: isDraft, Sync: j => j.sync !== 'ok' };
+    const C = 2 * Math.PI * 22;
+    const capSt = s => 'flex:1;height:6px;border-radius:3px;background:' + (s === 'ok' ? '#9EE6D6' : s === 'cur' ? 'linear-gradient(90deg,#1F6FB5,#2E8FDB)' : s === 'miss' ? '#F2A09A' : 'rgba(142,142,147,0.25)');
+    const v = {};
+    v.jobs = jobsAll.filter(test[f]).map(j => ({
+      href: j.href, noTxt: j.no ? 'NO.' + j.no : 'NO. —', title: j.name || 'ยังไม่ได้ตั้งชื่อโครงการ', nameSt: j.name ? '' : 'color:#7A8BA3;font-style:italic',
+      sub: j.name ? (j.place + (j.kwp ? ' · ' + j.kwp + ' kWp' : '')) : 'แตะเพื่อกรอกข้อมูลโครงการใน A1',
+      badge: isDraft(j) ? 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:#E9EEF5;color:#5B6B82' : (j.miss ? 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:rgba(217,69,59,0.13);color:#C0392B' : 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:rgba(46,158,91,0.14);color:#1E7B45'),
+      badgeTxt: isDraft(j) ? 'ร่าง' : (j.miss ? 'ขาด ' + j.miss + ' รายการ' : 'ข้อมูลครบ'),
+      pct: j.pct, dash: (C * j.pct / 100).toFixed(1) + ' ' + C.toFixed(1), ring: j.pct >= 80 ? '#27A99A' : '#1F6FB5',
+      caps: j.caps.split(' ').map(s => ({ st: capSt(s) })), nxt: j.nxt, stepTxt: j.nstep + '/13', nextBg: j.pct >= 80 ? 'rgba(39,169,154,0.1)' : 'rgba(31,111,181,0.07)',
+      tags: j.tags.map(t => ({ t })), date: j.date, time: j.time, photos: j.photos,
+      syncTxt: j.sync === 'ok' ? '☁ ซิงก์แล้ว' : '⟳ รอซิงก์', syncSt: 'font-weight:700;' + (j.sync === 'ok' ? 'color:#1F6FB5' : 'color:#C46A00'),
+      bd: j.id === '224' ? 'rgba(31,111,181,0.55)' : 'rgba(22,50,92,0.15)'
+    }));
+    const on = 'display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:12px 16px;border-radius:14px;border:2px solid #1F6FB5;background:#fff;color:#16325C;font-family:inherit;text-align:left;cursor:pointer;box-shadow:0 2px 8px rgba(31,111,181,0.15)';
+    const off = 'display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:12px 16px;border-radius:14px;border:1px solid rgba(22,50,92,0.15);background:#fff;color:#16325C;font-family:inherit;text-align:left;cursor:pointer';
+    const T = { All: 'งานทั้งหมด', Doing: 'กำลังสำรวจ', Draft: 'ร่าง', Sync: 'รอซิงก์' };
+    Object.keys(test).forEach(k => { v['n' + k] = jobsAll.filter(test[k]).length; v['s' + k] = f === k ? on : off; v['f' + k] = () => this.setState({ f: k }); });
+    v.listTitle = T[f]; v.listCount = v.jobs.length + ' งาน';
+    const pend = jobsAll.filter(test.Sync).length;
+    v.syncBtn = pend ? 'ซิงก์ (' + pend + ')' : 'ซิงก์แล้ว';
+    v.doSync = () => this.setState({ synced: true });
+    v.footDot = 'width:8px;height:8px;border-radius:50%;background:' + (pend ? '#F08C00' : '#2E9E5B');
+    v.footTxt = pend ? 'ออนไลน์ · มี ' + pend + ' งานรอซิงก์ขึ้นคลาวด์' : 'ออนไลน์ · ซิงก์ครบทุกงานแล้ว 23:36';
+    return v;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+[
+  {
+    "id": "224",
+    "no": "224",
+    "name": "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1",
+    "place": "ต.หนองบัว อ.เมือง จ.ตัวอย่าง",
+    "kwp": 120,
+    "pct": 72,
+    "date": "29/9/2569",
+    "time": "23:05",
+    "photos": 31,
+    "sync": "pending",
+    "caps": "ok ok ok ok ok ok ok ok ok ok miss cur -",
+    "nxt": "D1 ถังน้ำใส",
+    "nstep": 12,
+    "href": "iPadD1.dc.html",
+    "miss": 3,
+    "tags": [
+      "B ระบบไฟฟ้า ×5",
+      "C หลังคา ×2",
+      "D ถังน้ำใส ×1"
+    ]
+  },
+  {
+    "id": "120",
+    "no": "120",
+    "name": "การประปาวัดชัย",
+    "place": "สถานีผลิตน้ำวัดชัย",
+    "kwp": 250,
+    "pct": 84,
+    "date": "29/9/2569",
+    "time": "16:40",
+    "photos": 24,
+    "sync": "ok",
+    "caps": "ok ok ok ok ok ok ok ok ok ok ok ok cur",
+    "nxt": "E1 สรุปผลและลงนาม",
+    "nstep": 13,
+    "href": "iPadA1.dc.html",
+    "miss": 0,
+    "tags": [
+      "B ระบบไฟฟ้า ×5",
+      "C หลังคา ×1",
+      "D ถังน้ำใส ×1"
+    ]
+  },
+  {
+    "id": "111",
+    "no": "111",
+    "name": "",
+    "place": "",
+    "kwp": 0,
+    "pct": 13,
+    "date": "29/9/2569",
+    "time": "14:12",
+    "photos": 0,
+    "sync": "ok",
+    "caps": "ok cur - - - - - - - - - - -",
+    "nxt": "A2 ภาพสถานที่ติดตั้ง",
+    "nstep": 2,
+    "href": "iPadA2.dc.html",
+    "miss": 0,
+    "tags": [
+      "B ระบบไฟฟ้า ×5",
+      "C หลังคา ×1"
+    ]
+  },
+  {
+    "id": "d1",
+    "no": "",
+    "name": "",
+    "place": "",
+    "kwp": 0,
+    "pct": 20,
+    "date": "29/9/2569",
+    "time": "11:30",
+    "photos": 2,
+    "sync": "pending",
+    "caps": "ok ok cur - - - - - - - - - -",
+    "nxt": "A3 หม้อแปลง · MDB",
+    "nstep": 3,
+    "href": "iPadA3.dc.html",
+    "miss": 0,
+    "tags": [
+      "B ระบบไฟฟ้า ×5",
+      "C หลังคา ×1"
+    ]
+  },
+  {
+    "id": "d2",
+    "no": "",
+    "name": "",
+    "place": "",
+    "kwp": 0,
+    "pct": 2,
+    "date": "29/9/2569",
+    "time": "10:02",
+    "photos": 0,
+    "sync": "ok",
+    "caps": "cur - - - - - - - - - - - -",
+    "nxt": "A1 ข้อมูลโครงการ",
+    "nstep": 1,
+    "href": "iPadA1.dc.html",
+    "miss": 0,
+    "tags": [
+      "B ระบบไฟฟ้า ×5",
+      "C หลังคา ×1"
+    ]
+  },
+  {
+    "id": "d3",
+    "no": "",
+    "name": "",
+    "place": "",
+    "kwp": 0,
+    "pct": 1,
+    "date": "29/9/2569",
+    "time": "09:48",
+    "photos": 0,
+    "sync": "ok",
+    "caps": "cur - - - - - - - - - - - -",
+    "nxt": "A1 ข้อมูลโครงการ",
+    "nstep": 1,
+    "href": "iPadA1.dc.html",
+    "miss": 0,
+    "tags": [
+      "C หลังคา ×1"
+    ]
+  }
+]

@@ -69,7 +69,10 @@ public enum GPS {
 
 /// Required answers still missing (or unreadable) in one page of the editor.
 public struct MissingGroup: Identifiable, Sendable {
-    public enum Target: Hashable, Sendable { case info, site, electrical, flood, module(UUID), final }
+    public enum Target: Hashable, Sendable {
+        case info, site, electrical, flood, module(UUID), final
+        public var moduleID: UUID? { if case .module(let id) = self { return id }; return nil }
+    }
     public let target: Target
     public let title: String
     public let items: [String]

@@ -110,6 +110,50 @@ public extension Job {
     }
 }
 
+/// One page of the editor in workbook order (A1–A4, each added section, E1) — the home card's step bar.
+public struct SurveyStep: Identifiable, Hashable, Sendable {
+    public enum Status: Sendable { case complete, current, missing, notStarted }
+    public let page: MissingGroup.Target
+    /// "A1", "C1.2"
+    public let code: String
+    public let title: String
+    public let category: SectionCategory
+    public let completion: Completion
+    public var id: MissingGroup.Target { page }
+}
+
+public extension Job {
+    var steps: [SurveyStep] {
+        func cover(_ p: MissingGroup.Target, _ code: String, _ title: String, _ g: GroupSpec) -> SurveyStep {
+            SurveyStep(page: p, code: code, title: title, category: .general, completion: g.completion(values))
+        }
+        return [cover(.info, "A1", "ข้อมูลโครงการ", Schema.info), cover(.site, "A2", "ภาพสถานที่ติดตั้ง", Schema.site),
+                cover(.electrical, "A3", "มิเตอร์ หม้อแปลง และตู้ MDB", Schema.electrical), cover(.flood, "A4", "ประวัติน้ำท่วม", Schema.flood)]
+            + sectionsByCategory.flatMap { g in
+                g.sections.map { SurveyStep(page: .module($0.id), code: $0.number, title: $0.module.title, category: g.category, completion: $0.module.completion) }
+            }
+            + [SurveyStep(page: .final, code: "E1", title: "สรุปผลและลงนาม", category: .summary, completion: finalCompletion)]
+    }
+    /// First step with required fields still empty — where "continue" opens the editor.
+    var nextStep: SurveyStep? { steps.first { $0.completion.total > 0 && !$0.completion.isComplete } }
+    /// Each step with its colour on the step bar: done, the next one to fill, started but short, or untouched.
+    var stepStatuses: [(step: SurveyStep, status: SurveyStep.Status)] {
+        let next = nextStep?.page
+        return steps.map { s in
+            let c = s.completion
+            let status: SurveyStep.Status = s.page == next ? .current
+                : c.total == 0 || c.isComplete ? .complete : c.filled > 0 ? .missing : .notStarted
+            return (s, status)
+        }
+    }
+    /// Never saved to Drive, or answers edited since the last save there.
+    /// Background photo uploads don't count as a save — the report files in Drive are still the old ones.
+    var needsDriveSave: Bool {
+        guard drive?.folderID != nil, let saved = drive?.lastSaved else { return true }
+        return updated > saved
+    }
+}
+
 public struct NumberedSection: Identifiable, Sendable {
     public let number: String
     public let module: SurveyModule

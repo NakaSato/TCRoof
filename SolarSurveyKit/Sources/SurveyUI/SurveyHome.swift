@@ -27,20 +27,52 @@ public extension SurveyModel {
 struct SurveyHomeView: View {
     var title = "PWA Solar Survey"
     var subtitle = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)"
-    @Environment(SurveyModel.self) private var model
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var search = ""
-    @State private var showNew = false
-    @State private var open: Job?
-    @State private var importing = false
-    @State private var showSettings = false
-    @State private var showDriveOpen = false
-    @State private var share: SurveyModel.ExportFile?
-    @State private var toDelete: Job?
-    @State private var message: String?
-    @State private var error: String?
+    @Environment(SurveyModel.self) var model
+    @Environment(\.horizontalSizeClass) var sizeClass
+    @Environment(\.dismiss) var dismiss
+    /// Pushed by the host app (TCRoof) rather than the root of its own scene — show a back button.
+    @Environment(\.isPresented) var isPushed
+    @State var search = ""
+    @State var filter = Filter.all
+    @State var sort = Sort.updated
+    @State var showNew = false
+    @State var open: Opening?
+    @AppStorage("solarSurvey.lastOpened") var lastOpened = ""
+    @State var importing = false
+    @State var showSettings = false
+    @State var showDriveOpen = false
+    @State var share: SurveyModel.ExportFile?
+    @State var toDelete: Job?
+    @State var message: String?
+    @State var error: String?
+    @State var busy: String?
+    @State var pendingSync: PendingSync?
 
-    var filtered: [Job] {
+    /// A job to open, optionally at the step "continue" points to.
+    struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
+    struct PendingSync: Identifiable { let id = UUID(); let notes: [String] }
+
+    enum Filter: CaseIterable {
+        case all, active, draft, unsynced
+        var title: String { [.all: "ทั้งหมด", .active: "กำลังสำรวจ", .draft: "ร่าง", .unsynced: "รอซิงก์"][self]! }
+        var detail: String { [.all: "งานในเครื่องนี้", .active: "ยังไม่ครบทุกขั้น", .draft: "ยังไม่ตั้งชื่อ / เลขที่", .unsynced: "ยังไม่ขึ้นคลาวด์"][self]! }
+        var heading: String { self == .all ? "งานทั้งหมด" : title }
+    }
+    enum Sort: CaseIterable {
+        case updated, docNo, progress
+        var title: String { [.updated: "แก้ไขล่าสุด", .docNo: "เลขที่", .progress: "ความคืบหน้า"][self]! }
+    }
+
+    func matches(_ j: Job, _ f: Filter) -> Bool {
+        switch f {
+        case .all: return true
+        case .active: return !j.projectName.isEmpty && !j.completion.isComplete
+        case .draft: return j.projectName.isEmpty
+        case .unsynced: return model.waitsForSync(j)
+        }
+    }
+
+    var searched: [Job] {
         let q = search.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { return model.jobs }
         return model.jobs.filter { j in
@@ -48,79 +80,56 @@ struct SurveyHomeView: View {
         }
     }
 
+    var shown: [Job] {
+        let list = searched.filter { matches($0, filter) }
+        switch sort {
+        case .updated: return list.sorted { $0.updated > $1.updated }
+        // numbered jobs in order, unnumbered drafts last
+        case .docNo: return list.sorted { a, b in
+            if a.docNo.isEmpty != b.docNo.isEmpty { return b.docNo.isEmpty }
+            return a.docNo.localizedStandardCompare(b.docNo) == .orderedAscending
+        }
+        case .progress: return list.sorted { $0.completion.fraction > $1.completion.fraction }
+        }
+    }
+
+    var compact: Bool { sizeClass == .compact }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                let compact = sizeClass == .compact
-                let header = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
-                header {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(title).font(compact ? .title2.bold() : .largeTitle.bold())
-                        Text(subtitle).font(compact ? .subheadline : .body).foregroundStyle(.secondary)
-                    }
-                    if !compact { Spacer() }
-                    Button { showNew = true } label: {
-                        Label("งานสำรวจใหม่", systemImage: "plus").frame(maxWidth: compact ? .infinity : nil)
-                    }
-                    .buttonStyle(.borderedProminent).controlSize(.large)
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                VStack(alignment: .leading, spacing: 18) {
+                    if let message { Label(message, systemImage: "checkmark.circle").foregroundStyle(Paper.tick) }
+                    stats
+                    listHeading
+                    if shown.isEmpty { empty } else { grid }
                 }
-                if let message { Label(message, systemImage: "checkmark.circle").foregroundStyle(Paper.tick) }
-                if filtered.isEmpty {
-                    ContentUnavailableView {
-                        Label(model.jobs.isEmpty ? "ยังไม่มีงานสำรวจ" : "ไม่พบงานที่ค้นหา", systemImage: "list.clipboard")
-                    } description: {
-                        Text(model.jobs.isEmpty ? "เริ่มงานใหม่ หรือเปิดงานที่บันทึกไว้จาก Google Drive / ไฟล์สำรอง" : "ลองคำค้นอื่น")
-                    } actions: {
-                        if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(.borderedProminent) }
-                    }
-                    .padding(.top, 60)
-                } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 16)], spacing: 16) {
-                        ForEach(filtered) { j in
-                            Button { open = j } label: { JobCard(job: j) }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button { model.duplicate(j.id) } label: { Label("ทำสำเนา", systemImage: "plus.square.on.square") }
-                                    Button { do { share = try model.exportBackup([j.id]) } catch { self.error = error.localizedDescription } } label: { Label("ส่งออกข้อมูลงาน", systemImage: "square.and.arrow.up") }
-                                    Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
-                                }
-                        }
-                    }
-                }
+                .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 20)
+                .frame(maxWidth: 1240).frame(maxWidth: .infinity)
             }
-            .padding(sizeClass == .compact ? 16 : 24)
-            .frame(maxWidth: 1200)
-            .frame(maxWidth: .infinity)
         }
         .background(Paper.page)
-        .searchable(text: $search, prompt: "ค้นหาเลขที่ ชื่อโครงการ ที่อยู่")
+        // the blue header replaces the navigation bar; navigationTitle stays for the editor's back menu
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $open) { j in JobEditorView(job: model.job(j.id) ?? j).environment(model) }
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $open) { o in
+            if let j = model.job(o.id) { JobEditorView(job: j, start: o.start).environment(model) }
+        }
         #if DEBUG
         // `-surveyDemo YES` opens a job right away for simulator checks; add `-surveyDemoSection YES` to open its first section.
+        // `-surveyNew YES` opens the new-survey sheet.
+        .task { if UserDefaults.standard.bool(forKey: "surveyNew") { showNew = true } }
         .task {
             guard UserDefaults.standard.bool(forKey: "surveyDemo"), open == nil else { return }
-            open = model.jobs.first ?? model.create(JobTemplate.all[0], engineer: model.settings.engineer)
+            go(model.jobs.first ?? model.create(JobTemplate.all[0], engineer: model.settings.engineer))
         }
         #endif
-        .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button { showDriveOpen = true } label: { Label("เปิดจาก Google Drive", systemImage: "icloud.and.arrow.down") }
-                Menu {
-                    Button { importing = true } label: { Label("นำเข้าไฟล์ข้อมูล (.json)", systemImage: "square.and.arrow.down") }
-                    Button { do { share = try model.exportBackup() } catch { self.error = error.localizedDescription } } label: { Label("สำรองข้อมูลทุกงาน", systemImage: "externaldrive") }
-                        .disabled(model.jobs.isEmpty)
-                    Divider()
-                    Button { showSettings = true } label: { Label("ตั้งค่า", systemImage: "gearshape") }
-                } label: { Image(systemName: "ellipsis.circle") }
-            }
-        }
         .sheet(isPresented: $showNew) {
-            NewJobSheet { t in let j = model.create(t, engineer: model.settings.engineer); showNew = false; open = j }
+            NewJobSheet { t in let j = model.create(t, engineer: model.settings.engineer); showNew = false; go(j) }
         }
         .sheet(isPresented: $showSettings) { SurveySettingsView().environment(model) }
-        .sheet(isPresented: $showDriveOpen) { DriveOpenView { j in showDriveOpen = false; open = j }.environment(model) }
+        .sheet(isPresented: $showDriveOpen) { DriveOpenView { j in showDriveOpen = false; go(j) }.environment(model) }
         .sheet(item: $share) { f in ShareSheet(items: [f.url]) }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json], allowsMultipleSelection: false) { r in
             do {
@@ -133,130 +142,49 @@ struct SurveyHomeView: View {
                             titleVisibility: .visible, presenting: toDelete) { j in
             Button("ลบ \(j.projectName)", role: .destructive) { model.delete(j.id); toDelete = nil }
         } message: { _ in Text("ข้อมูลและรูปทั้งหมดของงานนี้ในเครื่องจะถูกลบ (ไฟล์ใน Google Drive ไม่ถูกลบ)") }
+        .alert("ซิงก์ต่อหรือไม่?", isPresented: Binding(get: { pendingSync != nil }, set: { if !$0 { pendingSync = nil } }), presenting: pendingSync) { _ in
+            Button("ซิงก์ต่อ") { pendingSync = nil; runSync() }
+            Button("ยกเลิก", role: .cancel) { pendingSync = nil }
+        } message: { p in Text(p.notes.joined(separator: "\n")) }
+        .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .onAppear { model.reload() }
     }
-}
 
-struct JobCard: View {
-    let job: Job
-    @Environment(SurveyModel.self) private var model
-    var body: some View {
-        let c = job.completion
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo)").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                    Text(job.projectName.isEmpty ? "(ยังไม่ได้ตั้งชื่อโครงการ)" : job.projectName).font(.headline).lineLimit(2)
-                }
-                Spacer()
-                ProgressRing(value: c.fraction, size: 42)
-            }
-            Text(job.values.text("address").isEmpty ? "—" : job.values.text("address")).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-            if let id = job.jobSyncID, let label = model.linkedJobLabel?(id) {
-                Label(label, systemImage: "link").font(.caption.weight(.semibold)).foregroundStyle(Color.accentColor).lineLimit(1)
-            }
-            FlowLayout(spacing: 6, lineSpacing: 6) {
-                ForEach(job.sectionsByCategory) { g in
-                    Text("\(g.category.rawValue) \(g.category.title) ×\(g.sections.count)").font(.caption2.weight(.medium))
-                        .padding(.horizontal, 8).padding(.vertical, 3).background(Paper.band, in: Capsule())
-                }
-            }
-            Divider()
-            HStack {
-                Label(ISODate.thai(job.values.text("date")), systemImage: "calendar")
-                Spacer()
-                Label("\(job.photoCount)", systemImage: "photo")
-                if job.drive?.folderID != nil { Image(systemName: "icloud.fill").foregroundStyle(.blue) }
-            }
-            .font(.caption).foregroundStyle(.secondary)
-        }
-        .padding(16)
-        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.secondary.opacity(0.15)))
-        .contentShape(RoundedRectangle(cornerRadius: 14))
+    func go(_ j: Job, at start: MissingGroup.Target? = nil) {
+        lastOpened = j.id.uuidString
+        open = Opening(id: j.id, start: start)
     }
-}
 
-struct NewJobSheet: View {
-    let create: (JobTemplate) -> Void
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    ForEach(JobTemplate.all) { t in
-                        Button { create(t) } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(t.label).font(.headline).foregroundStyle(.primary)
-                                Text(t.detail).font(.subheadline).foregroundStyle(.secondary)
-                            }
-                            .padding(.vertical, 6)
-                        }
-                    }
-                } footer: { Text("เพิ่มหรือลบหัวข้อสำรวจภายหลังได้ในหน้าแก้ไขงาน") }
-            }
-            .navigationTitle("เริ่มงานสำรวจใหม่").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } } }
-        }
-        .presentationDetents([.medium])
-    }
-}
+    // MARK: cards
 
-struct SurveySettingsView: View {
-    @Environment(SurveyModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
-    @State private var s = SurveySettings()
-    @State private var error: String?
-    @State private var signedIn = false
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("รายงาน") {
-                    TextField("ชื่อบริษัท (หัวรายงาน PDF)", text: $s.company)
-                    TextField("ชื่อวิศวกรผู้สำรวจ (ใส่ให้งานใหม่อัตโนมัติ)", text: $s.engineer)
+    var grid: some View {
+        LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
+            ForEach(shown) { j in
+                Button { go(j, at: j.nextStep?.page) } label: {
+                    JobCard(job: j, pendingSync: model.waitsForSync(j), synced: model.isSynced(j), recent: j.id.uuidString == lastOpened)
                 }
-                Section {
-                    SecureField("Google Maps API key (Maps Static API)", text: $s.googleMapsKey)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled()
-                    Stepper(value: $s.mapZoom, in: 15...21) {
-                        LabeledContent("ระดับซูม", value: "\(s.mapZoom)  (กว้างประมาณ \(Int(MapImage.metersAcross(lat: 15, zoom: s.mapZoom).rounded())) ม.)")
-                    }
-                } header: { Text("ภาพสถานที่ติดตั้งจากแผนที่") } footer: {
-                    Text("ปุ่ม \"Google Maps\" ในกรอบภาพสถานที่ติดตั้ง / ภาพมุมสูง ดึงภาพดาวเทียมตรงพิกัด GPS ของงาน ใส่ key ของ Maps Static API เพื่อใช้ภาพ Google ถ้าเว้นว่างจะใช้ภาพดาวเทียมของ Apple Maps แทน")
-                }
-                Section {
-                    TextField("xxxxxxxx.apps.googleusercontent.com", text: $s.googleClientID)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled()
-                    TextField("โฟลเดอร์หลักใน Drive", text: $s.driveRoot)
-                    Toggle("อัปรูปขึ้น Drive อัตโนมัติ", isOn: $s.autoUploadPhotos)
-                    if signedIn {
-                        LabeledContent("บัญชี", value: model.google.email ?? "ลงชื่อเข้าใช้แล้ว")
-                        Button("ออกจากระบบ Google", role: .destructive) { if let out = model.signOutHandler { out() } else { model.google.signOut(); signedIn = false } }
-                    } else {
-                        Button("ลงชื่อเข้าใช้ Google") {
-                            apply()
-                            Task { do { try await model.google.signIn(); signedIn = true } catch { self.error = error.localizedDescription } }
-                        }
-                    }
-                } header: { Text("Google Drive") } footer: {
-                    Text("สร้าง OAuth client ชนิด iOS ใน Google Cloud Console (เปิด Google Drive API) ใส่ Bundle ID ของแอป แล้วคัดลอก Client ID มาวางที่นี่ แอปจะเห็นเฉพาะไฟล์ที่แอปสร้างเอง (สิทธิ์ drive.file)\n\nอัปรูปอัตโนมัติ: รูปใหม่จะถูกส่งเข้าโฟลเดอร์งานใน Drive ภายในไม่กี่วินาที เพื่อให้ iPad เครื่องอื่นที่เปิดงานเดียวกันดึงรูปไปได้")
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button { go(j) } label: { Label("เปิดที่ A1", systemImage: "doc.text") }
+                    Button { model.duplicate(j.id) } label: { Label("ทำสำเนา", systemImage: "plus.square.on.square") }
+                    Button { do { share = try model.exportBackup([j.id]) } catch { self.error = error.localizedDescription } } label: { Label("ส่งออกข้อมูลงาน", systemImage: "square.and.arrow.up") }
+                    Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
                 }
             }
-            .navigationTitle("ตั้งค่าแบบสำรวจ").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { apply(); dismiss() } }
-            }
-            .onAppear { s = model.settings; signedIn = model.google.isSignedIn }
-            .errorAlert($error)
         }
     }
 
-    func apply() {
-        s.googleClientID = s.googleClientID.trimmingCharacters(in: .whitespacesAndNewlines)
-        model.settings = s
-        model.google.clientID = s.googleClientID
+    var empty: some View {
+        ContentUnavailableView {
+            Label(model.jobs.isEmpty ? "ยังไม่มีงานสำรวจ" : "ไม่พบงาน", systemImage: "list.clipboard")
+        } description: {
+            Text(model.jobs.isEmpty ? "เริ่มงานใหม่ หรือเปิดงานที่บันทึกไว้จาก Google Drive / ไฟล์สำรอง"
+                 : search.isEmpty ? "ไม่มีงานในกลุ่ม \"\(filter.title)\"" : "ลองคำค้นอื่น")
+        } actions: {
+            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(.borderedProminent) }
+        }
+        .padding(.top, 40)
     }
 }
 #endif

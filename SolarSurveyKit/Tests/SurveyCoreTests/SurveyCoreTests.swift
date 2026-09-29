@@ -29,6 +29,35 @@ final class SurveyCoreTests: XCTestCase {
         XCTAssertEqual(folder?.photos.first?.fileName, "01 ลายเซ็น.png")
     }
 
+    /// Station template: A1–A4, B1–B5, C1, E1 in workbook order; the first unfinished step is "current".
+    func testSteps() {
+        var j = Job.new(template: JobTemplate.all[0])
+        XCTAssertEqual(j.steps.map(\.code), ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "B5", "C1", "E1"])
+        XCTAssertEqual(j.nextStep?.page, .info)
+        XCTAssertEqual(j.stepStatuses.first?.status, .current)
+        // fill every required A1 field: A2 becomes current, A1 complete
+        for f in Schema.info.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") }
+        XCTAssertEqual(j.nextStep?.page, .site)
+        XCTAssertEqual(j.stepStatuses.map(\.status).prefix(3), [.complete, .current, .notStarted])
+        // a section started but short shows as missing
+        let roof = j.modules.last!.spec.groups.flatMap(\.fields).first { $0.isRequired(j.modules.last!.values) }!
+        j.modules[j.modules.count - 1].values[roof.id] = .text("1")
+        XCTAssertEqual(j.stepStatuses.first { $0.step.code == "C1" }?.status, .missing)
+    }
+
+    /// Unsaved until a Drive save is newer than the last edit.
+    func testNeedsDriveSave() {
+        var j = Job.new(template: JobTemplate.all[1])
+        XCTAssertTrue(j.needsDriveSave)
+        var link = DriveLink(); link.folderID = "f"
+        j.drive = link
+        XCTAssertTrue(j.needsDriveSave, "photos uploaded but no save yet")
+        j.drive?.lastSaved = j.updated.addingTimeInterval(1)
+        XCTAssertFalse(j.needsDriveSave)
+        j.updated = j.updated.addingTimeInterval(2)
+        XCTAssertTrue(j.needsDriveSave)
+    }
+
     func testNewJobAndProgress() throws {
         var j = Job.new(template: JobTemplate.all[0])
         XCTAssertEqual(j.modules.map(\.type), [.panel, .inverter, .water, .backfeed, .fts, .roof])

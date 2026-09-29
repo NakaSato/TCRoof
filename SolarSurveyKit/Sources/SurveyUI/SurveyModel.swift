@@ -20,7 +20,21 @@ public final class SurveyModel {
     @ObservationIgnored private var pendingSave: [UUID: Task<Void, Never>] = [:]
     /// Called after a job is created, edited, duplicated or deleted here (not for `applyRemote`/`removeRemote`).
     @ObservationIgnored public var onChange: (() -> Void)?
-    private let cache = NSCache<NSString, UIImage>()
+    /// Jobs the host app's cloud (TCRoof: Firestore) doesn't hold in their latest form yet.
+    /// nil without a cloud — the home screen then counts jobs not yet saved to Google Drive.
+    public var cloudPending: Set<UUID>?
+    /// Sends the pending jobs to the host's cloud now.
+    @ObservationIgnored public var cloudPush: (() -> Void)?
+    let cache = NSCache<NSString, UIImage>()
+    /// Download progress per job of photos taken on another iPad.
+    public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]
+    var photoRevision = 0
+
+    /// Upload progress per job; kept after a failure so the editor can say it will retry.
+    public internal(set) var photoUpload: [UUID: PhotoTransfer] = [:]
+    @ObservationIgnored var uploadWait: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored var uploadRun: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored var manualDriveSave: Set<UUID> = []
 
     public init(store: JobStore = .documents()) {
         self.store = store
@@ -51,7 +65,9 @@ public final class SurveyModel {
     /// Keeps the list current at once and writes to disk shortly after the last change.
     public func update(_ job: Job) {
         var j = job
-        j.updated = Date()
+        // only answers count as an edit — a Drive link landing after a save mustn't make the job look unsaved again
+        if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID { j.updated = old.updated }
+        else { j.updated = Date() }
         if let i = jobs.firstIndex(where: { $0.id == j.id }) { jobs[i] = j } else { jobs.insert(j, at: 0) }
         pendingSave[j.id]?.cancel()
         let snapshot = j
@@ -141,254 +157,6 @@ public final class SurveyModel {
         pendingSave[id]?.cancel(); pendingSave[id] = nil
         try? store.delete(id)
         jobs.removeAll { $0.id == id }
-    }
-
-    // MARK: photos
-
-    /// Scales a picked or captured image to at most `maxSide` px and stores it as JPEG (PNG for signatures).
-    public func addPhoto(_ image: UIImage, to job: UUID, maxSide: CGFloat = 1600, png: Bool = false) -> Photo? {
-        let img = image.scaled(maxSide: maxSide, opaque: !png)
-        guard let data = png ? img.pngData() : img.jpegData(compressionQuality: 0.8) else { return nil }
-        let px = CGSize(width: img.size.width * img.scale, height: img.size.height * img.scale)
-        let photo = try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, to: job)
-        // the field takes the photo right after this returns; the delay lets that land before the upload looks
-        if photo != nil { autoUploadPhotos(job) }
-        return photo
-    }
-
-    public func image(_ p: Photo, in job: UUID) -> UIImage? {
-        _ = photoRevision  // views showing an empty frame look again once a download lands
-        let key = "\(job.uuidString)/\(p.fileName)" as NSString
-        if let i = cache.object(forKey: key) { return i }
-        guard let d = store.data(of: p, in: job), let i = UIImage(data: d) else { return nil }
-        cache.setObject(i, forKey: key)
-        return i
-    }
-
-    // MARK: photos taken on another device
-
-    /// Progress of moving one job's photos to or from Drive.
-    public struct PhotoTransfer: Equatable, Sendable {
-        public var total = 0, done = 0, failed = 0
-        public var error: String?
-        public var running: Bool { done + failed < total }
-    }
-    public private(set) var photoFetch: [UUID: PhotoTransfer] = [:]
-    private var photoRevision = 0
-
-    /// Photos the job refers to whose files aren't on this device (taken on another iPad).
-    public func missingPhotos(_ job: Job) -> [Photo] { job.allPhotos.filter { !store.hasPhoto($0, in: job.id) } }
-
-    /// The missing photos that the device which took them already saved to Drive, with their Drive file ids.
-    public func downloadablePhotos(_ job: Job) -> [(photo: Photo, fileID: String)] {
-        let files = job.drive?.photoFiles ?? [:]
-        return missingPhotos(job).compactMap { p in files[p.id.uuidString].map { (p, $0) } }
-    }
-
-    /// Downloads the job's missing photos from its Drive folder, four at a time. Does nothing while signed out.
-    public func fetchMissingPhotos(_ id: UUID) async {
-        guard photoFetch[id]?.running != true, google.isSignedIn, let job = job(id) else { return }
-        let todo = downloadablePhotos(job)
-        guard !todo.isEmpty else { return }
-        photoFetch[id] = PhotoTransfer(total: todo.count)
-        let client = DriveClient(tokens: google), store = self.store
-        await withTaskGroup(of: String?.self) { group in
-            var next = todo.makeIterator()
-            func start() -> Bool {
-                guard let (p, fileID) = next.next() else { return false }
-                group.addTask {
-                    do { try store.writePhoto(try await client.download(fileID), for: p, in: id); return nil }
-                    catch { return error.localizedDescription }
-                }
-                return true
-            }
-            for _ in 0..<4 { if !start() { break } }
-            for await failure in group {
-                if let failure { photoFetch[id]?.failed += 1; photoFetch[id]?.error = failure }
-                else { photoFetch[id]?.done += 1; photoRevision += 1 }
-                _ = start()
-            }
-        }
-    }
-
-    /// Upload progress per job; kept after a failure so the editor can say it will retry.
-    public private(set) var photoUpload: [UUID: PhotoTransfer] = [:]
-    @ObservationIgnored private var uploadWait: [UUID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var uploadRun: [UUID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var manualDriveSave: Set<UUID> = []
-
-    /// Photos taken here that Drive doesn't have yet.
-    public func photosToUpload(_ job: Job) -> Int {
-        let sent = job.drive?.photoFiles ?? [:]
-        return job.driveFolders.flatMap(\.photos).filter { sent[$0.photo.id.uuidString] == nil && store.hasPhoto($0.photo, in: job.id) }.count
-    }
-
-    /// Sends the job's new photos to Drive a few seconds after the last change, so another iPad can download them.
-    /// Waits until the job has a name, so its Drive folder isn't created as "งานสำรวจ <date>".
-    public func autoUploadPhotos(_ id: UUID, after seconds: Double = 5) {
-        guard settings.autoUploadPhotos, google.isSignedIn else { return }
-        uploadWait[id]?.cancel()
-        uploadWait[id] = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-            guard let self, !Task.isCancelled else { return }
-            await self.uploadRun[id]?.value
-            guard !Task.isCancelled, !self.manualDriveSave.contains(id), let job = self.job(id),
-                  !(job.projectName.isEmpty && job.docNo.isEmpty), self.photosToUpload(job) > 0 else { return }
-            let run = Task { await self.uploadPhotos(id) }
-            self.uploadRun[id] = run
-            await run.value
-            if self.uploadRun[id] == run { self.uploadRun[id] = nil }
-        }
-    }
-
-    private func uploadPhotos(_ id: UUID) async {
-        guard let job = job(id) else { return }
-        let store = self.store
-        photoUpload[id] = PhotoTransfer(total: photosToUpload(job))
-        do {
-            let link = try await drive.syncPhotos(job, photos: job.driveFolders, photoData: { store.data(of: $0, in: id) }) { [weak self] step in
-                guard case .photos(let done, let total) = step else { return }
-                Task { @MainActor in self?.photoUpload[id] = PhotoTransfer(total: total, done: done) }
-            }
-            keepLink(link, for: id)
-            photoUpload[id] = nil
-        } catch {
-            if let e = error as? DriveSync.Interrupted { keepLink(e.link, for: id) }
-            photoUpload[id]?.error = error.localizedDescription
-            // offline or a Drive hiccup: try again in a minute (a folder this account can't reach won't fix itself)
-            if !(error is DriveSync.FolderUnreachable) { autoUploadPhotos(id, after: 60) }
-        }
-    }
-
-    /// Satellite picture centred on the job's GPS, stored like any other photo.
-    public func mapPhoto(gps: String, for job: UUID) async throws -> Photo {
-        let img = try await MapImage.fetch(gps: gps, zoom: settings.mapZoom, googleKey: settings.googleMapsKey)
-        guard let p = addPhoto(img, to: job, maxSide: 1600) else { throw MapImage.Failure.badResponse("บันทึกภาพไม่ได้") }
-        return p
-    }
-
-    // MARK: exports
-
-    public struct ExportFile: Identifiable { public let id = UUID(); public let url: URL; public let summary: String }
-
-    private func tempURL(_ name: String) -> URL {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("exports", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent(name)
-    }
-    static func safeName(_ s: String) -> String { s.replacingOccurrences(of: "[/\\\\:*?\"<>|]", with: "-", options: .regularExpression) }
-    func baseName(_ j: Job) -> String { Self.safeName("แบบสำรวจ NO.\(j.docNo.isEmpty ? "-" : j.docNo) \(j.projectName)".trimmingCharacters(in: .whitespaces)) }
-
-    func excelData(_ job: Job) throws -> ExcelExporter.Result {
-        let store = self.store
-        return try ExcelExporter().export(job, photoData: { store.data(of: $0, in: job.id) }, planImage: { m in
-            guard let sk = Drawings.plan(m.values, tank: m.type == .tank, width: 1100), let r = PDFRenderer.png(sk, scale: 1.5) else { return nil }
-            return ExcelImage(data: r.0, width: r.1, height: r.2, isPNG: true)
-        }, siteMapImage: markedSiteMap(job))
-    }
-
-    /// The site picture with its symbols drawn in, for the Excel frame (the PDF draws them as vectors).
-    func markedSiteMap(_ job: Job) -> ExcelImage? {
-        let marks = job.values.marks("siteMarks")
-        guard !marks.isEmpty, let p = job.values.photo("siteMap"), let img = image(p, in: job.id) else { return nil }
-        let base = img.scaled(maxSide: 1600)
-        let pic = base.size
-        // legend strip below the picture, scaled to the picture's width
-        let kinds = SiteMarks.usedKinds(marks), fs = max(9, Double(pic.width) * 0.014)
-        let lh = SiteMarks.legendHeight(kinds, width: Double(pic.width), size: fs)
-        let size = CGSize(width: pic.width, height: pic.height + CGFloat(lh))
-        let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.opaque = true
-        let out = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
-            UIColor.white.setFill(); ctx.fill(CGRect(origin: .zero, size: size))
-            base.draw(in: CGRect(origin: .zero, size: pic))
-            PDFRenderer.draw(SiteMarks.ops(marks, in: Box(0, 0, Double(pic.width), Double(pic.height))), in: ctx.cgContext, photo: { _ in nil })
-            PDFRenderer.draw(SiteMarks.legend(kinds, in: Box(0, Double(pic.height), Double(pic.width), lh), size: fs), in: ctx.cgContext, photo: { _ in nil })
-        }
-        guard let data = out.jpegData(compressionQuality: 0.85) else { return nil }
-        return ExcelImage(data: data, width: Int(size.width), height: Int(size.height), isPNG: false)
-    }
-
-    public func exportExcel(_ job: Job) throws -> ExportFile {
-        flush(job.id)
-        let r = try excelData(job)
-        let url = tempURL(baseName(job) + ".xlsx")
-        try r.data.write(to: url, options: .atomic)
-        return ExportFile(url: url, summary: "Excel \(r.sheets.count) แผ่น · \(r.pictures) รูป")
-    }
-
-    var reportHeader: ReportHeader { ReportHeader(company: settings.company) }
-
-    public func pdfData(_ job: Job) -> Data {
-        PDFRenderer.render(job: job, header: reportHeader, photo: { [weak self] p in self?.image(p, in: job.id) })
-    }
-
-    public func exportSummaryPDF(_ job: Job) throws -> ExportFile {
-        flush(job.id)
-        let url = tempURL("สรุป " + baseName(job) + ".pdf")
-        try PDFRenderer.renderSummary(job: job, header: reportHeader, photo: { [weak self] p in self?.image(p, in: job.id) }).write(to: url, options: .atomic)
-        return ExportFile(url: url, summary: "PDF สรุป 1 หน้า")
-    }
-
-    public func exportPDF(_ job: Job) throws -> ExportFile {
-        flush(job.id)
-        let url = tempURL(baseName(job) + ".pdf")
-        try pdfData(job).write(to: url, options: .atomic)
-        return ExportFile(url: url, summary: "รายงาน PDF")
-    }
-
-    public func exportBackup(_ ids: [UUID]? = nil) throws -> ExportFile {
-        let list = ids.map { set in jobs.filter { set.contains($0.id) } } ?? jobs
-        let url = tempURL("solar-survey-backup-\(ISODate.string(Date())).json")
-        try WebBackup.exportBackup(list, store: store).write(to: url, options: .atomic)
-        return ExportFile(url: url, summary: "สำรองข้อมูล \(list.count) งาน")
-    }
-
-    /// Imports a backup or survey-data file (from this app or the web version).
-    public func importFile(_ url: URL) throws -> Int {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        let imported = try WebBackup.importJobs(Data(contentsOf: url), into: store)
-        reload()
-        return imported.count
-    }
-
-    // MARK: Google Drive
-
-    public var drive: DriveSync { DriveSync(client: DriveClient(tokens: google), rootName: settings.driveRoot) }
-
-    public func saveToDrive(_ job: Job, kinds: [DriveSync.Kind], photos: Bool = false,
-                            progress: @escaping @Sendable (DriveSync.Step) -> Void) async throws -> [DriveFile] {
-        // one Drive writer per job: finish a background photo upload first so nothing is sent twice
-        manualDriveSave.insert(job.id)
-        defer { manualDriveSave.remove(job.id) }
-        await uploadRun[job.id]?.value
-        let job = self.job(job.id) ?? job
-        flush(job.id)
-        let excel = try kinds.contains(.xlsx) ? excelData(job).data : Data()
-        let pdf = kinds.contains(.pdf) ? pdfData(job) : Data()
-        let json = try kinds.contains(.json) ? WebBackup.exportDriveData(job, store: store) : Data()
-        let store = self.store, id = job.id
-        do {
-            let (link, files) = try await drive.save(job, kinds: kinds, build: { k in k == .xlsx ? excel : k == .pdf ? pdf : json },
-                                                     photos: photos ? job.driveFolders : [], photoData: { store.data(of: $0, in: id) },
-                                                     progress: progress)
-            keepLink(link, for: id)
-            return files
-        } catch let e as DriveSync.Interrupted {
-            // remember the photos that did upload so a retry sends only the rest
-            keepLink(e.link, for: id)
-            throw e
-        }
-    }
-
-    private func keepLink(_ link: DriveLink, for id: UUID) {
-        if var j = self.job(id) { j.drive = link; update(j); flush(j.id) }
-    }
-
-    public func openFromDrive(_ file: DriveFile) async throws -> Job {
-        let j = try await drive.open(file, into: store)
-        reload()
-        return j
     }
 }
 

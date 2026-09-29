@@ -10,24 +10,32 @@ import DriveSync
 struct JobEditorView: View {
     enum Page: Hashable { case summary, info, site, electrical, flood, module(UUID), final }
 
-    @Environment(SurveyModel.self) private var model
-    @State private var job: Job
-    @State private var page: Page = .info
-    @State private var preview: PDFPreviewItem?
-    @State private var showExport = false
-    @State private var busy: String?
-    @State private var error: String?
-    @State private var confirmDelete: SurveyModule?
-    @State private var sidebarVisible = true
-    @State private var collapsed: Set<SectionCategory> = []
-    @State private var pendingExport: PendingExport?
+    @Environment(SurveyModel.self) var model
+    @State var job: Job
+    @State var page: Page = .info
+    @State var preview: PDFPreviewItem?
+    @State var showExport = false
+    @State var busy: String?
+    @State var error: String?
+    @State var confirmDelete: SurveyModule?
+    @State var sidebarVisible = true
+    @State var collapsed: Set<SectionCategory> = []
+    @State var pendingExport: PendingExport?
     struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; let go: () -> Void }
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.horizontalSizeClass) var sizeClass
 
-    init(job: Job) { _job = State(initialValue: job) }
+    /// - Parameter start: page to open on (the home card's "continue" step); nil opens A1.
+    init(job: Job, start: MissingGroup.Target? = nil) {
+        _job = State(initialValue: job)
+        if let start {
+            _page = State(initialValue: Self.page(for: start))
+            _startedOnPage = State(initialValue: true)
+        }
+    }
+    @State var startedOnPage = false
 
     /// iPhone (and narrow iPad split view): the section list and the form take turns filling the screen.
-    private var compact: Bool { sizeClass == .compact }
+    var compact: Bool { sizeClass == .compact }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -57,6 +65,8 @@ struct JobEditorView: View {
         // photos an earlier upload didn't finish, or taken before signing in to Google
         .onAppear { model.autoUploadPhotos(job.id, after: 2) }
         .onDisappear { model.flush(job.id) }
+        // opened from "continue": on iPhone show that form rather than the section list
+        .onAppear { if startedOnPage && compact { sidebarVisible = false } }
         #if DEBUG
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
         // `-surveyExport YES` opens the export sheet for simulator checks
@@ -78,338 +88,6 @@ struct JobEditorView: View {
                             titleVisibility: .visible, presenting: confirmDelete) { m in
             Button("ลบ \(m.title)", role: .destructive) { remove(m) }
         } message: { _ in Text("ข้อมูลและรูปภาพในหัวข้อนี้จะถูกลบ") }
-    }
-
-    // MARK: sidebar
-
-    /// One entry in the sidebar: code badge, short title, and how much of it is filled.
-    struct SidebarItem: Identifiable {
-        let page: Page
-        let code: String
-        let title: String
-        let completion: Completion
-        var module: SurveyModule? = nil
-        var id: Page { page }
-    }
-    struct SidebarGroup: Identifiable {
-        let category: SectionCategory
-        let items: [SidebarItem]
-        var id: SectionCategory { category }
-    }
-
-    /// Sections in workbook order, grouped by category (A general, B–D added sections, E sign-off).
-    var sidebarGroups: [SidebarGroup] {
-        let general = SidebarGroup(category: .general, items: [
-            SidebarItem(page: .info, code: "A1", title: "ข้อมูลโครงการ", completion: Schema.info.completion(job.values)),
-            SidebarItem(page: .site, code: "A2", title: "ภาพสถานที่ติดตั้ง", completion: Schema.site.completion(job.values)),
-            SidebarItem(page: .electrical, code: "A3", title: "มิเตอร์ หม้อแปลง และตู้ MDB", completion: Schema.electrical.completion(job.values)),
-            SidebarItem(page: .flood, code: "A4", title: "ประวัติน้ำท่วม", completion: Schema.flood.completion(job.values)),
-        ])
-        let added = job.sectionsByCategory.map { g in
-            SidebarGroup(category: g.category, items: g.sections.map {
-                SidebarItem(page: .module($0.id), code: $0.number, title: $0.module.title, completion: $0.module.completion, module: $0.module)
-            })
-        }
-        let final = SidebarGroup(category: .summary, items: [SidebarItem(page: .final, code: "E1", title: "สรุปผลและลงนาม", completion: job.finalCompletion)])
-        return [general] + added + [final]
-    }
-
-    /// First section with required fields still empty — the header's "continue" shortcut.
-    var nextIncomplete: SidebarItem? {
-        sidebarGroups.flatMap(\.items).first { $0.completion.total > 0 && !$0.completion.isComplete }
-    }
-
-    func category(of p: Page) -> SectionCategory? {
-        switch p {
-        case .summary: return nil
-        case .info, .site, .electrical, .flood: return .general
-        case .final: return .summary
-        case .module(let id): return job.modules.first { $0.id == id }?.spec.category
-        }
-    }
-
-    var sidebar: some View {
-        let groups = sidebarGroups
-        return List(selection: Binding(get: { compact ? nil : Optional(page) }, set: { if let p = $0 { select(p) } })) {
-            Section { sidebarHeader }.listRowBackground(Color(uiColor: .systemBackground))
-            Section {
-                row(SidebarItem(page: .summary, code: "", title: "สรุปภาพรวม 1 หน้า", completion: Completion()), symbol: "doc.text.magnifyingglass")
-            }
-            ForEach(groups) { g in
-                Section(isExpanded: expanded(g.category)) {
-                    ForEach(g.items) { item in
-                        if let m = item.module {
-                            row(item)
-                                .contextMenu {
-                                    Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
-                                    Button(role: .destructive) { confirmDelete = m } label: { Label("ลบหัวข้อ", systemImage: "trash") }
-                                }
-                                .swipeActions { Button(role: .destructive) { confirmDelete = m } label: { Label("ลบ", systemImage: "trash") } }
-                        } else {
-                            row(item)
-                        }
-                    }
-                } header: {
-                    groupHeader(g)
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .background(Paper.page)
-        .safeAreaInset(edge: .bottom) { sidebarFooter }
-        // keep the open section visible when "next" or "continue" jumps into a collapsed group
-        .onChange(of: page) { _, p in if let c = category(of: p) { collapsed.remove(c) } }
-    }
-
-    func expanded(_ c: SectionCategory) -> Binding<Bool> {
-        Binding(get: { !collapsed.contains(c) }, set: { open in withAnimation { if open { collapsed.remove(c) } else { collapsed.insert(c) } } })
-    }
-
-    var sidebarHeader: some View {
-        let c = job.completion
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo)").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                    Text(job.projectName.isEmpty ? "(ยังไม่ได้ตั้งชื่อโครงการ)" : job.projectName).font(.headline).lineLimit(2)
-                }
-                Spacer(minLength: 8)
-                Text("\(c.percent)%").font(.title2.bold()).monospacedDigit().foregroundStyle(c.isComplete ? Paper.tick : .primary)
-            }
-            ProgressView(value: c.fraction).tint(c.isComplete ? Paper.tick : .accentColor)
-            HStack {
-                Text("กรอกแล้ว \(c.filled)/\(c.total)")
-                Spacer()
-                Label("\(job.photoCount)", systemImage: "photo")
-            }
-            .font(.caption).foregroundStyle(.secondary).monospacedDigit()
-            photoStatus
-            if let next = nextIncomplete, next.page != page {
-                Button { select(next.page) } label: {
-                    Label("ไปต่อ: \(next.code) \(next.title)", systemImage: "arrow.right.circle.fill")
-                        .font(.subheadline.weight(.semibold)).lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.bordered).controlSize(.small)
-            }
-        }
-        .padding(.vertical, 6)
-    }
-
-    /// Download progress, or how many photos are still only on another device.
-    @ViewBuilder var photoStatus: some View {
-        let gap = PhotoGap(model: model, job: job)
-        if let f = model.photoFetch[job.id], f.running {
-            HStack(spacing: 6) {
-                ProgressView(value: Double(f.done + f.failed), total: Double(f.total)).frame(width: 60)
-                Text("กำลังดึงรูปจาก Drive \(f.done)/\(f.total)")
-            }
-            .font(.caption).foregroundStyle(.secondary)
-        } else if let u = model.photoUpload[job.id], u.running {
-            HStack(spacing: 6) {
-                ProgressView(value: Double(u.done), total: Double(max(u.total, 1))).frame(width: 60)
-                Text("กำลังอัปรูปขึ้น Drive \(u.done)/\(u.total)")
-            }
-            .font(.caption).foregroundStyle(.secondary)
-        } else if let e = model.photoUpload[job.id]?.error, model.photosToUpload(job) > 0 {
-            Label("อัปรูปขึ้น Drive ไม่สำเร็จ: \(e)", systemImage: "exclamationmark.icloud")
-                .font(.caption).foregroundStyle(.orange).lineLimit(3)
-        } else if gap.missing > 0 {
-            Label("รูป \(gap.missing) รูปยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash")
-                .font(.caption).foregroundStyle(.orange)
-        }
-    }
-
-    func groupHeader(_ g: SidebarGroup) -> some View {
-        let done = g.items.filter(\.completion.isComplete).count
-        return HStack {
-            Text(g.category.heading)
-            Spacer()
-            Text("\(done)/\(g.items.count)").monospacedDigit()
-                .foregroundStyle(done == g.items.count ? Paper.tick : .secondary)
-        }
-    }
-
-    var sidebarFooter: some View {
-        VStack(spacing: 8) {
-            if !job.stationOverflow.isEmpty {
-                Label("หัวข้อระบบไฟฟ้าเกินช่องในแผ่นงาน — Excel จะเพิ่มแผ่น \"ระบบไฟฟ้า (2)\" ให้อัตโนมัติ", systemImage: "info.circle")
-                    .font(.caption2).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
-            }
-            Menu {
-                ForEach([SectionCategory.electrical, .roof, .water]) { cat in
-                    Section(cat.heading) {
-                        ForEach(ModuleType.byCode.filter { $0.category == cat }) { t in
-                            Button { add(t) } label: { Label(t.code + " " + Schema.spec(t).label + "  (แผ่น " + Schema.spec(t).sheet + ")", systemImage: icon(t)) }
-                        }
-                    }
-                }
-            } label: {
-                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.body.weight(.semibold)).frame(maxWidth: .infinity)
-            }
-            .menuStyle(.button).buttonStyle(.bordered).controlSize(.large)
-        }
-        .padding(12)
-        .background(.bar)
-    }
-
-    func select(_ p: Page) {
-        page = p
-        if compact { withAnimation { sidebarVisible = false } }
-    }
-
-    /// Code badge, one-line title, status mark; finished sections step back so open work stands out.
-    func row(_ item: SidebarItem, symbol: String? = nil) -> some View {
-        let c = item.completion
-        let selected = !compact && page == item.page
-        return HStack(spacing: 10) {
-            Group {
-                if let symbol { Image(systemName: symbol).font(.caption.weight(.bold)) }
-                else { Text(item.code).font(.caption.weight(.bold)).monospacedDigit() }
-            }
-            .foregroundStyle(selected ? Color.white : Paper.ink)
-            .frame(minWidth: 38, minHeight: 22)
-            .padding(.horizontal, 2)
-            .background(selected ? Color.accentColor : Paper.band, in: RoundedRectangle(cornerRadius: 6))
-            Text(item.title).lineLimit(1)
-                .fontWeight(selected ? .semibold : .regular)
-                .foregroundStyle(selected ? Color.accentColor : c.isComplete ? .secondary : .primary)
-            Spacer(minLength: 4)
-            StatusMark(completion: c)
-        }
-        .tag(item.page)
-        // own selection look: the system one turns solid blue while the list has focus and hides the badge and status
-        .listRowBackground(selected ? Color.accentColor.opacity(0.14) : Color(uiColor: .systemBackground))
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(c.total > 0 ? "กรอกแล้ว \(c.filled) จาก \(c.total)" : "")
-        .help(item.code + " " + item.title)
-    }
-
-    func icon(_ t: ModuleType) -> String {
-        switch t {
-        case .panel: return "rectangle.split.3x1"
-        case .inverter: return "bolt.batteryblock"
-        case .water: return "drop"
-        case .backfeed: return "arrow.uturn.backward.circle"
-        case .fts: return "exclamationmark.octagon"
-        case .roof: return "house"
-        case .tank: return "cylinder"
-        case .sed: return "square.split.bottomrightquarter"
-        case .house: return "house.lodge"
-        case .roofForm: return "building.2"
-        }
-    }
-
-    // MARK: detail
-
-    @ViewBuilder var detail: some View {
-        switch page {
-        case .summary: summaryPage
-        case .info: groupPage(Schema.info, code: "A1", title: "ข้อมูลโครงการ", subtitle: "ข้อมูลหัวกระดาษของทุกแผ่นงาน (เลขที่ วันที่ ผู้ประสานงาน ที่อยู่)")
-        case .site: groupPage(Schema.site, code: "A2", title: "ภาพสถานที่ติดตั้ง", subtitle: "แผ่น ระบบไฟฟ้า — ภาพสถานที่ติดตั้ง และ LIST")
-        case .electrical: groupPage(Schema.electrical, code: "A3", title: "มิเตอร์ หม้อแปลง และตู้ MDB", subtitle: "แผ่น ระบบไฟฟ้า — ผังมิเตอร์ หม้อแปลง และตู้ MDB")
-        case .flood: groupPage(Schema.flood, code: "A4", title: "ประวัติน้ำท่วม", subtitle: "ใช้กำหนดความสูงติดตั้งอินเวอร์เตอร์ ตู้ SMDB/กันย้อน และแนวรางสายไฟ · แสดงในรายงาน PDF")
-        case .final: groupPage(Schema.final, code: "E1", title: "สรุปผลและลงนาม", subtitle: "หน้าสุดท้ายของรายงาน PDF")
-        case .module(let id):
-            if let i = job.modules.firstIndex(where: { $0.id == id }) { modulePage(i) }
-            else { ContentUnavailableView("เลือกหัวข้อทางซ้าย", systemImage: "sidebar.left") }
-        }
-    }
-
-    var summaryPage: some View {
-        let layout = ReportLayout(job: job, header: model.reportHeader, measure: PDFRenderer.Measure())
-        let sheet = Sketch(width: ReportLayout.pageW, height: ReportLayout.pageH, ops: layout.summaryPage().ops)
-        let jobID = job.id
-        return VStack(spacing: 14) {
-            Canvas { ctx, size in
-                let k = size.width / CGFloat(sheet.width)
-                ctx.withCGContext { cg in
-                    cg.scaleBy(x: k, y: k)
-                    PDFRenderer.draw(sheet.ops, in: cg, photo: { model.image($0, in: jobID) })
-                }
-            }
-            .aspectRatio(CGFloat(sheet.width / sheet.height), contentMode: .fit)
-            .background(Color.white)
-            .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
-            Button { checked { run("กำลังสร้าง PDF สรุป…") { let f = try model.exportSummaryPDF(job); preview = PDFPreviewItem(url: f.url, title: "สรุป " + job.projectName) } } } label: {
-                Label("บันทึก PDF สรุป 1 หน้า", systemImage: "doc.richtext")
-            }
-            .buttonStyle(.borderedProminent).controlSize(.large)
-        }
-    }
-
-    func groupPage(_ g: GroupSpec, code: String, title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header(code + " " + title, subtitle: subtitle, completion: g.completion(job.values))
-            PaperBox(title: g.title ?? "") {
-                ForEach(g.fields) { f in
-                    if f.isVisible(job.values) && !f.id.hasPrefix("tr") || f.id == "trafos" { FieldView(spec: f, values: $job.values, jobID: job.id, gps: job.values.text("gps")) }
-                }
-            }
-            if page == .flood, let h = Schema.recommendedEquipHeight(job.values) {
-                Label("แนะนำติดตั้งอุปกรณ์สูงจากพื้นดินอย่างน้อย \(h) ซม. (ระดับน้ำสูงสุด + 50 ซม.)", systemImage: "arrow.up.to.line")
-                    .font(.callout).foregroundStyle(.blue)
-            }
-            if page == .electrical, job.values.transformers("trafos").isEmpty == false || !job.values.text("meterNo").isEmpty {
-                Text("ค่าที่กรอกจะลงในผัง SmartArt ของแผ่น ระบบไฟฟ้า").font(.footnote).foregroundStyle(.secondary)
-            }
-            nextButton
-        }
-    }
-
-    func modulePage(_ i: Int) -> some View {
-        let m = job.modules[i], spec = m.spec
-        let number = job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? spec.code
-        return VStack(alignment: .leading, spacing: 16) {
-            header(number + " " + spec.label, subtitle: "ไฟล์ Excel แผ่น \(spec.sheet) · ในรายงาน: \(spec.reportTitle)", completion: m.completion)
-            HStack {
-                Text("ชื่อ/อาคาร").foregroundStyle(.secondary)
-                TextField(spec.namePlaceholder, text: $job.modules[i].name).textFieldStyle(.roundedBorder).frame(maxWidth: 360)
-            }
-            ForEach(spec.groups) { g in
-                let c = g.completion(m.values)
-                let title: String = g.title ?? (m.name.isEmpty ? spec.reportTitle : spec.reportTitle + " " + m.name)
-                let trailing: String? = c.total > 0 ? "\(c.filled)/\(c.total)" : nil
-                let number: String? = g.no.map { $0 + "." }
-                PaperBox(title: title, number: number, trailing: trailing) {
-                    ForEach(g.fields) { f in
-                        if f.isVisible(job.modules[i].values) { FieldView(spec: f, values: $job.modules[i].values, jobID: job.id, moduleType: m.type, gps: job.values.text("gps")) }
-                    }
-                }
-            }
-            nextButton
-        }
-    }
-
-    func header(_ title: String, subtitle: String, completion c: Completion) -> some View {
-        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(alignment: .center, spacing: 14))
-        return layout {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.title2.bold())
-                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
-            }
-            if !compact { Spacer() }
-            if c.total > 0 {
-                VStack(alignment: compact ? .leading : .trailing, spacing: 2) {
-                    ProgressView(value: c.fraction).frame(width: 140).tint(c.isComplete ? Paper.tick : .accentColor)
-                    Text("กรอกแล้ว \(c.filled) จาก \(c.total)").font(.caption).foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    var pages: [Page] {
-        [.summary] + sidebarGroups.flatMap { $0.items.map(\.page) }
-    }
-    @ViewBuilder var nextButton: some View {
-        if let i = pages.firstIndex(of: page), i + 1 < pages.count {
-            HStack {
-                Spacer()
-                Button { withAnimation { page = pages[i + 1] } } label: { Label("หัวข้อถัดไป", systemImage: "arrow.right") }
-                    .buttonStyle(.borderedProminent).controlSize(.large)
-            }
-        }
     }
 
     // MARK: toolbar
@@ -441,7 +119,8 @@ struct JobEditorView: View {
         pendingExport = PendingExport(gaps: lines, target: unsigned.isEmpty ? groups.first?.target : .final, go: go)
     }
 
-    func page(for target: MissingGroup.Target) -> Page {
+    func page(for target: MissingGroup.Target) -> Page { Self.page(for: target) }
+    static func page(for target: MissingGroup.Target) -> Page {
         switch target {
         case .info: return .info
         case .site: return .site
@@ -483,88 +162,5 @@ struct JobEditorView: View {
         job.modules.removeAll { $0.id == m.id }
         confirmDelete = nil
     }
-}
-
-/// Sidebar status: empty circle, partial ring with count, or a green check.
-struct StatusMark: View {
-    let completion: Completion
-    var body: some View {
-        let c = completion
-        if c.total == 0 {
-            EmptyView()
-        } else if c.isComplete {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(Paper.tick)
-        } else if c.filled == 0 {
-            Circle().strokeBorder(Color.secondary.opacity(0.45), lineWidth: 1.5).frame(width: 17, height: 17)
-        } else {
-            HStack(spacing: 5) {
-                Text("\(c.filled)/\(c.total)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                ZStack {
-                    Circle().stroke(Color.secondary.opacity(0.25), lineWidth: 2.5)
-                    Circle().trim(from: 0, to: c.fraction).stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round)).rotationEffect(.degrees(-90))
-                }
-                .frame(width: 15, height: 15)
-            }
-        }
-    }
-}
-
-/// Photos a job refers to that this device doesn't have, and why.
-struct PhotoGap {
-    let missing: Int
-    /// Saved to Drive by the iPad that took them, so they can be downloaded here.
-    let onDrive: Int
-    @MainActor init(model: SurveyModel, job: Job) {
-        missing = model.missingPhotos(job).count
-        onDrive = model.downloadablePhotos(job).count
-    }
-    var message: String {
-        var s = "มีรูป \(missing) รูปที่ยังไม่อยู่ในเครื่องนี้ รายงานจะไม่มีรูปเหล่านี้"
-        if missing > onDrive { s += "\n\(missing - onDrive) รูปยังไม่ได้บันทึกขึ้น Google Drive — ให้เครื่องที่ถ่ายบันทึกรูปภาพลง Drive ก่อน" }
-        return s
-    }
-}
-
-struct BusyOverlay: View {
-    let text: String
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.25).ignoresSafeArea()
-            VStack(spacing: 12) { ProgressView().controlSize(.large); Text(text) }
-                .padding(28).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        }
-    }
-}
-
-struct PDFPreviewItem: Identifiable { let id = UUID(); let url: URL; let title: String }
-
-struct PDFPreview: View {
-    let item: PDFPreviewItem
-    @Environment(\.dismiss) private var dismiss
-    @State private var sharing = false
-    var body: some View {
-        NavigationStack {
-            PDFKitView(url: item.url)
-                .navigationTitle("รายงาน " + item.title).navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("ปิด") { dismiss() } }
-                    ToolbarItem(placement: .primaryAction) { Button { sharing = true } label: { Label("แชร์", systemImage: "square.and.arrow.up") } }
-                }
-                .sheet(isPresented: $sharing) { ShareSheet(items: [item.url]) }
-        }
-    }
-}
-
-struct PDFKitView: UIViewRepresentable {
-    let url: URL
-    func makeUIView(context: Context) -> PDFView {
-        let v = PDFView()
-        v.autoScales = true
-        v.displayMode = .singlePageContinuous
-        v.backgroundColor = .secondarySystemBackground
-        v.document = PDFDocument(url: url)
-        return v
-    }
-    func updateUIView(_ v: PDFView, context: Context) {}
 }
 #endif

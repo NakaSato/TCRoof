@@ -34,6 +34,8 @@ final class CloudSync {
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var pushTask: Task<Void, Never>?
     @ObservationIgnored private var known: [String: String] = [:]
+    /// Writes per document not yet confirmed by the server (offline, or still uploading).
+    @ObservationIgnored private var unconfirmed: [String: Int] = [:]
     /// Child records waiting for their job to arrive, keyed like `known`.
     @ObservationIgnored private var pending: [String: () -> Bool] = [:]
 
@@ -46,6 +48,13 @@ final class CloudSync {
         guard self.context == nil else { return }
         self.context = context
         self.survey = survey
+        // the survey home shows what Firestore still lacks, even before sign-in finishes
+        if let u = Auth.auth().currentUser?.uid { known = UserDefaults.standard.dictionary(forKey: "cloudSync.known.\(u)") as? [String: String] ?? [:] }
+        survey.cloudPush = { [weak self] in
+            guard let self else { return }
+            if case .failed = self.state { self.retry() } else { self.push() }
+        }
+        refreshSurveyPending()
         Task { await connect() }
     }
 
@@ -57,7 +66,10 @@ final class CloudSync {
         timer?.invalidate(); timer = nil
         pushTask?.cancel(); pushTask = nil
         survey?.onChange = nil
+        survey?.cloudPush = nil
+        survey?.cloudPending = nil
         pending = [:]
+        unconfirmed = [:]
         context = nil; survey = nil; uid = nil
         try? Auth.auth().signOut()
         state = .off
@@ -176,6 +188,7 @@ final class CloudSync {
             changes.append(Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil))
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
+        defer { refreshSurveyPending() }
         guard !changes.isEmpty else { return }
 
         // Firestore takes at most 500 writes per batch.
@@ -187,10 +200,17 @@ final class CloudSync {
                 do { try change.write(batch) } catch { failed(error); continue }
                 previous[change.key] = known[change.key]
                 known[change.key] = change.fingerprint
+                unconfirmed[change.key, default: 0] += 1
             }
             batch.commit { [weak self] error in
                 MainActor.assumeIsolated {
                     guard let self else { return }
+                    // Firestore calls back once the server has the batch, or has refused it
+                    for key in previous.keys {
+                        let left = (self.unconfirmed[key] ?? 1) - 1
+                        self.unconfirmed[key] = left > 0 ? left : nil
+                    }
+                    defer { self.refreshSurveyPending() }
                     if let error {
                         // Put back what the server still has so the next push tries again.
                         for (key, old) in previous { self.known[key] = old }
@@ -304,10 +324,22 @@ final class CloudSync {
                     self.known[key] = SurveyRecord(job)?.fingerprint
                 }
                 self.saveKnown()
+                self.refreshSurveyPending()
                 if !snapshot.metadata.isFromCache { self.synced() }
             }
         }
         listeners.append(registration)
+    }
+
+    /// Survey reports whose latest version Firestore doesn't have yet — never sent, edited since, or not confirmed.
+    private func refreshSurveyPending() {
+        guard let survey else { return }
+        let now = Set(survey.jobs.filter { job in
+            let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
+            return unconfirmed[key] != nil || known[key] != SurveyRecord(job)?.fingerprint
+        }.map(\.id))
+        // the 20 s push timer calls this too — only touch the observed value when it changes
+        if survey.cloudPending != now { survey.cloudPending = now }
     }
 }
 

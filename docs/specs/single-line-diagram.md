@@ -90,7 +90,7 @@ and neutral ground E2.
 | `name` | text | MDP | label at the top-right of the enclosure |
 | `icKA` | number (kA) | 25 | `IC ไม่น้อยกว่า 25 kA` |
 | `main` | poles, AT, AF | 3, 300, 400 | main breaker |
-| `pilotLamps` | bool + fuse text | yes, 3x6A | fuse → ⊗ x3 |
+| `pilotLamps` | bool | yes | lamps R Y B + VS → V 0-500V |
 | `busbar` | text | 4x300A. Cu. BUSBAR W/GROUND BUS | label above the bus |
 | `feeders[]` | rows (below) | 6 rows | numbered columns |
 | `ground` | text | 1x35-IEC01 ø20 PVC. | N/G bar, ground conductor, ground rod |
@@ -140,8 +140,7 @@ Standard AT: 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500,
 ### Layout rules
 
 - Top to bottom, centre column: the upstream chain above → dash-dot line into the enclosure → main breaker → CT → busbar.
-- Pilot lamps and DP meter branch right from the incoming line above the main breaker; the CT signal line returns to
-  the DP box.
+- Pilot lamps R Y B and VS → V 0-500V branch right from the incoming line above the main breaker (no fuse, no DPM).
 - Busbar spans the feeder columns; columns are spaced evenly across the enclosure. The incoming line joins the bus at
   the centre column position, never on top of a feeder label.
 - Each feeder: number above the bus, breaker with `3P AT/AF` to its right, line down through the enclosure edge, cable

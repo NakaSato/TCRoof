@@ -230,6 +230,7 @@ struct SurveySettingsView: View {
                     TextField("xxxxxxxx.apps.googleusercontent.com", text: $s.googleClientID)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                     TextField("โฟลเดอร์หลักใน Drive", text: $s.driveRoot)
+                    Toggle("อัปรูปขึ้น Drive อัตโนมัติ", isOn: $s.autoUploadPhotos)
                     if signedIn {
                         LabeledContent("บัญชี", value: model.google.email ?? "ลงชื่อเข้าใช้แล้ว")
                         Button("ออกจากระบบ Google", role: .destructive) { if let out = model.signOutHandler { out() } else { model.google.signOut(); signedIn = false } }
@@ -240,7 +241,7 @@ struct SurveySettingsView: View {
                         }
                     }
                 } header: { Text("Google Drive") } footer: {
-                    Text("สร้าง OAuth client ชนิด iOS ใน Google Cloud Console (เปิด Google Drive API) ใส่ Bundle ID ของแอป แล้วคัดลอก Client ID มาวางที่นี่ แอปจะเห็นเฉพาะไฟล์ที่แอปสร้างเอง (สิทธิ์ drive.file)")
+                    Text("สร้าง OAuth client ชนิด iOS ใน Google Cloud Console (เปิด Google Drive API) ใส่ Bundle ID ของแอป แล้วคัดลอก Client ID มาวางที่นี่ แอปจะเห็นเฉพาะไฟล์ที่แอปสร้างเอง (สิทธิ์ drive.file)\n\nอัปรูปอัตโนมัติ: รูปใหม่จะถูกส่งเข้าโฟลเดอร์งานใน Drive ภายในไม่กี่วินาที เพื่อให้ iPad เครื่องอื่นที่เปิดงานเดียวกันดึงรูปไปได้")
                 }
             }
             .navigationTitle("ตั้งค่าแบบสำรวจ").navigationBarTitleDisplayMode(.inline)

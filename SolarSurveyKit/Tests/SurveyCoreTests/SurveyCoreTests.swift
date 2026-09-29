@@ -17,6 +17,18 @@ final class SurveyCoreTests: XCTestCase {
         XCTAssertEqual(store.data(of: p, in: job), Data([1, 2, 3]))
     }
 
+    /// Signatures stay out of the photo folders but still go to Drive, so another iPad can draw them in the report.
+    func testDriveFoldersIncludeSignatures() {
+        var j = Job.new(template: JobTemplate.all[0])
+        let sign = Photo(fileName: "s.png", width: 10, height: 10)
+        j.values["surveyorSign"] = .photo(sign)
+        XCTAssertFalse(j.photoFolders.flatMap(\.photos).contains { $0.photo.id == sign.id })
+        let folder = j.driveFolders.last
+        XCTAssertEqual(folder?.name, "ลายเซ็น")
+        XCTAssertEqual(folder?.photos.map(\.photo.id), [sign.id])
+        XCTAssertEqual(folder?.photos.first?.fileName, "01 ลายเซ็น.png")
+    }
+
     func testNewJobAndProgress() throws {
         var j = Job.new(template: JobTemplate.all[0])
         XCTAssertEqual(j.modules.map(\.type), [.panel, .inverter, .water, .backfeed, .fts, .roof])

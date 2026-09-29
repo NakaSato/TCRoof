@@ -71,6 +71,26 @@ public struct DriveSync: Sendable {
         return (link, saved)
     }
 
+    /// The job's folder was made by another Google account (or deleted), so this one can't write to it.
+    public struct FolderUnreachable: Error, LocalizedError {
+        public var errorDescription: String? { "โฟลเดอร์งานใน Drive สร้างจากบัญชี Google อื่นหรือถูกลบ — บันทึกลง Drive จากหน้าส่งออกเพื่อสร้างโฟลเดอร์ใหม่" }
+    }
+
+    /// Sends only the photos Drive doesn't have yet — no report files, and `lastSaved` is left as it was.
+    /// Unlike `save`, it never replaces a folder it can't reach: two iPads on different accounts would
+    /// otherwise keep making their own folders and wiping each other's upload records.
+    public func syncPhotos(_ job: Job, photos: [PhotoFolder], photoData: @Sendable (Photo) -> Data?,
+                           progress: @Sendable (Step) -> Void = { _ in }) async throws -> DriveLink {
+        if let f = job.drive?.folderID {
+            do { if try await client.metadata(f).trashed == true { throw FolderUnreachable() } }
+            catch DriveError.http(let code, _) where code == 403 || code == 404 { throw FolderUnreachable() }
+        }
+        var link = try await ensureJobFolder(job)
+        do { try await uploadPhotos(photos, link: &link, photoData: photoData, progress: progress) }
+        catch { throw Interrupted(link: link, underlying: error) }
+        return link
+    }
+
     /// Uploads photos Drive doesn't have yet, one sub-folder per section, recording each on `link` as it lands.
     func uploadPhotos(_ folders: [PhotoFolder], link: inout DriveLink, photoData: @Sendable (Photo) -> Data?,
                       progress: @Sendable (Step) -> Void) async throws {

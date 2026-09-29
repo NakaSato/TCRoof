@@ -44,4 +44,15 @@ public extension Job {
         add("อื่นๆ", rest.enumerated().map { i, p in NamedPhoto(fileName: String(format: "%02d รูป", i + 1) + (p.isPNG ? ".png" : ".jpg"), photo: p) })
         return out
     }
+
+    /// What goes to Drive: `photoFolders` plus a ลายเซ็น folder, so another iPad can fetch everything the report draws.
+    var driveFolders: [PhotoFolder] {
+        let folders = photoFolders
+        let listed = Set(folders.flatMap { $0.photos.map(\.photo.id) })
+        let signatures = allPhotos.filter { !listed.contains($0.id) }
+        guard !signatures.isEmpty else { return folders }
+        return folders + [PhotoFolder(name: "ลายเซ็น", photos: signatures.enumerated().map { i, p in
+            NamedPhoto(fileName: String(format: "%02d ลายเซ็น", i + 1) + (p.isPNG ? ".png" : ".jpg"), photo: p)
+        })]
+    }
 }

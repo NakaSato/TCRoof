@@ -198,7 +198,7 @@ struct ExportSheet: View {
         let all = job.allPhotos.count
         guard all > 0 else { return "ยังไม่มีรูปในงานนี้" }
         let sent = Set((job.drive?.photoFiles ?? [:]).keys)
-        let new = job.photoFolders.flatMap(\.photos).filter { !sent.contains($0.photo.id.uuidString) }.count
+        let new = job.driveFolders.flatMap(\.photos).filter { !sent.contains($0.photo.id.uuidString) }.count
         if sent.isEmpty { return "\(all) รูป · แยกโฟลเดอร์ตามหัวข้อใน Drive" }
         return "\(all) รูป · " + (new == 0 ? "อยู่ใน Drive ครบแล้ว" : "รูปใหม่ \(new) รูป")
     }

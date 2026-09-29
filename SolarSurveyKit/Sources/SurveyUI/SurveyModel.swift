@@ -150,7 +150,10 @@ public final class SurveyModel {
         let img = image.scaled(maxSide: maxSide, opaque: !png)
         guard let data = png ? img.pngData() : img.jpegData(compressionQuality: 0.8) else { return nil }
         let px = CGSize(width: img.size.width * img.scale, height: img.size.height * img.scale)
-        return try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, to: job)
+        let photo = try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, to: job)
+        // the field takes the photo right after this returns; the delay lets that land before the upload looks
+        if photo != nil { autoUploadPhotos(job) }
+        return photo
     }
 
     public func image(_ p: Photo, in job: UUID) -> UIImage? {
@@ -164,13 +167,13 @@ public final class SurveyModel {
 
     // MARK: photos taken on another device
 
-    /// Progress of downloading one job's missing photos from Drive.
-    public struct PhotoFetch: Equatable, Sendable {
+    /// Progress of moving one job's photos to or from Drive.
+    public struct PhotoTransfer: Equatable, Sendable {
         public var total = 0, done = 0, failed = 0
         public var error: String?
         public var running: Bool { done + failed < total }
     }
-    public private(set) var photoFetch: [UUID: PhotoFetch] = [:]
+    public private(set) var photoFetch: [UUID: PhotoTransfer] = [:]
     private var photoRevision = 0
 
     /// Photos the job refers to whose files aren't on this device (taken on another iPad).
@@ -187,7 +190,7 @@ public final class SurveyModel {
         guard photoFetch[id]?.running != true, google.isSignedIn, let job = job(id) else { return }
         let todo = downloadablePhotos(job)
         guard !todo.isEmpty else { return }
-        photoFetch[id] = PhotoFetch(total: todo.count)
+        photoFetch[id] = PhotoTransfer(total: todo.count)
         let client = DriveClient(tokens: google), store = self.store
         await withTaskGroup(of: String?.self) { group in
             var next = todo.makeIterator()
@@ -205,6 +208,55 @@ public final class SurveyModel {
                 else { photoFetch[id]?.done += 1; photoRevision += 1 }
                 _ = start()
             }
+        }
+    }
+
+    /// Upload progress per job; kept after a failure so the editor can say it will retry.
+    public private(set) var photoUpload: [UUID: PhotoTransfer] = [:]
+    @ObservationIgnored private var uploadWait: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var uploadRun: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var manualDriveSave: Set<UUID> = []
+
+    /// Photos taken here that Drive doesn't have yet.
+    public func photosToUpload(_ job: Job) -> Int {
+        let sent = job.drive?.photoFiles ?? [:]
+        return job.driveFolders.flatMap(\.photos).filter { sent[$0.photo.id.uuidString] == nil && store.hasPhoto($0.photo, in: job.id) }.count
+    }
+
+    /// Sends the job's new photos to Drive a few seconds after the last change, so another iPad can download them.
+    /// Waits until the job has a name, so its Drive folder isn't created as "งานสำรวจ <date>".
+    public func autoUploadPhotos(_ id: UUID, after seconds: Double = 5) {
+        guard settings.autoUploadPhotos, google.isSignedIn else { return }
+        uploadWait[id]?.cancel()
+        uploadWait[id] = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            guard let self, !Task.isCancelled else { return }
+            await self.uploadRun[id]?.value
+            guard !Task.isCancelled, !self.manualDriveSave.contains(id), let job = self.job(id),
+                  !(job.projectName.isEmpty && job.docNo.isEmpty), self.photosToUpload(job) > 0 else { return }
+            let run = Task { await self.uploadPhotos(id) }
+            self.uploadRun[id] = run
+            await run.value
+            if self.uploadRun[id] == run { self.uploadRun[id] = nil }
+        }
+    }
+
+    private func uploadPhotos(_ id: UUID) async {
+        guard let job = job(id) else { return }
+        let store = self.store
+        photoUpload[id] = PhotoTransfer(total: photosToUpload(job))
+        do {
+            let link = try await drive.syncPhotos(job, photos: job.driveFolders, photoData: { store.data(of: $0, in: id) }) { [weak self] step in
+                guard case .photos(let done, let total) = step else { return }
+                Task { @MainActor in self?.photoUpload[id] = PhotoTransfer(total: total, done: done) }
+            }
+            keepLink(link, for: id)
+            photoUpload[id] = nil
+        } catch {
+            if let e = error as? DriveSync.Interrupted { keepLink(e.link, for: id) }
+            photoUpload[id]?.error = error.localizedDescription
+            // offline or a Drive hiccup: try again in a minute (a folder this account can't reach won't fix itself)
+            if !(error is DriveSync.FolderUnreachable) { autoUploadPhotos(id, after: 60) }
         }
     }
 
@@ -306,6 +358,11 @@ public final class SurveyModel {
 
     public func saveToDrive(_ job: Job, kinds: [DriveSync.Kind], photos: Bool = false,
                             progress: @escaping @Sendable (DriveSync.Step) -> Void) async throws -> [DriveFile] {
+        // one Drive writer per job: finish a background photo upload first so nothing is sent twice
+        manualDriveSave.insert(job.id)
+        defer { manualDriveSave.remove(job.id) }
+        await uploadRun[job.id]?.value
+        let job = self.job(job.id) ?? job
         flush(job.id)
         let excel = try kinds.contains(.xlsx) ? excelData(job).data : Data()
         let pdf = kinds.contains(.pdf) ? pdfData(job) : Data()
@@ -313,7 +370,7 @@ public final class SurveyModel {
         let store = self.store, id = job.id
         do {
             let (link, files) = try await drive.save(job, kinds: kinds, build: { k in k == .xlsx ? excel : k == .pdf ? pdf : json },
-                                                     photos: photos ? job.photoFolders : [], photoData: { store.data(of: $0, in: id) },
+                                                     photos: photos ? job.driveFolders : [], photoData: { store.data(of: $0, in: id) },
                                                      progress: progress)
             keepLink(link, for: id)
             return files
@@ -344,6 +401,8 @@ public struct SurveySettings: Codable, Equatable {
     public var googleMapsKey = ""
     /// Map zoom for site pictures: 20 ≈ 90 m across, 19 ≈ 180 m, 18 ≈ 360 m (at latitude 15°).
     public var mapZoom = 20
+    /// Send new photos to Google Drive in the background so other iPads can download them.
+    public var autoUploadPhotos = true
 
     public init() {}
     public init(from decoder: Decoder) throws {
@@ -355,6 +414,7 @@ public struct SurveySettings: Codable, Equatable {
         engineer = try c.decodeIfPresent(String.self, forKey: .engineer) ?? engineer
         googleMapsKey = try c.decodeIfPresent(String.self, forKey: .googleMapsKey) ?? googleMapsKey
         mapZoom = try c.decodeIfPresent(Int.self, forKey: .mapZoom) ?? mapZoom
+        autoUploadPhotos = try c.decodeIfPresent(Bool.self, forKey: .autoUploadPhotos) ?? autoUploadPhotos
     }
     static let key = "solarSurvey.settings"
     static func load() -> SurveySettings {

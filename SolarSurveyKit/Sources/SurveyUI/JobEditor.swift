@@ -48,11 +48,14 @@ struct JobEditorView: View {
         .navigationTitle(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
-        .onChange(of: job) { _, new in model.update(new) }
+        // the model owns the Drive link (uploads and other devices change it); this copy only mirrors it
+        .onChange(of: job) { _, new in var j = new; j.drive = model.job(new.id)?.drive ?? new.drive; model.update(j) }
         // the Drive link changes elsewhere (export sheet, another device) — take it so the next edit doesn't drop it
         .onChange(of: model.job(job.id)?.drive) { _, d in if let d, d != job.drive { job.drive = d } }
         // photos taken on another iPad: fetch them from Drive now, and again when that iPad uploads more
         .task(id: model.job(job.id)?.drive?.photoFiles?.count ?? 0) { await model.fetchMissingPhotos(job.id) }
+        // photos an earlier upload didn't finish, or taken before signing in to Google
+        .onAppear { model.autoUploadPhotos(job.id, after: 2) }
         .onDisappear { model.flush(job.id) }
         #if DEBUG
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
@@ -203,6 +206,15 @@ struct JobEditorView: View {
                 Text("กำลังดึงรูปจาก Drive \(f.done)/\(f.total)")
             }
             .font(.caption).foregroundStyle(.secondary)
+        } else if let u = model.photoUpload[job.id], u.running {
+            HStack(spacing: 6) {
+                ProgressView(value: Double(u.done), total: Double(max(u.total, 1))).frame(width: 60)
+                Text("กำลังอัปรูปขึ้น Drive \(u.done)/\(u.total)")
+            }
+            .font(.caption).foregroundStyle(.secondary)
+        } else if let e = model.photoUpload[job.id]?.error, model.photosToUpload(job) > 0 {
+            Label("อัปรูปขึ้น Drive ไม่สำเร็จ: \(e)", systemImage: "exclamationmark.icloud")
+                .font(.caption).foregroundStyle(.orange).lineLimit(3)
         } else if gap.missing > 0 {
             Label("รูป \(gap.missing) รูปยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash")
                 .font(.caption).foregroundStyle(.orange)

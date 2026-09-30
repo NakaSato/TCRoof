@@ -25,8 +25,8 @@ public struct FloodLookup: Sendable {
 
     public var apiKey: String
     public var baseURL = URL(string: "https://api-gateway.gistda.or.th/api/2.0/resources/features")!
-    /// Half-side of the box around the point.
-    public var radiusMeters = 25.0
+    /// Half-side of the box around the point: the area round the installation, not the point itself.
+    public var radiusMeters = 1000.0
     /// The service needs ~50 s per call; its gateway gives up at 60 s (HTTP 504).
     public var timeout: TimeInterval = 65
     public var session: URLSession = .shared
@@ -37,23 +37,34 @@ public struct FloodLookup: Sendable {
         (Bundle.main.object(forInfoDictionaryKey: "GISTDAAPIKey") as? String).map { $0.hasPrefix("$(") ? "" : $0 } ?? ""
     }
 
-    /// Is the point in a repeat-flood plot (within `radiusMeters`), and how often did it flood since 2011.
-    /// One request with `limit=1`: the service takes ~50 s whatever the box and the gateway gives up at 60 s, and it answers 504 for
-    /// `limit` above about 5, so `numberMatched` carries the answer. A timeout or 504 is retried up to `attempts` times; `progress` gets the attempt.
+    /// Which years flooded round the point, from พ.ศ. 2554 to the last year GISTDA holds: one `limit=1` request per year with the
+    /// filter `y_YYYY=1`, whose `numberMatched` is the number of repeat-flood plots in the box that flooded that year. The requests
+    /// run together. A timeout or 5xx is retried up to `attempts` times; `progress` gets the number of years answered.
     public func fetch(lat: Double, lon: Double, now: Date = Date(), attempts: Int = 3, progress: (@Sendable (Int) -> Void)? = nil) async throws -> FloodGistda {
         guard !apiKey.isEmpty else { throw Failure.noKey }
         guard (-90...90).contains(lat), (-180...180).contains(lon) else { throw Failure.badCoordinates }
+        let box = Self.bbox(lat: lat, lon: lon, meters: radiusMeters)
+        let answers = try await withThrowingTaskGroup(of: (Int, Int, String).self) { group -> [(Int, Int, String)] in
+            for ad in Self.gregorianYears { group.addTask { let (n, place) = try await self.plots(box: box, year: ad, attempts: attempts); return (ad + 543, n, place) } }
+            var out: [(Int, Int, String)] = []
+            for try await a in group { out.append(a); progress?(out.count) }
+            return out
+        }
+        var g = FloodGistda()
+        g.lat = lat; g.lon = lon; g.fetchedAt = now; g.radiusMeters = Int(radiusMeters)
+        g.years = answers.sorted { $0.0 < $1.0 }.map { FloodGistda.YearPlots(year: $0.0, plots: $0.1) }
+        g.place = answers.first { !$0.2.isEmpty }?.2 ?? ""
+        return g
+    }
+
+    /// Years the service holds (ค.ศ.): 2011 … 2024.
+    public static let gregorianYears = Array(2011...2024)
+
+    func plots(box: String, year: Int, attempts: Int) async throws -> (Int, String) {
         var last: Failure = .timeout
-        for n in 1...max(1, attempts) {
-            progress?(n)
-            do {
-                let data = try await get("flood-freq", Self.bbox(lat: lat, lon: lon, meters: radiusMeters))
-                var g = try Self.parsePoint(data)
-                g.lat = lat; g.lon = lon; g.fetchedAt = now
-                return g
-            } catch let e as Failure where e == .timeout || e == .http(504) || e == .http(502) || e == .http(503) {
-                last = e
-            }
+        for _ in 1...max(1, attempts) {
+            do { return try Self.parseYear(try await get("flood-freq", box, extra: [URLQueryItem(name: "y_\(year)", value: "1")])) }
+            catch let e as Failure where e == .timeout || e == .http(504) || e == .http(502) || e == .http(503) { last = e }
         }
         throw last
     }
@@ -64,9 +75,9 @@ public struct FloodLookup: Sendable {
         return [lon - dLon, lat - dLat, lon + dLon, lat + dLat].map { String(format: "%.5f", $0) }.joined(separator: ",")
     }
 
-    func get(_ path: String, _ bbox: String) async throws -> Data {
+    func get(_ path: String, _ bbox: String, extra: [URLQueryItem] = []) async throws -> Data {
         var c = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-        c.queryItems = [URLQueryItem(name: "bbox", value: bbox), URLQueryItem(name: "limit", value: "1")]
+        c.queryItems = [URLQueryItem(name: "bbox", value: bbox), URLQueryItem(name: "limit", value: "1")] + extra
         var req = URLRequest(url: c.url!, timeoutInterval: timeout)
         req.setValue(apiKey, forHTTPHeaderField: "API-Key")
         do {
@@ -95,31 +106,13 @@ public struct FloodLookup: Sendable {
         return nil
     }
 
-    /// Buddhist-era years flagged `y_2011` … on a repeat-flood plot.
-    static func years(_ p: [String: Any]) -> [Int] {
-        p.compactMap { k, v in
-            guard k.hasPrefix("y_"), let y = Int(k.dropFirst(2)), (int(v) ?? 0) > 0 else { return nil }
-            return y + 543
-        }.sorted()
-    }
     static func place(_ p: [String: Any]) -> String {
         ["tb_tn", "ap_tn", "pv_tn"].compactMap { p[$0] as? String }.filter { !$0.isEmpty }.joined(separator: " ")
     }
 
-    /// `flood-freq` for a tiny box round the point with `limit=1`: `numberMatched` plots touch it; the one returned carries `freq`
-    /// (times flooded), the `y_YYYY` flags (2011 = พ.ศ. 2554 onwards) and the tambon / amphoe / province.
-    public static func parsePoint(_ data: Data) throws -> FloodGistda {
+    /// `flood-freq` filtered to one year, `limit=1`: `numberMatched` plots flooded that year; the one returned names the tambon / amphoe / province.
+    public static func parseYear(_ data: Data) throws -> (plots: Int, place: String) {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any], root["features"] is [Any] else { throw Failure.badResponse }
-        let matched = int(root["numberMatched"]) ?? 0
-        var g = FloodGistda()
-        g.plots = matched
-        g.insideRepeatArea = matched > 0
-        if let f = try features(data).first {
-            g.maxTimes = int(f.props["freq"]) ?? 0
-            g.pointYears = years(f.props)
-            g.place = place(f.props)
-            g.nearestMeters = 0; g.nearestTimes = int(f.props["freq"]); g.nearestYears = g.pointYears
-        }
-        return g
+        return (int(root["numberMatched"]) ?? 0, try features(data).first.map { place($0.props) } ?? "")
     }
 }

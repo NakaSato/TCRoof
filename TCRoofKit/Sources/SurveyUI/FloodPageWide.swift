@@ -408,7 +408,7 @@ struct FloodPageWide: View {
         return Button(action: fetchGistda) {
             HStack(spacing: 8) {
                 if fetching { ProgressView().tint(.white) } else { Image(systemName: "arrow.down.circle") }
-                Text(fetching ? (attempt > 1 ? "กำลังลองใหม่ครั้งที่ \(attempt)/3…" : "กำลังดึงข้อมูล… (อาจใช้เวลาถึง 1 นาที)") : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
+                Text(fetching ? ("กำลังดึงข้อมูล \(attempt)/\(FloodLookup.gregorianYears.count) ปี…") : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
             }
             .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
             .padding(.horizontal, 18).frame(minHeight: 48)
@@ -434,7 +434,7 @@ struct FloodPageWide: View {
         guard !key.isEmpty else { failure = FloodLookup.Failure.noKey.message; return }
         fetching = true
         Task { @MainActor in
-            attempt = 1
+            attempt = 0
             do { job.values.setGistda(try await FloodLookup(apiKey: key).fetch(lat: p.lat, lon: p.lon, progress: { n in Task { @MainActor in attempt = n } })) }
             catch let e as FloodLookup.Failure { failure = e.message }
             catch { failure = FloodLookup.Failure.badResponse.message }

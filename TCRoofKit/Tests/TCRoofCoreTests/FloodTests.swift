@@ -60,41 +60,41 @@ final class FloodTests: XCTestCase {
         XCTAssertEqual(c.total, 1)
         XCTAssertTrue(c.isComplete)
         // the stored lookup survives save / load
-        var g = FloodGistda(); g.plots = 4; g.place = "ต.ยางซ้าย"
+        var g = FloodGistda(); g.years = [.init(year: 2554, plots: 4)]; g.place = "ต.ยางซ้าย"
         j.values.setGistda(g)
         let back = try JobStore.decoder.decode(Job.self, from: JobStore.encoder.encode(j))
-        XCTAssertEqual(back.values.gistda?.plots, 4)
+        XCTAssertEqual(back.values.gistda?.years.first?.plots, 4)
     }
 
-    /// Shaped like the real response of flood-freq for a 25 m box with limit=1 (trimmed).
+    /// Shaped like the real response of flood-freq with `y_2011=1&limit=1` (trimmed).
     func testLookupParsing() throws {
         let hit = """
-        {"type":"FeatureCollection","numberMatched":2,"numberReturned":1,"features":[
+        {"type":"FeatureCollection","numberMatched":227,"numberReturned":1,"features":[
           {"type":"Feature","geometry":{"type":"MultiPolygon","coordinates":[]},
-           "properties":{"freq":6,"tb_tn":"ต.ยางซ้าย","ap_tn":"อ.เมืองสุโขทัย","pv_tn":"จ.สุโขทัย",
-                         "y_2011":1,"y_2012":1,"y_2017":1,"y_2019":1,"y_2021":1,"y_2024":1,"y_2013":0}}]}
+           "properties":{"freq":1,"tb_tn":"ต.ยางซ้าย","ap_tn":"อ.เมืองสุโขทัย","pv_tn":"จ.สุโขทัย","y_2011":1}}]}
         """
-        let g = try FloodLookup.parsePoint(Data(hit.utf8))
-        XCTAssertTrue(g.insideRepeatArea)
-        XCTAssertEqual(g.plots, 2)
-        XCTAssertEqual(g.maxTimes, 6)
-        XCTAssertEqual(g.pointYears, [2554, 2555, 2560, 2562, 2564, 2567])
-        XCTAssertEqual(g.place, "ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย")
-        XCTAssertEqual(g.rows.map(\.label), ["จุดติดตั้ง", "ความลึกน้ำ"])
-        XCTAssertEqual(g.rows[0].tone, .bad)
-        XCTAssertTrue(g.rows[0].value.contains("ท่วม 6 ครั้ง") && g.rows[0].value.hasSuffix("ย้อนหลังถึงปี 2554"))
-        XCTAssertNil(g.depthCm)
+        let one = try FloodLookup.parseYear(Data(hit.utf8))
+        XCTAssertEqual(one.plots, 227)
+        XCTAssertEqual(one.place, "ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย")
+        XCTAssertEqual(try FloodLookup.parseYear(Data(#"{"features":[],"numberMatched":0,"numberReturned":0}"#.utf8)).plots, 0)
+        XCTAssertThrowsError(try FloodLookup.parseYear(Data("<html>504</html>".utf8)))
+        XCTAssertEqual(FloodLookup.gregorianYears.map { $0 + 543 }.first, FloodGistda.firstYear)
+
+        var g = FloodGistda()
+        g.years = [.init(year: 2554, plots: 227), .init(year: 2555, plots: 16), .init(year: 2558, plots: 0)]
+        XCTAssertEqual(g.floodedYears.map(\.year), [2554, 2555])
+        XCTAssertEqual(g.rows.map(\.label), ["ปีที่ท่วม รัศมี 1 กม.", "ความลึกน้ำ"])
+        XCTAssertEqual(g.rows[0].value, "2554 (227) · 2555 (16)")
+        XCTAssertEqual(g.rows[0].tone, .warn)
         XCTAssertEqual(g.rows[1].value, "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน 50 ซม.")
-        // nothing near the point
-        let none = try FloodLookup.parsePoint(Data(#"{"features":[],"numberMatched":0,"numberReturned":0}"#.utf8))
-        XCTAssertFalse(none.insideRepeatArea)
-        XCTAssertEqual(none.rows[0].tone, .good)
-        XCTAssertEqual(none.summary, "GISTDA: ไม่อยู่ในพื้นที่ท่วมซ้ำซาก")
+        XCTAssertEqual(g.summary, "GISTDA: ท่วม 2 ปีในรัศมี 1 กม.")
+        g.years = [.init(year: 2554, plots: 0)]
+        XCTAssertEqual(g.rows[0].tone, .good)
+        XCTAssertEqual(g.summary, "GISTDA: ไม่พบพื้นที่ท่วมซ้ำซาก")
         // "use the estimate" when the service does not answer
         let manual = FloodGistda.estimate()
         XCTAssertEqual(manual.rows.count, 1)
         XCTAssertEqual(manual.estimatedDepthCm, 50)
-        XCTAssertThrowsError(try FloodLookup.parsePoint(Data("<html>504</html>".utf8)))
     }
 
     func testLookupNeedsKey() async {
@@ -113,6 +113,7 @@ final class FloodLookupLiveTests: XCTestCase {
         catch FloodLookup.Failure.http(504) { throw XCTSkip("GISTDA gateway timed out (504)") }
         for r in g.rows { print(r.label, "|", r.value) }
         print(g.footnote)
+        XCTAssertEqual(g.years.count, 14)
         XCTAssertFalse(g.place.isEmpty)
     }
 }

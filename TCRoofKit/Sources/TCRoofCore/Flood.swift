@@ -1,27 +1,21 @@
 import Foundation
 
 /// GISTDA repeat-flood lookup stored in the job (`floodGistda`, JSON text), so it shows again offline and prints in the PDF.
+/// It says which years flooded around the point, not how deep: the service has no depth.
 public struct FloodGistda: Codable, Hashable, Sendable {
+    public struct YearPlots: Codable, Hashable, Sendable {
+        /// พ.ศ.
+        public var year: Int
+        /// Repeat-flood plots inside the search box that flooded in that year.
+        public var plots: Int
+        public init(year: Int, plots: Int) { self.year = year; self.plots = plots }
+    }
     public var lat = 0.0
     public var lon = 0.0
-    /// The point itself lies inside a repeat-flood area.
-    public var insideRepeatArea = false
-    public var pointYears: [Int] = []
-    /// Nearest repeat-flood area: distance (m), times flooded, years.
-    public var nearestMeters: Int?
-    public var nearestTimes: Int?
-    public var nearestYears: [Int] = []
-    /// Repeat-flood plots within 1 km: count, largest number of times, years.
-    public var plots = 0
-    public var maxTimes = 0
-    public var plotYears: [Int] = []
-    /// Satellite floods in the last 30 days: whether any, the nearest one's distance (m) and the image date range.
-    public var recentFound = false
-    public var recentMeters: Int?
-    public var recentFrom: String?
-    public var recentTo: String?
-    /// nil = the service has no depth (it never does for satellite data).
-    public var depthCm: Int?
+    /// Half-side of the search box, in metres.
+    public var radiusMeters = 1000
+    /// Every year from `firstYear`, flooded or not (plots = 0).
+    public var years: [YearPlots] = []
     /// "ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย"
     public var place = ""
     public var fetchedAt = Date(timeIntervalSince1970: 0)
@@ -33,49 +27,46 @@ public struct FloodGistda: Codable, Hashable, Sendable {
     public static let defaultDepthCm = 50
     /// First year of the GISTDA repeat-flood history (2011).
     public static let firstYear = 2554
-    /// Depth used for the drawing and the check table.
-    public var estimatedDepthCm: Int { depthCm ?? Self.defaultDepthCm }
+    /// GISTDA gives no depth, so the drawing and the check table use the default.
+    public var estimatedDepthCm: Int { Self.defaultDepthCm }
 
     public enum Tone: Sendable { case normal, good, warn, bad }
     public struct Row: Hashable, Sendable { public let label: String; public let value: String; public let tone: Tone }
 
-    static func years(_ a: [Int]) -> String { a.sorted().map(String.init).joined(separator: " ") }
-    static func range(_ a: [Int]) -> String {
-        let s = a.sorted()
-        guard let f = s.first, let l = s.last else { return "" }
-        return f == l ? "\(f)" : "\(f)–\(l)"
-    }
-    static func meters(_ m: Int) -> String { m >= 1000 ? String(format: "%.1f กม.", Double(m) / 1000) : "\(m) ม." }
+    public var floodedYears: [YearPlots] { years.filter { $0.plots > 0 } }
+    var radiusText: String { radiusMeters >= 1000 ? "\(radiusMeters / 1000) กม." : "\(radiusMeters) ม." }
 
     /// Label / value rows of the GISTDA card and the PDF table.
     public var rows: [Row] {
-        var r: [Row] = []
         if manual == true {
             return [Row(label: "ความลึกน้ำ", value: "ยังไม่ได้ข้อมูลจาก GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
         }
-        // flood-freq holds one flag per year from 2011 (พ.ศ. 2554), so the answer covers the history back to then
-        let since = " · ย้อนหลังถึงปี \(Self.firstYear)"
-        r.append(Row(label: "จุดติดตั้ง", value: insideRepeatArea
-                     ? "อยู่ในพื้นที่ท่วมซ้ำซาก" + (maxTimes > 0 ? " · ท่วม \(maxTimes) ครั้ง" : "") + (pointYears.isEmpty ? "" : " (ปี \(Self.years(pointYears)))") + since
-                     : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก" + since, tone: insideRepeatArea ? .bad : .good))
-        r.append(Row(label: "ความลึกน้ำ", value: depthCm == nil ? "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน \(estimatedDepthCm) ซม." : "\(estimatedDepthCm) ซม.",
-                     tone: depthCm == nil ? .bad : .normal))
-        return r
+        let f = floodedYears
+        let first = "ตั้งแต่ปี \(Self.firstYear)"
+        let flooded = f.isEmpty ? "ไม่พบน้ำท่วมซ้ำซากในรัศมี \(radiusText) (\(first))"
+            : f.map { "\($0.year) (\($0.plots))" }.joined(separator: " · ")
+        return [Row(label: "ปีที่ท่วม รัศมี \(radiusText)", value: flooded, tone: f.isEmpty ? .good : .warn),
+                Row(label: "ความลึกน้ำ", value: "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
     }
-    /// "GISTDA API: flood-freq · flood/30days · ต.ยางซ้าย … · ดึงเมื่อ 30/9/2569 10:37 · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"
+    /// "GISTDA API: flood-freq · ต.ยางซ้าย … · ดึงเมื่อ 30/9/2569 10:37 · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"
     public var footnote: String {
         if manual == true { return "ใช้ค่าประเมิน \(estimatedDepthCm) ซม. เพราะ GISTDA ไม่ตอบ · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี" }
         var f = Date.FormatStyle(date: .numeric, time: .shortened).locale(Locale(identifier: "th_TH"))
         f.calendar = Calendar(identifier: .buddhist)
-        return ["GISTDA API: flood-freq", place.isEmpty ? nil : place, "ดึงเมื่อ " + fetchedAt.formatted(f),
+        return ["GISTDA API: flood-freq · ตัวเลขในวงเล็บคือจำนวนแปลงที่ท่วม", place.isEmpty ? nil : place, "ดึงเมื่อ " + fetchedAt.formatted(f),
                 "ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"].compactMap { $0 }.joined(separator: " · ")
     }
-    /// One line for the report summary: "GISTDA: ไม่อยู่ในพื้นที่ท่วมซ้ำซาก".
-    public var summary: String { manual == true ? "ไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม." : "GISTDA: " + (insideRepeatArea ? "อยู่ในพื้นที่ท่วมซ้ำซาก" : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก") }
+    /// One line for the report summary.
+    public var summary: String {
+        if manual == true { return "ไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม." }
+        let n = floodedYears.count
+        return "GISTDA: " + (n == 0 ? "ไม่พบพื้นที่ท่วมซ้ำซาก" : "ท่วม \(n) ปีในรัศมี \(radiusText)")
+    }
     /// Banner over the drawing.
     public var banner: String {
         if manual == true { return "ยังไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมินระดับน้ำ \(estimatedDepthCm) ซม." }
-        return "GISTDA · จุดติดตั้ง" + (insideRepeatArea ? "อยู่ในพื้นที่ท่วมซ้ำซาก" : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก") + " · ความลึกเป็นค่าประเมิน"
+        let n = floodedYears.count
+        return "GISTDA · " + (n == 0 ? "ไม่พบน้ำท่วมซ้ำซาก" : "ท่วม \(n) ปี") + " รัศมี \(radiusText) · ความลึกเป็นค่าประเมิน"
     }
 }
 

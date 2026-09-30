@@ -46,8 +46,8 @@ struct JobEditorView: View {
     @State var detailSize: CGSize = .zero
     /// A1 in the card layout on iPad (docs/ui/survey-a1); iPhone keeps the one-column `groupPage`.
     var cardInfo: Bool { page == .info && !compact }
-    /// A2's picture page (docs/ui/survey-a2) needs landscape; portrait and iPhone keep `groupPage`.
-    var cardSite: Bool { page == .site && !compact && infoColumns == 2 }
+    /// A2's picture page (docs/ui/survey-a2): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
+    var cardSite: Bool { page == .site && !compact }
     /// A3's power-flow diagram (docs/ui/survey-a3) also needs landscape.
     var cardElectrical: Bool { page == .electrical && !compact && infoColumns == 2 }
     /// Pages with the blue header and bottom bar instead of the navigation bar.
@@ -144,7 +144,7 @@ struct JobEditorView: View {
         } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                SitePageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, request: $siteRequest)
+                SitePageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, request: $siteRequest, stacked: infoColumns != 2)
                     .disabled(readOnly)
             }
             .padding(.horizontal, 24).padding(.vertical, 16)

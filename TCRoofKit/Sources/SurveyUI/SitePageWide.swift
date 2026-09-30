@@ -14,6 +14,8 @@ struct SitePageWide: View {
     let width: CGFloat
     /// A LIST item the bottom bar's "ยังขาด" chip asked for; handled and cleared here.
     @Binding var request: String?
+    /// Portrait: the picture on top and the right column below it, the page scrolling (landscape puts them side by side).
+    var stacked = false
     @Environment(SurveyModel.self) var model
 
     /// What a tap on the picture does.
@@ -54,13 +56,25 @@ struct SitePageWide: View {
     var body: some View {
         VStack(spacing: 16) {
             PageStepBar(job: job, here: .site)
-            HStack(alignment: .top, spacing: 28) {
-                pictureCard.frame(maxWidth: .infinity, maxHeight: .infinity)
-                ScrollView { rightColumn.padding(.bottom, 4) }
-                    .scrollIndicators(.hidden)
-                    .frame(width: rightWidth)
+            if stacked {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        pictureCard.frame(height: max(320, width * 0.78))
+                        rightColumn
+                    }
+                    .padding(.bottom, 8)
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxHeight: .infinity)
+            } else {
+                HStack(alignment: .top, spacing: 28) {
+                    pictureCard.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView { rightColumn.padding(.bottom, 4) }
+                        .scrollIndicators(.hidden)
+                        .frame(width: rightWidth)
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
         }
         .foregroundStyle(Home.navy)
         .onAppear { tickFromCover() }

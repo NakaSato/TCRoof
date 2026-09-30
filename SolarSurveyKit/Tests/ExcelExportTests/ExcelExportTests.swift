@@ -1,6 +1,6 @@
 import XCTest
 @testable import ExcelExport
-@testable import SurveyCore
+@testable import TCRoofCore
 
 final class ExcelExportTests: XCTestCase {
     var fixtures: URL { URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures") }

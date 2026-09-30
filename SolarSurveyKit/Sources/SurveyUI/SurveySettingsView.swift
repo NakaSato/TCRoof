@@ -1,6 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 
 struct SurveySettingsView: View {
     @Environment(SurveyModel.self) private var model

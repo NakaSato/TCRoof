@@ -3,7 +3,7 @@ import XCTest
 import FoundationNetworking
 #endif
 @testable import DriveSync
-@testable import SurveyCore
+@testable import TCRoofCore
 
 /// Fake Drive: remembers folders and files in memory.
 final class FakeDrive: URLProtocol, @unchecked Sendable {

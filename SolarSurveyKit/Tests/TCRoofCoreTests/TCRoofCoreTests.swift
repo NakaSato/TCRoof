@@ -1,7 +1,7 @@
 import XCTest
-@testable import SurveyCore
+@testable import TCRoofCore
 
-final class SurveyCoreTests: XCTestCase {
+final class TCRoofCoreTests: XCTestCase {
     func tmpStore() -> JobStore {
         JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("ss-" + UUID().uuidString))
     }

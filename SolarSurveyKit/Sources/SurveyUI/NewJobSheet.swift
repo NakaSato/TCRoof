@@ -1,6 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 
 /// "Start a new survey": pick the kind of site; its sections are added and can be changed later in the editor.
 struct NewJobSheet: View {

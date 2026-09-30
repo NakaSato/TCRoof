@@ -1,5 +1,5 @@
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 import SurveyUI
 
 /// Ties the NO.224 survey reports (SurveyKit files, synced as `pwaSurveys`) to TCRoof jobs through `Job.syncID`.
@@ -27,7 +27,7 @@ extension Job {
 struct OpenSurveyReport: Identifiable, Hashable { let id: UUID }
 
 /// Short line for a report in TCRoof lists: "NO.215 · 28/9/2569 · 64%".
-func surveyReportSummary(_ r: SurveyCore.Job) -> String {
+func surveyReportSummary(_ r: TCRoofCore.Job) -> String {
     let parts = ["NO.\(r.docNo.isEmpty ? "—" : r.docNo)", r.values.text("date").isEmpty ? nil : ISODate.thai(r.values.text("date")),
                  "กรอกแล้ว \(r.completion.percent)%"]
     return parts.compactMap { $0 }.joined(separator: " · ")
@@ -41,9 +41,9 @@ struct PWASurveyCard: View {
     @State private var open: OpenSurveyReport?
     @AppStorage("userName") private var userName = ""
 
-    private var linked: [SurveyCore.Job] { job.syncID.map { model.jobs(linkedTo: $0) } ?? [] }
+    private var linked: [TCRoofCore.Job] { job.syncID.map { model.jobs(linkedTo: $0) } ?? [] }
     /// Reports not tied to any job on this device (never linked, or their job was deleted).
-    private var unlinked: [SurveyCore.Job] {
+    private var unlinked: [TCRoofCore.Job] {
         model.jobs.filter { r in r.jobSyncID.map { model.linkedJobLabel?($0) == nil } ?? true }
     }
 
@@ -111,7 +111,7 @@ struct PWASurveyCard: View {
         #endif
     }
 
-    private func link(_ r: SurveyCore.Job) {
+    private func link(_ r: TCRoofCore.Job) {
         model.link(r.id, to: job.ensureSyncID(), prefill: job.surveyPrefill)
     }
 }

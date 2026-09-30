@@ -1,5 +1,5 @@
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 import SurveyUI
 
 /// One entry of the bell panel. `id` stays the same while the event does, so "read" survives relaunches.

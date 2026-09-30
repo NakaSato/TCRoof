@@ -1,6 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 
 /// Every transformer must be photographed from all sides plus its nameplate, and must name the MDB it feeds.
 struct TransformerPhotosView: View {

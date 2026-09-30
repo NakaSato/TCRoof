@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 import CoreLocation
-import SurveyCore
+import TCRoofCore
 
 /// Satellite preview of the job's GPS on A1: pick a zoom level for the report's site picture and drag the pin to move the GPS.
 struct SiteMapPreview: View {

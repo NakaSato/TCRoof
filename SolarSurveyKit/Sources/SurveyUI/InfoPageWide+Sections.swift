@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import UIKit
-import SurveyCore
+import TCRoofCore
 
 /// "พื้นที่ติดตั้ง" (how many C1 roof and D1 tank sections the job has) and the location column.
 extension InfoPageWide {

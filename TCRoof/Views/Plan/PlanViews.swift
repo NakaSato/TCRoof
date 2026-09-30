@@ -1,6 +1,6 @@
 import SwiftUI
 import SwiftData
-import SurveyCore
+import TCRoofCore
 import SurveyUI
 
 struct PlanCalendarView: View {
@@ -52,7 +52,7 @@ struct PlanCalendarView: View {
 
     /// Survey appointments (TCRoof jobs) and NO.224 reports dated that day. A report whose job already has
     /// its appointment on the same day is shown on that job's row rather than twice.
-    private func surveys(on date: Date) -> (appointments: [Job], reports: [SurveyCore.Job]) {
+    private func surveys(on date: Date) -> (appointments: [Job], reports: [TCRoofCore.Job]) {
         let cal = Calendar.current
         let appointments = jobs.filter { cal.isDate($0.surveyDate, inSameDayAs: date) }
         let covered = Set(appointments.compactMap(\.syncID))

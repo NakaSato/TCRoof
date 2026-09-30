@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import UIKit
-import SurveyCore
+import TCRoofCore
 import PDFReport
 
 /// Place PEA METER, TRANSFORMER, MDB, INVERTER STATION, WATER CONNECTION POINT and SITE OFFICE symbols on the site picture.

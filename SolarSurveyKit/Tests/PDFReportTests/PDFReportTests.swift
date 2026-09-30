@@ -1,6 +1,6 @@
 import XCTest
 @testable import PDFReport
-@testable import SurveyCore
+@testable import TCRoofCore
 
 final class PDFReportTests: XCTestCase {
     func testLayoutFixture() throws {

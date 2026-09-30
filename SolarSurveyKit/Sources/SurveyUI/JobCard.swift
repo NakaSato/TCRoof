@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import UIKit
-import SurveyCore
+import TCRoofCore
 
 /// Colours of the home screen (docs/ui/pwa-solar-survey, after grf.css).
 enum Home {

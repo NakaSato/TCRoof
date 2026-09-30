@@ -1,5 +1,5 @@
 import XCTest
-@testable import SurveyCore
+@testable import TCRoofCore
 
 final class ValidationTests: XCTestCase {
     func testNumberClean() {

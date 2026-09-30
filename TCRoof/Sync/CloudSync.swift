@@ -4,7 +4,7 @@ import SwiftData
 import CryptoKit
 import FirebaseAuth
 import FirebaseFirestore
-import SurveyCore
+import TCRoofCore
 import SurveyUI
 
 /// Keeps every device's jobs, surveys, device scans, install logs, ICLs and NO.224 survey reports in step
@@ -332,7 +332,7 @@ final class CloudSync {
                         continue
                     }
                     guard let record = try? change.document.data(as: SurveyRecord.self), self.known[key] != record.fingerprint,
-                          let job = try? JobStore.decoder.decode(SurveyCore.Job.self, from: Data(record.json.utf8)) else { continue }
+                          let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
                     survey.applyRemote(job)
                     self.known[key] = SurveyRecord(job)?.fingerprint
                 }
@@ -362,7 +362,7 @@ private struct SurveyRecord: Codable {
     var updated: Int64
     var json: String
 
-    init?(_ job: SurveyCore.Job) {
+    init?(_ job: TCRoofCore.Job) {
         guard let data = try? JobStore.encoder.encode(job), let json = String(data: data, encoding: .utf8) else { return nil }
         self.projectName = job.projectName
         self.updated = job.updated.millis

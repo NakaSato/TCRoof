@@ -4,7 +4,7 @@ Swift package สำหรับ iPad (iOS 17+) ที่ใช้ใน TCRoof
 
 | Module | หน้าที่ |
 |---|---|
-| `SurveyCore` | โมเดลงาน, schema ฟอร์มทั้ง 10 หัวข้อ (ตรงกับแผ่นงาน NO.224), คำนวณความครบถ้วน, เก็บงาน/รูปใน `Documents/SolarSurvey`, นำเข้า/ส่งออก JSON ของเว็บแอป, แปลน/Truss/เข็มทิศแบบ vector |
+| `TCRoofCore` | โมเดลงาน, schema ฟอร์มทั้ง 10 หัวข้อ (ตรงกับแผ่นงาน NO.224), คำนวณความครบถ้วน, เก็บงาน/รูปใน `Documents/SolarSurvey`, นำเข้า/ส่งออก JSON ของเว็บแอป, แปลน/Truss/เข็มทิศแบบ vector |
 | `ExcelExport` | เติมข้อมูลลงสำเนา workbook ของบริษัท (`Resources/template.xlsx`) — ช่องเดิม, ติ๊ก checkbox, วางรูปในกรอบ, สร้างแผ่นเพิ่มเมื่อหลังคา/ถัง/ตู้ไฟเกินช่อง, เติมค่าใน SmartArt มิเตอร์–หม้อแปลง–MDB |
 | `PDFReport` | รายงาน A4 แบบ NO.215 (UIGraphicsPDFRenderer + ฟอนต์ Sarabun ที่แนบมา) |
 | `DriveSync` | Google Drive REST v3: โฟลเดอร์ `Solar Survey Projects/NO.xxx ชื่อโครงการ`, อัปโหลด PDF/Excel/survey-data.json, เปิดงานจาก Drive |

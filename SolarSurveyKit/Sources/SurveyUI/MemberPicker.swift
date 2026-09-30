@@ -1,6 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 
 /// "ขนาด @ระยะห่าง" for one roof-structure member: pick the section and spacing from lists, or type anything else.
 struct MemberPicker: View {

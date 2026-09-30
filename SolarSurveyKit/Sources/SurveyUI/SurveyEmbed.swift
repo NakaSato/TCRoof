@@ -1,6 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
-import SurveyCore
+import TCRoofCore
 
 /// One report's editor, for a host app to push from its own screens (e.g. a job's detail page).
 public struct SurveyReportEditor: View {

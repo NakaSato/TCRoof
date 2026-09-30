@@ -1,5 +1,5 @@
 import Foundation
-import SurveyCore
+import TCRoofCore
 
 /// Measures text; the UIKit renderer supplies real font metrics, tests use the estimate.
 public protocol TextMeasuring: Sendable {

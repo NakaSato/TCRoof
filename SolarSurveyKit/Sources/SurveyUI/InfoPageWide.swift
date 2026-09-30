@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import UIKit
-import SurveyCore
+import TCRoofCore
 
 /// A1 on iPad: the cover as cards (docs/ui/survey-a1) — two columns that fit one screen in landscape, one column in portrait.
 /// Every field keeps its `Schema.info` id and label, so Excel, PDF and completion are unchanged.

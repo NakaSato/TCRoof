@@ -97,6 +97,23 @@ final class FloodTests: XCTestCase {
         XCTAssertEqual(manual.estimatedDepthCm, 50)
     }
 
+    func testCacheKeepsAreaResults() throws {
+        let defaults = UserDefaults(suiteName: "FloodTests-\(UUID().uuidString)")!
+        let cache = FloodCache(defaults: defaults)
+        var g = FloodGistda(); g.lat = 17.0062; g.lon = 99.8235; g.years = [.init(year: 2554, plots: 9)]
+        g.fetchedAt = Date(timeIntervalSinceNow: -86_400)
+        cache.store(g)
+        // about 100 m away is the same area
+        XCTAssertEqual(cache.lookup(lat: 17.0064, lon: 99.8232, fresh: true)?.years.first?.plots, 9)
+        XCTAssertNil(cache.lookup(lat: 17.0200, lon: 99.8235, fresh: false))
+        // a month on it is only a fallback
+        XCTAssertNil(cache.lookup(lat: 17.0062, lon: 99.8235, fresh: true, now: Date(timeIntervalSinceNow: 40 * 86_400)))
+        XCTAssertNotNil(cache.lookup(lat: 17.0062, lon: 99.8235, fresh: false, now: Date(timeIntervalSinceNow: 40 * 86_400)))
+        // the surveyor's own estimate is not a GISTDA result
+        cache.store(.estimate())
+        XCTAssertNil(cache.lookup(lat: 0, lon: 0, radius: 0, fresh: false))
+    }
+
     func testLookupNeedsKey() async {
         do { _ = try await FloodLookup(apiKey: " ").fetch(lat: 17, lon: 99.8); XCTFail() }
         catch { XCTAssertEqual(error as? FloodLookup.Failure, .noKey) }

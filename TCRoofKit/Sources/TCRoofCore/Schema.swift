@@ -230,7 +230,7 @@ public enum Schema {
     }
     @Sendable public static func flooded(_ v: Values) -> Bool { v.choice("floodHistory") == "เคย" }
     public static let floodRefs = ["ดินเดิม", "พื้นถนน", "พื้นห้อง MDB"]
-    public static let floodInfoSources = ["เจ้าหน้าที่", "คราบน้ำ", "GISTDA"]
+    public static let floodInfoSources = ["เจ้าหน้าที่", "คราบน้ำ"]
     public static let floodSources = ["ฝนตกหนัก / ระบายน้ำไม่ทัน", "แม่น้ำ / คลองล้นตลิ่ง", "น้ำทะเลหนุน", "น้ำป่า / น้ำหลาก", "อื่นๆ"]
     public static let floodHits = ["ห้อง MDB / ตู้ไฟฟ้า", "หม้อแปลง", "ห้องเครื่องสูบน้ำ", "อาคาร / พื้นที่ติดตั้งอินเวอร์เตอร์", "ถนนทางเข้า"]
     public static let flood = GroupSpec("ประวัติน้ำท่วม", [

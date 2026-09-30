@@ -405,7 +405,7 @@ struct FloodPageWide: View {
     var fetchButton: some View { fetchButton(again: false) }
     func fetchButton(again: Bool) -> some View {
         let ready = GPS.parse(values.text("gps")) != nil
-        return Button(action: fetchGistda) {
+        return Button(action: { fetchGistda(force: again) }) {
             HStack(spacing: 8) {
                 if fetching { ProgressView().tint(.white) } else { Image(systemName: "arrow.down.circle") }
                 Text(fetching ? ("กำลังดึงข้อมูล \(attempt)/\(FloodLookup.gregorianYears.count) ปี…") : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
@@ -427,17 +427,30 @@ struct FloodPageWide: View {
         .buttonStyle(.plain)
     }
 
-    func fetchGistda() {
+    /// `force` (the "ดึงข้อมูลใหม่" button) skips the device cache. Otherwise a result fetched for this area in the last 30 days is reused;
+    /// an older one is used only when GISTDA does not answer.
+    func fetchGistda(force: Bool = false) {
         failure = nil
         guard let p = GPS.parse(values.text("gps")) else { failure = FloodLookup.Failure.badCoordinates.message; return }
+        let cache = FloodCache()
+        if !force, let g = cache.lookup(lat: p.lat, lon: p.lon, fresh: true) { job.values.setGistda(g); return }
         let key = gistdaKey
-        guard !key.isEmpty else { failure = FloodLookup.Failure.noKey.message; return }
+        guard !key.isEmpty else {
+            if let g = cache.lookup(lat: p.lat, lon: p.lon, fresh: false) { job.values.setGistda(g) } else { failure = FloodLookup.Failure.noKey.message }
+            return
+        }
         fetching = true
         Task { @MainActor in
             attempt = 0
-            do { job.values.setGistda(try await FloodLookup(apiKey: key).fetch(lat: p.lat, lon: p.lon, progress: { n in Task { @MainActor in attempt = n } })) }
-            catch let e as FloodLookup.Failure { failure = e.message }
-            catch { failure = FloodLookup.Failure.badResponse.message }
+            do {
+                let g = try await FloodLookup(apiKey: key).fetch(lat: p.lat, lon: p.lon, progress: { n in Task { @MainActor in attempt = n } })
+                cache.store(g)
+                job.values.setGistda(g)
+            } catch {
+                let f = (error as? FloodLookup.Failure) ?? .badResponse
+                if let old = cache.lookup(lat: p.lat, lon: p.lon, fresh: false) { job.values.setGistda(old); failure = "GISTDA ไม่ตอบ · ใช้ข้อมูลที่เก็บไว้ในเครื่อง" }
+                else { failure = f.message }
+            }
             fetching = false
         }
     }

@@ -48,8 +48,8 @@ struct JobEditorView: View {
     var cardInfo: Bool { page == .info && !compact }
     /// A2's picture page (docs/ui/survey-a2): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
     var cardSite: Bool { page == .site && !compact }
-    /// A3's power-flow diagram (docs/ui/survey-a3) also needs landscape.
-    var cardElectrical: Bool { page == .electrical && !compact && infoColumns == 2 }
+    /// A3's power-flow diagram (docs/ui/survey-a3) zooms to fit, so portrait iPad uses it too; iPhone keeps `groupPage`.
+    var cardElectrical: Bool { page == .electrical && !compact }
     /// Pages with the blue header and bottom bar instead of the navigation bar.
     var cardPage: Bool { cardInfo || cardSite || cardElectrical }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.

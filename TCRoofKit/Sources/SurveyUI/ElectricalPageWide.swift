@@ -84,7 +84,8 @@ struct ElectricalPageWide: View {
                     .onGeometryChange(for: CGSize.self) { $0.size } action: { s in
                         let first = viewport == .zero
                         viewport = s
-                        if first { fit() }
+                        // portrait is narrow: open readable (scrolling sideways) rather than at the whole-diagram fit
+                        if first { fit(); if s.height > s.width { scale = max(scale, 0.5) } }
                     }
             }
             .clipShape(RoundedRectangle(cornerRadius: 12))

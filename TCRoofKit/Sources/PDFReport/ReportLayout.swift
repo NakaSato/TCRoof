@@ -244,7 +244,8 @@ public struct ReportLayout {
                 o.append(.line(Pt(cx + 10, by + mdbH / 2), Pt(cx + 16, by + mdbH / 2), width: 0.6, color: .ink2))
                 let b = Box(cx + 16, by, colW - 20, mdbH)
                 o.append(.rect(b, stroke: .black, fill: nil, width: 0.6))
-                o.append(.text("ตู้ MDB\(k + 1)", at: Pt(b.x + 4, b.y + 8), size: 7, bold: true))
+                let bn = t.boards[safe: k]?.name.trimmingCharacters(in: .whitespaces) ?? ""
+                o.append(.text(bn.isEmpty ? "ตู้ MDB\(k + 1)" : bn, at: Pt(b.x + 4, b.y + 8), size: 7, bold: true))
                 let v = t.mdb[safe: k] ?? ""
                 o.append(.text("เบรกเกอร์ \(v.isEmpty ? "_____" : v) A", at: Pt(b.x + 4, b.y + 19), size: 7, color: v.isEmpty ? .black : .blue))
             }
@@ -331,15 +332,22 @@ public struct ReportLayout {
             y += 7
         }
         let trs = j.transformers("trafos")
+        // Vector group / %Z / condition come from the A3 wide page; the column shows only when some transformer has them
+        func spec(_ t: Transformer) -> String {
+            [t.vectorGroup, t.impedance.isEmpty ? "" : "\(t.impedance)%Z", t.condition].filter { !$0.isEmpty }.joined(separator: " · ")
+        }
+        let showSpec = trs.contains { !spec($0).isEmpty }
         let trRows: [[(String, RGBA)]] = trs.isEmpty ? [[("ยังไม่ระบุหม้อแปลง", .tag), ("", .black), ("", .black), ("", .black), ("", .black)]] :
             trs.enumerated().map { i, t in
                 let n = Schema.transformerAngles.filter { j.photo("tr\(i)_\($0.key)") != nil }.count
                 let mdb = t.mdb.enumerated().filter { !$0.element.isEmpty }.map { "MDB\($0.offset + 1) \($0.element) A" }.joined(separator: ", ")
                 let feed = [j.text("tr\(i)_feed"), j.text("tr\(i)_feedLoc")].filter { !$0.isEmpty }.joined(separator: " · ")
-                return [("TR\(i + 1)", .black), ("\(t.kva.isEmpty ? "-" : t.kva) kVA", .black), (mdb.isEmpty ? "-" : mdb, .black),
+                let row: [(String, RGBA)] = [("TR\(i + 1)", .black), ("\(t.kva.isEmpty ? "-" : t.kva) kVA", .black), (mdb.isEmpty ? "-" : mdb, .black),
                         (feed.isEmpty ? "ยังไม่ระบุ" : feed, feed.isEmpty ? .tag : .black), ("\(n)/6", n < 6 ? .tag : .black)]
+                return showSpec ? row + [(spec(t).isEmpty ? "-" : spec(t), .black)] : row
             }
-        table([("หม้อแปลง", 48), ("ขนาด", 58), ("ตู้ MDB (เบรกเกอร์)", 0), ("ตู้ MDB ปลายสาย", 130), ("ภาพ", 40)], trRows)
+        table([("หม้อแปลง", 48), ("ขนาด", 58), ("ตู้ MDB (เบรกเกอร์)", 0), ("ตู้ MDB ปลายสาย", 130), ("ภาพ", 40)]
+              + (showSpec ? [("Vector group / %Z / สภาพ", 120)] : []), trRows)
         let secs = job.sectionsByCategory.flatMap(\.sections)
         let secRows: [[(String, RGBA)]] = secs.isEmpty ? [[("-", .black), ("ยังไม่มีหัวข้อสำรวจ", .black), ("", .black), ("", .black)]] :
             secs.map { s in
@@ -386,6 +394,9 @@ public struct ReportLayout {
             }
             var all = photos
             if let fp = j.photo("tr\(i)_feedPhoto") { all.append((fp, "ตู้ MDB ปลายสาย " + feed)) }
+            for (key, label) in [("mdbOpen", "เปิดตู้ ภายใน"), ("mdbBreaker", "เมนเบรกเกอร์"), ("mdbSpace", "ที่ว่างติดตั้ง CB โซลาร์")] {
+                if let p = j.photo("tr\(i)_\(key)") { all.append((p, "ตู้ MDB " + label)) }
+            }
             units += grid("ภาพหม้อแปลง TR\(i + 1) (ทุกมุม)", all, cellH: 165)
         }
         return units

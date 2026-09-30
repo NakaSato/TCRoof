@@ -38,6 +38,13 @@ final class PDFReportTests: XCTestCase {
             XCTAssertEqual(Schema.shadeText(job.modules[ti].values), "เงาบัง: ต้นไม้, หอถังสูง ทิศ S, SW (ต้นไม้สูง ~8 ม. ห่าง 5 ม.)")
             XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. · กึ่งฝัง")
         }
+        // A3 wide-page answers (boards, spec, extra photos) still lay out
+        var trs = job.values.transformers("trafos")
+        trs[0].vectorGroup = "Dyn11"; trs[0].impedance = "4.14"; trs[0].condition = "ดี"
+        trs[0].setBoards([Board(name: "MDP-1", at: trs[0].mdb[0]), Board(name: "SDB ระบบกรอง", at: "400")])
+        job.values["trafos"] = .transformers(trs)
+        job.values["tr0_mdbSpace"] = job.values["siteMap"]
+        XCTAssertEqual(job.values.transformers("trafos")[0].mdb[1], "400")
         let pages = ReportLayout(job: job, header: ReportHeader(company: "TC Roof")).pages()
         print("pages:", pages.count)
         XCTAssertGreaterThan(pages.count, 10)

@@ -49,4 +49,51 @@ final class PDFReportTests: XCTestCase {
             }
         }
     }
+
+    /// A2's drawings, new symbols and site note appear over / under the site picture on the report's first page.
+    func testSiteDrawingInReport() throws {
+        let fx = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../ExcelExportTests/Fixtures/job215.json")
+        let store = JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("pdf-" + UUID().uuidString))
+        var job = try WebBackup.importJobs(Data(contentsOf: fx), into: store)[0]
+        job.values["siteMarks"] = .marks([MapMark(kind: .trafo, x: 0.6, y: 0.5, value: "630", label: "TX 1"), MapMark(kind: .zeroExport, x: 0.8, y: 0.2),
+                                          MapMark(kind: .stairs, x: 0.3, y: 0.3), MapMark(kind: .weather, x: 0.2, y: 0.8),
+                                          MapMark(kind: .meterSub, x: 0.7, y: 0.8), MapMark(kind: .roofLabel, x: 0.4, y: 0.15, label: "หลังคาถังน้ำใส 1")])
+        job.values[SiteShapes.key] = .shapes([
+            SiteShape(kind: .panelArea, points: [ShapePoint(0.1, 0.4), ShapePoint(0.5, 0.4), ShapePoint(0.5, 0.9), ShapePoint(0.1, 0.9)]),
+            SiteShape(kind: .cableRoute, points: [ShapePoint(0.5, 0.4), ShapePoint(0.6, 0.3), ShapePoint(0.6, 0.5)]),
+            SiteShape(kind: .measure, points: [ShapePoint(0.1, 0.35), ShapePoint(0.5, 0.35)]),
+            SiteShape(kind: .craneEntry, points: [ShapePoint(0.95, 0.6), ShapePoint(0.7, 0.6)], label: "ทางเข้าเครน"),
+            SiteShape(kind: .shade, points: [ShapePoint(0.1, 0.4), ShapePoint(0.2, 0.4), ShapePoint(0.2, 0.9), ShapePoint(0.1, 0.9)], label: "ร่มเงาต้นไม้")])
+        job.values[SiteShapes.scaleKey] = .text("100")
+        job.values["siteNote"] = .text("รถเครนเข้าทางถนนด้านตะวันออก")
+        let pages = ReportLayout(job: job, header: ReportHeader(company: "TC Roof")).pages()
+        // the one-page summary draws the picture small; the cover's site box has the legend and note
+        let all = pages.flatMap(\.ops), first = pages[0].ops
+        func hasText(_ t: String) -> Bool {
+            all.contains { op in
+                switch op {
+                case .text(let s, _, _, _, _, _, _): return s.contains(t)
+                case .textBox(let s, _, _, _, _, _): return s.contains(t)
+                default: return false
+                }
+            }
+        }
+        XCTAssertTrue(hasText("หมายเหตุหน้างาน: รถเครนเข้าทางถนนด้านตะวันออก"))
+        XCTAssertTrue(hasText("40.0 ม."))
+        XCTAssertTrue(hasText("TX 1"))
+        XCTAssertTrue(hasText("หลังคาถังน้ำใส 1"))
+        XCTAssertTrue(hasText("ร่มเงาต้นไม้"))
+        XCTAssertTrue(hasText("STAIRS"))   // legend
+        XCTAssertFalse(hasText("ROOF"))    // roof names label themselves, no legend entry
+        if let dir = ProcessInfo.processInfo.environment["EXPORT_DIR"] {
+            let svg = Sketch(width: ReportLayout.pageW, height: ReportLayout.pageH, ops: [.rect(Box(0, 0, ReportLayout.pageW, ReportLayout.pageH), stroke: nil, fill: .white)] + first)
+                .svg(photoHref: { "file://" + store.url(of: $0, in: job.id).path })
+            try svg.write(toFile: dir + "/a2-page1.svg", atomically: true, encoding: .utf8)
+            if let i = pages.firstIndex(where: { $0.ops.contains { if case .textBox(let t, _, _, _, _, _) = $0 { return t.hasPrefix("หมายเหตุหน้างาน") }; return false } }) {
+                let cover = Sketch(width: ReportLayout.pageW, height: ReportLayout.pageH, ops: [.rect(Box(0, 0, ReportLayout.pageW, ReportLayout.pageH), stroke: nil, fill: .white)] + pages[i].ops)
+                    .svg(photoHref: { "file://" + store.url(of: $0, in: job.id).path })
+                try cover.write(toFile: dir + "/a2-cover.svg", atomically: true, encoding: .utf8)
+            }
+        }
+    }
 }

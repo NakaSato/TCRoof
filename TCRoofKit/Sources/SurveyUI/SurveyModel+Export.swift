@@ -30,8 +30,8 @@ extension SurveyModel {
 
     /// The site picture with its symbols drawn in, for the Excel frame (the PDF draws them as vectors).
     func markedSiteMap(_ job: Job) -> ExcelImage? {
-        let marks = job.values.marks("siteMarks")
-        guard !marks.isEmpty, let p = job.values.photo("siteMap"), let img = image(p, in: job.id) else { return nil }
+        let marks = job.values.marks("siteMarks"), shapes = job.values.shapes(SiteShapes.key)
+        guard !marks.isEmpty || !shapes.isEmpty, let p = job.values.photo("siteMap"), let img = image(p, in: job.id) else { return nil }
         let base = img.scaled(maxSide: 1600)
         let pic = base.size
         // legend strip below the picture, scaled to the picture's width
@@ -42,7 +42,9 @@ extension SurveyModel {
         let out = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
             UIColor.white.setFill(); ctx.fill(CGRect(origin: .zero, size: size))
             base.draw(in: CGRect(origin: .zero, size: pic))
-            PDFRenderer.draw(SiteMarks.ops(marks, in: Box(0, 0, Double(pic.width), Double(pic.height))), in: ctx.cgContext, photo: { _ in nil })
+            let box = Box(0, 0, Double(pic.width), Double(pic.height))
+            PDFRenderer.draw(SiteShapes.ops(shapes, in: box, metersAcross: job.values.number(SiteShapes.scaleKey)), in: ctx.cgContext, photo: { _ in nil })
+            PDFRenderer.draw(SiteMarks.ops(marks, in: box), in: ctx.cgContext, photo: { _ in nil })
             PDFRenderer.draw(SiteMarks.legend(kinds, in: Box(0, Double(pic.height), Double(pic.width), lh), size: fs), in: ctx.cgContext, photo: { _ in nil })
         }
         guard let data = out.jpegData(compressionQuality: 0.85) else { return nil }

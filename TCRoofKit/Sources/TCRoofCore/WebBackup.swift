@@ -28,7 +28,7 @@ public enum WebBackup {
     }
 
     /// Cover answers A1 keeps outside the schema (ground-area count, map zoom); text in the JSON like other fields.
-    public static let extraJobKeys = ["groundAreas", "mapZoom"]
+    public static let extraJobKeys = ["groundAreas", "mapZoom", SiteShapes.sourceKey, SiteShapes.scaleKey]
 
     static func importJob(_ r: [String: Any], into store: JobStore) throws -> Job {
         let webID = (r["id"] as? String) ?? UUID().uuidString
@@ -39,6 +39,17 @@ public enum WebBackup {
         var job = Job(id: id, created: created, updated: updated)
         job.values = try values(d, fields: Schema.jobGroups.flatMap(\.fields), job: id, store: store)
         for k in extraJobKeys { let s = str(d[k]); if !s.isEmpty { job.values[k] = .text(s) } }
+        if let a = d[SiteShapes.key] as? [[String: Any]] {
+            let shapes = a.compactMap { s -> SiteShape? in
+                guard let k = (s["k"] as? String).flatMap(ShapeKind.init(rawValue:)) else { return nil }
+                let pts = ((s["p"] as? [[Any]]) ?? []).compactMap { p -> ShapePoint? in
+                    guard p.count == 2, let x = (p[0] as? NSNumber)?.doubleValue, let y = (p[1] as? NSNumber)?.doubleValue else { return nil }
+                    return ShapePoint(x, y)
+                }
+                return SiteShape(kind: k, points: pts, label: str(s["l"]))
+            }
+            if !shapes.isEmpty { job.values[SiteShapes.key] = .shapes(shapes) }
+        }
         for m in (d["modules"] as? [[String: Any]]) ?? [] {
             guard let t = (m["type"] as? String).flatMap(ModuleType.init(rawValue:)) else { continue }
             let mid = (m["id"] as? String).map { UUID(uuidString: $0) ?? stableUUID(webID + "/" + $0) } ?? UUID()
@@ -91,7 +102,7 @@ public enum WebBackup {
                 let a = ((x as? [[String: Any]]) ?? []).compactMap { m -> MapMark? in
                     guard let k = (m["k"] as? String).flatMap(MarkKind.init(rawValue:)),
                           let mx = (m["x"] as? NSNumber)?.doubleValue, let my = (m["y"] as? NSNumber)?.doubleValue else { return nil }
-                    return MapMark(kind: k, x: mx, y: my, value: str(m["v"]))
+                    return MapMark(kind: k, x: mx, y: my, value: str(m["v"]), label: str(m["l"]))
                 }
                 if !a.isEmpty { v[f.id] = .marks(a) }
             case .plan, .diagram, .note: break
@@ -124,6 +135,8 @@ public enum WebBackup {
     static func exportJob(_ job: Job, store: JobStore) -> [String: Any] {
         var d = exportValues(job.values, fields: Schema.jobGroups.flatMap(\.fields), job: job.id, store: store)
         for k in extraJobKeys { let s = job.values.text(k); if !s.isEmpty { d[k] = s } }
+        let shapes = job.values.shapes(SiteShapes.key)
+        if !shapes.isEmpty { d[SiteShapes.key] = shapes.map { ["k": $0.kind.rawValue, "p": $0.points.map { [$0.x, $0.y] }, "l": $0.label] as [String: Any] } }
         d["_v"] = 4
         d["modules"] = job.modules.map { m -> [String: Any] in
             ["id": m.id.uuidString, "type": m.type.rawValue, "name": m.name,
@@ -157,7 +170,8 @@ public enum WebBackup {
             case .photos(let a): d[f.id] = a.compactMap { exportPhoto($0, job: job, store: store) }
             case .obstacles(let a): d[f.id] = a.map { ["label": $0.label, "x": $0.x, "y": $0.y, "w": $0.w, "h": $0.h] }
             case .transformers(let a): d[f.id] = a.map { ["kva": $0.kva, "mdb": $0.mdb] as [String: Any] }
-            case .marks(let a): d[f.id] = a.map { ["k": $0.kind.rawValue, "x": $0.x, "y": $0.y, "v": $0.value] as [String: Any] }
+            case .marks(let a): d[f.id] = a.map { ["k": $0.kind.rawValue, "x": $0.x, "y": $0.y, "v": $0.value, "l": $0.label] as [String: Any] }
+            case .shapes: break   // not a schema field; written by exportJob
             }
         }
         return d

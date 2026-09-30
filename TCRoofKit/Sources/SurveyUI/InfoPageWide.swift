@@ -56,25 +56,7 @@ struct InfoPageWide: View {
 
     // MARK: step bar
 
-    var stepBar: some View {
-        let steps = job.steps
-        let here = steps.firstIndex { $0.page == .info } ?? 0
-        return VStack(spacing: 10) {
-            HStack {
-                Text("\(here + 1)/\(steps.count)").bold()
-                Spacer()
-                Text("ข้อมูลโครงการ")
-            }
-            .font(.system(size: 15))
-            HStack(spacing: 6) {
-                ForEach(Array(steps.enumerated()), id: \.offset) { i, s in
-                    Capsule().fill(i == here ? AnyShapeStyle(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing))
-                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Home.mint) : AnyShapeStyle(Color.gray.opacity(0.25)))
-                        .frame(height: 8)
-                }
-            }
-        }
-    }
+    var stepBar: some View { PageStepBar(job: job, here: .info) }
 
     // MARK: left column
 
@@ -280,6 +262,32 @@ struct A1Card<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+    }
+}
+
+/// "2/13 … ภาพสถานที่ติดตั้ง" and one bar per step, the open one in blue (card pages A1, A2).
+struct PageStepBar: View {
+    let job: Job
+    let here: MissingGroup.Target
+
+    var body: some View {
+        let steps = job.steps
+        let i = steps.firstIndex { $0.page == here } ?? 0
+        VStack(spacing: 10) {
+            HStack {
+                Text("\(i + 1)/\(steps.count)").bold()
+                Spacer()
+                Text(steps[safe: i]?.title ?? "")
+            }
+            .font(.system(size: 15))
+            HStack(spacing: 6) {
+                ForEach(Array(steps.enumerated()), id: \.offset) { n, s in
+                    Capsule().fill(n == i ? AnyShapeStyle(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing))
+                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Home.mint) : AnyShapeStyle(Color.gray.opacity(0.25)))
+                        .frame(height: 8)
+                }
+            }
+        }
     }
 }
 

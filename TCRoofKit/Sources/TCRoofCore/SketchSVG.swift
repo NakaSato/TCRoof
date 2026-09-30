@@ -3,7 +3,12 @@ import Foundation
 public extension Sketch {
     /// SVG of the drawing (used for previews in tests and for debugging layouts off-device).
     func svg(photoHref: (Photo) -> String? = { _ in nil }) -> String {
-        func c(_ v: RGBA?) -> String { guard let v else { return "none" }; return String(format: "#%02X%02X%02X", Int(v.r * 255), Int(v.g * 255), Int(v.b * 255)) }
+        func c(_ v: RGBA?) -> String {
+            guard let v else { return "none" }
+            // see-through fills (A2's panel area) keep their alpha
+            if v.a < 1 { return "rgba(\(Int(v.r * 255)),\(Int(v.g * 255)),\(Int(v.b * 255)),\(fmt(v.a)))" }
+            return String(format: "#%02X%02X%02X", Int(v.r * 255), Int(v.g * 255), Int(v.b * 255))
+        }
         func e(_ s: String) -> String { s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;") }
         func n(_ d: Double) -> String { fmt(d) }
         var s = "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"\(n(width))\" height=\"\(n(height))\" viewBox=\"0 0 \(n(width)) \(n(height))\" font-family=\"Sarabun, Tahoma, sans-serif\">"

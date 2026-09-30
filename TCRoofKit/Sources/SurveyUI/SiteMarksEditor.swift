@@ -4,21 +4,27 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// Place PEA METER, TRANSFORMER, MDB, INVERTER STATION, WATER CONNECTION POINT and SITE OFFICE symbols on the site picture.
+/// Place symbols on the site picture (portrait and iPhone; landscape iPad uses `SitePageWide`).
 /// Pick a symbol, tap the picture to drop it, drag to move, tap a symbol to select it for removal.
+/// Lines and areas drawn on the iPad page are shown but not edited here.
 struct SiteMarksEditor: View {
     @Binding var marks: [MapMark]
     let photo: Photo?
     var trafos: [Transformer] = []
     let jobID: UUID
+    var shapes: [SiteShape] = []
+    var metersAcross: Double? = nil
     @Environment(SurveyModel.self) private var model
+
+    /// The design's palette; the retired water point only while a job still has one.
+    var kinds: [MarkKind] { MarkKind.palette + (marks.contains { $0.kind == .water } ? [.water] : []) }
     @State private var armed: MarkKind?
     @State private var selected: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             FlowLayout(spacing: 8, lineSpacing: 8) {
-                ForEach(MarkKind.allCases) { k in
+                ForEach(kinds) { k in
                     Button { armed = armed == k ? nil : k; selected = nil } label: { chip(k) }.buttonStyle(.plain)
                 }
             }
@@ -62,12 +68,8 @@ struct SiteMarksEditor: View {
     func chip(_ k: MarkKind) -> some View {
         let on = armed == k
         return HStack(spacing: 6) {
-            Canvas { ctx, sz in
-                let ops = SiteMarks.symbol(k, at: Pt(Double(sz.width) / 2, Double(sz.height) / 2), radius: Double(min(sz.width, sz.height)) / 2 - 1)
-                ctx.withCGContext { cg in PDFRenderer.draw(ops, in: cg, photo: { _ in nil }) }
-            }
-            .frame(width: 24, height: 24)
-            Text(k.title).font(.caption.weight(.semibold)).foregroundStyle(on ? Color.white : Color.primary)
+            ToolIcon(tool: .mark(k)).frame(width: 24, height: 24)
+            Text(k.paletteTitle).font(.caption.weight(.semibold)).foregroundStyle(on ? Color.white : Color.primary)
         }
         .padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
         .background(on ? Color.accentColor : Color(uiColor: .systemBackground), in: Capsule())
@@ -80,7 +82,8 @@ struct SiteMarksEditor: View {
             ZStack(alignment: .topLeading) {
                 Image(uiImage: img).resizable().frame(width: size.width, height: size.height)
                 Canvas { ctx, sz in
-                    let ops = SiteMarks.ops(marks, in: Box(0, 0, Double(sz.width), Double(sz.height)))
+                    let box = Box(0, 0, Double(sz.width), Double(sz.height))
+                    let ops = SiteShapes.ops(shapes, in: box, metersAcross: metersAcross) + SiteMarks.ops(marks, in: box)
                     ctx.withCGContext { cg in PDFRenderer.draw(ops, in: cg, photo: { _ in nil }) }
                 }
                 .allowsHitTesting(false)
@@ -106,8 +109,9 @@ struct SiteMarksEditor: View {
 
     func place(at p: CGPoint, in size: CGSize) {
         guard let k = armed, size.width > 0, size.height > 0 else { selected = nil; return }
-        let m = MapMark(kind: k, x: Double(p.x / size.width), y: Double(p.y / size.height),
+        var m = MapMark(kind: k, x: Double(p.x / size.width), y: Double(p.y / size.height),
                         value: SiteMarks.suggestedValue(k, existing: marks, trafos: trafos))
+        if [.trafo, .mdb, .roofLabel].contains(k) { m.label = SiteMarks.defaultLabel(m, in: marks + [m]) }
         marks.append(m)
         armed = nil
         selected = m.id

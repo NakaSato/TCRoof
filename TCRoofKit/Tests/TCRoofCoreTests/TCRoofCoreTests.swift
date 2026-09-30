@@ -203,4 +203,65 @@ final class TCRoofCoreTests: XCTestCase {
         XCTAssertNil(j.install)
         XCTAssertTrue(j.canMoveToInstall)
     }
+
+    /// A2 saved before the card page: the six original symbols, no siteShapes, no mark labels. It must still open as it was.
+    func testDecodeOldSitePage() throws {
+        let kinds = ["meter", "trafo", "mdb", "inv", "water", "office"]
+        let marks = kinds.enumerated().map { i, k in #"{"id":"\#(UUID().uuidString)","kind":"\#(k)","x":0.\#(i + 1),"y":0.5,"value":"\#(i == 1 ? "630" : "")"}"# }
+        let old = """
+        {"created":780000000,"id":"\(UUID().uuidString)","modules":[],"updated":780000100,
+         "values":{"storage":{"siteMarks":{"marks":{"_0":[\(marks.joined(separator: ","))]}},
+                              "north":{"choice":{"_0":"ด้านบน","other":""}},
+                              "siteList":{"multi":{"_0":["ตำแหน่งติดตั้งแผง"]}}}}}
+        """
+        let j = try JobStore.decoder.decode(Job.self, from: Data(old.utf8))
+        XCTAssertEqual(j.values.marks("siteMarks").map(\.kind.rawValue), kinds)
+        XCTAssertEqual(j.values.marks("siteMarks")[1].rating, "630 kVA")
+        XCTAssertEqual(j.values.marks("siteMarks")[0].label, "")
+        XCTAssertTrue(j.values.shapes(SiteShapes.key).isEmpty)
+        XCTAssertEqual(j.values.choice("north"), "ด้านบน")
+        // water is off the palette but still drawable
+        XCTAssertFalse(MarkKind.palette.contains(.water))
+        XCTAssertFalse(SiteMarks.symbol(.water, at: Pt(0, 0), radius: 10).isEmpty)
+    }
+
+    /// The new A2 fields are optional: filling or leaving them doesn't change A2's completion.
+    func testNewSiteFieldsDontCount() {
+        var v = Values()
+        let before = Schema.site.completion(v)
+        v["siteNote"] = .text("รถเครนเข้าทางถนนด้านตะวันออก")
+        v["landType"] = .choice("ที่ราชพัสดุ", other: "")
+        v[SiteShapes.key] = .shapes([SiteShape(kind: .panelArea, points: [ShapePoint(0.1, 0.1), ShapePoint(0.5, 0.1), ShapePoint(0.5, 0.5)])])
+        XCTAssertEqual(Schema.site.completion(v).total, before.total)
+        XCTAssertEqual(Schema.site.completion(v).filled, before.filled)
+    }
+
+    /// Shapes and mark labels survive save/load and backup/restore; measurements read in metres.
+    func testSiteShapes() throws {
+        let measure = SiteShape(kind: .measure, points: [ShapePoint(0.1, 0.5), ShapePoint(0.5, 0.5)])
+        // 40% of a picture 100 m across
+        XCTAssertEqual(SiteShapes.length(measure, aspect: 1.5, metersAcross: 100) ?? 0, 40, accuracy: 0.001)
+        XCTAssertEqual(SiteShapes.meters(38.84), "38.8 ม.")
+        var j = Job.new(template: JobTemplate.all[2])
+        let shade = SiteShape(kind: .shade, points: [ShapePoint(0, 0), ShapePoint(0.2, 0), ShapePoint(0.2, 0.3)], label: "ร่มเงาต้นไม้")
+        j.values[SiteShapes.key] = .shapes([measure, shade])
+        j.values[SiteShapes.scaleKey] = .text("100")
+        j.values["siteMarks"] = .marks([MapMark(kind: .trafo, x: 0.3, y: 0.3, value: "630", label: "TX 1"), MapMark(kind: .stairs, x: 0.2, y: 0.2)])
+        XCTAssertEqual(try JobStore.decoder.decode(Job.self, from: JobStore.encoder.encode(j)), j)
+        let s = tmpStore()
+        let back = try WebBackup.importJobs(WebBackup.exportBackup([j], store: s), into: tmpStore())[0]
+        XCTAssertEqual(back.values.shapes(SiteShapes.key).map(\.kind), [.measure, .shade])
+        XCTAssertEqual(back.values.shapes(SiteShapes.key)[1].label, "ร่มเงาต้นไม้")
+        XCTAssertEqual(back.values.marks("siteMarks").first?.label, "TX 1")
+        XCTAssertEqual(back.values.marks("siteMarks").last?.kind, .stairs)
+        XCTAssertEqual(back.values.text(SiteShapes.scaleKey), "100")
+        // drawing: a hatched shade and a labelled measurement
+        let ops = SiteShapes.ops([measure, shade], in: Box(0, 0, 600, 400), metersAcross: 100)
+        XCTAssertTrue(ops.contains { if case .text("40.0 ม.", _, _, _, _, _, _) = $0 { return true }; return false })
+        XCTAssertGreaterThan(ops.filter { if case .line = $0 { return true }; return false }.count, 5)
+        // placing a symbol / drawing an area ticks the matching LIST item
+        XCTAssertEqual(MarkKind.stairs.listItem, "ตำแหน่งติดตั้งบันได")
+        XCTAssertEqual(ShapeKind.panelArea.listItem, "ตำแหน่งติดตั้งแผง")
+        XCTAssertEqual(ShapeKind.cableRoute.listItem, Options.list[5])
+    }
 }

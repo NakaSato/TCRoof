@@ -135,7 +135,8 @@ struct FieldView: View {
             ObstaclesEditor(items: Binding(get: { values.obstacles(spec.id) }, set: { values[spec.id] = $0.isEmpty ? nil : .obstacles($0) }))
         case .marks(let photoField):
             SiteMarksEditor(marks: Binding(get: { values.marks(spec.id) }, set: { values[spec.id] = $0.isEmpty ? nil : .marks($0) }),
-                            photo: values.photo(photoField), trafos: values.transformers("trafos"), jobID: jobID)
+                            photo: values.photo(photoField), trafos: values.transformers("trafos"), jobID: jobID,
+                            shapes: values.shapes(SiteShapes.key), metersAcross: values.number(SiteShapes.scaleKey))
         case .transformers:
             VStack(alignment: .leading, spacing: 14) {
                 TransformersEditor(items: Binding(get: { values.transformers(spec.id) }, set: { new in

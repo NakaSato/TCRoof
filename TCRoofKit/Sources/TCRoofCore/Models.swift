@@ -50,6 +50,8 @@ public enum FieldValue: Codable, Hashable, Sendable {
     case obstacles([Obstacle])
     case transformers([Transformer])
     case marks([MapMark])
+    /// Lines and areas drawn on the A2 site picture.
+    case shapes([SiteShape])
 }
 
 /// Answers for one scope (the job cover or one section), keyed by field id.
@@ -94,6 +96,10 @@ public struct Values: Codable, Hashable, Sendable {
     }
     public func marks(_ id: String) -> [MapMark] {
         if case .marks(let a)? = storage[id] { return a }
+        return []
+    }
+    public func shapes(_ id: String) -> [SiteShape] {
+        if case .shapes(let a)? = storage[id] { return a }
         return []
     }
     /// After transformer `i` is removed, move the photos and feed answers of the ones after it down by one (keys are by position).

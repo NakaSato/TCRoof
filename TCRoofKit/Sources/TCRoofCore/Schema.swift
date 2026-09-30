@@ -59,6 +59,7 @@ public struct FieldSpec: Identifiable, Sendable {
         case .obstacles(let a): return !a.isEmpty
         case .transformers(let a): return a.contains { !$0.kva.trimmingCharacters(in: .whitespaces).isEmpty }
         case .marks(let a): return !a.isEmpty
+        case .shapes(let a): return !a.isEmpty
         }
     }
     /// Required for completeness: counted, not optional, and currently shown.
@@ -132,6 +133,8 @@ public enum Options {
     public static let list = ["ตำแหน่งติดตั้งแผง", "ตำแหน่งติดตั้งห้องอินเวอร์เตอร์", "ตำแหน่งติดตั้ง Site Office", "ตำแหน่งติดตั้งกันย้อน", "ตำแหน่งติดตั้งบันได",
                               "แนวรางและสายไฟ AC/DC (Underground/Pipe Rack)", "ตำแหน่งติดตั้งตู้ SMDB ในห้อง MDB", "ตำแหน่งมิเตอร์ PEA", "ตำแหน่งหม้อแปลง", "รูปถ่ายป้ายหน้าโครงการ",
                               "GPS สถานี", "ที่อยู่สถานี", "ประเภทที่ดิน"]
+    /// Who owns the station's land (A2 LIST "ประเภทที่ดิน").
+    public static let landType = ["ที่ดิน กปภ.", "ที่ราชพัสดุ", "ที่สาธารณประโยชน์", "ที่ดินเช่า", "อื่นๆ"]
     public static let roofShape = ["หลังคาทรงจั่ว", "หลังคาทรงปั้นหยา", "หลังคาคอนกรีต (ดาดฟ้า)", "หลังคาทรงโค้ง", "หลังคาเพิงหมาแหงน", "อื่นๆ"]
     public static let roofMaterial = ["กระเบื้องซีแพค", "กระเบื้องลอนคู่/เดี่ยว", "เมทัลชีท", "คอนกรีตเสริมเหล็ก", "อื่นๆ"]
     public static let facing = ["เหนือ", "ใต้", "ตะวันออก", "ตะวันตก", "ตะวันตกเฉียงใต้", "ตะวันออกเฉียงเหนือ", "อื่นๆ"]
@@ -168,7 +171,11 @@ public enum Schema {
         P("siteMap", "ภาพสถานที่ติดตั้ง (โดรน/ดาวเทียม ระบุตำแหน่งแผง อินเวอร์เตอร์ MDB มิเตอร์ หม้อแปลง)"),
         FieldSpec("siteMarks", "สัญลักษณ์บนภาพ — PEA METER, TRANSFORMER, MDB, INVERTER STATION, WATER CONNECTION POINT, SITE OFFICE", .marks(photoField: "siteMap"), optional: true),
         C("north", "ทิศเหนือของภาพอยู่", ["ด้านบน", "ด้านขวา", "ด้านล่าง", "ด้านซ้าย"]),
-        FieldSpec("siteList", "LIST — รายการที่ระบุในภาพ", .checks(Options.list), optional: true)])
+        FieldSpec("siteList", "LIST — รายการที่ระบุในภาพ", .checks(Options.list), optional: true),
+        // added with the A2 card page; optional, so A2's completion counts as before
+        P("projectSignPhoto", "รูปถ่ายป้ายหน้าโครงการ", optional: true),
+        C("landType", "ประเภทที่ดิน", Options.landType, optional: true),
+        FieldSpec("siteNote", "หมายเหตุหน้างาน", .textarea, optional: true)])
     /// Photos every transformer must have (all sides, nameplate, wide view) — keys "tr0_front" … as in the web version.
     public static let transformerAngles: [(key: String, label: String)] = [
         ("front", "ด้านหน้า"), ("back", "ด้านหลัง"), ("left", "ด้านซ้าย"), ("right", "ด้านขวา"),

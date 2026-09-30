@@ -46,6 +46,12 @@ struct JobEditorView: View {
     @State var detailSize: CGSize = .zero
     /// A1 in the card layout on iPad (docs/ui/survey-a1); iPhone keeps the one-column `groupPage`.
     var cardInfo: Bool { page == .info && !compact }
+    /// A2's picture page (docs/ui/survey-a2) needs landscape; portrait and iPhone keep `groupPage`.
+    var cardSite: Bool { page == .site && !compact && infoColumns == 2 }
+    /// Pages with the blue header and bottom bar instead of the navigation bar.
+    var cardPage: Bool { cardInfo || cardSite }
+    /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
+    @State var siteRequest: String?
     /// Two columns on one screen in landscape; portrait stacks the same cards in one column.
     var infoColumns: Int {
         guard detailSize.width >= 860 else { return 1 }
@@ -62,42 +68,24 @@ struct JobEditorView: View {
                 if !compact { Divider() }
             }
             if !(compact && sidebarVisible) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        if readOnly { readOnlyBanner.padding(.horizontal, 24).padding(.top, 16).frame(maxWidth: 1240 + 48) }
-                        Group {
-                            if cardInfo {
-                                InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, twoColumns: infoColumns == 2)
-                                    .padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 1240 + 48)
-                            } else {
-                                detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
-                            }
-                        }
-                        // the summary only reads answers; everywhere else fields stay shown but can't be changed
-                        .disabled(readOnly && page != .summary)
-                        .frame(maxWidth: .infinity).id("top")
-                    }
+                detailArea
                     .background(Paper.page)
                     .safeAreaInset(edge: .top, spacing: 0) {
-                        if cardInfo {
-                            InfoPageHeader(job: job, back: { dismiss() },
+                        if cardPage {
+                            InfoPageHeader(job: job, title: cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ", back: { dismiss() },
                                            toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
                                            export: { model.flush(job.id); showExport = true })
                         }
                     }
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        if cardInfo { InfoPageBar(job: job, narrow: detailSize.width < 900, next: nextPage.map { p in { withAnimation { page = p } } }) }
-                    }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { if cardPage { cardBar } }
                     .onGeometryChange(for: CGSize.self) { $0.size } action: { detailSize = $0 }
-                    .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
-                }
             }
         }
         .navigationTitle(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
-        // A1's blue header carries back, sidebar and export itself
-        .toolbar(cardInfo ? .hidden : .visible, for: .navigationBar)
+        // the card pages' blue header carries back, sidebar and export itself
+        .toolbar(cardPage ? .hidden : .visible, for: .navigationBar)
         // the model owns the Drive link (uploads and other devices change it); this copy only mirrors it
         .onChange(of: job) { _, new in var j = new; j.drive = model.job(new.id)?.drive ?? new.drive; model.update(j) }
         // the Drive link changes elsewhere (export sheet, another device) — take it so the next edit doesn't drop it
@@ -111,6 +99,8 @@ struct JobEditorView: View {
         .onAppear { if startedOnPage && compact { sidebarVisible = false } }
         #if DEBUG
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
+        // `-surveyPage site` opens A2
+        .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "site" { select(.site) } }
         // `-surveyWideA1 YES` shows A1's two-column (landscape) layout in any orientation, sidebar hidden (simulators can't be turned from the command line)
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyWideA1") { sidebarVisible = false } }
         // `-surveyExport YES` opens the export sheet for simulator checks
@@ -132,6 +122,46 @@ struct JobEditorView: View {
                             titleVisibility: .visible, presenting: confirmDelete) { m in
             Button("ลบ \(m.title)", role: .destructive) { remove(m) }
         } message: { _ in Text("ข้อมูลและรูปภาพในหัวข้อนี้จะถูกลบ") }
+    }
+
+    /// A2 fills the screen without scrolling; every other page scrolls.
+    @ViewBuilder var detailArea: some View {
+        if cardSite {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                SitePageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, request: $siteRequest)
+                    .disabled(readOnly)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    if readOnly { readOnlyBanner.padding(.horizontal, 24).padding(.top, 16).frame(maxWidth: 1240 + 48) }
+                    Group {
+                        if cardInfo {
+                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, twoColumns: infoColumns == 2)
+                                .padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 1240 + 48)
+                        } else {
+                            detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
+                        }
+                    }
+                    // the summary only reads answers; everywhere else fields stay shown but can't be changed
+                    .disabled(readOnly && page != .summary)
+                    .frame(maxWidth: .infinity).id("top")
+                }
+                .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
+            }
+        }
+    }
+
+    /// Bottom bar of the card pages; A2's lists the LIST items still unticked.
+    var cardBar: some View {
+        let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
+        return InfoPageBar(job: job, here: cardSite ? .site : .info, narrow: detailSize.width < 900,
+                           previous: cardSite ? go(.info) : nil, next: go(nextPage),
+                           gaps: cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : [])
     }
 
     var readOnlyBanner: some View {

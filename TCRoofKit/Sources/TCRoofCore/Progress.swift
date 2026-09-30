@@ -194,6 +194,7 @@ public extension FieldSpec {
             }.joined(separator: " | ")
         case .marks(let a):
             return SiteMarks.labels(a).values.sorted().joined(separator: ", ")
+        case .shapes(let a): return a.isEmpty ? "" : "\(a.count) รูปวาด"
         }
     }
 }

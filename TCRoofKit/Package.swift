@@ -19,7 +19,7 @@ let package = Package(
         .target(name: "ExcelExport", dependencies: ["TCRoofCore", "CZlib"], resources: [.process("Resources")]),
         .target(name: "PDFReport", dependencies: ["TCRoofCore"], resources: [.process("Resources")]),
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),
-        .target(name: "SurveyUI", dependencies: ["TCRoofCore", "ExcelExport", "PDFReport", "DriveSync"]),
+        .target(name: "SurveyUI", dependencies: ["TCRoofCore", "ExcelExport", "PDFReport", "DriveSync"], resources: [.process("Resources")]),
         .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),
         .testTarget(name: "DriveSyncTests", dependencies: ["DriveSync", "TCRoofCore"]),

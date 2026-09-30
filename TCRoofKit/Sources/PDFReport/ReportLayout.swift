@@ -182,12 +182,16 @@ public struct ReportLayout {
         if let p = j.photo("siteMap") {
             let marks = j.marks("siteMarks"), kinds = SiteMarks.usedKinds(marks)
             let lh = SiteMarks.legendHeight(kinds, width: W - 12)
-            let area = Box(6, sy + Self.band + 20, W - 12, photoH - 8 - (lh > 0 ? lh + 4 : 0))
+            let note = j.text("siteNote").trimmingCharacters(in: .whitespacesAndNewlines), nh = note.isEmpty ? 0.0 : 22.0
+            let area = Box(6, sy + Self.band + 20, W - 12, photoH - 8 - (lh > 0 ? lh + 4 : 0) - nh)
             let pic = area.fit(Double(p.width), Double(p.height))
             o.append(.photo(p, area))
-            o += SiteMarks.ops(marks, in: pic)
+            o += siteDrawing(in: pic)
             // symbol legend under the picture
             o += SiteMarks.legend(kinds, in: Box(pic.x, area.maxY + 4, pic.w, lh))
+            if !note.isEmpty {
+                o.append(.textBox("หมายเหตุหน้างาน: " + note, Box(pic.x, area.maxY + 4 + (lh > 0 ? lh + 4 : 0), pic.w, nh), size: 7.5))
+            }
         }
         let ly = sy + Self.band + 20 + photoH
         o.append(.line(Pt(0, ly), Pt(W, ly), width: 0.8, color: .black))
@@ -203,6 +207,12 @@ public struct ReportLayout {
         o.append(.text("ทิศทาง", at: Pt(W - 43, ly + 8), size: 7.5, align: .center))
         o += Drawings.compass(j.choice("north"), size: 66).translated(W - 76, ly + 16)
         return [Unit(h: sy + siteH, ops: o)]
+    }
+
+    /// Shapes, then symbols, over the site picture drawn in `pic`.
+    func siteDrawing(in pic: Box) -> [DrawOp] {
+        SiteShapes.ops(j.shapes(SiteShapes.key), in: pic, metersAcross: j.number(SiteShapes.scaleKey))
+            + SiteMarks.ops(j.marks("siteMarks"), in: pic)
     }
 
     // MARK: meter / transformers / MDB tree
@@ -279,7 +289,7 @@ public struct ReportLayout {
         o.append(.rect(Box(0, y, picW, picH), stroke: .black, fill: nil, width: 0.6))
         if let p = j.photo("siteMap") {
             let area = Box(3, y + 3, picW - 6, picH - 6), fit = area.fit(Double(p.width), Double(p.height))
-            o.append(.photo(p, area)); o += SiteMarks.ops(j.marks("siteMarks"), in: fit)
+            o.append(.photo(p, area)); o += siteDrawing(in: fit)
         } else { o.append(.text("ยังไม่มีภาพสถานที่ติดตั้ง", at: Pt(picW / 2, y + picH / 2), size: 8, color: .faint, align: .center)) }
         let flood: String = {
             guard let f = j.choice("floodHistory") else { return "" }

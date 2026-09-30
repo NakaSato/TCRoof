@@ -175,10 +175,11 @@ extension InfoPageWide {
     }
 }
 
-/// Blue title bar of the A1 card page, in place of the navigation bar: back and sidebar buttons,
+/// Blue title bar of the card pages (A1, A2), in place of the navigation bar: back and sidebar buttons,
 /// page title with the report number and the TCRoof job it belongs to, and export.
 struct InfoPageHeader: View {
     let job: Job
+    var title = "A1 ข้อมูลโครงการ"
     let back: () -> Void
     let toggleSidebar: () -> Void
     let export: () -> Void
@@ -195,7 +196,7 @@ struct InfoPageHeader: View {
             squareButton("chevron.left", "ย้อนกลับ", action: back)
             squareButton("sidebar.left", "แสดง/ซ่อนรายการหัวข้อ", action: toggleSidebar)
             VStack(alignment: .leading, spacing: 0) {
-                Text("A1 ข้อมูลโครงการ").font(.system(size: 20, weight: .bold))
+                Text(title).font(.system(size: 20, weight: .bold))
                 Text(subtitle).font(.system(size: 15)).opacity(0.92).lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
@@ -232,18 +233,30 @@ struct InfoPageHeader: View {
     }
 }
 
-/// Bottom bar of the wide A1 page: save state, save now, previous (none) and next.
+/// Bottom bar of the card pages: save state, save now, previous and next step.
 struct InfoPageBar: View {
+    /// A shortcut chip after "ยังขาด" (A2: LIST items not ticked yet).
+    struct Gap: Identifiable { let id = UUID(); let title: String; let action: () -> Void }
+
     let job: Job
-    /// Portrait with the sidebar open: drops the disabled "previous" button and tightens the others.
+    var here: MissingGroup.Target = .info
+    /// Portrait with the sidebar open: drops the "previous" button and tightens the others.
     var narrow = false
+    var previous: (() -> Void)? = nil
     let next: (() -> Void)?
+    var gaps: [Gap] = []
     @Environment(SurveyModel.self) var model
     @State var savedNow: Date?
 
+    /// Step names short enough for the previous / next buttons ("A3 หม้อแปลง · MDB", as in docs/ui/survey-a2).
+    static func barTitle(_ s: SurveyStep) -> String {
+        s.page == .electrical ? "หม้อแปลง · MDB" : s.title
+    }
+
     var body: some View {
-        let c = Schema.info.completion(job.values)
         let steps = job.steps
+        let i = steps.firstIndex { $0.page == here } ?? 0
+        let c = steps[safe: i]?.completion ?? Completion()
         let saved = max(job.updated, savedNow ?? .distantPast)
         HStack(spacing: 12) {
             HStack(spacing: 10) {
@@ -251,7 +264,7 @@ struct InfoPageBar: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("บันทึกอัตโนมัติแล้ว " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
-                    Text("ครบ \(c.filled)/\(c.total) ช่องในหน้านี้").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    status(c)
                 }
                 .lineLimit(1)
             }
@@ -264,18 +277,34 @@ struct InfoPageBar: View {
             }
             .buttonStyle(.plain)
             if !narrow {
-                HStack(spacing: 8) { Image(systemName: "chevron.left"); Text("หัวข้อแรก") }
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
-                    .frame(width: 180, height: 56)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
-                    .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
+                if let previous, let s = steps[safe: i - 1] {
+                    Button(action: previous) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold))
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text("ก่อนหน้า \(i)/\(steps.count)").font(.system(size: 12)).foregroundStyle(Home.muted)
+                                Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
+                            }
+                        }
+                        .frame(width: 210, height: 56)
+                        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    HStack(spacing: 8) { Image(systemName: "chevron.left"); Text("หัวข้อแรก") }
+                        .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
+                        .frame(width: 180, height: 56)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
+                        .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
+                }
             }
-            if let next, let s = steps.dropFirst().first {
+            if let next, let s = steps[safe: i + 1] {
                 Button(action: next) {
                     HStack(spacing: 10) {
                         VStack(alignment: .trailing, spacing: 0) {
-                            Text("ถัดไป 2/\(steps.count)").font(.system(size: 12)).opacity(0.9)
-                            Text(s.code + " " + s.title).font(.system(size: 16, weight: .semibold)).lineLimit(1)
+                            Text("ถัดไป \(i + 2)/\(steps.count)").font(.system(size: 12)).opacity(0.9)
+                            Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                         }
                         Image(systemName: "chevron.right").font(.system(size: 17, weight: .bold))
                     }
@@ -292,6 +321,28 @@ struct InfoPageBar: View {
         .padding(.horizontal, 24).padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
+    }
+
+    /// "ครบ 9/10 ช่องในหน้านี้", or "ครบช่องบังคับแล้ว · ยังขาด [chips]" when the page lists gaps.
+    @ViewBuilder func status(_ c: Completion) -> some View {
+        if gaps.isEmpty {
+            Text("ครบ \(c.filled)/\(c.total) ช่องในหน้านี้").font(.system(size: 13)).foregroundStyle(Home.muted)
+        } else {
+            HStack(spacing: 6) {
+                Text((c.isComplete ? "ครบช่องบังคับแล้ว" : "ครบ \(c.filled)/\(c.total) ช่อง") + " · ยังขาด").font(.system(size: 13)).foregroundStyle(Home.muted)
+                ForEach(gaps.prefix(narrow ? 1 : 3)) { g in
+                    Button(action: g.action) {
+                        Text(g.title + " ›").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending)
+                            .padding(.horizontal, 8).frame(minHeight: 26)
+                            .background(Home.pending.opacity(0.12), in: Capsule())
+                            .frame(minHeight: 44).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                if gaps.count > (narrow ? 1 : 3) { Text("+\(gaps.count - (narrow ? 1 : 3))").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending) }
+            }
+            .frame(height: 22)
+        }
     }
 }
 #endif

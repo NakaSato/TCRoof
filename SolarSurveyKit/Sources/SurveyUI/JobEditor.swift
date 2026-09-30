@@ -23,6 +23,7 @@ struct JobEditorView: View {
     @State var pendingExport: PendingExport?
     struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; let go: () -> Void }
     @Environment(\.horizontalSizeClass) var sizeClass
+    @Environment(\.dismiss) var dismiss
 
     /// - Parameter start: page to open on (the home card's "continue" step); nil opens A1.
     init(job: Job, start: MissingGroup.Target? = nil) {
@@ -37,6 +38,18 @@ struct JobEditorView: View {
     /// iPhone (and narrow iPad split view): the section list and the form take turns filling the screen.
     var compact: Bool { sizeClass == .compact }
 
+    @State var detailSize: CGSize = .zero
+    /// A1 in the card layout on iPad (docs/ui/survey-a1); iPhone keeps the one-column `groupPage`.
+    var cardInfo: Bool { page == .info && !compact }
+    /// Two columns on one screen in landscape; portrait stacks the same cards in one column.
+    var infoColumns: Int {
+        guard detailSize.width >= 860 else { return 1 }
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "surveyWideA1") { return 2 }
+        #endif
+        return detailSize.width > detailSize.height ? 2 : 1
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             if sidebarVisible {
@@ -46,9 +59,28 @@ struct JobEditorView: View {
             if !(compact && sidebarVisible) {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        detail.padding(compact ? 16 : 24).frame(maxWidth: 980).frame(maxWidth: .infinity).id("top")
+                        Group {
+                            if cardInfo {
+                                InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, twoColumns: infoColumns == 2)
+                                    .padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 1240 + 48)
+                            } else {
+                                detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
+                            }
+                        }
+                        .frame(maxWidth: .infinity).id("top")
                     }
                     .background(Paper.page)
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        if cardInfo {
+                            InfoPageHeader(job: job, back: { dismiss() },
+                                           toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
+                                           export: { model.flush(job.id); showExport = true })
+                        }
+                    }
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        if cardInfo { InfoPageBar(job: job, narrow: detailSize.width < 900, next: nextPage.map { p in { withAnimation { page = p } } }) }
+                    }
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { detailSize = $0 }
                     .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
                 }
             }
@@ -56,6 +88,8 @@ struct JobEditorView: View {
         .navigationTitle(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
+        // A1's blue header carries back, sidebar and export itself
+        .toolbar(cardInfo ? .hidden : .visible, for: .navigationBar)
         // the model owns the Drive link (uploads and other devices change it); this copy only mirrors it
         .onChange(of: job) { _, new in var j = new; j.drive = model.job(new.id)?.drive ?? new.drive; model.update(j) }
         // the Drive link changes elsewhere (export sheet, another device) — take it so the next edit doesn't drop it
@@ -69,6 +103,8 @@ struct JobEditorView: View {
         .onAppear { if startedOnPage && compact { sidebarVisible = false } }
         #if DEBUG
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
+        // `-surveyWideA1 YES` shows A1's two-column (landscape) layout in any orientation, sidebar hidden (simulators can't be turned from the command line)
+        .onAppear { if UserDefaults.standard.bool(forKey: "surveyWideA1") { sidebarVisible = false } }
         // `-surveyExport YES` opens the export sheet for simulator checks
         .task { if UserDefaults.standard.bool(forKey: "surveyExport") { try? await Task.sleep(nanoseconds: 600_000_000); showExport = true } }
         #endif
@@ -145,8 +181,7 @@ struct JobEditorView: View {
 
     func add(_ t: ModuleType) {
         let m = SurveyModule(type: t)
-        // insert after the last section of the same sheet so the order follows the workbook
-        if let last = job.modules.lastIndex(where: { $0.spec.sheet == m.spec.sheet }) { job.modules.insert(m, at: last + 1) } else { job.modules.append(m) }
+        job.insertModule(m)
         page = .module(m.id)
     }
     func duplicate(_ m: SurveyModule) {
@@ -161,6 +196,13 @@ struct JobEditorView: View {
         if page == .module(m.id) { page = .info }
         job.modules.removeAll { $0.id == m.id }
         confirmDelete = nil
+    }
+}
+
+extension Job {
+    /// Adds a section after the last one of the same sheet so the order follows the workbook.
+    mutating func insertModule(_ m: SurveyModule) {
+        if let last = modules.lastIndex(where: { $0.spec.sheet == m.spec.sheet }) { modules.insert(m, at: last + 1) } else { modules.append(m) }
     }
 }
 #endif

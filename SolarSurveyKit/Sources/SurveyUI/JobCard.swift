@@ -15,6 +15,13 @@ enum Home {
     static let redSoft = Color(red: 0.949, green: 0.627, blue: 0.604)
     static let orange = Color(red: 0.769, green: 0.416, blue: 0.0)
     static let border = navy.opacity(0.15)
+    // design system "TCRoof Survey" (docs/ui/survey-a1), as in the host app's Theme.swift
+    static let danger = Color(red: 0.851, green: 0.271, blue: 0.231)
+    static let primarySoft = Color(red: 0.890, green: 0.933, blue: 0.973)
+    static let borderControl = Color(red: 0.467, green: 0.533, blue: 0.620)
+    static let pending = Color(red: 0.706, green: 0.325, blue: 0.035)
+    static let sun = Color(red: 1.0, green: 0.773, blue: 0.239)
+    static let ok = Color(red: 0.180, green: 0.620, blue: 0.357)
 }
 
 struct JobCard: View {

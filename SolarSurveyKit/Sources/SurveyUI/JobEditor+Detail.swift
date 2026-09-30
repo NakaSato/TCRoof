@@ -107,11 +107,15 @@ extension JobEditorView {
     var pages: [Page] {
         [.summary] + sidebarGroups.flatMap { $0.items.map(\.page) }
     }
+    var nextPage: Page? {
+        guard let i = pages.firstIndex(of: page), i + 1 < pages.count else { return nil }
+        return pages[i + 1]
+    }
     @ViewBuilder var nextButton: some View {
-        if let i = pages.firstIndex(of: page), i + 1 < pages.count {
+        if let next = nextPage {
             HStack {
                 Spacer()
-                Button { withAnimation { page = pages[i + 1] } } label: { Label("หัวข้อถัดไป", systemImage: "arrow.right") }
+                Button { withAnimation { page = next } } label: { Label("หัวข้อถัดไป", systemImage: "arrow.right") }
                     .buttonStyle(.borderedProminent).controlSize(.large)
             }
         }

@@ -1,0 +1,429 @@
+<title>IEC 62446 Test Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap">
+<style>
+/* Layout: canvas of iPad landscape artboards (1194×834), scaled to fit; tokens = design system "TCRoof Survey" */
+:root{
+  --navy:#16325C; --primary:#1F6FB5; --primary-light:#2E8FDB; --on-primary:#FFFFFF; --primary-soft:#E3EEF8;
+  --teal:#27A99A; --mint:#9EE6D6; --background:#F3F6FA; --surface:#FFFFFF; --paper-page:#F2F2F7;
+  --paper-band:#E2EFDA; --paper-ink:#1F2E24; --paper-value:#1F4F78; --paper-tick:#70AD47; --paper-tick-strong:#3B7420;
+  --ink-muted:#5B6B82; --muted:#7A8BA3; --border-control:#77889E; --border-subtle:#DDE4ED;
+  --pending:#B45309; --pending-soft:#FFF4E5; --danger:#D9453B; --danger-text:#B42318; --danger-soft:#FDECEA;
+  --canvas:#E4E9F0; --shadow:0 3px 8px rgba(22,50,92,.08); --frame:0 18px 40px rgba(22,50,92,.18);
+  --sans:Sarabun,"Thonburi",system-ui,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --navy:#C9D8EE; --primary:#5BB0F0; --on-primary:#0B1A2E; --primary-soft:#16273A; --mint:#1E5A52;
+  --background:#0E141C; --surface:#121A24; --paper-page:#1C1C1E; --paper-band:#1E2A22; --paper-ink:#DCEBD2;
+  --paper-value:#7CC4F5; --paper-tick:#8FD16A; --paper-tick-strong:#8FD16A; --ink-muted:#9DB0C7; --border-control:#6B7D93;
+  --border-subtle:#243142; --pending:#F5B35C; --pending-soft:#2E2213; --danger:#FF8A7F; --danger-text:#FF8A7F; --danger-soft:#3A1C1A;
+  --canvas:#070B10; --shadow:0 3px 8px rgba(0,0,0,.4); --frame:0 18px 40px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --navy:#C9D8EE; --primary:#5BB0F0; --on-primary:#0B1A2E; --primary-soft:#16273A; --mint:#1E5A52;
+  --background:#0E141C; --surface:#121A24; --paper-page:#1C1C1E; --paper-band:#1E2A22; --paper-ink:#DCEBD2;
+  --paper-value:#7CC4F5; --paper-tick:#8FD16A; --paper-tick-strong:#8FD16A; --ink-muted:#9DB0C7; --border-control:#6B7D93;
+  --border-subtle:#243142; --pending:#F5B35C; --pending-soft:#2E2213; --danger:#FF8A7F; --danger-text:#FF8A7F; --danger-soft:#3A1C1A;
+  --canvas:#070B10; --shadow:0 3px 8px rgba(0,0,0,.4); --frame:0 18px 40px rgba(0,0,0,.6); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--navy);font-family:var(--sans);font-size:17px;line-height:1.5}
+.page{padding:32px 16px 64px;display:flex;flex-direction:column;gap:48px;align-items:center}
+.intro{width:100%;max-width:1194px;display:grid;gap:6px}
+.intro h1{margin:0;font-size:30px;line-height:1.35;text-wrap:balance}
+.intro p{margin:0;color:var(--ink-muted);max-width:70ch}
+.board{width:100%;max-width:1194px;display:grid;gap:12px}
+.board-head{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.board-head b{font-size:20px}
+.board-head span{color:var(--ink-muted);font-size:15px}
+.fit{width:100%;position:relative;overflow:hidden}
+.ipad{width:1194px;height:834px;transform-origin:0 0;position:absolute;left:0;top:0;background:var(--background);border-radius:18px;overflow:hidden;box-shadow:var(--frame);display:flex;flex-direction:column}
+
+/* app chrome */
+.hdr{background:linear-gradient(90deg,#1F6FB5,#2E8FDB);color:#fff;padding:14px 24px 14px;display:flex;align-items:center;gap:16px;flex:none}
+.hdr .t{font-size:22px;font-weight:700;line-height:1.3}
+.hdr .s{font-size:14px;opacity:.92}
+.hdr .sp{flex:1}
+.seg{display:flex;background:rgba(255,255,255,.18);border-radius:10px;padding:3px;gap:3px}
+.seg button{all:unset;height:38px;padding:0 16px;border-radius:8px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button.on{background:#fff;color:#16325C}
+.hbtn{all:unset;height:44px;padding:0 14px;border-radius:8px;border:1px solid rgba(255,255,255,.6);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer}
+.body{flex:1;display:flex;min-height:0}
+.side{width:290px;flex:none;border-right:1px solid var(--border-subtle);padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.side h6{margin:10px 8px 4px;font-size:12px;font-weight:700;color:var(--ink-muted);letter-spacing:.04em}
+.srow{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:10px;font-size:16px;color:var(--navy)}
+.srow.on{background:var(--primary-soft);font-weight:700}
+.srow .code{font-size:12px;font-weight:700;color:var(--ink-muted);min-width:34px}
+.srow .n{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-muted)}
+.main{flex:1;min-width:0;padding:20px 24px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.foot{flex:none;height:76px;background:var(--surface);border-top:1px solid var(--border-subtle);display:flex;align-items:center;gap:12px;padding:0 24px}
+.foot .st{display:flex;align-items:center;gap:10px;font-size:15px}
+.foot .st small{display:block;color:var(--ink-muted);font-size:13px}
+.foot .sp{flex:1}
+.btn{all:unset;height:52px;padding:0 22px;border-radius:8px;border:1.5px solid var(--border-control);background:var(--surface);color:var(--navy);font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn .sub{display:block;font-size:12px;font-weight:400;opacity:.9;line-height:1.2}
+
+/* shared bits */
+.card{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:16px 18px}
+.card h3{margin:0 0 10px;font-size:18px;line-height:1.4;display:flex;align-items:center;gap:8px}
+.band{background:var(--paper-band);color:var(--paper-ink);font-weight:700;font-size:15px;padding:6px 12px;border-radius:8px}
+.muted{color:var(--ink-muted)}
+.hint{font-size:14px;color:var(--ink-muted)}
+.cap{font-size:12px;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.pill.ok{background:var(--paper-band);color:var(--paper-tick-strong)}
+.pill.miss{background:var(--pending-soft);color:var(--pending)}
+.pill.bad{background:var(--danger-soft);color:var(--danger-text)}
+.pill.info{background:var(--primary-soft);color:var(--navy)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.num{font-variant-numeric:tabular-nums}
+.val{color:var(--paper-value);font-weight:700}
+.field{height:52px;border:1.5px solid var(--border-control);border-radius:10px;background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:8px;font-size:17px}
+.field .u{margin-left:auto;color:var(--ink-muted);font-size:15px}
+.field.focus{border:2px solid var(--primary)}
+.field.empty{color:var(--ink-muted);font-weight:400}
+.lbl{font-size:15px;color:var(--paper-ink);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ring{width:28px;height:28px;flex:none}
+svg{display:block}
+.tick{width:22px;height:22px;border-radius:3px;background:var(--paper-tick);display:grid;place-items:center;flex:none}
+
+/* screen 1 */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:12px 16px}
+.kpi b{display:block;font-size:26px;line-height:1.3}
+.kpi span{font-size:13px;color:var(--ink-muted)}
+.invs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.phase{display:grid;grid-template-columns:130px 1fr 60px;gap:10px;align-items:center;font-size:15px;min-height:30px}
+.bar{height:8px;background:var(--border-subtle);border-radius:4px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%;background:var(--paper-tick)}
+.bar i.p{background:var(--pending)}
+.gaps{display:grid;gap:8px}
+.gap{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--pending-soft);color:var(--pending);font-size:15px}
+.gap b{color:var(--navy);font-weight:700}
+.gap .go{margin-left:auto;font-weight:700;color:var(--primary);font-size:14px}
+
+/* screen 2 grid */
+.strgrid{display:grid;grid-template-columns:150px repeat(10,1fr);border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden;background:var(--surface);font-size:14.5px}
+.strgrid>div{border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);min-height:40px;display:flex;align-items:center;justify-content:center;padding:2px 4px;text-align:center}
+.strgrid .rh{justify-content:flex-start;padding-left:12px;color:var(--paper-ink);background:var(--paper-page);font-size:13.5px;line-height:1.25}
+.strgrid .mh{background:var(--paper-band);color:var(--paper-ink);font-weight:700;font-size:13px}
+.strgrid .sh{background:var(--paper-band);color:var(--paper-ink);font-size:12px;min-height:30px}
+.pair{display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%}
+.pair>span{display:flex;align-items:center;justify-content:center;border-right:1px dashed var(--border-subtle);min-height:38px}
+.pair>span:last-child{border-right:none}
+.pair .x{color:var(--muted);font-size:12px}
+.cellsel{outline:2px solid var(--primary);outline-offset:-2px;border-radius:4px;background:var(--primary-soft)}
+.span{grid-column:2 / span 10}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-muted);align-items:center}
+
+/* screen 3 */
+.photo{border:1.5px dashed var(--border-control);border-radius:8px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--ink-muted);font-size:14px;position:relative;overflow:hidden}
+.photo.has{border-style:solid;border-color:var(--border-subtle)}
+.photo .tag{position:absolute;left:8px;bottom:8px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keypad span{height:52px;border-radius:10px;background:var(--paper-page);display:grid;place-items:center;font-size:22px;font-weight:700;color:var(--navy)}
+.keypad span.go{background:var(--primary);color:var(--on-primary);font-size:16px}
+.stepper{display:flex;gap:6px;flex-wrap:wrap}
+.stepper span{min-width:44px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:700;border:1.5px solid var(--border-subtle);color:var(--ink-muted)}
+.stepper span.ok{background:var(--paper-band);border-color:transparent;color:var(--paper-tick-strong)}
+.stepper span.on{border:2px solid var(--primary);color:var(--navy);background:var(--primary-soft)}
+
+/* screen 4 */
+.calc{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline;font-size:15.5px}
+.calc .f{font-family:var(--mono);font-size:13px;color:var(--ink-muted);grid-column:1 / -1;margin-bottom:8px}
+.big{font-size:34px;font-weight:700;line-height:1.2;color:var(--paper-value)}
+.cmp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden}
+.cmp>div{padding:10px 14px;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);font-size:15px}
+.cmp>div:nth-child(3n){border-right:none}
+.cmp .h{background:var(--paper-page);font-size:13px;font-weight:700;color:var(--ink-muted)}
+.warn{border-radius:12px;background:var(--danger-soft);color:var(--danger-text);padding:12px 14px;font-size:15px;display:flex;gap:10px}
+.warn b{display:block}
+.chk{display:flex;align-items:center;gap:10px;font-size:15px;min-height:40px;border-bottom:1px solid var(--border-subtle)}
+.chk:last-child{border-bottom:none}
+.chk .r{margin-left:auto}
+.notes{width:100%;max-width:1194px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.notes div{background:var(--background);border-radius:14px;padding:16px 18px}
+.notes b{display:block;margin-bottom:4px}
+.notes p{margin:0;color:var(--ink-muted);font-size:15px}
+@media (max-width:600px){.intro h1{font-size:24px}}
+</style>
+
+<div class="page">
+  <header class="intro">
+    <h1>ทดสอบระบบ IEC 62446 ก่อน/หลังเชื่อมต่อ</h1>
+    <p>แบบหน้าจอ iPad แนวนอนสำหรับ TCRoof ใช้ข้อมูลจริงของสถานีจ่ายน้ำแพรกหนามแดง 209.76 kWp กรอกครั้งเดียวแล้วออกทั้ง Excel IEC 62446 Test Report และ Word ภาพถ่าย IV TEST Before-After</p>
+  </header>
+
+  <!-- ============ 1 OVERVIEW ============ -->
+  <section class="board">
+    <div class="board-head"><b>1 · ภาพรวมงานทดสอบ</b><span>ดูความครบของทุก inverter ทั้งก่อนและหลังเชื่อมต่อ และรายการที่ยังขาดก่อนส่งออก</span></div>
+    <div class="fit"><div class="ipad">
+      <div class="hdr">
+        <div><div class="t">ทดสอบระบบ IEC 62446</div><div class="s">สถานีจ่ายน้ำแพรกหนามแดง · กปภ.สาขาสมุทรสงคราม</div></div>
+        <div class="sp"></div>
+        <button class="hbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg>ส่งออก</button>
+      </div>
+      <div class="body"><div class="main" style="padding:20px 28px">
+        <div class="kpis">
+          <div class="kpi"><span>กำลังติดตั้ง</span><b class="num">209.76 <small style="font-size:15px">kWp</small></b><span>Znshine 570 W × 368 แผง</span></div>
+          <div class="kpi"><span>Inverter / สตริง</span><b class="num">2 / 24</b><span>125 kW + 60 kW</span></div>
+          <div class="kpi"><span>ค่าที่วัดแล้ว</span><b class="num">48 / 120</b><span>Voc, I, IR, Vmp, Imp</span></div>
+          <div class="kpi"><span>รูปถ่าย</span><b class="num">97 / 121</b><span>สตริงละ 5 รูป + ความเข้มแสง</span></div>
+        </div>
+        <div class="invs" id="invCards"></div>
+        <div class="card" style="flex:1">
+          <h3>ยังขาดก่อนส่งออก <span class="pill miss"><span class="dot"></span>3 รายการ</span></h3>
+          <div class="gaps">
+            <div class="gap"><span class="dot"></span><span><b>ค่า IR (MΩ) ทั้ง 24 สตริง</b> · ฟอร์มเดิมเขียนแค่ Normal เก็บตัวเลขจากหน้าจอเครื่องวัด</span><span class="go">ไปกรอก ›</span></div>
+            <div class="gap"><span class="dot"></span><span><b>Vmp / Imp หลังเชื่อมต่อ</b> · 24 สตริง มีรูปแล้ว ยังไม่มีตัวเลข</span><span class="go">ไปกรอก ›</span></div>
+            <div class="gap"><span class="dot"></span><span><b>วันที่ทดสอบ ผู้ทดสอบ serial เครื่องมือ</b> · 3 ช่อง</span><span class="go">ไปกรอก ›</span></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="foot">
+        <div class="st"><svg class="ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" fill="none" stroke="var(--border-subtle)" stroke-width="4"/><circle cx="14" cy="14" r="11" fill="none" stroke="var(--primary)" stroke-width="4" stroke-dasharray="69.1" stroke-dashoffset="31" transform="rotate(-90 14 14)"/></svg><span>บันทึกอัตโนมัติแล้ว 13:42<small>ความคืบหน้ารวม 55%</small></span></div>
+        <div class="sp"></div>
+        <button class="btn">Word ภาพถ่าย <span class="hint">37 หน้า</span></button>
+        <button class="btn pri">ส่งออก Excel IEC 62446</button>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ 2 STRING GRID ============ -->
+  <section class="board">
+    <div class="board-head"><b>2 · ตารางสตริง (หน้าเดียวกับแผ่น Excel)</b><span>Inverter 1 · ก่อนการเชื่อมต่อ เรียงช่องเหมือน Excel: 10 MPPT × 2 สตริง แตะช่องเพื่อกรอกหรือถ่ายรูป</span></div>
+    <div class="fit"><div class="ipad">
+      <div class="hdr">
+        <div><div class="t">Inverter 1 · 125 kW</div><div class="s">S/N GKLRF5N02R · 16 สตริง · 145.92 kWp</div></div>
+        <div class="sp"></div>
+        <div class="seg"><button class="on">ก่อนเชื่อมต่อ</button><button>หลังเชื่อมต่อ</button></div>
+      </div>
+      <div class="body">
+        <aside class="side" id="side2"></aside>
+        <div class="main">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <span class="pill ok"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Voc ครบ 16/16</span>
+            <span class="pill ok">ต่างจากค่ากลางไม่เกิน 0.5%</span>
+            <span class="pill miss"><span class="dot"></span>IR MΩ ยังขาด 16</span>
+            <span class="sp" style="flex:1"></span>
+            <span class="hint">อากาศ 34.3 ºC · 1022 W/m² · 13:00</span>
+          </div>
+          <div id="grid"></div>
+          <div class="legend">
+            <span><span class="val">755</span> ค่าที่วัด (V)</span>
+            <span>✓ ขั้วถูกต้อง</span>
+            <span><span class="pill ok" style="height:20px;padding:0 6px">2/2</span> รูปแรงดัน + กระแส</span>
+            <span><span class="pill miss" style="height:20px;padding:0 6px">0/1</span> รูป/ค่า IR ยังขาด</span>
+            <span>— ช่องว่าง (ไม่มีสตริง)</span>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <div class="st"><span>ช่องเลือก: <b>String 9</b> (MPPT 5) = ป้ายรูป <b>INV1ST8</b><small>Word นับเฉพาะสตริงที่ใช้งาน Excel ใช้เลขช่อง แอปเก็บไว้ทั้งสองแบบ</small></span></div>
+        <div class="sp"></div>
+        <button class="btn">กรอกทั้งแถว</button>
+        <button class="btn pri">เปิดสตริงนี้ ›</button>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ 3 STRING DETAIL ============ -->
+  <section class="board">
+    <div class="board-head"><b>3 · กรอกทีละสตริง</b><span>รูปคู่แบบหน้า Word + ค่าที่อ่านจากมิเตอร์ แป้นตัวเลขอยู่ขวามือ กด "ถัดไป" ข้ามไปสตริงต่อไปทันที</span></div>
+    <div class="fit"><div class="ipad">
+      <div class="hdr">
+        <div><div class="t">INV1ST8 · String 9 · MPPT 5</div><div class="s">ก่อนการเชื่อมต่อระบบ · Znshine 16 แผง</div></div>
+        <div class="sp"></div>
+        <div class="seg"><button class="on">ก่อนเชื่อมต่อ</button><button>หลังเชื่อมต่อ</button></div>
+      </div>
+      <div class="body"><div class="main" style="flex-direction:row;gap:20px;padding:18px 24px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0">
+          <div class="stepper" id="stepper"></div>
+          <div class="card">
+            <h3>Voltage testing และ Current testing</h3>
+            <div class="grid2">
+              <div>
+                <div class="photo has" id="ph1"></div>
+                <div class="lbl" style="margin-top:10px">String Voltage (Voc) <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3L11.5 4" fill="none" stroke="var(--paper-tick-strong)" stroke-width="2"/></svg></div>
+                <div class="field focus"><span class="val num">753</span><span class="u">V</span></div>
+                <div class="hint" style="margin-top:4px">คาดไว้ 16 × 47.0 = 752 V · ต่าง +0.1%</div>
+              </div>
+              <div>
+                <div class="photo has" id="ph2"></div>
+                <div class="lbl" style="margin-top:10px">String Current <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3L11.5 4" fill="none" stroke="var(--paper-tick-strong)" stroke-width="2"/></svg></div>
+                <div class="field"><span class="val num">0</span><span class="u">A</span></div>
+                <div class="hint" style="margin-top:4px">ก่อนเชื่อมต่อวงจรเปิด ค่า 0 A ถูกต้อง</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Insulation Resistance testing <span class="pill miss"><span class="dot"></span>ยังขาด</span></h3>
+            <div style="display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:12px;align-items:end">
+              <div class="photo" style="height:100px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ถ่ายหน้าจอ</div>
+              <div><div class="lbl">Test Voltage</div><div class="field"><span class="val">1000</span><span class="u">V</span></div></div>
+              <div><div class="lbl">Positive – Earth</div><div class="field empty">เช่น 250<span class="u">MΩ</span></div></div>
+              <div><div class="lbl">Negative – Earth</div><div class="field empty">เช่น 250<span class="u">MΩ</span></div></div>
+            </div>
+            <div class="hint" style="margin-top:8px">ผ่านเมื่อทั้งสองค่า ≥ 1 MΩ ที่ 1000 V · ขั้วถูกต้อง <span class="val">✓</span> · ต่อเนื่อง <span class="val">Normal</span></div>
+          </div>
+        </div>
+        <div style="width:300px;flex:none;display:flex;flex-direction:column;gap:12px">
+          <div class="card">
+            <div class="lbl">กำลังกรอก</div>
+            <div class="big num">753 <span style="font-size:18px;color:var(--ink-muted)">V</span></div>
+            <div class="hint">String Voltage · INV1ST8</div>
+          </div>
+          <div class="keypad"><span>7</span><span>8</span><span>9</span><span>4</span><span>5</span><span>6</span><span>1</span><span>2</span><span>3</span><span>.</span><span>0</span><span>⌫</span></div>
+          <div class="keypad" style="grid-template-columns:1fr 1fr"><span style="font-size:16px">ค่าก่อนหน้า</span><span class="go">ถัดไป ›</span></div>
+          <div class="hint">ถัดไป: String Current → IR +E → IR −E → INV1ST9</div>
+        </div>
+      </div></div>
+      <div class="foot">
+        <div class="st"><span class="pill ok">รูป 2/3</span><span class="pill ok">ค่า 3/5</span></div>
+        <div class="sp"></div>
+        <button class="btn">‹ INV1ST7</button>
+        <button class="btn pri"><span>INV1ST9 ›<span class="sub">String 10 · MPPT 5</span></span></button>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ 4 PERFORMANCE ============ -->
+  <section class="board">
+    <div class="board-head"><b>4 · ผลการผลิตหลังเชื่อมต่อ</b><span>กรอกพลังงาน 7 วันและค่าแสง แอปคำนวณ Yf, PR, ประสิทธิภาพ และติ๊กผ่าน/ไม่ผ่านให้</span></div>
+    <div class="fit"><div class="ipad">
+      <div class="hdr">
+        <div><div class="t">System Performance · Inverter 1</div><div class="s">หลังการเชื่อมต่อระบบ · 145.92 kWp</div></div>
+        <div class="sp"></div>
+        <div class="seg"><button>ก่อนเชื่อมต่อ</button><button class="on">หลังเชื่อมต่อ</button></div>
+      </div>
+      <div class="body">
+        <aside class="side" id="side4"></aside>
+        <div class="main" style="flex-direction:row;gap:16px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0">
+            <div class="card">
+              <h3>ข้อมูลที่กรอก</h3>
+              <div class="grid2">
+                <div><div class="lbl">พลังงานที่ผลิตได้ 7 วัน</div><div class="field"><span class="val num">3,200.03</span><span class="u">kWh</span></div></div>
+                <div><div class="lbl">Solar irradiance เฉลี่ย (Yr)</div><div class="field"><span class="val num">4.24</span><span class="u">kWh/m²/วัน</span></div></div>
+                <div><div class="lbl">Array Temperature</div><div class="field"><span class="val num">59.4</span><span class="u">ºC</span></div></div>
+                <div><div class="lbl">พื้นที่แผงต่อแผ่น <span class="pill miss" style="height:22px"><span class="dot"></span>ยังขาด</span></div><div class="field empty">จาก datasheet<span class="u">m²</span></div></div>
+              </div>
+              <div class="lbl" style="margin-top:12px">หมายเหตุ</div>
+              <div class="field"><span class="val">กำลังผลิตถูกหรี่โดยโหลด</span></div>
+            </div>
+            <div class="card">
+              <h3>ตรวจการทำงาน</h3>
+              <div class="chk"><span class="tick"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3L11.5 4" fill="none" stroke="#fff" stroke-width="2.2"/></svg></span>Inverter testing<span class="r val">Normal</span></div>
+              <div class="chk"><span class="tick"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3L11.5 4" fill="none" stroke="#fff" stroke-width="2.2"/></svg></span>ภาพถ่ายความร้อนแผงเซลล์<span class="r val">เอกสารแนบ</span></div>
+              <div class="chk"><span class="pill miss"><span class="dot"></span></span>Vmp / Imp ทุกสตริง<span class="r" style="color:var(--pending);font-weight:700">0/16</span></div>
+            </div>
+          </div>
+          <div style="width:390px;flex:none;display:flex;flex-direction:column;gap:14px">
+            <div class="card">
+              <h3>คำนวณให้</h3>
+              <div class="grid2" style="gap:14px">
+                <div><div class="hint">Final Yield (Yf)</div><div class="big num">3.13</div><div class="hint">kWh/kWp/วัน</div></div>
+                <div><div class="hint">Performance Ratio</div><div class="big num">0.74</div><div class="hint">= Yf ÷ Yr</div></div>
+                <div><div class="hint">พลังงานเฉลี่ยต่อวัน</div><div class="big num" style="font-size:26px">457.15</div><div class="hint">kWh</div></div>
+                <div><div class="hint">System Efficiency</div><div class="big num" style="font-size:26px;color:var(--ink-muted)">—</div><div class="hint">รอพื้นที่แผง</div></div>
+              </div>
+            </div>
+            <div class="warn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" style="flex:none"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg><span><b>ค่าในฟอร์มเดิมไม่ตรงสูตร</b>ฟอร์มเดิมกรอก Yf 2.93 และ PR 0.69 แต่ 457.18 ÷ 145.92 = 3.13 แอปจะใช้ค่าที่คำนวณ</span></div>
+            <div class="cmp">
+              <div class="h">ค่า</div><div class="h">ฟอร์มเดิม</div><div class="h">คำนวณ</div>
+              <div>Yf</div><div class="num">2.93</div><div class="num val">3.13</div>
+              <div>PR</div><div class="num">0.69</div><div class="num val">0.74</div>
+              <div>kWh/วัน</div><div class="num">457.18</div><div class="num val">457.15</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <div class="st"><span class="pill ok">ผ่าน</span><span>ติ๊กช่อง "ผ่าน" ใน Excel ให้อัตโนมัติ<small>PR ≥ 0.70 ตามเกณฑ์ที่ตั้งไว้ในการตั้งค่า</small></span></div>
+        <div class="sp"></div>
+        <button class="btn pri">Inverter 2 ›</button>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="notes">
+    <div><b>จอเดียวกับแผ่นงาน</b><p>ตารางสตริงเรียงคอลัมน์ E..X และแถบสีเขียวเหมือน Excel คนที่คุ้นฟอร์มเดิมหาช่องเจอทันที</p></div>
+    <div><b>ค่าว่างต้องเห็นเอง</b><p>ช่องที่ฟอร์มเดิมปล่อยว่าง (IR MΩ, Vmp/Imp, ผ่าน/ไม่ผ่าน) แสดงเป็น "ยังขาด" สีส้มพร้อมจุด ไม่ใช่สีอย่างเดียว</p></div>
+    <div><b>ไม่ให้กรอกค่าคำนวณเอง</b><p>Yf, PR, kWp ต่อ inverter และประสิทธิภาพคำนวณจากข้อมูลดิบ ป้องกันค่าไม่ตรงแบบในงานแพรกหนามแดง</p></div>
+  </section>
+</div>
+
+<script>
+const INV1=[[1,1,755],[2,1,752],[3,2,752],[4,2,753],[5,3,750],[6,3,750],[7,4,749],[9,5,753],[10,5,756],[11,6,752],[12,6,753],[13,7,754],[14,7,750],[15,8,753],[17,9,753],[19,10,756]];
+const INV2=[[1,1,753,16],[3,2,754,16],[5,3,753,16],[7,4,755,16],[9,5,561.2,12],[10,5,563.5,12],[11,6,560.6,12],[12,6,560.5,12]];
+const ring=(p,c)=>`<svg class="ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" fill="none" stroke="var(--border-subtle)" stroke-width="4"/><circle cx="14" cy="14" r="11" fill="none" stroke="${c}" stroke-width="4" stroke-dasharray="69.1" stroke-dashoffset="${69.1*(1-p)}" transform="rotate(-90 14 14)"/></svg>`;
+const bar=(a,b,t)=>`<div class="bar"><i style="width:${a/t*100}%"></i><i class="p" style="width:${b/t*100}%"></i></div>`;
+
+/* screen 1 inverter cards */
+document.getElementById('invCards').innerHTML=[
+ {n:1,kw:125,sn:'GKLRF5N02R',st:16,kwp:'145.92',cfg:'16 × 16 แผง',pr:'0.74'},
+ {n:2,kw:60,sn:'BUFUEXB009',st:8,kwp:'63.84',cfg:'4 × 16 + 4 × 12 แผง',pr:'0.79'}
+].map(i=>`<div class="card">
+  <h3>Inverter ${i.n} · ${i.kw} kW <span class="hint" style="font-weight:400">S/N ${i.sn}</span><span style="margin-left:auto" class="pill info num">${i.kwp} kWp</span></h3>
+  <div class="hint" style="margin:-4px 0 10px">${i.st} สตริง · ${i.cfg}</div>
+  <div class="band" style="margin-bottom:6px">ก่อนการเชื่อมต่อระบบ</div>
+  <div class="phase"><span>Voc / กระแส</span>${bar(i.st,0,i.st)}<span class="cap" style="color:var(--paper-tick-strong)">${i.st}/${i.st}</span></div>
+  <div class="phase"><span>IR (MΩ)</span>${bar(0,i.st,i.st)}<span class="cap" style="color:var(--pending)">0/${i.st}</span></div>
+  <div class="band" style="margin:8px 0 6px">หลังการเชื่อมต่อระบบ</div>
+  <div class="phase"><span>Vmp / Imp</span>${bar(0,i.st,i.st)}<span class="cap" style="color:var(--pending)">0/${i.st}</span></div>
+  <div class="phase"><span>PR (คำนวณ)</span>${bar(1,0,1)}<span class="cap val">${i.pr}</span></div>
+</div>`).join('');
+
+/* sidebars */
+function side(active){
+  const rows=[['h','Inverter 1 · 125 kW'],['ก่อน','ตารางสตริง ก่อนเชื่อมต่อ','32/48',.66],['หลัง','ตารางสตริง หลังเชื่อมต่อ','0/32',0],['PR','ผลการผลิต','5/6',.83],
+    ['h','Inverter 2 · 60 kW'],['ก่อน','ตารางสตริง ก่อนเชื่อมต่อ','16/24',.66],['หลัง','ตารางสตริง หลังเชื่อมต่อ','0/16',0],['PR','ผลการผลิต','5/6',.83],
+    ['h','ทั้งสถานี'],['สภาพ','สภาพการทดสอบ เครื่องมือ','4/7',.57],['รูป','ความเข้มแสง ภาพความร้อน','7/7',1]];
+  let k=0;
+  return rows.map(r=>{ if(r[0]==='h') return `<h6>${r[1]}</h6>`; k++;
+    const c=r[3]===1?'var(--paper-tick)':r[3]===0?'var(--pending)':'var(--primary)';
+    return `<div class="srow${k===active?' on':''}">${ring(r[3]||0.001,c)}<span class="code">${r[0]}</span><span>${r[1]}</span><span class="n">${r[2]}</span></div>`}).join('');
+}
+document.getElementById('side2').innerHTML=side(1);
+document.getElementById('side4').innerHTML=side(3);
+
+/* screen 2 grid */
+(function(){
+  const bySlot={}; INV1.forEach(([s,m,v],i)=>bySlot[s]={v,seq:i+1});
+  let h='<div class="strgrid">';
+  h+='<div class="rh mh" style="justify-content:flex-start">รายการ</div>';
+  for(let m=1;m<=10;m++) h+=`<div class="mh">MPPT ${m}</div>`;
+  h+='<div class="rh sh">ช่อง String</div>';
+  for(let m=1;m<=10;m++) h+=`<div class="sh" style="padding:0"><div class="pair"><span>${m*2-1}</span><span>${m*2}</span></div></div>`;
+  const row=(label,fn,cls='')=>{h+=`<div class="rh">${label}</div>`;for(let m=1;m<=10;m++){h+=`<div style="padding:0" class="${cls}"><div class="pair">`;for(const s of [m*2-1,m*2]){const d=bySlot[s];const sel=s===9?' cellsel':'';h+=`<span class="${d?'':'x'}${sel}">${d?fn(d,s):'—'}</span>`}h+='</div></div>'}};
+  row('ป้ายรูป (Word)',d=>`<span class="cap muted">ST${d.seq}</span>`);
+  row('จำนวนแผง',d=>'<span class="val num">16</span>');
+  row('Polarity',d=>'<span class="val">✓</span>');
+  row('Test Voltage (V)',d=>'<span class="val num" >1000</span>');
+  row('String Voltage (V)',d=>`<span class="val num">${d.v}</span>`);
+  row('String Current (A)',d=>'<span class="val num">0</span>');
+  row('รูป V + I',d=>'<span class="pill ok" style="height:20px;padding:0 5px">2/2</span>');
+  row('IR +E / −E',d=>'<span class="pill miss" style="height:20px;padding:0 5px">0/1</span>');
+  h+='<div class="rh">Continuity</div><div class="span" style="justify-content:flex-start;padding-left:14px"><span class="val">Normal</span>&nbsp;<span class="hint">· ทั้ง inverter (ช่อง merge E11:X11)</span></div>';
+  h+='<div class="rh">Inverter testing</div><div class="span" style="justify-content:flex-start;padding-left:14px"><span class="val">Normal</span></div>';
+  h+='</div>';
+  document.getElementById('grid').innerHTML=h;
+})();
+
+/* screen 3 stepper + photos */
+document.getElementById('stepper').innerHTML=INV1.map((d,i)=>`<span class="${i<7?'ok':i===7?'on':''}">ST${i+1}</span>`).join('');
+const photo=(kind)=>`<svg viewBox="0 0 300 170" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><rect width="300" height="170" fill="var(--paper-page)"/>
+ ${kind==='v'?'<rect x="20" y="20" width="260" height="130" rx="6" fill="var(--border-subtle)"/><rect x="40" y="36" width="50" height="100" rx="4" fill="var(--muted)" opacity=".5"/><rect x="100" y="36" width="50" height="100" rx="4" fill="var(--muted)" opacity=".5"/>':'<path d="M0 120 L300 70" stroke="var(--muted)" stroke-width="10" opacity=".5"/><path d="M0 140 L300 90" stroke="var(--danger)" stroke-width="8" opacity=".45"/>'}
+ <rect x="175" y="30" width="70" height="115" rx="12" fill="var(--danger)" opacity=".85"/><rect x="186" y="44" width="48" height="30" rx="3" fill="var(--surface)"/>
+ <text x="210" y="65" text-anchor="middle" font-family="ui-monospace,monospace" font-size="15" font-weight="700" fill="var(--navy)">${kind==='v'?'753':'0.0'}</text>
+ ${kind==='i'?'<circle cx="210" cy="30" r="22" fill="none" stroke="var(--danger)" stroke-width="9" opacity=".85"/>':''}</svg>
+ <span class="tag pill ok">${kind==='v'?'แรงดัน':'กระแส'} · 13:04</span>`;
+document.getElementById('ph1').innerHTML=photo('v');
+document.getElementById('ph2').innerHTML=photo('i');
+
+/* scale artboards */
+function fit(){document.querySelectorAll('.fit').forEach(f=>{const s=Math.min(1,f.clientWidth/1194);const p=f.firstElementChild;p.style.transform=`scale(${s})`;f.style.height=(834*s)+'px'})}
+addEventListener('resize',fit);fit();
+</script>

@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "SolarSurveyKit",
+    name: "TCRoofKit",
     defaultLocalization: "th",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [

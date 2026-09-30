@@ -108,7 +108,7 @@
 			mainGroup = A10000000000000000000004;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A1000000000000000000F002 /* XCLocalSwiftPackageReference "SolarSurveyKit" */,
+				A1000000000000000000F002 /* XCLocalSwiftPackageReference "TCRoofKit" */,
 				A1000000000000000000F100 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -276,9 +276,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A1000000000000000000F002 /* XCLocalSwiftPackageReference "SolarSurveyKit" */ = {
+		A1000000000000000000F002 /* XCLocalSwiftPackageReference "TCRoofKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = SolarSurveyKit;
+			relativePath = TCRoofKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 

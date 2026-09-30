@@ -1,4 +1,4 @@
-# SolarSurveyKit — แบบสำรวจเพื่อออกแบบ (เบื้องต้น) NO.224
+# TCRoofKit — แบบสำรวจเพื่อออกแบบ (เบื้องต้น) NO.224
 
 Swift package สำหรับ iPad (iOS 17+) ที่ใช้ใน TCRoof
 

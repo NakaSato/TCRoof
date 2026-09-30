@@ -30,13 +30,135 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-/// A transformer with up to six MDB breaker sizes (A).
+/// One outgoing breaker of a board (A3 wide page). `count` > 1 groups equal breakers of a sub-board ("100 A × 2").
+public struct Breaker: Codable, Hashable, Identifiable, Sendable {
+    public var id = UUID()
+    public var at = ""
+    public var af = ""
+    public var ic = ""
+    public var poles = ""
+    public var brand = ""
+    /// Where it feeds ("ตู้ไฟฟ้า โรงสูบน้ำ (B1)").
+    public var target = ""
+    /// ดี / พอใช้ / ชำรุด
+    public var condition = ""
+    public var count = 1
+    public init(at: String = "", af: String = "", ic: String = "", poles: String = "", brand: String = "", target: String = "", condition: String = "", count: Int = 1) {
+        self.at = at; self.af = af; self.ic = ic; self.poles = poles; self.brand = brand; self.target = target; self.condition = condition; self.count = count
+    }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        at = try c.decodeIfPresent(String.self, forKey: .at) ?? ""
+        af = try c.decodeIfPresent(String.self, forKey: .af) ?? ""
+        ic = try c.decodeIfPresent(String.self, forKey: .ic) ?? ""
+        poles = try c.decodeIfPresent(String.self, forKey: .poles) ?? ""
+        brand = try c.decodeIfPresent(String.self, forKey: .brand) ?? ""
+        target = try c.decodeIfPresent(String.self, forKey: .target) ?? ""
+        condition = try c.decodeIfPresent(String.self, forKey: .condition) ?? ""
+        count = try c.decodeIfPresent(Int.self, forKey: .count) ?? 1
+    }
+}
+
+/// A distribution board (MDB / SDB) under a transformer. The first board (k = 0) is the main one; its name, location and
+/// front photo live in the old `tr{i}_feed`, `tr{i}_feedLoc`, `tr{i}_feedPhoto` answers, so those keep their meaning.
+public struct Board: Codable, Hashable, Identifiable, Sendable {
+    public var id = UUID()
+    public var name = ""
+    public var isMain = false
+    /// ACB / MCCB
+    public var mainType = ""
+    /// Main breaker trip (AT) — mirrored to `Transformer.mdb[k]`.
+    public var at = ""
+    public var af = ""
+    public var icu = ""
+    /// 3P / 4P
+    public var poles = ""
+    public var brand = ""
+    public var breakers: [Breaker] = []
+    public var condition = ""
+    public var conditionNote = ""
+    public var location = ""
+    /// Sub-boards: one optional photo. The main board's four photos are `tr{i}_feedPhoto`, `_mdbOpen`, `_mdbBreaker`, `_mdbSpace`.
+    public var photos: [Photo] = []
+    public init(name: String = "", isMain: Bool = false, at: String = "") { self.name = name; self.isMain = isMain; self.at = at }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        isMain = try c.decodeIfPresent(Bool.self, forKey: .isMain) ?? false
+        mainType = try c.decodeIfPresent(String.self, forKey: .mainType) ?? ""
+        at = try c.decodeIfPresent(String.self, forKey: .at) ?? ""
+        af = try c.decodeIfPresent(String.self, forKey: .af) ?? ""
+        icu = try c.decodeIfPresent(String.self, forKey: .icu) ?? ""
+        poles = try c.decodeIfPresent(String.self, forKey: .poles) ?? ""
+        brand = try c.decodeIfPresent(String.self, forKey: .brand) ?? ""
+        breakers = try c.decodeIfPresent([Breaker].self, forKey: .breakers) ?? []
+        condition = try c.decodeIfPresent(String.self, forKey: .condition) ?? ""
+        conditionNote = try c.decodeIfPresent(String.self, forKey: .conditionNote) ?? ""
+        location = try c.decodeIfPresent(String.self, forKey: .location) ?? ""
+        photos = try c.decodeIfPresent([Photo].self, forKey: .photos) ?? []
+    }
+}
+
+/// A transformer with up to six MDB breaker sizes (A). Everything after `mdb` is new in the A3 wide page and optional,
+/// so jobs saved before it (only `kva` and `mdb`) still decode.
 public struct Transformer: Codable, Hashable, Identifiable, Sendable {
+    public static let maxBoards = 6
     public var id = UUID()
     public var kva = ""
     public var mdb: [String] = Array(repeating: "", count: 6)
+    /// oil / dry
+    public var type = ""
+    public var voltage = ""
+    public var vectorGroup = ""
+    public var impedance = ""
+    public var brand = ""
+    public var serial = ""
+    public var year = ""
+    /// DO fuse / DS / VCB
+    public var hvProtection = ""
+    /// nil = not answered
+    public var hasLA: Bool?
+    public var condition = ""
+    public var conditionNote = ""
+    /// Empty for jobs from before the wide page — use `resolvedBoards`.
+    public var boards: [Board] = []
     public init(kva: String = "", mdb: [String] = Array(repeating: "", count: 6)) {
         self.kva = kva; self.mdb = mdb + Array(repeating: "", count: max(0, 6 - mdb.count))
+    }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        kva = try c.decodeIfPresent(String.self, forKey: .kva) ?? ""
+        let m = try c.decodeIfPresent([String].self, forKey: .mdb) ?? []
+        mdb = m + Array(repeating: "", count: max(0, 6 - m.count))
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? ""
+        voltage = try c.decodeIfPresent(String.self, forKey: .voltage) ?? ""
+        vectorGroup = try c.decodeIfPresent(String.self, forKey: .vectorGroup) ?? ""
+        impedance = try c.decodeIfPresent(String.self, forKey: .impedance) ?? ""
+        brand = try c.decodeIfPresent(String.self, forKey: .brand) ?? ""
+        serial = try c.decodeIfPresent(String.self, forKey: .serial) ?? ""
+        year = try c.decodeIfPresent(String.self, forKey: .year) ?? ""
+        hvProtection = try c.decodeIfPresent(String.self, forKey: .hvProtection) ?? ""
+        hasLA = try c.decodeIfPresent(Bool.self, forKey: .hasLA)
+        condition = try c.decodeIfPresent(String.self, forKey: .condition) ?? ""
+        conditionNote = try c.decodeIfPresent(String.self, forKey: .conditionNote) ?? ""
+        boards = try c.decodeIfPresent([Board].self, forKey: .boards) ?? []
+    }
+
+    /// The boards to show: `boards`, or for an older job one board per filled `mdb[k]` slot (k keeps its place; the first is the main one).
+    public var resolvedBoards: [Board] {
+        if !boards.isEmpty { return boards }
+        guard let last = mdb.lastIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) else { return [] }
+        return (0...last).map { k in Board(name: "MDB\(k + 1)", isMain: k == 0, at: mdb[k]) }
+    }
+    /// Stores boards (at most 6) and writes each one's AT to `mdb[k]`, so Excel, PDF and the A2 symbols read the same values as before.
+    public mutating func setBoards(_ new: [Board]) {
+        var b = Array(new.prefix(Self.maxBoards))
+        for k in b.indices { b[k].isMain = k == 0 }
+        boards = b
+        mdb = (0..<Self.maxBoards).map { b[safe: $0]?.at ?? "" }
     }
 }
 
@@ -104,7 +226,7 @@ public struct Values: Codable, Hashable, Sendable {
     }
     /// After transformer `i` is removed, move the photos and feed answers of the ones after it down by one (keys are by position).
     public mutating func shiftTransformerAnswers(removed i: Int) {
-        let suffixes = ["front", "back", "left", "right", "plate", "wide", "feed", "feedLoc", "feedPhoto"]
+        let suffixes = ["front", "back", "left", "right", "plate", "wide", "feed", "feedLoc", "feedPhoto", "mdbOpen", "mdbBreaker", "mdbSpace"]
         for j in i..<5 {
             for s in suffixes { storage["tr\(j)_\(s)"] = storage["tr\(j + 1)_\(s)"] }
         }
@@ -113,7 +235,12 @@ public struct Values: Codable, Hashable, Sendable {
     /// Every photo referenced by these answers (for copying, deleting and counting).
     public var allPhotos: [Photo] {
         storage.values.flatMap { v -> [Photo] in
-            switch v { case .photo(let p): return [p]; case .photos(let a): return a; default: return [] }
+            switch v {
+            case .photo(let p): return [p]
+            case .photos(let a): return a
+            case .transformers(let a): return a.flatMap { $0.boards.flatMap(\.photos) }
+            default: return []
+            }
         }
     }
 }

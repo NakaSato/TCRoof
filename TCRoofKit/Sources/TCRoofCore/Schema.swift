@@ -190,10 +190,20 @@ public enum Schema {
         return transformerAngles.map { FieldSpec("tr\(i)_\($0.key)", "TR\(i + 1) ภาพ\($0.label)", .photo, when: on) }
             + [FieldSpec("tr\(i)_feed", "TR\(i + 1) ตู้ MDB ปลายสาย", .text(placeholder: "MDB1"), when: on),
                FieldSpec("tr\(i)_feedLoc", "TR\(i + 1) ตำแหน่งตู้ MDB ปลายสาย", .text(placeholder: "เช่น ห้องไฟฟ้า อาคารสูบน้ำ"), optional: true, when: on),
-               FieldSpec("tr\(i)_feedPhoto", "TR\(i + 1) ภาพตู้ MDB ปลายสาย", .photo, optional: true, when: on)]
+               FieldSpec("tr\(i)_feedPhoto", "TR\(i + 1) ภาพตู้ MDB ปลายสาย", .photo, optional: true, when: on),
+               // A3 wide page: the other main-board photos. Only the solar-CB space is required, as on the design.
+               FieldSpec("tr\(i)_mdbOpen", "TR\(i + 1) ภาพเปิดตู้ MDB ภายใน", .photo, optional: true, when: on),
+               FieldSpec("tr\(i)_mdbBreaker", "TR\(i + 1) ภาพเมนเบรกเกอร์ MDB", .photo, optional: true, when: on),
+               FieldSpec("tr\(i)_mdbSpace", "TR\(i + 1) ภาพที่ว่างติดตั้ง CB โซลาร์", .photo, when: on)]
     }
     public static let electrical = GroupSpec("มิเตอร์ / หม้อแปลง / ตู้ MDB", [
-        T("meterNo", "หมายเลขมิเตอร์ไฟฟ้า"), FieldSpec("trafos", "หม้อแปลงไฟฟ้าและตู้ MDB (สูงสุด 5 × 6)", .transformers)] + transformerFields)
+        T("meterNo", "หมายเลขมิเตอร์ไฟฟ้า"), FieldSpec("trafos", "หม้อแปลงไฟฟ้าและตู้ MDB (สูงสุด 5 × 6)", .transformers)] + transformerFields
+        // A3 wide page: meter details, all optional (caNo / userType / meterPhoto of the C3 form live in that section's answers, so these are separate)
+        + [C("meterKV", "แรงดันที่รับไฟ (kV)", meterKV, optional: true), C("meterPhase", "ระบบไฟ", meterPhases, optional: true),
+           T("meterCA", "เลขผู้ใช้ไฟ (CA)", optional: true), T("meterRate", "ประเภทผู้ใช้ไฟ / อัตรา", optional: true),
+           T("meterCT", "ขนาดมิเตอร์ / CT (A)", "400/5", optional: true), P("meterPic", "ภาพมิเตอร์", optional: true)])
+    public static let meterKV = ["0.4", "22", "33"]
+    public static let meterPhases = ["1 เฟส", "3 เฟส"]
     /// A4 flood history — sets how high inverters, SMDB/backfeed boxes and cable routes must be mounted.
     public static let tankTypes = ["ค.ส.ล.", "เหล็ก", "FRP", "อื่นๆ"]
     public static let tankPositions = ["บนดิน", "ฝังดิน", "กึ่งฝัง"]

@@ -70,6 +70,7 @@ public extension Job {
             guard Schema.transformerPresent(values, i) else { return nil }
             var miss = Schema.transformerAngles.filter { values.photo("tr\(i)_\($0.key)") == nil }.map(\.label)
             if values.text("tr\(i)_feed").trimmingCharacters(in: .whitespaces).isEmpty { miss.append("ตู้ MDB ปลายสาย") }
+            if values.photo("tr\(i)_mdbSpace") == nil { miss.append("ที่ว่างติดตั้ง CB โซลาร์") }
             return miss.isEmpty ? nil : "TR\(i + 1): " + miss.joined(separator: ", ")
         }
     }

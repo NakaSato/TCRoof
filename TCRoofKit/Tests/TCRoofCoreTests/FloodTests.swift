@@ -66,51 +66,35 @@ final class FloodTests: XCTestCase {
         XCTAssertEqual(back.values.gistda?.plots, 4)
     }
 
-    /// Shaped like the real responses of flood-freq and flood/30days (trimmed).
+    /// Shaped like the real response of flood-freq for a 25 m box with limit=1 (trimmed).
     func testLookupParsing() throws {
-        let lat = 17.0062, lon = 99.8235
-        func square(_ x: Double, _ y: Double, _ d: Double) -> String {
-            "[[[\(x),\(y)],[\(x + d),\(y)],[\(x + d),\(y + d)],[\(x),\(y + d)],[\(x),\(y)]]]"
-        }
-        let freq = """
-        {"type":"FeatureCollection","numberMatched":2,"numberReturned":2,"features":[
-          {"type":"Feature","geometry":{"type":"MultiPolygon","coordinates":[\(square(99.8285, 17.0050, 0.002))]},
-           "properties":{"freq":1,"tb_tn":"ต.ยางซ้าย","ap_tn":"อ.เมืองสุโขทัย","pv_tn":"จ.สุโขทัย","y_2011":1,"y_2012":0,"y_2024":0}},
-          {"type":"Feature","geometry":{"type":"Polygon","coordinates":\(square(99.8300, 17.0000, 0.002))},
-           "properties":{"freq":6,"y_2011":1,"y_2012":1,"y_2017":1,"y_2019":1,"y_2021":1,"y_2024":1}}]}
+        let hit = """
+        {"type":"FeatureCollection","numberMatched":2,"numberReturned":1,"features":[
+          {"type":"Feature","geometry":{"type":"MultiPolygon","coordinates":[]},
+           "properties":{"freq":6,"tb_tn":"ต.ยางซ้าย","ap_tn":"อ.เมืองสุโขทัย","pv_tn":"จ.สุโขทัย",
+                         "y_2011":1,"y_2012":1,"y_2017":1,"y_2019":1,"y_2021":1,"y_2024":1,"y_2013":0}}]}
         """
-        let g0 = try FloodLookup.parseFreq(Data(freq.utf8), lat: lat, lon: lon)
-        XCTAssertFalse(g0.insideRepeatArea)
-        XCTAssertEqual(g0.plots, 2)
-        XCTAssertEqual(g0.maxTimes, 6)
-        XCTAssertEqual(g0.nearestTimes, 1)
-        XCTAssertEqual(g0.nearestYears, [2554])
-        XCTAssertEqual(g0.nearestMeters.map { abs($0 - 530) < 30 }, true)
-        XCTAssertEqual(g0.plotYears, [2554, 2555, 2560, 2562, 2564, 2567])
-        XCTAssertEqual(g0.place, "ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย")
-        // a plot around the point
-        let inside = """
-        {"features":[{"geometry":{"type":"Polygon","coordinates":\(square(99.8230, 17.0055, 0.001))},"properties":{"freq":3,"y_2011":1}}]}
-        """
-        let g1 = try FloodLookup.parseFreq(Data(inside.utf8), lat: lat, lon: lon)
-        XCTAssertTrue(g1.insideRepeatArea)
-        XCTAssertEqual(g1.nearestMeters, 0)
-        XCTAssertEqual(g1.rows.first?.tone, .bad)
-
-        var g = g0
-        let recent = """
-        {"features":[{"geometry":{"type":"MultiPolygon","coordinates":[\(square(99.8320, 17.0060, 0.0005))]},
-          "properties":{"file_name":"S1D_20260910_0551, rd2_20260901_1811, S1C_20260928_0550","tb_tn":"ต.ยางซ้าย"}}]}
-        """
-        FloodLookup.parseRecent(Data(recent.utf8), lat: lat, lon: lon, into: &g)
-        XCTAssertTrue(g.recentFound)
+        let g = try FloodLookup.parsePoint(Data(hit.utf8))
+        XCTAssertTrue(g.insideRepeatArea)
+        XCTAssertEqual(g.plots, 2)
+        XCTAssertEqual(g.maxTimes, 6)
+        XCTAssertEqual(g.pointYears, [2554, 2555, 2560, 2562, 2564, 2567])
+        XCTAssertEqual(g.place, "ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย")
         XCTAssertEqual(g.rows.map(\.label), ["จุดติดตั้ง", "ความลึกน้ำ"])
-        XCTAssertEqual(g.recentFrom, "1/9/2569")
-        XCTAssertEqual(g.recentTo, "28/9/2569")
-        XCTAssertEqual(g.recentMeters.map { abs($0 - 900) < 30 }, true)
+        XCTAssertEqual(g.rows[0].tone, .bad)
+        XCTAssertTrue(g.rows[0].value.contains("ท่วม 6 ครั้ง") && g.rows[0].value.hasSuffix("ย้อนหลังถึงปี 2554"))
         XCTAssertNil(g.depthCm)
-        XCTAssertEqual(g.rows.last?.value, "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน 50 ซม.")
-        XCTAssertThrowsError(try FloodLookup.parseFreq(Data("<html>504</html>".utf8), lat: lat, lon: lon))
+        XCTAssertEqual(g.rows[1].value, "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน 50 ซม.")
+        // nothing near the point
+        let none = try FloodLookup.parsePoint(Data(#"{"features":[],"numberMatched":0,"numberReturned":0}"#.utf8))
+        XCTAssertFalse(none.insideRepeatArea)
+        XCTAssertEqual(none.rows[0].tone, .good)
+        XCTAssertEqual(none.summary, "GISTDA: ไม่อยู่ในพื้นที่ท่วมซ้ำซาก")
+        // "use the estimate" when the service does not answer
+        let manual = FloodGistda.estimate()
+        XCTAssertEqual(manual.rows.count, 1)
+        XCTAssertEqual(manual.estimatedDepthCm, 50)
+        XCTAssertThrowsError(try FloodLookup.parsePoint(Data("<html>504</html>".utf8)))
     }
 
     func testLookupNeedsKey() async {

@@ -17,6 +17,7 @@ struct FloodPageWide: View {
     @Environment(SurveyModel.self) var model
     @State var fetching = false
     @State var failure: String?
+    @State var attempt = 0
     @State var dragging = false
     @State var editHeights = false
     @State var pickPhoto: PhotosPickerItem?
@@ -128,7 +129,7 @@ struct FloodPageWide: View {
             Text("ยังไม่มีข้อมูลระดับน้ำ").font(.system(size: 15, weight: .bold))
             Text("ดึงประวัติน้ำท่วมจาก GISTDA ตามพิกัด A1").font(.system(size: 13)).foregroundStyle(Home.muted).multilineTextAlignment(.center)
             fetchButton
-            if let failure { Text(failure).font(.system(size: 12.5)).foregroundStyle(Home.danger).multilineTextAlignment(.center) }
+            if let failure { Text(failure).font(.system(size: 12.5)).foregroundStyle(Home.danger).multilineTextAlignment(.center); estimateButton }
         }
         .padding(.vertical, 14).padding(.horizontal, 16).frame(width: 320)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
@@ -389,6 +390,7 @@ struct FloodPageWide: View {
                 Text("ยังไม่มีข้อมูลจากหน้างาน ดึงประวัติพื้นที่น้ำท่วมซ้ำซากจากภาพดาวเทียม GISTDA ได้ทันที").font(.system(size: 15)).foregroundStyle(Home.muted)
                 fetchButton
             }
+            if failure != nil { estimateButton }
             if let failure { Text(failure).font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.danger) }
             else if gps == nil { Text("ใส่พิกัด GPS ในหน้า A1 ก่อน (เช่น 17.0062, 99.8235)").font(.system(size: 13)).foregroundStyle(Home.pending) }
             else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " · ตั้งค่าได้ในหน้าตั้งค่า").font(.system(size: 13)).foregroundStyle(Home.pending) }
@@ -406,13 +408,23 @@ struct FloodPageWide: View {
         return Button(action: fetchGistda) {
             HStack(spacing: 8) {
                 if fetching { ProgressView().tint(.white) } else { Image(systemName: "arrow.down.circle") }
-                Text(fetching ? "กำลังดึงข้อมูล…" : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
+                Text(fetching ? (attempt > 1 ? "กำลังลองใหม่ครั้งที่ \(attempt)/3…" : "กำลังดึงข้อมูล… (อาจใช้เวลาถึง 1 นาที)") : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
             }
             .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
             .padding(.horizontal, 18).frame(minHeight: 48)
             .background(ready && !fetching ? Home.primary : Home.disabledText, in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain).disabled(!ready || fetching)
+    }
+
+    /// GISTDA is slow or down: carry on with the default estimate instead of waiting.
+    var estimateButton: some View {
+        Button { failure = nil; job.values.setGistda(.estimate()) } label: {
+            Text("ใช้ค่าประเมิน \(FloodGistda.defaultDepthCm) ซม. ไปก่อน").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.primary)
+                .padding(.horizontal, 16).frame(minHeight: 44)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary))
+        }
+        .buttonStyle(.plain)
     }
 
     func fetchGistda() {
@@ -422,7 +434,8 @@ struct FloodPageWide: View {
         guard !key.isEmpty else { failure = FloodLookup.Failure.noKey.message; return }
         fetching = true
         Task { @MainActor in
-            do { job.values.setGistda(try await FloodLookup(apiKey: key).fetch(lat: p.lat, lon: p.lon)) }
+            attempt = 1
+            do { job.values.setGistda(try await FloodLookup(apiKey: key).fetch(lat: p.lat, lon: p.lon, progress: { n in Task { @MainActor in attempt = n } })) }
             catch let e as FloodLookup.Failure { failure = e.message }
             catch { failure = FloodLookup.Failure.badResponse.message }
             fetching = false

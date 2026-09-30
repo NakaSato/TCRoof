@@ -25,9 +25,14 @@ public struct FloodGistda: Codable, Hashable, Sendable {
     /// "ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย"
     public var place = ""
     public var fetchedAt = Date(timeIntervalSince1970: 0)
+    /// The surveyor chose the default estimate because GISTDA did not answer; nothing was fetched.
+    public var manual: Bool?
     public init() {}
+    public static func estimate(now: Date = Date()) -> FloodGistda { var g = FloodGistda(); g.manual = true; g.fetchedAt = now; return g }
 
     public static let defaultDepthCm = 50
+    /// First year of the GISTDA repeat-flood history (2011).
+    public static let firstYear = 2554
     /// Depth used for the drawing and the check table.
     public var estimatedDepthCm: Int { depthCm ?? Self.defaultDepthCm }
 
@@ -45,25 +50,32 @@ public struct FloodGistda: Codable, Hashable, Sendable {
     /// Label / value rows of the GISTDA card and the PDF table.
     public var rows: [Row] {
         var r: [Row] = []
+        if manual == true {
+            return [Row(label: "ความลึกน้ำ", value: "ยังไม่ได้ข้อมูลจาก GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
+        }
+        // flood-freq holds one flag per year from 2011 (พ.ศ. 2554), so the answer covers the history back to then
+        let since = " · ย้อนหลังถึงปี \(Self.firstYear)"
         r.append(Row(label: "จุดติดตั้ง", value: insideRepeatArea
-                     ? "อยู่ในพื้นที่ท่วมซ้ำซาก" + (pointYears.isEmpty ? "" : " (\(Self.range(pointYears)))")
-                     : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก" + (pointYears.isEmpty ? "" : " (\(Self.range(pointYears)))"), tone: insideRepeatArea ? .bad : .good))
+                     ? "อยู่ในพื้นที่ท่วมซ้ำซาก" + (maxTimes > 0 ? " · ท่วม \(maxTimes) ครั้ง" : "") + (pointYears.isEmpty ? "" : " (ปี \(Self.years(pointYears)))") + since
+                     : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก" + since, tone: insideRepeatArea ? .bad : .good))
         r.append(Row(label: "ความลึกน้ำ", value: depthCm == nil ? "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน \(estimatedDepthCm) ซม." : "\(estimatedDepthCm) ซม.",
                      tone: depthCm == nil ? .bad : .normal))
         return r
     }
     /// "GISTDA API: flood-freq · flood/30days · ต.ยางซ้าย … · ดึงเมื่อ 30/9/2569 10:37 · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"
     public var footnote: String {
+        if manual == true { return "ใช้ค่าประเมิน \(estimatedDepthCm) ซม. เพราะ GISTDA ไม่ตอบ · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี" }
         var f = Date.FormatStyle(date: .numeric, time: .shortened).locale(Locale(identifier: "th_TH"))
         f.calendar = Calendar(identifier: .buddhist)
         return ["GISTDA API: flood-freq", place.isEmpty ? nil : place, "ดึงเมื่อ " + fetchedAt.formatted(f),
                 "ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"].compactMap { $0 }.joined(separator: " · ")
     }
     /// One line for the report summary: "GISTDA: ไม่อยู่ในพื้นที่ท่วมซ้ำซาก".
-    public var summary: String { "GISTDA: " + (insideRepeatArea ? "อยู่ในพื้นที่ท่วมซ้ำซาก" : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก") }
+    public var summary: String { manual == true ? "ไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม." : "GISTDA: " + (insideRepeatArea ? "อยู่ในพื้นที่ท่วมซ้ำซาก" : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก") }
     /// Banner over the drawing.
     public var banner: String {
-        "GISTDA · จุดติดตั้ง" + (insideRepeatArea ? "อยู่ในพื้นที่ท่วมซ้ำซาก" : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก") + " · ความลึกเป็นค่าประเมิน"
+        if manual == true { return "ยังไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมินระดับน้ำ \(estimatedDepthCm) ซม." }
+        return "GISTDA · จุดติดตั้ง" + (insideRepeatArea ? "อยู่ในพื้นที่ท่วมซ้ำซาก" : "ไม่อยู่ในพื้นที่ท่วมซ้ำซาก") + " · ความลึกเป็นค่าประเมิน"
     }
 }
 

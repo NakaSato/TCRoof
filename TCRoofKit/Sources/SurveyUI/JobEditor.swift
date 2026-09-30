@@ -48,10 +48,14 @@ struct JobEditorView: View {
     var cardInfo: Bool { page == .info && !compact }
     /// A2's picture page (docs/ui/survey-a2) needs landscape; portrait and iPhone keep `groupPage`.
     var cardSite: Bool { page == .site && !compact && infoColumns == 2 }
+    /// A3's power-flow diagram (docs/ui/survey-a3) also needs landscape.
+    var cardElectrical: Bool { page == .electrical && !compact && infoColumns == 2 }
     /// Pages with the blue header and bottom bar instead of the navigation bar.
-    var cardPage: Bool { cardInfo || cardSite }
+    var cardPage: Bool { cardInfo || cardSite || cardElectrical }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?
+    /// A transformer the A3 bottom bar's "ยังขาดภาพ" chip points to.
+    @State var electricalRequest: Int?
     /// Two columns on one screen in landscape; portrait stacks the same cards in one column.
     var infoColumns: Int {
         guard detailSize.width >= 860 else { return 1 }
@@ -72,7 +76,7 @@ struct JobEditorView: View {
                     .background(Paper.page)
                     .safeAreaInset(edge: .top, spacing: 0) {
                         if cardPage {
-                            InfoPageHeader(job: job, title: cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ", back: { dismiss() },
+                            InfoPageHeader(job: job, title: cardElectrical ? "A3 หม้อแปลง · MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ", back: { dismiss() },
                                            toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
                                            export: { model.flush(job.id); showExport = true })
                         }
@@ -101,6 +105,8 @@ struct JobEditorView: View {
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
         // `-surveyPage site` opens A2
         .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "site" { select(.site) } }
+        // `-surveyPage electrical` opens A3
+        .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "electrical" { select(.electrical) } }
         // `-surveyWideA1 YES` shows A1's two-column (landscape) layout in any orientation, sidebar hidden (simulators can't be turned from the command line)
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyWideA1") { sidebarVisible = false } }
         // `-surveyExport YES` opens the export sheet for simulator checks
@@ -126,7 +132,16 @@ struct JobEditorView: View {
 
     /// A2 fills the screen without scrolling; every other page scrolls.
     @ViewBuilder var detailArea: some View {
-        if cardSite {
+        if cardElectrical {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                ElectricalPageWide(job: $job, request: $electricalRequest)
+                    .disabled(readOnly)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+        } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
                 SitePageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, request: $siteRequest)
@@ -159,9 +174,11 @@ struct JobEditorView: View {
     /// Bottom bar of the card pages; A2's lists the LIST items still unticked.
     var cardBar: some View {
         let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
-        return InfoPageBar(job: job, here: cardSite ? .site : .info, narrow: detailSize.width < 900,
-                           previous: cardSite ? go(.info) : nil, next: go(nextPage),
-                           gaps: cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : [])
+        let here: MissingGroup.Target = cardElectrical ? .electrical : cardSite ? .site : .info
+        let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
+            : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
+        return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900,
+                           previous: cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(nextPage), gaps: gaps)
     }
 
     var readOnlyBanner: some View {

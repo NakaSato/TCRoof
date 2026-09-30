@@ -49,6 +49,11 @@ public enum WebBackup {
             job.drive = link
         }
         job.jobSyncID = d["jobSyncId"] as? String
+        job.stage = (d["stage"] as? String).flatMap(JobStage.init(rawValue:)) ?? .survey
+        if let i = d["install"] as? [String: Any] {
+            job.install = InstallInfo(doneSteps: i["doneSteps"] as? Int ?? 0, currentFraction: i["currentFraction"] as? Double ?? 0,
+                                      team: i["team"] as? String ?? "", dueDate: date(i["dueDate"]), movedAt: date(i["movedAt"]) ?? updated)
+        }
         return job
     }
 
@@ -126,6 +131,12 @@ public enum WebBackup {
             d["drive"] = dr
         }
         if let s = job.jobSyncID { d["jobSyncId"] = s }
+        if job.stage != .survey { d["stage"] = job.stage.rawValue }
+        if let i = job.install {
+            var x: [String: Any] = ["doneSteps": i.doneSteps, "currentFraction": i.currentFraction, "team": i.team, "movedAt": iso(i.movedAt)]
+            if let due = i.dueDate { x["dueDate"] = iso(due) }
+            d["install"] = x
+        }
         return ["id": job.id.uuidString, "created": iso(job.created), "updated": iso(job.updated), "data": d]
     }
 

@@ -2,7 +2,7 @@
 import SwiftUI
 import SurveyCore
 
-/// Blue header (title, search, sync, new survey, more menu), filter boxes and the list heading.
+/// Blue header (title, search, sync, more menu), stage tabs, filter boxes, list heading and the floating add buttons.
 extension SurveyHomeView {
     var engineerLine: String {
         let e = model.settings.engineer.trimmingCharacters(in: .whitespaces)
@@ -27,13 +27,12 @@ extension SurveyHomeView {
                 if !compact {
                     searchField.frame(width: 300)
                     syncButton
-                    newButton
                 }
                 moreMenu
             }
             if compact {
                 searchField
-                HStack(spacing: 10) { syncButton; newButton }
+                syncButton
             }
         }
         .foregroundStyle(.white)
@@ -59,11 +58,77 @@ extension SurveyHomeView {
         .background(.white, in: RoundedRectangle(cornerRadius: 10))
     }
 
-    var newButton: some View {
-        Button { showNew = true } label: {
-            Label("งานสำรวจใหม่", systemImage: "plus").font(.body.weight(.bold)).foregroundStyle(Home.primary)
-                .padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: compact ? .infinity : nil)
-                .background(.white, in: RoundedRectangle(cornerRadius: 10))
+    // MARK: stage tabs
+
+    var tabBar: some View {
+        HStack(spacing: 4) {
+            ForEach(Array(JobStage.allCases.enumerated()), id: \.element) { i, t in
+                let on = tab == t
+                Button { withAnimation(.snappy) { tab = t } } label: {
+                    HStack(spacing: 8) {
+                        Text("\(i + 1)").font(.caption.weight(.bold)).foregroundStyle(.white)
+                            .frame(width: 22, height: 22).background(on ? Home.primary : Home.disabledText, in: Circle())
+                        // iPhone: drop the count before the name gets cut
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) { Text(t.title).font(.subheadline.weight(.bold)); countText(t) }
+                            Text(t.title).font(.subheadline.weight(.bold))
+                            Text(t.shortTitle).font(.subheadline.weight(.bold))
+                        }
+                        .lineLimit(1)
+                    }
+                    .foregroundStyle(on ? Home.navy : Home.muted)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background {
+                        if on { RoundedRectangle(cornerRadius: 10).fill(.white).shadow(color: Home.navy.opacity(0.15), radius: 3, y: 1) }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(t.title) \(model.jobs(in: t).count) งาน")
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(4)
+        .background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    func countText(_ t: JobStage) -> some View {
+        Text("\(model.jobs(in: t).count) งาน").font(.caption.weight(.semibold)).foregroundStyle(Home.muted).monospacedDigit()
+    }
+
+    /// Installation or maintenance tab with nothing in it yet.
+    var stageEmpty: some View {
+        VStack(spacing: 8) {
+            Text(tab == .install ? "ยังไม่มีงานติดตั้งในเครื่องนี้" : "ยังไม่มีงานบำรุงรักษา").font(.headline).foregroundStyle(Home.navy)
+            if tab == .install {
+                Text("กด \"เพิ่มโครงการ\" เพื่อดึงงานสำรวจที่ครบ 100% มาเป็นงานติดตั้ง").font(.subheadline).foregroundStyle(Home.muted)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: compact ? 280 : 520)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Home.borderControl.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+    }
+
+    @ViewBuilder var floatingButton: some View {
+        switch tab {
+        case .survey:
+            Button { showNew = true } label: {
+                Image(systemName: "plus").font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 68, height: 68)
+                    .background(Home.primary, in: Circle())
+                    .shadow(color: Home.navy.opacity(0.3), radius: 8, y: 4)
+            }
+            .accessibilityLabel("งานสำรวจใหม่")
+        case .install:
+            Button { showInstallPicker = true } label: {
+                Label("เพิ่มโครงการ", systemImage: "plus").font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
+                    .padding(.horizontal, 28).frame(height: 64)
+                    .background(Home.primary, in: Capsule())
+                    .shadow(color: Home.navy.opacity(0.3), radius: 8, y: 4)
+            }
+        case .maintenance:
+            EmptyView()
         }
     }
 
@@ -124,7 +189,7 @@ extension SurveyHomeView {
         let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
         return layout {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(filter.heading).font(.title3.bold()).foregroundStyle(Home.navy)
+                Text(tab == .survey ? filter.heading : tab.title).font(.title3.bold()).foregroundStyle(Home.navy)
                 Text("\(shown.count) งาน").font(.subheadline).foregroundStyle(Home.muted)
             }
             if !compact { Spacer() }
@@ -137,5 +202,11 @@ extension SurveyHomeView {
             }
         }
     }
+}
+
+extension JobStage {
+    var title: String { [.survey: "งานสำรวจ", .install: "งานติดตั้ง", .maintenance: "งานบำรุงรักษา"][self]! }
+    /// For a narrow iPhone tab.
+    var shortTitle: String { [.survey: "สำรวจ", .install: "ติดตั้ง", .maintenance: "บำรุงรักษา"][self]! }
 }
 #endif

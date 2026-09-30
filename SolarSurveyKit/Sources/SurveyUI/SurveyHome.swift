@@ -47,6 +47,11 @@ struct SurveyHomeView: View {
     @State var error: String?
     @State var busy: String?
     @State var pendingSync: PendingSync?
+    /// Home tab: surveys, installations, maintenance; kept between launches.
+    @AppStorage("solarSurvey.homeTab") var tab = JobStage.survey
+    @State var showInstallPicker = false
+    /// Installation job whose tracking page is open.
+    @State var tracking: UUID?
 
     /// A job to open, optionally at the step "continue" points to.
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
@@ -72,16 +77,19 @@ struct SurveyHomeView: View {
         }
     }
 
+    /// The tab's jobs matching the search.
     var searched: [Job] {
         let q = search.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { return model.jobs }
-        return model.jobs.filter { j in
+        let jobs = model.jobs(in: tab)
+        guard !q.isEmpty else { return jobs }
+        return jobs.filter { j in
             [j.docNo, j.projectName, j.values.text("address"), j.values.text("coordinator"), j.values.text("engineer")].contains { $0.localizedCaseInsensitiveContains(q) }
         }
     }
 
     var shown: [Job] {
-        let list = searched.filter { matches($0, filter) }
+        // the four filter boxes only show on the survey tab
+        let list = tab == .survey ? searched.filter { matches($0, filter) } : searched
         switch sort {
         case .updated: return list.sorted { $0.updated > $1.updated }
         // numbered jobs in order, unnumbered drafts last
@@ -89,6 +97,7 @@ struct SurveyHomeView: View {
             if a.docNo.isEmpty != b.docNo.isEmpty { return b.docNo.isEmpty }
             return a.docNo.localizedStandardCompare(b.docNo) == .orderedAscending
         }
+        case .progress where tab == .install: return list.sorted { ($0.install?.percent ?? 0) > ($1.install?.percent ?? 0) }
         case .progress: return list.sorted { $0.completion.fraction > $1.completion.fraction }
         }
     }
@@ -101,20 +110,35 @@ struct SurveyHomeView: View {
                 header
                 VStack(alignment: .leading, spacing: 18) {
                     if let message { Label(message, systemImage: "checkmark.circle").foregroundStyle(Paper.tick) }
-                    stats
-                    listHeading
-                    if shown.isEmpty { empty } else { grid }
+                    tabBar
+                    if tab == .survey { stats }
+                    if tab != .survey && model.jobs(in: tab).isEmpty {
+                        stageEmpty
+                    } else {
+                        listHeading
+                        if shown.isEmpty { empty } else { grid }
+                    }
                 }
-                .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 20)
+                .padding(.horizontal, compact ? 16 : 24).padding(.top, 20)
+                // room for the floating button under the last row
+                .padding(.bottom, 110)
                 .frame(maxWidth: 1240).frame(maxWidth: .infinity)
             }
         }
         .background(Paper.page)
+        .overlay(alignment: .bottom) {
+            HStack { Spacer(); floatingButton }
+                .padding(.horizontal, compact ? 16 : 24).padding(.bottom, compact ? 12 : 24)
+                .frame(maxWidth: 1240)
+        }
         // the blue header replaces the navigation bar; navigationTitle stays for the editor's back menu
         .navigationTitle(title)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $open) { o in
             if let j = model.job(o.id) { JobEditorView(job: j, start: o.start).environment(model) }
+        }
+        .navigationDestination(item: $tracking) { id in
+            if let j = model.job(id) { InstallTrackingView(job: j) }
         }
         #if DEBUG
         // `-surveyDemo YES` opens a job right away for simulator checks; add `-surveyDemoSection YES` to open its first section.
@@ -128,6 +152,17 @@ struct SurveyHomeView: View {
         .sheet(isPresented: $showNew) {
             NewJobSheet { t in let j = model.create(t, engineer: model.settings.engineer); showNew = false; go(j) }
         }
+        .sheet(isPresented: $showInstallPicker) {
+            InstallPickerSheet(jobs: model.jobs(in: .survey).filter { $0.stage == .survey }) { id in
+                guard model.moveToInstall(id) else { return }
+                showInstallPicker = false
+                withAnimation(.snappy) { tab = .install }
+            }
+        }
+        #if DEBUG
+        // `-surveyInstallPicker YES` opens "เพิ่มโครงการติดตั้ง" for simulator checks
+        .task { if UserDefaults.standard.bool(forKey: "surveyInstallPicker") { showInstallPicker = true } }
+        #endif
         .sheet(isPresented: $showSettings) { SurveySettingsView().environment(model) }
         .sheet(isPresented: $showDriveOpen) { DriveOpenView { j in showDriveOpen = false; go(j) }.environment(model) }
         .sheet(item: $share) { f in ShareSheet(items: [f.url]) }
@@ -161,17 +196,41 @@ struct SurveyHomeView: View {
     var grid: some View {
         LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
             ForEach(shown) { j in
-                Button { go(j, at: j.nextStep?.page) } label: {
-                    JobCard(job: j, pendingSync: model.waitsForSync(j), synced: model.isSynced(j), recent: j.id.uuidString == lastOpened)
+                let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey ? .survey : .locked
+                Button { open(j, mode) } label: {
+                    JobCard(job: j, mode: mode, pendingSync: model.waitsForSync(j), synced: model.isSynced(j), recent: j.id.uuidString == lastOpened)
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
-                    Button { go(j) } label: { Label("เปิดที่ A1", systemImage: "doc.text") }
-                    Button { model.duplicate(j.id) } label: { Label("ทำสำเนา", systemImage: "plus.square.on.square") }
-                    Button { do { share = try model.exportBackup([j.id]) } catch { self.error = error.localizedDescription } } label: { Label("ส่งออกข้อมูลงาน", systemImage: "square.and.arrow.up") }
-                    Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
+                    switch mode {
+                    case .survey:
+                        Button { go(j) } label: { Label("เปิดที่ A1", systemImage: "doc.text") }
+                        Button { model.duplicate(j.id) } label: { Label("ทำสำเนา", systemImage: "plus.square.on.square") }
+                        exportButton(j)
+                        Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
+                    case .locked:
+                        exportButton(j)
+                    case .install:
+                        Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") }
+                        exportButton(j)
+                    }
                 }
             }
+        }
+    }
+
+    func open(_ j: Job, _ mode: JobCard.Mode) {
+        switch mode {
+        case .survey: go(j, at: j.nextStep?.page)
+        // the editor opens a moved survey read-only, on its summary
+        case .locked: go(j)
+        case .install: lastOpened = j.id.uuidString; tracking = j.id
+        }
+    }
+
+    func exportButton(_ j: Job) -> some View {
+        Button { do { share = try model.exportBackup([j.id]) } catch { self.error = error.localizedDescription } } label: {
+            Label("ส่งออกข้อมูลงาน", systemImage: "square.and.arrow.up")
         }
     }
 

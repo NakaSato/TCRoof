@@ -66,7 +66,8 @@ public final class SurveyModel {
     public func update(_ job: Job) {
         var j = job
         // only answers count as an edit — a Drive link landing after a save mustn't make the job look unsaved again
-        if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID { j.updated = old.updated }
+        if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID,
+           old.stage == j.stage, old.install == j.install { j.updated = old.updated }
         else { j.updated = Date() }
         if let i = jobs.firstIndex(where: { $0.id == j.id }) { jobs[i] = j } else { jobs.insert(j, at: 0) }
         pendingSave[j.id]?.cancel()
@@ -95,6 +96,22 @@ public final class SurveyModel {
         guard let j = job(id), let copy = try? store.duplicate(j) else { return }
         jobs.insert(copy, at: 0)
         onChange?()
+    }
+
+    // MARK: project stages
+
+    /// Jobs of one home tab. Surveys include those moved on, which stay listed there locked.
+    public func jobs(in stage: JobStage) -> [Job] {
+        stage == .survey ? jobs.filter { $0.stage != .maintenance } : jobs.filter { $0.stage == stage }
+    }
+
+    /// Makes a complete survey an installation job; it saves and waits for sync like any edit.
+    @discardableResult
+    public func moveToInstall(_ id: UUID) -> Bool {
+        guard var j = job(id), j.moveToInstall() else { return false }
+        update(j)
+        flush(id)
+        return true
     }
 
     // MARK: link to the host app's jobs

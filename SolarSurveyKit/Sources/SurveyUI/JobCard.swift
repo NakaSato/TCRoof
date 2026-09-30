@@ -22,26 +22,42 @@ enum Home {
     static let pending = Color(red: 0.706, green: 0.325, blue: 0.035)
     static let sun = Color(red: 1.0, green: 0.773, blue: 0.239)
     static let ok = Color(red: 0.180, green: 0.620, blue: 0.357)
+    // surveys moved to installation (docs/ui/pwa-solar-survey, 30/9/2569)
+    static let lockedCard = Color(red: 0.961, green: 0.969, blue: 0.980)
+    static let lockedAction = Color(red: 0.918, green: 0.945, blue: 0.973)
+    static let lockBadge = Color(red: 0.867, green: 0.894, blue: 0.929)
+    static let disabledFill = Color(red: 0.933, green: 0.949, blue: 0.969)
+    static let disabledText = Color(red: 0.561, green: 0.639, blue: 0.737)
+}
+
+/// Icon and title close together, for small badges.
+struct TightLabel: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) { configuration.icon.imageScale(.small); configuration.title }
+    }
 }
 
 struct JobCard: View {
+    /// A survey in progress, a survey moved to installation (read-only), or the installation job itself.
+    enum Mode { case survey, locked, install }
     let job: Job
+    var mode = Mode.survey
     var pendingSync = false
     var synced = false
     var recent = false
     @Environment(SurveyModel.self) private var model
 
     var body: some View {
-        let c = job.completion
-        let steps = job.stepStatuses
-        let next = job.nextStep
-        let nextIndex = next.flatMap { n in steps.firstIndex { $0.step.page == n.page } }
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
                         Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.subheadline.weight(.heavy)).foregroundStyle(Home.muted)
-                        badge
+                        if mode == .install { installBadge }
+                        else if mode == .locked {
+                            // the lock matters more than the answer count once the survey is closed
+                            ViewThatFits(in: .horizontal) { HStack(spacing: 8) { badge; lockBadge }; lockBadge }
+                        } else { badge }
                     }
                     if job.projectName.isEmpty {
                         Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.system(size: 17, weight: .bold)).italic().foregroundStyle(Home.muted)
@@ -52,16 +68,18 @@ struct JobCard: View {
                 }
                 .lineLimit(1)
                 Spacer(minLength: 0)
-                PercentRing(percent: c.percent)
+                PercentRing(percent: mode == .install ? install.percent : job.completion.percent)
             }
-            HStack(spacing: 4) {
-                ForEach(steps, id: \.step.id) { s in Capsule().fill(color(s.status)).frame(height: 5) }
-            }
-            continueRow(next: next, index: nextIndex.map { $0 + 1 }, total: steps.count)
-            if let id = job.jobSyncID, let label = model.linkedJobLabel?(id) {
+            if mode == .install { installProgress } else { surveyProgress }
+            if mode != .install, let id = job.jobSyncID, let label = model.linkedJobLabel?(id) {
                 Label(label, systemImage: "link").font(.caption.weight(.semibold)).foregroundStyle(Home.primary).lineLimit(1)
             }
-            if !job.sectionsByCategory.isEmpty {
+            if mode == .install {
+                HStack(spacing: 6) {
+                    chip(install.team.isEmpty ? "ยังไม่กำหนดทีม" : "ทีม " + install.team)
+                    chip("ส่งมอบ " + (install.dueDate.map { ISODate.thai(ISODate.string($0)) } ?? "ยังไม่กำหนด"))
+                }
+            } else if !job.sectionsByCategory.isEmpty {
                 FlowLayout(spacing: 6, lineSpacing: 6) {
                     ForEach(job.sectionsByCategory) { g in
                         Text("\(g.category.rawValue) \(g.category.title) ×\(g.sections.count)").font(.caption.weight(.bold)).foregroundStyle(Home.navy)
@@ -80,9 +98,64 @@ struct JobCard: View {
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(mode == .locked ? Home.lockedCard : Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(recent ? Home.primary.opacity(0.55) : Home.border, lineWidth: recent ? 1.5 : 1))
         .contentShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    @ViewBuilder var surveyProgress: some View {
+        let steps = job.stepStatuses
+        let next = job.nextStep
+        let nextIndex = next.flatMap { n in steps.firstIndex { $0.step.page == n.page } }
+        HStack(spacing: 4) {
+            ForEach(steps, id: \.step.id) { s in Capsule().fill(color(s.status)).frame(height: 5) }
+        }
+        if mode == .locked {
+            actionRow(Text("งดแก้ไข · ดูได้อย่างเดียว"), Text("ดูรายงานสำรวจ"), background: Home.lockedAction)
+        } else {
+            continueRow(next: next, index: nextIndex.map { $0 + 1 }, total: steps.count)
+        }
+    }
+
+    var install: InstallInfo { job.install ?? InstallInfo(movedAt: job.updated) }
+
+    /// Seven installation steps: done, in progress, not yet.
+    @ViewBuilder var installProgress: some View {
+        let n = InstallInfo.steps.count
+        HStack(spacing: 4) {
+            ForEach(0..<n, id: \.self) { i in
+                Capsule().fill(i < install.doneSteps ? Home.mint : i == install.doneSteps ? Home.primary : Color.secondary.opacity(0.2)).frame(height: 5)
+            }
+        }
+        actionRow(Text("ขั้น \(min(install.doneSteps + 1, n))/\(n)").monospacedDigit(), Text(install.currentStep ?? "ส่งมอบแล้ว"),
+                  background: install.isDone ? Home.mint.opacity(0.25) : Home.primary.opacity(0.08))
+    }
+
+    var installBadge: some View {
+        Text(install.doneSteps > 0 ? "กำลังติดตั้ง" : "รอเริ่มงาน").font(.caption2.weight(.bold)).foregroundStyle(Home.primary)
+            .padding(.horizontal, 7).padding(.vertical, 2).background(Home.primarySoft, in: Capsule())
+    }
+
+    var lockBadge: some View {
+        Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.caption2.weight(.bold)).foregroundStyle(Home.navy)
+            .labelStyle(TightLabel()).fixedSize()
+            .padding(.horizontal, 8).padding(.vertical, 2).background(Home.lockBadge, in: Capsule())
+    }
+
+    func chip(_ text: String) -> some View {
+        Text(text).font(.caption.weight(.bold)).foregroundStyle(Home.navy)
+            .padding(.horizontal, 9).padding(.vertical, 4).background(Home.primarySoft, in: Capsule())
+    }
+
+    func actionRow(_ lead: Text, _ title: Text, background: Color) -> some View {
+        HStack(spacing: 8) {
+            lead.font(.caption).foregroundStyle(Home.muted)
+            title.font(.subheadline.weight(.bold)).foregroundStyle(Home.navy).lineLimit(1)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Home.primary)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 10)
+        .background(background, in: RoundedRectangle(cornerRadius: 10))
     }
 
     var badge: some View {

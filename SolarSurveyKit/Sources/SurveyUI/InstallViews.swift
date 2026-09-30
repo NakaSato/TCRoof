@@ -1,0 +1,110 @@
+#if canImport(UIKit)
+import SwiftUI
+import SurveyCore
+
+/// "เพิ่มโครงการติดตั้ง": every survey still in the survey stage, complete ones first; only those can be added.
+struct InstallPickerSheet: View {
+    let jobs: [Job]
+    let add: (UUID) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var rows: [Job] {
+        jobs.sorted { a, b in
+            if a.canMoveToInstall != b.canMoveToInstall { return a.canMoveToInstall }
+            return a.completion.fraction > b.completion.fraction
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("เพิ่มโครงการติดตั้ง").font(.system(size: 22, weight: .bold)).foregroundStyle(Home.navy)
+                    Text("ดึงข้อมูลจากงานสำรวจ · เลือกได้เฉพาะงานที่สำรวจครบ 100%").font(.subheadline).foregroundStyle(Home.muted)
+                }
+                Spacer(minLength: 0)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Home.navy)
+                        .frame(width: 44, height: 44)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.border))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).accessibilityLabel("ปิด")
+            }
+            .padding(.horizontal, 24).padding(.vertical, 20)
+            Divider()
+            if rows.isEmpty {
+                ContentUnavailableView("ไม่มีงานสำรวจ", systemImage: "list.clipboard", description: Text("งานสำรวจทุกงานย้ายไปงานติดตั้งแล้ว"))
+                    .padding(.vertical, 40)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(rows) { j in
+                            row(j)
+                            Divider()
+                        }
+                    }
+                }
+            }
+        }
+        .background(Color(uiColor: .systemBackground))
+    }
+
+    func row(_ j: Job) -> some View {
+        let ok = j.canMoveToInstall
+        return HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(j.docNo.isEmpty ? "NO. —" : "NO.\(j.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Home.muted)
+                Text(j.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : j.projectName).font(.system(size: 17, weight: .bold)).foregroundStyle(Home.navy)
+                Text(detail(j)).font(.caption).foregroundStyle(Home.muted)
+            }
+            .lineLimit(1)
+            .opacity(ok ? 1 : 0.55)
+            Spacer(minLength: 0)
+            if ok {
+                Button { add(j.id) } label: {
+                    Text("เพิ่มได้").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                        .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
+                        .background(Home.primary, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("เพิ่ม \(j.projectName) เป็นงานติดตั้ง")
+            } else {
+                Text("เพิ่มไม่ได้").font(.system(size: 15, weight: .bold)).foregroundStyle(Home.disabledText)
+                    .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
+                    .background(Home.disabledFill, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityLabel("เพิ่มไม่ได้ สำรวจยังไม่ครบ")
+            }
+        }
+        .padding(.horizontal, 24).padding(.vertical, 10)
+    }
+
+    /// "สถานที่ · 90 kWp · 36 รูป"
+    func detail(_ j: Job) -> String {
+        let kw = j.values.text("capacity").trimmingCharacters(in: .whitespaces)
+        return [j.values.text("address").trimmingCharacters(in: .whitespacesAndNewlines), kw.isEmpty ? "" : kw + " kWp", "\(j.photoCount) รูป"]
+            .filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+}
+
+/// Installation tracking of one job.
+// TODO: build from the canvas board `iPadInstall.dc.html` (steps, team, handover); only a placeholder for now.
+struct InstallTrackingView: View {
+    let job: Job
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(job.docNo.isEmpty ? "NO. —" : "NO.\(job.docNo)").font(.subheadline.weight(.heavy)).foregroundStyle(Home.muted)
+            Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName).font(.title2.bold()).foregroundStyle(Home.navy)
+                .multilineTextAlignment(.center)
+            Label("อยู่ระหว่างพัฒนา", systemImage: "hammer").font(.headline).foregroundStyle(Home.muted).padding(.top, 8)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Paper.page)
+        .navigationTitle("ติดตามงานติดตั้ง")
+        .toolbar(.visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+#endif

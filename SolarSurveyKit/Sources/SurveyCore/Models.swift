@@ -153,10 +153,39 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
     public var drive: DriveLink?
     /// Sync id of the host app's job this report belongs to (TCRoof `Job.syncID`); nil when it stands alone.
     public var jobSyncID: String?
+    /// Where the project is: a survey moved to installation is locked and read-only.
+    public var stage: JobStage = .survey
+    /// Installation progress, set when the survey moves to `.install`.
+    public var install: InstallInfo?
     public init(id: UUID = UUID(), created: Date = Date(), updated: Date = Date(), values: Values = Values(), modules: [SurveyModule] = [],
-                drive: DriveLink? = nil, jobSyncID: String? = nil) {
+                drive: DriveLink? = nil, jobSyncID: String? = nil, stage: JobStage = .survey, install: InstallInfo? = nil) {
         self.id = id; self.created = created; self.updated = updated; self.values = values; self.modules = modules; self.drive = drive
-        self.jobSyncID = jobSyncID
+        self.jobSyncID = jobSyncID; self.stage = stage; self.install = install
+    }
+    public init(from decoder: Decoder) throws {
+        // jobs saved before stages existed have no stage or install — they are surveys
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        created = try c.decode(Date.self, forKey: .created)
+        updated = try c.decode(Date.self, forKey: .updated)
+        values = try c.decode(Values.self, forKey: .values)
+        modules = try c.decode([SurveyModule].self, forKey: .modules)
+        drive = try c.decodeIfPresent(DriveLink.self, forKey: .drive)
+        jobSyncID = try c.decodeIfPresent(String.self, forKey: .jobSyncID)
+        stage = try c.decodeIfPresent(JobStage.self, forKey: .stage) ?? .survey
+        install = try c.decodeIfPresent(InstallInfo.self, forKey: .install)
+    }
+
+    /// Only a survey filled in completely can become an installation job.
+    public var canMoveToInstall: Bool { stage == .survey && completion.isComplete }
+
+    /// Moves a complete survey to installation; false (and unchanged) otherwise.
+    @discardableResult
+    public mutating func moveToInstall(now: Date = Date()) -> Bool {
+        guard canMoveToInstall else { return false }
+        stage = .install
+        install = InstallInfo(movedAt: now)
+        return true
     }
     public var docNo: String { values.text("docNo") }
     public var projectName: String { values.text("projectName") }
@@ -168,6 +197,36 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
         v["date"] = .text(ISODate.string(now))
         v["rev"] = .text("00")
         return Job(created: now, updated: now, values: v, modules: template.modules.map { SurveyModule(type: $0) })
+    }
+}
+
+/// The three stages of a project, one home-screen tab each.
+public enum JobStage: String, Codable, CaseIterable, Sendable {
+    case survey, install, maintenance
+}
+
+/// Installation progress of a job moved out of the survey stage.
+public struct InstallInfo: Codable, Hashable, Sendable {
+    /// Steps finished, 0…7.
+    public var doneSteps: Int
+    /// How far the step in progress is, 0–1.
+    public var currentFraction: Double
+    public var team: String
+    public var dueDate: Date?
+    public var movedAt: Date
+    public init(doneSteps: Int = 0, currentFraction: Double = 0, team: String = "", dueDate: Date? = nil, movedAt: Date = Date()) {
+        self.doneSteps = doneSteps; self.currentFraction = currentFraction; self.team = team; self.dueDate = dueDate; self.movedAt = movedAt
+    }
+
+    public static let steps = ["ส่งวัสดุเข้าหน้างาน", "ติดตั้งโครงสร้างราง", "ติดตั้งแผงโซลาร์", "เดินสาย DC · ตู้ DC",
+                               "ติดตั้งอินเวอร์เตอร์ · ตู้ AC", "ทดสอบระบบ", "ขนานไฟ · ส่งมอบ"]
+
+    public var isDone: Bool { doneSteps >= Self.steps.count }
+    /// Step in progress; nil once handed over.
+    public var currentStep: String? { Self.steps[safe: doneSteps] }
+    public var percent: Int {
+        let n = Double(Self.steps.count)
+        return Int((min(Double(doneSteps) + (isDone ? 0 : currentFraction), n) / n * 100).rounded())
     }
 }
 

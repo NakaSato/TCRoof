@@ -90,6 +90,8 @@ public final class JobStore: @unchecked Sendable {
     public func duplicate(_ job: Job, now: Date = Date()) throws -> Job {
         var copy = job
         copy.id = UUID(); copy.created = now; copy.updated = now; copy.drive = nil
+        // a copy of a survey already moved on is a new survey
+        copy.stage = .survey; copy.install = nil
         copy.values["projectName"] = .text(job.projectName.isEmpty ? "(สำเนา)" : job.projectName + " (สำเนา)")
         copy.modules = job.modules.map { var m = $0; m.id = UUID(); return m }
         try fm.createDirectory(at: photosFolder(copy.id), withIntermediateDirectories: true)

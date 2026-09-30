@@ -28,6 +28,8 @@ struct JobEditorView: View {
     /// - Parameter start: page to open on (the home card's "continue" step); nil opens A1.
     init(job: Job, start: MissingGroup.Target? = nil) {
         _job = State(initialValue: job)
+        // a survey moved to installation opens on its report summary
+        if start == nil, job.stage != .survey { _page = State(initialValue: .summary) }
         if let start {
             _page = State(initialValue: Self.page(for: start))
             _startedOnPage = State(initialValue: true)
@@ -37,6 +39,9 @@ struct JobEditorView: View {
 
     /// iPhone (and narrow iPad split view): the section list and the form take turns filling the screen.
     var compact: Bool { sizeClass == .compact }
+
+    /// A survey moved to installation is kept as it was: view and export only.
+    var readOnly: Bool { job.stage != .survey }
 
     @State var detailSize: CGSize = .zero
     /// A1 in the card layout on iPad (docs/ui/survey-a1); iPhone keeps the one-column `groupPage`.
@@ -59,6 +64,7 @@ struct JobEditorView: View {
             if !(compact && sidebarVisible) {
                 ScrollViewReader { proxy in
                     ScrollView {
+                        if readOnly { readOnlyBanner.padding(.horizontal, 24).padding(.top, 16).frame(maxWidth: 1240 + 48) }
                         Group {
                             if cardInfo {
                                 InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, twoColumns: infoColumns == 2)
@@ -67,6 +73,8 @@ struct JobEditorView: View {
                                 detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
                             }
                         }
+                        // the summary only reads answers; everywhere else fields stay shown but can't be changed
+                        .disabled(readOnly && page != .summary)
                         .frame(maxWidth: .infinity).id("top")
                     }
                     .background(Paper.page)
@@ -124,6 +132,14 @@ struct JobEditorView: View {
                             titleVisibility: .visible, presenting: confirmDelete) { m in
             Button("ลบ \(m.title)", role: .destructive) { remove(m) }
         } message: { _ in Text("ข้อมูลและรูปภาพในหัวข้อนี้จะถูกลบ") }
+    }
+
+    var readOnlyBanner: some View {
+        Label("งานนี้ย้ายไปงานติดตั้งแล้ว · งดแก้ไข ดูและส่งออกได้อย่างเดียว", systemImage: "lock")
+            .font(.subheadline.weight(.semibold)).foregroundStyle(Home.navy)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Home.lockBadge, in: RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: toolbar

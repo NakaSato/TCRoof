@@ -134,4 +134,47 @@ final class SurveyCoreTests: XCTestCase {
         XCTAssertEqual(fmt(4), "4"); XCTAssertEqual(fmt(1.50), "1.5")
         XCTAssertEqual(ISODate.thai("2026-09-28"), "28/9/2569")
     }
+
+    /// job.json written before stages existed has no "stage" or "install" key: it opens as a survey.
+    func testDecodeJobWithoutStage() throws {
+        let old = """
+        {"created":780000000,"drive":{"folderID":"f1"},"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","jobSyncID":"tc-12",
+         "modules":[{"id":"7F9619FF-8B86-D011-B42D-00C04FC964FF","name":"","type":"roof","values":{"storage":{}}}],
+         "updated":780000100,"values":{"storage":{"projectName":{"text":{"_0":"การประปาทดสอบ"}}}}}
+        """
+        let j = try JobStore.decoder.decode(Job.self, from: Data(old.utf8))
+        XCTAssertEqual(j.stage, .survey)
+        XCTAssertNil(j.install)
+        XCTAssertEqual(j.projectName, "การประปาทดสอบ")
+        XCTAssertEqual(j.modules.first?.type, .roof)
+        XCTAssertEqual(j.drive?.folderID, "f1")
+        XCTAssertEqual(j.jobSyncID, "tc-12")
+        // saved again, the stage travels with it
+        var moved = j; moved.stage = .install; moved.install = InstallInfo(doneSteps: 3, currentFraction: 0.5, team: "TCR02", movedAt: Date(timeIntervalSinceReferenceDate: 0))
+        let back = try JobStore.decoder.decode(Job.self, from: JobStore.encoder.encode(moved))
+        XCTAssertEqual(back, moved)
+    }
+
+    /// Only a complete survey moves to installation; a copy of it starts over as a survey.
+    func testMoveToInstall() throws {
+        var j = Job.new(template: JobTemplate.all[2])
+        XCTAssertFalse(j.moveToInstall())
+        XCTAssertEqual(j.stage, .survey)
+        for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
+        XCTAssertTrue(j.completion.isComplete)
+        XCTAssertTrue(j.moveToInstall())
+        XCTAssertEqual(j.stage, .install)
+        XCTAssertEqual(j.install?.doneSteps, 0)
+        XCTAssertFalse(j.moveToInstall())
+        XCTAssertEqual(InstallInfo(doneSteps: 3, currentFraction: 0.5).percent, 50)
+        XCTAssertEqual(InstallInfo(doneSteps: 3).currentStep, "เดินสาย DC · ตู้ DC")
+        XCTAssertEqual(InstallInfo(doneSteps: 7, currentFraction: 0.5).percent, 100)
+        // Drive data / backups keep the stage
+        let s = tmpStore()
+        j.install?.team = "TCR02"
+        let back = try WebBackup.importJobs(WebBackup.exportBackup([j], store: s), into: tmpStore())[0]
+        XCTAssertEqual(back.stage, .install)
+        XCTAssertEqual(back.install?.team, "TCR02")
+        XCTAssertEqual(try s.duplicate(j).stage, .survey)
+    }
 }

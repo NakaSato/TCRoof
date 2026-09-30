@@ -60,7 +60,7 @@ extension JobEditorView {
             ForEach(groups) { g in
                 Section(isExpanded: expanded(g.category)) {
                     ForEach(g.items) { item in
-                        if let m = item.module {
+                        if let m = item.module, !readOnly {
                             row(item)
                                 .contextMenu {
                                     Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
@@ -79,7 +79,7 @@ extension JobEditorView {
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(Paper.page)
-        .safeAreaInset(edge: .bottom) { sidebarFooter }
+        .safeAreaInset(edge: .bottom) { if !readOnly { sidebarFooter } }
         // keep the open section visible when "next" or "continue" jumps into a collapsed group
         .onChange(of: page) { _, p in if let c = category(of: p) { collapsed.remove(c) } }
     }

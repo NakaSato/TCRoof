@@ -42,7 +42,52 @@ enum MapImage {
     static func fetch(gps: String, zoom: Int, googleKey: String) async throws -> UIImage {
         guard let c = coordinate(from: gps) else { throw Failure.noGPS }
         let key = googleKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        return key.isEmpty ? try await apple(c, zoom: zoom) : try await google(c, zoom: zoom, key: key)
+        let name = Cache.name(c, zoom: zoom, google: !key.isEmpty)
+        if let img = Cache.image(name) { return img }
+        let img = key.isEmpty ? try await apple(c, zoom: zoom) : try await google(c, zoom: zoom, key: key)
+        Cache.store(img, name)
+        return img
+    }
+
+    /// Pictures already fetched, in memory and in Caches/MapImages, so reopening A1 or switching back to a zoom
+    /// level doesn't download again. Satellite imagery rarely changes; a picture is fetched anew after 30 days.
+    enum Cache {
+        static let maxAge: TimeInterval = 30 * 24 * 3600
+        static let maxFiles = 300
+        private static let memory = NSCache<NSString, UIImage>()
+        private static let folder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("MapImages", isDirectory: true)
+
+        /// Same centre (to ~1 cm), zoom and source → same picture.
+        static func name(_ c: CLLocationCoordinate2D, zoom: Int, google: Bool) -> String {
+            String(format: "%@_%.7f_%.7f_z%d.jpg", google ? "g" : "a", c.latitude, c.longitude, zoom)
+        }
+
+        static func image(_ name: String) -> UIImage? {
+            if let img = memory.object(forKey: name as NSString) { return img }
+            let url = folder.appendingPathComponent(name)
+            guard let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate,
+                  Date().timeIntervalSince(date) < maxAge,
+                  let data = try? Data(contentsOf: url), let img = UIImage(data: data, scale: 2) else { return nil }
+            memory.setObject(img, forKey: name as NSString)
+            return img
+        }
+
+        static func store(_ img: UIImage, _ name: String) {
+            memory.setObject(img, forKey: name as NSString)
+            guard let data = img.jpegData(compressionQuality: 0.85) else { return }
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try? data.write(to: folder.appendingPathComponent(name), options: .atomic)
+            prune()
+        }
+
+        /// Keeps the newest `maxFiles` pictures.
+        private static func prune() {
+            let keys: Set<URLResourceKey> = [.contentModificationDateKey]
+            guard let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: Array(keys)),
+                  files.count > maxFiles else { return }
+            let dated = files.map { ($0, (try? $0.resourceValues(forKeys: keys))?.contentModificationDate ?? .distantPast) }
+            for (url, _) in dated.sorted(by: { $0.1 > $1.1 }).dropFirst(maxFiles) { try? FileManager.default.removeItem(at: url) }
+        }
     }
 
     static func google(_ c: CLLocationCoordinate2D, zoom: Int, key: String) async throws -> UIImage {

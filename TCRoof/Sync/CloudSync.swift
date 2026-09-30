@@ -42,10 +42,23 @@ final class CloudSync {
     private static let surveyCollection = "pwaSurveys"
     private var db: Firestore { Firestore.firestore() }
 
+    /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
+    /// the listeners aren't using get evicted and have to be downloaded again. On a restart the listeners
+    /// then start from this cache and download only what changed. Must run before the first Firestore call.
+    private static var cacheConfigured = false
+    private static func configureCache() {
+        guard !cacheConfigured else { return }
+        cacheConfigured = true
+        let settings = Firestore.firestore().settings
+        settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: FirestoreCacheSizeUnlimited))
+        Firestore.firestore().settings = settings
+    }
+
     // MARK: lifecycle
 
     func start(context: ModelContext, survey: SurveyModel) {
         guard self.context == nil else { return }
+        Self.configureCache()
         self.context = context
         self.survey = survey
         // the survey home shows what Firestore still lacks, even before sign-in finishes

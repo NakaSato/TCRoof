@@ -1,6 +1,7 @@
 # Auto 2D Drawings: Swift Implementation Spec
 
 **Companion to:** [`auto-drawing.md`](auto-drawing.md), which covers the design, drawing standard and prototype images.
+**Tank update 2026-10-01:** §8–§12 tank parts follow the D1 design (standard tank picker, confirmed openings, azimuth); the D1 page itself is in [`tank-drawing-swift.md`](tank-drawing-swift.md). The package is now `TCRoofKit` / module `TCRoofCore` (renamed on `main`); paths below keep the old names where the text predates the rename.
 **Package:** `SolarSurveyKit` (targets `SurveyCore`, `SurveyUI`, `PDFReport`).
 **Swift:** 5.9 tools, iOS 17 / macOS 14 (as in `Package.swift`). No new dependencies.
 **Reference output:** `docs/specs/img/*.png`, rendered by the Python prototypes in the same folder, and the
@@ -30,13 +31,15 @@ SolarSurveyKit/Sources/SurveyCore/Drawing/
   DrawingSettings.swift    defaults & assumptions (setbacks, sizes, m²/kWp)
   RoofInput.swift          Values → RoofInput (derivation, missing, assumed)
   RoofGeometry.swift       section + truss geometry, schedule
-  TankInput.swift          Values → TankInput (openings, setting)
+  TankTemplates.swift      standard กปภ. tanks: size, column grid, seeded openings
+  TankInput.swift          Values → TankInput (template, outline, setting, azimuth, openings with status)
   TankGeometry.swift       outline, resolved openings, usable area
   DrawingKit.swift         layout transform, dimension chains, tags, callouts, legend, notes
   RoofDrawings.swift       section, framing plan, truss details, schedule table
   TankDrawings.swift       roof plan (กปภ. style), section, summary
 SolarSurveyKit/Sources/SurveyUI/
-  DrawingField.swift       .roofSection / .tankDrawing field views, tap-to-place vents
+  DrawingField.swift       .roofSection field view
+  TankFlowView*.swift      D1 page: five steps (tank-drawing-swift.md)
 SolarSurveyKit/Tests/SurveyCoreTests/
   SpansTests.swift, MemberSpecTests.swift, RoofTests.swift, TankTests.swift, DrawingSnapshotTests.swift
   Fixtures/drawings/*.svg
@@ -441,66 +444,84 @@ The purlin marker is a 7 × 5 pt rectangle rotated to the slope, offset 2.8 pt o
 ### 8.1 Model change (`Models.swift`)
 
 Tank openings reuse `Obstacle`, so existing data, the obstacle editor and `Drawings.plan` keep working. The new
-keys are optional, so synthesized `Codable` decodes old JSON unchanged. `id` is already stored.
+keys are optional, so old JSON decodes unchanged. `id` is already stored. Positions stay in the existing `x`, `y`
+(metres from the top-left corner, y down); `w`, `h` default to the kind's size.
 
 ```swift
 public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var id = UUID()
-    public var label = ""
+    public var label = ""                  // "V9", "H1" …
     public var x = "", y = "", w = "", h = ""
     // new, all optional
     public var kind: OpeningKind?          // nil ⇒ .other
-    public var cell: GridCell?             // .vent placed by tap
-    public var edge: WallEdge?             // .hatch / .ladder / .pipe
-    public var along: String?              // m along the wall from its start (top/bottom: from left; left/right: from top)
+    public var status: OpeningStatus?      // nil ⇒ .ok (old rows)
+    public var fromTemplate: Bool?         // seeded from the standard tank
+    public var photoTag: String?           // links obstPhotos to this opening
+    public var edge: WallEdge?             // .ladder / .pipe (not on the D1 page v1)
+    public var along: String?              // m along the wall
     public var diameter: String?           // mm, pipes
 }
 public enum OpeningKind: String, Codable, Sendable { case vent, hatch, ladder, pipe, other }
-public enum VentStyle: String, Codable, Sendable { case box, cross }   // per tank: value `ventStyle` (choice, default box)
-public struct GridCell: Codable, Hashable, Sendable { public var row: Int; public var col: Int }
+public enum OpeningStatus: String, Codable, Sendable { case pending, ok, moved, absent }
 public enum WallEdge: String, Codable, Sendable { case top, bottom, left, right }
 ```
 
-`WebBackup` import/export adds the keys when present: `kind`, `row`, `col`, `edge`, `along`, `diameter`. It must
-keep them when absent, so the web version stays compatible.
+The 2026-09-29 draft placed vents with `GridCell` (tap a bay cell). The D1 design replaced that with seeded,
+confirmed and draggable openings, so `GridCell` / `cell` and `ventStyle` are dropped.
+
+`WebBackup` import/export adds `kind`, `status`, `fromTemplate`, `photoTag`, `edge`, `along`, `diameter` when present
+and keeps them when absent.
 
 ### 8.2 Input (`TankInput.swift`)
 
 ```swift
+public enum TankTemplate: String, Sendable, CaseIterable { case t40, t64, t30, t20, custom }
+public struct TankTemplateSpec: Sendable {
+    public var size: (w: Double, l: Double); public var spansX, spansY: String   // "10@4"
+    public var label: String, sub: String
+    public var openings: [Obstacle]                                              // seeded as .pending
+}
 public enum TankOutline: Sendable, Equatable { case rectangle(Double, Double), circle(Double) }
 public enum TankSetting: Sendable, Equatable { case aboveGround, buried(cover: Double), partlyBuried(above: Double) }
 
-public struct ResolvedOpening: Sendable { public var kind: OpeningKind; public var box: Box   // metres, y-down plan
-                                          public var edge: WallEdge?; public var label: String; public var diameter: Double? }
+public struct ResolvedOpening: Sendable { public var id: String; public var kind: OpeningKind; public var status: OpeningStatus
+                                          public var box: Box      // metres, y-down plan
+                                          public var edge: WallEdge?; public var diameter: Double? }
 
 public struct TankInput: Sendable {
     public var title: String
+    public var template: TankTemplate
     public var outline: TankOutline
-    public var bays: (x: [Double], y: [Double])     // empty for a circle without spans
+    public var bays: (x: [Double], y: [Double])
     public var height: Double?
     public var setting: TankSetting
+    public var azimuth: Double?                  // wall A outward normal, degrees
+    public var roofSurface: String?
     public var openings: [ResolvedOpening]
     public var missing: [String], assumed: [String], warnings: [String]
     public static func from(_ m: SurveyModule) -> TankInput?     // .tank only
 }
 ```
 
-- **Outline:** a `tankDiameter` value makes it `.circle`. Otherwise it is `.rectangle(Σ spansX, Σ spansY)`. With
-  neither, `missing` gets "ระยะช่วงเสา".
-- **Setting:**
-  - `tankAboveGround` ≥ `tankHeight` → above ground
-  - `tankAboveGround` == 0 → `.buried(cover: soilDepth ?? 0)`
-  - anything in between → partly buried
-  - no value → the existing `tankPos` choice, else above ground, with an assumed note
-- **Resolving openings** (y-down, metres from the top-left corner):
-  - `.vent` with `cell`: a square of `S.ventSize`, centred in the bay cell, from `Spans.edges`. A vent whose
-    cell is outside the grid is dropped with a warning.
-  - `.hatch`: a square of `S.hatchSize` against the wall, offset 0.15 m inside, centred at `along`. Top and
-    bottom walls measure from the left; left and right walls measure from the top.
-  - `.ladder`: a zero-area point just outside the wall at `along`. It is drawn only, and not subtracted from the
-    usable area, because it sits outside the roof.
-  - `.pipe`: zero-area box at the wall point. `diameter` comes from `NumberInput.value`.
-  - `.other` / `nil`: the existing x, y, w, h fields, parsed with `NumberInput.value`.
+- **Outline:**
+  - `tankTemplate` t40 / t64 / t30 / t20 → the template size.
+  - `custom` → `tankWidth × tankLength`.
+  - `tankDiameter` → `.circle` (model only).
+  - Old jobs without these fall back to `Σ spansX × Σ spansY`.
+  - With none of them, `missing` gets "ขนาดถัง".
+- **Grid:** the template's spans; for custom, `spansX` / `spansY` when typed, else one bay.
+- **Setting from `tankPos`:**
+  - บนดิน → above ground
+  - ฝังดิน → `.buried(cover: soilDepth ?? 0)`
+  - กึ่งฝัง → `.partlyBuried(above: tankAboveGround clamped to 0…height)`
+  - no answer → above ground, with an assumed note
+- **Resolving openings:**
+  - `x`, `y` in metres from the top-left corner.
+  - Size = `w`, `h`, or `S.ventSize` (1.45) / `S.hatchSize` (1.15).
+  - Clamped inside the walls with a warning.
+  - `.absent` openings are kept (drawn faded) but excluded from clashes, usable area and the layout.
+  - `.ladder` / `.pipe` (not placed by the D1 page v1): a point just outside the wall `edge` at `along` (top/bottom from the left, left/right from the top); a pipe adds `diameter` (มม.). Ladders are not subtracted from the roof.
+- **Clash check** (for the step 2 check line): the nearest opening closer than `S.openingSetback` (0.50 m).
 
 ### 8.3 Geometry (`TankGeometry.swift`)
 
@@ -510,6 +531,7 @@ public struct TankGeometry: Sendable {
     public var roofArea: Double, grossVolume: Double?
     public var usableArea: Double, usableKWp: Double
     public var usableRuns: [Box]          // merged horizontal runs of free cells (for the green fill)
+    public var clashes: [(a: String, b: String, gap: Double)]   // openings closer than openingSetback (0.50 m), .absent excluded
     public static func compute(_ i: TankInput, settings: DrawingSettings = .current) -> TankGeometry
 }
 ```
@@ -536,7 +558,7 @@ public enum TankDrawings {
 }
 ```
 
-`roofPlan` also returns its `DrawingTransform`. The editor uses it to turn a tap into a `GridCell` (§9.2).
+`roofPlan` also returns its `DrawingTransform`. The D1 page uses it to turn a drag back into metres (§9.2).
 The symbols follow `img/tank_pwa.png` and `img/tank_40x40.png`. Beams are drawn as a double dashed band
 (`beamWidth` 0.30 m, assumed) on each inner grid line. Section marks 1–1 and 2–2 go at `sectionX`/`sectionY`, or at the
 centre lines when those are empty.
@@ -557,7 +579,8 @@ Labels are grouped by type and placed on a free side. The summary strip reads:
 ```swift
 public struct DrawingSettings: Codable, Equatable, Sendable {
     public var purlinSpacing = 1.0           // m, when not entered
-    public var ventSize = 1.5, hatchSize = 1.2, beamWidth = 0.30   // m
+    public var ventSize = 1.45, hatchSize = 1.15, beamWidth = 0.30   // m (D1 design)
+    public var hatchAccess = 0.60, postClearance = 0.30               // m, panel layout (tank-mounting-layout.md)
     public var edgeSetback = 1.0, openingSetback = 0.5   // m
     public var m2PerKWp = 6.0                // same constant as TCRoof SurveyForm
     public static var current = DrawingSettings()   // set once from SurveySettings at launch (Swift 5 mode)
@@ -602,18 +625,28 @@ after the structure group.
 
 **C3 `.house`.** Add `FieldSpec("section", …, .roofSection)` after group 13. It uses `measI1`, `measI2` and `roofAngle`.
 
-**D1 `.tank`.** In group "ข้อมูลถัง", add:
+**D1 `.tank`.** The D1 page (`tank-drawing-swift.md`) uses these fields. In group "ข้อมูลถัง":
 
 ```swift
-N("tankDiameter", "เส้นผ่านศูนย์กลาง (ถังกลม)", "ม.", optional: true),
-N("tankAboveGround", "ความสูงส่วนที่พ้นดิน", "ม.", optional: true),
-N("sectionX", "ตำแหน่งรูปตัด 1–1 (ระยะจากขอบซ้าย)", "ม.", optional: true),
-N("sectionY", "ตำแหน่งรูปตัด 2–2 (ระยะจากขอบบน)", "ม.", optional: true),
-C("ventStyle", "สัญลักษณ์ช่องระบายอากาศ", ["กล่อง", "กากบาท"], optional: true),   // describes the object, default กล่อง
+C("tankTemplate", "ขนาดถัง", ["t40", "t64", "t30", "t20", "custom"]),        // labels from TankTemplates
+N("tankWidth", "กว้าง", "ม.", optional: true, when: custom),
+N("tankLength", "ยาว", "ม.", optional: true, when: custom),
+N("tankAboveGround", "ส่วนพ้นดิน", "ม.", optional: true, when: { $0.choice("tankPos") == "กึ่งฝัง" }),
+C("roofSurface", "ผิวหลังคา", ["คอนกรีต", "คอนกรีตเคลือบกันซึม", "ดินปลูกหญ้า", "หินกรวด"]),
+N("tankAzimuth", "ทิศของถัง (ผนัง A หันไปทิศ)", "°", optional: true),
+T("tankAzimuthSource", "ที่มาของทิศ", optional: true),                           // "เข็มทิศ iPad · ±3° · 30/9 16:55"
+N("tankDiameter", "เส้นผ่านศูนย์กลาง (ถังกลม)", "ม.", optional: true),           // model only, hidden on the page
 ```
 
-Then, in the `planFields(tank: true)` group, replace `FieldSpec("plan", "แปลน", .plan(tank: true))` with
-`FieldSpec("plan", "แปลน", .tankDrawing)` when `SurveySettings.autoDrawings` is on. Keep `.plan` otherwise.
+- **Existing fields:** `tankHeight`, `tankPos` and `soilDepth` stay. `tankType` is hidden but kept. `surface` is read into `roofSurface` when it matches one of the four choices.
+- **Group "เงาบัง":** add `N("shadeHeight", "ความสูง", "ม.", when: shaded)` and `N("shadeDistance", "ห่างผนังถัง", "ม.", when: shaded)`.
+- **Group "ภาพถ่าย":**
+  - `sidePhotos` max 4, labelled by direction.
+  - Add `FieldSpec("roofPhotos", "หลังคาถัง", .photos(max: 2), optional: true)`, `P("shadePhoto", "เงาบัง", optional: true)` and `P("cablePhoto", "ทางเดินสายไฟ", optional: true)`.
+  - These stay optional until the team decides otherwise (`tank-drawing-swift.md` open question 4).
+
+`FieldSpec("plan", "แปลน", .tankDrawing)` renders the D1 page in place of the old plan preview when
+`SurveySettings.autoDrawings` is on. Keep `.plan` otherwise.
 
 Keep `N(... "M")` units as they are for existing fields. New fields use `"ม."`.
 
@@ -640,43 +673,27 @@ struct DrawingField: View {
                     .fullScreenCover(isPresented: $zoomed) { ZoomableSketch(sketch: sk) }
             } else { MissingBox(items: RoofInput.from(module)?.missing ?? []) }
         case .tankDrawing:
-            TankPlanEditor(module: $module)
+            TankFlowView(module: $module)      // D1 five-step page
         default: EmptyView()
         }
     }
 }
 
-/// Tank plan with tap-to-toggle vents on bay cells.
-struct TankPlanEditor: View {
-    @Binding var module: SurveyModule
-    var body: some View {
-        if let i = TankInput.from(module), i.missing.isEmpty,
-           let plan = TankDrawings.roofPlan(TankGeometry.compute(i)) {      // (Sketch, DrawingTransform)
-            GeometryReader { geo in
-                SketchView(sketch: plan.0)
-                    .gesture(SpatialTapGesture().onEnded { e in
-                        toggleVent(at: e.location, size: geo.size, sketch: plan.0, t: plan.1, bays: i.bays)
-                    })
-            }
-            .aspectRatio(plan.0.width / plan.0.height, contentMode: .fit)
-        } else { MissingBox(items: TankInput.from(module)?.missing ?? []) }
-    }
-    /// View point → sketch point (same fit as SketchView) → metres → GridCell; add or remove a .vent Obstacle.
-    func toggleVent(at p: CGPoint, size: CGSize, sketch: Sketch, t: DrawingTransform, bays: (x: [Double], y: [Double])) { … }
-}
 ```
 
-Tap mapping:
-1. `SketchView` scales by `k = min(w/sketch.w, h/sketch.h)` and centres horizontally. Invert that first.
-2. Then apply `t.metres(_:)`.
-3. Find the cell by a binary search over `Spans.edges`.
-4. A tap inside an existing vent's cell removes it. Otherwise it appends
-   `Obstacle(kind: .vent, cell: GridCell(row:col:))`.
-5. Haptic feedback: `.selection`.
+**Tank (D1 page).** `.tankDrawing` opens `TankFlowView`, the five-step page described in `tank-drawing-swift.md`.
+Code notes for step 2 (openings):
 
-Hatches and pipes use the existing obstacle table with two new columns, **ผนัง** (a picker) and **ระยะ (ม.)**,
-shown when the row's type is ช่องลงถัง or ท่อ. The type is a small menu at the start of the row. This menu is
-the only choice in the feature, and it describes what the object is, not a design decision.
+1. **Drag mapping:**
+   - View point → sketch point: invert the `SketchView` fit (`k = min(w/sketch.w, h/sketch.h)`, centred).
+   - Sketch point → metres: `DrawingTransform.metres(_:)`.
+   - Snap to 0.05 m and clamp inside the walls.
+2. **Status on move:** a move sets `status = .moved`. One drag is one `UndoManager` action. Keep 30 levels, as in the design.
+3. **Distances:** the panel shows distances from the **nearest** walls (left/right, top/bottom) and edits `x` / `y` through them.
+4. **Seeding:** choosing a template when `obst` is empty appends the template's openings with `status = .pending`, `fromTemplate = true`.
+5. **Row duplication:** adds `n` copies at `spacing` along x or y, clamped inside, with the next free labels.
+
+The draft's `TankPlanEditor` (tap a bay cell to toggle a vent) is dropped.
 
 ---
 
@@ -690,6 +707,7 @@ func planSection(_ mod: SurveyModule) -> [Unit] {
             let g = TankGeometry.compute(i)
             if let plan = TankDrawings.roofPlan(g, width: 690) { U.append(sketchUnit(plan.0, title: "แปลนฝาถัง")) }
             if let s = TankDrawings.section(g, width: 690) { U.append(sketchUnit(s, title: "รูปตัดถัง")) }
+            // then ผังจัดแผง, ภาพตัดโต๊ะแผง (tank-mounting-layout.md) and เงาบัง (tank-drawing-swift.md §4)
         }
         if mod.type == .roof, let i = RoofInput.from(mod), i.missing.isEmpty, let s = RoofDrawings.section(i) {
             U.append(sketchUnit(s, title: "รูปตัดโครงหลังคา"))
@@ -769,48 +787,52 @@ final class RoofTests: XCTestCase {
 }
 
 final class TankTests: XCTestCase {
-    func pwa() -> SurveyModule {                        // the กปภ. sheet: 64 × 40, 20 vents, 8 hatches (ladders at 6 of them)
+    func t40() -> SurveyModule {                        // D1 design: standard 40 × 40, seeded openings
         var m = SurveyModule(type: .tank)
-        m.values["spansX"] = .text("16@4"); m.values["spansY"] = .text("10@4"); m.values["tankHeight"] = .text("4.5")
-        var o: [Obstacle] = []
-        for r in [0, 3, 6, 9] { for c in [0, 4, 8, 12, 15] { var x = Obstacle(); x.kind = .vent; x.cell = GridCell(row: r, col: c); o.append(x) } }
-        for (e, a) in [(WallEdge.top, "14.3"), (.top, "46"), (.bottom, "14.1"), (.bottom, "45.7"),
-                       (.left, "18"), (.left, "22"), (.right, "18.2"), (.right, "22.2")] {
-            var x = Obstacle(); x.kind = .hatch; x.edge = e; x.along = a; o.append(x)
-        }
-        m.values["obst"] = .obstacles(o)
+        m.values["tankTemplate"] = .choice("t40", other: ""); m.values["tankHeight"] = .text("4.5")
+        m.values["tankPos"] = .choice("กึ่งฝัง", other: ""); m.values["tankAboveGround"] = .text("1.2")
+        m.values["obst"] = .obstacles(TankTemplates.spec(.t40).openings)
         return m
     }
-    func testSummary() throws {
-        let g = TankGeometry.compute(try XCTUnwrap(TankInput.from(pwa())), settings: DrawingSettings())
-        XCTAssertEqual(g.roofArea, 2560)
-        XCTAssertEqual(g.input.openings.filter { $0.kind == .vent }.count, 20)
-        XCTAssertEqual(g.usableArea, 2222, accuracy: 10)     // 0.25 m raster (interactive prototype); the 0.5 m images show 2,180
+    func testTemplate() throws {
+        let i = try XCTUnwrap(TankInput.from(t40()))
+        XCTAssertEqual(i.outline, .rectangle(40, 40))
+        XCTAssertEqual(i.bays.x.count, 10)                               // 10@4
+        XCTAssertEqual(i.setting, .partlyBuried(above: 1.2))
+        XCTAssertEqual(i.openings.filter { $0.kind == .vent }.count, 10)  // V1–V10
+        XCTAssertEqual(i.openings.filter { $0.kind == .hatch }.count, 6)  // H1–H6
+        XCTAssertTrue(i.openings.allSatisfy { $0.status == .pending })
+        XCTAssertEqual(TankGeometry.compute(i).roofArea, 1600)
     }
-    func testSecondSheet() throws {                     // 40 × 40, 12 cross vents, 6 hatches, 3 separate ladders
-        var m = SurveyModule(type: .tank)
-        m.values["spansX"] = .text("10@4"); m.values["spansY"] = .text("10@4")
-        m.values["ventStyle"] = .choice("กากบาท", other: "")
-        var o: [Obstacle] = []
-        for r in [0, 4, 9] { for c in [0, 4, 5, 9] { var x = Obstacle(); x.kind = .vent; x.cell = GridCell(row: r, col: c); o.append(x) } }
-        for (e, a) in [(WallEdge.top, "10.2"), (.top, "29.6"), (.bottom, "10.2"), (.bottom, "29.6"), (.left, "21.7"), (.right, "21.7")] {
-            var x = Obstacle(); x.kind = .hatch; x.edge = e; x.along = a; o.append(x)
-        }
-        for (e, a) in [(WallEdge.left, "6.4"), (.left, "33.4"), (.right, "33.4")] {
-            var x = Obstacle(); x.kind = .ladder; x.edge = e; x.along = a; o.append(x)
-        }
+    func testSettingFromPosition() {
+        var m = t40()
+        m.values["tankPos"] = .choice("บนดิน", other: ""); XCTAssertEqual(TankInput.from(m)?.setting, .aboveGround)
+        m.values["tankPos"] = .choice("ฝังดิน", other: ""); m.values["soilDepth"] = .text("0.3")
+        XCTAssertEqual(TankInput.from(m)?.setting, .buried(cover: 0.3))
+        m.values["tankPos"] = .choice("กึ่งฝัง", other: ""); m.values["tankAboveGround"] = .text("9")
+        XCTAssertEqual(TankInput.from(m)?.setting, .partlyBuried(above: 4.5))     // clamped to the height
+    }
+    func testAbsentIgnoredAndClash() throws {
+        var m = t40(); var o = TankTemplates.spec(.t40).openings
+        o[0].status = .absent
+        o[1].x = o[2].x; o[1].y = String((Double(o[2].y) ?? 0) + 1.6)          // 0.15 m gap to the next vent
         m.values["obst"] = .obstacles(o)
-        let g = TankGeometry.compute(try XCTUnwrap(TankInput.from(m)), settings: DrawingSettings())
-        XCTAssertEqual(g.roofArea, 1600)
-        XCTAssertEqual(g.input.openings.filter { $0.kind == .ladder }.count, 3)
-        XCTAssertEqual(g.usableArea, 1363, accuracy: 10)     // 0.25 m raster; the 0.5 m image shows 1,341
+        let g = TankGeometry.compute(try XCTUnwrap(TankInput.from(m)))
+        XCTAssertFalse(g.clashes.contains { $0.a == o[0].label || $0.b == o[0].label })
+        XCTAssertTrue(g.clashes.contains { Set([$0.a, $0.b]) == Set([o[1].label, o[2].label]) })
     }
-    func testRoundAndSetting() {
+    func testCustomSize() {
         var m = SurveyModule(type: .tank)
-        m.values["tankDiameter"] = .text("10"); m.values["tankHeight"] = .text("5"); m.values["tankAboveGround"] = .text("2")
+        m.values["tankTemplate"] = .choice("custom", other: "")
+        m.values["tankWidth"] = .text("12"); m.values["tankLength"] = .text("8"); m.values["tankHeight"] = .text("4.5")
         let i = TankInput.from(m)!
-        XCTAssertEqual(i.outline, .circle(10)); XCTAssertEqual(i.setting, .partlyBuried(above: 2))
-        XCTAssertEqual(TankGeometry.compute(i).grossVolume ?? 0, 392.7, accuracy: 0.1)
+        XCTAssertEqual(i.outline, .rectangle(12, 8))
+        XCTAssertEqual(TankGeometry.compute(i).grossVolume ?? 0, 432, accuracy: 0.1)
+    }
+    func testOldJobFallsBackToSpans() {
+        var m = SurveyModule(type: .tank)
+        m.values["spansX"] = .text("16@4"); m.values["spansY"] = .text("10@4")
+        XCTAssertEqual(TankInput.from(m)?.outline, .rectangle(64, 40))
     }
 }
 ```
@@ -821,8 +843,8 @@ final class TankTests: XCTestCase {
   2. C1 Howe truss
   3. C1 Warren truss
   4. C3 house
-  5. PWA tank 64 × 40 and PWA tank 40 × 40 (cross vents, ladders, section marks)
-  6. round tank partly buried
+  5. D1 tank `t40` with the design's openings (pending, confirmed, absent, moved) and `t64`
+  6. custom 12 × 8 tank partly buried
 - Compare each with `Fixtures/drawings/<name>.svg` (add the folder to the test target's resources).
 - `RECORD_SNAPSHOTS=1` rewrites the files.
 - Numbers in the SVG are already rounded by `fmt`, so the output is stable across macOS and Linux.
@@ -842,8 +864,8 @@ final class TankTests: XCTestCase {
 | 1 | `Spans`, `parseSpans` delegate, `MemberSpec`, `DrawingSettings` + tests | `swift test` passes; old plans unchanged |
 | 2 | `RoofInput`, `RoofGeometry` (rafter + truss + schedule) + tests | Numbers in §11 pass |
 | 3 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails` + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` visually |
-| 4 | `Obstacle` fields, `WebBackup`, `TankInput`, `TankGeometry`, `TankDrawings` + tests/snapshots | 64 × 40 fixture: 2,560 m², 20 vents, 2,222 m² usable. 40 × 40 fixture: 1,600 m², 12 cross vents, 1,363 m² usable (0.25 m raster) |
-| 5 | Schema fields and kinds, `DrawingField`, `TankPlanEditor` (tap to place) | iPad: fill C1/D1 from the PWA sheet and see the drawings live |
+| 4 | `Obstacle` fields (`kind`, `status` …), `WebBackup`, `TankTemplates`, `TankInput`, `TankGeometry`, `TankDrawings` + tests/snapshots | `t40` fixture: 1,600 m², 10 vents + 6 hatches pending; statuses, clash and setting tests pass |
+| 5 | Schema fields and kinds, `DrawingField`, `TankFlowView` (D1 five steps, see `tank-drawing-swift.md` §7 for its own PR split) | iPad: pick 40 × 40, confirm and move openings, see plan and layout live |
 | 6 | `ReportLayout` integration, `missingGroups`, `autoDrawings` flag | PDF pages match the prototypes; export sheet lists drawing gaps |
 | 7 | Framing plan overlay | Matches `img/framing_plan.png` |
 

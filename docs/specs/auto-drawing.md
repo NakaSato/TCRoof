@@ -1,7 +1,7 @@
 # Auto 2D Drawings: Roof Structure & Tank Size
 
 **Status:** Draft · **Owner:** TCRoof · **Module:** `SolarSurveyKit` (SurveyCore / SurveyUI / PDFReport / ExcelExport)
-**Date:** 2026-09-29 · **Swift implementation spec:** [`auto-drawing-swift.md`](auto-drawing-swift.md) · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
+**Date:** 2026-09-29, tank parts updated 2026-10-01 to the D1 design (see `tank-drawing-swift.md`) · **Swift implementation spec:** [`auto-drawing-swift.md`](auto-drawing-swift.md) · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
 
 ## 1. Goal
 
@@ -12,14 +12,14 @@ longer depends on a hand sketch:
 |---|---|---|
 | **Roof framing section** (รูปตัดโครงหลังคา) | C1 หลังคา, C2 หลังคาอาคาร, C3 บ้าน | Generic `Drawings.truss()` diagram |
 | **Roof framing plan** (แปลนโครงหลังคา) | C1, C2 | Adds rafters / purlins / ridge to the existing `Drawings.plan()` |
-| **Tank drawing** (แปลน + รูปตัดถัง + ขนาด) | D1 ถังน้ำใส | Adds a section, round tanks and a size/volume summary |
+| **Tank drawing** (แปลน + รูปตัดถัง + ขนาด) | D1 ถังน้ำใส | Plan from a standard tank or custom size, confirmed openings, section, size/volume summary; feeds the panel layout (D1 step 3) |
 
 The drawings must show in the editor while typing, in the PDF (NO.215), and later in Excel (NO.224).
 They are **indicative survey drawings, not construction drawings**. Every sheet carries that note.
 
 ### Non-goals (v1)
 - Structural checks (member capacity, load). Geometry only.
-- PV module layout on the roof (planned for v2, see §11).
+- PV module layout on building roofs (v2, see §11). Tanks get a panel layout in D1 step 3 (`tank-mounting-layout.md`).
 - 3D, perspective or editable CAD. DXF export is a stretch goal (§10).
 
 ### Prototype output
@@ -155,12 +155,17 @@ public enum RoofDrawings {
 public enum TankOutline: Sendable { case rectangle(length: Double, width: Double), circle(diameter: Double) }
 public enum TankSetting: Sendable { case aboveGround, buried(cover: Double), partlyBuried(aboveGround: Double) }
 
+public enum TankTemplate: String, Sendable { case t40, t64, t30, t20, custom }   // D1 ขนาดถัง
+
 public struct TankInput: Sendable {
+    public var template: TankTemplate
     public var outline: TankOutline
     public var height: Double           // m
     public var setting: TankSetting
     public var bays: (x: [Double], y: [Double])?   // column grid on the roof slab, rectangle only
-    public var obstacles: [Obstacle]
+    public var azimuth: Double?         // degrees wall A faces (tankAzimuth)
+    public var roofSurface: String?
+    public var obstacles: [Obstacle]    // with status; .absent ones are drawn faded and ignored by the layout
     public var missing: [String]
     public static func from(_ m: SurveyModule) -> TankInput?   // .tank only
 }
@@ -199,8 +204,13 @@ derived (§5.2). Where a value can't be derived it is **assumed** and printed in
 | C1 | `compBottom` | ขื่อล่าง (ขนาด) | `.member` | no | Falls back to `comp4` ขื่อ |
 | C1 | `compVertical` | ตัวตั้ง (ขนาด) | `.member` | no | Falls back to `comp7` ดั้ง (king post only) |
 | C1 | `compDiagonal` | ตัวทแยง (ขนาด) | `.member` | no | Falls back to `comp5` ค้ำยัน |
-| D1 | `tankDiameter` | เส้นผ่านศูนย์กลาง (ถังกลม) | `.number("ม.")` | no | Filled means a round tank; the spans are then not needed |
-| D1 | `tankAboveGround` | ความสูงส่วนที่พ้นดิน | `.number("ม.")` | no | Ground line in the section |
+| D1 | `tankTemplate` | ขนาดถัง (มาตรฐาน กปภ. / กำหนดเอง) | choice `t40` `t64` `t30` `t20` `custom` | yes | Fills size, column grid and the starting openings (a pick from a list of real tank sizes, not a design choice) |
+| D1 | `tankWidth`, `tankLength` | กว้าง × ยาว (กำหนดเอง) | `.number("ม.")` | when custom | Outline; same ids as branch `feature/tank-size` |
+| D1 | `tankAboveGround` | ส่วนพ้นดิน | `.number("ม.")` | when `tankPos` = กึ่งฝัง | Ground line in the section; บนดิน = height, ฝังดิน = 0 |
+| D1 | `roofSurface` | ผิวหลังคา | choice คอนกรีต / คอนกรีตเคลือบกันซึม / ดินปลูกหญ้า / หินกรวด | yes | Replaces free-text `surface` (read across when it matches) |
+| D1 | `tankAzimuth` | ทิศของถัง (ผนัง A หันไปทิศ, องศา) | measured with the iPad compass + camera | no | Rotates the plan's N arrow; sets the panel slope direction |
+| D1 | `shadeHeight`, `shadeDistance` | ความสูง / ห่างผนังถัง ของสิ่งที่บัง | `.number("ม.")` | when shaded | Shade model (D1 step 4) |
+| D1 | `tankDiameter` | เส้นผ่านศูนย์กลาง (ถังกลม) | `.number("ม.")` | no | Kept in the model for round tanks; not on the D1 page v1 |
 
 Removed from the earlier draft: `roofAngle` (C1/C2), `ridgeDir`, `frameType`, `trussType`, `tankShape`.
 C3 keeps its existing `roofAngle` only as a fallback. It already has the heights `measI1`/`measI2`.
@@ -229,8 +239,10 @@ and any exporter switching on `FieldKind`.
 | Panels per half `n` | `round(L / purlin spacing)`, so purlins sit on nodes | Purlin spacing 1.0 m |
 | Heel depth | `heelDepth` | 0 (triangular truss) |
 | Overhang | `overhang` | 0 |
-| Tank outline | `tankDiameter` filled → circle; else `Σ spansX × Σ spansY` | — |
-| Tank setting | `tankAboveGround ≥ tankHeight` → above ground; `0` → buried; in between → partly buried | Existing `tankPos` choice, else above ground |
+| Tank outline | `tankTemplate` size, or `tankWidth × tankLength` when custom; `tankDiameter` → circle (model only); last fallback `Σ spansX × Σ spansY` for old jobs | — |
+| Column grid | template grid (e.g. `10@4`), or `spansX` / `spansY` when custom and typed | one bay |
+| Tank setting | `tankPos`: บนดิน → above ground; ฝังดิน → buried (cover `soilDepth`); กึ่งฝัง → partly buried at `tankAboveGround` | above ground |
+| Panel slope direction | faces the wall side closer to south, from `tankAzimuth` | faces the bottom wall |
 
 Checks shown next to the fields (numbers only, no extra questions):
 - ridge ≤ eave → "ความสูงสันต้องมากกว่าชายคา"
@@ -326,27 +338,31 @@ Notation: `B = Σ across`, `θ = pitch`, `h = B/2` (gable), `E = eaveHeight ?? 0
 64.00 × 40.00 (16 × 10 @ 4.00, box vents, pipes) and 40.00 × 40.00 (10 × 10 @ 4.00, cross vents, ladders apart from hatches, section marks 1 and 2).
 - **Outline and grid:** a double wall line; the beam/bay grid dashed from `spansX`/`spansY`; bay dimensions
   "4.00" per bay plus the total "64.00" on the top and left.
-- **Openings** are typed, so each gets the right symbol and label:
+- **Openings** are typed, so each gets the right symbol and label. **D1 design (2026-10-01):** openings start
+  pre-placed from the chosen standard tank and the surveyor confirms each one (ตรงแบบ / ไม่มีจริง), drags it or edits
+  its distances from the nearest walls, adds, duplicates as a row or deletes (`tank-drawing-swift.md` step 2). v1
+  uses vents (1.45 m) and hatches (1.15 m) only; the table below is the full set the model keeps for later:
 
   | Type | Symbol | Default size | How it's placed |
   |---|---|---|---|
-  | ช่องระบายอากาศ | box (square + inner square + circle) or cross (mushroom vent on a column head). Style set once per tank | 1.5 m | **Tap bay cells** on the auto-drawn grid; centred in the cell |
-  | ช่องลงถัง | square on the inner wall | 1.2 m | Pick the wall, then enter the distance along it (ม.) |
+  | ช่องระบายอากาศ | box (square + inner square + circle) or cross (mushroom vent on a column head). Style set once per tank | 1.45 m | Seeded from the standard tank; confirm, drag (0.05 m snap) or edit distances from the nearest walls; add / duplicate as a row |
+  | ช่องลงถัง | square on the inner wall | 1.15 m | Seeded or added like vents; no panel within 0.60 m (access) |
   | บันไดขึ้นถัง | small box outside the wall | — | Pick the wall, then enter the distance along it. **Separate from hatches**: on the 40 × 40 sheet the ladders are not at the hatches |
   | ท่อ (ท่อน้ำใส / ท่อเชื่อมถัง / ท่อน้ำล้น) | stub through the wall, coupling, open end | Ø entered in มม. | Pick the wall, then enter the distance along it and the diameter |
   | สิ่งกีดขวางอื่น | hatched rectangle (existing) | as entered | x, y, w, h (existing obstacle editor) |
 
-  The surveyor still only enters sizes and distances: tapping a cell is a distance from the grid.
-  The 20 vents on this sheet take 20 taps, instead of 80 numbers typed into the obstacle table.
-- **Usable area for PV:** roof minus an edge setback minus a clearance around every opening. It is shaded green,
-  and the summary gives m² and kWp (m² ÷ 6, the constant the TCRoof survey form already uses).
+  The surveyor still only enters sizes and distances: confirming a seeded opening or dragging it sets its distances.
+  Ladders and pipes (below) are kept in the model but are not placed on the D1 page v1.
+- **Usable area for PV** (superseded on the D1 page by the real panel layout, D1 step 3 and `tank-mounting-layout.md`;
+  kept as a quick figure for jobs without a layout): roof minus an edge setback minus a clearance around every
+  opening, shaded green, m² and kWp (m² ÷ 6).
   - Setbacks are assumed values (1.0 m from the edge, 0.5 m around openings) and are printed as ค่าสมมติ.
   - A settings screen can change them later.
-- **Schema:** `obst` rows gain a `kind` (`vent`, `hatch`, `ladder`, `pipe`, `other`; old rows read as `other`), plus
-  `edge`/`along`/`diameter` for hatches, ladders and pipes. `Obstacle` stays `Codable`, and the new keys are optional.
+- **Schema:** `obst` rows gain a `kind` (`vent`, `hatch`, `ladder`, `pipe`, `other`; old rows read as `other`), a
+  `status` (`pending`, `ok`, `moved`, `absent`; old rows read as `ok`), `fromTemplate`, `photoTag`, plus
+  `edge`/`along`/`diameter` kept for ladders and pipes later. `Obstacle` stays `Codable`, and the new keys are optional.
 - **Beams** are drawn as a double dashed band, 0.30 m wide (assumed), on every grid line, as on the sheets.
-- **Section marks 1–1 and 2–2** are placed at `sectionX` / `sectionY`, two optional distances in ม. Without them
-  the marks go at the centre lines. The tank section drawing is titled to match ("รูปตัด 1–1").
+- **Section marks 1–1 and 2–2** go at the centre lines (`sectionX` / `sectionY` are not on the D1 page v1). The tank section drawing is titled to match ("รูปตัด 1–1").
 
 **Guards:**
 - Reject (return `nil` plus a missing reason) when `B ≤ 0`, `θ ∉ (0, 60]`, or any number is non-finite.
@@ -445,8 +461,9 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
    overhangs or real bays? If they are always overhangs, `overhang` can be derived and the new field dropped.
 2. **Ridge direction:** it is inferred from `sheetDir`, else the longer side. Is that always right for station roofs? (There is deliberately no extra question.)
 3. **Excel:** is there space on the NO.224 roof/tank sheets for a section image, or should the section be PDF-only?
-4. **Tank dimensions:** are D1 spans outside dimensions (most likely, since they come from the plan)? Should the
-   volume be shown at all, or only the roof area used for PV?
+4. **Tank dimensions:** the D1 design picks a standard กปภ. tank (40 × 40, 64 × 40, 30 × 30, 20 × 20) or a custom
+   size. Confirm each template's size, column grid and opening positions against the กปภ. drawings
+   (`tank-drawing-swift.md` open questions 1–3).
 5. **C3 mapping:** confirm that `measA` = rafter spacing, `measC` = purlin spacing, and `measI1`/`measI2` = ground→ridge
    and ground→eave, as the labels suggest.
-6. **v2:** PV module layout on the section and plan (module size, row spacing, setbacks), reusing the same geometry.
+6. **PV layout:** for tanks it is now in scope (D1 step 3, `tank-mounting-layout.md`). Roofs (C1/C2) stay v2.

@@ -64,7 +64,7 @@ struct HomeHeader<Panel: View>: View {
                           ThaiFormat.weekday.string(from: t.date) + " " + ThaiFormat.numericDate.string(from: t.date),
                           t.date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)) + " น."]
                         .compactMap { $0 }.joined(separator: " · "))
-                        .font(.subheadline).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                        .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                 }
             }
             .padding(.leading, 16).padding(.trailing, 12).padding(.vertical, 12)
@@ -76,8 +76,8 @@ struct HomeHeader<Panel: View>: View {
             Image("AppLogo").resizable().frame(width: 48, height: 48).clipShape(RoundedRectangle(cornerRadius: 11))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("TCRoof").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.navy)
-                Text("ระบบงานติดตั้งโซลาร์รูฟ").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                Text("TCRoof").font(.sarabun(22, .bold)).foregroundStyle(Theme.navy)
+                Text("ระบบงานติดตั้งโซลาร์รูฟ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
         }
         .padding(.horizontal, wide ? 24 : 0)
@@ -86,9 +86,9 @@ struct HomeHeader<Panel: View>: View {
 
     func cell(_ label: String, _ value: String, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.system(size: 19, weight: .bold)).monospacedDigit().foregroundStyle(Theme.navy)
-            Text(sub).font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+            Text(label).font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(19, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
+            Text(sub).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
         }
         .lineLimit(1).minimumScaleFactor(0.8)
         .padding(.horizontal, 20).padding(.vertical, 10)
@@ -101,7 +101,7 @@ struct HomeHeader<Panel: View>: View {
                 squareIcon("bell", active: showNotifications)
                     .overlay(alignment: .topTrailing) {
                         if unread > 0 {
-                            Text("\(unread)").font(.system(size: 12, weight: .bold)).foregroundStyle(.white).monospacedDigit()
+                            Text("\(unread)").font(.sarabun(12, .bold)).foregroundStyle(.white).monospacedDigit()
                                 .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
                                 .background(Theme.danger, in: Capsule())
                                 .offset(x: 8, y: -8)
@@ -130,15 +130,15 @@ struct HomeHeader<Panel: View>: View {
     @ViewBuilder var bottomRow: some View {
         if wide {
             HStack(spacing: 0) {
-                Text("สถานะวันนี้").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.paperInk)
+                Text("สถานะวันนี้").font(.sarabun(15, .bold)).foregroundStyle(Theme.paperInk)
                     .padding(.horizontal, 24).frame(width: brandWidth, alignment: .leading).frame(maxHeight: .infinity)
                     .background(Theme.paperBand)
                 divider
                 statCells
                 divider
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("งานถัดไป").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
-                    Text(next).font(.system(size: 15)).foregroundStyle(Theme.navy).lineLimit(1).monospacedDigit()
+                    Text("งานถัดไป").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
+                    Text(next).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1).monospacedDigit()
                 }
                 .padding(.horizontal, 20).frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .combine)
@@ -149,8 +149,8 @@ struct HomeHeader<Panel: View>: View {
                 statCells.fixedSize(horizontal: false, vertical: true)
                 hairline(Theme.borderSubtle, horizontal: true)
                 HStack(spacing: 6) {
-                    Text("งานถัดไป").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
-                    Text(next).font(.system(size: 15)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text("งานถัดไป").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
+                    Text(next).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 10)
@@ -164,8 +164,8 @@ struct HomeHeader<Panel: View>: View {
             ForEach(Array(stats.enumerated()), id: \.element.id) { i, s in
                 if i > 0 { hairline(Theme.borderSubtle, horizontal: false) }
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(s.value)").font(.system(size: 26, weight: .bold)).monospacedDigit().foregroundStyle(s.color)
-                    Text(s.label).font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    Text("\(s.value)").font(.sarabun(26, .bold)).monospacedDigit().foregroundStyle(s.color)
+                    Text(s.label).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 .padding(.horizontal, wide ? 20 : 12).padding(.vertical, 8)
                 .frame(maxWidth: wide ? nil : .infinity, alignment: .leading)

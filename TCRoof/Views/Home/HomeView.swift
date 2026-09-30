@@ -78,6 +78,7 @@ struct HomeView: View {
             .frame(maxWidth: 1240)
             .frame(maxWidth: .infinity)
         }
+        .font(.sarabun(17))
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -132,7 +133,7 @@ struct HomeView: View {
 
     private var todaySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("งานวันนี้").font(.title2.bold()).foregroundStyle(Theme.navy)
+            Text("งานวันนี้").font(.sarabun(22, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
             if todaysJobs.isEmpty {
                 Text("ไม่มีงานสำรวจหรืองานติดตั้งในวันนี้")
                     .foregroundStyle(Theme.muted)
@@ -162,13 +163,13 @@ private struct TodayRow: View {
                     TeamTag(team: job.team)
                     Spacer()
                     if let day = job.installDay(on: .now) {
-                        Text("ติดตั้ง Day \(day)/\(job.installDays)").font(.caption.bold()).foregroundStyle(Theme.primary)
+                        Text("ติดตั้ง Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
                     } else {
-                        Text("นัดสำรวจ").font(.caption.bold()).foregroundStyle(Theme.teal)
+                        Text("นัดสำรวจ").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.teal)
                     }
                 }
-                Text(job.projectName).font(.subheadline)
-                Text("\(job.capacityKW.kw) | \(job.province)").font(.caption).foregroundStyle(Theme.muted)
+                Text(job.projectName).font(.sarabun(15, relativeTo: .subheadline))
+                Text("\(job.capacityKW.kw) | \(job.province)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
             .foregroundStyle(Theme.navy)
         }
@@ -184,11 +185,11 @@ private struct ModuleCard: View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
                 Text(module.title)
-                    .font(.title2.bold())
+                    .font(.sarabun(22, .bold, relativeTo: .title2))
                     .foregroundStyle(Theme.navy)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(module.subtitle)
-                    .font(.subheadline)
+                    .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.inkMuted)
             }
             Spacer()
@@ -233,7 +234,7 @@ struct SettingsView: View {
                         InfoRow(title: "ซิงค์ล่าสุด", value: last.formatted(date: .abbreviated, time: .shortened))
                     }
                     if case .failed(let message) = sync.state {
-                        Text(message).font(.caption).foregroundStyle(.red)
+                        Text(message).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(.red)
                         Button("ลองอีกครั้ง") { sync.retry() }
                     }
                 } header: {

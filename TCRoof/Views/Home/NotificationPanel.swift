@@ -95,14 +95,14 @@ struct NotificationPanel: View {
         let unread = items.filter { !read.contains($0.id) }.count
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("การแจ้งเตือน").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.navy)
-                Text(unread > 0 ? "ยังไม่อ่าน \(unread)" : "อ่านครบแล้ว").font(.caption.bold())
+                Text("การแจ้งเตือน").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
+                Text(unread > 0 ? "ยังไม่อ่าน \(unread)" : "อ่านครบแล้ว").font(.sarabun(12, .bold, relativeTo: .caption))
                     .foregroundStyle(unread > 0 ? Theme.primary : Theme.paperTickStrong)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(unread > 0 ? Theme.primarySoft : Theme.paperBand, in: Capsule())
                 Spacer()
                 if unread > 0 {
-                    Button("อ่านทั้งหมด") { markRead(items) }.font(.subheadline.bold()).foregroundStyle(Theme.primary)
+                    Button("อ่านทั้งหมด") { markRead(items) }.font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
                         .frame(minHeight: 44)
                 }
                 Button(action: close) {
@@ -118,11 +118,12 @@ struct NotificationPanel: View {
                 .frame(maxHeight: 460)
             Rectangle().fill(Theme.borderSubtle).frame(height: 1)
             Button(action: showAll) {
-                Text("ดูการแจ้งเตือนทั้งหมด").font(.subheadline.bold()).foregroundStyle(Theme.primary)
+                Text("ดูการแจ้งเตือนทั้งหมด").font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 48)
             }
         }
         .background(Theme.surface)
+        .font(.sarabun(17))
     }
 }
 
@@ -146,7 +147,7 @@ struct NotificationList: View {
 
     func group(_ title: String, _ list: [AppNotification]) -> some View {
         VStack(spacing: 0) {
-            Text(title).font(.caption.bold()).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 8)
                 .background(Theme.background)
                 .accessibilityAddTraits(.isHeader)
@@ -166,11 +167,11 @@ struct NotificationList: View {
                 .frame(width: 40, height: 40).background(n.tintBackground, in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(n.title).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
+                    Text(n.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     Spacer(minLength: 8)
-                    Text(n.timeText).font(.caption).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                    Text(n.timeText).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                 }
-                Text(n.detail).font(.system(size: 14)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                Text(n.detail).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
             if unread { Circle().fill(Theme.primary).frame(width: 10, height: 10).padding(.top, 6).accessibilityLabel("ยังไม่อ่าน") }
         }
@@ -195,6 +196,7 @@ struct NotificationsView: View {
         NavigationStack {
             ScrollView { NotificationList(items: items, read: read, markRead: markRead, sync: sync) }
                 .background(Theme.surface)
+                .font(.sarabun(17))
                 .navigationTitle("การแจ้งเตือน")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {

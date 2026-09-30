@@ -1,4 +1,23 @@
 import SwiftUI
+import CoreText
+
+/// Sarabun 400/700 (Resources/Fonts, SIL OFL), registered at launch so no Info.plist entry is needed.
+enum AppFont {
+    static func register() {
+        for name in ["Sarabun-Regular", "Sarabun-Bold"] {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+    }
+}
+
+extension Font {
+    /// Sarabun at `size`, scaling with Dynamic Type like `style`; semibold and heavier use the bold face.
+    static func sarabun(_ size: CGFloat, _ weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
+        let bold = [Font.Weight.semibold, .bold, .heavy, .black].contains(weight)
+        return .custom(bold ? "Sarabun-Bold" : "Sarabun-Regular", size: size, relativeTo: style)
+    }
+}
 
 extension Color {
     init(hex: UInt32, opacity: Double = 1) {

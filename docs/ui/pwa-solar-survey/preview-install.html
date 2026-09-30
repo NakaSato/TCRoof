@@ -1,0 +1,122 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+/* GRoof / TCRoof wizard shell — values from InspectionView (InspectionViews.swift), Components.swift, Theme.swift */
+.g, .g * { box-sizing: border-box; }
+.g {
+  --navy: #16325C; --primary: #1F6FB5; --primary-light: #2E8FDB; --teal: #27A99A; --mint: #9EE6D6;
+  --danger: #D9453B; --background: #F3F6FA; --muted: #7A8BA3; --text-2: #5B6B82;
+  font-family: -apple-system, "SF Pro Text", Sarabun, system-ui, sans-serif; color: var(--navy); background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+.g svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* header: headerGradient, bottom corners 15 */
+.g-head { flex: none; display: flex; align-items: center; gap: 14px; padding: 18px 24px; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); border-radius: 0 0 15px 15px; color: #FFFFFF; }
+.g-close { width: 36px; height: 36px; border-radius: 8px; background: #FFFFFF; color: var(--primary); display: grid; place-items: center; border: 0; flex: none; }
+.g-close svg { stroke-width: 2.5; width: 18px; height: 18px; }
+.g-head .t { font-size: 20px; line-height: 25px; font-weight: 700; }
+.g-head .s { font-size: 15px; line-height: 20px; opacity: .92; }
+
+/* progress: "3/11" · step name · capsules (gradient = current/past, mint = complete, grey = todo) */
+.g-prog { flex: none; padding: 14px 24px; display: flex; flex-direction: column; gap: 10px; }
+.g-prog .row { display: flex; justify-content: space-between; font-size: 15px; color: var(--navy); }
+.g-prog .row b { font-weight: 700; }
+.g-caps { display: flex; gap: 6px; }
+.g-caps i { flex: 1; height: 8px; border-radius: 4px; background: rgba(142,142,147,0.25); }
+.g-caps i.cur { background: linear-gradient(90deg, #1F6FB5, #2E8FDB); }
+.g-caps i.ok { background: var(--mint); }
+
+/* step body (maxWidth 760, padding 24, spacing 20) */
+.g-body { flex-grow: 1; overflow: hidden; padding: 4px 24px 24px; display: flex; flex-direction: column; gap: 20px; }
+.g-sec { font-size: 20px; line-height: 25px; font-weight: 600; color: var(--navy); }
+.g-hint { display: flex; gap: 6px; align-items: flex-start; font-size: 15px; line-height: 20px; color: var(--muted); }
+.g-hint svg { width: 17px; height: 17px; margin-top: 1px; }
+.g-sep { height: 1px; background: rgba(22,50,92,0.12); }
+
+/* FieldLabel: headline navy + red * */
+.g-field { display: flex; flex-direction: column; gap: 8px; }
+.g-label { display: flex; align-items: baseline; gap: 8px; font-size: 17px; line-height: 22px; font-weight: 600; color: var(--navy); }
+.g-label .req { color: var(--danger); }
+.g-label .aside { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--muted); }
+/* OutlinedFieldStyle: padding 14, radius 10, navy 45% stroke */
+.g-input { display: flex; align-items: center; min-height: 50px; padding: 14px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); border-radius: 10px; font-size: 17px; line-height: 22px; color: var(--navy); }
+.g-input.focus { border: 2px solid var(--primary); padding: 13px; }
+.g-input .ph { color: var(--muted); }
+.g-input .unit { margin-left: auto; padding-left: 10px; font-size: 20px; color: var(--muted); }
+.g-input.calc { background: rgba(158,230,214,0.3); }
+.g-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.g-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+
+/* ChoiceButton: minHeight 54, radius 10; selected mint (ไม่ผ่าน/ไม่ใช่: danger 25%) */
+.g-choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; }
+.g-choices.wrap { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.g-choice { min-height: 54px; display: grid; place-items: center; padding: 0 10px; text-align: center; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.5); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-choice.on { background: var(--mint); border-color: rgba(22,50,92,0.2); }
+.g-choice.no { background: rgba(217,69,59,0.25); border-color: rgba(22,50,92,0.2); }
+
+/* photo: อัปโหลด | กล้อง, thumbnails with x */
+.g-photobtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.g-pbtn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); font-size: 16px; font-weight: 600; color: var(--navy); }
+.g-pbtn svg { color: var(--primary); }
+.g-thumbs { display: flex; gap: 12px; flex-wrap: wrap; }
+.g-thumb { width: 84px; height: 84px; border-radius: 8px; background: #C9D6E3; position: relative; }
+.g-thumb .x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #FFFFFF; display: grid; place-items: center; }
+.g-thumb .x svg { width: 12px; height: 12px; stroke-width: 3; }
+.g-thumb .tag { position: absolute; left: 4px; bottom: 4px; font-size: 11px; line-height: 16px; background: rgba(255,255,255,0.92); padding: 0 6px; border-radius: 4px; }
+.g-nophoto { min-height: 80px; display: grid; place-items: center; background: #FFFFFF; border: 1px dashed rgba(122,139,163,0.5); border-radius: 10px; font-size: 15px; color: var(--muted); }
+.g-hasphoto { min-height: 50px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-crit { font-size: 15px; line-height: 20px; color: var(--danger); }
+
+/* bottom bar: บันทึก (outlined) + ‹ › gradient 120×56 */
+.g-bar { flex: none; display: flex; gap: 16px; padding: 16px 24px 28px; background: #FFFFFF; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.g-save { flex-grow: 1; min-height: 56px; border-radius: 12px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.6); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-nav { width: 120px; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); color: #FFFFFF; display: grid; place-items: center; }
+.g-nav svg { width: 22px; height: 22px; stroke-width: 2.75; }
+.g-nav.off { background: rgba(142,142,147,0.4); }
+.g-go { flex-grow: 1; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #27A99A, #4DB6E0); color: #FFFFFF; font-size: 17px; font-weight: 600; }
+
+/* StepSummaryRow */
+.g-sum { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; background: #FFFFFF; border-radius: 12px; text-decoration: none; color: var(--navy); }
+.g-sum .n { flex-grow: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+.g-sum .n small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.g-sum .ok { color: #2E9E5B; }
+.g-sum .miss { color: var(--danger); }
+.g-sum .chev { color: var(--muted); }
+
+</style></head><body style="margin:0">
+
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+</style>
+
+<div class="g" style="position: relative; width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head" style="padding:22px 63px 26px">
+<div style="flex-grow:1"><div style="font-size:30px;line-height:36px;font-weight:700">PWA Solar Survey</div><div class="s">การประปาส่วนภูมิภาค · แบบสำรวจเพื่อออกแบบ (เบื้องต้น)</div></div>
+<div style="display:flex;align-items:center;gap:8px;width:330px;height:46px;padding:0 14px;border-radius:12px;background:rgba(255,255,255,0.95);color:#5B6B82;font-size:15px"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span>ค้นหาเลขที่ ชื่อโครงการ สถานที่…</span></div>
+<button onClick="" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.14);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"></path><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"></path></svg>ซิงก์ (2)</button>
+</header>
+<div style="flex-grow:1;overflow:hidden;display:flex;justify-content:center;padding-top:20px">
+<main style="width:1240px;display:flex;flex-direction:column;gap:16px">
+<div role="tablist" aria-label="ประเภทงาน" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:#E3EEF8"><button role="tab" onClick="" aria-selected="false" style="min-height:48px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;font-family:inherit;font-size:16px;line-height:24px;font-weight:700;color:#5B6B82;background:none;cursor:pointer"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:#8FA3BC">1</span>งานสำรวจ<span style="font-size:13px;font-weight:600;color:#5B6B82">7 งาน</span></button><button role="tab" onClick="" aria-selected="true" style="min-height:48px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;font-family:inherit;font-size:16px;line-height:24px;font-weight:700;color:#16325C;background:#fff;box-shadow:0 1px 3px rgba(22,50,92,0.2);cursor:pointer"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:#1F6FB5">2</span>งานติดตั้ง<span style="font-size:13px;font-weight:600;color:#5B6B82">1 งาน</span></button><button role="tab" onClick="" aria-selected="false" style="min-height:48px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;font-family:inherit;font-size:16px;line-height:24px;font-weight:700;color:#5B6B82;background:none;cursor:pointer"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:#8FA3BC">3</span>งานบำรุงรักษา<span style="font-size:13px;font-weight:600;color:#5B6B82">0 งาน</span></button></div>
+
+<div style="display:flex;align-items:center;gap:10px"><b style="font-size:18px">งานติดตั้ง</b><span style="font-size:14px;color:#5B6B82">1 งาน</span><span style="margin-left:auto;font-size:13px;color:#5B6B82">เรียงตาม</span><div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#E3EEF8"><span style="min-height:30px;padding:0 12px;display:flex;align-items:center;border-radius:8px;background:#fff;font-size:13px;font-weight:700;box-shadow:0 1px 3px rgba(22,50,92,0.2)">แก้ไขล่าสุด</span><span style="min-height:30px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#5B6B82">เลขที่</span><span style="min-height:30px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#5B6B82">ความคืบหน้า</span></div></div>
+<div style="flex:1 1 0;min-height:0;overflow-y:auto;margin:0 -8px;padding:0 8px 120px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:230px;gap:16px;align-content:start"><a href="iPadInstall.dc.html" style="display:flex;flex-direction:column;gap:10px;min-width:0;height:230px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:14px 16px 12px;text-decoration:none;color:#16325C;box-shadow:0 3px 8px rgba(22,50,92,0.08)">
+<div style="display:flex;align-items:flex-start;gap:12px;height:62px;flex:none">
+<div style="flex-grow:1;min-width:0;line-height:20px"><div style="display:flex;align-items:center;gap:8px;height:20px;white-space:nowrap"><span style="font-size:13px;font-weight:700;color:#5B6B82">NO.098</span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:#E3EEF8;color:#1F6FB5">กำลังติดตั้ง</span></div>
+<div style="font-size:17px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">การประปาบ้านโป่ง (ตัวอย่าง)</div>
+<div style="font-size:13px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">สถานีจ่ายน้ำบ้านโป่ง · 90 kWp</div></div>
+<div style="position:relative;width:58px;height:58px;flex:none"><svg viewBox="0 0 58 58" aria-hidden="true" style="position:absolute;inset:0;width:58px;height:58px"><circle cx="29" cy="29" r="26" fill="none" stroke="#E6ECF3" stroke-width="4"></circle><circle cx="29" cy="29" r="26" fill="none" stroke="#1F6FB5" stroke-width="4" stroke-linecap="round" stroke-dasharray="81.7 163.4" transform="rotate(-90 29 29)"></circle></svg><span style="position:absolute;inset:0;display:flex;align-items:baseline;justify-content:center;padding-top:18px;box-sizing:border-box;color:#16325C;font-variant-numeric:tabular-nums"><b style="font-size:17px;line-height:20px;font-weight:700;letter-spacing:-0.03em">50</b><span style="font-size:10px;line-height:20px;font-weight:700;color:#5B6B82;margin-left:1px">%</span></span></div></div>
+<div style="display:flex;gap:3px;flex:none"><i style="flex:1;height:6px;border-radius:3px;background:#70AD47"></i><i style="flex:1;height:6px;border-radius:3px;background:#70AD47"></i><i style="flex:1;height:6px;border-radius:3px;background:#70AD47"></i><i style="flex:1;height:6px;border-radius:3px;background:#1F6FB5"></i><i style="flex:1;height:6px;border-radius:3px;background:#DDE4ED"></i><i style="flex:1;height:6px;border-radius:3px;background:#DDE4ED"></i><i style="flex:1;height:6px;border-radius:3px;background:#DDE4ED"></i></div>
+<div style="display:flex;align-items:center;gap:8px;height:38px;flex:none;border-radius:10px;background:#E3EEF8;padding:0 10px"><span style="font-size:12px;color:#5B6B82;white-space:nowrap">ขั้น 4/7</span><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">เดินสาย DC · ตู้ DC</b><span style="margin-left:auto;font-size:18px;color:#1F6FB5">›</span></div>
+<div style="display:flex;flex-wrap:nowrap;gap:6px;height:22px;flex:none;overflow:hidden"><span style="font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:#E3EEF8;color:#16325C;white-space:nowrap;flex:none">ทีม TCR02</span><span style="font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:#E3EEF8;color:#16325C;white-space:nowrap;flex:none">ส่งมอบ 6/10/2569</span></div>
+<div style="display:flex;align-items:center;gap:6px;margin-top:auto;flex:none;white-space:nowrap;border-top:1px solid #DDE4ED;padding-top:9px;font-size:13px;color:#5B6B82"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;width:16px;height:16px"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>30/9/2569 · 17:10</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;width:16px;height:16px"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M21 16l-5-5-8 8"></path></svg>40</span><span style="font-weight:700;color:#3B7420">✓ ซิงก์แล้ว</span></div>
+</a></div>
+
+
+</main></div>
+
+<button onClick="" style="position:absolute;right:63px;bottom:36px;height:64px;padding:0 26px 0 20px;border:0;border-radius:32px;background:#1F6FB5;color:#fff;display:flex;align-items:center;gap:10px;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(22,50,92,0.28)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>เพิ่มโครงการ</button>
+
+</div>
+</body></html>

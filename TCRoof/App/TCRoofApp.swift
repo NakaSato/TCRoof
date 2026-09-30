@@ -20,6 +20,7 @@ struct TCRoofApp: App {
 
     init() {
         FirebaseApp.configure()
+        AppFont.register()
         _session = State(initialValue: GoogleSession())
     }
 

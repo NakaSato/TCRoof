@@ -129,6 +129,19 @@ final class SurveyCoreTests: XCTestCase {
         XCTAssertEqual(back.values.text("projectName"), j.values.text("projectName"))
     }
 
+    /// A1's ground-area count and map zoom aren't schema fields but must survive a backup and restore.
+    func testBackupKeepsExtraCoverKeys() throws {
+        var j = Job.new(template: JobTemplate.all[2])
+        j.values["groundAreas"] = .text("2"); j.values["mapZoom"] = .text("18")
+        let s = tmpStore()
+        let back = try WebBackup.importJobs(WebBackup.exportBackup([j], store: s), into: tmpStore())[0]
+        XCTAssertEqual(back.values.text("groundAreas"), "2")
+        XCTAssertEqual(back.values.text("mapZoom"), "18")
+        // a backup without them leaves them unset rather than empty
+        let plain = try WebBackup.importJobs(WebBackup.exportBackup([Job.new(template: JobTemplate.all[2])], store: s), into: tmpStore())[0]
+        XCTAssertNil(plain.values["groundAreas"])
+    }
+
     func testHelpers() {
         XCTAssertEqual(parseSpans("1.5, 4,4/4"), [1.5, 4, 4, 4])
         XCTAssertEqual(fmt(4), "4"); XCTAssertEqual(fmt(1.50), "1.5")

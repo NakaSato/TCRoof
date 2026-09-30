@@ -27,6 +27,9 @@ public enum WebBackup {
         return out
     }
 
+    /// Cover answers A1 keeps outside the schema (ground-area count, map zoom); text in the JSON like other fields.
+    public static let extraJobKeys = ["groundAreas", "mapZoom"]
+
     static func importJob(_ r: [String: Any], into store: JobStore) throws -> Job {
         let webID = (r["id"] as? String) ?? UUID().uuidString
         let id = UUID(uuidString: webID) ?? stableUUID(webID)
@@ -35,6 +38,7 @@ public enum WebBackup {
         let d = (r["data"] as? [String: Any]) ?? [:]
         var job = Job(id: id, created: created, updated: updated)
         job.values = try values(d, fields: Schema.jobGroups.flatMap(\.fields), job: id, store: store)
+        for k in extraJobKeys { let s = str(d[k]); if !s.isEmpty { job.values[k] = .text(s) } }
         for m in (d["modules"] as? [[String: Any]]) ?? [] {
             guard let t = (m["type"] as? String).flatMap(ModuleType.init(rawValue:)) else { continue }
             let mid = (m["id"] as? String).map { UUID(uuidString: $0) ?? stableUUID(webID + "/" + $0) } ?? UUID()
@@ -119,6 +123,7 @@ public enum WebBackup {
 
     static func exportJob(_ job: Job, store: JobStore) -> [String: Any] {
         var d = exportValues(job.values, fields: Schema.jobGroups.flatMap(\.fields), job: job.id, store: store)
+        for k in extraJobKeys { let s = job.values.text(k); if !s.isEmpty { d[k] = s } }
         d["_v"] = 4
         d["modules"] = job.modules.map { m -> [String: Any] in
             ["id": m.id.uuidString, "type": m.type.rawValue, "name": m.name,

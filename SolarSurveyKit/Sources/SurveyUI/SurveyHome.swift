@@ -43,6 +43,8 @@ struct SurveyHomeView: View {
     @State var showDriveOpen = false
     @State var share: SurveyModel.ExportFile?
     @State var toDelete: Job?
+    /// Installation job to return to the survey tab, after confirming.
+    @State var toSurvey: Job?
     @State var message: String?
     @State var error: String?
     @State var busy: String?
@@ -177,6 +179,18 @@ struct SurveyHomeView: View {
                             titleVisibility: .visible, presenting: toDelete) { j in
             Button("ลบ \(j.projectName)", role: .destructive) { model.delete(j.id); toDelete = nil }
         } message: { _ in Text("ข้อมูลและรูปทั้งหมดของงานนี้ในเครื่องจะถูกลบ (ไฟล์ใน Google Drive ไม่ถูกลบ)") }
+        .confirmationDialog("ย้ายกลับเป็นงานสำรวจ?", isPresented: Binding(get: { toSurvey != nil }, set: { if !$0 { toSurvey = nil } }),
+                            titleVisibility: .visible, presenting: toSurvey) { j in
+            Button("ย้าย \(j.projectName) กลับ", role: .destructive) {
+                toSurvey = nil
+                guard model.moveBackToSurvey(j.id) else { return }
+                withAnimation(.snappy) { tab = .survey }
+            }
+        } message: { j in
+            let n = j.install?.doneSteps ?? 0
+            Text(n > 0 ? "ความคืบหน้าติดตั้ง \(n)/\(InstallInfo.steps.count) ขั้น ทีม และวันส่งมอบจะถูกลบ งานจะแก้ไขได้อีกครั้งในแท็บงานสำรวจ"
+                 : "งานจะกลับไปแก้ไขได้ในแท็บงานสำรวจ")
+        }
         .alert("ซิงก์ต่อหรือไม่?", isPresented: Binding(get: { pendingSync != nil }, set: { if !$0 { pendingSync = nil } }), presenting: pendingSync) { _ in
             Button("ซิงก์ต่อ") { pendingSync = nil; runSync() }
             Button("ยกเลิก", role: .cancel) { pendingSync = nil }
@@ -213,6 +227,7 @@ struct SurveyHomeView: View {
                     case .install:
                         Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") }
                         exportButton(j)
+                        Button(role: .destructive) { toSurvey = j } label: { Label("ย้ายกลับเป็นงานสำรวจ", systemImage: "arrow.uturn.backward") }
                     }
                 }
             }

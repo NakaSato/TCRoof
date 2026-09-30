@@ -187,6 +187,14 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
         install = InstallInfo(movedAt: now)
         return true
     }
+    /// Undoes `moveToInstall`: the installation progress is dropped and the survey opens for editing again.
+    @discardableResult
+    public mutating func moveBackToSurvey() -> Bool {
+        guard stage == .install else { return false }
+        stage = .survey
+        install = nil
+        return true
+    }
     public var docNo: String { values.text("docNo") }
     public var projectName: String { values.text("projectName") }
     public var allPhotos: [Photo] { values.allPhotos + modules.flatMap { $0.values.allPhotos } }

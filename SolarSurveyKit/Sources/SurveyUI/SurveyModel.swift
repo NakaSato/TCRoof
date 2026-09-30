@@ -114,6 +114,15 @@ public final class SurveyModel {
         return true
     }
 
+    /// Returns an installation job to the survey stage, dropping its installation progress.
+    @discardableResult
+    public func moveBackToSurvey(_ id: UUID) -> Bool {
+        guard var j = job(id), j.moveBackToSurvey() else { return false }
+        update(j)
+        flush(id)
+        return true
+    }
+
     // MARK: link to the host app's jobs
 
     /// Reports that belong to one host-app job, newest first.

@@ -177,4 +177,17 @@ final class SurveyCoreTests: XCTestCase {
         XCTAssertEqual(back.install?.team, "TCR02")
         XCTAssertEqual(try s.duplicate(j).stage, .survey)
     }
+
+    /// Moving back undoes the move: the survey is editable again and the installation progress is gone.
+    func testMoveBackToSurvey() {
+        var j = Job.new(template: JobTemplate.all[2])
+        XCTAssertFalse(j.moveBackToSurvey())
+        for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
+        XCTAssertTrue(j.moveToInstall())
+        j.install?.doneSteps = 2; j.install?.team = "TCR02"
+        XCTAssertTrue(j.moveBackToSurvey())
+        XCTAssertEqual(j.stage, .survey)
+        XCTAssertNil(j.install)
+        XCTAssertTrue(j.canMoveToInstall)
+    }
 }

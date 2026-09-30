@@ -229,10 +229,12 @@ public enum Schema {
         }
     }
     @Sendable public static func flooded(_ v: Values) -> Bool { v.choice("floodHistory") == "เคย" }
+    public static let floodRefs = ["ดินเดิม", "พื้นถนน", "พื้นห้อง MDB"]
+    public static let floodInfoSources = ["เจ้าหน้าที่", "คราบน้ำ", "GISTDA"]
     public static let floodSources = ["ฝนตกหนัก / ระบายน้ำไม่ทัน", "แม่น้ำ / คลองล้นตลิ่ง", "น้ำทะเลหนุน", "น้ำป่า / น้ำหลาก", "อื่นๆ"]
     public static let floodHits = ["ห้อง MDB / ตู้ไฟฟ้า", "หม้อแปลง", "ห้องเครื่องสูบน้ำ", "อาคาร / พื้นที่ติดตั้งอินเวอร์เตอร์", "ถนนทางเข้า"]
     public static let flood = GroupSpec("ประวัติน้ำท่วม", [
-        C("floodHistory", "พื้นที่เคยมีน้ำท่วมหรือไม่", ["ไม่เคย", "เคย"]),
+        C("floodHistory", "พื้นที่เคยมีน้ำท่วมหรือไม่", ["ไม่เคย", "เคย", "ไม่ทราบ"]),
         T("floodYear", "ปีที่ท่วมล่าสุด (พ.ศ.)", "เช่น 2554", when: flooded),
         N("floodDepth", "ระดับน้ำสูงสุดจากพื้นดิน", "ซม.", when: flooded),
         N("floodDays", "ระยะเวลาน้ำท่วมขัง", "วัน", optional: true, when: flooded),
@@ -240,12 +242,22 @@ public enum Schema {
         C("floodSource", "สาเหตุ", floodSources, other: true, optional: true, when: flooded),
         FieldSpec("floodHit", "จุดที่เคยได้รับผลกระทบ", .checks(floodHits), optional: true, when: flooded),
         FieldSpec("floodPhoto", "ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม", .photo, optional: true, when: flooded),
+        // A4 wide page: everything below is optional, so jobs saved before it decode and count as before.
+        C("floodRef", "วัดความสูงจาก", floodRefs, optional: true, when: flooded),
+        C("floodInfoSource", "ที่มาข้อมูล", floodInfoSources, optional: true, when: flooded),
+        // evidence photos after the first (`floodPhoto` stays the first, so old jobs and the PDF still work)
+        FieldSpec("floodPhotos", "ภาพหลักฐานน้ำท่วมเพิ่มเติม", .photos(max: 12), optional: true, when: flooded),
+        // the stored GISTDA lookup (JSON); shown by the wide page and the PDF, never as a form row
+        FieldSpec("floodGistda", "ข้อมูลน้ำท่วมจาก GISTDA", .text(placeholder: ""), optional: true, when: { _ in false }),
+        N("invFloorCm", "ความสูงพื้นห้อง Inverter จากพื้นดิน", "ซม.", optional: true, when: flooded),
+        N("invMountCm", "ความสูงติดตั้ง Inverter / SMDB จากพื้นห้อง", "ซม.", optional: true, when: flooded),
+        N("emgMountCm", "ความสูงติดตั้งปุ่ม Emergency", "ซม.", optional: true, when: flooded),
         N("equipHeight", "ระดับติดตั้งอุปกรณ์ที่แนะนำ (สูงจากพื้นดิน)", "ซม.", optional: true, when: flooded),
         FieldSpec("floodNote", "หมายเหตุ", .textarea, optional: true)])
-    /// Flood level + 50 cm, rounded up to 10 cm.
+    /// Water level + 50 cm, rounded up to 10 cm — for a flood the surveyor reported, or a GISTDA estimate (`FloodCheck.level`).
+    /// nil when there is no water level.
     public static func recommendedEquipHeight(_ v: Values) -> Int? {
-        guard flooded(v), let d = v.number("floodDepth"), d > 0 else { return nil }
-        return Int(((d + 50) / 10).rounded(.up) * 10)
+        FloodCheck.level(v) > 0 ? FloodCheck.minCm(v) : nil
     }
     public static let final = GroupSpec("สรุปผลการสำรวจและลงนาม", [
         C("verdict", "ผลการประเมินความเหมาะสมในการติดตั้ง", Options.verdict),

@@ -13,6 +13,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A1000000000000000000C001 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		A1000000000000000000C002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = AppInfo.plist; sourceTree = "<group>"; };
 		A10000000000000000000001 /* TCRoof.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TCRoof.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -42,6 +44,8 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000002 /* TCRoof */,
+				A1000000000000000000C001 /* Config.xcconfig */,
+				A1000000000000000000C002 /* Info.plist */,
 				A10000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -190,6 +194,7 @@
 		};
 		A10000000000000000000014 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1000000000000000000C001 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -197,6 +202,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TCRoof;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์และถ่ายรูปหน้างาน";
@@ -222,6 +228,7 @@
 		};
 		A10000000000000000000015 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1000000000000000000C001 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -229,6 +236,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TCRoof;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์และถ่ายรูปหน้างาน";

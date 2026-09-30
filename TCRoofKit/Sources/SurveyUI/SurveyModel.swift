@@ -193,6 +193,8 @@ public struct SurveySettings: Codable, Equatable {
     public var engineer = ""
     /// Google Maps Static API key; empty = Apple Maps satellite imagery.
     public var googleMapsKey = ""
+    /// GISTDA flood API key for A4; empty = use the build's `GISTDAAPIKey` (git-ignored Secrets.xcconfig), else the lookup is off.
+    public var gistdaKey = ""
     /// Map zoom for site pictures: 20 ≈ 90 m across, 19 ≈ 180 m, 18 ≈ 360 m (at latitude 15°).
     public var mapZoom = 20
     /// Send new photos to Google Drive in the background so other iPads can download them.
@@ -203,6 +205,7 @@ public struct SurveySettings: Codable, Equatable {
         // settings saved by an older version miss the newer keys — keep defaults for those
         let c = try decoder.container(keyedBy: CodingKeys.self)
         company = try c.decodeIfPresent(String.self, forKey: .company) ?? company
+        gistdaKey = try c.decodeIfPresent(String.self, forKey: .gistdaKey) ?? gistdaKey
         googleClientID = try c.decodeIfPresent(String.self, forKey: .googleClientID) ?? googleClientID
         driveRoot = try c.decodeIfPresent(String.self, forKey: .driveRoot) ?? driveRoot
         engineer = try c.decodeIfPresent(String.self, forKey: .engineer) ?? engineer

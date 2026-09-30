@@ -245,6 +245,9 @@ struct InfoPageBar: View {
     var previous: (() -> Void)? = nil
     let next: (() -> Void)?
     var gaps: [Gap] = []
+    /// Replaces the completion line (A4: the equipment height check); red when `statusAlert`.
+    var statusText: String? = nil
+    var statusAlert = false
     @Environment(SurveyModel.self) var model
     @State var savedNow: Date?
 
@@ -325,7 +328,9 @@ struct InfoPageBar: View {
 
     /// "ครบ 9/10 ช่องในหน้านี้", or "ครบช่องบังคับแล้ว · ยังขาด [chips]" when the page lists gaps.
     @ViewBuilder func status(_ c: Completion) -> some View {
-        if gaps.isEmpty {
+        if let statusText {
+            Text(statusText).font(.system(size: 13)).foregroundStyle(statusAlert ? Home.danger : Home.muted)
+        } else if gaps.isEmpty {
             Text("ครบ \(c.filled)/\(c.total) ช่องในหน้านี้").font(.system(size: 13)).foregroundStyle(Home.muted)
         } else {
             HStack(spacing: 6) {

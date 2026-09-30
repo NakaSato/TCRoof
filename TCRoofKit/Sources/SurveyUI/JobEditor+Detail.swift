@@ -53,7 +53,7 @@ extension JobEditorView {
                 }
             }
             if page == .flood, let h = Schema.recommendedEquipHeight(job.values) {
-                Label("แนะนำติดตั้งอุปกรณ์สูงจากพื้นดินอย่างน้อย \(h) ซม. (ระดับน้ำสูงสุด + 50 ซม.)", systemImage: "arrow.up.to.line")
+                Label("แนะนำติดตั้งอุปกรณ์สูงจากพื้นดินอย่างน้อย \(h) ซม. (\(Schema.flooded(job.values) ? "ระดับน้ำสูงสุด" : "ระดับน้ำประเมิน GISTDA") + 50 ซม.)", systemImage: "arrow.up.to.line")
                     .font(.callout).foregroundStyle(.blue)
             }
             if page == .electrical, job.values.transformers("trafos").isEmpty == false || !job.values.text("meterNo").isEmpty {

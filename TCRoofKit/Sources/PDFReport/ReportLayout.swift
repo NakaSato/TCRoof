@@ -294,6 +294,7 @@ public struct ReportLayout {
         } else { o.append(.text("ยังไม่มีภาพสถานที่ติดตั้ง", at: Pt(picW / 2, y + picH / 2), size: 8, color: .faint, align: .center)) }
         let flood: String = {
             guard let f = j.choice("floodHistory") else { return "" }
+            if f == "ไม่ทราบ" { return ["ไม่ทราบ", j.gistda?.summary].compactMap { $0 }.joined(separator: " · ") }
             guard f == "เคย" else { return f }
             return ["เคย", j.text("floodYear").isEmpty ? nil : "ปี " + j.text("floodYear"), j.text("floodDepth").isEmpty ? nil : "สูง \(j.text("floodDepth")) ซม.",
                     j.text("equipHeight").isEmpty ? nil : "ติดตั้งอุปกรณ์ ≥ \(j.text("equipHeight")) ซม."].compactMap { $0 }.joined(separator: " · ")
@@ -419,10 +420,12 @@ public struct ReportLayout {
             y += rh
         }
         row("พื้นที่เคยมีน้ำท่วมหรือไม่") { y in
-            let (ops, h) = checks(["ไม่เคย", "เคย"], chosen: { $0 == v }, x: labelW + 6, y: y + 1, width: valW - 12, size: 8); return (ops, h + 2)
+            let (ops, h) = checks(["ไม่เคย", "เคย", "ไม่ทราบ"], chosen: { $0 == v }, x: labelW + 6, y: y + 1, width: valW - 12, size: 8); return (ops, h + 2)
         }
-        for f in Schema.flood.fields where f.id != "floodHistory" && f.isVisible(j) {
+        // the equipment heights are in the check table below; photos and the GISTDA result have their own boxes
+        for f in Schema.flood.fields where f.id != "floodHistory" && !["invFloorCm", "invMountCm", "emgMountCm"].contains(f.id) && f.isVisible(j) {
             if case .photo = f.kind { continue }
+            if case .photos = f.kind { continue }
             var unit = ""
             if case .number(let u) = f.kind { unit = u }
             var t = f.displayText(j)
@@ -433,7 +436,54 @@ public struct ReportLayout {
             }, unit: unit)
         }
         var units = [Unit(h: y, ops: box("ประวัติน้ำท่วม", height: y) + o)]
-        if Schema.flooded(j), let p = j.photo("floodPhoto") { units += grid("ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม", [(p, nil)], cellH: 230, columns: 1) }
+        if let g = j.gistda { units.append(gistdaBox(g)) }
+        units += floodSection()
+        let evidence = ([j.photo("floodPhoto")] + j.photos("floodPhotos").map { Optional($0) }).compactMap { $0 }
+        units += grid("ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม", evidence.map { ($0, nil) }, cellH: 230, columns: 1)
+        return units
+    }
+
+    /// GISTDA lookup rows under the flood table, with the source footnote.
+    func gistdaBox(_ g: FloodGistda) -> Unit {
+        let W = Self.cw, labelW = 110.0, valW = W - labelW
+        var o: [DrawOp] = [], y = Self.band
+        for r in g.rows {
+            let h = max(17, m.height(r.value, width: valW - 12, size: 8.5, bold: true) + 6)
+            o.append(.rect(Box(0, y, labelW, h), stroke: .black, fill: RGBA(hex: 0xF4F8F1), width: 0.5))
+            o.append(.rect(Box(labelW, y, valW, h), stroke: .black, fill: nil, width: 0.5))
+            o.append(.text(r.label, at: Pt(6, y + h / 2), size: 8))
+            let c: RGBA = r.tone == .good ? RGBA(hex: 0x3B7420) : r.tone == .warn ? RGBA(hex: 0xB45309) : r.tone == .bad ? RGBA(hex: 0xB42318) : .blue
+            o.append(.textBox(r.value, Box(labelW + 6, y + 3, valW - 12, h - 3), size: 8.5, bold: true, color: c))
+            y += h
+        }
+        let fh = m.height(g.footnote, width: W - 12, size: 7, bold: false) + 6
+        o.append(.rect(Box(0, y, W, fh), stroke: .black, fill: nil, width: 0.5))
+        o.append(.textBox(g.footnote, Box(6, y + 3, W - 12, fh - 3), size: 7, color: .ink2))
+        y += fh
+        return Unit(h: y, ops: box("ข้อมูลน้ำท่วมจาก GISTDA · ตามพิกัด A1 \(GPS.format(g.lat, g.lon))", height: y) + o)
+    }
+
+    /// The cross-section drawing (the same geometry as the editor) and the equipment height check.
+    func floodSection() -> [Unit] {
+        let W = Self.cw, k = W / FloodSection.width, dh = FloodSection.height * k
+        let sk = FloodSection.sketch(job)
+        var units = [Unit(h: Self.band + dh + 4, ops: box("ภาพตัดระดับน้ำ", height: Self.band + dh + 4) + sk.translated(0, Self.band + 2, scale: k))]
+        let r = job.floodCheck
+        guard !r.rows.isEmpty else { return units }
+        let nameW = 230.0, tagW = 40.0, hW = 90.0, sW = W - nameW - tagW - hW
+        var o: [DrawOp] = [.text(FloodCheck.requirement(j), at: Pt(W - 6, Self.band / 2), size: 8, color: .ink2, align: .right)], y = Self.band
+        for row in r.rows {
+            let h = 17.0
+            let c: RGBA = row.status.tone == .good ? RGBA(hex: 0x3B7420) : row.status.tone == .bad ? RGBA(hex: 0xB42318) : RGBA(hex: 0xB45309)
+            o.append(.rect(Box(0, y, W, h), stroke: .black, fill: nil, width: 0.5))
+            o.append(.text(row.name, at: Pt(6, y + h / 2), size: 8.5))
+            o.append(.text(row.tag, at: Pt(nameW + 4, y + h / 2), size: 8, color: .ink2))
+            o.append(.text(row.height, at: Pt(nameW + tagW + hW - 8, y + h / 2), size: 8.5, bold: true, color: .blue, align: .right))
+            o.append(.text(row.status.text, at: Pt(nameW + tagW + hW + 6, y + h / 2), size: 8.5, bold: true, color: c))
+            y += h
+        }
+        _ = sW
+        units.append(Unit(h: y, ops: box("ตรวจความสูงอุปกรณ์", height: y, left: true) + o))
         return units
     }
 

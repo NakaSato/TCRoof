@@ -1,0 +1,158 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/* GRoof / TCRoof wizard shell — values from InspectionView (InspectionViews.swift), Components.swift, Theme.swift */
+.g, .g * { box-sizing: border-box; }
+.g {
+  --navy: #16325C; --primary: #1F6FB5; --primary-light: #2E8FDB; --teal: #27A99A; --mint: #9EE6D6;
+  --danger: #D9453B; --background: #F3F6FA; --muted: #7A8BA3; --text-2: #5B6B82;
+  font-family: -apple-system, "SF Pro Text", Sarabun, system-ui, sans-serif; color: var(--navy); background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+.g svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* header: headerGradient, bottom corners 15 */
+.g-head { flex: none; display: flex; align-items: center; gap: 14px; padding: 18px 24px; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); border-radius: 0 0 15px 15px; color: #FFFFFF; }
+.g-close { width: 36px; height: 36px; border-radius: 8px; background: #FFFFFF; color: var(--primary); display: grid; place-items: center; border: 0; flex: none; }
+.g-close svg { stroke-width: 2.5; width: 18px; height: 18px; }
+.g-head .t { font-size: 20px; line-height: 25px; font-weight: 700; }
+.g-head .s { font-size: 15px; line-height: 20px; opacity: .92; }
+
+/* progress: "3/11" · step name · capsules (gradient = current/past, mint = complete, grey = todo) */
+.g-prog { flex: none; padding: 14px 24px; display: flex; flex-direction: column; gap: 10px; }
+.g-prog .row { display: flex; justify-content: space-between; font-size: 15px; color: var(--navy); }
+.g-prog .row b { font-weight: 700; }
+.g-caps { display: flex; gap: 6px; }
+.g-caps i { flex: 1; height: 8px; border-radius: 4px; background: rgba(142,142,147,0.25); }
+.g-caps i.cur { background: linear-gradient(90deg, #1F6FB5, #2E8FDB); }
+.g-caps i.ok { background: var(--mint); }
+
+/* step body (maxWidth 760, padding 24, spacing 20) */
+.g-body { flex-grow: 1; overflow: hidden; padding: 4px 24px 24px; display: flex; flex-direction: column; gap: 20px; }
+.g-sec { font-size: 20px; line-height: 25px; font-weight: 600; color: var(--navy); }
+.g-hint { display: flex; gap: 6px; align-items: flex-start; font-size: 15px; line-height: 20px; color: var(--muted); }
+.g-hint svg { width: 17px; height: 17px; margin-top: 1px; }
+.g-sep { height: 1px; background: rgba(22,50,92,0.12); }
+
+/* FieldLabel: headline navy + red * */
+.g-field { display: flex; flex-direction: column; gap: 8px; }
+.g-label { display: flex; align-items: baseline; gap: 8px; font-size: 17px; line-height: 22px; font-weight: 600; color: var(--navy); }
+.g-label .req { color: var(--danger); }
+.g-label .aside { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--muted); }
+/* OutlinedFieldStyle: padding 14, radius 10, navy 45% stroke */
+.g-input { display: flex; align-items: center; min-height: 50px; padding: 14px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); border-radius: 10px; font-size: 17px; line-height: 22px; color: var(--navy); }
+.g-input.focus { border: 2px solid var(--primary); padding: 13px; }
+.g-input .ph { color: var(--muted); }
+.g-input .unit { margin-left: auto; padding-left: 10px; font-size: 20px; color: var(--muted); }
+.g-input.calc { background: rgba(158,230,214,0.3); }
+.g-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.g-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+
+/* ChoiceButton: minHeight 54, radius 10; selected mint (ไม่ผ่าน/ไม่ใช่: danger 25%) */
+.g-choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; }
+.g-choices.wrap { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.g-choice { min-height: 54px; display: grid; place-items: center; padding: 0 10px; text-align: center; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.5); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-choice.on { background: var(--mint); border-color: rgba(22,50,92,0.2); }
+.g-choice.no { background: rgba(217,69,59,0.25); border-color: rgba(22,50,92,0.2); }
+
+/* photo: อัปโหลด | กล้อง, thumbnails with x */
+.g-photobtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.g-pbtn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); font-size: 16px; font-weight: 600; color: var(--navy); }
+.g-pbtn svg { color: var(--primary); }
+.g-thumbs { display: flex; gap: 12px; flex-wrap: wrap; }
+.g-thumb { width: 84px; height: 84px; border-radius: 8px; background: #C9D6E3; position: relative; }
+.g-thumb .x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #FFFFFF; display: grid; place-items: center; }
+.g-thumb .x svg { width: 12px; height: 12px; stroke-width: 3; }
+.g-thumb .tag { position: absolute; left: 4px; bottom: 4px; font-size: 11px; line-height: 16px; background: rgba(255,255,255,0.92); padding: 0 6px; border-radius: 4px; }
+.g-nophoto { min-height: 80px; display: grid; place-items: center; background: #FFFFFF; border: 1px dashed rgba(122,139,163,0.5); border-radius: 10px; font-size: 15px; color: var(--muted); }
+.g-hasphoto { min-height: 50px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-crit { font-size: 15px; line-height: 20px; color: var(--danger); }
+
+/* bottom bar: บันทึก (outlined) + ‹ › gradient 120×56 */
+.g-bar { flex: none; display: flex; gap: 16px; padding: 16px 24px 28px; background: #FFFFFF; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.g-save { flex-grow: 1; min-height: 56px; border-radius: 12px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.6); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-nav { width: 120px; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); color: #FFFFFF; display: grid; place-items: center; }
+.g-nav svg { width: 22px; height: 22px; stroke-width: 2.75; }
+.g-nav.off { background: rgba(142,142,147,0.4); }
+.g-go { flex-grow: 1; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #27A99A, #4DB6E0); color: #FFFFFF; font-size: 17px; font-weight: 600; }
+
+/* StepSummaryRow */
+.g-sum { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; background: #FFFFFF; border-radius: 12px; text-decoration: none; color: var(--navy); }
+.g-sum .n { flex-grow: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+.g-sum .n small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.g-sum .ok { color: #2E9E5B; }
+.g-sum .miss { color: var(--danger); }
+.g-sum .chev { color: var(--muted); }
+</style></head><body style="margin:0">
+
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+a{color:#1F6FB5}a:hover{color:#16325C}
+</style>
+
+<div class="g" style="width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head">
+<div><div class="t">A4 น้ำท่วม</div><div class="s">แบบสำรวจ NO.224 · GRF2567-23407</div></div>
+</header>
+
+<div style="display: flex; justify-content: center"><div class="g-prog" style="width: 1240px; padding-left: 0; padding-right: 0">
+<div class="row"><b>4/13</b><span>ประวัติน้ำท่วม</span></div>
+<div class="g-caps"><i class="ok"></i><i class="ok"></i><i class="cur"></i><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</div></div>
+
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center">
+<main style="width: 1240px; display: grid; grid-template-columns: 560px minmax(0, 1fr); gap: 28px; padding-bottom: 16px; align-items: stretch">
+<div style="display:flex;flex-direction:column;gap:14px;min-width:0"><div style="background:#fff;border:1px solid rgba(22,50,92,0.2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:17px;font-weight:600">ภาพตัดระดับน้ำ</span><span style="font-size:13px;color:#5B6B82">อัปเดตตามข้อมูลด้านขวา · ใช้ในรายงาน PDF</span></div>
+<div style="position:relative;border-radius:8px;overflow:hidden"><svg viewBox="0 100 540 420" style="width:100%;height:420px;display:block;font-family:Sarabun,sans-serif" role="img" aria-label="ภาพตัดระดับน้ำท่วม 80 ซม. และระดับติดตั้งอุปกรณ์ 130 ซม.">
+<defs>
+<pattern id="hGround" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" fill="#EFEAE2"></rect><line x1="0" y1="0" x2="0" y2="10" stroke="#8C7B63" stroke-width="1.2"></line></pattern>
+<pattern id="hConc" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#F1F3F5"></rect><circle cx="2" cy="2" r="0.9" fill="#8E959B"></circle><circle cx="6" cy="6" r="0.7" fill="#8E959B"></circle></pattern>
+<pattern id="hWater" width="24" height="8" patternUnits="userSpaceOnUse"><rect width="24" height="8" fill="#E3EEF8"></rect><line x1="3" y1="4" x2="13" y2="4" stroke="#9FC3E4" stroke-width="1"></line></pattern>
+</defs>
+<rect x="0" y="100" width="540" height="420" fill="#fff"></rect>
+<rect style="" x="0" y="340" width="540" height="144" fill="url(#hWater)"></rect>
+<line style="" x1="0" y1="340" x2="540" y2="340" stroke="#1F6FB5" stroke-width="1.6" stroke-dasharray=""></line>
+<rect x="44" y="142" width="84" height="342" fill="#fff" stroke="#1F2E24" stroke-width="1.4"></rect>
+<line x1="44" y1="168" x2="128" y2="168" stroke="#1F2E24" stroke-width="0.8"></line>
+<text x="86" y="160" text-anchor="middle" font-size="12" font-weight="700" fill="#1F2E24">MDB 1 (เดิม)</text>
+<rect x="176" y="430" width="324" height="54" fill="url(#hConc)" stroke="#1F2E24" stroke-width="1.4"></rect>
+<path d="M186 430 V112 H490 V430" fill="none" stroke="#1F2E24" stroke-width="2.4"></path>
+<text x="338" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="#1F2E24">ห้อง Inverter (B2)</text>
+<rect x="250" y="140" width="64" height="110" fill="#fff" stroke="#1F6FB5" stroke-width="1.8"></rect>
+<text x="282" y="199" text-anchor="middle" font-size="12" font-weight="700" fill="#1F6FB5">INV</text>
+<rect x="332" y="160" width="46" height="90" fill="#fff" stroke="#1F6FB5" stroke-width="1.8"></rect>
+<text x="355" y="209" text-anchor="middle" font-size="10" font-weight="700" fill="#1F6FB5">SMDB</text>
+<line x1="0" y1="250" x2="540" y2="250" stroke="#1C8A7E" stroke-width="1.4" stroke-dasharray="14 4 3 4"></line>
+<rect x="0" y="484" width="540" height="36" fill="url(#hGround)"></rect>
+<line x1="0" y1="484" x2="540" y2="484" stroke="#1F2E24" stroke-width="2"></line>
+<g font-size="11.5" font-weight="700">
+<path d="M18 " fill="none"></path>
+<path d="M18 250 m-7 -11 h14 l-7 11 z" fill="#fff" stroke="#1C8A7E" stroke-width="1.4"></path><text x="30" y="244" fill="#1C8A7E" style="paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round">+1.30 ระดับติดตั้งต่ำสุด</text>
+<g style=""><path d="M470 340 m-7 -11 h14 l-7 11 z" fill="#fff" stroke="#1F6FB5" stroke-width="1.4"></path><text x="456" y="334" text-anchor="end" fill="#1F6FB5" style="paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round">+0.80 น้ำสูงสุด ปี 2554</text></g>
+<path d="M18 484 m-7 -11 h14 l-7 11 z" fill="#fff" stroke="#1F2E24" stroke-width="1.4"></path><text x="30" y="478" fill="#1F2E24" style="paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round">±0.00 ดินเดิม</text>
+</g>
+<g stroke="#1F2E24" stroke-width="1" fill="none"><line x1="514" y1="484" x2="514" y2="430"></line><line x1="514" y1="430" x2="514" y2="250"></line><line x1="500" y1="430" x2="520" y2="430"></line><line x1="378" y1="250" x2="520" y2="250" stroke-dasharray="3 3"></line><path d="M509 489 L519 479 M509 435 L519 425 M509 255 L519 245"></path></g>
+<text x="528" y="457" text-anchor="middle" transform="rotate(-90 528 457)" font-size="11" fill="#1F2E24">30</text>
+<text x="528" y="344" text-anchor="middle" transform="rotate(-90 528 344)" font-size="11" fill="#1F2E24">100</text>
+<g style="" stroke="#1C8A7E" stroke-width="1" fill="none"><line x1="160" y1="340" x2="160" y2="250"></line><path d="M155 345 L165 335 M155 255 L165 245"></path></g>
+<text style="" x="152" y="299" text-anchor="middle" transform="rotate(-90 152 299)" font-size="11" font-weight="700" fill="#1C8A7E">ระยะเผื่อ 50</text>
+<text x="338" y="444" text-anchor="middle" font-size="11" font-weight="700" fill="#1F2E24" style="paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round">พื้นห้อง +0.30</text>
+<text x="528" y="512" text-anchor="end" font-size="10.5" fill="#5B6B82">หน่วย: ซม. (ระดับเป็นเมตร)</text>
+</svg><span style="position:absolute;right:70px;top:252px;display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #1F6FB5;color:#1F6FB5;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:3px;">⇕ ลากเส้นน้ำเพื่อปรับระดับ</span></div>
+<div style="display:flex;flex-direction:column"><div style="display:flex;align-items:baseline;gap:8px;padding:0 2px 4px"><b style="font-size:15px">ตรวจความสูงอุปกรณ์</b><span style="font-size:12px;color:#5B6B82">ต้อง ≥ 130 ซม. จากดินเดิม</span></div><div style="display:flex;align-items:center;gap:8px;min-height:28px;border-top:1px solid #DDE4ED;font-size:14px"><span style="flex-grow:1;min-width:0">พื้นห้อง Inverter <span style="font-size:12px;color:#5B6B82">B2</span></span><span style="width:96px;font-variant-numeric:tabular-nums;color:#16325C">30 ซม.</span><span style="font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#FFF4E5;color:#B45309">! ต่ำกว่าน้ำ 50 ซม.</span></div><div style="display:flex;align-items:center;gap:8px;min-height:28px;border-top:1px solid #DDE4ED;font-size:14px"><span style="flex-grow:1;min-width:0">อินเวอร์เตอร์ × 2 <span style="font-size:12px;color:#5B6B82">B2</span></span><span style="width:96px;font-variant-numeric:tabular-nums;color:#16325C">130 ซม.</span><span style="font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#E2EFDA;color:#3B7420">✓ ผ่าน</span></div><div style="display:flex;align-items:center;gap:8px;min-height:28px;border-top:1px solid #DDE4ED;font-size:14px"><span style="flex-grow:1;min-width:0">ตู้ SMDB-PV · รีเลย์กันย้อน <span style="font-size:12px;color:#5B6B82">B4</span></span><span style="width:96px;font-variant-numeric:tabular-nums;color:#16325C">130 ซม.</span><span style="font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#E2EFDA;color:#3B7420">✓ ผ่าน</span></div><div style="display:flex;align-items:center;gap:8px;min-height:28px;border-top:1px solid #DDE4ED;font-size:14px"><span style="flex-grow:1;min-width:0">ปุ่ม Emergency <span style="font-size:12px;color:#5B6B82">B5</span></span><span style="width:96px;font-variant-numeric:tabular-nums;color:#16325C">140 ซม.</span><span style="font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#E2EFDA;color:#3B7420">✓ ผ่าน</span></div><div style="display:flex;align-items:center;gap:8px;min-height:28px;border-top:1px solid #DDE4ED;font-size:14px"><span style="flex-grow:1;min-width:0">MDP-1 จุดเชื่อมต่อ (เดิม) <span style="font-size:12px;color:#5B6B82">A3</span></span><span style="width:96px;font-variant-numeric:tabular-nums;color:#16325C">ฐาน 0 ซม.</span><span style="font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#FFF4E5;color:#B45309">! น้ำเคยเข้า 80 ซม.</span></div></div>
+</div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม<span class="aside">ไม่บังคับ · แนะนำถ่ายคู่ตลับเมตร</span></label><div style="display:flex;gap:10px;align-items:center"><div style="position:relative;width:92px;height:60px;border-radius:8px;overflow:hidden;background:linear-gradient(180deg,#C8CDC6 0 52%,#8C8A6E 52% 55%,#A9A58C 55%);flex:none"><span style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:grid;place-items:center"><svg class="ic" viewBox="0 0 24 24" style="width:11px;height:11px;stroke-width:3"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div><div style="position:relative;width:92px;height:60px;border-radius:8px;overflow:hidden;background:linear-gradient(180deg,#D8DCDF 0 60%,#7F7B62 60% 63%,#B3AE95 63%);flex:none"><span style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:grid;place-items:center"><svg class="ic" viewBox="0 0 24 24" style="width:11px;height:11px;stroke-width:3"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div><span class="g-pbtn" style="min-height:60px;width:110px;flex-direction:row;gap:6px;font-size:14px"><svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 15l5-4 4 3 3-2 6 4"></path></svg>อัปโหลด</span><span class="g-pbtn" style="min-height:60px;width:110px;flex-direction:row;gap:6px;font-size:14px"><svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>กล้อง</span></div></div></div>
+<div style="display:flex;flex-direction:column;gap:12px;min-width:0"><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">พื้นที่เคยมีน้ำท่วมหรือไม่ <span class="req">*</span></label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><span class="g-choice" onClick="" style="min-height:50px;font-size:17px;cursor:pointer">ไม่เคย</span><span class="g-choice on" onClick="" style="min-height:50px;font-size:17px;cursor:pointer">เคย</span><span class="g-choice" onClick="" style="min-height:50px;font-size:17px;cursor:pointer">ไม่ทราบ</span></div></div><div style="display:flex;flex-direction:column;gap:12px"><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px"><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ปีล่าสุด (พ.ศ.) <span class="req">*</span></label><div class="g-input" style="min-height:46px;padding-top:0;padding-bottom:0;font-weight:700">2554</div></div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ระดับน้ำสูงสุด <span class="req">*</span></label><div class="g-input focus" style="min-height:46px;padding-top:0;padding-bottom:0;font-weight:700">80<span class="unit" style="font-size:14px">ซม.</span></div></div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ท่วมขัง</label><div class="g-input" style="min-height:46px;padding-top:0;padding-bottom:0;font-weight:700">7<span class="unit" style="font-size:14px">วัน</span></div></div></div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">วัดความสูงจาก <span class="req">*</span></label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><span class="g-choice on" onClick="" style="min-height:40px;font-size:14px;cursor:pointer">ดินเดิม</span><span class="g-choice" onClick="" style="min-height:40px;font-size:14px;cursor:pointer">พื้นถนน</span><span class="g-choice" onClick="" style="min-height:40px;font-size:13px;cursor:pointer">พื้นห้อง MDB</span></div></div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ที่มาข้อมูล <span class="req">*</span><span class="aside"><a href="https://flood.gistda.or.th" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none">แผนที่ GISTDA ↗</a></span></label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><span class="g-choice on" onClick="" style="min-height:40px;font-size:14px;cursor:pointer">เจ้าหน้าที่</span><span class="g-choice" onClick="" style="min-height:40px;font-size:14px;cursor:pointer">คราบน้ำ</span><span class="g-choice" onClick="" style="min-height:40px;font-size:14px;cursor:pointer">GISTDA</span></div></div></div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ความถี่</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><span class="g-choice" style="min-height:44px;font-size:15px">ทุกปี</span><span class="g-choice" style="min-height:44px;font-size:15px">2–5 ปีครั้ง</span><span class="g-choice on" style="min-height:44px;font-size:15px">นานกว่า 5 ปี</span></div></div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">สาเหตุ<span class="aside">เลือกได้ 1</span></label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><span class="g-choice" style="min-height:40px;font-size:14px">ฝนตกหนัก / ระบายไม่ทัน</span><span class="g-choice on" style="min-height:40px;font-size:14px">แม่น้ำ / คลองล้นตลิ่ง</span><span class="g-choice" style="min-height:40px;font-size:14px">น้ำทะเลหนุน</span><span class="g-choice" style="min-height:40px;font-size:14px">น้ำป่า / น้ำหลาก</span><span class="g-choice" style="min-height:40px;font-size:14px">อื่นๆ</span></div></div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">จุดที่เคยได้รับผลกระทบ<span class="aside">แสดงบนภาพ A2</span></label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 12px"><span style="display:flex;align-items:center;gap:8px;min-height:30px;font-size:14px"><span style="width:22px;height:22px;border-radius:3px;background:#1F6FB5;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none">✓</span>ห้อง MDB / ตู้ไฟฟ้า</span><span style="display:flex;align-items:center;gap:8px;min-height:30px;font-size:14px"><span style="width:22px;height:22px;border-radius:3px;border:1.5px solid #77889E;background:#fff;box-sizing:border-box;flex:none"></span>หม้อแปลง</span><span style="display:flex;align-items:center;gap:8px;min-height:30px;font-size:14px"><span style="width:22px;height:22px;border-radius:3px;background:#1F6FB5;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none">✓</span>ห้องเครื่องสูบน้ำ</span><span style="display:flex;align-items:center;gap:8px;min-height:30px;font-size:14px"><span style="width:22px;height:22px;border-radius:3px;border:1.5px solid #77889E;background:#fff;box-sizing:border-box;flex:none"></span>อาคาร / พื้นที่อินเวอร์เตอร์</span><span style="display:flex;align-items:center;gap:8px;min-height:30px;font-size:14px"><span style="width:22px;height:22px;border-radius:3px;background:#1F6FB5;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none">✓</span>ถนนทางเข้า</span></div></div></div><div class="g-field" style="gap:6px;flex-grow:1"><label class="g-label" style="font-size:16px">หมายเหตุ</label><div class="g-input" style="flex-grow:1;align-items:flex-start;padding-top:12px;padding-bottom:0;font-size:15px">ปี 2554 น้ำเข้าห้อง MDB สูงประมาณครึ่งตู้ · ถนนทางเข้าถูกตัดขาด 5 วัน</div></div></div>
+</main>
+</div>
+
+<nav class="g-bar" style="justify-content: center; padding-bottom: 24px"><div style="width: 1240px; display: flex; align-items: center; gap: 12px">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; min-width: 0">
+<svg class="ic" viewBox="0 0 24 24" style="color: #2E9E5B"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+<div><div style="font-size: 15px; font-weight: 600; color: #16325C">บันทึกอัตโนมัติ 10:27</div><div style="font-size: 13px; color: #5B6B82">ครบช่องบังคับแล้ว · อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ 130 ซม. · จุดต่อ MDP-1 เคยน้ำท่วม</div></div>
+</div>
+<button class="g-save" style="flex-grow: 0; width: 170px; font-size: 16px">บันทึกร่างตอนนี้</button>
+<button class="g-nav" style="width: 230px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; background: #FFFFFF; color: #16325C; border: 1px solid rgba(22,50,92,0.6)"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px"><path d="M15 5l-7 7 7 7"></path></svg><span style="text-align: left; line-height: 18px"><span style="display: block; font-size: 12px; font-weight: 400; color: #5B6B82">ก่อนหน้า 3/13</span>A3 หม้อแปลง · MDB</span></button>
+<button class="g-nav" style="width: 230px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600"><span style="text-align: right; line-height: 18px"><span style="display: block; font-size: 12px; font-weight: 400; opacity: .9">ถัดไป 5/13</span>B1 ตู้ไฟฟ้าอาคาร</span><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px"><path d="M9 5l7 7-7 7"></path></svg></button>
+</div></nav>
+</div>
+</body></html>

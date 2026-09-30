@@ -50,8 +50,10 @@ struct JobEditorView: View {
     var cardSite: Bool { page == .site && !compact }
     /// A3's power-flow diagram (docs/ui/survey-a3) zooms to fit, so portrait iPad uses it too; iPhone keeps `groupPage`.
     var cardElectrical: Bool { page == .electrical && !compact }
+    /// A4's flood page (docs/ui/survey-a4): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
+    var cardFlood: Bool { page == .flood && !compact }
     /// Pages with the blue header and bottom bar instead of the navigation bar.
-    var cardPage: Bool { cardInfo || cardSite || cardElectrical }
+    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?
     /// A transformer the A3 bottom bar's "ยังขาดภาพ" chip points to.
@@ -76,7 +78,7 @@ struct JobEditorView: View {
                     .background(Paper.page)
                     .safeAreaInset(edge: .top, spacing: 0) {
                         if cardPage {
-                            InfoPageHeader(job: job, title: cardElectrical ? "A3 หม้อแปลง · MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ", back: { dismiss() },
+                            InfoPageHeader(job: job, title: cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง · MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ", back: { dismiss() },
                                            toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
                                            export: { model.flush(job.id); showExport = true })
                         }
@@ -107,6 +109,8 @@ struct JobEditorView: View {
         .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "site" { select(.site) } }
         // `-surveyPage electrical` opens A3
         .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "electrical" { select(.electrical) } }
+        // `-surveyPage flood` opens A4
+        .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "flood" { select(.flood) } }
         // `-surveyWideA1 YES` shows A1's two-column (landscape) layout in any orientation, sidebar hidden (simulators can't be turned from the command line)
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyWideA1") { sidebarVisible = false } }
         // `-surveyExport YES` opens the export sheet for simulator checks
@@ -141,6 +145,15 @@ struct JobEditorView: View {
             .padding(.horizontal, 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
+        } else if cardFlood {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                FloodPageWide(job: $job, width: min(detailSize.width, 1318 + 48) - 48, stacked: infoColumns != 2)
+                    .disabled(readOnly)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
         } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
@@ -174,11 +187,13 @@ struct JobEditorView: View {
     /// Bottom bar of the card pages; A2's lists the LIST items still unticked.
     var cardBar: some View {
         let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
-        let here: MissingGroup.Target = cardElectrical ? .electrical : cardSite ? .site : .info
+        let here: MissingGroup.Target = cardFlood ? .flood : cardElectrical ? .electrical : cardSite ? .site : .info
         let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
             : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900,
-                           previous: cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(nextPage), gaps: gaps)
+                           previous: cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(nextPage), gaps: gaps,
+                           statusText: cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil,
+                           statusAlert: cardFlood && job.floodCheck.fails > 0)
     }
 
     var readOnlyBanner: some View {

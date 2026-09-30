@@ -26,6 +26,12 @@ struct SurveySettingsView: View {
                     Text("ปุ่ม \"Google Maps\" ในกรอบภาพสถานที่ติดตั้ง / ภาพมุมสูง ดึงภาพดาวเทียมตรงพิกัด GPS ของงาน ใส่ key ของ Maps Static API เพื่อใช้ภาพ Google ถ้าเว้นว่างจะใช้ภาพดาวเทียมของ Apple Maps แทน")
                 }
                 Section {
+                    SecureField("GISTDA API key", text: $s.gistdaKey)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                } header: { Text("น้ำท่วม (A4)") } footer: {
+                    Text("ใช้ปุ่ม \"ดึงข้อมูลจาก GISTDA\" ในหน้า A4 เมื่อไม่ทราบประวัติน้ำท่วม key เก็บในเครื่องนี้เท่านั้น ไม่ถูกบันทึกในงานหรือส่งขึ้น Drive")
+                }
+                Section {
                     TextField("xxxxxxxx.apps.googleusercontent.com", text: $s.googleClientID)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                     TextField("โฟลเดอร์หลักใน Drive", text: $s.driveRoot)

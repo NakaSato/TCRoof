@@ -37,3 +37,7 @@ _update/
 .env.*
 # Added by code-review-graph
 .code-review-graph/
+
+# GISTDA API key (see Secrets.example.xcconfig)
+Secrets.xcconfig
+**/Secrets.xcconfig

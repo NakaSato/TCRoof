@@ -66,7 +66,7 @@ extension ReportLayout {
         case .water:
             return [two(spec.reportTitle + ofBuilding, d.photo("photoArea"), "ภาพถ่ายพื้นที่ติดตั้ง", right: d.photo("photoWide"), "ภาพถ่ายมุมกว้างของพื้นที่ติดตั้ง",
                         infoL: { y, o in o += checks(["ติดตั้งระบบน้ำใหม่", "ติดตั้งร่วมกับระบบน้ำเดิม"], chosen: { d.choice("waterMode") == $0 }, x: 6, y: y + 4, width: half - 12).0 },
-                        infoR: detailLine)]
+                        infoR: detailLine)] + waterPointUnit(mod)
         case .backfeed:
             return [two(spec.reportTitle + ofBuilding, d.photo("photoArea"), "ภาพถ่ายพื้นที่ติดตั้ง", right: d.photo("photoDetail"), "รายละเอียด", detail: d.text("detail"),
                         infoL: { y, o in
@@ -82,6 +82,25 @@ extension ReportLayout {
         case .house, .roofForm: return formSection(mod)
         }
     }
+
+    /// B3's water point on the A2 picture, with A2's drawings and symbols, ringed and named by the water mode.
+    func waterPointUnit(_ mod: SurveyModule) -> [Unit] {
+        guard let p = j.photo("siteMap"), let m = WaterPoint.mark(job, module: mod.id) else { return [] }
+        let W = Self.cw, picH = 260.0, h = Self.band + picH + 8
+        var o = box("ตำแหน่งจุดจ่ายน้ำ (ภาพ A2)" + (mod.name.isEmpty ? "" : " " + mod.name), height: h)
+        let pic = Box(6, Self.band + 4, W - 12, picH).fit(Double(p.width), Double(p.height))
+        o.append(.photo(p, pic))
+        o += siteDrawing(in: pic)
+        let c = Pt(pic.x + m.x * pic.w, pic.y + m.y * pic.h), R = max(6, pic.w * 0.019)
+        o.append(.circle(c, r: R * 1.6, stroke: Self.waterBlue, fill: nil, width: 2))
+        let label = WaterPoint.mode(mod.values)?.pinLabel ?? "จุดจ่ายน้ำ"
+        let fs = 7.5, tw = ApproxText.width(label, size: fs, bold: true) + 10
+        let tag = Box(c.x - tw / 2, c.y + R * 1.8, tw, 12)
+        o.append(.rect(tag, stroke: nil, fill: Self.waterBlue))
+        o.append(.text(label, at: Pt(c.x, tag.y + 6), size: fs, bold: true, color: .white, align: .center))
+        return [Unit(h: h, ops: o)]
+    }
+    static let waterBlue = RGBA(hex: 0x1F6FB5)
 
     func planSection(_ mod: SurveyModule) -> [Unit] {
         let d = mod.values, tank = mod.type == .tank, W = Self.cw

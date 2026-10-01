@@ -129,10 +129,13 @@ public struct MapMark: Codable, Hashable, Identifiable, Sendable {
     public var value: String = ""
     /// Name written on the picture ("TX 1", "หลังคาถังน้ำใส 1"); empty uses the kind's default.
     public var label: String = ""
-    public init(id: UUID = UUID(), kind: MarkKind, x: Double, y: Double, value: String = "", label: String = "") {
+    /// The section this point belongs to: a B3 water module's water point (`WaterPoint`). nil for A2's own symbols.
+    public var module: UUID? = nil
+    public init(id: UUID = UUID(), kind: MarkKind, x: Double, y: Double, value: String = "", label: String = "", module: UUID? = nil) {
         self.id = id; self.kind = kind; self.x = min(max(x, 0), 1); self.y = min(max(y, 0), 1); self.value = value; self.label = label
+        self.module = module
     }
-    enum CodingKeys: String, CodingKey { case id, kind, x, y, value, label }
+    enum CodingKeys: String, CodingKey { case id, kind, x, y, value, label, module }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
@@ -140,6 +143,7 @@ public struct MapMark: Codable, Hashable, Identifiable, Sendable {
         x = try c.decode(Double.self, forKey: .x); y = try c.decode(Double.self, forKey: .y)
         value = try c.decodeIfPresent(String.self, forKey: .value) ?? ""
         label = try c.decodeIfPresent(String.self, forKey: .label) ?? ""
+        module = try c.decodeIfPresent(UUID.self, forKey: .module)
     }
     /// "800 kVA", "1250 AT", or "" when there is nothing to show.
     public var rating: String {

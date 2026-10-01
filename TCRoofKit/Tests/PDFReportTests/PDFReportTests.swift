@@ -57,6 +57,25 @@ final class PDFReportTests: XCTestCase {
         }
     }
 
+    /// B3's water point is drawn on the A2 picture in the water section, named by the water mode; no pin, no extra block.
+    func testWaterPointInReport() throws {
+        let fx = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../ExcelExportTests/Fixtures/job215.json")
+        let store = JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("pdf-" + UUID().uuidString))
+        var job = try WebBackup.importJobs(Data(contentsOf: fx), into: store)[0]
+        XCTAssertNotNil(job.values.photo("siteMap"))
+        if !job.modules.contains(where: { $0.type == .water }) { job.modules.append(SurveyModule(type: .water)) }
+        let w = job.modules.first { $0.type == .water }!.id
+        job.modules[job.modules.firstIndex { $0.id == w }!].values["waterMode"] = .choice(WaterPoint.Mode.new.rawValue, other: "")
+        func texts(_ j: Job) -> [String] {
+            ReportLayout(job: j, header: ReportHeader()).pages().flatMap(\.ops).compactMap { if case .text(let t, _, _, _, _, _, _) = $0 { return t }; return nil }
+        }
+        XCTAssertFalse(texts(job).contains("ตำแหน่งจุดจ่ายน้ำ (ภาพ A2)"))
+        WaterPoint.place(&job, module: w, x: 0.3, y: 0.4)
+        let t = texts(job)
+        XCTAssertTrue(t.contains { $0.hasPrefix("ตำแหน่งจุดจ่ายน้ำ (ภาพ A2)") })
+        XCTAssertTrue(t.contains("ถังพัก / ปั๊มใหม่"))
+    }
+
     /// A2's drawings, new symbols and site note appear over / under the site picture on the report's first page.
     func testSiteDrawingInReport() throws {
         let fx = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../ExcelExportTests/Fixtures/job215.json")

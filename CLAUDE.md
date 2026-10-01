@@ -32,6 +32,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
 - `-surveyStacked YES` forces the one-column (portrait) layout of the wide pages in a landscape simulator.
 - `-surveyPage site|electrical|sld|inverter|panels|flood|water|fts|roof` opens that page (`JobEditor.openDebugPage`).
+- `-surveyC1 span|spany|posts|pv|keepout|landscape|ridgev|frame-n|frame-w|frame-c|frame-r|bays12|picker|shape|material|wood` (with `-surveyPage roof`) writes the design's example roof into the opened job and opens that state of `docs/ui/survey-c1/states`.
 - `-surveyRoofRender YES` (with `-surveyPage roof`) writes C1 offscreen at several free widths and heights to `Documents/roof-<w>x<h>.png`, for layout checks without rotating. ImageRenderer can't draw menus, text fields or scroll views; they show as placeholders or blank.
 - `-surveyExport YES` opens the export sheet.
 - `-surveyA2 layers|fullscreen` opens A2's layers menu, or full screen with the first placed building model selected.

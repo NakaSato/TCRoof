@@ -30,7 +30,9 @@ extension RoofPageWide {
                 Text(m.name).font(.system(size: 16)).lineLimit(1).minimumScaleFactor(0.7).truncationMode(.tail)
                 Spacer(minLength: 6)
                 if off { Circle().fill(Home.warn).frame(width: 8, height: 8).accessibilityLabel("ขนาดนี้ไม่อยู่ในรายการของชนิดโครงนี้") }
-                Image("c1-profile-\(Roof.profile(size))", bundle: .module).resizable().scaledToFit().frame(width: 20, height: 20)
+                if !size.isEmpty {
+                    Image("c1-profile-\(Roof.profile(size))", bundle: .module).resizable().scaledToFit().frame(width: 20, height: 20)
+                }
                 Text(size.isEmpty ? "เลือกขนาด" : size + (spacing.isEmpty ? "" : " " + spacing))
                     .font(.system(size: 16, weight: !size.isEmpty && size != "-" && size != m.defaultSize ? .bold : .regular))
                     .foregroundStyle(size.isEmpty ? Home.primary : size == "-" ? Home.disabledText : Home.navy)
@@ -69,6 +71,7 @@ extension RoofPageWide {
                     HStack(spacing: 10) {
                         Image("c1-profile-\(Roof.profile(s))", bundle: .module).resizable().scaledToFit().frame(width: 18, height: 18)
                         Text(s == "-" ? "-  (ไม่มี / ไม่ใช้)" : s).font(.system(size: 15, weight: on ? .bold : .regular))
+                        if s == m.defaultSize && s != "-" { Text("มาตรฐาน").font(.system(size: 11, weight: .semibold)).foregroundStyle(Home.ok) }
                         Spacer()
                         if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.primary) }
                     }

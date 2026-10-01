@@ -37,6 +37,8 @@ struct RoofPageWide: View {
     @State var sketchPicker = false
     @State var sketchCamera = false
     @State var viewingSketch: Photo?
+    /// A card the stacked column scrolls to (DEBUG state checks).
+    @State var scrollTarget: String?
 
     var gap: CGFloat { width >= 1180 ? 28 : 20 }
     /// Side by side only: the plan / section column.
@@ -60,6 +62,9 @@ struct RoofPageWide: View {
             if stacked { stackedLayout } else { wideLayout }
         }
         .foregroundStyle(Home.navy)
+        #if DEBUG
+        .task { await openDebugState() }
+        #endif
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -105,16 +110,21 @@ struct RoofPageWide: View {
 
     /// Portrait or narrow: the drawings at full width keep their aspect, the cards follow; one scrolling column.
     @ViewBuilder var stackedLayout: some View {
-        if scrolls { ScrollView { stackedColumn }.scrollIndicators(.hidden) } else { stackedColumn }
+        if scrolls {
+            ScrollViewReader { proxy in
+                ScrollView { stackedColumn }.scrollIndicators(.hidden)
+                    .onChange(of: scrollTarget) { _, t in if let t { withAnimation { proxy.scrollTo(t, anchor: .top) } } }
+            }
+        } else { stackedColumn }
     }
 
     var stackedColumn: some View {
             VStack(spacing: 12) {
                 planCard.frame(height: min(620, width * RoofPlan.height / RoofPlan.width) + 64)
                 sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + 72)
-                infoCard
-                membersCard
-                photosCard
+                infoCard.id("info")
+                membersCard.id("members")
+                photosCard.id("photos")
             }
             .padding(.bottom, 4)
     }
@@ -265,6 +275,50 @@ struct RoofPageWide: View {
         .padding(.vertical, 6)
     }
 }
+
+#if DEBUG
+extension RoofPageWide {
+    /// `-surveyC1 <state>` seeds the design's example roof (19 × 16, Pratt, ridge นอน, two skylights) and opens one of the
+    /// states in docs/ui/survey-c1/states: span, spany, posts, pv, keepout, landscape, ridgev, frame-n|w|c|r, picker,
+    /// shape, material, wood, bays12.
+    func openDebugState() async {
+        guard let state = UserDefaults.standard.string(forKey: "surveyC1") else { return }
+        update { v in
+            Roof.setSpans(&v, .x, [1.5, 4, 4, 4, 4, 1.5]); Roof.setSpans(&v, .y, [1.5, 4.5, 4, 4.5, 1.5])
+            Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt); Roof.setBays(&v, nil)
+            v[Roof.Key.pvOrientation] = nil; v[Roof.Key.structure] = nil; v[Roof.Key.posts] = nil
+            v[Roof.Key.obstacles] = .obstacles([Obstacle(label: "แผ่นใส", x: "6.4", y: "1", w: "0.8", h: "6.6", kind: Roof.skylightKind),
+                                                Obstacle(label: "แผ่นใส", x: "11.8", y: "8.4", w: "0.8", h: "6.6", kind: Roof.skylightKind, canCover: true)])
+            v[Roof.Key.panels] = .text("312")
+        }
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        switch state {
+        case "span": span = SpanRef(axis: .x, index: 2)
+        case "spany": span = SpanRef(axis: .y, index: 1)
+        case "posts": editPosts = true
+        case "pv": mode = .pv
+        case "keepout":
+            update { v in
+                Roof.addArea(&v, kind: Roof.keepOutKind, x1: 2.4, y1: 9.2, x2: 6.6, y2: 12.2)
+                Roof.addArea(&v, kind: Roof.keepOutKind, x1: 13, y1: 2.2, x2: 15.4, y2: 4.4)
+            }
+            mode = .pv; tool = .keepOut
+        case "landscape": set(Roof.Key.pvOrientation, .text("l")); mode = .pv
+        case "ridgev": update { Roof.setRidge(&$0, .v) }
+        case "frame-n": update { Roof.setFrame(&$0, .normal) }
+        case "frame-w": update { Roof.setFrame(&$0, .warren) }
+        case "frame-c": update { Roof.setFrame(&$0, .rafterTie) }
+        case "frame-r": update { Roof.setFrame(&$0, .rafterTruss) }
+        case "bays12": update { Roof.setBays(&$0, 12) }
+        case "picker": scrollTarget = "members"; try? await Task.sleep(nanoseconds: 700_000_000); member = 2
+        case "shape": scrollTarget = "info"; try? await Task.sleep(nanoseconds: 700_000_000); dropdown = Roof.Key.shape
+        case "material": scrollTarget = "info"; try? await Task.sleep(nanoseconds: 700_000_000); dropdown = Roof.Key.material
+        case "wood": set(Roof.Key.structure, .choice("ไม้", other: "")); scrollTarget = "info"
+        default: break
+        }
+    }
+}
+#endif
 
 /// The design's segmented control: a grey track, the chosen segment white with a soft shadow and bold navy text.
 /// When the segments can't get `minSegment` each, it falls back to a menu with the same values.

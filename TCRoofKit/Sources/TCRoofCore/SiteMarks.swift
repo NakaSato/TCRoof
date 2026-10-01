@@ -5,8 +5,11 @@ import Foundation
 public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case meter, trafo, mdb, inv, water, office
     case zeroExport, meterSub, weather, roofLabel, stairs
+    /// B5's FTS switch (Emergency) button, placed from B5 only (`ModuleMarks`); like `water`, not in A2's palette.
+    case emergency
     public var id: String { rawValue }
-    /// A2's symbol palette, in the design's order. `water` isn't offered any more but still shows where a job has it.
+    /// A2's symbol palette, in the design's order. `water` isn't offered any more but still shows where a job has it;
+    /// `emergency` is placed from B5.
     public static let palette: [MarkKind] = [.meter, .zeroExport, .trafo, .mdb, .inv, .meterSub, .weather, .office, .roofLabel, .stairs]
     /// Palette name and hint (docs/ui/survey-a2).
     public var paletteTitle: String {
@@ -22,6 +25,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .roofLabel: return "ชื่อหลังคา"
         case .stairs: return "บันได"
         case .water: return "จุดเชื่อมน้ำ"
+        case .emergency: return "ปุ่ม FTS switch"
         }
     }
     public var paletteDetail: String {
@@ -37,6 +41,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .roofLabel: return "+ ขอบเขตแดง"
         case .stairs: return "ทางขึ้นหลังคา"
         case .water: return "WATER CONNECTION POINT"
+        case .emergency: return "Emergency"
         }
     }
     /// The LIST item (`Options.list`) placing this symbol ticks.
@@ -49,7 +54,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .inv: return Options.list[1]
         case .office: return Options.list[2]
         case .stairs: return Options.list[4]
-        case .meterSub, .weather, .roofLabel, .water: return nil
+        case .meterSub, .weather, .roofLabel, .water, .emergency: return nil
         }
     }
     /// Label printed next to the symbol, as on the company's site drawings.
@@ -66,6 +71,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .weather: return "WEATHER STATION"
         case .roofLabel: return "ROOF"
         case .stairs: return "STAIRS"
+        case .emergency: return "FTS SWITCH (EMERGENCY)"
         }
     }
     /// Unit of the rating written under the symbol (transformer kVA, MDB main breaker AT); nil = no rating.
@@ -86,6 +92,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .weather: return "WS"
         case .roofLabel: return "Aa"
         case .stairs: return "ST"
+        case .emergency: return "E"
         }
     }
     /// Line and text colour, from the design's icon set (docs/ui/survey-a2/icons).
@@ -97,10 +104,11 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .water: return RGBA(hex: 0x0891B2)
         case .office, .zeroExport, .weather, .roofLabel: return RGBA(hex: 0xE03A2F)
         case .meterSub: return RGBA(hex: 0x1BA7C9)
+        case .emergency: return RGBA(hex: 0xD9453B)
         }
     }
     /// Image in SurveyUI's `A2Icons` asset catalog (docs/ui/survey-a2/icons); nil = no icon in the design, use `symbol`.
-    public var assetName: String? { self == .water ? nil : "mark-" + rawValue }
+    public var assetName: String? { self == .water || self == .emergency ? nil : "mark-" + rawValue }
     /// SF Symbol for the editor toolbar; the fallback where `assetName` is nil or missing.
     public var symbol: String {
         switch self {
@@ -115,6 +123,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .weather: return "cloud.sun"
         case .roofLabel: return "textformat"
         case .stairs: return "stairs"
+        case .emergency: return "exclamationmark.octagon.fill"
         }
     }
 }
@@ -274,8 +283,16 @@ public enum SiteMarks {
                     .polygon([Q(-6, -4), Q(-6, 4), Q(0, 0)], stroke: nil, fill: col, width: w),
                     .polygon([Q(6, -4), Q(6, 4), Q(0, 0)], stroke: nil, fill: col, width: w),
                     .line(Q(0, 0), Q(0, -6), width: w, color: col), .line(Q(-2.5, -6), Q(2.5, -6), width: w, color: col)]
+        case .emergency:   // docs/ui/survey-b5/icons/b5-fts-pin.svg on its 44-unit grid, r 21 = R
+            let v = R / 21
+            return [.circle(c, r: 21 * v, stroke: emergencyHalo, fill: RGBA(0.941, 0.549, 0, 0.18), width: 3 * v),
+                    .circle(c, r: 13 * v, stroke: col, fill: .white, width: 4 * v),
+                    .circle(c, r: 5.5 * v, stroke: nil, fill: col)]
         }
     }
+
+    /// The orange halo round the FTS switch pin.
+    public static let emergencyHalo = RGBA(hex: 0xF08C00)
 
     /// Kinds in use, in legend order.
     /// Roof names label themselves, so they stay out of the legend.

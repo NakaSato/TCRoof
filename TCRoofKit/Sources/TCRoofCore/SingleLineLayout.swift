@@ -11,6 +11,8 @@ public struct SLHit: Sendable {
 public struct SingleLineDrawing: Sendable {
     public var sketch: Sketch
     public var hits: [SLHit]
+    /// The inverters, FTS DC cut, PV arrays and Emergency button with its control lines (B5's crop).
+    public var ftsBox: Box? = nil
     public var width: Double { sketch.width }
     public var height: Double { sketch.height }
 }
@@ -42,6 +44,7 @@ private struct Drawer {
     var o: [DrawOp] = []
     var hits: [SLHit] = []
     var midX = 780.0
+    var ftsBox: Box?
     typealias L = SingleLineLayout
     var ink: RGBA { L.ink }
 
@@ -179,7 +182,7 @@ private struct Drawer {
 
         let h = C + 660
         o.insert(.rect(Box(0, 0, L.width, h), stroke: nil, fill: .white), at: 0)
-        return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits)
+        return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits, ftsBox: ftsBox)
     }
 
     // MARK: a board under a transformer
@@ -327,5 +330,7 @@ private struct Drawer {
         add(SLSymbols.emergency(x: emgX, y: ey))
         text("ปุ่ม Emergency", emgX, ey + 28, size: 11, L.blue, align: .center)
         hit(emgX - 40, ey - 16, 80, 56, .module(.fts))
+        let left = invX0 - 250, right = max(ctrlX, emgX + 50) + 14
+        ftsBox = Box(left, smdbY + 56, right - left, ey + 40 - (smdbY + 56))
     }
 }

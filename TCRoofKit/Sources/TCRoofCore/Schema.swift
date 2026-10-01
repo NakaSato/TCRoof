@@ -299,7 +299,10 @@ public enum Schema {
                             C("level", "ตำแหน่งกันย้อน", ["กันย้อนที่แรงต่ำ", "กันย้อนที่แรงสูง"]),
                             C("pole", "เสา", ["เสาเดิม", "เสาใหม่"], when: { $0.choice("level") == "กันย้อนที่แรงสูง" }), detail()])]),
         .fts: ModuleSpec(type: .fts, sheet: "ระบบไฟฟ้า", label: "ตู้ FTS และปุ่มฉุกเฉิน", short: "ตู้ FTS และปุ่มฉุกเฉิน", reportTitle: "ภาพตำแหน่งติดตั้งตู้ FTS และปุ่ม Emergency", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
-            GroupSpec(nil, [P("photoFTS", "ภาพถ่ายพื้นที่ติดตั้งตู้ FTS"), P("photoEmg", "ภาพถ่ายพื้นที่ติดตั้งปุ่ม Emergency")])]),
+            // the owner no longer records the FTS cabinet's place (docs/ui/survey-b5): its photo stays for old jobs, Excel and
+            // the PDF but is optional, so B5 needs only the Emergency button photo; `emgPlace` is B5 wide page's place text
+            GroupSpec(nil, [P("photoFTS", "ภาพถ่ายพื้นที่ติดตั้งตู้ FTS", optional: true), P("photoEmg", "ภาพถ่ายพื้นที่ติดตั้งปุ่ม Emergency"),
+                            T("emgPlace", "ตำแหน่งปุ่ม Emergency", optional: true, when: { _ in false })])]),
         .roof: ModuleSpec(type: .roof, sheet: "หลังคาทั่วไป R", label: "หลังคา (แปลนและโครงสร้าง)", short: "หลังคา", reportTitle: "หลังคาทั่วไป", namePlaceholder: "เช่น 1 โรงกรอง", groups: [
             GroupSpec("แปลนหลังคา", planFields(tank: false)),
             GroupSpec("โครงสร้าง", [FieldSpec("diag", "แนะนำองค์ประกอบของหลังคา", .diagram)] + Options.components.enumerated().map { FieldSpec("comp\($0.offset + 1)", "\($0.offset + 1). \($0.element)", .member(component: $0.offset + 1)) }),

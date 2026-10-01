@@ -257,6 +257,8 @@ struct InfoPageBar: View {
     /// Replaces the completion line (A4: the equipment height check); red when `statusAlert`.
     var statusText: String? = nil
     var statusAlert = false
+    /// A warning that doesn't block completion (B5's button height): orange "!" and an orange status line.
+    var statusWarn = false
     /// Steps the back / next buttons name, when not the ones either side of `here` (B1 shows every building on one page).
     var previousIndex: Int? = nil
     var nextIndex: Int? = nil
@@ -275,7 +277,7 @@ struct InfoPageBar: View {
         let saved = max(job.updated, savedNow ?? .distantPast)
         HStack(spacing: 12) {
             HStack(spacing: 10) {
-                badge(complete: c.isComplete && !statusAlert)
+                badge(complete: c.isComplete && !statusAlert && !statusWarn)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("บันทึกอัตโนมัติ " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
@@ -354,7 +356,7 @@ struct InfoPageBar: View {
 
     /// "ครบ 9/10 ช่องในหน้านี้", or "ครบช่องบังคับแล้ว · ยังขาด [chips]" when the page lists gaps.
     @ViewBuilder func status(_ c: Completion) -> some View {
-        let tint = c.isComplete && !statusAlert ? Home.muted : Home.danger
+        let tint = !c.isComplete || statusAlert ? Home.danger : statusWarn ? Home.pending : Home.muted
         if let statusText {
             Text(statusText).font(.system(size: 13)).foregroundStyle(tint)
         } else if gaps.isEmpty {

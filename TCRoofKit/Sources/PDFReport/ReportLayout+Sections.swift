@@ -76,7 +76,7 @@ extension ReportLayout {
                         photoH: 240)]
         case .fts:
             return [two(spec.reportTitle + ofBuilding, d.photo("photoFTS"), "ภาพถ่ายพื้นที่ติดตั้งตู้ FTS", right: d.photo("photoEmg"), "ภาพถ่ายพื้นที่ติดตั้งปุ่ม Emergency",
-                        infoL: d.text("detail").isEmpty ? nil : detailLine, infoR: nil, photoH: 150)]
+                        infoL: d.text("detail").isEmpty ? nil : detailLine, infoR: nil, photoH: 150)] + emergencyPointUnit(mod)
         case .roof, .tank: return planSection(mod)
         case .sed: return sed(mod)
         case .house, .roofForm: return formSection(mod)
@@ -85,18 +85,27 @@ extension ReportLayout {
 
     /// B3's water point on the A2 picture, with A2's drawings and symbols, ringed and named by the water mode.
     func waterPointUnit(_ mod: SurveyModule) -> [Unit] {
-        guard let p = j.photo("siteMap"), let m = WaterPoint.mark(job, module: mod.id) else { return [] }
+        guard let m = WaterPoint.mark(job, module: mod.id) else { return [] }
+        return pointUnit(mod, m, title: "ตำแหน่งจุดจ่ายน้ำ (ภาพ A2)", label: WaterPoint.mode(mod.values)?.pinLabel ?? "จุดจ่ายน้ำ", color: Self.waterBlue)
+    }
+    /// B5's FTS switch on the A2 picture.
+    func emergencyPointUnit(_ mod: SurveyModule) -> [Unit] {
+        guard let m = EmergencyButton.mark(job, module: mod.id) else { return [] }
+        return pointUnit(mod, m, title: "ตำแหน่งปุ่ม FTS switch (ภาพ A2)", label: "FTS switch", color: MarkKind.emergency.color)
+    }
+    /// A section's point on the A2 picture, ringed, with its name in a pill below.
+    func pointUnit(_ mod: SurveyModule, _ m: MapMark, title: String, label: String, color: RGBA) -> [Unit] {
+        guard let p = j.photo("siteMap") else { return [] }
         let W = Self.cw, picH = 260.0, h = Self.band + picH + 8
-        var o = box("ตำแหน่งจุดจ่ายน้ำ (ภาพ A2)" + (mod.name.isEmpty ? "" : " " + mod.name), height: h)
+        var o = box(title + (mod.name.isEmpty ? "" : " " + mod.name), height: h)
         let pic = Box(6, Self.band + 4, W - 12, picH).fit(Double(p.width), Double(p.height))
         o.append(.photo(p, pic))
         o += siteDrawing(in: pic)
         let c = Pt(pic.x + m.x * pic.w, pic.y + m.y * pic.h), R = max(6, pic.w * 0.019)
-        o.append(.circle(c, r: R * 1.6, stroke: Self.waterBlue, fill: nil, width: 2))
-        let label = WaterPoint.mode(mod.values)?.pinLabel ?? "จุดจ่ายน้ำ"
+        o.append(.circle(c, r: R * 1.6, stroke: color, fill: nil, width: 2))
         let fs = 7.5, tw = ApproxText.width(label, size: fs, bold: true) + 10
         let tag = Box(c.x - tw / 2, c.y + R * 1.8, tw, 12)
-        o.append(.rect(tag, stroke: nil, fill: Self.waterBlue))
+        o.append(.rect(tag, stroke: nil, fill: color))
         o.append(.text(label, at: Pt(c.x, tag.y + 6), size: fs, bold: true, color: .white, align: .center))
         return [Unit(h: h, ops: o)]
     }

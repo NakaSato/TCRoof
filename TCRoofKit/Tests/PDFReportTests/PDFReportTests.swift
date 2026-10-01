@@ -74,6 +74,14 @@ final class PDFReportTests: XCTestCase {
         let t = texts(job)
         XCTAssertTrue(t.contains { $0.hasPrefix("ตำแหน่งจุดจ่ายน้ำ (ภาพ A2)") })
         XCTAssertTrue(t.contains("ถังพัก / ปั๊มใหม่"))
+        // B5's FTS switch the same way
+        if !job.modules.contains(where: { $0.type == .fts }) { job.modules.append(SurveyModule(type: .fts)) }
+        let f = job.modules.first { $0.type == .fts }!.id
+        XCTAssertFalse(texts(job).contains { $0.hasPrefix("ตำแหน่งปุ่ม FTS switch (ภาพ A2)") })
+        EmergencyButton.place(&job, module: f, x: 0.6, y: 0.2)
+        XCTAssertTrue(texts(job).contains { $0.hasPrefix("ตำแหน่งปุ่ม FTS switch (ภาพ A2)") })
+        // and in the site picture's legend on the first page
+        XCTAssertTrue(texts(job).contains(MarkKind.emergency.title))
     }
 
     /// A2's drawings, new symbols and site note appear over / under the site picture on the report's first page.

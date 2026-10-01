@@ -16,8 +16,8 @@ struct SiteMarksEditor: View {
     var metersAcross: Double? = nil
     @Environment(SurveyModel.self) private var model
 
-    /// The design's palette; the retired water point only while a job still has one.
-    var kinds: [MarkKind] { MarkKind.palette + (marks.contains { $0.kind == .water } ? [.water] : []) }
+    /// The design's palette; the retired water point and B5's FTS switch only while a job has one (they are placed from B3 / B5).
+    var kinds: [MarkKind] { MarkKind.palette + [MarkKind.water, .emergency].filter { k in marks.contains { $0.kind == k } } }
     @State private var armed: MarkKind?
     @State private var selected: UUID?
 

@@ -3,7 +3,7 @@ import Foundation
 /// B3 "ระบบน้ำล้างแผง" (docs/ui/survey-b3): the water point is A2's `siteMarks` entry of kind `.water`, one per water
 /// module, so A2, B3 and the report show the same point. No separate coordinate field is stored.
 public enum WaterPoint {
-    public static let marksKey = "siteMarks"
+    public static let marksKey = ModuleMarks.key
     public static let modeKey = "waterMode"
     public static let photoKeys = ["photoArea", "photoWide"]
 
@@ -34,42 +34,17 @@ public enum WaterPoint {
 
     // MARK: the pin
 
-    /// The index in `siteMarks` of this module's water point: the mark linked to it, else (jobs from before the link)
-    /// the unlinked `.water` mark in the same position as the module among the water modules without a linked mark.
-    static func index(in marks: [MapMark], module: UUID, job: Job) -> Int? {
-        if let i = marks.firstIndex(where: { $0.kind == .water && $0.module == module }) { return i }
-        let linked = Set(marks.compactMap { $0.kind == .water ? $0.module : nil })
-        let unlinkedModules = job.modules.filter { $0.type == .water && !linked.contains($0.id) }.map(\.id)
-        let unlinkedMarks = marks.indices.filter { marks[$0].kind == .water && marks[$0].module == nil }
-        guard let k = unlinkedModules.firstIndex(of: module) else { return nil }
-        return unlinkedMarks[safe: k]
-    }
-
     /// This module's water point, or nil when none has been placed.
-    public static func mark(_ job: Job, module: UUID) -> MapMark? {
-        let marks = job.values.marks(marksKey)
-        return index(in: marks, module: module, job: job).map { marks[$0] }
-    }
+    public static func mark(_ job: Job, module: UUID) -> MapMark? { ModuleMarks.mark(job, .water, of: .water, module: module) }
 
     /// Moves this module's water point to (x, y) in fractions of the A2 picture, creating it if there is none.
     /// The mark is linked to the module, so each water module keeps exactly one.
     public static func place(_ job: inout Job, module: UUID, x: Double, y: Double) {
-        var marks = job.values.marks(marksKey)
-        if let i = index(in: marks, module: module, job: job) {
-            marks[i].x = min(max(x, 0), 1); marks[i].y = min(max(y, 0), 1); marks[i].module = module
-        } else {
-            marks.append(MapMark(kind: .water, x: x, y: y, module: module))
-        }
-        job.values[marksKey] = .marks(marks)
+        ModuleMarks.place(&job, .water, of: .water, module: module, x: x, y: y)
     }
 
     /// Drops the water point of a removed module.
-    public static func remove(_ job: inout Job, module: UUID) {
-        let marks = job.values.marks(marksKey)
-        guard let i = index(in: marks, module: module, job: job) else { return }
-        var rest = marks; rest.remove(at: i)
-        job.values[marksKey] = rest.isEmpty ? nil : .marks(rest)
-    }
+    public static func remove(_ job: inout Job, module: UUID) { ModuleMarks.remove(&job, .water, of: .water, module: module) }
 
     // MARK: status
 

@@ -5,7 +5,7 @@ import TCRoofCore
 
 /// B3 on iPad landscape (docs/ui/survey-b3): the water point on the A2 picture on the left; the water mode, the two photos
 /// and the details on the right. The pin is A2's `.water` mark for this module (`WaterPoint`); field ids are unchanged.
-/// iPad portrait and iPhone keep the schema form (`groupPage`).
+/// iPad portrait stacks the same cards in one scrolling column; iPhone keeps the schema form (`groupPage`).
 struct WaterPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -13,7 +13,11 @@ struct WaterPageWide: View {
     let width: CGFloat
     /// "เปิด A2 →".
     var openSite: () -> Void = {}
+    /// Portrait: the picture on top, then the mode, photos and details, the page scrolling.
+    var stacked = false
     @Environment(SurveyModel.self) var model
+    @State var modeHeight: CGFloat = 0
+    @State var photosHeight: CGFloat = 0
 
     var rightWidth: CGFloat { min(500, max(380, width * 0.38)) }
 
@@ -29,23 +33,59 @@ struct WaterPageWide: View {
     var body: some View {
         VStack(spacing: 16) {
             PageStepBar(job: job, here: .module(moduleID), title: "ตำแหน่งระบบน้ำล้างแผง")
-            HStack(alignment: .top, spacing: 20) {
-                pinCard.frame(maxWidth: .infinity, maxHeight: .infinity)
-                VStack(spacing: 14) {
-                    modeCard
-                    photosCard
-                    detailCard.frame(maxHeight: .infinity)
-                }
-                .frame(width: rightWidth)
-                .frame(maxHeight: .infinity)
-            }
-            .frame(maxHeight: .infinity)
+            if stacked { stackedColumn } else { sideBySide }
         }
         .foregroundStyle(Home.navy)
     }
 
+    var stackedColumn: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                pinCard.frame(height: stackedPictureHeight + 150)
+                modeCard
+                photosCard
+                detailCard.frame(height: 200)
+            }
+            .padding(.bottom, 8)
+        }
+        .scrollIndicators(.hidden)
+        .frame(maxHeight: .infinity)
+    }
+
+    /// The A2 picture at the column's width and the photo's own proportions (no grey bands), within 240–560 pt.
+    var stackedPictureHeight: CGFloat {
+        let p = job.values.photo("siteMap")
+        let ratio = p.map { $0.width > 0 ? CGFloat($0.height) / CGFloat($0.width) : 0.625 } ?? 0.625
+        return min(560, max(240, (width - 32) * ratio))
+    }
+
+    var sideBySide: some View {
+        HStack(alignment: .top, spacing: 20) {
+            pinCard.frame(maxWidth: .infinity, maxHeight: .infinity)
+            rightColumn.frame(width: rightWidth).frame(maxHeight: .infinity)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    /// Mode, photos and details. The details card takes the height left over; on a short screen (11" landscape) it
+    /// keeps a minimum and the column scrolls, so the page never grows past the screen.
+    var rightColumn: some View {
+        GeometryReader { geo in
+            ScrollView {
+                VStack(spacing: 14) {
+                    modeCard.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { modeHeight = $0 }
+                    photosCard.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { photosHeight = $0 }
+                    detailCard.frame(height: max(150, geo.size.height - modeHeight - photosHeight - 28))
+                }
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+
     // MARK: card frame
 
+    static let blue = Color(red: 0.122, green: 0.435, blue: 0.710)
     static let chipFill = Color(red: 0.890, green: 0.933, blue: 0.973)
     static let tileFill = Color(red: 0.961, green: 0.973, blue: 0.988)
     static let teal = Color(red: 0.153, green: 0.663, blue: 0.604)
@@ -57,6 +97,7 @@ struct WaterPageWide: View {
             Text("\(n)").font(.system(size: 14, weight: .heavy)).foregroundStyle(Home.primary)
                 .frame(width: 28, height: 28).background(Self.chipFill, in: RoundedRectangle(cornerRadius: 8))
             (Text(title) + (required ? Text(" *").foregroundColor(Home.danger) : Text(""))).font(.system(size: 17, weight: .bold)).lineLimit(1)
+                .layoutPriority(1)
             trailing()
         }
     }
@@ -75,18 +116,32 @@ struct WaterPageWide: View {
     var pinCard: some View {
         card {
             header(1, "ตำแหน่งจุดจ่ายน้ำ", required: true) {
-                Text("ภาพจากหน้า A2 · แตะบนภาพเพื่อย้ายจุด").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.7)
-                    .padding(.horizontal, 8).padding(.vertical, 4).background(Self.tileFill, in: RoundedRectangle(cornerRadius: 6))
-                Spacer(minLength: 8)
+                // the grey tag gives way first when the column is narrow (portrait with the sidebar)
+                ViewThatFits(in: .horizontal) {
+                    Text("ภาพจากหน้า A2 · แตะบนภาพเพื่อย้ายจุด").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1).fixedSize()
+                        .padding(.horizontal, 8).padding(.vertical, 4).background(Self.tileFill, in: RoundedRectangle(cornerRadius: 6))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Color.clear.frame(height: 1)
+                }
+                .layoutPriority(-1)
                 Button(action: openSite) {
-                    Text("เปิด A2 →").font(.system(size: 15, weight: .bold)).foregroundStyle(Home.primary)
+                    Text("เปิด A2 →").font(.system(size: 15, weight: .bold)).foregroundStyle(Home.primary).lineLimit(1).fixedSize()
                         .padding(.horizontal, 14).frame(minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary.opacity(0.5)))
                 }
                 .buttonStyle(.plain)
             }
-            WaterPinStage(job: $job, moduleID: moduleID, mode: shownMode, openSite: openSite)
-                .frame(maxHeight: .infinity)
+            SitePinStage(job: $job, moduleID: moduleID, kind: .water, type: .water, pinName: shownMode.pinLabel, scrolls: stacked, openSite: openSite) {
+                SitePin(ring: Self.blue, halo: Self.blue, label: shownMode.pinLabel)
+            } legend: {
+                HStack(spacing: 6) {
+                    Circle().stroke(Self.blue, lineWidth: 3).frame(width: 11, height: 11)
+                    Text(shownMode.legend).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+            }
+            .frame(maxHeight: .infinity)
             summaryStrip
         }
     }

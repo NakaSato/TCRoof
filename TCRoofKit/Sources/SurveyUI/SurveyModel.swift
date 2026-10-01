@@ -199,6 +199,8 @@ public struct SurveySettings: Codable, Equatable {
     public var mapZoom = 20
     /// Send new photos to Google Drive in the background so other iPads can download them.
     public var autoUploadPhotos = true
+    /// PV module rating used for W/panel → kWp (variant id in `PVModuleCatalog`, e.g. "zxm7-uhldd144-580").
+    public var pvModule = PVModuleCatalog.defaultVariantID
 
     public init() {}
     public init(from decoder: Decoder) throws {
@@ -212,6 +214,7 @@ public struct SurveySettings: Codable, Equatable {
         googleMapsKey = try c.decodeIfPresent(String.self, forKey: .googleMapsKey) ?? googleMapsKey
         mapZoom = try c.decodeIfPresent(Int.self, forKey: .mapZoom) ?? mapZoom
         autoUploadPhotos = try c.decodeIfPresent(Bool.self, forKey: .autoUploadPhotos) ?? autoUploadPhotos
+        pvModule = try c.decodeIfPresent(String.self, forKey: .pvModule) ?? pvModule
     }
     static let key = "solarSurvey.settings"
     static func load() -> SurveySettings {

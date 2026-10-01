@@ -35,6 +35,8 @@ public enum DrawOp: Sendable {
     case hatch(Box, color: RGBA, spacing: Double = 6)
     case circle(Pt, r: Double, stroke: RGBA?, fill: RGBA?, width: Double = 1)
     case polygon([Pt], stroke: RGBA?, fill: RGBA?, width: Double = 1)
+    /// An open path with mitred joins (truss chords, corrugated sheet).
+    case polyline([Pt], width: Double, color: RGBA, dash: [Double] = [])
     /// One line of text; `at` is the anchor point at the vertical centre of the line.
     case text(String, at: Pt, size: Double, bold: Bool = false, color: RGBA = .black, align: TextAlign = .left, angle: Double = 0)
     /// Wrapped text inside a box, clipped to it.
@@ -61,6 +63,7 @@ public struct Sketch: Sendable {
             case let .hatch(r, c, sp): return .hatch(b(r), color: c, spacing: sp * k)
             case let .circle(c, r, s, f, w): return .circle(p(c), r: r * k, stroke: s, fill: f, width: w * k)
             case let .polygon(ps, s, f, w): return .polygon(ps.map(p), stroke: s, fill: f, width: w * k)
+            case let .polyline(ps, w, col, dash): return .polyline(ps.map(p), width: w * k, color: col, dash: dash.map { $0 * k })
             case let .text(t, at, sz, bold, col, al, ang): return .text(t, at: p(at), size: sz * k, bold: bold, color: col, align: al, angle: ang)
             case let .textBox(t, r, sz, bold, col, al): return .textBox(t, b(r), size: sz * k, bold: bold, color: col, align: al)
             case let .photo(ph, r): return .photo(ph, b(r))
@@ -74,9 +77,14 @@ public struct Sketch: Sendable {
 
 public enum Drawings {
     /// Dimensioned plan from column spans (m) and obstacles, as on the roof / clear-water-tank sheets.
+    /// A roof whose frame type was chosen on the C1 page draws the C1 plan (frame lines, posts, ridge, skylights).
     public static func plan(_ v: Values, tank: Bool, width W: Double = 690) -> Sketch? {
         let sx = parseSpans(v.text("spansX")), sy = parseSpans(v.text("spansY"))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
+        if !tank && Roof.hasFrame(v) {
+            let p = RoofPlan(v).sketch, k = W / p.width
+            return Sketch(width: W, height: p.height * k, ops: p.translated(0, 0, scale: k))
+        }
         let TW = sx.reduce(0, +), TH = sy.reduce(0, +)
         let padL = 58.0, padT = 50.0, padR = 16.0, padB = 16.0, maxH = (W * 0.52).rounded()
         let k = min((W - padL - padR) / TW, (maxH - padT - padB) / TH), w = TW * k, h = TH * k

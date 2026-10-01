@@ -26,6 +26,8 @@ public extension Sketch {
                 s += "</g>"
             case let .circle(p, r, st, f, w):
                 s += "<circle cx=\"\(n(p.x))\" cy=\"\(n(p.y))\" r=\"\(n(r))\" fill=\"\(c(f))\" stroke=\"\(c(st))\" stroke-width=\"\(n(w))\"/>"
+            case let .polyline(ps, w, col, dash):
+                s += "<polyline points=\"\(ps.map { "\(n($0.x)),\(n($0.y))" }.joined(separator: " "))\" fill=\"none\" stroke=\"\(c(col))\" stroke-width=\"\(n(w))\"" + (dash.isEmpty ? "" : " stroke-dasharray=\"\(dash.map { n($0) }.joined(separator: " "))\"") + "/>"
             case let .polygon(ps, st, f, w):
                 s += "<polygon points=\"\(ps.map { "\(n($0.x)),\(n($0.y))" }.joined(separator: " "))\" fill=\"\(c(f))\" stroke=\"\(c(st))\" stroke-width=\"\(n(w))\"/>"
             case let .text(t, at, size, bold, col, al, ang):

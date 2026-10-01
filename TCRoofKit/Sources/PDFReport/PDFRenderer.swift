@@ -103,6 +103,13 @@ public enum PDFRenderer {
                 path.closeSubpath()
                 if let f { c.addPath(path); c.setFillColor(uiColor(f).cgColor); c.fillPath() }
                 if let st { c.addPath(path); c.setStrokeColor(uiColor(st).cgColor); c.setLineWidth(CGFloat(w)); c.strokePath() }
+            case let .polyline(ps, w, col, dash):
+                guard let first = ps.first else { break }
+                c.setStrokeColor(uiColor(col).cgColor); c.setLineWidth(CGFloat(w)); c.setLineJoin(.miter); c.setMiterLimit(6)
+                if !dash.isEmpty { c.setLineDash(phase: 0, lengths: dash.map { CGFloat($0) }) }
+                c.move(to: CGPoint(x: first.x, y: first.y))
+                for p in ps.dropFirst() { c.addLine(to: CGPoint(x: p.x, y: p.y)) }
+                c.strokePath()
             case let .text(s, at, size, bold, col, al, angle):
                 let attrs = attributes(size, bold: bold, color: col, align: .left, wrap: false)
                 let str = s as NSString

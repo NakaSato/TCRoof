@@ -25,8 +25,24 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var y = ""
     public var w = ""
     public var h = ""
-    public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "") {
-        self.label = label; self.x = x; self.y = y; self.w = w; self.h = h
+    /// What it is on the C1 plan (docs/ui/survey-c1): "" an obstacle, `sky` a skylight sheet, `keep` a keep-out zone
+    /// drawn for the PV layout. Older entries are obstacles.
+    public var kind = ""
+    /// A skylight panels may cover (วางทับได้); false keeps panels off it (ห้ามวางทับ).
+    public var canCover = false
+    public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "", kind: String = "", canCover: Bool = false) {
+        self.label = label; self.x = x; self.y = y; self.w = w; self.h = h; self.kind = kind; self.canCover = canCover
+    }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        label = try c.decodeIfPresent(String.self, forKey: .label) ?? ""
+        x = try c.decodeIfPresent(String.self, forKey: .x) ?? ""
+        y = try c.decodeIfPresent(String.self, forKey: .y) ?? ""
+        w = try c.decodeIfPresent(String.self, forKey: .w) ?? ""
+        h = try c.decodeIfPresent(String.self, forKey: .h) ?? ""
+        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? ""
+        canCover = try c.decodeIfPresent(Bool.self, forKey: .canCover) ?? false
     }
 }
 

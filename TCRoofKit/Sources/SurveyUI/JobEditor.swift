@@ -44,7 +44,7 @@ struct JobEditorView: View {
     var readOnly: Bool { job.stage != .survey }
 
     @State var detailSize: CGSize = .zero
-    /// A1 in the card layout on iPad (docs/ui/survey-a1); iPhone keeps the one-column `groupPage`.
+    /// A1 in the card layout (docs/ui/survey-a1); one column on iPad portrait and iPhone.
     var cardInfo: Bool { page == .info && !compact }
     /// A2's picture page (docs/ui/survey-a2): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
     var cardSite: Bool { page == .site && !compact }
@@ -76,12 +76,21 @@ struct JobEditorView: View {
         guard case .module(let id) = page, !compact, infoColumns == 2 else { return nil }
         return job.modules.first { $0.id == id && $0.type == .fts }
     }
+    /// C1 roof on iPad (docs/ui/survey-c1): the roof plan, section A-A, members and photo angles; one screen side by side
+    /// at 1100 pt and wider in landscape, else one scrolling column. iPhone keeps `groupPage`.
+    var cardRoof: SurveyModule? {
+        guard case .module(let id) = page, !compact else { return nil }
+        return job.modules.first { $0.id == id && $0.type == .roof }
+    }
     /// The B1 building shown with its old per-section form; cleared when the page changes.
     @State var panelForm: UUID?
     /// Pages with the blue header and bottom bar instead of the navigation bar.
-    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil || cardPanels != nil || cardWater != nil || cardFts != nil }
+    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil || cardPanels != nil || cardWater != nil || cardFts != nil || cardRoof != nil }
     var cardTitle: String {
         if let m = cardPanels { return m.type.code + " " + m.spec.label }
+        if let m = cardRoof {
+            return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "C1") + " " + m.spec.short + (m.name.isEmpty ? "" : " · " + m.name)
+        }
         if let m = cardFts { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B5") + " ปุ่ม Emergency" }
         if let m = cardWater { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B3") + " " + m.spec.label }
         if let m = cardInverter { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B2") + " " + m.spec.label }
@@ -105,25 +114,17 @@ struct JobEditorView: View {
         return detailSize.width > detailSize.height ? 2 : 1
     }
 
+    static let sidebarWidth: CGFloat = 310
+
     var body: some View {
-        HStack(spacing: 0) {
-            if sidebarVisible {
-                sidebar.frame(width: compact ? nil : 310)
-                if !compact { Divider() }
-            }
-            if !(compact && sidebarVisible) {
-                detailArea
-                    .background(Paper.page)
-                    .safeAreaInset(edge: .top, spacing: 0) {
-                        if cardPage {
-                            InfoPageHeader(job: job, title: cardTitle, back: { dismiss() },
-                                           toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
-                                           export: { model.flush(job.id); showExport = true })
-                        }
-                    }
-                    .safeAreaInset(edge: .bottom, spacing: 0) { if cardPage { cardBar } }
-                    .onGeometryChange(for: CGSize.self) { $0.size } action: { detailSize = $0 }
-            }
+        // The detail's size is the screen minus the sidebar, never the detail's own size: a page wider than the free
+        // space would otherwise grow detailSize, which widens the page again (layout loop, clipped header and bar).
+        GeometryReader { geo in
+            let side: CGFloat = sidebarVisible && !compact ? Self.sidebarWidth + 1 : 0
+            let free = CGSize(width: max(0, geo.size.width - side), height: geo.size.height)
+            editorBody(free)
+                .onAppear { detailSize = free }
+                .onChange(of: free) { _, f in detailSize = f }
         }
         .navigationTitle(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName)
         .navigationBarTitleDisplayMode(.inline)
@@ -175,7 +176,7 @@ struct JobEditorView: View {
 
     #if DEBUG
     /// `-surveyPage site` opens A2, `electrical` A3, `sld` the single line diagram, `inverter` the first B2, `panels` the first B1, `flood` A4,
-    /// `water` the first B3, `fts` the first B5.
+    /// `water` the first B3, `fts` the first B5, `roof` the first C1.
     func openDebugPage() {
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
@@ -187,6 +188,10 @@ struct JobEditorView: View {
         case "flood": select(.flood)
         case "water": if let p = first(.water) { select(p) }
         case "fts": if let p = first(.fts) { select(p) }
+        case "roof":
+            if let p = first(.roof) { select(p) }
+            // `-surveyRoofRender YES` also writes C1 at free widths 980 / 1100 / 1318 to Documents/roof-<w>.png (no rotation here)
+            if UserDefaults.standard.bool(forKey: "surveyRoofRender"), let m = job.modules.first(where: { $0.type == .roof }) { renderRoof(m.id) }
         default: break
         }
     }
@@ -246,6 +251,17 @@ struct JobEditorView: View {
             .padding(.horizontal, 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
+        } else if let m = cardRoof {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48,
+                             stacked: infoColumns != 2 || detailSize.width < 1100)
+                    .disabled(readOnly)
+                    .id(m.id)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
         } else if cardFlood {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
@@ -285,12 +301,54 @@ struct JobEditorView: View {
         }
     }
 
+    #if DEBUG
+    func renderRoof(_ id: UUID) {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        // free width × free height: 13" landscape ≈ 848 pt high, 11" ≈ 636; stacked ones are drawn unscrolled, taller
+        for (free, h) in [(1366.0, 848.0), (1318.0, 848.0), (1100.0, 848.0), (1180.0, 636.0), (1100.0, 636.0), (980.0, 1500.0), (820.0, 1500.0)] {
+            let w = min(free, 1318 + 48) - 48
+            let page = RoofPageWide(job: .constant(job), moduleID: id, width: w, stacked: free < 1100, scrolls: false)
+                .environment(model).padding(.horizontal, 24).padding(.vertical, 16)
+                .frame(width: free, height: h).background(Paper.page)
+            let r = ImageRenderer(content: page); r.scale = 1
+            if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("roof-\(Int(free))x\(Int(h)).png")) }
+        }
+    }
+    #endif
+
+    /// The sidebar and the detail; the detail gets exactly the free width and clips anything wider.
+    func editorBody(_ free: CGSize) -> some View {
+        HStack(spacing: 0) {
+            if sidebarVisible {
+                sidebar.frame(width: compact ? nil : Self.sidebarWidth)
+                if !compact { Divider() }
+            }
+            if !(compact && sidebarVisible) {
+                detailArea
+                    .background(Paper.page)
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        if cardPage {
+                            InfoPageHeader(job: job, title: cardTitle, back: { dismiss() },
+                                           toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
+                                           export: { model.flush(job.id); showExport = true })
+                        }
+                    }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { if cardPage { cardBar } }
+                    .frame(width: free.width)
+                    .clipped()
+            }
+        }
+    }
+
     /// Bottom bar of the card pages; A2's lists the LIST items still unticked.
     var cardBar: some View {
         let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
         let station = cardInverter.map { InverterStation($0.values) }
-        let module = cardInverter ?? cardPanels ?? cardWater ?? cardFts
+        let module = cardInverter ?? cardPanels ?? cardWater ?? cardFts ?? cardRoof
         let water: String? = cardWater.flatMap { WaterPoint.statusLine($0.values) } ?? cardFts.map { m in EmergencyButton.statusLine(job, m.values) }
+            ?? cardRoof.map { Roof.statusLine($0.values) }
+        // C1: the six photo angles are a page warning only; completion is unchanged
+        let roofMissing = cardRoof.map { !Roof.missingShots($0.values).isEmpty } ?? false
         // B5: a button height outside 1.10–1.50 m warns without blocking completion
         let ftsWarn = cardFts != nil && !EmergencyButton.isRecommended(EmergencyButton.heightCm(job))
         let ftsMissing = cardFts.map { m in EmergencyButton.photoMissing(m.values) } ?? false
@@ -309,7 +367,7 @@ struct JobEditorView: View {
                            previous: module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(after), gaps: gaps,
                            statusText: station?.status ?? water ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
                            statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
-                                                                     ftsMissing || (cardFlood && job.floodCheck.fails > 0)),
+                                                                     ftsMissing || roofMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,
                            previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil)
     }

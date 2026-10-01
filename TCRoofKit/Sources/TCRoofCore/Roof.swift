@@ -1,0 +1,377 @@
+import Foundation
+
+/// C1 "หลังคา (แปลนและโครงสร้าง)" wide page (docs/ui/survey-c1): the roof plan, the frame type and section A-A, the
+/// member sizes and the six photo angles. Field ids, labels and Excel cells are unchanged; the page's own answers
+/// (`frameType`, `ridgeDir`, `trussBays`, `postGrid`, `pvOrientation`, `roofShots`, `eaveOverhang`, `clearHeight`)
+/// are optional and hidden, so the section's completion counts as before.
+public enum Roof {
+    public enum Key {
+        public static let spansX = "spansX", spansY = "spansY", sheetDir = "sheetDir", obstacles = "obst"
+        public static let frame = "frameType", ridge = "ridgeDir", bays = "trussBays", posts = "postGrid"
+        public static let pvOrientation = "pvOrientation", shots = "roofShots"
+        public static let overhang = "eaveOverhang", clearHeight = "clearHeight"
+        public static let shape = "roofShape", material = "roofMaterial", structure = "roofStructure", panels = "panelsBefore"
+        public static let aerial = "aerialPhoto", general = "generalPhotos", structPhotos = "structPhotos"
+        public static func member(_ n: Int) -> String { "comp\(n)" }
+    }
+
+    // MARK: spans
+
+    public enum Axis: Sendable { case x, y }
+    public static func key(_ a: Axis) -> String { a == .x ? Key.spansX : Key.spansY }
+    /// The grid spans in metres, or the schema's placeholder when none are stored (the plan is never empty).
+    public static func spans(_ v: Values, _ a: Axis) -> [Double] {
+        let s = parseSpans(v.text(key(a)))
+        if !s.isEmpty { return s }
+        return a == .x ? [1.5, 4, 4, 4, 4, 1.5] : [1.5, 4.5, 4, 4.5, 1.5]
+    }
+    /// Writes the spans back in the form's format, "1.5,4,4,4,4,1.5".
+    public static func setSpans(_ v: inout Values, _ a: Axis, _ s: [Double]) {
+        let t = s.filter { $0 > 0 }.map { fmt(($0 * 1000).rounded() / 1000, digits: 3) }.joined(separator: ",")
+        v[key(a)] = t.isEmpty ? nil : .text(t)
+    }
+    /// Grid line names: 1, 2, 3 … across x, A, B, C … down y.
+    public static func gridName(_ a: Axis, _ i: Int) -> String {
+        a == .x ? String(i + 1) : i < 26 ? String(UnicodeScalar(UInt8(65 + i))) : "A\(i - 25)"
+    }
+    public static func spanName(_ a: Axis, _ i: Int) -> String { gridName(a, i) + "-" + gridName(a, i + 1) }
+
+    // MARK: ridge
+
+    public enum Ridge: String, Sendable { case h, v }
+    /// The ridge runs along x (`h`, นอน) or y (`v`, ตั้ง). Without a stored `ridgeDir` it follows `sheetDir`: the sheets'
+    /// ribs run down the slope, across the ridge, and the old plan (`Drawings.plan`) draws ribs along x when `sheetDir`
+    /// is แนวนอน or empty, so แนวนอน / empty means a ridge along y.
+    public static func ridge(_ v: Values) -> Ridge {
+        if let r = Ridge(rawValue: v.text(Key.ridge)) { return r }
+        return v.choice(Key.sheetDir) == "แนวตั้ง" ? .h : .v
+    }
+    /// Stores the ridge and writes `sheetDir` back so the old plan, the PDF and Excel agree.
+    public static func setRidge(_ v: inout Values, _ r: Ridge) {
+        v[Key.ridge] = .text(r.rawValue)
+        v[Key.sheetDir] = .choice(r == .h ? "แนวตั้ง" : "แนวนอน", other: "")
+    }
+
+    // MARK: frame
+
+    public static func frame(_ v: Values) -> RoofFrame { RoofFrame(rawValue: v.text(Key.frame)) ?? .pratt }
+    /// A frame type was chosen on the C1 page; the report then draws the new plan and section and names the members by it.
+    public static func hasFrame(_ v: Values) -> Bool { RoofFrame(rawValue: v.text(Key.frame)) != nil }
+    public static func setFrame(_ v: inout Values, _ f: RoofFrame) { v[Key.frame] = .text(f.rawValue) }
+
+    /// Width across the ridge (the section's span).
+    public static func span(_ v: Values) -> Double {
+        (ridge(v) == .h ? spans(v, .y) : spans(v, .x)).reduce(0, +)
+    }
+    /// Truss panels per half: stored, else about one per metre (at least 2).
+    public static func autoBays(_ v: Values) -> Int { max(2, Int((span(v) / 2).rounded())) }
+    public static func bays(_ v: Values) -> Int {
+        if let n = v.number(Key.bays), n >= 2 { return min(20, Int(n)) }
+        return autoBays(v)
+    }
+    public static func baysAreAuto(_ v: Values) -> Bool { !((v.number(Key.bays) ?? 0) >= 2) }
+    public static let baysRange = 2...20
+    public static func setBays(_ v: inout Values, _ n: Int?) {
+        v[Key.bays] = n.map { .text(String(min(baysRange.upperBound, max(baysRange.lowerBound, $0)))) }
+    }
+
+    /// Eave overhang and clear height (m) for section A-A; the design's 0.70 / 4.00 until measured.
+    public static func overhang(_ v: Values) -> Double { v.number(Key.overhang) ?? 0.7 }
+    public static func clearHeight(_ v: Values) -> Double { v.number(Key.clearHeight) ?? 4.0 }
+    public static func setLength(_ v: inout Values, _ key: String, _ m: Double?) {
+        v[key] = m.map { .text(fmt(($0 * 100).rounded() / 100)) }
+    }
+
+    // MARK: posts
+
+    /// Grid intersections "i,j" (x line i, y line j) with a post by default for this frame.
+    public static func defaultPosts(_ f: RoofFrame, nx: Int, ny: Int, ridge: Ridge) -> Set<String> {
+        // a = grid lines along the ridge, c = across it; nx / ny count grid lines
+        let na = ridge == .h ? nx : ny, nc = ridge == .h ? ny : nx
+        var out = Set<String>()
+        func add(_ ia: Int, _ ic: Int) { out.insert(ridge == .h ? "\(ia),\(ic)" : "\(ic),\(ia)") }
+        guard na >= 2, nc >= 2 else { return out }
+        switch f {
+        case .rafterTie:
+            for ia in 0..<na { for ic in Set([1, nc - 2]) where ic >= 0 && ic < nc { add(ia, ic) } }
+        case .rafterTruss:
+            for ia in 1..<max(1, na - 1) { for ic in 1..<max(1, nc - 1) { add(ia, ic) } }
+        default:
+            for ia in 1..<max(1, na - 1) { for ic in Set([1, nc - 2]) where ic >= 0 && ic < nc { add(ia, ic) } }
+        }
+        return out
+    }
+    /// Posts added (true) or removed (false) on the page, per frame type.
+    public static func postEdits(_ v: Values) -> [String: [String: Bool]] {
+        guard let d = v.text(Key.posts).data(using: .utf8),
+              let o = try? JSONDecoder().decode([String: [String: Bool]].self, from: d) else { return [:] }
+        return o
+    }
+    public static func posts(_ v: Values) -> Set<String> {
+        let f = frame(v), nx = spans(v, .x).count + 1, ny = spans(v, .y).count + 1
+        var s = defaultPosts(f, nx: nx, ny: ny, ridge: ridge(v))
+        for (k, on) in postEdits(v)[f.rawValue] ?? [:] {
+            let p = k.split(separator: ",").compactMap { Int($0) }
+            guard p.count == 2, p[0] < nx, p[1] < ny else { continue }
+            if on { s.insert(k) } else { s.remove(k) }
+        }
+        return s
+    }
+    /// Adds or removes the post at grid intersection (i, j) for the current frame type.
+    public static func togglePost(_ v: inout Values, i: Int, j: Int) {
+        let f = frame(v), k = "\(i),\(j)", on = posts(v).contains(k)
+        var all = postEdits(v), mine = all[f.rawValue] ?? [:]
+        let def = defaultPosts(f, nx: spans(v, .x).count + 1, ny: spans(v, .y).count + 1, ridge: ridge(v)).contains(k)
+        if !on == def { mine[k] = nil } else { mine[k] = !on }
+        all[f.rawValue] = mine.isEmpty ? nil : mine
+        let enc = JSONEncoder(); enc.outputFormatting = .sortedKeys
+        if all.isEmpty { v[Key.posts] = nil }
+        else if let d = try? enc.encode(all), let t = String(data: d, encoding: .utf8) { v[Key.posts] = .text(t) }
+    }
+
+    // MARK: skylights and keep-out zones (in `obst`)
+
+    public static let skylightKind = "sky", keepOutKind = "keep"
+    public struct Area: Hashable, Sendable {
+        public var index: Int
+        public var x, y, w, h: Double
+        public var kind: String
+        public var canCover: Bool
+        public var label: String
+    }
+    /// Every entry of `obst` with a usable rectangle (metres from the plan's top-left).
+    public static func areas(_ v: Values) -> [Area] {
+        v.obstacles(Key.obstacles).enumerated().compactMap { i, o in
+            guard let x = NumberInput.value(o.x), let y = NumberInput.value(o.y), let w = NumberInput.value(o.w), let h = NumberInput.value(o.h),
+                  w > 0, h > 0 else { return nil }
+            return Area(index: i, x: x, y: y, w: w, h: h, kind: o.kind, canCover: o.canCover, label: o.label)
+        }
+    }
+    /// Adds a skylight or keep-out zone; rounded to 0.1 m, at least 0.3 × 0.3 m. Returns false when too small.
+    @discardableResult
+    public static func addArea(_ v: inout Values, kind: String, x1: Double, y1: Double, x2: Double, y2: Double) -> Bool {
+        let r = { (d: Double) in (d * 10).rounded() / 10 }
+        let x = r(min(x1, x2)), y = r(min(y1, y2)), w = r(abs(x2 - x1)), h = r(abs(y2 - y1))
+        guard w >= 0.3, h >= 0.3 else { return false }
+        var list = v.obstacles(Key.obstacles)
+        list.append(Obstacle(label: kind == skylightKind ? "แผ่นใส" : "เขตห้ามติด", x: fmt(x), y: fmt(y), w: fmt(w), h: fmt(h), kind: kind))
+        v[Key.obstacles] = .obstacles(list)
+        return true
+    }
+    public static func removeArea(_ v: inout Values, index: Int) {
+        var list = v.obstacles(Key.obstacles)
+        guard list.indices.contains(index) else { return }
+        list.remove(at: index)
+        v[Key.obstacles] = list.isEmpty ? nil : .obstacles(list)
+    }
+    public static func toggleCover(_ v: inout Values, index: Int) {
+        var list = v.obstacles(Key.obstacles)
+        guard list.indices.contains(index) else { return }
+        list[index].canCover.toggle()
+        v[Key.obstacles] = .obstacles(list)
+    }
+
+    // MARK: members
+
+    /// Row n (1…7) is always stored in `comp<n>`, "size @spacing"; only the name shown changes with the frame type.
+    public static func member(_ v: Values, _ n: Int) -> String { v.text(Key.member(n)) }
+    /// The size part of a stored member ("C-100x50x20x3.2 @1.00M" → "C-100x50x20x3.2").
+    public static func memberSize(_ v: Values, _ n: Int) -> String { StructureSizes.split(member(v, n)).size }
+    /// Picks a size and keeps the spacing (or the usual spacing for rows 1–2 when none is stored). "-" stores "-".
+    public static func setMember(_ v: inout Values, _ n: Int, size: String) {
+        let old = StructureSizes.split(member(v, n)).spacing
+        let sp = size == "-" ? "" : old.isEmpty ? (StructureSizes.defaultSpacing(n) ?? "") : old
+        let t = StructureSizes.join(size: size, spacing: sp)
+        v[Key.member(n)] = t.isEmpty ? nil : .text(t)
+    }
+    public static func setSpacing(_ v: inout Values, _ n: Int, spacing: String) {
+        let size = memberSize(v, n)
+        guard !size.isEmpty, size != "-" else { return }
+        v[Key.member(n)] = .text(StructureSizes.join(size: size, spacing: spacing))
+    }
+    /// A stored size the current frame type doesn't list (kept, the row is marked).
+    public static func memberOffList(_ v: Values, _ n: Int) -> Bool {
+        let s = memberSize(v, n)
+        guard !s.isEmpty, let m = frame(v).members[safe: n - 1] else { return false }
+        return !m.sizes.contains(s)
+    }
+
+    /// Profile glyph for a size: C, 2C, box, tube, wood, rc, T2, none or other.
+    public static func profile(_ size: String) -> String {
+        let s = size.trimmingCharacters(in: .whitespaces)
+        if s.isEmpty || s == "-" { return "none" }
+        if s.hasPrefix("2C") { return "2C" }
+        if s.hasPrefix("C-") || s.hasPrefix("C ") { return "C" }
+        if s.hasPrefix("□") { return "box" }
+        if s.hasPrefix("ท่อ") || s.hasPrefix("Ø") { return "tube" }
+        if s.hasPrefix("ไม้") || s.hasPrefix("ไฟเบอร์") { return "wood" }
+        if s.hasPrefix("ค.ส.ล") { return "rc" }
+        if s.hasPrefix("T2") { return "T2" }
+        return "other"
+    }
+
+    /// "ชุดมาตรฐาน · โครงถักเหล็ก 16 ม."
+    public static func memberNote(_ v: Values) -> String {
+        let f = frame(v), wood = v.choice(Key.structure) == "ไม้"
+        let kind = f.isTruss ? "โครงถัก" : f == .rafterTie ? "โครงขื่อรัด" : f == .rafterTruss ? "โครงจันทันถัก" : "โครง"
+        return "ชุดมาตรฐาน · \(kind)\(wood ? "ไม้" : "เหล็ก") \(fmt(span(v))) ม."
+    }
+
+    // MARK: roof shape and material
+
+    /// A design option and the existing choice it is stored as (nil: "อื่นๆ" with the design name as the text).
+    public struct Option: Hashable, Sendable {
+        public let name: String, sub: String
+        public let stored: String?
+    }
+    public static let shapes: [Option] = [
+        Option(name: "ทรงจั่ว", sub: "Gable · ลาด 2 ด้าน", stored: "หลังคาทรงจั่ว"),
+        Option(name: "ทรงปั้นหยา", sub: "Hip · ลาด 4 ด้าน", stored: "หลังคาทรงปั้นหยา"),
+        Option(name: "ทรงเพิงหมาแหงน", sub: "Shed · ลาดด้านเดียว", stored: "หลังคาเพิงหมาแหงน"),
+        Option(name: "ทรงฟันเลื่อย", sub: "Saw-tooth · โรงงาน", stored: nil),
+        Option(name: "ทรงโค้ง", sub: "Arch / Curved", stored: "หลังคาทรงโค้ง"),
+        Option(name: "หลังคาแบน / ดาดฟ้า", sub: "Flat · คอนกรีต", stored: "หลังคาคอนกรีต (ดาดฟ้า)"),
+    ]
+    public static let materials: [Option] = [
+        Option(name: "เมทัลชีท", sub: "ลอนสแน็ปล็อก / ลอนทั่วไป", stored: "เมทัลชีท"),
+        Option(name: "เมทัลชีทบุฉนวน", sub: "Sandwich / PU foam", stored: nil),
+        Option(name: "กระเบื้องลอนคู่", sub: "ไฟเบอร์ซีเมนต์", stored: "กระเบื้องลอนคู่/เดี่ยว"),
+        Option(name: "กระเบื้องคอนกรีต", sub: "ซีแพค / โมเนีย", stored: "กระเบื้องซีแพค"),
+        Option(name: "แผ่นโปร่งแสง", sub: "ไฟเบอร์กลาส / โพลีคาร์บอเนต", stored: nil),
+        Option(name: "คอนกรีต (ดาดฟ้า)", sub: "พื้น คสล.", stored: "คอนกรีตเสริมเหล็ก"),
+    ]
+    /// The design option the stored answer matches, if any.
+    public static func option(_ v: Values, _ key: String, in list: [Option]) -> Option? {
+        guard let c = v.choice(key) else { return nil }
+        if c == "อื่นๆ" { return list.first { $0.stored == nil && $0.name == v.other(key) } }
+        return list.first { $0.stored == c }
+    }
+    /// What the dropdown shows: the design name, else the stored choice or its other-text as typed.
+    public static func shown(_ v: Values, _ key: String, in list: [Option]) -> String? {
+        if let o = option(v, key, in: list) { return o.name }
+        guard let c = v.choice(key) else { return nil }
+        return c == "อื่นๆ" ? (v.other(key).isEmpty ? "อื่นๆ" : v.other(key)) : c
+    }
+    public static func choose(_ v: inout Values, _ key: String, _ o: Option) {
+        v[key] = o.stored.map { .choice($0, other: "") } ?? .choice("อื่นๆ", other: o.name)
+    }
+    public static func chooseOther(_ v: inout Values, _ key: String, text: String) {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        v[key] = .choice("อื่นๆ", other: t)
+    }
+
+    // MARK: photos
+
+    /// The six recommended angles. มุมสูง is `aerialPhoto`; ด้านหน้า / ด้านข้าง / แผ่นมุง are `generalPhotos`;
+    /// ใต้หลังคา โครง / จุดต่อ are `structPhotos`. `roofShots` keeps which angle each list photo is, so deleting one
+    /// doesn't move the others to another slot.
+    public enum Shot: Int, CaseIterable, Sendable {
+        case aerial, front, side, frame, joint, sheet
+        public var name: String { ["มุมสูง ภาพรวม", "ด้านหน้า", "ด้านข้าง", "ใต้หลังคา โครง", "ใต้หลังคา จุดต่อ", "แผ่นมุง ระยะใกล้"][rawValue] }
+        var tag: String { ["a", "f", "s", "r", "j", "c"][rawValue] }
+        var field: String { self == .aerial ? Key.aerial : self == .frame || self == .joint ? Key.structPhotos : Key.general }
+    }
+    static let generalOrder: [Shot] = [.front, .side, .sheet], structOrder: [Shot] = [.frame, .joint]
+
+    /// Which angle each `generalPhotos` / `structPhotos` item is; nil for extra old photos.
+    static func tags(_ v: Values) -> (general: [Shot?], structure: [Shot?]) {
+        let g = v.photos(Key.general).count, s = v.photos(Key.structPhotos).count
+        let parts = v.text(Key.shots).split(separator: "|", omittingEmptySubsequences: false).map { $0.split(separator: ",").map(String.init) }
+        func resolve(_ stored: [String]?, count: Int, order: [Shot]) -> [Shot?] {
+            if let stored, stored.count == count {
+                let t = stored.map { tag in order.first { $0.tag == tag } }
+                // a slot named twice keeps the first photo only
+                var seen = Set<Shot>()
+                return t.map { s in guard let s, !seen.contains(s) else { return nil }; seen.insert(s); return s }
+            }
+            return (0..<count).map { order[safe: $0] }
+        }
+        return (resolve(parts[safe: 0], count: g, order: generalOrder), resolve(parts[safe: 1], count: s, order: structOrder))
+    }
+    static func writeTags(_ v: inout Values, general: [Shot?], structure: [Shot?]) {
+        let t = general.map { $0?.tag ?? "x" }.joined(separator: ",") + "|" + structure.map { $0?.tag ?? "x" }.joined(separator: ",")
+        v[Key.shots] = t == "|" ? nil : .text(t)
+    }
+
+    public static func photo(_ v: Values, _ s: Shot) -> Photo? {
+        if s == .aerial { return v.photo(Key.aerial) }
+        let t = tags(v)
+        let (list, tg) = s.field == Key.general ? (v.photos(Key.general), t.general) : (v.photos(Key.structPhotos), t.structure)
+        return tg.firstIndex(of: s).flatMap { list[safe: $0] }
+    }
+    /// Old structure photos beyond the two angles (kept; the page shows "+n").
+    public static func extraStructPhotos(_ v: Values) -> Int { tags(v).structure.filter { $0 == nil }.count }
+
+    public static func setPhoto(_ v: inout Values, _ s: Shot, _ p: Photo?) {
+        if s == .aerial { v[Key.aerial] = p.map { .photo($0) }; return }
+        var t = tags(v), list = v.photos(s.field)
+        var tg = s.field == Key.general ? t.general : t.structure
+        if let i = tg.firstIndex(of: s) {
+            if let p { list[i] = p } else { list.remove(at: i); tg.remove(at: i) }
+        } else if let p {
+            list.append(p); tg.append(s)
+        }
+        v[s.field] = list.isEmpty ? nil : .photos(list)
+        if s.field == Key.general { t.general = tg } else { t.structure = tg }
+        writeTags(&v, general: t.general, structure: t.structure)
+    }
+    public static func missingShots(_ v: Values) -> [Shot] { Shot.allCases.filter { photo(v, $0) == nil } }
+    /// The bottom bar's line; the six angles are a page warning only, completion is unchanged.
+    public static func statusLine(_ v: Values) -> String {
+        let m = missingShots(v)
+        return m.isEmpty ? "ปิดแอปแล้วกลับมาทำต่อได้ · ครบช่องบังคับหน้านี้แล้ว" : "ยังขาดภาพหลังคา: " + m.map(\.name).joined(separator: " · ")
+    }
+}
+
+/// ชนิดโครงหลังคา, stored in `frameType`.
+public enum RoofFrame: String, CaseIterable, Sendable {
+    case normal = "n", pratt = "p", warren = "w", rafterTie = "c", rafterTruss = "r"
+
+    /// The segmented control's label, in the design's order (ปกติ first).
+    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก"][rawValue]! }
+    public var title: String {
+        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2"][rawValue]!
+    }
+    public static let ordered: [RoofFrame] = [.normal, .pratt, .warren, .rafterTie, .rafterTruss]
+    /// Pratt, Warren and the normal frame are trusses with a bottom chord.
+    public var isTruss: Bool { self == .normal || self == .pratt || self == .warren }
+    public var slope: Double { self == .rafterTie ? 30 : 15 }
+    /// Truss depth at the heel (m).
+    public var heel: Double { self == .rafterTie ? 0 : 0.5 }
+    /// Thumbnail family in `icons/members`.
+    public var iconFamily: String { self == .rafterTie ? "rafter-tie" : self == .rafterTruss ? "rafter-truss-T2" : "truss-pratt-normal-warren" }
+
+    public struct Member: Sendable {
+        public let name: String
+        /// "-" (ไม่มี / ไม่ใช้) first, then the sizes.
+        public let sizes: [String]
+        public let defaultSize: String
+    }
+
+    /// The seven rows (`comp1`…`comp7`) as the design names and sizes them for this frame type.
+    public var members: [Member] {
+        func m(_ n: String, _ s: [String], _ d: Int) -> Member { Member(name: n, sizes: ["-"] + s, defaultSize: (["-"] + s)[d + 1]) }
+        let chord = ["2C-100x50x20x3.2", "2C-125x50x20x3.2", "2C-150x50x20x3.2", "2C-150x65x20x3.2"]
+        let web = ["C-75x45x15x2.3", "C-75x45x15x3.2", "C-100x50x20x2.3", "C-100x50x20x3.2"]
+        let post = ["□-75x75x3.2", "□-100x100x3.2", "□-100x100x4.0", "□-125x125x4.5"]
+        var r = [m("แป", ["C-75x45x15x2.3", "C-100x50x20x2.3", "C-100x50x20x3.2", "C-125x50x20x3.2", "C-150x50x20x3.2"], 2),
+                 m("คอร์ดบน", chord, 2), m("คอร์ดล่าง", chord, 2), m("ตัวตั้ง", web, 0), m("ตัวทแยง", web, 0),
+                 m("เชิงชาย", ["ไม้ 1\"x6\"", "ไม้ 1\"x8\"", "ไฟเบอร์ซีเมนต์ 1\"x8\"", "C-100x50x20x2.3"], 1),
+                 m("เสากลาง", post, 1)]
+        switch self {
+        case .rafterTie:
+            r[1] = m("จันทัน", ["C-125x50x20x3.2", "C-150x50x20x3.2", "2C-125x50x20x3.2", "2C-150x50x20x3.2"], 1)
+            r[2] = m("ขื่อรัด", ["C-100x50x20x2.3", "C-100x50x20x3.2", "C-125x50x20x3.2"], 1)
+            r[3] = m("อเส", ["C-100x50x20x3.2", "C-125x50x20x3.2", "ค.ส.ล. (เดิม)"], 2)
+            r[4] = m("ตัวค้ำ", ["C-75x45x15x2.3", "C-75x45x15x3.2"], -1)
+            r[6] = m("เสากลาง", post, -1)
+        case .rafterTruss:
+            let tube = ["ท่อกลม Ø1\" หนา 1.6", "ท่อกลม Ø1¼\" หนา 2.0", "ท่อกลม Ø1½\" หนา 2.3"]
+            r[1] = m("คอร์ดบน", tube, 0); r[2] = m("คอร์ดล่าง", tube, 0); r[3] = m("ตัวทแยง", tube, 0)
+            r[4] = m("T2 รับจันทัน", ["T2 ลึก 1.00 ท่อ Ø1\"", "T2 ลึก 0.80 ท่อ Ø1\"", "2C-150x65x20x3.2"], 0)
+            r[6] = m("เสา", ["□-100x100x3.2", "□-125x125x4.5", "ค.ส.ล. (เดิม)"], 0)
+        default: break
+        }
+        return r
+    }
+}

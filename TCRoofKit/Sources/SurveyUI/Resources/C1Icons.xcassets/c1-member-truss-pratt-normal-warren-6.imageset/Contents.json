@@ -1,0 +1,15 @@
+{
+  "images" : [
+    {
+      "filename" : "c1-member-truss-pratt-normal-warren-6.svg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "properties" : {
+    "preserves-vector-representation" : true
+  }
+}

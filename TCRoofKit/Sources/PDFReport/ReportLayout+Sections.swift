@@ -111,6 +111,14 @@ extension ReportLayout {
     }
     static let waterBlue = RGBA(hex: 0x1F6FB5)
 
+    /// C1 section A-A across the full width, titled with the frame type; replaces the generic truss diagram.
+    func roofSectionUnit(_ d: Values) -> Unit {
+        let W = Self.cw, sec = RoofSection(d).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 4
+        var o = box("รูปตัด A-A · " + Roof.frame(d).title + " (หน่วย ม.)", height: h)
+        o += sec.translated(8, Self.band + 6, scale: k)
+        return Unit(h: h, ops: o)
+    }
+
     func planSection(_ mod: SurveyModule) -> [Unit] {
         let d = mod.values, tank = mod.type == .tank, W = Self.cw
         let title = mod.spec.reportTitle + (mod.name.isEmpty ? "" : " " + mod.name)
@@ -143,14 +151,20 @@ extension ReportLayout {
         o.append(.text(tank ? "* ระบุตำแหน่งสิ่งกีดขวางบนถังน้ำใส เช่น ปล่องระบายอากาศ ช่องเซอร์วิส ท่อ เสาสัญญาณ" : "* ระบุตำแหน่งเสาและระยะสำหรับโครงสร้างหลังคา", at: Pt(0, h + 8), size: 7.5, color: .tag))
         U.append(Unit(h: h + 14, ops: o))
 
+        if !tank && Roof.hasFrame(d) {
+            U.append(roofSectionUnit(d))
+        }
         if !tank {
-            // structure: truss + component table + option rows
+            // structure: truss + component table + option rows (a C1 frame type names the rows and draws section A-A above)
+            let framed = Roof.hasFrame(d), names = framed ? Roof.frame(d).members.map(\.name) : Options.components
             let tableW = 250.0, rowH = 15.0, th = Self.band + 10 + rowH * 8 + 8
             var s = box("โครงสร้าง", height: th)
-            s.append(.text("แนะนำองค์ประกอบของหลังคา", at: Pt(8, Self.band + 10), size: 7.5))
-            let tr = Drawings.truss(width: W - tableW - 30)
-            s += tr.translated(8, Self.band + 18)
-            let tx = W - tableW - 8, ty = Self.band + 8
+            let tx = framed ? (W - tableW) / 2 : W - tableW - 8, ty = Self.band + 8
+            if !framed {
+                s.append(.text("แนะนำองค์ประกอบของหลังคา", at: Pt(8, Self.band + 10), size: 7.5))
+                let tr = Drawings.truss(width: W - tableW - 30)
+                s += tr.translated(8, Self.band + 18)
+            }
             let cols: [Double] = [22, 60, tableW - 82]
             for r in 0...7 {
                 let y = ty + Double(r) * rowH
@@ -159,7 +173,7 @@ extension ReportLayout {
                     s.append(.rect(Box(x, y, cwid, rowH), stroke: .black, fill: r == 0 ? .band : nil, width: 0.5))
                     let txt: String
                     if r == 0 { txt = ["", "องค์ประกอบ", "รายละเอียด"][ci] }
-                    else { let v = d.text("comp\(r)"); txt = [String(r), Options.components[r - 1], v.isEmpty ? "-" : v][ci] }
+                    else { let v = d.text("comp\(r)"); txt = [String(r), names[r - 1], v.isEmpty ? "-" : v][ci] }
                     s.append(.textBox(txt, Box(x + 2, y + 2, cwid - 4, rowH - 2), size: 7.5, bold: ci == 2 && r > 0, align: .center))
                     x += cwid
                 }

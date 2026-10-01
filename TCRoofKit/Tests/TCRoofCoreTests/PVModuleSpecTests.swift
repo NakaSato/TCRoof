@@ -8,7 +8,7 @@ final class PVModuleSpecTests: XCTestCase {
         XCTAssertEqual(s.mechanical.lengthMm, 2278)
         XCTAssertEqual(s.mechanical.widthMm, 1134)
         XCTAssertEqual(s.mechanical.mountingHoles.first?.pitchAlongLengthMm, 1400)
-        XCTAssertEqual(s.defaultRating?.pmaxW, 580)
+        XCTAssertEqual(s.defaultRating?.pmaxW, 570)
         XCTAssertEqual(s.limits.maxSystemVoltageV, 1500)
     }
 

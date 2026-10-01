@@ -267,6 +267,8 @@ struct A1Card<Content: View>: View {
 struct PageStepBar: View {
     let job: Job
     let here: MissingGroup.Target
+    /// Shown on the right in place of the step's title (B1: "ตู้ไฟฟ้าอาคาร · 3 อาคาร").
+    var title: String? = nil
 
     var body: some View {
         let steps = job.steps
@@ -275,7 +277,7 @@ struct PageStepBar: View {
             HStack {
                 Text("\(i + 1)/\(steps.count)").bold()
                 Spacer()
-                Text(steps[safe: i]?.title ?? "")
+                Text(title ?? steps[safe: i]?.title ?? "")
             }
             .font(.system(size: 15))
             HStack(spacing: 6) {

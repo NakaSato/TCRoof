@@ -14,9 +14,11 @@ public enum ShapeKind: String, Codable, CaseIterable, Sendable {
     case shade
     /// B2 inverter area drawn on its boundary photo: closed polygon, dashed teal, a length chip on each edge.
     case boundary
+    /// B1 PV connection point marked on the panel's wide photo: a rectangle between two corners, dashed teal, label above.
+    case pvPoint
 
     /// Points needed before the shape is complete; nil = as many as the engineer taps (at least `minPoints`).
-    public var fixedPoints: Int? { self == .measure || self == .craneEntry ? 2 : nil }
+    public var fixedPoints: Int? { self == .measure || self == .craneEntry || self == .pvPoint ? 2 : nil }
     public var minPoints: Int { self == .cableRoute || fixedPoints != nil ? 2 : 3 }
     public var isClosed: Bool { self == .panelArea || self == .shade || self == .boundary }
     /// The LIST item (`Options.list`) drawing this shape ticks.
@@ -33,7 +35,7 @@ public enum ShapeKind: String, Codable, CaseIterable, Sendable {
         case .cableRoute: return RGBA(hex: 0x16325C)
         case .measure: return RGBA(hex: 0x16325C)
         case .craneEntry, .shade: return RGBA(hex: 0xE36414)
-        case .boundary: return RGBA(hex: 0x27A99A)
+        case .boundary, .pvPoint: return RGBA(hex: 0x27A99A)
         }
     }
 }
@@ -131,6 +133,16 @@ public enum SiteShapes {
                     o.append(.rect(Box(mid.x - tw / 2, mid.y - th / 2, tw, th), stroke: nil, fill: col))
                     o.append(.text(t, at: mid, size: fs * 0.85, bold: true, color: .white, align: .center))
                 }
+            case .pvPoint:
+                let r = Box(min(pts[0].x, pts[1].x), min(pts[0].y, pts[1].y), abs(pts[1].x - pts[0].x), abs(pts[1].y - pts[0].y))
+                o.append(.rect(r, stroke: nil, fill: RGBA(col.r, col.g, col.b, 0.18)))
+                let c = [Pt(r.x, r.y), Pt(r.x + r.w, r.y), Pt(r.x + r.w, r.y + r.h), Pt(r.x, r.y + r.h)]
+                for (a, b) in zip(c, c.dropFirst() + [c[0]]) { o.append(.line(a, b, width: w * 1.4, color: col, dash: [w * 4, w * 2.5])) }
+                // the label reads at a glance on the photo, so it is larger than the A2 tags
+                let ls = fs * 1.25, t = s.label.isEmpty ? "จุดเชื่อมต่อ PV" : s.label, tw = ApproxText.width(t, size: ls, bold: true) + ls * 1.4, th = ls * 1.8
+                let mid = Pt(min(max(r.x + r.w / 2, box.x + tw / 2), box.x + box.w - tw / 2), max(box.y + th / 2, r.y - th * 0.7))
+                o.append(.rect(Box(mid.x - tw / 2, mid.y - th / 2, tw, th), stroke: nil, fill: col))
+                o.append(.text(t, at: mid, size: ls, bold: true, color: .white, align: .center))
             case .measure:
                 let a = pts[0], b = pts[1]
                 o.append(.line(a, b, width: w, color: col))

@@ -331,15 +331,24 @@ private struct Builder {
         return br
     }
 
-    func loadText(for target: String) -> [SLText] {
+    /// "ตู้ไฟฟ้า โรงสูบน้ำ (B1)" → "โรงสูบน้ำ"; also drops a numbered tag ("(B1.2)").
+    static func targetName(_ target: String) -> String {
+        target.replacingOccurrences(of: "ตู้ไฟฟ้า", with: "")
+            .replacingOccurrences(of: #"\(B1(\.\d+)?\)"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    /// The load block under an outgoing breaker: the B1 building linked to it (`a3Breaker`), else one whose name or number
+    /// the breaker's target mentions (jobs from before the link).
+    func loadText(for target: String, breaker id: UUID? = nil) -> [SLText] {
         let sections = job.sectionsByCategory.flatMap(\.sections).filter { $0.module.type == .panel }
         let trimmed = t(target)
-        var name = trimmed.replacingOccurrences(of: "ตู้ไฟฟ้า", with: "").replacingOccurrences(of: "(B1)", with: "").trimmingCharacters(in: .whitespaces)
-        if name.isEmpty { name = "" }
-        let match = sections.first { s in
+        let linked = id.flatMap { id in sections.first { BuildingPanels.BreakerRef($0.module.values.text(BuildingPanels.Key.a3Breaker))?.breaker == id } }
+        let match = linked ?? sections.first { s in
             let n = t(s.module.name)
             return (!n.isEmpty && trimmed.contains(n)) || (!trimmed.isEmpty && trimmed.contains("(\(s.number))"))
         }
+        let name = linked.map { t($0.module.name).isEmpty ? $0.number : t($0.module.name) } ?? Self.targetName(trimmed)
         var out = [SLText("ตู้ไฟฟ้า", bold: true)]
         out.append(name.isEmpty ? SLText("?", .missing, bold: true) : SLText(name, bold: true))
         if let m = match?.module {
@@ -481,8 +490,8 @@ private struct Builder {
             for (j, br) in bd.breakers.enumerated() {
                 var o = breaker(type: "MCCB", poles: br.poles, at: br.at, af: br.af, ic: br.ic, brand: br.brand, condition: br.condition,
                                 note: "", id: br.id, trafo: i, board: k, isMain: false, number: j + 1,
-                                name: t(br.target).replacingOccurrences(of: "ตู้ไฟฟ้า", with: "").replacingOccurrences(of: "(B1)", with: "").trimmingCharacters(in: .whitespaces))
-                o.destination = (i == connection.0 && k == connection.1) ? loadText(for: br.target) : []
+                                name: BuildingPanels.panel(linkedTo: br.id, in: job).map { BuildingPanels.name($0, in: job) } ?? Self.targetName(t(br.target)))
+                o.destination = (i == connection.0 && k == connection.1) ? loadText(for: br.target, breaker: br.id) : []
                 outs.append(o)
             }
             boards.append(SLBoard(id: bd.id, trafo: i, index: k, name: name, location: loc, isMain: k == 0, main: main, breakers: outs))

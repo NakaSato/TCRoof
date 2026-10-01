@@ -34,3 +34,28 @@ enum SingleLineTestsFixture {
         return Job(values: v, modules: [SurveyModule(type: .inverter, values: Values(["inverterCount": .text("2")]))])
     }
 }
+
+final class BuildingPanelReportTests: XCTestCase {
+    /// B1 linked to an A3 breaker with a PV point on its wide photo: the unit prints the link and draws the point.
+    func testPanelUnitPrintsA3LinkAndPoint() {
+        var job = SingleLineTestsFixture.job()
+        var trafos = job.values.transformers("trafos")
+        trafos[0].boards[0].breakers = [Breaker(at: "400")]
+        job.values["trafos"] = .transformers(trafos)
+        var m = SurveyModule(type: .panel, name: "โรงสูบน้ำ")
+        m.values["photoWide"] = .photo(Photo(fileName: "w.jpg", width: 400, height: 300))
+        m.values["pvPoint"] = .shapes([SiteShape(kind: .pvPoint, points: [ShapePoint(0.2, 0.2), ShapePoint(0.4, 0.5)])])
+        m.values["spareSlots"] = .text("2")
+        job.modules.insert(m, at: 0)
+        BuildingPanels.link(&job, panel: m.id, to: BuildingPanels.options(job)[0].ref)
+        let texts = ReportLayout(job: job).moduleUnits(job.modules[0]).flatMap(\.ops).compactMap { op -> String? in
+            switch op {
+            case .text(let t, _, _, _, _, _, _): return t
+            case .textBox(let t, _, _, _, _, _): return t
+            default: return nil
+            }
+        }
+        XCTAssertTrue(texts.contains("จุดเชื่อมต่อ PV · ช่องว่าง 2 ช่อง"), "\(texts)")
+        XCTAssertTrue(texts.contains { $0.contains("MDP-1 · CB1 · 400 AT") }, "\(texts)")
+    }
+}

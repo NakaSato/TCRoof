@@ -278,7 +278,9 @@ public enum Schema {
     public static let modules: [ModuleType: ModuleSpec] = [
         .panel: ModuleSpec(type: .panel, sheet: "ระบบไฟฟ้า", label: "ตู้ไฟฟ้าอาคาร", short: "ตู้ไฟฟ้าอาคาร", reportTitle: "ภาพตู้ไฟฟ้าของอาคาร", namePlaceholder: "ชื่ออาคาร เช่น โรงสูบน้ำ", groups: [
             GroupSpec(nil, [P("photoBreaker", "ภาพถ่ายเบรกเกอร์เมนของตู้ไฟฟ้า"), P("photoWide", "ภาพถ่ายมุมกว้างของตู้ไฟฟ้า (เพื่อพิจารณาจุดเชื่อมต่อระบบโซล่าเซลล์)"),
-                            N("breakerAT", "ขนาดเบรกเกอร์เมน", "AT"), N("loadKW", "ปริมาณการใช้ไฟ", "kW"), T("loadTime", "เวลา", "10 น."), detail()])]),
+                            N("breakerAT", "ขนาดเบรกเกอร์เมน", "AT"), N("loadKW", "ปริมาณการใช้ไฟ", "kW"), T("loadTime", "เวลา", "10 น."), detail()]
+                            // B1 wide page (docs/ui/survey-b1): optional and not shown on the form page, so completion counts as before
+                            + buildingPanelFields)]),
         .inverter: ModuleSpec(type: .inverter, sheet: "ระบบไฟฟ้า", label: "พื้นที่ติดตั้งอินเวอร์เตอร์", short: "พื้นที่ติดตั้งอินเวอร์เตอร์", reportTitle: "ภาพตำแหน่งติดตั้ง Inverter station", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
             GroupSpec(nil, [P("photoArea", "ภาพถ่ายพื้นที่ติดตั้ง Inverter Station"), P("photoDetail", "รายละเอียด (ภาพระบุขอบเขตพื้นที่)", optional: true),
                             T("sizeLWH", "ขนาดพื้นที่ติดตั้ง Inverter station (ก x ย x ส)", "6x2"), N("inverterCount", "จำนวนอินเวอร์เตอร์", "เครื่อง"),
@@ -379,6 +381,14 @@ public enum Schema {
                                 P("photoFront", "ด้านหน้า"), P("photoBack", "ด้านหลัง"), P("photoLeft", "ด้านซ้าย"), P("photoRight", "ด้านขวา")])]),
     ]
     public static func spec(_ t: ModuleType) -> ModuleSpec { modules[t]! }
+
+    /// B1 wide page answers: the A3 breaker feeding the panel, the PV connection point on `photoWide` and the spare slots.
+    static let buildingPanelFields: [FieldSpec] = {
+        let hidden: @Sendable (Values) -> Bool = { _ in false }
+        return [T("a3Breaker", "ตู้นี้ในผัง A3", optional: true, when: hidden),
+                FieldSpec("pvPoint", "จุดเชื่อมต่อ PV บนภาพ", .text(), optional: true, when: hidden),
+                N("spareSlots", "ช่องว่างในตู้", "ช่อง", optional: true, when: hidden)]
+    }()
 
     /// B2 wide page answers: the measured area, the boundary on `photoDetail`, the site, the inverter sizes and the user's spans / tray / ladder.
     static let inverterStationFields: [FieldSpec] = {

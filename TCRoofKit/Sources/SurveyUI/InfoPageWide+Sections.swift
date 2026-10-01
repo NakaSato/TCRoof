@@ -254,6 +254,11 @@ struct InfoPageBar: View {
     /// Replaces the completion line (A4: the equipment height check); red when `statusAlert`.
     var statusText: String? = nil
     var statusAlert = false
+    /// Steps the back / next buttons name, when not the ones either side of `here` (B1 shows every building on one page).
+    var previousIndex: Int? = nil
+    var nextIndex: Int? = nil
+    /// Red alert icon in place of the saved tick while `statusAlert` (B1: required items missing).
+    var alertIcon = false
     @Environment(SurveyModel.self) var model
     @State var savedNow: Date?
 
@@ -269,7 +274,11 @@ struct InfoPageBar: View {
         let saved = max(job.updated, savedNow ?? .distantPast)
         HStack(spacing: 12) {
             HStack(spacing: 10) {
-                A2Icon(name: "ui-check", fallback: "checkmark", size: 20).foregroundStyle(Home.ok)
+                if alertIcon && statusAlert {
+                    A2Icon(name: "ui-alert", fallback: "exclamationmark.circle", size: 20).foregroundStyle(Home.danger)
+                } else {
+                    A2Icon(name: "ui-check", fallback: "checkmark", size: 20).foregroundStyle(Home.ok)
+                }
                 VStack(alignment: .leading, spacing: 1) {
                     Text("บันทึกอัตโนมัติ " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
@@ -286,12 +295,12 @@ struct InfoPageBar: View {
             }
             .buttonStyle(.plain)
             if !narrow {
-                if let previous, let s = steps[safe: i - 1] {
+                if let previous, let pi = Optional(previousIndex ?? i - 1), let s = steps[safe: pi] {
                     Button(action: previous) {
                         HStack(spacing: 10) {
                             A2Icon(name: "ui-prev", fallback: "chevron.left", size: 20)
                             VStack(alignment: .leading, spacing: 0) {
-                                Text("ก่อนหน้า \(i)/\(steps.count)").font(.system(size: 12)).foregroundStyle(Home.muted)
+                                Text("ก่อนหน้า \(pi + 1)/\(steps.count)").font(.system(size: 12)).foregroundStyle(Home.muted)
                                 Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                             }
                         }
@@ -308,11 +317,11 @@ struct InfoPageBar: View {
                         .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
                 }
             }
-            if let next, let s = steps[safe: i + 1] {
+            if let next, let ni = Optional(nextIndex ?? i + 1), let s = steps[safe: ni] {
                 Button(action: next) {
                     HStack(spacing: 10) {
                         VStack(alignment: .trailing, spacing: 0) {
-                            Text("ถัดไป \(i + 2)/\(steps.count)").font(.system(size: 12)).opacity(0.9)
+                            Text("ถัดไป \(ni + 1)/\(steps.count)").font(.system(size: 12)).opacity(0.9)
                             Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                         }
                         A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)

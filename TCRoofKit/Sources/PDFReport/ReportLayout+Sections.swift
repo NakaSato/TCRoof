@@ -36,12 +36,22 @@ extension ReportLayout {
         let detailLine: (Double, inout [DrawOp]) -> Void = { y, o in _ = field("รายละเอียดเพิ่มเติม", firstDetail, x: 6, y: y + 12, valueWidth: half - 90, ops: &o) }
         switch mod.type {
         case .panel:
-            return [two(spec.reportTitle + named, d.photo("photoBreaker"), "ภาพถ่ายเบรกเกอร์เมนของตู้ไฟฟ้า", right: d.photo("photoWide"), "ภาพถ่ายมุมกว้างของตู้ไฟฟ้า (เพื่อพิจารณาจุดเชื่อมต่อระบบโซล่าเซลล์)",
+            let link = BuildingPanels.linked(mod, in: job)
+            var unit = two(spec.reportTitle + named, d.photo("photoBreaker"), "ภาพถ่ายเบรกเกอร์เมนของตู้ไฟฟ้า", right: d.photo("photoWide"), "ภาพถ่ายมุมกว้างของตู้ไฟฟ้า (เพื่อพิจารณาจุดเชื่อมต่อระบบโซล่าเซลล์)",
                         infoL: { y, o in
                             _ = field("ขนาดเบรกเกอร์เมน", d.text("breakerAT") + (d.text("breakerAT").isEmpty ? "" : " AT"), x: 6, y: y + 11, valueWidth: 90, ops: &o)
                             let nx = field("ปริมาณการใช้ไฟ (kW)", d.text("loadKW"), x: 6, y: y + 26, valueWidth: 60, ops: &o)
                             _ = field("เวลา", d.text("loadTime"), x: nx, y: y + 26, valueWidth: 50, ops: &o) },
-                        infoR: detailLine)]
+                        infoR: { y, o in
+                            detailLine(y, &o)
+                            if let link { _ = field("ตู้ใน A3", "\(link.boardName) · \(link.cbText)", x: 6, y: y + 26, valueWidth: half - 60, ops: &o) } })
+            // the PV connection point marked on the wide photo, in the same fitted rect as the photo
+            if let p = d.photo(BuildingPanels.Key.photoWide), var pt = d.shapes(BuildingPanels.Key.pvPoint).first {
+                pt.label = BuildingPanels.pointLabel(d)
+                let area = Box(half, Self.band + 15, half, 170 - 15).inset(4).fit(Double(p.width), Double(p.height))
+                unit.ops += SiteShapes.ops([pt], in: area, metersAcross: nil)
+            }
+            return [unit]
         case .inverter where InverterStation.isDesigned(d):
             return inverterStation(mod)
         case .inverter:

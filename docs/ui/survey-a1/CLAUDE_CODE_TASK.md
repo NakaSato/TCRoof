@@ -1,103 +1,44 @@
-# งานสำหรับ Claude Code: หน้า A1 ข้อมูลโครงการ (iPad) ตามแบบใหม่
+# Claude Code task: A1 ข้อมูลโครงการ (iPad) — finish the latest design
 
-> วิธีใช้: เปิด Claude Code ในโฟลเดอร์ repo `TCRoof` แล้วพิมพ์
-> `ทำตาม docs/ui/survey-a1/CLAUDE_CODE_TASK.md`
+> How to use: open Claude Code in the `TCRoof` repo folder and type
+> `Follow docs/ui/survey-a1/CLAUDE_CODE_TASK.md`
+>
+> This replaces the earlier Thai task (29–30/9). The A1 wide page (`InfoPageWide`) already exists; this task closes the gaps to the 30/9 design and adds the icons. Full detail: [`SPEC.md`](SPEC.md).
 
-## เป้าหมาย
-หน้า A1 ตอนนี้วาดจาก `groupPage(Schema.info, code: "A1", …)` ใน `SolarSurveyKit/Sources/SurveyUI/JobEditor.swift` เป็นรายการช่องเรียงลงมาทีละแถว
-ให้ทำ layout เฉพาะของ A1 บน iPad แนวนอน ตาม `preview.png` คือ 2 คอลัมน์ จบในจอเดียว ไม่ต้องเลื่อน
-- ค่าทุกช่องยังอ่าน/เขียนผ่าน `job.values` ด้วย field id เดิม
-- ห้ามเปลี่ยน id หรือป้ายชื่อใน `Schema`
-- ป้ายชื่อต้องตรงกับแผ่นงาน เพราะ Excel และ PDF ใช้ข้อความเดียวกัน
+UI text stays in Thai exactly as in `preview.png`. Thai strings in `backticks` are the literal labels.
 
-![preview](preview.png)
+## Goal
+Bring `InfoPageWide` in line with `preview.png`:
+1. **Swap the columns:** location card on the left (~620 pt), document / project / coordinator / areas on the right, gap 28.
+2. **Report crop frame** on the map, stored as `mapCrop` (SPEC §3): move and resize with 44 pt corner handles, minimum 12 %, stays inside the map. Label `ภาพในรายงาน · {W} × {H} ม.`, hint text and `รีเซ็ตกรอบ`. PDF and Excel map images use only the crop.
+3. **Install areas:** only หลังคา and ถังน้ำใส. Remove the พื้นดิน tile, but keep decoding and backing up `groundAreas`.
+4. **Engineer field:** remove the `ผู้ใช้เครื่องนี้` tag.
+5. **Bottom bar:** `บันทึกอัตโนมัติ HH:mm`, without the word แล้ว.
+6. **Icons:** copy `icons/A1Icons.xcassets` into `TCRoofKit/Sources/SurveyUI/Resources/` and use the icons per SPEC §7.
 
-อ้างอิง:
-- `preview.html`: หน้าเดียวกันเป็น HTML เปิดในเบราว์เซอร์ได้
-- `iPadA1.dc.html`: ต้นฉบับจาก canvas
-- design system "TCRoof Survey": สีและระยะตรงกับ `Theme.swift` / `Paper` ที่มีอยู่
+References in this folder: `preview.png`, `preview.html`, `iPadA1.dc.html` (crop logic in `dragStart`), `SPEC.md`, `icons/`.
 
-## อัปเดต 30/9/2569 (แบบล่าสุดจาก canvas — ถ้าขัดกับส่วนด้านล่าง ให้ยึดหัวข้อนี้)
-1. **สลับคอลัมน์**: "ที่ตั้ง" (แผนที่ · พิกัด · ที่อยู่) ย้ายไปอยู่**ซ้าย** กว้างประมาณ 620 ส่วน เอกสาร / โครงการ / ผู้ประสานงาน / พื้นที่ติดตั้ง อยู่**ขวา** ช่องไฟ 28
-2. **กรอบเลือกพื้นที่ภาพในรายงาน** บนแผนที่ (แทนข้อความ "ลากหมุดเพื่อปรับตำแหน่ง"):
-   - กรอบสี่เหลี่ยมขอบน้ำเงิน 2 pt มีจุดจับ 4 มุม
-   - ลากกลางกรอบ = ย้าย ลากมุม = ย่อ/ขยาย ขนาดขั้นต่ำ 12% ของแผนที่ และต้องอยู่ในแผนที่เสมอ
-   - ป้ายมุมซ้ายบนของกรอบ "ภาพในรายงาน · 108 × 69 ม." คำนวณเป็นเมตรจากมาตราส่วนของระดับซูม
-   - ใต้แผนที่เขียน "ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย" และลิงก์ "รีเซ็ตกรอบ" ทางขวา
-   - ภาพแผนที่ใน PDF / Excel ใช้เฉพาะพื้นที่ในกรอบ (crop จาก `MapImage` ตามระดับซูมที่เลือก)
-   - เก็บกรอบใน `values` คีย์ใหม่ `mapCrop` (x, y, w, h เป็น % ของภาพ) ค่าเริ่มต้น x 22, y 16, w 54, h 64
-3. **พื้นที่ติดตั้ง เหลือ 2 ตัวเลือก**: หลังคา และ ถังน้ำใส (เอา "พื้นดิน" ออก ไม่ต้องทำ `groundAreas`) กริด 2 คอลัมน์
-4. ช่องวิศวกร**ไม่มี**ป้าย "ผู้ใช้เครื่องนี้" แล้ว (ค่าเริ่มต้นยังมาจาก `settings.engineer`)
-5. แถบล่างซ้ายเขียน "บันทึกอัตโนมัติ HH:mm" (ไม่มีคำว่า "แล้ว")
+## Relevant files
+- `TCRoofKit/Sources/SurveyUI/InfoPageWide.swift` (`body` column order, `engineerInput`, `groundKey`)
+- `TCRoofKit/Sources/SurveyUI/InfoPageWide+Sections.swift` (areas tiles ~line 17, location box, bottom bar ~line 268)
+- `TCRoofKit/Sources/SurveyUI/MapImage.swift` (`fetch`, `metersAcross`)
+- `TCRoofKit/Sources/TCRoofCore/WebBackup.swift` (`extraJobKeys`: add `mapCrop`)
+- `TCRoofKit/Sources/PDFReport/ReportLayout+Cover.swift`, `TCRoofKit/Sources/ExcelExport/ExcelExporter.swift` (map image)
 
-ภาพ `preview.png` / `preview.html` / `iPadA1.dc.html` ในโฟลเดอร์นี้อัปเดตเป็นแบบล่าสุดแล้ว (logic ลากกรอบดู `dragStart` ใน `renderVals()`)
+Use code-review-graph per `CLAUDE.md` to find callers of `groundAreas` / `groundKey`, `MapImage` and `mapZoom` before editing.
 
-## โครงหน้า
+## Constraints
+- Do not change field ids / labels in `Schema.info` or the Excel layout. A1 completion counts as before.
+- Old jobs without `mapCrop` use the whole map image. Jobs with `groundAreas` still open and round-trip.
+- iPad portrait / iPhone: one column. Order: location, document, project, coordinator, areas.
+- Every control is at least 44 pt.
+- Values in the preview are examples. Do not hardcode them. Examples: 224, 00, 29/9/2569, สมชาย, the project name, 120 kWp, the coordinator, the phone number, 17.0062, 99.8235, the address, `108 × 69 ม.`.
 
-- เนื้อหากว้าง 1240 ชิดกลาง
-- แบ่งเป็น 2 คอลัมน์ ซ้ายยืดเต็ม ขวากว้าง 520 ช่องไฟ 28
-- แต่ละกล่องเป็นการ์ดพื้นขาว มุม 12 ขอบ `navy` 20% padding 16/18
-- หัวกล่อง 18 bold
-
-### คอลัมน์ซ้าย
-1. **เอกสาร**: กริด 4 ช่อง สัดส่วน 1 : 0.7 : 1.2 : 1.6
-   - `docNo` "เลขที่" *
-   - `rev` "REV." ไม่บังคับ
-   - `date` "วันที่" * แสดงเป็น พ.ศ. `29/9/2569` ผ่าน `ISODate.thai` และมีไอคอนปฏิทินเปิด date picker
-   - `engineer` "วิศวกรผู้สำรวจงาน" * ค่าเริ่มต้นจาก `settings.engineer` และมีป้ายเล็ก "ผู้ใช้เครื่องนี้" ทางขวา
-2. **โครงการ**:
-   - `projectName` "ชื่อโครงการ / สถานี" * เต็มแถว
-   - แถวล่าง 2 ช่อง: `capacity` (หน่วย kWp ท้ายช่อง ใช้แป้นตัวเลข) กับ `internet` (ChoiceChips มี/ไม่มี สูง 50)
-3. **ผู้ประสานงาน**: สัดส่วน 1.4 : 1
-   - `coordinator`
-   - `phone` มีไอคอนโทรศัพท์ แตะแล้วโทรออก (`tel:`)
-4. **พื้นที่ติดตั้ง** * (ส่วนใหม่ ดูหัวข้อถัดไป)
-
-### คอลัมน์ขวา: ที่ตั้ง
-- **แผนที่** สูง 280 มุม 10:
-  - ใช้ `MapImage.fetch(gps:zoom:)` เดิม
-  - มุมซ้ายบนมีปุ่มแบ่งส่วน 3 ระดับซูม: พื้นที่ 500 ม. / สถานี 200 ม. / อาคาร 50 ม. คำนวณจาก `metersAcross` ระดับที่เลือกเป็นพื้น `mint`
-  - มุมขวาบนมีปุ่ม + / − 44×44
-  - มุมซ้ายล่างเขียน "ลากหมุดเพื่อปรับตำแหน่ง" มุมขวาล่างมีแถบมาตราส่วน
-  - ใต้แผนที่เขียน "ระดับซูมที่เลือกใช้เป็นภาพแผนที่ในรายงาน PDF และแผ่น Excel"
-- **`gps`** "พิกัดดาวเทียม Google Map":
-  - ป้ายมี `**` นำหน้า ให้แสดงเป็นป้ายเหลือง "สำคัญ" (`sun`) แทนดอกจัน
-  - ช่องพิกัดมีปุ่ม "ตำแหน่งปัจจุบัน" (CoreLocation) อยู่ข้างๆ
-  - ใต้ช่องเขียน "ความแม่นยำ ±5 ม. · บันทึกเมื่อ HH:mm"
-- **`address`**: textarea สูงขั้นต่ำ 74
-- **`officeAddress`**: ไม่บังคับ มีปุ่ม "คัดลอก" คัดลอกค่าจาก `address`
-
-## ส่วนใหม่: พื้นที่ติดตั้ง
-มี 3 ตัวเลือก เรียงเป็นกริด 3 คอลัมน์ แต่ละตัวมีช่องติ๊ก 22 (`radius-box`) ชื่อ คำอธิบายเล็ก และปุ่ม − / + กับตัวเลข
-
-| ตัวเลือก | คำอธิบาย | ผลกับแบบสำรวจ |
-|---|---|---|
-| หลังคา | หน้า C · หลัง | จำนวนหัวข้อ C1 (`.roof`) ของงาน |
-| ถังน้ำใส | หน้า D1 · ถัง | จำนวนหัวข้อ D1 (`.tank`) |
-| พื้นดิน | ลานจอด | ยังไม่มีหัวข้อ; เก็บค่าไว้ก่อน |
-
-- ติ๊กแล้วพื้นเป็น `primary-soft` ช่องติ๊กเป็น `primary` ถ้าไม่ติ๊ก พื้นขาว ขอบ `border-control`
-- ขวาบนของกล่องเขียน "กำหนดหน้า C / D ในแบบสำรวจ · รวม N ขั้น" โดย N = จำนวนขั้นทั้งหมดหลังเปลี่ยน
-- **การทำงาน**: เปลี่ยนตัวเลขแล้วเพิ่มหรือลบ `SurveyModule` ของชนิดนั้นใน `job.modules` ให้ตรงกับจำนวน
-  - ตอนลด ถ้าหัวข้อที่จะถูกลบมีข้อมูลแล้ว ต้องถามยืนยันก่อน
-  - ค่าเริ่มต้นนับจาก `job.modules` ที่มีอยู่
-- ถ้าจะไม่แตะ schema ให้เก็บจำนวนพื้นดินใน `values` คีย์ใหม่ `groundAreas` (ไม่บังคับ)
-
-## สถานะช่อง
-- ช่องที่เติมอัตโนมัติจากงาน TCRoof (`jobSyncID`) ใช้พื้น "calc" (มิ้นต์อ่อนแบบใน `preview`) ได้แก่ `projectName`, `capacity`, `coordinator`, `phone`, `address`, `date`
-- แบบนี้เอาแถบแจ้ง "เติมจากงาน … ให้แล้ว" ออกแล้วตามคอมเมนต์ อย่าเพิ่มกลับมา
-- ช่องบังคับที่ยังว่างแสดงสถานะที่ป้ายชื่อตาม design system: จุด `pending` + "ยังขาด"
-
-## แถบล่าง
-- ซ้าย: ✓ "บันทึกอัตโนมัติแล้ว HH:mm" + "ครบ x/y ช่องในหน้านี้" (`Schema.info.completion`)
-- ขวา:
-  - ปุ่ม "บันทึกร่างตอนนี้"
-  - ปุ่มก่อนหน้า ใช้ไม่ได้ในหน้านี้ ป้าย "หัวข้อแรก"
-  - ปุ่มถัดไป "ถัดไป 2/13 · A2 ภาพสถานที่ติดตั้ง"
-
-## เกณฑ์รับงาน
-- [ ] build ผ่าน บน iPad แนวนอนทั้งหน้าอยู่ในจอเดียว (1366×1024 pt) ไม่ต้องเลื่อน
-- [ ] field id และป้ายชื่อเหมือนเดิม Excel/PDF ส่งออกได้เหมือนเดิม และ `completion` ของ A1 นับเท่าเดิม
-- [ ] เปลี่ยนจำนวนหลังคา/ถังแล้ว หัวข้อ C1/D1 ในแถบซ้ายของ `JobEditorView` เพิ่มหรือลดตาม
-- [ ] iPad แนวตั้งและ iPhone (`compact`) ยังใช้ `groupPage` แบบเดิม (มีแบบ iPhone ใน canvas ชื่อ `PhoneA1.dc.html` ถ้าจะทำต่อ)
-- [ ] ปุ่มและช่องทุกตัวสูงอย่างน้อย 44pt
+## Check before finishing
+1. Build passes and `swift test` passes, with the tests in SPEC §6.
+2. Run the iPad simulator in landscape at 1366 × 1024 and compare with `preview.png`.
+3. Try the flow:
+   - move and resize the crop at each zoom level; reset it
+   - export PDF and Excel, and check the cropped map
+   - open an old job that has `groundAreas`
+4. Summarize the changed files and the open questions in SPEC §8.

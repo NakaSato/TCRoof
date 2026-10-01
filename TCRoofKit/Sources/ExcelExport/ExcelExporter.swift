@@ -133,7 +133,11 @@ struct Fill {
             a.pic("B\(h + 2):N\(h + 12)", img(d.photo("photoArea"))); a.pic("O\(h + 2):AA\(h + 12)", img(d.photo("photoDetail")))
             a.set("K\(h + 13)", d.text("sizeLWH"))
             var l = Self.lines(d.text("detail"))
-            if let n = d.number("inverterCount"), n > 0 { l.insert("อินเวอร์เตอร์ \(fmt(n)) เครื่อง ต้องการพื้นที่ \(String(format: "%.2f", 1.5 * n + 1.5)) x 2.00 ม.", at: 0) }
+            if InverterStation.isDesigned(d) {
+                // same cell, with the B2 page's catalog equipment and minimum room / wall
+                let s = InverterStation(d)
+                l.insert("อินเวอร์เตอร์ \(s.sizesText) · CB \(s.breakerSummary) · \(s.minimumText) · \(s.site.label)", at: 0)
+            } else if let n = d.number("inverterCount"), n > 0 { l.insert("อินเวอร์เตอร์ \(fmt(n)) เครื่อง ต้องการพื้นที่ \(String(format: "%.2f", 1.5 * n + 1.5)) x 2.00 ม.", at: 0) }
             detail("R\(h + 13)", "R\(h + 14)", l)
         }
         for (i, (h, cr)) in [(199, 13), (215, 13), (231, 13), (247, 11)].enumerated() {

@@ -83,13 +83,17 @@ final class FloodTests: XCTestCase {
         var g = FloodGistda()
         g.years = [.init(year: 2554, plots: 227), .init(year: 2555, plots: 16), .init(year: 2558, plots: 0)]
         XCTAssertEqual(g.floodedYears.map(\.year), [2554, 2555])
-        XCTAssertEqual(g.rows.map(\.label), ["ปีที่ท่วม รัศมี 1 กม.", "ความลึกน้ำ"])
-        XCTAssertEqual(g.rows[0].value, "2554 (227) · 2555 (16)")
+        XCTAssertEqual(g.headline, "ท่วม 2 จาก 3 ปี (2554–2558)")
+        XCTAssertEqual(g.detail, "ล่าสุดปี 2555 · ท่วมมากสุดปี 2554 (227 แปลง)")
+        XCTAssertEqual(g.rows.map(\.label), ["สรุป", "จำนวนแปลงที่ท่วม", "ความลึกน้ำ"])
+        XCTAssertEqual(g.rows[1].value, "2554 (227) · 2555 (16)")
         XCTAssertEqual(g.rows[0].tone, .warn)
-        XCTAssertEqual(g.rows[1].value, "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน 50 ซม.")
+        XCTAssertEqual(g.rows[2].value, "ไม่มีข้อมูลความลึก · ใช้ค่าประเมิน 50 ซม.")
+        XCTAssertFalse(g.chart().ops.isEmpty)
         XCTAssertEqual(g.summary, "GISTDA: ท่วม 2 ปีในรัศมี 1 กม.")
         g.years = [.init(year: 2554, plots: 0)]
         XCTAssertEqual(g.rows[0].tone, .good)
+        XCTAssertNil(g.detail)
         XCTAssertEqual(g.summary, "GISTDA: ไม่พบพื้นที่ท่วมซ้ำซาก")
         // "use the estimate" when the service does not answer
         let manual = FloodGistda.estimate()

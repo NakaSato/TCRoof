@@ -81,50 +81,95 @@ struct GPSInput: View {
 }
 
 /// One-shot current location; asks for "while using" permission the first time. Main thread only.
+/// Listens for fixes until one is within `goodAccuracy`, or until `timeLimit`, then gives the best fix it saw
+/// (or an error), so the button never spins forever where the iPad gets no fix (Wi-Fi-only iPad in the field, indoors).
 final class GPSLocator: NSObject, CLLocationManagerDelegate {
     struct Denied: LocalizedError {
         var errorDescription: String? { "ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง เปิดได้ที่ การตั้งค่า > TCRoof > ตำแหน่ง" }
     }
 
-    private let manager = CLLocationManager()
-    private var completion: ((Result<CLLocation, Error>) -> Void)?
+    static let goodAccuracy: CLLocationAccuracy = 25
+    static let timeLimit: TimeInterval = 12
 
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-    }
+    /// Made on the first request: a view re-creates its `@State` initial value on every update, and each manager
+    /// opens a connection to locationd.
+    private var manager: CLLocationManager?
+    private var completion: ((Result<CLLocation, Error>) -> Void)?
+    private var best: CLLocation?
+    private var started = Date()
+    private var timer: Timer?
 
     func request(_ completion: @escaping (Result<CLLocation, Error>) -> Void) {
-        self.completion = completion
-        switch manager.authorizationStatus {
-        case .notDetermined: manager.requestWhenInUseAuthorization()
-        case .denied, .restricted: finish(.failure(Denied()))
-        default: manager.requestLocation()
+        let m = manager ?? CLLocationManager()
+        if manager == nil {
+            m.delegate = self
+            m.desiredAccuracy = kCLLocationAccuracyBest
+            manager = m
         }
+        self.completion = completion
+        switch m.authorizationStatus {
+        case .notDetermined: m.requestWhenInUseAuthorization()
+        case .denied, .restricted: finish(.failure(Denied()))
+        default: start(m)
+        }
+    }
+
+    /// The time limit runs from here, not while the permission prompt is open.
+    private func start(_ m: CLLocationManager) {
+        best = nil
+        started = Date()
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: Self.timeLimit, repeats: false) { [weak self] _ in self?.timeUp() }
+        m.startUpdatingLocation()
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         guard completion != nil else { return }
         switch manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways: manager.requestLocation()
+        case .authorizedWhenInUse, .authorizedAlways: if timer == nil { start(manager) }
         case .denied, .restricted: finish(.failure(Denied()))
         default: break
         }
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.last { finish(.success(location)) }
+        guard completion != nil else { return }
+        // skip a fix cached from before this request, and invalid ones
+        for l in locations where l.horizontalAccuracy >= 0 && l.timestamp > started.addingTimeInterval(-10) {
+            if best.map({ l.horizontalAccuracy < $0.horizontalAccuracy }) ?? true { best = l }
+        }
+        if let best, best.horizontalAccuracy <= Self.goodAccuracy { finish(.success(best)) }
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        finish(.failure(error))
+        // no fix yet: CoreLocation keeps trying while updating, so wait for the time limit
+        if (error as? CLError)?.code == .locationUnknown { return }
+        finish(best.map { .success($0) } ?? .failure(LocationFailure(error)))
+    }
+
+    private func timeUp() {
+        finish(best.map { .success($0) } ?? .failure(LocationFailure(CLError(.locationUnknown))))
     }
 
     private func finish(_ result: Result<CLLocation, Error>) {
+        timer?.invalidate(); timer = nil
+        manager?.stopUpdatingLocation()
         let done = completion
         completion = nil
         done?(result)
     }
+}
+/// A CoreLocation failure in words the surveyor can act on, in place of "kCLErrorDomain error 0".
+struct LocationFailure: LocalizedError {
+    let message: String
+    init(_ error: Error) {
+        switch (error as? CLError)?.code {
+        case .locationUnknown?: message = "ยังหาตำแหน่งไม่ได้ ลองออกไปที่โล่งแล้วกดอีกครั้ง หรือพิมพ์พิกัดเอง"
+        case .denied?: message = "ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง เปิดได้ที่ การตั้งค่า > TCRoof > ตำแหน่ง"
+        case .network?: message = "เชื่อมต่อเครือข่ายไม่ได้ ลองใหม่อีกครั้ง หรือพิมพ์พิกัดเอง"
+        default: message = "หาตำแหน่งไม่สำเร็จ ลองใหม่อีกครั้ง หรือพิมพ์พิกัดเอง"
+        }
+    }
+    var errorDescription: String? { message }
 }
 #endif

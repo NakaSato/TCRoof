@@ -52,12 +52,25 @@ struct JobEditorView: View {
     var cardElectrical: Bool { page == .electrical && !compact }
     /// A4's flood page (docs/ui/survey-a4): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
     var cardFlood: Bool { page == .flood && !compact }
+    /// B2 on iPad landscape (docs/ui/survey-b2): the section being shown; portrait and iPhone keep `groupPage`.
+    var cardInverter: SurveyModule? {
+        guard case .module(let id) = page, !compact, infoColumns == 2 else { return nil }
+        return job.modules.first { $0.id == id && $0.type == .inverter }
+    }
     /// Pages with the blue header and bottom bar instead of the navigation bar.
-    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood }
+    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil }
+    var cardTitle: String {
+        if let m = cardInverter { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B2") + " " + m.spec.label }
+        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง · MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
+    }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?
     /// A transformer the A3 bottom bar's "ยังขาดภาพ" chip points to.
     @State var electricalRequest: Int?
+    /// A breaker / board the single line diagram sent us to; A3 opens it.
+    @State var electricalFocus: SLTarget?
+    /// The single line diagram page (docs/ui/survey-sld), opened from A3.
+    @State var showSLD = false
     /// Two columns on one screen in landscape; portrait stacks the same cards in one column.
     var infoColumns: Int {
         guard detailSize.width >= 860 else { return 1 }
@@ -78,7 +91,7 @@ struct JobEditorView: View {
                     .background(Paper.page)
                     .safeAreaInset(edge: .top, spacing: 0) {
                         if cardPage {
-                            InfoPageHeader(job: job, title: cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง · MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ", back: { dismiss() },
+                            InfoPageHeader(job: job, title: cardTitle, back: { dismiss() },
                                            toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
                                            export: { model.flush(job.id); showExport = true })
                         }
@@ -109,6 +122,10 @@ struct JobEditorView: View {
         .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "site" { select(.site) } }
         // `-surveyPage electrical` opens A3
         .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "electrical" { select(.electrical) } }
+        // `-surveyPage sld` opens the single line diagram
+        .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "sld" { select(.electrical); showSLD = true } }
+        // `-surveyPage inverter` opens the first B2
+        .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "inverter", let m = job.modules.first(where: { $0.type == .inverter }) { select(.module(m.id)) } }
         // `-surveyPage flood` opens A4
         .onAppear { if UserDefaults.standard.string(forKey: "surveyPage") == "flood" { select(.flood) } }
         // `-surveyWideA1 YES` shows A1's two-column (landscape) layout in any orientation, sidebar hidden (simulators can't be turned from the command line)
@@ -117,6 +134,10 @@ struct JobEditorView: View {
         .task { if UserDefaults.standard.bool(forKey: "surveyExport") { try? await Task.sleep(nanoseconds: 600_000_000); showExport = true } }
         #endif
         .sheet(item: $preview) { p in PDFPreview(item: p) }
+        .fullScreenCover(isPresented: $showSLD) {
+            SingleLinePage(job: $job, open: { openFromDiagram($0) }, close: { showSLD = false })
+                .environment(model)
+        }
         // a Drive save stores the folder link on the model's copy — take it back so the next edit keeps it
         .sheet(isPresented: $showExport, onDismiss: { if let d = model.job(job.id)?.drive { job.drive = d } }) {
             ExportSheet(jobID: job.id) { select(page(for: $0)) }.environment(model)
@@ -139,11 +160,21 @@ struct JobEditorView: View {
         if cardElectrical {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                ElectricalPageWide(job: $job, request: $electricalRequest)
+                ElectricalPageWide(job: $job, request: $electricalRequest, focus: $electricalFocus, openDiagram: { showSLD = true })
                     .disabled(readOnly)
             }
             .padding(.horizontal, 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+        } else if let m = cardInverter {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48)
+                    .disabled(readOnly)
+                    .id(m.id)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if cardFlood {
             VStack(spacing: 12) {
@@ -187,13 +218,16 @@ struct JobEditorView: View {
     /// Bottom bar of the card pages; A2's lists the LIST items still unticked.
     var cardBar: some View {
         let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
-        let here: MissingGroup.Target = cardFlood ? .flood : cardElectrical ? .electrical : cardSite ? .site : .info
+        let station = cardInverter.map { InverterStation($0.values) }
+        let here: MissingGroup.Target = cardInverter.map { .module($0.id) } ?? (cardFlood ? .flood : cardElectrical ? .electrical : cardSite ? .site : .info)
+        // module pages step back to the section before them in the survey order
+        let before: Page? = cardInverter == nil ? nil : job.steps.firstIndex { $0.page == here }.flatMap { job.steps[safe: $0 - 1] }.map { page(for: $0.page) }
         let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
             : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900,
-                           previous: cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(nextPage), gaps: gaps,
-                           statusText: cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil,
-                           statusAlert: cardFlood && job.floodCheck.fails > 0)
+                           previous: cardInverter != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(nextPage), gaps: gaps,
+                           statusText: station?.status ?? (cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
+                           statusAlert: station.map { !$0.isOK } ?? (cardFlood && job.floodCheck.fails > 0))
     }
 
     var readOnlyBanner: some View {
@@ -231,6 +265,23 @@ struct JobEditorView: View {
         let lines = (unsigned.isEmpty ? [] : ["PDF ที่ส่ง กปภ. ยังไม่มี" + unsigned.joined(separator: " และ")])
             + (photos.missing > 0 ? [photos.message] : []) + groups.map { "\($0.title): \($0.items.count) รายการ" }
         pendingExport = PendingExport(gaps: lines, target: unsigned.isEmpty ? groups.first?.target : .final, go: go)
+    }
+
+    /// A tap or link on the single line diagram: close it and open the page (and item) it points at.
+    func openFromDiagram(_ t: SLTarget) {
+        showSLD = false
+        switch t.page {
+        case .info: select(.info)
+        case .flood: select(.flood)
+        case .module(let type):
+            if let m = job.modules.first(where: { $0.type == type }) { select(.module(m.id)) } else { select(.electrical) }
+        case .electrical:
+            select(.electrical)
+            if t.trafo != nil {
+                // the page must be on screen before it can open the item
+                DispatchQueue.main.async { electricalFocus = t; electricalRequest = t.trafo }
+            }
+        }
     }
 
     func page(for target: MissingGroup.Target) -> Page { Self.page(for: target) }

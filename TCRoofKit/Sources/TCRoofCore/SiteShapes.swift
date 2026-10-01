@@ -12,11 +12,13 @@ public enum ShapeKind: String, Codable, CaseIterable, Sendable {
     case craneEntry
     /// Something shading the panels: closed polygon, orange hatching, with a label.
     case shade
+    /// B2 inverter area drawn on its boundary photo: closed polygon, dashed teal, a length chip on each edge.
+    case boundary
 
     /// Points needed before the shape is complete; nil = as many as the engineer taps (at least `minPoints`).
     public var fixedPoints: Int? { self == .measure || self == .craneEntry ? 2 : nil }
     public var minPoints: Int { self == .cableRoute || fixedPoints != nil ? 2 : 3 }
-    public var isClosed: Bool { self == .panelArea || self == .shade }
+    public var isClosed: Bool { self == .panelArea || self == .shade || self == .boundary }
     /// The LIST item (`Options.list`) drawing this shape ticks.
     public var listItem: String? {
         switch self {
@@ -31,6 +33,7 @@ public enum ShapeKind: String, Codable, CaseIterable, Sendable {
         case .cableRoute: return RGBA(hex: 0x16325C)
         case .measure: return RGBA(hex: 0x16325C)
         case .craneEntry, .shade: return RGBA(hex: 0xE36414)
+        case .boundary: return RGBA(hex: 0x27A99A)
         }
     }
 }
@@ -48,16 +51,30 @@ public struct SiteShape: Codable, Hashable, Identifiable, Sendable {
     public var points: [ShapePoint]
     /// Text drawn with the shape ("ร่มเงาต้นไม้", "ทางเข้าเครน"); measurements show their length instead.
     public var label: String
-    public init(id: UUID = UUID(), kind: ShapeKind, points: [ShapePoint], label: String = "") {
-        self.id = id; self.kind = kind; self.points = points; self.label = label
+    /// Typed length (m) of each edge, edge i running from point i to i + 1 (B2 boundary); "" where not typed.
+    public var edges: [String]
+    public init(id: UUID = UUID(), kind: ShapeKind, points: [ShapePoint], label: String = "", edges: [String] = []) {
+        self.id = id; self.kind = kind; self.points = points; self.label = label; self.edges = edges
     }
-    enum CodingKeys: String, CodingKey { case id, kind, points, label }
+    enum CodingKeys: String, CodingKey { case id, kind, points, label, edges }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         kind = try c.decode(ShapeKind.self, forKey: .kind)
         points = try c.decodeIfPresent([ShapePoint].self, forKey: .points) ?? []
         label = try c.decodeIfPresent(String.self, forKey: .label) ?? ""
+        edges = try c.decodeIfPresent([String].self, forKey: .edges) ?? []
+    }
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id); try c.encode(kind, forKey: .kind); try c.encode(points, forKey: .points); try c.encode(label, forKey: .label)
+        if !edges.isEmpty { try c.encode(edges, forKey: .edges) }
+    }
+    /// Midpoint of edge i (closed shapes wrap to the first point).
+    public func edgeMid(_ i: Int) -> ShapePoint? {
+        guard points.count >= 2, i >= 0, i < (kind.isClosed ? points.count : points.count - 1) else { return nil }
+        let a = points[i], b = points[(i + 1) % points.count]
+        return ShapePoint((a.x + b.x) / 2, (a.y + b.y) / 2)
     }
 }
 
@@ -104,6 +121,16 @@ public enum SiteShapes {
                 o += zip(pts, pts.dropFirst()).map { .line($0, $1, width: w * 1.4, color: col, dash: [w * 4, w * 2.5]) }
                 o.append(arrowHead(from: pts[pts.count - 2], to: pts[pts.count - 1], size: fs * 1.1, color: col))
                 o += SiteMarks.nameTag(s.label.isEmpty ? "ทางเข้าเครน" : s.label, at: Pt(pts[0].x, pts[0].y - fs * 1.4), size: fs * 0.75, color: col)
+            case .boundary:
+                o.append(.polygon(pts, stroke: nil, fill: RGBA(col.r, col.g, col.b, 0.10)))
+                for (a, b) in zip(pts, pts.dropFirst() + [pts[0]]) { o.append(.line(a, b, width: w * 1.4, color: col, dash: [w * 5, w * 3])) }
+                for i in pts.indices {
+                    guard let e = s.edges[safe: i]?.trimmingCharacters(in: .whitespaces), !e.isEmpty, let m = s.edgeMid(i) else { continue }
+                    let t = e + " ม.", tw = ApproxText.width(t, size: fs * 0.85, bold: true) + fs, th = fs * 1.5
+                    let mid = Pt(box.x + m.x * box.w, box.y + m.y * box.h)
+                    o.append(.rect(Box(mid.x - tw / 2, mid.y - th / 2, tw, th), stroke: nil, fill: col))
+                    o.append(.text(t, at: mid, size: fs * 0.85, bold: true, color: .white, align: .center))
+                }
             case .measure:
                 let a = pts[0], b = pts[1]
                 o.append(.line(a, b, width: w, color: col))

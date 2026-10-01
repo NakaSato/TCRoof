@@ -59,6 +59,10 @@ extension JobEditorView {
             if page == .electrical, job.values.transformers("trafos").isEmpty == false || !job.values.text("meterNo").isEmpty {
                 Text("ค่าที่กรอกจะลงในผัง SmartArt ของแผ่น ระบบไฟฟ้า").font(.footnote).foregroundStyle(.secondary)
             }
+            if page == .electrical {
+                Button { showSLD = true } label: { Label("สร้าง Single Line Diagram", systemImage: "bolt.horizontal").frame(minHeight: 44) }
+                    .buttonStyle(.bordered)
+            }
             nextButton
         }
     }

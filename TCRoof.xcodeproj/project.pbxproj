@@ -13,9 +13,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000000000000000000C001 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
-		A1000000000000000000C002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = AppInfo.plist; sourceTree = "<group>"; };
 		A10000000000000000000001 /* TCRoof.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TCRoof.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000C001 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		A1000000000000000000C002 /* AppInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = AppInfo.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -45,7 +45,7 @@
 			children = (
 				A10000000000000000000002 /* TCRoof */,
 				A1000000000000000000C001 /* Config.xcconfig */,
-				A1000000000000000000C002 /* Info.plist */,
+				A1000000000000000000C002 /* AppInfo.plist */,
 				A10000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";

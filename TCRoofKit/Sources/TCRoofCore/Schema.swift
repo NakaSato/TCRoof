@@ -282,7 +282,10 @@ public enum Schema {
         .inverter: ModuleSpec(type: .inverter, sheet: "ระบบไฟฟ้า", label: "พื้นที่ติดตั้งอินเวอร์เตอร์", short: "พื้นที่ติดตั้งอินเวอร์เตอร์", reportTitle: "ภาพตำแหน่งติดตั้ง Inverter station", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
             GroupSpec(nil, [P("photoArea", "ภาพถ่ายพื้นที่ติดตั้ง Inverter Station"), P("photoDetail", "รายละเอียด (ภาพระบุขอบเขตพื้นที่)", optional: true),
                             T("sizeLWH", "ขนาดพื้นที่ติดตั้ง Inverter station (ก x ย x ส)", "6x2"), N("inverterCount", "จำนวนอินเวอร์เตอร์", "เครื่อง"),
-                            FieldSpec("invNote", "", .note("**ขนาดพื้นที่ที่ต้องการในการติดตั้ง Inverter Station ยาว = (1.5 × จำนวนอินเวอร์เตอร์) + 1.5 เมตร กว้าง 2 เมตร")), detail()])]),
+                            FieldSpec("invNote", "", .note("**ขนาดพื้นที่ที่ต้องการในการติดตั้ง Inverter Station ยาว = (1.5 × จำนวนอินเวอร์เตอร์) + 1.5 เมตร กว้าง 2 เมตร")), detail()]
+                            // B2 wide page (docs/ui/survey-b2): optional and not shown on the form page, so completion counts as before;
+                            // the page keeps `sizeLWH` and `inverterCount` in step with them (`InverterStation`)
+                            + inverterStationFields)]),
         .water: ModuleSpec(type: .water, sheet: "ระบบไฟฟ้า", label: "ระบบน้ำล้างแผง", short: "ระบบน้ำล้างแผง", reportTitle: "ภาพตำแหน่งระบบน้ำล้างแผง", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
             GroupSpec(nil, [P("photoArea", "ภาพถ่ายพื้นที่ติดตั้ง"), P("photoWide", "ภาพถ่ายมุมกว้างของพื้นที่ติดตั้ง"),
                             C("waterMode", "รูปแบบระบบน้ำ", ["ติดตั้งระบบน้ำใหม่", "ติดตั้งร่วมกับระบบน้ำเดิม"]), detail()])]),
@@ -376,6 +379,18 @@ public enum Schema {
                                 P("photoFront", "ด้านหน้า"), P("photoBack", "ด้านหลัง"), P("photoLeft", "ด้านซ้าย"), P("photoRight", "ด้านขวา")])]),
     ]
     public static func spec(_ t: ModuleType) -> ModuleSpec { modules[t]! }
+
+    /// B2 wide page answers: the measured area, the boundary on `photoDetail`, the site, the inverter sizes and the user's spans / tray / ladder.
+    static let inverterStationFields: [FieldSpec] = {
+        let hidden: @Sendable (Values) -> Bool = { _ in false }
+        return [N("invAreaW", "ความกว้างพื้นที่ (ก)", "ม.", optional: true, when: hidden), N("invAreaL", "ความยาวพื้นที่ (ย)", "ม.", optional: true, when: hidden),
+                N("invAreaH", "ความสูงพื้นที่ (ส)", "ม.", optional: true, when: hidden),
+                FieldSpec("invBoundary", "ขอบเขตบนภาพ", .text(), optional: true, when: hidden),
+                C("invSite", "ตำแหน่งติดตั้ง", InverterStation.Site.allCases.map(\.label), optional: true, when: hidden),
+                T("invSizes", "ขนาดอินเวอร์เตอร์ (kW คั่นด้วย ,)", "60,60", optional: true, when: hidden),
+                T("invSpans", "ระยะช่วงเสา (ม. คั่นด้วย ,)", optional: true, when: hidden),
+                N("invTrayW", "Tray อินเวอร์เตอร์ → AC-DB", "มม.", optional: true, when: hidden), N("invLadderW", "Ladder ออกจาก AC-DB", "มม.", optional: true, when: hidden)]
+    }()
 
     /// Starting slots on the station sheet, used to warn when a sheet copy will be added.
     public static let stationSlots: [ModuleType: Int] = [.panel: 3, .inverter: 3, .water: 4, .backfeed: 2, .fts: 4]

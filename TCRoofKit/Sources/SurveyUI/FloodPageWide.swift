@@ -374,14 +374,27 @@ struct FloodPageWide: View {
         let gps = GPS.parse(values.text("gps"))
         return A1Card(title: "ข้อมูลน้ำท่วมจาก GISTDA", trailing: gps.map { "ตามพิกัด A1 · " + String(format: "%.4f, %.4f", $0.lat, $0.lon) } ?? "ยังไม่มีพิกัด A1", spacing: 10) {
             if let g = values.gistda {
-                VStack(spacing: 0) {
-                    ForEach(g.rows, id: \.label) { r in
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Text(r.label).font(.system(size: 14)).foregroundStyle(Home.muted).frame(width: 110, alignment: .leading)
-                            Text(r.value).font(.system(size: 15, weight: .bold)).foregroundStyle(tone(r.tone)).frame(maxWidth: .infinity, alignment: .leading)
+                if g.manual == true {
+                    Text(g.rows[0].value).font(.system(size: 15, weight: .bold)).foregroundStyle(tone(.bad))
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(g.headline).font(.system(size: 20, weight: .bold)).foregroundStyle(tone(g.floodedYears.isEmpty ? .good : .warn))
+                        if let d = g.detail { Text(d).font(.system(size: 15)).foregroundStyle(Home.navy) }
+                    }
+                    let sk = g.chart()
+                    Canvas { ctx, size in
+                        ctx.withCGContext { cg in
+                            let k = size.width / CGFloat(sk.width)
+                            cg.scaleBy(x: k, y: k)
+                            PDFRenderer.draw(sk.ops, in: cg, photo: { _ in nil })
                         }
-                        .padding(.vertical, 7)
-                        Divider()
+                    }
+                    .aspectRatio(CGFloat(sk.width / sk.height), contentMode: .fit)
+                    .accessibilityElement().accessibilityLabel(g.headline + (g.detail.map { ". " + $0 } ?? ""))
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Home.pending)
+                        Text("GISTDA ไม่มีข้อมูลความลึกน้ำ · ใช้ค่าประเมิน \(g.estimatedDepthCm) ซม. ควรยืนยันกับเจ้าหน้าที่สถานี")
+                            .font(.system(size: 14, weight: .semibold)).foregroundStyle(tone(.bad))
                     }
                 }
                 Text(g.footnote).font(.system(size: 12)).foregroundStyle(Home.muted)

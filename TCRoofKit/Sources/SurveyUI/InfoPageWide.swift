@@ -3,7 +3,8 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// A1 on iPad: the cover as cards (docs/ui/survey-a1) — two columns that fit one screen in landscape, one column in portrait.
+/// A1 on iPad: the cover as cards (docs/ui/survey-a1) — two columns that fit one screen in landscape (location on the left),
+/// one column in portrait.
 /// Every field keeps its `Schema.info` id and label, so Excel, PDF and completion are unchanged.
 struct InfoPageWide: View {
     @Binding var job: Job
@@ -24,24 +25,23 @@ struct InfoPageWide: View {
 
     /// Filled from the linked TCRoof job (`SurveyModel.fill`), shown on the mint "calc" background.
     static let prefilled: Set<String> = ["projectName", "capacity", "coordinator", "phone", "address", "date"]
-    /// Ground-mounted areas; there is no ground section yet, so only the count is kept.
-    static let groundKey = "groundAreas"
 
-    var rightWidth: CGFloat { min(520, max(360, (width - 28) * 0.44)) }
+    /// The location card (~620 of the design's 1240); narrower when the sidebar is open.
+    var locationWidth: CGFloat { min(620, max(360, (width - 28) * 0.5)) }
     /// Width of the column holding the document, project and area boxes.
-    var mainWidth: CGFloat { twoColumns ? width - 28 - rightWidth : width }
+    var mainWidth: CGFloat { twoColumns ? width - 28 - locationWidth : width }
 
     var body: some View {
         VStack(spacing: 16) {
             stepBar
             if twoColumns {
                 HStack(alignment: .top, spacing: 28) {
+                    locationBox.frame(width: locationWidth)
                     VStack(spacing: 16) { documentBox; projectBox; coordinatorBox; areasBox }
                         .frame(maxWidth: .infinity)
-                    locationBox.frame(width: rightWidth)
                 }
             } else {
-                VStack(spacing: 16) { documentBox; projectBox; coordinatorBox; areasBox; locationBox }
+                VStack(spacing: 16) { locationBox; documentBox; projectBox; coordinatorBox; areasBox }
             }
         }
         .foregroundStyle(Home.navy)
@@ -58,7 +58,7 @@ struct InfoPageWide: View {
 
     var stepBar: some View { PageStepBar(job: job, here: .info) }
 
-    // MARK: left column
+    // MARK: right column
 
     var documentBox: some View {
         A1Card(title: "เอกสาร") {
@@ -98,7 +98,7 @@ struct InfoPageWide: View {
             HStack(spacing: 6) {
                 Text(t.isEmpty ? "เลือกวันที่" : ISODate.thai(t)).foregroundStyle(t.isEmpty ? Home.muted : Home.navy).lineLimit(1)
                 Spacer(minLength: 4)
-                Image(systemName: "calendar").foregroundStyle(Home.primary)
+                A2Icon(name: "ui-calendar", fallback: "calendar", size: 20).foregroundStyle(Home.primary)
             }
             .inputBox(calc: calc("date"), focused: showDate)
             .contentShape(Rectangle())
@@ -120,9 +120,7 @@ struct InfoPageWide: View {
         let value = job.values.text("engineer").trimmingCharacters(in: .whitespaces)
         return HStack(spacing: 6) {
             TextField(mine.isEmpty ? "ชื่อวิศวกร" : mine, text: text("engineer")).focused($focus, equals: "engineer")
-            if !mine.isEmpty && value == mine {
-                Text("ผู้ใช้เครื่องนี้").font(.footnote).foregroundStyle(Home.muted).lineLimit(1).fixedSize()
-            } else if !mine.isEmpty && value.isEmpty {
+            if !mine.isEmpty && value.isEmpty {
                 Button("ใช้ชื่อฉัน") { job.values["engineer"] = .text(mine) }
                     .font(.footnote.weight(.semibold)).foregroundStyle(Home.primary).frame(minHeight: 44).fixedSize()
             }
@@ -168,7 +166,7 @@ struct InfoPageWide: View {
         return HStack(spacing: 4) {
             TextField("0xx-xxx-xxxx", text: text("phone")).keyboardType(.phonePad).focused($focus, equals: "phone")
             Button { if let u = URL(string: "tel:" + digits) { openURL(u) } } label: {
-                Image(systemName: "phone").foregroundStyle(Home.primary).frame(width: 40, height: 44)
+                A2Icon(name: "ui-phone", fallback: "phone", size: 20).foregroundStyle(Home.primary).frame(width: 40, height: 44)
             }
             .disabled(digits.isEmpty)
             .accessibilityLabel("โทรหาผู้ประสานงาน")

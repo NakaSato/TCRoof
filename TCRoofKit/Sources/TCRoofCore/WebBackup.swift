@@ -27,8 +27,9 @@ public enum WebBackup {
         return out
     }
 
-    /// Cover answers A1 keeps outside the schema (ground-area count, map zoom); text in the JSON like other fields.
-    public static let extraJobKeys = ["groundAreas", "mapZoom", SiteShapes.sourceKey, SiteShapes.scaleKey]
+    /// Cover answers A1 keeps outside the schema (map zoom and report crop; the ground-area count of older jobs,
+    /// no longer shown but kept); text in the JSON like other fields.
+    public static let extraJobKeys = ["groundAreas", "mapZoom", MapCrop.key, SiteShapes.sourceKey, SiteShapes.scaleKey]
 
     static func importJob(_ r: [String: Any], into store: JobStore) throws -> Job {
         let webID = (r["id"] as? String) ?? UUID().uuidString

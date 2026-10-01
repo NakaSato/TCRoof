@@ -169,7 +169,9 @@ struct SitePageWide: View {
                 let p = try await model.mapPhoto(gps: gps, for: job.id)
                 job.values["siteMap"] = .photo(p)
                 job.values[SiteShapes.sourceKey] = .text("google")
-                job.values[SiteShapes.scaleKey] = .text(String(format: "%.2f", MapImage.metersAcross(lat: c.latitude, zoom: zoom)))
+                // the picture is cut to the A1 report frame, so it spans that share of the map's width
+                let share = (MapCrop(job.values.text(MapCrop.key))?.w ?? 100) / 100
+                job.values[SiteShapes.scaleKey] = .text(String(format: "%.2f", MapImage.metersAcross(lat: c.latitude, zoom: zoom) * share))
             } catch { failure = error.localizedDescription }
         }
     }

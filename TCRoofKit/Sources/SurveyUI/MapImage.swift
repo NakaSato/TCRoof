@@ -2,6 +2,7 @@
 import UIKit
 import MapKit
 import CoreLocation
+import TCRoofCore
 
 /// Satellite picture of the site for "ภาพสถานที่ติดตั้ง": Google Maps Static API when an API key is set,
 /// otherwise Apple Maps satellite imagery (no key needed). Same centre, zoom and framing either way.
@@ -47,6 +48,13 @@ enum MapImage {
         let img = key.isEmpty ? try await apple(c, zoom: zoom) : try await google(c, zoom: zoom, key: key)
         Cache.store(img, name)
         return img
+    }
+
+    /// The part of `img` inside the A1 report frame; the whole picture when there is no frame or it can't be cut.
+    static func crop(_ img: UIImage, to crop: MapCrop?) -> UIImage {
+        guard let crop, crop != .full, let cg = img.cgImage,
+              let part = cg.cropping(to: crop.pixelRect(width: cg.width, height: cg.height)) else { return img }
+        return UIImage(cgImage: part, scale: img.scale, orientation: img.imageOrientation)
     }
 
     /// Pictures already fetched, in memory and in Caches/MapImages, so reopening A1 or switching back to a zoom

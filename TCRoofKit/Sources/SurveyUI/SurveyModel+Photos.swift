@@ -119,10 +119,12 @@ extension SurveyModel {
     }
 
     /// Satellite picture centred on the job's GPS, stored like any other photo.
-    /// Uses the zoom level picked on A1 (`mapZoom`), else the one in settings.
+    /// Uses the zoom level picked on A1 (`mapZoom`), else the one in settings, cut to the A1 report frame (`mapCrop`).
     public func mapPhoto(gps: String, for job: UUID) async throws -> Photo {
-        let zoom = self.job(job).flatMap { Int($0.values.text("mapZoom")) } ?? settings.mapZoom
-        let img = try await MapImage.fetch(gps: gps, zoom: zoom, googleKey: settings.googleMapsKey)
+        let values = self.job(job)?.values
+        let zoom = values.flatMap { Int($0.text("mapZoom")) } ?? settings.mapZoom
+        let full = try await MapImage.fetch(gps: gps, zoom: zoom, googleKey: settings.googleMapsKey)
+        let img = MapImage.crop(full, to: values.flatMap { MapCrop($0.text(MapCrop.key)) })
         guard let p = addPhoto(img, to: job, maxSide: 1600) else { throw MapImage.Failure.badResponse("บันทึกภาพไม่ได้") }
         return p
     }

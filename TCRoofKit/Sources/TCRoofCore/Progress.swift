@@ -50,6 +50,9 @@ public extension Job {
         let size: String? = span("spansX") > 0 && span("spansY") > 0 ? "\(fmt(span("spansX"))) x \(fmt(span("spansY"))) ม." : nil
         switch m.type {
         case .panel: return j(t("breakerAT").isEmpty ? nil : "เบรกเกอร์เมน \(t("breakerAT")) AT", t("loadKW").isEmpty ? nil : "โหลด \(t("loadKW")) kW" + (t("loadTime").isEmpty ? "" : " @" + t("loadTime")))
+        case .inverter where InverterStation.isDesigned(d):
+            let s = InverterStation(d)
+            return j(s.sizesAssumed ? "\(s.sizes.count) เครื่อง" : s.sizesText, t("sizeLWH").isEmpty ? nil : "พื้นที่ " + t("sizeLWH"), s.minimumText, s.fits ? nil : "พื้นที่ไม่พอ")
         case .inverter:
             let n = d.number("inverterCount")
             return j(n.map { "\(fmt($0)) เครื่อง" }, t("sizeLWH").isEmpty ? nil : "พื้นที่ " + t("sizeLWH"), n.map { "ต้องการ \(String(format: "%.2f", 1.5 * $0 + 1.5)) x 2.00 ม." })

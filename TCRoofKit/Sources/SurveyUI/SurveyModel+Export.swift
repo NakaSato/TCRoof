@@ -72,6 +72,14 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "PDF สรุป 1 หน้า")
     }
 
+    /// The single line diagram alone on an A3 landscape page.
+    public func exportSingleLinePDF(_ job: Job, hv: Bool? = nil) throws -> ExportFile {
+        flush(job.id)
+        let url = tempURL("SLD " + baseName(job) + ".pdf")
+        try PDFRenderer.renderSingleLine(job: job, header: reportHeader, hv: hv, photo: { _ in nil }).write(to: url, options: .atomic)
+        return ExportFile(url: url, summary: "Single Line Diagram A3")
+    }
+
     public func exportPDF(_ job: Job) throws -> ExportFile {
         flush(job.id)
         let url = tempURL(baseName(job) + ".pdf")

@@ -3,20 +3,19 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// "พื้นที่ติดตั้ง" (how many C1 roof and D1 tank sections the job has) and the location column.
+/// "พื้นที่ติดตั้ง" (how many C1 roof and D1 tank sections the job has) and the location card.
+/// Older jobs may carry a ground-area count (`groundAreas`); it is no longer shown or counted, but stays in the job
+/// and its web backup (`WebBackup.extraJobKeys`).
 extension InfoPageWide {
     // MARK: installation areas
 
     var areasBox: some View {
         A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ · รวม \(job.steps.count) ขั้น", spacing: 10) {
-            // three across when the column is wide enough; one per row when the sidebar leaves it too narrow
-            let layout = mainWidth >= 620 ? AnyLayout(RatioRow(weights: [1, 1, 1], spacing: 10)) : AnyLayout(VStackLayout(spacing: 8))
+            // two across when the column is wide enough; one per row when the sidebar leaves it too narrow
+            let layout = mainWidth >= 440 ? AnyLayout(RatioRow(weights: [1, 1], spacing: 10)) : AnyLayout(VStackLayout(spacing: 8))
             layout {
                 areaTile("หลังคา", "หน้า C · หลัง", count: count(.roof)) { setCount(.roof, $0) }
                 areaTile("ถังน้ำใส", "หน้า D1 · ถัง", count: count(.tank)) { setCount(.tank, $0) }
-                areaTile("พื้นดิน", "ลานจอด", count: Int(job.values.text(Self.groundKey)) ?? 0) {
-                    job.values[Self.groundKey] = $0 > 0 ? .text(String($0)) : nil
-                }
             }
         }
     }
@@ -26,12 +25,8 @@ extension InfoPageWide {
         return HStack(spacing: 2) {
             Button { set(on ? 0 : 1) } label: {
                 HStack(spacing: 8) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 3).fill(on ? Home.primary : Color.white)
-                        if on { Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white) }
-                        else { RoundedRectangle(cornerRadius: 3).stroke(Home.borderControl, lineWidth: 1.5) }
-                    }
-                    .frame(width: 22, height: 22)
+                    A2Icon(name: on ? "a1-checkbox-on" : "a1-checkbox-off", fallback: on ? "checkmark.square.fill" : "square", size: 22)
+                        .foregroundStyle(Home.primary)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(title).font(.system(size: 15, weight: .bold))
                         Text(detail).font(.system(size: 12)).foregroundStyle(Home.muted)
@@ -44,18 +39,18 @@ extension InfoPageWide {
             .buttonStyle(.plain)
             .accessibilityLabel(title)
             .accessibilityAddTraits(on ? .isSelected : [])
-            stepButton("minus", label: "ลด" + title) { set(count - 1) }.disabled(count == 0)
+            stepButton("ui-minus", "minus", label: "ลด" + title) { set(count - 1) }.disabled(count == 0)
             Text("\(count)").font(.system(size: 16, weight: .bold)).monospacedDigit().frame(minWidth: 18)
-            stepButton("plus", label: "เพิ่ม" + title) { set(count + 1) }.disabled(count >= 20)
+            stepButton("ui-plus", "plus", label: "เพิ่ม" + title) { set(count + 1) }.disabled(count >= 20)
         }
         .padding(.leading, 12).padding(.trailing, 2)
         .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.navy.opacity(0.2) : Home.borderControl))
     }
 
-    func stepButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+    func stepButton(_ icon: String, _ symbol: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 16, weight: .bold)).frame(width: 30, height: 44).contentShape(Rectangle())
+            A2Icon(name: icon, fallback: symbol, size: 18).frame(width: 30, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).foregroundStyle(Home.primary)
         .accessibilityLabel(label)
@@ -95,8 +90,17 @@ extension InfoPageWide {
         A1Card(title: "ที่ตั้ง") {
             VStack(alignment: .leading, spacing: 8) {
                 SiteMapPreview(gps: text("gps"), zoom: Binding(get: { mapZoom }, set: { job.values["mapZoom"] = .text(String($0)) }),
+                               crop: Binding(get: { mapCrop }, set: { job.values[MapCrop.key] = .text($0.text) }),
                                googleKey: model.settings.googleMapsKey)
-                Text("ระดับซูมที่เลือกใช้เป็นภาพแผนที่ในรายงาน PDF และแผ่น Excel").font(.footnote).foregroundStyle(Home.muted)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย")
+                        .font(.footnote).foregroundStyle(Home.muted).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    Button("รีเซ็ตกรอบ") { job.values[MapCrop.key] = .text(MapCrop.standard.text) }
+                        .font(.footnote.weight(.bold)).foregroundStyle(Home.primary)
+                        .frame(minWidth: 44, minHeight: 44).fixedSize()
+                        .disabled(mapCrop == .standard)
+                }
             }
             field("gps") { gpsInput }
             field("address") {
@@ -120,6 +124,8 @@ extension InfoPageWide {
 
     /// Zoom of this job's site picture; follows the settings until a level is picked here.
     var mapZoom: Int { Int(job.values.text("mapZoom")) ?? model.settings.mapZoom }
+    /// Part of the map used as the report picture; a job from before the frame existed uses all of it.
+    var mapCrop: MapCrop { MapCrop(job.values.text(MapCrop.key)) ?? .full }
 
     var gpsInput: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -128,7 +134,7 @@ extension InfoPageWide {
                     .inputBox(focused: focus == "gps")
                 Button(action: locate) {
                     HStack(spacing: 8) {
-                        if locating { ProgressView() } else { Image(systemName: "scope").foregroundStyle(Home.primary) }
+                        if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Home.primary) }
                         Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold))
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
@@ -263,9 +269,9 @@ struct InfoPageBar: View {
         let saved = max(job.updated, savedNow ?? .distantPast)
         HStack(spacing: 12) {
             HStack(spacing: 10) {
-                Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(Home.ok)
+                A2Icon(name: "ui-check", fallback: "checkmark", size: 20).foregroundStyle(Home.ok)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("บันทึกอัตโนมัติแล้ว " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
+                    Text("บันทึกอัตโนมัติ " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
                     status(c)
                 }
@@ -283,7 +289,7 @@ struct InfoPageBar: View {
                 if let previous, let s = steps[safe: i - 1] {
                     Button(action: previous) {
                         HStack(spacing: 10) {
-                            Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold))
+                            A2Icon(name: "ui-prev", fallback: "chevron.left", size: 20)
                             VStack(alignment: .leading, spacing: 0) {
                                 Text("ก่อนหน้า \(i)/\(steps.count)").font(.system(size: 12)).foregroundStyle(Home.muted)
                                 Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
@@ -295,7 +301,7 @@ struct InfoPageBar: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    HStack(spacing: 8) { Image(systemName: "chevron.left"); Text("หัวข้อแรก") }
+                    HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 18); Text("หัวข้อแรก") }
                         .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
                         .frame(width: 180, height: 56)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
@@ -309,7 +315,7 @@ struct InfoPageBar: View {
                             Text("ถัดไป \(i + 2)/\(steps.count)").font(.system(size: 12)).opacity(0.9)
                             Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                         }
-                        Image(systemName: "chevron.right").font(.system(size: 17, weight: .bold))
+                        A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)
                     }
                     .foregroundStyle(.white)
                     .frame(width: narrow ? 220 : 250, height: 56)

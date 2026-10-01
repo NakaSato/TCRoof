@@ -36,17 +36,47 @@ public struct FloodGistda: Codable, Hashable, Sendable {
     public var floodedYears: [YearPlots] { years.filter { $0.plots > 0 } }
     var radiusText: String { radiusMeters >= 1000 ? "\(radiusMeters / 1000) กม." : "\(radiusMeters) ม." }
 
+    /// Plain-language answer: "ท่วม 9 จาก 14 ปี (2554–2567)".
+    public var headline: String {
+        guard let first = years.first?.year, let last = years.last?.year else { return "" }
+        let n = floodedYears.count
+        return n == 0 ? "ไม่พบน้ำท่วมซ้ำซากในรัศมี \(radiusText) · \(first)–\(last)" : "ท่วม \(n) จาก \(years.count) ปี (\(first)–\(last))"
+    }
+    /// "ล่าสุดปี 2567 · ท่วมมากสุดปี 2554 (101 แปลง)"; nil when nothing flooded.
+    public var detail: String? {
+        let f = floodedYears
+        guard let latest = f.last, let most = f.max(by: { $0.plots < $1.plots }) else { return nil }
+        return "ล่าสุดปี \(latest.year)" + (most.year == latest.year ? "" : " · ท่วมมากสุดปี \(most.year) (\(most.plots) แปลง)")
+    }
+
+    /// Bars for each year, tallest = the most plots that flooded; drawn by the editor and the PDF from the same ops.
+    public static let chartHeight = 112.0
+    public func chart(width: Double = 480) -> Sketch {
+        let n = max(years.count, 1), slot = width / Double(n), barW = min(24, slot * 0.62), top = 16.0, base = 78.0
+        let maxPlots = Double(max(years.map(\.plots).max() ?? 1, 1))
+        let orange = RGBA(hex: 0xC4650B), grey = RGBA(hex: 0xC9D1DC), ink = RGBA(hex: 0x16325C), muted = RGBA(hex: 0x5B6B82)
+        var o: [DrawOp] = []
+        for (i, y) in years.enumerated() {
+            let cx = slot * (Double(i) + 0.5), h = y.plots > 0 ? max(4, (base - top) * Double(y.plots) / maxPlots) : 2
+            o.append(.rect(Box(cx - barW / 2, base - h, barW, h), stroke: nil, fill: y.plots > 0 ? orange : grey))
+            if y.plots > 0 { o.append(.text("\(y.plots)", at: Pt(cx, base - h - 7), size: 9, bold: true, color: orange, align: .center)) }
+            o.append(.text(String(y.year % 100), at: Pt(cx, base + 10), size: 9.5, bold: y.plots > 0, color: y.plots > 0 ? ink : muted, align: .center))
+        }
+        o.append(.line(Pt(0, base), Pt(width, base), width: 1, color: muted))
+        o.append(.text("ปี พ.ศ. 25xx · ความสูงแท่ง = จำนวนแปลงที่ท่วมในรัศมี \(radiusText)", at: Pt(width / 2, base + 28), size: 9, color: muted, align: .center))
+        return Sketch(width: width, height: Self.chartHeight, ops: o)
+    }
+
     /// Label / value rows of the GISTDA card and the PDF table.
     public var rows: [Row] {
         if manual == true {
             return [Row(label: "ความลึกน้ำ", value: "ยังไม่ได้ข้อมูลจาก GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
         }
         let f = floodedYears
-        let first = "ตั้งแต่ปี \(Self.firstYear)"
-        let flooded = f.isEmpty ? "ไม่พบน้ำท่วมซ้ำซากในรัศมี \(radiusText) (\(first))"
-            : f.map { "\($0.year) (\($0.plots))" }.joined(separator: " · ")
-        return [Row(label: "ปีที่ท่วม รัศมี \(radiusText)", value: flooded, tone: f.isEmpty ? .good : .warn),
-                Row(label: "ความลึกน้ำ", value: "ไม่มีในข้อมูลดาวเทียม · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
+        var r = [Row(label: "สรุป", value: headline + (detail.map { " · " + $0 } ?? ""), tone: f.isEmpty ? .good : .warn)]
+        if !f.isEmpty { r.append(Row(label: "จำนวนแปลงที่ท่วม", value: f.map { "\($0.year) (\($0.plots))" }.joined(separator: " · "), tone: .normal)) }
+        r.append(Row(label: "ความลึกน้ำ", value: "ไม่มีข้อมูลความลึก · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad))
+        return r
     }
     /// "GISTDA API: flood-freq · ต.ยางซ้าย … · ดึงเมื่อ 30/9/2569 10:37 · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"
     public var footnote: String {

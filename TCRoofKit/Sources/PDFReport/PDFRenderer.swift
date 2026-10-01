@@ -48,6 +48,11 @@ public enum PDFRenderer {
         render(pages: [ReportLayout(job: job, header: header, measure: Measure()).summaryPage()], job: job, photo: photo)
     }
 
+    /// The single line diagram alone, on one A3 landscape page.
+    public static func renderSingleLine(job: Job, header: ReportHeader, hv: Bool? = nil, photo: @escaping (Photo) -> UIImage?) -> Data {
+        render(pages: [ReportLayout(job: job, header: header, measure: Measure()).singleLinePage(hv: hv)], job: job, photo: photo)
+    }
+
     public static func render(job: Job, header: ReportHeader, photo: @escaping (Photo) -> UIImage?,
                               progress: ((Int, Int) -> Void)? = nil) -> Data {
         render(pages: ReportLayout(job: job, header: header, measure: Measure()).pages(), job: job, photo: photo, progress: progress)
@@ -63,7 +68,7 @@ public enum PDFRenderer {
         return renderer.pdfData { ctx in
             for (i, page) in pages.enumerated() {
                 progress?(i + 1, pages.count)
-                ctx.beginPage()
+                ctx.beginPage(withBounds: CGRect(x: 0, y: 0, width: page.width, height: page.height), pageInfo: [:])
                 draw(page.ops, in: ctx.cgContext, photo: photo)
             }
         }

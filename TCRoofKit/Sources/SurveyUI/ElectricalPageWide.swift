@@ -10,6 +10,10 @@ struct ElectricalPageWide: View {
     @Binding var job: Job
     /// Transformer a bottom-bar "ยังขาดภาพ" chip asked for; handled and cleared here.
     @Binding var request: Int?
+    /// A breaker (or board) the single line diagram asked for: its transformer opens and the breaker sheet shows.
+    @Binding var focus: SLTarget?
+    /// Opens the single line diagram page.
+    var openDiagram: () -> Void = {}
     @Environment(SurveyModel.self) var model
 
     /// One breaker being edited in the sheet.
@@ -63,6 +67,14 @@ struct ElectricalPageWide: View {
             request = nil
             reveal(i)
         }
+        .onChange(of: focus) { _, t in
+            guard let t, let i = t.trafo else { return }
+            focus = nil
+            reveal(i)
+            if let id = t.breaker, let k = t.board, boards(i)[safe: k]?.breakers.contains(where: { $0.id == id }) == true {
+                editBreaker = BreakerEdit(id: id, trafo: i, board: k)
+            }
+        }
         .sheet(item: $editBreaker) { e in
             BreakerSheet(breaker: breakerBinding(e), isMain: e.board == 0,
                          onDelete: { removeBreaker(e); editBreaker = nil })
@@ -101,13 +113,14 @@ struct ElectricalPageWide: View {
             Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Home.muted).lineLimit(1)
             Spacer(minLength: 8)
             matchChip
-            // the single line diagram page is not in the app yet
-            Text("สร้าง Single Line Diagram →").font(.system(size: 16, weight: .bold)).lineLimit(1)
-                .foregroundStyle(Home.disabledText)
-                .padding(.horizontal, 18).frame(minHeight: 44)
-                .background(Home.disabledFill, in: RoundedRectangle(cornerRadius: 10))
-                .accessibilityLabel("สร้าง Single Line Diagram").accessibilityHint("ยังใช้ไม่ได้")
-                .accessibilityAddTraits(.isButton)
+            Button(action: openDiagram) {
+                Text("สร้าง Single Line Diagram →").font(.system(size: 16, weight: .bold)).lineLimit(1)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18).frame(minHeight: 44)
+                    .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("สร้าง Single Line Diagram").accessibilityHint("เปิดแผนภาพเส้นเดียวที่สร้างจากข้อมูลสำรวจ")
         }
         .padding(.bottom, 10)
     }

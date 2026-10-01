@@ -12,6 +12,7 @@ final class LocationFetcher: NSObject, CLLocationManagerDelegate {
 
     private let manager = CLLocationManager()
     private var completion: ((Result<CLLocation, Error>) -> Void)?
+    private var retries = 0
 
     override init() {
         super.init()
@@ -21,6 +22,7 @@ final class LocationFetcher: NSObject, CLLocationManagerDelegate {
 
     func request(_ completion: @escaping (Result<CLLocation, Error>) -> Void) {
         self.completion = completion
+        retries = 0
         switch manager.authorizationStatus {
         case .notDetermined: manager.requestWhenInUseAuthorization()
         case .denied, .restricted: finish(.failure(Failure.denied))
@@ -42,7 +44,13 @@ final class LocationFetcher: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        finish(.failure(error))
+        // no fix yet (indoors, just woke up, simulator without a location): CoreLocation keeps trying, so ask again a few times
+        if (error as? CLError)?.code == .locationUnknown, retries < 3 {
+            retries += 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.manager.requestLocation() }
+            return
+        }
+        finish(.failure(LocationFailure(error)))
     }
 
     private func finish(_ result: Result<CLLocation, Error>) {
@@ -50,4 +58,18 @@ final class LocationFetcher: NSObject, CLLocationManagerDelegate {
         completion = nil
         done?(result)
     }
+}
+
+/// A CoreLocation failure in words the surveyor can act on, in place of "kCLErrorDomain error 0".
+struct LocationFailure: LocalizedError {
+    let message: String
+    init(_ error: Error) {
+        switch (error as? CLError)?.code {
+        case .locationUnknown?: message = "ยังหาตำแหน่งไม่ได้ ลองออกไปที่โล่งแล้วกดอีกครั้ง หรือพิมพ์พิกัดเอง"
+        case .denied?: message = "ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง เปิดได้ที่ การตั้งค่า > TCRoof > ตำแหน่ง"
+        case .network?: message = "เชื่อมต่อเครือข่ายไม่ได้ ลองใหม่อีกครั้ง หรือพิมพ์พิกัดเอง"
+        default: message = "หาตำแหน่งไม่สำเร็จ ลองใหม่อีกครั้ง หรือพิมพ์พิกัดเอง"
+        }
+    }
+    var errorDescription: String? { message }
 }

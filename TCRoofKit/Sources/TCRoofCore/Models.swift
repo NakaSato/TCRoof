@@ -337,6 +337,8 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
         var v = Values()
         v["date"] = .text(ISODate.string(now))
         v["rev"] = .text("00")
+        // the report picture starts as the design's frame; older jobs have none and use the whole map
+        v[MapCrop.key] = .text(MapCrop.standard.text)
         return Job(created: now, updated: now, values: v, modules: template.modules.map { SurveyModule(type: $0) })
     }
 }

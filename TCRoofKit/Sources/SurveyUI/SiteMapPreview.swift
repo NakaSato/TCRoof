@@ -4,18 +4,26 @@ import UIKit
 import CoreLocation
 import TCRoofCore
 
-/// Satellite preview of the job's GPS on A1: pick a zoom level for the report's site picture and drag the pin to move the GPS.
+/// Satellite preview of the job's GPS on A1: pick a zoom level for the report's site picture, frame the part the report
+/// uses (`MapCrop`), and long-press the pin to move the GPS.
+/// The view has the picture's own proportions, so a frame in % of the view is the same % of the picture.
 struct SiteMapPreview: View {
     @Binding var gps: String
     @Binding var zoom: Int
+    @Binding var crop: MapCrop
     let googleKey: String
-    var height: CGFloat = 280
 
     @State private var image: UIImage?
     @State private var loading = false
     @State private var failure: String?
     @State private var drag: CGSize = .zero
+    @State private var pinLifted = false
     @State private var frameSize: CGSize = .zero
+    /// The frame while a finger moves it; written to the job when the finger lifts.
+    @State private var liveCrop: MapCrop?
+
+    static let cropBlue = Color(red: 0x1F / 255, green: 0x6F / 255, blue: 0xB5 / 255)
+    static let aspect = MapImage.size.height / MapImage.size.width
 
     /// Named levels; each is the zoom whose picture is closest to that width at the site's latitude.
     static let levels: [(name: String, meters: Double)] = [("พื้นที่", 500), ("สถานี", 200), ("อาคาร", 50)]
@@ -41,17 +49,14 @@ struct SiteMapPreview: View {
                     Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.footnote).foregroundStyle(Home.muted)
                         .multilineTextAlignment(.center).padding(.horizontal, 40)
                 }
-                if coordinate != nil { pin }
+                if coordinate != nil { cropLayer(size); pin }
             }
             .overlay(alignment: .topLeading) { levelPicker.padding(10) }
             .overlay(alignment: .topTrailing) { zoomButtons.padding(10) }
-            .overlay(alignment: .bottomLeading) {
-                if coordinate != nil { tag(Text("ลากหมุดเพื่อปรับตำแหน่ง").font(.system(size: 12)).foregroundStyle(Home.muted)).padding(10) }
-            }
             .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(10) } }
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { frameSize = $0 }
-        .frame(height: height)
+        .aspectRatio(1 / Self.aspect, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.2)))
         .task(id: "\(gps)|\(zoom)") { await load() }
@@ -59,19 +64,82 @@ struct SiteMapPreview: View {
 
     // MARK: pin
 
-    /// The fetched picture has its own marker at the centre; this one sits on it and follows the finger.
+    /// The fetched picture has its own marker at the centre; this one sits on it. Long-press, then drag, to move it
+    /// (a plain drag belongs to the report frame underneath). The frame stays where it is.
     var pin: some View {
-        ZStack {
-            Circle().fill(Home.primary.opacity(0.18)).frame(width: 44, height: 44)
-            Image(systemName: "mappin").font(.system(size: 30, weight: .bold)).foregroundStyle(Home.danger).offset(y: -12)
-                .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+        // a1-map-pin is 48 × 50 with its accuracy halo centred 1 pt below the middle; the halo's centre is the site
+        A2Icon(name: "a1-map-pin", fallback: "mappin", size: nil).frame(width: 48, height: 50).offset(y: -1)
+            .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+            .scaleEffect(pinLifted ? 1.15 : 1)
+            .frame(width: 60, height: 60).contentShape(Rectangle())
+            .offset(drag)
+            .gesture(LongPressGesture(minimumDuration: 0.35).sequenced(before: DragGesture(minimumDistance: 0))
+                .onChanged { v in
+                    guard case .second(true, let d) = v else { return }
+                    pinLifted = true
+                    drag = d?.translation ?? .zero
+                }
+                .onEnded { v in
+                    if case .second(true, let d?) = v { move(by: d.translation) }
+                    drag = .zero; pinLifted = false
+                })
+            .animation(.easeOut(duration: 0.15), value: pinLifted)
+            .accessibilityLabel("หมุดตำแหน่ง")
+            .accessibilityHint("แตะค้างแล้วลากเพื่อย้าย")
+    }
+
+    // MARK: report frame
+
+    /// Blue frame with four corner handles; outside it the map is dimmed.
+    func cropLayer(_ size: CGSize) -> some View {
+        let c = liveCrop ?? crop
+        let r = c.rect(in: size)
+        let across = MapImage.metersAcross(lat: coordinate?.latitude ?? 15, zoom: zoom)
+        return ZStack(alignment: .topLeading) {
+            Path { p in p.addRect(CGRect(origin: .zero, size: size)); p.addRect(r) }
+                .fill(Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.32), style: FillStyle(eoFill: true))
+                .allowsHitTesting(false)
+            Rectangle().fill(Color.white.opacity(0.001))
+                .overlay(Rectangle().stroke(Self.cropBlue, lineWidth: 2))
+                .frame(width: r.width, height: r.height)
+                .gesture(cropDrag(size) { $0.moved(dx: $1.width, dy: $1.height) })
+                .offset(x: r.minX, y: r.minY)
+            Text(c.label(across: across, aspect: Self.aspect))
+                .font(.system(size: 12, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                .padding(.horizontal, 7).padding(.vertical, 3)
+                .background(Self.cropBlue, in: RoundedRectangle(cornerRadius: 4))
+                .fixedSize()
+                .offset(x: r.minX + 6, y: r.minY + 6)
+                .allowsHitTesting(false)
+            ForEach(MapCrop.Corner.allCases, id: \.self) { k in
+                handle.gesture(cropDrag(size) { $0.resized(k, dx: $1.width, dy: $1.height) })
+                    .offset(x: (k == .nw || k == .sw ? r.minX : r.maxX) - 22, y: (k == .nw || k == .ne ? r.minY : r.maxY) - 22)
+            }
         }
-        .frame(width: 60, height: 60).contentShape(Rectangle())
-        .offset(drag)
-        .gesture(DragGesture()
-            .onChanged { drag = $0.translation }
-            .onEnded { g in move(by: g.translation); drag = .zero })
-        .accessibilityLabel("หมุดตำแหน่ง")
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(c.label(across: across, aspect: Self.aspect))
+    }
+
+    /// 16-pt white square, blue border, in a 44-pt hit area centred on the corner.
+    var handle: some View {
+        RoundedRectangle(cornerRadius: 3).fill(.white)
+            .overlay(RoundedRectangle(cornerRadius: 3).stroke(Self.cropBlue, lineWidth: 2.5))
+            .frame(width: 16, height: 16)
+            .frame(width: 44, height: 44).contentShape(Rectangle())
+    }
+
+    /// Applies `change` (translation in % of the map) to the frame as it was when the finger went down.
+    func cropDrag(_ size: CGSize, change: @escaping (MapCrop, CGSize) -> MapCrop) -> some Gesture {
+        DragGesture(minimumDistance: 1)
+            .onChanged { g in
+                let d = CGSize(width: g.translation.width / size.width * 100, height: g.translation.height / size.height * 100)
+                liveCrop = change(crop, d)
+            }
+            .onEnded { _ in
+                if let liveCrop { crop = liveCrop }
+                liveCrop = nil
+            }
     }
 
     /// Metres per point of the preview: the 640-pt picture is scaled to fill the frame.
@@ -117,17 +185,17 @@ struct SiteMapPreview: View {
 
     var zoomButtons: some View {
         VStack(spacing: 0) {
-            zoomButton("plus", "ซูมเข้า", +1).disabled(zoom >= Self.zoomRange.upperBound)
+            zoomButton("ui-plus", "plus", "ซูมเข้า", +1).disabled(zoom >= Self.zoomRange.upperBound)
             Rectangle().fill(Home.navy.opacity(0.12)).frame(width: 44, height: 1)
-            zoomButton("minus", "ซูมออก", -1).disabled(zoom <= Self.zoomRange.lowerBound)
+            zoomButton("ui-minus", "minus", "ซูมออก", -1).disabled(zoom <= Self.zoomRange.lowerBound)
         }
         .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
     }
 
-    func zoomButton(_ symbol: String, _ label: String, _ step: Int) -> some View {
+    func zoomButton(_ icon: String, _ symbol: String, _ label: String, _ step: Int) -> some View {
         Button { zoom += step } label: {
-            Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(Home.primary)
+            A2Icon(name: icon, fallback: symbol, size: 20).foregroundStyle(Home.primary)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityLabel(label)

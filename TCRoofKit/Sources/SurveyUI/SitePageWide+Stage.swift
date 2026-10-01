@@ -82,6 +82,7 @@ extension SitePageWide {
             case .cableRoute: return layers.contains(.cables)
             case .measure: return layers.contains(.measure)
             case .craneEntry, .shade: return layers.contains(.symbols)
+            case .boundary: return false
             }
         }
         return Canvas { ctx, _ in
@@ -364,7 +365,7 @@ extension SitePageWide {
             case .shape(.cableRoute)?: return "แตะตามแนวสาย แล้วกดเสร็จ (\(draft.count) จุด)"
             case .shape(.measure)?: return metersAcross == nil ? "ลากตามระยะที่รู้ความยาวจริง เพื่อตั้งมาตราส่วน" : "ลากหรือแตะ 2 จุดเพื่อวัดระยะ"
             case .shape(.craneEntry)?: return "ลากจากถนนเข้าหาจุดติดตั้ง"
-            case nil: return ""
+            case .shape(.boundary)?, nil: return ""
             }
         }()
         return HStack(spacing: 10) {

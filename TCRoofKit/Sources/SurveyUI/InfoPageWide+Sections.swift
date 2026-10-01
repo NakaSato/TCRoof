@@ -257,8 +257,6 @@ struct InfoPageBar: View {
     /// Steps the back / next buttons name, when not the ones either side of `here` (B1 shows every building on one page).
     var previousIndex: Int? = nil
     var nextIndex: Int? = nil
-    /// Red alert icon in place of the saved tick while `statusAlert` (B1: required items missing).
-    var alertIcon = false
     @Environment(SurveyModel.self) var model
     @State var savedNow: Date?
 
@@ -274,11 +272,7 @@ struct InfoPageBar: View {
         let saved = max(job.updated, savedNow ?? .distantPast)
         HStack(spacing: 12) {
             HStack(spacing: 10) {
-                if alertIcon && statusAlert {
-                    A2Icon(name: "ui-alert", fallback: "exclamationmark.circle", size: 20).foregroundStyle(Home.danger)
-                } else {
-                    A2Icon(name: "ui-check", fallback: "checkmark", size: 20).foregroundStyle(Home.ok)
-                }
+                badge(complete: c.isComplete && !statusAlert)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("บันทึกอัตโนมัติ " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
@@ -341,15 +335,24 @@ struct InfoPageBar: View {
         .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
     }
 
+    /// Filled circle left of the save time: green ✓ when the page is complete, orange ! while items are missing (docs/ui/survey-a2 v2).
+    func badge(complete: Bool) -> some View {
+        Text(complete ? "✓" : "!").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+            .frame(width: 24, height: 24)
+            .background(complete ? Home.ok : Home.warn, in: Circle())
+            .accessibilityLabel(complete ? "ครบแล้ว" : "ยังขาดข้อมูล")
+    }
+
     /// "ครบ 9/10 ช่องในหน้านี้", or "ครบช่องบังคับแล้ว · ยังขาด [chips]" when the page lists gaps.
     @ViewBuilder func status(_ c: Completion) -> some View {
+        let tint = c.isComplete && !statusAlert ? Home.muted : Home.danger
         if let statusText {
-            Text(statusText).font(.system(size: 13)).foregroundStyle(statusAlert ? Home.danger : Home.muted)
+            Text(statusText).font(.system(size: 13)).foregroundStyle(tint)
         } else if gaps.isEmpty {
-            Text("ครบ \(c.filled)/\(c.total) ช่องในหน้านี้").font(.system(size: 13)).foregroundStyle(Home.muted)
+            Text("ครบ \(c.filled)/\(c.total) ช่องในหน้านี้").font(.system(size: 13)).foregroundStyle(tint)
         } else {
             HStack(spacing: 6) {
-                Text((c.isComplete ? "ครบช่องบังคับแล้ว" : "ครบ \(c.filled)/\(c.total) ช่อง") + " · ยังขาด").font(.system(size: 13)).foregroundStyle(Home.muted)
+                Text((c.isComplete ? "ครบช่องบังคับแล้ว" : "ครบ \(c.filled)/\(c.total) ช่อง") + " · ยังขาด").font(.system(size: 13)).foregroundStyle(tint)
                 ForEach(gaps.prefix(narrow ? 1 : 3)) { g in
                     Button(action: g.action) {
                         Text(g.title + " ›").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending)

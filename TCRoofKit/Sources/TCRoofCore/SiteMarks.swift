@@ -17,7 +17,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .mdb: return "MDB"
         case .inv: return "INV"
         case .meterSub: return "M"
-        case .weather: return "Weather St."
+        case .weather: return "Weather"
         case .office: return "Site Office"
         case .roofLabel: return "ชื่อหลังคา"
         case .stairs: return "บันได"
@@ -27,12 +27,12 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
     public var paletteDetail: String {
         switch self {
         case .meter: return "มิเตอร์ กฟภ."
-        case .zeroExport: return "ZERO EXPORT MV"
+        case .zeroExport: return "Zero Export"
         case .trafo: return "TX · kVA"
         case .mdb: return "ตู้ + AT"
         case .inv: return "อินเวอร์เตอร์"
         case .meterSub: return "มิเตอร์"
-        case .weather: return "สถานีตรวจอากาศ"
+        case .weather: return "สถานีอากาศ"
         case .office: return "ป้ายกรอบแดง"
         case .roofLabel: return "+ ขอบเขตแดง"
         case .stairs: return "ทางขึ้นหลังคา"

@@ -4,14 +4,14 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// A2's picture card: the site picture with symbols and drawings, the drawing toolbar, north arrow, layers and scale.
+/// A2's picture card: the site picture with symbols, drawings and building models, the v2 toolbar, north arrow, layers and scale.
 extension SitePageWide {
     static let stageSpace = "a2stage"
     static let norths = ["ด้านบน", "ด้านขวา", "ด้านล่าง", "ด้านซ้าย"]
 
     var pictureCard: some View {
         VStack(spacing: 10) {
-            GeometryReader { geo in stage(geo.size) }
+            GeometryReader { geo in picture(geo.size, full: false) }
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(tool == nil ? Home.navy.opacity(0.15) : Home.primary, lineWidth: tool == nil ? 1 : 2))
             captionRow
@@ -19,6 +19,50 @@ extension SitePageWide {
         .padding(10)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+    }
+
+    // MARK: picture
+
+    /// The picture with its toolbar, north button, hint and scale; full screen adds pinch-to-zoom and pan.
+    func picture(_ size: CGSize, full: Bool) -> some View {
+        let z = full ? zoom : 1
+        return stage(size, full: full)
+            .scaleEffect(z)
+            .offset(full ? pan : .zero)
+            .frame(width: size.width, height: size.height)
+            .clipped()
+            .contentShape(Rectangle())
+            .simultaneousGesture(magnify, including: full ? .all : .subviews)
+            .simultaneousGesture(panning, including: full ? .all : .subviews)
+            .overlay(alignment: .top) { if photo != nil { toolbar(full: full).padding(8) } }
+            .overlay(alignment: .topTrailing) { if photo != nil && showLayers { layersMenu.padding(.top, 54).padding(.trailing, 8) } }
+            .overlay(alignment: .topLeading) { if photo != nil { northButton.padding(.leading, 10).padding(.top, 58) } }
+            .overlay(alignment: .bottomLeading) { if photo != nil { hintStack.padding(10) } }
+            .overlay(alignment: .bottomTrailing) { if photo != nil { scaleBar(size, zoom: z).padding(10) } }
+    }
+
+    var magnify: some Gesture {
+        MagnifyGesture()
+            .onChanged { v in
+                if zoomStart == nil { zoomStart = zoom }
+                zoom = min(6, max(1, (zoomStart ?? 1) * v.magnification))
+            }
+            .onEnded { _ in
+                zoomStart = nil
+                if zoom < 1.02 { zoom = 1; pan = .zero }
+            }
+    }
+
+    /// Full screen, zoomed in, Select tool: dragging the picture (not a symbol or model) moves it.
+    var panning: some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .global)
+            .onChanged { g in
+                guard zoom > 1, tool == nil, zoomStart == nil else { return }
+                if panStart == nil { panStart = pan }
+                guard modelGrab == nil, draggingMark == nil else { pan = panStart ?? pan; return }
+                pan = CGSize(width: (panStart?.width ?? 0) + g.translation.width, height: (panStart?.height ?? 0) + g.translation.height)
+            }
+            .onEnded { _ in panStart = nil }
     }
 
     // MARK: stage
@@ -31,7 +75,8 @@ extension SitePageWide {
         return CGRect(x: (size.width - w) / 2, y: (size.height - h) / 2, width: w, height: h)
     }
 
-    @ViewBuilder func stage(_ size: CGSize) -> some View {
+    /// The picture, drawings and handles in unzoomed coordinates (`stageSpace`).
+    @ViewBuilder func stage(_ size: CGSize, full: Bool) -> some View {
         ZStack(alignment: .topLeading) {
             Color(red: 0.91, green: 0.933, blue: 0.961)
             if let p = photo, let img = model.image(p, in: job.id) {
@@ -39,9 +84,12 @@ extension SitePageWide {
                 Image(uiImage: img).resizable().frame(width: r.width, height: r.height).position(x: r.midX, y: r.midY)
                 drawing(r).allowsHitTesting(false)
                 if layers.contains(.symbols) { markHandles(r) }
-                Color.clear.frame(width: 1, height: 1).position(anchor)
-                    .popover(item: $editing) { e in editor(e, rect: r).environment(model) }
-                    .allowsHitTesting(false)
+                // only the copy on screen (card or full screen) carries the editor
+                if full == fullScreen {
+                    Color.clear.frame(width: 1, height: 1).position(anchor)
+                        .popover(item: $editing) { e in editor(e, rect: r).environment(model) }
+                        .allowsHitTesting(false)
+                }
             } else if photo != nil {
                 Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
                     .font(.callout).foregroundStyle(Home.muted).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,10 +104,6 @@ extension SitePageWide {
         .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.stageSpace))
             .onChanged { g in dragging(g, in: size) }
             .onEnded { g in ended(g, in: size) })
-        .overlay(alignment: .topLeading) { if photo != nil { toolbar.padding(10) } }
-        .overlay(alignment: .bottomLeading) { if photo != nil { layerBar.padding(10) } }
-        .overlay(alignment: .bottomTrailing) { if photo != nil { scaleBar(size).padding(10) } }
-        .overlay(alignment: .bottom) { if tool != nil { hintBar.padding(.bottom, 64) } }
     }
 
     var emptyPicture: some View {
@@ -73,7 +117,7 @@ extension SitePageWide {
         }
     }
 
-    /// Shapes, the shape being drawn, symbols and the grid, drawn like the report does.
+    /// Grid, building models, shapes, the shape being drawn and symbols, drawn like the report does.
     func drawing(_ r: CGRect) -> some View {
         let box = Box(Double(r.minX), Double(r.minY), Double(r.width), Double(r.height))
         let visible = shapes.filter { s in
@@ -85,17 +129,17 @@ extension SitePageWide {
             case .boundary, .pvPoint: return false
             }
         }
+        let placed = layers.contains(.symbols) ? placedModels : []
         return Canvas { ctx, _ in
-            if layers.contains(.grid) {
-                var p = Path()
-                for i in 1..<10 {
-                    let x = r.minX + r.width * CGFloat(i) / 10, y = r.minY + r.height * CGFloat(i) / 10
-                    p.move(to: CGPoint(x: x, y: r.minY)); p.addLine(to: CGPoint(x: x, y: r.maxY))
-                    p.move(to: CGPoint(x: r.minX, y: y)); p.addLine(to: CGPoint(x: r.maxX, y: y))
+            if layers.contains(.grid) { ctx.stroke(grid(r), with: .color(.white.opacity(0.45)), lineWidth: 0.7) }
+            var ops: [DrawOp] = []
+            if let m = metersAcross {
+                for p in placed {
+                    ops += SiteModels.ops(p.model, p.source, in: box, metersAcross: m, detailed: true,
+                                          selected: p.model.id == selectedModel, locked: isLocked(p.model))
                 }
-                ctx.stroke(p, with: .color(.white.opacity(0.45)), lineWidth: 0.7)
             }
-            var ops = SiteShapes.ops(visible, in: box, metersAcross: metersAcross)
+            ops += SiteShapes.ops(visible, in: box, metersAcross: metersAcross)
             if case .shape(let k)? = tool {
                 let pts = draft + (dragEnd.map { [$0] } ?? [])
                 if pts.count >= 2 { ops += SiteShapes.ops([SiteShape(kind: k, points: pts, label: k == .craneEntry ? "ทางเข้าเครน" : "")], in: box, metersAcross: metersAcross) }
@@ -112,6 +156,21 @@ extension SitePageWide {
                 }
             }
         }
+    }
+
+    /// "กริด 5 ม.": lines every 5 m once the scale is known (wider steps on a big picture), else tenths of the picture.
+    func grid(_ r: CGRect) -> Path {
+        var step = r.width / 10
+        if let m = metersAcross {
+            var meters = 5.0
+            while m / meters > 60 { meters *= 2 }
+            step = CGFloat(meters / m) * r.width
+        }
+        var p = Path()
+        guard step > 2 else { return p }
+        for x in stride(from: r.minX + step, to: r.maxX, by: step) { p.move(to: CGPoint(x: x, y: r.minY)); p.addLine(to: CGPoint(x: x, y: r.maxY)) }
+        for y in stride(from: r.minY + step, to: r.maxY, by: step) { p.move(to: CGPoint(x: r.minX, y: y)); p.addLine(to: CGPoint(x: r.maxX, y: y)) }
+        return p
     }
 
     func point(_ p: ShapePoint, in r: CGRect) -> CGPoint { CGPoint(x: r.minX + p.x * r.width, y: r.minY + p.y * r.height) }
@@ -142,6 +201,7 @@ extension SitePageWide {
 
     func open(_ e: Editing, at p: CGPoint) {
         tool = nil; draft = []
+        selectedModel = nil
         anchor = p
         realLength = ""
         editing = e
@@ -151,7 +211,7 @@ extension SitePageWide {
         guard let f = fraction(p, in: r) else { return }
         if draggingMark != id {   // one undo step per drag
             draggingMark = id
-            history.append(Snapshot(marks: marks, shapes: shapes))
+            history.record(snapshot)
         }
         var a = marks
         guard let i = a.firstIndex(where: { $0.id == id }) else { return }
@@ -159,10 +219,46 @@ extension SitePageWide {
         setMarks(a)
     }
 
+    // MARK: building models on the picture
+
+    var placedModels: [(model: SiteModel, source: SiteModels.Source)] { SiteModels.placed(job) }
+
+    /// The topmost model under `p` (symbols layer on, scale known).
+    func modelHit(_ p: CGPoint, in r: CGRect) -> SiteModel? {
+        guard layers.contains(.symbols), let m = metersAcross else { return nil }
+        let box = Box(Double(r.minX), Double(r.minY), Double(r.width), Double(r.height))
+        for q in placedModels.reversed() {
+            guard let w = q.source.width, let l = q.source.length else { continue }
+            let pts = SiteModels.corners(q.model, width: w, length: l, in: box, metersAcross: m).map { CGPoint(x: $0.x, y: $0.y) }
+            if contains(pts, p) { return q.model }
+        }
+        return nil
+    }
+
+    /// Select tool: drags a model (unless locked) with one undo step.
+    func dragModel(_ g: DragGesture.Value, in r: CGRect) {
+        if modelGrab == nil {
+            guard hypot(g.translation.width, g.translation.height) > 4, let m = modelHit(g.startLocation, in: r) else { return }
+            selectedModel = m.id
+            guard !isLocked(m) else { return }
+            let start = ShapePoint(Double((g.startLocation.x - r.minX) / r.width), Double((g.startLocation.y - r.minY) / r.height))
+            history.record(snapshot)
+            modelGrab = (m.id, m.x - start.x, m.y - start.y)
+        }
+        guard let grab = modelGrab, r.width > 0, r.height > 0 else { return }
+        var a = models
+        guard let i = a.firstIndex(where: { $0.id == grab.id }) else { return }
+        a[i].x = min(max(Double((g.location.x - r.minX) / r.width) + grab.dx, 0), 1)
+        a[i].y = min(max(Double((g.location.y - r.minY) / r.height) + grab.dy, 0), 1)
+        setModels(a)
+    }
+
     // MARK: taps and drags on the picture
 
     func dragging(_ g: DragGesture.Value, in size: CGSize) {
-        guard case .shape(let k)? = tool, k.fixedPoints == 2, let r = currentRect(size) else { return }
+        guard let r = currentRect(size) else { return }
+        if tool == nil { return dragModel(g, in: r) }
+        guard case .shape(let k)? = tool, k.fixedPoints == 2 else { return }
         // measure / crane entrance: press, drag, release
         if hypot(g.translation.width, g.translation.height) > 8, draft.isEmpty, let a = fraction(g.startLocation, in: r) {
             draft = [a]
@@ -171,6 +267,8 @@ extension SitePageWide {
     }
 
     func ended(_ g: DragGesture.Value, in size: CGSize) {
+        showLayers = false
+        if modelGrab != nil { modelGrab = nil; return }
         guard let r = currentRect(size) else { return }
         let isTap = hypot(g.translation.width, g.translation.height) <= 8
         if !isTap, let end = dragEnd, draft.count == 1, case .shape(let k)? = tool {
@@ -205,7 +303,9 @@ extension SitePageWide {
             draft.append(f)
             if let n = k.fixedPoints, draft.count >= n { finishDraft() }
         case nil:
-            if let s = shapeHit(p, in: r) { open(.shape(s.id), at: p) } else { editing = nil }
+            if let m = modelHit(p, in: r) { editing = nil; selectedModel = m.id }
+            else if let s = shapeHit(p, in: r) { open(.shape(s.id), at: p) }
+            else { editing = nil; selectedModel = nil }
         }
     }
 
@@ -251,33 +351,82 @@ extension SitePageWide {
         return inside
     }
 
-    // MARK: overlays
+    // MARK: toolbar (v2 §2)
 
-    var toolbar: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                toolButton("วาดพื้นที่แผง", icon: "tool-panelArea", symbol: "pencil", .shape(.panelArea))
-                toolButton("วาดแนวสายไฟ", icon: "tool-cableRoute", symbol: "point.topleft.down.to.point.bottomright.curvepath", .shape(.cableRoute))
-                toolButton("วัดระยะ", icon: "tool-measure", symbol: "ruler", .shape(.measure))
-                Button { undo() } label: { toolLabel("ย้อน", icon: nil, symbol: "arrow.uturn.backward", on: false) }
-                    .buttonStyle(.plain).disabled(history.isEmpty && draft.isEmpty).opacity(history.isEmpty && draft.isEmpty ? 0.5 : 1)
+    func toolbar(full: Bool) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            toolGroup {
+                toolItem("เลือก", icon: "tool-select", symbol: "cursorarrow", nil)
+                toolItem("พื้นที่แผง", icon: "tool-panelArea", symbol: "pentagon", .shape(.panelArea))
+                toolItem("แนวสาย", icon: "tool-cableRoute", symbol: "point.topleft.down.to.point.bottomright.curvepath", .shape(.cableRoute))
+                toolItem("วัดระยะ", icon: "tool-measure", symbol: "ruler", .shape(.measure))
             }
-            northButton
+            toolGroup {
+                iconItem("ย้อนกลับ", icon: "action-undo", symbol: "arrow.uturn.backward", enabled: canUndo) { undo() }
+                iconItem("ทำซ้ำ", icon: "action-redo", symbol: "arrow.uturn.forward", enabled: history.canRedo && draft.isEmpty) { redo() }
+            }
+            toolGroup {
+                Button {
+                    SiteModels.setAllLocked(!allLocked, in: &job.values)
+                    showLayers = false
+                } label: {
+                    itemLabel(allLocked ? "ล็อกอยู่" : "ล็อก", icon: allLocked ? "action-lock" : "action-unlock", symbol: allLocked ? "lock" : "lock.open",
+                              fill: allLocked ? Home.warn : .clear, on: allLocked)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ล็อกโมเดลอาคาร").accessibilityAddTraits(allLocked ? .isSelected : [])
+            }
+            Spacer(minLength: 0)
+            toolGroup {
+                Button { showLayers.toggle() } label: {
+                    itemLabel("ชั้น \(layers.count)/\(Layer.allCases.count)", icon: "action-layers", symbol: "square.3.layers.3d",
+                              fill: showLayers ? Home.primarySoft : .clear, on: false)
+                }
+                .buttonStyle(.plain).accessibilityLabel("ชั้นที่แสดง \(layers.count) จาก \(Layer.allCases.count)")
+                iconItem(full ? "ออกจากเต็มจอ" : "ดูภาพเต็มจอ", icon: full ? "action-fullscreenExit" : "action-fullscreen",
+                         symbol: full ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right", enabled: true) {
+                    showLayers = false
+                    fullScreen = !full
+                }
+            }
         }
     }
 
-    func toolButton(_ title: String, icon: String, symbol: String, _ t: Tool) -> some View {
-        Button { arm(t) } label: { toolLabel(title, icon: icon, symbol: symbol, on: tool == t) }
-            .buttonStyle(.plain).accessibilityAddTraits(tool == t ? .isSelected : [])
+    /// A floating white group of toolbar buttons.
+    func toolGroup<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        HStack(spacing: 0) { content() }
+            .padding(2)
+            .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 10))
+            .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.28), radius: 2.5, y: 1)
     }
 
-    func toolLabel(_ title: String, icon: String?, symbol: String, on: Bool) -> some View {
-        Label { Text(title) } icon: { A2Icon(name: icon, fallback: symbol, size: 20) }
-            .font(.system(size: 14, weight: .bold)).labelStyle(TightLabel())
-            .foregroundStyle(on ? Color.white : Home.navy)
-            .padding(.horizontal, 12).frame(minHeight: 44)
-            .background(on ? Home.navy : Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+    func itemLabel(_ title: String, icon: String, symbol: String, fill: Color, on: Bool) -> some View {
+        HStack(spacing: 5) {
+            A2Icon(name: icon, fallback: symbol, size: 16)
+            Text(title).font(.system(size: 11.5, weight: .semibold)).lineLimit(1).fixedSize()
+        }
+        .foregroundStyle(on ? Color.white : Home.navy)
+        .padding(.horizontal, 10).frame(height: 36)
+        .background(fill, in: RoundedRectangle(cornerRadius: 7))
+        // 36 pt button + the group's padding: a 44 pt target
+        .contentShape(Rectangle().inset(by: -4))
+    }
+
+    /// One tool of the segmented group; nil is Select.
+    func toolItem(_ title: String, icon: String, symbol: String, _ t: Tool?) -> some View {
+        let on = tool == t
+        return Button { arm(t) } label: { itemLabel(title, icon: icon, symbol: symbol, fill: on ? Home.navy : .clear, on: on) }
+            .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    func iconItem(_ label: String, icon: String, symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            A2Icon(name: icon, fallback: symbol, size: 16).foregroundStyle(Home.navy)
+                .frame(width: 36, height: 36).contentShape(Rectangle().inset(by: -4))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled).opacity(enabled ? 1 : 0.35)
+        .accessibilityLabel(label)
     }
 
     /// Where north is on the picture; each tap turns it a quarter and saves to `north`.
@@ -288,15 +437,13 @@ extension SitePageWide {
             let next = Self.norths[((i ?? -1) + 1) % 4]
             job.values["north"] = .choice(next, other: "")
         } label: {
-            VStack(spacing: -2) {
-                Image(systemName: "location.north.fill").font(.system(size: 18)).foregroundStyle(i == nil ? Home.muted : Home.danger)
-                Text("N").font(.system(size: 11, weight: .heavy))
-            }
-            .rotationEffect(.degrees(Double(i ?? 0) * 90))
-            .frame(width: 50, height: 50)
-            .background(Color.white, in: Circle())
-            .overlay(Circle().stroke(i == nil ? Home.pending : .clear, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
-            .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+            A2Icon(name: "ui-north", fallback: "location.north.circle.fill", size: 38)
+                .foregroundStyle(i == nil ? Home.muted : Home.danger)
+                .rotationEffect(.degrees(Double(i ?? 0) * 90))
+                .background(Color.white, in: Circle())
+                .overlay(Circle().stroke(i == nil ? Home.pending : .clear, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
+                .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+                .frame(width: 44, height: 44).contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("ทิศเหนือของภาพ")
@@ -304,31 +451,37 @@ extension SitePageWide {
         .accessibilityHint("แตะเพื่อหมุนทีละ 90 องศา")
     }
 
-    var layerBar: some View {
-        HStack(spacing: 2) {
-            Text("ชั้น").font(.system(size: 12)).foregroundStyle(Home.muted).padding(.horizontal, 6)
+    /// v2 §3: the layers dropdown under "ชั้น n/5".
+    var layersMenu: some View {
+        VStack(spacing: 2) {
             ForEach(Layer.allCases, id: \.self) { l in
                 let on = layers.contains(l)
                 Button { if on { layers.remove(l) } else { layers.insert(l) } } label: {
-                    Text(l.title).font(.system(size: 12, weight: .bold)).foregroundStyle(on ? Home.navy : Home.muted)
-                        .strikethrough(!on)
-                        .padding(.horizontal, 8).frame(minHeight: 44)
-                        .background(on ? Home.primarySoft : .clear, in: RoundedRectangle(cornerRadius: 7))
-                        .contentShape(Rectangle())
+                    HStack(spacing: 10) {
+                        Text(on ? "✓" : "○").font(.system(size: 13, weight: .bold)).frame(width: 16)
+                        Text(l.title).font(.system(size: 13, weight: .semibold)).strikethrough(!on)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(on ? Home.navy : Home.muted)
+                    .padding(.horizontal, 10).frame(height: 36)
+                    .background(on ? Home.primarySoft : .clear, in: RoundedRectangle(cornerRadius: 8))
+                    .contentShape(Rectangle().inset(by: -1))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("ชั้น " + l.title).accessibilityAddTraits(on ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 3)
-        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+        .padding(6)
+        .frame(width: 180)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.3), radius: 10, y: 6)
     }
 
-    @ViewBuilder func scaleBar(_ size: CGSize) -> some View {
+    @ViewBuilder func scaleBar(_ size: CGSize, zoom z: CGFloat) -> some View {
         if let m = metersAcross, let r = currentRect(size), r.width > 0 {
-            let length = [1.0, 2, 5, 10, 20, 50, 100, 200, 500, 1000].last { $0 <= m * 0.22 } ?? 1
-            let w = CGFloat(length / m) * r.width
+            let seen = m / Double(z)
+            let length = [1.0, 2, 5, 10, 20, 50, 100, 200, 500, 1000].last { $0 <= seen * 0.22 } ?? 1
+            let w = CGFloat(length / m) * r.width * z
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 0) {
                     Rectangle().fill(Home.navy).frame(width: w / 2, height: 5)
@@ -356,35 +509,59 @@ extension SitePageWide {
 
     func fmt(_ v: Double) -> String { v == v.rounded() ? String(Int(v)) : String(format: "%.1f", v) }
 
-    var hintBar: some View {
-        let text: String = {
-            switch tool {
-            case .mark(let k)?: return "แตะบนภาพเพื่อวาง \(k.paletteTitle)"
-            case .shape(.panelArea)?: return "แตะทีละมุม · แตะจุดแรกเพื่อปิดพื้นที่ (\(draft.count) จุด)"
-            case .shape(.shade)?: return "แตะรอบสิ่งที่บังแดด · แตะจุดแรกเพื่อปิด (\(draft.count) จุด)"
-            case .shape(.cableRoute)?: return "แตะตามแนวสาย แล้วกดเสร็จ (\(draft.count) จุด)"
-            case .shape(.measure)?: return metersAcross == nil ? "ลากตามระยะที่รู้ความยาวจริง เพื่อตั้งมาตราส่วน" : "ลากหรือแตะ 2 จุดเพื่อวัดระยะ"
-            case .shape(.craneEntry)?: return "ลากจากถนนเข้าหาจุดติดตั้ง"
-            case .shape(.boundary)?, .shape(.pvPoint)?, nil: return ""
-            }
-        }()
-        return HStack(spacing: 10) {
-            Text(text).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
-            if case .shape(let k)? = tool, k.fixedPoints == nil {
-                Button("เสร็จ") { finishDraft() }.font(.system(size: 14, weight: .bold))
-                    .disabled(draft.count < k.minPoints)
-                    .padding(.horizontal, 12).frame(minHeight: 36)
-                    .background(Color.white.opacity(draft.count < k.minPoints ? 0.4 : 1), in: Capsule())
-                    .foregroundStyle(Home.navy)
-            }
-            Button("ยกเลิก") { arm(nil) }.font(.system(size: 14, weight: .bold))
-                .padding(.horizontal, 12).frame(minHeight: 36)
-                .overlay(Capsule().stroke(.white.opacity(0.7)))
-                .foregroundStyle(.white)
+    // MARK: hint
+
+    /// Bold tool name and what to do (the design's `TL` hints for the toolbar tools).
+    var toolHint: (name: String, hint: String) {
+        switch tool {
+        case nil: return ("เลือก", "แตะสัญลักษณ์หรือโมเดลอาคารเพื่อแก้ไข ลากเพื่อย้าย")
+        case .shape(.panelArea)?: return ("พื้นที่แผง", "แตะมุมพื้นที่ทีละจุด แตะจุดแรกอีกครั้งเพื่อปิดรูป")
+        case .shape(.cableRoute)?: return ("แนวสาย", "แตะจุดเริ่มจากแผง ลากผ่านแนวที่เดินสาย จบที่ห้องอินเวอร์เตอร์")
+        case .shape(.measure)?: return ("วัดระยะ", "แตะจุดเริ่มและจุดสิ้นสุด ระยะอ้างอิงจากสเกลภาพ")
+        case .shape(.shade)?: return ("ร่มเงา", "แตะรอบสิ่งที่บังแดด · แตะจุดแรกเพื่อปิด")
+        case .shape(.craneEntry)?: return ("ทางเข้าเครน", "ลากจากถนนเข้าหาจุดติดตั้ง")
+        case .mark(let k)?: return (k.paletteTitle, "แตะบนภาพเพื่อวาง")
+        case .shape(.boundary)?, .shape(.pvPoint)?: return ("", "")
         }
-        .padding(.leading, 16).padding(.trailing, 6).padding(.vertical, 4)
-        .background(Home.navy.opacity(0.92), in: Capsule())
-        .frame(minHeight: 44)
+    }
+
+    /// The hint banner (no hit-testing) and, while drawing a line or placing a palette item, the v1 count / done / cancel control.
+    var hintStack: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            drawControl
+            (Text(toolHint.name).bold() + Text("  " + toolHint.hint))
+                .font(.system(size: 13)).foregroundStyle(.white)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(Home.navy.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
+                .frame(maxWidth: 420, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .allowsHitTesting(false)
+        }
+    }
+
+    @ViewBuilder var drawControl: some View {
+        let polyline: ShapeKind? = { if case .shape(let k)? = tool, k.fixedPoints == nil { return k }; return nil }()
+        let palette: Bool = { switch tool { case .mark?, .shape(.craneEntry)?, .shape(.shade)?: return true; default: return false } }()
+        if palette || (polyline != nil && !draft.isEmpty) {
+            HStack(spacing: 10) {
+                if let k = polyline {
+                    Text("\(draft.count) จุด").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white).monospacedDigit()
+                    Button("เสร็จ") { finishDraft() }.font(.system(size: 14, weight: .bold))
+                        .disabled(draft.count < k.minPoints)
+                        .padding(.horizontal, 14).frame(minHeight: 36)
+                        .background(Color.white.opacity(draft.count < k.minPoints ? 0.4 : 1), in: Capsule())
+                        .foregroundStyle(Home.navy)
+                        .contentShape(Capsule().inset(by: -4))
+                }
+                Button("ยกเลิก") { arm(nil) }.font(.system(size: 14, weight: .bold))
+                    .padding(.horizontal, 14).frame(minHeight: 36)
+                    .overlay(Capsule().stroke(.white.opacity(0.7)))
+                    .foregroundStyle(.white)
+                    .contentShape(Capsule().inset(by: -4))
+            }
+            .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 4)
+            .background(Home.navy.opacity(0.92), in: Capsule())
+        }
     }
 
     // MARK: caption

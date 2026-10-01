@@ -69,9 +69,10 @@ extension ReportLayout {
         return [Unit(h: sy + siteH, ops: o)]
     }
 
-    /// Shapes, then symbols, over the site picture drawn in `pic`.
+    /// Building models, shapes, then symbols, over the site picture drawn in `pic`.
     func siteDrawing(in pic: Box) -> [DrawOp] {
-        SiteShapes.ops(j.shapes(SiteShapes.key), in: pic, metersAcross: j.number(SiteShapes.scaleKey))
+        SiteModels.reportOps(job, in: pic)
+            + SiteShapes.ops(j.shapes(SiteShapes.key), in: pic, metersAcross: j.number(SiteShapes.scaleKey))
             + SiteMarks.ops(j.marks("siteMarks"), in: pic)
     }
 

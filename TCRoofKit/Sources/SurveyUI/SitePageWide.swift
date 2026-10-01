@@ -22,14 +22,16 @@ struct SitePageWide: View {
     enum Tool: Hashable { case mark(MarkKind), shape(ShapeKind) }
     enum Layer: CaseIterable, Hashable {
         case panels, cables, symbols, measure, grid
-        var title: String { [.panels: "แผง", .cables: "แนวสาย", .symbols: "สัญลักษณ์", .measure: "ระยะ", .grid: "กริด"][self]! }
+        var title: String { [.panels: "แผง", .cables: "แนวสายไฟ", .symbols: "สัญลักษณ์", .measure: "ระยะ", .grid: "กริด 5 ม."][self]! }
     }
     /// A symbol or shape whose editor is open.
     enum Editing: Identifiable, Hashable {
         case mark(UUID), shape(UUID)
         var id: Self { self }
     }
-    struct Snapshot { let marks: [MapMark]; let shapes: [SiteShape] }
+    struct Snapshot: Equatable, Sendable { let marks: [MapMark]; let shapes: [SiteShape]; let models: [SiteModel] }
+    /// A building-model card being dragged onto the picture (full screen), at `at` in `fullSpace`.
+    struct CardDrag: Equatable { let id: String; var at: CGPoint }
 
     @State var tool: Tool?
     @State var draft: [ShapePoint] = []
@@ -37,7 +39,7 @@ struct SitePageWide: View {
     @State var dragEnd: ShapePoint?
     @State var editing: Editing?
     @State var anchor: CGPoint = .zero
-    @State var history: [Snapshot] = []
+    @State var history = UndoStack<Snapshot>()
     @State var layers: Set<Layer> = Set(Layer.allCases)
     @State var showLayers = false
     @State var fetchingMap = false
@@ -50,8 +52,22 @@ struct SitePageWide: View {
     @State var chooseLand = false
     @State var realLength = ""
     @State var draggingMark: UUID?
+    /// Building model picked on the picture or in the panel (v2 §5).
+    @State var selectedModel: String?
+    /// A model being dragged on the picture, with the grab offset from its centre (fractions); one undo step per drag.
+    @State var modelGrab: (id: String, dx: Double, dy: Double)?
+    @State var cardDrag: CardDrag?
+    @State var fullScreen = false
+    /// Full-screen zoom and pan; the card always shows the whole picture.
+    @State var zoom: CGFloat = 1
+    @State var zoomStart: CGFloat?
+    @State var pan: CGSize = .zero
+    @State var panStart: CGSize?
+    /// The full-screen picture's frame in `fullSpace`, for dropping cards.
+    @State var fullFrame: CGRect = .zero
 
-    var rightWidth: CGFloat { min(600, max(420, (width - 28) * 0.44)) }
+    /// Picture card 860 of 1318 (v2 §1); the right column fills the rest.
+    var pictureWidth: CGFloat { (width - 24) * 860 / 1294 }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -67,17 +83,27 @@ struct SitePageWide: View {
                 .scrollIndicators(.hidden)
                 .frame(maxHeight: .infinity)
             } else {
-                HStack(alignment: .top, spacing: 28) {
-                    pictureCard.frame(maxWidth: .infinity, maxHeight: .infinity)
+                HStack(alignment: .top, spacing: 24) {
+                    pictureCard.frame(width: pictureWidth).frame(maxHeight: .infinity)
                     ScrollView { rightColumn.padding(.bottom, 4) }
                         .scrollIndicators(.hidden)
-                        .frame(width: rightWidth)
+                        .frame(maxWidth: .infinity)
                 }
                 .frame(maxHeight: .infinity)
             }
         }
         .foregroundStyle(Home.navy)
         .onAppear { tickFromCover() }
+        #if DEBUG
+        // `-surveyA2 layers|fullscreen` opens the layers menu or full screen (with the first placed model selected) for simulator checks
+        .task {
+            switch UserDefaults.standard.string(forKey: "surveyA2") {
+            case "layers"?: showLayers = true
+            case "fullscreen"?: selectedModel = models.first?.id; fullScreen = true
+            default: break
+            }
+        }
+        #endif
         .onChange(of: request) { _, item in if let item { handle(item); request = nil } }
         .photosPicker(isPresented: $pickDrone, selection: $droneItem, matching: .images)
         .onChange(of: droneItem) { _, item in load(item) { img in setPicture(img, source: "drone") }; droneItem = nil }
@@ -90,12 +116,19 @@ struct SitePageWide: View {
             ForEach(Options.landType, id: \.self) { o in Button(o) { setLand(o) } }
         }
         .errorAlert($failure)
+        .fullScreenCover(isPresented: $fullScreen, onDismiss: { zoom = 1; pan = .zero; cardDrag = nil }) {
+            fullScreenView.environment(model)
+        }
     }
 
     // MARK: values
 
     var marks: [MapMark] { job.values.marks("siteMarks") }
     var shapes: [SiteShape] { job.values.shapes(SiteShapes.key) }
+    var models: [SiteModel] { SiteModels.models(job.values) }
+    /// The toolbar's "ล็อก": every building model stays where it is.
+    var allLocked: Bool { SiteModels.allLocked(job.values) }
+    func isLocked(_ m: SiteModel) -> Bool { allLocked || m.locked }
     var list: [String] { job.values.multi("siteList") }
     var photo: Photo? { job.values.photo("siteMap") }
     var source: String { job.values.text(SiteShapes.sourceKey) }
@@ -104,23 +137,42 @@ struct SitePageWide: View {
 
     func setMarks(_ a: [MapMark]) { job.values["siteMarks"] = a.isEmpty ? nil : .marks(a) }
     func setShapes(_ a: [SiteShape]) { job.values[SiteShapes.key] = a.isEmpty ? nil : .shapes(a) }
+    func setModels(_ a: [SiteModel]) { SiteModels.setModels(a, in: &job.values) }
     func setList(_ a: [String]) { job.values["siteList"] = a.isEmpty ? nil : .multi(Options.list.filter(a.contains)) }
 
-    /// Changes symbols / shapes with an undo step.
+    var snapshot: Snapshot { Snapshot(marks: marks, shapes: shapes, models: models) }
+    func restore(_ s: Snapshot) {
+        setMarks(s.marks); setShapes(s.shapes); setModels(s.models)
+    }
+
+    /// Changes symbols / shapes with an undo step (and drops what could be redone).
     func change(_ body: (inout [MapMark], inout [SiteShape]) -> Void) {
         var m = marks, s = shapes
-        history.append(Snapshot(marks: m, shapes: s))
-        if history.count > 50 { history.removeFirst() }
+        history.record(snapshot)
         body(&m, &s)
         if m != marks { setMarks(m) }
         if s != shapes { setShapes(s) }
     }
 
+    /// Changes the building models with an undo step.
+    func changeModels(_ body: (inout [SiteModel]) -> Void) {
+        var a = models
+        history.record(snapshot)
+        body(&a)
+        if a != models { setModels(a) }
+    }
+
+    var canUndo: Bool { history.canUndo || !draft.isEmpty }
     func undo() {
         if !draft.isEmpty { draft.removeLast(); return }
-        guard let last = history.popLast() else { return }
+        guard let last = history.undo(snapshot) else { return }
         editing = nil
-        setMarks(last.marks); setShapes(last.shapes)
+        restore(last)
+    }
+    func redo() {
+        guard draft.isEmpty, let next = history.redo(snapshot) else { return }
+        editing = nil
+        restore(next)
     }
 
     /// Ticks a LIST item because something on the page now shows it; the engineer can still untick it.
@@ -204,6 +256,8 @@ struct SitePageWide: View {
     func arm(_ t: Tool?) {
         editing = nil
         draft = []; dragEnd = nil
+        showLayers = false
+        if t != nil { selectedModel = nil }
         tool = tool == t ? nil : t
     }
 
@@ -221,7 +275,7 @@ struct SitePageWide: View {
     // MARK: right column
 
     var rightColumn: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             sourceSection
             paletteSection
             listSection
@@ -295,16 +349,16 @@ struct SitePageWide: View {
             }
         }()
         return Button { arm(t) } label: {
-            HStack(spacing: 8) {
-                ToolIcon(tool: t).frame(width: 34, height: 34)
+            HStack(spacing: 6) {
+                ToolIcon(tool: t).frame(width: 28, height: 28)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.system(size: 14, weight: .bold)).lineLimit(1)
-                    Text(detail).font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1)
+                    Text(title).font(.system(size: 13, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(detail).font(.system(size: 10.5)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 0)
                 Circle().fill(placed(t) ? Home.ok : Color.gray.opacity(0.35)).frame(width: 7, height: 7)
             }
-            .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 44)
+            .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
             .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.primary : Home.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
         }
@@ -316,11 +370,11 @@ struct SitePageWide: View {
 
     var listSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("LIST — รายการที่ระบุในภาพ", trailing: "ติ๊กให้เองเมื่อวางสัญลักษณ์ / วาดพื้นที่")
+            heading("LIST — รายการที่ระบุในภาพ", trailing: "ติ๊กอัตโนมัติเมื่อวาง")
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], alignment: .leading, spacing: 0) {
                 ForEach(Options.list, id: \.self) { item in listRow(item) }
             }
-            .padding(4)
+            .padding(2)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
         }
@@ -335,17 +389,17 @@ struct SitePageWide: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 19))
                         .foregroundStyle(on ? Home.primary : Home.pending).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 4 }
-                    Text(item).font(.system(size: 13)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    Text(item).font(.system(size: 12)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(on ? .isSelected : [])
             if !on { shortcut(item) }
         }
-        .padding(.horizontal, 8)
+        .padding(.leading, 6)
         .background(on ? Color.clear : Home.pending.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 
@@ -353,12 +407,24 @@ struct SitePageWide: View {
         if item == Options.list[12] {
             Menu {
                 ForEach(Options.landType, id: \.self) { o in Button(o) { setLand(o) } }
-            } label: { shortcutLabel("เลือก", icon: nil, symbol: "chevron.down") }
+            } label: { shortcutLabel("เลือก", icon: "action-chevronDown", symbol: "chevron.down") }
         } else if item == Options.list[9] {
-            Button { takeSignPhoto() } label: { shortcutLabel("ถ่ายรูป", icon: "action-camera", symbol: "camera") }.buttonStyle(.plain)
+            Button { takeSignPhoto() } label: { shortcutIcon("action-camera", symbol: "camera") }
+                .buttonStyle(.plain).accessibilityLabel("ถ่ายรูป")
         } else if MarkKind.palette.contains(where: { $0.listItem == item }) || ShapeKind.allCases.contains(where: { $0.listItem == item }) {
-            Button { handle(item) } label: { shortcutLabel("วางบนภาพ", icon: "action-place", symbol: "mappin.and.ellipse") }.buttonStyle(.plain)
+            Button { handle(item) } label: { shortcutIcon("action-place", symbol: "mappin.and.ellipse") }
+                .buttonStyle(.plain).accessibilityLabel("วางบนภาพ")
         }
+    }
+
+    /// v2: the place / photo shortcuts are icon-only 44 × 44.
+    func shortcutIcon(_ icon: String, symbol: String) -> some View {
+        A2Icon(name: icon, fallback: symbol, size: 18).foregroundStyle(Home.pending)
+            .frame(width: 32, height: 30)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.pending.opacity(0.6)))
+            // laid out 34 wide so the LIST text keeps its line; the touch target still reaches 44 × 44
+            .frame(width: 34, height: 44).contentShape(Rectangle().inset(by: -5))
     }
 
     func shortcutLabel(_ title: String, icon: String?, symbol: String) -> some View {
@@ -373,7 +439,7 @@ struct SitePageWide: View {
 
     var noteSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("หมายเหตุหน้างาน", trailing: "ไม่บังคับ · แสดงใต้ภาพในรายงาน")
+            heading("หมายเหตุหน้างาน", trailing: "ไม่บังคับ · ใต้ภาพในรายงาน")
             TextField("เช่น รถเครนเข้าทางถนนด้านตะวันออก · ต้นไม้บังแดดเช้า", text: Binding(
                 get: { job.values.text("siteNote") },
                 set: { job.values["siteNote"] = $0.isEmpty ? nil : .text($0) }), axis: .vertical)

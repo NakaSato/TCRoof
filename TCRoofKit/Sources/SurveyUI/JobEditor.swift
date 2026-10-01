@@ -217,11 +217,11 @@ struct JobEditorView: View {
         } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                SitePageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, request: $siteRequest, stacked: infoColumns != 2)
+                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - 48, request: $siteRequest, stacked: infoColumns != 2)
                     .disabled(readOnly)
             }
             .padding(.horizontal, 24).padding(.vertical, 16)
-            .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
+            .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else {
             ScrollViewReader { proxy in
@@ -264,7 +264,7 @@ struct JobEditorView: View {
                            previous: module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(after), gaps: gaps,
                            statusText: station?.status ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
                            statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardFlood && job.floodCheck.fails > 0)),
-                           previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil, alertIcon: cardPanels != nil)
+                           previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil)
     }
 
     var readOnlyBanner: some View {

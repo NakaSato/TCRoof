@@ -32,6 +32,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
 - `-surveyPage site|electrical|sld|inverter|panels|flood` opens that page (`JobEditor.openDebugPage`).
 - `-surveyExport YES` opens the export sheet.
+- `-surveyA2 layers|fullscreen` opens A2's layers menu, or full screen with the first placed building model selected.
 - Survey job data is stored at `<app data container>/Documents/SolarSurvey/Jobs/<id>/job.json`, with photos in `photos/`. It can be edited while the app is stopped to seed test data; back it up first.
 
 ## Architecture

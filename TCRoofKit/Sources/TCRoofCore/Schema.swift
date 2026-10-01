@@ -175,7 +175,10 @@ public enum Schema {
         // added with the A2 card page; optional, so A2's completion counts as before
         P("projectSignPhoto", "รูปถ่ายป้ายหน้าโครงการ", optional: true),
         C("landType", "ประเภทที่ดิน", Options.landType, optional: true),
-        FieldSpec("siteNote", "หมายเหตุหน้างาน", .textarea, optional: true)])
+        FieldSpec("siteNote", "หมายเหตุหน้างาน", .textarea, optional: true),
+        // A2 v2 building models (`SiteModels`): optional and not shown on the form page, so completion counts as before
+        T(SiteModels.key, "โมเดลอาคารบนภาพ", optional: true, when: { _ in false }),
+        T(SiteModels.lockKey, "ล็อกโมเดลอาคารทั้งหมด", optional: true, when: { _ in false })])
     /// Photos every transformer must have (all sides, nameplate, wide view) — keys "tr0_front" … as in the web version.
     public static let transformerAngles: [(key: String, label: String)] = [
         ("front", "ด้านหน้า"), ("back", "ด้านหลัง"), ("left", "ด้านซ้าย"), ("right", "ด้านขวา"),
@@ -387,7 +390,9 @@ public enum Schema {
         let hidden: @Sendable (Values) -> Bool = { _ in false }
         return [T("a3Breaker", "ตู้นี้ในผัง A3", optional: true, when: hidden),
                 FieldSpec("pvPoint", "จุดเชื่อมต่อ PV บนภาพ", .text(), optional: true, when: hidden),
-                N("spareSlots", "ช่องว่างในตู้", "ช่อง", optional: true, when: hidden)]
+                N("spareSlots", "ช่องว่างในตู้", "ช่อง", optional: true, when: hidden),
+                // A2 building model of this building (`SiteModels`)
+                N("bldW", "ความกว้างอาคาร (ก)", "ม.", optional: true, when: hidden), N("bldL", "ความยาวอาคาร (ย)", "ม.", optional: true, when: hidden)]
     }()
 
     /// B2 wide page answers: the measured area, the boundary on `photoDetail`, the site, the inverter sizes and the user's spans / tray / ladder.

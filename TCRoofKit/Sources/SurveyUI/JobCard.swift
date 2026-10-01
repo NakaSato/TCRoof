@@ -22,6 +22,8 @@ enum Home {
     static let pending = Color(red: 0.706, green: 0.325, blue: 0.035)
     static let sun = Color(red: 1.0, green: 0.773, blue: 0.239)
     static let ok = Color(red: 0.180, green: 0.620, blue: 0.357)
+    /// Warning orange #F08C00: the A2 lock, selected building models and the bottom bar's "!" badge (docs/ui/survey-a2 v2).
+    static let warn = Color(red: 0.941, green: 0.549, blue: 0.0)
     // surveys moved to installation (docs/ui/pwa-solar-survey, 30/9/2569)
     static let lockedCard = Color(red: 0.961, green: 0.969, blue: 0.980)
     static let lockedAction = Color(red: 0.918, green: 0.945, blue: 0.973)

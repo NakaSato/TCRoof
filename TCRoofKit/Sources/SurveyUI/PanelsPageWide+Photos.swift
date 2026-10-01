@@ -6,9 +6,9 @@ import PDFReport
 
 /// B1's two photos: the wide one with the PV connection point dragged out on it, and the main breaker.
 extension PanelsPageWide {
-    func addPhoto(_ img: UIImage) {
+    func addPhoto(_ img: UIImage, to field: PhotoField) {
         guard let p = model.addPhoto(img, to: job.id) else { return }
-        set(pickTarget.rawValue, .photo(p))
+        set(field.rawValue, .photo(p))
     }
 
     var pvPoint: SiteShape? { values.shapes(BuildingPanels.Key.pvPoint).first }
@@ -16,17 +16,25 @@ extension PanelsPageWide {
     var widePhotoCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             label("ภาพมุมกว้างของตู้ไฟฟ้า", required: true, aside: "ใช้พิจารณาจุดเชื่อมต่อระบบโซลาร์")
-            GeometryReader { geo in wideStage(geo.size) }
-                .frame(height: 330)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
+            if values.photo(PhotoField.wide.rawValue) == nil {
+                PhotoSlot(photo: nil, jobID: job.id, hint: "ถ่ายมุมกว้างให้เห็นทั้งตู้และช่องว่าง", required: true,
+                          onPick: { addPhoto($0, to: .wide) }, onClear: {})
+                    .frame(height: 330)
+            } else {
+                GeometryReader { geo in wideStage(geo.size) }
+                    .frame(height: 330)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
+            }
         }
     }
 
     var breakerPhotoCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             label("ภาพเบรกเกอร์เมนของตู้", required: true, aside: "เห็นป้าย AT / รุ่น ชัด")
-            breakerStage
+            PhotoSlot(photo: values.photo(PhotoField.breaker.rawValue), jobID: job.id, hint: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลขชัด",
+                      required: true, onPick: { addPhoto($0, to: .breaker) },
+                      onClear: { set(PhotoField.breaker.rawValue, nil) }, onOpen: { viewing = $0 })
                 .frame(height: 250)
         }
     }
@@ -42,7 +50,7 @@ extension PanelsPageWide {
     @ViewBuilder func wideStage(_ size: CGSize) -> some View {
         let photo = values.photo(PhotoField.wide.rawValue)
         ZStack(alignment: .topLeading) {
-            Color(red: 0.91, green: 0.933, blue: 0.961)
+            PhotoSlot.stageColor
             if let p = photo, let img = model.image(p, in: job.id) {
                 let r = imageRect(img, in: size)
                 Image(uiImage: img).resizable().frame(width: r.width, height: r.height).position(x: r.midX, y: r.midY)
@@ -52,16 +60,13 @@ extension PanelsPageWide {
                         .onChanged { g in dragRect = (fraction(g.startLocation, in: r), fraction(g.location, in: r)) }
                         .onEnded { _ in savePoint() })
                     .accessibilityLabel("ภาพมุมกว้างของตู้ไฟฟ้า ลากเพื่อวงจุดเชื่อมต่อ PV")
-            } else if photo != nil {
-                Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
-                    .font(.callout).foregroundStyle(Home.muted).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                emptyPhoto(.wide, text: "ถ่ายมุมกว้างให้เห็นทั้งตู้และช่องว่าง").frame(maxWidth: .infinity, maxHeight: .infinity)
+                PhotoSlot.notDownloaded
             }
         }
         .frame(width: size.width, height: size.height)
-        .overlay(alignment: .topLeading) { if photo != nil { doneBadge } }
-        .overlay(alignment: .topTrailing) { if photo != nil { clearButton(pvPoint != nil ? "ล้างจุดเชื่อมต่อ" : "ลบภาพ") { clearWide() } } }
+        .overlay(alignment: .topLeading) { if photo != nil { PhotoDoneBadge() } }
+        .overlay(alignment: .topTrailing) { if photo != nil { PhotoClearButton(label: pvPoint != nil ? "ล้างจุดเชื่อมต่อ" : "ลบภาพ") { clearWide() } } }
         .overlay(alignment: .bottomLeading) {
             if photo != nil {
                 Text(pvPoint == nil ? "แตะภาพเพื่อวงจุดเชื่อมต่อ" : "ลากใหม่เพื่อย้ายจุดเชื่อมต่อ")
@@ -91,70 +96,6 @@ extension PanelsPageWide {
 
     func clearWide() {
         if pvPoint != nil { set(BuildingPanels.Key.pvPoint, nil) } else { set(PhotoField.wide.rawValue, nil) }
-    }
-
-    @ViewBuilder var breakerStage: some View {
-        let photo = values.photo(PhotoField.breaker.rawValue)
-        if let p = photo {
-            ZStack {
-                Color(red: 0.91, green: 0.933, blue: 0.961)
-                if let img = model.image(p, in: job.id) {
-                    Button { viewing = p } label: { Image(uiImage: img).resizable().scaledToFit() }
-                        .buttonStyle(.plain).accessibilityLabel("ภาพเบรกเกอร์เมน แตะเพื่อดูเต็มจอ")
-                } else {
-                    Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down").font(.callout).foregroundStyle(Home.muted)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
-            .overlay(alignment: .topLeading) { doneBadge }
-            .overlay(alignment: .topTrailing) { clearButton("ลบภาพ") { set(PhotoField.breaker.rawValue, nil) } }
-        } else {
-            emptyPhoto(.breaker, text: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลขชัด")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.danger, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
-        }
-    }
-
-    func emptyPhoto(_ field: PhotoField, text: String) -> some View {
-        VStack(spacing: 14) {
-            Text(text).font(.system(size: 15)).foregroundStyle(Home.muted)
-            HStack(spacing: 10) {
-                photoButton("อัปโหลด", icon: "ui-upload-photo", fallback: "photo") { pickTarget = field; showPicker = true }
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    photoButton("กล้อง", icon: "ui-camera", fallback: "camera") { pickTarget = field; showCamera = true }
-                }
-            }
-        }
-        .padding()
-    }
-
-    func photoButton(_ title: String, icon: String, fallback: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                A2Icon(name: icon, fallback: fallback, size: 18)
-                Text(title).font(.system(size: 15, weight: .bold))
-            }
-            .foregroundStyle(Home.navy)
-            .frame(width: 150, height: 46)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
-        }
-        .buttonStyle(.plain)
-    }
-
-    var doneBadge: some View {
-        A2Icon(name: "b1-photo-done", fallback: "checkmark.circle.fill", size: 28).foregroundStyle(Home.ok)
-            .padding(10).allowsHitTesting(false).accessibilityHidden(true)
-    }
-
-    func clearButton(_ label: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            A2Icon(name: "b1-photo-clear", fallback: "xmark.circle.fill", size: 28)
-                .frame(width: 44, height: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).padding(4)
-        .accessibilityLabel(label)
     }
 }
 #endif

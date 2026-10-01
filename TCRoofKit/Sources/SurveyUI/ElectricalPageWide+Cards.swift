@@ -91,7 +91,7 @@ func a3Chip(_ text: String, ok: Bool) -> some View {
         .background((ok ? Home.mint.opacity(0.4) : Home.danger.opacity(0.1)), in: Capsule())
 }
 
-/// A photo frame: filled shows the picture with a tick; empty is a dashed frame (red when required) with library and camera buttons.
+/// A small photo frame on the shared `PhotoSlot`: the compact empty layout, and the label on the filled photo.
 struct A3PhotoTile: View {
     @Binding var photo: Photo?
     let jobID: UUID
@@ -99,75 +99,19 @@ struct A3PhotoTile: View {
     var required = false
     var height: CGFloat = 96
     @Environment(SurveyModel.self) private var model
-    @State private var pick: PhotosPickerItem?
-    @State private var showPicker = false
-    @State private var showCamera = false
-    @State private var showFull = false
 
     var body: some View {
-        ZStack {
-            if let p = photo {
-                if let img = model.image(p, in: jobID) {
-                    Image(uiImage: img).resizable().scaledToFill().frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
-                        .onTapGesture { showFull = true }
-                } else {
-                    Color.gray.opacity(0.15)
-                    Image(systemName: "icloud.and.arrow.down").foregroundStyle(Home.muted)
-                }
-            } else {
-                VStack(spacing: 4) {
-                    Text(label + (required ? " *" : "")).font(.system(size: 12, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                        .foregroundStyle(required ? Home.danger : Home.muted)
-                    HStack(spacing: 8) {
-                        tileButton("photo.on.rectangle", "คลังภาพ") { showPicker = true }
-                        if UIImagePickerController.isSourceTypeAvailable(.camera) { tileButton("camera", "กล้อง") { showCamera = true } }
-                    }
+        PhotoSlot(photo: photo, jobID: jobID, hint: label + (required ? " *" : ""), required: required, title: label, dense: true,
+                  onPick: { img in if let p = model.addPhoto(img, to: jobID) { photo = p } },
+                  onClear: { photo = nil })
+            .frame(maxWidth: .infinity).frame(height: height)
+            .overlay(alignment: .bottomLeading) {
+                if photo != nil {
+                    Text(label).font(.system(size: 11, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                        .padding(.horizontal, 5).padding(.vertical, 2).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4)).padding(4)
+                        .allowsHitTesting(false)
                 }
             }
-        }
-        .frame(maxWidth: .infinity).frame(height: height)
-        .background(Color(uiColor: .tertiarySystemFill).opacity(photo == nil ? 0.4 : 1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(photo == nil ? (required ? Home.danger : Home.borderControl.opacity(0.7)) : Color.clear,
-                                                          style: StrokeStyle(lineWidth: photo == nil && required ? 1.5 : 1, dash: photo == nil ? [5, 3] : [])))
-        .overlay(alignment: .bottomLeading) {
-            if photo != nil {
-                Text(label).font(.system(size: 11, weight: .bold)).foregroundStyle(.white).lineLimit(1)
-                    .padding(.horizontal, 5).padding(.vertical, 2).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4)).padding(4)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if photo != nil {
-                Menu {
-                    Button { showPicker = true } label: { Label("เลือกจากคลังภาพ", systemImage: "photo") }
-                    if UIImagePickerController.isSourceTypeAvailable(.camera) { Button { showCamera = true } label: { Label("ถ่ายใหม่", systemImage: "camera") } }
-                    Button(role: .destructive) { photo = nil } label: { Label("ลบภาพ", systemImage: "trash") }
-                } label: {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 22)).symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, Home.ok).frame(width: 44, height: 44, alignment: .topTrailing).padding(2)
-                }
-            }
-        }
-        .photosPicker(isPresented: $showPicker, selection: $pick, matching: .images)
-        .onChange(of: pick) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) { photo = model.addPhoto(img, to: jobID) }
-                pick = nil
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) { CameraPicker { img in if let img { photo = model.addPhoto(img, to: jobID) } }.ignoresSafeArea() }
-        .sheet(isPresented: $showFull) { if let p = photo, let img = model.image(p, in: jobID) { PhotoViewer(image: img, title: label) } }
-    }
-
-    func tileButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 16, weight: .semibold)).foregroundStyle(Home.primary)
-                .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.borderControl.opacity(0.6)))
-        }
-        .buttonStyle(.plain).accessibilityLabel(label)
     }
 }
 

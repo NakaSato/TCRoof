@@ -16,7 +16,6 @@ struct PhotoField: View {
     @Environment(SurveyModel.self) private var model
     @State private var fetchingMap = false
     @State private var mapError: String?
-    @State private var pick: PhotosPickerItem?
     @State private var showPicker = false
     @State private var showCamera = false
     @State private var showFull = false
@@ -29,23 +28,19 @@ struct PhotoField: View {
                     .onTapGesture { showFull = true }
             } else if photo != nil {
                 // taken on another iPad and not downloaded yet — don't offer to fill the frame again
-                VStack(spacing: 8) {
-                    Image(systemName: "icloud.and.arrow.down").font(.system(size: 28)).foregroundStyle(.secondary)
-                    Text("รูปนี้ถ่ายจากเครื่องอื่น ยังไม่อยู่ในเครื่องนี้").font(.callout).foregroundStyle(.secondary)
-                }
+                PhotoSlot.notDownloaded
             } else {
-                VStack(spacing: 10) {
-                    Image(systemName: "photo.badge.plus").font(.system(size: 30)).foregroundStyle(.secondary)
-                    HStack(spacing: 10) {
-                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                            Button { showCamera = true } label: { Label("ถ่ายภาพ", systemImage: "camera.fill") }.buttonStyle(.borderedProminent)
-                        }
-                        Button { showPicker = true } label: { Label("คลังภาพ", systemImage: "photo.on.rectangle") }.buttonStyle(.bordered)
-                        if mapGPS != nil {
-                            Button { fetchMap() } label: { Label("Google Maps", systemImage: "map.fill") }.buttonStyle(.bordered)
-                        }
+                ViewThatFits {
+                    VStack(spacing: 12) {
+                        PhotoSourceButtons(onUpload: { showPicker = true }, onCamera: { showCamera = true })
+                        mapButton
+                    }
+                    HStack(spacing: 8) {
+                        PhotoSourceButtons(compact: true, onUpload: { showPicker = true }, onCamera: { showCamera = true })
+                        mapButton
                     }
                 }
+                .padding(8)
             }
             if fetchingMap { Color.black.opacity(0.35); ProgressView("กำลังดึงภาพแผนที่…").tint(.white).foregroundStyle(.white) }
         }
@@ -66,23 +61,17 @@ struct PhotoField: View {
                 }
             }
         }
-        .photosPicker(isPresented: $showPicker, selection: $pick, matching: .images)
-        .onChange(of: pick) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
-                    photo = model.addPhoto(img, to: jobID)
-                }
-                pick = nil
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { img in if let img { photo = model.addPhoto(img, to: jobID) } }.ignoresSafeArea()
-        }
+        .photoSources(picker: $showPicker, camera: $showCamera) { img in photo = model.addPhoto(img, to: jobID) }
         .sheet(isPresented: $showFull) {
             if let p = photo, let img = model.image(p, in: jobID) { PhotoViewer(image: img, title: label) }
         }
         .errorAlert($mapError)
+    }
+
+    @ViewBuilder var mapButton: some View {
+        if mapGPS != nil {
+            Button { fetchMap() } label: { Label("Google Maps", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(.bordered)
+        }
     }
 
     func fetchMap() {

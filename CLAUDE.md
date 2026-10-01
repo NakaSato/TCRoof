@@ -30,6 +30,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-screen <name>` skips sign-in and opens one app screen (`TCRoofApp.swift` `DebugScreen`; `pwa` is the survey module).
 - `-surveyDemo YES` opens a demo job; add `-surveyDemoSection YES` to open its first section.
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
+- `-surveyStacked YES` forces the one-column (portrait) layout of the wide pages in a landscape simulator.
 - `-surveyPage site|electrical|sld|inverter|panels|flood` opens that page (`JobEditor.openDebugPage`).
 - `-surveyExport YES` opens the export sheet.
 - `-surveyA2 layers|fullscreen` opens A2's layers menu, or full screen with the first placed building model selected.

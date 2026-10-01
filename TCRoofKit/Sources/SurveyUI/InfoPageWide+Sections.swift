@@ -246,8 +246,11 @@ struct InfoPageBar: View {
 
     let job: Job
     var here: MissingGroup.Target = .info
-    /// Portrait with the sidebar open: drops the "previous" button and tightens the others.
+    /// Portrait: the "previous" button shows only the step code, and the others tighten.
     var narrow = false
+    /// Portrait with the sidebar open (or iPad mini): "save" and "previous" become icon buttons and "next" shrinks,
+    /// so the bar never pushes the page wider than the screen.
+    var tight = false
     var previous: (() -> Void)? = nil
     let next: (() -> Void)?
     var gaps: [Gap] = []
@@ -282,55 +285,61 @@ struct InfoPageBar: View {
             }
             Spacer(minLength: 8)
             Button { model.flush(job.id); savedNow = Date() } label: {
-                Text("บันทึกร่างตอนนี้").font(.system(size: 16, weight: .semibold)).lineLimit(1)
-                    .frame(width: narrow ? 140 : 170, height: 56)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
+                Group {
+                    if tight { Image(systemName: "square.and.arrow.down").font(.system(size: 20, weight: .semibold)) }
+                    else { Text("บันทึกร่างตอนนี้").font(.system(size: 16, weight: .semibold)).lineLimit(1) }
+                }
+                .frame(width: tight ? 56 : narrow ? 130 : 170, height: 56)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
             }
             .buttonStyle(.plain)
-            if !narrow {
-                if let previous, let pi = Optional(previousIndex ?? i - 1), let s = steps[safe: pi] {
-                    Button(action: previous) {
-                        HStack(spacing: 10) {
-                            A2Icon(name: "ui-prev", fallback: "chevron.left", size: 20)
+            .accessibilityLabel("บันทึกร่างตอนนี้")
+            if let previous, let pi = Optional(previousIndex ?? i - 1), let s = steps[safe: pi] {
+                Button(action: previous) {
+                    HStack(spacing: narrow ? 6 : 10) {
+                        A2Icon(name: "ui-prev", fallback: "chevron.left", size: 20)
+                        if !tight {
                             VStack(alignment: .leading, spacing: 0) {
                                 Text("ก่อนหน้า \(pi + 1)/\(steps.count)").font(.system(size: 12)).foregroundStyle(Home.muted)
-                                Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
+                                Text(narrow ? s.code : s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                             }
                         }
-                        .frame(width: 210, height: 56)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
                     }
-                    .buttonStyle(.plain)
-                } else {
-                    HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 18); Text("หัวข้อแรก") }
-                        .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
-                        .frame(width: 180, height: 56)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
-                        .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
+                    .frame(width: tight ? 56 : narrow ? 120 : 210, height: 56)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ก่อนหน้า " + s.code + " " + Self.barTitle(s))
+            } else if !narrow {
+                HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 18); Text("หัวข้อแรก") }
+                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
+                    .frame(width: 180, height: 56)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
+                    .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
             }
             if let next, let ni = Optional(nextIndex ?? i + 1), let s = steps[safe: ni] {
                 Button(action: next) {
-                    HStack(spacing: 10) {
+                    HStack(spacing: tight ? 6 : 10) {
                         VStack(alignment: .trailing, spacing: 0) {
                             Text("ถัดไป \(ni + 1)/\(steps.count)").font(.system(size: 12)).opacity(0.9)
-                            Text(s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
+                            Text(tight ? s.code : s.code + " " + Self.barTitle(s)).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                         }
                         A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)
                     }
                     .foregroundStyle(.white)
-                    .frame(width: narrow ? 220 : 250, height: 56)
+                    .frame(width: tight ? 120 : narrow ? 220 : 250, height: 56)
                     .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing),
                                 in: RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("ถัดไป " + s.code + " " + Self.barTitle(s))
             }
         }
         .foregroundStyle(Home.navy)
         .frame(maxWidth: 1240)
-        .padding(.horizontal, 24).padding(.vertical, 12)
+        .padding(.horizontal, tight ? 16 : 24).padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
     }
@@ -353,7 +362,7 @@ struct InfoPageBar: View {
         } else {
             HStack(spacing: 6) {
                 Text((c.isComplete ? "ครบช่องบังคับแล้ว" : "ครบ \(c.filled)/\(c.total) ช่อง") + " · ยังขาด").font(.system(size: 13)).foregroundStyle(tint)
-                ForEach(gaps.prefix(narrow ? 1 : 3)) { g in
+                ForEach(gaps.prefix(tight ? 0 : narrow ? 1 : 3)) { g in
                     Button(action: g.action) {
                         Text(g.title + " ›").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending)
                             .padding(.horizontal, 8).frame(minHeight: 26)
@@ -362,7 +371,7 @@ struct InfoPageBar: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if gaps.count > (narrow ? 1 : 3) { Text("+\(gaps.count - (narrow ? 1 : 3))").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending) }
+                if gaps.count > (tight ? 0 : narrow ? 1 : 3) { Text("+\(gaps.count - (tight ? 0 : narrow ? 1 : 3))").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending) }
             }
             .frame(height: 22)
         }

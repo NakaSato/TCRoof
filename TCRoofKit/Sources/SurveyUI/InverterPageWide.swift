@@ -7,13 +7,15 @@ import PDFReport
 
 /// B2 on iPad landscape (docs/ui/survey-b2): the area photo with its drawn boundary, the measured size and column spans on the left;
 /// the live station plan and the Growatt inverters on the right. Everything else (cabinets, breakers, cables, tray, ladder, room)
-/// comes from `InverterStation` and the equipment catalog. Field ids are unchanged and the new answers are optional;
-/// iPad portrait and iPhone keep the schema form (`groupPage`).
+/// comes from `InverterStation` and the equipment catalog. Field ids are unchanged and the new answers are optional.
+/// iPad portrait stacks the two columns; iPhone keeps the schema form (`groupPage`).
 struct InverterPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
     /// Width of the page's content.
     let width: CGFloat
+    /// Portrait: the photo and size column on top, the plan and inverters below it, the page scrolling.
+    var stacked = false
     @Environment(SurveyModel.self) var model
 
     enum PhotoTab { case area, boundary }
@@ -25,9 +27,6 @@ struct InverterPageWide: View {
     @State var edgeText = ""
     @State var spanSel = 0
     @State var showPlan = false
-    @State var pickPhoto: PhotosPickerItem?
-    @State var showPicker = false
-    @State var showCamera = false
     @State var viewing: Photo?
 
     var leftWidth: CGFloat { min(460, max(400, width * 0.33)) }
@@ -51,22 +50,25 @@ struct InverterPageWide: View {
     var body: some View {
         VStack(spacing: 16) {
             PageStepBar(job: job, here: .module(moduleID))
-            HStack(alignment: .top, spacing: 24) {
-                ScrollView { leftColumn.padding(.bottom, 4) }.scrollIndicators(.hidden).frame(width: leftWidth)
-                ScrollView { rightColumn.padding(.bottom, 4) }.scrollIndicators(.hidden).frame(maxWidth: .infinity)
+            if stacked {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        leftColumn
+                        rightColumn
+                    }
+                    .padding(.bottom, 8)
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxHeight: .infinity)
+            } else {
+                HStack(alignment: .top, spacing: 24) {
+                    ScrollView { leftColumn.padding(.bottom, 4) }.scrollIndicators(.hidden).frame(width: leftWidth)
+                    ScrollView { rightColumn.padding(.bottom, 4) }.scrollIndicators(.hidden).frame(maxWidth: .infinity)
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
         }
         .foregroundStyle(Home.navy)
-        .photosPicker(isPresented: $showPicker, selection: $pickPhoto, matching: .images)
-        .onChange(of: pickPhoto) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) { addPhoto(img) }
-                pickPhoto = nil
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) { CameraPicker { img in if let img { addPhoto(img) } }.ignoresSafeArea() }
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: "พื้นที่ติดตั้งอินเวอร์เตอร์") } }
         .fullScreenCover(isPresented: $showPlan) { PlanViewer(sketch: InverterStationDrawing.sketch(station), title: planTitle) }
         .alert("ระยะด้านนี้ (ม.)", isPresented: Binding(get: { editingEdge != nil }, set: { if !$0 { editingEdge = nil } })) {
@@ -120,10 +122,16 @@ struct InverterPageWide: View {
                 segment(boundary != nil ? "ภาพระบุขอบเขต ✓" : "ภาพระบุขอบเขต", on: tab == .boundary) { tab = .boundary }
             }
             .padding(3).background(Home.navy.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
-            GeometryReader { geo in stage(geo.size) }
-                .frame(height: 300)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(drawing ? Home.teal : Home.navy.opacity(0.15), lineWidth: drawing ? 2 : 1))
+            if values.photo(photoField) == nil {
+                PhotoSlot(photo: nil, jobID: job.id, hint: tab == .area ? "ถ่ายภาพพื้นที่ติดตั้ง Inverter Station" : "ภาพสำหรับวาดขอบเขตพื้นที่",
+                          required: tab == .area, extra: useAreaPhoto, onPick: addPhoto, onClear: {})
+                    .frame(height: stacked ? 420 : 300)
+            } else {
+                GeometryReader { geo in stage(geo.size) }
+                    .frame(height: stacked ? 420 : 300)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(drawing ? Home.teal : Home.navy.opacity(0.15), lineWidth: drawing ? 2 : 1))
+            }
         }
     }
 
@@ -149,7 +157,7 @@ struct InverterPageWide: View {
     @ViewBuilder func stage(_ size: CGSize) -> some View {
         let photo = values.photo(photoField)
         ZStack(alignment: .topLeading) {
-            Color(red: 0.91, green: 0.933, blue: 0.961)
+            PhotoSlot.stageColor
             if let p = photo, let img = model.image(p, in: job.id) {
                 let r = imageRect(img, in: size)
                 Image(uiImage: img).resizable().frame(width: r.width, height: r.height).position(x: r.midX, y: r.midY)
@@ -164,24 +172,17 @@ struct InverterPageWide: View {
                 } else {
                     Color.white.opacity(0.001).frame(width: size.width, height: size.height).onTapGesture { viewing = p }
                 }
-            } else if photo != nil {
-                Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
-                    .font(.callout).foregroundStyle(Home.muted).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                emptyPhoto.frame(maxWidth: .infinity, maxHeight: .infinity)
+                PhotoSlot.notDownloaded
             }
         }
         .frame(width: size.width, height: size.height)
-        .overlay(alignment: .topLeading) { if photo != nil && tab == .boundary { boundaryTools.padding(10) } }
+        .overlay(alignment: .topLeading) {
+            if photo != nil { if tab == .boundary { boundaryTools.padding(10) } else { PhotoDoneBadge() } }
+        }
         .overlay(alignment: .topTrailing) {
             if photo != nil {
-                Button { clearPhotoOrBoundary() } label: {
-                    A2Icon(name: "ui-close", fallback: "xmark", size: 12).foregroundStyle(.white)
-                        .frame(width: 28, height: 28).background(Color.black.opacity(0.6), in: Circle())
-                        .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).padding(4)
-                .accessibilityLabel(tab == .boundary && (boundary != nil || !draft.isEmpty) ? "ล้างขอบเขต" : "ลบภาพ")
+                PhotoClearButton(label: tab == .boundary && (boundary != nil || !draft.isEmpty) ? "ล้างขอบเขต" : "ลบภาพ") { clearPhotoOrBoundary() }
             }
         }
         .overlay(alignment: .bottomLeading) {
@@ -194,22 +195,12 @@ struct InverterPageWide: View {
         }
     }
 
-    var emptyPhoto: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "photo.badge.plus").font(.system(size: 32)).foregroundStyle(Home.muted)
-            Text(tab == .area ? "ถ่ายภาพพื้นที่ติดตั้ง Inverter Station" : "ภาพสำหรับวาดขอบเขตพื้นที่").font(.headline)
-            HStack(spacing: 10) {
-                if tab == .boundary, let p = values.photo("photoArea") {
-                    Button { if let img = model.image(p, in: job.id) { addPhoto(img) } } label: { Label("ใช้ภาพพื้นที่", systemImage: "photo").frame(minHeight: 44) }
-                        .buttonStyle(.borderedProminent)
-                }
-                Button { showPicker = true } label: { Label("อัปโหลด", systemImage: "photo.on.rectangle").frame(minHeight: 44) }.buttonStyle(.bordered)
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    Button { showCamera = true } label: { Label("กล้อง", systemImage: "camera").frame(minHeight: 44) }.buttonStyle(.bordered)
-                }
-            }
-        }
-        .padding()
+    /// On the boundary tab, reuses the area photo instead of taking another.
+    var useAreaPhoto: AnyView? {
+        guard tab == .boundary, let p = values.photo("photoArea"), let img = model.image(p, in: job.id) else { return nil }
+        return AnyView(Button { addPhoto(img) } label: {
+            Label("ใช้ภาพพื้นที่", systemImage: "photo").font(.system(size: 15, weight: .bold)).frame(minHeight: 44)
+        }.buttonStyle(.borderedProminent))
     }
 
     var boundaryTools: some View {

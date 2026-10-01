@@ -52,9 +52,10 @@ struct JobEditorView: View {
     var cardElectrical: Bool { page == .electrical && !compact }
     /// A4's flood page (docs/ui/survey-a4): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
     var cardFlood: Bool { page == .flood && !compact }
-    /// B2 on iPad landscape (docs/ui/survey-b2): the section being shown; portrait and iPhone keep `groupPage`.
+    /// B2 on iPad (docs/ui/survey-b2): the section being shown, side by side in landscape and stacked in portrait;
+    /// iPhone keeps `groupPage`.
     var cardInverter: SurveyModule? {
-        guard case .module(let id) = page, !compact, infoColumns == 2 else { return nil }
+        guard case .module(let id) = page, !compact else { return nil }
         return job.modules.first { $0.id == id && $0.type == .inverter }
     }
     /// B1 on iPad (docs/ui/survey-b1): every building on one page, side by side in landscape and stacked in portrait;
@@ -85,6 +86,7 @@ struct JobEditorView: View {
         guard detailSize.width >= 860 else { return 1 }
         #if DEBUG
         if UserDefaults.standard.bool(forKey: "surveyWideA1") { return 2 }
+        if UserDefaults.standard.bool(forKey: "surveyStacked") { return 1 }
         #endif
         return detailSize.width > detailSize.height ? 2 : 1
     }
@@ -198,7 +200,7 @@ struct JobEditorView: View {
         } else if let m = cardInverter {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48)
+                InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48, stacked: infoColumns != 2)
                     .disabled(readOnly)
                     .id(m.id)
             }
@@ -260,7 +262,7 @@ struct JobEditorView: View {
         let panelsMissing = cardPanels != nil && !BuildingPanels.missing(job).isEmpty
         let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
             : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
-        return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900,
+        return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(after), gaps: gaps,
                            statusText: station?.status ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
                            statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardFlood && job.floodCheck.fails > 0)),

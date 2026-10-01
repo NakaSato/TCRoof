@@ -20,7 +20,6 @@ struct FloodPageWide: View {
     @State var attempt = 0
     @State var dragging = false
     @State var editHeights = false
-    @State var pickPhoto: PhotosPickerItem?
     @State var showPicker = false
     @State var showCamera = false
     @State var viewing: Photo?
@@ -49,15 +48,7 @@ struct FloodPageWide: View {
         .foregroundStyle(Home.navy)
         // the recommended install height is what the report summary quotes
         .onChange(of: check.minCm) { _, n in if state == .flooded { job.values["equipHeight"] = .text(String(n)) } }
-        .photosPicker(isPresented: $showPicker, selection: $pickPhoto, matching: .images)
-        .onChange(of: pickPhoto) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) { addPhoto(img) }
-                pickPhoto = nil
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) { CameraPicker { img in if let img { addPhoto(img) } }.ignoresSafeArea() }
+        .photoSources(picker: $showPicker, camera: $showCamera, onPick: addPhoto)
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: "หลักฐานน้ำท่วม") } }
     }
 
@@ -228,22 +219,12 @@ struct FloodPageWide: View {
                             .offset(x: 12, y: -12).accessibilityLabel("ลบภาพ")
                         }
                     }
-                    photoButton("อัปโหลด", "photo.on.rectangle") { showPicker = true }
-                    if UIImagePickerController.isSourceTypeAvailable(.camera) { photoButton("กล้อง", "camera") { showCamera = true } }
+                    PhotoSourceButtons(height: 60, onUpload: { showPicker = true }, onCamera: { showCamera = true })
                 }
                 .padding(.top, 8)
             }
             .scrollIndicators(.hidden)
         }
-    }
-    func photoButton(_ title: String, _ icon: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: icon).font(.system(size: 15, weight: .semibold))
-                .frame(minWidth: 96, minHeight: 60).padding(.horizontal, 8)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.5)))
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: right column

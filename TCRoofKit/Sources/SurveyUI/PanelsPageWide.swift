@@ -21,10 +21,6 @@ struct PanelsPageWide: View {
     @Environment(SurveyModel.self) var model
 
     enum PhotoField: String { case wide = "photoWide", breaker = "photoBreaker" }
-    @State var pickTarget: PhotoField = .wide
-    @State var pickPhoto: PhotosPickerItem?
-    @State var showPicker = false
-    @State var showCamera = false
     @State var viewing: Photo?
     @State var renaming = false
     @State var nameText = ""
@@ -59,15 +55,6 @@ struct PanelsPageWide: View {
             if stacked { stackedLayout } else { wideLayout }
         }
         .foregroundStyle(Home.navy)
-        .photosPicker(isPresented: $showPicker, selection: $pickPhoto, matching: .images)
-        .onChange(of: pickPhoto) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) { addPhoto(img) }
-                pickPhoto = nil
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) { CameraPicker { img in if let img { addPhoto(img) } }.ignoresSafeArea() }
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: title) } }
         .alert("ชื่ออาคาร", isPresented: $renaming) {
             TextField("เช่น โรงสูบน้ำ", text: $nameText)

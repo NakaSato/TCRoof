@@ -276,7 +276,7 @@ public enum Schema {
     }
 
     public static let modules: [ModuleType: ModuleSpec] = [
-        .panel: ModuleSpec(type: .panel, sheet: "ระบบไฟฟ้า", label: "ตู้ไฟฟ้าอาคาร", short: "ตู้ไฟฟ้าอาคาร", reportTitle: "ภาพตู้ไฟฟ้าของอาคาร", namePlaceholder: "ชื่ออาคาร เช่น โรงสูบน้ำ", groups: [
+        .panel: ModuleSpec(type: .panel, sheet: "ระบบไฟฟ้า", label: "ตู้พิจารณาเชื่อมต่อ", short: "ตู้พิจารณาเชื่อมต่อ", reportTitle: "ภาพตู้ไฟฟ้าของอาคาร", namePlaceholder: "ชื่ออาคาร เช่น โรงสูบน้ำ", groups: [
             GroupSpec(nil, [P("photoBreaker", "ภาพถ่ายเบรกเกอร์เมนของตู้ไฟฟ้า"), P("photoWide", "ภาพถ่ายมุมกว้างของตู้ไฟฟ้า (เพื่อพิจารณาจุดเชื่อมต่อระบบโซล่าเซลล์)"),
                             N("breakerAT", "ขนาดเบรกเกอร์เมน", "AT"), N("loadKW", "ปริมาณการใช้ไฟ", "kW"), T("loadTime", "เวลา", "10 น."), detail()])]),
         .inverter: ModuleSpec(type: .inverter, sheet: "ระบบไฟฟ้า", label: "พื้นที่ติดตั้งอินเวอร์เตอร์", short: "พื้นที่ติดตั้งอินเวอร์เตอร์", reportTitle: "ภาพตำแหน่งติดตั้ง Inverter station", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [

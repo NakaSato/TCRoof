@@ -135,7 +135,7 @@ extension InfoPageWide {
                 Button(action: locate) {
                     HStack(spacing: 8) {
                         if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Home.primary) }
-                        Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold))
+                        if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
@@ -143,6 +143,7 @@ extension InfoPageWide {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).disabled(locating).fixedSize()
+                .accessibilityLabel("ตำแหน่งปัจจุบัน")
             }
             gpsNote.font(.footnote)
         }
@@ -190,6 +191,8 @@ struct InfoPageHeader: View {
     let toggleSidebar: () -> Void
     let export: () -> Void
     @Environment(SurveyModel.self) var model
+    /// iPhone: tighter padding, smaller title, export as an icon.
+    @Environment(\.horizontalSizeClass) var sizeClass
 
     var subtitle: String {
         // "TC-0012 · สถานีสูบน้ำ" → "TC-0012"; the project name is already on the page
@@ -198,29 +201,34 @@ struct InfoPageHeader: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        let phone = sizeClass == .compact
+        return HStack(spacing: phone ? 4 : 12) {
             squareButton("chevron.left", "ย้อนกลับ", action: back)
             squareButton("sidebar.left", "แสดง/ซ่อนรายการหัวข้อ", action: toggleSidebar)
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.system(size: 20, weight: .bold))
-                Text(subtitle).font(.system(size: 15)).opacity(0.92).lineLimit(1)
+                Text(title).font(.system(size: phone ? 17 : 20, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                Text(subtitle).font(.system(size: phone ? 13 : 15)).opacity(0.92).lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             .padding(.leading, 4)
-            Spacer(minLength: 8)
+            Spacer(minLength: phone ? 4 : 8)
             Button(action: export) {
-                Label("ส่งออก", systemImage: "square.and.arrow.up").font(.system(size: 16, weight: .semibold))
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(alignment: .topTrailing) {
-                        // the export sheet explains the gap; this dot just says there is one
-                        if !job.missingGroups.isEmpty { Circle().fill(.orange).frame(width: 9, height: 9).offset(x: 3, y: -3) }
-                    }
+                Group {
+                    if phone { Image(systemName: "square.and.arrow.up") } else { Label("ส่งออก", systemImage: "square.and.arrow.up") }
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .padding(.horizontal, phone ? 0 : 14).frame(minWidth: 44, minHeight: 44)
+                .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(alignment: .topTrailing) {
+                    // the export sheet explains the gap; this dot just says there is one
+                    if !job.missingGroups.isEmpty { Circle().fill(.orange).frame(width: 9, height: 9).offset(x: 3, y: -3) }
+                }
             }
+            .accessibilityLabel("ส่งออก")
             .buttonStyle(.plain)
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 24).padding(.vertical, 10)
+        .padding(.horizontal, phone ? 8 : 24).padding(.vertical, phone ? 6 : 10)
         .frame(maxWidth: .infinity)
         // runs up under the status bar
         .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing)
@@ -263,6 +271,8 @@ struct InfoPageBar: View {
     var previousIndex: Int? = nil
     var nextIndex: Int? = nil
     @Environment(SurveyModel.self) var model
+    /// iPhone: icon buttons for save and previous, a short "next", and no "first section" placeholder.
+    @Environment(\.horizontalSizeClass) var sizeClass
     @State var savedNow: Date?
 
     /// Step names short enough for the previous / next buttons ("A3 หม้อแปลง · MDB", as in docs/ui/survey-a2).
@@ -275,7 +285,8 @@ struct InfoPageBar: View {
         let i = steps.firstIndex { $0.page == here } ?? 0
         let c = steps[safe: i]?.completion ?? Completion()
         let saved = max(job.updated, savedNow ?? .distantPast)
-        HStack(spacing: 12) {
+        let phone = sizeClass == .compact, tight = self.tight || phone
+        return HStack(spacing: phone ? 8 : 12) {
             HStack(spacing: 10) {
                 badge(complete: c.isComplete && !statusAlert && !statusWarn)
                 VStack(alignment: .leading, spacing: 1) {
@@ -283,15 +294,15 @@ struct InfoPageBar: View {
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
                     status(c)
                 }
-                .lineLimit(1)
+                .lineLimit(1).minimumScaleFactor(phone ? 0.75 : 1)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: phone ? 0 : 8)
             Button { model.flush(job.id); savedNow = Date() } label: {
                 Group {
                     if tight { Image(systemName: "square.and.arrow.down").font(.system(size: 20, weight: .semibold)) }
                     else { Text("บันทึกร่างตอนนี้").font(.system(size: 16, weight: .semibold)).lineLimit(1) }
                 }
-                .frame(width: tight ? 56 : narrow ? 130 : 170, height: 56)
+                .frame(width: phone ? 48 : tight ? 56 : narrow ? 130 : 170, height: phone ? 50 : 56)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
             }
@@ -308,13 +319,13 @@ struct InfoPageBar: View {
                             }
                         }
                     }
-                    .frame(width: tight ? 56 : narrow ? 120 : 210, height: 56)
+                    .frame(width: phone ? 48 : tight ? 56 : narrow ? 120 : 210, height: phone ? 50 : 56)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("ก่อนหน้า " + s.code + " " + Self.barTitle(s))
-            } else if !narrow {
+            } else if !narrow && !phone {
                 HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 18); Text("หัวข้อแรก") }
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
                     .frame(width: 180, height: 56)
@@ -331,7 +342,7 @@ struct InfoPageBar: View {
                         A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)
                     }
                     .foregroundStyle(.white)
-                    .frame(width: tight ? 120 : narrow ? 220 : 250, height: 56)
+                    .frame(width: phone ? 108 : tight ? 120 : narrow ? 220 : 250, height: phone ? 50 : 56)
                     .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing),
                                 in: RoundedRectangle(cornerRadius: 12))
                 }
@@ -341,7 +352,7 @@ struct InfoPageBar: View {
         }
         .foregroundStyle(Home.navy)
         .frame(maxWidth: 1240)
-        .padding(.horizontal, tight ? 16 : 24).padding(.vertical, 12)
+        .padding(.horizontal, phone ? 12 : tight ? 16 : 24).padding(.vertical, phone ? 8 : 12)
         .frame(maxWidth: .infinity)
         .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
     }

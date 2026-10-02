@@ -30,6 +30,8 @@ struct InfoPageWide: View {
     var locationWidth: CGFloat { min(620, max(360, (width - 28) * 0.5)) }
     /// Width of the column holding the document, project and area boxes.
     var mainWidth: CGFloat { twoColumns ? width - 28 - locationWidth : width }
+    /// iPhone width: the document row splits in two and the GPS button keeps only its icon.
+    var phone: Bool { width < 500 }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -62,11 +64,20 @@ struct InfoPageWide: View {
 
     var documentBox: some View {
         A1Card(title: "เอกสาร") {
-            RatioRow(weights: [1, 0.7, 1.2, 1.6]) {
-                field("docNo") { textInput("docNo", keyboard: .numbersAndPunctuation) }
-                field("rev") { textInput("rev", keyboard: .numbersAndPunctuation) }
+            if phone {
+                RatioRow(weights: [1, 0.7]) {
+                    field("docNo") { textInput("docNo", keyboard: .numbersAndPunctuation) }
+                    field("rev") { textInput("rev", keyboard: .numbersAndPunctuation) }
+                }
                 field("date") { dateInput }
                 field("engineer") { engineerInput }
+            } else {
+                RatioRow(weights: [1, 0.7, 1.2, 1.6]) {
+                    field("docNo") { textInput("docNo", keyboard: .numbersAndPunctuation) }
+                    field("rev") { textInput("rev", keyboard: .numbersAndPunctuation) }
+                    field("date") { dateInput }
+                    field("engineer") { engineerInput }
+                }
             }
         }
     }
@@ -83,9 +94,14 @@ struct InfoPageWide: View {
 
     var coordinatorBox: some View {
         A1Card(title: "ผู้ประสานงาน") {
-            RatioRow(weights: [1.4, 1]) {
+            if phone {
                 field("coordinator") { textInput("coordinator") }
                 field("phone") { phoneInput }
+            } else {
+                RatioRow(weights: [1.4, 1]) {
+                    field("coordinator") { textInput("coordinator") }
+                    field("phone") { phoneInput }
+                }
             }
         }
     }

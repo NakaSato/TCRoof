@@ -77,11 +77,13 @@ public struct Sketch: Sendable {
 
 public enum Drawings {
     /// Dimensioned plan from column spans (m) and obstacles, as on the roof / clear-water-tank sheets.
-    /// A roof whose frame type was chosen on the C1 page draws the C1 plan (frame lines, posts, ridge, skylights).
+    /// A roof whose frame type was chosen on the C1 page draws the C1 plan (frame lines, posts, ridge, skylights);
+    /// a tank draws `TankPlan` (the D1 page's plan).
     public static func plan(_ v: Values, tank: Bool, width W: Double = 690) -> Sketch? {
         let sx = parseSpans(v.text("spansX")), sy = parseSpans(v.text("spansY"))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
-        if !tank && Roof.hasFrame(v) {
+        if tank { return TankPlan(v, width: W)?.sketch }
+        if Roof.hasFrame(v) {
             let p = RoofPlan(v).sketch, k = W / p.width
             return Sketch(width: W, height: p.height * k, ops: p.translated(0, 0, scale: k))
         }
@@ -90,13 +92,11 @@ public enum Drawings {
         let k = min((W - padL - padR) / TW, (maxH - padT - padB) / TH), w = TW * k, h = TH * k
         let ox = padL + ((W - padL - padR) - w) / 2, oy = padT, H = (oy + h + padB).rounded()
         var o: [DrawOp] = [.rect(Box(0, 0, W, H), stroke: nil, fill: .white)]
-        if !tank {
-            let horizontal = (v.choice("sheetDir") ?? "แนวนอน") == "แนวนอน", step = max(4, 0.33 * k)
-            var p = step
-            while p < (horizontal ? h : w) {
-                o.append(horizontal ? .line(Pt(ox, oy + p), Pt(ox + w, oy + p), width: 0.6, color: .rule) : .line(Pt(ox + p, oy), Pt(ox + p, oy + h), width: 0.6, color: .rule))
-                p += step
-            }
+        let horizontal = (v.choice("sheetDir") ?? "แนวนอน") == "แนวนอน", step = max(4, 0.33 * k)
+        var p = step
+        while p < (horizontal ? h : w) {
+            o.append(horizontal ? .line(Pt(ox, oy + p), Pt(ox + w, oy + p), width: 0.6, color: .rule) : .line(Pt(ox + p, oy), Pt(ox + p, oy + h), width: 0.6, color: .rule))
+            p += step
         }
         var xs = [0.0]; for s in sx { xs.append(xs.last! + s) }
         var ys = [0.0]; for s in sy { ys.append(ys.last! + s) }
@@ -108,7 +108,6 @@ public enum Drawings {
             o.append(.line(Pt(ox - 18, Y), Pt(ox + w + 8, Y), width: 0.7, color: .ink2, dash: dash))
             o.append(.circle(Pt(ox - 18, Y), r: 2.4, stroke: .black, fill: .white, width: 0.8)) }
         o.append(.rect(Box(ox, oy, w, h), stroke: .black, fill: nil, width: 1.3))
-        if tank { o.append(.rect(Box(ox + 3, oy + 3, w - 6, h - 6), stroke: .black, fill: nil, width: 0.8)) }
         // dimension chains
         let dy = oy - 30
         o.append(.line(Pt(ox, dy), Pt(ox + w, dy), width: 0.6, color: .black))

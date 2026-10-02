@@ -37,6 +37,18 @@ final class PDFReportTests: XCTestCase {
             job.modules[ti].values["shadeDir"] = .multi(["S", "SW"]); job.modules[ti].values["shadeNote"] = .text("ต้นไม้สูง ~8 ม. ห่าง 5 ม.")
             XCTAssertEqual(Schema.shadeText(job.modules[ti].values), "เงาบัง: ต้นไม้, หอถังสูง ทิศ S, SW (ต้นไม้สูง ~8 ม. ห่าง 5 ม.)")
             XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. · กึ่งฝัง")
+            // D1 wide page answers: the report draws the tank plan with the caption, level tags and the turned N arrow
+            Tank.apply(&job.modules[ti].values, Tank.presets[1])
+            Tank.setHeight(&job.modules[ti].values, 4.5); Tank.setExposed(&job.modules[ti].values, 1.2)
+            Tank.setAzimuth(&job.modules[ti].values, 14, source: .compass, accuracy: 3)
+            let unit = ReportLayout(job: job, header: ReportHeader(company: "TC Roof")).planSection(job.modules[ti])[0]
+            let texts = unit.ops.compactMap { op -> String? in if case let .text(t, _, _, _, _, _, _) = op { return t }; return nil }
+            XCTAssertTrue(texts.contains("แปลนหลังคาถังน้ำใส 64 × 40 ม."))
+            XCTAssertEqual(texts.filter { $0 == "ระดับหลังถัง +1.20" }.count, 4)
+            XCTAssertTrue(texts.contains("N") && texts.contains("17") && texts.contains("K"))
+            XCTAssertFalse(texts.contains { $0.contains("ขั้นที่ 2") })
+            // the plan fits inside its box on the page
+            for op in unit.ops { if case let .circle(c, r, _, _, _) = op { XCTAssertLessThanOrEqual(c.x + r, ReportLayout.cw + 0.5) } }
         }
         // A3 wide-page answers (boards, spec, extra photos) still lay out
         var trs = job.values.transformers("trafos")

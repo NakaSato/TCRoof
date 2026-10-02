@@ -317,7 +317,11 @@ public enum Schema {
         .tank: ModuleSpec(type: .tank, sheet: "บ่อน้ำใส", label: "ถังน้ำใส", short: "ถังน้ำใส", reportTitle: "ถังน้ำใส", namePlaceholder: "เช่น 1 (ใหม่)", groups: [
             GroupSpec("แปลนถัง", planFields(tank: true)),
             GroupSpec("ข้อมูลถัง", [C("tankType", "ชนิดถัง", tankTypes, other: true), C("tankPos", "ตำแหน่งถัง", tankPositions),
-                                  N("tankHeight", "ความสูงของถังน้ำใส", "M"), T("surface", "ผิวของถังน้ำใส", "คอนกรีต"), N("soilDepth", "กรณีมีดินกลบ ชั้นดินลึก", "M", optional: true)]),
+                                  N("tankHeight", "ความสูงของถังน้ำใส", "M"), T("surface", "ผิวของถังน้ำใส", "คอนกรีต"), N("soilDepth", "กรณีมีดินกลบ ชั้นดินลึก", "M", optional: true)]
+                                  // the D1 wide page's own answers (docs/ui/survey-d1-size, `Tank`); hidden, so completion is unchanged
+                                  + [N(Tank.Key.exposed, "ส่วนพ้นดิน", "M", optional: true, when: { _ in false })]
+                                  + [(Tank.Key.azimuth, "ทิศของถัง"), (Tank.Key.azimuthAt, "เวลาวัดทิศของถัง"), (Tank.Key.azimuthSrc, "ที่มาทิศของถัง"),
+                                     (Tank.Key.azimuthAcc, "ความแม่นยำทิศของถัง")].map { T($0.0, $0.1, optional: true, when: { _ in false }) }),
             GroupSpec("เงาบัง", [C("shade", "มีเงาบังพื้นที่ติดตั้งหรือไม่", ["ไม่มี", "มี"]),
                                FieldSpec("shadeFrom", "สิ่งที่บัง", .checks(shadeSources), when: shaded),
                                FieldSpec("shadeDir", "ทิศที่เงาบัง", .checks(shadeDirs), when: shaded),

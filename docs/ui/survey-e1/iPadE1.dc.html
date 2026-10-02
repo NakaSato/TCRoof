@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ขั้น 13 — E1 สรุปผลและลงนาม (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+a{color:#1F6FB5}a:hover{color:#16325C}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head">
+<div><div class="t">E1 สรุปผลและลงนาม</div><div class="s">แบบสำรวจ NO.224 · GRF2567-23407 · หน้าสุดท้ายของรายงาน PDF</div></div>
+</header>
+
+<div style="display: flex; justify-content: center"><div class="g-prog" style="width: 1240px; padding-left: 0; padding-right: 0">
+<div class="row"><b>13/13</b><span>สรุปผลการสำรวจและลงนาม</span></div>
+<div class="g-caps"><i class="ok"></i><i class="cur"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="cur"></i><i class="cur"></i></div>
+</div></div>
+
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center">
+<main style="width: 1240px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 28px; padding-bottom: 16px; align-items: stretch">
+
+<section style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<div class="g-field" style="gap: 8px"><label class="g-label" style="font-size: 16px">ผลการประเมินความเหมาะสมในการติดตั้ง <span class="req">*</span></label>
+<div style="display: grid; grid-template-columns: 1fr; gap: 8px">
+<button onClick="{{v1}}" style="{{v1S}}"><span style="{{v1D}}"></span>ติดตั้งได้</button>
+<button onClick="{{v2}}" style="{{v2S}}"><span style="{{v2D}}"></span>ติดตั้งได้ (มีเงื่อนไข)</button>
+<button onClick="{{v3}}" style="{{v3S}}"><span style="{{v3D}}"></span>ไม่แนะนำให้ติดตั้ง</button>
+</div></div>
+
+<div class="g-field" style="gap: 8px"><label class="g-label" style="font-size: 16px">ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง<span class="aside" style="{{remAsideS}}">{{remAside}}</span></label>
+<div class="g-input" style="height: {{remH}}; box-sizing: border-box; align-items: flex-start; padding-top: 10px; font-size: 14.5px; line-height: 21px; color: #16325C; white-space: normal; overflow: hidden"><span style="display: block; white-space: pre-line">{{remTxt}}</span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; margin-top: -6px">
+<div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #5B4BC4"><svg viewBox="0 0 24 24" style="width: 15px; height: 15px; flex: none"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z" fill="currentColor"></path></svg>ข้อเสนอแนะอัตโนมัติจาก AI<span style="font-weight: 400; color: #5B6B82">· บนเครื่อง</span><sc-if value="{{sugAny}}" hint-placeholder-val="{{true}}"><button onClick="{{sugAll}}" style="margin-left: auto; min-height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: #F1EEFF; color: #5B4BC4; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer">เพิ่มทั้งหมด</button></sc-if></div>
+<sc-for list="{{sugs}}" as="g" hint-placeholder-count="2"><button onClick="{{g.add}}" style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 10px 4px 12px; border-radius: 10px; border: 1px dashed rgba(106,90,224,0.55); background: #FBFAFF; font: inherit; text-align: left; cursor: pointer"><span style="flex-grow: 1; min-width: 0; font-size: 13.5px; line-height: 19px; color: #16325C">{{g.txt}} <span style="color: #6A5AE0; font-weight: 700">{{g.src}}</span></span><span style="flex: none; font-size: 13px; font-weight: 700; color: #5B4BC4">+ เพิ่ม</span></button></sc-for>
+<sc-if value="{{sugNone}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: #1E7B45">✓ ใส่ข้อเสนอแนะครบแล้ว · แก้ข้อความในช่องได้</div></sc-if>
+</div>
+
+<div style="border: 1px solid rgba(22,50,92,0.2); border-radius: 12px; background: #FFFFFF; overflow: hidden">
+<div style="display: flex; align-items: baseline; padding: 12px 14px 10px"><span style="font-size: 16px; font-weight: 700; color: #16325C">ยังขาดในหน้าอื่น</span><span style="margin-left: auto; font-size: 13px; color: #5B6B82">ส่งออกได้ แต่จะยังไม่ครบ</span></div>
+<div style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 8px 0 14px; border-top: 1px solid #EEF1F5"><b style="width: 30px; font-size: 14px; color: #16325C">A2</b><span style="flex-grow: 1; min-width: 0; font-size: 14px; color: #3B4A60">รูปถ่ายป้ายหน้าโครงการ · ตำแหน่งติดตั้งบันได</span><span class="g-pbtn" style="min-height: 44px; padding: 0 12px; font-size: 14px; white-space: nowrap">ไปที่หน้า ›</span></div>
+<div style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 8px 0 14px; border-top: 1px solid #EEF1F5"><b style="width: 30px; font-size: 14px; color: #16325C">D1</b><span style="flex-grow: 1; min-width: 0; font-size: 14px; color: #3B4A60">ถังน้ำใส 1: ภาพบังคับ 3 ภาพ</span><span class="g-pbtn" style="min-height: 44px; padding: 0 12px; font-size: 14px; white-space: nowrap">ไปที่หน้า ›</span></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<div style="display: flex; align-items: baseline"><span style="font-size: 17px; font-weight: 700; color: #16325C">ลงนาม</span><span style="margin-left: auto; font-size: 13px; color: #5B6B82">เซ็นด้วย Apple Pencil หรือนิ้ว</span></div>
+<div style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.18); border-radius: 14px; box-shadow: 0 1px 3px rgba(22,50,92,0.08); overflow: hidden">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 10px 0 18px; border-bottom: 1px solid #EEF1F5">
+<span style="font-size: 16px; font-weight: 700; color: #16325C">วิศวกรผู้สำรวจ <span style="color: #D9453B">*</span></span>
+<span style="{{chip1S}}">{{chip1}}</span>
+<span style="flex-grow: 1"></span>
+<sc-if value="{{s1}}" hint-placeholder-val="{{true}}"><button onClick="{{clr1}}" aria-label="เซ็นใหม่" style="min-height: 44px; padding: 0 12px; display: flex; align-items: center; gap: 6px; border: 0; border-radius: 10px; background: transparent; color: #5B6B82; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer"><svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"></path></svg>เซ็นใหม่</button></sc-if>
+</div>
+<div onClick="{{open1}}" role="button" aria-label="เซ็นชื่อวิศวกรผู้สำรวจ" style="position: relative; flex-grow: 1; min-height: 0; cursor: pointer; background: radial-gradient(rgba(22,50,92,0.07) 1px, transparent 1.2px) 0 0 / 18px 18px, #FCFDFE">
+<div style="position: absolute; left: 56px; right: 56px; bottom: 30%; border-bottom: 1.5px solid rgba(22,50,92,0.35)"></div>
+<span style="position: absolute; left: 34px; bottom: calc(30% + 2px); font-size: 18px; color: rgba(22,50,92,0.45)">✕</span>
+<sc-if value="{{s1}}" hint-placeholder-val="{{true}}"><svg viewBox="0 0 300 90" style="position: absolute; left: 50%; bottom: calc(30% - 14px); transform: translateX(-50%); width: 380px; max-width: 80%; height: 124px"><path d="M18 62 C40 20 52 18 58 46 S70 78 84 40 S104 10 112 50 C118 74 132 66 140 44 C148 26 160 30 166 52 C172 70 186 66 196 46 M188 58 C214 54 246 50 282 44" fill="none" stroke="#13213A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+<sc-if value="{{n1}}" hint-placeholder-val="{{false}}"><span style="position: absolute; left: 0; right: 0; top: 34%; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #5B6B82"><svg viewBox="0 0 24 24" style="width: 28px; height: 28px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"></path><path d="M14 6l3 3"></path></svg><span style="font-size: 15px; font-weight: 600">แตะเพื่อเซ็นชื่อ</span></span></sc-if>
+<div style="position: absolute; left: 0; right: 0; bottom: 12%; display: flex; flex-direction: column; align-items: center; gap: 2px"><span style="font-size: 15px; font-weight: 600; color: #16325C">( สมชาย ใจดี )</span><span style="font-size: 12.5px; color: #5B6B82">วิศวกรผู้สำรวจ · 29/9/2569</span></div>
+</div>
+</div>
+<div style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.18); border-radius: 14px; box-shadow: 0 1px 3px rgba(22,50,92,0.08); overflow: hidden">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 10px 0 18px; border-bottom: 1px solid #EEF1F5">
+<span style="font-size: 16px; font-weight: 700; color: #16325C">ผู้ประสานงาน / เจ้าของสถานที่ <span style="color: #D9453B">*</span></span>
+<span style="{{chip2S}}">{{chip2}}</span>
+<span style="flex-grow: 1"></span>
+<sc-if value="{{s2}}" hint-placeholder-val="{{false}}"><button onClick="{{clr2}}" aria-label="เซ็นใหม่" style="min-height: 44px; padding: 0 12px; display: flex; align-items: center; gap: 6px; border: 0; border-radius: 10px; background: transparent; color: #5B6B82; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer"><svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"></path></svg>เซ็นใหม่</button></sc-if>
+</div>
+<div onClick="{{open2}}" role="button" aria-label="เซ็นชื่อผู้ประสานงาน / เจ้าของสถานที่" style="position: relative; flex-grow: 1; min-height: 0; cursor: pointer; background: radial-gradient(rgba(22,50,92,0.07) 1px, transparent 1.2px) 0 0 / 18px 18px, #FCFDFE">
+<div style="position: absolute; left: 56px; right: 56px; bottom: 30%; border-bottom: 1.5px solid rgba(22,50,92,0.35)"></div>
+<span style="position: absolute; left: 34px; bottom: calc(30% + 2px); font-size: 18px; color: rgba(22,50,92,0.45)">✕</span>
+<sc-if value="{{s2}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 300 90" style="position: absolute; left: 50%; bottom: calc(30% - 14px); transform: translateX(-50%); width: 380px; max-width: 80%; height: 124px"><path d="M22 54 C34 30 50 26 54 48 C58 66 72 62 80 38 C86 22 98 26 100 46 C102 64 118 64 128 44 M120 56 C150 42 170 70 196 40 C210 26 226 34 232 50 M226 58 C246 54 262 52 284 50" fill="none" stroke="#13213A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+<sc-if value="{{n2}}" hint-placeholder-val="{{true}}"><span style="position: absolute; left: 0; right: 0; top: 34%; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #D9453B"><svg viewBox="0 0 24 24" style="width: 28px; height: 28px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"></path><path d="M14 6l3 3"></path></svg><span style="font-size: 15px; font-weight: 600">แตะเพื่อเซ็นชื่อ</span></span></sc-if>
+<div style="position: absolute; left: 0; right: 0; bottom: 12%; display: flex; flex-direction: column; align-items: center; gap: 2px"><span onClick="{{stop}}" style="min-width: 220px; min-height: 36px; display: flex; align-items: center; justify-content: center; border-bottom: 1.5px dashed rgba(31,111,181,0.5); font-size: 15px; font-weight: 600; color: #16325C; cursor: text">( สมหญิง รักษ์น้ำ )</span><span style="font-size: 12.5px; color: #5B6B82">ผู้ประสานงาน / เจ้าของสถานที่ · 29/9/2569</span></div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 8px 0 18px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.18); border-radius: 14px"><span style="font-size: 15px; font-weight: 700; color: #16325C">ผู้ตรวจสอบ</span><span style="font-size: 12.5px; color: #5B6B82">ไม่บังคับ · ลงนามบนกระดาษ</span><span style="flex-grow: 1"></span><span style="min-width: 220px; min-height: 40px; display: flex; align-items: center; padding: 0 12px; border-radius: 10px; background: #F3F6FA; font-size: 15px; color: #16325C">วิชัย ตรวจดี</span></div>
+</section>
+</main>
+</div>
+
+<nav class="g-bar" style="justify-content: center; padding-bottom: 24px"><div style="width: 1240px; display: flex; align-items: center; gap: 12px">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; min-width: 0">
+<span style="width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:#F08C00">!</span>
+<div style="min-width: 0"><div style="font-size: 15px; font-weight: 600; color: #16325C">บันทึกอัตโนมัติ 11:20</div><div style="font-size: 13px; color: #D9453B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{barTxt}}</div></div>
+</div>
+<button class="g-save" style="flex-grow: 0; width: 170px; font-size: 16px">บันทึกร่างตอนนี้</button>
+<button class="g-nav" style="width: 230px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; background: #FFFFFF; color: #16325C; border: 1px solid rgba(22,50,92,0.6)"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px"><path d="M15 5l-7 7 7 7"></path></svg><span style="text-align: left; line-height: 18px"><span style="display: block; font-size: 12px; font-weight: 400; color: #5B6B82">ก่อนหน้า 12/13</span>D1 ถังน้ำใส 1</span></button>
+<button class="g-nav" style="width: 230px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600"><span style="text-align: right; line-height: 18px"><span style="display: block; font-size: 12px; font-weight: 400; opacity: .9">ขั้นสุดท้าย</span>สรุปผล · ส่งออก</span><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px"><path d="M9 5l7 7-7 7"></path></svg></button>
+</div></nav>
+
+<sc-if value="{{padOpen}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; z-index: 30; background: rgba(14,26,43,0.55); display: flex; align-items: center; justify-content: center">
+<div style="width: calc(100% - 64px); height: calc(100% - 64px); box-sizing: border-box; background: #FFFFFF; border-radius: 20px; padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.3)">
+<div style="display: flex; align-items: center; gap: 10px">
+<button onClick="{{padCancel}}" style="min-width: 110px; min-height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(22,50,92,0.35); background: #FFFFFF; color: #16325C; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">ยกเลิก</button>
+<div style="flex-grow: 1; text-align: center"><div style="font-size: 20px; font-weight: 700; color: #16325C">ลายเซ็น</div><div style="font-size: 14px; color: #5B6B82">{{padWho}}</div></div>
+<button style="min-width: 96px; min-height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(22,50,92,0.35); background: #FFFFFF; color: #16325C; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">ล้าง</button>
+<button onClick="{{padSave}}" style="min-width: 130px; min-height: 48px; padding: 0 18px; border-radius: 12px; border: 0; background: #1F6FB5; color: #FFFFFF; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer">บันทึก</button>
+</div>
+<div style="position: relative; flex-grow: 1; min-height: 0; border: 1px solid rgba(91,107,130,0.35); border-radius: 14px; background: #FCFDFE">
+<div style="position: absolute; left: 80px; right: 80px; bottom: 26%; height: 1.5px; background: rgba(91,107,130,0.5)"></div>
+<div style="position: absolute; left: 80px; bottom: calc(26% + 10px); font-size: 28px; color: rgba(91,107,130,0.55)">×</div>
+<svg viewBox="80 60 340 180" preserveAspectRatio="xMidYMid meet" style="position: absolute; left: 20%; top: 22%; width: 60%; height: 50%"><path d="M120 200 C150 120 175 115 186 170 S210 230 236 160 S270 100 286 176 C296 214 320 200 334 166 C350 132 372 140 382 176" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</div>
+<div style="text-align: center; font-size: 14px; color: #5B6B82">เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว</div>
+</div></div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const vd = st.vd === undefined ? 2 : st.vd;
+    const s1 = st.s1 === undefined ? true : st.s1, s2 = !!st.s2, pad = st.pad || 0;
+    const VC = { 1: ['#2E7D32', 'rgba(46,125,50,0.12)'], 2: ['#B26A00', 'rgba(240,140,0,0.13)'], 3: ['#D9453B', 'rgba(217,69,59,0.12)'] };
+    const VT = { 1: 'ติดตั้งได้', 2: 'ติดตั้งได้ (มีเงื่อนไข)', 3: 'ไม่แนะนำให้ติดตั้ง' };
+    const v = {};
+    [1, 2, 3].forEach(i => {
+      const on = vd === i, c = VC[i];
+      v['v' + i] = () => this.setState({ vd: i });
+      v['v' + i + 'S'] = 'min-height: 48px; display: flex; align-items: center; justify-content: flex-start; padding-left: 14px !important; gap: 8px; border-radius: 10px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; padding: 0 8px; ' + (on ? 'border: 2px solid ' + c[0] + '; background: ' + c[1] + '; color: ' + c[0] : 'border: 1px solid rgba(22,50,92,0.45); background: #FFFFFF; color: #16325C');
+      v['v' + i + 'D'] = 'width: 12px; height: 12px; border-radius: 50%; flex: none; ' + (on ? 'background: ' + c[0] : 'border: 1.5px solid rgba(22,50,92,0.45)');
+    });
+    v.remAside = vd === 2 ? 'ระบุเงื่อนไขให้ครบ' : vd === 3 ? 'ระบุเหตุผล' : 'ไม่บังคับ';
+    const SUG = [
+      ['ตัดแต่งต้นไม้ด้านตะวันตกถังน้ำใส 1 ก่อนติดตั้ง (เงาบังเช้า 1.9%)', 'D1'],
+      ['ยก SMDB-PV และรีเลย์กันย้อนสูง ≥ 130 ซม. (MDP-1 เคยน้ำท่วม 80 ซม.)', 'A4'],
+      ['ขอค่า IC ของ CB3 อาคารสำนักงาน และ %Z ของ TX2 ก่อนออกแบบ', 'A3'],
+      ['ต้องมีระบบกันย้อน (โหลดกลางวัน 107 kW < PV 120 kW)', 'B1']
+    ];
+    const added = st.added || [0, 1];
+    v.remTxt = added.length ? added.map((k, n) => (n + 1) + '. ' + SUG[k][0]).join('\n') : 'พิมพ์ความเห็น หรือแตะข้อเสนอแนะด้านล่าง';
+    const rest = SUG.map((x, k) => k).filter(k => added.indexOf(k) < 0);
+    v.sugs = rest.map(k => ({ txt: SUG[k][0], src: SUG[k][1], add: () => this.setState({ added: added.concat([k]) }) }));
+    v.remH = (added.length > 2 ? 236 : 150) + 'px';
+    v.sugAny = rest.length > 1; v.sugNone = rest.length === 0;
+    v.sugAll = () => this.setState({ added: added.concat(rest) });
+    v.remAsideS = 'white-space: nowrap;' + (vd === 1 ? '' : 'color: ' + VC[vd][0] + '; font-weight: 700');
+    const box = (signed, need) => 'min-height: 0; border-radius: 8px; display: grid; place-items: center; cursor: pointer; background: #FFFFFF; ' + (signed ? 'border: 1px solid rgba(91,107,130,0.4)' : need ? 'border: 2px dashed #D9453B' : 'border: 1px dashed rgba(91,107,130,0.6)');
+    v.s1 = s1; v.n1 = !s1; v.s2 = s2; v.n2 = !s2;
+    const chip = ok => 'font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 3px 10px; white-space: nowrap; ' + (ok ? 'color: #1E7B45; background: rgba(46,158,91,0.14)' : 'color: #C0392B; background: rgba(217,69,59,0.12)');
+    v.chip1 = s1 ? '✓ ลงนามแล้ว' : 'รอลงนาม'; v.chip1S = chip(s1); v.chip2 = s2 ? '✓ ลงนามแล้ว' : 'รอลงนาม'; v.chip2S = chip(s2);
+    v.stop = e => { if (e && e.stopPropagation) e.stopPropagation(); };
+    v.box1 = box(s1, true); v.box2 = box(s2, true);
+    v.open1 = () => this.setState({ pad: 1 }); v.open2 = () => this.setState({ pad: 2 });
+    v.clr1 = e => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ s1: false }); };
+    v.clr2 = e => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ s2: false }); };
+    v.padOpen = pad > 0; v.padWho = pad === 1 ? 'วิศวกรผู้สำรวจ · สมชาย ใจดี' : 'ผู้ประสานงาน / เจ้าของสถานที่ · สมหญิง รักษ์น้ำ';
+    v.padCancel = () => this.setState({ pad: 0 });
+    v.padSave = () => this.setState(pad === 1 ? { pad: 0, s1: true } : { pad: 0, s2: true });
+    const miss = [];
+    if (!vd) miss.push('ผลการประเมิน');
+    if (!s1) miss.push('ลายเซ็นวิศวกรผู้สำรวจ');
+    if (!s2) miss.push('ลายเซ็นผู้ประสานงาน');
+    v.barTxt = miss.length ? 'ยังขาดในหน้านี้: ' + miss.join(', ') + ' · และอีก 2 หน้า' : 'หน้านี้ครบแล้ว · ยังขาดอีก 2 หน้า (A2, D1)';
+    return v;
+  }
+}
+</script>
+</body>
+</html>

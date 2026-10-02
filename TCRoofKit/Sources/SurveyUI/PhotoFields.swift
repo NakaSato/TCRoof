@@ -169,47 +169,117 @@ struct SignatureField: View {
             .onTapGesture { signing = true }
             if photo != nil { Button("ลบลายเซ็น", role: .destructive) { photo = nil } }
         }
-        .sheet(isPresented: $signing) {
-            SignaturePad { img in if let img { photo = model.addPhoto(img, to: jobID, maxSide: 900, png: true) } }
+        .signaturePad(isPresented: $signing) { img in if let img { photo = model.addPhoto(img, to: jobID, maxSide: 900, png: true) } }
+    }
+}
+
+extension View {
+    /// The signature pad: full screen over a dimmed page on iPad (docs/ui/survey-e1 states/05), a sheet on iPhone.
+    func signaturePad(isPresented: Binding<Bool>, who: String? = nil, done: @escaping (UIImage?) -> Void) -> some View {
+        modifier(SignaturePadPresenter(isPresented: isPresented, who: who, done: done))
+    }
+}
+
+private struct SignaturePadPresenter: ViewModifier {
+    @Binding var isPresented: Bool
+    let who: String?
+    let done: (UIImage?) -> Void
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    func body(content: Content) -> some View {
+        if sizeClass == .compact {
+            content.sheet(isPresented: $isPresented) { SignaturePad(who: who, done: done) }
+        } else {
+            content.fullScreenCover(isPresented: $isPresented) {
+                SignaturePad(who: who, done: done).presentationBackground(.clear)
+            }
         }
     }
 }
 
+/// Sign with Apple Pencil or a finger. On iPad it is a card inset 32 pt over a dimmed page; on iPhone it fills its sheet.
+/// The PNG is the drawing's bounds plus 12 pt, at scale 2, drawn in the light trait so the ink stays black.
 struct SignaturePad: View {
+    /// "วิศวกรผู้สำรวจ · <name>" under the title.
+    var who: String? = nil
     let done: (UIImage?) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var canvas = PKCanvasView()
+
+    static let fill = Color(red: 0.988, green: 0.992, blue: 0.996)
+    static let line = Color(red: 0.357, green: 0.420, blue: 0.510)
+    static let save = Color(red: 0.122, green: 0.435, blue: 0.710)
+
     var body: some View {
-        NavigationStack {
-            VStack {
-                CanvasRepresentable(canvas: canvas)
-                    .frame(height: 280).background(Color.white)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Color.secondary.opacity(0.5)).frame(height: 1).padding(.horizontal, 40).padding(.bottom, 60) }
-                    .overlay(Rectangle().stroke(Color.secondary.opacity(0.4)))
-                Text("เซ็นชื่อด้วย Apple Pencil หรือนิ้ว").font(.footnote).foregroundStyle(.secondary)
-                Spacer()
+        let phone = sizeClass == .compact
+        ZStack {
+            if !phone { Color(red: 0.055, green: 0.102, blue: 0.169).opacity(0.55).ignoresSafeArea() }
+            VStack(spacing: 12) {
+                topBar(phone: phone)
+                pad(phone: phone)
+                Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 14)).foregroundStyle(Home.muted)
             }
-            .padding()
-            .navigationTitle("ลายเซ็น").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
-                ToolbarItem(placement: .principal) { Button("ล้าง") { canvas.drawing = PKDrawing() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("บันทึก") {
-                        let d = canvas.drawing
-                        if !d.bounds.isEmpty {
-                            let r = d.bounds.insetBy(dx: -12, dy: -12)
-                            var img: UIImage?
-                            UITraitCollection(userInterfaceStyle: .light).performAsCurrent { img = d.image(from: r, scale: 2) }
-                            done(img)
-                        }
-                        dismiss()
-                    }
-                    .bold()
+            .padding(.horizontal, phone ? 16 : 20).padding(.top, 14).padding(.bottom, 18)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
+            .shadow(color: .black.opacity(phone ? 0 : 0.3), radius: 24, y: 16)
+            .padding(phone ? 0 : 32)
+        }
+        .environment(\.colorScheme, .light)
+    }
+
+    func topBar(phone: Bool) -> some View {
+        HStack(spacing: 10) {
+            outline("ยกเลิก", width: phone ? 80 : 110) { dismiss() }
+            VStack(spacing: 0) {
+                Text("ลายเซ็น").font(.system(size: 20, weight: .bold)).foregroundStyle(Home.navy)
+                if let who { Text(who).font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.7) }
+            }
+            .frame(maxWidth: .infinity)
+            outline("ล้าง", width: phone ? 64 : 96) { canvas.drawing = PKDrawing() }
+            Button {
+                let d = canvas.drawing
+                if !d.bounds.isEmpty {
+                    let r = d.bounds.insetBy(dx: -12, dy: -12)
+                    var img: UIImage?
+                    UITraitCollection(userInterfaceStyle: .light).performAsCurrent { img = d.image(from: r, scale: 2) }
+                    done(img)
                 }
+                dismiss()
+            } label: {
+                Text("บันทึก").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    .frame(minWidth: phone ? 80 : 130, minHeight: 48)
+                    .background(Self.save, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    func outline(_ title: String, width: CGFloat, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Home.navy)
+                .frame(minWidth: width, minHeight: 48)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.35)))
+        }
+        .buttonStyle(.plain)
+    }
+
+    func pad(phone: Bool) -> some View {
+        let inset: CGFloat = phone ? 32 : 80
+        return GeometryReader { geo in
+            let y = geo.size.height * 0.74
+            ZStack(alignment: .topLeading) {
+                Rectangle().fill(Self.line.opacity(0.5)).frame(width: max(0, geo.size.width - 2 * inset), height: 1.5)
+                    .offset(x: inset, y: y)
+                Text("×").font(.system(size: 28)).foregroundStyle(Self.line.opacity(0.55))
+                    .offset(x: inset, y: y - 44)
+                CanvasRepresentable(canvas: canvas)
             }
         }
-        .presentationDetents([.medium, .large])
+        .background(Self.fill)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Self.line.opacity(0.35)))
+        .frame(minHeight: 240)
     }
 }
 

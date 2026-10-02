@@ -31,11 +31,13 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyDemo YES` opens a demo job; add `-surveyDemoSection YES` to open its first section.
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
 - `-surveyStacked YES` forces the one-column (portrait) layout of the wide pages in a landscape simulator.
-- `-surveyPage site|electrical|sld|inverter|panels|flood|water|fts|roof|tank` opens that page (`JobEditor.openDebugPage`).
+- `-surveyPage site|electrical|sld|inverter|panels|flood|water|fts|roof|tank|final` opens that page (`JobEditor.openDebugPage`).
 - `-surveyC1 span|spany|posts|pv|keepout|landscape|ridgev|frame-n|frame-w|frame-c|frame-r|bays12|picker|shape|material|wood` (with `-surveyPage roof`) writes the design's example roof into the opened job and opens that state of `docs/ui/survey-c1/states`.
 - `-surveyRoofRender YES` (with `-surveyPage roof`) writes C1 offscreen at several free widths and heights to `Documents/roof-<w>x<h>.png`, for layout checks without rotating. ImageRenderer can't draw menus, text fields or scroll views; they show as placeholders or blank.
 - `-surveyD1 default|size|t64|t30|t20|above|buried|custom|compass|span|empty` (with `-surveyPage tank`) writes the design's example tank into the opened job and opens that state of `docs/ui/survey-d1-size/states`.
 - `-surveyTankRender YES` (with `-surveyPage tank`) writes D1 offscreen at free widths 1366 / 1180 / 1100 to `Documents/tank-<w>x<h>.png`.
+- `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
+- `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
 - `-surveyA2 layers|fullscreen` opens A2's layers menu, or full screen with the first placed building model selected.
 - Survey job data is stored at `<app data container>/Documents/SolarSurvey/Jobs/<id>/job.json`, with photos in `photos/`. It can be edited while the app is stopped to seed test data; back it up first.
@@ -57,7 +59,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `SurveyUI`: the editor.
   - `SurveyModel` (job storage, photos) and `JobEditorView` (sidebar, page routing, `cardBar` bottom bar).
   - The generic schema form `groupPage` is used on iPhone and wherever a wide page doesn't apply.
-  - Designed "wide" pages: `InfoPageWide` (A1), `SitePageWide` (A2), `ElectricalPageWide` (A3), `FloodPageWide` (A4), `PanelsPageWide` (B1), `InverterPageWide` (B2), `WaterPageWide` (B3), `FtsPageWide` (B5), `RoofPageWide` (C1), `TankPageWide` (D1), `SingleLinePage`.
+  - Designed "wide" pages: `InfoPageWide` (A1), `SitePageWide` (A2), `ElectricalPageWide` (A3), `FloodPageWide` (A4), `PanelsPageWide` (B1), `InverterPageWide` (B2), `WaterPageWide` (B3), `FtsPageWide` (B5), `RoofPageWide` (C1), `TankPageWide` (D1), `FinalPageWide` (E1), `SingleLinePage`.
 
 **Data rules every change must keep:**
 - Answers live in `Values` keyed by schema field id. Existing ids, labels and Excel cells must not change.

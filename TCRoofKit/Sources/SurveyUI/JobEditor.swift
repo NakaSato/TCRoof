@@ -88,11 +88,15 @@ struct JobEditorView: View {
         guard case .module(let id) = page, !compact, infoColumns == 2 else { return nil }
         return job.modules.first { $0.id == id && $0.type == .tank }
     }
+    /// E1 on iPad landscape (docs/ui/survey-e1): verdict, remarks with suggestions, gaps elsewhere and both signatures on one
+    /// screen; one column under 1100 pt. iPad portrait and iPhone keep `groupPage`.
+    var cardFinal: Bool { page == .final && !compact && infoColumns == 2 }
     /// The B1 building shown with its old per-section form; cleared when the page changes.
     @State var panelForm: UUID?
     /// Pages with the blue header and bottom bar instead of the navigation bar.
-    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil || cardPanels != nil || cardWater != nil || cardFts != nil || cardRoof != nil || cardTank != nil }
+    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil || cardPanels != nil || cardWater != nil || cardFts != nil || cardRoof != nil || cardTank != nil || cardFinal }
     var cardTitle: String {
+        if cardFinal { return "E1 สรุปผลและลงนาม" }
         if let m = cardPanels { return m.type.code + " " + m.spec.label }
         if let m = cardRoof {
             return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "C1") + " " + m.spec.short + (m.name.isEmpty ? "" : " · " + m.name)
@@ -185,7 +189,7 @@ struct JobEditorView: View {
 
     #if DEBUG
     /// `-surveyPage site` opens A2, `electrical` A3, `sld` the single line diagram, `inverter` the first B2, `panels` the first B1, `flood` A4,
-    /// `water` the first B3, `fts` the first B5, `roof` the first C1, `tank` the first D1.
+    /// `water` the first B3, `fts` the first B5, `roof` the first C1, `tank` the first D1, `final` E1.
     func openDebugPage() {
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
@@ -201,6 +205,10 @@ struct JobEditorView: View {
             if let p = first(.roof) { select(p) }
             // `-surveyRoofRender YES` also writes C1 at free widths 980 / 1100 / 1318 to Documents/roof-<w>.png (no rotation here)
             if UserDefaults.standard.bool(forKey: "surveyRoofRender"), let m = job.modules.first(where: { $0.type == .roof }) { renderRoof(m.id) }
+        case "final":
+            select(.final)
+            // `-surveyFinalRender YES` also writes E1 at free widths 1366 / 1180 to Documents/final-<w>x<h>.png
+            if UserDefaults.standard.bool(forKey: "surveyFinalRender") { renderFinal() }
         case "tank":
             if let p = first(.tank) { select(p) }
             // `-surveyTankRender YES` also writes D1 at free widths 1366 / 1180 / 1100 to Documents/tank-<w>x<h>.png
@@ -285,6 +293,16 @@ struct JobEditorView: View {
             .padding(.horizontal, 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
+        } else if cardFinal {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, stacked: detailSize.width < 1100,
+                              open: { select(page(for: $0)) })
+                    .disabled(readOnly)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
         } else if cardFlood {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
@@ -338,6 +356,21 @@ struct JobEditorView: View {
         }
     }
 
+    func renderFinal() {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            for (free, h) in [(1366.0, 848.0), (1180.0, 636.0)] {
+                let w = min(free, 1240 + 48) - 48
+                let page = FinalPageWide(job: .constant(job), width: w, scrolls: false)
+                    .environment(model).padding(.horizontal, 24).padding(.vertical, 16)
+                    .frame(width: free, height: h).background(Paper.page)
+                let r = ImageRenderer(content: page); r.scale = 1
+                if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("final-\(Int(free))x\(Int(h)).png")) }
+            }
+        }
+    }
+
     func renderTank(_ id: UUID) {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         Task { @MainActor in
@@ -369,7 +402,8 @@ struct JobEditorView: View {
                         if cardPage {
                             InfoPageHeader(job: job, title: cardTitle, back: { dismiss() },
                                            toggleSidebar: { withAnimation { sidebarVisible.toggle() } },
-                                           export: { model.flush(job.id); showExport = true })
+                                           export: { model.flush(job.id); showExport = true },
+                                           subtitleSuffix: cardFinal ? "หน้าสุดท้ายของรายงาน PDF" : nil)
                         }
                     }
                     .safeAreaInset(edge: .bottom, spacing: 0) { if cardPage { cardBar } }
@@ -380,7 +414,22 @@ struct JobEditorView: View {
     }
 
     /// Bottom bar of the card pages; A2's lists the LIST items still unticked.
-    var cardBar: some View {
+    @ViewBuilder var cardBar: some View {
+        if cardFinal { finalBar } else { pageBar }
+    }
+
+    /// E1: the badge and status follow the whole job; the primary button runs the export flow with its gaps alert.
+    var finalBar: some View {
+        let steps = job.steps
+        let before = steps.firstIndex { $0.page == .final }.flatMap { steps[safe: $0 - 1] }.map { page(for: $0.page) }
+        let done = FinalSummary.isComplete(job)
+        return InfoPageBar(job: job, here: .final, narrow: detailSize.width < 900, tight: detailSize.width < 720,
+                           previous: before.map { p in { withAnimation { page = p } } }, next: nil,
+                           statusText: FinalSummary.statusLine(job), statusAlert: !done, badgeComplete: done, statusOK: done,
+                           finish: (sub: "ขั้นสุดท้าย", title: "สรุปผล · ส่งออก", action: { model.flush(job.id); checked { showExport = true } }))
+    }
+
+    var pageBar: some View {
         let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
         let station = cardInverter.map { InverterStation($0.values) }
         let module = cardInverter ?? cardPanels ?? cardWater ?? cardFts ?? cardRoof ?? cardTank

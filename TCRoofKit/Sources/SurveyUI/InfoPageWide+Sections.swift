@@ -190,6 +190,8 @@ struct InfoPageHeader: View {
     let back: () -> Void
     let toggleSidebar: () -> Void
     let export: () -> Void
+    /// Added after the project code (E1: "หน้าสุดท้ายของรายงาน PDF").
+    var subtitleSuffix: String? = nil
     @Environment(SurveyModel.self) var model
     /// iPhone: tighter padding, smaller title, export as an icon.
     @Environment(\.horizontalSizeClass) var sizeClass
@@ -197,7 +199,7 @@ struct InfoPageHeader: View {
     var subtitle: String {
         // "TC-0012 · สถานีสูบน้ำ" → "TC-0012"; the project name is already on the page
         let code = job.jobSyncID.flatMap { model.linkedJobLabel?($0) }?.components(separatedBy: " · ").first
-        return (["แบบสำรวจ NO.\(job.docNo.isEmpty ? "—" : job.docNo)"] + [code].compactMap { $0 }).joined(separator: " · ")
+        return (["แบบสำรวจ NO.\(job.docNo.isEmpty ? "—" : job.docNo)"] + [code, subtitleSuffix].compactMap { $0 }).joined(separator: " · ")
     }
 
     var body: some View {
@@ -270,6 +272,12 @@ struct InfoPageBar: View {
     /// Steps the back / next buttons name, when not the ones either side of `here` (B1 shows every building on one page).
     var previousIndex: Int? = nil
     var nextIndex: Int? = nil
+    /// E1: the badge follows the whole job, not this page.
+    var badgeComplete: Bool? = nil
+    /// E1 when nothing is missing anywhere: the status line in green.
+    var statusOK = false
+    /// The last page's primary button ("ขั้นสุดท้าย" / "สรุปผล · ส่งออก"), in place of "next".
+    var finish: (sub: String, title: String, action: () -> Void)? = nil
     @Environment(SurveyModel.self) var model
     /// iPhone: icon buttons for save and previous, a short "next", and no "first section" placeholder.
     @Environment(\.horizontalSizeClass) var sizeClass
@@ -288,7 +296,7 @@ struct InfoPageBar: View {
         let phone = sizeClass == .compact, tight = self.tight || phone
         return HStack(spacing: phone ? 8 : 12) {
             HStack(spacing: 10) {
-                badge(complete: c.isComplete && !statusAlert && !statusWarn)
+                badge(complete: badgeComplete ?? (c.isComplete && !statusAlert && !statusWarn))
                 VStack(alignment: .leading, spacing: 1) {
                     Text("บันทึกอัตโนมัติ " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
@@ -332,7 +340,23 @@ struct InfoPageBar: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
                     .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
             }
-            if let next, let ni = Optional(nextIndex ?? i + 1), let s = steps[safe: ni] {
+            if let finish {
+                Button(action: finish.action) {
+                    HStack(spacing: tight ? 6 : 10) {
+                        VStack(alignment: .trailing, spacing: 0) {
+                            Text(finish.sub).font(.system(size: 12)).opacity(0.9)
+                            Text(finish.title).font(.system(size: 16, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                        A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: phone ? 108 : tight ? 120 : narrow ? 200 : 230, height: phone ? 50 : 56)
+                    .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing),
+                                in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(finish.title)
+            } else if let next, let ni = Optional(nextIndex ?? i + 1), let s = steps[safe: ni] {
                 Button(action: next) {
                     HStack(spacing: tight ? 6 : 10) {
                         VStack(alignment: .trailing, spacing: 0) {
@@ -357,6 +381,9 @@ struct InfoPageBar: View {
         .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
     }
 
+    /// #1E7B45, E1's "ครบทุกหน้าแล้ว" line.
+    static let okText = Color(red: 0.118, green: 0.482, blue: 0.271)
+
     /// Filled circle left of the save time: green ✓ when the page is complete, orange ! while items are missing (docs/ui/survey-a2 v2).
     func badge(complete: Bool) -> some View {
         Text(complete ? "✓" : "!").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
@@ -367,7 +394,7 @@ struct InfoPageBar: View {
 
     /// "ครบ 9/10 ช่องในหน้านี้", or "ครบช่องบังคับแล้ว · ยังขาด [chips]" when the page lists gaps.
     @ViewBuilder func status(_ c: Completion) -> some View {
-        let tint = !c.isComplete || statusAlert ? Home.danger : statusWarn ? Home.pending : Home.muted
+        let tint = statusOK ? Self.okText : !c.isComplete || statusAlert ? Home.danger : statusWarn ? Home.pending : Home.muted
         if let statusText {
             Text(statusText).font(.system(size: 13)).foregroundStyle(tint)
         } else if gaps.isEmpty {

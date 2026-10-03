@@ -1,269 +1,190 @@
-# Claude Code task: C1 Roof plan + structure, one-screen wide page (iPad)
+# Claude Code task: C1 Roof (หลังคา · แปลนและโครงสร้าง) page for iPad, new design
 
-> How to use: open Claude Code in the `TCRoof` repo and type
+> How to use: open Claude Code in the `TCRoof` repo folder and type
 > `Follow docs/ui/survey-c1/CLAUDE_CODE_TASK.md`
 
+UI text stays in Thai exactly as shown in the previews. This document is in English. Thai strings in `backticks` are the literal labels to use. All values in the previews (19 × 16 m, member sizes, 66 panels and so on) are **example data**.
+
 ## Goal
-The C roof module (`ModuleType.roof`, "หลังคา (แปลนและโครงสร้าง)") is still drawn by the generic `groupPage`, in four groups that scroll: แปลนหลังคา / โครงสร้าง / รูปแบบหลังคา / ภาพถ่าย. Build one designed wide page for iPad landscape that fits **on one screen with no scrolling**, like the A2/B1–B5 wide pages:
+C1 (`ModuleType.roof`, `Schema.modules[.roof]`) is currently drawn by `groupPage` as four vertical groups:
+- `แปลนหลังคา`: `planFields(tank: false)`, `PlanPreview`
+- `โครงสร้าง`: `.diagram`, `SketchView(Drawings.truss())`, `comp1…7` `.member`
+- `รูปแบบหลังคา`: `roofShape`, `roofMaterial`, `roofStructure`
+- `ภาพถ่าย`
 
-- **Left:** an interactive roof plan (grid, spans, posts, skylights, PV layout, keep-out zones) above a true-scale section A-A that changes with the frame type.
-- **Right:** roof info, the member sizes 1–7, and the photo checklist.
+Build a dedicated **one-screen** iPad landscape layout matching `preview.png`. Name it `RoofPageWide` and build it the same way as `InfoPageWide`, `SitePageWide`, `ElectricalPageWide` and `FloodPageWide`. Nothing scrolls. Everything fits between the step bar and the bottom bar.
 
-### Reference files in this folder
+![preview](preview.png)
+
+## Files in this folder
+
 | File | What it is |
 |---|---|
-| `preview.png` | default state, 1366 × 1024 (span popover open on grid 3–4) |
-| `states/01…17-*.png` | every state; listed in "States" below |
-| `preview.html` | static render of the default state |
-| `iPadC1.dc.html` | **design source**: all markup, plus all drawing math and interaction logic in the `<script>` `renderVals()`. Treat it as the executable spec: plan geometry, section geometry, PV packing, member lists and defaults are all there. |
-| `icons/members/*.svg` | the 21 member thumbnails (3 frame families × 7); `icons/members/INDEX.md` maps file → frame → number → name |
-| `icons/profiles/*.svg` | the section-profile glyphs shown before each size (C, 2C, □, tube, wood, RC, T2, none, other) |
-| `icons/photo-*.svg`, `icons/ui-*.svg` | photo slot icons (same set as `docs/ui/photo-picker`) |
+| `preview.png` | Default state, tab `โครงสร้าง` (1366 × 1024) |
+| `preview-panels.png` | Plan tab `จัดแผง` and right tab `การจัดแผง` (PV layout) |
+| `preview-edit-posts.png` | `แก้เสา` mode: tap grid nodes to add or remove posts |
+| `preview-section-zoom.png` | `ขยาย`: section A–A full-screen sheet |
+| `preview-std-dropdown.png` | `หลังคามาตรฐาน` dropdown open (PWA standards + team-saved) |
+| `preview.html` | Default state, opens in a browser |
+| `states/*.pdf` | **Vector** PDF of each state at 1366 × 1024. Use these to measure exact sizes, colours and strokes. |
+| `iPadC1.dc.html` | Design source. Its `<script type="text/x-dc">` (`renderVals`) holds the reference logic: plan geometry, purlins, posts, section drawing, PV packing, member lists, DXF export (`cadBuild`). Read it for formulas. Do not port the HTML. |
+| `svg/` | All vector assets (see below) |
 
-Use code-review-graph first, as `CLAUDE.md` says. Find every reader of the roof fields below, especially in:
-- `Sketch.swift` (plan drawing from `spansX` / `spansY`)
-- `SiteModels.swift` (A2 building models read the roof size)
-- `Progress.swift`
-- the PDF `ReportLayout+*` roof pages
-- `ExcelExporter` (sheet "หลังคาทั่วไป R")
-- `StructureSizes.swift` and `MemberPicker.swift`
-- `Fields.swift` (`.plan`, `.diagram`, `.member`, `.obstacles`)
+### `svg/` assets
+- `drawings/`
+  - `plan-structure.svg`: plan with all labels
+  - `plan-panels.svg`: plan with PV layout
+  - `section-AA-pratt.svg`: section A–A
+  - `section-AA-pratt-fullscreen.svg`: full-screen section
+  - `*-lines-only.svg`: the same drawings without text, as a geometry reference. The page draws its labels as separate overlay text.
+  - Use these as visual references. The app must **draw the plan and section in code** (SwiftUI `Canvas` / `Path`) from the job's values, because they change live.
+- `legend/`: 24 × 14 legend symbols for both tabs (`structure-*`, `panels-*`)
+- `members/`
+  - `member-1…7-*.svg`: truss thumbnails with the member highlighted in red
+  - `profile-1…7-*.svg`: steel section glyphs (C, 2C, □, timber)
+  - Can go into `Assets.xcassets` as vector images (Preserve Vector Data), or be redrawn as `Path`.
+- `roof-types/`: 40 × 24 glyphs for the standard-roof dropdown, one per frame type
+- `icons/`
+  - `north-arrow`, `cad-export`, `camera-add`, `camera-sketch`, `expand`, `edit-posts`, `chevron-prev/next`
+  - Prefer SF Symbols where one matches: `camera`, `arrow.up.left.and.arrow.down.right`, `chevron.left/right`, `square.and.arrow.down`. Use the SVG only when there is no match (north arrow).
+  - `photo-thumb-sample-*` is a placeholder for the photo tiles in the preview, not an app asset.
 
-Read the source before editing.
+The design uses the Sarabun font. Keep the app's current fonts (`Theme.swift`). Do not add Sarabun.
 
-## Existing data: do not change ids, labels or Excel cells
-From `Schema.planFields(tank: false)` and `modules[.roof]`:
+## Relevant files
+- `TCRoofKit/Sources/TCRoofCore/Schema.swift`
+  - `modules[.roof]`
+  - `planFields(tank:)`: `spansX`, `spansY`, `sheetDir`, `obst`, `plan`, `planPhoto`
+  - `Options.components`, `roofShape`, `roofMaterial`, `structure`
+  - `FieldKind.member`, `.diagram`, `.plan`
+- `TCRoofKit/Sources/TCRoofCore/StructureSizes.swift`: member size lists
+- `TCRoofKit/Sources/TCRoofCore/Sketch.swift`, `SketchSVG.swift`: `Drawings.truss()`, current SVG output for the report
+- `TCRoofKit/Sources/SurveyUI/Fields.swift`: `PlanPreview` (~line 188), `.diagram`, `.member` rows
+- `TCRoofKit/Sources/SurveyUI/JobEditor.swift`: `detailArea` routing. Add `cardRoof` like `cardFlood`.
+- `TCRoofKit/Sources/SurveyUI/JobEditor+Detail.swift`: `groupPage`
+- `TCRoofKit/Sources/SurveyUI/FloodPageWide.swift`, `SitePageWide.swift`: patterns for a wide page plus bottom-bar gaps (`InfoPageBar.Gap`)
+- `TCRoofKit/Sources/TCRoofCore/Progress.swift`, `Validation.swift`: C1 completeness and missing items
+- `TCRoofKit/Sources/PDFReport/ReportLayout.swift`, `ExcelExport/ExcelExporter.swift` (sheet `หลังคาทั่วไป R`): the report must still get the same answers
 
-| Field id | Type | Use on the new page |
-|---|---|---|
-| `panelsBefore` | number (แผง) | "จำนวนแผง" box in the roof-info card |
-| `panelsCut` | number, optional | not shown (keep it) |
-| `spansX`, `spansY` | text "1.5,4,4,4,4,1.5" | the plan grid spans (x = 1…n, y = A…). Edited in the span popover and written back as the same comma string. |
-| `sheetDir` | choice แนวนอน / แนวตั้ง, optional | see "ridge direction" below |
-| `obst` | `.obstacles`, optional | skylights, keep-out zones and roof objects (see below) |
-| `plan` | `.plan(tank: false)` | the plan itself |
-| `planPhoto` | photo, optional | "ถ่ายแบบร่าง" button (hand-drawn sketch that replaces the auto plan) |
-| `diag` | `.diagram` | replaced by the section A-A on this page |
-| `comp1`…`comp7` | `.member(component:)` "size @spacing" | the 7 member rows (see mapping) |
-| `roofShape` | choice + other | "รูปแบบหลังคา" dropdown |
-| `roofMaterial` | choice + other | "วัสดุมุง" dropdown |
-| `roofStructure` | choice ไม้ / โครงเหล็ก | "วัสดุโครงสร้าง" segmented control |
-| `aerialPhoto` | photo | photo slot "มุมสูง ภาพรวม" |
-| `generalPhotos` | photos (max 3), optional | photo slots "ด้านหน้า", "ด้านข้าง", "แผ่นมุง ระยะใกล้" |
-| `structPhotos` | photos (max 4) | photo slots "ใต้หลังคา โครง", "ใต้หลังคา จุดต่อ" |
+Per `CLAUDE.md`, use code-review-graph before editing. Find the callers of `spansX`, `spansY`, `comp1…7`, `roofStructure`, `PlanPreview` and `Drawings.truss`, and check `tests_for` on `Validation` / `Progress`.
 
-### New fields
-All optional, `when: { _ in false }`, so the roof section's completion counts as before. Old JSON must decode (`decodeIfPresent` with defaults).
+## Layout (iPad landscape, content 1240 × 792 below the step bar)
+Measured from the design. All values are in pt.
 
-| New id | Type | Default | Meaning |
-|---|---|---|---|
-| `frameType` | text enum `p` / `n` / `w` / `c` / `r` | `p` | ชนิดโครงหลังคา: ถัก Pratt / ปกติ / ถัก Warren / ขื่อรัด (rafter + tie) / จันทันถัก (rafter truss + T2) |
-| `ridgeDir` | text enum `h` / `v` | derived from `sheetDir` (sheets run across the ridge: `sheetDir` แนวตั้ง → ridge `h`), else `h` | แนวสันหลังคา นอน / ตั้ง. **Also write `sheetDir` back** (ridge `h` → `แนวตั้ง`, `v` → `แนวนอน`) so Sketch, PDF and Excel keep working. **Verify this convention against `Sketch.swift` before relying on it; if `sheetDir` means the ridge there, map 1:1.** |
-| `trussBays` | number | auto = max(2, round(half-span / 1.0)) | panels per half truss (section stepper "ช่อง/ข้าง n × w ม.") |
-| `postGrid` | per frame type, set of "i,j" toggles | the frame's default posts | posts added or removed in "แก้เสา" mode |
-| `pvOrientation` | `p` / `l` | `p` | PV layout preview: portrait / landscape modules |
-| `photoAngles` | the 6-angle checklist state | derived from photos | only if needed to know which slot a `generalPhotos` / `structPhotos` item fills (see Photos) |
+| Region | x, y, w, h |
+|---|---|
+| Header + 13-step bar | as on the other pages (`10/13` · `แปลนและโครงสร้างหลังคา`) |
+| Left column | 63, 151, **720** × 792 |
+| · Plan card | 720 × 483 |
+| · Section A–A card | 720 × 297 (gap 12) |
+| Right column | 811, 151, **492** × 792 (gap 28) |
+| · Roof / PV card (tabs) | 492 × 301 |
+| · Members 1–7 card | 492 × 347 |
+| · Photos card | 492 × 124 |
+| Bottom bar | 73 high: gap status · `บันทึกร่างตอนนี้` · `ก่อนหน้า 9/13 B5 ปุ่ม Emergency` · `ถัดไป 11/13 C1 หลังคา 2` |
 
-Skylights and keep-out zones go into the existing **`obst`** obstacles value, extended if needed:
-- **skylight**: rect in plan metres, plus `canCover: Bool` (วางทับได้ / ห้ามวางทับ)
-- **keep-out**: rect in plan metres
+### Left column
 
-If `obst`'s current model can't hold these, add optional properties with defaults. Never change the meaning of existing obstacle entries.
+**1. Plan card `แปลนโครงหลังคา`**: canvas, legend at right, footer toolbar.
+- **Structure plan** (`plan-structure.svg`):
+  - Grid from `spansX` / `spansY` (default `1.5,4,4,4,4,1.5` × `1.5,4.5,4,4.5,1.5`), scaled to fit about 380 × 320.
+  - Grid bubbles `1…n` on top and `A…` on the left.
+  - Two dimension chains on each side: spans, and the overall total (`19.00` / `16.00`, vertical text rotated −90°).
+  - **Span values are tappable**: popover `−` value `+`, step 0.05 m, plus the quick actions `แบ่งครึ่ง`, `ลบช่วง`, `ถัดไป ›`, `EQ เท่ากันทั้งแนว`.
+  - A blue `+` at the end of each chain adds a span.
+- Structure elements drawn from the frame type (`ชนิดโครงหลังคา`):
+  - `ปกติ` / `ถัก Pratt` / `ถัก Warren`: trusses `T1` across, double line, labelled.
+  - `ขื่อรัด` / `ชายคาฝ้า`: rafters `จันทัน @1.00` plus eaves beams `อเส`.
+  - `จันทันถัก`: `T1` across plus `T2` along.
+  - Purlins parallel to the ridge at `ระยะแป` measured along the slope (plan spacing = `pp·cos(angle)`).
+  - Posts are black squares at defaults per frame type.
+  - Ridge line is dash-dot, labelled `สันหลังคา`. It is horizontal or vertical from `แนวสันหลังคา นอน/ตั้ง`.
+  - Slope arrows `ลาด 15°`: 15° by default, 30° for `ขื่อรัด`.
+  - Skylights: light-blue rectangles. Dashed red outline = `แผ่นใส · ห้ามวางทับ`, teal = `แผ่นใส · วางทับได้`.
+  - Section mark `A ◀` at both ends of line A–A.
+  - The orange callout `แป @1.00` follows `ระยะแป`.
+- **Legend** (`legend/structure-*`) with a north arrow `ทิศเหนือ`, rotated from A2 (`ตามภาพ A2 · หมุน 12° (ตัวอย่าง)`).
+- **Footer**:
+  - Title `แปลนโครงหลังคา` (underlined link style)
+  - Segmented `โครงสร้าง | จัดแผง`
+  - `แก้เสา (10)`: toggles post-edit mode (see `preview-edit-posts.png`). Every grid node shows a 22 pt target, red-filled = has post, blue dashed = empty. Tap to toggle. The button reads `เสร็จ · เสา 10 ต้น`.
+  - `ถ่ายแบบร่าง` → existing `planPhoto` (a hand sketch replaces the auto plan).
+  - `CAD`: opens a sheet `ส่งออก CAD` / `DXF R12 · เปิดได้ใน CAD ทั่วไป`, with units `มม. (1:1)` / `ม.` and layer list. Port `cadBuild` from the design script. It writes plain DXF R12 `LINE`/`CIRCLE`/`TEXT` entities, with Thai mapped to TIS-620 code points.
+- **Panels plan** (`preview-panels.png`, `plan-panels.svg`):
+  - The same grid with PV tables packed between eaves and ridge on each slope.
+  - Skips `ห้ามวางทับ` skylights and blocked bays.
+  - Shows `ห่าง 0.40` between tables.
+  - Uses the `legend/panels-*` legend.
 
-### Member rows 1–7 → `comp1`…`comp7`
-The schema labels stay **แป จันทัน อเส ขื่อ ค้ำยัน เชิงชาย ดั้ง**; Excel and PDF use them. The page shows a **display name per frame type** (from `iPadC1.dc.html`, the `M` array) but always stores row *n* in `comp<n>`:
+**2. Section card `รูปตัด A–A · โครงถัก Pratt`** (`section-AA-pratt.svg`)
+- Truss drawn from frame type, span (= plan depth across the ridge), bays per side (`ช่อง/ข้าง` stepper `− 8 × 1.00 ม. +`, `อัตโนมัติ`), slope, height under tie `สูงใต้ขื่อ 4.00` and eaves `ชายคา 0.70`.
+- Includes:
+  - purlin cleats on the top chord
+  - corrugated roof sheet line
+  - rise dimension `R 2.14` (= span/2·tan(angle)) and `0.50` truss depth
+  - bottom dimension chain `8 × 1.00 = 8.00` per side and overall `16 (จากแปลน)`
+- Red numbered callouts `1…7` point at the members.
+  - Tapping a row in **Members 1–7** highlights that member in red here.
+  - Tapping a callout scrolls to and selects its row.
+- `ขยาย` opens a full-screen sheet (`preview-section-zoom.png`) with the caption `หน่วย ม. · แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง` and `ปิด`.
 
-| Row | Schema label | Pratt / ปกติ / Warren | ขื่อรัด (`c`) | จันทันถัก + T2 (`r`) |
-|---|---|---|---|---|
-| 1 | แป | แป | แป | แป |
-| 2 | จันทัน | คอร์ดบน | จันทัน | คอร์ดบน |
-| 3 | อเส | คอร์ดล่าง | ขื่อรัด | คอร์ดล่าง |
-| 4 | ขื่อ | ตัวตั้ง | อเส | ตัวทแยง |
-| 5 | ค้ำยัน | ตัวทแยง | ตัวค้ำ | T2 รับจันทัน |
-| 6 | เชิงชาย | เชิงชาย | เชิงชาย | เชิงชาย |
-| 7 | ดั้ง | เสากลาง | เสากลาง | เสา |
+### Right column
 
-**Flag this mapping in your summary.** The truss names don't match the schema names one-to-one, for example คอร์ดล่าง is stored in the `อเส` slot. If you find Excel/PDF readers that depend on the semantic meaning, stop and list them rather than silently re-labelling.
+**3. Card with tabs `หลังคา *` | `การจัดแผง`**
+- **Tab `หลังคา`**:
+  - `หลังคามาตรฐาน`: dropdown, see `preview-std-dropdown.png`.
+    - Section `แบบมาตรฐาน กปภ.` shows a glyph, name and size, subtitle (`ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด`) and ✓.
+    - Section `แบบที่ทีมบันทึก` shows who and when.
+    - Footer `＋ บันทึกค่าปัจจุบันเป็นแบบใหม่` opens the save sheet (`ชื่อแบบ`, `ใครใช้ได้ ทั้งทีม / เฉพาะฉัน`, `บันทึกแบบ`).
+    - Picking a standard fills `spansX`, `spansY`, frame type and `ระยะแป`.
+    - The standards list is `STD` in the design script.
+  - `วัสดุมุง`: dropdown with subtitles. The list is `RM` in the design script (`เมทัลชีท`, `เมทัลชีทบุฉนวน`, `กระเบื้องลอนคู่`, `กระเบื้องคอนกรีต`, `แผ่นโปร่งแสง`, `คอนกรีต (ดาดฟ้า)`).
+  - `ระยะแป`: value button `1.00 ม. ▾` opens a number popover, `−`/`+` step 0.05, range 0.60–1.50, `วัดตามแนวลาด`.
+  - `แนวสันหลังคา`: segmented `นอน | ตั้ง`.
+  - `วัสดุโครงสร้าง`: segmented `ไม้ | เหล็ก`.
+  - `ชนิดโครงหลังคา`: 6-way segmented `ปกติ | ถัก Pratt | ถัก Warren | ขื่อรัด | จันทันถัก | ชายคาฝ้า`.
+- **Tab `การจัดแผง`**:
+  - Count `66 แผง` and `37.6 kWp`, with subtitle `{n} ชุด · แผง 570 W`. The module spec is `MOD` in the script, W = 0.57 kW.
+  - `แนวแผง ตั้ง | นอน`
+  - `แถวต่อชุด (ตามแนวลาด)`: chips
+  - `แผงต่อชุด`
+  - `ระยะห่างระหว่างชุด`: stepper, 0.40 m.
 
-Size lists and defaults per frame type are in the design's `M` array: first entry `-` (ไม่มี / ไม่ใช้), then the sizes; the default index is `m[2] + 1`. Merge them with `StructureSizes` (recommended first, full catalogue in a submenu). Keep the stored format **`size @spacing`** that `MemberPicker` uses. The design row shows the size only; keep the spacing editable in the picker.
+**4. `ขนาดชิ้นส่วน 1–7 *`** with subtitle `ชุดมาตรฐาน · โครงถักเหล็ก 16 ม.`
+- Each row has the number, the `members/member-n` thumbnail, the name, the `profile-n` glyph, the size and `▾`. Tapping opens a size list with ✓.
+- Rows: `แป`, `คอร์ดบน`, `คอร์ดล่าง`, `ตัวตั้ง`, `ตัวทแยง`, `เชิงชาย`, `เสากลาง`. Size lists are in the design script (array `M`).
+- Map rows to the existing `comp1…7` fields. The current `Options.components` names (`แป, จันทัน, อเส, ขื่อ, ค้ำยัน, เชิงชาย, ดั้ง`) apply to timber or rafter frames. For truss frames, use the design's names. **Keep `comp1…7` storage keys unchanged**, so the report and Excel still work, and label each row by frame type.
 
-## Layout (landscape 1366 × 1024, content width 1240, no scroll)
-- Header: blue gradient bar "C1 หลังคา · 1 โรงกรอง" / "แบบสำรวจ NO.224 · GRF2567-23407" (module name and job number from data).
-- Step row: `10/13` with the step title "แปลนและโครงสร้างหลังคา" and the 13-capsule progress bar (shared component).
-- Main grid: **left 720 / right flexible**, gap 28. The left stack is the plan card (top, about 480 tall) and the section card (bottom, about 270 tall). The right stack has three cards.
-- Bottom bar: shared `cardBar`, described below.
-
-### Left card 1: roof plan (แปลนโครงหลังคา)
-Draw it with `DrawOp` / `Canvas`, shared with the PDF where possible. It sits in a 580 × 446 design viewBox, uniformly scaled to fit. The drawing order and math are in `renderVals` (`P.*` layers):
-
-1. **Grid + dimensions.**
-   - Grid lines 1…n (top bubbles, r 9) and A…m (left bubbles).
-   - Two dimension chains on top: overall `19.00` plus each span; same on the left (`16.00`).
-   - Ticks are 45° slashes.
-   - Total length = sum of `spansX`, total width = sum of `spansY`. Scale `k = min(380/Lx, 320/Ly)`, centred.
-2. **Span chips.** Each span value is a tappable chip: blue underlined text, or a filled `#E3EEF8` chip with a 1.5 pt blue outline when selected. The design chip is small, so **give each one a 44 × 44 pt hit area**. Tapping opens the **span popover**:
-   - Title `ระยะช่วงกริด 3-4` (or `B-C` for y), with `ช่วงที่ i จาก n` and a close button.
-   - − / value (m, 2 decimals) / + in 0.5 m steps, minimum 0.5.
-   - Quick chips `1.5  3  4  4.5  6`; the current value is filled mint `#9EE6D6`.
-   - `แบ่งครึ่ง` (split into two halves), `ลบช่วง` (delete; disabled when it's the only span), `ถัดไป ›` (next span; after the last x it goes to y).
-   - `EQ เท่ากันทั้งแนว` (equalise; disabled if already equal) and `ทุกช่วง 4.00 ม.`.
-   - A footer line with the whole chain and total, e.g. `ทั้งแนว: 1.5, 4, 4, 4, 4, 1.5 · รวม 19.00 ม.`
-   - Placement: x popover under the chip, clamped inside the card; y popover to the right of the left chain.
-   - States: `preview.png`, `states/16-span-popover-y.png`.
-3. **`+` buttons** (blue square) at the end of each chain add a span equal to the last one and select it.
-4. **Ridge.** A dash-dot line through the middle, along x if `ridgeDir = h`, else along y, with the label `สันหลังคา` (`states/06-ridge-vertical.png`).
-5. **Frame lines by `frameType`**:
-   - Pratt / Warren / ปกติ: double lines `T1` on each inner grid line across the ridge.
-   - ขื่อรัด: rafters every 1.00 m and eave beams `อเส`, labelled `จันทัน @1.00`.
-   - จันทันถัก: `T1` across plus `T2` along the inner grid.
-6. **Purlins.** Thin lines every 1.0 m, parallel to the ridge.
-7. **Posts.** 10 pt black squares at the frame's default grid intersections. In **แก้เสา mode** (`states/02-edit-posts.png`), every intersection shows a 22-unit circle: red if it has a post (tap to remove), dashed blue if not (tap to add). Store the result in `postGrid[frameType]`. The button label is `แก้เสา (n)`, or `เสร็จ · เสา n ต้น` while editing.
-8. **Slope arrows.** Two arrows per side pointing down-slope, labelled `ลาด 15°` (30° for ขื่อรัด).
-9. **Section mark A-A.** A dash-dot cut line at 42% along the ridge, heavy end bars, view-direction triangles and `A` bubbles.
-10. **Skylights** (`P.sky` / `P.skyNo`):
-    - Blue-filled rects. Tap to toggle **วางทับได้** (blue border) / **ห้ามวางทับ** (red dashed border).
-    - Defaults are two skylights at 36% and 64% along the ridge (examples). On the real page they come from `obst`; add and edit them with the obstacle editor.
-
-The mode toggle under the plan is `โครงสร้าง | จัดแผง`, with buttons beside it:
-- `โครงสร้าง` mode: `แก้เสา (n)`, `ถ่ายแบบร่าง` (`planPhoto`).
-- `จัดแผง` (PV layout) mode (`states/03…05`):
-  - Hide frame lines, posts, purlins, slope arrows and their labels.
-  - Pack modules on each roof face. Module size comes from the global spec default; today that is **2278 × 1134 mm, 570 W** (read the equipment catalogue, don't hard-code).
-  - Edge clearances: eave 0.5 m, ridge 0.3 m, gable ends 0.5 m. Gap 2 cm.
-  - Rows go along the slope: horizontal depth × cos(slope).
-  - Modules that hit a keep-out zone or a no-cover skylight are drawn as dashed outlines and not counted.
-  - Hint text: `84 แผง · 47.9 kWp` (computed).
-  - Buttons:
-    - `แผงแนวตั้ง` / `แผงแนวนอน` toggles portrait / landscape (`pvOrientation`).
-    - `วาดเขตห้ามติด (n)`: drag a rectangle on the plan (at least 0.3 × 0.3 m, rounded to 0.1 m) to add a keep-out zone. Zones are hatched red with the label `ห้ามติด 4.2×3.0` and a red `×` to delete. The button label becomes `เสร็จ · เขตห้าม n` while drawing (`states/04-pv-keepout.png`).
-  - This count is a **preview only**. Do not overwrite `panelsBefore` with it.
-
-Hint text under the plan, by mode:
-- default: `แตะเลขสีฟ้า/แผ่นใสเพื่อแก้`
-- posts: `แตะจุดตัดกริด เพิ่ม/ลบเสา`
-- keep-out: `ลากเพื่อวาดเขตห้ามติด`
-- PV: the panel count and kWp
-
-### Left card 2: section A-A (รูปตัด A-A · <frame name>)
-True-scale section across the ridge, fitted to the card. The geometry is in `renderVals` (`S.*`):
-- **Span**: the plan width across the ridge (`16 (จากแปลน)`). **Half-span** = span / 2. **Rise** = half × tan(slope): 15°, or 30° for ขื่อรัด. **Heel**: 0.50 m for trusses, 0 for ขื่อรัด.
-- **Members by frame type**:
-  - Pratt: verticals + diagonals toward the centre.
-  - Warren: alternating diagonals.
-  - ปกติ: king post + two struts.
-  - ขื่อรัด: rafters + tie at 62% height + RC supports.
-  - จันทันถัก: double chord with heel depth, zig-zag web, and 4 columns.
-- **Styling**:
-  - Chords and columns: thick dark outline (6 / 7 px) with a light core (3.6 / 4.4 px `#D5DBE3`).
-  - Webs: 3.2 px dark with a 1.3 px light core.
-  - Gusset diamonds at the nodes.
-  - Corrugated roof sheet line `#1F4F78` with a ridge cap.
-  - Purlin C-marks on top.
-  - Fascia at the eaves; base plates and break marks at the column feet.
-- **Dimensions**: the bay chain `8 × 1.00 = 8.00` each side; overall `16`; overhang `ชายคา 0.70` each side; clear height `สูงใต้ขื่อ 4.00` (or `สูงถึงหัวเสา` for ขื่อรัด); rise `R 2.14`; heel `0.50`; slope arc with `15°`.
-- **Callouts** ①…⑦: red circles with leader arrows pointing at members 1–7. Their positions per frame are in the `call(...)` lines. Hide the callouts that a frame doesn't have, e.g. 5 and 7 for ขื่อรัด.
-- **Footer**: the title is a link `รูปตัด A-A · โครงถัก Pratt` with `หน่วย ม.`. On the right is the stepper `ช่อง/ข้าง  −  8 × 1.00 ม.  +` (2…20, writes `trussBays`) and `อัตโนมัติ`, which clears it and is disabled when already auto.
-- States: `07…10` (frame types) and `17` (12 bays).
-
-### Right card 1: ข้อมูลหลังคา * (trailing note: `ตามแผนงาน ข้อ 1–3`)
-- Row 1:
-  - `รูปแบบหลังคา` dropdown → `roofShape`. The design list is ทรงจั่ว / ทรงปั้นหยา / ทรงเพิงหมาแหงน / ทรงฟันเลื่อย / ทรงโค้ง / หลังคาแบน-ดาดฟ้า, each with an English sub-label.
-  - `วัสดุมุง` dropdown → `roofMaterial`: เมทัลชีท / เมทัลชีทบุฉนวน / กระเบื้องลอนคู่ / กระเบื้องคอนกรีต / แผ่นโปร่งแสง / คอนกรีต (ดาดฟ้า).
-  - **Map each design option to the existing `Options.roofShape` / `Options.roofMaterial` values. Anything without an exact match is stored as `อื่นๆ` plus the other-text**, so Excel stays valid. List the mapping you chose in your summary.
-  - Dropdowns: white list, selected row `#E3EEF8` with ✓ (`states/12`, `states/13`).
-- Row 2:
-  - `จำนวนแผง` number field → `panelsBefore`, unit `แผง`.
-  - `แนวสันหลังคา` segmented `นอน | ตั้ง` → `ridgeDir` (+ `sheetDir`).
-  - `วัสดุโครงสร้าง` segmented `ไม้ | เหล็ก` → `roofStructure` (ไม้ / โครงเหล็ก) (`states/14`).
-- Row 3: `ชนิดโครงหลังคา` segmented with 5 options: `ปกติ | ถัก Pratt | ถัก Warren | ขื่อรัด | จันทันถัก` → `frameType`.
-- Segmented style: track `#EEF2F7`; the selected segment is white with a soft shadow, bold navy text. Height at least 44 pt.
-
-### Right card 2: ขนาดชิ้นส่วน 1–7 *
-- Trailing note: `ชุดมาตรฐาน · โครงถักเหล็ก 16 ม.` (frame + material + span; computed).
-- Seven rows, at least 44 pt tall, each:
-  - red number
-  - 67 × 36 member thumbnail (`icons/members/…`; the highlighted member in red)
-  - display name
-  - right-aligned profile glyph (`icons/profiles/…`, chosen from the size prefix) + size text
-  - a `▾` affordance
-- Size text is bold when it differs from the default, and grey for `-`.
-- Tap opens the **member picker popover** (`states/11-member-picker-open.png`):
-  - title `2 คอร์ดบน · เลือกขนาด` with a close button
-  - options with ✓ on the current one; the first option is `-  (ไม่มี / ไม่ใช้)`
-  - for rows 1–4 it opens below the row, for 5–7 above
-- Values are kept per frame type in the design. On the app, `comp<n>` holds **one** value. When the frame type changes, keep the stored value if it is in the new list; otherwise leave it as is and mark the row (do not wipe user data).
-
-### Right card 3: ภาพหลังคา * — 6-angle checklist
-- Header counter: `3/6 มุม · ต้องถ่ายครบทุกมุม` (red bold), or `ครบ 6 มุมที่แนะนำ ✓` (green) (`states/15`).
-- Six small photo tiles in a row:
-  - filled: thumbnail, done badge, clear `×` (44 pt hit)
-  - empty: dashed red, camera icon + name
-- Tile names: `มุมสูง ภาพรวม`, `ด้านหน้า`, `ด้านข้าง`, `ใต้หลังคา โครง`, `ใต้หลังคา จุดต่อ`, `แผ่นมุง ระยะใกล้`. Storage:
-  - มุมสูง ภาพรวม → `aerialPhoto`
-  - ด้านหน้า, ด้านข้าง, แผ่นมุง ระยะใกล้ → the three `generalPhotos` (max 3)
-  - ใต้หลังคา โครง, ใต้หลังคา จุดต่อ → `structPhotos` items 1 and 2. `structPhotos` allows 4; keep any extra old photos and show a `+n` chip.
-- Use the shared `PhotoSlot` (`docs/ui/photo-picker`) in its compact form: Upload / Camera in a small menu on tap.
-- The tiles are small, so the whole tile is the hit target (at least 44 pt).
+**5. `ภาพหลังคา *`** with chip `3/6 มุม · ต้องถ่ายครบทุกมุม`
+- Six 73 pt tiles: `มุมสูง ภาพรวม`, `ด้านหน้า`, `ด้านข้าง`, `ใต้หลังคา โครง`, `ใต้หลังคา จุดต่อ`, `แผ่นมุง ระยะใกล้`.
+- Taken tiles show the photo, a green ✓ and a delete ×. Empty tiles are red dashed with a camera and the name.
+- Map them onto `aerialPhoto`, `generalPhotos` and `structPhotos`. Do not rename existing keys. The order above is display only.
 
 ### Bottom bar
-Use the shared `InfoPageBar`, with `statusText` / `statusAlert`:
-- Badge: green ✓ when all 6 angles are present, orange ! otherwise.
-- Status: `ยังขาดภาพหลังคา: ด้านหน้า · ด้านข้าง · แผ่นมุง ระยะใกล้` in red, or `ปิดแอปแล้วกลับมาทำต่อได้ · ครบช่องบังคับหน้านี้แล้ว`.
-- The 6-angle rule is a page warning; **do not change `Progress` completion**.
-- Previous: the step before (here `B5 ปุ่ม Emergency`). Next: the next roof module or step (`C1 หลังคา 2`).
+- Left: an orange gap status, e.g. `ยังขาดภาพหลังคา: ด้านหน้า · ด้านข้าง · แผ่นมุง ระยะใกล้`. Tapping jumps to the first gap.
+  - Provide `RoofPageWide.gaps(job)` like `SitePageWide.gaps` and wire it into `InfoPageBar`.
+  - When nothing is missing it turns green: `ครบช่องบังคับแล้ว`.
+- Then `บันทึกร่างตอนนี้` · `‹ ก่อนหน้า` · `ถัดไป ›`. Previous and next sit next to each other, as on the other pages.
 
-## States to match (`states/`)
-| File | State |
-|---|---|
-| `preview.png` | default, span 3–4 popover |
-| `01-span-popover-closed` | nothing selected |
-| `02-edit-posts` | แก้เสา mode |
-| `03-pv-layout` | จัดแผง, portrait modules |
-| `04-pv-keepout` | drawing keep-out zones, 2 zones |
-| `05-pv-landscape` | landscape modules |
-| `06-ridge-vertical` | ridge along y |
-| `07-frame-normal` | โครงปกติ |
-| `08-frame-warren` | ถัก Warren |
-| `09-frame-rafter-tie` | ขื่อรัด (30°, no heel, RC supports) |
-| `10-frame-rafter-truss-T2` | จันทันถัก + T2 (tube members) |
-| `11-member-picker-open` | member 2 picker |
-| `12-roof-shape-dropdown` / `13-roof-material-dropdown` | dropdowns open |
-| `14-wood-structure` | ไม้ selected |
-| `15-photos-complete` | 6/6 photos |
-| `16-span-popover-y` | y-span popover |
-| `17-section-bays-12` | section with 12 bays per side |
+## Data
+- Reuse existing keys wherever they exist: `spansX`, `spansY`, `sheetDir`, `obst`, `planPhoto`, `roofShape`, `roofMaterial`, `roofStructure`, `comp1…7`, and the photos.
+- New values (add them to `Schema` as optional fields so old jobs still open):
+  - `roofStd`
+  - `purlinSpacing` (default 1.00)
+  - `ridgeDir` (`นอน`/`ตั้ง`)
+  - `frameType` (`n p w c r k`)
+  - `sectionBays` (0 = auto)
+  - `posts`: an edited set of grid nodes per frame type, stored as text, e.g. `"2,1;3,1"`
+  - `pvOrient`, `pvRows`, `pvPerTable`, `pvGap`
+- `roofMaterial` options change to the design list. Map old answers on read: `กระเบื้องซีแพค` → `กระเบื้องคอนกรีต`, `กระเบื้องลอนคู่/เดี่ยว` → `กระเบื้องลอนคู่`. Keep `อื่นๆ`.
+- `roofStructure` (`ไม้`/`โครงเหล็ก`) is driven by `วัสดุโครงสร้าง`.
 
-## Rules
-- Do not change existing field ids, labels, choice strings, Excel cells or the Excel layout. New fields are optional and hidden; roof completion is unchanged.
-- Old job JSON must decode. Jobs with free-text `comp<n>` values, other-text roof shapes and existing obstacles must display unchanged.
-- One screen, no scroll, at 1366 × 1024 landscape. iPad portrait and iPhone keep `groupPage`. The page must never push wider than the free space (see the A4 overflow fix).
-- Every control is at least 44 pt. Use enlarged hit areas for the small plan chips and post circles.
-- UI text stays Thai, exactly as in the design.
-- All numbers in the previews are examples and must never be hard-coded: 19.00 × 16.00, the spans, 312 panels, 84 panels / 47.9 kWp, 4.00 / 0.70 / 2.14, member sizes, the module name.
-- Plan and section drawings should be `DrawOp`-based so the PDF can draw the same plan and section (replacing the old `.diagram` image) without a second implementation.
-
-## Check before finishing
-1. `swift build` and `swift test` in `TCRoofKit` pass. Add tests:
-   - old roof JSON decodes
-   - editing spans writes the same comma format to `spansX` / `spansY`
-   - `ridgeDir` ↔ `sheetDir` round-trip
-   - `comp<n>` mapping per frame type
-   - the PV packing count for a known roof matches the design math, e.g. 19 × 16, Pratt, ridge `h`, portrait 2278 × 1134 → 84 without zones
-   - completion is unchanged
-2. The xcodebuild command from `CLAUDE.md` passes, using your own `-derivedDataPath`.
-3. Add `-surveyPage roof`, open it in the simulator at 1366 × 1024 and compare with `preview.png` and every file in `states/`. Flow:
-   1. Edit a span with the popover (split, delete, EQ).
-   2. Add a span.
-   3. Toggle the ridge.
-   4. Switch all 5 frame types and check the section and member names.
-   5. Edit posts.
-   6. Open จัดแผง, draw and delete a keep-out zone, toggle orientation.
-   7. Pick a member size.
-   8. Fill all 6 photos.
-   9. Export the PDF and Excel and check the roof pages and the `comp1`…`comp7` cells.
-4. Summarise:
-   - the files changed
-   - the `comp<n>` display-name mapping
-   - the roofShape / roofMaterial option mapping
-   - the `sheetDir` convention you confirmed
-   - anything left open
+## Acceptance
+1. On a 1366 × 1024 iPad landscape, C1 matches `preview.png` with no scrolling.
+2. Changing spans, ridge direction, frame type, purlin spacing or posts redraws the plan, the section, the dimensions and the panel count live.
+3. `จัดแผง` packs panels as in `preview-panels.png` and respects `ห้ามวางทับ` skylights.
+4. Member row ↔ section callout highlighting works both ways. `ขยาย` opens the full-screen section.
+5. The CAD sheet writes a DXF that opens in a CAD viewer with the layer names from the design.
+6. The gap status and C1 completeness agree with `Validation` / `Progress`.
+7. The PDF report and Excel export for an existing job are unchanged. Add or extend tests in `TCRoofKit/Tests`.
+8. Portrait or narrow width: stack the right column under the left, the same way `FloodPageWide(stacked:)` does.

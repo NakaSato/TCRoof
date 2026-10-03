@@ -1,0 +1,134 @@
+/* TCRoof Survey — form components. Every value comes from tokens.css. */
+.tc, .tc * { box-sizing: border-box; }
+.tc { font-family: var(--font-sans); color: var(--paper-ink); -webkit-font-smoothing: antialiased; }
+.tc svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* Button */
+.tc-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--touch-min); padding: 0 var(--space-4); border-radius: var(--radius-sm); border: 1px solid transparent; font: 700 17px/26px var(--font-sans); cursor: pointer; background: none; }
+.tc-btn.primary { background: var(--primary); color: var(--on-primary); }
+.tc-btn.secondary { background: var(--surface); color: var(--navy); border-color: var(--border-control); }
+.tc-btn.quiet { color: var(--primary); padding: 0 var(--space-3); }
+.tc-btn.destructive { background: var(--surface); color: var(--danger-text); border-color: var(--border-control); }
+.tc-btn:focus-visible, .tc-input:focus-visible, .tc-chip:focus-visible, .tc-photo:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tc-btn[disabled] { opacity: .45; cursor: default; }
+
+/* Status marker beside a label */
+.tc-status { display: inline-flex; align-items: center; gap: var(--space-1); font: 700 12px/18px var(--font-sans); white-space: nowrap; }
+.tc-status.pending { color: var(--pending); }
+.tc-status.pending::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pending); }
+.tc-status.done { color: var(--paper-tick-strong); }
+.tc-status.optional { color: var(--ink-muted); font-weight: 400; }
+.tc-important { font: 700 12px/18px var(--font-sans); color: var(--navy); background: var(--sun); padding: 0 6px; border-radius: var(--radius-pill); }
+
+/* Field row: label left, control right (regular width) */
+.tc-field { display: grid; grid-template-columns: minmax(180px, 40%) 1fr; gap: var(--space-3) var(--space-4); align-items: start; padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle); }
+.tc-field:first-child { border-top: 0; }
+.tc-field.stacked { grid-template-columns: 1fr; gap: var(--space-2); }
+.tc-field > .tc-lab { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); padding-top: 10px; font: 400 16px/24px var(--font-sans); color: var(--paper-ink); }
+.tc-field.stacked > .tc-lab { padding-top: 0; }
+.tc-help { font: 400 14px/21px var(--font-sans); color: var(--ink-muted); margin-top: var(--space-1); }
+.tc-err { font: 400 14px/21px var(--font-sans); color: var(--danger-text); background: var(--danger-soft); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); margin-top: var(--space-2); }
+
+/* Text / number input */
+.tc-input { display: flex; align-items: center; min-height: var(--touch-min); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-md); padding: 0 var(--space-3); font: 700 17px/26px var(--font-sans); color: var(--paper-value); width: 100%; }
+.tc-input .ph { font: 400 14px/21px var(--font-sans); color: var(--ink-muted); }
+.tc-input .unit { margin-left: auto; padding-left: var(--space-2); font: 400 14px/21px var(--font-sans); color: var(--ink-muted); }
+.tc-input.focus { border: 2px solid var(--primary); padding: 0 11px; }
+.tc-input.invalid { border: 2px solid var(--danger); padding: 0 11px; }
+.tc-input.area { align-items: flex-start; min-height: 96px; padding-top: var(--space-2); }
+.tc-input.suggest { background: var(--primary-soft); border-style: dashed; }
+.tc-input .pick { margin-left: auto; color: var(--muted); }
+.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2); }
+.tc-grid .cap { font: 700 12px/18px var(--font-sans); color: var(--ink-muted); margin-bottom: 2px; }
+
+/* Choice chips (single) and check chips (multi) */
+.tc-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tc-chip { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--touch-min); padding: 0 var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--border-control); background: var(--surface); font: 400 16px/24px var(--font-sans); color: var(--paper-ink); cursor: pointer; }
+.tc-chip.on { background: var(--primary-soft); border: 2px solid var(--primary); padding: 0 11px; color: var(--navy); font-weight: 700; }
+.tc-chip .radio { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-control); flex: none; }
+.tc-chip.on .radio { border: 6px solid var(--primary); }
+.tc-chip.check.on { background: var(--paper-band); border-color: var(--paper-tick); color: var(--paper-ink); }
+.tc-chip .box { width: var(--checkbox); height: var(--checkbox); border-radius: var(--radius-box); border: 1px solid var(--paper-rule); background: var(--surface); flex: none; display: grid; place-items: center; }
+.tc-chip.on .box { background: var(--paper-tick-strong); border-color: var(--paper-tick-strong); }
+.tc-chip .box svg { width: 14px; height: 14px; stroke: var(--surface); stroke-width: 3; fill: none; }
+.tc-other { margin-top: var(--space-2); }
+
+/* Photo slot */
+.tc-photos { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-start; }
+.tc-photo { position: relative; width: 148px; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); border: 1.5px dashed var(--border-control); background: var(--paper-page); display: grid; place-items: center; align-content: center; gap: var(--space-1); color: var(--primary); font: 700 14px/21px var(--font-sans); text-align: center; overflow: hidden; }
+.tc-photo.filled { border: 1px solid var(--border-control); background: var(--paper-page); }
+.tc-photo.filled .img { position: absolute; inset: 0; background: linear-gradient(160deg, var(--mint), var(--chip)); }
+.tc-photo .tag { position: absolute; left: 6px; bottom: 6px; font: 700 12px/18px var(--font-sans); color: var(--navy); background: var(--surface); padding: 0 6px; border-radius: var(--radius-pill); }
+.tc-photo .rm { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface); color: var(--danger); display: grid; place-items: center; }
+.tc-photo .rm svg { width: 16px; height: 16px; }
+.tc-photo.wide { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; }
+.tc-count { font: 400 12px/16px var(--font-mono); color: var(--ink-muted); align-self: center; }
+
+/* Paper box: a group of fields with the green workbook band */
+.tc-box { background: var(--surface); border: 1px solid var(--paper-rule); }
+.tc-box > .band { display: flex; align-items: center; gap: var(--space-2); background: var(--paper-band); border-bottom: 1px solid var(--paper-rule); padding: var(--space-2) var(--space-4); font: 700 17px/26px var(--font-sans); color: var(--paper-ink); }
+.tc-box > .band .no { font: 700 12px/18px var(--font-sans); color: var(--paper-ink); border: 1px solid var(--paper-rule); border-radius: var(--radius-box); padding: 0 6px; }
+.tc-box > .band .meta { margin-left: auto; }
+.tc-box > .body { padding: var(--space-1) var(--space-4) var(--space-3); }
+
+/* Conditional group: revealed under the answer that opened it */
+.tc-cond { margin: 0 0 var(--space-2) var(--space-4); padding: var(--space-1) 0 var(--space-1) var(--space-4); border-left: 2px dotted var(--border-control); }
+.tc-cond .why { font: 700 12px/18px var(--font-sans); color: var(--ink-muted); padding-top: var(--space-2); }
+
+/* Note from the workbook */
+.tc-note { display: flex; gap: var(--space-2); background: var(--paper-page); border-radius: var(--radius-sm); padding: var(--space-3); font: 400 14px/21px var(--font-sans); color: var(--paper-ink); }
+.tc-note svg { color: var(--primary); }
+
+/* Progress ring */
+.tc-ring { width: var(--progress-ring); height: var(--progress-ring); flex: none; }
+.tc-ring circle { fill: none; stroke-width: 4; }
+.tc-ring .track { stroke: var(--border-subtle); }
+.tc-ring .fill { stroke: var(--primary); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.tc-ring.done .fill { stroke: var(--paper-tick); }
+
+/* Section header */
+.tc-head { display: flex; align-items: center; gap: var(--space-3); }
+.tc-code { display: inline-grid; place-items: center; min-width: 40px; height: 28px; padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--navy); color: var(--surface); font: 700 12px/18px var(--font-sans); }
+.tc-head .t { font: 700 24px/34px var(--font-sans); color: var(--navy); }
+.tc-head .s { font: 400 14px/21px var(--font-sans); color: var(--ink-muted); }
+.tc-head .prog { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+
+/* Sidebar */
+.tc-side { background: var(--background); width: var(--sidebar-width); padding: var(--space-2); }
+.tc-side .cat { font: 700 12px/18px var(--font-sans); color: var(--ink-muted); padding: var(--space-3) var(--space-3) var(--space-1); }
+.tc-row { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch-min); padding: 0 var(--space-3); border-radius: var(--radius-sm); font: 400 16px/24px var(--font-sans); color: var(--paper-ink); }
+.tc-row .c { font: 700 12px/18px var(--font-sans); color: var(--ink-muted); width: 24px; }
+.tc-row .n { flex: 1; min-width: 0; }
+.tc-row .n small { display: block; font: 400 12px/16px var(--font-sans); color: var(--ink-muted); }
+.tc-row .k { font: 400 12px/16px var(--font-mono); color: var(--ink-muted); }
+.tc-row.done .k { color: var(--paper-tick-strong); }
+.tc-row.sel { background: var(--primary-soft); color: var(--navy); font-weight: 700; box-shadow: inset 0 0 0 1px var(--primary); }
+.tc-row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pending); }
+
+/* Banner: what is still missing */
+.tc-missing { background: var(--pending-soft); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); color: var(--paper-ink); }
+.tc-missing .h { display: flex; align-items: center; gap: var(--space-2); font: 700 16px/24px var(--font-sans); color: var(--pending); }
+.tc-missing ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tc-missing li a { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border-control); font: 400 14px/21px var(--font-sans); color: var(--navy); text-decoration: none; }
+.tc-missing li b { font: 700 12px/18px var(--font-sans); color: var(--ink-muted); }
+
+/* Card and badge */
+.tc-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: var(--space-4); }
+.tc-badge { display: inline-flex; align-items: center; gap: var(--space-1); border-radius: var(--radius-pill); padding: 2px 10px; font: 700 12px/18px var(--font-sans); }
+.tc-badge.done { background: var(--paper-band); color: var(--paper-tick-strong); }
+.tc-badge.pending { background: var(--pending-soft); color: var(--pending); }
+.tc-badge.info { background: var(--primary-soft); color: var(--navy); }
+
+/* Transformer card */
+.tc-tr { border: 1px solid var(--border-control); border-radius: var(--radius-lg); background: var(--surface); padding: var(--space-3) var(--space-4); }
+.tc-tr .top { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.tc-tr .mdb { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2); margin-top: var(--space-3); }
+.tc-tr .angles { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2); margin-top: var(--space-3); }
+.tc-tr .angles .tc-photo { width: 100%; font-size: 12px; line-height: 18px; }
+
+/* Signature */
+.tc-sign { height: 140px; border: 1.5px dashed var(--border-control); border-radius: var(--radius-sm); background: var(--surface); position: relative; }
+.tc-sign .line { position: absolute; left: var(--space-4); right: var(--space-4); bottom: 36px; border-bottom: 1px solid var(--paper-rule); }
+.tc-sign .x { position: absolute; left: var(--space-4); bottom: 38px; font: 700 17px/26px var(--font-sans); color: var(--ink-muted); }
+.tc-sign .who { position: absolute; left: var(--space-4); bottom: 8px; font: 400 14px/21px var(--font-sans); color: var(--ink-muted); }
+.tc-sign path { fill: none; stroke: var(--paper-value); stroke-width: 2.5; stroke-linecap: round; }

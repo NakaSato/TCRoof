@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>PWA Solar Survey — รายการงานสำรวจ (iPhone)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head" style="flex-direction:column;align-items:stretch;gap:10px;padding:0 16px 14px;border-bottom-left-radius:15px;border-bottom-right-radius:15px">
+<div aria-hidden="true" style="height:44px;margin:0 -16px -8px;padding:0 26px 0 32px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700"><span>9:41</span><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 18 12" style="width:18px;height:12px;fill:#fff"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><svg viewBox="0 0 16 12" style="width:16px;height:12px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round"><path d="M1.5 4.5a9.5 9.5 0 0 1 13 0M4 7.3a6 6 0 0 1 8 0M6.5 10a2.4 2.4 0 0 1 3 0"></path></svg><svg viewBox="0 0 27 13" style="width:27px;height:13px"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".5"></rect><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"></rect><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"></rect></svg></span></div>
+<div style="min-width:0"><div style="font-size:22px;line-height:28px;font-weight:700">PWA Solar Survey</div><div style="font-size:13px;line-height:18px;opacity:.9">การประปาส่วนภูมิภาค</div></div>
+<div style="display:flex;gap:8px"><div style="flex-grow:1;min-width:0;display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,0.96);color:#5B6B82;font-size:14px"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ค้นหาเลขที่ ชื่อโครงการ…</span></div></div>
+</header>
+<div role="tablist" style="display:flex;gap:6px;padding:12px 16px 0"><button role="tab" onClick="{{fAll}}" style="{{sAll}}">ทั้งหมด<b style="{{cAll}}">{{nAll}}</b></button><button role="tab" onClick="{{fDoing}}" style="{{sDoing}}">กำลังทำ<b style="{{cDoing}}">{{nDoing}}</b></button><button role="tab" onClick="{{fDraft}}" style="{{sDraft}}">ร่าง<b style="{{cDraft}}">{{nDraft}}</b></button></div>
+<div style="display:flex;align-items:center;gap:8px;padding:4px 16px 2px"><b style="font-size:16px">{{listTitle}}</b><span style="font-size:13px;color:#5B6B82">{{listCount}}</span><span style="margin-left:auto;min-height:44px;display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#1F6FB5">แก้ไขล่าสุด ▾</span></div>
+<main style="flex-grow:1;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:0 16px 100px"><sc-for list="{{jobs}}" as="j" hint-placeholder-count="6"><a href="{{j.href}}" style="display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid {{j.bd}};border-radius:16px;padding:12px 14px 10px;text-decoration:none;color:#16325C;box-shadow:0 3px 8px rgba(22,50,92,0.08);flex:none">
+<div style="display:flex;align-items:flex-start;gap:10px">
+<div style="flex-grow:1;min-width:0;line-height:19px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;font-weight:700;color:#5B6B82">{{j.noTxt}}</span><span style="{{j.badge}}">{{j.badgeTxt}}</span></div>
+<div style="font-size:16px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{{j.nameSt}}">{{j.title}}</div>
+<div style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{j.sub}}</div></div>
+<svg viewBox="0 0 52 52" style="width:44px;height:44px;flex:none"><circle cx="26" cy="26" r="22" fill="none" stroke="#DDE4ED" stroke-width="5"></circle><circle cx="26" cy="26" r="22" fill="none" stroke="{{j.ring}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{j.dash}}" transform="rotate(-90 26 26)"></circle><text x="26" y="30.5" font-size="13" font-weight="700" text-anchor="middle" fill="#16325C">{{j.pct}}%</text></svg></div>
+<div style="display:flex;gap:2px"><sc-for list="{{j.caps}}" as="c" hint-placeholder-count="13"><i style="{{c.st}}"></i></sc-for></div>
+<div style="display:flex;align-items:center;gap:6px;min-height:34px;border-radius:9px;background:{{j.nextBg}};padding:0 10px"><span style="font-size:11px;color:#5B6B82;white-space:nowrap">ทำต่อ {{j.stepTxt}}</span><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{j.nxt}}</b><span style="margin-left:auto;font-size:17px;color:#1F6FB5">›</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:4px"><sc-for list="{{j.tags}}" as="g" hint-placeholder-count="3"><span style="font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;background:#E3EEF8;color:#16325C">{{g.t}}</span></sc-for></div>
+<div style="display:flex;align-items:center;gap:5px;border-top:1px solid #DDE4ED;padding-top:8px;font-size:12px;color:#5B6B82"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;width:16px;height:16px"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>{{j.date}} · {{j.time}}</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:3px"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;width:16px;height:16px"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M21 16l-5-5-8 8"></path></svg>{{j.photos}}</span><span role="img" aria-label="{{j.syncTxt}}" title="{{j.syncTxt}}" style="display:inline-flex;align-items:center;margin-left:4px"><sc-if value="{{j.isSynced}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:#3B7420;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 18h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 8.6 4.7 4.7 0 0 0 7 18z"></path><path d="M9.3 13.2l1.9 1.9 3.6-3.7"></path></svg></sc-if><sc-if value="{{j.isPending}}" hint-placeholder-val="{{true}}"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:#B45309;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 18h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 8.6 4.7 4.7 0 0 0 7 18z"></path><path d="M12 15.5v-5M9.8 12.6 12 10.4l2.2 2.2"></path></svg></sc-if></span></div>
+</a></sc-for></main>
+<a href="PhoneA1.dc.html" aria-label="งานสำรวจใหม่" style="position:absolute;right:20px;bottom:34px;z-index:5;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1F6FB5,#2E8FDB);color:#fff;display:grid;place-items:center;text-decoration:none;box-shadow:0 6px 16px rgba(22,50,92,0.35)"><svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const f = st.f || 'All', synced = !!st.synced;
+    const RAW = [{"id": "224", "no": "224", "name": "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1", "place": "ต.หนองบัว อ.เมือง จ.ตัวอย่าง", "kwp": 120, "pct": 72, "date": "29/9/2569", "time": "23:05", "photos": 31, "sync": "pending", "caps": "ok ok ok ok ok ok ok ok ok ok miss cur -", "nxt": "D1 ถังน้ำใส", "nstep": 12, "href": "iPadD1.dc.html", "miss": 3, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×2", "D ถังน้ำใส ×1"]}, {"id": "120", "no": "120", "name": "การประปาวัดชัย", "place": "สถานีผลิตน้ำวัดชัย", "kwp": 250, "pct": 84, "date": "29/9/2569", "time": "16:40", "photos": 24, "sync": "ok", "caps": "ok ok ok ok ok ok ok ok ok ok ok ok cur", "nxt": "E1 สรุปผลและลงนาม", "nstep": 13, "href": "PhoneA1.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1", "D ถังน้ำใส ×1"]}, {"id": "111", "no": "111", "name": "", "place": "", "kwp": 0, "pct": 13, "date": "29/9/2569", "time": "14:12", "photos": 0, "sync": "ok", "caps": "ok cur - - - - - - - - - - -", "nxt": "A2 ภาพสถานที่ติดตั้ง", "nstep": 2, "href": "iPadA2.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1"]}, {"id": "d1", "no": "", "name": "", "place": "", "kwp": 0, "pct": 20, "date": "29/9/2569", "time": "11:30", "photos": 2, "sync": "pending", "caps": "ok ok cur - - - - - - - - - -", "nxt": "A3 หม้อแปลง · MDB", "nstep": 3, "href": "iPadA3.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1"]}, {"id": "d2", "no": "", "name": "", "place": "", "kwp": 0, "pct": 2, "date": "29/9/2569", "time": "10:02", "photos": 0, "sync": "ok", "caps": "cur - - - - - - - - - - - -", "nxt": "A1 ข้อมูลโครงการ", "nstep": 1, "href": "PhoneA1.dc.html", "miss": 0, "tags": ["B ระบบไฟฟ้า ×5", "C หลังคา ×1"]}, {"id": "d3", "no": "", "name": "", "place": "", "kwp": 0, "pct": 1, "date": "29/9/2569", "time": "09:48", "photos": 0, "sync": "ok", "caps": "cur - - - - - - - - - - - -", "nxt": "A1 ข้อมูลโครงการ", "nstep": 1, "href": "PhoneA1.dc.html", "miss": 0, "tags": ["C หลังคา ×1"]}];
+    const jobsAll = RAW.map(j => ({ ...j, sync: synced ? 'ok' : j.sync }));
+    const isDraft = j => !j.name;
+    const test = { All: () => true, Doing: j => j.pct < 100 && !isDraft(j), Draft: isDraft, Sync: j => j.sync !== 'ok' };
+    const C = 2 * Math.PI * 22;
+    const capSt = s => 'flex:1;height:6px;border-radius:3px;background:' + (s === 'ok' ? '#70AD47' : s === 'cur' ? '#1F6FB5' : s === 'miss' ? '#B45309' : '#DDE4ED');
+    const v = {};
+    v.jobs = jobsAll.filter(test[f]).map(j => ({
+      href: j.href, noTxt: j.no ? 'NO.' + j.no : 'NO. —', title: j.name || 'ยังไม่ได้ตั้งชื่อโครงการ', nameSt: j.name ? '' : 'color:#5B6B82',
+      sub: j.name ? (j.place + (j.kwp ? ' · ' + j.kwp + ' kWp' : '')) : 'แตะเพื่อกรอกข้อมูลโครงการใน A1',
+      badge: isDraft(j) ? 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:#E3EEF8;color:#5B6B82' : (j.miss ? 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:#FFF4E5;color:#B45309' : 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;background:#E2EFDA;color:#3B7420'),
+      badgeTxt: isDraft(j) ? 'ร่าง' : (j.miss ? 'ยังขาด ' + j.miss + ' ช่อง' : 'ครบ'),
+      pct: j.pct, dash: (C * j.pct / 100).toFixed(1) + ' ' + C.toFixed(1), ring: j.pct >= 100 ? '#70AD47' : '#1F6FB5',
+      caps: j.caps.split(' ').map(s => ({ st: capSt(s) })), nxt: j.nxt, stepTxt: j.nstep + '/13', nextBg: '#E3EEF8',
+      tags: j.tags.map(t => ({ t })), date: j.date, time: j.time, photos: j.photos,
+      syncTxt: j.sync === 'ok' ? 'ซิงก์แล้ว' : 'รอซิงก์', isSynced: j.sync === 'ok', isPending: j.sync !== 'ok', // icon only: cloud ↑ = waiting, cloud ✓ = synced
+      bd: j.id === '224' ? '#1F6FB5' : '#DDE4ED'
+    }));
+    const on = 'flex:1 1 0;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:0;background:#16325C;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+    const off = 'flex:1 1 0;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:1px solid #DDE4ED;background:#fff;color:#16325C;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap';
+    const cnt = (o, warn) => 'min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:700;' + (o ? 'background:rgba(255,255,255,0.22);color:#fff' : warn ? 'background:#FFF4E5;color:#B45309' : 'background:#EEF2F7;color:#16325C');
+    const T = { All: 'งานทั้งหมด', Doing: 'กำลังสำรวจ', Draft: 'ร่าง', Sync: 'รอซิงก์' };
+    Object.keys(test).forEach(k => { v['n' + k] = jobsAll.filter(test[k]).length; v['s' + k] = f === k ? on : off; v['f' + k] = () => this.setState({ f: k }); v['c' + k] = cnt(f === k, k === 'Sync' && v['n' + k] > 0); });
+    v.listTitle = T[f]; v.listCount = v.jobs.length + ' งาน';
+    const pend = jobsAll.filter(test.Sync).length;
+    v.syncBtn = pend ? 'ซิงก์ (' + pend + ')' : 'ซิงก์แล้ว';
+    v.doSync = () => this.setState({ synced: true });
+    v.syncBtnSt = 'min-height:34px;padding:0 12px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;' + (pend ? 'border:0;background:#1F6FB5;color:#fff' : 'border:1px solid #DDE4ED;background:#fff;color:#2E9E5B');
+    v.footDot = 'width:8px;height:8px;border-radius:50%;background:' + (pend ? '#F08C00' : '#2E9E5B');
+    v.footTxt = pend ? 'ออนไลน์ · มี ' + pend + ' งานรอซิงก์ขึ้นคลาวด์' : 'ออนไลน์ · ซิงก์ครบทุกงานแล้ว 23:36';
+    return v;
+  }
+}
+</script>
+</body>
+</html>

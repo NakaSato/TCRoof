@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แผนก่อสร้าง — ปฏิทิน (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/tcroofsurvey/tokens.css">
+<link rel="stylesheet" href="ds/tcroofsurvey/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0;background:var(--background)}
+/* page-local pieces, built only from DS tokens */
+.pc-nav{flex:none;min-height:72px;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-6);background:var(--surface);border-bottom:1px solid var(--border-subtle)}
+.pc-crumb{font:400 14px/21px var(--font-sans);color:var(--ink-muted)}
+.pc-crumb b{font-weight:700;color:var(--navy)}
+.pc-cap{font:700 12px/18px var(--font-sans);color:var(--ink-muted)}
+.pc-hint{font:400 14px/21px var(--font-sans);color:var(--ink-muted)}
+.pc-day{min-height:44px;height:100%;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:3px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface);padding:var(--space-1);cursor:pointer;font-family:var(--font-sans);text-align:left;overflow:hidden;min-width:0}
+.pc-num{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;font:700 16px/24px var(--font-sans);color:var(--navy)}
+.pc-ev{display:flex;align-items:center;gap:4px;min-width:0;border-radius:4px;padding:0 4px;font:700 12px/18px var(--font-sans);color:var(--navy);background:var(--background);white-space:nowrap;overflow:hidden}
+.pc-ev i{width:8px;height:8px;border-radius:50%;flex:none}
+.pc-ev span{overflow:hidden;text-overflow:ellipsis}
+.pc-seg{flex:none;display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--background);border:1px solid var(--border-subtle)}
+.pc-seg button{white-space:nowrap;min-height:38px;min-width:38px;padding:0 var(--space-3);border:0;border-radius:var(--radius-sm);background:none;display:grid;place-items:center;font:700 14px/21px var(--font-sans);color:var(--navy);cursor:pointer}
+.pc-seg button.on{background:var(--surface);box-shadow:var(--shadow-card)}
+.pc-filter{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 10px;white-space:nowrap;flex:none;border-radius:var(--radius-pill);border:1px solid var(--border-subtle);background:var(--surface);font:700 13px/20px var(--font-sans);color:var(--ink-muted);cursor:pointer}
+.pc-filter i{width:8px;height:8px;border-radius:50%}
+.pc-filter.on{border-color:var(--navy);color:var(--navy);background:var(--primary-soft)}
+.pc-month{flex-grow:1;min-height:0;display:flex;flex-direction:column;border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden}
+.pc-wdrow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--surface)}
+.pc-wdrow div{padding:6px var(--space-3);font:700 12px/18px var(--font-sans);color:var(--ink-muted);letter-spacing:.02em}
+.pc-week{flex:1 1 0;min-height:0;position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:32px repeat(3,20px) minmax(20px,1fr);row-gap:2px;border-top:1px solid var(--border-subtle);overflow:hidden}
+.pc-cell{grid-row:1 / -1;position:relative;border:0;border-left:1px solid var(--border-subtle);background:var(--surface);padding:4px 6px;text-align:left;cursor:pointer;font-family:var(--font-sans);display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between}
+.pc-cell:first-child{border-left:0}
+.pc-cell .n{min-width:26px;height:26px;padding:0 6px;border-radius:var(--radius-pill);display:grid;place-items:center;font:700 15px/22px var(--font-sans);color:var(--navy)}
+.pc-bar{position:relative;z-index:1;pointer-events:none;margin:0 4px;display:flex;align-items:center;gap:6px;min-width:0;height:20px;padding:0 6px;font:700 12px/18px var(--font-sans);color:var(--navy);white-space:nowrap;overflow:hidden}
+.pc-bar span{overflow:hidden;text-overflow:ellipsis}
+.pc-bar em{font-style:normal;font-weight:400;color:var(--ink-muted)}
+.pc-sv{position:relative;z-index:1;pointer-events:none;grid-row:5;align-self:end;margin:0 6px 4px;display:inline-flex;align-items:center;gap:4px;justify-self:start;height:20px;padding:0 8px;border-radius:var(--radius-pill);border:1px dashed var(--border-control);background:var(--surface);font:700 12px/18px var(--font-sans);color:var(--navy);white-space:nowrap}
+.pc-dots{height:8px;display:flex;gap:3px;align-items:center}
+.pc-dots i{width:8px;height:8px;border-radius:50%}
+.pc-team{display:inline-flex;align-items:center;gap:var(--space-1);border-radius:var(--radius-pill);border:1px solid var(--border-control);background:var(--surface);padding:0 8px;font:700 12px/18px var(--font-sans);color:var(--navy);white-space:nowrap}
+.pc-team i{width:8px;height:8px;border-radius:50%}
+.pc-item{display:flex;gap:var(--space-3);padding:var(--space-3);border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border-subtle);text-decoration:none;color:var(--paper-ink)}
+.pc-item .t{font:700 16px/24px var(--font-sans);color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-meta{display:flex;align-items:center;gap:var(--space-1);font:400 14px/21px var(--font-sans);color:var(--ink-muted)}
+.pc-meta svg.ic{width:16px;height:16px;color:var(--muted)}
+</style>
+</helmet>
+<div class="tc" style="position:relative;width:1366px;height:1024px;display:flex;flex-direction:column;overflow:hidden;background:var(--background)">
+<nav class="pc-nav" aria-label="การนำทาง"><a href="iPadMenu.dc.html" class="tc-btn secondary" aria-label="กลับหน้าหลัก" style="text-decoration:none;width:44px;padding:0"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><div style="display:flex;flex-direction:column;min-width:0"><div style="font:700 24px/34px var(--font-sans);color:var(--navy)">แผนก่อสร้าง</div><span class="pc-crumb">หน้าหลัก <span aria-hidden="true">›</span> แผนก่อสร้างและเอกสาร <span aria-hidden="true">›</span> <b>ปฏิทิน</b></span></div><span style="margin-left:auto;display:flex;align-items:center;gap:var(--space-4)"><a href="iPadPlanList.dc.html" class="tc-btn secondary" style="text-decoration:none"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></svg>ดูรายการแผนก่อสร้าง</a></span></nav>
+<main style="flex-grow:1;padding:var(--space-4) var(--space-6) var(--space-6);display:flex;flex-direction:column;min-height:0">
+<div style="flex-grow:1;display:flex;gap:var(--space-4);align-items:stretch;min-height:0">
+<section class="tc-card" style="flex-grow:1;min-width:0;min-height:0;overflow:hidden;padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)">
+<div style="display:flex;align-items:center;gap:var(--space-3)"><div style="display:flex;flex-direction:column;flex:none"><div style="font:700 24px/34px var(--font-sans);color:var(--navy)">{{monTxt}}</div><div class="pc-hint">{{monSub}}</div></div><span style="flex-grow:1"></span><div class="pc-seg" role="group" aria-label="เลื่อนเดือน"><button onClick="{{prev}}" aria-label="เดือนก่อนหน้า"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></button><button onClick="{{goToday}}" class="on">วันนี้</button><button onClick="{{next}}" aria-label="เดือนถัดไป"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button></div></div>
+<div class="pc-month">
+<div class="pc-wdrow"><sc-for list="{{wd}}" as="w" hint-placeholder-count="7"><div style="{{w.st}}">{{w.t}}</div></sc-for></div>
+<sc-for list="{{weeks}}" as="wk" hint-placeholder-count="5"><div class="pc-week">
+<sc-for list="{{wk.days}}" as="d" hint-placeholder-count="7"><button onClick="{{d.go}}" aria-label="{{d.aria}}" aria-pressed="{{d.sel}}" class="pc-cell" style="{{d.st}}"><span class="n" style="{{d.numSt}}">{{d.n}}</span></button></sc-for>
+<sc-for list="{{wk.bars}}" as="b" hint-placeholder-count="2"><div class="pc-bar" style="{{b.st}}"><span>{{b.t}}</span><em>{{b.sub}}</em></div></sc-for>
+<sc-for list="{{wk.svs}}" as="v" hint-placeholder-count="1"><div class="pc-sv" style="{{v.st}}">{{v.t}}</div></sc-for>
+</div></sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><sc-for list="{{filters}}" as="f" hint-placeholder-count="5"><button onClick="{{f.go}}" class="pc-filter" style="{{f.st}}" aria-pressed="{{f.on}}"><i style="{{f.dot}}"></i>{{f.t}}<span style="font-weight:400;color:var(--ink-muted)">{{f.n}}</span></button></sc-for><span class="pc-hint" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:18px;height:14px;border:1px dashed var(--border-control);border-radius:var(--radius-pill)"></span>นัดสำรวจ</span></div>
+</section>
+<aside class="tc-card" style="width:360px;flex:none;padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:0">
+<div style="background:var(--paper-band);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-subtle)"><div style="font:700 17px/26px var(--font-sans);color:var(--paper-ink)">{{dayTitle}}</div><div class="pc-cap" style="color:var(--paper-ink);font-weight:400">{{daySub}}</div></div>
+<div style="flex-grow:1;min-height:0;overflow:auto;padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)">
+<sc-if value="{{hasSurvey}}" hint-placeholder-val="true"><div style="display:flex;flex-direction:column;gap:var(--space-2)"><div class="pc-cap">งานสำรวจ</div>
+<sc-for list="{{surveys}}" as="s" hint-placeholder-count="1"><a href="{{s.href}}" class="pc-item" style="align-items:center"><span style="color:var(--primary);display:flex"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l1 2h2v14H6V6h2zM9 11h6M9 15h4"></path></svg></span><span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><span class="t">{{s.title}}</span><span class="pc-hint">{{s.detail}}</span></span><sc-if value="{{s.pwa}}" hint-placeholder-val="false"><span class="tc-badge info">แบบ กปภ.</span></sc-if></a></sc-for></div></sc-if>
+<div class="pc-cap">งานติดตั้ง</div>
+<sc-if value="{{noJobs}}" hint-placeholder-val="false"><div class="tc-note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 8h.01"></path></svg><span>ไม่มีงานติดตั้งในวันนี้</span></div></sc-if>
+<sc-for list="{{dayJobs}}" as="j" hint-placeholder-count="1"><a href="iPadPlanJob.dc.html" class="pc-item" style="position:relative;flex-direction:column;gap:var(--space-1);padding-left:calc(var(--space-3) + 4px);overflow:hidden"><i style="position:absolute;left:0;top:0;bottom:0;width:4px;{{j.bar}}"></i><span style="display:flex;align-items:center;gap:var(--space-2)"><span class="t">{{j.code}}</span><span class="tc-badge info" style="margin-left:auto;white-space:nowrap;flex:none">Day {{j.day}}/{{j.days}}</span></span><span style="font:400 16px/24px var(--font-sans);color:var(--paper-ink)">{{j.project}}</span><span class="pc-meta"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg><b style="color:var(--paper-value)">{{j.kw}}</b><span style="margin:0 var(--space-1)">·</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12zM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"></path></svg>{{j.province}}</span><sc-if value="{{j.showCust}}" hint-placeholder-val="false"><span class="pc-meta"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg>{{j.customer}}</span></sc-if><span class="pc-team" style="align-self:flex-start;margin-top:2px"><i style="{{j.tagSt}}"></i>ทีม {{j.team}}</span></a></sc-for>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TEAM = { TCR01: '#2E9E5B', TCR02: '#8B3FD9', TCR03: '#2F6FDB', TCR04: '#F08A24' };
+    const STATUS = { interested: ['ลูกค้าสนใจติดตั้ง', '#4DA3E0'], confirmed: ['ลูกค้ายืนยันติดตั้ง', '#27A99A'], installing: ['กำลังติดตั้ง', '#F08A24'], completed: ['ติดตั้งเสร็จสิ้น', '#2E9E5B'] };
+    const SEEDS = [
+      ['คุณดารา ภัทรปรีดา', 'คุณดารา ภัทรปรีดา', '0812345678', '99/12 ซ.ลาดพร้าว 71 แขวงลาดพร้าว เขตลาดพร้าว', 'กรุงเทพมหานคร', 14.08, 'TCR01', 'installing', -14, -1, 4],
+      ['บริษัท คิดดี จำกัด', 'บริษัท คิดดี จำกัด', '038123456', '88 ม.3 ต.บ้านสวน อ.เมือง', 'ชลบุรี', 49.5, 'TCR02', 'confirmed', -10, 1, 5],
+      ['คุณนพพร วีระโชติ', 'คุณนพพร วีระโชติ', '0891112222', '12 ถ.งามวงศ์วาน ต.บางกระสอ อ.เมือง', 'นนทบุรี', 5.5, 'TCR03', 'interested', 0, 16, 2],
+      ['คุณรยา จุลพัฒน์', 'คุณรยา จุลพัฒน์', '0865554444', '45/8 ซ.สุขุมวิท 101 แขวงบางจาก เขตพระโขนง', 'กรุงเทพมหานคร', 10.23, 'TCR01', 'interested', 1, 20, 3],
+      ['โรงงานสยามแพ็คกิ้ง', 'บริษัท สยามแพ็คกิ้ง จำกัด', '025551234', '234 นิคมอุตสาหกรรมบางปู', 'สมุทรปราการ', 199.8, 'TCR04', 'confirmed', -21, 3, 12],
+      ['คุณสมศักดิ์ ใจดี', 'คุณสมศักดิ์ ใจดี', '0823334444', '7 ม.5 ต.คลองหนึ่ง อ.คลองหลวง', 'ปทุมธานี', 8.25, 'TCR03', 'confirmed', -5, 5, 2],
+      ['ร้านกาแฟบ้านสวน', 'คุณวิภาวรรณ ศรีสุข', '0847778888', '19 ถ.สุขุมวิท ต.เนินพระ อ.เมือง', 'ระยอง', 15.4, 'TCR02', 'interested', 3, 25, 3],
+      ['คุณปกรณ์ ศักดิ์สิทธิ์', 'คุณปกรณ์ ศักดิ์สิทธิ์', '0810009999', '301 ซ.รามอินทรา 40 แขวงนวลจันทร์ เขตบึงกุ่ม', 'กรุงเทพมหานคร', 6.6, 'TCR01', 'completed', -30, -12, 2],
+      ['หอพักกรีนเพลส', 'คุณอารีย์ มั่นคง', '0852221111', '55 ถ.พหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง', 'ปทุมธานี', 30.25, 'TCR04', 'interested', 5, 40, 4],
+      ['คุณธนา วงศ์ใหญ่', 'คุณธนา วงศ์ใหญ่', '0879990000', '8/3 ม.2 ต.บางพูด อ.ปากเกร็ด', 'นนทบุรี', 11.0, 'TCR02', 'confirmed', -8, 8, 3]
+    ];
+    const TODAY = new Date(2026, 8, 30);
+    const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const TH_M = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    const TH_MS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const thaiLong = d => d.getDate() + ' ' + TH_M[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+    const thaiShort = d => d.getDate() + ' ' + TH_MS[d.getMonth()] + ' ' + String(d.getFullYear() + 543).slice(2);
+    const monthYear = d => TH_M[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+    const kw = v => (Math.round(v * 100) / 100).toLocaleString('en-US') + ' kW';
+    const JOBS = SEEDS.map((s, i) => { const start = addD(TODAY, s[9]); return { i, code: 'TCR2569-' + (23401 + i), project: s[0], customer: s[1], phone: s[2], address: s[3], province: s[4], kw: s[5], team: s[6], status: s[7],
+      survey: addD(TODAY, s[8]), start, days: s[10], end: addD(start, Math.max(s[10], 1) - 1) }; });
+    const installDay = (j, d) => { const diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - j.start) / 864e5); return diff >= 0 && diff < Math.max(j.days, 1) ? diff + 1 : null; };
+    // PWA NO.224 report (SurveyCore) dated 29/9/2569, not linked to a TCRoof job
+    const REPORTS = [{ date: new Date(2026, 8, 29), title: 'กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1', detail: 'ยังไม่ผูกกับงาน · NO.224 · 29 ก.ย. 69 · กรอกแล้ว 72%' }];
+    const st = Object.assign({ y: 2026, m: 8, sel: 30, sm: 8 }, this.state || {});
+    const first = new Date(st.y, st.m, 1), lead = first.getDay(), count = new Date(st.y, st.m + 1, 0).getDate();
+    const cellsN = Math.ceil((lead + count) / 7) * 7, start = addD(first, -lead);
+    const selD = new Date(st.y, st.sm, st.sel);
+    const jobsOn = d => JOBS.filter(j => installDay(j, d) !== null);
+    const surveysOn = d => ({ appts: JOBS.filter(j => same(j.survey, d)), reports: REPORTS.filter(r => same(r.date, d)) });
+    const team = st.team || 'all';
+    const tint = (hex, a) => 'rgba(' + [1, 3, 5].map(k => parseInt(hex.slice(k, k + 2), 16)).join(',') + ',' + a + ')';
+    const vis = JOBS.filter(j => team === 'all' || j.team === team);
+    const weeks = [];
+    for (let w = 0; w < cellsN / 7; w++) {
+      const ws = addD(start, w * 7), we = addD(ws, 6);
+      const days = [], svs = [];
+      for (let c = 0; c < 7; c++) {
+        const d = addD(ws, c), inM = d.getMonth() === st.m, isSel = same(d, selD), wk = d.getDay() % 6 === 0, isT = same(d, TODAY);
+        const sv = surveysOn(d), nS = sv.appts.length + sv.reports.length, nJ = jobsOn(d).length;
+        days.push({ n: d.getDate() === 1 ? d.getDate() + ' ' + TH_MS[d.getMonth()] : d.getDate(), sel: String(isSel), aria: thaiLong(d) + ', ' + nJ + ' งานติดตั้ง' + (nS ? ', นัดสำรวจ ' + nS : ''),
+          go: () => this.setState({ sel: d.getDate(), sm: d.getMonth(), y: d.getFullYear(), m: st.m }),
+          st: 'grid-column:' + (c + 1) + ';' + (isSel ? 'background:var(--primary-soft);box-shadow:inset 0 0 0 2px var(--primary)' : wk || !inM ? 'background:var(--paper-page)' : ''),
+          numSt: isT ? 'background:var(--primary);color:var(--on-primary)' : inM ? '' : 'color:var(--muted);font-weight:400' });
+        if (nS) svs.push({ t: 'นัดสำรวจ ' + nS, st: 'grid-column:' + (c + 1) });
+      }
+      // lanes: jobs overlapping this week, earliest first
+      const lanes = [], bars = [];
+      vis.filter(j => j.start <= we && j.end >= ws).sort((a, b) => a.start - b.start || b.days - a.days).forEach(j => {
+        const s0 = j.start < ws ? ws : j.start, e0 = j.end > we ? we : j.end;
+        const c0 = Math.round((s0 - ws) / 864e5), c1 = Math.round((e0 - ws) / 864e5);
+        let lane = lanes.findIndex(end => end < c0); if (lane < 0) { lane = lanes.length; lanes.push(-1); } lanes[lane] = c1;
+        if (lane > 2) return;
+        const open = j.start < ws, cont = j.end > we, col = TEAM[j.team];
+        const span1 = c1 === c0;
+        bars.push({ t: span1 ? j.team : j.team + ' · ' + j.customer.replace(/^(คุณ|บริษัท )/, ''), sub: span1 ? '' : (open ? 'ต่อ · ' : '') + j.days + ' วัน · ' + kw(j.kw),
+          st: 'grid-row:' + (lane + 2) + ';grid-column:' + (c0 + 1) + ' / span ' + (c1 - c0 + 1) + ';background:' + tint(col, 0.18) +
+            (open ? ';margin-left:0' : '') + (cont ? ';margin-right:0' : '') + ';border-radius:' + (open ? '0' : '4px') + ' ' + (cont ? '0 0' : '4px 4px') + ' ' + (open ? '0' : '4px') });
+      });
+      weeks.push({ days, bars, svs });
+    }
+    const mA = new Date(st.y, st.m, 1), mB = new Date(st.y, st.m + 1, 0);
+    const inMonth = JOBS.filter(j => j.start <= mB && j.end >= mA);
+    const sv = surveysOn(selD), dj = jobsOn(selD);
+    const move = dm => { const d = new Date(st.y, st.m + dm, 1); this.setState({ y: d.getFullYear(), m: d.getMonth() }); };
+    return {
+      monTxt: monthYear(first), prev: () => move(-1), next: () => move(1), goToday: () => this.setState({ y: 2026, m: 8, sm: 8, sel: 30 }),
+      wd: ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'].map((t, i) => ({ t, st: i % 6 === 0 ? 'color:var(--muted)' : '' })), weeks,
+      monSub: inMonth.length + ' งานติดตั้ง · ' + JOBS.filter(j => j.survey >= mA && j.survey <= mB).length + ' นัดสำรวจ · ' + (new Set(inMonth.map(j => j.team))).size + ' ทีมทำงาน',
+      filters: [{ id: 'all', t: 'ทุกทีม', c: 'var(--navy)' }].concat(Object.keys(TEAM).map(id => ({ id, t: id, c: TEAM[id] }))).map(f => ({ t: f.t, on: String(team === f.id), n: f.id === 'all' ? inMonth.length : inMonth.filter(j => j.team === f.id).length,
+        dot: 'background:' + f.c, st: team === f.id ? 'border-color:var(--navy);color:var(--navy);background:var(--primary-soft)' : '', go: () => this.setState({ team: f.id }) })),
+      dayTitle: (same(selD, TODAY) ? 'วันนี้ · ' : '') + thaiLong(selD),
+      daySub: (sv.appts.length + sv.reports.length) + ' งานสำรวจ · ' + dj.length + ' งานติดตั้ง',
+      hasSurvey: sv.appts.length + sv.reports.length > 0,
+      surveys: sv.appts.map(j => ({ href: 'iPadPlanJob.dc.html', title: j.code + ' · ' + j.project, detail: 'นัดสำรวจ 09:00' + (j.customer !== j.project ? ' · ' + j.customer : ''), pwa: false }))
+        .concat(sv.reports.map(r => ({ href: 'iPadHome.dc.html', title: r.title, detail: r.detail, pwa: true }))),
+      noJobs: dj.length === 0,
+      dayJobs: dj.map(j => ({ team: j.team, tagSt: 'background:' + TEAM[j.team], bar: 'background:' + TEAM[j.team], code: j.code, day: installDay(j, selD), days: j.days, kw: kw(j.kw), province: j.province, customer: j.customer, project: j.project, showCust: j.customer !== j.project }))
+    };
+  }
+}
+</script>
+</body>
+</html>

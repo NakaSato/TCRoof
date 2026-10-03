@@ -85,6 +85,11 @@ struct HomeView: View {
     @State private var showSurveyList = false
     @State private var installLogs: Job?
     @AppStorage("userName") private var engineerName = ""
+    @State private var notificationService = NotificationService.shared
+    /// A screen opened from a system notification.
+    @State private var linked: LinkedScreen?
+    @State private var shareURL: SharedLink?
+    @Environment(\.openURL) private var openURL
 
     private var todaysJobs: [Job] {
         jobs.filter { $0.installDay(on: .now) != nil || $0.surveyDate.isToday }
@@ -106,6 +111,19 @@ struct HomeView: View {
         .navigationDestination(item: $openReport) { SurveyReportEditor(jobID: $0.id, start: $0.start) }
         .navigationDestination(item: $installLogs) { JobInstallLogsView(job: $0) }
         .navigationDestination(isPresented: $showSurveyList) { SurveyListView() }
+        .navigationDestination(item: $linked) { screen in
+            switch screen {
+            case .pending: SolarSurveyReportView(unsyncedOnly: true)
+            case .tools(let action): ToolsPlaceholderView(request: action)
+            }
+        }
+        .sheet(item: $shareURL) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
+        .onChange(of: notificationService.link, initial: true) { _, link in
+            guard let link else { return }
+            notificationService.link = nil
+            open(link)
+        }
+        .onChange(of: unreadCount, initial: true) { _, n in notificationService.setBadge(n) }
         .sheet(item: $startReport) { job in
             SurveyTemplatePicker { t in
                 let survey = session.survey
@@ -246,9 +264,62 @@ struct HomeView: View {
     private func markRead(_ list: [AppNotification]) {
         let shown = Set(notifications.map(\.id))
         readRaw = readIDs.intersection(shown).union(list.map(\.id)).sorted().joined(separator: "\n")
+        notificationService.bellRead(Set(list.map(\.id)))
     }
 
     private func sync() { session.survey.cloudPush?() }
+
+    private var unreadCount: Int {
+        let read = readIDs
+        return notifications.filter { !read.contains($0.id) }.count
+    }
+
+    // MARK: system notification links
+
+    /// Opens the screen a notification tap or quick action points to.
+    private func open(_ link: DeepLink) {
+        showNotifications = false
+        showSettings = false
+        switch link {
+        case .survey(let key):
+            guard let a = appointment(key: key) else { return }
+            openAppointment(a, at: a.nextStep?.page)
+        case .navigate(let key):
+            guard let a = appointment(key: key) else { return }
+            if let c = a.coordinate { openURL(mapsURL(c)) }
+            else if let q = a.job.address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), !q.isEmpty,
+                    let url = URL(string: "http://maps.apple.com/?daddr=\(q)&dirflg=d") { openURL(url) }
+        case .toolCamera, .toolQueue, .leaveQueue, .extendLoan, .toolRecord:
+            linked = .tools(action: notificationService.linkAction ?? "")
+        case .call(let phone):
+            let digits = phone.filter { $0.isNumber || $0 == "+" }
+            if let url = URL(string: "tel:\(digits)") { openURL(url) }
+        case .syncNow: sync()
+        case .pendingList: linked = .pending
+        case .driveFolder(let url): openURL(url)
+        case .share(let url): shareURL = SharedLink(url: url)
+        case .remindLater, .home: break
+        }
+    }
+
+    /// The appointment of a job by the key its notification carries (`syncID`, else the job code).
+    private func appointment(key: String) -> TodayAppointment? {
+        guard let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) else { return nil }
+        let report = job.syncID.flatMap { session.survey.jobs(linkedTo: $0).max { $0.updated < $1.updated } }
+        return TodayAppointment(job: job, report: report)
+    }
+}
+
+/// Screens only a notification opens: the survey home on รอซิงก์ (`ดูรายการ`), and the tools screen
+/// with the quick action's title.
+enum LinkedScreen: Hashable {
+    case pending
+    case tools(action: String)
+}
+
+struct SharedLink: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }
 
 private extension View {

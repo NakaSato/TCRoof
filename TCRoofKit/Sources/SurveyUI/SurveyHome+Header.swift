@@ -199,11 +199,12 @@ extension SurveyHomeView {
         }
     }
 
-    /// iPhone: one row of three pills instead of the boxes (docs/ui/pwa-solar-survey-iphone); รอซิงก์ stays in the ••• menu.
+    /// iPhone: one row of three pills instead of the boxes (docs/ui/pwa-solar-survey-iphone); รอซิงก์ stays in the ••• menu,
+    /// and shows as a fourth pill only while it is the filter (opened from the sync notification, or kept from the iPad layout).
     var filterPills: some View {
         let jobs = searched
         return HStack(spacing: 6) {
-            ForEach([Filter.all, .active, .draft], id: \.self) { f in
+            ForEach([Filter.all, .active, .draft] + (filter == .unsynced ? [.unsynced] : []), id: \.self) { f in
                 let on = filter == f
                 let n = jobs.filter { matches($0, f) }.count
                 Button { withAnimation(.snappy) { filter = f } } label: {

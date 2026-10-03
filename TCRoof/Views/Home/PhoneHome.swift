@@ -61,11 +61,19 @@ struct PhoneHome: View {
 
 /// `AppModule.tools` until the tools and calibration feature is built.
 struct ToolsPlaceholderView: View {
+    /// The quick action of a tools notification that opened this screen (`คืนอุปกรณ์`, `ดูคิว`…).
+    var request: String? = nil
+
     var body: some View {
         ContentUnavailableView {
             Label("เครื่องมือและอุปกรณ์วัด", systemImage: "briefcase")
         } description: {
             Text("รายการโดรน กล้องถ่ายภาพความร้อน แคลมป์มิเตอร์ และกำหนดสอบเทียบ จะเปิดใช้เร็ว ๆ นี้")
+        } actions: {
+            if let request, !request.isEmpty {
+                Text("จากการแจ้งเตือน: \(request)").font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
+                    .padding(.horizontal, 14).padding(.vertical, 6).background(Theme.primarySoft, in: Capsule())
+            }
         }
         .font(.sarabun(17))
         .navigationTitle("เครื่องมือและอุปกรณ์วัด")

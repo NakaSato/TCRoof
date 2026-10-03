@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofCore
 
 /// iPhone settings (docs/ui/tcroof-home-iphone states/06): grouped white cards on the page colour.
 struct PhoneSettingsList: View {
@@ -7,6 +8,7 @@ struct PhoneSettingsList: View {
     @AppStorage("userName") private var userName = ""
     @AppStorage("home.aiGreeting") private var aiGreeting = true
     @State private var sync = CloudSync.shared
+    @State private var notifications = NotificationService.shared
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -32,6 +34,7 @@ struct PhoneSettingsList: View {
                     .tint(Theme.primary)
                     .rowFrame()
                 }
+                notificationsSection
                 section("GOOGLE DRIVE") {
                     row("บัญชี Google", session.email.flatMap { $0.isEmpty ? nil : $0 } ?? "เชื่อมต่อแล้ว")
                     divider
@@ -75,6 +78,38 @@ struct PhoneSettingsList: View {
         .background(Theme.phonePage)
     }
 
+    /// One switch per notification group, and a way back in when iOS has them turned off.
+    private var notificationsSection: some View {
+        section("การแจ้งเตือน") {
+            switch notifications.authorization {
+            case .denied:
+                Button {
+                    if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
+                } label: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("การแจ้งเตือนถูกปิดอยู่").foregroundStyle(Theme.danger)
+                        Text("แตะเพื่อเปิดในการตั้งค่าของ iPhone ›").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                    }
+                    .rowFrame()
+                }
+                .buttonStyle(.plain)
+                divider
+            case .notDetermined:
+                Button { Task { await notifications.requestAuthorization() } } label: {
+                    Text("อนุญาตการแจ้งเตือน").font(.sarabun(16, .bold)).foregroundStyle(Theme.primary).rowFrame()
+                }
+                .buttonStyle(.plain)
+                divider
+            default: EmptyView()
+            }
+            ForEach(Array(NotificationGroup.allCases.enumerated()), id: \.element) { i, group in
+                if i > 0 { divider }
+                NotificationGroupToggle(group: group).rowFrame()
+            }
+        }
+        .task { await notifications.refreshAuthorization() }
+    }
+
     private var accountCard: some View {
         HStack(spacing: 12) {
             Text(userInitials(userName, email: session.email)).font(.sarabun(17, .heavy)).foregroundStyle(.white)
@@ -115,6 +150,22 @@ struct PhoneSettingsList: View {
     }
 
     private var divider: some View { Rectangle().fill(Theme.hairline).frame(height: 1) }
+}
+
+private struct NotificationGroupToggle: View {
+    let group: NotificationGroup
+    @AppStorage private var on: Bool
+
+    init(group: NotificationGroup) {
+        self.group = group
+        _on = AppStorage(wrappedValue: true, group.defaultsKey)
+    }
+
+    var body: some View {
+        Toggle(isOn: $on) { Text(group.title).foregroundStyle(Theme.navy) }
+            .tint(Theme.primary)
+            .onChange(of: on) { Task { await NotificationService.shared.groupChanged(group) } }
+    }
 }
 
 private extension View {

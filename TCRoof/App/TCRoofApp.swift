@@ -2,8 +2,17 @@ import SwiftUI
 import SwiftData
 import FirebaseCore
 
+/// Sets the notification delegate at launch, so a quick action that starts the app is still handled.
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        MainActor.assumeIsolated { NotificationService.shared.configure() }
+        return true
+    }
+}
+
 @main
 struct TCRoofApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     let container: ModelContainer = {
         let schema = Schema([
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
@@ -58,6 +67,7 @@ struct RootView: View {
                 }
             #endif
         }
+        .systemNotifications(survey: session.survey)
         .task {
             // report cards name the TCRoof job they belong to
             let context = context
@@ -70,6 +80,9 @@ struct RootView: View {
             #endif
             SampleData.removeSamples(context)
             CloudSync.shared.start(context: context, survey: session.survey)
+            let survey = session.survey
+            NotificationService.shared.syncNow = { survey.cloudPush?() }
+            if NotificationService.shared.takePendingSyncNow() { survey.cloudPush?() }
         }
     }
 }

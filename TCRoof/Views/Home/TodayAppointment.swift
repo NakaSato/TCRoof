@@ -35,11 +35,15 @@ struct TodayAppointment: Identifiable {
         return [doc ?? job.code, project].filter { !$0.isEmpty }.joined(separator: " ")
     }
 
-    /// "ต.หนองบัว อ.เมือง · 120 kWp": sub-district and district from the address, else the province.
-    var place: String {
+    /// "ต.หนองบัว อ.เมือง": sub-district and district from the address, else the province.
+    var area: String {
         let parts = job.address.split(separator: " ").map(String.init)
             .filter { p in ["ต.", "อ.", "แขวง", "เขต"].contains { p.hasPrefix($0) } }
-        let area = parts.isEmpty ? (job.province.isEmpty ? "" : "จ.\(job.province)") : parts.joined(separator: " ")
+        return parts.isEmpty ? (job.province.isEmpty ? "" : "จ.\(job.province)") : parts.joined(separator: " ")
+    }
+
+    /// "ต.หนองบัว อ.เมือง · 120 kWp"
+    var place: String {
         let size = job.capacityKW > 0 ? "\(job.capacityKW.plain) kWp" : ""
         return [area, size].filter { !$0.isEmpty }.joined(separator: " · ")
     }

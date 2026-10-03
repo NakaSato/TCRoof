@@ -25,6 +25,9 @@ public final class SurveyModel {
     public var cloudPending: Set<UUID>?
     /// Sends the pending jobs to the host's cloud now.
     @ObservationIgnored public var cloudPush: (() -> Void)?
+    /// Called after a Drive save succeeds, with the saved job (its `drive` link updated), the file kinds and
+    /// whether photos were sent. TCRoof posts `บันทึกขึ้น Drive แล้ว` from here.
+    @ObservationIgnored public var onDriveSaved: ((Job, [DriveSync.Kind], Bool) -> Void)?
     let cache = NSCache<NSString, UIImage>()
     /// Download progress per job of photos taken on another iPad.
     public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]

@@ -29,6 +29,7 @@ extension SurveyModel {
                                                      photos: photos ? job.driveFolders : [], photoData: { store.data(of: $0, in: id) },
                                                      progress: progress)
             keepLink(link, for: id)
+            onDriveSaved?(self.job(id) ?? job, kinds, photos)
             return files
         } catch let e as DriveSync.Interrupted {
             // remember the photos that did upload so a retry sends only the rest

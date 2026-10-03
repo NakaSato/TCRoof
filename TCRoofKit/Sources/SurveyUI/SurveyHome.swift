@@ -11,13 +11,17 @@ public struct SolarSurveyReportView: View {
     @State private var model = SurveyModel.shared
     let title: String
     let subtitle: String
+    let unsyncedOnly: Bool
     /// - Parameters:
     ///   - title: heading of the job list, e.g. the client group "การประปาส่วนภูมิภาค".
+    ///   - unsyncedOnly: open on the รอซิงก์ filter (the sync notification's `ดูรายการ`).
     public init(title: String = "PWA Solar Survey",
-                subtitle: String = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)") {
-        self.title = title; self.subtitle = subtitle
+                subtitle: String = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)", unsyncedOnly: Bool = false) {
+        self.title = title; self.subtitle = subtitle; self.unsyncedOnly = unsyncedOnly
     }
-    public var body: some View { SurveyHomeView(title: title, subtitle: subtitle).environment(model) }
+    public var body: some View {
+        SurveyHomeView(title: title, subtitle: subtitle, filter: unsyncedOnly ? .unsynced : .all).environment(model)
+    }
 }
 
 public extension SurveyModel {
@@ -203,8 +207,6 @@ struct SurveyHomeView: View {
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .onAppear { model.reload() }
-        // the iPhone has no รอซิงก์ pill
-        .onChange(of: compact, initial: true) { if compact && filter == .unsynced { filter = .all } }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {

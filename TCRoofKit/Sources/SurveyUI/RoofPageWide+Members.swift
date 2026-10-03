@@ -118,10 +118,12 @@ extension RoofPageWide {
             cardTitle("ภาพหลังคา", trailing: missing == 0 ? "ครบ 6 มุมที่แนะนำ ✓" : "\(6 - missing)/6 มุม · ต้องถ่ายครบทุกมุม",
                       trailingColor: missing == 0 ? Home.ok : Self.red, bold: missing > 0)
             // 6 in a row when the column has room, else 3 × 2
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: cardsWidth >= 520 ? 6 : 3), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: cardsWidth >= 440 ? 6 : 3), spacing: 6) {
                 ForEach(Roof.Shot.allCases, id: \.rawValue) { s in
                     RoofShotTile(photo: Binding(get: { Roof.photo(values, s) }, set: { p in update { Roof.setPhoto(&$0, s, p) } }),
                                  jobID: job.id, name: s.name, extra: s == .joint ? extra : 0)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.warn, lineWidth: flashShot == s ? 3 : 0).allowsHitTesting(false))
+                        .animation(.easeInOut(duration: 0.3).repeatCount(3), value: flashShot)
                 }
             }
         }

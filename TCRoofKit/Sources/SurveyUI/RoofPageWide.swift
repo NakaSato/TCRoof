@@ -4,9 +4,9 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// C1 roof on iPad landscape (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof
-/// info, member sizes 1–7 and the six photo angles on the right, on one screen. Field ids, choices and Excel cells are
-/// unchanged; the page's own answers are hidden optional fields (`Roof.Key`). iPad portrait and iPhone keep `groupPage`.
+/// C1 roof on iPad landscape (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof /
+/// PV-layout tabs, member sizes 1–7 and the six photo angles on the right, on one screen. Field ids, choices and Excel
+/// cells are unchanged; the page's own answers are hidden optional fields (`Roof.Key`). iPhone keeps `groupPage`.
 struct RoofPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -16,17 +16,21 @@ struct RoofPageWide: View {
     var stacked = false
     /// false lays the stacked column out without its ScrollView (DEBUG offscreen render).
     var scrolls = true
+    /// A gap the bottom bar sent us to (`Roof.Gap.key`).
+    var request: Binding<String?> = .constant(nil)
     @Environment(SurveyModel.self) var model
 
     struct SpanRef: Hashable { var axis: Roof.Axis; var index: Int }
     enum Tool { case keepOut, skylight }
 
+    /// โครงสร้าง / จัดแผง: the plan's mode and the right card's tab (หลังคา / การจัดแผง) are one choice.
     @State var mode: RoofPlan.Mode = .structure
     @State var span: SpanRef?
     @State var editPosts = false
     @State var tool: Tool?
     /// The rectangle being dragged out, metres (x1, y1, x2, y2).
     @State var drag: (Double, Double, Double, Double)?
+    /// The member row picked (1…7): its size list is open and its lines are red on the plan and the section.
     @State var member: Int?
     @State var dropdown: String?
     @State var otherKey: String?
@@ -37,13 +41,21 @@ struct RoofPageWide: View {
     @State var sketchPicker = false
     @State var sketchCamera = false
     @State var viewingSketch: Photo?
-    /// A card the stacked column scrolls to (DEBUG state checks).
+    @State var savingStandard = false
+    @State var showCAD = false
+    @State var sectionBig = false
+    /// A photo tile the bottom bar pointed at (pulses).
+    @State var flashShot: Roof.Shot?
+    @State var panelsFocused = false
+    /// A card the stacked column scrolls to (DEBUG state checks, bottom-bar gaps).
     @State var scrollTarget: String?
+    /// Roofs the team saved (`RoofStandards`).
+    @State var saved: [Roof.Standard] = RoofStandards.load()
 
     var gap: CGFloat { width >= 1180 ? 28 : 20 }
-    /// Side by side only: the plan / section column.
-    var leftWidth: CGFloat { min(720, (width - gap) * 0.58) }
-    /// Width of the cards' column (photo tiles go 3 × 2 under 520 pt).
+    /// Side by side only: the plan / section column (720 of 1240 in the design).
+    var leftWidth: CGFloat { min(720, (width - gap) * 0.594) }
+    /// Width of the cards' column (photo tiles go 3 × 2 under 440 pt).
     var cardsWidth: CGFloat { stacked ? width : width - leftWidth - gap }
 
     var index: Int? { job.modules.firstIndex { $0.id == moduleID } }
@@ -55,6 +67,7 @@ struct RoofPageWide: View {
     static let soft = Color(red: 0.890, green: 0.933, blue: 0.973)
     static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
     static let line = Color(red: 0.867, green: 0.894, blue: 0.929)
+    static let amber = Color(red: 0.706, green: 0.325, blue: 0.035)
 
     var body: some View {
         VStack(spacing: 16) {
@@ -65,6 +78,7 @@ struct RoofPageWide: View {
         #if DEBUG
         .task { await openDebugState() }
         #endif
+        .onChange(of: request.wrappedValue) { _, k in if let k { open(gap: k); request.wrappedValue = nil } }
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -78,15 +92,35 @@ struct RoofPageWide: View {
             }
             Button("ยกเลิก", role: .cancel) {}
         }
+        .sheet(isPresented: $savingStandard) { saveStandardSheet }
+        .fullScreenCover(isPresented: $sectionBig) { sectionZoom.presentationBackground(.black.opacity(0.45)) }
+    }
+
+    /// Opens what a bottom-bar gap names.
+    func open(gap key: String) {
+        span = nil; editPosts = false; tool = nil
+        if key.hasPrefix("shot-"), let n = Int(key.dropFirst(5)), let s = Roof.Shot(rawValue: n) {
+            scrollTarget = "photos"; flashShot = s
+            Task { try? await Task.sleep(nanoseconds: 1_600_000_000); if flashShot == s { flashShot = nil } }
+            return
+        }
+        switch key {
+        case "spans": mode = .structure; span = SpanRef(axis: .x, index: 0)
+        case Roof.Key.panels: mode = .pv; scrollTarget = "info"; panelsFocused = true
+        case Roof.Key.shape, Roof.Key.material: mode = .structure; scrollTarget = "info"; dropdown = key
+        case Roof.Key.structure: mode = .structure; scrollTarget = "info"
+        default:
+            if key.hasPrefix("comp"), let n = Int(key.dropFirst(4)) { scrollTarget = "members"; member = n }
+        }
     }
 
     var wideLayout: some View {
         HStack(alignment: .top, spacing: gap) {
-            // the section keeps the design's 262 pt on a tall screen and gives the plan room on a short one (11" landscape)
+            // the section keeps the design's 297 pt on a tall screen and gives the plan room on a short one (11" landscape)
             GeometryReader { geo in
                 VStack(spacing: 12) {
                     planCard.frame(maxHeight: .infinity)
-                    sectionCard.frame(height: min(262, max(190, geo.size.height * 0.36)))
+                    sectionCard.frame(height: min(297, max(200, geo.size.height * 0.375)))
                 }
             }
             .frame(width: leftWidth)
@@ -101,8 +135,8 @@ struct RoofPageWide: View {
     }
 
     func cardsColumn(fill: Bool) -> some View {
-        VStack(spacing: 10) {
-            infoCard
+        VStack(spacing: 12) {
+            roofCard
             membersCard.frame(maxHeight: fill ? .infinity : nil)
             photosCard
         }
@@ -113,16 +147,16 @@ struct RoofPageWide: View {
         if scrolls {
             ScrollViewReader { proxy in
                 ScrollView { stackedColumn }.scrollIndicators(.hidden)
-                    .onChange(of: scrollTarget) { _, t in if let t { withAnimation { proxy.scrollTo(t, anchor: .top) } } }
+                    .onChange(of: scrollTarget) { _, t in if let t { withAnimation { proxy.scrollTo(t, anchor: .top) }; scrollTarget = nil } }
             }
         } else { stackedColumn }
     }
 
     var stackedColumn: some View {
             VStack(spacing: 12) {
-                planCard.frame(height: min(620, width * RoofPlan.height / RoofPlan.width) + 64)
+                planCard.frame(height: min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
                 sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + 72)
-                infoCard.id("info")
+                roofCard.id("info")
                 membersCard.id("members")
                 photosCard.id("photos")
             }
@@ -147,31 +181,14 @@ struct RoofPageWide: View {
         }
     }
 
-    // MARK: roof info
+    // MARK: roof / PV card
 
-    var infoCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            cardTitle("ข้อมูลหลังคา", trailing: "ตามแผนงาน ข้อ 1–3")
-            Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 8) {
-                GridRow {
-                    dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes).gridCellColumns(3)
-                    dropdownField("วัสดุมุง", key: Roof.Key.material, list: Roof.materials).gridCellColumns(3)
-                }
-                GridRow {
-                    panelsField.gridCellColumns(2)
-                    ridgeField.gridCellColumns(2)
-                    structureField.gridCellColumns(2)
-                }
-                GridRow {
-                    VStack(alignment: .leading, spacing: 3) {
-                        A3Label(text: "ชนิดโครงหลังคา")
-                        RoofSegments(options: RoofFrame.ordered.map(\.label), selected: RoofFrame.ordered.firstIndex(of: Roof.frame(values)), minSegment: 84) { i in
-                            update { Roof.setFrame(&$0, RoofFrame.ordered[i]) }
-                        }
-                    }
-                    .gridCellColumns(6)
-                }
+    var roofCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            RoofSegments(options: ["หลังคา *", "การจัดแผง"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
+                setMode(i == 1 ? .pv : .structure)
             }
+            if mode == .structure { roofTab } else { pvTab }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -179,23 +196,38 @@ struct RoofPageWide: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
     }
 
-    var panelsField: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            A3Label(text: "จำนวนแผง")
-            HStack(spacing: 4) {
-                TextField("", text: Binding(get: { values.text(Roof.Key.panels) }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
-                    .keyboardType(.numberPad)
-                Text("แผง").font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(1)
+    func setMode(_ m: RoofPlan.Mode) {
+        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil
+    }
+
+    var roofTab: some View {
+        Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
+            GridRow {
+                standardField.gridCellColumns(2)
+                dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes).gridCellColumns(2)
+                dropdownField("วัสดุมุง", key: Roof.Key.material, list: Roof.materials).gridCellColumns(2)
             }
-            .inputBox(minHeight: 44, trailing: 10)
+            GridRow {
+                purlinField.gridCellColumns(2)
+                ridgeField.gridCellColumns(2)
+                structureField.gridCellColumns(2)
+            }
+            GridRow {
+                VStack(alignment: .leading, spacing: 3) {
+                    A3Label(text: "ชนิดโครงหลังคา")
+                    RoofSegments(options: RoofFrame.ordered.map(\.label), selected: RoofFrame.ordered.firstIndex(of: Roof.frame(values)), minSegment: 66) { i in
+                        update { Roof.setFrame(&$0, RoofFrame.ordered[i]) }
+                    }
+                }
+                .gridCellColumns(6)
+            }
         }
-        .frame(maxWidth: .infinity)
     }
 
     var ridgeField: some View {
         VStack(alignment: .leading, spacing: 3) {
             A3Label(text: "แนวสันหลังคา")
-            RoofSegments(options: ["นอน", "ตั้ง"], selected: Roof.ridge(values) == .h ? 0 : 1, minSegment: 52) { i in
+            RoofSegments(options: ["นอน", "ตั้ง"], selected: Roof.ridge(values) == .h ? 0 : 1, minSegment: 44) { i in
                 update { Roof.setRidge(&$0, i == 0 ? .h : .v) }
             }
         }
@@ -206,8 +238,32 @@ struct RoofPageWide: View {
         let wood = values.choice(Roof.Key.structure)
         return VStack(alignment: .leading, spacing: 3) {
             A3Label(text: "วัสดุโครงสร้าง")
-            RoofSegments(options: ["ไม้", "เหล็ก"], selected: wood == "ไม้" ? 0 : wood == "โครงเหล็ก" ? 1 : nil, minSegment: 52) { i in
+            RoofSegments(options: ["ไม้", "เหล็ก"], selected: wood == "ไม้" ? 0 : wood == "โครงเหล็ก" ? 1 : nil, minSegment: 44) { i in
                 set(Roof.Key.structure, .choice(Options.structure[i], other: ""))
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// ระยะแป: the value opens a ± 0.05 popover.
+    var purlinField: some View {
+        let p = Roof.purlinSpacing(values), open = dropdown == "purlin"
+        return VStack(alignment: .leading, spacing: 3) {
+            A3Label(text: "ระยะแป")
+            Button { dropdown = open ? nil : "purlin" } label: {
+                HStack(spacing: 4) {
+                    Text(String(format: "%.2f", p)).font(.system(size: 18, weight: .bold)).foregroundStyle(Self.amber).monospacedDigit()
+                    Text("ม.").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    Spacer(minLength: 2)
+                    Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Home.primary)
+                }
+                .inputBox(focused: open, minHeight: 44, trailing: 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ระยะแป " + String(format: "%.2f", p) + " เมตร วัดตามแนวลาด")
+            .popover(isPresented: Binding(get: { dropdown == "purlin" }, set: { if !$0 { dropdown = nil } }), arrowEdge: .top) {
+                purlinEditor.presentationCompactAdaptation(.popover)
             }
         }
         .frame(maxWidth: .infinity)
@@ -219,11 +275,11 @@ struct RoofPageWide: View {
             A3Label(text: label)
             Button { dropdown = open ? nil : key } label: {
                 HStack {
-                    Text(shown ?? "เลือก").font(.system(size: 17)).foregroundStyle(shown == nil ? Home.muted : Home.navy).lineLimit(1).minimumScaleFactor(0.7)
-                    Spacer(minLength: 4)
+                    Text(shown ?? "เลือก").font(.system(size: 16)).foregroundStyle(shown == nil ? Home.muted : Home.navy).lineLimit(1).minimumScaleFactor(0.6)
+                    Spacer(minLength: 2)
                     Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Home.primary)
                 }
-                .inputBox(focused: open, minHeight: 44, trailing: 12)
+                .inputBox(focused: open, minHeight: 44, trailing: 10)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -274,22 +330,106 @@ struct RoofPageWide: View {
         .frame(width: 300)
         .padding(.vertical, 6)
     }
+
+    // MARK: การจัดแผง tab
+
+    var pvTab: some View {
+        let portrait = Roof.pvPortrait(values), rows = Roof.pvRows(values), per = Roof.pvPerTable(values)
+        let pv = RoofPlan(values, mode: .pv).pv, tables = rows > 0 || per > 0
+        let watts = Int((RoofPlan.Module.catalogDefault.kW * 1000).rounded())
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(pv.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
+                Text("แผง").font(.system(size: 14)).foregroundStyle(Home.muted)
+                Text(String(format: "%.1f", pv.kWp)).font(.system(size: 26, weight: .bold)).monospacedDigit().padding(.leading, 10)
+                Text("kWp").font(.system(size: 14)).foregroundStyle(Home.muted)
+                Spacer(minLength: 6)
+                Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1)
+            }
+            .padding(.horizontal, 12).frame(minHeight: 44)
+            .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
+            .accessibilityElement(children: .combine)
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    A3Label(text: "แนวแผง")
+                    RoofSegments(options: ["แนวตั้ง", "แนวนอน"], selected: portrait ? 0 : 1, minSegment: 60) { i in
+                        set(Roof.Key.pvOrientation, i == 1 ? .text("l") : nil)
+                    }
+                }
+                .frame(maxWidth: 170)
+                VStack(alignment: .leading, spacing: 3) {
+                    A3Label(text: "แถวต่อชุด (ตามแนวลาด)")
+                    RoofSegments(options: ["ต่อเนื่อง", "1", "2", "3", "4"], selected: rows, minSegment: 40) { i in update { Roof.setPV(&$0, rows: i) } }
+                }
+            }
+            HStack(spacing: 10) {
+                Text("ตามแนวสัน\nแผงต่อชุด").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(2).fixedSize()
+                RoofSegments(options: ["ต่อเนื่อง", "ทุก 2 แผง", "ทุก 4 แผง", "ทุก 6 แผง"], selected: [0, 2, 4, 6].firstIndex(of: per), minSegment: 64) { i in
+                    update { Roof.setPV(&$0, perTable: [0, 2, 4, 6][i]) }
+                }
+            }
+            if tables { gapRow }
+            panelsRow(pv.count)
+        }
+    }
+
+    var gapRow: some View {
+        let g = Roof.pvGap(values)
+        return HStack(spacing: 8) {
+            Text("ระยะห่างระหว่างชุด").font(.system(size: 14))
+            Spacer(minLength: 6)
+            stepButton("minus", enabled: g > 0) { update { Roof.setPV(&$0, gap: g - 0.05) } }
+            (Text(String(format: "%.2f", g)).font(.system(size: 20, weight: .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.system(size: 13)).foregroundColor(Home.muted))
+                .monospacedDigit().frame(minWidth: 70)
+            stepButton("plus", enabled: g < 2) { update { Roof.setPV(&$0, gap: g + 0.05) } }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("ระยะห่างระหว่างชุด " + String(format: "%.2f", g) + " เมตร")
+    }
+
+    /// จำนวนแผงก่อนเข้าสำรวจ (required): typed, or taken from the layout.
+    func panelsRow(_ count: Int) -> some View {
+        let cur = values.text(Roof.Key.panels)
+        return HStack(spacing: 8) {
+            Text("จำนวนแผงก่อนเข้าสำรวจ").font(.system(size: 14)).lineLimit(1).minimumScaleFactor(0.8)
+            Text("*").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.danger)
+            Spacer(minLength: 6)
+            HStack(spacing: 4) {
+                TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
+                    .keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                Text("แผง").font(.system(size: 13)).foregroundStyle(Home.muted)
+            }
+            .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 10)
+            .frame(width: 110)
+            if count > 0 && cur != String(count) {
+                Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
+                    Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                        .padding(.horizontal, 10).frame(minHeight: 44)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary.opacity(0.5)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ใช้จำนวนแผงจากการจัดแผง \(count) แผง")
+            }
+        }
+    }
 }
 
 #if DEBUG
 extension RoofPageWide {
     /// `-surveyC1 <state>` seeds the design's example roof (19 × 16, Pratt, ridge นอน, two skylights) and opens one of the
-    /// states in docs/ui/survey-c1/states: span, spany, posts, pv, keepout, landscape, ridgev, frame-n|w|c|r, picker,
-    /// shape, material, wood, bays12.
+    /// states in docs/ui/survey-c1: span, spany, posts, pv, keepout, landscape, ridgev, frame-n|w|c|r|k, picker, shape,
+    /// material, wood, bays12, std, save, purlin, zoom, cad, member.
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyC1") else { return }
         update { v in
             Roof.setSpans(&v, .x, [1.5, 4, 4, 4, 4, 1.5]); Roof.setSpans(&v, .y, [1.5, 4.5, 4, 4.5, 1.5])
             Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt); Roof.setBays(&v, nil)
-            v[Roof.Key.pvOrientation] = nil; v[Roof.Key.structure] = nil; v[Roof.Key.posts] = nil
+            v[Roof.Key.pvOrientation] = nil; v[Roof.Key.structure] = .choice("โครงเหล็ก", other: ""); v[Roof.Key.posts] = nil
             v[Roof.Key.obstacles] = .obstacles([Obstacle(label: "แผ่นใส", x: "6.4", y: "1", w: "0.8", h: "6.6", kind: Roof.skylightKind),
                                                 Obstacle(label: "แผ่นใส", x: "11.8", y: "8.4", w: "0.8", h: "6.6", kind: Roof.skylightKind, canCover: true)])
             v[Roof.Key.panels] = .text("312")
+            Roof.choose(&v, Roof.Key.material, Roof.materials[0])
+            for n in 1...7 where Roof.memberSize(v, n).isEmpty { Roof.setMember(&v, n, size: RoofFrame.pratt.members[n - 1].defaultSize) }
         }
         try? await Task.sleep(nanoseconds: 500_000_000)
         switch state {
@@ -309,10 +449,16 @@ extension RoofPageWide {
         case "frame-w": update { Roof.setFrame(&$0, .warren) }
         case "frame-c": update { Roof.setFrame(&$0, .rafterTie) }
         case "frame-r": update { Roof.setFrame(&$0, .rafterTruss) }
+        case "frame-k": update { Roof.setFrame(&$0, .eaveCeiling) }
         case "bays12": update { Roof.setBays(&$0, 12) }
-        case "picker": scrollTarget = "members"; try? await Task.sleep(nanoseconds: 700_000_000); member = 2
+        case "picker", "member": scrollTarget = "members"; try? await Task.sleep(nanoseconds: 700_000_000); member = 2
         case "shape": scrollTarget = "info"; try? await Task.sleep(nanoseconds: 700_000_000); dropdown = Roof.Key.shape
         case "material": scrollTarget = "info"; try? await Task.sleep(nanoseconds: 700_000_000); dropdown = Roof.Key.material
+        case "std": scrollTarget = "info"; try? await Task.sleep(nanoseconds: 700_000_000); dropdown = "std"
+        case "save": savingStandard = true
+        case "purlin": scrollTarget = "info"; try? await Task.sleep(nanoseconds: 700_000_000); dropdown = "purlin"
+        case "zoom": sectionBig = true
+        case "cad": showCAD = true
         case "wood": set(Roof.Key.structure, .choice("ไม้", other: "")); scrollTarget = "info"
         default: break
         }
@@ -326,6 +472,7 @@ struct RoofSegments: View {
     let options: [String]
     let selected: Int?
     var minSegment: CGFloat = 56
+    var height: CGFloat = 38
     let set: (Int) -> Void
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -339,9 +486,9 @@ struct RoofSegments: View {
             ForEach(Array(options.enumerated()), id: \.offset) { i, o in
                 let on = selected == i
                 Button { set(i) } label: {
-                    Text(o).font(.system(size: 15, weight: on ? .bold : .medium)).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(o).font(.system(size: 15, weight: on ? .bold : .medium)).lineLimit(1).minimumScaleFactor(0.7)
                         .foregroundStyle(on ? Home.navy : Home.muted)
-                        .frame(maxWidth: .infinity, minHeight: 38)
+                        .frame(maxWidth: .infinity, minHeight: height)
                         .background {
                             if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Home.navy.opacity(0.25), radius: 1.5, y: 1) }
                         }

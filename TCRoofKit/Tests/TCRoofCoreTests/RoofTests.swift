@@ -123,7 +123,8 @@ final class RoofTests: XCTestCase {
         Roof.setPhoto(&v, .side, nil)
         XCTAssertEqual(Roof.photo(v, .front), photo(2), "deleting one doesn't move the others")
         XCTAssertNil(Roof.photo(v, .side))
-        XCTAssertEqual(Roof.statusLine(v), "ยังขาดภาพหลังคา: มุมสูง ภาพรวม · ด้านข้าง · ใต้หลังคา โครง · แผ่นมุง ระยะใกล้")
+        XCTAssertTrue(Roof.statusLine(v).hasPrefix("ยังขาด: จำนวนแผง · ระยะช่วงเสา · "))
+        XCTAssertTrue(Roof.statusLine(v).hasSuffix("ภาพมุมสูง ภาพรวม · ภาพด้านข้าง · ภาพใต้หลังคา โครง · ภาพแผ่นมุง ระยะใกล้"))
         // old photos without angles fill the slots in order; extra structure photos are kept
         var old = Values()
         old["structPhotos"] = .photos([photo(1), photo(2), photo(3)])
@@ -361,5 +362,24 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(p[0].points.map(\.x), [10, 30, 35, 35])
         XCTAssertEqual(p[0].points.last?.y, 35)
         XCTAssertEqual(p[1].points.map(\.y), [2, -2, 6])
+    }
+
+    /// The bottom bar's gaps are the section's missing required fields (as `Progress` counts them), then the angles.
+    func testGapsAgreeWithProgress() {
+        var m = SurveyModule(type: .roof)
+        let fieldGaps = { Roof.gaps(m.values).filter { !$0.key.hasPrefix("shot-") } }
+        XCTAssertEqual(fieldGaps().map(\.title), ["จำนวนแผง", "ระยะช่วงเสา"] + (1...7).map { "ขนาดชิ้นส่วน \($0)" } + ["รูปแบบหลังคา", "วัสดุมุง", "วัสดุโครงสร้าง"])
+        m.values["panelsBefore"] = .text("312")
+        Roof.applyStandard(&m.values, Roof.standards[0])
+        for n in 1...7 { Roof.setMember(&m.values, n, size: RoofFrame.pratt.members[n - 1].defaultSize) }
+        Roof.choose(&m.values, Roof.Key.material, Roof.materials[0])
+        m.values[Roof.Key.structure] = .choice("โครงเหล็ก", other: "")
+        XCTAssertTrue(fieldGaps().isEmpty)
+        XCTAssertEqual(Roof.statusLine(m.values), "ยังขาดภาพหลังคา: " + Roof.Shot.allCases.map(\.name).joined(separator: " · "))
+        XCTAssertFalse(m.completion.isComplete, "the aerial and structure photos are still required")
+        for s in Roof.Shot.allCases { Roof.setPhoto(&m.values, s, Self.photos[s.rawValue % 4]) }
+        XCTAssertTrue(Roof.gaps(m.values).isEmpty)
+        XCTAssertTrue(m.completion.isComplete)
+        XCTAssertEqual(Roof.statusLine(m.values), "ครบช่องบังคับแล้ว")
     }
 }

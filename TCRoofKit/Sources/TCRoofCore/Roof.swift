@@ -365,10 +365,40 @@ public enum Roof {
         writeTags(&v, general: t.general, structure: t.structure)
     }
     public static func missingShots(_ v: Values) -> [Shot] { Shot.allCases.filter { photo(v, $0) == nil } }
-    /// The bottom bar's line; the six angles are a page warning only, completion is unchanged.
+
+    // MARK: gaps (bottom bar)
+
+    /// Something the page still needs: a required field (`key` is its id, "spans" for both span lists) or a photo
+    /// angle (`key` "shot-<n>").
+    public struct Gap: Hashable, Sendable {
+        public let key: String, title: String
+    }
+    /// The section's required fields still empty (the same as `Progress`, photos aside), then the photo angles.
+    public static func gaps(_ v: Values) -> [Gap] {
+        let photoFields: Set = [Key.aerial, Key.general, Key.structPhotos]
+        var out: [Gap] = []
+        for f in Schema.spec(.roof).groups.flatMap({ $0.missing(v) }) where !photoFields.contains(f.id) {
+            let g: Gap
+            switch f.id {
+            case Key.spansX, Key.spansY: g = Gap(key: "spans", title: "ระยะช่วงเสา")
+            case Key.shape: g = Gap(key: f.id, title: "รูปแบบหลังคา")
+            case Key.material: g = Gap(key: f.id, title: "วัสดุมุง")
+            case Key.structure: g = Gap(key: f.id, title: "วัสดุโครงสร้าง")
+            case Key.panels: g = Gap(key: f.id, title: "จำนวนแผง")
+            default:
+                if f.id.hasPrefix("comp"), let n = Int(f.id.dropFirst(4)) { g = Gap(key: f.id, title: "ขนาดชิ้นส่วน \(n)") }
+                else { g = Gap(key: f.id, title: f.label) }
+            }
+            if !out.contains(g) { out.append(g) }
+        }
+        return out + missingShots(v).map { Gap(key: "shot-\($0.rawValue)", title: $0.name) }
+    }
+    /// The bottom bar's line: the missing fields and angles, or ครบช่องบังคับแล้ว.
     public static func statusLine(_ v: Values) -> String {
-        let m = missingShots(v)
-        return m.isEmpty ? "ปิดแอปแล้วกลับมาทำต่อได้ · ครบช่องบังคับหน้านี้แล้ว" : "ยังขาดภาพหลังคา: " + m.map(\.name).joined(separator: " · ")
+        let g = gaps(v)
+        if g.isEmpty { return "ครบช่องบังคับแล้ว" }
+        if g.allSatisfy({ $0.key.hasPrefix("shot-") }) { return "ยังขาดภาพหลังคา: " + g.map(\.title).joined(separator: " · ") }
+        return "ยังขาด: " + g.map { $0.key.hasPrefix("shot-") ? "ภาพ" + $0.title : $0.title }.joined(separator: " · ")
     }
 }
 

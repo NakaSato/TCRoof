@@ -5,10 +5,10 @@ import PhotosUI
 import TCRoofCore
 import PDFReport
 
-/// B2 on iPad landscape (docs/ui/survey-b2): the area photo with its drawn boundary, the measured size and column spans on the left;
+/// B2 (docs/ui/survey-b2): the area photo with its drawn boundary, the measured size and column spans on the left;
 /// the live station plan and the Growatt inverters on the right. Everything else (cabinets, breakers, cables, tray, ladder, room)
 /// comes from `InverterStation` and the equipment catalog. Field ids are unchanged and the new answers are optional.
-/// iPad portrait stacks the two columns; iPhone keeps the schema form (`groupPage`).
+/// iPad portrait and iPhone stack the two columns.
 struct InverterPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -30,6 +30,9 @@ struct InverterPageWide: View {
     @State var viewing: Photo?
 
     var leftWidth: CGFloat { min(460, max(400, width * 0.33)) }
+    /// iPhone: asides under labels, a shorter photo, rows that sit side by side on iPad one above the other.
+    var narrow: Bool { width < 600 }
+    var photoHeight: CGFloat { narrow ? 260 : stacked ? 420 : 300 }
 
     var index: Int? { job.modules.firstIndex { $0.id == moduleID } }
     var values: Values { index.map { job.modules[$0].values } ?? Values() }
@@ -97,9 +100,10 @@ struct InverterPageWide: View {
     }
 
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+        let row = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+        return row {
             (Text(t) + (required ? Text(" *").foregroundColor(Home.danger) : Text(""))).font(.system(size: 17, weight: .bold))
-            Spacer(minLength: 8)
+            if !narrow { Spacer(minLength: 8) }
             if let aside { Text(aside).font(.footnote).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8) }
         }
     }
@@ -125,10 +129,10 @@ struct InverterPageWide: View {
             if values.photo(photoField) == nil {
                 PhotoSlot(photo: nil, jobID: job.id, hint: tab == .area ? "ถ่ายภาพพื้นที่ติดตั้ง Inverter Station" : "ภาพสำหรับวาดขอบเขตพื้นที่",
                           required: tab == .area, extra: useAreaPhoto, onPick: addPhoto, onClear: {})
-                    .frame(height: stacked ? 420 : 300)
+                    .frame(height: photoHeight)
             } else {
                 GeometryReader { geo in stage(geo.size) }
-                    .frame(height: stacked ? 420 : 300)
+                    .frame(height: photoHeight)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(drawing ? Home.teal : Home.navy.opacity(0.15), lineWidth: drawing ? 2 : 1))
             }
@@ -303,20 +307,33 @@ struct InverterPageWide: View {
         let s = station
         return VStack(alignment: .leading, spacing: 8) {
             label("ขนาดพื้นที่ที่มีจริง (วัด)", required: true, aside: "ก × ย × ส (ม.) · แปลนวาดตามค่านี้")
-            RatioRow(weights: [1.15, 1.15, 0.8], spacing: 10) {
-                stepper("ก กว้าง", value: s.width, digits: 1, error: s.width.map { !InverterStation.widthRange.contains($0) } ?? false,
-                        down: { step(\.width, -InverterStation.widthStep, InverterStation.widthRange, start: InverterStation.roomWidth) },
-                        up: { step(\.width, InverterStation.widthStep, InverterStation.widthRange, start: InverterStation.roomWidth) })
-                stepper("ย ยาว", value: s.length, digits: 1, error: s.length.map { !InverterStation.lengthRange.contains($0) } ?? false,
-                        down: { step(\.length, -InverterStation.lengthStep, InverterStation.lengthRange, start: s.minLength) },
-                        up: { step(\.length, InverterStation.lengthStep, InverterStation.lengthRange, start: s.minLength) })
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ส สูง").font(.system(size: 13)).foregroundStyle(Home.muted)
-                    TextField("3.0", text: Binding(get: { s.height.map { fmt($0) } ?? "" },
-                                                  set: { t in update { $0.height = NumberInput.value(t) } }))
-                        .keyboardType(.decimalPad).font(.system(size: 20, weight: .bold)).inputBox(minHeight: 48)
-                }
+            if narrow {
+                RatioRow(weights: [1, 1], spacing: 10) { roomWidthStepper(s); roomLengthStepper(s) }
+                heightField(s)
+            } else {
+                RatioRow(weights: [1.15, 1.15, 0.8], spacing: 10) { roomWidthStepper(s); roomLengthStepper(s); heightField(s) }
             }
+        }
+    }
+
+    func roomWidthStepper(_ s: InverterStation) -> some View {
+        stepper("ก กว้าง", value: s.width, digits: 1, error: s.width.map { !InverterStation.widthRange.contains($0) } ?? false,
+                down: { step(\.width, -InverterStation.widthStep, InverterStation.widthRange, start: InverterStation.roomWidth) },
+                up: { step(\.width, InverterStation.widthStep, InverterStation.widthRange, start: InverterStation.roomWidth) })
+    }
+
+    func roomLengthStepper(_ s: InverterStation) -> some View {
+        stepper("ย ยาว", value: s.length, digits: 1, error: s.length.map { !InverterStation.lengthRange.contains($0) } ?? false,
+                down: { step(\.length, -InverterStation.lengthStep, InverterStation.lengthRange, start: s.minLength) },
+                up: { step(\.length, InverterStation.lengthStep, InverterStation.lengthRange, start: s.minLength) })
+    }
+
+    func heightField(_ s: InverterStation) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("ส สูง").font(.system(size: 13)).foregroundStyle(Home.muted)
+            TextField("3.0", text: Binding(get: { s.height.map { fmt($0) } ?? "" },
+                                          set: { t in update { $0.height = NumberInput.value(t) } }))
+                .keyboardType(.decimalPad).font(.system(size: 20, weight: .bold)).inputBox(minHeight: 48)
         }
     }
 
@@ -359,28 +376,27 @@ struct InverterPageWide: View {
         let eqEnabled = s.spans.count > 1 && s.spans.contains { abs($0 - s.planLength / Double(s.spans.count)) > 0.005 }
         return VStack(alignment: .leading, spacing: 8) {
             label("ระยะช่วงเสา (ม.)", required: true)
-            HStack(spacing: 6) {
-                stepButton("minus", enabled: !editable.isEmpty) { setSpan(sel, by: -InverterStation.spanStep) }
-                ForEach(Array(s.spans.enumerated()), id: \.offset) { i, v in
-                    let last = i == s.spans.count - 1
-                    Button { if !last { spanSel = i } } label: {
-                        Text(String(format: "%.2f", v)).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
-                            .foregroundStyle(last ? (s.spansOK ? Home.muted : Color(red: 0.706, green: 0.137, blue: 0.094)) : Home.navy)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Home.danger.opacity(0.08)) : i == sel ? Home.primarySoft : Color.white,
-                                        in: RoundedRectangle(cornerRadius: 9))
-                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(last ? (s.spansOK ? Home.borderControl : Home.danger) : i == sel ? Home.primary : Home.borderControl,
-                                                                              style: StrokeStyle(lineWidth: !last && i == sel ? 2 : 1, dash: last ? [4, 3] : [])))
-                    }
-                    .buttonStyle(.plain).disabled(last)
-                    .accessibilityLabel("ช่วงที่ \(i + 1) \(String(format: "%.2f", v)) เมตร" + (last ? " คำนวณจากความยาวห้อง" : ""))
+            if narrow {
+                // iPhone: the stepper on its own line, the spans five to a row under it
+                HStack(spacing: 6) {
+                    stepButton("minus", enabled: !editable.isEmpty) { setSpan(sel, by: -InverterStation.spanStep) }
+                    Text(editable.isEmpty ? "–" : "ช่วงที่ \(sel + 1)").font(.system(size: 14, weight: .semibold)).frame(maxWidth: .infinity)
+                    stepButton("plus", enabled: !editable.isEmpty) { setSpan(sel, by: InverterStation.spanStep) }
                 }
-                stepButton("plus", enabled: !editable.isEmpty) { setSpan(sel, by: InverterStation.spanStep) }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
+                    ForEach(Array(s.spans.enumerated()), id: \.offset) { i, v in spanButton(i, v, s, sel: sel) }
+                }
+            } else {
+                HStack(spacing: 6) {
+                    stepButton("minus", enabled: !editable.isEmpty) { setSpan(sel, by: -InverterStation.spanStep) }
+                    ForEach(Array(s.spans.enumerated()), id: \.offset) { i, v in spanButton(i, v, s, sel: sel) }
+                    stepButton("plus", enabled: !editable.isEmpty) { setSpan(sel, by: InverterStation.spanStep) }
+                }
             }
             Text(s.spansOK ? "\(s.spans.count) ช่วง · รวม \(String(format: "%.2f", s.planLength)) ม. " + (custom ? "✓" : "· อัตโนมัติ ✓")
                            : "ช่วงสุดท้ายเหลือ \(String(format: "%.2f", s.lastSpan)) ม. ✗")
                 .font(.system(size: 13, weight: s.spansOK ? .regular : .bold)).foregroundStyle(s.spansOK ? Home.ok : Home.danger)
-            HStack(spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
                 smallButton(s.spans.count < InverterStation.maxSpans ? "+ เพิ่มช่วง" : "ครบ 10 ช่วง", enabled: s.spans.count < InverterStation.maxSpans) {
                     update { $0.userSpans = $0.editableSpans + [2.5] }; spanSel = editable.count
                 }
@@ -391,6 +407,22 @@ struct InverterPageWide: View {
                 smallButton("คืนค่าอัตโนมัติ", enabled: custom) { update { $0.userSpans = nil }; spanSel = 0 }
             }
         }
+    }
+
+    /// One span; the last is what's left of the room and can't be picked.
+    func spanButton(_ i: Int, _ v: Double, _ s: InverterStation, sel: Int) -> some View {
+        let last = i == s.spans.count - 1
+        return Button { if !last { spanSel = i } } label: {
+            Text(String(format: "%.2f", v)).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+                .foregroundStyle(last ? (s.spansOK ? Home.muted : Color(red: 0.706, green: 0.137, blue: 0.094)) : Home.navy)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Home.danger.opacity(0.08)) : i == sel ? Home.primarySoft : Color.white,
+                            in: RoundedRectangle(cornerRadius: 9))
+                .overlay(RoundedRectangle(cornerRadius: 9).stroke(last ? (s.spansOK ? Home.borderControl : Home.danger) : i == sel ? Home.primary : Home.borderControl,
+                                                                  style: StrokeStyle(lineWidth: !last && i == sel ? 2 : 1, dash: last ? [4, 3] : [])))
+        }
+        .buttonStyle(.plain).disabled(last)
+        .accessibilityLabel("ช่วงที่ \(i + 1) \(String(format: "%.2f", v)) เมตร" + (last ? " คำนวณจากความยาวห้อง" : ""))
     }
 
     func setSpan(_ i: Int, by d: Double) {

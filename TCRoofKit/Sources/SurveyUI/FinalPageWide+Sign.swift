@@ -62,27 +62,20 @@ extension FinalPageWide {
 
     func signatureCard<Name: View>(title: String, field: String, role: String, emptyTint: Color, signing: Binding<Bool>, who: String,
                                    @ViewBuilder name: () -> Name) -> some View {
-        let photo = v.photo(field), signed = photo != nil
+        let photo = v.photo(field)
         return VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                (Text(title + " ") + Text("*").foregroundColor(Home.danger)).font(.system(size: 16, weight: .bold)).lineLimit(1)
-                Text(signed ? "✓ ลงนามแล้ว" : "รอลงนาม").font(.system(size: 12.5, weight: .bold))
-                    .foregroundStyle(signed ? Self.okText : Self.chipRed)
-                    .padding(.horizontal, 10).padding(.vertical, 3)
-                    .background((signed ? Home.ok.opacity(0.14) : Home.danger.opacity(0.12)), in: Capsule())
-                    .fixedSize()
-                Spacer(minLength: 0)
-                if signed {
-                    Button { set(field, nil) } label: {
-                        HStack(spacing: 6) {
-                            A2Icon(name: "e1-resign", fallback: "arrow.counterclockwise", size: 16)
-                            Text("เซ็นใหม่").font(.system(size: 14, weight: .semibold))
-                        }
-                        .foregroundStyle(Home.muted)
-                        .padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
+            Group {
+                if narrow {
+                    // iPhone: the role on its own line, the status and เซ็นใหม่ under it
+                    VStack(alignment: .leading, spacing: 0) {
+                        signatureTitle(title).padding(.top, 8)
+                        HStack(spacing: 10) { signatureStatus(field: field, title: title) }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("เซ็นใหม่ " + title)
+                } else {
+                    HStack(spacing: 10) {
+                        signatureTitle(title)
+                        signatureStatus(field: field, title: title)
+                    }
                 }
             }
             .padding(.leading, 18).padding(.trailing, 10)
@@ -96,6 +89,32 @@ extension FinalPageWide {
         .shadow(color: Home.navy.opacity(0.08), radius: 2, y: 1)
         .signaturePad(isPresented: signing, who: who) { img in
             if let img, let p = model.addPhoto(img, to: job.id, maxSide: 900, png: true) { set(field, .photo(p)) }
+        }
+    }
+
+    func signatureTitle(_ title: String) -> some View {
+        (Text(title + " ") + Text("*").foregroundColor(Home.danger)).font(.system(size: 16, weight: .bold)).lineLimit(1)
+    }
+
+    @ViewBuilder func signatureStatus(field: String, title: String) -> some View {
+        let signed = v.photo(field) != nil
+        Text(signed ? "✓ ลงนามแล้ว" : "รอลงนาม").font(.system(size: 12.5, weight: .bold))
+            .foregroundStyle(signed ? Self.okText : Self.chipRed)
+            .padding(.horizontal, 10).padding(.vertical, 3)
+            .background((signed ? Home.ok.opacity(0.14) : Home.danger.opacity(0.12)), in: Capsule())
+            .fixedSize()
+        Spacer(minLength: 0)
+        if signed {
+            Button { set(field, nil) } label: {
+                HStack(spacing: 6) {
+                    A2Icon(name: "e1-resign", fallback: "arrow.counterclockwise", size: 16)
+                    Text("เซ็นใหม่").font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundStyle(Home.muted)
+                .padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("เซ็นใหม่ " + title)
         }
     }
 
@@ -149,11 +168,11 @@ extension FinalPageWide {
     var reviewerRow: some View {
         HStack(spacing: 12) {
             Text("ผู้ตรวจสอบ").font(.system(size: 15, weight: .bold))
-            Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1)
+            if !narrow { Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1) }
             Spacer(minLength: 8)
-            TextField("ชื่อผู้ตรวจสอบ", text: Binding(get: { v.text("reviewer") }, set: { set("reviewer", $0.isEmpty ? nil : .text($0)) }))
+            TextField(narrow ? "ไม่บังคับ" : "ชื่อผู้ตรวจสอบ", text: Binding(get: { v.text("reviewer") }, set: { set("reviewer", $0.isEmpty ? nil : .text($0)) }))
                 .font(.system(size: 15))
-                .padding(.horizontal, 12).frame(width: 220, height: 44)
+                .padding(.horizontal, 12).frame(width: narrow ? nil : 220, height: 44).frame(maxWidth: narrow ? .infinity : nil)
                 .background(Self.fieldFill, in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityLabel("ผู้ตรวจสอบ")
         }

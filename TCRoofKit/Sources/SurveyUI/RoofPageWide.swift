@@ -4,9 +4,9 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// C1 roof on iPad landscape (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof /
+/// C1 roof (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof /
 /// PV-layout tabs, member sizes 1–7 and the six photo angles on the right, on one screen. Field ids, choices and Excel
-/// cells are unchanged; the page's own answers are hidden optional fields (`Roof.Key`). iPhone keeps `groupPage`.
+/// cells are unchanged; the page's own answers are hidden optional fields (`Roof.Key`). Portrait and iPhone stack it.
 struct RoofPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -61,6 +61,8 @@ struct RoofPageWide: View {
     }
 
     var gap: CGFloat { width >= 1180 ? 28 : 20 }
+    /// iPhone: the legend under the plan, footers on two lines, two roof fields per row.
+    var narrow: Bool { width < 600 }
     /// Side by side only: the plan / section column (720 of 1240 in the design).
     var leftWidth: CGFloat { min(720, (width - gap) * 0.594) }
     /// Width of the cards' column (photo tiles go 3 × 2 under 440 pt).
@@ -166,8 +168,10 @@ struct RoofPageWide: View {
 
     var stackedColumn: some View {
             VStack(spacing: 12) {
-                planCard.frame(height: min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
-                sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + 72)
+                // iPhone: the legend and footer sit under the plan, so the plan gets the full width
+                planCard.frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
+                                              : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
+                sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
                 roofCard.id("info")
                 membersCard.id("members")
                 photosCard.id("photos")
@@ -212,7 +216,30 @@ struct RoofPageWide: View {
         mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil
     }
 
-    var roofTab: some View {
+    @ViewBuilder var roofTab: some View {
+        if narrow { roofTabNarrow } else { roofTabWide }
+    }
+
+    /// iPhone: two fields per row.
+    var roofTabNarrow: some View {
+        Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
+            GridRow { standardField; dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes) }
+            GridRow { dropdownField("วัสดุมุง", key: Roof.Key.material, list: Roof.materials); purlinField }
+            GridRow { ridgeField; structureField }
+            GridRow { frameField.gridCellColumns(2) }
+        }
+    }
+
+    var frameField: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            A3Label(text: "ชนิดโครงหลังคา")
+            RoofSegments(options: RoofFrame.ordered.map(\.label), selected: RoofFrame.ordered.firstIndex(of: Roof.frame(values)), minSegment: 66) { i in
+                update { Roof.setFrame(&$0, RoofFrame.ordered[i]) }
+            }
+        }
+    }
+
+    var roofTabWide: some View {
         Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
             GridRow {
                 standardField.gridCellColumns(2)
@@ -224,15 +251,7 @@ struct RoofPageWide: View {
                 ridgeField.gridCellColumns(2)
                 structureField.gridCellColumns(2)
             }
-            GridRow {
-                VStack(alignment: .leading, spacing: 3) {
-                    A3Label(text: "ชนิดโครงหลังคา")
-                    RoofSegments(options: RoofFrame.ordered.map(\.label), selected: RoofFrame.ordered.firstIndex(of: Roof.frame(values)), minSegment: 66) { i in
-                        update { Roof.setFrame(&$0, RoofFrame.ordered[i]) }
-                    }
-                }
-                .gridCellColumns(6)
-            }
+            GridRow { frameField.gridCellColumns(6) }
         }
     }
 
@@ -339,7 +358,7 @@ struct RoofPageWide: View {
             .buttonStyle(.plain)
         }
         .foregroundStyle(Home.navy)
-        .frame(width: 300)
+        .frame(width: narrow ? 280 : 300)
         .padding(.vertical, 6)
     }
 
@@ -366,21 +385,23 @@ struct RoofPageWide: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
             .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
-            HStack(alignment: .top, spacing: 10) {
+            let pair = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .top, spacing: 10))
+            pair {
                 VStack(alignment: .leading, spacing: 3) {
                     A3Label(text: "แนวแผง")
                     RoofSegments(options: ["แนวตั้ง", "แนวนอน"], selected: portrait ? 0 : 1, minSegment: 60) { i in
                         set(Roof.Key.pvOrientation, i == 1 ? .text("l") : nil)
                     }
                 }
-                .frame(maxWidth: 170)
+                .frame(maxWidth: narrow ? .infinity : 170)
                 VStack(alignment: .leading, spacing: 3) {
                     A3Label(text: "แถวต่อชุด (ตามแนวลาด)")
                     RoofSegments(options: ["ต่อเนื่อง", "1", "2", "3", "4"], selected: rows, minSegment: 40) { i in update { Roof.setPV(&$0, rows: i) } }
                 }
             }
-            HStack(spacing: 10) {
-                Text("ตามแนวสัน\nแผงต่อชุด").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(2).fixedSize()
+            let perRow = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 3)) : AnyLayout(HStackLayout(spacing: 10))
+            perRow {
+                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(2).fixedSize()
                 RoofSegments(options: ["ต่อเนื่อง", "ทุก 2 แผง", "ทุก 4 แผง", "ทุก 6 แผง"], selected: [0, 2, 4, 6].firstIndex(of: per), minSegment: 64) { i in
                     update { Roof.setPV(&$0, perTable: [0, 2, 4, 6][i]) }
                 }

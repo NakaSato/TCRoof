@@ -4,17 +4,19 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// D1 clear-water tank on iPad landscape (docs/ui/survey-d1-size): four sub-steps in a tab bar. Sub-step 1 "ขนาดถัง"
+/// D1 clear-water tank (docs/ui/survey-d1-size): four sub-steps in a tab bar. Sub-step 1 "ขนาดถัง"
 /// is the designed page (the tank plan on the left, the tank's data on the right); sub-steps 2–4 show the section's
 /// generic groups until their designs arrive. Field ids, labels and Excel cells are unchanged; the page's own answers
-/// are hidden optional fields (`Tank.Key`). iPad portrait and iPhone keep `groupPage`.
+/// are hidden optional fields (`Tank.Key`). iPad portrait and iPhone use the one-column layout.
 struct TankPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
     /// Width of the page's content.
     let width: CGFloat
-    /// One column (the plan on top, the card below, scrolling): a free width under 1100 pt.
+    /// One column (the plan on top, the card below, scrolling): portrait, iPhone or a free width under 1100 pt.
     var stacked = false
+    /// iPhone: the sub-step tabs two to a row, a taller plan.
+    var narrow: Bool { width < 600 }
     @Environment(SurveyModel.self) var model
 
     /// The sub-step shown (view state only, never stored in the job).
@@ -42,7 +44,7 @@ struct TankPageWide: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            PageStepBar(job: job, here: .module(moduleID), title: "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
+            PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
             tabBar
             if tab == 1 { sizeStep } else { formStep }
         }
@@ -73,7 +75,7 @@ struct TankPageWide: View {
     }
 
     var tabBar: some View {
-        HStack(spacing: 4) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: narrow ? 2 : 4), spacing: 4) {
             ForEach(Array(steps.enumerated()), id: \.offset) { i, s in tabSegment(i + 1, s) }
         }
         .padding(4)
@@ -120,7 +122,7 @@ struct TankPageWide: View {
         if stacked {
             ScrollView {
                 VStack(spacing: 14) {
-                    planCard.frame(height: min(640, width * 0.72))
+                    planCard.frame(height: min(640, width * (narrow ? 0.9 : 0.72)))
                     infoCard(fill: false)
                 }
                 .padding(.bottom, 4)

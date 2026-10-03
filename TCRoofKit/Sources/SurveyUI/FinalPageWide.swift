@@ -3,15 +3,17 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// E1 on iPad landscape (docs/ui/survey-e1): the verdict, remarks with on-device suggestions and the gaps on other pages
+/// E1 (docs/ui/survey-e1): the verdict, remarks with on-device suggestions and the gaps on other pages
 /// on the left; both signatures and the reviewer on the right. Binds to the existing `Schema.final` fields only, so
-/// completion, the PDF and Excel are unchanged. iPad portrait and iPhone keep the schema form (`groupPage`).
+/// completion, the PDF and Excel are unchanged. iPad portrait and iPhone stack the two columns.
 struct FinalPageWide: View {
     @Binding var job: Job
     /// Width of the page's content.
     let width: CGFloat
-    /// One scrolling column (free width under 1100 pt).
+    /// One scrolling column (portrait, iPhone, or a free width under 1100 pt).
     var stacked = false
+    /// iPhone: signature card headers on two lines, shorter asides, a smaller signing column.
+    var narrow: Bool { width < 600 }
     /// "ไปที่หน้า ›" on a row of the gaps card.
     var open: (MissingGroup.Target) -> Void = { _ in }
     /// false for offscreen renders (`-surveyFinalRender`): ImageRenderer leaves scroll views blank.
@@ -46,7 +48,7 @@ struct FinalPageWide: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         left
-                        right.frame(height: 760)
+                        right.frame(height: narrow ? 640 : 760)
                     }
                     .padding(.bottom, 16)
                 }
@@ -187,7 +189,7 @@ struct FinalPageWide: View {
                 HStack(spacing: 6) {
                     A2Icon(name: "e1-ai-sparkle", fallback: "sparkle", size: 15).foregroundStyle(Self.purple)
                     Text("ข้อเสนอแนะอัตโนมัติจาก AI").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.purple)
-                    Text("· บนเครื่อง").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    if !narrow { Text("· บนเครื่อง").font(.system(size: 13)).foregroundStyle(Home.muted) }
                     Spacer(minLength: 4)
                     if rest.count >= 2 {
                         Button { add(rest) } label: {
@@ -243,7 +245,7 @@ struct FinalPageWide: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("ยังขาดในหน้าอื่น").font(.system(size: 16, weight: .bold))
                     Spacer(minLength: 8)
-                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.75)
                 }
                 .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
                 ForEach(groups.prefix(4)) { g in gapRow(g) }

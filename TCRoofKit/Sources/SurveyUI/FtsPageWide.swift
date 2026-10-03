@@ -4,10 +4,10 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// B5 on iPad landscape (docs/ui/survey-b5): the Emergency button's photo, place, what it cuts and its height on the
+/// B5 (docs/ui/survey-b5): the Emergency button's photo, place, what it cuts and its height on the
 /// left; its point on the A2 picture and the FTS part of the single line diagram on the right. The height is A4's
 /// `emgMountCm`; the pin is A2's `.emergency` mark for this module. The FTS cabinet is no longer located, so
-/// `photoFTS` isn't shown here (owner's decision). iPad portrait and iPhone keep the schema form (`groupPage`).
+/// `photoFTS` isn't shown here (owner's decision). iPad portrait and iPhone stack the three cards in one scrolling column.
 struct FtsPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -15,6 +15,8 @@ struct FtsPageWide: View {
     let width: CGFloat
     var openSite: () -> Void = {}
     var openDiagram: () -> Void = {}
+    /// Portrait and iPhone: the button card, the A2 picture and the SLD crop one under another, the page scrolling.
+    var stacked = false
     @Environment(SurveyModel.self) var model
     @State var editingPlace = false
     @State var placeText = ""
@@ -32,16 +34,8 @@ struct FtsPageWide: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            PageStepBar(job: job, here: .module(moduleID), title: "ตำแหน่งติดตั้งปุ่ม FTS switch (Emergency)")
-            HStack(alignment: .top, spacing: 20) {
-                buttonCard.frame(width: leftWidth).frame(maxHeight: .infinity)
-                VStack(spacing: 14) {
-                    siteCard.frame(maxHeight: .infinity)
-                    sldCard.frame(height: 248)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(maxHeight: .infinity)
+            PageStepBar(job: job, here: .module(moduleID), title: width < 600 ? "ปุ่ม Emergency" : "ตำแหน่งติดตั้งปุ่ม FTS switch (Emergency)")
+            if stacked { stackedColumn } else { sideBySide }
         }
         .foregroundStyle(Home.navy)
         .alert("ตำแหน่งปุ่ม Emergency", isPresented: $editingPlace) {
@@ -52,6 +46,38 @@ struct FtsPageWide: View {
             }
             Button("ยกเลิก", role: .cancel) {}
         }
+    }
+
+    var sideBySide: some View {
+        HStack(alignment: .top, spacing: 20) {
+            buttonCard.frame(width: leftWidth).frame(maxHeight: .infinity)
+            VStack(spacing: 14) {
+                siteCard.frame(maxHeight: .infinity)
+                sldCard.frame(height: 248)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    var stackedColumn: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                buttonCard
+                siteCard.frame(height: stackedPictureHeight + 60)
+                sldCard.frame(height: 248)
+            }
+            .padding(.bottom, 8)
+        }
+        .scrollIndicators(.hidden)
+        .frame(maxHeight: .infinity)
+    }
+
+    /// The A2 picture at the column's width and its own proportions, within 240–560 pt (as B3).
+    var stackedPictureHeight: CGFloat {
+        let p = job.values.photo("siteMap")
+        let ratio = p.map { $0.width > 0 ? CGFloat($0.height) / CGFloat($0.width) : 0.625 } ?? 0.625
+        return min(560, max(240, (width - 32) * ratio))
     }
 
     func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
@@ -82,7 +108,7 @@ struct FtsPageWide: View {
                     Text("จุดที่เข้าถึงได้ทันที").font(.system(size: 13)).foregroundStyle(Home.muted)
                 }
             }
-            photo.frame(maxHeight: .infinity)
+            photo.frame(height: stacked ? (width < 600 ? 260 : 380) : nil).frame(maxHeight: stacked ? nil : .infinity)
             VStack(spacing: 0) {
                 infoRow("ตำแหน่ง") { placeButton }
                 infoRow("สั่งตัด") { Text(EmergencyButton.cuts(job)).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7) }
@@ -159,7 +185,7 @@ struct FtsPageWide: View {
         card {
             title("ตำแหน่งบนภาพ A2", sub: "แตะบนภาพเพื่อวางตำแหน่งปุ่ม FTS switch")
             SitePinStage(job: $job, moduleID: moduleID, kind: .emergency, type: .fts, legendAlignment: .topTrailing,
-                         pinName: "ปุ่ม FTS switch", openSite: openSite) {
+                         pinName: "ปุ่ม FTS switch", scrolls: stacked, openSite: openSite) {
                 SitePin(ring: Self.red, halo: Self.orange, haloStroke: Self.orange, label: "FTS switch")
             } legend: {
                 HStack(spacing: 6) {

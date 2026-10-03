@@ -36,11 +36,16 @@ extension RoofPageWide {
 
     var planCard: some View {
         card {
-            HStack(alignment: .top, spacing: 6) {
+            if narrow {
                 planStage.frame(maxWidth: .infinity, maxHeight: .infinity)
-                legend.frame(width: 150)
+                legendRow
+            } else {
+                HStack(alignment: .top, spacing: 6) {
+                    planStage.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    legend.frame(width: 150)
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
             Divider()
             planFooter
         }
@@ -60,18 +65,60 @@ extension RoofPageWide {
         return "แตะเลขสีฟ้า/แผ่นใสเพื่อแก้"
     }
 
-    var planFooter: some View {
-        HStack(spacing: 8) {
-            (Text("แปลนโครงหลังคา").bold().underline() + Text(" · " + planHint).foregroundColor(mode == .pv && tool == nil ? Home.navy : Home.muted)
-                .fontWeight(mode == .pv && tool == nil ? .bold : .regular))
-                .font(.system(size: 14)).lineLimit(1).minimumScaleFactor(0.6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
-                .frame(minWidth: 120, maxWidth: 150)
-            if mode == .structure { structureButtons } else { pvButtons }
-            footerButton("CAD", icon: "doc.badge.arrow.up", on: showCAD) { showCAD.toggle(); span = nil }
-                .accessibilityLabel("ส่งออก CAD")
-                .popover(isPresented: $showCAD, arrowEdge: .bottom) { cadSheet.presentationCompactAdaptation(.popover) }
+    @ViewBuilder var planFooter: some View {
+        if narrow {
+            // iPhone: the caption, then the mode switch, then the buttons
+            VStack(alignment: .leading, spacing: 8) {
+                planCaption.lineLimit(2)
+                RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
+                HStack(spacing: 8) {
+                    if mode == .structure { structureButtons } else { pvButtons }
+                    Spacer(minLength: 0)
+                    cadButton
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                planCaption.lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
+                    .frame(minWidth: 120, maxWidth: 150)
+                if mode == .structure { structureButtons } else { pvButtons }
+                cadButton
+            }
+        }
+    }
+
+    var planCaption: some View {
+        (Text("แปลนโครงหลังคา").bold().underline() + Text(" · " + planHint).foregroundColor(mode == .pv && tool == nil ? Home.navy : Home.muted)
+            .fontWeight(mode == .pv && tool == nil ? .bold : .regular))
+            .font(.system(size: 14)).minimumScaleFactor(0.6)
+    }
+
+    var cadButton: some View {
+        footerButton("CAD", icon: "doc.badge.arrow.up", on: showCAD) { showCAD.toggle(); span = nil }
+            .accessibilityLabel("ส่งออก CAD")
+            .popover(isPresented: $showCAD, arrowEdge: .bottom) { cadSheet.presentationCompactAdaptation(.popover) }
+    }
+
+    /// iPhone: north and the symbols in two columns under the plan.
+    var legendRow: some View {
+        let north = job.values.choice("north"), turn = Double(SitePageWide.norths.firstIndex(of: north ?? "") ?? 0) * 90
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                NorthArrow(degrees: turn).frame(width: 32, height: 32)
+                Text("ทิศเหนือ").font(.system(size: 13, weight: .bold))
+                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1)
+            }
+            .accessibilityElement(children: .combine)
+            LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], spacing: 4) {
+                ForEach(Array(legendItems.enumerated()), id: \.offset) { _, item in
+                    HStack(spacing: 6) {
+                        LegendGlyph(kind: item.0).frame(width: 24, height: 14)
+                        Text(item.1).font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.75)
+                    }
+                }
+            }
         }
     }
 
@@ -326,13 +373,21 @@ extension RoofPageWide {
         return card {
             sectionStage(big: false).frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            HStack(spacing: 8) {
-                (Text("รูปตัด A-A · " + f.title).bold().underline() + Text(" · หน่วย ม.").foregroundColor(Home.muted))
-                    .font(.system(size: 14)).lineLimit(1).minimumScaleFactor(0.6).truncationMode(.tail)
-                Spacer(minLength: 8)
-                footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Home.primary) { sectionBig = true }
-                    .accessibilityLabel("ขยายรูปตัดเต็มจอ")
+            let caption = (Text("รูปตัด A-A · " + f.title).bold().underline() + Text(" · หน่วย ม.").foregroundColor(Home.muted))
+                .font(.system(size: 14)).lineLimit(1).minimumScaleFactor(0.6).truncationMode(.tail)
+            let zoom = footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Home.primary) { sectionBig = true }
+                .accessibilityLabel("ขยายรูปตัดเต็มจอ")
+            if narrow {
+                // iPhone: the caption and ขยาย on one line, the bays stepper under them
+                HStack(spacing: 8) { caption; Spacer(minLength: 8); zoom }
                 if !f.isRafter { baysStepper }
+            } else {
+                HStack(spacing: 8) {
+                    caption
+                    Spacer(minLength: 8)
+                    zoom
+                    if !f.isRafter { baysStepper }
+                }
             }
         }
     }
@@ -364,7 +419,8 @@ extension RoofPageWide {
     var baysStepper: some View {
         let n = Roof.bays(values), auto = Roof.baysAreAuto(values), w = Roof.span(values) / 2 / Double(n)
         return HStack(spacing: 8) {
-            Text("ช่อง/ข้าง").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).fixedSize()
+            // the whole row is labelled for VoiceOver; iPhone has no room for the word
+            if !narrow { Text("ช่อง/ข้าง").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).fixedSize() }
             stepButton("minus", enabled: n > Roof.baysRange.lowerBound) { update { Roof.setBays(&$0, n - 1) } }
             Text("\(n) × " + String(format: "%.2f ม.", w)).font(.system(size: 16, weight: .bold)).monospacedDigit()
                 .lineLimit(1).fixedSize()

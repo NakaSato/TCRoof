@@ -45,29 +45,28 @@ struct JobEditorView: View {
 
     @State var detailSize: CGSize = .zero
     /// A1 in the card layout (docs/ui/survey-a1); one column on iPad portrait and iPhone.
-    var cardInfo: Bool { page == .info && !compact }
-    /// A2's picture page (docs/ui/survey-a2): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
-    var cardSite: Bool { page == .site && !compact }
-    /// A3's power-flow diagram (docs/ui/survey-a3) zooms to fit, so portrait iPad uses it too; iPhone keeps `groupPage`.
-    var cardElectrical: Bool { page == .electrical && !compact }
-    /// A4's flood page (docs/ui/survey-a4): side by side in landscape, stacked in portrait; iPhone keeps `groupPage`.
-    var cardFlood: Bool { page == .flood && !compact }
-    /// B2 on iPad (docs/ui/survey-b2): the section being shown, side by side in landscape and stacked in portrait;
-    /// iPhone keeps `groupPage`.
+    var cardInfo: Bool { page == .info }
+    /// A2's picture page (docs/ui/survey-a2): side by side in landscape, one column on iPad portrait and iPhone.
+    var cardSite: Bool { page == .site }
+    /// A3's power-flow diagram (docs/ui/survey-a3) zooms and scrolls, so portrait iPad and iPhone use it too.
+    var cardElectrical: Bool { page == .electrical }
+    /// A4's flood page (docs/ui/survey-a4): side by side in landscape, one column on iPad portrait and iPhone.
+    var cardFlood: Bool { page == .flood }
+    /// B2 (docs/ui/survey-b2): the section being shown, side by side in landscape, one column on iPad portrait and iPhone.
     var cardInverter: SurveyModule? {
-        guard case .module(let id) = page, !compact else { return nil }
+        guard case .module(let id) = page else { return nil }
         return job.modules.first { $0.id == id && $0.type == .inverter }
     }
-    /// B1 on iPad (docs/ui/survey-b1): every building on one page, side by side in landscape and stacked in portrait;
-    /// iPhone, and a building whose old form was asked for, keep `groupPage`.
+    /// B1 (docs/ui/survey-b1): every building on one page, side by side in landscape, one column on iPad portrait and
+    /// iPhone; a building whose old form was asked for keeps `groupPage`.
     var cardPanels: SurveyModule? {
-        guard case .module(let id) = page, !compact, panelForm != id else { return nil }
+        guard case .module(let id) = page, panelForm != id else { return nil }
         return job.modules.first { $0.id == id && $0.type == .panel }
     }
-    /// B3 on iPad (docs/ui/survey-b3): the water point on the A2 picture, the mode, photos and details; one screen in
-    /// landscape, one scrolling column in portrait. iPhone keeps `groupPage`.
+    /// B3 (docs/ui/survey-b3): the water point on the A2 picture, the mode, photos and details; one screen in
+    /// landscape, one scrolling column on iPad portrait and iPhone.
     var cardWater: SurveyModule? {
-        guard case .module(let id) = page, !compact else { return nil }
+        guard case .module(let id) = page else { return nil }
         return job.modules.first { $0.id == id && $0.type == .water }
     }
     /// B4 (docs/ui/survey-b4): the level, four photos, the SLD crop, the A2 crop and the equipment list; side by side on
@@ -76,27 +75,27 @@ struct JobEditorView: View {
         guard case .module(let id) = page else { return nil }
         return job.modules.first { $0.id == id && $0.type == .backfeed }
     }
-    /// B5 on iPad landscape (docs/ui/survey-b5): the Emergency button, its point on the A2 picture and the SLD crop;
-    /// iPad portrait and iPhone keep `groupPage`.
+    /// B5 (docs/ui/survey-b5): the Emergency button, its point on the A2 picture and the SLD crop; side by side in
+    /// landscape, one scrolling column on iPad portrait and iPhone.
     var cardFts: SurveyModule? {
-        guard case .module(let id) = page, !compact, infoColumns == 2 else { return nil }
+        guard case .module(let id) = page else { return nil }
         return job.modules.first { $0.id == id && $0.type == .fts }
     }
     /// C1 roof on iPad (docs/ui/survey-c1): the roof plan, section A-A, members and photo angles; one screen side by side
-    /// at 1100 pt and wider in landscape, else one scrolling column. iPhone keeps `groupPage`.
+    /// at 1100 pt and wider in landscape, else one scrolling column (iPad portrait and iPhone).
     var cardRoof: SurveyModule? {
-        guard case .module(let id) = page, !compact else { return nil }
+        guard case .module(let id) = page else { return nil }
         return job.modules.first { $0.id == id && $0.type == .roof }
     }
-    /// D1 tank on iPad landscape (docs/ui/survey-d1-size): the sub-step tab bar, the tank plan and its data; one column
-    /// under 1100 pt. iPad portrait and iPhone keep `groupPage`.
+    /// D1 tank (docs/ui/survey-d1-size): the sub-step tab bar, the tank plan and its data; side by side in landscape at
+    /// 1100 pt and wider, else one column (iPad portrait and iPhone too).
     var cardTank: SurveyModule? {
-        guard case .module(let id) = page, !compact, infoColumns == 2 else { return nil }
+        guard case .module(let id) = page else { return nil }
         return job.modules.first { $0.id == id && $0.type == .tank }
     }
-    /// E1 on iPad landscape (docs/ui/survey-e1): verdict, remarks with suggestions, gaps elsewhere and both signatures on one
-    /// screen; one column under 1100 pt. iPad portrait and iPhone keep `groupPage`.
-    var cardFinal: Bool { page == .final && !compact && infoColumns == 2 }
+    /// E1 (docs/ui/survey-e1): verdict, remarks with suggestions, gaps elsewhere and both signatures on one screen in
+    /// landscape at 1100 pt and wider; else one column (iPad portrait and iPhone too).
+    var cardFinal: Bool { page == .final }
     /// The B1 building shown with its old per-section form; cleared when the page changes.
     @State var panelForm: UUID?
     /// Pages with the blue header and bottom bar instead of the navigation bar.
@@ -236,42 +235,45 @@ struct JobEditorView: View {
         if cardElectrical {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                ElectricalPageWide(job: $job, request: $electricalRequest, focus: $electricalFocus, openDiagram: { showSLD = true })
+                ElectricalPageWide(job: $job, request: $electricalRequest, focus: $electricalFocus, openDiagram: { showSLD = true },
+                                   narrow: compact)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardPanels {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                PanelsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1240 + 48) - 48, stacked: infoColumns != 2,
+                PanelsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
+                               stacked: compact || infoColumns != 2,
                                select: { id in withAnimation { page = id.map { .module($0) } ?? .info } },
                                openForm: { panelForm = m.id })
                     .disabled(readOnly)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardInverter {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48, stacked: infoColumns != 2)
+                InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
+                                 stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
                     .id(m.id)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardWater {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                WaterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48, openSite: { select(.site) },
-                              stacked: infoColumns != 2)
+                WaterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), openSite: { select(.site) },
+                              stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
                     .id(m.id)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardBackfeed {
@@ -288,61 +290,64 @@ struct JobEditorView: View {
         } else if let m = cardFts {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                FtsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48,
-                            openSite: { select(.site) }, openDiagram: { showSLD = true })
+                FtsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
+                            openSite: { select(.site) }, openDiagram: { showSLD = true }, stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
                     .id(m.id)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardRoof {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48,
-                             stacked: infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
+                RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
+                             stacked: compact || infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
                     .disabled(readOnly)
                     .id(m.id)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardTank {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                TankPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48, stacked: detailSize.width < 1100)
+                TankPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
+                             stacked: compact || infoColumns != 2 || detailSize.width < 1100)
                     .disabled(readOnly)
                     .id(m.id)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if cardFinal {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - 48, stacked: detailSize.width < 1100,
+                FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
+                              stacked: compact || infoColumns != 2 || detailSize.width < 1100,
                               open: { select(page(for: $0)) })
                     .disabled(readOnly)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if cardFlood {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                FloodPageWide(job: $job, width: min(detailSize.width, 1318 + 48) - 48, stacked: infoColumns != 2)
+                FloodPageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - 48, request: $siteRequest, stacked: infoColumns != 2)
+                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), request: $siteRequest,
+                             stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, 24).padding(.vertical, 16)
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else {

@@ -37,6 +37,8 @@ enum Home {
     static let stepDone = Color(red: 0.439, green: 0.678, blue: 0.278)
     /// "✓ ซิงก์แล้ว" #2E7D32.
     static let synced = Color(red: 0.180, green: 0.490, blue: 0.196)
+    /// The footer's synced cloud #3B7420 (docs/ui/pwa-solar-survey-iphone/icons/cloud-synced.svg).
+    static let syncedIcon = Color(red: 0.231, green: 0.455, blue: 0.125)
     // card tokens of the iPhone and iPad boards (docs/ui/pwa-solar-survey-iphone/icons/README.md, 3/10/2569)
     /// Hairline #DDE4ED: steps not started, the 44 pt ring's track, filter pill borders.
     static let hairline = Color(red: 0.867, green: 0.894, blue: 0.929)
@@ -239,19 +241,14 @@ struct JobCard: View {
                     in: RoundedRectangle(cornerRadius: compact ? 9 : 10))
     }
 
+    /// Sync state as a 20 pt icon only (owner, 3 ต.ค.): waiting / synced; VoiceOver keeps the words.
     @ViewBuilder var syncMark: some View {
         if pendingSync {
-            HStack(spacing: 5) {
-                Circle().fill(Home.warn).frame(width: 8, height: 8)
-                Text("รอซิงก์").fontWeight(.bold)
-            }
-            .foregroundStyle(Home.warn)
+            Image(systemName: "icloud.and.arrow.up").font(.system(size: 20)).foregroundStyle(Home.pending)
+                .accessibilityLabel("รอซิงก์")
         } else if synced {
-            HStack(spacing: 4) {
-                Image(systemName: "checkmark").fontWeight(.bold)
-                Text("ซิงก์แล้ว").fontWeight(.bold)
-            }
-            .foregroundStyle(Home.synced)
+            Image(systemName: "checkmark.icloud").font(.system(size: 20)).foregroundStyle(Home.syncedIcon)
+                .accessibilityLabel("ซิงก์แล้ว")
         }
     }
 }

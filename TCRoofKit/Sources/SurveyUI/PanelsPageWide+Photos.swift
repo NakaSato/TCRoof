@@ -19,10 +19,10 @@ extension PanelsPageWide {
             if values.photo(PhotoField.wide.rawValue) == nil {
                 PhotoSlot(photo: nil, jobID: job.id, hint: "ถ่ายมุมกว้างให้เห็นทั้งตู้และช่องว่าง", required: true,
                           onPick: { addPhoto($0, to: .wide) }, onClear: {})
-                    .frame(height: 330)
+                    .frame(height: narrow ? 240 : 330)
             } else {
                 GeometryReader { geo in wideStage(geo.size) }
-                    .frame(height: 330)
+                    .frame(height: narrow ? 240 : 330)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
             }
@@ -35,7 +35,7 @@ extension PanelsPageWide {
             PhotoSlot(photo: values.photo(PhotoField.breaker.rawValue), jobID: job.id, hint: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลขชัด",
                       required: true, onPick: { addPhoto($0, to: .breaker) },
                       onClear: { set(PhotoField.breaker.rawValue, nil) }, onOpen: { viewing = $0 })
-                .frame(height: 250)
+                .frame(height: narrow ? 200 : 250)
         }
     }
 

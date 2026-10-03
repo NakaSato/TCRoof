@@ -4,9 +4,9 @@ import UIKit
 import PhotosUI
 import TCRoofCore
 
-/// B1 on iPad (docs/ui/survey-b1): every building panel (`.panel` section) on one page. Landscape has the master list, the
-/// selected building's photos and its A3 link / load side by side; portrait stacks them under a row of building chips.
-/// Field ids are unchanged and the new answers (`a3Breaker`, `pvPoint`, `spareSlots`) are optional; iPhone keeps `groupPage`.
+/// B1 (docs/ui/survey-b1): every building panel (`.panel` section) on one page. Landscape has the master list, the
+/// selected building's photos and its A3 link / load side by side; portrait and iPhone stack them under a row of building chips.
+/// Field ids are unchanged and the new answers (`a3Breaker`, `pvPoint`, `spareSlots`) are optional.
 struct PanelsPageWide: View {
     @Binding var job: Job
     /// The building shown.
@@ -29,6 +29,8 @@ struct PanelsPageWide: View {
     @State var dragRect: (ShapePoint, ShapePoint)?
 
     static let listWidth: CGFloat = 240, sideWidth: CGFloat = 380, gap: CGFloat = 24
+    /// iPhone: asides under their labels, smaller photos, the heading's buttons on their own line.
+    var narrow: Bool { width < 600 }
 
     var panels: [SurveyModule] { job.modules.filter { $0.type == .panel } }
     var index: Int? { job.modules.firstIndex { $0.id == moduleID } }
@@ -42,9 +44,10 @@ struct PanelsPageWide: View {
     }
 
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+        let row = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+        return row {
             (Text(t) + (required ? Text(" *").foregroundColor(Home.danger) : Text(""))).font(.system(size: 17, weight: .bold))
-            Spacer(minLength: 8)
+            if !narrow { Spacer(minLength: 8) }
             if let aside { Text(aside).font(.footnote).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8) }
         }
     }
@@ -198,31 +201,46 @@ struct PanelsPageWide: View {
         }
     }
 
-    var heading: some View {
-        HStack(spacing: 10) {
-            Button { nameText = module?.name ?? ""; renaming = true } label: {
-                HStack(spacing: 6) {
-                    Text(title).font(.system(size: 26, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                    Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.muted)
-                }
-                .frame(minHeight: 44).contentShape(Rectangle())
+    @ViewBuilder var heading: some View {
+        if narrow {
+            VStack(alignment: .leading, spacing: 4) {
+                nameButton
+                HStack(spacing: 10) { Spacer(minLength: 0); headingActions }
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("แตะเพื่อเปลี่ยนชื่ออาคาร")
-            Spacer(minLength: 8)
-            Button { openForm() } label: {
-                Text("แบบฟอร์มเดิม").font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.primary)
-                    .padding(.horizontal, 10).frame(minHeight: 44).contentShape(Rectangle())
+        } else {
+            HStack(spacing: 10) {
+                nameButton
+                Spacer(minLength: 8)
+                headingActions
             }
-            .buttonStyle(.plain)
-            Button { confirmDelete = true } label: {
-                Text("ลบอาคาร").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.red)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.red.opacity(0.8)))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
         }
+    }
+
+    var nameButton: some View {
+        Button { nameText = module?.name ?? ""; renaming = true } label: {
+            HStack(spacing: 6) {
+                Text(title).font(.system(size: narrow ? 22 : 26, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.muted)
+            }
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("แตะเพื่อเปลี่ยนชื่ออาคาร")
+    }
+
+    @ViewBuilder var headingActions: some View {
+        Button { openForm() } label: {
+            Text("แบบฟอร์มเดิม").font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.primary)
+                .padding(.horizontal, 10).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        Button { confirmDelete = true } label: {
+            Text("ลบอาคาร").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.red)
+                .padding(.horizontal, 14).frame(minHeight: 44)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.red.opacity(0.8)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 #endif

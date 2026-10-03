@@ -17,9 +17,10 @@ extension InverterPageWide {
     /// `คำนวณห้องและแบบให้เอง`: B4 in the header, the inverter list and the summary strip.
     var calcCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+            let head = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
+            head {
                 Text("คำนวณห้องและแบบให้เอง").font(.system(size: 18, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
-                Spacer(minLength: 8)
+                if !narrow { Spacer(minLength: 8) }
                 zeroExport
             }
             Divider()
@@ -37,36 +38,25 @@ extension InverterPageWide {
     var planCard: some View {
         let s = station
         return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Text(planTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
-                Spacer(minLength: 6)
-                HStack(spacing: 0) {
-                    ForEach(InverterStation.Site.allCases, id: \.self) { site in
-                        segment(site.label, on: s.site == site) { update { $0.site = site } }.frame(width: 118)
-                    }
+            if narrow {
+                // iPhone: title and verdict on one line, the site switch full width under them
+                HStack(spacing: 10) {
+                    Text(planTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                    Spacer(minLength: 6)
+                    planVerdict(s)
                 }
-                .padding(3).background(Home.navy.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
-                Text(!s.measured ? "ยังไม่ได้วัด" : s.isOK ? "พื้นที่พอ ✓" : "พื้นที่ไม่พอ ✗").font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                    .foregroundStyle(!s.measured ? Home.pending : s.isOK ? Home.ok : Home.danger)
-                    .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background((!s.measured ? Home.pending : s.isOK ? Home.ok : Home.danger).opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+                siteSwitch(s, segmentWidth: nil)
+            } else {
+                HStack(spacing: 10) {
+                    Text(planTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                    Spacer(minLength: 6)
+                    siteSwitch(s, segmentWidth: 118)
+                    planVerdict(s)
+                }
             }
-            Button { showPlan = true } label: {
-                // capped so the inverter list and summary stay on screen in landscape; tap opens it full screen
-                SketchView(sketch: InverterStationDrawing.sketch(s))
-                    .frame(maxWidth: .infinity, maxHeight: 270)
-                    .padding(6)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.navy.opacity(0.12)))
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.primary)
-                            .frame(width: 30, height: 30).background(Color.white.opacity(0.9), in: Circle()).padding(6)
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(planTitle) \(String(format: "%.1f", s.planLength)) × \(String(format: "%.1f", s.planWidth)) ม. อินเวอร์เตอร์ \(s.sizes.count) เครื่อง")
-            .accessibilityHint("แตะเพื่อดูเต็มจอ")
-            HStack(spacing: 12) {
+            planPicture(s)
+            let trays = narrow ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 12))
+            trays {
                 widthStepper("Tray อินเวอร์เตอร์ → AC-DB", value: s.trayWidth, min: s.trayMin, sizes: InverterStation.traySizes) { w in update { $0.trayPick = w } }
                 widthStepper("Ladder ออกจาก AC-DB", value: s.ladderWidth, min: s.feeder.ladderMin, sizes: InverterStation.ladderSizes) { w in update { $0.ladderPick = w } }
             }
@@ -74,6 +64,40 @@ extension InverterPageWide {
         .padding(14)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Home.border))
+    }
+
+    func siteSwitch(_ s: InverterStation, segmentWidth: CGFloat?) -> some View {
+        HStack(spacing: 0) {
+            ForEach(InverterStation.Site.allCases, id: \.self) { site in
+                segment(site.label, on: s.site == site) { update { $0.site = site } }.frame(width: segmentWidth)
+            }
+        }
+        .padding(3).background(Home.navy.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
+    }
+
+    func planVerdict(_ s: InverterStation) -> some View {
+            Text(!s.measured ? "ยังไม่ได้วัด" : s.isOK ? "พื้นที่พอ ✓" : "พื้นที่ไม่พอ ✗").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                .foregroundStyle(!s.measured ? Home.pending : s.isOK ? Home.ok : Home.danger)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background((!s.measured ? Home.pending : s.isOK ? Home.ok : Home.danger).opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    func planPicture(_ s: InverterStation) -> some View {
+        Button { showPlan = true } label: {
+            // capped so the inverter list and summary stay on screen in landscape; tap opens it full screen
+            SketchView(sketch: InverterStationDrawing.sketch(s))
+                .frame(maxWidth: .infinity, maxHeight: 270)
+                .padding(6)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.navy.opacity(0.12)))
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.primary)
+                        .frame(width: 30, height: 30).background(Color.white.opacity(0.9), in: Circle()).padding(6)
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(planTitle) \(String(format: "%.1f", s.planLength)) × \(String(format: "%.1f", s.planWidth)) ม. อินเวอร์เตอร์ \(s.sizes.count) เครื่อง")
+        .accessibilityHint("แตะเพื่อดูเต็มจอ")
     }
 
     func widthStepper(_ title: String, value: Int, min: Int, sizes: [Int], set: @escaping (Int) -> Void) -> some View {
@@ -136,8 +160,16 @@ extension InverterPageWide {
         let s = station, n = s.sizes.count, full = n >= InverterStation.maxInverters
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Home.danger)).font(.system(size: 17, weight: .bold))
-                Text("\(n) / \(InverterStation.maxInverters) เครื่อง").font(.system(size: 13)).foregroundStyle(Home.muted)
+                let count = Text("\(n) / \(InverterStation.maxInverters) เครื่อง").font(.system(size: 13)).foregroundStyle(Home.muted)
+                if narrow {
+                    VStack(alignment: .leading, spacing: 0) {
+                        (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Home.danger)).font(.system(size: 17, weight: .bold))
+                        count
+                    }
+                } else {
+                    (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Home.danger)).font(.system(size: 17, weight: .bold))
+                    count
+                }
                 Spacer()
                 Button { update { $0.sizes.append($0.sizes.last ?? 60); $0.sizesAssumed = false } } label: {
                     Text(full ? "ครบแล้ว" : "+ เพิ่มเครื่อง").font(.system(size: 13, weight: .semibold))
@@ -155,7 +187,7 @@ extension InverterPageWide {
                     Button("ยืนยัน") { update { $0.sizesAssumed = false } }.font(.system(size: 13, weight: .bold)).frame(minHeight: 44)
                 }
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: narrow ? 1 : 2), spacing: 8) {
                 ForEach(Array(s.sizes.enumerated()), id: \.offset) { i, kw in inverterRow(i, kw, s) }
             }
         }
@@ -201,7 +233,8 @@ extension InverterPageWide {
 
     var summaryStrip: some View {
         let s = station, cap = s.capacityCheck(job.values.number("capacity"))
-        return HStack(spacing: 8) {
+        let row = narrow ? AnyLayout(VStackLayout(spacing: 6)) : AnyLayout(HStackLayout(spacing: 8))
+        return row {
             summaryCell("กำลังรวม", "\(s.totalKW) kW", sub: cap?.text ?? "A1 ยังไม่มี kWp", good: cap?.ok)
             summaryCell("CB อินเวอร์เตอร์", s.breakerSummary, sub: "Feeder \(s.feeder.at) AT", good: nil)
             summaryCell(s.site == .outdoor ? "ห้องขั้นต่ำ" : "ผนังยาวขั้นต่ำ",

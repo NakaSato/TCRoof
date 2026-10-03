@@ -34,7 +34,8 @@ extension SitePageWide {
             .contentShape(Rectangle())
             .simultaneousGesture(magnify, including: full ? .all : .subviews)
             .simultaneousGesture(panning, including: full ? .all : .subviews)
-            .overlay(alignment: .top) { if photo != nil { toolbar(full: full).padding(8) } }
+            // iPhone and narrow cards: icon-only tools so the bar fits one line
+            .overlay(alignment: .top) { if photo != nil { toolbar(full: full, narrow: size.width < 600).padding(8) } }
             .overlay(alignment: .topTrailing) { if photo != nil && showLayers { layersMenu.padding(.top, 54).padding(.trailing, 8) } }
             .overlay(alignment: .topLeading) { if photo != nil { northButton.padding(.leading, 10).padding(.top, 58) } }
             .overlay(alignment: .bottomLeading) { if photo != nil { hintStack.padding(10) } }
@@ -110,11 +111,16 @@ extension SitePageWide {
         VStack(spacing: 14) {
             Image(systemName: "photo.badge.plus").font(.system(size: 34)).foregroundStyle(Home.muted)
             Text("เลือกภาพมุมสูงของสถานที่ติดตั้ง").font(.headline)
-            HStack(spacing: 10) {
-                Button { fetchGoogle() } label: { Label("Google Maps", systemImage: "map").frame(minHeight: 36) }.buttonStyle(.borderedProminent)
-                Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(.bordered)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { emptyButtons }
+                VStack(spacing: 10) { emptyButtons }
             }
         }
+    }
+
+    @ViewBuilder var emptyButtons: some View {
+        Button { fetchGoogle() } label: { Label("Google Maps", systemImage: "map").frame(minHeight: 36) }.buttonStyle(.borderedProminent)
+        Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(.bordered)
     }
 
     /// Grid, building models, shapes, the shape being drawn and symbols, drawn like the report does.
@@ -353,13 +359,13 @@ extension SitePageWide {
 
     // MARK: toolbar (v2 §2)
 
-    func toolbar(full: Bool) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+    func toolbar(full: Bool, narrow: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: narrow ? 4 : 8) {
             toolGroup {
-                toolItem("เลือก", icon: "tool-select", symbol: "cursorarrow", nil)
-                toolItem("พื้นที่แผง", icon: "tool-panelArea", symbol: "pentagon", .shape(.panelArea))
-                toolItem("แนวสาย", icon: "tool-cableRoute", symbol: "point.topleft.down.to.point.bottomright.curvepath", .shape(.cableRoute))
-                toolItem("วัดระยะ", icon: "tool-measure", symbol: "ruler", .shape(.measure))
+                toolItem("เลือก", icon: "tool-select", symbol: "cursorarrow", nil, narrow: narrow)
+                toolItem("พื้นที่แผง", icon: "tool-panelArea", symbol: "pentagon", .shape(.panelArea), narrow: narrow)
+                toolItem("แนวสาย", icon: "tool-cableRoute", symbol: "point.topleft.down.to.point.bottomright.curvepath", .shape(.cableRoute), narrow: narrow)
+                toolItem("วัดระยะ", icon: "tool-measure", symbol: "ruler", .shape(.measure), narrow: narrow)
             }
             toolGroup {
                 iconItem("ย้อนกลับ", icon: "action-undo", symbol: "arrow.uturn.backward", enabled: canUndo) { undo() }
@@ -371,7 +377,7 @@ extension SitePageWide {
                     showLayers = false
                 } label: {
                     itemLabel(allLocked ? "ล็อกอยู่" : "ล็อก", icon: allLocked ? "action-lock" : "action-unlock", symbol: allLocked ? "lock" : "lock.open",
-                              fill: allLocked ? Home.warn : .clear, on: allLocked)
+                              fill: allLocked ? Home.warn : .clear, on: allLocked, narrow: narrow)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("ล็อกโมเดลอาคาร").accessibilityAddTraits(allLocked ? .isSelected : [])
@@ -380,7 +386,7 @@ extension SitePageWide {
             toolGroup {
                 Button { showLayers.toggle() } label: {
                     itemLabel("ชั้น \(layers.count)/\(Layer.allCases.count)", icon: "action-layers", symbol: "square.3.layers.3d",
-                              fill: showLayers ? Home.primarySoft : .clear, on: false)
+                              fill: showLayers ? Home.primarySoft : .clear, on: false, narrow: narrow)
                 }
                 .buttonStyle(.plain).accessibilityLabel("ชั้นที่แสดง \(layers.count) จาก \(Layer.allCases.count)")
                 iconItem(full ? "ออกจากเต็มจอ" : "ดูภาพเต็มจอ", icon: full ? "action-fullscreenExit" : "action-fullscreen",
@@ -400,22 +406,24 @@ extension SitePageWide {
             .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.28), radius: 2.5, y: 1)
     }
 
-    func itemLabel(_ title: String, icon: String, symbol: String, fill: Color, on: Bool) -> some View {
+    /// `narrow` drops the title (VoiceOver keeps it) so the toolbar fits an iPhone.
+    func itemLabel(_ title: String, icon: String, symbol: String, fill: Color, on: Bool, narrow: Bool = false) -> some View {
         HStack(spacing: 5) {
             A2Icon(name: icon, fallback: symbol, size: 16)
-            Text(title).font(.system(size: 11.5, weight: .semibold)).lineLimit(1).fixedSize()
+            if !narrow { Text(title).font(.system(size: 11.5, weight: .semibold)).lineLimit(1).fixedSize() }
         }
         .foregroundStyle(on ? Color.white : Home.navy)
-        .padding(.horizontal, 10).frame(height: 36)
+        .padding(.horizontal, narrow ? 0 : 10).frame(minWidth: narrow ? 36 : nil).frame(height: 36)
         .background(fill, in: RoundedRectangle(cornerRadius: 7))
         // 36 pt button + the group's padding: a 44 pt target
         .contentShape(Rectangle().inset(by: -4))
+        .accessibilityLabel(title)
     }
 
     /// One tool of the segmented group; nil is Select.
-    func toolItem(_ title: String, icon: String, symbol: String, _ t: Tool?) -> some View {
+    func toolItem(_ title: String, icon: String, symbol: String, _ t: Tool?, narrow: Bool = false) -> some View {
         let on = tool == t
-        return Button { arm(t) } label: { itemLabel(title, icon: icon, symbol: symbol, fill: on ? Home.navy : .clear, on: on) }
+        return Button { arm(t) } label: { itemLabel(title, icon: icon, symbol: symbol, fill: on ? Home.navy : .clear, on: on, narrow: narrow) }
             .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
     }
 
@@ -566,29 +574,48 @@ extension SitePageWide {
 
     // MARK: caption
 
+    /// On an iPhone the C1 chip moves to its own line under the title.
     var captionRow: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("ภาพสถานที่ติดตั้ง").font(.system(size: 14, weight: .bold)).underline()
-                Text(photoLine).font(.system(size: 12)).foregroundStyle(Home.muted)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                captionTitle.fixedSize()
+                Spacer(minLength: 6)
+                panelChip
+                pictureMenu
             }
-            .lineLimit(1)
-            Spacer(minLength: 6)
-            panelChip
-            Menu {
-                Button { fetchGoogle() } label: { Label("Google Maps ตามพิกัด A1", systemImage: "map") }
-                Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo") }
-                if photo != nil {
-                    Button(role: .destructive) { job.values["siteMap"] = nil; job.values[SiteShapes.sourceKey] = nil; job.values[SiteShapes.scaleKey] = nil } label: {
-                        Label("ลบภาพ", systemImage: "trash")
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    captionTitle
+                    Spacer(minLength: 6)
+                    pictureMenu
                 }
-            } label: {
-                Text(photo == nil ? "เลือกภาพ" : "เปลี่ยนภาพ").font(.system(size: 15, weight: .semibold))
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.5)))
+                panelChip
             }
+        }
+    }
+
+    var captionTitle: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("ภาพสถานที่ติดตั้ง").font(.system(size: 14, weight: .bold)).underline()
+            Text(photoLine).font(.system(size: 12)).foregroundStyle(Home.muted)
+        }
+        .lineLimit(1)
+    }
+
+    var pictureMenu: some View {
+        Menu {
+            Button { fetchGoogle() } label: { Label("Google Maps ตามพิกัด A1", systemImage: "map") }
+            Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo") }
+            if photo != nil {
+                Button(role: .destructive) { job.values["siteMap"] = nil; job.values[SiteShapes.sourceKey] = nil; job.values[SiteShapes.scaleKey] = nil } label: {
+                    Label("ลบภาพ", systemImage: "trash")
+                }
+            }
+        } label: {
+            Text(photo == nil ? "เลือกภาพ" : "เปลี่ยนภาพ").font(.system(size: 15, weight: .semibold))
+                .padding(.horizontal, 14).frame(minHeight: 44)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.5)))
         }
     }
 

@@ -131,7 +131,7 @@ extension PanelsPageWide {
     var spareSlotsRow: some View {
         HStack(spacing: 10) {
             Text("ช่องว่างในตู้").font(.system(size: 15, weight: .semibold))
-            Text("แสดงที่จุดเชื่อมต่อ").font(.footnote).foregroundStyle(Home.muted)
+            if !narrow { Text("แสดงที่จุดเชื่อมต่อ").font(.footnote).foregroundStyle(Home.muted) }
             Spacer(minLength: 6)
             TextField("–", text: text(BuildingPanels.Key.spareSlots)).keyboardType(.numberPad)
                 .font(.system(size: 17, weight: .bold)).multilineTextAlignment(.trailing).frame(width: 60)

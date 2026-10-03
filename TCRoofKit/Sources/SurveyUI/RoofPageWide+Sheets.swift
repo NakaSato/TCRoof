@@ -66,7 +66,7 @@ extension RoofPageWide {
             }
         }
         .foregroundStyle(Home.navy)
-        .frame(width: 390)
+        .frame(width: narrow ? 340 : 390)
         .frame(maxHeight: 520)
     }
 

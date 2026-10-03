@@ -295,7 +295,10 @@ struct SitePageWide: View {
     var sourceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             heading("ภาพมุมสูง", required: true, trailing: "เลือก 1 แหล่ง")
-            HStack(spacing: 10) {
+            // one above the other on an iPhone
+            let narrow = width < 600
+            let stack = narrow ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
+            stack {
                 sourceButton("Google Maps", "ภาพดาวเทียมตามพิกัด A1", icon: "source-google", symbol: "map", on: source == "google") { fetchGoogle() }
                 sourceButton("อัปโหลดภาพจากโดรน", "JPG ภาพมุมตรง (Nadir)", icon: "source-drone", symbol: "camera.aperture", on: source == "drone") { pickDrone = true }
             }
@@ -326,7 +329,7 @@ struct SitePageWide: View {
     var paletteSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             heading("สัญลักษณ์บนภาพ", trailing: "แตะ แล้วแตะบนภาพเพื่อวาง")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: width < 600 ? 2 : 3), spacing: 8) {
                 ForEach(paletteTools, id: \.self) { t in paletteButton(t) }
             }
         }

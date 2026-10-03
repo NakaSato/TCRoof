@@ -5,9 +5,9 @@ import PhotosUI
 import TCRoofCore
 import PDFReport
 
-/// A4 on iPad (docs/ui/survey-a4): a live water-level cross-section, the equipment height check and flood photos on the left;
-/// the flood questions, the GISTDA lookup and the note on the right. Landscape puts them side by side, portrait stacks them and scrolls.
-/// Field ids are unchanged; the new answers are optional, so completion is too. iPhone keeps the schema form (`groupPage`).
+/// A4 (docs/ui/survey-a4): a live water-level cross-section, the equipment height check and flood photos on the left;
+/// the flood questions, the GISTDA lookup and the note on the right. Landscape puts them side by side, portrait and iPhone stack them and scroll.
+/// Field ids are unchanged; the new answers are optional, so completion is too.
 struct FloodPageWide: View {
     @Binding var job: Job
     /// Width of the page's content.
@@ -25,6 +25,8 @@ struct FloodPageWide: View {
     @State var viewing: Photo?
 
     var rightWidth: CGFloat { min(740, max(460, (width - 28) * 0.55)) }
+    /// iPhone: rows that sit side by side on iPad go one above the other.
+    var narrow: Bool { width < 600 }
     var values: Values { job.values }
     var state: FloodCheck.State { FloodCheck.state(values) }
     var check: FloodCheck.Result { job.floodCheck }
@@ -65,6 +67,8 @@ struct FloodPageWide: View {
         VStack(alignment: .leading, spacing: 16) {
             A1Card(title: "ภาพตัดระดับน้ำ", trailing: "อัปเดตตามข้อมูลด้านขวา · ใช้ในรายงาน PDF", spacing: 10) {
                 sectionDrawing
+                // the GISTDA box covers the whole drawing on an iPhone, so it goes under it
+                if narrow && state == .unknownEmpty { fetchBox }
                 checkTable
             }
             photosBlock
@@ -93,7 +97,7 @@ struct FloodPageWide: View {
                         .position(x: 375 * s, y: min(wy + 26 * s, (FloodSection.groundY - 14) * s))
                         .allowsHitTesting(false)
                 }
-                if state == .unknownEmpty { fetchOverlay }
+                if state == .unknownEmpty && !narrow { fetchOverlay }
                 if state == .unknownFetched, let g = values.gistda {
                     Text(g.banner).font(.system(size: 12.5, weight: .bold)).foregroundStyle(Home.pending)
                         .padding(.horizontal, 10).padding(.vertical, 4)
@@ -116,17 +120,21 @@ struct FloodPageWide: View {
     }
 
     var fetchOverlay: some View {
+        fetchBox.frame(width: 320)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center).offset(y: -12)
+    }
+
+    var fetchBox: some View {
         VStack(spacing: 10) {
             Text("ยังไม่มีข้อมูลระดับน้ำ").font(.system(size: 15, weight: .bold))
             Text("ดึงประวัติน้ำท่วมจาก GISTDA ตามพิกัด A1").font(.system(size: 13)).foregroundStyle(Home.muted).multilineTextAlignment(.center)
             fetchButton
             if let failure { Text(failure).font(.system(size: 12.5)).foregroundStyle(Home.danger).multilineTextAlignment(.center); estimateButton }
         }
-        .padding(.vertical, 14).padding(.horizontal, 16).frame(width: 320)
+        .padding(.vertical, 14).padding(.horizontal, 16).frame(maxWidth: .infinity)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.borderControl))
         .shadow(color: Home.navy.opacity(0.12), radius: 6, y: 3)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center).offset(y: -12)
     }
 
     // MARK: equipment height check
@@ -135,13 +143,14 @@ struct FloodPageWide: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
                 Text("ตรวจความสูงอุปกรณ์").font(.system(size: 16, weight: .bold))
-                Text(FloodCheck.requirement(values)).font(.system(size: 12.5)).foregroundStyle(Home.muted)
+                if !narrow { requirementText }
                 Spacer()
                 Button { editHeights = true } label: {
                     Label("ปรับความสูง", systemImage: "slider.horizontal.3").font(.system(size: 14, weight: .semibold)).frame(minHeight: 44)
                 }
                 .popover(isPresented: $editHeights) { heightEditor }
             }
+            if narrow { requirementText }
             if check.rows.isEmpty {
                 Text("ยังไม่มีหัวข้อ Inverter / SMDB / Emergency ในงานนี้").font(.system(size: 13)).foregroundStyle(Home.muted).padding(.vertical, 6)
             }
@@ -151,12 +160,16 @@ struct FloodPageWide: View {
                     Text(r.tag).font(.system(size: 12.5)).foregroundStyle(Home.muted)
                     Spacer(minLength: 6)
                     Text(r.height).font(.system(size: 14)).monospacedDigit().foregroundStyle(Home.navy)
-                    pill(r.status).frame(width: 130, alignment: .trailing)
+                    pill(r.status).frame(width: narrow ? nil : 130, alignment: .trailing)
                 }
                 .frame(minHeight: 30)
                 Divider()
             }
         }
+    }
+
+    var requirementText: some View {
+        Text(FloodCheck.requirement(values)).font(.system(size: 12.5)).foregroundStyle(Home.muted)
     }
 
     func pill(_ s: FloodCheck.Status) -> some View {
@@ -196,9 +209,10 @@ struct FloodPageWide: View {
 
     var photosBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
+            let head = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+            head {
                 Text("ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม").font(.system(size: 16, weight: .bold))
-                Spacer()
+                if !narrow { Spacer() }
                 Text("ไม่บังคับ · แนะนำถ่ายคู่ตลับเมตร").font(.footnote).foregroundStyle(Home.muted)
             }
             ScrollView(.horizontal) {
@@ -299,7 +313,8 @@ struct FloodPageWide: View {
                 numberBox("ระดับน้ำสูงสุด", id: "floodDepth", unit: "ซม.", required: true, keyboard: .decimalPad)
                 numberBox("ท่วมขัง", id: "floodDays", unit: "วัน")
             }
-            HStack(alignment: .top, spacing: 12) {
+            let pair = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14)) : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+            pair {
                 VStack(alignment: .leading, spacing: 6) { label("วัดความสูงจาก", required: true); choiceRow(Schema.floodRefs, id: "floodRef", height: 44) }
                 VStack(alignment: .leading, spacing: 6) {
                     label("ที่มาข้อมูล", required: true)
@@ -317,7 +332,7 @@ struct FloodPageWide: View {
             }
             VStack(alignment: .leading, spacing: 6) {
                 label("จุดที่เคยได้รับผลกระทบ", aside: "แสดงบนภาพ A2")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .leading), count: 3), alignment: .leading, spacing: 4) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .leading), count: narrow ? 2 : 3), alignment: .leading, spacing: 4) {
                     ForEach(Schema.floodHits, id: \.self) { h in hitBox(h) }
                 }
             }

@@ -3,8 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// A3 on iPad in landscape (docs/ui/survey-a3): the power-flow diagram meter → transformers → boards, filled in place.
-/// Portrait and iPhone keep the schema form (`groupPage`). Field ids are unchanged; the new answers are optional
+/// A3 (docs/ui/survey-a3): the power-flow diagram meter → transformers → boards, filled in place, on iPad and iPhone. Field ids are unchanged; the new answers are optional
 /// (`Transformer.boards`, `meterKV` …), so A3's completion counts as before.
 struct ElectricalPageWide: View {
     @Binding var job: Job
@@ -14,6 +13,8 @@ struct ElectricalPageWide: View {
     @Binding var focus: SLTarget?
     /// Opens the single line diagram page.
     var openDiagram: () -> Void = {}
+    /// iPhone: a two-line header, a smaller zoom panel and the diagram opened at 80 % to scroll around.
+    var narrow = false
     @Environment(SurveyModel.self) var model
 
     /// One breaker being edited in the sheet.
@@ -97,32 +98,48 @@ struct ElectricalPageWide: View {
                         let first = viewport == .zero
                         viewport = s
                         // portrait is narrow: open readable (scrolling sideways) rather than at the whole-diagram fit
-                        if first { fit(); if s.height > s.width { scale = max(scale, 0.5) } }
+                        if first { fit(); if s.height > s.width { scale = max(scale, narrow ? 0.8 : 0.5) } }
                     }
             }
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding(16)
+        .padding(narrow ? 10 : 16)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Home.navy.opacity(0.2)))
     }
 
-    var cardHeader: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text("ผังการจ่ายไฟ").font(.system(size: 22, weight: .bold))
-            Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Home.muted).lineLimit(1)
-            Spacer(minLength: 8)
-            matchChip
-            Button(action: openDiagram) {
-                Text("สร้าง Single Line Diagram →").font(.system(size: 16, weight: .bold)).lineLimit(1)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18).frame(minHeight: 44)
-                    .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+    @ViewBuilder var cardHeader: some View {
+        if narrow {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text("ผังการจ่ายไฟ").font(.system(size: 19, weight: .bold)).lineLimit(1)
+                    Spacer(minLength: 4)
+                    diagramButton
+                }
+                matchChip
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("สร้าง Single Line Diagram").accessibilityHint("เปิดแผนภาพเส้นเดียวที่สร้างจากข้อมูลสำรวจ")
+            .padding(.bottom, 8)
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("ผังการจ่ายไฟ").font(.system(size: 22, weight: .bold))
+                Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Home.muted).lineLimit(1)
+                Spacer(minLength: 8)
+                matchChip
+                diagramButton
+            }
+            .padding(.bottom, 10)
         }
-        .padding(.bottom, 10)
+    }
+
+    var diagramButton: some View {
+        Button(action: openDiagram) {
+            Text(narrow ? "Single Line →" : "สร้าง Single Line Diagram →").font(.system(size: narrow ? 15 : 16, weight: .bold)).lineLimit(1)
+                .foregroundStyle(.white)
+                .padding(.horizontal, narrow ? 12 : 18).frame(minHeight: 44)
+                .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("สร้าง Single Line Diagram").accessibilityHint("เปิดแผนภาพเส้นเดียวที่สร้างจากข้อมูลสำรวจ")
     }
 
     /// Green when the transformer / MDB count matches the symbols on the A2 picture, orange with the difference otherwise.
@@ -173,12 +190,12 @@ struct ElectricalPageWide: View {
                 scale = min(max(base * v.magnification, 0.4), 1.6)
             }
             .onEnded { _ in pinchBase = nil })
-        .overlay(alignment: .bottomTrailing) { zoomPanel.padding(14) }
+        .overlay(alignment: .bottomTrailing) { zoomPanel.padding(narrow ? 8 : 14) }
     }
 
     var zoomPanel: some View {
         HStack(spacing: 10) {
-            Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.system(size: 13)).foregroundStyle(Home.muted)
+            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.system(size: 13)).foregroundStyle(Home.muted) }
             HStack(spacing: 6) {
                 zoomButton("minus", "ย่อ") { step(-1) }
                 Text("\(Int((scale * 100).rounded()))%").font(.system(size: 16, weight: .bold)).frame(minWidth: 52)

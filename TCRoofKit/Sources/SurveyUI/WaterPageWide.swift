@@ -3,9 +3,9 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// B3 on iPad landscape (docs/ui/survey-b3): the water point on the A2 picture on the left; the water mode, the two photos
+/// B3 (docs/ui/survey-b3): the water point on the A2 picture on the left; the water mode, the two photos
 /// and the details on the right. The pin is A2's `.water` mark for this module (`WaterPoint`); field ids are unchanged.
-/// iPad portrait stacks the same cards in one scrolling column; iPhone keeps the schema form (`groupPage`).
+/// iPad portrait and iPhone stack the same cards in one scrolling column.
 struct WaterPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -20,6 +20,8 @@ struct WaterPageWide: View {
     @State var photosHeight: CGFloat = 0
 
     var rightWidth: CGFloat { min(500, max(380, width * 0.38)) }
+    /// iPhone: two summary tiles, mode texts on two lines.
+    var narrow: Bool { width < 600 }
 
     var index: Int? { job.modules.firstIndex { $0.id == moduleID } }
     var module: SurveyModule? { index.map { job.modules[$0] } }
@@ -150,7 +152,7 @@ struct WaterPageWide: View {
         HStack(spacing: 10) {
             summaryTile("หลังคาที่ต้องล้าง", WaterPoint.roofNames(job))
             summaryTile("จำนวนแผง (จาก D1)", WaterPoint.panelSummary(job))
-            summaryTile("แสดงผลใน", "ภาพ A2 · รายงาน")
+            if !narrow { summaryTile("แสดงผลใน", "ภาพ A2 · รายงาน") }
         }
     }
 
@@ -185,7 +187,8 @@ struct WaterPageWide: View {
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(on ? Self.teal : Self.tileFill, in: RoundedRectangle(cornerRadius: 5))
                 Text(m.cardTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                Text(m.cardSub).font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.75)
+                Text(m.cardSub).font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(narrow ? 2 : 1).minimumScaleFactor(0.75)
+                    .fixedSize(horizontal: false, vertical: narrow)
             }
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)

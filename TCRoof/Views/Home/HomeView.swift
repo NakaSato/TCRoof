@@ -1,9 +1,10 @@
 import SwiftUI
 import SwiftData
 import SurveyUI
+import TCRoofCore
 
 enum AppModule: String, CaseIterable, Identifiable {
-    case survey, plan, scan, install, pwa
+    case survey, plan, scan, install, pwa, tools
 
     var id: String { rawValue }
 
@@ -14,6 +15,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: "สแกนอุปกรณ์"
         case .install: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน"
         case .pwa: "การประปา\nส่วนภูมิภาค"
+        case .tools: "เครื่องมือและอุปกรณ์วัด"
         }
     }
 
@@ -24,6 +26,25 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: "สแกนซีเรียลแผงและอินเวอร์เตอร์"
         case .install: "บันทึกประจำวันและใบตรวจรับ (ICL)"
         case .pwa: "Excel / PDF / Drive"
+        case .tools: "โดรน กล้องถ่ายภาพความร้อน แคลมป์มิเตอร์"
+        }
+    }
+
+    /// One-line subtitle of the iPhone module rows.
+    var shortSubtitle: String {
+        switch self {
+        case .survey: "นัดหมาย · หลังคา · ระบบไฟฟ้า"
+        case .install: "บันทึกประจำวัน · ใบตรวจรับ ICL"
+        default: subtitle
+        }
+    }
+
+    /// Status chip of the home row: `2 นัดวันนี้` on the survey row, `Day 2/5` on the install row.
+    func chip(surveyToday: Int, installDay: String?) -> String? {
+        switch self {
+        case .survey: surveyToday > 0 ? "\(surveyToday) นัดวันนี้" : nil
+        case .install: installDay
+        default: nil
         }
     }
 
@@ -34,6 +55,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: "barcode.viewfinder"
         case .install: "folder.fill"
         case .pwa: "drop.fill"
+        case .tools: "briefcase.fill"
         }
     }
 
@@ -44,78 +66,175 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: ScanJobListView()
         case .install: InstallRecordsView()
         case .pwa: SolarSurveyEntryView()
+        case .tools: ToolsPlaceholderView()
         }
     }
 }
 
 struct HomeView: View {
-    @AppStorage("userName") private var userName = ""
     @AppStorage("notifications.read") private var readRaw = ""
     @Environment(GoogleSession.self) private var session
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State private var showSettings = false
     @State private var showNotifications = false
-    @State private var showAllNotifications = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var openReport: OpenReportPage?
+    /// Appointment whose job has no report yet: pick a template, then open the new report at A1.
+    @State private var startReport: Job?
+    @State private var showNewJob = false
+    @State private var showSurveyList = false
+    @State private var installLogs: Job?
+    @AppStorage("userName") private var engineerName = ""
 
     private var todaysJobs: [Job] {
         jobs.filter { $0.installDay(on: .now) != nil || $0.surveyDate.isToday }
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                header
-                LazyVGrid(columns: isPhone ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 24), count: 2),
-                          spacing: isPhone ? 20 : 24) {
-                    ForEach(AppModule.allCases) { module in
-                        NavigationLink { module.destination } label: { ModuleCard(module: module) }
-                            .buttonStyle(.plain)
-                    }
-                }
-                todaySection
-            }
-            .padding(isPhone ? 20 : 32)
-            .frame(maxWidth: 1240)
-            .frame(maxWidth: .infinity)
+        // each minute, so appointments drop off and "อีก n นาที" counts down
+        TimelineView(.everyMinute) { _ in
+            if sizeClass == .compact { phoneHome } else { padHome.debugBoard() }
         }
         .font(.sarabun(17))
-        .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showSettings) { SettingsView().presentationDetents([.large]).formSheetSizing() }
+        .sheet(isPresented: $showNewJob) { NewJobView() }
+        // iPad shows them in the bell's popover
+        .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
+            notificationsView(large: false)
+        }
+        .navigationDestination(item: $openReport) { SurveyReportEditor(jobID: $0.id, start: $0.start) }
+        .navigationDestination(item: $installLogs) { JobInstallLogsView(job: $0) }
+        .navigationDestination(isPresented: $showSurveyList) { SurveyListView() }
+        .sheet(item: $startReport) { job in
+            SurveyTemplatePicker { t in
+                let survey = session.survey
+                let engineer = survey.settings.engineer.isEmpty ? engineerName : survey.settings.engineer
+                let r = survey.create(t, engineer: engineer, linkedTo: job.ensureSyncID(), prefill: job.surveyPrefill)
+                startReport = nil
+                openReport = OpenReportPage(id: r.id)
+            }
+        }
         #if DEBUG
-        // `-homeNotifications YES` opens the bell panel for simulator checks
-        .task { if UserDefaults.standard.bool(forKey: "homeNotifications") { try? await Task.sleep(for: .seconds(1)); showNotifications = true } }
+        .task {
+            if UserDefaults.standard.bool(forKey: "homeDemo") { seedDemo() }
+            // `-homeNotifications YES` opens the notifications for simulator checks
+            if UserDefaults.standard.bool(forKey: "homeNotifications") { try? await Task.sleep(for: .seconds(1)); showNotifications = true }
+            // `-homeSettings YES` opens the settings sheet
+            if UserDefaults.standard.bool(forKey: "homeSettings") { try? await Task.sleep(for: .seconds(1)); showSettings = true }
+        }
         #endif
-        .sheet(isPresented: $showAllNotifications) {
-            NotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: sync)
-        }
     }
 
-    // MARK: header
+    private func notificationsView(large: Bool) -> PhoneNotificationsView {
+        PhoneNotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: sync,
+                               surveyHint: surveyHint, openSurvey: openSurvey, large: large)
+    }
 
-    private var header: some View {
+    private var installChip: String? {
+        jobs.lazy.compactMap { j in j.installDay(on: .now).map { "Day \($0)/\(j.installDays)" } }.first
+    }
+
+    // MARK: iPhone
+
+    private var phoneHome: some View {
         let survey = session.survey
-        let stats: [HomeHeader<NotificationPanel>.Stat] = [
-            .init(label: "นัดสำรวจวันนี้", value: jobs.filter { $0.surveyDate.isToday }.count, color: Theme.primary),
-            .init(label: "งานสำรวจยังขาด", value: survey.jobs.filter { !$0.completion.isComplete }.count, color: Theme.navy),
-            .init(label: "รอซิงก์", value: survey.jobsToSync.count, color: Theme.pending),
-        ]
         let items = notifications, read = readIDs
-        return HomeHeader(userName: userName, stats: stats, next: nextAppointment,
-                          unread: items.filter { !read.contains($0.id) }.count,
-                          showNotifications: $showNotifications, openSettings: { showSettings = true }) {
-            NotificationPanel(items: items, read: read, markRead: markRead, sync: sync,
-                              close: { showNotifications = false },
-                              showAll: { showNotifications = false; showAllNotifications = true })
+        let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
+        return PhoneHome(appointments: appointments,
+                         unread: items.filter { !read.contains($0.id) }.count,
+                         surveyToday: jobs.filter { $0.surveyDate.isToday }.count,
+                         installChip: installChip,
+                         greetingFacts: greetingFacts(appointments.first, pending: survey.jobsToSync.count),
+                         notificationsShown: $showNotifications,
+                         openSettings: { showSettings = true },
+                         open: openAppointment,
+                         newSurvey: { showNewJob = true })
+    }
+
+    // MARK: iPad
+
+    private var padHome: some View {
+        let survey = session.survey
+        let items = notifications, read = readIDs
+        let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
+        return PadHome(appointments: appointments,
+                       timeline: TimelineItem.list(jobs: todaysJobs, survey: survey),
+                       pending: PendingSurvey.list(survey: survey, todayJobs: todaysJobs),
+                       unread: items.filter { !read.contains($0.id) }.count,
+                       surveyToday: jobs.filter { $0.surveyDate.isToday }.count,
+                       installChip: installChip,
+                       greetingFacts: greetingFacts(appointments.first, pending: survey.jobsToSync.count),
+                       notificationsShown: $showNotifications,
+                       openSettings: { showSettings = true },
+                       open: openAppointment,
+                       openInstall: { installLogs = $0 },
+                       openReport: { openReport = OpenReportPage(id: $0.report.id, start: $0.target) },
+                       showSurveyList: { showSurveyList = true },
+                       newSurvey: { showNewJob = true }) {
+            notificationsView(large: true)
         }
     }
 
-    /// "09:30 · TC-0012 ชื่อโครงการ" — today's first survey appointment still ahead.
-    private var nextAppointment: String {
-        guard let j = jobs.filter({ $0.surveyDate.isToday && $0.surveyDate > .now }).min(by: { $0.surveyDate < $1.surveyDate }) else {
-            return "ไม่มีนัดวันนี้"
+    #if DEBUG
+    /// `-screen home -homeDemo YES`: two sample jobs get survey appointments later today and the first a linked
+    /// report with GPS and a phone, so the hero shows the pager, ring, navigate and call; a third is on install day 2/5.
+    private func seedDemo() {
+        guard DebugScreen.requested != nil else { return }
+        let sorted = jobs.sorted { abs($0.surveyDate.timeIntervalSinceNow) < abs($1.surveyDate.timeIntervalSinceNow) }
+        let picks = sorted.prefix(2)
+        for (i, job) in picks.enumerated() {
+            job.surveyDate = Date.now.addingTimeInterval(i == 0 ? 49 * 60 + 30 : 3 * 3600)
         }
-        return j.surveyDate.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)) + " · \(j.code) \(j.projectName)"
+        if sorted.count > 2, !jobs.contains(where: { $0.installDay(on: .now) != nil }) {
+            let install = sorted[2]
+            install.installStart = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now.adding(days: -1)) ?? .now
+            install.installDays = 5
+        }
+        // an open report off today's schedule, for `งานสำรวจค้างอยู่`
+        if PendingSurvey.list(survey: session.survey, todayJobs: todaysJobs).isEmpty, let template = JobTemplate.all.first {
+            var r = session.survey.create(template, engineer: "สมชาย")
+            r.values["docNo"] = .text("198")
+            session.survey.update(r)
+        }
+        guard let first = picks.first, session.survey.jobs(linkedTo: first.ensureSyncID()).isEmpty,
+              let template = JobTemplate.all.first else { return }
+        var r = session.survey.create(template, engineer: "สมชาย", linkedTo: first.ensureSyncID(), prefill: first.surveyPrefill)
+        r.values["docNo"] = .text("224")
+        r.values["gps"] = .text("17.0062, 99.8235")
+        r.values["coordinator"] = .text("คุณสมชาย")
+        session.survey.update(r)
+    }
+    #endif
+
+    private func greetingFacts(_ next: TodayAppointment?, pending: Int) -> HomeGreeting.Facts {
+        HomeGreeting.Facts(hour: Calendar.current.component(.hour, from: .now),
+                           nextName: next.map { a in a.report.flatMap { $0.docNo.isEmpty ? nil : "NO.\($0.docNo)" } ?? a.job.code },
+                           nextTime: next?.time, percent: next?.report.map { $0.completion.percent },
+                           nextStepTitle: next?.nextStep?.title, pendingSync: pending)
+    }
+
+    /// Opens the appointment's report at `start`, or starts one when the job has none.
+    private func openAppointment(_ a: TodayAppointment, at start: MissingGroup.Target?) {
+        if let r = a.report { openReport = OpenReportPage(id: r.id, start: start) } else { startReport = a.job }
+    }
+
+    private func appointment(for n: AppNotification) -> TodayAppointment? {
+        guard let job = n.job else { return nil }
+        let report = job.syncID.flatMap { session.survey.jobs(linkedTo: $0).max { $0.updated < $1.updated } }
+        return TodayAppointment(job: job, report: report)
+    }
+
+    private func surveyHint(_ n: AppNotification) -> String {
+        guard let a = appointment(for: n) else { return "" }
+        guard a.report != nil else { return "แตะเพื่อเริ่มสำรวจ A1" }
+        return a.nextStepLabel.map { "แตะเพื่อทำต่อ \($0)" } ?? "แตะเพื่อเปิดแบบสำรวจ"
+    }
+
+    private func openSurvey(_ n: AppNotification) {
+        guard let a = appointment(for: n) else { return }
+        // after the cover has gone, so the push lands on the home stack
+        Task { try? await Task.sleep(for: .milliseconds(350)); openAppointment(a, at: a.nextStep?.page) }
     }
 
     // MARK: notifications
@@ -130,76 +249,27 @@ struct HomeView: View {
     }
 
     private func sync() { session.survey.cloudPush?() }
-
-    private var todaySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("งานวันนี้").font(.sarabun(22, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
-            if todaysJobs.isEmpty {
-                Text("ไม่มีงานสำรวจหรืองานติดตั้งในวันนี้")
-                    .foregroundStyle(Theme.muted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .cardStyle()
-            } else {
-                LazyVGrid(columns: cardColumns, spacing: 16) {
-                    ForEach(todaysJobs) { job in
-                        NavigationLink { JobDetailView(job: job) } label: { TodayRow(job: job) }
-                            .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-    }
 }
 
-private struct TodayRow: View {
-    let job: Job
-
-    var body: some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 3).fill(job.team.color).frame(width: 6)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(job.code).bold()
-                    TeamTag(team: job.team)
-                    Spacer()
-                    if let day = job.installDay(on: .now) {
-                        Text("ติดตั้ง Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
-                    } else {
-                        Text("นัดสำรวจ").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.teal)
-                    }
-                }
-                Text(job.projectName).font(.sarabun(15, relativeTo: .subheadline))
-                Text("\(job.capacityKW.kw) | \(job.province)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+private extension View {
+    /// `-homeBoard YES`: lays the iPad home out at the board's 1366 × 1024 (landscape) and scales it to fit,
+    /// since the simulator here can't be rotated by hand.
+    @ViewBuilder func debugBoard() -> some View {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "homeBoard") {
+            GeometryReader { g in
+                self.frame(width: 1366, height: 1024).scaleEffect(g.size.width / 1366, anchor: .topLeading)
             }
-            .foregroundStyle(Theme.navy)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle(padding: 14)
+            .ignoresSafeArea()
+        } else { self }
+        #else
+        self
+        #endif
     }
-}
 
-private struct ModuleCard: View {
-    let module: AppModule
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(module.title)
-                    .font(.sarabun(22, .bold, relativeTo: .title2))
-                    .foregroundStyle(Theme.navy)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(module.subtitle)
-                    .font(.sarabun(15, relativeTo: .subheadline))
-                    .foregroundStyle(Theme.inkMuted)
-            }
-            Spacer()
-            ModuleIllustration(symbol: module.symbol, size: isPhone ? 84 : 110)
-        }
-        .padding(isPhone ? 18 : 24)
-        .frame(minHeight: isPhone ? 120 : 150)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .cardShadow()
-        .contentShape(Rectangle())
+    /// iPad settings as a centred form sheet (about 560 × 820).
+    @ViewBuilder func formSheetSizing() -> some View {
+        if #available(iOS 18, *) { presentationSizing(.form) } else { self }
     }
 }
 
@@ -208,54 +278,24 @@ private struct ModuleCard: View {
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(GoogleSession.self) private var session
-    @AppStorage("userName") private var userName = ""
-    @State private var sync = CloudSync.shared
     @State private var confirmLogout = false
 
+    /// The same grouped cards on iPhone (large sheet) and iPad (form sheet).
     var body: some View {
         NavigationStack {
-            Form {
-                Section("ผู้ใช้งาน") {
-                    TextField("ชื่อที่แสดง", text: $userName)
-                        // typed by hand — stop replacing it with the account name
-                        .onChange(of: userName) { GoogleSession.userNameEdited() }
-                }
-                Section {
-                    InfoRow(title: "บัญชี Google", value: session.email.flatMap { $0.isEmpty ? nil : $0 } ?? "ลงชื่อเข้าใช้แล้ว")
-                    Button("ออกจากระบบ", role: .destructive) { confirmLogout = true }
-                } header: {
-                    Text("Google Drive")
-                } footer: {
-                    Text("ไฟล์โครงการจะถูกอัปโหลดไปที่โฟลเดอร์ \"\(DriveFolders.root)\" ใน Google Drive ของบัญชีนี้")
-                }
-                Section {
-                    InfoRow(title: "สถานะ", value: sync.state.title)
-                    if let last = sync.lastSync {
-                        InfoRow(title: "ซิงค์ล่าสุด", value: last.formatted(date: .abbreviated, time: .shortened))
+            PhoneSettingsList(confirmLogout: $confirmLogout)
+                .navigationTitle("ตั้งค่า")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }
+                .confirmationDialog("ต้องการออกจากระบบหรือไม่?", isPresented: $confirmLogout, titleVisibility: .visible) {
+                    Button("ออกจากระบบ", role: .destructive) {
+                        dismiss()
+                        session.signOut()
                     }
-                    if case .failed(let message) = sync.state {
-                        Text(message).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(.red)
-                        Button("ลองอีกครั้ง") { sync.retry() }
-                    }
-                } header: {
-                    Text("ซิงค์ข้อมูลทีม")
-                } footer: {
-                    Text("ข้อมูลตัวอักษรของทุกงานซิงค์ผ่าน Firebase ให้ทุกเครื่องในทีมเห็นตรงกัน รูปภาพ ลายเซ็น และไฟล์เก็บในเครื่องและ Google Drive")
+                    Button("ยกเลิก", role: .cancel) {}
+                } message: {
+                    Text("งานที่ยังไม่ได้ซิงค์จะยังอยู่ในเครื่องนี้")
                 }
-                Section("เกี่ยวกับ") {
-                    InfoRow(title: "แอป", value: "TCRoof Internal")
-                    InfoRow(title: "เวอร์ชัน", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                }
-            }
-            .navigationTitle("ตั้งค่า")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }
-            .confirmationDialog("ต้องการออกจากระบบหรือไม่?", isPresented: $confirmLogout, titleVisibility: .visible) {
-                Button("ออกจากระบบ", role: .destructive) {
-                    dismiss()
-                    session.signOut()
-                }
-            }
         }
     }
 }

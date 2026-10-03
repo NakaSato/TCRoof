@@ -76,7 +76,7 @@ struct RootView: View {
 
 #if DEBUG
 /// Opens one screen directly for simulator checks: `simctl launch <device> com.tcroof.internal -screen plan`.
-private struct DebugScreen: View {
+struct DebugScreen: View {
     static let requested = UserDefaults.standard.string(forKey: "screen")
     static let screens: Set = ["survey", "plan", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }

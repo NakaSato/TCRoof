@@ -1,0 +1,421 @@
+import SwiftUI
+import TCRoofCore
+import SurveyUI
+
+/// Sizes of the pieces the iPhone and iPad homes share (docs/ui/tcroof-home-iphone, docs/ui/tcroof-home-ipad).
+struct HomeSize {
+    // header
+    var logo: CGFloat
+    var logoRadius: CGFloat
+    var headerRadius: CGFloat
+    var greeting: CGFloat
+    var greetingLines: Int
+    var roundButton: CGFloat
+    var bellGlyph: CGFloat
+    var initials: CGFloat
+    // hero
+    var heroRadius: CGFloat
+    var heroPadding: EdgeInsets
+    var heroGap: CGFloat
+    var heroLabel: CGFloat
+    var ring: CGFloat
+    var ringStroke: CGFloat
+    var ringText: CGFloat
+    var time: CGFloat
+    var kind: CGFloat
+    var name: CGFloat
+    var place: CGFloat
+    var action: CGFloat
+    var actionRadius: CGFloat
+    var actionText: CGFloat
+    // module row
+    var rowRadius: CGFloat
+    var rowGap: CGFloat
+    var rowPadding: (leading: CGFloat, trailing: CGFloat)
+    var tile: CGFloat
+    var tileRadius: CGFloat
+    var tileGlyph: CGFloat
+    var title: CGFloat
+    var subtitle: CGFloat
+    var chip: CGFloat
+    var chevron: CGFloat
+
+    static let phone = HomeSize(
+        logo: 40, logoRadius: 10, headerRadius: 18, greeting: 14, greetingLines: 2, roundButton: 44, bellGlyph: 19, initials: 15,
+        heroRadius: 20, heroPadding: EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14), heroGap: 11, heroLabel: 12.5,
+        ring: 56, ringStroke: 5, ringText: 13, time: 24, kind: 12.5, name: 15, place: 12.5, action: 46, actionRadius: 12, actionText: 15,
+        rowRadius: 16, rowGap: 12, rowPadding: (12, 10), tile: 42, tileRadius: 12, tileGlyph: 19, title: 15, subtitle: 12, chip: 11, chevron: 14)
+
+    static let pad = HomeSize(
+        logo: 56, logoRadius: 14, headerRadius: 22, greeting: 21, greetingLines: 1, roundButton: 52, bellGlyph: 22, initials: 17,
+        heroRadius: 22, heroPadding: EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20), heroGap: 16, heroLabel: 14,
+        ring: 88, ringStroke: 8, ringText: 20, time: 38, kind: 14, name: 19, place: 14, action: 56, actionRadius: 14, actionText: 17,
+        rowRadius: 18, rowGap: 16, rowPadding: (18, 18), tile: 56, tileRadius: 15, tileGlyph: 26, title: 19, subtitle: 14, chip: 13, chevron: 18)
+
+    var isPad: Bool { greetingLines == 1 }
+}
+
+/// "WC" from "wit.chanthawat", or the first letters of the first two words of the name.
+func userInitials(_ name: String, email: String?) -> String {
+    let source = name.trimmingCharacters(in: .whitespaces).isEmpty ? (email?.split(separator: "@").first.map(String.init) ?? "") : name
+    let words = source.split(whereSeparator: { " ._-".contains($0) })
+    let letters = words.prefix(2).compactMap(\.first).map { String($0).uppercased() }.joined()
+    return letters.isEmpty ? "?" : letters
+}
+
+// MARK: - Header
+
+/// App icon, the AI greeting (with the date under it on iPad), bell and account avatar.
+/// On iPad the bell carries the notifications popover; on iPhone the caller presents them full screen.
+struct HomeBrandHeader<Popover: View>: View {
+    let size: HomeSize
+    let initials: String
+    let unread: Int
+    let facts: HomeGreeting.Facts
+    @Binding var notificationsShown: Bool
+    let openSettings: () -> Void
+    @ViewBuilder let popover: () -> Popover
+
+    @AppStorage("home.aiGreeting") private var aiGreeting = true
+    @AppStorage("home.greeting") private var greeting = ""
+    @AppStorage("home.greetingDay") private var greetingDay = ""
+
+    var body: some View {
+        HStack(spacing: size.isPad ? 16 : 10) {
+            Image("AppLogo").resizable().frame(width: size.logo, height: size.logo)
+                .clipShape(RoundedRectangle(cornerRadius: size.logoRadius, style: .continuous))
+                .accessibilityHidden(true)
+            greetingButton
+            bell
+            Button(action: openSettings) {
+                Text(initials).font(.sarabun(size.initials, .heavy)).foregroundStyle(.white)
+                    .frame(width: size.roundButton, height: size.roundButton).background(Theme.primary, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ตั้งค่าและบัญชี")
+        }
+        .padding(.horizontal, size.isPad ? 32 : 16)
+        .padding(.top, size.isPad ? 18 : 4).padding(.bottom, size.isPad ? 16 : 10)
+        .background {
+            let shape = UnevenRoundedRectangle(bottomLeadingRadius: size.headerRadius, bottomTrailingRadius: size.headerRadius, style: .continuous)
+            shape.fill(Theme.surface)
+                .overlay { if size.isPad { shape.stroke(Theme.headerLine) } }
+                .shadow(color: Theme.navy.opacity(0.05), radius: 4, y: 2)
+                .ignoresSafeArea(edges: .top)
+        }
+        .task(id: aiGreeting) { await refresh(force: false) }
+    }
+
+    private var line: String {
+        aiGreeting ? (greeting.isEmpty ? HomeGreeting.plain(hour: facts.hour) : greeting) : HomeGreeting.plain(hour: facts.hour)
+    }
+
+    private var greetingButton: some View {
+        Button { Task { await refresh(force: true) } } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(line)
+                    .font(.sarabun(size.greeting, .bold, relativeTo: size.isPad ? .title3 : .subheadline)).foregroundStyle(Theme.navy)
+                    .lineLimit(size.greetingLines).truncationMode(.tail).multilineTextAlignment(.leading)
+                if size.isPad {
+                    Text(ThaiFormat.longDate.string(from: .now)).font(.sarabun(14, relativeTo: .subheadline))
+                        .foregroundStyle(Theme.inkMuted).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!aiGreeting)
+        .accessibilityLabel(aiGreeting ? "คำทักทายจาก AI ในเครื่อง · แตะเพื่อสุ่มใหม่" : HomeGreeting.plain(hour: facts.hour))
+        .accessibilityValue(aiGreeting ? greeting : "")
+    }
+
+    private var bell: some View {
+        let active = size.isPad && notificationsShown
+        return Button { notificationsShown.toggle() } label: {
+            Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .semibold)).foregroundStyle(Theme.navy)
+                .frame(width: size.roundButton, height: size.roundButton)
+                .background(active ? Theme.primarySoft : Theme.hairline, in: Circle())
+                .overlay { if active { Circle().strokeBorder(Theme.primary, lineWidth: 2) } }
+                .overlay(alignment: .topTrailing) {
+                    if unread > 0 {
+                        Text("\(unread)").font(.sarabun(12, .bold)).monospacedDigit().foregroundStyle(.white)
+                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
+                            .background(Theme.danger, in: Capsule())
+                            .overlay(Capsule().stroke(.white, lineWidth: 2))
+                            .offset(x: 4, y: -4)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("การแจ้งเตือน")
+        .accessibilityValue(unread > 0 ? "ยังไม่อ่าน \(unread)" : "")
+        .modifier(BellPopover(enabled: size.isPad, shown: $notificationsShown, popover: popover))
+    }
+
+    /// Once a day, or on tap: the on-device model's line, else the next template.
+    private func refresh(force: Bool) async {
+        guard aiGreeting else { return }
+        let today = ISODate.string(.now)
+        guard force || greetingDay != today || greeting.isEmpty else { return }
+        let previous = greeting
+        greeting = HomeGreeting.template(facts, after: previous)
+        greetingDay = today
+        if let line = await HomeGreeting.onDevice(facts, avoiding: previous) { greeting = line }
+    }
+}
+
+private struct BellPopover<P: View>: ViewModifier {
+    let enabled: Bool
+    @Binding var shown: Bool
+    let popover: () -> P
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.popover(isPresented: $shown, arrowEdge: .top) {
+                popover().presentationCompactAdaptation(.fullScreenCover)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+// MARK: - Module row
+
+struct ModuleRow: View {
+    let size: HomeSize
+    let module: AppModule
+    let chip: String?
+
+    var body: some View {
+        HStack(spacing: size.rowGap) {
+            Image(systemName: module.symbol).font(.system(size: size.tileGlyph, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: size.tile, height: size.tile)
+                .background(Theme.primary, in: RoundedRectangle(cornerRadius: size.tileRadius, style: .continuous))
+            VStack(alignment: .leading, spacing: size.isPad ? 2 : 1) {
+                let oneLine = module.title.replacingOccurrences(of: "\n", with: "")
+                Group {
+                    if size.isPad {
+                        Text(oneLine).lineLimit(1).minimumScaleFactor(0.8)
+                    } else {
+                        // one line when it fits, else broken where the title has its line break
+                        ViewThatFits(in: .horizontal) {
+                            Text(oneLine).lineLimit(1).fixedSize()
+                            Text(module.title).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .font(.sarabun(size.title, .bold, relativeTo: size.isPad ? .title3 : .subheadline)).foregroundStyle(Theme.navy)
+                Text(module.shortSubtitle).font(.sarabun(size.subtitle, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                    .lineLimit(1).truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let chip {
+                Text(chip).font(.sarabun(size.chip, .bold, relativeTo: .caption2)).foregroundStyle(Theme.primary).lineLimit(1)
+                    .padding(.horizontal, size.isPad ? 12 : 8).padding(.vertical, size.isPad ? 3 : 1)
+                    .background(Theme.primarySoft, in: Capsule())
+                    .fixedSize()
+            }
+            Image(systemName: "chevron.right").font(.system(size: size.chevron, weight: .semibold)).foregroundStyle(Theme.chevron)
+        }
+        .padding(.leading, size.rowPadding.leading).padding(.trailing, size.rowPadding.trailing).padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: size.isPad ? 72 : 60, maxHeight: .infinity)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous).stroke(Theme.borderSubtle))
+        .shadow(color: Theme.navy.opacity(0.05), radius: 3, y: 2)
+        .contentShape(RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Hero
+
+/// `นัดวันนี้`: today's survey appointments as a pager, with ring, primary action, navigate and call.
+struct AppointmentHero: View {
+    let size: HomeSize
+    let appointments: [TodayAppointment]
+    @Binding var page: Int
+    let open: (TodayAppointment, MissingGroup.Target?) -> Void
+    let newSurvey: () -> Void
+
+    @State private var calling: TodayAppointment?
+    @Environment(\.openURL) private var openURL
+
+    private var current: TodayAppointment? { appointments.indices.contains(page) ? appointments[page] : appointments.first }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: size.heroGap) {
+            topRow
+            if let a = current {
+                AppointmentBody(size: size, appointment: a)
+                    .id(a.id)
+                    .transition(.opacity)
+                actions(a)
+            } else {
+                Text("ไม่มีนัดวันนี้").font(.sarabun(size.isPad ? 21 : 17, .bold, relativeTo: .headline))
+                Button(action: newSurvey) { primaryLabel("งานสำรวจใหม่ ›") }.buttonStyle(.plain)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(size.heroPadding)
+        .background(Theme.heroGradient, in: RoundedRectangle(cornerRadius: size.heroRadius, style: .continuous))
+        .shadow(color: Theme.navy.opacity(0.25), radius: size.isPad ? 11 : 9, y: size.isPad ? 10 : 8)
+        .contentShape(Rectangle())
+        .simultaneousGesture(DragGesture(minimumDistance: 20).onEnded { v in
+            guard abs(v.translation.width) > abs(v.translation.height) else { return }
+            go(v.translation.width < 0 ? 1 : -1)
+        })
+        .onChange(of: appointments.count) { page = min(page, max(appointments.count - 1, 0)) }
+        .callDialog($calling, open: open)
+    }
+
+    private var topRow: some View {
+        HStack(spacing: size.isPad ? 8 : 6) {
+            Text("นัดวันนี้").font(.sarabun(size.heroLabel, .bold, relativeTo: .caption)).opacity(0.85)
+            if appointments.count > 1 {
+                HStack(spacing: 4) {
+                    ForEach(appointments.indices, id: \.self) { i in
+                        Capsule().fill(.white.opacity(i == page ? 1 : 0.4)).frame(width: i == page ? 16 : 6, height: 6)
+                    }
+                }
+                .padding(.leading, size.isPad ? 4 : 2)
+                .accessibilityHidden(true)
+            }
+            Spacer(minLength: 4)
+            Text(ThaiFormat.weekdayShort.string(from: .now) + (appointments.isEmpty ? "" : " · \(page + 1)/\(appointments.count)"))
+                .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(0.85).lineLimit(1)
+            if appointments.count > 1 {
+                pagerButton("chevron.left", label: "นัดก่อนหน้า", enabled: page > 0) { go(-1) }
+                pagerButton("chevron.right", label: "นัดถัดไป", enabled: page < appointments.count - 1) { go(1) }
+            }
+        }
+        .frame(minHeight: 32)
+        .padding(.trailing, size.isPad ? -10 : -8).padding(.vertical, -6)
+    }
+
+    private func pagerButton(_ symbol: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: size.isPad ? 18 : 16, weight: .bold)).frame(width: 44, height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(enabled ? 1 : 0.35)
+        .disabled(!enabled)
+        .accessibilityLabel(label)
+    }
+
+    private func go(_ step: Int) {
+        let next = page + step
+        guard appointments.indices.contains(next) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) { page = next }
+    }
+
+    private func actions(_ a: TodayAppointment) -> some View {
+        HStack(spacing: 10) {
+            Button { open(a, a.nextStep?.page) } label: { primaryLabel(a.actionTitle) }
+                .buttonStyle(.plain)
+            if let c = a.coordinate {
+                iconButton("location", label: "นำทาง") { openURL(mapsURL(c)) }
+            }
+            if !a.phone.isEmpty {
+                iconButton("phone", label: "โทรหาผู้ประสานงาน") { calling = a }
+            }
+        }
+    }
+
+    private func primaryLabel(_ title: String) -> some View {
+        Text(title).font(.sarabun(size.actionText, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
+            .lineLimit(1).minimumScaleFactor(0.8)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: size.action)
+            .background(.white, in: RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
+    }
+
+    private func iconButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: size.isPad ? 21 : 18, weight: .semibold))
+                .frame(width: size.isPad ? 56 : 44, height: size.action)
+                .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+}
+
+/// Apple Maps driving directions to a point.
+func mapsURL(_ c: (lat: Double, lon: Double)) -> URL {
+    URL(string: "http://maps.apple.com/?daddr=\(c.lat),\(c.lon)&dirflg=d")!
+}
+
+extension View {
+    /// `โทร <number>` · `ส่งข้อความ` · `ดูรายละเอียดผู้ประสานงานใน A1` · `ยกเลิก` for the appointment being called.
+    func callDialog(_ calling: Binding<TodayAppointment?>, open: @escaping (TodayAppointment, MissingGroup.Target?) -> Void) -> some View {
+        modifier(CallDialog(calling: calling, open: open))
+    }
+}
+
+private struct CallDialog: ViewModifier {
+    @Binding var calling: TodayAppointment?
+    let open: (TodayAppointment, MissingGroup.Target?) -> Void
+    @Environment(\.openURL) private var openURL
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(calling?.contactName ?? "", isPresented: Binding(get: { calling != nil }, set: { if !$0 { calling = nil } }),
+                                   titleVisibility: .visible, presenting: calling) { a in
+            let digits = a.phone.filter { $0.isNumber || $0 == "+" }
+            Button("โทร \(a.phone)") { if let url = URL(string: "tel:\(digits)") { openURL(url) } }
+            Button("ส่งข้อความ") { if let url = URL(string: "sms:\(digits)") { openURL(url) } }
+            if a.report != nil {
+                Button("ดูรายละเอียดผู้ประสานงานใน A1") { open(a, .info) }
+            }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: { a in
+            Text("ผู้ประสานงาน · \(a.name)")
+        }
+    }
+}
+
+/// Ring, time, countdown, job name and place of one appointment.
+private struct AppointmentBody: View {
+    let size: HomeSize
+    let appointment: TodayAppointment
+
+    var body: some View {
+        HStack(spacing: size.isPad ? 18 : 12) {
+            ProgressRing(size: size, fraction: appointment.fraction, percent: appointment.percent)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(alignment: .firstTextBaseline, spacing: size.isPad ? 10 : 8) {
+                    Text(appointment.time).font(.sarabun(size.time, .bold, relativeTo: .title2)).monospacedDigit()
+                    Text("นัดสำรวจ · \(appointment.countdown)").font(.sarabun(size.kind, relativeTo: .caption)).opacity(0.9).lineLimit(1)
+                }
+                Text(appointment.name).font(.sarabun(size.name, .bold, relativeTo: .subheadline)).lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !appointment.place.isEmpty {
+                    Text(appointment.place).font(.sarabun(size.place, relativeTo: .caption)).opacity(0.8).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct ProgressRing: View {
+    let size: HomeSize
+    let fraction: Double
+    let percent: Int
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(.white.opacity(0.22), lineWidth: size.ringStroke)
+            Circle().trim(from: 0, to: fraction)
+                .stroke(Theme.ringDone, style: StrokeStyle(lineWidth: size.ringStroke, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text("\(percent)%").font(.sarabun(size.ringText, .bold, relativeTo: .caption)).monospacedDigit()
+        }
+        .padding(size.ringStroke / 2)
+        .frame(width: size.ring, height: size.ring)
+        .accessibilityLabel("กรอกแล้ว \(percent)%")
+    }
+}

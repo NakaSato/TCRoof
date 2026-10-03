@@ -60,6 +60,25 @@ enum Theme {
     static let progressFull = Color(hex: 0x2E7D32)
     static let progressZero = Color(hex: 0x9AA6B6)
 
+    // iPhone home board (docs/ui/tcroof-home-iphone)
+    static let phonePage = Color(hex: 0xF5F8FB)
+    /// Quiet fill of round icon buttons, and row separators.
+    static let hairline = Color(hex: 0xEEF2F7)
+    static let chevron = Color(hex: 0xAAB6C5)
+    static let success = Color(hex: 0x2E9E5B)
+    static let successInk = Color(hex: 0x3B7420)
+    static let warning = Color(hex: 0xF08C00)
+    static let warningSoft = Color(hex: 0xFFF1DE)
+    static let ringDone = Color(hex: 0x8FD16A)
+    // iPad home board (docs/ui/tcroof-home-ipad)
+    /// Hairline under the white header #E6EBF2.
+    static let headerLine = Color(hex: 0xE6EBF2)
+    /// Light dim of the page behind the bell popover.
+    static let popoverDim = navy.opacity(0.12)
+    /// Expanded timeline row's action button, 135°.
+    static let actionGradient = LinearGradient(colors: [primary, primaryLight], startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let heroGradient = LinearGradient(colors: [primary, navy], startPoint: UnitPoint(x: 0.25, y: 0), endPoint: UnitPoint(x: 0.75, y: 1))
+
     static let headerGradient = LinearGradient(colors: [primary, primaryLight], startPoint: .leading, endPoint: .trailing)
     static let tealGradient = LinearGradient(colors: [teal, Color(hex: 0x4DB6E0)], startPoint: .leading, endPoint: .trailing)
     static let pageGradient = LinearGradient(colors: [Color(hex: 0xDCE8F2), background], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))

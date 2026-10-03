@@ -5,11 +5,13 @@ import TCRoofCore
 /// One report's editor, for a host app to push from its own screens (e.g. a job's detail page).
 public struct SurveyReportEditor: View {
     let jobID: UUID
+    let start: MissingGroup.Target?
     @State private var model = SurveyModel.shared
-    public init(jobID: UUID) { self.jobID = jobID }
+    /// - Parameter start: page to open on (e.g. the job's `nextStep`); nil opens the editor's default page.
+    public init(jobID: UUID, start: MissingGroup.Target? = nil) { self.jobID = jobID; self.start = start }
     public var body: some View {
         if let j = model.job(jobID) {
-            JobEditorView(job: j).environment(model)
+            JobEditorView(job: j, start: start).environment(model)
         } else {
             ContentUnavailableView("ไม่พบแบบสำรวจ", systemImage: "doc.questionmark", description: Text("อาจถูกลบจากเครื่องอื่นแล้ว"))
         }

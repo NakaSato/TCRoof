@@ -53,6 +53,17 @@ enum Home {
     static let pillOn = Color(red: 0.086, green: 0.196, blue: 0.361)
     /// Count chip of an unselected filter pill #EEF2F7.
     static let pillCount = Color(red: 0.933, green: 0.949, blue: 0.969)
+    // iPhone bottom bar (docs/ui/components/iphone-bottom-bar, 4/10/2569)
+    /// "✓ บันทึกแล้ว" text and border #3B7420.
+    static let okTick = Color(red: 0.231, green: 0.455, blue: 0.125)
+    /// "✓ บันทึกแล้ว" background #F1F8EC.
+    static let okSoftBG = Color(red: 0.945, green: 0.973, blue: 0.925)
+    /// "กำลังบันทึก…" background #F3F6FA.
+    static let savingBG = Color(red: 0.953, green: 0.965, blue: 0.980)
+    /// Disabled ‹ / › rgba(142,142,147,0.4).
+    static let navOff = Color(red: 0.557, green: 0.557, blue: 0.576).opacity(0.4)
+    /// End of the teal gradient #4DB6E0 (from `teal`).
+    static let tealLight = Color(red: 0.302, green: 0.714, blue: 0.878)
 }
 
 /// Icon and title close together, for small badges.

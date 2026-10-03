@@ -261,7 +261,24 @@ struct SingleLinePage: View {
 
     // MARK: bottom bar
 
-    func bottomBar(_ sl: SingleLine) -> some View {
+    @ViewBuilder func bottomBar(_ sl: SingleLine) -> some View {
+        if sizeClass == .compact { phoneBar(sl) } else { padBar(sl) }
+    }
+
+    /// iPhone: the notes and "แนบในรายงาน" above two equal buttons (docs/ui/components/iphone-bottom-bar, state 08).
+    func phoneBar(_ sl: SingleLine) -> some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 12) { notes(sl); Spacer(minLength: 0); attachButton(job.values.text("sldAttach") == "1") }
+                .padding(.horizontal, 24).padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(.bar)
+                .overlay(alignment: .top) { Divider() }
+            BottomBar(variant: .pair(secondary: .init(title: "แก้ข้อมูลใน A3") { open(SLTarget(.electrical)) },
+                                     primary: .init(title: "ส่งออก PDF (A3)", action: exportPDF)))
+        }
+    }
+
+    func padBar(_ sl: SingleLine) -> some View {
         let attach = job.values.text("sldAttach") == "1"
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: 16) { notes(sl); Spacer(minLength: 8); buttons(attach) }
@@ -284,18 +301,22 @@ struct SingleLinePage: View {
         HStack(spacing: 10) {
             barButton("‹ แก้ข้อมูลใน A3", filled: false, action: { open(SLTarget(.electrical)) })
             barButton("ส่งออก PDF (A3)", filled: true, action: exportPDF)
-            Button { job.values["sldAttach"] = attach ? nil : .text("1") } label: {
-                HStack(spacing: 6) {
-                    if attach { Image(systemName: "checkmark") }
-                    Text("แนบในรายงาน")
-                }
-                .font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
-                .foregroundStyle(attach ? .white : Home.navy)
-                .background(attach ? Home.ok : .white, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(attach ? Home.ok : Home.borderControl))
-            }
-            .buttonStyle(.plain).accessibilityAddTraits(attach ? .isSelected : [])
+            attachButton(attach)
         }
+    }
+
+    func attachButton(_ attach: Bool) -> some View {
+        Button { job.values["sldAttach"] = attach ? nil : .text("1") } label: {
+            HStack(spacing: 6) {
+                if attach { Image(systemName: "checkmark") }
+                Text("แนบในรายงาน")
+            }
+            .font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
+            .foregroundStyle(attach ? .white : Home.navy)
+            .background(attach ? Home.ok : .white, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(attach ? Home.ok : Home.borderControl))
+        }
+        .buttonStyle(.plain).accessibilityAddTraits(attach ? .isSelected : [])
     }
 
     func barButton(_ t: String, filled: Bool, action: @escaping () -> Void) -> some View {

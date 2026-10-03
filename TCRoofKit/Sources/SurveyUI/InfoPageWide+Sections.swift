@@ -249,7 +249,7 @@ struct InfoPageHeader: View {
     }
 }
 
-/// Bottom bar of the card pages: save state, save now, previous and next step.
+/// Bottom bar of the card pages: save state, save now, previous and next step. iPhone shows `BottomBar` instead.
 struct InfoPageBar: View {
     /// A shortcut chip after "ยังขาด" (A2: LIST items not ticked yet).
     struct Gap: Identifiable { let id = UUID(); let title: String; let action: () -> Void }
@@ -281,7 +281,7 @@ struct InfoPageBar: View {
     /// The last page's primary button ("ขั้นสุดท้าย" / "สรุปผล · ส่งออก"), in place of "next".
     var finish: (sub: String, title: String, action: () -> Void)? = nil
     @Environment(SurveyModel.self) var model
-    /// iPhone: icon buttons for save and previous, a short "next", and no "first section" placeholder.
+    /// iPhone: `phoneBar` (docs/ui/components/iphone-bottom-bar) in place of the iPad bar.
     @Environment(\.horizontalSizeClass) var sizeClass
     @State var savedNow: Date?
 
@@ -290,13 +290,36 @@ struct InfoPageBar: View {
         s.page == .electrical ? "หม้อแปลง · MDB" : s.title
     }
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if sizeClass == .compact { phoneBar } else { padBar }
+    }
+
+    /// iPhone (docs/ui/components/iphone-bottom-bar): "บันทึก" · ‹ · ›, icons only; the step line above shows the gaps.
+    var phoneBar: some View {
+        let steps = job.steps
+        let i = steps.firstIndex { $0.page == here } ?? 0
+        let name: (SurveyStep) -> String = { $0.code + " " + Self.barTitle($0) }
+        let before = previous == nil ? nil : steps[safe: previousIndex ?? i - 1]
+        let back = before.map { s in BottomBar.Nav(label: "ก่อนหน้า " + name(s), action: previous) }
+            ?? BottomBar.Nav(label: "ก่อนหน้า (ขั้นแรก)", hint: "ไม่มีหัวข้อก่อนหน้า", action: nil)
+        let after = next == nil ? nil : steps[safe: nextIndex ?? i + 1]
+        let forward = finish.map { f in BottomBar.Nav(label: "ถัดไป " + f.title, action: f.action) }
+            ?? after.map { s in BottomBar.Nav(label: "ถัดไป " + name(s), action: next) }
+            ?? BottomBar.Nav(label: "ถัดไป", action: nil)
+        return BottomBar(variant: .steps(save: {
+            model.flush(job.id)
+            let now = Date()
+            savedNow = now
+            return now
+        }, previous: back, next: forward))
+    }
+
+    var padBar: some View {
         let steps = job.steps
         let i = steps.firstIndex { $0.page == here } ?? 0
         let c = steps[safe: i]?.completion ?? Completion()
         let saved = max(job.updated, savedNow ?? .distantPast)
-        let phone = sizeClass == .compact, tight = self.tight || phone
-        return HStack(spacing: phone ? 8 : 12) {
+        return HStack(spacing: 12) {
             HStack(spacing: 10) {
                 badge(complete: badgeComplete ?? (c.isComplete && !statusAlert && !statusWarn))
                 VStack(alignment: .leading, spacing: 1) {
@@ -304,15 +327,15 @@ struct InfoPageBar: View {
                                                     : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
                     status(c)
                 }
-                .lineLimit(1).minimumScaleFactor(phone ? 0.75 : 1)
+                .lineLimit(1)
             }
-            Spacer(minLength: phone ? 0 : 8)
+            Spacer(minLength: 8)
             Button { model.flush(job.id); savedNow = Date() } label: {
                 Group {
                     if tight { Image(systemName: "square.and.arrow.down").font(.system(size: 20, weight: .semibold)) }
                     else { Text("บันทึกร่างตอนนี้").font(.system(size: 16, weight: .semibold)).lineLimit(1) }
                 }
-                .frame(width: phone ? 48 : tight ? 56 : narrow ? 130 : 170, height: phone ? 50 : 56)
+                .frame(width: tight ? 56 : narrow ? 130 : 170, height: 56)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
             }
@@ -329,13 +352,13 @@ struct InfoPageBar: View {
                             }
                         }
                     }
-                    .frame(width: phone ? 48 : tight ? 56 : narrow ? 120 : 210, height: phone ? 50 : 56)
+                    .frame(width: tight ? 56 : narrow ? 120 : 210, height: 56)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("ก่อนหน้า " + s.code + " " + Self.barTitle(s))
-            } else if !narrow && !phone {
+            } else if !narrow {
                 HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 18); Text("หัวข้อแรก") }
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
                     .frame(width: 180, height: 56)
@@ -352,7 +375,7 @@ struct InfoPageBar: View {
                         A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)
                     }
                     .foregroundStyle(.white)
-                    .frame(width: phone ? 108 : tight ? 120 : narrow ? 200 : 230, height: phone ? 50 : 56)
+                    .frame(width: tight ? 120 : narrow ? 200 : 230, height: 56)
                     .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing),
                                 in: RoundedRectangle(cornerRadius: 12))
                 }
@@ -368,7 +391,7 @@ struct InfoPageBar: View {
                         A2Icon(name: "ui-next", fallback: "chevron.right", size: 20)
                     }
                     .foregroundStyle(.white)
-                    .frame(width: phone ? 108 : tight ? 120 : narrow ? 220 : 250, height: phone ? 50 : 56)
+                    .frame(width: tight ? 120 : narrow ? 220 : 250, height: 56)
                     .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing),
                                 in: RoundedRectangle(cornerRadius: 12))
                 }
@@ -378,7 +401,7 @@ struct InfoPageBar: View {
         }
         .foregroundStyle(Home.navy)
         .frame(maxWidth: 1240)
-        .padding(.horizontal, phone ? 12 : tight ? 16 : 24).padding(.vertical, phone ? 8 : 12)
+        .padding(.horizontal, tight ? 16 : 24).padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
     }

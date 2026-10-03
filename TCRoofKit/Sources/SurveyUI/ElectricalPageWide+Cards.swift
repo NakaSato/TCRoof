@@ -540,9 +540,12 @@ struct BreakerSheet: View {
     let isMain: Bool
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    /// iPhone: delete and done in the bottom bar (docs/ui/components/iphone-bottom-bar, state 07).
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
-        NavigationStack {
+        let phone = sizeClass == .compact
+        return NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 10) {
@@ -560,15 +563,23 @@ struct BreakerSheet: View {
                         A3Label(text: "สภาพ")
                         A3Segments(options: ["ดี", "พอใช้", "ชำรุด"], selected: breaker.condition) { breaker.condition = $0 }
                     }
-                    Button(role: .destructive, action: onDelete) {
-                        Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)
+                    if !phone {
+                        Button(role: .destructive, action: onDelete) {
+                            Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.bordered).padding(.top, 8)
                     }
-                    .buttonStyle(.bordered).padding(.top, 8)
                 }
                 .padding(20)
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if phone {
+                    BottomBar(variant: .detail(destructive: .init(title: "ลบ CB ลูกย่อยนี้", action: onDelete),
+                                               primary: .init(title: "เสร็จ") { dismiss() }))
+                }
+            }
             .navigationTitle("CB ลูกย่อย").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }
+            .toolbar { if !phone { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } } }
         }
     }
 }

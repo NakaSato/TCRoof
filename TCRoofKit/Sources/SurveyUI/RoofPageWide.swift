@@ -24,7 +24,7 @@ struct RoofPageWide: View {
     enum Tool { case keepOut, skylight }
 
     /// โครงสร้าง / จัดแผง: the plan's mode and the right card's tab (หลังคา / การจัดแผง) are one choice.
-    @State var mode: RoofPlan.Mode = .structure
+    @State var mode: RoofPlan.Mode = Self.startMode
     @State var span: SpanRef?
     @State var editPosts = false
     @State var tool: Tool?
@@ -51,6 +51,14 @@ struct RoofPageWide: View {
     @State var scrollTarget: String?
     /// Roofs the team saved (`RoofStandards`).
     @State var saved: [Roof.Standard] = RoofStandards.load()
+
+    /// จัดแผง for the `-surveyC1 pv` checks (also the offscreen render), else โครงสร้าง.
+    static var startMode: RoofPlan.Mode {
+        #if DEBUG
+        if ["pv", "landscape", "keepout"].contains(UserDefaults.standard.string(forKey: "surveyC1") ?? "") { return .pv }
+        #endif
+        return .structure
+    }
 
     var gap: CGFloat { width >= 1180 ? 28 : 20 }
     /// Side by side only: the plan / section column (720 of 1240 in the design).
@@ -125,9 +133,13 @@ struct RoofPageWide: View {
             }
             .frame(width: leftWidth)
             // one screen when it fits (13"); a short screen (11" landscape) scrolls the cards only
-            ViewThatFits(in: .vertical) {
-                cardsColumn(fill: true)
-                ScrollView { cardsColumn(fill: false).padding(.bottom, 4) }.scrollIndicators(.hidden)
+            Group {
+                if scrolls {
+                    ViewThatFits(in: .vertical) {
+                        cardsColumn(fill: true)
+                        ScrollView { cardsColumn(fill: false).padding(.bottom, 4) }.scrollIndicators(.hidden)
+                    }
+                } else { cardsColumn(fill: true) }
             }
             .frame(maxWidth: .infinity)
         }

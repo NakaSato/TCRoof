@@ -276,6 +276,8 @@ struct InfoPageBar: View {
     var badgeComplete: Bool? = nil
     /// E1 when nothing is missing anywhere: the status line in green.
     var statusOK = false
+    /// Tapping the status line (C1: opens the first gap).
+    var statusAction: (() -> Void)? = nil
     /// The last page's primary button ("ขั้นสุดท้าย" / "สรุปผล · ส่งออก"), in place of "next".
     var finish: (sub: String, title: String, action: () -> Void)? = nil
     @Environment(SurveyModel.self) var model
@@ -395,7 +397,13 @@ struct InfoPageBar: View {
     /// "ครบ 9/10 ช่องในหน้านี้", or "ครบช่องบังคับแล้ว · ยังขาด [chips]" when the page lists gaps.
     @ViewBuilder func status(_ c: Completion) -> some View {
         let tint = statusOK ? Self.okText : !c.isComplete || statusAlert ? Home.danger : statusWarn ? Home.pending : Home.muted
-        if let statusText {
+        if let statusText, let statusAction {
+            Button(action: statusAction) {
+                Text(statusText).font(.system(size: 13)).foregroundStyle(tint).frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("แตะเพื่อไปที่รายการแรกที่ยังขาด")
+        } else if let statusText {
             Text(statusText).font(.system(size: 13)).foregroundStyle(tint)
         } else if gaps.isEmpty {
             Text("ครบ \(c.filled)/\(c.total) ช่องในหน้านี้").font(.system(size: 13)).foregroundStyle(tint)

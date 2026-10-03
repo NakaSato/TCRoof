@@ -111,6 +111,8 @@ struct JobEditorView: View {
     }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?
+    /// A C1 gap (`Roof.Gap.key`) the bottom bar's status line points to.
+    @State var roofRequest: String?
     /// A transformer the A3 bottom bar's "ยังขาดภาพ" chip points to.
     @State var electricalRequest: Int?
     /// A breaker / board the single line diagram sent us to; A3 opens it.
@@ -276,7 +278,7 @@ struct JobEditorView: View {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
                 RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - 48,
-                             stacked: infoColumns != 2 || detailSize.width < 1100)
+                             stacked: infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
                     .disabled(readOnly)
                     .id(m.id)
             }
@@ -346,13 +348,17 @@ struct JobEditorView: View {
     func renderRoof(_ id: UUID) {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         // free width × free height: 13" landscape ≈ 848 pt high, 11" ≈ 636; stacked ones are drawn unscrolled, taller
-        for (free, h) in [(1366.0, 848.0), (1318.0, 848.0), (1100.0, 848.0), (1180.0, 636.0), (1100.0, 636.0), (980.0, 1500.0), (820.0, 1500.0)] {
-            let w = min(free, 1318 + 48) - 48
-            let page = RoofPageWide(job: .constant(job), moduleID: id, width: w, stacked: free < 1100, scrolls: false)
-                .environment(model).padding(.horizontal, 24).padding(.vertical, 16)
-                .frame(width: free, height: h).background(Paper.page)
-            let r = ImageRenderer(content: page); r.scale = 1
-            if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("roof-\(Int(free))x\(Int(h)).png")) }
+        // after `-surveyC1` has seeded the example roof
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            for (free, h) in [(1366.0, 848.0), (1180.0, 636.0), (980.0, 1500.0)] {
+                let w = min(free, 1318 + 48) - 48
+                let page = RoofPageWide(job: .constant(job), moduleID: id, width: w, stacked: free < 1100, scrolls: false)
+                    .environment(model).padding(.horizontal, 24).padding(.vertical, 16)
+                    .frame(width: free, height: h).background(Paper.page)
+                let r = ImageRenderer(content: page); r.scale = 1
+                if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("roof-\(Int(free))x\(Int(h)).png")) }
+            }
         }
     }
 
@@ -435,8 +441,9 @@ struct JobEditorView: View {
         let module = cardInverter ?? cardPanels ?? cardWater ?? cardFts ?? cardRoof ?? cardTank
         let water: String? = cardWater.flatMap { WaterPoint.statusLine($0.values) } ?? cardFts.map { m in EmergencyButton.statusLine(job, m.values) }
             ?? cardRoof.map { Roof.statusLine($0.values) } ?? cardTank.flatMap { Tank.statusLine($0.values) }
-        // C1: the six photo angles are a page warning only; completion is unchanged
-        let roofMissing = cardRoof.map { !Roof.missingShots($0.values).isEmpty } ?? false
+        // C1: the missing fields and photo angles; tapping the line opens the first
+        let roofGaps = cardRoof.map { Roof.gaps($0.values) } ?? []
+        let roofMissing = !roofGaps.isEmpty
         // D1: the required photos still missing
         let tankMissing = cardTank.map { Tank.statusLine($0.values) != nil } ?? false
         // B5: a button height outside 1.10–1.50 m warns without blocking completion
@@ -459,7 +466,9 @@ struct JobEditorView: View {
                            statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
                                                                      ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,
-                           previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil)
+                           previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil,
+                           statusOK: cardRoof != nil && roofGaps.isEmpty,
+                           statusAction: roofGaps.first.map { g in { roofRequest = g.key } })
     }
 
     var readOnlyBanner: some View {

@@ -350,17 +350,22 @@ struct RoofPageWide: View {
         let pv = RoofPlan(values, mode: .pv).pv, tables = rows > 0 || per > 0
         let watts = Int((RoofPlan.Module.catalogDefault.kW * 1000).rounded())
         return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(pv.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
-                Text("แผง").font(.system(size: 14)).foregroundStyle(Home.muted)
-                Text(String(format: "%.1f", pv.kWp)).font(.system(size: 26, weight: .bold)).monospacedDigit().padding(.leading, 10)
-                Text("kWp").font(.system(size: 14)).foregroundStyle(Home.muted)
+            HStack(alignment: .center, spacing: 8) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(pv.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
+                        Text("แผง").font(.system(size: 14)).foregroundStyle(Home.muted)
+                        Text(String(format: "%.1f", pv.kWp)).font(.system(size: 26, weight: .bold)).monospacedDigit().padding(.leading, 8)
+                        Text("kWp").font(.system(size: 14)).foregroundStyle(Home.muted)
+                    }
+                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1)
+                }
+                .accessibilityElement(children: .combine)
                 Spacer(minLength: 6)
-                Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1)
+                panelsField(pv.count)
             }
-            .padding(.horizontal, 12).frame(minHeight: 44)
+            .padding(.horizontal, 12).padding(.vertical, 6)
             .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
-            .accessibilityElement(children: .combine)
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     A3Label(text: "แนวแผง")
@@ -381,7 +386,6 @@ struct RoofPageWide: View {
                 }
             }
             if tables { gapRow }
-            panelsRow(pv.count)
         }
     }
 
@@ -399,28 +403,30 @@ struct RoofPageWide: View {
         .accessibilityLabel("ระยะห่างระหว่างชุด " + String(format: "%.2f", g) + " เมตร")
     }
 
-    /// จำนวนแผงก่อนเข้าสำรวจ (required): typed, or taken from the layout.
-    func panelsRow(_ count: Int) -> some View {
+    /// จำนวนแผงก่อนเข้าสำรวจ (required, the report's count): typed, or taken from the layout.
+    func panelsField(_ count: Int) -> some View {
         let cur = values.text(Roof.Key.panels)
-        return HStack(spacing: 8) {
-            Text("จำนวนแผงก่อนเข้าสำรวจ").font(.system(size: 14)).lineLimit(1).minimumScaleFactor(0.8)
-            Text("*").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.danger)
-            Spacer(minLength: 6)
-            HStack(spacing: 4) {
-                TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
-                    .keyboardType(.numberPad).multilineTextAlignment(.trailing)
-                Text("แผง").font(.system(size: 13)).foregroundStyle(Home.muted)
-            }
-            .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 10)
-            .frame(width: 110)
-            if count > 0 && cur != String(count) {
-                Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
-                    Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
-                        .padding(.horizontal, 10).frame(minHeight: 44)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary.opacity(0.5)))
+        return VStack(alignment: .trailing, spacing: 2) {
+            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Home.danger)).font(.system(size: 11.5)).foregroundStyle(Home.muted).lineLimit(1)
+            HStack(spacing: 6) {
+                HStack(spacing: 4) {
+                    TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
+                        .keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                    Text("แผง").font(.system(size: 13)).foregroundStyle(Home.muted)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("ใช้จำนวนแผงจากการจัดแผง \(count) แผง")
+                .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 8)
+                .frame(width: 100)
+                .accessibilityLabel("จำนวนแผงก่อนเข้าสำรวจ")
+                if count > 0 && cur != String(count) {
+                    Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
+                        Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                            .padding(.horizontal, 8).frame(minHeight: 44)
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary.opacity(0.5)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("ใช้จำนวนแผงจากการจัดแผง \(count) แผง")
+                }
             }
         }
     }

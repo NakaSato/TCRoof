@@ -96,6 +96,19 @@ final class PDFReportTests: XCTestCase {
         XCTAssertTrue(texts(job).contains(MarkKind.emergency.title))
     }
 
+    /// B4's third and fourth photos add a box after the original one; a job without them keeps one box.
+    func testBackfeedExtraPhotos() {
+        var m = SurveyModule(type: .backfeed)
+        m.values["photoArea"] = .photo(Photo(fileName: "a.jpg", width: 400, height: 300))
+        var job = Job(); job.modules = [m]
+        XCTAssertEqual(ReportLayout(job: job, header: ReportHeader()).moduleUnits(m).count, 1)
+        m.values["photoAccess"] = .photo(Photo(fileName: "b.jpg", width: 400, height: 300))
+        job.modules = [m]
+        let units = ReportLayout(job: job, header: ReportHeader()).moduleUnits(m)
+        XCTAssertEqual(units.count, 2)
+        XCTAssertTrue(units[1].ops.contains { if case .photo = $0 { return true }; return false })
+    }
+
     /// A2's drawings, new symbols and site note appear over / under the site picture on the report's first page.
     func testSiteDrawingInReport() throws {
         let fx = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../ExcelExportTests/Fixtures/job215.json")

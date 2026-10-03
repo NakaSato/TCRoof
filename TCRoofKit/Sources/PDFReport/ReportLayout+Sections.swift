@@ -73,7 +73,7 @@ extension ReportLayout {
                             o += checks(["กันย้อนที่แรงต่ำ", "กันย้อนที่แรงสูง"], chosen: { d.choice("level") == $0 }, x: 6, y: y + 2, width: half - 12).0
                             o += checks(["เสาเดิม", "เสาใหม่"], chosen: { d.choice("pole") == $0 }, x: 6, y: y + 18, width: half - 12).0 },
                         infoR: { y, o in _ = field("รายละเอียดเพิ่มเติม", d.photo("photoDetail") != nil ? firstDetail : "", x: 6, y: y + 12, valueWidth: half - 90, ops: &o) },
-                        photoH: 240)]
+                        photoH: 240)] + backfeedMoreUnit(mod)
         case .fts:
             return [two(spec.reportTitle + ofBuilding, d.photo("photoFTS"), "ภาพถ่ายพื้นที่ติดตั้งตู้ FTS", right: d.photo("photoEmg"), "ภาพถ่ายพื้นที่ติดตั้งปุ่ม Emergency",
                         infoL: d.text("detail").isEmpty ? nil : detailLine, infoR: nil, photoH: 150)] + emergencyPointUnit(mod)
@@ -81,6 +81,16 @@ extension ReportLayout {
         case .sed: return sed(mod)
         case .house, .roofForm: return formSection(mod)
         }
+    }
+
+    /// B4's third and fourth photos (docs/ui/survey-b4), labelled by the level; nothing for a job without them.
+    func backfeedMoreUnit(_ mod: SurveyModule) -> [Unit] {
+        let d = mod.values, keys = Array(ZeroExport.photoKeys.dropFirst(2))
+        guard keys.contains(where: { d.photo($0) != nil }) else { return [] }
+        let hv = ZeroExport.isHV(d), board = ZeroExport.boardName(SingleLine.build(job))
+        let ofBuilding = mod.name.isEmpty ? "" : " ของอาคาร" + mod.name
+        return [two(mod.spec.reportTitle + ofBuilding + " (ต่อ)", d.photo(keys[0]), ZeroExport.photoLabel(2, hv: hv, board: board),
+                    right: d.photo(keys[1]), ZeroExport.photoLabel(3, hv: hv, board: board), infoL: nil, infoR: nil, photoH: 200)]
     }
 
     /// B3's water point on the A2 picture, with A2's drawings and symbols, ringed and named by the water mode.

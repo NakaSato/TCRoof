@@ -19,6 +19,8 @@ struct PhotoSlot: View {
     var clearLabel = "ลบภาพ"
     /// Small tiles (A3): badges sit closer to the corners and a missing photo shows only its icon.
     var dense = false
+    /// The photo fills the slot, cropped (B4's 2 × 2 grid); otherwise it fits.
+    var fill = false
     var onPick: (UIImage) -> Void
     var onClear: () -> Void
     /// nil opens the built-in viewer.
@@ -66,7 +68,13 @@ struct PhotoSlot: View {
             PhotoSlot.stageColor
             if let img = model.image(p, in: jobID) {
                 Button { if let onOpen { onOpen(p) } else { viewing = p } } label: {
-                    Image(uiImage: img).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if fill {
+                        // in an overlay, so the cropped photo never sizes the slot
+                        Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .overlay { Image(uiImage: img).resizable().scaledToFill() }.clipped()
+                    } else {
+                        Image(uiImage: img).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
                 .buttonStyle(.plain).accessibilityLabel(title.isEmpty ? "ดูภาพเต็มจอ" : "\(title) แตะเพื่อดูเต็มจอ")
             } else {

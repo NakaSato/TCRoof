@@ -59,7 +59,7 @@ struct RootView: View {
             #endif
         }
         .task {
-            // NO.224 report cards name the TCRoof job they belong to
+            // report cards name the TCRoof job they belong to
             let context = context
             session.survey.linkedJobLabel = { id in
                 (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first?.linkLabel

@@ -13,6 +13,9 @@ public struct SingleLineDrawing: Sendable {
     public var hits: [SLHit]
     /// The inverters, FTS DC cut, PV arrays and Emergency button with its control lines (B5's crop).
     public var ftsBox: Box? = nil
+    /// The zero-export parts: LV the incomer CT, relay box and control line in the connection board; HV the meter,
+    /// CT/VT, relay box and HV bus (B4's crop).
+    public var zeroExportBox: Box? = nil
     public var width: Double { sketch.width }
     public var height: Double { sketch.height }
 }
@@ -45,6 +48,7 @@ private struct Drawer {
     var hits: [SLHit] = []
     var midX = 780.0
     var ftsBox: Box?
+    var zeroExportBox: Box?
     typealias L = SingleLineLayout
     var ink: RGBA { L.ink }
 
@@ -126,6 +130,7 @@ private struct Drawer {
             text("\(m.pole == "เสาเดิม" ? "เสาเดิม" : "เสาใหม่") (B4)", 185, 208, size: 11, L.blue, align: .center)
             control([(290, 190), (mid - 14, 190)])
             hit(80, 172, 210, 44, .module(.backfeed))
+            zeroExportBox = Box(60, 30, max(mid + 260, 700) - 60, 380)
         } else {
             line(mid, 154, mid, busY)
         }
@@ -182,7 +187,7 @@ private struct Drawer {
 
         let h = C + 660
         o.insert(.rect(Box(0, 0, L.width, h), stroke: nil, fill: .white), at: 0)
-        return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits, ftsBox: ftsBox)
+        return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits, ftsBox: ftsBox, zeroExportBox: zeroExportBox)
     }
 
     // MARK: a board under a transformer
@@ -237,6 +242,7 @@ private struct Drawer {
             text("Zero export (B4)", relayX + 100, C + 77, size: 11, L.blue, align: .center)
             control([(inX + 14, C + 174), (relayX + 60, C + 174), (relayX + 60, C + 86)])
             hit(relayX, C + 40, 200, 46, .module(.backfeed))
+            zeroExportBox = Box(inX - 120, C - 40, relayX + 240 - (inX - 120), 340)
         }
 
         // main bus

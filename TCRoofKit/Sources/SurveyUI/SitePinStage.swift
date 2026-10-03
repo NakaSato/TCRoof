@@ -88,19 +88,7 @@ struct SitePinStage<Pin: View, Legend: View>: View {
     }
 
     /// Building models, shapes and symbols as A2 shows them; this module's own mark is the pin instead.
-    func drawing(_ r: CGRect) -> some View {
-        let box = Box(Double(r.minX), Double(r.minY), Double(r.width), Double(r.height))
-        let shapes = job.values.shapes(SiteShapes.key).filter { $0.kind != .boundary && $0.kind != .pvPoint }
-        let own = mark?.id
-        let marks = job.values.marks(ModuleMarks.key).filter { $0.id != own }
-        let meters = job.values.number(SiteShapes.scaleKey).flatMap { $0 > 0 ? $0 : nil }
-        let locked = SiteModels.allLocked(job.values)
-        let models = meters.map { m in
-            SiteModels.placed(job).flatMap { SiteModels.ops($0.model, $0.source, in: box, metersAcross: m, detailed: true, locked: locked || $0.model.locked) }
-        } ?? []
-        let ops = models + SiteShapes.ops(shapes, in: box, metersAcross: meters) + SiteMarks.ops(marks, in: box)
-        return Canvas { ctx, _ in ctx.withCGContext { cg in PDFRenderer.draw(ops, in: cg, photo: { _ in nil }) } }
-    }
+    func drawing(_ r: CGRect) -> some View { siteDrawing(job, in: r, without: mark?.id) }
 
     /// No A2 picture yet (or not downloaded to this device): say so and offer A2.
     func empty(noPicture: Bool) -> some View {
@@ -117,6 +105,20 @@ struct SitePinStage<Pin: View, Legend: View>: View {
             }
         }
     }
+}
+
+/// A2's building models, shapes and symbols over the site picture drawn in `r`, read-only; `own` leaves out one mark.
+func siteDrawing(_ job: Job, in r: CGRect, without own: UUID? = nil) -> some View {
+    let box = Box(Double(r.minX), Double(r.minY), Double(r.width), Double(r.height))
+    let shapes = job.values.shapes(SiteShapes.key).filter { $0.kind != .boundary && $0.kind != .pvPoint }
+    let marks = job.values.marks(ModuleMarks.key).filter { $0.id != own }
+    let meters = job.values.number(SiteShapes.scaleKey).flatMap { $0 > 0 ? $0 : nil }
+    let locked = SiteModels.allLocked(job.values)
+    let models = meters.map { m in
+        SiteModels.placed(job).flatMap { SiteModels.ops($0.model, $0.source, in: box, metersAcross: m, detailed: true, locked: locked || $0.model.locked) }
+    } ?? []
+    let ops = models + SiteShapes.ops(shapes, in: box, metersAcross: meters) + SiteMarks.ops(marks, in: box)
+    return Canvas { ctx, _ in ctx.withCGContext { cg in PDFRenderer.draw(ops, in: cg, photo: { _ in nil }) } }
 }
 
 /// A round pin in a 44 pt target with its name in a pill below (docs/ui/survey-b3 / survey-b5 icons).

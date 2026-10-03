@@ -122,7 +122,7 @@ public extension Job {
         let numbered = sectionsByCategory.flatMap(\.sections)
         for m in modules {
             let title = numbered.first { $0.id == m.id }?.title ?? (m.spec.code + " " + m.title)
-            add(.module(m.id), title, m.spec.groups.flatMap { items($0, m.values) })
+            add(.module(m.id), title, m.spec.groups.flatMap { items($0, m.values) } + (m.type == .backfeed ? ZeroExport.extraMissing(m.values) : []))
         }
         add(.final, "E1 สรุปผลและลงนาม", items(Schema.final, values))
         return out

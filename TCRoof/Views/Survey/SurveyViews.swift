@@ -1,12 +1,17 @@
 import SwiftUI
 import SwiftData
 import CoreLocation
+import TCRoofCore
 
 struct SurveyListView: View {
     @Query(sort: \Job.surveyDate) private var jobs: [Job]
     @State private var window: DateWindow = .week
     @State private var search = ""
     @State private var showNewJob = false
+    @Environment(\.dismiss) private var dismiss
+
+    /// Three cards across at 1366 pt, two at 1024 pt.
+    private let columns = isPhone ? cardColumns : [GridItem(.adaptive(minimum: 400), spacing: 16)]
 
     private var filtered: [Job] {
         jobs.filter { window.overlaps($0.surveyInterval) && $0.matches(search) }
@@ -21,18 +26,13 @@ struct SurveyListView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                PageHeader(title: "สำรวจหน้างาน", symbol: AppModule.survey.symbol) {
-                    HeaderLink(title: "ประวัติการสำรวจ") { SurveyHistoryView() }
-                }
                 QueueFilterBar(listTitle: "รายการงานสำรวจ", prefix: "คิวสำรวจ", window: $window, search: $search, count: filtered.count)
                 if filtered.isEmpty {
                     ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
                 } else {
-                    LazyVGrid(columns: cardColumns, spacing: 16) {
+                    LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(filtered) { job in
-                            JobCard(job: job, dateLabel: "วันที่สำรวจ", date: job.surveyDate, showTeam: false) {
-                                JobDetailView(job: job)
-                            } footer: {
+                            SurveyJobCard(job: job) {
                                 NavigationLink { SurveyFormView(job: job) } label: {
                                     GradientButtonLabel(title: buttonTitle(job), systemImage: "list.bullet.clipboard")
                                 }
@@ -43,15 +43,168 @@ struct SurveyListView: View {
                 }
             }
             .padding(24)
-            .frame(maxWidth: 1100)
-            .frame(maxWidth: .infinity)
         }
+        .safeAreaInset(edge: .top, spacing: 0) { topBar }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
             FloatingButton(systemImage: "person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่") { showNewJob = true }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showNewJob) { NewJobView() }
+    }
+
+    /// Back, page title over the breadcrumb, and the history button, on a white bar.
+    private var topBar: some View {
+        HStack(spacing: 12) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .secondaryButtonFrame()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("กลับหน้าหลัก")
+            VStack(alignment: .leading, spacing: 0) {
+                Text("สำรวจหน้างาน").font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.navy)
+                (Text("หน้าหลัก › สำรวจหน้างาน › ") + Text("รายการงานสำรวจ").bold().foregroundColor(Theme.navy))
+                    .font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            }
+            Spacer(minLength: 12)
+            NavigationLink { SurveyHistoryView() } label: {
+                Label("ประวัติการสำรวจ", systemImage: "clock.arrow.circlepath")
+                    .font(.system(size: 17, weight: .bold))
+                    .padding(.horizontal, 16).frame(minHeight: 44)
+                    .secondaryButtonFrame()
+            }
+            .buttonStyle(.plain)
+        }
+        .foregroundStyle(Theme.navy)
+        .padding(.horizontal, 24).padding(.vertical, 12)
+        .frame(minHeight: 72)
+        .background(.white)
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+    }
+}
+
+private extension View {
+    /// Design system `tc-btn secondary`: white, 1 pt control border, radius 8.
+    func secondaryButtonFrame() -> some View {
+        background(.white, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Survey job card
+
+/// A survey queue card: job, appointment, draft progress, then `footer` (the survey button).
+/// The body opens `JobDetailView`; the footer is a separate tap target.
+struct SurveyJobCard<Footer: View>: View {
+    let job: Job
+    @ViewBuilder var footer: () -> Footer
+
+    private var days: Int { RelativeDay.days(from: .now, to: job.surveyDate) }
+    private var when: String { RelativeDay.label(days: days, time: ThaiFormat.time.string(from: job.surveyDate)) }
+    private var progress: SurveyCardProgress {
+        SurveyCardProgress(draft: job.surveyDraft.map(SurveyOptions.progress), hasSaved: !job.savedSurveys.isEmpty)
+    }
+
+    var body: some View {
+        let p = progress
+        VStack(alignment: .leading, spacing: 12) {
+            NavigationLink { JobDetailView(job: job) } label: { content }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(job.projectName), \(when), \(p.key) \(p.value) \(p.percent)%")
+            progressBox(p)
+            footer()
+        }
+        .cardStyle()
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            titleRow
+            codeRow
+            metaRow
+            Divider().padding(.vertical, 4)
+            whenRow
+            Label(job.province, systemImage: "mappin.and.ellipse")
+                .font(.footnote)
+                .foregroundStyle(Theme.navy.opacity(0.85))
+        }
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private var titleRow: some View {
+        HStack(spacing: 8) {
+            Text(job.projectName)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Theme.navy)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
+            DotPill(title: "ทีม \(job.team.rawValue)", color: job.team.color, dot: true)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.muted)
+        }
+    }
+
+    private var codeRow: some View {
+        HStack(spacing: 8) {
+            Text(job.code).font(.caption.bold()).foregroundStyle(Theme.inkMuted)
+            DotPill(title: job.status.title, color: job.status.color)
+        }
+    }
+
+    private var metaRow: some View {
+        HStack(spacing: 16) {
+            if job.customerName != job.projectName {
+                Label(job.customerName, systemImage: "person").lineLimit(1)
+            }
+            Label(job.capacityKW.kw, systemImage: "bolt.fill")
+        }
+        .font(.footnote)
+        .foregroundStyle(Theme.navy.opacity(0.85))
+    }
+
+    private var whenRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Label(when, systemImage: "calendar")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(days == 0 ? Theme.primary : days < 0 ? Theme.muted : Theme.navy)
+            Text(job.surveyDate.thaiShort).font(.caption).foregroundStyle(Theme.muted)
+        }
+    }
+
+    private func progressBox(_ p: SurveyCardProgress) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(p.key).font(.caption).foregroundStyle(Theme.inkMuted)
+                Text(p.value).font(.subheadline.bold()).foregroundStyle(Theme.navy).lineLimit(1)
+                Spacer(minLength: 0)
+                Text("\(p.percent)%").font(.subheadline.bold()).monospacedDigit()
+                    .foregroundStyle(p.percent == 0 ? Theme.progressZero : p.tone == .complete ? Theme.progressFull : Theme.primary)
+            }
+            HStack(spacing: 3) {
+                ForEach(p.segments.indices, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3).fill(color(p.segments[i])).frame(height: 6)
+                }
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(p.tone == .draft ? Theme.progressBox : Theme.progressBoxIdle, in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityHidden(true)
+    }
+
+    private func color(_ segment: SurveyCardProgress.Segment) -> Color {
+        switch segment {
+        case .done: Theme.stepDone
+        case .current: Theme.primary
+        case .todo: Theme.borderSubtle
+        }
     }
 }
 
@@ -143,19 +296,29 @@ enum SurveyOptions {
         return max(a, b)
     }
 
+    /// Every required item in form order, with its group in `SurveyDraftProgress.groupTitles`
+    /// (หลังคา, ระบบไฟฟ้า, ค่าไฟ, รูปบังคับ) and whether it is filled.
+    static func checklist(_ form: SurveyForm) -> [(title: String, group: Int, filled: Bool)] {
+        [
+            ("ประเภทหลังคา", 0, !form.roofType.isEmpty),
+            ("พื้นที่หลังคา", 0, form.roofAreaSqm > 0),
+            ("ทิศทางหลังคา", 0, !form.orientation.isEmpty),
+            ("เงาบัง", 0, !form.shading.isEmpty),
+            ("การไฟฟ้า", 1, !form.utility.isEmpty),
+            ("ระบบมิเตอร์", 1, !form.meterPhase.isEmpty),
+            ("เมนเบรกเกอร์", 1, form.mainBreakerAmp > 0),
+            ("ค่าไฟหรือหน่วยต่อเดือน", 2, form.monthlyBill > 0 || form.monthlyKWh > 0),
+        ] + photoTags.filter(\.required).map { ("รูป\($0.title)", 3, !photos(form, $0.id).isEmpty) }
+    }
+
     /// Required items still empty, in form order.
     static func missing(_ form: SurveyForm) -> [String] {
-        var m: [String] = []
-        if form.roofType.isEmpty { m.append("ประเภทหลังคา") }
-        if form.roofAreaSqm <= 0 { m.append("พื้นที่หลังคา") }
-        if form.orientation.isEmpty { m.append("ทิศทางหลังคา") }
-        if form.shading.isEmpty { m.append("เงาบัง") }
-        if form.utility.isEmpty { m.append("การไฟฟ้า") }
-        if form.meterPhase.isEmpty { m.append("ระบบมิเตอร์") }
-        if form.mainBreakerAmp <= 0 { m.append("เมนเบรกเกอร์") }
-        if form.monthlyBill <= 0 && form.monthlyKWh <= 0 { m.append("ค่าไฟหรือหน่วยต่อเดือน") }
-        for tag in photoTags where tag.required && photos(form, tag.id).isEmpty { m.append("รูป\(tag.title)") }
-        return m
+        checklist(form).filter { !$0.filled }.map { $0.title }
+    }
+
+    /// The same checklist as `missing`, counted per group for the job list card.
+    static func progress(_ form: SurveyForm) -> SurveyDraftProgress {
+        SurveyDraftProgress(items: checklist(form).map { .init(group: $0.group, filled: $0.filled) })
     }
 }
 

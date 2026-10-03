@@ -64,6 +64,8 @@ struct SurveyHomeView: View {
         var title: String { [.all: "ทั้งหมด", .active: "กำลังสำรวจ", .draft: "ร่าง", .unsynced: "รอซิงก์"][self]! }
         var detail: String { [.all: "งานในเครื่องนี้", .active: "ยังไม่ครบทุกขั้น", .draft: "ยังไม่ตั้งชื่อ / เลขที่", .unsynced: "ยังไม่ขึ้นคลาวด์"][self]! }
         var heading: String { self == .all ? "งานทั้งหมด" : title }
+        /// The iPhone filter pill's label.
+        var shortTitle: String { self == .active ? "กำลังทำ" : title }
     }
     enum Sort: CaseIterable {
         case updated, docNo, progress
@@ -110,18 +112,21 @@ struct SurveyHomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: compact ? 12 : 18) {
                     if let message { Label(message, systemImage: "checkmark.circle").foregroundStyle(Paper.tick) }
                     tabBar
-                    if tab == .survey { stats }
+                    // iPhone: pills → heading 4, heading → first card 0 (docs/ui/pwa-solar-survey-iphone)
+                    if tab == .survey { if compact { filterPills.padding(.bottom, -8) } else { stats } }
                     if tab != .survey && model.jobs(in: tab).isEmpty {
                         stageEmpty
                     } else {
-                        listHeading
-                        if shown.isEmpty { empty } else { grid }
+                        VStack(alignment: .leading, spacing: compact ? 0 : 18) {
+                            if compact { compactListHeading } else { listHeading }
+                            if shown.isEmpty { empty } else { grid }
+                        }
                     }
                 }
-                .padding(.horizontal, compact ? 16 : 24).padding(.top, 20)
+                .padding(.horizontal, compact ? 16 : 24).padding(.top, compact ? 12 : 20)
                 // room for the floating button under the last row
                 .padding(.bottom, 110)
                 .frame(maxWidth: 1240).frame(maxWidth: .infinity)
@@ -130,7 +135,7 @@ struct SurveyHomeView: View {
         .background(Paper.page)
         .overlay(alignment: .bottom) {
             HStack { Spacer(); floatingButton }
-                .padding(.horizontal, compact ? 16 : 24).padding(.bottom, compact ? 12 : 24)
+                .padding(.horizontal, compact ? 20 : 24).padding(.bottom, compact ? 12 : 24)
                 .frame(maxWidth: 1240)
         }
         // the blue header replaces the navigation bar; navigationTitle stays for the editor's back menu
@@ -198,6 +203,8 @@ struct SurveyHomeView: View {
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .onAppear { model.reload() }
+        // the iPhone has no รอซิงก์ pill
+        .onChange(of: compact, initial: true) { if compact && filter == .unsynced { filter = .all } }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {
@@ -208,7 +215,7 @@ struct SurveyHomeView: View {
     // MARK: cards
 
     var grid: some View {
-        LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
+        LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: compact ? 10 : 16) {
             ForEach(shown) { j in
                 let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey ? .survey : .locked
                 Button { open(j, mode) } label: {

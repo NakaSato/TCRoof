@@ -2,7 +2,7 @@
 import SwiftUI
 import TCRoofCore
 
-/// Blue header (title, search, sync, more menu), stage tabs, filter boxes, list heading and the floating add buttons.
+/// Blue header (title, search, more menu), stage tabs, filter boxes, list heading and the floating add buttons.
 extension SurveyHomeView {
     var engineerLine: String {
         let e = model.settings.engineer.trimmingCharacters(in: .whitespaces)
@@ -10,7 +10,7 @@ extension SurveyHomeView {
     }
 
     var header: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: compact ? 10 : 14) {
             HStack(alignment: .center, spacing: 12) {
                 if isPushed {
                     Button { dismiss() } label: {
@@ -19,24 +19,23 @@ extension SurveyHomeView {
                     }
                     .accessibilityLabel("ย้อนกลับ")
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.system(size: compact ? 24 : 30, weight: .bold))
-                    Text(engineerLine).font(.subheadline).opacity(0.9).lineLimit(compact ? 2 : 1)
+                VStack(alignment: .leading, spacing: compact ? 1 : 4) {
+                    Text(title).font(.system(size: compact ? 22 : 30, weight: .bold))
+                    // iPhone: the subtitle only (docs/ui/pwa-solar-survey-iphone)
+                    if compact {
+                        Text(subtitle).font(.system(size: 13)).opacity(0.9).lineLimit(1).truncationMode(.tail)
+                    } else {
+                        Text(engineerLine).font(.system(size: 15)).opacity(0.92).lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 12)
-                if !compact {
-                    searchField.frame(width: 300)
-                    syncButton
-                }
+                if !compact { searchField.frame(width: 330) }
                 moreMenu
             }
-            if compact {
-                searchField
-                syncButton
-            }
+            if compact { searchField }
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, compact ? 16 : 24).padding(.vertical, compact ? 14 : 20)
+        .padding(.horizontal, compact ? 16 : 24).padding(.top, compact ? 6 : 22).padding(.bottom, compact ? 14 : 26)
         .frame(maxWidth: 1240).frame(maxWidth: .infinity)
         // runs up under the status bar
         .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing)
@@ -47,15 +46,15 @@ extension SurveyHomeView {
     var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(Home.muted)
-            TextField("ค้นหาเลขที่ ชื่อโครงการ ที่อยู่", text: $search).foregroundStyle(Home.navy)
+            TextField(compact ? "ค้นหาเลขที่ ชื่อโครงการ…" : "ค้นหาเลขที่ ชื่อโครงการ สถานที่…", text: $search).foregroundStyle(Home.navy)
                 .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
             if !search.isEmpty {
                 Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Home.muted) }
                     .accessibilityLabel("ล้างคำค้น")
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(.white, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, compact ? 12 : 14).frame(height: compact ? 44 : 46)
+        .background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: stage tabs
@@ -114,10 +113,18 @@ extension SurveyHomeView {
         switch tab {
         case .survey:
             Button { showNew = true } label: {
-                Image(systemName: "plus").font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 68, height: 68)
-                    .background(Home.primary, in: Circle())
-                    .shadow(color: Home.navy.opacity(0.3), radius: 8, y: 4)
+                if compact {
+                    // iPhone: 60 pt with the board's gradient (icons/fab-60.svg)
+                    Image(systemName: "plus").font(.system(size: 28, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 60, height: 60)
+                        .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
+                        .shadow(color: Home.pillOn.opacity(0.35), radius: 8, y: 6)
+                } else {
+                    Image(systemName: "plus").font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 68, height: 68)
+                        .background(Home.primary, in: Circle())
+                        .shadow(color: Home.navy.opacity(0.3), radius: 8, y: 4)
+                }
             }
             .accessibilityLabel("งานสำรวจใหม่")
         case .install:
@@ -134,6 +141,11 @@ extension SurveyHomeView {
 
     var moreMenu: some View {
         Menu {
+            // sync moved here from the header (docs/ui/pwa-solar-survey v2)
+            let n = model.jobsToSync.count
+            Button { syncAll() } label: { Label("ซิงก์ทั้งหมด (\(n))", systemImage: "arrow.triangle.2.circlepath.icloud") }
+                .disabled(n == 0 || busy != nil)
+            Divider()
             Button { showDriveOpen = true } label: { Label("เปิดจาก Google Drive", systemImage: "icloud.and.arrow.down") }
             Button { importing = true } label: { Label("นำเข้าไฟล์ข้อมูล (.json)", systemImage: "square.and.arrow.down") }
             Button { do { share = try model.exportBackup() } catch { self.error = error.localizedDescription } } label: { Label("สำรองข้อมูลทุกงาน", systemImage: "externaldrive") }
@@ -141,21 +153,23 @@ extension SurveyHomeView {
             Divider()
             Button { showSettings = true } label: { Label("ตั้งค่า", systemImage: "gearshape") }
         } label: {
-            Image(systemName: "ellipsis").font(.title3.weight(.semibold)).frame(width: 40, height: 40)
+            Image(systemName: "ellipsis").font(.title3.weight(.semibold)).frame(width: compact ? 44 : 40, height: compact ? 44 : 40)
                 .background(.white.opacity(0.18), in: Circle())
         }
         .accessibilityLabel("เมนูเพิ่มเติม")
     }
 
-    var syncButton: some View {
+    /// "ซิงก์ n งาน" beside the list heading while the รอซิงก์ box is selected.
+    var syncListButton: some View {
         let n = model.jobsToSync.count
         return Button { syncAll() } label: {
-            Label(n > 0 ? "ซิงก์ (\(n))" : "ซิงก์แล้ว", systemImage: n > 0 ? "arrow.triangle.2.circlepath.icloud" : "checkmark.icloud")
-                .font(.body.weight(.semibold))
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.45)))
+            Label("ซิงก์ \(n) งาน", systemImage: "arrow.triangle.2.circlepath.icloud")
+                .font(.subheadline.weight(.bold)).foregroundStyle(Home.navy)
+                .padding(.horizontal, 14).frame(minHeight: 44)
+                .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.borderControl))
         }
+        .buttonStyle(.plain)
         .disabled(n == 0 || busy != nil)
     }
 
@@ -176,12 +190,64 @@ extension SurveyHomeView {
                     .foregroundStyle(Home.navy)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(14)
-                    .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Home.primary : Home.border, lineWidth: on ? 2 : 1))
+                    .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(on ? Home.primary : Home.border, lineWidth: on ? 2 : 1))
                     .shadow(color: on ? Home.primary.opacity(0.15) : .clear, radius: 6, y: 2)
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+
+    /// iPhone: one row of three pills instead of the boxes (docs/ui/pwa-solar-survey-iphone); รอซิงก์ stays in the ••• menu.
+    var filterPills: some View {
+        let jobs = searched
+        return HStack(spacing: 6) {
+            ForEach([Filter.all, .active, .draft], id: \.self) { f in
+                let on = filter == f
+                let n = jobs.filter { matches($0, f) }.count
+                Button { withAnimation(.snappy) { filter = f } } label: {
+                    HStack(spacing: 5) {
+                        Text(f.shortTitle).font(.system(size: 13, weight: on ? .bold : .semibold)).lineLimit(1)
+                        Text("\(n)").font(.system(size: 12, weight: .bold)).monospacedDigit()
+                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
+                            .background(on ? Color.white.opacity(0.22) : Home.pillCount, in: RoundedRectangle(cornerRadius: 10))
+                    }
+                    .foregroundStyle(on ? Color.white : Home.pillOn)
+                    .padding(.horizontal, 6)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(on ? Home.pillOn : Color.white, in: Capsule())
+                    .overlay { if !on { Capsule().stroke(Home.hairline) } }
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(f.title) \(n) งาน")
+                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+    }
+
+    /// iPhone: heading, count and a sort menu on one row.
+    var compactListHeading: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text(tab == .survey ? filter.heading : tab.title).font(.system(size: 16, weight: .bold)).foregroundStyle(Home.navy).lineLimit(1)
+            Text("\(shown.count) งาน").font(.system(size: 13)).foregroundStyle(Home.muted).monospacedDigit().lineLimit(1)
+            Spacer(minLength: 8)
+            Menu {
+                Picker("เรียงตาม", selection: $sort) {
+                    ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(sort.title).font(.system(size: 12.5, weight: .semibold))
+                    Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
+                }
+                .foregroundStyle(Home.primary)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel("เรียงตาม \(sort.title)")
         }
     }
 
@@ -194,6 +260,7 @@ extension SurveyHomeView {
             }
             if !compact { Spacer() }
             HStack(spacing: 8) {
+                if tab == .survey && filter == .unsynced { syncListButton.padding(.trailing, 4) }
                 Text("เรียงตาม").font(.caption).foregroundStyle(Home.muted)
                 Picker("เรียงตาม", selection: $sort) {
                     ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }

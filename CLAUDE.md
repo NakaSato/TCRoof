@@ -31,7 +31,9 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyDemo YES` opens a demo job; add `-surveyDemoSection YES` to open its first section.
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
 - `-surveyStacked YES` forces the one-column (portrait) layout of the wide pages in a landscape simulator.
-- `-surveyPage site|electrical|sld|inverter|panels|flood|water|fts|roof|tank|final` opens that page (`JobEditor.openDebugPage`).
+- `-surveyPage site|electrical|sld|inverter|panels|flood|water|backfeed|fts|roof|tank|final` opens that page (`JobEditor.openDebugPage`).
+- `-surveyB4 lv|lvdone|hv|hvdone` (with `-surveyPage backfeed`) writes that state of `docs/ui/survey-b4/states` into the opened B4, with generated placeholder photos.
+- `-surveyB4Render YES` (with `-surveyPage backfeed`) writes B4 offscreen at free widths 1366 / 1180 to `Documents/backfeed-<w>x<h>.png`, and its one-column iPhone layout to `Documents/backfeed-phone.png`.
 - `-surveyC1 span|spany|posts|pv|keepout|landscape|ridgev|frame-n|frame-w|frame-c|frame-r|bays12|picker|shape|material|wood` (with `-surveyPage roof`) writes the design's example roof into the opened job and opens that state of `docs/ui/survey-c1/states`.
 - `-surveyRoofRender YES` (with `-surveyPage roof`) writes C1 offscreen at several free widths and heights to `Documents/roof-<w>x<h>.png`, for layout checks without rotating. ImageRenderer can't draw menus, text fields or scroll views; they show as placeholders or blank.
 - `-surveyD1 default|size|t64|t30|t20|above|buried|custom|compass|span|empty` (with `-surveyPage tank`) writes the design's example tank into the opened job and opens that state of `docs/ui/survey-d1-size/states`.

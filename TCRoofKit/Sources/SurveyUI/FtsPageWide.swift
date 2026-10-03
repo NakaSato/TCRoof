@@ -203,14 +203,19 @@ struct FtsPageWide: View {
     }
 }
 
-/// The FTS / Emergency part of the single line diagram (`SingleLineDrawing.ftsBox`), fitted and clipped; read-only.
+/// A part of the single line diagram, fitted and clipped; read-only. The FTS / Emergency part (`ftsBox`) unless `box`
+/// names another (B4's `zeroExportBox`).
 struct SLDCrop: View {
     let drawing: SingleLineDrawing
+    var box: Box? = nil
+    /// Widens (or deepens) the box to the view's shape, within the drawing, so the lines run to the edges.
+    var fill = false
 
     var body: some View {
         Canvas { ctx, size in
-            guard let b = drawing.ftsBox, b.w > 0, b.h > 0 else { return }
-            let pad = 8.0
+            guard var b = box ?? drawing.ftsBox, b.w > 0, b.h > 0, size.width > 0, size.height > 0 else { return }
+            if fill { b = Self.widened(b, to: Double(size.width / size.height), within: drawing) }
+            let pad = fill ? 0.0 : 8.0
             let k = min((size.width - 2 * pad) / b.w, (size.height - 2 * pad) / b.h)
             let ox = (size.width - b.w * k) / 2, oy = (size.height - b.h * k) / 2
             ctx.clip(to: Path(CGRect(x: ox, y: oy, width: b.w * k, height: b.h * k)))
@@ -219,6 +224,15 @@ struct SLDCrop: View {
             ctx.withCGContext { cg in PDFRenderer.draw(drawing.sketch.ops, in: cg, photo: { _ in nil }) }
         }
         .clipped()
+    }
+
+    static func widened(_ b: Box, to aspect: Double, within d: SingleLineDrawing) -> Box {
+        if b.w / b.h < aspect {
+            let w = min(b.h * aspect, d.width)
+            return Box(min(max(b.x + b.w / 2 - w / 2, 0), d.width - w), b.y, w, b.h)
+        }
+        let h = min(b.w / aspect, d.height)
+        return Box(b.x, min(max(b.y + b.h / 2 - h / 2, 0), d.height - h), b.w, h)
     }
 }
 #endif

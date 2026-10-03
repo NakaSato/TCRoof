@@ -295,7 +295,10 @@ public enum Schema {
             GroupSpec(nil, [P("photoArea", "ภาพถ่ายพื้นที่ติดตั้ง"), P("photoWide", "ภาพถ่ายมุมกว้างของพื้นที่ติดตั้ง"),
                             C("waterMode", "รูปแบบระบบน้ำ", ["ติดตั้งระบบน้ำใหม่", "ติดตั้งร่วมกับระบบน้ำเดิม"]), detail()])]),
         .backfeed: ModuleSpec(type: .backfeed, sheet: "ระบบไฟฟ้า", label: "ระบบกันย้อน", short: "ระบบกันย้อน", reportTitle: "ภาพตำแหน่งติดตั้งระบบกันย้อน", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
+            // B4 wide page (docs/ui/survey-b4): four photos are required; `photoDetail` stays optional here so old jobs keep it
+            // as it was, and `ZeroExport` adds it to B4's count in `Progress`
             GroupSpec(nil, [P("photoArea", "ภาพถ่ายพื้นที่ติดตั้ง"), P("photoDetail", "รายละเอียด (ภาพ)", optional: true),
+                            P("photoRating", "ภาพป้ายพิกัดอุปกรณ์เดิม"), P("photoAccess", "ภาพพื้นที่ทำงาน / ขนาดบัสบาร์"),
                             C("level", "ตำแหน่งกันย้อน", ["กันย้อนที่แรงต่ำ", "กันย้อนที่แรงสูง"]),
                             C("pole", "เสา", ["เสาเดิม", "เสาใหม่"], when: { $0.choice("level") == "กันย้อนที่แรงสูง" }), detail()])]),
         .fts: ModuleSpec(type: .fts, sheet: "ระบบไฟฟ้า", label: "ตู้ FTS และปุ่มฉุกเฉิน", short: "ตู้ FTS และปุ่มฉุกเฉิน", reportTitle: "ภาพตำแหน่งติดตั้งตู้ FTS และปุ่ม Emergency", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [

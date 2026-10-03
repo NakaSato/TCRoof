@@ -231,16 +231,41 @@ extension JobCard where Footer == EmptyView {
     }
 }
 
+/// Tinted capsule, optionally led by a dot (team and status on the job card).
+struct DotPill: View {
+    let title: String
+    let color: Color
+    var dot = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if dot { Circle().fill(color).frame(width: 7, height: 7) }
+            Text(title)
+        }
+        .font(.system(size: 12.5, weight: .bold)).foregroundStyle(color).lineLimit(1).fixedSize()
+        .padding(.horizontal, 10).frame(height: 24)
+        .background(color.opacity(dot ? 0.1 : 0.12), in: Capsule())
+    }
+}
+
+struct TightIconLabel: LabelStyle {
+    var spacing: CGFloat
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: spacing) { configuration.icon; configuration.title }
+    }
+}
+
 struct GradientButtonLabel: View {
     let title: String
     let systemImage: String
 
     var body: some View {
         Label(title, systemImage: systemImage)
-            .font(.subheadline.weight(.semibold))
+            .font(.system(size: 16, weight: .bold))
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
+            .lineLimit(1)
+            .padding(.horizontal, 18)
+            .frame(maxWidth: .infinity, minHeight: 52)
             .background(Theme.tealGradient, in: RoundedRectangle(cornerRadius: 8))
     }
 }

@@ -22,6 +22,8 @@ enum ThaiFormat {
     static let weekday = make("EEEE")
     /// "29/9 16:42"
     static let dayMonthTime = make("d/M HH:mm")
+    /// "09:30"
+    static let time = make("HH:mm")
 }
 
 extension Date {

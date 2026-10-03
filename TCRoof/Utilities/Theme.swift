@@ -52,6 +52,13 @@ enum Theme {
     static let pending = Color(hex: 0xB45309)
     static let pendingSoft = Color(hex: 0xFDF1E4)
     static let unreadRow = Color(hex: 0xF3F8FD)
+    /// Survey job card progress box: fill while a draft is open, fill otherwise, finished-group bar,
+    /// percent at 100 % and at 0 %.
+    static let progressBox = Color(hex: 0xEEF4FB)
+    static let progressBoxIdle = Color(hex: 0xF3F6FA)
+    static let stepDone = Color(hex: 0x70AD47)
+    static let progressFull = Color(hex: 0x2E7D32)
+    static let progressZero = Color(hex: 0x9AA6B6)
 
     static let headerGradient = LinearGradient(colors: [primary, primaryLight], startPoint: .leading, endPoint: .trailing)
     static let tealGradient = LinearGradient(colors: [teal, Color(hex: 0x4DB6E0)], startPoint: .leading, endPoint: .trailing)

@@ -28,7 +28,8 @@ public extension ModuleSpec {
 
 public extension SurveyModule {
     var spec: ModuleSpec { Schema.spec(type) }
-    var completion: Completion { spec.completion(values) }
+    /// B4 also counts `photoDetail`, which the schema leaves optional for old jobs (`ZeroExport`).
+    var completion: Completion { spec.completion(values) + (type == .backfeed ? ZeroExport.extraCompletion(values) : Completion()) }
     /// "ตู้ไฟฟ้า โรงสูบน้ำ"
     var title: String { name.isEmpty ? spec.short : spec.short + " · " + name }
 }

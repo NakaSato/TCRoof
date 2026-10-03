@@ -70,6 +70,12 @@ struct JobEditorView: View {
         guard case .module(let id) = page, !compact else { return nil }
         return job.modules.first { $0.id == id && $0.type == .water }
     }
+    /// B4 (docs/ui/survey-b4): the level, four photos, the SLD crop, the A2 crop and the equipment list; side by side on
+    /// iPad landscape, one scrolling column on iPad portrait and iPhone.
+    var cardBackfeed: SurveyModule? {
+        guard case .module(let id) = page else { return nil }
+        return job.modules.first { $0.id == id && $0.type == .backfeed }
+    }
     /// B5 on iPad landscape (docs/ui/survey-b5): the Emergency button, its point on the A2 picture and the SLD crop;
     /// iPad portrait and iPhone keep `groupPage`.
     var cardFts: SurveyModule? {
@@ -94,7 +100,7 @@ struct JobEditorView: View {
     /// The B1 building shown with its old per-section form; cleared when the page changes.
     @State var panelForm: UUID?
     /// Pages with the blue header and bottom bar instead of the navigation bar.
-    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil || cardPanels != nil || cardWater != nil || cardFts != nil || cardRoof != nil || cardTank != nil || cardFinal }
+    var cardPage: Bool { cardInfo || cardSite || cardElectrical || cardFlood || cardInverter != nil || cardPanels != nil || cardWater != nil || cardBackfeed != nil || cardFts != nil || cardRoof != nil || cardTank != nil || cardFinal }
     var cardTitle: String {
         if cardFinal { return "E1 สรุปผลและลงนาม" }
         if let m = cardPanels { return m.type.code + " " + m.spec.label }
@@ -104,6 +110,7 @@ struct JobEditorView: View {
         if let m = cardTank {
             return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "D1") + " " + m.spec.short + (m.name.isEmpty ? "" : " " + m.name)
         }
+        if let m = cardBackfeed { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B4") + " " + m.spec.label }
         if let m = cardFts { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B5") + " ปุ่ม Emergency" }
         if let m = cardWater { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B3") + " " + m.spec.label }
         if let m = cardInverter { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B2") + " " + m.spec.label }
@@ -160,7 +167,7 @@ struct JobEditorView: View {
         .onAppear { if startedOnPage && compact { sidebarVisible = false } }
         #if DEBUG
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyDemoSection") { select(.info) } }
-        // `-surveyPage site|electrical|sld|inverter|panels|flood|water|fts|roof|tank` opens that page
+        // `-surveyPage site|electrical|sld|inverter|panels|flood|water|backfeed|fts|roof|tank` opens that page
         .onAppear { openDebugPage() }
         // `-surveyWideA1 YES` shows A1's two-column (landscape) layout in any orientation, sidebar hidden (simulators can't be turned from the command line)
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyWideA1") { sidebarVisible = false } }
@@ -191,7 +198,7 @@ struct JobEditorView: View {
 
     #if DEBUG
     /// `-surveyPage site` opens A2, `electrical` A3, `sld` the single line diagram, `inverter` the first B2, `panels` the first B1, `flood` A4,
-    /// `water` the first B3, `fts` the first B5, `roof` the first C1, `tank` the first D1, `final` E1.
+    /// `water` the first B3, `backfeed` the first B4, `fts` the first B5, `roof` the first C1, `tank` the first D1, `final` E1.
     func openDebugPage() {
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
@@ -202,6 +209,10 @@ struct JobEditorView: View {
         case "panels": if let p = first(.panel) { select(p) }
         case "flood": select(.flood)
         case "water": if let p = first(.water) { select(p) }
+        case "backfeed":
+            if let p = first(.backfeed) { select(p) }
+            // `-surveyB4Render YES` also writes B4 at free widths 1366 / 1180 to Documents/backfeed-<w>x<h>.png
+            if UserDefaults.standard.bool(forKey: "surveyB4Render"), let m = job.modules.first(where: { $0.type == .backfeed }) { renderBackfeed(m.id) }
         case "fts": if let p = first(.fts) { select(p) }
         case "roof":
             if let p = first(.roof) { select(p) }
@@ -261,6 +272,17 @@ struct JobEditorView: View {
                     .id(m.id)
             }
             .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+        } else if let m = cardBackfeed {
+            VStack(spacing: 12) {
+                if readOnly { readOnlyBanner }
+                BackfeedPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
+                                 openSite: { select(.site) }, openDiagram: { showSLD = true }, stacked: compact || infoColumns != 2)
+                    .disabled(readOnly)
+                    .id(m.id)
+            }
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, compact || infoColumns != 2 ? 0 : 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardFts {
@@ -377,6 +399,26 @@ struct JobEditorView: View {
         }
     }
 
+    func renderBackfeed(_ id: UUID) {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        Task { @MainActor in
+            // let `-surveyB4` seed the job first
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            for (free, h) in [(1366.0, 848.0), (1180.0, 636.0)] {
+                let page = BackfeedPageWide(job: .constant(job), moduleID: id, width: min(free, 1318 + 48) - 48)
+                    .environment(model).padding(.horizontal, 24).padding(.vertical, 16)
+                    .frame(width: free, height: h).background(Paper.page)
+                let r = ImageRenderer(content: page); r.scale = 1
+                if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("backfeed-\(Int(free))x\(Int(h)).png")) }
+            }
+            // the one-column layout at an iPhone's width, without its scroll view (ImageRenderer leaves those blank)
+            let phone = BackfeedPageWide(job: .constant(job), moduleID: id, width: 370, stacked: true)
+            let cards = phone.stackedCards(phone.line).environment(model).padding(16).frame(width: 402).background(Paper.page)
+            let r = ImageRenderer(content: cards); r.scale = 1
+            if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("backfeed-phone.png")) }
+        }
+    }
+
     func renderTank(_ id: UUID) {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         Task { @MainActor in
@@ -438,8 +480,9 @@ struct JobEditorView: View {
     var pageBar: some View {
         let go: (Page?) -> (() -> Void)? = { p in p.map { p in { withAnimation { page = p } } } }
         let station = cardInverter.map { InverterStation($0.values) }
-        let module = cardInverter ?? cardPanels ?? cardWater ?? cardFts ?? cardRoof ?? cardTank
-        let water: String? = cardWater.flatMap { WaterPoint.statusLine($0.values) } ?? cardFts.map { m in EmergencyButton.statusLine(job, m.values) }
+        let module = cardInverter ?? cardPanels ?? cardWater ?? cardBackfeed ?? cardFts ?? cardRoof ?? cardTank
+        let water: String? = cardWater.flatMap { WaterPoint.statusLine($0.values) } ?? cardBackfeed.map { ZeroExport.statusLine($0.values) }
+            ?? cardFts.map { m in EmergencyButton.statusLine(job, m.values) }
             ?? cardRoof.map { Roof.statusLine($0.values) } ?? cardTank.flatMap { Tank.statusLine($0.values) }
         // C1: the missing fields and photo angles; tapping the line opens the first
         let roofGaps = cardRoof.map { Roof.gaps($0.values) } ?? []
@@ -448,6 +491,8 @@ struct JobEditorView: View {
         let tankMissing = cardTank.map { Tank.statusLine($0.values) != nil } ?? false
         // B5: a button height outside 1.10–1.50 m warns without blocking completion
         let ftsWarn = cardFts != nil && !EmergencyButton.isRecommended(EmergencyButton.heightCm(job))
+        // B4: fewer than four photos, or the level / pole still to choose
+        let backfeedMissing = cardBackfeed.map { !ZeroExport.isComplete($0.values) } ?? false
         let ftsMissing = cardFts.map { m in EmergencyButton.photoMissing(m.values) } ?? false
         let here: MissingGroup.Target = module.map { .module($0.id) } ?? (cardFlood ? .flood : cardElectrical ? .electrical : cardSite ? .site : .info)
         // module pages step back to the section before them in the survey order; B1 shows every building, so it steps over them all
@@ -464,7 +509,7 @@ struct JobEditorView: View {
                            previous: module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(after), gaps: gaps,
                            statusText: station?.status ?? water ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
                            statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
-                                                                     ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
+                                                                     backfeedMissing || ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,
                            previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil,
                            statusOK: cardRoof != nil && roofGaps.isEmpty,

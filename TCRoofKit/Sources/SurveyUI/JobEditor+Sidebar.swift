@@ -210,11 +210,13 @@ extension JobEditorView {
                     }
                 }
             } label: {
-                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.body.weight(.bold)).foregroundStyle(Home.primary)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(Home.primarySoft.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                // same dashed add button as A3's "เพิ่มหม้อแปลง" and "+ เพิ่มตู้"
+                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Home.primary)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
         .background(Color(uiColor: .systemBackground).shadow(.drop(color: Home.navy.opacity(0.08), radius: 6, y: -2)))

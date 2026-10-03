@@ -16,7 +16,8 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
   ```
   xcodebuild -project TCRoof.xcodeproj -scheme TCRoof -destination 'generic/platform=iOS Simulator' -derivedDataPath <scratch>/DerivedData build
   ```
-  Always pass your own `-derivedDataPath`. The user keeps Xcode open, and a CLI build in the shared DerivedData locks Xcode's `build.db`.
+  Always pass your own `-derivedDataPath`. The user keeps Xcode open, and a CLI build in the shared DerivedData locks Xcode's `build.db`. Reuse the same path between builds: a clean build takes over 10 minutes, so run it in the background.
+- **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it.
 
 ### Simulator checks (DEBUG launch arguments)
@@ -46,7 +47,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 
 ## Architecture
 
-**App target (`TCRoof/`)** handles Google sign-in (`Auth/`), SwiftData models, Firestore sync (`Sync/CloudSync.swift`) and the non-survey screens. It hosts the survey module via `Views/Survey/` (`SolarSurveyEntry`, `PWASurveyLink`).
+**App target (`TCRoof/`)** handles Google sign-in (`Auth/`), SwiftData models, Firestore sync (`Sync/CloudSync.swift`) and the non-survey screens. Firestore access is limited by `firestore.rules` (Firebase project `tcroof-1564c`): only accounts with a `members/<email>` document, and only the collections the app syncs, so a newly synced collection needs a rule. It hosts the survey module via `Views/Survey/` (`SolarSurveyEntry`, `PWASurveyLink`).
 
 **`TCRoofKit` Swift package** holds all survey work, layered as follows:
 - `TCRoofCore`: pure values and rules, no UI.
@@ -84,6 +85,8 @@ UI conventions from the specs:
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
+
+The server runs the `code-review-graph` binary from `.mcp.json`; install it with `uv tool install code-review-graph`. If it fails to connect, use grep and Read instead.
 
 **This project has a knowledge graph. Start with the code-review-graph
 MCP tools to narrow scope, then read the source.** The graph is cheaper than scanning files and

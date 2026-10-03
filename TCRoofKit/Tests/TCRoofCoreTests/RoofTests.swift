@@ -215,4 +215,83 @@ final class RoofTests: XCTestCase {
         Roof.setBays(&v, nil)
         XCTAssertTrue(Roof.baysAreAuto(v))
     }
+
+    // MARK: second hand-off (docs/ui/survey-c1, CLAUDE_CODE_TASK.md)
+
+    func testPurlinSpacing() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        XCTAssertEqual(Roof.purlinSpacing(v), 1.0)
+        // 16 m across the ridge, 15°: 0.15 m off the ridge, then every cos 15° = 0.966 m; 9 lines a side
+        let lines = Roof.purlinLines(v)
+        XCTAssertEqual(lines.count, 18)
+        XCTAssertEqual(lines[0], 7.85, accuracy: 1e-9)
+        XCTAssertEqual(lines[2], 8 - 0.15 - cos(15 * .pi / 180), accuracy: 1e-9)
+        XCTAssertEqual(Roof.purlinNote(v), "ข้างละ 9 แนว")
+        Roof.setPurlinSpacing(&v, 0.4)
+        XCTAssertEqual(v.text("purlinSpacing"), "0.60", "clamped to 0.60–1.50")
+        Roof.setPurlinSpacing(&v, 1.234)
+        XCTAssertEqual(Roof.purlinSpacing(v), 1.23)
+        XCTAssertLessThan(Roof.purlinLines(v).count, lines.count)
+        Roof.setPurlinSpacing(&v, nil)
+        XCTAssertNil(v["purlinSpacing"])
+    }
+
+    func testEaveCeilingFrame() {
+        let k = RoofFrame.eaveCeiling
+        XCTAssertEqual(RoofFrame.ordered.map(\.label), ["ปกติ", "ถัก Pratt", "ถัก Warren", "ขื่อรัด", "จันทันถัก", "ชายคาฝ้า"])
+        XCTAssertEqual(k.members.map(\.name), ["แป", "จันทัน", "ขื่อรัด", "คานหัวเสา", "โครงฝ้า", "เชิงชาย", "เสา"])
+        XCTAssertTrue(k.isRafter); XCTAssertFalse(k.isTruss)
+        XCTAssertEqual(k.slope, 15); XCTAssertEqual(k.heel, 0)
+        var v = Values()
+        Roof.setFrame(&v, k)
+        XCTAssertEqual(Roof.overhang(v), 1.2)
+        Roof.setLength(&v, Roof.Key.overhang, 0.9)
+        XCTAssertEqual(Roof.overhang(v), 0.9)
+    }
+
+    func testStandards() {
+        var v = Values()
+        XCTAssertEqual(Roof.standards.map { $0.title() }, ["โรงกรอง 19 × 16 ม.", "อาคารสูบน้ำ 12 × 8 ม.", "อาคารสำนักงาน 16 × 10 ม.",
+                                                            "อาคารเก็บสารเคมี 24 × 12 ม.", "โรงจอดรถ 30 × 20 ม."])
+        XCTAssertEqual(Roof.standards[0].subtitle, "ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด")
+        Roof.togglePost(&v, i: 0, j: 0)
+        Roof.setFrame(&v, .rafterTie); Roof.togglePost(&v, i: 0, j: 0)
+        Roof.applyStandard(&v, Roof.standards[1])
+        XCTAssertEqual(v.text("spansX"), "4,4,4"); XCTAssertEqual(v.text("spansY"), "1,3,3,1")
+        XCTAssertEqual(Roof.frame(v), .rafterTie)
+        XCTAssertEqual(v.choice("roofShape"), "หลังคาทรงจั่ว")
+        XCTAssertEqual(v.text("roofStd"), "pump")
+        XCTAssertNil(Roof.postEdits(v)["c"], "the standard's frame goes back to its default posts")
+        XCTAssertNotNil(Roof.postEdits(v)["p"], "other frames keep their edits")
+        XCTAssertEqual(Roof.matchingStandard(v, in: Roof.standards)?.id, "pump")
+        XCTAssertEqual(Roof.standardLabel(v, in: Roof.standards), "อาคารสูบน้ำ 12×8")
+        // a saved roof matches its purlin spacing too
+        Roof.setPurlinSpacing(&v, 0.9)
+        let mine = Roof.standard(from: v, id: "t-1", name: "โรงสูบน้ำ (พิจิตร)", by: "วิชัย", scope: "ทั้งทีม", date: "28 ก.ย.")
+        XCTAssertEqual(mine.title(), "โรงสูบน้ำ 12 × 8 ม. (พิจิตร)")
+        XCTAssertEqual(mine.subtitle, "ขื่อรัด · แป @0.90 · โดย วิชัย · 28 ก.ย. · ทั้งทีม")
+        XCTAssertEqual(Roof.matchingStandard(v, in: [mine])?.id, "t-1")
+        Roof.setPurlinSpacing(&v, 1.0)
+        XCTAssertNil(Roof.matchingStandard(v, in: [mine]))
+        Roof.setSpans(&v, .x, [4, 4, 4.5])
+        XCTAssertNil(Roof.matchingStandard(v, in: Roof.standards))
+        XCTAssertEqual(Roof.standardLabel(v, in: Roof.standards), "กำหนดเอง 12.5×8 ม.")
+        let back = try? JSONDecoder().decode(Roof.Standard.self, from: JSONEncoder().encode(mine))
+        XCTAssertEqual(back, mine)
+    }
+
+    func testNewHiddenFieldsKeepCompletion() {
+        var m = SurveyModule(type: .roof)
+        let before = m.completion
+        Roof.setPurlinSpacing(&m.values, 0.9)
+        Roof.setPV(&m.values, rows: 2, perTable: 4, gap: 0.5)
+        m.values["roofStd"] = .text("filter")
+        XCTAssertEqual(m.completion.filled, before.filled)
+        XCTAssertEqual(m.completion.total, before.total)
+        XCTAssertEqual(Roof.pvRows(m.values), 2); XCTAssertEqual(Roof.pvPerTable(m.values), 4); XCTAssertEqual(Roof.pvGap(m.values), 0.5)
+        Roof.setPV(&m.values, rows: 0, perTable: 0)
+        XCTAssertNil(m.values["pvRows"]); XCTAssertNil(m.values["pvPerTable"])
+    }
 }

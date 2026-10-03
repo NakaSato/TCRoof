@@ -308,7 +308,9 @@ public enum Schema {
             GroupSpec("โครงสร้าง", [FieldSpec("diag", "แนะนำองค์ประกอบของหลังคา", .diagram)] + Options.components.enumerated().map { FieldSpec("comp\($0.offset + 1)", "\($0.offset + 1). \($0.element)", .member(component: $0.offset + 1)) }
                                     // the C1 wide page's own answers (docs/ui/survey-c1, `Roof`); hidden, so completion is unchanged
                                     + [("frameType", "ชนิดโครงหลังคา"), ("ridgeDir", "แนวสันหลังคา"), ("trussBays", "ช่องโครงถักต่อข้าง"), ("postGrid", "เสาที่แก้ในแปลน"),
-                                       ("pvOrientation", "แนวแผงในแปลนจัดแผง"), ("roofShots", "มุมภาพหลังคา"), ("eaveOverhang", "ชายคา (ม.)"), ("clearHeight", "ความสูงใต้ขื่อ (ม.)")]
+                                       ("pvOrientation", "แนวแผงในแปลนจัดแผง"), ("roofShots", "มุมภาพหลังคา"), ("eaveOverhang", "ชายคา (ม.)"), ("clearHeight", "ความสูงใต้ขื่อ (ม.)"),
+                                       ("purlinSpacing", "ระยะแป (ม.)"), ("roofStd", "หลังคามาตรฐาน"), ("pvRows", "แถวต่อชุด"), ("pvPerTable", "แผงต่อชุด"),
+                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)")]
                                         .map { T($0.0, $0.1, optional: true, when: { _ in false }) }),
             GroupSpec("รูปแบบหลังคา", [C("roofShape", "**1. รูปแบบหลังคา", Options.roofShape, other: true), C("roofMaterial", "**2. วัสดุมุงหลังคา", Options.roofMaterial, other: true),
                                      C("roofStructure", "**3. ชนิดโครงสร้างหลังคา", Options.structure)]),

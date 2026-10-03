@@ -2,14 +2,17 @@ import Foundation
 
 /// C1 "หลังคา (แปลนและโครงสร้าง)" wide page (docs/ui/survey-c1): the roof plan, the frame type and section A-A, the
 /// member sizes and the six photo angles. Field ids, labels and Excel cells are unchanged; the page's own answers
-/// (`frameType`, `ridgeDir`, `trussBays`, `postGrid`, `pvOrientation`, `roofShots`, `eaveOverhang`, `clearHeight`)
-/// are optional and hidden, so the section's completion counts as before.
+/// (`frameType`, `ridgeDir`, `trussBays`, `postGrid`, `pvOrientation`, `roofShots`, `eaveOverhang`, `clearHeight`,
+/// `purlinSpacing`, `roofStd`, `pvRows`, `pvPerTable`, `pvGap`) are optional and hidden, so the section's completion
+/// counts as before.
 public enum Roof {
     public enum Key {
         public static let spansX = "spansX", spansY = "spansY", sheetDir = "sheetDir", obstacles = "obst"
         public static let frame = "frameType", ridge = "ridgeDir", bays = "trussBays", posts = "postGrid"
         public static let pvOrientation = "pvOrientation", shots = "roofShots"
         public static let overhang = "eaveOverhang", clearHeight = "clearHeight"
+        public static let purlin = "purlinSpacing", standard = "roofStd"
+        public static let pvRows = "pvRows", pvPerTable = "pvPerTable", pvGap = "pvGap"
         public static let shape = "roofShape", material = "roofMaterial", structure = "roofStructure", panels = "panelsBefore"
         public static let aerial = "aerialPhoto", general = "generalPhotos", structPhotos = "structPhotos"
         public static func member(_ n: Int) -> String { "comp\(n)" }
@@ -75,12 +78,54 @@ public enum Roof {
         v[Key.bays] = n.map { .text(String(min(baysRange.upperBound, max(baysRange.lowerBound, $0)))) }
     }
 
-    /// Eave overhang and clear height (m) for section A-A; the design's 0.70 / 4.00 until measured.
-    public static func overhang(_ v: Values) -> Double { v.number(Key.overhang) ?? 0.7 }
+    /// Eave overhang and clear height (m) for section A-A; the design's 0.70 (1.20 for ชายคาฝ้า) / 4.00 until measured.
+    public static func overhang(_ v: Values) -> Double { v.number(Key.overhang) ?? frame(v).overhang }
     public static func clearHeight(_ v: Values) -> Double { v.number(Key.clearHeight) ?? 4.0 }
     public static func setLength(_ v: inout Values, _ key: String, _ m: Double?) {
         v[key] = m.map { .text(fmt(($0 * 100).rounded() / 100)) }
     }
+
+    // MARK: purlins
+
+    /// ระยะแป measured along the slope (m), 0.60–1.50 in 0.05 steps; 1.00 until set.
+    public static let purlinRange = 0.6...1.5
+    public static func purlinSpacing(_ v: Values) -> Double {
+        guard let p = v.number(Key.purlin), p > 0 else { return 1.0 }
+        return min(purlinRange.upperBound, max(purlinRange.lowerBound, p))
+    }
+    public static func setPurlinSpacing(_ v: inout Values, _ p: Double?) {
+        v[Key.purlin] = p.map { .text(String(format: "%.2f", min(purlinRange.upperBound, max(purlinRange.lowerBound, ($0 * 100).rounded() / 100)))) }
+    }
+    /// Purlin lines across the ridge, metres from the plan's first grid line: 0.15 m each side of the ridge, then every
+    /// `spacing · cos(slope)` down to the eaves (the design's `PUR`).
+    public static func purlinLines(_ v: Values) -> [Double] {
+        let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
+        let step = purlinSpacing(v) * cos(frame(v).slope * .pi / 180)
+        var out: [Double] = [], d = 0.15
+        while d < across / 2 - 0.05 { out += [across / 2 - d, across / 2 + d]; d += step }
+        return out
+    }
+    /// "ข้างละ 9 แนว"
+    public static func purlinNote(_ v: Values) -> String {
+        let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
+        let step = purlinSpacing(v) * cos(frame(v).slope * .pi / 180)
+        return "ข้างละ \(Int(((across / 2 - 0.15) / step).rounded(.up))) แนว"
+    }
+
+    // MARK: PV layout settings (การจัดแผง)
+
+    /// Rows of modules per table down the slope: 0 = one continuous field (ต่อเนื่อง), else 1–4.
+    public static func pvRows(_ v: Values) -> Int { min(4, max(0, Int(v.number(Key.pvRows) ?? 0))) }
+    /// Modules per table along the ridge: 0 = continuous, else 2, 4 or 6.
+    public static func pvPerTable(_ v: Values) -> Int { min(6, max(0, Int(v.number(Key.pvPerTable) ?? 0))) }
+    /// Gap between tables (m), 0–2; 0.40 until set.
+    public static func pvGap(_ v: Values) -> Double { min(2, max(0, v.number(Key.pvGap) ?? 0.4)) }
+    public static func setPV(_ v: inout Values, rows: Int? = nil, perTable: Int? = nil, gap: Double? = nil) {
+        if let rows { v[Key.pvRows] = rows == 0 ? nil : .text(String(rows)) }
+        if let perTable { v[Key.pvPerTable] = perTable == 0 ? nil : .text(String(perTable)) }
+        if let gap { v[Key.pvGap] = .text(String(format: "%.2f", min(2, max(0, (gap * 100).rounded() / 100)))) }
+    }
+    public static func pvPortrait(_ v: Values) -> Bool { v.text(Key.pvOrientation) != "l" }
 
     // MARK: posts
 
@@ -92,7 +137,7 @@ public enum Roof {
         func add(_ ia: Int, _ ic: Int) { out.insert(ridge == .h ? "\(ia),\(ic)" : "\(ic),\(ia)") }
         guard na >= 2, nc >= 2 else { return out }
         switch f {
-        case .rafterTie:
+        case .rafterTie, .eaveCeiling:
             for ia in 0..<na { for ic in Set([1, nc - 2]) where ic >= 0 && ic < nc { add(ia, ic) } }
         case .rafterTruss:
             for ia in 1..<max(1, na - 1) { for ic in 1..<max(1, nc - 1) { add(ia, ic) } }
@@ -325,21 +370,33 @@ public enum Roof {
 
 /// ชนิดโครงหลังคา, stored in `frameType`.
 public enum RoofFrame: String, CaseIterable, Sendable {
-    case normal = "n", pratt = "p", warren = "w", rafterTie = "c", rafterTruss = "r"
+    case normal = "n", pratt = "p", warren = "w", rafterTie = "c", rafterTruss = "r", eaveCeiling = "k"
 
     /// The segmented control's label, in the design's order (ปกติ first).
-    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก"][rawValue]! }
+    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก", "k": "ชายคาฝ้า"][rawValue]! }
     public var title: String {
-        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2"][rawValue]!
+        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2",
+         "k": "โครงจันทันพาดเสา · ชายคาฝ้า"][rawValue]!
     }
-    public static let ordered: [RoofFrame] = [.normal, .pratt, .warren, .rafterTie, .rafterTruss]
+    public static let ordered: [RoofFrame] = [.normal, .pratt, .warren, .rafterTie, .rafterTruss, .eaveCeiling]
     /// Pratt, Warren and the normal frame are trusses with a bottom chord.
     public var isTruss: Bool { self == .normal || self == .pratt || self == .warren }
+    /// Rafters on eaves beams (ขื่อรัด, ชายคาฝ้า): no truss panels, the plan draws rafters @1.00.
+    public var isRafter: Bool { self == .rafterTie || self == .eaveCeiling }
     public var slope: Double { self == .rafterTie ? 30 : 15 }
     /// Truss depth at the heel (m).
-    public var heel: Double { self == .rafterTie ? 0 : 0.5 }
+    public var heel: Double { isRafter ? 0 : 0.5 }
+    /// Eave overhang (m) until measured: the boxed eave of ชายคาฝ้า is deeper.
+    public var overhang: Double { self == .eaveCeiling ? 1.2 : 0.7 }
     /// Thumbnail family in `icons/members`.
-    public var iconFamily: String { self == .rafterTie ? "rafter-tie" : self == .rafterTruss ? "rafter-truss-T2" : "truss-pratt-normal-warren" }
+    public var iconFamily: String {
+        switch self {
+        case .rafterTie: return "rafter-tie"
+        case .rafterTruss: return "rafter-truss-T2"
+        case .eaveCeiling: return "eave-ceiling"
+        default: return "truss-pratt-normal-warren"
+        }
+    }
 
     public struct Member: Sendable {
         public let name: String
@@ -358,13 +415,21 @@ public enum RoofFrame: String, CaseIterable, Sendable {
                  m("คอร์ดบน", chord, 2), m("คอร์ดล่าง", chord, 2), m("ตัวตั้ง", web, 0), m("ตัวทแยง", web, 0),
                  m("เชิงชาย", ["ไม้ 1\"x6\"", "ไม้ 1\"x8\"", "ไฟเบอร์ซีเมนต์ 1\"x8\"", "C-100x50x20x2.3"], 1),
                  m("เสากลาง", post, 1)]
+        let rafter = ["C-125x50x20x3.2", "C-150x50x20x3.2", "2C-125x50x20x3.2", "2C-150x50x20x3.2"]
+        let tie = ["C-100x50x20x2.3", "C-100x50x20x3.2", "C-125x50x20x3.2"]
         switch self {
         case .rafterTie:
-            r[1] = m("จันทัน", ["C-125x50x20x3.2", "C-150x50x20x3.2", "2C-125x50x20x3.2", "2C-150x50x20x3.2"], 1)
-            r[2] = m("ขื่อรัด", ["C-100x50x20x2.3", "C-100x50x20x3.2", "C-125x50x20x3.2"], 1)
+            r[1] = m("จันทัน", rafter, 1)
+            r[2] = m("ขื่อรัด", tie, 1)
             r[3] = m("อเส", ["C-100x50x20x3.2", "C-125x50x20x3.2", "ค.ส.ล. (เดิม)"], 2)
             r[4] = m("ตัวค้ำ", ["C-75x45x15x2.3", "C-75x45x15x3.2"], -1)
             r[6] = m("เสากลาง", post, -1)
+        case .eaveCeiling:
+            r[1] = m("จันทัน", rafter, 1)
+            r[2] = m("ขื่อรัด", tie, 1)
+            r[3] = m("คานหัวเสา", ["ค.ส.ล. (เดิม)", "C-125x50x20x3.2", "2C-150x50x20x3.2"], 0)
+            r[4] = m("โครงฝ้า", ["C-75x45x15x2.3", "ไม้ 1½\"x3\"", "โครงคร่าวเหล็กชุบสังกะสี"], 0)
+            r[6] = m("เสา", ["ค.ส.ล. (เดิม)", "□-100x100x3.2", "□-125x125x4.5"], 0)
         case .rafterTruss:
             let tube = ["ท่อกลม Ø1\" หนา 1.6", "ท่อกลม Ø1¼\" หนา 2.0", "ท่อกลม Ø1½\" หนา 2.3"]
             r[1] = m("คอร์ดบน", tube, 0); r[2] = m("คอร์ดล่าง", tube, 0); r[3] = m("ตัวทแยง", tube, 0)
@@ -373,5 +438,83 @@ public enum RoofFrame: String, CaseIterable, Sendable {
         default: break
         }
         return r
+    }
+}
+
+/// หลังคามาตรฐาน: a roof the team draws often (spans, frame type, purlin spacing). The PWA standards ship with the app
+/// (the design's `STD`); a team member can save the current roof as a new one (`Roof.Standard` is Codable for that).
+public extension Roof {
+    struct Standard: Codable, Hashable, Identifiable, Sendable {
+        public var id: String
+        public var name: String
+        public var xs: [Double], ys: [Double]
+        public var frame: String
+        /// Purlin spacing saved with the roof; nil for the PWA standards (any spacing matches).
+        public var purlin: Double?
+        /// Saved by, scope (ทั้งทีม / เฉพาะฉัน) and date, for the team's own roofs.
+        public var by: String?, scope: String?, date: String?
+        public init(id: String, name: String, xs: [Double], ys: [Double], frame: RoofFrame, purlin: Double? = nil,
+                    by: String? = nil, scope: String? = nil, date: String? = nil) {
+            self.id = id; self.name = name; self.xs = xs; self.ys = ys; self.frame = frame.rawValue; self.purlin = purlin
+            self.by = by; self.scope = scope; self.date = date
+        }
+        public var roofFrame: RoofFrame { RoofFrame(rawValue: frame) ?? .pratt }
+        var isTeam: Bool { by != nil }
+
+        /// "โรงกรอง 19 × 16 ม." (a trailing "(…)" stays at the end: "โรงสูบน้ำ 14 × 10 ม. (พิจิตร)").
+        public func title(_ sep: String = " × ") -> String {
+            let size = fmt(xs.reduce(0, +)) + sep + fmt(ys.reduce(0, +)) + (sep == "×" ? "" : " ม.")
+            if let r = name.range(of: #"\s*\([^)]*\)\s*$"#, options: .regularExpression) {
+                return String(name[..<r.lowerBound]) + " " + size + " " + name[r].trimmingCharacters(in: .whitespaces)
+            }
+            return name + " " + size
+        }
+        /// "ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด", or for a saved roof "ขื่อรัด · แป @0.90 · โดย วิชัย · 28 ก.ย. · ทั้งทีม".
+        public var subtitle: String {
+            if let by {
+                return [roofFrame.label, "แป @" + String(format: "%.2f", purlin ?? 1), "โดย " + by, date ?? "", scope ?? ""]
+                    .filter { !$0.isEmpty }.joined(separator: " · ")
+            }
+            return roofFrame.label + " · ช่วงเสา " + fmt(xs.max() ?? 0) + " ม. · \(xs.count + 1) × \(ys.count + 1) กริด"
+        }
+    }
+
+    /// แบบมาตรฐาน กปภ. (the design's `STD`).
+    static let standards: [Standard] = [
+        Standard(id: "filter", name: "โรงกรอง", xs: [1.5, 4, 4, 4, 4, 1.5], ys: [1.5, 4.5, 4, 4.5, 1.5], frame: .pratt),
+        Standard(id: "pump", name: "อาคารสูบน้ำ", xs: [4, 4, 4], ys: [1, 3, 3, 1], frame: .rafterTie),
+        Standard(id: "office", name: "อาคารสำนักงาน", xs: [4, 4, 4, 4], ys: [1.2, 3.8, 3.8, 1.2], frame: .eaveCeiling),
+        Standard(id: "chem", name: "อาคารเก็บสารเคมี", xs: [6, 6, 6, 6], ys: [1, 5, 5, 1], frame: .warren),
+        Standard(id: "park", name: "โรงจอดรถ", xs: [5, 5, 5, 5, 5, 5], ys: [1, 9, 9, 1], frame: .rafterTruss),
+    ]
+
+    /// The standard (or saved roof) the roof's spans, frame and purlin spacing match, if any.
+    static func matchingStandard(_ v: Values, in list: [Standard]) -> Standard? {
+        let xs = spans(v, .x), ys = spans(v, .y), f = frame(v), pp = purlinSpacing(v)
+        func same(_ a: [Double], _ b: [Double]) -> Bool { a.count == b.count && zip(a, b).allSatisfy { abs($0 - $1) < 0.001 } }
+        return list.first { $0.roofFrame == f && same($0.xs, xs) && same($0.ys, ys) && ($0.purlin.map { abs($0 - pp) < 0.001 } ?? true) }
+    }
+    /// The dropdown's text: "โรงกรอง 19×16", else "กำหนดเอง 19×16 ม.".
+    static func standardLabel(_ v: Values, in list: [Standard]) -> String {
+        if let s = matchingStandard(v, in: list) { return s.title("×") }
+        return "กำหนดเอง " + fmt(spans(v, .x).reduce(0, +)) + "×" + fmt(spans(v, .y).reduce(0, +)) + " ม."
+    }
+    /// Fills the spans, frame type and purlin spacing; the frame's edited posts and the truss panels go back to their
+    /// defaults, and the roof shape becomes ทรงจั่ว (every standard is a gable).
+    static func applyStandard(_ v: inout Values, _ s: Standard) {
+        setSpans(&v, .x, s.xs); setSpans(&v, .y, s.ys)
+        setFrame(&v, s.roofFrame)
+        if let p = s.purlin { setPurlinSpacing(&v, p) }
+        var edits = postEdits(v); edits[s.frame] = nil
+        let enc = JSONEncoder(); enc.outputFormatting = .sortedKeys
+        if edits.isEmpty { v[Key.posts] = nil }
+        else if let d = try? enc.encode(edits), let t = String(data: d, encoding: .utf8) { v[Key.posts] = .text(t) }
+        setBays(&v, nil)
+        if let gable = shapes.first?.stored { v[Key.shape] = .choice(gable, other: "") }
+        v[Key.standard] = .text(s.id)
+    }
+    /// The current roof as a new saved standard.
+    static func standard(from v: Values, id: String, name: String, by: String, scope: String, date: String) -> Standard {
+        Standard(id: id, name: name, xs: spans(v, .x), ys: spans(v, .y), frame: frame(v), purlin: purlinSpacing(v), by: by, scope: scope, date: date)
     }
 }

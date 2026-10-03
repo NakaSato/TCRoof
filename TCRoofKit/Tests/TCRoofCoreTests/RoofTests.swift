@@ -159,6 +159,7 @@ final class RoofTests: XCTestCase {
         var v = Values()
         v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
         Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        Roof.setPV(&v, perTable: 0)
         let module = RoofPlan.Module(length: 2.278, width: 1.134, kW: 0.57)
         XCTAssertEqual(RoofPlan.pvCount(v, module: module), 90)
         let a = 19 * 0.36
@@ -172,6 +173,43 @@ final class RoofTests: XCTestCase {
         XCTAssertNotEqual(RoofPlan.pvCount(v, portrait: false, module: module), RoofPlan.pvCount(v, module: module))
         // keep-out zones only show in the PV mode
         XCTAssertFalse(RoofPlan(v).layout.areas.contains { $0.area.kind == Roof.keepOutKind })
+    }
+
+    /// preview-panels.png: tables of 2 portrait modules along the ridge, 0.40 m apart → 66 modules, 37.6 kWp, 36 tables.
+    func testPVTablesMatchDesign() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        v["obst"] = .obstacles([Obstacle(x: fmt(19 * 0.36 - 0.4), y: "1", w: "0.8", h: "6.6", kind: "sky"),
+                                Obstacle(x: fmt(19 * 0.64 - 0.4), y: "8.4", w: "0.8", h: "6.6", kind: "sky", canCover: true)])
+        let module = RoofPlan.Module(length: 2.278, width: 1.134, kW: 0.57)
+        let pv = RoofPlan(v, mode: .pv, module: module).pv
+        XCTAssertEqual(pv.count, 66)
+        XCTAssertEqual(String(format: "%.1f", pv.kWp), "37.6")
+        XCTAssertEqual(pv.tables, 36)
+        // rows per table down the slope and a wider gap leave fewer modules
+        Roof.setPV(&v, rows: 2, gap: 0.8)
+        let two = RoofPlan(v, mode: .pv, module: module).pv
+        XCTAssertLessThanOrEqual(two.count, 66)
+        XCTAssertGreaterThan(two.tables, 0)
+        XCTAssertTrue(RoofPlan(v, mode: .pv, module: module).tags.contains("tbl"))
+    }
+
+    func testPlanTagsAndHighlight() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        let p = RoofPlan(v)
+        XCTAssertEqual(p.tags.count, p.sketch.ops.count)
+        XCTAssertEqual(p.tags.filter { $0 == "purl" }.count, Roof.purlinLines(v).count)
+        XCTAssertEqual(p.tags.filter { $0 == "post" }.count, 10)
+        XCTAssertEqual(p.tags.filter { $0 == "tbd" }.count, 10, "five T1 trusses, two lines each")
+        // row 1 (แป) redraws every purlin in red
+        XCTAssertEqual(RoofPlan(v, highlight: 1).sketch.ops.count, p.sketch.ops.count + Roof.purlinLines(v).count)
+        Roof.setFrame(&v, .eaveCeiling)
+        XCTAssertTrue(RoofPlan(v).tags.contains("raft"))
+        XCTAssertEqual(RoofPlan.highlightKeys(.eaveCeiling, member: 4), ["eave"])
+        XCTAssertEqual(RoofPlan.highlightKeys(.eaveCeiling, member: 5), [])
     }
 
     func testCompletionUnchanged() {
@@ -292,6 +330,36 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(m.completion.total, before.total)
         XCTAssertEqual(Roof.pvRows(m.values), 2); XCTAssertEqual(Roof.pvPerTable(m.values), 4); XCTAssertEqual(Roof.pvGap(m.values), 0.5)
         Roof.setPV(&m.values, rows: 0, perTable: 0)
-        XCTAssertNil(m.values["pvRows"]); XCTAssertNil(m.values["pvPerTable"])
+        XCTAssertNil(m.values["pvRows"]); XCTAssertEqual(Roof.pvPerTable(m.values), 0, "continuous is stored, not the default")
+        XCTAssertEqual(Roof.pvPerTable(Values()), 2, "portrait pairs until chosen")
+    }
+
+    func testSectionCalloutsAndPurlins() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h)
+        Roof.setFrame(&v, .pratt)
+        XCTAssertEqual(Set(RoofSection(v).callouts.keys), Set(1...7))
+        let plain = RoofSection(v)
+        XCTAssertEqual(RoofSection(v, highlight: 3).sketch.ops.count, plain.sketch.ops.count + 2)
+        XCTAssertEqual(plain.tags.count, plain.sketch.ops.count)
+        XCTAssertEqual(plain.scale, min(540 / 16, 118 / (8 * tan(15 * .pi / 180) + 0.5)), accuracy: 1e-9)
+        // wider purlin spacing, fewer purlin marks
+        Roof.setPurlinSpacing(&v, 1.5)
+        XCTAssertLessThan(RoofSection(v).sketch.ops.count, plain.sketch.ops.count)
+        Roof.setFrame(&v, .rafterTie)
+        XCTAssertEqual(Set(RoofSection(v).callouts.keys), [1, 2, 3, 4, 6], "ขื่อรัด has no ตัวค้ำ / เสากลาง callout")
+        Roof.setFrame(&v, .eaveCeiling)
+        XCTAssertEqual(Set(RoofSection(v).callouts.keys), Set(1...7))
+        XCTAssertTrue(RoofSection(v).sketch.ops.contains { if case .polygon = $0 { return true }; return false }, "hatched beam ends")
+    }
+
+    func testPathParser() {
+        let p = PathD.parse("M10 20L30 40h5v-5zM1 2l2 -4l2 8")
+        XCTAssertEqual(p.count, 2)
+        XCTAssertTrue(p[0].closed)
+        XCTAssertEqual(p[0].points.map(\.x), [10, 30, 35, 35])
+        XCTAssertEqual(p[0].points.last?.y, 35)
+        XCTAssertEqual(p[1].points.map(\.y), [2, -2, 6])
     }
 }

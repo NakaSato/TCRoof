@@ -116,13 +116,17 @@ public enum Roof {
 
     /// Rows of modules per table down the slope: 0 = one continuous field (ต่อเนื่อง), else 1–4.
     public static func pvRows(_ v: Values) -> Int { min(4, max(0, Int(v.number(Key.pvRows) ?? 0))) }
-    /// Modules per table along the ridge: 0 = continuous, else 2, 4 or 6.
-    public static func pvPerTable(_ v: Values) -> Int { min(6, max(0, Int(v.number(Key.pvPerTable) ?? 0))) }
+    /// Modules per table along the ridge: 0 = continuous, else 2, 4 or 6. Until chosen, portrait modules go in pairs
+    /// (the design's default, "ทุก 2 แผง") and landscape ones run continuous.
+    public static func pvPerTable(_ v: Values, portrait: Bool? = nil) -> Int {
+        guard let n = v.number(Key.pvPerTable) else { return (portrait ?? pvPortrait(v)) ? 2 : 0 }
+        return min(6, max(0, Int(n)))
+    }
     /// Gap between tables (m), 0–2; 0.40 until set.
     public static func pvGap(_ v: Values) -> Double { min(2, max(0, v.number(Key.pvGap) ?? 0.4)) }
     public static func setPV(_ v: inout Values, rows: Int? = nil, perTable: Int? = nil, gap: Double? = nil) {
         if let rows { v[Key.pvRows] = rows == 0 ? nil : .text(String(rows)) }
-        if let perTable { v[Key.pvPerTable] = perTable == 0 ? nil : .text(String(perTable)) }
+        if let perTable { v[Key.pvPerTable] = .text(String(perTable)) }
         if let gap { v[Key.pvGap] = .text(String(format: "%.2f", min(2, max(0, (gap * 100).rounded() / 100)))) }
     }
     public static func pvPortrait(_ v: Values) -> Bool { v.text(Key.pvOrientation) != "l" }

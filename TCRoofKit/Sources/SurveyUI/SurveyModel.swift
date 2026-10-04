@@ -194,7 +194,10 @@ public struct SurveySettings: Codable, Equatable {
     public var googleClientID = ""
     public var driveRoot = "Solar Survey Projects"
     public var engineer = ""
-    /// Google Maps Static API key; empty = Apple Maps satellite imagery.
+    /// Mapbox access token for site pictures, the first map source; empty = the build's `MapboxAccessToken`
+    /// (git-ignored Secrets.xcconfig), else Mapbox is skipped.
+    public var mapboxToken = ""
+    /// Google Maps Static API key, used when Mapbox has no token or doesn't answer; empty = skip Google.
     public var googleMapsKey = ""
     /// GISTDA flood API key for A4; empty = use the build's `GISTDAAPIKey` (git-ignored Secrets.xcconfig), else the lookup is off.
     public var gistdaKey = ""
@@ -215,11 +218,23 @@ public struct SurveySettings: Codable, Equatable {
         driveRoot = try c.decodeIfPresent(String.self, forKey: .driveRoot) ?? driveRoot
         engineer = try c.decodeIfPresent(String.self, forKey: .engineer) ?? engineer
         googleMapsKey = try c.decodeIfPresent(String.self, forKey: .googleMapsKey) ?? googleMapsKey
+        mapboxToken = try c.decodeIfPresent(String.self, forKey: .mapboxToken) ?? mapboxToken
         mapZoom = try c.decodeIfPresent(Int.self, forKey: .mapZoom) ?? mapZoom
         autoUploadPhotos = try c.decodeIfPresent(Bool.self, forKey: .autoUploadPhotos) ?? autoUploadPhotos
         pvModule = try c.decodeIfPresent(String.self, forKey: .pvModule) ?? pvModule
     }
     static let key = "solarSurvey.settings"
+
+    /// Mapbox token from the git-ignored xcconfig (Info.plist `MapboxAccessToken`); empty when none is built in.
+    static var bundledMapboxToken: String {
+        (Bundle.main.object(forInfoDictionaryKey: "MapboxAccessToken") as? String).map { $0.hasPrefix("$(") ? "" : $0 } ?? ""
+    }
+
+    /// Keys for `MapImage.fetch`: the token typed in Settings, else the built-in one.
+    var mapKeys: MapImage.Keys {
+        let typed = mapboxToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        return MapImage.Keys(mapbox: typed.isEmpty ? Self.bundledMapboxToken : typed, google: googleMapsKey)
+    }
     static func load() -> SurveySettings {
         guard let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(SurveySettings.self, from: d) else { return SurveySettings() }
         return s

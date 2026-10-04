@@ -91,7 +91,7 @@ extension InfoPageWide {
             VStack(alignment: .leading, spacing: 8) {
                 SiteMapPreview(gps: text("gps"), zoom: Binding(get: { mapZoom }, set: { job.values["mapZoom"] = .text(String($0)) }),
                                crop: Binding(get: { mapCrop }, set: { job.values[MapCrop.key] = .text($0.text) }),
-                               googleKey: model.settings.googleMapsKey)
+                               keys: model.settings.mapKeys)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย")
                         .font(.footnote).foregroundStyle(Home.muted).fixedSize(horizontal: false, vertical: true)

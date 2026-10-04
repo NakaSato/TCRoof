@@ -119,7 +119,7 @@ extension SitePageWide {
     }
 
     @ViewBuilder var emptyButtons: some View {
-        Button { fetchGoogle() } label: { Label("Google Maps", systemImage: "map").frame(minHeight: 36) }.buttonStyle(.borderedProminent)
+        Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียม", systemImage: "map").frame(minHeight: 36) }.buttonStyle(.borderedProminent)
         Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(.bordered)
     }
 

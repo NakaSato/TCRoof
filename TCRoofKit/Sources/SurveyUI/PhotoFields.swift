@@ -11,7 +11,7 @@ struct PhotoField: View {
     let jobID: UUID
     var label: String = ""
     var height: CGFloat = 220
-    /// When set, offers "Google Maps" to fill the frame with a satellite picture of this location.
+    /// When set, offers "แผนที่ดาวเทียม" to fill the frame with a satellite picture of this location.
     var mapGPS: String? = nil
     @Environment(SurveyModel.self) private var model
     @State private var fetchingMap = false
@@ -53,7 +53,7 @@ struct PhotoField: View {
                 Menu {
                     if UIImagePickerController.isSourceTypeAvailable(.camera) { Button { showCamera = true } label: { Label("ถ่ายใหม่", systemImage: "camera") } }
                     Button { showPicker = true } label: { Label("เลือกจากคลังภาพ", systemImage: "photo") }
-                    if mapGPS != nil { Button { fetchMap() } label: { Label("ดึงใหม่จาก Google Maps", systemImage: "map") } }
+                    if mapGPS != nil { Button { fetchMap() } label: { Label("ดึงใหม่จากแผนที่ดาวเทียม", systemImage: "map") } }
                     Button(role: .destructive) { photo = nil } label: { Label("ลบภาพ", systemImage: "trash") }
                 } label: {
                     Image(systemName: "ellipsis.circle.fill").font(.title2).symbolRenderingMode(.palette)
@@ -70,7 +70,7 @@ struct PhotoField: View {
 
     @ViewBuilder var mapButton: some View {
         if mapGPS != nil {
-            Button { fetchMap() } label: { Label("Google Maps", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(.bordered)
+            Button { fetchMap() } label: { Label("แผนที่ดาวเทียม", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(.bordered)
         }
     }
 

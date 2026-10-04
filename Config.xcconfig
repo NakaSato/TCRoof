@@ -2,4 +2,6 @@
 // The GISTDA API key comes from the git-ignored Secrets.xcconfig (copy Secrets.example.xcconfig); without it the key is empty
 // and the A4 GISTDA lookup asks for one in Settings.
 GISTDA_API_KEY =
+// Mapbox token for satellite site pictures, also from Secrets.xcconfig; without it the app asks in Settings or uses Google / Apple.
+MAPBOX_ACCESS_TOKEN =
 #include? "Secrets.xcconfig"

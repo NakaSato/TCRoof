@@ -253,7 +253,7 @@ extension SitePageWide {
 
     var pictureMenu: some View {
         Menu {
-            Button { fetchGoogle() } label: { Label("Google Maps ตามพิกัด A1", systemImage: "map") }
+            Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียมตามพิกัด A1", systemImage: "map") }
             Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo") }
             if photo != nil {
                 Button(role: .destructive) { job.values["siteMap"] = nil; job.values[SiteShapes.sourceKey] = nil; job.values[SiteShapes.scaleKey] = nil } label: {

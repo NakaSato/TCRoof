@@ -299,7 +299,7 @@ struct SitePageWide: View {
             let narrow = width < 600
             let stack = narrow ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
             stack {
-                sourceButton("Google Maps", "ภาพดาวเทียมตามพิกัด A1", icon: "source-google", symbol: "map", on: source == "google") { fetchGoogle() }
+                sourceButton("แผนที่ดาวเทียม", "ภาพดาวเทียมตามพิกัด A1", icon: "source-google", symbol: "map", on: source == "google") { fetchGoogle() }
                 sourceButton("อัปโหลดภาพจากโดรน", "JPG ภาพมุมตรง (Nadir)", icon: "source-drone", symbol: "camera.aperture", on: source == "drone") { pickDrone = true }
             }
         }

@@ -30,13 +30,15 @@ struct SurveySettingsView: View {
                     Text("ใช้คิด W/แผง → kWp ในภาพสถานที่ติดตั้ง (A2) ข้อมูลจาก datasheet ที่แนบไว้ในแอป")
                 }
                 Section {
+                    SecureField("Mapbox access token", text: $s.mapboxToken)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
                     SecureField("Google Maps API key (Maps Static API)", text: $s.googleMapsKey)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                     Stepper(value: $s.mapZoom, in: 15...21) {
                         LabeledContent("ระดับซูม", value: "\(s.mapZoom)  (กว้างประมาณ \(Int(MapImage.metersAcross(lat: 15, zoom: s.mapZoom).rounded())) ม.)")
                     }
                 } header: { Text("ภาพสถานที่ติดตั้งจากแผนที่") } footer: {
-                    Text("ปุ่ม \"Google Maps\" ในกรอบภาพสถานที่ติดตั้ง / ภาพมุมสูง ดึงภาพดาวเทียมตรงพิกัด GPS ของงาน ใส่ key ของ Maps Static API เพื่อใช้ภาพ Google ถ้าเว้นว่างจะใช้ภาพดาวเทียมของ Apple Maps แทน")
+                    Text("ปุ่ม \"แผนที่ดาวเทียม\" ในกรอบภาพสถานที่ติดตั้ง / ภาพมุมสูง ดึงภาพดาวเทียมตรงพิกัด GPS ของงาน ใช้ภาพดาวเทียม Mapbox เป็นหลัก ถ้าไม่มี token หรือ Mapbox ไม่ตอบ จะใช้ Google Maps (ถ้าใส่ key ไว้) แล้วจึงใช้ภาพของ Apple Maps")
                 }
                 Section {
                     SecureField("GISTDA API key", text: $s.gistdaKey)

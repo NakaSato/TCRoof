@@ -123,7 +123,7 @@ extension SurveyModel {
     public func mapPhoto(gps: String, for job: UUID) async throws -> Photo {
         let values = self.job(job)?.values
         let zoom = values.flatMap { Int($0.text("mapZoom")) } ?? settings.mapZoom
-        let full = try await MapImage.fetch(gps: gps, zoom: zoom, googleKey: settings.googleMapsKey)
+        let full = try await MapImage.fetch(gps: gps, zoom: zoom, keys: settings.mapKeys)
         let img = MapImage.crop(full, to: values.flatMap { MapCrop($0.text(MapCrop.key)) })
         guard let p = addPhoto(img, to: job, maxSide: 1600) else { throw MapImage.Failure.badResponse("บันทึกภาพไม่ได้") }
         return p

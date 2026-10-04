@@ -4,9 +4,19 @@ import MapKit
 import CoreLocation
 import TCRoofCore
 
-/// Satellite picture of the site for "ภาพสถานที่ติดตั้ง": Google Maps Static API when an API key is set,
-/// otherwise Apple Maps satellite imagery (no key needed). Same centre, zoom and framing either way.
+/// Satellite picture of the site for "ภาพสถานที่ติดตั้ง". Mapbox satellite comes first; Google Maps Static API and then
+/// Apple Maps imagery (no key needed) are used when a source has no key or doesn't answer. Same centre, zoom and framing
+/// from every source.
 enum MapImage {
+    /// Keys for the sources that need one; an empty key skips that source.
+    struct Keys: Equatable {
+        var mapbox = ""
+        var google = ""
+    }
+
+    enum Source: String, CaseIterable {
+        case mapbox = "m", google = "g", apple = "a"
+    }
     enum Failure: Error, LocalizedError {
         case noGPS, badResponse(String)
         var errorDescription: String? {
@@ -40,14 +50,35 @@ enum MapImage {
         156_543.033_92 * cos(lat * .pi / 180) * px / pow(2, Double(zoom))
     }
 
-    static func fetch(gps: String, zoom: Int, googleKey: String) async throws -> UIImage {
+    /// Sources in order of preference, each with its key: Mapbox, then Google, then Apple.
+    static func sources(_ keys: Keys) -> [(Source, String)] {
+        let mapbox = keys.mapbox.trimmingCharacters(in: .whitespacesAndNewlines)
+        let google = keys.google.trimmingCharacters(in: .whitespacesAndNewlines)
+        return [(.mapbox, mapbox), (.google, google), (.apple, "")].filter { $0.0 == .apple || !$0.1.isEmpty }
+    }
+
+    /// The picture from the first source that has it cached or answers; the last source's error when none does.
+    static func fetch(gps: String, zoom: Int, keys: Keys) async throws -> UIImage {
         guard let c = coordinate(from: gps) else { throw Failure.noGPS }
-        let key = googleKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = Cache.name(c, zoom: zoom, google: !key.isEmpty)
-        if let img = Cache.image(name) { return img }
-        let img = key.isEmpty ? try await apple(c, zoom: zoom) : try await google(c, zoom: zoom, key: key)
-        Cache.store(img, name)
-        return img
+        var failure: Error = Failure.badResponse("")
+        for (source, key) in sources(keys) {
+            let name = Cache.name(c, zoom: zoom, source: source)
+            if let img = Cache.image(name) { return img }
+            do {
+                let img: UIImage
+                switch source {
+                case .mapbox: img = try await mapbox(c, zoom: zoom, token: key)
+                case .google: img = try await google(c, zoom: zoom, key: key)
+                case .apple: img = try await apple(c, zoom: zoom)
+                }
+                Cache.store(img, name)
+                return img
+            } catch {
+                if Task.isCancelled { throw error }
+                failure = error
+            }
+        }
+        throw failure
     }
 
     /// The part of `img` inside the A1 report frame; the whole picture when there is no frame or it can't be cut.
@@ -66,8 +97,8 @@ enum MapImage {
         private static let folder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("MapImages", isDirectory: true)
 
         /// Same centre (to ~1 cm), zoom and source → same picture.
-        static func name(_ c: CLLocationCoordinate2D, zoom: Int, google: Bool) -> String {
-            String(format: "%@_%.7f_%.7f_z%d.jpg", google ? "g" : "a", c.latitude, c.longitude, zoom)
+        static func name(_ c: CLLocationCoordinate2D, zoom: Int, source: Source) -> String {
+            String(format: "%@_%.7f_%.7f_z%d.jpg", source.rawValue, c.latitude, c.longitude, zoom)
         }
 
         static func image(_ name: String) -> UIImage? {
@@ -96,6 +127,23 @@ enum MapImage {
             let dated = files.map { ($0, (try? $0.resourceValues(forKeys: keys))?.contentModificationDate ?? .distantPast) }
             for (url, _) in dated.sorted(by: { $0.1 > $1.1 }).dropFirst(maxFiles) { try? FileManager.default.removeItem(at: url) }
         }
+    }
+
+    /// Mapbox Static Images API, `satellite-v9` style. Mapbox zooms count 512-px tiles, one level less than Google's
+    /// 256-px ones for the same ground width, so `zoom - 1` frames the same area as the other sources.
+    static func mapbox(_ c: CLLocationCoordinate2D, zoom: Int, token: String) async throws -> UIImage {
+        let center = String(format: "%.6f,%.6f", c.longitude, c.latitude)
+        let path = "/styles/v1/mapbox/satellite-v9/static/pin-s+e53935(\(center))/\(center),\(zoom - 1),0/\(Int(size.width))x\(Int(size.height))@2x"
+        var u = URLComponents(string: "https://api.mapbox.com")!
+        u.path = path
+        u.queryItems = [.init(name: "access_token", value: token)]
+        let (data, resp) = try await URLSession.shared.data(from: u.url!)
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200, let img = UIImage(data: data, scale: 2) else {
+            let msg = String(data: data.prefix(300), encoding: .utf8) ?? ""
+            throw Failure.badResponse("Mapbox HTTP \(status) \(msg)".trimmingCharacters(in: .whitespaces))
+        }
+        return img
     }
 
     static func google(_ c: CLLocationCoordinate2D, zoom: Int, key: String) async throws -> UIImage {

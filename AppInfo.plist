@@ -5,5 +5,7 @@
 	<!-- merged with the generated Info.plist; the value is set in Secrets.xcconfig (git-ignored) -->
 	<key>GISTDAAPIKey</key>
 	<string>$(GISTDA_API_KEY)</string>
+	<key>MapboxAccessToken</key>
+	<string>$(MAPBOX_ACCESS_TOKEN)</string>
 </dict>
 </plist>

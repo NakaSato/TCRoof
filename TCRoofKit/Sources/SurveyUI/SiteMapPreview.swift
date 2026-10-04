@@ -11,7 +11,7 @@ struct SiteMapPreview: View {
     @Binding var gps: String
     @Binding var zoom: Int
     @Binding var crop: MapCrop
-    let googleKey: String
+    let keys: MapImage.Keys
 
     @State private var image: UIImage?
     @State private var loading = false
@@ -227,7 +227,7 @@ struct SiteMapPreview: View {
         loading = true
         defer { loading = false }
         do {
-            let img = try await MapImage.fetch(gps: gps, zoom: zoom, googleKey: googleKey)
+            let img = try await MapImage.fetch(gps: gps, zoom: zoom, keys: keys)
             guard !Task.isCancelled else { return }
             image = img; failure = nil
         } catch {

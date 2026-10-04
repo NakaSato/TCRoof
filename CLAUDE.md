@@ -42,7 +42,8 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
-- `-surveyA2 layers|fullscreen` opens A2's layers menu, or full screen with the first placed building model selected.
+- `-surveyA2 layers|fullscreen|trafo|zero` opens A2's layers menu, full screen with the first placed building model selected, or the transformer / กันย้อน symbol's editor.
+- `-surveyAutofill fill|conflict` (with `-surveyPage site` or `electrical`) writes `docs/ui/a2-a3-autofill`'s A2 symbols and a placeholder site picture: `fill` links them into A3 / B4, `conflict` gives A3 a 500 kVA transformer first. Add `-surveyA2Panel YES` on A3 to open the `ดึงจากภาพ A2` panel.
 - Survey job data is stored at `<app data container>/Documents/SolarSurvey/Jobs/<id>/job.json`, with photos in `photos/`. It can be edited while the app is stopped to seed test data; back it up first.
 
 ## Architecture

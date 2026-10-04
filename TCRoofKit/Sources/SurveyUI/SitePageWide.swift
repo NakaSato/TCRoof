@@ -100,6 +100,10 @@ struct SitePageWide: View {
             switch UserDefaults.standard.string(forKey: "surveyA2") {
             case "layers"?: showLayers = true
             case "fullscreen"?: selectedModel = models.first?.id; fullScreen = true
+            // `trafo|zero` opens that symbol's editor (docs/ui/a2-a3-autofill states 01 / 02)
+            case let k? where k == "trafo" || k == "zero":
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                if let m = marks.first(where: { $0.kind == (k == "zero" ? .zeroExport : .trafo) }) { open(.mark(m.id), at: CGPoint(x: 420, y: 300)) }
             default: break
             }
         }
@@ -135,7 +139,12 @@ struct SitePageWide: View {
     /// Metres across the picture's width; nil until known (map zoom, or a drone photo measured once).
     var metersAcross: Double? { job.values.number(SiteShapes.scaleKey).flatMap { $0 > 0 ? $0 : nil } }
 
-    func setMarks(_ a: [MapMark]) { job.values["siteMarks"] = a.isEmpty ? nil : .marks(a) }
+    /// Writes the symbols, then fills A3 / B4 from them (`SiteSync`; a deleted symbol leaves A3's data as it is).
+    func setMarks(_ a: [MapMark]) {
+        let before = marks
+        job.values["siteMarks"] = a.isEmpty ? nil : .marks(a)
+        SiteSync.push(&job, previous: before)
+    }
     func setShapes(_ a: [SiteShape]) { job.values[SiteShapes.key] = a.isEmpty ? nil : .shapes(a) }
     func setModels(_ a: [SiteModel]) { SiteModels.setModels(a, in: &job.values) }
     func setList(_ a: [String]) { job.values["siteList"] = a.isEmpty ? nil : .multi(Options.list.filter(a.contains)) }

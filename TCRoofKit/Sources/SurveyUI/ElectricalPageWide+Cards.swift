@@ -25,11 +25,14 @@ struct A3Input: View {
     var required = false
     var unit: String?
     var keyboard: UIKeyboardType = .default
+    /// The value came from the A2 picture.
+    var a2 = false
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             A3Label(text: label, required: required)
             HStack(spacing: 4) {
                 TextField("", text: $text).keyboardType(keyboard).textInputAutocapitalization(.never).autocorrectionDisabled()
+                if a2 { A2Badge() }
                 if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Home.muted) }
             }
             .inputBox(minHeight: 44, trailing: 10)
@@ -124,6 +127,7 @@ extension ElectricalPageWide {
                 HStack(spacing: 8) {
                     A3Badge(text: "PEA")
                     Text("มิเตอร์ กฟภ.").font(.system(size: 18, weight: .bold))
+                    if a2Badges.contains(.meter) { A2Badge() }
                 }
                 A3Input(label: "หมายเลขมิเตอร์", text: vText("meterNo"), required: true)
                 VStack(alignment: .leading, spacing: 3) {
@@ -180,6 +184,7 @@ extension ElectricalPageWide {
             TextField("", text: tText(i, \.kva, number: true)).keyboardType(.numberPad)
                 .font(.system(size: 17, weight: .semibold))
             Text("kVA").font(.system(size: 14)).foregroundStyle(Home.muted)
+            if a2Badges.contains(.kva(i)) { A2Badge().padding(.leading, 4) }
             Menu {
                 ForEach(Self.kvaSizes, id: \.self) { k in Button(k + " kVA") { edit(i) { $0.kva = k } } }
             } label: { Image(systemName: "chevron.down").frame(width: 36, height: 44) }
@@ -294,7 +299,11 @@ extension ElectricalPageWide {
     func breakerTotal(_ bs: [Breaker]) -> Int { bs.reduce(0) { $0 + max($1.count, 1) } }
 
     func mainName(_ i: Int) -> Binding<String> {
-        Binding(get: { job.values.text("tr\(i)_feed") }, set: { job.values["tr\(i)_feed"] = $0.isEmpty ? nil : .text($0) })
+        Binding(get: { job.values.text("tr\(i)_feed") }, set: { v in
+            let before = job
+            job.values["tr\(i)_feed"] = v.isEmpty ? nil : .text(v)
+            SiteSync.pull(&job, since: before)
+        })
     }
     func boardName(_ i: Int, _ k: Int) -> String {
         if k == 0 { let n = job.values.text("tr\(i)_feed"); return n.isEmpty ? "ตู้หลัก" : n }
@@ -361,7 +370,10 @@ extension ElectricalPageWide {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     A3Badge(text: "MDB")
-                    TextField("MDP-1", text: mainName(i)).font(.system(size: 18, weight: .bold))
+                    HStack(spacing: 6) {
+                        TextField("MDP-1", text: mainName(i)).font(.system(size: 18, weight: .bold))
+                        if a2Badges.contains(.boardName(i, 0)) { A2Badge() }
+                    }
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.3)))
@@ -375,7 +387,8 @@ extension ElectricalPageWide {
                             A3Segments(options: ["ACB", "MCCB"], selected: b.mainType) { v in editBoards(i) { $0[0].mainType = v } }
                         }
                         HStack(spacing: 8) {
-                            A3Input(label: "AT (ตั้งตัด)", text: bText(i, 0, \.at, number: true), required: true, unit: "A", keyboard: .numberPad)
+                            A3Input(label: "AT (ตั้งตัด)", text: bText(i, 0, \.at, number: true), required: true, unit: "A", keyboard: .numberPad,
+                                    a2: a2Badges.contains(.boardAT(i, 0)))
                             A3Input(label: "AF (เฟรม)", text: bText(i, 0, \.af, number: true), required: true, unit: "A", keyboard: .numberPad)
                         }
                         HStack(alignment: .bottom, spacing: 8) {

@@ -26,7 +26,13 @@ struct BackfeedPageWide: View {
 
     var index: Int? { job.modules.firstIndex { $0.id == moduleID } }
     var values: Values { index.map { job.modules[$0].values } ?? Values() }
-    func set(_ id: String, _ v: FieldValue?) { if let i = index { job.modules[i].values[id] = v } }
+    func set(_ id: String, _ v: FieldValue?) {
+        guard let i = index else { return }
+        let before = job
+        job.modules[i].values[id] = v
+        // the A2 กันย้อน symbol shows the level as MV / LV
+        if id == ZeroExport.levelKey { SiteSync.pull(&job, since: before) }
+    }
 
     var hv: Bool { ZeroExport.isHV(values) }
     var line: SingleLine { SingleLine.build(job) }

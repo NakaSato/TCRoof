@@ -134,6 +134,8 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
 /// A transformer with up to six MDB breaker sizes (A). Everything after `mdb` is new in the A3 wide page and optional,
 /// so jobs saved before it (only `kva` and `mdb`) still decode.
 public struct Transformer: Codable, Hashable, Identifiable, Sendable {
+    /// A3 holds at most five (Excel's slots).
+    public static let maxTransformers = 5
     public static let maxBoards = 6
     public var id = UUID()
     public var kva = ""

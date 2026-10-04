@@ -23,7 +23,12 @@ private struct NotificationScheduler: ViewModifier {
         content
             .task {
                 let service = NotificationService.shared
+                #if DEBUG
+                // the component gallery's screenshots run on a fresh install; no permission prompt over them
+                if UserDefaults.standard.string(forKey: "screen") != "components" { await service.requestAuthorization() }
+                #else
                 await service.requestAuthorization()
+                #endif
                 survey.onDriveSaved = { job, kinds, photos in
                     service.driveSaved(job, kinds: kinds.map(\.rawValue), photos: photos, root: survey.settings.driveRoot)
                 }

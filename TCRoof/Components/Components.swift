@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 
 // MARK: - Page chrome
 
@@ -61,44 +62,7 @@ struct HeaderLink<Destination: View>: View {
     }
 }
 
-/// Back, page title over the breadcrumb, and `trailing` (usually a `TopBarLink`), on a white bar.
-/// Pages using it hide the navigation bar.
-struct PageTopBar<Trailing: View>: View {
-    let title: String
-    /// Pages before this one, e.g. `["หน้าหลัก", "สำรวจหน้างาน"]`.
-    let trail: [String]
-    let current: String
-    var backLabel = "กลับหน้าหลัก"
-    @ViewBuilder var trailing: Trailing
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .frame(width: 44, height: 44)
-                    .secondaryButtonFrame()
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(backLabel)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.navy)
-                (Text(trail.map { "\($0) › " }.joined()) + Text(current).bold().foregroundColor(Theme.navy))
-                    .font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            }
-            Spacer(minLength: 12)
-            trailing
-        }
-        .foregroundStyle(Theme.navy)
-        .padding(.horizontal, 24).padding(.vertical, 12)
-        .frame(minHeight: 72)
-        .background(.white)
-        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
-    }
-}
-
-/// The secondary button on the right of a `PageTopBar`.
+/// The secondary button on the right of a `TCNavBar`.
 struct TopBarLink<Destination: View>: View {
     let title: String
     let systemImage: String
@@ -106,40 +70,9 @@ struct TopBarLink<Destination: View>: View {
 
     var body: some View {
         NavigationLink(destination: destination) {
-            Label(title, systemImage: systemImage)
-                .font(.system(size: 17, weight: .bold))
-                .padding(.horizontal, 16).frame(minHeight: 44)
-                .secondaryButtonFrame()
+            Label(title, systemImage: systemImage).labelStyle(TCIconTitleLabel())
         }
-        .buttonStyle(.plain)
-    }
-}
-
-extension View {
-    /// Design system `tc-btn secondary`: white, 1 pt control border, radius 8.
-    func secondaryButtonFrame() -> some View {
-        background(.white, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
-            .contentShape(RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-struct FloatingButton: View {
-    let systemImage: String
-    var accessibilityLabel: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.title2.bold())
-                .foregroundStyle(.white)
-                .frame(width: 68, height: 68)
-                .background(Theme.tealGradient, in: Circle())
-                .shadow(color: Theme.teal.opacity(0.4), radius: 10, y: 4)
-        }
-        .accessibilityLabel(accessibilityLabel)
-        .padding(28)
+        .buttonStyle(TCButtonStyle(.secondary, fullWidth: false))
     }
 }
 
@@ -155,20 +88,6 @@ struct TeamTag: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(team.color, in: RoundedRectangle(cornerRadius: 4))
-    }
-}
-
-struct StatusBadge: View {
-    let title: String
-    let color: Color
-
-    var body: some View {
-        Text(title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(color.opacity(0.12), in: Capsule())
     }
 }
 
@@ -294,42 +213,10 @@ extension JobCard where Footer == EmptyView {
     }
 }
 
-/// Tinted capsule, optionally led by a dot (team and status on the job card).
-struct DotPill: View {
-    let title: String
-    let color: Color
-    var dot = false
-
-    var body: some View {
-        HStack(spacing: 6) {
-            if dot { Circle().fill(color).frame(width: 7, height: 7) }
-            Text(title)
-        }
-        .font(.system(size: 12.5, weight: .bold)).foregroundStyle(color).lineLimit(1).fixedSize()
-        .padding(.horizontal, 10).frame(height: 24)
-        .background(color.opacity(dot ? 0.1 : 0.12), in: Capsule())
-    }
-}
-
 struct TightIconLabel: LabelStyle {
     var spacing: CGFloat
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: spacing) { configuration.icon; configuration.title }
-    }
-}
-
-struct GradientButtonLabel: View {
-    let title: String
-    let systemImage: String
-
-    var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(.white)
-            .lineLimit(1)
-            .padding(.horizontal, 18)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background(Theme.tealGradient, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -339,35 +226,6 @@ let isPhone = UIDevice.current.userInterfaceIdiom == .phone
 let cardColumns = [GridItem(.adaptive(minimum: isPhone ? 280 : 380), spacing: 16)]
 
 // MARK: - Form helpers
-
-struct FieldLabel: View {
-    let title: String
-    var required = false
-
-    var body: some View {
-        (Text(title).foregroundStyle(Theme.navy) + Text(required ? " *" : "").foregroundStyle(Theme.danger))
-            .font(.headline)
-    }
-}
-
-struct ChoiceButton: View {
-    let title: String
-    let selected: Bool
-    var tint: Color = Theme.mint
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(Theme.navy)
-                .frame(maxWidth: .infinity, minHeight: 54)
-                .background(selected ? tint : .white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(selected ? 0.2 : 0.5)))
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 struct InfoRow: View {
     let title: String

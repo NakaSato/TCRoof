@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import TCRoofCore
 
 /// iPhone settings (docs/ui/tcroof-home-iphone states/06): grouped white cards on the page colour.
@@ -10,6 +11,9 @@ struct PhoneSettingsList: View {
     @State private var sync = CloudSync.shared
     @State private var notifications = NotificationService.shared
     @Environment(\.openURL) private var openURL
+    #if DEBUG
+    @State private var showGallery = false
+    #endif
 
     var body: some View {
         ScrollView {
@@ -71,11 +75,25 @@ struct PhoneSettingsList: View {
                     divider
                     row("เวอร์ชัน", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                 }
+                #if DEBUG
+                section("นักพัฒนา") {
+                    Button { showGallery = true } label: { row("คอมโพเนนต์", "ดูทุกสถานะ ›") }
+                        .buttonStyle(.plain)
+                }
+                #endif
             }
             .padding(.horizontal, 16).padding(.bottom, 30)
         }
         .font(.sarabun(16))
         .background(Theme.phonePage)
+        #if DEBUG
+        .fullScreenCover(isPresented: $showGallery) {
+            NavigationStack {
+                ComponentGallery()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("ปิด") { showGallery = false } } }
+            }
+        }
+        #endif
     }
 
     /// One switch per notification group, and a way back in when iOS has them turned off.

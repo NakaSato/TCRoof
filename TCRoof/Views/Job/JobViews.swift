@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import QuickLook
 import UniformTypeIdentifiers
@@ -77,7 +78,7 @@ struct JobDetailView: View {
                 }
             } label: {
                 HStack(spacing: 4) {
-                    StatusBadge(title: job.status.title, color: job.status.color)
+                    TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
                     Image(systemName: "chevron.down").font(.caption).foregroundStyle(job.status.color)
                 }
             }

@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import FirebaseCore
 
@@ -91,7 +92,7 @@ struct RootView: View {
 /// Opens one screen directly for simulator checks: `simctl launch <device> com.tcroof.internal -screen plan`.
 struct DebugScreen: View {
     static let requested = UserDefaults.standard.string(forKey: "screen")
-    static let screens: Set = ["survey", "plan", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa"]
+    static let screens: Set = ["survey", "plan", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -110,6 +111,7 @@ struct DebugScreen: View {
         case "log": if let log = job?.logs.first { InstallLogDetailView(log: log) }
         case "icl": if let job { InspectionView(job: job) }
         case "pwa": SolarSurveyEntryView()
+        case "components": ComponentGallery(only: Optional(UserDefaults.standard.integer(forKey: "gallerySection")).flatMap { $0 == 0 ? nil : $0 })
         default: EmptyView()
         }
     }

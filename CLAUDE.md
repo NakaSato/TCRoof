@@ -42,6 +42,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
+- `-screen components` opens `ComponentGallery` (also in Settings › นักพัฒนา in DEBUG builds); add `-gallerySection 1…9` to show one board section of `docs/ui/components`.
 - `-surveyA2 layers|fullscreen|trafo|zero` opens A2's layers menu, full screen with the first placed building model selected, or the transformer / กันย้อน symbol's editor.
 - `-surveyAutofill fill|conflict` (with `-surveyPage site` or `electrical`) writes `docs/ui/a2-a3-autofill`'s A2 symbols and a placeholder site picture: `fill` links them into A3 / B4, `conflict` gives A3 a 500 kVA transformer first. Add `-surveyA2Panel YES` on A3 to open the `ดึงจากภาพ A2` panel.
 - Survey job data is stored at `<app data container>/Documents/SolarSurvey/Jobs/<id>/job.json`, with photos in `photos/`. It can be edited while the app is stopped to seed test data; back it up first.
@@ -51,6 +52,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 **App target (`TCRoof/`)** handles Google sign-in (`Auth/`), SwiftData models, Firestore sync (`Sync/CloudSync.swift`) and the non-survey screens. Firestore access is limited by `firestore.rules` (Firebase project `tcroof-1564c`): only accounts with a `members/<email>` document, and only the collections the app syncs, so a newly synced collection needs a rule. It hosts the survey module via `Views/Survey/` (`SolarSurveyEntry`, `PWASurveyLink`).
 
 **`TCRoofKit` Swift package** holds all survey work, layered as follows:
+- `TCRoofUI`: the design system shared by the app and the survey module (`docs/ui/components`). `Theme` tokens (light and dark), `Space` / `Radius` / `TypeScale`, `Font.sarabun`, and `TC*` components by board section, plus the DEBUG `ComponentGallery`. It has no dependencies, so it type-checks in seconds: `xcrun swiftc -typecheck -D DEBUG -sdk $(xcrun --sdk iphonesimulator --show-sdk-path) -target arm64-apple-ios17.0-simulator -module-name TCRoofUI $(find Sources/TCRoofUI -name '*.swift')` from `TCRoofKit/`. New screens build from these components; colours come from `Theme`, never hex literals in views.
 - `TCRoofCore`: pure values and rules, no UI.
   - `Models.swift`: `Job`, `SurveyModule`, `Values` / `FieldValue`, `Transformer` / `Board` / `Breaker`.
   - `Schema.swift`: every page and section as `ModuleSpec` / `GroupSpec` / `FieldSpec` with field ids.

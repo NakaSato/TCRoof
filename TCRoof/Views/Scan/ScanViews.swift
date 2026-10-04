@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import PhotosUI
 import VisionKit
@@ -42,7 +43,8 @@ struct ScanJobListView: View {
         }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
-            FloatingButton(systemImage: "barcode.viewfinder", accessibilityLabel: "สแกนอุปกรณ์") { showPicker = true }
+            TCFab("barcode.viewfinder", accessibilityLabel: "สแกนอุปกรณ์", gradient: Theme.tealGradient) { showPicker = true }
+                .tcFabPlacement(compact: isPhone)
         }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPicker, onDismiss: {

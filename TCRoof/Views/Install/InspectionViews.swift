@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 
 /// Step-by-step installation checklist (ICL), ending with customer sign-off.
@@ -184,15 +185,14 @@ private struct InspectionStepForm: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                FieldLabel(title: "\(index + 1).\(step.title)", required: true)
-                    .font(.title3)
+                TCFieldLabel("\(index + 1).\(step.title)", required: true)
                 Label(step.hint, systemImage: "info.circle")
                     .font(.subheadline)
                     .foregroundStyle(Theme.muted)
 
                 if step.needsInstrument {
                     VStack(alignment: .leading, spacing: 8) {
-                        FieldLabel(title: "Serial No. เครื่องวัด", required: true)
+                        TCFieldLabel("Serial No. เครื่องวัด", required: true)
                         TextField("ระบุหมายเลขเครื่องวัด", text: $inspection.results[index].instrumentSerial)
                             .textFieldStyle(OutlinedFieldStyle())
                             .textInputAutocapitalization(.characters)
@@ -201,20 +201,13 @@ private struct InspectionStepForm: View {
 
                 if let unit = step.unit {
                     VStack(alignment: .leading, spacing: 8) {
-                        FieldLabel(title: "ค่าที่วัดได้", required: true)
-                        HStack {
-                            TextField("0", text: $inspection.results[index].value)
-                                .keyboardType(.decimalPad)
-                            Text(unit).font(.title3).foregroundStyle(Theme.muted)
-                        }
-                        .padding(14)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                        TCFieldLabel("ค่าที่วัดได้", required: true)
+                        TCTextField("0", text: $inspection.results[index].value, unit: unit, keyboard: .decimalPad)
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    FieldLabel(title: "รูปถ่าย", required: true)
+                    TCFieldLabel("รูปถ่าย", required: true)
                     let photos = inspection.photos(for: step.id)
                     PhotoPickerSection(images: photos.map(\.data), onAdd: addPhoto, onDelete: { i in
                         context.delete(photos[i])
@@ -222,20 +215,19 @@ private struct InspectionStepForm: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    FieldLabel(title: "ผลการตรวจ", required: true)
+                    TCFieldLabel("ผลการตรวจ", required: true)
                     HStack(spacing: 16) {
-                        ChoiceButton(title: "ผ่าน", selected: inspection.results[index].passed == true) {
+                        TCChoiceChip("ผ่าน", selected: inspection.results[index].passed == true) {
                             inspection.results[index].passed = true
                         }
-                        ChoiceButton(title: "ไม่ผ่าน", selected: inspection.results[index].passed == false,
-                                     tint: Theme.danger.opacity(0.25)) {
+                        TCChoiceChip("ไม่ผ่าน", selected: inspection.results[index].passed == false, negative: true) {
                             inspection.results[index].passed = false
                         }
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    FieldLabel(title: "หมายเหตุ")
+                    TCFieldLabel("หมายเหตุ")
                     TextField("รายละเอียดเพิ่มเติม / สิ่งที่ต้องแก้ไข", text: $inspection.results[index].note, axis: .vertical)
                         .lineLimit(2...6)
                         .textFieldStyle(OutlinedFieldStyle())
@@ -276,14 +268,14 @@ private struct InspectionSignOff: View {
                 .cardStyle(padding: 8)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    FieldLabel(title: "ชื่อผู้รับงาน (ลูกค้า)", required: true)
+                    TCFieldLabel("ชื่อผู้รับงาน (ลูกค้า)", required: true)
                     TextField("ชื่อ-นามสกุล", text: $inspection.customerName)
                         .textFieldStyle(OutlinedFieldStyle())
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        FieldLabel(title: "ลายมือชื่อผู้รับงาน", required: true)
+                        TCFieldLabel("ลายมือชื่อผู้รับงาน", required: true)
                         Spacer()
                         Button("ล้าง") { inspection.signature = nil }.disabled(inspection.signature == nil)
                     }

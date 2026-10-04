@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 
 /// Notifications: full screen on iPhone, the bell's popover on iPad (`large`). Filter chips, today / yesterday / earlier
 /// groups, compact rows. Rows have no buttons; tapping one does its action and marks it read.

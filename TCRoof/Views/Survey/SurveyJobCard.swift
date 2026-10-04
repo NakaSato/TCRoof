@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import CoreLocation
 import TCRoofCore
@@ -53,7 +54,7 @@ struct SurveyJobCard<Footer: View>: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
-            DotPill(title: "ทีม \(job.team.rawValue)", color: job.team.color, dot: true)
+            TCStatusChip("ทีม \(job.team.rawValue)", fill: job.team.color.opacity(0.1), text: job.team.color, dot: true)
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Theme.muted)
@@ -63,7 +64,7 @@ struct SurveyJobCard<Footer: View>: View {
     private var codeRow: some View {
         HStack(spacing: 8) {
             Text(job.code).font(.caption.bold()).foregroundStyle(Theme.inkMuted)
-            DotPill(title: job.status.title, color: job.status.color)
+            TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
         }
     }
 

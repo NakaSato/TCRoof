@@ -134,17 +134,19 @@ public struct MapMark: Codable, Hashable, Identifiable, Sendable {
     public var kind: MarkKind
     public var x: Double
     public var y: Double
-    /// Rating shown under the symbol: kVA for a transformer, AT for an MDB.
+    /// Rating shown under the symbol: kVA for a transformer, AT for an MDB; "MV" / "LV" for a กันย้อน symbol (empty = MV).
     public var value: String = ""
     /// Name written on the picture ("TX 1", "หลังคาถังน้ำใส 1"); empty uses the kind's default.
     public var label: String = ""
     /// The section this point belongs to: a B3 water module's water point (`WaterPoint`). nil for A2's own symbols.
     public var module: UUID? = nil
-    public init(id: UUID = UUID(), kind: MarkKind, x: Double, y: Double, value: String = "", label: String = "", module: UUID? = nil) {
+    /// The A3 entry this transformer / MDB fills (`SiteSync`): "tr:<Transformer.id>" or "bd:<Board.id>". nil until the first sync.
+    public var link: String? = nil
+    public init(id: UUID = UUID(), kind: MarkKind, x: Double, y: Double, value: String = "", label: String = "", module: UUID? = nil, link: String? = nil) {
         self.id = id; self.kind = kind; self.x = min(max(x, 0), 1); self.y = min(max(y, 0), 1); self.value = value; self.label = label
-        self.module = module
+        self.module = module; self.link = link
     }
-    enum CodingKeys: String, CodingKey { case id, kind, x, y, value, label, module }
+    enum CodingKeys: String, CodingKey { case id, kind, x, y, value, label, module, link }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
@@ -153,6 +155,7 @@ public struct MapMark: Codable, Hashable, Identifiable, Sendable {
         value = try c.decodeIfPresent(String.self, forKey: .value) ?? ""
         label = try c.decodeIfPresent(String.self, forKey: .label) ?? ""
         module = try c.decodeIfPresent(UUID.self, forKey: .module)
+        link = try c.decodeIfPresent(String.self, forKey: .link)
     }
     /// "800 kVA", "1250 AT", or "" when there is nothing to show.
     public var rating: String {
@@ -185,7 +188,8 @@ public enum SiteMarks {
             if m.kind == .roofLabel { return nameTag(name.isEmpty ? "หลังคา" : name, at: c, size: R * 1.05, color: m.kind.color) }
             if m.kind == .office { return nameTag(name.isEmpty ? "Site Office" : name, at: c, size: R * 1.05, color: m.kind.color) }
             let inside = m.kind == .trafo || m.kind == .mdb
-            var o = symbol(m.kind, at: c, radius: R, text: inside ? (name.isEmpty ? defaultLabel(m, in: marks) : name) : nil)
+            let text = inside ? (name.isEmpty ? defaultLabel(m, in: marks) : name) : m.kind == .zeroExport ? zeroExportLine(m) : nil
+            var o = symbol(m.kind, at: c, radius: R, text: text)
             if !inside && !name.isEmpty {   // the engineer's own name above the symbol
                 o += nameTag(name, at: Pt(c.x, c.y - R * 1.9), size: R * 0.7, color: m.kind.color)
             }
@@ -206,6 +210,11 @@ public enum SiteMarks {
         let b = Box(c.x - w / 2, c.y - h / 2, w, h)
         return [.rect(b, stroke: color, fill: .white, width: max(0.6, fs * 0.1)),
                 .text(s, at: c, size: fs, color: color, align: .center)]
+    }
+
+    /// The third line of a กันย้อน symbol: "MV" or "LV".
+    public static func zeroExportLine(_ m: MapMark) -> String {
+        m.value.trimmingCharacters(in: .whitespaces).uppercased() == "LV" ? "LV" : "MV"
     }
 
     /// Name shown on the picture when the engineer hasn't typed one: "TX 1", "MDB-2", "INV"…
@@ -236,7 +245,7 @@ public enum SiteMarks {
     public static let ink = RGBA(hex: 0x1A1A1A)
 
     /// One symbol of outer radius `R`, drawn as vectors from the design's icons (docs/ui/survey-a2/icons/svg/symbols:
-    /// 34-unit box, circle r 15). `text` replaces the name inside a transformer / MDB ("TX 1", "MDP-1").
+    /// 34-unit box, circle r 15). `text` replaces the name inside a transformer / MDB ("TX 1", "MDP-1"), or a กันย้อน's "MV" / "LV".
     public static func symbol(_ k: MarkKind, at c: Pt, radius R: Double, text: String? = nil) -> [DrawOp] {
         let u = R / 15, col = k.color
         // SVG coordinates, centre (17, 17)
@@ -260,7 +269,7 @@ public enum SiteMarks {
         case .meter:
             return [circle(15, fill: col, stroke: .white, width: 1.3), label("PEA", 15.7, 7, .white, bold: true), label("METER", 23.3, 7, .white, bold: true)]
         case .zeroExport:
-            return [circle(15, fill: .white, stroke: col, width: 1.6), label("ZERO", 12.8, 5.6, col), label("EXPORT", 19, 5.6, col), label("MV", 25.2, 5.6, col)]
+            return [circle(15, fill: .white, stroke: col, width: 1.6), label("ZERO", 12.8, 5.6, col), label("EXPORT", 19, 5.6, col), label(text ?? "MV", 25.2, 5.6, col)]
         case .trafo, .mdb:
             let s = text ?? (k == .trafo ? "TX" : "MDB"), size = fitted(s, k == .trafo ? 9 : 8.5)
             return [circle(15, fill: .white, stroke: col, width: 1.3), .text(s, at: c, size: size * u, color: ink, align: .center)]

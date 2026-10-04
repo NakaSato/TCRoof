@@ -7,11 +7,38 @@ import PDFReport
 import DriveSync
 
 #if DEBUG
+extension JobEditorView {
+    /// `-surveyAutofill fill|conflict` writes docs/ui/a2-a3-autofill's A2 symbols (PEA meter, TX 1 630 kVA, MDP-1 800 AT, กันย้อน MV)
+    /// into the opened job, linked and filled into A3 / B4 for `fill`; `conflict` first gives A3 one transformer of 500 kVA and leaves them for A3 to link.
+    func seedAutofill() {
+        guard let state = UserDefaults.standard.string(forKey: "surveyAutofill") else { return }
+        job.values["trafos"] = state == "conflict" ? .transformers([Transformer(kva: "500")]) : nil
+        for i in 0..<Transformer.maxTransformers { job.values["tr\(i)_feed"] = nil }
+        if let k = job.modules.firstIndex(where: { $0.type == .backfeed }) { job.modules[k].values[ZeroExport.levelKey] = nil }
+        job.values["siteMarks"] = .marks([
+            MapMark(kind: .meter, x: 0.86, y: 0.08),
+            MapMark(kind: .zeroExport, x: 0.86, y: 0.2, value: "MV"),
+            MapMark(kind: .trafo, x: 0.78, y: 0.72, value: "630", label: "TX 1"),
+            MapMark(kind: .mdb, x: 0.62, y: 0.95, value: "800", label: "MDP-1"),
+        ])
+        if job.values.photo("siteMap") == nil {
+            // a plain green site picture so A2 has a stage to draw on
+            let img = UIGraphicsImageRenderer(size: CGSize(width: 1600, height: 1000)).image { ctx in
+                UIColor(red: 0.42, green: 0.55, blue: 0.36, alpha: 1).setFill(); ctx.fill(CGRect(x: 0, y: 0, width: 1600, height: 1000))
+                UIColor(white: 0.78, alpha: 1).setFill(); ctx.fill(CGRect(x: 1180, y: 0, width: 140, height: 1000))
+            }
+            job.values["siteMap"] = model.addPhoto(img, to: job.id).map { .photo($0) }
+        }
+        if state == "fill" { SiteSync.push(&job) }
+    }
+}
+
 /// Launch-argument helpers for simulator checks: open a page, and write wide pages offscreen to Documents.
 extension JobEditorView {
     /// `-surveyPage site` opens A2, `electrical` A3, `sld` the single line diagram, `inverter` the first B2, `panels` the first B1, `flood` A4,
     /// `water` the first B3, `backfeed` the first B4, `fts` the first B5, `roof` the first C1, `tank` the first D1, `final` E1.
     func openDebugPage() {
+        seedAutofill()
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
         case "site": select(.site)

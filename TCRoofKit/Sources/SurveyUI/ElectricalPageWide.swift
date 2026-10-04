@@ -29,6 +29,8 @@ struct ElectricalPageWide: View {
     @State var moreMeter = false
     @State var confirmRemove: Int?
     @State var editBreaker: BreakerEdit?
+    /// The `ดึงจากภาพ A2` panel.
+    @State var showA2 = false
 
     // MARK: layout (points at 100 %)
 
@@ -63,6 +65,12 @@ struct ElectricalPageWide: View {
             card.frame(maxHeight: .infinity)
         }
         .foregroundStyle(Home.navy)
+        // marks placed on A2 (or before links existed) fill this page's empty fields
+        .onAppear { SiteSync.push(&job) }
+        #if DEBUG
+        // `-surveyA2Panel YES` opens the ดึงจากภาพ A2 panel for simulator checks
+        .task { if UserDefaults.standard.bool(forKey: "surveyA2Panel") { try? await Task.sleep(nanoseconds: 600_000_000); showA2 = true } }
+        #endif
         .onChange(of: request) { _, i in
             guard let i else { return }
             request = nil
@@ -116,7 +124,7 @@ struct ElectricalPageWide: View {
                     Spacer(minLength: 4)
                     diagramButton
                 }
-                matchChip
+                a2Button
             }
             .padding(.bottom, 8)
         } else {
@@ -124,7 +132,7 @@ struct ElectricalPageWide: View {
                 Text("ผังการจ่ายไฟ").font(.system(size: 22, weight: .bold))
                 Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Home.muted).lineLimit(1)
                 Spacer(minLength: 8)
-                matchChip
+                a2Button
                 diagramButton
             }
             .padding(.bottom, 10)
@@ -140,24 +148,6 @@ struct ElectricalPageWide: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("สร้าง Single Line Diagram").accessibilityHint("เปิดแผนภาพเส้นเดียวที่สร้างจากข้อมูลสำรวจ")
-    }
-
-    /// Green when the transformer / MDB count matches the symbols on the A2 picture, orange with the difference otherwise.
-    @ViewBuilder var matchChip: some View {
-        let marks = job.values.marks("siteMarks")
-        let tx = marks.filter { $0.kind == .trafo }.count, mdb = marks.filter { $0.kind == .mdb }.count
-        let myTx = (0..<trafos.count).filter { Schema.transformerPresent(job.values, $0) }.count
-        let myMdb = (0..<trafos.count).map { i in boards(i).filter { !$0.at.trimmingCharacters(in: .whitespaces).isEmpty }.count }.reduce(0, +)
-        if tx + mdb + myTx + myMdb > 0 {
-            let ok = tx == myTx && mdb == myMdb
-            let diff = [tx == myTx ? nil : "หม้อแปลง A2 \(tx) / A3 \(myTx)", mdb == myMdb ? nil : "MDB A2 \(mdb) / A3 \(myMdb)"].compactMap { $0 }.joined(separator: " · ")
-            Text(ok ? "ตรงกับภาพ A2 ✓" : "ไม่ตรงกับภาพ A2")
-                .font(.system(size: 14, weight: .bold)).lineLimit(1)
-                .foregroundStyle(ok ? Home.ok : Home.pending)
-                .padding(.horizontal, 14).frame(minHeight: 36)
-                .accessibilityLabel(ok ? "ตรงกับภาพ A2" : "ไม่ตรงกับภาพ A2 " + diff)
-                .background((ok ? Home.mint.opacity(0.4) : Home.pending.opacity(0.12)), in: Capsule())
-        }
     }
 
     // MARK: zoomable canvas
@@ -290,7 +280,7 @@ struct ElectricalPageWide: View {
 
     var addTransformerButton: some View {
         Group {
-            if trafos.count < 5 {
+            if trafos.count < Transformer.maxTransformers {
                 Button { add() } label: {
                     Label("เพิ่มหม้อแปลง", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Home.primary)
                         .frame(maxWidth: .infinity, minHeight: 56)
@@ -308,7 +298,12 @@ struct ElectricalPageWide: View {
 
     // MARK: data
 
-    func setTrafos(_ a: [Transformer]) { job.values["trafos"] = a.isEmpty ? nil : .transformers(a) }
+    /// Writes the transformers, and the symbols linked to them on A2 take the new kVA / AT.
+    func setTrafos(_ a: [Transformer]) {
+        let before = job
+        job.values["trafos"] = a.isEmpty ? nil : .transformers(a)
+        SiteSync.pull(&job, since: before)
+    }
 
     func edit(_ i: Int, _ body: (inout Transformer) -> Void) {
         var a = trafos
@@ -335,7 +330,7 @@ struct ElectricalPageWide: View {
 
     func add() {
         var a = trafos
-        guard a.count < 5 else { return }
+        guard a.count < Transformer.maxTransformers else { return }
         a.append(Transformer())
         setTrafos(a)
         withAnimation { open = a.count - 1 }

@@ -193,7 +193,7 @@ extension SitePageWide {
     func markHandles(_ r: CGRect) -> some View {
         ForEach(marks) { m in
             Circle().fill(Color.white.opacity(0.001))
-                .overlay { if editing == .mark(m.id) { Circle().stroke(Color.yellow, lineWidth: 3).padding(4) } }
+                .overlay { if editing == .mark(m.id) { Circle().stroke(m.kind == .zeroExport ? Home.warn : Color.yellow, lineWidth: 3).padding(4) } }
                 .frame(width: 44, height: 44)
                 .position(point(ShapePoint(m.x, m.y), in: r))
                 .onTapGesture { open(.mark(m.id), at: point(ShapePoint(m.x, m.y), in: r)) }

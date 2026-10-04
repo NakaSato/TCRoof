@@ -20,20 +20,16 @@ extension SitePageWide {
                 set: { v in var a = marks; if let i = a.firstIndex(where: { $0.id == id }) { a[i][keyPath: key] = v; setMarks(a) } })
     }
 
-    func markEditor(_ m: MapMark) -> some View {
+    @ViewBuilder func markEditor(_ m: MapMark) -> some View {
+        if m.kind == .zeroExport { zeroExportEditor(m) } else { ratingEditor(m) }
+    }
+
+    func ratingEditor(_ m: MapMark) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(m.kind.paletteTitle).font(.headline)
                 Spacer()
-                if m.kind == .trafo || m.kind == .mdb {
-                    Button("ดึงจาก A3") {
-                        // the n-th transformer / MDB on the picture takes the n-th one's size from A3
-                        let same = marks.filter { $0.kind == m.kind }
-                        let before = Array(same.prefix(same.firstIndex { $0.id == m.id } ?? 0))
-                        markBinding(m.id, \.value).wrappedValue = SiteMarks.suggestedValue(m.kind, existing: before, trafos: job.values.transformers("trafos"))
-                    }
-                    .font(.system(size: 13)).frame(minHeight: 44)
-                }
+                if m.kind == .trafo || m.kind == .mdb { a3LinkChip(m) }
             }
             HStack(alignment: .bottom, spacing: 10) {
                 editorField("ชื่อบนภาพ", text: markBinding(m.id, \.label), placeholder: SiteMarks.defaultLabel(m, in: marks))
@@ -41,6 +37,65 @@ extension SitePageWide {
                     editorField("ขนาด", text: markBinding(m.id, \.value), placeholder: "0", unit: unit, numeric: true).frame(width: 130)
                 }
             }
+            editorButtons { change { a, _ in a.removeAll { $0.id == m.id } }; editing = nil }
+        }
+        .padding(16).frame(width: 340)
+        .foregroundStyle(Home.navy)
+    }
+
+    /// `↔ A3 TX 1` once the symbol fills A3; tapping it takes A3's values again (the old `ดึงจาก A3`).
+    func a3LinkChip(_ m: MapMark) -> some View {
+        let title = SiteSync.linkTitle(job, mark: m) ?? "A3"
+        return Button { SiteSync.keepA3(&job, mark: m.id) } label: {
+            linkChip(title).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("เชื่อมกับ \(title)").accessibilityHint("แตะเพื่อดึงค่าจาก A3")
+    }
+
+    /// Blue pill `↔ A3 TX 1` / `↔ B4`.
+    func linkChip(_ title: String) -> some View {
+        Text("↔ " + title).font(.system(size: 11.5, weight: .bold)).foregroundStyle(Home.primary).lineLimit(1)
+            .padding(.horizontal, 8).frame(height: 22)
+            .background(Home.primarySoft, in: Capsule())
+    }
+
+    static let zeroExportChoices: [(value: String, title: String, detail: String)] = [
+        ("MV", "ZERO EXPORT MV", "กันย้อนฝั่งแรงดันกลาง (22/33 kV)"),
+        ("LV", "ZERO EXPORT LV", "กันย้อนฝั่งแรงดันต่ำ (400/230 V)"),
+    ]
+
+    /// กันย้อน: MV or LV, written on the symbol and sent to B4's level.
+    func zeroExportEditor(_ m: MapMark) -> some View {
+        let value = markBinding(m.id, \.value)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("กันย้อน · ข้อความบนภาพ").font(.headline)
+                Spacer()
+                if let title = SiteSync.linkTitle(job, mark: m) { linkChip(title) }
+            }
+            ForEach(Self.zeroExportChoices, id: \.value) { c in
+                let on = value.wrappedValue.uppercased() == c.value
+                Button { value.wrappedValue = c.value } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: on ? "record.circle.fill" : "circle")
+                            .font(.system(size: 20)).foregroundStyle(on ? Home.danger : Home.borderControl)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(c.title).font(.system(size: 16, weight: .bold))
+                            Text(c.detail).font(.system(size: 12)).foregroundStyle(Home.muted)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 12).frame(minHeight: 52)
+                    .background(on ? Home.danger.opacity(0.06) : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.danger : Home.hairline, lineWidth: on ? 2 : 1))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+            Text("ส่งไป B4 กันย้อน: MV = \(ZeroExport.hv) · LV = \(ZeroExport.lv)")
+                .font(.system(size: 12)).foregroundStyle(Home.muted)
             editorButtons { change { a, _ in a.removeAll { $0.id == m.id } }; editing = nil }
         }
         .padding(16).frame(width: 340)

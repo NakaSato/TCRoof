@@ -1,0 +1,52 @@
+{
+  "template": "template/IEC62446_Test_Report_PWA.xlsx",
+  "sheetNaming": "INV {index:02d}-ก่อน / INV {index:02d}-หลัง (แม่แบบมี 2 inverter = 4 แผ่น; ถ้ามีมากกว่าให้คัดลอกแผ่น INV 02 แล้วเปลี่ยนชื่อ)",
+  "master": "แผ่น INV 01 เป็นข้อมูลหลัก — แผ่นอื่นลิงก์สูตร C3, AA25, AA26, E29, E30, AA30 มาจาก INV 01 (หมายเหตุใน AD8) ถ้าเขียนค่าตรงลงช่องเหล่านี้จะทับสูตร",
+  "printArea": "A1:AB35, A4 แนวนอน",
+  "stringColumns": {
+    "range": "E..X",
+    "slot": "slot n → คอลัมน์ที่ (4 + n) → E=1 … X=20",
+    "mpptHeader": "แถว 6: MPPT k merge 2 คอลัมน์ (E:F=1, G:H=2, … W:X=10)",
+    "emptySlot": "ช่องที่ไม่มีสตริงเว้นว่างทั้งคอลัมน์"
+  },
+  "header": {
+    "C1": "ชื่อโครงการ + ชื่อตาราง (ค่าคงที่, merge C1:Z2)",
+    "C3": "site.titleLine (merge C3:Z3)",
+    "AA4": "module.powerW",
+    "E5": "Inverter {index} ({ratedKW} kW)  (merge E5:N5)",
+    "O5": "S/N : {serial}  (merge O5:X5)"
+  },
+  "rowsPerString": {
+    "8": "moduleBrand",
+    "9": "moduleCount",
+    "10": "optimizerCount",
+    "12": "before.polarity  → 'P' (ฟอนต์ Wingdings = ✓)",
+    "13": "before.irTestVoltageV → '1000V'",
+    "16": "before.voltageV",
+    "17": "after.voltageV",
+    "18": "before.currentA",
+    "19": "after.currentA"
+  },
+  "mergedRowsPerInverter": {
+    "E11": "before.continuity → 'Normal'  (E11:X11)",
+    "E14": "before.irPositiveEarth/irNegativeEarth → 'Normal'  (E14:X15 รวม +/− ในช่องเดียว)",
+    "E20": "before.inverterFunctional  (E20:X20)",
+    "E21": "after.inverterFunctional  (E21:X21)",
+    "E22": "after.performanceRatio  (แผ่นหลังเท่านั้น)",
+    "E23": "after.finalYieldKWhPerKWp",
+    "E24": "after.dailyEnergyKWh",
+    "E25": "after.sevenDayEnergyKWh",
+    "E26": "after.systemEfficiency (รูปแบบ %)",
+    "E27": "'เอกสารแนบ' (ภาพความร้อน E27:X28)",
+    "E29": "conditions.*.ambientC → '34.3 (ºC)'",
+    "E30": "conditions.*.irradianceWm2 → '1022 (W/m²)'",
+    "D31": "after.remark"
+  },
+  "notesColumn": {
+    "AA9": "สูตร =SUM(E9:X9)*$AA$4 → W (kWp ติดตั้งของ INV × 1000)",
+    "AA25": "'Solar irradiance (เฉลี่ย) = {avgIrradiationKWhM2Day} kWh/m2'",
+    "AA26": "'Array Temperature = {arrayTempC} (ºC)'",
+    "AA30": "conditions.*.time → '13.00 น.'"
+  },
+  "passFailColumns": { "Y": "ผ่าน", "Z": "ไม่ผ่าน", "note": "ฟอร์มเดิมไม่มีค่า — เสนอให้แอปคำนวณจากเกณฑ์แล้วติ๊กให้" }
+}

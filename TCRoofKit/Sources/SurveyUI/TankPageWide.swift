@@ -49,6 +49,14 @@ struct TankPageWide: View {
     @State var rowCount = 3
     @State var rowSpacing = 4.0
     @State var deleteAsk = false
+    /// iPhone sub-step 3: `แก้แผง` (else `เลื่อนผัง`), the plan full screen and its zoom, the question before a new
+    /// layout, the max search running, the B1-C3 drawing.
+    @State var layoutEditing = false
+    @State var layoutFull = false
+    @State var layoutZoom: CGFloat = 1
+    @State var layoutAsk: LayoutRun?
+    @State var layoutSearching = false
+    @State var drawingOpen = false
 
     var gap: CGFloat { width >= 1180 ? 20 : 16 }
     static let cardWidth: CGFloat = 330
@@ -229,7 +237,10 @@ extension TankPageWide {
     /// opens a state of docs/ui/survey-d1-size/states: default, size, t64, t30, t20, above, buried, custom (typed azimuth
     /// and surface), compass, span, empty; tab2 opens sub-step 2. obst opens sub-step 2 as docs/ui/survey-d1-obstacles-iphone
     /// (obstbottom scrolled to the end, obstshade the shading view, obstrow the row question, obstfull the plan full screen, obstadded a hatch added
-    /// on site, obstdelete the delete question).
+    /// on site, obstdelete the delete question). layout opens sub-step 3 as docs/ui/survey-d1-layout-iphone with every point of
+    /// 2/4 checked and the automatic layout (layoutbottom scrolled to the end, layoutedit แก้แผง with a panel off and a table
+    /// removed, layoutask the question before จัดแผงใหม่, layoutfull the plan full screen, layoutmax หาผังแผงมากสุด,
+    /// layoutdrawing the B1-C3 sheet).
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyD1") else { return }
         update { v in
@@ -277,6 +288,32 @@ extension TankPageWide {
             case "obstfull": obsFull = true
             case "obstadded": addPoint(TankPoints.hatch)
             case "obstdelete": addPoint(TankPoints.vent); try? await Task.sleep(nanoseconds: 300_000_000); deleteAsk = true
+            default: break
+            }
+        case "layout", "layoutbottom", "layoutedit", "layoutfull", "layoutask", "layoutmax", "layoutdrawing":
+            // docs/ui/survey-d1-layout-iphone: the standard points of 2/4 all checked, sub-step 3 with its automatic layout
+            update { v in
+                v[Roof.Key.obstacles] = nil
+                TankPoints.seed(&v)
+                for o in TankPoints.points(v) { TankPoints.setStatus(&v, o.id, TankPoints.ok) }
+                for k in [TankLayout.Key.orient, TankLayout.Key.offX, TankLayout.Key.offY, TankLayout.Key.off] { v[k] = nil }
+                TankLayout.save(&v, TankLayout.auto(v), off: [])
+            }
+            tab = 3
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            switch state {
+            case "layoutedit", "layoutask":
+                layoutEditing = true
+                if let l = TankLayout.current(values) {
+                    update { v in
+                        TankLayout.toggle(&v, l.tables[2].panels[0].key)
+                        TankLayout.removeTable(&v, row: l.tables[8].row, index: l.tables[8].index)
+                    }
+                }
+                if state == "layoutask" { askLayout(.auto) }
+            case "layoutfull": layoutFull = true
+            case "layoutmax": askLayout(.max)
+            case "layoutdrawing": drawingOpen = true
             default: break
             }
         default: break

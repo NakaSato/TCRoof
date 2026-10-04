@@ -340,8 +340,8 @@ public struct TankLayout: Sendable {
     public static func snap(_ d: Double) -> Double { TankPoints.snap(d) }
 
     /// The automatic layout: columns centred, rows from the south setback (§3).
-    public static func auto(_ v: Values, base: Params = defaults()) -> Params {
-        var p = base
+    public static func auto(_ v: Values, base: Params? = nil) -> Params {
+        var p = base ?? defaults(v)
         p.offX = snap(offsetRange(v, p).x / 2)
         p.offY = 0
         return p
@@ -354,7 +354,8 @@ public struct TankLayout: Sendable {
 
     /// `หาผังแผงมากสุด`: every offset on the 5 cm grid; stage 1 counts modules without posts, stage 2 lays out the ten
     /// best with posts, as a cut column can change the order (§3a step 5). The most modules wins, then the smallest offset.
-    public static func best(_ v: Values, base: Params = defaults()) -> Params? {
+    public static func best(_ v: Values, base: Params? = nil) -> Params? {
+        let base = base ?? defaults(v)
         guard let t = TankPoints.tankSize(v) else { return nil }
         let q = turn(v), open = openings(v), r = offsetRange(v, base)
         let nx = Int((r.x / TankPoints.grid + 1e-9).rounded(.down)), ny = Int((r.y / TankPoints.grid + 1e-9).rounded(.down))
@@ -382,10 +383,16 @@ public struct TankLayout: Sendable {
         p.moduleL = m.length; p.moduleW = m.width; p.moduleKW = m.kW
         return p
     }
+    /// The standard for this tank: the measured vent height when there is one.
+    public static func defaults(_ v: Values) -> Params {
+        var p = defaults()
+        if let h = Tank.ventHeight(v) { p.ventH = h }
+        return p
+    }
     /// The stored layout's parameters, nil before the first layout.
     public static func params(_ v: Values) -> Params? {
         guard !v.text(Key.orient).isEmpty else { return nil }
-        var p = defaults()
+        var p = defaults(v)
         p.offX = v.number(Key.offX) ?? 0; p.offY = v.number(Key.offY) ?? 0
         return p
     }

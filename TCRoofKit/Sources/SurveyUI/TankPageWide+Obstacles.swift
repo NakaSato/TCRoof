@@ -6,14 +6,50 @@ import TCRoofCore
 /// D1 sub-step 2 "สิ่งกีดขวาง" on iPhone (docs/ui/survey-d1-obstacles-iphone, 390 × 844): verify on site. The tank's
 /// standard vents and hatches (`TankPoints`) are on the plan; the surveyor marks each one มีตรงแบบ / ไม่มีจริง, moves
 /// it by drag or by typed distances, and adds the ones missing from the layout. Card 1 also switches to the shading
-/// questions. The points live in `obst`, so the PDF, Excel and the iPad page keep reading them.
+/// questions. The points live in `obst`, so the PDF and Excel keep reading them. iPad shows the same cards in two columns
+/// (`padObstacleStep`).
 extension TankPageWide {
     var phoneObstacleCards: some View {
-        VStack(spacing: 12) {
+        obstacleSheets(VStack(spacing: 12) {
             phoneTabs
             obstaclePlanCard
             if !obsShade { pointCard }
+        })
+    }
+
+    /// iPad: the plan card on the left and the selected point on the right; one column in portrait.
+    @ViewBuilder var padObstacleStep: some View {
+        let next = nextButton("ถัดไป · จัดแผง ›") { withAnimation { tab = 3 } }
+        if stacked {
+            obstacleSheets(ScrollView {
+                VStack(spacing: 14) {
+                    obstaclePlanCard.frame(maxWidth: 640)
+                    if !obsShade { pointCard.frame(maxWidth: 640) }
+                    next.frame(maxWidth: 640)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 8)
+            }
+            .scrollIndicators(.hidden))
+        } else {
+            obstacleSheets(HStack(alignment: .top, spacing: gap) {
+                ScrollView { obstaclePlanCard.frame(maxWidth: 680).frame(maxWidth: .infinity) }.scrollIndicators(.hidden)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        if !obsShade { pointCard }
+                        next
+                    }
+                }
+                .scrollIndicators(.hidden)
+                .frame(width: 360)
+            }
+            .frame(maxHeight: .infinity))
         }
+    }
+
+    /// First open, the delete question and the row sheet, for both layouts.
+    func obstacleSheets<V: View>(_ content: V) -> some View {
+        content
         .onAppear(perform: openPoints)
         .confirmationDialog("ลบจุดนี้?", isPresented: $deleteAsk, titleVisibility: .visible) {
             Button("ลบจุด " + (selectedPoint?.label ?? ""), role: .destructive, action: deletePoint)
@@ -182,6 +218,7 @@ extension TankPageWide {
                 pointPicker(p)
                 field("สถานะ", required: true) { statusChoice(p) }
                 pointDistances(p)
+                if p.kind == TankPoints.vent { ventHeightField }
                 pointInfo(p)
                 field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(p) }
             }
@@ -271,6 +308,15 @@ extension TankPageWide {
             }
         }
         .id(p.id)
+    }
+
+    /// The vents' height above the roof, one value for the tank: whether panels can pass over them in จัดแผง.
+    var ventHeightField: some View {
+        field("ความสูงปล่อง", aside: "ใช้กับทุกปล่อง · ไม่วัดใช้ 1.00 ม.") {
+            // not measured: the steppers start from the 1.00 m the layout assumes; clearing the field goes back to it
+            TankStepper(value: Tank.ventHeight(values) ?? TankLayout.Params().ventH, step: 0.05, range: 0...5, label: "ความสูงปล่อง",
+                        unit: "ม.", glyph: 17) { h in update { Tank.setVentHeight(&$0, h) } }
+        }
     }
 
     /// "แนวเดียวกับ V10 · ไม่ทับจุดอื่น" in mint; an overlap or a point outside the tank in orange.

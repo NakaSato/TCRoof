@@ -148,6 +148,28 @@ final class TankLayoutTests: XCTestCase {
         XCTAssertEqual(best.offX, TankLayout.snap(best.offX)); XCTAssertEqual(best.offY, TankLayout.snap(best.offY))
     }
 
+    func testMeasuredVentHeight() {
+        var v = tank()
+        XCTAssertNil(Tank.ventHeight(v))
+        let before = TankLayout(v, params: TankLayout.auto(v))!
+        XCTAssertEqual(before.params.ventH, 1)
+        // vents 3 m high: none fits under the panels (the underside is at most 2 m), their columns go
+        Tank.setVentHeight(&v, 3)
+        XCTAssertEqual(Tank.ventHeight(v), 3)
+        let tall = TankLayout(v, params: TankLayout.auto(v))!
+        XCTAssertEqual(tall.params.ventH, 3)
+        XCTAssertEqual(tall.checks.ventsUnder, 0)
+        XCTAssertLessThan(tall.count, before.count)
+        // a stored layout reads the height too
+        TankLayout.save(&v, TankLayout.auto(v), off: [])
+        XCTAssertEqual(TankLayout.current(v)!.count, tall.count)
+        // low vents: no fewer modules than the default
+        Tank.setVentHeight(&v, 0.4)
+        XCTAssertGreaterThanOrEqual(TankLayout(v, params: TankLayout.auto(v))!.count, before.count)
+        Tank.setVentHeight(&v, -1); XCTAssertEqual(Tank.ventHeight(v), 0)
+        Tank.setVentHeight(&v, nil); XCTAssertNil(Tank.ventHeight(v))
+    }
+
     func testRowsFaceTheWallNearestSouth() {
         var v = tank(points: false)
         XCTAssertEqual(TankLayout.turn(v), 0)

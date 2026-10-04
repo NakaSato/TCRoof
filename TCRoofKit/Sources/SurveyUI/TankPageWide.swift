@@ -5,9 +5,10 @@ import TCRoofCore
 import PDFReport
 
 /// D1 clear-water tank (docs/ui/survey-d1-size): four sub-steps in a tab bar. Sub-step 1 "ขนาดถัง"
-/// is the designed page (the tank plan on the left, the tank's data on the right); sub-steps 2–4 show the section's
-/// generic groups until their designs arrive. Field ids, labels and Excel cells are unchanged; the page's own answers
-/// are hidden optional fields (`Tank.Key`). iPad portrait and iPhone use the one-column layout.
+/// is the designed page (the tank plan on the left, the tank's data on the right); sub-steps 2 "สิ่งกีดขวาง" and 3 "จัดแผง"
+/// show the iPhone designs' cards in two columns (`TankPoints`, `TankLayout`); sub-step 4 shows the section's generic
+/// group until its design arrives. Field ids, labels and Excel cells are unchanged; the page's own answers are hidden
+/// optional fields (`Tank.Key`, `TankLayout.Key`). iPad portrait and iPhone use the one-column layout.
 struct TankPageWide: View {
     @Binding var job: Job
     let moduleID: UUID
@@ -76,10 +77,17 @@ struct TankPageWide: View {
                 VStack(spacing: 14) {
                     PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
                     tabBar
-                    if tab == 1 { sizeStep } else { formStep }
+                    switch tab {
+                    case 1: sizeStep
+                    case 2: padObstacleStep
+                    case 3: padLayoutStep
+                    default: formStep
+                    }
                 }
             }
         }
+        .fullScreenCover(isPresented: $obsFull) { obstacleFullScreen }
+        .fullScreenCover(isPresented: $layoutFull) { layoutFullScreen }
         .foregroundStyle(Home.navy)
         #if DEBUG
         .task { await openDebugState() }
@@ -95,13 +103,18 @@ struct TankPageWide: View {
         let shade = spec.groups.first { $0.title == "เงาบัง" }?.completion(v) ?? Completion()
         let photos = Tank.photoCompletion(v)
         let size = Tank.sizeLabel(v)?.name ?? ""
-        let obst = v.obstacles(Roof.Key.obstacles).count
-        let panels = v.text("panelsBefore").trimmingCharacters(in: .whitespaces)
+        let checked = TankPoints.checked(v), points = TankPoints.done(v) && shade.isComplete
+        let layout = TankLayout.current(v), laid = TankLayout.done(v)
         func status(_ done: Bool, _ s: String) -> String { done ? s + " · เสร็จ" : "ยังไม่เสร็จ" }
         return [
             Step(title: "ขนาดถัง", status: status(Tank.sizeDone(v), size), done: Tank.sizeDone(v), statusOK: Tank.sizeDone(v)),
-            Step(title: "สิ่งกีดขวาง · เงาบัง", status: status(shade.isComplete, "\(obst) จุด"), done: shade.isComplete, statusOK: shade.isComplete),
-            Step(title: "จัดแผง", status: status(!panels.isEmpty, panels + " แผง"), done: !panels.isEmpty, statusOK: !panels.isEmpty),
+            // every standard point checked and the shading answered
+            Step(title: "สิ่งกีดขวาง · เงาบัง", status: points ? "\(checked.total) จุด · เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
+                    : checked.total > 0 ? "ตรวจแล้ว \(checked.n)/\(checked.total)" : "ยังไม่เสร็จ",
+                 done: points, statusOK: points),
+            // a layout whose checks all pass
+            Step(title: "จัดแผง", status: laid ? "\(layout?.count ?? 0) แผง · เสร็จ" : layout.map { "ตรวจผ่าน \($0.checks.passed)/3" } ?? "ยังไม่เสร็จ",
+                 done: laid, statusOK: laid),
             Step(title: "ภาพถ่าย", status: "บังคับ \(photos.filled)/\(photos.total)", done: photos.isComplete, statusOK: photos.isComplete),
         ]
     }
@@ -182,15 +195,9 @@ struct TankPageWide: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
     }
 
-    // MARK: sub-steps 2–4 (the section's generic groups until their designs arrive)
+    // MARK: sub-step 4 (the section's generic group until its design arrives)
 
-    var formFields: [(title: String, ids: [String])] {
-        switch tab {
-        case 2: return [("สิ่งกีดขวางบนถัง", ["obst", "plan"]), ("เงาบัง", ["shade", "shadeFrom", "shadeDir", "shadeNote"])]
-        case 3: return [("จัดแผง", ["panelsBefore", "panelsCut", "planPhoto"])]
-        default: return [("ภาพถ่าย", ["obstPhotos", "aerialPhoto", "sidePhotos"])]
-        }
-    }
+    var formFields: [(title: String, ids: [String])] { [("ภาพถ่าย", ["obstPhotos", "aerialPhoto", "sidePhotos"])] }
 
     @ViewBuilder var formStep: some View {
         if let i = index {
@@ -204,12 +211,6 @@ struct TankPageWide: View {
                                     FieldView(spec: f, values: $job.modules[i].values, jobID: job.id, moduleType: .tank, gps: job.values.text("gps"))
                                 }
                             }
-                        }
-                    }
-                    if tab < 4 && !phone {
-                        HStack {
-                            Spacer()
-                            nextButton(tab == 2 ? "ถัดไป · จัดแผง ›" : "ถัดไป · ภาพถ่าย ›") { tab += 1 }.frame(maxWidth: Self.cardWidth)
                         }
                     }
                 }

@@ -111,11 +111,33 @@ public struct TankPlan: Sendable {
         self.chips = chipList
     }
 
+    /// The iPhone plan (docs/ui/survey-d1-size-iphone, 330 × 300): the outline, the grid lines named 1… / A… and the
+    /// two totals, the north arrow at the top right. Each span stays on the full plan (`init`).
+    public static func compact(_ v: Values) -> Sketch? {
+        let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
+        guard !sx.isEmpty, !sy.isEmpty else { return nil }
+        let TW = sx.reduce(0, +), TH = sy.reduce(0, +), side = 240.0
+        let k = min(side / TW, side / TH), w = TW * k, h = TH * k
+        let ox = 30 + (side - w) / 2, oy = 30 + (side - h) / 2
+        let navy = RGBA(hex: 0x16325C), label = RGBA(hex: 0x5B6B82), grid = RGBA(hex: 0xC9D3DF)
+        var xs = [0.0]; for s in sx { xs.append(xs.last! + s) }
+        var ys = [0.0]; for s in sy { ys.append(ys.last! + s) }
+        var o: [DrawOp] = [.rect(Box(0, 0, 330, 300), stroke: nil, fill: .white), .rect(Box(ox, oy, w, h), stroke: nil, fill: .white)]
+        for x in xs.dropFirst().dropLast() { o.append(.line(Pt(ox + x * k, oy), Pt(ox + x * k, oy + h), width: 1, color: grid, dash: [3, 3])) }
+        for y in ys.dropFirst().dropLast() { o.append(.line(Pt(ox, oy + y * k), Pt(ox + w, oy + y * k), width: 1, color: grid, dash: [3, 3])) }
+        o.append(.rect(Box(ox, oy, w, h), stroke: navy, fill: nil, width: 2))
+        for (i, x) in xs.enumerated() { o.append(.text(Roof.gridName(.x, i), at: Pt(ox + x * k, oy - 10), size: 8, color: label, align: .center)) }
+        for (j, y) in ys.enumerated() { o.append(.text(Roof.gridName(.y, j), at: Pt(ox - 10, oy + y * k), size: 8, color: label, align: .center)) }
+        o.append(.text(String(format: "%.2f", TW), at: Pt(ox + w / 2, oy + h + 16), size: 9, bold: true, color: navy, align: .center))
+        o.append(.text(String(format: "%.2f", TH), at: Pt(ox + w + 16, oy + h / 2), size: 9, bold: true, color: navy, align: .center, angle: 90))
+        if let az = Tank.azimuth(v) { o += northArrow(at: Pt(298, 42), azimuth: az, radius: 13, ink: navy) }
+        return Sketch(width: 330, height: 300, ops: o)
+    }
+
     /// The design's north arrow (`d1-north-arrow`) turned by −azimuth: wall A stays on top, N points to true north.
-    public static func northArrow(at c: Pt, azimuth az: Int, radius R: Double = 12) -> [DrawOp] {
+    public static func northArrow(at c: Pt, azimuth az: Int, radius R: Double = 12, ink: RGBA = RGBA(hex: 0x111111)) -> [DrawOp] {
         let a = -Double(az) * .pi / 180, ca = cos(a), sa = sin(a), k = R / 12
         func p(_ x: Double, _ y: Double) -> Pt { Pt(c.x + (x * ca - y * sa) * k, c.y + (x * sa + y * ca) * k) }
-        let ink = RGBA(hex: 0x111111)
         return [
             .circle(c, r: R, stroke: ink, fill: .white, width: 0.9),
             .polygon([p(0, -10), p(4.5, 6), p(0, 2.5), p(-4.5, 6)], stroke: nil, fill: ink),

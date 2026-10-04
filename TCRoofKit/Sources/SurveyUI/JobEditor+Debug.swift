@@ -101,12 +101,18 @@ extension JobEditorView {
             try? await Task.sleep(nanoseconds: 1_200_000_000)
             for (free, h) in [(1366.0, 848.0), (1180.0, 636.0), (1100.0, 848.0)] {
                 let w = min(free, 1318 + 48) - 48
-                let page = TankPageWide(job: .constant(job), moduleID: id, width: w, stacked: free < 1100)
+                let page = TankPageWide(job: .constant(job), moduleID: id, width: w, stacked: free < 1100, tab: .constant(1))
                     .environment(model).padding(.horizontal, 24).padding(.vertical, 16)
                     .frame(width: free, height: h).background(Paper.page)
                 let r = ImageRenderer(content: page); r.scale = 1
                 if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("tank-\(Int(free))x\(Int(h)).png")) }
             }
+            // iPhone: the step line and sub-step 1 at 393 pt, without its scroll view (ImageRenderer leaves those blank)
+            let phone = TankPageWide(job: .constant(job), moduleID: id, width: 361, stacked: true, tab: .constant(1), phoneLayout: true)
+            let cards = VStack(spacing: 8) { PageStepBar(job: job, here: .module(id), compact: true, chip: phone.photoChip); phone.phoneSizeCards }
+                .foregroundStyle(Home.navy).environment(model).padding(16).frame(width: 393).background(Home.lockedCard)
+            let r = ImageRenderer(content: cards); r.scale = 3
+            if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("tank-phone.png")) }
         }
     }
 }

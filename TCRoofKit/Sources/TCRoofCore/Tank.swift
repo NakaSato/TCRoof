@@ -138,11 +138,12 @@ public enum Tank {
     public static func measuredAt(_ v: Values) -> Date? { ISO8601DateFormatter().date(from: v.text(Key.azimuthAt)) }
 
     /// The line under the field: how the value was found; nil when empty.
-    public static func sourceLine(_ v: Values, timeZone: TimeZone = .current) -> String? {
+    /// iPhone: `device` "iPhone" and the shorter tail "แปลนหมุนตามค่านี้".
+    public static func sourceLine(_ v: Values, timeZone: TimeZone = .current, device: String = "iPad",
+                                  tail: String = "แปลนและลูกศร N หมุนตามค่านี้") -> String? {
         guard azimuth(v) != nil else { return nil }
-        let tail = "แปลนและลูกศร N หมุนตามค่านี้"
         guard source(v) == .compass else { return "ป้อนเอง · " + tail }
-        var parts = ["วัดด้วยเข็มทิศ iPad"]
+        var parts = ["วัดด้วยเข็มทิศ " + device]
         if let a = v.number(Key.azimuthAcc) { parts.append("±\(Int(a.rounded()))°") }
         if let d = measuredAt(v) {
             var cal = Calendar(identifier: .gregorian); cal.timeZone = timeZone

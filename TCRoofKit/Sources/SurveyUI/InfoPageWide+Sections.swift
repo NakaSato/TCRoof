@@ -280,6 +280,9 @@ struct InfoPageBar: View {
     var statusAction: (() -> Void)? = nil
     /// The last page's primary button ("ขั้นสุดท้าย" / "สรุปผล · ส่งออก"), in place of "next".
     var finish: (sub: String, title: String, action: () -> Void)? = nil
+    /// iPhone: VoiceOver names for ‹ › when they step within the page (D1's sub-steps), in place of the steps either side.
+    var previousLabel: String? = nil
+    var nextLabel: String? = nil
     @Environment(SurveyModel.self) var model
     /// iPhone: `phoneBar` (docs/ui/components/iphone-bottom-bar) in place of the iPad bar.
     @Environment(\.horizontalSizeClass) var sizeClass
@@ -300,13 +303,19 @@ struct InfoPageBar: View {
         let i = steps.firstIndex { $0.page == here } ?? 0
         let name: (SurveyStep) -> String = { $0.code + " " + Self.barTitle($0) }
         let before = previous == nil ? nil : steps[safe: previousIndex ?? i - 1]
-        let back = before.map { s in BottomBar.Nav(label: "ก่อนหน้า " + name(s), action: previous) }
+        var back = before.map { s in BottomBar.Nav(label: "ก่อนหน้า " + name(s), action: previous) }
             ?? BottomBar.Nav(label: "ก่อนหน้า (ขั้นแรก)", hint: "ไม่มีหัวข้อก่อนหน้า", action: nil)
         let after = next == nil ? nil : steps[safe: nextIndex ?? i + 1]
+        if let previousLabel { back = BottomBar.Nav(label: previousLabel, action: previous) }
+        if let nextLabel { return bar(back, BottomBar.Nav(label: nextLabel, action: next)) }
         let forward = finish.map { f in BottomBar.Nav(label: "ถัดไป " + f.title, action: f.action) }
             ?? after.map { s in BottomBar.Nav(label: "ถัดไป " + name(s), action: next) }
             ?? BottomBar.Nav(label: "ถัดไป", action: nil)
-        return BottomBar(variant: .steps(save: {
+        return bar(back, forward)
+    }
+
+    func bar(_ back: BottomBar.Nav, _ forward: BottomBar.Nav) -> BottomBar {
+        BottomBar(variant: .steps(save: {
             model.flush(job.id)
             let now = Date()
             savedNow = now

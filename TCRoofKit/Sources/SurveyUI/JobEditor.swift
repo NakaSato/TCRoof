@@ -119,6 +119,8 @@ struct JobEditorView: View {
     @State var siteRequest: String?
     /// A C1 gap (`Roof.Gap.key`) the bottom bar's status line points to.
     @State var roofRequest: String?
+    /// D1's sub-step (1 ขนาดถัง … 4 ภาพถ่าย); the iPhone bar's ‹ › step through it before leaving the page.
+    @State var tankTab = 1
     /// A transformer the A3 bottom bar's "ยังขาดภาพ" chip points to.
     @State var electricalRequest: Int?
     /// A breaker / board the single line diagram sent us to; A3 opens it.
@@ -161,7 +163,7 @@ struct JobEditorView: View {
         // photos an earlier upload didn't finish, or taken before signing in to Google
         .onAppear { model.autoUploadPhotos(job.id, after: 2) }
         .onDisappear { model.flush(job.id) }
-        .onChange(of: page) { _, _ in panelForm = nil }
+        .onChange(of: page) { _, _ in panelForm = nil; tankTab = 1 }
         // opened from "continue": on iPhone show that form rather than the section list
         .onAppear { if startedOnPage && compact { sidebarVisible = false } }
         #if DEBUG
@@ -278,7 +280,7 @@ struct JobEditorView: View {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
                 TankPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
-                             stacked: compact || infoColumns != 2 || detailSize.width < 1100)
+                             stacked: compact || infoColumns != 2 || detailSize.width < 1100, tab: $tankTab)
                     .disabled(readOnly)
                     .id(m.id)
             }
@@ -405,15 +407,28 @@ struct JobEditorView: View {
         let panelsMissing = cardPanels != nil && !BuildingPanels.missing(job).isEmpty
         let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
             : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
+        let sub = tankSubSteps
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900, tight: detailSize.width < 720,
-                           previous: module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil, next: go(after), gaps: gaps,
+                           previous: sub?.previous ?? (module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil),
+                           next: sub?.next ?? go(after), gaps: gaps,
                            statusText: station?.status ?? water ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
                            statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
                                                                      backfeedMissing || ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,
                            previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil,
                            statusOK: cardRoof != nil && roofGaps.isEmpty,
-                           statusAction: roofGaps.first.map { g in { roofRequest = g.key } })
+                           statusAction: roofGaps.first.map { g in { roofRequest = g.key } },
+                           previousLabel: sub?.previousLabel, nextLabel: sub?.nextLabel)
+    }
+
+    /// iPhone D1: ‹ › move between the four sub-steps first ("ถัดไป D1 2/4 สิ่งกีดขวาง"), then to the pages either side.
+    var tankSubSteps: (previous: (() -> Void)?, previousLabel: String?, next: (() -> Void)?, nextLabel: String?)? {
+        guard compact, let m = cardTank else { return nil }
+        let code = job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "D1"
+        let names = TankPageWide.phoneTitles, t = tankTab
+        let label: (Int) -> String = { n in "\(code) \(n)/\(names.count) \(names[n - 1])" }
+        return (t > 1 ? { withAnimation { tankTab = t - 1 } } : nil, t > 1 ? "ก่อนหน้า " + label(t - 1) : nil,
+                t < names.count ? { withAnimation { tankTab = t + 1 } } : nil, t < names.count ? "ถัดไป " + label(t + 1) : nil)
     }
 
     var readOnlyBanner: some View {

@@ -15,12 +15,18 @@ struct TankPageWide: View {
     let width: CGFloat
     /// One column (the plan on top, the card below, scrolling): portrait, iPhone or a free width under 1100 pt.
     var stacked = false
+    /// The sub-step shown (view state only, never stored in the job). The editor owns it so the iPhone bottom bar's
+    /// ‹ › can step through the sub-steps.
+    @Binding var tab: Int
     /// iPhone: the sub-step tabs two to a row, a taller plan.
     var narrow: Bool { width < 600 }
     @Environment(SurveyModel.self) var model
+    /// iPhone: the phone design (docs/ui/survey-d1-size-iphone); iPad keeps the layout below at any width.
+    @Environment(\.horizontalSizeClass) var sizeClass
+    var phone: Bool { phoneLayout || sizeClass == .compact }
+    /// The phone layout outside a view graph (`-surveyTankRender`, where the size class isn't set).
+    var phoneLayout = false
 
-    /// The sub-step shown (view state only, never stored in the job).
-    @State var tab = 1
     @State var sizeOpen = false
     @State var pendingPreset: Tank.Preset?
     @State var span: RoofPageWide.SpanRef?
@@ -31,6 +37,8 @@ struct TankPageWide: View {
     @State var azEntry = false
     @State var azText = ""
     @State var compass = false
+    /// iPhone: the full plan with its span numbers, full screen.
+    @State var planFull = false
 
     var gap: CGFloat { width >= 1180 ? 20 : 16 }
     static let cardWidth: CGFloat = 330
@@ -43,10 +51,16 @@ struct TankPageWide: View {
     func set(_ id: String, _ v: FieldValue?) { update { $0[id] = v } }
 
     var body: some View {
-        VStack(spacing: 14) {
-            PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
-            tabBar
-            if tab == 1 { sizeStep } else { formStep }
+        Group {
+            if phone {
+                phoneBody
+            } else {
+                VStack(spacing: 14) {
+                    PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
+                    tabBar
+                    if tab == 1 { sizeStep } else { formStep }
+                }
+            }
         }
         .foregroundStyle(Home.navy)
         #if DEBUG
@@ -174,7 +188,7 @@ struct TankPageWide: View {
                             }
                         }
                     }
-                    if tab < 4 {
+                    if tab < 4 && !phone {
                         HStack {
                             Spacer()
                             nextButton(tab == 2 ? "ถัดไป · จัดแผง ›" : "ถัดไป · ภาพถ่าย ›") { tab += 1 }.frame(maxWidth: Self.cardWidth)
@@ -203,7 +217,7 @@ struct TankPageWide: View {
 extension TankPageWide {
     /// `-surveyD1 <state>` seeds the design's example tank (40 × 40, ค.ส.ล., กึ่งฝัง, 4.50 / 1.20, คอนกรีต, 12°) and
     /// opens a state of docs/ui/survey-d1-size/states: default, size, t64, t30, t20, above, buried, custom (typed azimuth
-    /// and surface), compass, span, empty.
+    /// and surface), compass, span, empty; tab2 opens sub-step 2.
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyD1") else { return }
         update { v in
@@ -226,8 +240,12 @@ extension TankPageWide {
         case "buried": update { Tank.setPosition(&$0, Tank.buried); Tank.setSoil(&$0, 0.6) }
         case "custom": update { Tank.setAzimuth(&$0, 14, source: .manual); $0[Tank.Key.surface] = .text("แผ่นยางกันซึม") }
         case "compass": compass = true
-        case "span": span = RoofPageWide.SpanRef(axis: .x, index: 2)
+        case "span":
+            // iPhone: the span numbers are on the full-screen plan
+            if phone { planFull = true; try? await Task.sleep(nanoseconds: 700_000_000) }
+            span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
+        case "tab2": tab = 2
         default: break
         }
     }

@@ -117,6 +117,8 @@ final class TankTests: XCTestCase {
         Tank.setAzimuth(&v, 14, source: .compass, at: cal.date(from: c)!, accuracy: 3.4)
         XCTAssertEqual(v.text("tankAzimuthSrc"), "compass")
         XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone), "วัดด้วยเข็มทิศ iPad · ±3° · 30/9 16:55 · แปลนและลูกศร N หมุนตามค่านี้")
+        XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone, device: "iPhone", tail: "แปลนหมุนตามค่านี้"),
+                       "วัดด้วยเข็มทิศ iPhone · ±3° · 30/9 16:55 · แปลนหมุนตามค่านี้")
         Tank.setAzimuth(&v, nil, source: .manual)
         XCTAssertNil(v["tankAzimuth"]); XCTAssertNil(v["tankAzimuthAt"]); XCTAssertNil(v["tankAzimuthSrc"])
     }
@@ -200,6 +202,21 @@ final class TankTests: XCTestCase {
         XCTAssertFalse(texts(plan.sketch).contains("4.00"))
         XCTAssertTrue(texts(plan.sketch).contains("ผนัง ค.ส.ล. · สิ่งกีดขวางระบุในขั้นที่ 2"))
         XCTAssertNil(TankPlan(Values()))
+    }
+
+    func testCompactPlan() throws {
+        var v = Values()
+        XCTAssertNil(TankPlan.compact(v))
+        Tank.apply(&v, Tank.presets[0])
+        let sketch = try XCTUnwrap(TankPlan.compact(v))
+        XCTAssertEqual(sketch.width, 330); XCTAssertEqual(sketch.height, 300)
+        let texts = sketch.ops.compactMap { op -> String? in if case let .text(t, _, _, _, _, _, _) = op { return t }; return nil }
+        // grid names 1…11 and A…K, the two totals, no single spans; no arrow without an azimuth
+        XCTAssertEqual(texts.filter { $0 == "40.00" }.count, 2)
+        XCTAssertTrue(texts.contains("11")); XCTAssertTrue(texts.contains("K"))
+        XCTAssertFalse(texts.contains("4.00")); XCTAssertFalse(texts.contains("N"))
+        Tank.setAzimuth(&v, 12, source: .manual)
+        XCTAssertTrue(try XCTUnwrap(TankPlan.compact(v)).ops.contains { if case .text("N", _, _, _, _, _, _) = $0 { return true }; return false })
     }
 
     func testPhotoStatus() {

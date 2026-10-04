@@ -285,11 +285,45 @@ struct PageStepBar: View {
     let here: MissingGroup.Target
     /// Shown on the right in place of the step's title (B1: "ตู้ไฟฟ้าอาคาร · 3 อาคาร").
     var title: String? = nil
+    /// iPhone (docs/ui/survey-d1-size-iphone): the step's name in grey after the count, this chip on the right,
+    /// 6-pt bars with done steps green.
+    var compact = false
+    var chip: (text: String, ok: Bool)? = nil
 
     var body: some View {
+        if compact { compactBody } else { regularBody }
+    }
+
+    var compactBody: some View {
         let steps = job.steps
         let i = steps.firstIndex { $0.page == here } ?? 0
-        VStack(spacing: 10) {
+        return VStack(spacing: 7) {
+            HStack(spacing: 8) {
+                Text("\(i + 1)/\(steps.count)").font(.system(size: 14, weight: .bold)).monospacedDigit()
+                Text(title ?? steps[safe: i]?.title ?? "").font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(1)
+                Spacer(minLength: 4)
+                if let chip {
+                    Text(chip.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(chip.ok ? Home.badgeOkText : Home.pending)
+                        .lineLimit(1).fixedSize()
+                        .padding(.horizontal, 8).padding(.vertical, 1)
+                        .background(chip.ok ? Home.badgeOkBg : Home.badgeWarnBg, in: Capsule())
+                }
+            }
+            HStack(spacing: 2) {
+                ForEach(Array(steps.enumerated()), id: \.offset) { n, s in
+                    Capsule().fill(n == i ? Home.primary : s.completion.total > 0 && s.completion.isComplete ? Home.stepDone : Home.hairline)
+                        .frame(height: 6)
+                }
+            }
+            .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    var regularBody: some View {
+        let steps = job.steps
+        let i = steps.firstIndex { $0.page == here } ?? 0
+        return VStack(spacing: 10) {
             HStack {
                 Text("\(i + 1)/\(steps.count)").bold()
                 Spacer()

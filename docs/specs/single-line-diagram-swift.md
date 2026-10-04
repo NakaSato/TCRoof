@@ -1,410 +1,237 @@
 # Auto Single Line Diagram — Swift implementation spec (iPad + iPhone)
 
-**Status:** Draft for development, 2026-09-29
+**Status:** Updated 2026-10-01 to match the code being built on `main` and the SLD page design
 **Design spec:** [`single-line-diagram.md`](single-line-diagram.md) (what is drawn and why)
-**Prototype to match:** `img/sld_form.py` with `img/sld_form_sample.json` and `img/sld_form_large.json`
-**Targets:** `SolarSurveyKit` (iOS 17+, macOS 14 for tests) inside the TCRoof app (`TARGETED_DEVICE_FAMILY = 1,2`)
-**New dependencies:** none
+**Page design / task:** `docs/ui/survey-sld/CLAUDE_CODE_TASK.md`. Visual reference: `diagram-lv.svg`, `diagram-hv.svg`, `preview.png`, `preview-hv.png`.
+**Targets:** `TCRoofKit` (iOS 17+, macOS 14 for tests) inside the TCRoof app
+**New dependencies:** none. Layout is written by hand, because the SLD topology is fixed.
 
-This document tells a Swift developer what to build, where it goes, and how to know it is done. The prototype PNGs
-are the visual reference; the Swift output must match them within a few points.
+## What changed from the 2026-09-29 draft
 
-![](img/sld_form_hv.png)
-
----
+| Draft | Now |
+|---|---|
+| `SolarSurveyKit/Sources/SurveyCore/SLD/…` | `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLineLayout.swift` (package and module renamed) |
+| `BreakerInfo`, `Transformer.breakers`, `EquipmentCondition` | the A3 model already on `main`: `Transformer` nameplate fields, `Board`, `Breaker`, `resolvedBoards` |
+| nameplate in `tr<i>_type`, `tr<i>_z` … keys | stored inside `Transformer` (`type`, `voltage`, `vectorGroup`, `impedance`, `brand`, `serial`, `year`, `hvProtection`, `hasLA`, `condition`, `conditionNote`) |
+| B1 breaker fields (`breakerType`, `breakerKA` …) | not added; outgoing breakers are recorded on the A3 board (`Breaker.target` names the B1 panel); B1 still gives `loadKW` / `loadTime` |
+| HV side always DOF, "No VCB/52" | follows A3 `hvProtection`: DO fuse / DS / VCB |
+| PV always at TR1's feed MDB | picked on the SLD page (`sldTransformer`, `sldBoard`), default TR1 main board |
+| new fields required (block completion) | nothing new is required; A3 completion counts as before, and blanks show as red `?` plus the missing list |
+| `SLDPreviewCard`, `BreakerEditor`, `TransformerPlate`, `ConditionPicker` | not needed: editing stays on the A3 wide page; the SLD page is read-only with links back |
+| SLD image in Excel | not in v1 (design spec, open question 5) |
+| short-circuit studies a non-goal | a simple Isc estimate and a breaker IC check are in v1 |
 
 ## 1. Goals and non-goals
 
 **Goals**
 
-1. Generate the SLD automatically from the survey. The surveyor never draws; every edit redraws it.
-2. Record every transformer and breaker completely, with its condition. Blanks show as a red `?` and are listed.
-3. Use the MDB names written on site (MDP-1, SDB ระบบกรอง, MDB-ADMIN …), not fixed MDB1…MDB6.
-4. Run well on iPad (primary, field use) and iPhone (review, quick checks), portrait and landscape.
-5. Put the same drawing in the preview, the PDF report and the Excel export.
+1. Generate the SLD automatically from the survey. The surveyor never draws, and every edit redraws it.
+2. Show every missing value as a red `?`, list it, and link it back to where it is entered.
+3. Use the board names written on site.
+4. Size the PV breakers, estimate Isc, and check existing breaker IC against it.
+5. Use the same drawing on screen and in the A3 PDF.
 
 **Non-goals (v1)**
-
-- Editing the drawing by hand (moving symbols, adding lines).
-- Cable sizing, voltage drop, short-circuit studies.
-- The detailed MDP level (feeder cables and conduits, `img/sld.py`), which comes later.
-- Anything on the TCRoof-only `SurveyForm` (the PWA survey lives in SolarSurveyKit).
+- Editing the drawing by hand
+- Cable sizing or voltage drop from real lengths
+- Level 2 feeder detail
+- An Excel image
 
 ## 2. Where the code goes
 
 ```
-SolarSurveyKit/Sources/
-  SurveyCore/
-    Models.swift            + BreakerInfo, Transformer.breakers, EquipmentCondition
-    Schema.swift            + transformer nameplate fields, B1 breaker fields, required rules
-    Progress.swift          + missing-field lines for breakers and transformers
-    WebBackup.swift         + round-trip of the new keys (PWA parity)
-    SLD/                    (new folder, platform-neutral, fully unit-testable on macOS)
-      SLDInput.swift        Job → SLDInput (+ missing, assumed)
-      SLDRatings.swift      standard AT/AF tables, PV breaker sizing
-      SLDLayout.swift       SLDInput → positions (no drawing)
-      SLDSymbols.swift      DrawOp builders: breaker, draw-out, CT, VT, DOF, LA, transformer, inverter …
-      SLDDrawing.swift      SLDLayout → Sketch
-  PDFReport/
-    ReportLayout.swift      + SLD page(s)
-  ExcelExport/
-    ExcelExporter.swift     + SLD image on the electrical sheet
+TCRoofKit/Sources/
+  TCRoofCore/                     (no UIKit / SwiftUI; tested with swift test)
+    SingleLine.swift              model (SL* types), SLConstants, calculations, build(job)
+    SingleLineLayout.swift        SingleLine → SingleLineDrawing (Sketch + hit boxes)
+    Flood.swift                   FloodCheck (read for the flood card)
   SurveyUI/
-    SLD/                    (new folder, #if canImport(UIKit))
-      SLDScreen.swift       full preview: zoom, pan, share, missing list
-      SLDPreviewCard.swift  thumbnail card on the A3 page
-      BreakerEditor.swift   one breaker card (used for MDB rows and B1 panels)
-      TransformerPlate.swift nameplate + condition fields under each transformer
-      ConditionPicker.swift ดี / พอใช้ / ชำรุด + note
-    TransformerPhotos.swift feed picker uses on-site names
-    Fields.swift            .transformers editor opens BreakerEditor per MDB
+    SingleLinePage.swift          page: toolbar (B4 toggle, PV board menu, zoom), drawing card, bottom bar
+    SingleLinePage+Panel.swift    side panel: PV data, IC check, blocking list, flood card, sheets
+    ElectricalPageWide.swift      A3 button "สร้าง Single Line Diagram →" opens the page
+    JobEditor*.swift              navigation to / from the page and to link targets
+    SurveyModel+Export.swift      "ส่งออก PDF (A3)" share
+  PDFReport/
+    SingleLinePage.swift          A3 landscape page (vector drawing, title block, tables)
+    ReportLayout.swift            attachesSingleLine(job) → page after the A3 section
+Tests/TCRoofCoreTests/
+  SingleLineTests.swift
 ```
 
-SurveyCore stays free of UIKit and SwiftUI so layout and drawing are tested with `swift test` on a Mac or Linux.
+## 3. Data read (no new required fields)
 
-## 3. Data model (SurveyCore/Models.swift)
+| Value | Read from |
+|---|---|
+| meter | `values.text("meterNo" / "meterCA" / "meterRate" / "meterCT")`, `choice("meterKV" / "meterPhase")` |
+| transformers | `values.transformers("trafos")`, entries where `Schema.transformerPresent` is true, up to 5 |
+| boards | `Transformer.resolvedBoards`; board 0 name / location also from `tr{i}_feed` / `tr{i}_feedLoc` |
+| PV size | A1 `number("capacity")` |
+| inverters | sum of `number("inverterCount")` over `.inverter` modules |
+| loads | `.panel` modules: `number("loadKW")`, `text("loadTime")`, matched to `Breaker.target` by section name |
+| zero export | first `.backfeed` module `choice("level")`, `choice("pole")`; `hasB4` = such a module exists |
+| FTS / emergency | a `.fts` module exists |
+| flood | `FloodCheck.state(values)`, `level`, `minCm` |
 
-All additions decode from old jobs and old web backups. **Do not rely on synthesized `Codable` for new stored
-properties**: a missing key throws. Use optionals or a custom `init(from:)` with `decodeIfPresent`.
+New optional answers, written only by the SLD page:
+- `sldAttach` ("1")
+- `sldTransformer` (index as text, nil = 0)
+- `sldBoard` (board UUID, nil = main board)
+
+Old jobs with only `kva` + `mdb[6]` must build without crashing (covered by a test).
+
+## 4. Model (`SingleLine.swift`)
 
 ```swift
-public enum EquipmentCondition: String, Codable, CaseIterable, Sendable {
-    case good = "ดี", fair = "พอใช้", damaged = "ชำรุด"
-}
+public enum SLStatus { case known, missing, assumed, new, condition(SLCondition) }
+public enum SLCondition: String { case good, fair, bad }        // init from ดี / พอใช้ / ชำรุด
+public struct SLTarget { enum Page { case info, electrical, flood, module(ModuleType) }; var trafo, board: Int?; var breaker: UUID? }
+public struct SLText { var text: String; var status: SLStatus; var bold: Bool }
 
-public enum BreakerMount: String, Codable, CaseIterable, Sendable { case fixed = "Fixed", drawOut = "Draw-out" }
+public struct SLBreaker   { id, trafo, board, number, isMain, isNew, type, at, af, ic, brand, condition?, note?, atAmps?, icKA?, destination }
+public struct SLBoard     { id, trafo, index, name, location, isMain, main: SLBreaker, breakers: [SLBreaker] }
+public struct SLTransformer { id, index, lines: [SLText], collapsed, hasLA: Bool?, cable, boards, kva?, zPercent? }
+public struct SLMissing   { id, label, blocking: Bool, target: SLTarget }
+public struct SLAssumption{ id, text }
+public enum   SLCheckState{ case ok, marginal, insufficient, unknown }
+public struct SLCheck     { id, name, icKA?, state, target }
+public struct SLFlood     { text, minCm, levelCm }
+public struct SLPV        { capacityKWp?, inverterCount?, inverterKW?, inverterAT?, totalAT?, requiredIC?, busbar?, inverterCable?, mainCable?, cableRuns, totalCableM, rows }
 
-/// One surveyed breaker. Numbers stay as String, like every other form value, so typing is never blocked.
-public struct BreakerInfo: Codable, Hashable, Identifiable, Sendable {
-    public var id = UUID()
-    public var name = ""          // on-site panel name, e.g. "MDP-1" (MDB rows only; B1 uses the section name)
-    public var type = ""          // "MCCB" | "ACB" | other text
-    public var mount: BreakerMount?
-    public var poles = ""         // "1" "2" "3" "4"
-    public var at = ""
-    public var af = ""
-    public var ka = ""            // IC kA
-    public var brand = ""
-    public var condition: EquipmentCondition?
-    public var note = ""          // required when condition != .good
-    public var plate: Photo?      // optional nameplate photo
-}
-
-public struct Transformer: Codable, Hashable, Identifiable, Sendable {
-    public var id = UUID()
-    public var kva = ""
-    public var mdb: [String]                 // kept: the AT of each MDB, read by old code and the web app
-    public var breakers: [BreakerInfo]       // NEW, index-aligned with `mdb`
-    // custom init(from:) → breakers = decodeIfPresent ?? []; then `normalise()`
+public struct SingleLine {
+    sourceLabel, meter: [SLText], protection: SLText
+    zeroExportHV: Bool, hasB4: Bool, pole: String
+    transformers: [SLTransformer]
+    connection: (trafo: Int, board: Int)
+    pv: SLPV, isc: Double?, iscAssumedZ: Bool, checks: [SLCheck]
+    missing: [SLMissing], assumptions: [SLAssumption], flood: SLFlood?
+    conditionCounts: (bad: Int, fair: Int), projectLine: String
+    static func build(_ job: Job, hvOverride: Bool? = nil) -> SingleLine
 }
 ```
 
-`Transformer.normalise()` keeps `mdb` and `breakers` in step:
+`hvOverride` lets the page preview the other zero export position when the job has no B4 section.
 
-- `breakers.count == mdb.count` (pad with empty `BreakerInfo`).
-- Writing `breakers[k].at` also writes `mdb[k]` (and the reverse on decode of old data), so SiteMarks, Progress and
-  the web app keep working unchanged.
+## 5. Constants and calculations
 
-Transformer nameplate and condition go in `Job.values` under per-transformer keys, like the existing `tr<i>_feed`.
-`Values.shiftTransformerAnswers(removed:)` must add the new suffixes:
+`SLConstants` holds every figure that is not survey data. Using one adds an `SLAssumption`.
 
-| Key | Kind | Required |
+| Constant | Value |
+|---|---|
+| `lineVoltage` | 400 V |
+| `breakerFactor` | 1.25 |
+| `icMargin` | 1.25 |
+| `defaultZPercent` | 4.0 % |
+| `cableRunM` | 20 m |
+| `inverterSizes` | 5, 10, 15, 20, 25, 30, 36, 40, 50, 60, 75, 100, 110 kW |
+| `frames` | 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800 A |
+| `icSizes` | 10, 15, 25, 36, 50, 65, 85 kA |
+| `cables` | table by AT; 125 A → `CV 4×35 + G16`, 250 A → `CV 4×120 + G25` |
+| `busbars` | table by AT; 250 A → `25 × 5` |
+
+Functions (all static on `SingleLine`):
+
+| Function | Rule | Test value |
 |---|---|---|
-| `tr<i>_type` | choice OIL IMMERSED / DRY TYPE / อื่นๆ | yes |
-| `tr<i>_hv` | number kV | yes |
-| `tr<i>_lv` | text (230-400) | yes |
-| `tr<i>_vector` | text (Dyn11) | yes |
-| `tr<i>_z` | number % | yes |
-| `tr<i>_brand` | text | yes |
-| `tr<i>_serial` | text | yes |
-| `tr<i>_year` | number (พ.ศ.) | yes |
-| `tr<i>_cond` | choice ดี / พอใช้ / ชำรุด | yes |
-| `tr<i>_condNote` | text | when `cond` ≠ ดี |
+| `standardInverter(kw)` | first standard size ≥ kW | 60 → 60 |
+| `breakerAT(kw:)` | `kw·1000 / (√3·400) × 1.25` → next frame | 60 kW → 125; 120 kW → 250 |
+| `breakerAF(at:)` | next frame ≥ AT | 125 → 125 |
+| `shortCircuit(kva:zPercent:)` | `kva / (√3 · 0.4 · z/100)` / 1000 (kA) | 630, 4.14 → 22.0 |
+| `requiredIC(isc:)` | next `icSizes` ≥ Isc | 22.0 → 25 |
+| `classify(ic:isc:)` | ok ≥ 1.25·Isc · marginal ≥ Isc · insufficient < Isc · unknown when no IC | 50/36 ok, 25 marginal, nil unknown |
 
-B1 ตู้ไฟฟ้าอาคาร module values (next to the existing `breakerAT`, `loadKW`, `loadTime`): `breakerType`,
-`breakerMount`, `breakerPoles`, `breakerAF`, `breakerKA`, `breakerBrand`, `cond`, `condNote`. The module `name` is the
-on-site panel name.
+**Missing items:**
+- `blocking == true` for:
+  - IC / AF / brand of breakers on the connection bus
+  - %Z of transformers with drawn boards
+  - main AT / IC of the connection board
+  - A1 `capacity`
+  - B2 `inverterCount`
+- `blocking == false` for everything else printed as `?`.
 
-`tr<i>_feed` stores the **name** of the MDB (not an index). Old jobs holding "MDB1" … are mapped on read: if no
-breaker has that name and `breakers[k].name` is empty, `"MDB\(k+1)"` matches index `k`.
-
-### Web app parity
-
-`WebBackup.swift` writes and reads `breakers` inside each `trafos[]` entry and the new `tr<i>_*` keys.
-`SolarSurveyWeb/survey-app.html` must accept and preserve unknown keys (it already stores `trafos` as JSON). Adding
-the editors to the web app is a separate task; until then the web app round-trips the data without showing it.
-
-## 4. Required fields and progress (Schema.swift, Progress.swift)
-
-- A breaker is complete when `type`, `mount`, `poles`, `at`, `af`, `ka`, `brand`, `condition` are set, and `note`
-  when the condition is not ดี. MDB rows also need `name`.
-- A transformer is complete when `kva` and every required `tr<i>_*` key above is set.
-- `Progress` adds one line per incomplete item, in the same words the drawing prints:
-  `A3 TR2: Vector group, %Z, Serial no., สภาพ` · `A3 TR2 MDB-ADMIN: IC kA` · `B1 ตู้ไฟฟ้า อาคารสำนักงาน: AF, IC kA, ยี่ห้อ`.
-- One function builds these lines (`SLDInput.missing`) and both Progress and the drawing call it.
-
-## 5. SLD core (SurveyCore/SLD)
-
-### 5.1 Input
+## 6. Layout and drawing (`SingleLineLayout.swift`)
 
 ```swift
-public struct SLDInput: Sendable {
-    public struct Transformer: Sendable {
-        public var index: Int, name: String          // "TR1"
-        public var kva: Double?
-        public var plate: [String: String]           // type, hv, lv, vector, z, brand, serial, year
-        public var condition: EquipmentCondition?, note: String
-        public var mdbs: [BreakerInfo]               // name = on-site MDB name
-        public var feed: String, feedLocation: String
-    }
-    public struct Panel: Sendable { public var name: String; public var breaker: BreakerInfo; public var loadKW: Double?; public var loadTime: String }
-    public enum ExportLimit: Sendable { case lv, hv(pole: String), unknown }
-    public struct PV: Sendable { public var kwp: Double; public var inverters: Int; public var exportLimit: ExportLimit; public var fts: Bool }
-
-    public var projectName: String
-    public var meterNo: String
-    public var transformers: [Transformer]
-    public var panels: [Panel]
-    public var pv: PV?                  // nil when A1 capacity or B2 inverter count is blank
-    public var missing: [String]        // red list under the drawing, also used by Progress
-    public var assumed: [String]        // ค่าสมมติ list
-
-    public init(job: Job)
-}
+public struct SLHit { var box: Box; var target: SLTarget }
+public struct SingleLineDrawing { var sketch: Sketch; var hits: [SLHit]; var width, height: Double }
+public enum SingleLineLayout { static let width: Double; static func draw(_ m: SingleLine) -> SingleLineDrawing }
 ```
 
-Field sources (ids exactly as in `Schema`):
+- **Width:** fixed design width of 1560. Height grows with the content (design sample 1480).
+- **Placement:**
+  - Transformers are spaced evenly across the width.
+  - The connection board spans the width under its transformer.
+  - Other boards stack under their transformer.
+- **Readability:** must hold with 1–5 transformers and up to 6 boards each.
+- **Symbols:** drawn as `DrawOp` paths, listed below. Lines stop at a symbol and never pass through it.
+  - HV: switch, DO fuse / DS, VCB, LA with ground, three cable terminations, Δ/Y transformer
+  - Meter: `kWh` meter
+  - Breakers: fixed arc, draw-out arc with chevrons
+  - Zero export: CT with count, CT/VT (HV), relay box
+  - PV side: inverter (=/~), DC disconnect, PV array, emergency button
+  - Other: load block, `))` line break
+- **Colours:**
+  - Existing: `RGBA.dark`
+  - New PV: `RGBA.blue`
+  - Missing: `RGBA.red`
+  - Condition: ดี `0x2F855A`, พอใช้ `0xB7791F`, ชำรุด `RGBA.red`
+  - Control lines: dashed blue `[4, 3]`
+- **Hits:** one `SLHit` for every transformer, board and breaker, plus PV items linking to their B-section.
 
-| Input | Source |
+`Sketch.svg()` must produce output that matches `docs/ui/survey-sld/diagram-lv.svg` / `diagram-hv.svg` for the design sample within a few points.
+
+## 7. UI (`SurveyUI/SingleLinePage*.swift`)
+
+- **iPad landscape:** diagram area on the left (~950 pt), side panel on the right (~310 pt). Layout and labels as in `CLAUDE_CODE_TASK.md` and `preview.png`.
+- **Toolbar:**
+  - `ตำแหน่งกันย้อน (B4)` segmented control. It writes B4 `level`; with no B4 it passes `hvOverride` only.
+  - PV board menu `เชื่อมต่อ PV ที่ตู้นี้`
+  - zoom `−` · `50%` · `+` · `พอดีจอ` (35 / 50 / 60 / 75 / 90 / 100 %), pinch and pan
+- **Taps:** a tap resolves through `hits`. Below 75 % zoom it first zooms to the item. Then it navigates to the `SLTarget`: A3 expands that transformer, board or breaker; B-sections open their page.
+- **Side panel:**
+  - `ข้อมูลฝั่ง PV`
+  - `เบรกเกอร์ทนลัดวงจร {Isc} kA ได้ไหม`
+  - `ต้องเก็บก่อนออกแบบ`
+  - flood card (`A4 →`)
+  - sheets for `ข้อมูลที่ขาดอื่นๆ`, `สภาพอุปกรณ์`, `ค่าสมมติ`
+- **Bottom bar:** `‹ แก้ข้อมูลใน A3` · `ส่งออก PDF (A3)` · `แนบในรายงาน` (toggles `sldAttach`)
+- **iPad portrait / iPhone:** diagram full width with zoom; the side panel becomes a sheet opened from the toolbar.
+- **Rebuild:** redraw when `job.values` or the modules change, debounced about 150 ms, off the main actor. Core types are `Sendable`.
+- **Accessibility:**
+  - The drawing has an accessibility summary: transformers, boards, PV, and the missing and condition lists as text.
+  - Buttons are at least 44 pt.
+
+## 8. PDF
+
+- `singleLinePage(hv:)`: one A3 landscape page (1190 × 842 pt). It holds the vector drawing scaled to fit, a title block (job number, station, date), the PV data table and the breaker check table.
+- `ReportLayout.attachesSingleLine(job)`: when true, the page is added after the A3 section, and the other pages do not move.
+- The footer `สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง` is printed on the page.
+
+## 9. Tests (`SingleLineTests.swift`)
+
+| Test | Checks |
 |---|---|
-| `meterNo` | `job.values.text("meterNo")` |
-| transformers | `job.values.transformers("trafos")` + `tr<i>_*` keys, skipping entries where `Schema.transformerPresent` is false |
-| `pv.kwp` | `job.values.number("capacity")` |
-| `pv.inverters` | sum of `number("inverterCount")` over `.inverter` modules |
-| `pv.exportLimit` | first `.backfeed` module: `choice("level")` = กันย้อนที่แรงสูง → `.hv(pole: choice("pole"))`, กันย้อนที่แรงต่ำ → `.lv` |
-| `pv.fts` | any `.fts` module with `photo("photoFTS")` or `photo("photoEmg")` |
-| panels | `.panel` modules in order |
-
-Assumptions printed (the form does not ask them): 22 kV system, PEA metering on the HV side, PV and B1 panels
-connect at TR1's `tr0_feed` MDB, PF 1, breaker factor 1.25.
-
-### 5.2 Ratings
-
-```swift
-public enum SLDRatings {
-    public static let at: [Int] = [16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800,
-                                   1000, 1250, 1600, 2000, 2500, 3200]
-    public static let af: [Int] = [100, 160, 250, 400, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000]
-    public static func current(kw: Double, volts: Double = 400) -> Double   // kW·1000 / (√3·V)
-    public static func breaker(forAmps a: Double, factor: Double = 1.25) -> (at: Int, af: Int)
-}
-```
-
-Expected values (unit tests): 100 kW → 144.3 A → 200 AT / 250 AF; 300 kW → 433.0 A → 630 AT / 630 AF;
-30 kW → 43.3 A → 63 AT / 100 AF; 630 kVA → 909 A; 250 kVA → 361 A.
-
-### 5.3 Layout (numbers from the prototype, in points)
-
-`SLDLayout` computes positions only; it holds no `DrawOp`s, so it can be tested with plain asserts.
-
-| Constant | Value | Meaning |
-|---|---|---|
-| `mdbColumn` | 120 | spacing of MDB boxes under a transformer |
-| `blockMin` | 270 | minimum width of a transformer block (its nameplate text must fit) |
-| `blockGap` | 30 | gap between transformer blocks |
-| `feederSpacing` | 105 | B1 feeders in the expanded MDB |
-| `feederStart` | 110 | first feeder right of the MDB incomer |
-| `inverterSpacing` | 60 | inverter columns under SMDB-PV (max 10 drawn, label "แสดง 10") |
-| `minWidth` | 1300 | sheet width never below this |
-
-Rules:
-
-- Sheet width = max(`minWidth`, end of the last transformer block + 60, PV group right edge + 170).
-- The expanded MDB is TR1's feed MDB when PV or B1 panels exist; every other MDB is a compact dashed box.
-- Names wrap at about 14 characters on spaces, at most two lines (Thai names without spaces stay on one line and
-  may be shrunk to fit the box width with `DrawOp.textBox`).
-- Breaker half-height: 11 fixed, 22 draw-out. Lines stop at the symbol, never through it.
-
-### 5.4 Symbols (SLDSymbols.swift)
-
-Each returns `[DrawOp]`; colours: existing `RGBA.dark`, new PV `RGBA.blue`, missing `RGBA.red`, condition ดี
-`0x2F855A`, พอใช้ `0xB7791F`, ชำรุด `RGBA.red`.
-
-| Symbol | Drawing |
-|---|---|
-| `breakerFixed` | terminal dot, arc (r 9) to the right, terminal dot |
-| `breakerDrawOut` | arc between two up-chevrons (above) and two down-chevrons (below) |
-| `breakerLabel` | `TYPE,nP` / `ATAT` over `AFAF` / `IC kA` / brand / `สภาพ: …` (+ note line) — blank → `?` in red |
-| `dropOutFuse` | open terminal, slanted blade with hook |
-| `lightningArrester` | box with arrow, ground, label LA |
-| `cableTerminations` | **three** filled triangles pointing down |
-| `transformer` | two circles (r 17), Δ in the upper, Y in the lower |
-| `pea meter` | small square + circle "M" with loop |
-| `ct` | circle on the line, slash with the count "3", signal lead |
-| `vt` | two small circles on a branch |
-| `inverter`, `fts`, `pvArray`, `emergency` | as in the prototype |
-| `relay` | blue box, two text lines |
-| `control` | dashed blue polyline `[4, 3]` |
-
-HV side is always drop-out fuse → lightning arrester → three terminations → transformer. No VCB/52.
-
-Export limiting: the relay's control line ends on a dashed bus under the inverter boxes, one stub and dot into each
-inverter, label "สั่งควบคุมกำลังผลิต". It never goes to a breaker.
-
-### 5.5 Drawing (SLDDrawing.swift)
-
-```swift
-public enum SLDDrawing {
-    /// Whole diagram on one sheet (preview, Excel).
-    public static func sketch(_ input: SLDInput) -> Sketch
-    /// Pages for the PDF; one sheet today, split later (open question: page per transformer).
-    public static func pages(_ input: SLDInput, page: Box) -> [Sketch]
-}
-public extension Job { var sld: SLDInput { SLDInput(job: self) } }
-```
-
-`Sketch.svg()` already exists: tests compare the SVG of the two sample jobs against checked-in snapshots.
-
-## 6. UI (SurveyUI/SLD)
-
-### 6.1 Entry points
-
-| Where | What |
-|---|---|
-| A3 page (electrical), under the transformer cards | `SLDPreviewCard`: thumbnail, "ขาด n รายการ", "ชำรุด n", tap → `SLDScreen` |
-| Job toolbar | "แผนภาพเส้นเดียว" button (`point.3.connected.trianglepath.dotted`) → `SLDScreen` |
-| Export sheet | "SLD (PDF)" option alongside the report |
-
-### 6.2 SLDScreen — iPad (regular width)
-
-```
-┌───────────────────────────────┬───────────────────┐
-│  drawing (zoom / pan)         │ ข้อมูลที่ขาด (3)   │
-│                               │  • TR2: Vector …  │  ← tap: jumps to the field
-│                               │ สภาพอุปกรณ์        │
-│                               │  • TR1 พอใช้ …     │
-│  [ fit ] [ 100% ]  [ share ]  │ ค่าสมมติ           │
-└───────────────────────────────┴───────────────────┘
-```
-
-- `NavigationSplitView`-style two columns inside the job editor: drawing left (flex), side panel right (320 pt,
-  collapsible with a toolbar button).
-- Editing in split view (Stage Manager / Slide Over) redraws live: the form on the left of the job editor and the
-  preview card on the right.
-- Keyboard: ⌘+ / ⌘− zoom, ⌘0 fit.
-
-### 6.3 SLDScreen — iPhone (compact width)
-
-- Full-screen sheet, drawing only, fit-to-width on open; a bottom segmented control switches ภาพ / ขาด (n) / สภาพ.
-- Landscape is recommended for large stations; show a one-time hint "หมุนแนวนอนเพื่อดูภาพเต็ม" when the sheet is
-  wider than 2× the screen.
-- Share button in the toolbar (PDF / PNG) through the existing `ShareSheet`.
-
-### 6.4 Zoom and pan (both)
-
-- `ScrollView([.horizontal, .vertical])` with a `MagnifyGesture`, zoom 0.25×…4×, double tap toggles fit ↔ 100%.
-- Render: `SketchView` (Canvas) at the current zoom. For sheets above ~3,000 pt wide, render once to a cached
-  `UIImage` via `PDFRenderer.png` at `scale = min(3, 8192 / width)`, keyed by a hash of `SLDInput`, and show that
-  image while zooming; redraw vector when the zoom settles.
-- The drawing sits on a white "paper" card in both light and dark mode (it is a document, not UI).
-
-### 6.5 Editors
-
-**BreakerEditor** (MDB rows and B1 panels share it):
-
-| Control | iPad | iPhone |
-|---|---|---|
-| ชื่อตู้ตามหน้างาน (MDB rows) | text field, autocapitalization off | same |
-| ชนิด | segmented MCCB / ACB / อื่นๆ | same |
-| การติดตั้ง | segmented Fixed / Draw-out with the symbol drawn in each segment | same |
-| โพล | segmented 1 2 3 4 | same |
-| AT, AF, IC kA | three number fields in one row, `.numberPad`, a menu of standard values beside AT/AF | stacked, two per row |
-| ยี่ห้อ | text field with suggestions (Schneider, ABB, Mitsubishi, LS, Siemens, Chint, Hager) | same |
-| สภาพ | `ConditionPicker`: three coloured capsules; note field appears when not ดี and is required | same |
-| ภาพป้าย (optional) | `PhotoField` 150 pt | 120 pt |
-
-- Card header shows the name and a status: green check when complete, red "ขาด n" otherwise.
-- AT > AF shows an inline warning (not blocking).
-- The `.transformers` field keeps its compact grid (kVA + 6 AT) for speed; each AT cell gets a disclosure that opens
-  the BreakerEditor for that MDB (sheet on iPhone, popover on iPad).
-
-**TransformerPlate** (inside each transformer card in `TransformerPhotosView`): type, kV HV / LV, vector, %Z, brand,
-serial, year, condition + note. Two columns on iPad, one on iPhone.
-
-**Feed picker**: the menu lists the on-site MDB names of that transformer; typing a name is still allowed; a name
-that matches none shows the red hint "ไม่ตรงกับชื่อตู้ที่กรอก".
-
-### 6.6 Accessibility and input
-
-- Editors support Dynamic Type; the drawing does not scale with Dynamic Type (fixed document).
-- `SLDScreen` exposes an accessibility summary: transformers, MDBs, PV, and the missing and condition lists as text.
-- Number fields accept Thai and Arabic digits (normalise with the same cleaning the other number fields use).
-
-### 6.7 Performance budget
-
-| Step | Budget (iPhone 12) |
-|---|---|
-| `SLDInput(job:)` + layout + sketch, sample job | < 5 ms |
-| same, large sample (3 TR, 9 MDB, 8 feeders, 8 inverters) | < 20 ms |
-| first render of the large sheet at fit | < 150 ms |
-
-Rebuild on every change of `job.values` or modules, debounced 150 ms, off the main actor (`Task.detached`) since
-SurveyCore types are `Sendable`.
-
-## 7. PDF and Excel
-
-- PDF: a new page "แผนภาพเส้นเดียว (Single Line Diagram)" after the A3 page, A3 landscape (1190 × 842 pt), the
-  sketch scaled to fit with the title strip and footer of the report. If the scale drops below 0.45, split per the
-  answer to the open question (default for now: one page per transformer plus the expanded MDB on its own page).
-- Excel: the sheet PNG (`PDFRenderer.png`) placed on the electrical sheet under the transformer table.
-- Both carry the footer "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง".
-
-## 8. Tests
-
-| Target | Test |
-|---|---|
-| SurveyCoreTests | old `Transformer` JSON without `breakers` decodes; `mdb` ↔ `breakers[k].at` stay in step |
-| | old `tr0_feed = "MDB1"` maps to index 0 when names are empty |
-| | `shiftTransformerAnswers` moves every new `tr<i>_*` key |
-| | `SLDRatings` values in §5.2 |
-| | `SLDInput` from the two fixtures: missing lines equal the prototype's list word for word |
-| | layout: large fixture width, no two breaker label boxes overlap, every line endpoint touches a symbol |
-| | `SLDDrawing.sketch(...).svg()` equals `Fixtures/sld_sample.svg` and `sld_large.svg` |
-| PDFReportTests | report with SLD page renders, page count rises by 1 (sample) |
-| ExcelExportTests | SLD image present on the electrical sheet |
-| UI (manual, both devices) | checklist in §10 |
-
-Fixtures: convert `img/sld_form_sample.json` and `img/sld_form_large.json` to `Job` JSON with a small script
-(`Tests/SurveyCoreTests/Fixtures/`).
-
-## 9. Delivery plan
-
-| PR | Content | Size |
-|---|---|---|
-| 1 | Models: `BreakerInfo`, `EquipmentCondition`, `Transformer.breakers`, decoding, `shiftTransformerAnswers`, WebBackup | S |
-| 2 | Schema + Progress: required fields, missing lines | S |
-| 3 | `SLDRatings`, `SLDInput` + tests | M |
-| 4 | `SLDLayout`, `SLDSymbols`, `SLDDrawing` + snapshot tests | L |
-| 5 | Editors: BreakerEditor, TransformerPlate, ConditionPicker, feed picker | M |
-| 6 | `SLDScreen` (iPad + iPhone), `SLDPreviewCard`, zoom/pan, share | M |
-| 7 | PDF page(s) and Excel image | S |
-| 8 | Web app: preserve and later edit the new keys | S / M |
-
-Each PR builds for iOS in Xcode (SurveyUI compiles only with UIKit) and passes `swift test` on macOS.
+| `testBreakerSizing` | 60 kW → 125 AT; 2 × 60 kW → 250 AT |
+| `testShortCircuit` | 630 kVA, 4.14 % → 22.0 kA; required IC 25 kA |
+| `testBreakerCheckClassification` | 50 / 36 / 25 / nil against 22 kA |
+| `testFixtureModel` | design sample builds the expected transformers, boards and PV rows |
+| `testMissingItems` | blocking and non-blocking counts on the fixture |
+| `testPVBlockingWhenA1AndB2Empty` | no capacity or inverter count → blocking items, no PV branch |
+| `testAssumedZWhenImpedanceMissing` | %Z blank → 4 % assumed + blocking item |
+| `testHVOverrideAndSelection` | `hvOverride`, `sldTransformer` / `sldBoard` pick the connection |
+| `testOldJobBuilds` | job with only `kva` + `mdb` builds |
+| `testLayoutHitsAndHeight` | every transformer / board / breaker has a hit box; height grows with content |
+| `testWriteSVG` | writes the sample SVG for visual comparison with `diagram-*.svg` |
 
 ## 10. Done when
 
-- [ ] The sample job on an iPad and an iPhone draws the same as `img/sld_form_hv.png` and `img/sld_form_lv.png`.
-- [ ] The large job scrolls and zooms smoothly on an iPhone SE-size screen, landscape and portrait.
-- [ ] Blank fields show `?` in red and appear in "ข้อมูลที่ขาด"; filling one removes it on the next redraw.
-- [ ] Renaming an MDB updates the drawing, the feed picker and the missing list.
-- [ ] Old jobs open without data loss; web backup round-trips the new fields.
-- [ ] PDF and Excel contain the diagram with the footer line.
+- [ ] A3 → `สร้าง Single Line Diagram →` opens the page on iPad and iPhone.
+- [ ] The design sample matches `preview.png` / `preview-hv.png` and `diagram-lv.svg` / `diagram-hv.svg`.
+- [ ] The LV / HV toggle changes B4 (or previews when there is no B4).
+- [ ] Tapping a red `?` opens A3 on that item. Filling it removes it from the list on return.
+- [ ] Changing the PV board redraws the connection board, Isc and the IC check.
+- [ ] `ส่งออก PDF (A3)` shares one vector A3 page. With `แนบในรายงาน` on, the survey PDF contains it.
+- [ ] Old jobs open without data loss. `swift test` passes.
 
-## 11. Open questions (from the design spec, blocking only where noted)
+## 11. Open questions
 
-1. Large stations: one wide sheet or one PDF page per transformer? (blocks PR 7 page split; default above)
-2. Do PV and B1 panels always connect at TR1's feed MDB, or does the form need a "PV ต่อที่ตู้" picker? (PR 3)
-3. Is 1.25 × rated current the breaker rule for inverters and the PV incomer?
-4. For กันย้อนแรงสูง, which equipment and ratings does กฟภ. expect on the SLD?
-5. Should DOF, lightning arrester and grounding also get a condition field?
+See [`single-line-diagram.md`](single-line-diagram.md#open-questions). None of them block v1.

@@ -14,14 +14,27 @@ struct A2Badge: View {
     }
 }
 
+/// Keeps A3's `SiteSync.Summary` until the symbols, transformers, board names or B4 levels change: the badges and the
+/// button read it from several cards on every render, and A3 renders on every keystroke.
+final class A2SyncCache {
+    private var inputs: SiteSync.Inputs?
+    private var value = SiteSync.Summary()
+    func summary(_ job: Job) -> SiteSync.Summary {
+        let now = SiteSync.Inputs(job)
+        if now != inputs { inputs = now; value = SiteSync.summary(job) }
+        return value
+    }
+}
+
 // MARK: ดึงจากภาพ A2
 
 extension ElectricalPageWide {
-    var a2Badges: Set<SiteSync.Field> { SiteSync.badges(job) }
+    var a2Sync: SiteSync.Summary { a2Cache.summary(job) }
+    var a2Badges: Set<SiteSync.Field> { a2Sync.badges }
 
     /// `ดึงจากภาพ A2 · N รายการ`, orange `· ต่างกัน n` with conflicts; opens the panel (a sheet on iPhone).
     @ViewBuilder var a2Button: some View {
-        let items = SiteSync.items(job)
+        let items = a2Sync.items
         if !items.isEmpty {
             let conflicts = items.filter(\.status.isConflict).count
             let linked = items.filter(\.status.isLinked).count
@@ -57,7 +70,7 @@ extension ElectricalPageWide {
                     }
                     .buttonStyle(.plain).accessibilityLabel("ปิด")
                 }
-                ForEach(SiteSync.items(job)) { a2Row($0) }
+                ForEach(a2Sync.items) { a2Row($0) }
                 Divider().padding(.top, 4)
                 VStack(alignment: .leading, spacing: 2) {
                     (Text("ช่องที่มีป้าย ") + Text("A2").bold().foregroundColor(Home.primary)

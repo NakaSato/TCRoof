@@ -57,16 +57,34 @@ public enum SiteSync {
         run(&job, previous: previous, force: [:]).items
     }
 
-    /// The panel's rows: what `push` reports, without writing.
-    public static func items(_ job: Job) -> [Item] {
-        var copy = job
-        return push(&copy)
+    /// The panel's rows (what `push` reports) and the fields to badge, from one run without writing.
+    public struct Summary: Equatable, Sendable {
+        public var items: [Item] = []
+        public var badges: Set<Field> = []
+        public init() {}
     }
-
-    /// Fields to badge on A3 / B4.
-    public static func badges(_ job: Job) -> Set<Field> {
+    public static func summary(_ job: Job) -> Summary {
         var copy = job
-        return run(&copy, previous: nil, force: [:]).badges
+        return run(&copy, previous: nil, force: [:])
+    }
+    /// The panel's rows: what `push` reports, without writing.
+    public static func items(_ job: Job) -> [Item] { summary(job).items }
+    /// Fields to badge on A3 / B4.
+    public static func badges(_ job: Job) -> Set<Field> { summary(job).badges }
+
+    /// Everything `summary` reads: equal inputs give an equal summary, so a page can keep one until they change.
+    public struct Inputs: Equatable, Sendable {
+        let marks: [MapMark]
+        let trafos: [Transformer]
+        let feeds: [String]
+        /// "<B4 id>:<level>" in module order (an unlinked กันย้อน mark takes the n-th B4).
+        let levels: [String]
+        public init(_ job: Job) {
+            marks = job.values.marks(marksKey)
+            trafos = job.values.transformers(trafosKey)
+            feeds = (0..<Transformer.maxTransformers).map { job.values.text("tr\($0)_feed") }
+            levels = job.modules.filter { $0.type == .backfeed }.map { "\($0.id):\($0.values.choice(ZeroExport.levelKey) ?? "")" }
+        }
     }
 
     /// What a linked mark points at, for A2's chip `↔ A3 TX 1` / `↔ A3 MDP-1` / `↔ B4`: "A3 TX 1", "A3 MDP-1", "B4"; nil when unlinked.
@@ -191,14 +209,12 @@ public enum SiteSync {
 
     // MARK: engine
 
-    struct Result { var items: [Item] = []; var badges: Set<Field> = [] }
-
     @discardableResult
-    static func run(_ job: inout Job, previous: [MapMark]?, force: [UUID: Side]) -> Result {
+    static func run(_ job: inout Job, previous: [MapMark]?, force: [UUID: Side]) -> Summary {
         var marks = job.values.marks(marksKey)
-        guard !marks.isEmpty else { return Result() }
+        guard !marks.isEmpty else { return Summary() }
         var trafos = job.values.transformers(trafosKey)
-        var out = Result()
+        var out = Summary()
         let before = Dictionary((previous ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var items: [UUID: Item] = [:]
 

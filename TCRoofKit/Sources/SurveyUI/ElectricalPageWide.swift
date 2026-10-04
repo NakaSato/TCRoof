@@ -31,6 +31,7 @@ struct ElectricalPageWide: View {
     @State var editBreaker: BreakerEdit?
     /// The `ดึงจากภาพ A2` panel.
     @State var showA2 = false
+    @State var a2Cache = A2SyncCache()
 
     // MARK: layout (points at 100 %)
 

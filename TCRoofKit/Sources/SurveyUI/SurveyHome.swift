@@ -106,7 +106,8 @@ struct SurveyHomeView: View {
             return a.docNo.localizedStandardCompare(b.docNo) == .orderedAscending
         }
         case .progress where tab == .install: return list.sorted { ($0.install?.percent ?? 0) > ($1.install?.percent ?? 0) }
-        case .progress: return list.sorted { $0.completion.fraction > $1.completion.fraction }
+        // completion walks the whole schema: work it out once per job, not in every comparison
+        case .progress: return list.map { ($0, $0.completion.fraction) }.sorted { $0.1 > $1.1 }.map(\.0)
         }
     }
 

@@ -7,7 +7,7 @@ from matplotlib import font_manager
 from matplotlib.patches import Polygon, Rectangle, Circle, Arc
 
 for f in ("Sarabun-Regular.ttf", "Sarabun-Bold.ttf"):
-    font_manager.fontManager.addfont(f"../../../SolarSurveyKit/Sources/PDFReport/Resources/{f}")
+    font_manager.fontManager.addfont(f"../../../TCRoofKit/Sources/PDFReport/Resources/{f}")
 plt.rcParams["font.family"] = "Sarabun"
 
 DARK, BLACK, INK2, RED, FAINT, TAG, RULE, BLUE = "#333333", "#000000", "#555555", "#E0433A", "#999999", "#C00000", "#9a9a9a", "#1F4E79"

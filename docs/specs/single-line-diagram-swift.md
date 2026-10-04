@@ -10,7 +10,7 @@
 
 | Draft | Now |
 |---|---|
-| `SolarSurveyKit/Sources/SurveyCore/SLD/…` | `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLineLayout.swift` (package and module renamed) |
+| `TCRoofKit/Sources/TCRoofCore/SLD/…` | `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLineLayout.swift` (package and module renamed) |
 | `BreakerInfo`, `Transformer.breakers`, `EquipmentCondition` | the A3 model already on `main`: `Transformer` nameplate fields, `Board`, `Breaker`, `resolvedBoards` |
 | nameplate in `tr<i>_type`, `tr<i>_z` … keys | stored inside `Transformer` (`type`, `voltage`, `vectorGroup`, `impedance`, `brand`, `serial`, `year`, `hvProtection`, `hasLA`, `condition`, `conditionNote`) |
 | B1 breaker fields (`breakerType`, `breakerKA` …) | not added; outgoing breakers are recorded on the A3 board (`Breaker.target` names the B1 panel); B1 still gives `loadKW` / `loadTime` |

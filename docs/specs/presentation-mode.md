@@ -145,8 +145,8 @@ Every remark line is its own row. The summary tile counts the red rows (4).
 
 | File | Contents |
 |---|---|
-| `SurveyCore/Present/DeckBuilder.swift` | job → `[Slide]` (§2): which slides, which fields, notes text, hiding rules |
-| `SurveyCore/Present/FixList.swift` | §3 from conditions, `remarks` and `Progress` |
+| `TCRoofCore/Present/DeckBuilder.swift` | job → `[Slide]` (§2): which slides, which fields, notes text, hiding rules |
+| `TCRoofCore/Present/FixList.swift` | §3 from conditions, `remarks` and `Progress` |
 | `SurveyUI/Present/SlideView.swift` | one slide at any size (1920 × 1080 logical, scaled) |
 | `SurveyUI/Present/PresenterView.swift` | §4.1, §4.2 |
 | `SurveyUI/Present/ExternalDisplayScene.swift` | §4.3 scene delegate and `PresentationModel` |

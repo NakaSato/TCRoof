@@ -156,7 +156,7 @@ a **วัดด้วยเข็มทิศ** button (CoreLocation heading, t
 for the energy numbers; energy tiles (MWh/yr, kWh/kWp, row shading %) sit next to the module count, and
 "หาผังที่ได้แผงมากที่สุด" becomes **หาผังที่ได้พลังงานมากที่สุด**.
 
-Swift: `SurveyCore/Mounting/SunModel.swift` (sun position, clear-sky, POA, row shading; pure functions, unit-tested
+Swift: `TCRoofCore/Mounting/SunModel.swift` (sun position, clear-sky, POA, row shading; pure functions, unit-tested
 against the Python numbers above), `MountLayout` gains `orientation`, polygon geometry (`Polygon.sat`, `contains`), and
 `MountOptimizer` runs the search off the main thread.
 
@@ -174,10 +174,10 @@ Footer on all: "สร้างอัตโนมัติจากข้อม�
 
 | File | Contents |
 |---|---|
-| `SurveyCore/Mounting/MountStandard.swift` | the §1 values (`Codable`, in `SurveySettings`), derived tilt, depth, pitch |
-| `SurveyCore/Mounting/MountLayout.swift` | `MountLayout.compute(tank: TankGeometry, std: MountStandard, north: PlanNorth) -> MountLayout` with `rows`, `tables`, `posts`, `notes`, `ventsUnder` |
-| `SurveyCore/Mounting/MountQuantities.swift` | the §3.7 counts; also feeds the report and Excel BOQ |
-| `SurveyCore/Mounting/MountDrawings.swift` | `plan`, `section`, `front` → `Sketch` (same `DrawingKit` as the tank) |
+| `TCRoofCore/Mounting/MountStandard.swift` | the §1 values (`Codable`, in `SurveySettings`), derived tilt, depth, pitch |
+| `TCRoofCore/Mounting/MountLayout.swift` | `MountLayout.compute(tank: TankGeometry, std: MountStandard, north: PlanNorth) -> MountLayout` with `rows`, `tables`, `posts`, `notes`, `ventsUnder` |
+| `TCRoofCore/Mounting/MountQuantities.swift` | the §3.7 counts; also feeds the report and Excel BOQ |
+| `TCRoofCore/Mounting/MountDrawings.swift` | `plan`, `section`, `front` → `Sketch` (same `DrawingKit` as the tank) |
 | `SurveyUI/Tank/MountLayoutView.swift` | a third tab next to แปลน / รูปตัด in the tank editor: **โครงสร้าง**; toggles for layers; quantities panel; tap a red post to see why |
 
 Performance: the 40 × 40 layout is a few hundred boxes; compute with the tank geometry off the main thread.

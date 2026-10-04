@@ -288,12 +288,12 @@ Shows the selected row (default: row 1 of the south face) along the slope:
 
 | File | Contents |
 |---|---|
-| `SurveyCore/RoofPV/RoofFaces.swift` | faces from `RoofGeometry` (shape, `A`, `B`, pitch, ridge axis, bearing): polygon, edge kinds, half-planes, plan map, 3D basis, azimuth |
-| `SurveyCore/RoofPV/RoofMountStandard.swift` | §3 values (`Codable`, in `SurveySettings`), obstacle kind table |
-| `SurveyCore/RoofPV/ShadeHulls.swift` | sun positions (shared with `MountEnergy`), ray–plane projection, convex hull, SAT |
-| `SurveyCore/RoofPV/RoofPVLayout.swift` | `compute(faces:purlins:obstacles:std:options:) -> RoofPVLayout` and `best(…)`: §3.2–3.6 |
-| `SurveyCore/RoofPV/RoofPVQuantities.swift` | §3.8; feeds the report and the Excel BOQ |
-| `SurveyCore/RoofPV/RoofPVDrawings.swift` | plan, section, detail A → `Sketch` |
+| `TCRoofCore/RoofPV/RoofFaces.swift` | faces from `RoofGeometry` (shape, `A`, `B`, pitch, ridge axis, bearing): polygon, edge kinds, half-planes, plan map, 3D basis, azimuth |
+| `TCRoofCore/RoofPV/RoofMountStandard.swift` | §3 values (`Codable`, in `SurveySettings`), obstacle kind table |
+| `TCRoofCore/RoofPV/ShadeHulls.swift` | sun positions (shared with `MountEnergy`), ray–plane projection, convex hull, SAT |
+| `TCRoofCore/RoofPV/RoofPVLayout.swift` | `compute(faces:purlins:obstacles:std:options:) -> RoofPVLayout` and `best(…)`: §3.2–3.6 |
+| `TCRoofCore/RoofPV/RoofPVQuantities.swift` | §3.8; feeds the report and the Excel BOQ |
+| `TCRoofCore/RoofPV/RoofPVDrawings.swift` | plan, section, detail A → `Sketch` |
 | `SurveyUI/Roof/RoofPVEditorView.swift` | §5 |
 
 **Shared with the tank:**

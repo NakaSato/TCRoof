@@ -51,7 +51,7 @@ width.
 - Setting a new scale re-measures every route. The deltas show on the tiles.
 - Replacing the picture keeps the routes but asks: "ภาพเปลี่ยน ตรวจแนวเส้นสายอีกครั้ง".
 
-## 3. Data model (`SurveyCore/SiteRoutes.swift`)
+## 3. Data model (`TCRoofCore/SiteRoutes.swift`)
 
 ```swift
 public struct SitePoint: Codable, Hashable { public var x, y: Double }          // fractions 0…1, like MapMark
@@ -84,7 +84,7 @@ public struct SiteRoutes: Codable, Hashable {
 - The same switches as for `.marks` need updating: `FieldView`, `countable`, `Progress`, `WebBackup` (JSON
   `{s, rd, bd, rt}`), the Excel exporter.
 
-## 4. Computation (`SurveyCore/RouteAnalysis.swift`, pure Swift, tested on Linux)
+## 4. Computation (`TCRoofCore/RouteAnalysis.swift`, pure Swift, tested on Linux)
 
 Notation:
 - `s` = metres per picture px
@@ -212,9 +212,9 @@ Roads and buildings are few, and the surveyor draws them only where routes cross
 
 | File | Contents |
 |---|---|
-| `SurveyCore/SiteRoutes.swift` | §3 model, `Codable`, `WebBackup` mapping |
-| `SurveyCore/RouteAnalysis.swift` | §4 (geometry, allowances, VD, suggested size); `RouteStandard` in `SurveySettings` |
-| `SurveyCore/SiteRoutesDrawing.swift` | report ops + legend + table → `Sketch` |
+| `TCRoofCore/SiteRoutes.swift` | §3 model, `Codable`, `WebBackup` mapping |
+| `TCRoofCore/RouteAnalysis.swift` | §4 (geometry, allowances, VD, suggested size); `RouteStandard` in `SurveySettings` |
+| `TCRoofCore/SiteRoutesDrawing.swift` | report ops + legend + table → `Sketch` |
 | `SurveyUI/SiteRoutesEditor.swift` | §6 |
 | `SurveyUI/MapImage.swift` | returns the zoom and lat with the picture so `scale = .map` is stored |
 | `PDFReport/ReportLayout.swift` | routes on the site picture page + the table |

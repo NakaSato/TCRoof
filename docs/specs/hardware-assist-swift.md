@@ -78,7 +78,7 @@ This spec builds on all of these.
 - **Photos already taken:** `VNRecognizeTextRequest` (`.accurate`) runs on the existing nameplate photo in the
   background, and the app offers "พบ 630 kVA ในรูปป้าย ใช้ค่านี้?".
 
-**Parsing** (`SurveyCore/Hardware/NameplateParser.swift`, pure Swift, tested on Linux):
+**Parsing** (`TCRoofCore/Hardware/NameplateParser.swift`, pure Swift, tested on Linux):
 
 | Target | Pattern (case-insensitive, Thai/Arabic digits normalised with `NumberInput`) |
 |---|---|
@@ -266,13 +266,13 @@ Each permission is asked for only the first time its feature is used, never at l
 | File | Contents |
 |---|---|
 | `SurveyUI/Hardware/DeviceCaps.swift` | §1 detection, environment object, Settings › เครื่องนี้ |
-| `SurveyCore/Hardware/NameplateParser.swift` | §H1 patterns (pure Swift) |
+| `TCRoofCore/Hardware/NameplateParser.swift` | §H1 patterns (pure Swift) |
 | `SurveyUI/Hardware/LiveTextScanner.swift` | VisionKit text scanner sheet, photo OCR task |
 | `SurveyUI/Hardware/LocationService.swift` | `LocationFetcher` moved here, with accuracy, streaming, GNSS hint |
 | `SurveyUI/Hardware/InclinometerView.swift`, `CompassView.swift` | §H3 |
-| `SurveyCore/Hardware/Orientation.swift` | tilt from gravity, heading → form choice (pure Swift) |
+| `TCRoofCore/Hardware/Orientation.swift` | tilt from gravity, heading → form choice (pure Swift) |
 | `SurveyUI/Hardware/SurveyCamera.swift` | AVFoundation camera: quality checks, torch, stamp, multi-shot guide, 0.5× |
-| `SurveyCore/Hardware/ImageQuality.swift` | blur / brightness metrics on a luminance buffer (Accelerate on Apple, a plain loop on Linux for tests) |
+| `TCRoofCore/Hardware/ImageQuality.swift` | blur / brightness metrics on a luminance buffer (Accelerate on Apple, a plain loop on Linux for tests) |
 | `SurveyUI/Hardware/PencilTools.swift` | squeeze palette, roll rotation, hover preview, Pencil haptics |
 | `SurveyUI/Hardware/MediaImport.swift` | `fileImporter`, EXIF (ImageIO), placement proposals |
 | `SurveyUI/Hardware/LaserMeter.swift` | CoreBluetooth central, one adapter per brand |

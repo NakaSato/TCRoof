@@ -2,9 +2,9 @@
 
 **Status:** Ready for development, 2026-09-29
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same code runs on iPhone in compact layout.
-**Modules:** `SurveyCore` (model, diff, hash; testable with `swift test`), `SurveyUI` (pages), `PDFReport` (page and
+**Modules:** `TCRoofCore` (model, diff, hash; testable with `swift test`), `SurveyUI` (pages), `PDFReport` (page and
 footer), `DriveSync` (upload).
-**No new dependencies.** Hashing uses CryptoKit, which the app already imports in `GoogleAuth.swift`. `SurveyCore`
+**No new dependencies.** Hashing uses CryptoKit, which the app already imports in `GoogleAuth.swift`. `TCRoofCore`
 wraps it in `#if canImport(CryptoKit)`, with a small pure-Swift SHA-256 for Linux test runs.
 
 Three features work together:
@@ -21,7 +21,7 @@ Three features work together:
 
 | Existing | Where | Used for |
 |---|---|---|
-| `Job { values, modules, updated, drive, … }`, synthesized `Codable` | `SurveyCore/Models.swift` | new fields are **optional** so old `job.json` files decode unchanged |
+| `Job { values, modules, updated, drive, … }`, synthesized `Codable` | `TCRoofCore/Models.swift` | new fields are **optional** so old `job.json` files decode unchanged |
 | `FieldKind.photo`, `.photos(max:)`, `.signature` (a signature is stored as `.photo`, PNG) | `Schema.swift`, `PhotoFields.swift` (`SignatureField`, `SignaturePad`) | slots (§2); the lock trigger (§4) |
 | `FieldSpec.isRequired(_:)`, `isFilled(_:)`, `displayText(_:)` | `Schema.swift`, `Progress.swift` | red frames (§2), diff text (§3) |
 | `Job.photoFolders`, `transformerAngles`, `transformerGaps` | `PhotoFolders.swift`, `Schema.swift`, `Progress.swift` | the same section order and names as the Drive photo folders |
@@ -35,7 +35,7 @@ Three features work together:
 
 ## 2. Feature 5: ตรวจรูปทั้งหมด (photo check)
 
-### 2.1 Slots (`SurveyCore/Review/PhotoSlots.swift`)
+### 2.1 Slots (`TCRoofCore/Review/PhotoSlots.swift`)
 
 ```swift
 public enum SlotScope: Hashable, Sendable { case cover, module(UUID) }
@@ -135,7 +135,7 @@ After writing, `model.update(job)` saves as today.
 
 ## 3. Feature 6: เทียบ REV (REV comparison)
 
-### 3.1 Model (`SurveyCore/Review/Revision.swift`)
+### 3.1 Model (`TCRoofCore/Review/Revision.swift`)
 
 ```swift
 /// The answers exactly as issued: what the PDF was made from and what was signed.
@@ -172,7 +172,7 @@ Jobs/<uuid>/revisions/REV00.pdf           the report exported at lock time
 - `loadRevision(rev:job:) -> FormSnapshot?`
 - `revisionPDF(rev:job:) -> URL`
 
-### 3.2 Diff (`SurveyCore/Review/FormDiff.swift`, pure Swift)
+### 3.2 Diff (`TCRoofCore/Review/FormDiff.swift`, pure Swift)
 
 ```swift
 public struct FieldChange: Hashable, Identifiable, Sendable {
@@ -345,11 +345,11 @@ On confirm:
 
 | File | Contents |
 |---|---|
-| `SurveyCore/Review/PhotoSlots.swift` | §2.1 |
-| `SurveyCore/Review/Revision.swift` | `FormSnapshot`, `Revision`, `FormLock`, `Job` extensions, next-REV rule |
-| `SurveyCore/Review/FormDiff.swift` | §3.2 |
-| `SurveyCore/Review/FormHash.swift` | SHA-256 (CryptoKit, with a pure-Swift fallback for Linux tests), canonical encoding, short code |
-| `SurveyCore/JobStore.swift` | `saveRevision`, `loadRevision`, `revisionPDF`, purge rule (§3.4), duplicate rule |
+| `TCRoofCore/Review/PhotoSlots.swift` | §2.1 |
+| `TCRoofCore/Review/Revision.swift` | `FormSnapshot`, `Revision`, `FormLock`, `Job` extensions, next-REV rule |
+| `TCRoofCore/Review/FormDiff.swift` | §3.2 |
+| `TCRoofCore/Review/FormHash.swift` | SHA-256 (CryptoKit, with a pure-Swift fallback for Linux tests), canonical encoding, short code |
+| `TCRoofCore/JobStore.swift` | `saveRevision`, `loadRevision`, `revisionPDF`, purge rule (§3.4), duplicate rule |
 | `SurveyUI/SurveyModel.swift` | `issue(job:)`, `openNextRevision(job:reason:updateDate:)`, lock guard in `update(_:)`, integrity check |
 | `SurveyUI/Review/PhotoReviewPage.swift` | §2.2–2.3 (grid, filters, camera into slot, go-to-field) |
 | `SurveyUI/Review/RevisionsPage.swift` | §3.3 |
@@ -359,7 +359,7 @@ On confirm:
 | `PDFReport/ReportLayout.swift` | "รายการแก้ไข" unit, footer code |
 | `ExcelExport/ExcelExporter.swift` | optional "รายการแก้ไข" sheet |
 | `DriveSync` | `Kind.revisions` upload to `<job>/REV/` |
-| `SurveyCore/WebBackup.swift` | back up `lock`, `revisions` and the snapshot files |
+| `TCRoofCore/WebBackup.swift` | back up `lock`, `revisions` and the snapshot files |
 
 ## 6. Tests (`swift test`, no simulator)
 

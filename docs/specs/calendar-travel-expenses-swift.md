@@ -3,7 +3,7 @@
 **Status:** Ready for development, 2026-09-29
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.
 **App target:** the host app `TCRoof` (jobs, plan, Firebase sync). Pure logic goes in a new, dependency-free target
-`SolarSurveyKit/Sources/FieldOps`, testable with `swift test`.
+`TCRoofKit/Sources/FieldOps`, testable with `swift test`.
 **No new dependencies:** EventKit, EventKitUI, MapKit, CoreLocation, VisionKit, Vision, UserNotifications, and the
 existing `PDFReport` / `ExcelExport` / `DriveSync`.
 
@@ -19,7 +19,7 @@ existing `PDFReport` / `ExcelExport` / `DriveSync`.
 | Existing | Where | Used for |
 |---|---|---|
 | `Job` (SwiftData): `code`, `projectName`, `customerName`, `phone`, `address`, `province`, `team`, `surveyDate` (date + time), `installStart`, `syncID` | `TCRoof/Models/Models.swift` | event content (A), trips per job (B) |
-| NO.224 survey job linked by `jobSyncID`: `coordinator`, `phone`, `address`, `gps` | `SurveyCore` cover fields | better coordinator, phone and location when present |
+| NO.224 survey job linked by `jobSyncID`: `coordinator`, `phone`, `address`, `gps` | `TCRoofCore` cover fields | better coordinator, phone and location when present |
 | `PlanCalendarView` shows survey appointments (`surveys(on:)`) | `TCRoof/Views/Plan/PlanViews.swift` | buttons **นำทาง / โทร / เพิ่มลงปฏิทิน** on each appointment row |
 | `CloudSynced` protocol: text-only Firestore records per SwiftData model; photos stay on the device and Drive | `TCRoof/Sync/CloudRecords.swift`, `CloudSync.swift` | sync of trips and expenses (B) |
 | Firestore rules: members only; collections `jobs`, `surveyForms`, `devices`, `installLogs`, `inspections`, `pwaSurveys` | `firestore.rules` | two new collections (§B6) |
@@ -265,10 +265,10 @@ submitted.
 
 | File | Contents |
 |---|---|
-| `SolarSurveyKit/Sources/FieldOps/EventContent.swift` | builds title, notes, times and alarms from plain values (A2), pure Swift |
-| `SolarSurveyKit/Sources/FieldOps/ReceiptParser.swift` | §B4 rules |
-| `SolarSurveyKit/Sources/FieldOps/ClaimBuilder.swift` | month aggregation, per-job allocation, fuel split, duplicate detection |
-| `SolarSurveyKit/Package.swift` | target `FieldOps` (no dependencies) + tests |
+| `TCRoofKit/Sources/FieldOps/EventContent.swift` | builds title, notes, times and alarms from plain values (A2), pure Swift |
+| `TCRoofKit/Sources/FieldOps/ReceiptParser.swift` | §B4 rules |
+| `TCRoofKit/Sources/FieldOps/ClaimBuilder.swift` | month aggregation, per-job allocation, fuel split, duplicate detection |
+| `TCRoofKit/Package.swift` | target `FieldOps` (no dependencies) + tests |
 | `TCRoof/Calendar/CalendarService.swift` | EventKit: permission, calendar creation, create/update/delete, `CalendarLink` |
 | `TCRoof/Calendar/AddToCalendarButton.swift` | `EKEventEditViewController` wrapper (manual mode) |
 | `TCRoof/Calendar/AppointmentReminders.swift` | `UNUserNotificationCenter` scheduling (§A3) |

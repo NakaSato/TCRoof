@@ -2,7 +2,7 @@
 
 **Companion to:** [`auto-drawing.md`](auto-drawing.md), which covers the design, drawing standard and prototype images.
 **Tank update 2026-10-01:** §8–§12 tank parts follow the D1 design (standard tank picker, confirmed openings, azimuth); the D1 page itself is in [`tank-drawing-swift.md`](tank-drawing-swift.md). The package is now `TCRoofKit` / module `TCRoofCore` (renamed on `main`); paths below keep the old names where the text predates the rename.
-**Package:** `SolarSurveyKit` (targets `SurveyCore`, `SurveyUI`, `PDFReport`).
+**Package:** `TCRoofKit` (targets `TCRoofCore`, `SurveyUI`, `PDFReport`).
 **Swift:** 5.9 tools, iOS 17 / macOS 14 (as in `Package.swift`). No new dependencies.
 **Reference output:** `docs/specs/img/*.png`, rendered by the Python prototypes in the same folder, and the
 interactive tank prototype `docs/specs/prototype/tank-layout.html`, whose parsing, placement and 0.25 m raster match §2 and §8. The Swift output
@@ -13,7 +13,7 @@ should match them. The same inputs must give the same geometry, down to the numb
 ## 0. Preconditions
 
 1. **Branch base.** Build on the `main` that contains this morning's Mac commits (`30b3253 … 904728d`). This spec
-   uses `NumberInput` from `SurveyCore/Validation.swift`, and those commits are not on GitHub yet. Push them first,
+   uses `NumberInput` from `TCRoofCore/Validation.swift`, and those commits are not on GitHub yet. Push them first,
    then branch `feature/auto-drawings` from that `main`.
 2. **Principle.** The surveyor enters **only sizes and distances**. Every other value is derived (§4) or assumed.
    Assumed values are listed in `assumed` and printed under the drawing.
@@ -25,7 +25,7 @@ should match them. The same inputs must give the same geometry, down to the numb
 ## 1. Files
 
 ```
-SolarSurveyKit/Sources/SurveyCore/Drawing/
+TCRoofKit/Sources/TCRoofCore/Drawing/
   Spans.swift              span lists incl. "16@4", cumulative positions
   MemberSpec.swift         member size/spacing parsing
   DrawingSettings.swift    defaults & assumptions (setbacks, sizes, m²/kWp)
@@ -37,10 +37,10 @@ SolarSurveyKit/Sources/SurveyCore/Drawing/
   DrawingKit.swift         layout transform, dimension chains, tags, callouts, legend, notes
   RoofDrawings.swift       section, framing plan, truss details, schedule table
   TankDrawings.swift       roof plan (กปภ. style), section, summary
-SolarSurveyKit/Sources/SurveyUI/
+TCRoofKit/Sources/SurveyUI/
   DrawingField.swift       .roofSection field view
   TankFlowView*.swift      D1 page: five steps (tank-drawing-swift.md)
-SolarSurveyKit/Tests/SurveyCoreTests/
+TCRoofKit/Tests/TCRoofCoreTests/
   SpansTests.swift, MemberSpecTests.swift, RoofTests.swift, TankTests.swift, DrawingSnapshotTests.swift
   Fixtures/drawings/*.svg
 ```
@@ -728,7 +728,7 @@ func sketchUnit(_ sk: Sketch, title: String) -> Unit
 
 ## 11. Tests
 
-All tests use `@testable import SurveyCore` and run with `swift test` on macOS. They do not need the simulator.
+All tests use `@testable import TCRoofCore` and run with `swift test` on macOS. They do not need the simulator.
 
 ```swift
 final class SpansTests: XCTestCase {
@@ -869,6 +869,6 @@ final class TankTests: XCTestCase {
 | 6 | `ReportLayout` integration, `missingGroups`, `autoDrawings` flag | PDF pages match the prototypes; export sheet lists drawing gaps |
 | 7 | Framing plan overlay | Matches `img/framing_plan.png` |
 
-PR 1–4 touch only `SurveyCore` and its tests, so they can be written and reviewed without Xcode.
+PR 1–4 touch only `TCRoofCore` and its tests, so they can be written and reviewed without Xcode.
 PR 5–6 need an iOS build (`xcodebuild -scheme TCRoof -destination 'generic/platform=iOS Simulator'`),
 because `SurveyUI` is `#if canImport(UIKit)` and a macOS `swift build` doesn't compile it.

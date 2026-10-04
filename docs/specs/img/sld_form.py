@@ -1,4 +1,4 @@
-"""Single line diagram generated only from the survey form (field ids as in SurveyCore/Schema.swift).
+"""Single line diagram generated only from the survey form (field ids as in TCRoofCore/Schema.swift).
 
 Reads:  job.meterNo · job.capacity (A1 kWp) · job.trafos[i].kva / .mdb[0..5] (A3) · job.tr{i}_feed / _feedLoc (A3)
         sections: panel (B1 name, breakerAT, loadKW, loadTime) · inverter (B2 inverterCount)

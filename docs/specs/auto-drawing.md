@@ -1,6 +1,6 @@
 # Auto 2D Drawings: Roof Structure & Tank Size
 
-**Status:** Draft · **Owner:** TCRoof · **Module:** `SolarSurveyKit` (SurveyCore / SurveyUI / PDFReport / ExcelExport)
+**Status:** Draft · **Owner:** TCRoof · **Module:** `TCRoofKit` (TCRoofCore / SurveyUI / PDFReport / ExcelExport)
 **Date:** 2026-09-29, tank parts updated 2026-10-01 to the D1 design (see `tank-drawing-swift.md`) · **Swift implementation spec:** [`auto-drawing-swift.md`](auto-drawing-swift.md) · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
 
 ## 1. Goal
@@ -43,7 +43,7 @@ this spec. The Swift implementation should match them.
 
 ## 2. Library decision
 
-**No new dependency.** Build on the drawing model that already exists in `SurveyCore/Sketch.swift`:
+**No new dependency.** Build on the drawing model that already exists in `TCRoofCore/Sketch.swift`:
 
 - `Sketch` / `DrawOp` (line, rect, hatch, circle, polygon, text, textBox, photo) is platform-neutral Swift.
 - It already has four renderers:
@@ -74,14 +74,14 @@ Until then, arcs can be approximated with `.polygon` of 24 points, so the extens
 
 ```
 Values (survey answers)
-   │  parse + validate            SurveyCore/Drawing/RoofInput.swift, TankInput.swift
+   │  parse + validate            TCRoofCore/Drawing/RoofInput.swift, TankInput.swift
    ▼
 RoofInput / TankInput   ── missing: [String]   (what to fill in to get a drawing)
-   │  pure geometry, metres, y-up SurveyCore/Drawing/RoofGeometry.swift, TankGeometry.swift
+   │  pure geometry, metres, y-up TCRoofCore/Drawing/RoofGeometry.swift, TankGeometry.swift
    ▼
 RoofGeometry / TankGeometry
    │  layout: scale to points, flip y, dimensions, tags, legend
-   ▼                              SurveyCore/Drawing/RoofDrawings.swift, TankDrawings.swift, DrawingKit.swift
+   ▼                              TCRoofCore/Drawing/RoofDrawings.swift, TankDrawings.swift, DrawingKit.swift
 Sketch  ──► SketchView (editor) · PDFRenderer (PDF) · png (Excel) · svg (tests)
 ```
 
@@ -91,7 +91,7 @@ Rules:
 - Geometry works in **metres, y-up**. Layout converts to **points, y-down** (the `Sketch` convention).
 - Every stage is a pure function. Drawing functions return `nil` when input is insufficient, and the caller shows
   `input.missing`.
-- New files go under `SolarSurveyKit/Sources/SurveyCore/Drawing/`. Existing `Drawings.plan()` stays and gains
+- New files go under `TCRoofKit/Sources/TCRoofCore/Drawing/`. Existing `Drawings.plan()` stays and gains
   an overlay parameter, so current PDFs are unchanged until the flag is on.
 
 ## 4. Swift API
@@ -402,7 +402,7 @@ Matches the existing `Drawings.plan` look, so the pages read as one set:
 
 | Where | Change |
 |---|---|
-| `SurveyCore/Drawing/*` | New input, geometry and drawing files (§3–4) |
+| `TCRoofCore/Drawing/*` | New input, geometry and drawing files (§3–4) |
 | `Schema.swift` | New fields and kinds (§5). C1 gets `FieldSpec("section", "รูปตัดโครงหลังคา", .roofSection)` after the structure group; D1 gets `.tankDrawing` |
 | `SurveyUI/Fields.swift` | Render `.roofSection` / `.tankDrawing` like `PlanPreview`: live `SketchView`, or a grey box listing `input.missing`. Tap for a full-screen zoomable view |
 | `PDFReport/ReportLayout.swift` | `planSection` (roof, tank): add the section drawing under the plan, with a page break when it doesn't fit. `formSection` (C2/C3): replace `Drawings.truss()` with the section when available, otherwise keep truss |
@@ -414,7 +414,7 @@ Feature flag: `SurveySettings.autoDrawings` (default **on** in Debug, **off** in
 
 ## 9. Testing
 
-All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no simulator.
+All in `Tests/TCRoofCoreTests`. They run with `swift test` on the Mac, with no simulator.
 
 1. **Parsing**
    - `MemberSpec.parse` covers every row of §5.3.
@@ -436,7 +436,7 @@ All in `Tests/SurveyCoreTests`. They run with `swift test` on the Mac, with no s
    - `nil` exactly when `missing` is non-empty
 4. **Snapshots:**
    - `Sketch.svg()` for 6 fixtures (gable C1, hip C1, shed C2, house C3, rect tank buried, round tank above ground)
-     compared with `Tests/SurveyCoreTests/Fixtures/drawings/*.svg`
+     compared with `Tests/TCRoofCoreTests/Fixtures/drawings/*.svg`
    - Regenerate with `RECORD_SNAPSHOTS=1 swift test`
 5. **Manual:**
    - Check the editor preview and PDF on an iPad simulator for the 6 fixtures.

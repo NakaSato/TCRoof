@@ -54,7 +54,7 @@ is derived, and every assumption is printed as ค่าสมมติ.
   - inverter count from the SLD
   - rail length from the layout BOQ
 
-## 3. Checks (`SurveyCore/Logistics/LogisticsAnalysis.swift`, pure Swift, tested on Linux)
+## 3. Checks (`TCRoofCore/Logistics/LogisticsAnalysis.swift`, pure Swift, tested on Linux)
 
 ### 3.1 Vehicles
 
@@ -203,7 +203,7 @@ In **portrait**, the left column becomes a sheet from a toolbar button "เค�
 Everything works offline: the map picture is already in the job, and all checks run on the device. The PDF and share
 sheet work offline too. Only Drive upload waits for a connection.
 
-## 6. Data model (`SurveyCore/Logistics/SiteLogistics.swift`)
+## 6. Data model (`TCRoofCore/Logistics/SiteLogistics.swift`)
 
 ```swift
 public struct NarrowPoint: Codable, Hashable, Identifiable { id; label; at: SitePoint; width: Double?; height: Double?; measured: MeasureSource; photo: Photo? }
@@ -229,10 +229,10 @@ public struct SiteLogistics: Codable, Hashable {
 
 | File | Contents |
 |---|---|
-| `SurveyCore/Logistics/SiteLogistics.swift` | §6 model, `Codable`, `WebBackup` mapping |
-| `SurveyCore/Logistics/LogisticsStandard.swift` | vehicles, cranes (charts), clearances, laydown factors |
-| `SurveyCore/Logistics/LogisticsAnalysis.swift` | §3 → `LogisticsResult` (vehicle checks, crane pick, clearances, laydown, bring list) |
-| `SurveyCore/Logistics/LogisticsDrawing.swift` | overlay and report ops → `Sketch` |
+| `TCRoofCore/Logistics/SiteLogistics.swift` | §6 model, `Codable`, `WebBackup` mapping |
+| `TCRoofCore/Logistics/LogisticsStandard.swift` | vehicles, cranes (charts), clearances, laydown factors |
+| `TCRoofCore/Logistics/LogisticsAnalysis.swift` | §3 → `LogisticsResult` (vehicle checks, crane pick, clearances, laydown, bring list) |
+| `TCRoofCore/Logistics/LogisticsDrawing.swift` | overlay and report ops → `Sketch` |
 | `SurveyUI/Logistics/LogisticsEditor.swift` | §5.1 layout, tools, info bar, tiles, table, bring list |
 | `SurveyUI/Logistics/PencilCanvas.swift` | Pencil/finger split, hover preview, snapping |
 | `SurveyUI/Logistics/ARMeasureView.swift` | LiDAR / ARKit width and height (`ARView`, raycast to planes and mesh) |

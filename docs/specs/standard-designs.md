@@ -199,9 +199,9 @@ No roof designs are seeded. The first station of each building type saves one.
 
 | File | Contents |
 |---|---|
-| `SurveyCore/Designs/StandardDesign.swift` | §5 model, seed JSON for the two sheets, `.tcdesign` import/export |
-| `SurveyCore/Designs/DesignLibrary.swift` | load/save, revision, match ranking (§3.1), rotation, Drive sync hooks |
-| `SurveyCore/Designs/DesignCheck.swift` | states, apply to D1/C1 values, the difference list, progress |
+| `TCRoofCore/Designs/StandardDesign.swift` | §5 model, seed JSON for the two sheets, `.tcdesign` import/export |
+| `TCRoofCore/Designs/DesignLibrary.swift` | load/save, revision, match ranking (§3.1), rotation, Drive sync hooks |
+| `TCRoofCore/Designs/DesignCheck.swift` | states, apply to D1/C1 values, the difference list, progress |
 | `SurveyUI/Designs/DesignPickerSheet.swift` | §3.1 |
 | `SurveyUI/Designs/DesignCheckView.swift` | §3.2 and §3.3; drag snapping; keyboard shortcuts; camera |
 | `SurveyUI/Designs/DesignLibrarySettings.swift` | Settings › คลังแบบมาตรฐาน |

@@ -5,19 +5,59 @@ import TCRoofCore
 
 /// D1 sub-step 3 "จัดแผง" on iPhone (docs/ui/survey-d1-layout-iphone, 390 × 844): the automatic panel layout on the
 /// tank roof (`TankLayout`), its structure materials and three checks before going on. The layout's offset,
-/// orientation and the panels switched off are stored in the tank's values; `panelsBefore` follows the count.
+/// orientation and the panels switched off are stored in the tank's values; `panelsBefore` follows the count. iPad shows
+/// the same cards in two columns (`padLayoutStep`).
 extension TankPageWide {
     static let drawingRef = "B1-C3"
 
     var phoneLayoutCards: some View {
-        VStack(spacing: 12) {
+        layoutSheets(VStack(spacing: 12) {
             phoneTabs
             layoutPlanCard
-            if let l = TankLayout.current(values) {
-                layoutSummaryCard(l)
-                layoutChecksCard(l)
-            }
+            layoutSideCards
+        })
+    }
+
+    @ViewBuilder var layoutSideCards: some View {
+        if let l = TankLayout.current(values) {
+            layoutSummaryCard(l)
+            layoutChecksCard(l)
         }
+    }
+
+    /// iPad: the plan card on the left, the materials and checks on the right; one column in portrait.
+    @ViewBuilder var padLayoutStep: some View {
+        let next = nextButton("ถัดไป · ภาพถ่าย ›") { withAnimation { tab = 4 } }
+        if stacked {
+            layoutSheets(ScrollView {
+                VStack(spacing: 14) {
+                    layoutPlanCard.frame(maxWidth: 640)
+                    layoutSideCards.frame(maxWidth: 640)
+                    next.frame(maxWidth: 640)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 8)
+            }
+            .scrollIndicators(.hidden))
+        } else {
+            layoutSheets(HStack(alignment: .top, spacing: gap) {
+                ScrollView { layoutPlanCard.frame(maxWidth: 680).frame(maxWidth: .infinity) }.scrollIndicators(.hidden)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        layoutSideCards
+                        next
+                    }
+                }
+                .scrollIndicators(.hidden)
+                .frame(width: 360)
+            }
+            .frame(maxHeight: .infinity))
+        }
+    }
+
+    /// First open, the question before a new layout and the B1-C3 sheet, for both layouts.
+    func layoutSheets<V: View>(_ content: V) -> some View {
+        content
         .onAppear(perform: openLayout)
         .confirmationDialog("ล้างการแก้แผงที่ทำไว้?", isPresented: Binding(get: { layoutAsk != nil }, set: { if !$0 { layoutAsk = nil } }),
                             titleVisibility: .visible) {

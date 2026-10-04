@@ -29,8 +29,6 @@ extension TankPageWide {
             }
         }
         .fullScreenCover(isPresented: $planFull) { planFullScreen }
-        .fullScreenCover(isPresented: $obsFull) { obstacleFullScreen }
-        .fullScreenCover(isPresented: $layoutFull) { layoutFullScreen }
     }
 
     /// `-surveyD1 obstbottom` / `layoutbottom`: sub-step 2 / 3 scrolled to its end (no scrolling in the simulator here).

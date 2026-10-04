@@ -9,7 +9,15 @@ public enum Tank {
         public static let type = "tankType", pos = "tankPos", height = "tankHeight", surface = "surface", soil = "soilDepth"
         public static let exposed = "tankExposed", azimuth = "tankAzimuth", azimuthAt = "tankAzimuthAt"
         public static let azimuthSrc = "tankAzimuthSrc", azimuthAcc = "tankAzimuthAcc"
+        /// The vents' height above the roof (docs/specs/tank-mounting-layout.md §2), one value per tank.
+        public static let ventHeight = "ventHeight"
     }
+
+    // MARK: vent height
+
+    /// The vents' height above the roof as measured, nil when not measured (the layout then assumes 1.00 m).
+    public static func ventHeight(_ v: Values) -> Double? { v.number(Key.ventHeight) }
+    public static func setVentHeight(_ v: inout Values, _ h: Double?) { v[Key.ventHeight] = h.map { num(min(5, max(0, $0))) } }
 
     // MARK: size presets
 

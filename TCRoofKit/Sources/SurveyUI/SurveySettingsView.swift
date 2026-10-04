@@ -17,6 +17,19 @@ struct SurveySettingsView: View {
                     TextField("ชื่อวิศวกรผู้สำรวจ (ใส่ให้งานใหม่อัตโนมัติ)", text: $s.engineer)
                 }
                 Section {
+                    Picker("แผงโซลาร์", selection: $s.pvModule) {
+                        ForEach(PVModuleCatalog.all) { spec in
+                            ForEach(spec.variants) { v in Text("\(spec.manufacturer) \(spec.series) · \(Int(v.pmaxW)) W").tag(v.id) }
+                        }
+                    }
+                    if let hit = PVModuleCatalog.variant(s.pvModule) {
+                        LabeledContent("ขนาด", value: "\(Int(hit.spec.mechanical.lengthMm)) × \(Int(hit.spec.mechanical.widthMm)) มม. · \(hit.spec.mechanical.weightKg.formatted()) กก.")
+                        LabeledContent("Voc / Isc", value: "\(hit.variant.stc.vocV.formatted()) V / \(hit.variant.stc.iscA.formatted()) A")
+                    }
+                } header: { Text("แผงโซลาร์") } footer: {
+                    Text("ใช้คิด W/แผง → kWp ในภาพสถานที่ติดตั้ง (A2) ข้อมูลจาก datasheet ที่แนบไว้ในแอป")
+                }
+                Section {
                     SecureField("Google Maps API key (Maps Static API)", text: $s.googleMapsKey)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                     Stepper(value: $s.mapZoom, in: 15...21) {

@@ -275,7 +275,7 @@ extension SitePageWide {
         return kind + " " + ISODate.thai(ISODate.string(p.takenAt)) + " " + p.takenAt.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
 
-    /// Panels from the C sections (before − cut), for checking the drawn area; W/panel and kWp come later.
+    /// Panels from the C / D sections (before − cut) × W/panel of the module chosen in settings = kWp.
     var panelChip: some View {
         let n = job.modules.filter { $0.type == .roof || $0.type == .tank }.reduce(0.0) { sum, m in
             sum + max(0, (m.values.number("panelsBefore") ?? 0) - (m.values.number("panelsCut") ?? 0))
@@ -283,7 +283,12 @@ extension SitePageWide {
         return HStack(spacing: 4) {
             Text("C1").foregroundStyle(Home.muted)
             Text(n > 0 ? "\(Int(n)) แผง" : "— แผง").bold()
-            Text("× [W/แผง] = [kWp]").foregroundStyle(Home.muted)
+            if let w = PVModuleCatalog.variant(model.settings.pvModule)?.variant.pmaxW {
+                Text("× \(Int(w)) W =").foregroundStyle(Home.muted)
+                Text(n > 0 ? String(format: "%.1f kWp", n * w / 1000) : "— kWp").bold()
+            } else {
+                Text("× [W/แผง] = [kWp]").foregroundStyle(Home.muted)
+            }
         }
         .font(.system(size: 13)).lineLimit(1).fixedSize()
         .padding(.horizontal, 10).frame(minHeight: 36)

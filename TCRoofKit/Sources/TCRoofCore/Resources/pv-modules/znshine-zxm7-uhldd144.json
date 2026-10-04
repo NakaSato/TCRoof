@@ -1,0 +1,393 @@
+{
+  "schema": "tcroof.pv-module/1",
+  "id": "znshine-zxm7-uhldd144",
+  "manufacturer": "ZNShine Solar",
+  "series": "ZXM7-UHLDD144",
+  "description": "16BB half-cell N-type TOPCon bifacial double-glass monocrystalline",
+  "technology": "N-type TOPCon",
+  "cell": {
+    "type": "N-type monocrystalline, half-cut, 16BB",
+    "count": 144,
+    "layout": "6x24",
+    "waferMm": 182
+  },
+  "bifacial": true,
+  "bifacialFactor": {
+    "value": 0.8,
+    "tolerance": 0.1
+  },
+  "glass": "2.0 mm + 2.0 mm heat-strengthened, AR coated",
+  "source": {
+    "datasheet": "ZXM7-UHLDD144_182_2278x1134_30x32NH__565-595W_350mm_Type_29_20231007_E.pdf",
+    "version": "ZXM7-UHLDD144 2301.E",
+    "date": "2023-10-07",
+    "note": "PDF title says 555-585W; the datasheet tables are 565-595W and are used here"
+  },
+  "mechanical": {
+    "lengthMm": 2278,
+    "widthMm": 1134,
+    "thicknessMm": 30,
+    "toleranceMm": 2,
+    "weightKg": 31.5,
+    "weightToleranceKg": 1.0,
+    "areaM2": 2.583,
+    "frame": {
+      "heightMm": 30,
+      "flangeMm": 18
+    },
+    "mountingHoles": [
+      {
+        "count": 4,
+        "slotMm": [
+          14,
+          9
+        ],
+        "pitchAlongLengthMm": 1400,
+        "pitchAcrossWidthMm": 1088
+      },
+      {
+        "count": 4,
+        "slotMm": [
+          10,
+          7
+        ],
+        "pitchAlongLengthMm": 400,
+        "pitchAcrossWidthMm": 1088
+      }
+    ],
+    "groundingHoles": {
+      "count": 4,
+      "diameterMm": 4
+    },
+    "drainageHoles": {
+      "count": 16,
+      "slotMm": [
+        8,
+        3
+      ]
+    },
+    "junctionBox": {
+      "ip": "IP68",
+      "bypassDiodes": 3
+    },
+    "cable": {
+      "crossSectionMm2": 4,
+      "lengthMm": 350
+    },
+    "connector": "MC4-compatible"
+  },
+  "limits": {
+    "maxSystemVoltageV": 1500,
+    "maxSeriesFuseA": 30,
+    "operatingTempC": {
+      "min": -40,
+      "max": 85
+    },
+    "frontStaticLoadPa": 5400,
+    "rearStaticLoadPa": 2400,
+    "fireRating": "Type 29"
+  },
+  "temperature": {
+    "nmotC": 44,
+    "nmotToleranceC": 2,
+    "pmaxPctPerC": -0.3,
+    "pmaxCoeffTolerance": 0.03,
+    "vocPctPerC": -0.25,
+    "iscPctPerC": 0.046
+  },
+  "testConditions": {
+    "stc": "1000 W/m², module 25±2 °C, AM 1.5",
+    "nmot": "800 W/m², ambient 20 °C, AM 1.5, wind 1 m/s",
+    "measurementTolerancePct": 3
+  },
+  "warranty": {
+    "productYears": 12,
+    "outputYears": 30,
+    "annualDegradationPct": 0.4
+  },
+  "packaging": {
+    "piecesPerBox": 36,
+    "piecesPer40HQ": 720
+  },
+  "certifications": [
+    "IEC 61215",
+    "IEC 61730",
+    "IEC 61701",
+    "IEC 62716",
+    "UL 61730",
+    "ISO 9001",
+    "ISO 14001",
+    "ISO 45001"
+  ],
+  "defaultVariant": "zxm7-uhldd144-570",
+  "variants": [
+    {
+      "id": "zxm7-uhldd144-565",
+      "pmaxW": 565,
+      "stc": {
+        "vmpV": 42.2,
+        "impA": 13.39,
+        "vocV": 50.9,
+        "iscA": 14.17,
+        "efficiencyPct": 21.87
+      },
+      "nmot": {
+        "pmaxW": 426.4,
+        "vmpV": 39.7,
+        "impA": 10.74,
+        "vocV": 48.0,
+        "iscA": 11.44
+      },
+      "rearGain25": {
+        "pmaxW": 706,
+        "vmpV": 42.3,
+        "impA": 16.7,
+        "vocV": 51.0,
+        "iscA": 17.67
+      }
+    },
+    {
+      "id": "zxm7-uhldd144-570",
+      "pmaxW": 570,
+      "stc": {
+        "vmpV": 42.4,
+        "impA": 13.45,
+        "vocV": 51.1,
+        "iscA": 14.23,
+        "efficiencyPct": 22.07
+      },
+      "nmot": {
+        "pmaxW": 430.3,
+        "vmpV": 39.9,
+        "impA": 10.79,
+        "vocV": 48.2,
+        "iscA": 11.48
+      },
+      "rearGain25": {
+        "pmaxW": 713,
+        "vmpV": 42.5,
+        "impA": 16.76,
+        "vocV": 51.2,
+        "iscA": 17.74
+      }
+    },
+    {
+      "id": "zxm7-uhldd144-575",
+      "pmaxW": 575,
+      "stc": {
+        "vmpV": 42.6,
+        "impA": 13.5,
+        "vocV": 51.3,
+        "iscA": 14.29,
+        "efficiencyPct": 22.26
+      },
+      "nmot": {
+        "pmaxW": 433.9,
+        "vmpV": 40.0,
+        "impA": 10.83,
+        "vocV": 48.4,
+        "iscA": 11.53
+      },
+      "rearGain25": {
+        "pmaxW": 719,
+        "vmpV": 42.7,
+        "impA": 16.83,
+        "vocV": 51.4,
+        "iscA": 17.82
+      }
+    },
+    {
+      "id": "zxm7-uhldd144-580",
+      "pmaxW": 580,
+      "stc": {
+        "vmpV": 42.8,
+        "impA": 13.56,
+        "vocV": 51.5,
+        "iscA": 14.35,
+        "efficiencyPct": 22.45
+      },
+      "nmot": {
+        "pmaxW": 437.8,
+        "vmpV": 40.2,
+        "impA": 10.88,
+        "vocV": 48.6,
+        "iscA": 11.58
+      },
+      "rearGain25": {
+        "pmaxW": 725,
+        "vmpV": 42.9,
+        "impA": 16.9,
+        "vocV": 51.6,
+        "iscA": 17.88
+      }
+    },
+    {
+      "id": "zxm7-uhldd144-585",
+      "pmaxW": 585,
+      "stc": {
+        "vmpV": 43.0,
+        "impA": 13.61,
+        "vocV": 51.7,
+        "iscA": 14.41,
+        "efficiencyPct": 22.65
+      },
+      "nmot": {
+        "pmaxW": 441.4,
+        "vmpV": 40.4,
+        "impA": 10.93,
+        "vocV": 48.8,
+        "iscA": 11.63
+      },
+      "rearGain25": {
+        "pmaxW": 731,
+        "vmpV": 43.1,
+        "impA": 16.97,
+        "vocV": 51.8,
+        "iscA": 17.96
+      }
+    },
+    {
+      "id": "zxm7-uhldd144-590",
+      "pmaxW": 590,
+      "stc": {
+        "vmpV": 43.2,
+        "impA": 13.67,
+        "vocV": 51.9,
+        "iscA": 14.47,
+        "efficiencyPct": 22.84
+      },
+      "nmot": {
+        "pmaxW": 445.1,
+        "vmpV": 40.6,
+        "impA": 10.98,
+        "vocV": 49.0,
+        "iscA": 11.68
+      },
+      "rearGain25": {
+        "pmaxW": 737,
+        "vmpV": 43.3,
+        "impA": 17.04,
+        "vocV": 52.0,
+        "iscA": 18.02
+      }
+    },
+    {
+      "id": "zxm7-uhldd144-595",
+      "pmaxW": 595,
+      "stc": {
+        "vmpV": 43.4,
+        "impA": 13.72,
+        "vocV": 52.1,
+        "iscA": 14.53,
+        "efficiencyPct": 23.03
+      },
+      "nmot": {
+        "pmaxW": 449.0,
+        "vmpV": 40.8,
+        "impA": 11.03,
+        "vocV": 49.2,
+        "iscA": 11.73
+      },
+      "rearGain25": {
+        "pmaxW": 743,
+        "vmpV": 43.5,
+        "impA": 17.11,
+        "vocV": 52.2,
+        "iscA": 18.08
+      }
+    }
+  ],
+  "catalogEntries": [
+    {
+      "id": "zn565",
+      "w": 565,
+      "model": "ZNShine ZXM7-UHLDD144 565 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 50.9,
+      "isc": 14.17,
+      "vmp": 42.2,
+      "imp": 13.39
+    },
+    {
+      "id": "zn570",
+      "w": 570,
+      "model": "ZNShine ZXM7-UHLDD144 570 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 51.1,
+      "isc": 14.23,
+      "vmp": 42.4,
+      "imp": 13.45
+    },
+    {
+      "id": "zn575",
+      "w": 575,
+      "model": "ZNShine ZXM7-UHLDD144 575 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 51.3,
+      "isc": 14.29,
+      "vmp": 42.6,
+      "imp": 13.5
+    },
+    {
+      "id": "zn580",
+      "w": 580,
+      "model": "ZNShine ZXM7-UHLDD144 580 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 51.5,
+      "isc": 14.35,
+      "vmp": 42.8,
+      "imp": 13.56
+    },
+    {
+      "id": "zn585",
+      "w": 585,
+      "model": "ZNShine ZXM7-UHLDD144 585 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 51.7,
+      "isc": 14.41,
+      "vmp": 43.0,
+      "imp": 13.61
+    },
+    {
+      "id": "zn590",
+      "w": 590,
+      "model": "ZNShine ZXM7-UHLDD144 590 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 51.9,
+      "isc": 14.47,
+      "vmp": 43.2,
+      "imp": 13.67
+    },
+    {
+      "id": "zn595",
+      "w": 595,
+      "model": "ZNShine ZXM7-UHLDD144 595 W",
+      "l": 2278,
+      "wd": 1134,
+      "t": 30,
+      "kg": 31.5,
+      "voc": 52.1,
+      "isc": 14.53,
+      "vmp": 43.4,
+      "imp": 13.72
+    }
+  ]
+}

@@ -8,7 +8,6 @@ struct SurveyListView: View {
     @State private var window: DateWindow = .week
     @State private var search = ""
     @State private var showNewJob = false
-    @Environment(\.dismiss) private var dismiss
 
     /// Three cards across at 1366 pt, two at 1024 pt.
     private let columns = isPhone ? cardColumns : [GridItem(.adaptive(minimum: 400), spacing: 16)]
@@ -44,53 +43,16 @@ struct SurveyListView: View {
             }
             .padding(24)
         }
-        .safeAreaInset(edge: .top, spacing: 0) { topBar }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            PageTopBar(title: "สำรวจหน้างาน", trail: ["หน้าหลัก", "สำรวจหน้างาน"], current: "รายการงานสำรวจ") {
+                TopBarLink(title: "ประวัติการสำรวจ", systemImage: "clock.arrow.circlepath") { SurveyHistoryView() }
+            }
+        }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
             FloatingButton(systemImage: "person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่") { showNewJob = true }
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showNewJob) { NewJobView() }
-    }
-
-    /// Back, page title over the breadcrumb, and the history button, on a white bar.
-    private var topBar: some View {
-        HStack(spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .frame(width: 44, height: 44)
-                    .secondaryButtonFrame()
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("กลับหน้าหลัก")
-            VStack(alignment: .leading, spacing: 0) {
-                Text("สำรวจหน้างาน").font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.navy)
-                (Text("หน้าหลัก › สำรวจหน้างาน › ") + Text("รายการงานสำรวจ").bold().foregroundColor(Theme.navy))
-                    .font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            }
-            Spacer(minLength: 12)
-            NavigationLink { SurveyHistoryView() } label: {
-                Label("ประวัติการสำรวจ", systemImage: "clock.arrow.circlepath")
-                    .font(.system(size: 17, weight: .bold))
-                    .padding(.horizontal, 16).frame(minHeight: 44)
-                    .secondaryButtonFrame()
-            }
-            .buttonStyle(.plain)
-        }
-        .foregroundStyle(Theme.navy)
-        .padding(.horizontal, 24).padding(.vertical, 12)
-        .frame(minHeight: 72)
-        .background(.white)
-        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
-    }
-}
-
-private extension View {
-    /// Design system `tc-btn secondary`: white, 1 pt control border, radius 8.
-    func secondaryButtonFrame() -> some View {
-        background(.white, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
-            .contentShape(RoundedRectangle(cornerRadius: 8))
     }
 }

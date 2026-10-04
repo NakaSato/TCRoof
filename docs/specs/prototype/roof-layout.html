@@ -1,0 +1,617 @@
+<title>วางแผงบนหลังคา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Layout: same drafting table as the tank editor. Controls left, live layout right, quantities under it.
+   The drawing is a paper document and keeps its light paper in both themes. */
+:root {
+  --bg: #eef1f0; --panel: #ffffff; --field: #fbfcfb; --ink: #1d2826; --muted: #5d6b68; --line: #d3dbd8;
+  --accent: #1f4e79; --accent-soft: #e3ecf5; --good: #2f855a; --good-soft: #dcefe3; --warn: #b3372e; --warn-soft: #fbe9e7;
+  --doc: #ffffff; --doc-ink: #1b1b1b; --doc-grid: #9aa6a3; --doc-soft: #6a6a6a; --doc-mod: #1f4e79; --doc-modfill: #e8eff7;
+  --doc-open: #8a8a8a; --doc-clamp: #2ead4b; --doc-lug: #e0433a; --doc-sel: #f0a020; --doc-hover: rgba(240, 160, 32, .18);
+  --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
+  --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
+.wrap { max-width: 1520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 80ch; }
+.main { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); padding: 0; margin-bottom: 2px; }
+.sec { border-top: 1px solid var(--line); padding-top: 12px; }
+label { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 90px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+input[type=range] { padding: 0; accent-color: var(--accent); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 12px; color: var(--muted); }
+button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 9px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+button.go { background: var(--good-soft); color: var(--good); font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.val { font: 500 12px/1 var(--f-num); color: var(--accent); }
+.board { display: grid; gap: 10px; min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.tools .spacer { flex: 1 1 0; }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 50px; }
+.info b { font-weight: 600; }
+.info .k { color: var(--muted); font-size: 12px; }
+.info .v { font-family: var(--f-num); font-size: 13px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--warn-soft); color: var(--warn); }
+.canvas { background: var(--doc); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 80vh; }
+.canvas svg { display: block; width: 100%; height: auto; font-family: var(--f-draw); user-select: none; -webkit-user-select: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+.stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.stat.hl { background: var(--good-soft); border-color: transparent; }
+.stat.hl b, .stat.hl span { color: var(--good); }
+.delta { font: 500 11px/1 var(--f-num); margin-left: 4px; }
+.delta.up { color: var(--good); } .delta.down { color: var(--warn); }
+.notes { display: grid; gap: 4px; font-size: 13px; }
+.notes div { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 5px 10px; }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+/* drawing */
+.canvas svg * { pointer-events: none; }
+.canvas svg .hit { pointer-events: all; cursor: pointer; }
+.d-t { fill: var(--doc-ink); font-size: 13px; }
+.d-s { fill: var(--doc-soft); font-size: 12px; }
+.d-b { font-weight: 600; }
+.mod { fill: var(--doc-modfill); stroke: var(--doc-mod); stroke-width: .8; }
+.mod.off { fill: none; stroke: var(--doc-lug); stroke-dasharray: 3 2; }
+.mod.sel { fill: #fde9c4; }
+.hit.m:hover + .mod, .mod.hov { fill: #fde9c4; }
+.foot-dot { fill: var(--doc-clamp); }
+.mod.cut { fill: none; stroke: var(--doc-lug); stroke-width: 1.4; }
+.mod.shd { fill: none; stroke: #d9a86c; stroke-dasharray: 2 2; }
+.facechk { display: grid; gap: 6px; }
+.facechk label { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.facechk input { width: auto; }
+.facechk .v { margin-left: auto; font: 500 12px/1 var(--f-num); color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>วางแผงบนหลังคาอัตโนมัติ <span class="pill ok" id="tag">ตัวอย่าง: หลังคาจั่ว 42 × 24 ม.</span></h1>
+    <p>ผังนี้วางเองจากแปลนหลังคา C1 (ช่วงเสา แนวลอน ความสูงชายคา/สัน ระยะแป สิ่งกีดขวาง) รางทั้ง 2 เส้นของทุกแถวต้องตกบนแป L-foot ไม่ชนสิ่งกีดขวาง (ถ้าหลบไม่ได้ ระบบตัดแผงช่องนั้นออกเป็นกรอบแดง) และเว้นแผงออกจากเงาของปล่อง ลูกหมุน ท่อ ช่วง 09:00–15:00 แตะแผง L-foot หรือสิ่งกีดขวางเพื่อดูเหตุผล</p>
+  </header>
+  <div class="main">
+    <form class="sheet" id="form" autocomplete="off">
+      <fieldset>
+        <legend>หลังคา</legend>
+        <div class="seg" role="group" aria-label="หลังคาตัวอย่าง">
+          <button type="button" data-preset="gable" aria-pressed="true">จั่ว</button>
+          <button type="button" data-preset="hip" aria-pressed="false">ปั้นหยา</button>
+          <button type="button" data-preset="shed" aria-pressed="false">เพิงหมาแหงน</button>
+        </div>
+        <div class="row">
+          <label>สูงชายคา (ม.)<input class="num" id="eave" inputmode="decimal"></label>
+          <label>สูงสัน (ม.)<input class="num" id="ridge" inputmode="decimal"></label>
+        </div>
+        <div class="row">
+          <label>ระยะแป (ม.)<input class="num" id="purlin" inputmode="decimal"></label>
+          <label>ทิศของขอบบนแปลน (°)<input class="num" id="bearing" inputmode="decimal"></label>
+        </div>
+        <div class="hint" id="roofNote"></div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>วิธียึด</legend>
+        <div class="seg" role="group" aria-label="วิธียึด">
+          <button type="button" data-mount="purlin" aria-pressed="true">ยึดเข้าแป</button>
+          <button type="button" data-mount="rib" aria-pressed="false">จับสันลอน</button>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="shade" style="width:auto" checked> เว้นเงาสิ่งกีดขวาง 09:00–15:00 ทั้งปี</label>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>ด้านหลังคาที่วางแผง</legend>
+        <div class="facechk" id="faces"></div>
+        <div class="hint" id="faceNote"></div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>จัดแนวผัง</legend>
+        <div class="seg" role="group" aria-label="ด้าน" id="faceSeg"></div>
+        <label>เลื่อนแนวแผงตามชายคา <span class="val" id="colV"></span><input type="range" id="col" min="0" max="1.15" step="0.05"></label>
+        <button type="button" class="go" id="best">หาผังที่ได้แผงมากที่สุด</button>
+        <div class="hint" id="bestNote">ลองแนวแผงทีละ 0.05 ม. แนวแถวทีละ 0.10 ม. ทุกด้าน</div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>มาตรฐานการยึดแผง</legend>
+        <div class="row">
+          <label>แผง ยาว × กว้าง (ม.)<input class="num" id="modL"></label>
+          <label>&nbsp;<input class="num" id="modW"></label>
+          <label>W/แผง<input class="num" id="modWp"></label>
+        </div>
+        <div class="row">
+          <label>ช่วงจับแผงจากปลาย (ม.)<input class="num" id="clampMin"></label>
+          <label>&nbsp;<input class="num" id="clampMax"></label>
+          <label>L-foot ห่างไม่เกิน<input class="num" id="footDx"></label>
+        </div>
+        <div class="row">
+          <label>ร่นชายคา<input class="num" id="setEave"></label>
+          <label>ร่นสัน<input class="num" id="setRidge"></label>
+          <label>ร่นขอบจั่ว/ตะเข้<input class="num" id="setVerge"></label>
+        </div>
+        <button type="button" class="ghost" id="resetStd">คืนค่ามาตรฐาน</button>
+      </fieldset>
+    </form>
+
+    <section class="board">
+      <div class="tools">
+        <div class="seg" role="group" aria-label="โหมด">
+          <button type="button" data-mode="inspect" aria-pressed="true">ดูรายละเอียด</button>
+          <button type="button" data-mode="remove" aria-pressed="false">เอาแผงออก / ใส่คืน</button>
+        </div>
+        <button type="button" class="ghost" id="undo">↶ ย้อนกลับ</button>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="มุมมอง">
+          <button type="button" data-view="plan" aria-pressed="true">แปลน</button>
+          <button type="button" data-view="section" aria-pressed="false">รูปตัดแถวที่เลือก</button>
+        </div>
+      </div>
+      <div class="info" id="info"></div>
+      <div class="canvas"><svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ผังแผงบนหลังคา"></svg></div>
+      <div class="stats" id="stats"></div>
+      <div class="notes" id="notes"></div>
+      <div class="foot"><span id="assumed"></span><span>สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบรรทุกของโครงหลังคากับวิศวกรโครงสร้าง</span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const f2 = v => (Math.round(v * 100) / 100).toFixed(2);
+  const fmt = v => v.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  const R2D = 180 / Math.PI, D2R = Math.PI / 180;
+
+  // ---- sample roofs (C1 input: spans, sheet direction, heights, purlin "@", obstacles with kind + height) ----
+  const sky = (x, y, h) => ({ kind: "skylight", x, y, w: 0.82, h });
+  const ROOFS = {
+    gable: { tag: "ตัวอย่าง: หลังคาจั่ว 42 × 24 ม.", shape: "gable", bx: Array(7).fill(6), by: Array(4).fill(6), eave: 6.0, ridge: 7.5, purlin: 1.2, bearing: 15,
+      obst: [10.3, 20.6, 30.9].flatMap(x => [sky(x, 3, 6), sky(x, 15, 6)])
+        .concat([4.7, 15.7, 26.2, 36.7].map(x => ({ kind: "turbine", x, y: 10.9, w: 0.6, h: 0.6 })))
+        .concat([{ kind: "stack", x: 37.2, y: 16.4, w: 0.5, h: 0.5, hgt: 2.5 }, { kind: "pipe", x: 16.9, y: 5.2, w: 0.15, h: 0.15, hgt: 0.8 },
+                 { kind: "other", x: 2.0, y: 19.0, w: 1.6, h: 1.2, hgt: 0.9, label: "คอยล์ร้อนแอร์" }]) },
+    hip: { tag: "ตัวอย่าง: หลังคาปั้นหยา 30 × 18 ม.", shape: "hip", bx: Array(6).fill(5), by: Array(3).fill(6), eave: 4.0, ridge: 6.6, purlin: 1.0, bearing: 0,
+      obst: [{ kind: "turbine", x: 14.7, y: 8.0, w: 0.6, h: 0.6 }, sky(8.0, 12.5, 4), sky(21.0, 12.5, 4), { kind: "pipe", x: 22.0, y: 4.0, w: 0.15, h: 0.15, hgt: 0.6 }] },
+    shed: { tag: "ตัวอย่าง: หลังคาเพิงหมาแหงน 30 × 12 ม.", shape: "shed", bx: Array(5).fill(6), by: [6, 6], eave: 5.0, ridge: 6.3, purlin: 1.1, bearing: -20,
+      obst: [sky(9.0, 1.0, 10), sky(19.5, 1.0, 10), { kind: "stack", x: 26.0, y: 3.0, w: 0.6, h: 0.6, hgt: 1.8 }] },
+  };
+  const KINDS = { skylight: [0.10, 0.50, 0, "แผ่นโปร่งแสง"], turbine: [0.30, 0.30, 0.60, "ลูกหมุนระบายอากาศ"], stack: [0.30, 0.30, 2.0, "ปล่อง / ท่อไอเสีย"],
+                  pipe: [0.30, 0.30, 0.50, "ท่อระบาย"], other: [0.30, 0.30, 0, "สิ่งกีดขวางอื่น"] };   // module clear, foot clear, default height, label
+  const STD0 = { modL: 2.28, modW: 1.13, modWp: 600, clampMin: 0.34, clampMax: 0.68, footDx: 1.2, setEave: 0.3, setRidge: 0.4, setVerge: 0.5 };
+  const FIX = { gap: 0.02, railOver: 0.05, cant: 0.40, footMin: 0.30, stock: 4.2, faceMin: 0.85, lat: 17.0 };
+
+  let st = { preset: "gable", ...pick(ROOFS.gable), mount: "purlin", shade: true, std: { ...STD0 }, off: {}, shift: {}, centre: {}, use: {}, removed: new Set(), face: "S" };
+  function pick(r) { return { eave: r.eave, ridge: r.ridge, purlin: r.purlin, bearing: r.bearing }; }
+  let mode = "inspect", view = "plan", sel = null, prevQ = null, undo = [], Q = null, G = null;
+  const snap = () => JSON.stringify({ ...st, removed: [...st.removed] });
+  const push = () => { undo.push(snap()); if (undo.length > 100) undo.shift(); $("undo").disabled = false; };
+
+  // ---- sun + yield (same model as img/tank_mount_opt.py; flush mount, so no row shading) ----
+  function sun(lat, n, t) {
+    const d = D2R * 23.45 * Math.sin(D2R * 360 * (284 + n) / 365), w = D2R * 15 * (t - 12), p = D2R * lat;
+    const a = Math.asin(Math.max(-1, Math.min(1, Math.sin(p) * Math.sin(d) + Math.cos(p) * Math.cos(d) * Math.cos(w))));
+    if (a <= 0) return null;
+    const cz = (Math.sin(a) * Math.sin(p) - Math.sin(d)) / (Math.cos(a) * Math.cos(p));
+    return [a * R2D, Math.acos(Math.max(-1, Math.min(1, cz))) * R2D * (w > 0 ? 1 : -1)];
+  }
+  let SUN = null;
+  function sunTable() {
+    if (SUN) return SUN; SUN = [];
+    for (let n = 1; n < 366; n += 3) for (let t = 5; t <= 19; t += 0.25) {
+      const s = sun(FIX.lat, n, t); if (!s) continue;
+      const cz = Math.sin(D2R * s[0]), ghi = 1098 * cz * Math.exp(-0.057 / cz) * 0.72, i0 = 1367 * (1 + 0.033 * Math.cos(D2R * 360 * n / 365)) * cz;
+      const kt = i0 > 0 ? ghi / i0 : 0;
+      const fd = kt <= 0.22 ? 1 - 0.09 * kt : kt <= 0.8 ? 0.9511 - 0.1604 * kt + 4.388 * kt ** 2 - 16.638 * kt ** 3 + 12.336 * kt ** 4 : 0.165;
+      SUN.push([s[0], s[1], ghi, (ghi - ghi * fd) / cz, ghi * fd]);
+    }
+    return SUN;
+  }
+  function yieldOf(tilt, gp) {       // kWh/kWp/yr
+    const b = D2R * tilt; let e = 0;
+    for (const [alt, g, ghi, dni, dhi] of sunTable()) {
+      const a = D2R * alt, ci = Math.cos(b) * Math.sin(a) + Math.sin(b) * Math.cos(a) * Math.cos(D2R * (g - gp));
+      e += dni * Math.max(0, ci) + dhi * (1 + Math.cos(b)) / 2 + ghi * 0.2 * (1 - Math.cos(b)) / 2;
+    }
+    return e * 0.25 * 3 * 0.8 / 1000;
+  }
+  const COMPASS = ["เหนือ", "ตะวันออกเฉียงเหนือ", "ตะวันออก", "ตะวันออกเฉียงใต้", "ใต้", "ตะวันตกเฉียงใต้", "ตะวันตก", "ตะวันตกเฉียงเหนือ"];
+  const compass = az => COMPASS[Math.floor(((az % 360 + 360) % 360 + 22.5) / 45) % 8];
+
+  // ---- geometry ----
+  const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0), sub = (a, b) => a.map((v, i) => v - b[i]);
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  function hull(P) {
+    P = [...new Map(P.map(p => [p[0].toFixed(4) + "," + p[1].toFixed(4), p])).values()].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (P.length < 3) return P;
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); const lo = [], up = [];
+    for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (const p of [...P].reverse()) { while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    return lo.slice(0, -1).concat(up.slice(0, -1));
+  }
+  function sat(A, B) {
+    for (const P of [A, B]) for (let i = 0; i < P.length; i++) {
+      const [x1, y1] = P[i], [x2, y2] = P[(i + 1) % P.length], nx = y2 - y1, ny = x1 - x2;
+      const a = A.map(([x, y]) => nx * x + ny * y), b = B.map(([x, y]) => nx * x + ny * y);
+      if (Math.max(...a) <= Math.min(...b) || Math.max(...b) <= Math.min(...a)) return false;
+    }
+    return true;
+  }
+  const inFace = (hp, pts) => pts.every(p => hp.every(([n, d]) => n[0] * p[0] + n[1] * p[1] >= d - 1e-9));
+
+  function roofGeom() {
+    const r = ROOFS[st.preset], S = st.std, LX = r.bx.reduce((a, b) => a + b), LY = r.by.reduce((a, b) => a + b);
+    const A = LX, B = LY, rise = st.ridge - st.eave, shed = r.shape === "shed", hip = r.shape === "hip";
+    const h = shed ? B : B / 2, th = Math.atan(Math.max(rise, 0.01) / h), c = Math.cos(th), Ls = h / c;
+    const down = (dx, dy) => ((st.bearing + Math.atan2(dx, -dy) * R2D) % 360 + 360) % 360;
+    const F = [];
+    const add = (name, poly, ek, map, dv) => F.push({ name, poly, ek, map, az: down(...dv), tilt: th, Ls });
+    const rect = [[0, 0], [A, 0], [A, Ls], [0, Ls]], gk = ["eave", "verge", "ridge", "verge"];
+    if (shed) add("S", rect, gk, (u, v) => [u, B - v * c], [0, 1]);
+    else if (hip) {
+      const rl = Math.max(0, A - B), tz = [[0, 0], [A, 0], [(A + rl) / 2, Ls], [(A - rl) / 2, Ls]], hk = ["eave", "hip", "ridge", "hip"];
+      add("S", tz, hk, (u, v) => [u, B - v * c], [0, 1]); add("N", tz, hk, (u, v) => [A - u, v * c], [0, -1]);
+      add("E", [[0, 0], [B, 0], [h, Ls]], ["eave", "hip", "hip"], (u, v) => [A - v * c, B - u], [1, 0]);
+      add("W", [[0, 0], [B, 0], [h, Ls]], ["eave", "hip", "hip"], (u, v) => [v * c, u], [-1, 0]);
+    } else { add("S", rect, gk, (u, v) => [u, B - v * c], [0, 1]); add("N", rect, gk, (u, v) => [A - u, v * c], [0, -1]); }
+    const setOf = { eave: S.setEave, ridge: S.setRidge, verge: S.setVerge, hip: S.setVerge };
+    for (const f of F) {
+      f.hp = []; f.hp0 = [];
+      f.poly.forEach((p, i) => { const q = f.poly[(i + 1) % f.poly.length], L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = [-(q[1] - p[1]) / L, (q[0] - p[0]) / L];
+        f.hp.push([n, n[0] * p[0] + n[1] * p[1] + setOf[f.ek[i]]]); f.hp0.push([n, n[0] * p[0] + n[1] * p[1]]); });
+      const o = f.map(0, 0), eu = f.map(1, 0), ev = f.map(0, 1);
+      f.O = [o[0], o[1], 0]; f.eu = [eu[0] - o[0], eu[1] - o[1], 0]; f.ev = [ev[0] - o[0], ev[1] - o[1], Math.sin(th)];
+      f.inv = (x, y) => { const d = [x - f.O[0], y - f.O[1]]; return [(d[0] * f.eu[0] + d[1] * f.eu[1]) / (f.eu[0] ** 2 + f.eu[1] ** 2), (d[0] * f.ev[0] + d[1] * f.ev[1]) / (f.ev[0] ** 2 + f.ev[1] ** 2)]; };
+      f.p3 = (u, v) => [f.O[0] + u * f.eu[0] + v * f.ev[0], f.O[1] + u * f.eu[1] + v * f.ev[1], v * f.ev[2]];
+      f.uv = X => { const d = sub(X, f.O); return [dot(d, f.eu) / dot(f.eu, f.eu), dot(d, f.ev) / dot(f.ev, f.ev)]; };
+      f.umin = Math.min(...f.poly.map(p => p[0])); f.umax = Math.max(...f.poly.map(p => p[0]));
+      f.kwh = yieldOf(th * R2D, ((f.az - 180 + 540) % 360) - 180);
+      f.obs = []; f.shade = []; f.cache = new Map();
+    }
+    // purlins
+    const s = st.purlin, P = [0]; while (P[P.length - 1] + s <= Ls + 1e-9) P.push(P[P.length - 1] + s); if (Ls - P[P.length - 1] > 0.25 * s) P.push(Ls);
+    // obstacles: home face, box in (u, v), shade hulls on every face
+    const obs = r.obst.map((o, i) => { const K = KINDS[o.kind], cx = o.x + o.w / 2, cy = o.y + o.h / 2;
+      const home = F.find(f => inFace(f.hp0, [f.inv(cx, cy)])) || F[0];
+      const corners = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]];
+      return { i, o, kind: o.kind, mc: K[0], fc: K[1], hgt: o.hgt ?? K[2], label: o.label || K[3], home: home.name, corners, base3: corners.map(([x, y]) => home.p3(...home.inv(x, y))) }; });
+    const times = []; for (const d of [355, 172, 80]) for (let t = 9; t <= 15; t += 0.5) times.push([d, t]);
+    for (const f of F) {
+      let n = cross(f.eu, f.ev); if (n[2] < 0) n = n.map(v => -v);
+      for (const ob of obs) {
+        const uv = ob.corners.map(([x, y]) => f.inv(x, y)), us = uv.map(p => p[0]), vs = uv.map(p => p[1]);
+        if (ob.home === f.name) f.obs.push({ ...ob, box: [Math.min(...us), Math.min(...vs), Math.max(...us), Math.max(...vs)] });
+        if (!st.shade || !(ob.hgt > 0)) continue;
+        for (const [day, t] of times) {
+          const s_ = sun(FIX.lat, day, t); if (!s_) continue;
+          const alt = D2R * s_[0], Az = D2R * (180 + s_[1] - st.bearing), Sv = [Math.sin(Az) * Math.cos(alt), -Math.cos(Az) * Math.cos(alt), Math.sin(alt)];
+          const ns = dot(n, Sv); if (ns <= 1e-6) continue;
+          const pts = [];
+          for (const Pb of ob.base3) {
+            const Qt = [Pb[0], Pb[1], Pb[2] + ob.hgt], tt = dot(n, sub(Qt, f.O)) / ns; if (tt < 0) continue;
+            pts.push(f.uv(sub(Qt, Sv.map(a => tt * a))));
+            pts.push(ob.home === f.name ? f.uv(Pb) : f.uv(sub(Pb, Sv.map(a => dot(n, sub(Pb, f.O)) / ns * a))));
+          }
+          if (pts.length >= 3) { const H = hull(pts); if (H.length >= 3) f.shade.push({ H, ob: ob.i, bb: [Math.min(...H.map(p => p[0])), Math.min(...H.map(p => p[1])), Math.max(...H.map(p => p[0])), Math.max(...H.map(p => p[1]))] }); }
+        }
+      }
+    }
+    const top = Math.max(...F.map(f => f.kwh));
+    for (const f of F) { f.auto = f.kwh >= FIX.faceMin * top; if (st.use[f.name] === undefined) st.use[f.name] = f.auto; }
+    return { r, F, P, obs, LX, LY, A, B, h, rise, th, Ls, c, s };
+  }
+
+  // ---- rows, slots, feet (same rules as img/roof_pv.py) ----
+  function rowsOn(g, f, shift, centre) {
+    const S = st.std, L = S.modL, lo = S.clampMin, hi = S.clampMax, P = g.P;
+    const vmin = S.setEave, vmax = f.Ls - S.setRidge, out = [];
+    let v = vmin + shift;
+    while (v + L <= vmax + 1e-9) {
+      if (st.mount === "rib") { out.push([v, v + L / 4, v + 3 * L / 4]); v += L + FIX.gap; continue; }
+      let found = null;
+      for (let w = v; w + L <= vmax + 1e-9; w = Math.round((w + 0.01) * 1e4) / 1e4) {
+        const a = P.find(p => p - w >= lo - 1e-9 && p - w <= hi + 1e-9), b = [...P].reverse().find(p => w + L - p >= lo - 1e-9 && w + L - p <= hi + 1e-9);
+        if (a !== undefined && b !== undefined) { found = [w, a, b]; break; }
+      }
+      if (!found) break; out.push(found); v = found[0] + L + FIX.gap;
+    }
+    if (centre) for (let i = out.length - 1; i >= 0; i--) {
+      const [, a, b] = out[i];
+      const lo_ = Math.max(a - hi, b + lo - L, i === 0 ? vmin : out[i - 1][0] + L + FIX.gap);
+      const hi_ = Math.min(a - lo, b + hi - L, vmax - L, i + 1 < out.length ? out[i + 1][0] - L - FIX.gap : 1e9);
+      out[i] = [Math.min(Math.max((a + b) / 2 - L / 2, lo_), hi_), a, b];
+    }
+    return out;
+  }
+  function slotBlock(f, u, v) {
+    const key = u.toFixed(3) + "," + v.toFixed(3); if (f.cache.has(key)) return f.cache.get(key);
+    const S = st.std, L = S.modL, W = S.modW, rect = [[u, v], [u + W, v], [u + W, v + L], [u, v + L]];
+    let why = null;
+    if (!inFace(f.hp, rect)) why = { t: "นอกพื้นที่ (ระยะร่นขอบ)" };
+    if (!why) for (const ob of f.obs) { const [x0, y0, x1, y1] = ob.box, m = ob.mc;
+      if (u < x1 + m && x0 - m < u + W && v < y1 + m && y0 - m < v + L) { why = { t: `${ob.label}: เว้นระยะ ${f2(m)} ม.`, ob: ob.i }; break; } }
+    if (!why) for (const s of f.shade) { const b = s.bb;
+      if (b[0] < u + W && u < b[2] && b[1] < v + L && v < b[3] && sat(rect, s.H)) { why = { t: `เงา${g_obsLabel(s.ob)} 09:00–15:00`, ob: s.ob, shade: true }; break; } }
+    f.cache.set(key, why); return why;
+  }
+  let g_obs = []; const g_obsLabel = i => g_obs[i] ? g_obs[i].label : "สิ่งกีดขวาง";
+  function forbid(f, vr) { return f.obs.filter(ob => ob.box[1] - ob.fc <= vr && vr <= ob.box[3] + ob.fc).map(ob => [ob.box[0] - ob.fc, ob.box[2] + ob.fc, ob]); }
+  function placeFeet(xa, xb, bad) {
+    const ok = x => bad.every(([a, b]) => !(a < x && x < b)), dx = st.std.footDx, c = FIX.cant, mn = FIX.footMin, Lr = xb - xa;
+    const m = Math.max(1, Math.ceil((Lr - 0.4) / dx));
+    const eq = Lr > 0.4 ? Array.from({ length: m + 1 }, (_, i) => xa + 0.2 + i * (Lr - 0.4) / m) : [(xa + xb) / 2];
+    if (eq.every(ok)) return { feet: eq, moved: false };
+    const grid = (lo, hi) => { const o = []; for (let x = hi; x >= lo - 1e-9; x -= 0.05) o.push(Math.round(x * 1000) / 1000); return o; };
+    const first = grid(xa + 0.05, Math.min(xb, xa + c)).find(ok); if (first === undefined) return { fail: xa + c / 2 };
+    const feet = [first];
+    while (feet[feet.length - 1] < xb - c - 1e-9) {
+      const l = feet[feet.length - 1], nx = grid(l + mn, Math.min(xb - 0.05, l + dx)).find(ok);
+      if (nx === undefined) return { fail: l + dx / 2 }; feet.push(nx);
+    }
+    return { feet, moved: true };
+  }
+  function layoutFace(g, f, off, shift, centre, removed) {
+    const S = st.std, W = S.modW, pw = W + FIX.gap, rows = [];
+    rowsOn(g, f, shift, centre).forEach(([v, ra, rb], ri) => {
+      const slots = []; let ci = 0;
+      for (let u = f.umin + S.setVerge + off; u + W <= f.umax + 1e-9; u += pw, ci++) {
+        let why = slotBlock(f, u, v);
+        if (!why && removed && removed.has(`${f.name}:${ri}:${ci}`)) why = { t: "เอาออกเอง", removed: true };
+        slots.push({ u, why, ci });
+      }
+      rows.push({ v, rails: [ra, rb], slots });
+    });
+    let cuts = 0;
+    for (const row of rows) for (let k = 0; k < 300; k++) {
+      const runs = []; let cur = [];
+      row.slots.forEach((s, i) => { if (!s.why) cur.push(i); else if (cur.length) { runs.push(cur); cur = []; } }); if (cur.length) runs.push(cur);
+      row.runs = []; let fail = null;
+      for (const run of runs) {
+        const xa = row.slots[run[0]].u - FIX.railOver, xb = row.slots[run[run.length - 1]].u + W + FIX.railOver, feet = []; let moved = false;
+        for (const vr of row.rails) { const res = placeFeet(xa, xb, forbid(f, vr)); if (res.fail !== undefined) { fail = [run, res.fail]; break; } feet.push(res.feet); moved = moved || res.moved; }
+        if (fail) break; row.runs.push({ i: run, xa, xb, feet, moved });
+      }
+      if (!fail) break;
+      const [run, at] = fail, i = run.reduce((b, j) => Math.abs(row.slots[j].u + W / 2 - at) < Math.abs(row.slots[b].u + W / 2 - at) ? j : b, run[0]);
+      row.slots[i].why = { t: "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง", cut: true }; cuts++;
+    }
+    const n = rows.reduce((s, r) => s + r.slots.filter(x => !x.why).length, 0);
+    return { rows, n, cuts, off, shift, centre };
+  }
+  function layout() {
+    const g = roofGeom(); g_obs = g.obs;
+    for (const f of g.F) f.L = layoutFace(g, f, st.off[f.name] ?? 0, st.shift[f.name] ?? 0, st.centre[f.name] ?? false, st.removed);
+    return g;
+  }
+  function bestFace(g, f) {
+    const pw = st.std.modW + FIX.gap, pitch = st.std.modL + FIX.gap + (st.mount === "rib" ? 0 : st.purlin); let best = null, tried = 0;
+    for (let j = 0; j * 0.1 <= pitch + 1e-9; j++) for (let k = 0; k * 0.05 <= pw + 1e-9; k++) for (const centre of [true, false]) {
+      const L = layoutFace(g, f, k * 0.05, j * 0.1, centre, null); tried++;
+      if (!best || L.n > best.n || (L.n === best.n && (L.cuts < best.cuts || (L.cuts === best.cuts && centre && !best.centre)))) best = L;
+    }
+    return { best, tried };
+  }
+  function quantities(g) {
+    const q = { modules: 0, kwp: 0, mwh: 0, rails: 0, splices: 0, feet: 0, mid: 0, end: 0, runs: 0, cuts: 0, hits: 0 };
+    for (const f of g.F) { if (!st.use[f.name]) continue;
+      q.modules += f.L.n; q.cuts += f.L.cuts; q.mwh += f.L.n * st.std.modWp / 1e6 * f.kwh;
+      for (const row of f.L.rows) for (const run of row.runs) { const Lr = run.xb - run.xa, k = run.i.length;
+        q.runs++; q.rails += 2 * Lr; q.splices += 2 * (Math.ceil(Lr / FIX.stock) - 1); q.feet += run.feet.reduce((s, a) => s + a.length, 0); q.mid += 2 * (k - 1); q.end += 4; } }
+    q.kwp = q.modules * st.std.modWp / 1000; return q;
+  }
+
+  // ---- drawing ----
+  const PAL = { ink: "#1b1b1b", soft: "#6a6a6a", grid: "#b9c2bf", pur: "#d2d2d2", mod: "#1f4e79", modf: "#e8eff7", foot: "#2ead4b", cut: "#e0433a", shade: "#fbe3c8", sky: "#dcebf7", skyS: "#8db3d6", use: "#7fb77e", sel: "#f0a020" };
+  let T = null;   // plan transform
+  function planSVG() {
+    const g = G, W = 1100, padL = 60, padT = 64, k = Math.min((W - padL - 40) / g.LX, 620 / g.LY), H = padT + g.LY * k + 50;
+    T = { k, ox: padL, oy: padT };
+    const P = (x, y) => [padL + x * k, padT + y * k], FP = (f, u, v) => P(...f.map(u, v)), pts = a => a.map(p => p.map(v => v.toFixed(1)).join(",")).join(" ");
+    const o = [];
+    o.push(`<rect x="${padL}" y="${padT}" width="${g.LX * k}" height="${g.LY * k}" fill="none" stroke="${PAL.ink}" stroke-width="1.6"/>`);
+    let acc = 0; for (const b of g.r.bx.slice(0, -1)) { acc += b; o.push(`<line x1="${P(acc, 0)[0]}" y1="${padT}" x2="${P(acc, 0)[0]}" y2="${padT + g.LY * k}" stroke="${PAL.grid}" stroke-dasharray="4 3" stroke-width=".6"/>`); }
+    acc = 0; for (const b of g.r.by.slice(0, -1)) { acc += b; o.push(`<line x1="${padL}" y1="${P(0, acc)[1]}" x2="${padL + g.LX * k}" y2="${P(0, acc)[1]}" stroke="${PAL.grid}" stroke-dasharray="4 3" stroke-width=".6"/>`); }
+    for (const f of g.F) {
+      for (const p of g.P) { const a = FP(f, f.umin, p), b = FP(f, f.umax, p); o.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${PAL.pur}" stroke-width=".5"/>`); }
+      o.push(`<polygon points="${pts(f.poly.map(q => FP(f, ...q)))}" fill="none" stroke="${PAL.ink}" stroke-width=".9"/>`);
+      const ip = []; for (let i = 0; i < f.hp.length; i++) { const [n1, d1] = f.hp[(i - 1 + f.hp.length) % f.hp.length], [n2, d2] = f.hp[i], det = n1[0] * n2[1] - n1[1] * n2[0];
+        if (Math.abs(det) > 1e-12) ip.push([(d1 * n2[1] - d2 * n1[1]) / det, (n1[0] * d2 - n2[0] * d1) / det]); }
+      o.push(`<polygon points="${pts(ip.map(q => FP(f, ...q)))}" fill="none" stroke="${PAL.use}" stroke-width=".8"/>`);
+    }
+    if (g.r.shape === "gable") o.push(`<line x1="${P(0, g.LY / 2)[0]}" y1="${P(0, g.LY / 2)[1]}" x2="${P(g.LX, g.LY / 2)[0]}" y2="${P(g.LX, g.LY / 2)[1]}" stroke="${PAL.ink}" stroke-width="1.3" stroke-dasharray="10 3 2 3"/>`);
+    const obsHits = [];
+    for (const f of g.F) for (const s of f.shade) o.push(`<polygon points="${pts(s.H.map(q => FP(f, ...q)))}" fill="${PAL.shade}" stroke="none"/>`);
+    for (const ob of g.obs) { const q = ob.o, [x, y] = P(q.x, q.y), w = Math.max(3, q.w * k), h = Math.max(3, q.h * k), on = sel && sel.t === "obs" && sel.i === ob.i;
+      const st_ = on ? PAL.sel : ob.kind === "skylight" ? PAL.skyS : PAL.ink, sw = on ? 2 : .8;
+      if (ob.kind === "skylight") o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${PAL.sky}" stroke="${st_}" stroke-width="${sw}"/>`);
+      else if (ob.kind === "turbine") { const c = P(q.x + q.w / 2, q.y + q.h / 2); o.push(`<circle cx="${c[0]}" cy="${c[1]}" r="${w / 2}" fill="#fff" stroke="${st_}" stroke-width="${sw}"/><path d="M${c[0] - w / 2} ${c[1]}h${w}M${c[0]} ${c[1] - w / 2}v${w}" stroke="${st_}" stroke-width=".6"/>`); }
+      else if (ob.kind === "other") o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="${st_}" stroke-width="${sw}"/><path d="M${x} ${y + h}L${x + w} ${y}" stroke="${PAL.soft}" stroke-width=".6"/>`);
+      else o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#666" stroke="${st_}" stroke-width="${sw}"/>`);
+      obsHits.push(`<rect class="hit" data-obs="${ob.i}" x="${x - 4}" y="${y - 4}" width="${w + 8}" height="${h + 8}" fill="transparent"/>`); }
+    const L = st.std.modL, Wm = st.std.modW;
+    for (const f of g.F) f.L.rows.forEach((row, ri) => {
+      row.slots.forEach(s => {
+        const q = [FP(f, s.u, row.v), FP(f, s.u + Wm, row.v), FP(f, s.u + Wm, row.v + L), FP(f, s.u, row.v + L)];
+        const on = sel && sel.t === "slot" && sel.f === f.name && sel.r === ri && (sel.c === s.ci || (sel.run && sel.run.includes(s.ci)));
+        let cls = null;
+        if (!s.why) cls = "mod" + (st.use[f.name] ? "" : " off") + (on ? " sel" : "");
+        else if (s.why.cut) cls = "mod cut";
+        else if (s.why.removed && mode === "remove") cls = "mod off";
+        else if (on) cls = "mod shd";
+        if (cls) o.push(`<polygon class="${cls}" points="${pts(q)}"/>`);
+        const bb = [Math.min(...q.map(p => p[0])), Math.min(...q.map(p => p[1])), Math.max(...q.map(p => p[0])), Math.max(...q.map(p => p[1]))];
+        if (s.why?.t?.startsWith("นอกพื้นที่")) return;
+        o.push(`<rect class="hit m" data-face="${f.name}" data-row="${ri}" data-col="${s.ci}" x="${bb[0]}" y="${bb[1]}" width="${bb[2] - bb[0]}" height="${bb[3] - bb[1]}" fill="transparent"/>`);
+      });
+      if (!st.use[f.name]) return;
+      row.runs.forEach((run, ki) => row.rails.forEach((vr, j) => {
+        const a = FP(f, run.xa, vr), b = FP(f, run.xb, vr); o.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#333" stroke-width="1"/>`);
+        run.feet[j].forEach((x, fi) => { const c = FP(f, x, vr), on = sel && sel.t === "foot" && sel.key === `${f.name}:${ri}:${ki}:${j}:${fi}`;
+          o.push(`<circle cx="${c[0]}" cy="${c[1]}" r="${on ? 4 : 2.2}" fill="${PAL.foot}" stroke="${on ? PAL.sel : "none"}" stroke-width="2"/><circle class="hit" data-foot="${f.name}:${ri}:${ki}:${j}:${fi}" cx="${c[0]}" cy="${c[1]}" r="5" fill="transparent"/>`); });
+      }));
+    });
+    for (const f of g.F) {
+      const rows = f.L.rows, vb = ((rows.length ? rows[rows.length - 1].v + L : 0) + f.Ls) / 2, cu = f.name === "E" || f.name === "W" ? g.B / 2 : (f.umin + f.umax) / 2;
+      const c = FP(f, cu, Math.min(vb, f.Ls * 0.9)), t = `ด้าน${compass(f.az)} ${f.az.toFixed(0)}° · ${fmt(Math.round(f.kwh))} kWh/kWp · ${st.use[f.name] ? f.L.n + " แผง" : "ไม่วางแผง"}`;
+      o.push(`<rect x="${c[0] - t.length * 3.1}" y="${c[1] - 9}" width="${t.length * 6.2}" height="17" fill="#fff" opacity=".9"/><text class="d-t d-b" x="${c[0]}" y="${c[1] + 4}" text-anchor="middle" fill="${st.use[f.name] ? PAL.mod : PAL.cut}">${esc(t)}</text>`);
+    }
+    o.push(...obsHits);   // obstacles on top of the slot hit areas
+    // dims + north arrow
+    o.push(`<text class="d-t d-b" x="${padL + g.LX * k / 2}" y="${padT - 30}" text-anchor="middle">${f2(g.LX)}</text><line x1="${padL}" y1="${padT - 24}" x2="${padL + g.LX * k}" y2="${padT - 24}" stroke="${PAL.ink}" stroke-width=".6"/>`);
+    acc = 0; for (const b of g.r.bx) { o.push(`<text class="d-s" x="${P(acc + b / 2, 0)[0]}" y="${padT - 8}" text-anchor="middle">${f2(b)}</text>`); acc += b; }
+    o.push(`<text class="d-t d-b" x="${padL - 26}" y="${padT + g.LY * k / 2}" text-anchor="middle" transform="rotate(-90 ${padL - 26} ${padT + g.LY * k / 2})">${f2(g.LY)}</text>`);
+    const nx = W - 26, ny = 26, a = -st.bearing * D2R, tip = [nx + 14 * Math.sin(a), ny - 14 * Math.cos(a)], l = [nx - 5 * Math.cos(a), ny - 5 * Math.sin(a)], rr = [nx + 5 * Math.cos(a), ny + 5 * Math.sin(a)];
+    o.push(`<polygon points="${pts([tip, l, rr])}" fill="${PAL.ink}"/><text class="d-t d-b" x="${nx}" y="${ny + 20}" text-anchor="middle">N</text>`);
+    return { W, H, body: o.join("") };
+  }
+  function selectedRow() {
+    const g = G; let f = g.F.find(x => x.name === (sel && sel.f)) || g.F.find(x => x.name === "S") || g.F[0];
+    const ri = sel && sel.f === f.name ? sel.r : 0; return { f, ri: Math.min(ri, f.L.rows.length - 1) };
+  }
+  function sectionSVG() {
+    const g = G, W = 1100, { f, ri } = selectedRow(), row = f.L.rows[ri], o = [];
+    if (!row) return { W, H: 80, body: `<text class="d-t" x="20" y="40">ด้านนี้ไม่มีแถวแผง</text>` };
+    const S = st.std, L = S.modL, q = 280, bx = 70, by = 230, v0 = row.v, P = g.P.filter(p => p <= v0 + L + 1.0 && p >= v0 - 1.0);
+    const X = v => bx + (v - Math.max(0, v0 - 0.9)) * q;
+    o.push(`<text class="d-t d-b" x="20" y="28">รูปตัดตามแนวเอียง ด้าน${compass(f.az)} แถวที่ ${ri + 1} (ไม่ได้มาตราส่วนจริง)</text>`);
+    o.push(`<line x1="${X(Math.max(0, v0 - 0.9))}" y1="${by}" x2="${X(v0 + L + 0.9)}" y2="${by}" stroke="${PAL.ink}" stroke-width="2"/>`);
+    for (let v = Math.max(0, v0 - 0.9); v < v0 + L + 0.9; v += 0.25) o.push(`<path d="M${X(v)} ${by}l8 -6l8 6" fill="none" stroke="${PAL.soft}" stroke-width=".7"/>`);
+    for (const p of P) o.push(`<rect x="${X(p) - 22}" y="${by + 1}" width="44" height="32" fill="#fff" stroke="#333" stroke-width="1.2"/><text class="d-s" x="${X(p)}" y="${by + 50}" text-anchor="middle">แป ${f2(p)}</text>`);
+    const onP = r => g.P.some(p => Math.abs(p - r) < 1e-6);
+    for (const vr of row.rails) o.push(`<rect x="${X(vr) - 7}" y="${by - 30}" width="14" height="26" fill="#fff" stroke="${onP(vr) ? PAL.foot : PAL.cut}" stroke-width="1.4"/><rect x="${X(vr) - 12}" y="${by - 42}" width="24" height="12" fill="#333"/>`);
+    o.push(`<rect x="${X(v0)}" y="${by - 58}" width="${L * q}" height="14" fill="${PAL.modf}" stroke="${PAL.mod}" stroke-width="1.4"/>`);
+    const dim = (a, b, y, t, bold) => o.push(`<line x1="${X(a)}" y1="${y}" x2="${X(b)}" y2="${y}" stroke="${PAL.ink}" stroke-width=".7"/><path d="M${X(a) - 3} ${y + 3}l6 -6M${X(b) - 3} ${y + 3}l6 -6" stroke="${PAL.ink}"/><text class="d-t${bold ? " d-b" : ""}" x="${(X(a) + X(b)) / 2}" y="${y - 6}" text-anchor="middle">${t}</text>`);
+    const [ra, rb] = row.rails;
+    dim(v0, v0 + L, by - 120, `แผง ${f2(L)}`, true); dim(v0, ra, by - 90, f2(ra - v0)); dim(ra, rb, by - 90, f2(rb - ra)); dim(rb, v0 + L, by - 90, f2(v0 + L - rb));
+    for (let i = 0; i + 1 < P.length; i++) dim(P[i], P[i + 1], by + 80, f2(P[i + 1] - P[i]));
+    const inZone = d => d >= S.clampMin - 1e-6 && d <= S.clampMax + 1e-6, ok = inZone(ra - v0) && inZone(v0 + L - rb) && (st.mount === "rib" || (onP(ra) && onP(rb)));
+    const lines = [`แถวเริ่มที่ ${f2(v0)} ม. จากชายคา (ตามแนวเอียง) · เอียง ${(f.tilt * R2D).toFixed(1)}°`,
+      st.mount === "rib" ? "จับสันลอน: รางไม่ต้องตรงแป วางที่ 1/4 ของแผง" : `รางทั้ง 2 เส้นวางตรงแป (${f2(ra)} และ ${f2(rb)} ม.) ยึด L-foot เข้าแปผ่านสันลอน`,
+      `ระยะจับแผง ${f2(ra - v0)} / ${f2(v0 + L - rb)} ม. ต้องอยู่ในช่วง ${f2(S.clampMin)}–${f2(S.clampMax)} ม.`];
+    lines.forEach((t, i) => o.push(`<text class="d-t" x="${X(v0 + L + 0.9) + 30}" y="${by - 100 + i * 22}">${esc(t)}</text>`));
+    o.push(`<text class="d-t d-b" x="${X(v0 + L + 0.9) + 30}" y="${by - 100 + 3 * 22}" fill="${ok ? PAL.foot : PAL.cut}">${ok ? "ถูกต้องตามมาตรฐาน" : "ไม่ผ่าน"}</text>`);
+    return { W, H: by + 110, body: o.join("") };
+  }
+
+  // ---- render ----
+  function render() {
+    G = layout(); Q = quantities(G);
+    const d = view === "plan" ? planSVG() : sectionSVG();
+    $("svg").setAttribute("viewBox", `0 0 ${d.W} ${d.H}`); $("svg").innerHTML = d.body;
+    const S = st.std;
+    $("roofNote").textContent = `เอียง ${(G.th * R2D).toFixed(1)}° · ยาวตามเอียง ${f2(G.Ls)} ม. · แป ${G.P.length} เส้นต่อด้าน`;
+    $("faces").innerHTML = G.F.map(f => `<label><input type="checkbox" data-use="${f.name}" ${st.use[f.name] ? "checked" : ""}> ด้าน${compass(f.az)} (${f.az.toFixed(0)}°)<span class="v">${fmt(Math.round(f.kwh))} kWh/kWp</span></label>`).join("");
+    $("faceNote").textContent = `ค่าเริ่มต้น: วางเฉพาะด้านที่ได้ไม่ต่ำกว่า ${FIX.faceMin * 100}% ของด้านที่ดีที่สุด`;
+    $("faceSeg").innerHTML = G.F.map(f => `<button type="button" data-face="${f.name}" aria-pressed="${st.face === f.name}">ด้าน${compass(f.az)}</button>`).join("");
+    const cf = G.F.find(f => f.name === st.face) || G.F[0]; $("col").value = st.off[cf.name] ?? 0; $("colV").textContent = f2(+$("col").value) + " ม.";
+    const tile = (k, v, lab, hl, fmtD = x => fmt(x)) => { const dv = prevQ ? Q[k] - prevQ[k] : 0; const dd = Math.abs(dv) > 1e-6 ? `<span class="delta ${dv > 0 ? "up" : "down"}">${dv > 0 ? "+" : "−"}${fmtD(Math.abs(dv))}</span>` : "";
+      return `<div class="stat${hl ? " hl" : ""}"><b>${v}${dd}</b><span>${lab}</span></div>`; };
+    $("stats").innerHTML = [tile("modules", Q.modules, "แผง", true), tile("kwp", fmt(Q.kwp), "kWp"), tile("mwh", fmt(Q.mwh), "MWh/ปี (ประมาณ)"),
+      tile("rails", fmt(Math.round(Q.rails)), "ราง (ม.)", false, x => fmt(Math.round(x))), tile("feet", Q.feet, "L-foot"), tile("mid", `${Q.mid}/${Q.end}`, "mid / end clamp"),
+      tile("cuts", Q.cuts, "ช่องที่ตัดหลบขา"), `<div class="stat hl"><b>0</b><span>ขาชนสิ่งกีดขวาง</span></div>`].join("");
+    const notes = [];
+    for (const f of G.F) { if (!st.use[f.name]) continue; f.L.rows.forEach((row, ri) => row.slots.forEach(s => { if (s.why && s.why.cut) notes.push(`ด้าน${compass(f.az)} แถว ${ri + 1}: ตัดแผง 1 ช่องที่ ${f2(s.u)}–${f2(s.u + S.modW)} ม. เพื่อให้ L-foot ห่างสิ่งกีดขวาง`); })); }
+    $("notes").innerHTML = notes.slice(0, 4).map(n => `<div>${esc(n)}</div>`).join("") + (notes.length > 4 ? `<div>… อีก ${notes.length - 4} รายการ</div>` : "");
+    $("assumed").textContent = `ค่าสมมติ: ${S.modL}×${S.modW} ม. ${S.modWp} W · ช่วงจับ ${f2(S.clampMin)}–${f2(S.clampMax)} · L-foot ห่างไม่เกิน ${f2(S.footDx)} ยื่นปลายไม่เกิน ${f2(FIX.cant)} · ห่างแผ่นโปร่งแสง 0.50 อื่นๆ 0.30 ม. · lat ${FIX.lat}° PR 0.8`;
+    renderInfo();
+  }
+  function renderInfo() {
+    const pill = (ok, t) => `<span class="pill ${ok ? "ok" : "bad"}">${esc(t)}</span>`, kv = (k, v) => `<span><span class="k">${k}</span> <span class="v">${v}</span></span>`;
+    let h = "";
+    if (!sel) h = mode === "remove" ? "<b>เอาแผงออก / ใส่คืน</b> <span class='k'>แตะแผงเพื่อเว้นทางเดิน (แผงทั้งแผ่นออกพร้อมกัน)</span>"
+      : "<b>ดูรายละเอียด</b> <span class='k'>แตะแผง L-foot หรือสิ่งกีดขวาง</span>";
+    else if (sel.t === "obs") { const ob = G.obs[sel.i], sh = G.F.reduce((s, f) => s + f.shade.filter(x => x.ob === ob.i).length, 0);
+      h = `<b>${esc(ob.label)}</b> ${kv("ขนาด", `${f2(ob.o.w)}×${f2(ob.o.h)} ม.`)} ${kv("สูงจากหลังคา", f2(ob.hgt) + " ม.")} ${kv("แผงห่าง", f2(ob.mc) + " ม.")} ${kv("L-foot ห่าง", f2(ob.fc) + " ม.")} `
+        + (ob.hgt > 0 ? pill(false, `เว้นแผงจากเงา 09:00–15:00 (${sh} ช่วงเวลา)`) : pill(true, "ไม่สูงพอจะทอดเงา")); }
+    else if (sel.t === "foot") { const [fn, ri, ki, j, fi] = sel.key.split(":"), f = G.F.find(x => x.name === fn), row = f.L.rows[+ri], run = row.runs[+ki], x = run.feet[+j][+fi];
+      const near = f.obs.map(ob => { const dx = Math.max(ob.box[0] - x, 0, x - ob.box[2]), dy = Math.max(ob.box[1] - row.rails[+j], 0, row.rails[+j] - ob.box[3]); return Math.hypot(dx, dy); });
+      const mn = near.length ? Math.min(...near) : Infinity;
+      h = `<b>L-foot</b> ${kv("ด้าน", compass(f.az))} ${kv("แถว", +ri + 1)} ${kv("ราง", +j + 1)} ${kv("ตำแหน่ง", f2(x) + " ม.")} ${kv("บนแป", f2(row.rails[+j]) + " ม.")} `
+        + pill(true, isFinite(mn) ? `ห่างสิ่งกีดขวางใกล้สุด ${f2(mn)} ม.` : "ไม่มีสิ่งกีดขวางใกล้") + (run.moved ? " " + pill(true, "จัดระยะใหม่เพื่อหลบ") : ""); }
+    else if (sel.t === "slot") { const f = G.F.find(x => x.name === sel.f), row = f.L.rows[sel.r], s = row.slots.find(x => x.ci === sel.c);
+      if (s.why) h = `<b>ช่องว่าง</b> ${kv("ด้าน", compass(f.az))} ${kv("แถว", sel.r + 1)} ${kv("ช่อง", sel.c + 1)} ` + pill(false, s.why.t);
+      else { const run = row.runs.find(r => r.i.some(i => row.slots[i].ci === sel.c)), gaps = run.feet.flatMap(fs => fs.slice(1).map((x, i) => x - fs[i]));
+        h = `<b>ชุดแผงต่อเนื่อง</b> ${kv("ด้าน", compass(f.az))} ${kv("แถว", sel.r + 1)} ${kv("แผง", `${run.i.length} (${fmt(run.i.length * st.std.modWp / 1000)} kWp)`)} ${kv("ราง", `2 × ${f2(run.xb - run.xa)} ม.`)} `
+          + `${kv("L-foot", `${run.feet[0].length}+${run.feet[1].length} ห่างสุด ${f2(Math.max(...gaps, 0))} ม.`)} ` + pill(true, "ขาไม่ชนสิ่งกีดขวาง") + " "
+          + (st.mount === "purlin" ? pill(true, "รางตกแปทั้ง 2 เส้น") : "") + (run.moved ? " " + pill(true, "จัดระยะ L-foot ใหม่เพื่อหลบ") : "")
+          + ` <button type="button" id="toSection">ดูรูปตัดแถวนี้</button>`; } }
+    $("info").innerHTML = h;
+    const b = $("toSection"); if (b) b.addEventListener("click", () => setView("section"));
+  }
+
+  // ---- events ----
+  $("svg").addEventListener("click", e => {
+    const t = e.target.closest(".hit"); if (!t) { sel = null; render(); return; }
+    if (t.dataset.obs !== undefined) sel = { t: "obs", i: +t.dataset.obs };
+    else if (t.dataset.foot) sel = { t: "foot", key: t.dataset.foot };
+    else if (t.dataset.face) {
+      const f = t.dataset.face, r = +t.dataset.row, c = +t.dataset.col;
+      if (mode === "remove") { const face = G.F.find(x => x.name === f), s = face.L.rows[r].slots.find(x => x.ci === c);
+        if (s.why && !s.why.removed) { sel = { t: "slot", f, r, c }; renderInfo(); return; }
+        push(); prevQ = Q; const key = `${f}:${r}:${c}`; st.removed.has(key) ? st.removed.delete(key) : st.removed.add(key); sel = null; render(); return; }
+      const face = G.F.find(x => x.name === f), row = face.L.rows[r], run = row.runs.find(x => x.i.some(i => row.slots[i].ci === c));
+      sel = { t: "slot", f, r, c, run: run ? run.i.map(i => row.slots[i].ci) : null }; st.face = f;
+    }
+    render();
+  });
+  function setView(v) { view = v; document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v))); render(); }
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+  document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; sel = null;
+    document.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); render(); }));
+  function best(note = true) {
+    const g = roofGeom(); g_obs = g.obs; let tried = 0;
+    for (const f of g.F) { const r = bestFace(g, f); tried += r.tried; st.off[f.name] = r.best.off; st.shift[f.name] = r.best.shift; st.centre[f.name] = r.best.centre; }
+    st.removed = new Set();
+    if (note) { render(); $("bestNote").textContent = `ลอง ${fmt(tried)} แบบ · ดีที่สุด ${Q.modules} แผง`; }
+  }
+  document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => { push(); prevQ = null; st.preset = b.dataset.preset; Object.assign(st, pick(ROOFS[st.preset]));
+    st.use = {}; st.off = {}; st.shift = {}; st.centre = {}; st.face = "S"; sel = null; $("tag").textContent = ROOFS[st.preset].tag;
+    document.querySelectorAll("[data-preset]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); sync(); best(false); render(); }));
+  document.querySelectorAll("[data-mount]").forEach(b => b.addEventListener("click", () => { push(); prevQ = Q; st.mount = b.dataset.mount;
+    document.querySelectorAll("[data-mount]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); best(); }));
+  $("shade").addEventListener("change", e => { push(); prevQ = Q; st.shade = e.target.checked; best(); });
+  $("faces").addEventListener("change", e => { const n = e.target.dataset.use; if (!n) return; push(); prevQ = Q; st.use[n] = e.target.checked; render(); });
+  $("faceSeg").addEventListener("click", e => { const b = e.target.closest("[data-face]"); if (!b) return; st.face = b.dataset.face; render(); });
+  $("col").addEventListener("pointerdown", () => { push(); prevQ = Q; });
+  $("col").addEventListener("input", e => { st.off[st.face] = parseFloat(e.target.value); st.removed = new Set(); sel = null; render(); });
+  for (const id of ["eave", "ridge", "purlin", "bearing"]) $(id).addEventListener("change", e => { const v = parseFloat(e.target.value);
+    if (!isFinite(v) || (id !== "bearing" && v <= 0) || (id === "ridge" && v <= st.eave) || (id === "eave" && v >= st.ridge)) { e.target.value = st[id]; return; }
+    push(); prevQ = Q; st[id] = v; if (id === "bearing") st.use = {}; best(); });
+  for (const id of Object.keys(STD0)) $(id).addEventListener("change", e => { const v = parseFloat(e.target.value); if (!(v >= 0)) { e.target.value = st.std[id]; return; }
+    push(); prevQ = Q; st.std[id] = v; best(); });
+  $("resetStd").addEventListener("click", () => { push(); prevQ = Q; st.std = { ...STD0 }; sync(); best(); });
+  $("best").addEventListener("click", () => { push(); prevQ = Q; best(); });
+  $("undo").addEventListener("click", () => { if (!undo.length) return; prevQ = Q; const o = JSON.parse(undo.pop()); o.removed = new Set(o.removed); st = o; sel = null; sync(); render(); });
+  $("form").addEventListener("submit", e => e.preventDefault());
+  function sync() { for (const id of ["eave", "ridge", "purlin", "bearing"]) $(id).value = st[id]; $("shade").checked = st.shade;
+    for (const id of Object.keys(STD0)) $(id).value = st.std[id];
+    document.querySelectorAll("[data-mount]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.mount === st.mount))); }
+  sync(); $("undo").disabled = true; best(false); render();
+})();
+</script>

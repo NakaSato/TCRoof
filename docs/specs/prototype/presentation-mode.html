@@ -1,0 +1,286 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>โหมดนำเสนอ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Layout: same drafting table as the tank editor. Controls left, live layout right, quantities under it.
+   The drawing is a paper document and keeps its light paper in both themes. */
+:root {
+  --bg: #eef1f0; --panel: #ffffff; --field: #fbfcfb; --ink: #1d2826; --muted: #5d6b68; --line: #d3dbd8;
+  --accent: #1f4e79; --accent-soft: #e3ecf5; --good: #2f855a; --good-soft: #dcefe3; --warn: #b3372e; --warn-soft: #fbe9e7;
+  --doc: #ffffff; --doc-ink: #1b1b1b; --doc-grid: #9aa6a3; --doc-soft: #6a6a6a; --doc-mod: #1f4e79; --doc-modfill: #e8eff7;
+  --doc-open: #8a8a8a; --doc-clamp: #2ead4b; --doc-lug: #e0433a; --doc-sel: #f0a020; --doc-hover: rgba(240, 160, 32, .18);
+  --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
+  --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
+.wrap { max-width: 1520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 80ch; }
+.main { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); padding: 0; margin-bottom: 2px; }
+.sec { border-top: 1px solid var(--line); padding-top: 12px; }
+label { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 90px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+input[type=range] { padding: 0; accent-color: var(--accent); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 12px; color: var(--muted); }
+button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 9px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+button.go { background: var(--good-soft); color: var(--good); font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.val { font: 500 12px/1 var(--f-num); color: var(--accent); }
+.board { display: grid; gap: 10px; min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.tools .spacer { flex: 1 1 0; }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 50px; }
+.info b { font-weight: 600; }
+.info .k { color: var(--muted); font-size: 12px; }
+.info .v { font-family: var(--f-num); font-size: 13px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--warn-soft); color: var(--warn); }
+.canvas { background: var(--doc); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 80vh; }
+.canvas svg { display: block; width: 100%; height: auto; font-family: var(--f-draw); user-select: none; -webkit-user-select: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+.stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.stat.hl { background: var(--good-soft); border-color: transparent; }
+.stat.hl b, .stat.hl span { color: var(--good); }
+.delta { font: 500 11px/1 var(--f-num); margin-left: 4px; }
+.delta.up { color: var(--good); } .delta.down { color: var(--warn); }
+.notes { display: grid; gap: 4px; font-size: 13px; }
+.notes div { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 5px 10px; }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+/* drawing */
+.canvas svg * { pointer-events: none; }
+.canvas svg .hit { pointer-events: all; cursor: pointer; }
+.d-t { fill: var(--doc-ink); font-size: 13px; }
+.d-s { fill: var(--doc-soft); font-size: 12px; }
+.d-b { font-weight: 600; }
+.mod { fill: var(--doc-modfill); stroke: var(--doc-mod); stroke-width: .8; }
+.mod.off { fill: none; stroke: var(--doc-lug); stroke-dasharray: 3 2; }
+.mod.sel { fill: #fde9c4; }
+.hit.m:hover + .mod, .mod.hov { fill: #fde9c4; }
+.stage2 { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .stage2 { grid-template-columns: minmax(0, 1fr); } }
+.tv { background: #0d1117; border-radius: 14px; padding: 14px; display: grid; gap: 8px; }
+.tv .lab { color: #9aa4ad; font-size: 12px; display: flex; justify-content: space-between; }
+.screen { position: relative; aspect-ratio: 16 / 9; background: #fff; border-radius: 4px; overflow: hidden; }
+.screen .slide, .mini .slide { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
+.screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.screen .laser { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: radial-gradient(#ff3b30 30%, rgba(255,59,48,.25) 70%, transparent); pointer-events: none; display: none; }
+.screen.black::after { content: ""; position: absolute; inset: 0; background: #000; }
+.ipad { background: #1c1c1e; border-radius: 22px; padding: 14px; color: #f2f2f7; display: grid; gap: 10px; }
+.ipad .top { display: flex; justify-content: space-between; align-items: center; font: 500 13px/1 var(--f-num); color: #aeaeb2; }
+.ipad .cur { position: relative; aspect-ratio: 16 / 9; background: #fff; border-radius: 6px; overflow: hidden; outline: 2px solid #0a84ff; cursor: crosshair; touch-action: none; }
+.ipad .cur .slide { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; pointer-events: none; }
+.ipad .cur canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ipad .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini { position: relative; aspect-ratio: 16 / 9; background: #fff; border-radius: 4px; overflow: hidden; }
+.notes2 { background: #2c2c2e; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.6; min-height: 120px; }
+.notes2 b { color: #ffd60a; font-weight: 600; }
+.ctrls { display: flex; gap: 8px; flex-wrap: wrap; }
+.ctrls button { background: #2c2c2e; color: #f2f2f7; border: 1px solid #3a3a3c; }
+.ctrls button[aria-pressed="true"] { background: #0a84ff; border-color: #0a84ff; color: #fff; }
+.ctrls .big { flex: 1; font-size: 15px; padding: 12px; }
+.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.thumb { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; gap: 4px; text-align: left; color: var(--ink); }
+.thumb[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.thumb.off { opacity: .45; }
+.thumb .mini { pointer-events: none; }
+.thumb span { font-size: 12px; }
+.thumb label { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.thumb input { width: auto; }
+/* slide design (16:9, 1600×900) */
+.slide { font-family: "Sarabun", "IBM Plex Sans Thai", sans-serif; color: #1b2430; background: #fff; }
+.slide .hd { position: absolute; left: 80px; right: 80px; top: 56px; display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #1f4e79; padding-bottom: 14px; }
+.slide .hd h2 { margin: 0; font-size: 50px; font-weight: 700; color: #1f4e79; }
+.slide .hd span { font-size: 22px; color: #6b7785; }
+.slide .bd { position: absolute; left: 80px; right: 80px; top: 170px; bottom: 90px; }
+.slide .ft { position: absolute; left: 80px; right: 80px; bottom: 30px; display: flex; justify-content: space-between; font-size: 18px; color: #8a96a3; }
+.slide .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.slide .kpi { background: #f2f6fa; border-radius: 16px; padding: 26px 30px; }
+.slide .kpi b { display: block; font-size: 64px; line-height: 1.1; color: #1f4e79; font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+.slide .kpi span { font-size: 24px; color: #4a5663; }
+.slide .kpi.g { background: #e6f4ea; } .slide .kpi.g b { color: #1e7a3c; }
+.slide .kpi.r { background: #fdecea; } .slide .kpi.r b { color: #b3372e; }
+.slide img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.slide .two { display: grid; grid-template-columns: 1.45fr 1fr; gap: 40px; height: 100%; }
+.slide .side { font-size: 26px; line-height: 1.55; }
+.slide .side li { margin-bottom: 10px; }
+.slide .fix { display: grid; gap: 14px; font-size: 26px; }
+.slide .fix div { display: grid; grid-template-columns: 170px 1fr 260px; gap: 20px; align-items: center; padding: 14px 20px; border-radius: 12px; background: #f4f6f8; }
+.slide .fix .lv { font-weight: 700; font-size: 22px; border-radius: 99px; padding: 6px 14px; text-align: center; }
+.slide .fix .r .lv { background: #b3372e; color: #fff; } .slide .fix .a .lv { background: #e8a33d; color: #fff; } .slide .fix .i .lv { background: #c9d1d9; color: #1b2430; }
+.slide .fix .src { font-size: 19px; color: #6b7785; text-align: right; }
+.slide .note { font-size: 18px; color: #8a96a3; }
+.slide.cover { background: linear-gradient(135deg, #1f4e79, #163a5a); color: #fff; }
+.slide.cover h1 { position: absolute; left: 100px; top: 250px; margin: 0; font-size: 84px; line-height: 1.15; font-weight: 700; }
+.slide.cover p { position: absolute; left: 100px; top: 470px; margin: 0; font-size: 32px; line-height: 1.6; color: #cfe0f1; }
+.slide.cover .by { position: absolute; left: 100px; bottom: 70px; font-size: 24px; color: #9fbad3; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>โหมดนำเสนอ <span class="pill ok">iPad + จอประชุม (AirPlay หรือสาย USB-C → HDMI)</span></h1>
+    <p>ระบบทำสไลด์จากข้อมูลในแบบฟอร์มสำรวจของงานนี้เท่านั้น ไม่มีตัวเลขคำนวณเพิ่ม ไม่ต้องพิมพ์ใหม่ จอประชุมเห็นเฉพาะสไลด์ ส่วน iPad เห็นสไลด์ถัดไป บันทึกผู้พูด และเวลา ใช้ Apple Pencil ชี้หรือขีดบนสไลด์ได้ และเห็นบนจอใหญ่ทันที</p>
+  </header>
+  <div class="stage2">
+    <div class="tv"><div class="lab"><span>จอประชุม (สิ่งที่ผู้ฟังเห็น)</span><span id="tvLab"></span></div><div class="screen" id="screen"><div class="laser" id="laser"></div><canvas id="tvInk"></canvas></div></div>
+    <div class="ipad">
+      <div class="top"><span id="clock">00:00</span><span id="pos">1 / 10</span><span id="ext">● ต่อจอแล้ว</span></div>
+      <div class="cur" id="cur"><canvas id="ink"></canvas></div>
+      <div class="row2"><div><div style="font-size:12px;color:#aeaeb2;margin-bottom:4px">ถัดไป</div><div class="mini" id="next"></div></div>
+        <div class="ctrls" style="align-content:start"><button type="button" data-tool="none" aria-pressed="true">แตะ</button><button type="button" data-tool="laser" aria-pressed="false">เลเซอร์</button><button type="button" data-tool="pen" aria-pressed="false">ปากกา</button><button type="button" id="clear">ล้างเส้น</button><button type="button" id="black">จอดำ</button></div></div>
+      <div class="notes2" id="notes"></div>
+      <div class="ctrls"><button type="button" class="big" id="prev">◀ ก่อนหน้า</button><button type="button" class="big" id="nextBtn">ถัดไป ▶</button></div>
+    </div>
+  </div>
+  <div class="sheet" style="gap:10px">
+    <div class="row" style="align-items:center"><b style="flex:0 0 auto">สไลด์ที่สร้างจากงานนี้</b><span class="hint" style="flex:1 1 auto">ปิดสไลด์ที่ไม่อยากแสดงได้ · สไลด์ที่ไม่มีข้อมูลจะถูกซ่อนเอง</span><button type="button" id="pdf" style="flex:0 0 auto">ส่งออก PDF ให้ลูกค้า</button></div>
+    <div class="strip" id="strip"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmt = (v, d = 0) => v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+  // survey form values of the sample job (field ids as in Schema.swift); nothing here is computed outside the form
+  const JOB = {
+    cover: { docNo: "215", rev: "00", date: "29 ก.ย. 2569", engineer: "วิศวกรผู้สำรวจ (ตัวอย่าง)", projectName: "สถานีผลิตน้ำ (ตัวอย่าง)", coordinator: "หัวหน้าสถานี (ตัวอย่าง)", phone: "0xx-xxx-xxxx",
+      address: "สถานีผลิตน้ำ อ.เมือง จ.พิษณุโลก (ตัวอย่าง)", gps: "17.0062, 99.8235", internet: "มี", capacity: "300" },
+    site: { siteMap: "../img/pres_sitemap.png", north: "ด้านบน", marks: ["PEA METER", "TRANSFORMER 1", "MDB", "INVERTER STATION", "SITE OFFICE"] },
+    electrical: { meterNo: "020-123456", sld: "../img/sld_form_existing.png",
+      trafos: [{ kva: "630", type: "OIL IMMERSED", hv: "22", lv: "230-400", vector: "Dyn11", z: "4.14", brand: "Tirathai", year: "2558", cond: "พอใช้", condNote: "น้ำมันซึมที่วาล์วถ่าย", feed: "MDP-1", feedLoc: "ห้องไฟฟ้า อาคารสูบน้ำ",
+                 breakers: [["MDP-1", "ACB", "800", "ดี", ""], ["SDB ระบบกรอง", "MCCB", "400", "พอใช้", "ขั้วต่อมีคราบความร้อน"]] },
+               { kva: "250", type: "OIL IMMERSED", hv: "22", lv: "230-400", vector: "", z: "", brand: "Tirathai", year: "2549", cond: "", condNote: "", feed: "MDB-ADMIN", feedLoc: "อาคารสำนักงาน",
+                 breakers: [["MDB-ADMIN", "MCCB", "400", "ดี", ""]] }] },
+    panels: [{ name: "ตู้ไฟฟ้า โรงสูบน้ำ", type: "MCCB", at: "400", af: "400", ka: "36", brand: "Schneider", cond: "ดี", condNote: "", loadKW: "180", loadTime: "10 น." },
+             { name: "ตู้ไฟฟ้า โรงกรอง", type: "MCCB", at: "250", af: "250", ka: "25", brand: "LS", cond: "ชำรุด", condNote: "ก้านโยกหัก", loadKW: "60", loadTime: "10 น." },
+             { name: "ตู้ไฟฟ้า อาคารสำนักงาน", type: "MCCB", at: "100", af: "", ka: "", brand: "", cond: "ดี", condNote: "", loadKW: "25", loadTime: "" }],
+    inverter: { inverterCount: "3" }, backfeed: { level: "กันย้อนที่แรงสูง", pole: "เสาใหม่" }, fts: { photoFTS: true, photoEmg: true },
+    tank: { name: "ถังน้ำใส 1", plan: "../img/tank_40x40.png", spansX: "4 × 10", spansY: "4 × 10", tankType: "ค.ส.ล.", tankPos: "บนดิน", tankHeight: "6.0", surface: "คอนกรีต", shade: "ไม่มีเงาบัง", panelsBefore: "420", panelsCut: "12", obst: 21 },
+    flood: { floodHistory: "เคย", floodYear: "2554", floodDepth: "60", floodSource: "แม่น้ำ / คลองล้นตลิ่ง", floodHit: ["ห้องเครื่องสูบน้ำ"], equipHeight: "110" },
+    final: { verdict: "ติดตั้งได้ (มีเงื่อนไข)", remarks: ["เปลี่ยนเบรกเกอร์ตู้ไฟฟ้าโรงกรองก่อนเชื่อมต่อระบบ", "ติดตั้ง inverter และตู้ SMDB สูงจากพื้นไม่น้อยกว่า 110 ซม.", "ขอแบบ as-built ถังน้ำใสจากสถานีก่อนออกแบบรายละเอียด"],
+      reviewer: "ผู้ตรวจสอบ (ตัวอย่าง)", customerName: "หัวหน้าสถานี (ตัวอย่าง)", signed: ["วิศวกรผู้สำรวจ", "ผู้ประสานงาน"] },
+    missing: ["TR2 เวกเตอร์กรุ๊ป", "TR2 %Z", "TR2 สภาพหม้อแปลง", "ตู้ไฟฟ้า อาคารสำนักงาน AF / kA / ยี่ห้อ"],
+  };
+  const hd = (t, s) => `<div class="hd"><h2>${t}</h2><span>${s || ""}</span></div>`;
+  const ft = n => `<div class="ft"><span>${esc(JOB.cover.projectName)} · เลขที่ ${JOB.cover.docNo} REV.${JOB.cover.rev}</span><span>จากแบบฟอร์มสำรวจ · หน้า ${n}</span></div>`;
+  const dash = v => (v && String(v).trim()) ? esc(v) : `<span style="color:#b3372e">?</span>`;
+  const condCls = c => c === "ชำรุด" ? "r" : c === "พอใช้" ? "a" : c ? "g" : "";
+  const tbl = (head, rows) => `<table style="width:100%;border-collapse:collapse;font-size:24px">${`<tr>${head.map(h => `<th style="text-align:left;color:#6b7785;font-weight:600;padding:8px 10px;border-bottom:2px solid #1f4e79">${h}</th>`).join("")}</tr>`}${rows.map(r => `<tr>${r.map(c => `<td style="padding:10px;border-bottom:1px solid #e3e8ee">${c}</td>`).join("")}</tr>`).join("")}</table>`;
+  const cond = (c, n) => c ? `<span style="font-weight:700;color:${{ r: "#b3372e", a: "#b7791f", g: "#1e7a3c" }[condCls(c)]}">${esc(c)}</span>${n ? `<br><span style="font-size:19px;color:#6b7785">${esc(n)}</span>` : ""}` : dash("");
+
+  function fixes() {   // only from what the form holds: equipment condition, remarks, flood height, unanswered fields
+    const F = [], E = JOB.electrical;
+    JOB.panels.forEach(p => { if (p.cond === "ชำรุด") F.push(["r", `${p.name}: เบรกเกอร์ ${p.type} ${p.at} AT สภาพชำรุด${p.condNote ? " (" + p.condNote + ")" : ""}`, "B1 ตู้ไฟฟ้า · สภาพอุปกรณ์"]);
+      else if (p.cond === "พอใช้") F.push(["a", `${p.name}: สภาพพอใช้${p.condNote ? " (" + p.condNote + ")" : ""}`, "B1 ตู้ไฟฟ้า"]); });
+    E.trafos.forEach((t, i) => { if (t.cond === "ชำรุด" || t.cond === "พอใช้") F.push([t.cond === "ชำรุด" ? "r" : "a", `หม้อแปลง TR${i + 1} ${t.kva} kVA สภาพ${t.cond}${t.condNote ? " (" + t.condNote + ")" : ""}`, "หม้อแปลง · สภาพอุปกรณ์"]);
+      t.breakers.forEach(b => { if (b[3] === "ชำรุด" || b[3] === "พอใช้") F.push([b[3] === "ชำรุด" ? "r" : "a", `${b[0]} ${b[1]} ${b[2]} AT สภาพ${b[3]}${b[4] ? " (" + b[4] + ")" : ""}`, `TR${i + 1} ตู้ MDB`]); }); });
+    JOB.final.remarks.forEach(r => F.push(["r", r, "ความเห็น / เงื่อนไขก่อนติดตั้ง"]));
+    if (JOB.missing.length) F.push(["i", `ข้อมูลที่ยังไม่ได้กรอก ${JOB.missing.length} ช่อง: ${JOB.missing.join(", ")}`, "ความครบของแบบฟอร์ม"]);
+    return F;
+  }
+  function slides() {
+    const C = JOB.cover, E = JOB.electrical, T = JOB.tank, FL = JOB.flood, FI = JOB.final, fx = fixes(), S = [];
+    S.push({ id: "cover", title: "ปก", note: "แนะนำทีม วัตถุประสงค์: สรุปผลสำรวจตามแบบฟอร์ม ใช้เวลาประมาณ 10 นาที",
+      html: `<div class="slide cover"><h1>ผลการสำรวจพื้นที่ติดตั้ง<br>ระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์</h1><p>${esc(C.projectName)}<br>${esc(C.address)}</p><div class="by">${esc(C.engineer)} · ${esc(C.date)} · เลขที่ ${esc(C.docNo)} REV.${esc(C.rev)}</div></div>` });
+    S.push({ id: "summary", title: "สรุป", note: `<b>ประโยคเปิด:</b> ผลประเมิน “${esc(FI.verdict)}” ขนาดที่ต้องการติดตั้ง ${C.capacity} kWp · มี ${fx.filter(f => f[0] === "r").length} รายการที่ต้องทำก่อนติดตั้ง`,
+      html: `<div class="slide">${hd("สรุปผลการสำรวจ", "ผลการประเมิน: " + esc(FI.verdict))}<div class="bd"><div class="kpis">
+        <div class="kpi"><b>${esc(C.capacity)}</b><span>kWp ขนาดที่ต้องการติดตั้ง</span></div><div class="kpi"><b>${+T.panelsBefore - +T.panelsCut}</b><span>แผงบน${esc(T.name)} (${T.panelsBefore} − ตัดออก ${T.panelsCut})</span></div><div class="kpi"><b>${esc(JOB.inverter.inverterCount)}</b><span>อินเวอร์เตอร์ (เครื่อง)</span></div>
+        <div class="kpi"><b style="font-size:40px">${esc(JOB.backfeed.level)}</b><span>ระบบกันย้อน · ${esc(JOB.backfeed.pole)}</span></div><div class="kpi ${FL.floodHistory === "เคย" ? "r" : "g"}"><b style="font-size:40px">${FL.floodHistory === "เคย" ? `เคยท่วม ${FL.floodDepth} ซม.` : "ไม่เคยท่วม"}</b><span>ประวัติน้ำท่วม${FL.equipHeight ? ` · ติดตั้งอุปกรณ์สูง ${FL.equipHeight} ซม.` : ""}</span></div>
+        <div class="kpi ${fx.some(f => f[0] === "r") ? "r" : "g"}"><b>${fx.filter(f => f[0] === "r").length}</b><span>รายการต้องทำก่อนติดตั้ง</span></div></div></div>${ft(2)}</div>` });
+    if (JOB.site.siteMap) S.push({ id: "site", title: "สถานที่", note: "ชี้ตำแหน่งมิเตอร์ หม้อแปลง MDB และจุดตั้ง inverter ตามสัญลักษณ์บนภาพ",
+      html: `<div class="slide">${hd("ภาพสถานที่ติดตั้ง", `พิกัด ${esc(C.gps)} · ทิศเหนือ${esc(JOB.site.north)}`)}<div class="bd"><div class="two"><img src="${JOB.site.siteMap}" alt=""><ul class="side">${JOB.site.marks.map(m => `<li>${esc(m)}</li>`).join("")}<li>สัญญาณอินเทอร์เน็ต: ${esc(C.internet)}</li></ul></div></div>${ft(3)}</div>` });
+    S.push({ id: "elec", title: "มิเตอร์ / หม้อแปลง", note: "ย้ำหม้อแปลงที่สภาพพอใช้และช่องที่ยังไม่มีข้อมูล (เครื่องหมาย ? สีแดง)",
+      html: `<div class="slide">${hd("มิเตอร์ / หม้อแปลง / ตู้ MDB", "มิเตอร์ " + esc(E.meterNo))}<div class="bd">${tbl(["หม้อแปลง", "ชนิด", "HV/LV (kV/V)", "เวกเตอร์ · %Z", "ยี่ห้อ · ปี", "สภาพ", "ตู้ MDB ปลายสาย"],
+        E.trafos.map((t, i) => [`<b>TR${i + 1}</b> ${esc(t.kva)} kVA`, esc(t.type), `${dash(t.hv)} / ${dash(t.lv)}`, `${dash(t.vector)} · ${dash(t.z)}`, `${dash(t.brand)} · ${dash(t.year)}`, cond(t.cond, t.condNote), `${esc(t.feed)}<br><span style="font-size:19px;color:#6b7785">${esc(t.feedLoc)}</span>`]))}
+        <div style="margin-top:26px">${tbl(["เบรกเกอร์ในตู้ MDB", "ชนิด", "AT", "สภาพ"], E.trafos.flatMap((t, i) => t.breakers.map(b => [`TR${i + 1} · ${esc(b[0])}`, esc(b[1]), esc(b[2]), cond(b[3], b[4])])))}</div></div>${ft(4)}</div>` });
+    if (E.sld) S.push({ id: "sld", title: "Single line", note: "แผนภาพนี้วาดจากข้อมูลหม้อแปลงและเบรกเกอร์ในแบบฟอร์มชุดเดียวกับรายงาน",
+      html: `<div class="slide">${hd("Single line diagram (ระบบเดิม)", "วาดจากข้อมูลในแบบฟอร์ม")}<div class="bd"><img src="${E.sld}" alt="" style="width:100%;height:100%;object-fit:contain"></div>${ft(5)}</div>` });
+    S.push({ id: "panels", title: "ตู้ไฟฟ้าอาคาร", note: "ตู้ที่สภาพชำรุดต้องเปลี่ยนก่อนต่อระบบ · โหลดเป็นค่าที่อ่านได้ตอนสำรวจ",
+      html: `<div class="slide">${hd("ตู้ไฟฟ้าอาคาร (B1)", `${JOB.panels.length} ตู้`)}<div class="bd">${tbl(["ตู้", "เบรกเกอร์", "AT / AF / kA", "ยี่ห้อ", "สภาพ", "โหลด (kW)"],
+        JOB.panels.map(p => [`<b>${esc(p.name)}</b>`, esc(p.type), `${dash(p.at)} / ${dash(p.af)} / ${dash(p.ka)}`, dash(p.brand), cond(p.cond, p.condNote), `${dash(p.loadKW)}${p.loadTime ? ` <span style="font-size:19px;color:#6b7785">เวลา ${esc(p.loadTime)}</span>` : ""}`]))}
+        <p class="note" style="margin-top:24px">อินเวอร์เตอร์ ${esc(JOB.inverter.inverterCount)} เครื่อง · กันย้อน: ${esc(JOB.backfeed.level)} (${esc(JOB.backfeed.pole)}) · ภาพ FTS และปุ่มหยุดฉุกเฉิน: ${JOB.fts.photoFTS && JOB.fts.photoEmg ? "มีครบ" : "ยังไม่ครบ"}</p></div>${ft(6)}</div>` });
+    if (T) S.push({ id: "tank", title: "ถังน้ำใส", note: "แปลนวาดจากช่วงเสาและสิ่งกีดขวางที่กรอกในแบบฟอร์ม",
+      html: `<div class="slide">${hd(esc(T.name) + " (D1)", `ถัง ${esc(T.tankType)} · ${esc(T.tankPos)} · สูง ${esc(T.tankHeight)} ม.`)}<div class="bd"><div class="two"><img src="${T.plan}" alt=""><ul class="side"><li>ช่วงเสา ${esc(T.spansX)} × ${esc(T.spansY)} ม.</li><li>สิ่งกีดขวาง ${T.obst} จุด</li><li>ผิวถัง: ${esc(T.surface)}</li><li>${esc(T.shade)}</li><li>แผงก่อนเข้าสำรวจ ${esc(T.panelsBefore)} · ตัดออก ${esc(T.panelsCut)}</li></ul></div></div>${ft(7)}</div>` });
+    if (FL.floodHistory) S.push({ id: "flood", title: "น้ำท่วม", note: "ความสูงติดตั้งอุปกรณ์ = ระดับน้ำสูงสุด + 50 ซม. ตามกฎในแบบฟอร์ม",
+      html: `<div class="slide">${hd("ประวัติน้ำท่วม", FL.floodHistory === "เคย" ? "เคยท่วม" : "ไม่เคยท่วม")}<div class="bd"><div class="kpis"><div class="kpi"><b>${esc(FL.floodYear)}</b><span>ปีที่ท่วมล่าสุด</span></div><div class="kpi r"><b>${esc(FL.floodDepth)}</b><span>ซม. ระดับน้ำสูงสุดจากพื้น</span></div><div class="kpi g"><b>${esc(FL.equipHeight)}</b><span>ซม. ความสูงติดตั้งอุปกรณ์ที่แนะนำ</span></div></div>
+        <ul class="side" style="margin-top:30px"><li>สาเหตุ: ${esc(FL.floodSource)}</li><li>จุดที่เคยได้รับผลกระทบ: ${esc(FL.floodHit.join(", "))}</li></ul></div>${ft(8)}</div>` });
+    S.push({ id: "fix", title: "ต้องทำก่อนติดตั้ง", note: "เริ่มจากสีแดง ขอผู้รับผิดชอบและกำหนดวันจากสถานี · ช่องที่ยังไม่กรอกให้ขอข้อมูลในห้องประชุมนี้",
+      html: `<div class="slide">${hd("สิ่งที่ต้องทำก่อนติดตั้ง", `${fx.length} รายการ จากแบบฟอร์ม`)}<div class="bd"><div class="fix">${fx.map(([lv, t, src]) => `<div class="${lv}"><span class="lv">${{ r: "ต้องทำก่อน", a: "ควรแก้", i: "ขอข้อมูล" }[lv]}</span><span>${esc(t)}</span><span class="src">${esc(src)}</span></div>`).join("")}</div></div>${ft(9)}</div>` });
+    S.push({ id: "sign", title: "สรุปและลงนาม", note: "อ่านผลประเมินและเงื่อนไข แล้วขอลายเซ็นผู้ประสานงานบน iPad",
+      html: `<div class="slide">${hd("สรุปผลการสำรวจและลงนาม")}<div class="bd"><p style="font-size:34px;margin:0 0 20px"><b>ผลการประเมิน:</b> ${esc(FI.verdict)}</p><ul class="side">${FI.remarks.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:40px;font-size:24px">${[["วิศวกรผู้สำรวจ", C.engineer], ["ผู้ตรวจสอบ", FI.reviewer], ["ผู้ประสานงาน / เจ้าของสถานที่", FI.customerName]].map(([r, n]) => `<div style="border-top:2px solid #1b2430;padding-top:10px;text-align:center">${esc(n)}<br><span style="color:#6b7785;font-size:20px">${r}</span></div>`).join("")}</div></div>${ft(10)}</div>` });
+    return S;
+  }
+  let idx = 0, tool = "none", black = false, t0 = Date.now(), off = new Set(), ink = {};
+  let S = slides();
+  const shown = () => S.filter(s => !off.has(s.id));
+
+  // ---- render ----
+  function mount(el, s) { el.querySelectorAll(".slide").forEach(n => n.remove()); const w = document.createElement("div"); w.innerHTML = s.html; const n = w.firstElementChild; el.prepend(n); n.style.transform = `scale(${el.clientWidth / 1600})`; }
+  function drawInk(cv, id) { const c = cv.getContext("2d"), r = cv.getBoundingClientRect(); cv.width = r.width * 2; cv.height = r.height * 2; c.clearRect(0, 0, cv.width, cv.height);
+    c.lineCap = "round"; c.lineJoin = "round"; c.strokeStyle = "#ff3b30"; c.lineWidth = Math.max(3, cv.width / 300);
+    for (const st of ink[id] || []) { c.beginPath(); st.forEach(([x, y], i) => i ? c.lineTo(x * cv.width, y * cv.height) : c.moveTo(x * cv.width, y * cv.height)); c.stroke(); } }
+  function render() {
+    const L = shown(); idx = Math.max(0, Math.min(idx, L.length - 1)); const s = L[idx];
+    mount($("screen"), s); mount($("cur"), s); if (L[idx + 1]) mount($("next"), L[idx + 1]); else { $("next").innerHTML = `<div style="display:grid;place-items:center;height:100%;color:#6b7785;font-size:13px">จบการนำเสนอ</div>`; }
+    drawInk($("tvInk"), s.id); drawInk($("ink"), s.id);
+    $("screen").classList.toggle("black", black); $("pos").textContent = `${idx + 1} / ${L.length}`; $("tvLab").textContent = s.title; $("notes").innerHTML = s.note;
+    $("strip").innerHTML = S.map(x => `<button type="button" class="thumb ${off.has(x.id) ? "off" : ""}" data-go="${x.id}" aria-current="${x.id === s.id}"><div class="mini" data-mini="${x.id}"></div><span>${esc(x.title)}</span><label><input type="checkbox" data-show="${x.id}" ${off.has(x.id) ? "" : "checked"}> แสดง</label></button>`).join("");
+    S.forEach(x => mount(document.querySelector(`[data-mini="${x.id}"]`), x));
+  }
+  const go = d => { idx += d; render(); };
+  $("prev").addEventListener("click", () => go(-1)); $("nextBtn").addEventListener("click", () => go(1));
+  document.addEventListener("keydown", e => { if (e.target.closest("input")) return; if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); go(1); } if (["ArrowLeft", "PageUp"].includes(e.key)) go(-1); if (e.key === "b") { black = !black; render(); } });
+  $("strip").addEventListener("click", e => { const c = e.target.closest("[data-show]"); if (c) { c.checked ? off.delete(c.dataset.show) : off.add(c.dataset.show); render(); return; }
+    const g = e.target.closest("[data-go]"); if (g && !off.has(g.dataset.go)) { idx = shown().findIndex(x => x.id === g.dataset.go); render(); } });
+  document.querySelectorAll("[data-tool]").forEach(b => b.addEventListener("click", () => { tool = b.dataset.tool; document.querySelectorAll("[data-tool]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("laser").style.display = "none"; }));
+  $("clear").addEventListener("click", () => { delete ink[shown()[idx].id]; render(); });
+  $("black").addEventListener("click", () => { black = !black; $("black").setAttribute("aria-pressed", String(black)); render(); });
+  // pointer on the iPad copy → laser / ink on the meeting screen
+  const cur = $("cur"); let stroke = null;
+  const rel = e => { const r = cur.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  cur.addEventListener("pointerdown", e => { const p = rel(e); cur.setPointerCapture(e.pointerId);
+    if (tool === "pen") { const id = shown()[idx].id; stroke = [p]; (ink[id] = ink[id] || []).push(stroke); }
+    if (tool === "laser") showLaser(p); if (tool === "none") go(p[0] < 0.3 ? -1 : 1); });
+  cur.addEventListener("pointermove", e => { const p = rel(e); if (tool === "laser" && e.buttons) showLaser(p); if (stroke) { stroke.push(p); drawInk($("tvInk"), shown()[idx].id); drawInk($("ink"), shown()[idx].id); } });
+  cur.addEventListener("pointerup", () => { stroke = null; if (tool === "laser") setTimeout(() => $("laser").style.display = "none", 700); });
+  function showLaser(p) { const l = $("laser"); l.style.display = "block"; l.style.left = p[0] * 100 + "%"; l.style.top = p[1] * 100 + "%"; }
+  $("pdf").addEventListener("click", () => { $("pdf").textContent = `PDF ${shown().length} หน้า พร้อมแชร์ (ในแอปใช้ share sheet)`; });
+  setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); $("clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }, 1000);
+  window.addEventListener("resize", render);
+  render();
+})();
+</script>

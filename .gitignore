@@ -37,6 +37,7 @@ _update/
 .env.*
 # Added by code-review-graph
 .code-review-graph/
+__pycache__/
 
 # GISTDA API key (see Secrets.example.xcconfig)
 Secrets.xcconfig

@@ -1,0 +1,312 @@
+<title>คลังแบบมาตรฐาน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Layout: same drafting table as the tank editor. Controls left, live layout right, quantities under it.
+   The drawing is a paper document and keeps its light paper in both themes. */
+:root {
+  --bg: #eef1f0; --panel: #ffffff; --field: #fbfcfb; --ink: #1d2826; --muted: #5d6b68; --line: #d3dbd8;
+  --accent: #1f4e79; --accent-soft: #e3ecf5; --good: #2f855a; --good-soft: #dcefe3; --warn: #b3372e; --warn-soft: #fbe9e7;
+  --doc: #ffffff; --doc-ink: #1b1b1b; --doc-grid: #9aa6a3; --doc-soft: #6a6a6a; --doc-mod: #1f4e79; --doc-modfill: #e8eff7;
+  --doc-open: #8a8a8a; --doc-clamp: #2ead4b; --doc-lug: #e0433a; --doc-sel: #f0a020; --doc-hover: rgba(240, 160, 32, .18);
+  --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
+  --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
+.wrap { max-width: 1520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 80ch; }
+.main { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); padding: 0; margin-bottom: 2px; }
+.sec { border-top: 1px solid var(--line); padding-top: 12px; }
+label { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 90px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+input[type=range] { padding: 0; accent-color: var(--accent); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 12px; color: var(--muted); }
+button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 9px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+button.go { background: var(--good-soft); color: var(--good); font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.val { font: 500 12px/1 var(--f-num); color: var(--accent); }
+.board { display: grid; gap: 10px; min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.tools .spacer { flex: 1 1 0; }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 50px; }
+.info b { font-weight: 600; }
+.info .k { color: var(--muted); font-size: 12px; }
+.info .v { font-family: var(--f-num); font-size: 13px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--warn-soft); color: var(--warn); }
+.canvas { background: var(--doc); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 80vh; }
+.canvas svg { display: block; width: 100%; height: auto; font-family: var(--f-draw); user-select: none; -webkit-user-select: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+.stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.stat.hl { background: var(--good-soft); border-color: transparent; }
+.stat.hl b, .stat.hl span { color: var(--good); }
+.delta { font: 500 11px/1 var(--f-num); margin-left: 4px; }
+.delta.up { color: var(--good); } .delta.down { color: var(--warn); }
+.notes { display: grid; gap: 4px; font-size: 13px; }
+.notes div { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 5px 10px; }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+/* drawing */
+.canvas svg * { pointer-events: none; }
+.canvas svg .hit { pointer-events: all; cursor: pointer; }
+.d-t { fill: var(--doc-ink); font-size: 13px; }
+.d-s { fill: var(--doc-soft); font-size: 12px; }
+.d-b { font-weight: 600; }
+.mod { fill: var(--doc-modfill); stroke: var(--doc-mod); stroke-width: .8; }
+.mod.off { fill: none; stroke: var(--doc-lug); stroke-dasharray: 3 2; }
+.mod.sel { fill: #fde9c4; }
+.hit.m:hover + .mod, .mod.hov { fill: #fde9c4; }
+.cards { display: grid; gap: 8px; }
+.card { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; text-align: left; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 8px; color: var(--ink); }
+.card[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.card b { display: block; font-size: 13px; } .card span { display: block; font-size: 12px; color: var(--muted); }
+.card .m { font-weight: 600; } .card .m.good { color: var(--good); } .card .m.far { color: var(--warn); }
+.card svg { width: 64px; height: 48px; background: #fff; border-radius: 4px; }
+.prog { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; } .prog i { display: block; height: 100%; background: var(--good); }
+.acts { display: inline-flex; gap: 6px; flex-wrap: wrap; } .acts button { padding: 7px 10px; }
+.acts .ok { background: var(--good-soft); color: var(--good); } .acts .bad { background: var(--warn-soft); color: var(--warn); }
+.diff { display: grid; gap: 4px; font-size: 13px; } .diff div { border-radius: 6px; padding: 5px 10px; }
+.d-miss { background: var(--warn-soft); color: var(--warn); } .d-move { background: #fdf0dc; color: #9a5b00; } .d-add { background: #efe3fb; color: #6b21a8; } .d-dim { background: var(--accent-soft); color: var(--accent); }
+.canvas svg .hit:hover { fill: rgba(240,160,32,.15); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>คลังแบบมาตรฐาน กปภ. <span class="pill ok">ถังน้ำใส (D1)</span></h1>
+    <p>ใส่ขนาดที่วัดได้ ระบบแนะนำแบบมาตรฐานที่ตรง เลือกแล้วช่วงเสา ช่องระบาย ช่องลงถัง บันได และท่อถูกเติมให้ทั้งหมด ผู้สำรวจแตะตรวจทีละจุดว่าตรงแบบ ไม่มีจริง หรือย้าย และเพิ่มสิ่งที่ไม่มีในแบบ ผลส่งเข้าแปลนถังและผังแผงทันที พร้อมรายการที่ต่างจากแบบในรายงาน</p>
+  </header>
+  <div class="main">
+    <form class="sheet" id="form" autocomplete="off">
+      <fieldset>
+        <legend>ขนาดที่วัดได้หน้างาน</legend>
+        <div class="row"><label>กว้าง (ม.)<input class="num" id="mW" inputmode="decimal" placeholder="เช่น 40"></label><label>ยาว (ม.)<input class="num" id="mH" inputmode="decimal" placeholder="เช่น 40"></label></div>
+        <div class="hint">ใส่ขนาดรวมก่อน ระบบเรียงแบบที่ใกล้ที่สุดไว้บนสุด (ต่างไม่เกิน 0.50 ม. ถือว่าตรง)</div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>แบบในคลัง</legend>
+        <div class="cards" id="cards"></div>
+      </fieldset>
+      <fieldset class="sec" id="saveBox">
+        <legend>บันทึกเป็นแบบมาตรฐาน</legend>
+        <label>ชื่อแบบ<input id="saveName" placeholder="เช่น ถังน้ำใส 40×40 แบบบันไดข้าง"></label>
+        <button type="button" id="save">บันทึกผลตรวจนี้เป็นแบบใหม่</button>
+        <div class="hint">ใช้เมื่อเจอแบบที่ซ้ำหลายสถานี ทีมทุกคนจะเห็นในคลังหลังซิงก์ Drive</div>
+      </fieldset>
+    </form>
+
+    <section class="board">
+      <div class="tools">
+        <div class="seg" role="group" aria-label="โหมด"><button type="button" data-mode="check" aria-pressed="true">ตรวจทีละจุด</button><button type="button" data-mode="add" aria-pressed="false">เพิ่มสิ่งที่ไม่มีในแบบ</button></div>
+        <select id="addKind" style="width:auto" hidden><option value="vent">ช่องระบาย</option><option value="hatch">ช่องลงถัง</option><option value="ladder">บันได</option><option value="pipe">ท่อ</option></select>
+        <button type="button" class="ghost" id="undo">↶ ย้อนกลับ</button>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="มุมมอง"><button type="button" data-view="check" aria-pressed="true">หน้างาน</button><button type="button" data-view="diff" aria-pressed="false">เทียบกับแบบ</button></div>
+      </div>
+      <div class="info" id="info"></div>
+      <div class="canvas"><svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="แปลนถังจากแบบมาตรฐาน"></svg></div>
+      <div class="stats" id="stats"></div>
+      <div class="diff" id="diff"></div>
+      <div class="foot"><span id="src"></span><span>ค่าจากแบบต้องยืนยันหน้างานทุกจุดก่อนใช้ออกแบบ · ไม่ใช่แบบก่อสร้าง</span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const f2 = v => (Math.round(v * 100) / 100).toFixed(2);
+  // the two กปภ. sheets the team supplied (same data as img/tank_plan.py); more come from "บันทึกเป็นแบบมาตรฐาน" or import
+  let LIB = [
+    { id: "pwa-64x40", name: "ถังน้ำใส 64×40 (ช่องระบายแบบกล่อง)", src: "แบบ กปภ. แผ่นที่ทีมส่งมา (แปลนฝาถังน้ำใส)", bx: Array(16).fill(4), by: Array(10).fill(4), ventStyle: "box",
+      vents: [0, 3, 6, 9].flatMap(r => [0, 4, 8, 12, 15].map(c => [r, c])),
+      hatches: [["top", 14.3], ["top", 46.0], ["bottom", 14.1], ["bottom", 45.7], ["left", 18.0], ["left", 22.0], ["right", 18.2], ["right", 22.2]],
+      ladders: [["top", 14.3], ["top", 46.0], ["bottom", 14.1], ["bottom", 45.7], ["left", 22.0], ["right", 22.2]],
+      pipes: [["left", 14, "ท่อเชื่อมถัง Ø600"], ["left", 26, "ท่อเชื่อมถัง Ø600"], ["right", 14, "ท่อน้ำใส Ø700"], ["right", 26, "ท่อน้ำใส Ø700"], ["right", 17, "ท่อน้ำล้น Ø500"], ["right", 23, "ท่อน้ำล้น Ø500"]] },
+    { id: "pwa-40x40", name: "ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด)", src: "แบบ กปภ. แผ่นที่ทีมส่งมา (แปลนพื้น เสา ค.ส.ล. ที่ฝาถัง)", bx: Array(10).fill(4), by: Array(10).fill(4), ventStyle: "cross",
+      vents: [0, 4, 9].flatMap(r => [0, 4, 5, 9].map(c => [r, c])),
+      hatches: [["top", 10.2], ["top", 29.6], ["bottom", 10.2], ["bottom", 29.6], ["left", 21.7], ["right", 21.7]],
+      ladders: [["left", 6.4], ["left", 33.4], ["right", 33.4]], pipes: [] },
+  ];
+  const KIND = { vent: "ช่องระบาย", hatch: "ช่องลงถัง", ladder: "บันได", pipe: "ท่อ", dims: "ขนาดรวม", spansX: "ช่วงเสาแนวนอน", spansY: "ช่วงเสาแนวตั้ง" };
+  const EDGE = { top: "ด้านบน", bottom: "ด้านล่าง", left: "ด้านซ้าย", right: "ด้านขวา" };
+  const V = 1.5, HS = 1.2, TOL = 0.5;
+  let st = { design: null, items: [], measured: { w: null, h: null }, next: 1 }, mode = "check", view = "check", sel = null, undo = [];
+  const push = () => { undo.push(JSON.stringify(st)); if (undo.length > 100) undo.shift(); };
+  const sum = a => a.reduce((x, y) => x + y, 0), cum = a => a.reduce((o, v) => (o.push(o[o.length - 1] + v), o), [0]);
+
+  function load(d) {
+    st.design = d.id; st.items = []; let n = 0; const W = sum(d.bx), H = sum(d.by);
+    st.items.push({ id: "dims", kind: "dims", state: "open", design: [W, H], val: [W, H] });
+    st.items.push({ id: "spansX", kind: "spansX", state: "open", design: d.bx.slice(), val: d.bx.slice() });
+    st.items.push({ id: "spansY", kind: "spansY", state: "open", design: d.by.slice(), val: d.by.slice() });
+    d.vents.forEach(([r, c]) => st.items.push({ id: "v" + n++, kind: "vent", state: "open", design: [r, c], val: [r, c] }));
+    d.hatches.forEach(([e, a]) => st.items.push({ id: "h" + n++, kind: "hatch", state: "open", design: [e, a], val: [e, a] }));
+    d.ladders.forEach(([e, a]) => st.items.push({ id: "l" + n++, kind: "ladder", state: "open", design: [e, a], val: [e, a] }));
+    d.pipes.forEach(([e, a, lab]) => st.items.push({ id: "p" + n++, kind: "pipe", state: "open", design: [e, a], val: [e, a], label: lab }));
+  }
+  const D = () => LIB.find(x => x.id === st.design);
+  const itm = id => st.items.find(x => x.id === id);
+  function geom() { const it = itm("spansX"), jt = itm("spansY"); const bx = it ? it.val : [], by = jt ? jt.val : []; return { xs: cum(bx), ys: cum(by), W: sum(bx), H: sum(by) }; }
+  function box(it, useDesign) {
+    const g = geom(), [a, b] = useDesign ? it.design : it.val;
+    if (it.kind === "vent") { const cx = (g.xs[b] + g.xs[b + 1]) / 2, cy = (g.ys[a] + g.ys[a + 1]) / 2; return [cx - V / 2, cy - V / 2, V, V]; }
+    if (it.kind === "hatch") return { top: [b - HS / 2, .15, HS, HS], bottom: [b - HS / 2, g.H - HS - .15, HS, HS], left: [.15, b - HS / 2, HS, HS], right: [g.W - HS - .15, b - HS / 2, HS, HS] }[a];
+    if (it.kind === "ladder") return { top: [b - .5, -1.1, 1.0, .9], bottom: [b - .5, g.H + .2, 1.0, .9], left: [-1.1, b - .5, .9, 1.0], right: [g.W + .2, b - .5, .9, 1.0] }[a];
+    if (it.kind === "pipe") return { top: [b - .35, -2.4, .7, 2.2], bottom: [b - .35, g.H + .2, .7, 2.2], left: [-2.4, b - .35, 2.2, .7], right: [g.W + .2, b - .35, 2.2, .7] }[a];
+  }
+  function describe(it, useDesign) { const [a, b] = useDesign ? it.design : it.val;
+    if (it.kind === "vent") return `แถว ${a + 1} ช่อง ${b + 1}`; if (["hatch", "ladder", "pipe"].includes(it.kind)) return `${EDGE[a]} ${f2(b)} ม.${it.label ? " · " + it.label : ""}`;
+    if (it.kind === "dims") return `${f2(a)} × ${f2(b)} ม.`; return `${(useDesign ? it.design : it.val).length} ช่วง @${f2((useDesign ? it.design : it.val)[0])}`; }
+  const moved = it => JSON.stringify(it.val) !== JSON.stringify(it.design);
+
+  // ---- drawing ----
+  const COL = { open: "#2f6fb8", ok: "#2f855a", miss: "#c0392b", move: "#d97706", add: "#7c3aed" };
+  let T = null;
+  function plan() {
+    if (!st.design) return { W: 1000, H: 200, body: `<text x="500" y="100" font-size="16" text-anchor="middle" fill="#6a6a6a">ใส่ขนาดที่วัดได้ แล้วเลือกแบบจากคลังด้านซ้าย</text>` };
+    const g = geom(), Wv = 1000, pad = 70, k = Math.min((Wv - 2 * pad - 180) / g.W, 560 / g.H), ox = pad, oy = 50, Hv = oy + g.H * k + 70; T = { k, ox, oy }; window.__T = T;
+    const P = (x, y) => [ox + x * k, oy + y * k], o = [];
+    o.push(`<rect x="${ox - 5}" y="${oy - 5}" width="${g.W * k + 10}" height="${g.H * k + 10}" fill="none" stroke="#1b1b1b" stroke-width="2"/><rect x="${ox}" y="${oy}" width="${g.W * k}" height="${g.H * k}" fill="#fafafa" stroke="#1b1b1b" stroke-width=".8"/>`);
+    g.xs.slice(1, -1).forEach(x => o.push(`<line x1="${P(x, 0)[0]}" y1="${oy}" x2="${P(x, 0)[0]}" y2="${oy + g.H * k}" stroke="#9aa6a3" stroke-dasharray="4 3" stroke-width=".7"/>`));
+    g.ys.slice(1, -1).forEach(y => o.push(`<line x1="${ox}" y1="${P(0, y)[1]}" x2="${ox + g.W * k}" y2="${P(0, y)[1]}" stroke="#9aa6a3" stroke-dasharray="4 3" stroke-width=".7"/>`));
+    const dimIt = itm("dims"), spIt = itm("spansX");
+    const dimCol = dimIt.state === "open" ? COL.open : moved(dimIt) || moved(spIt) || moved(itm("spansY")) ? COL.move : COL.ok;
+    o.push(`<text x="${ox + g.W * k / 2}" y="${oy - 18}" font-size="14" font-weight="700" text-anchor="middle" fill="${dimCol}">${f2(g.W)}</text><text x="${ox - 22}" y="${oy + g.H * k / 2}" font-size="14" font-weight="700" text-anchor="middle" fill="${dimCol}" transform="rotate(-90 ${ox - 22} ${oy + g.H * k / 2})">${f2(g.H)}</text>`);
+    o.push(`<rect class="hit" data-id="dims" x="${ox}" y="${oy - 34}" width="${g.W * k}" height="24" fill="transparent"/>`);
+    const diff = view === "diff";
+    for (const it of st.items) { if (["dims", "spansX", "spansY"].includes(it.kind)) continue;
+      const st_ = it.state, col = COL[st_ === "ok" && moved(it) ? "move" : st_], on = sel === it.id;
+      if (diff && moved(it) && it.state !== "add") { const [x, y, w, h] = box(it, true); o.push(`<rect x="${P(x, y)[0]}" y="${P(x, y)[1]}" width="${w * k}" height="${h * k}" fill="none" stroke="${COL.move}" stroke-dasharray="3 2"/>`);
+        const a = P(x + w / 2, y + h / 2), bb = box(it), b = P(bb[0] + bb[2] / 2, bb[1] + bb[3] / 2); o.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${COL.move}" stroke-width="1.5" marker-end="url(#ar)"/>`); }
+      const [x, y, w, h] = box(it), [px, py] = P(x, y), pw = w * k, ph = h * k, dash = st_ === "open" ? 'stroke-dasharray="4 2"' : "";
+      if (st_ === "miss") { o.push(`<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="none" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 2"/><path d="M${px} ${py}L${px + pw} ${py + ph}M${px + pw} ${py}L${px} ${py + ph}" stroke="${col}" stroke-width="2"/>`); }
+      else if (it.kind === "vent") { const c = [px + pw / 2, py + ph / 2];
+        o.push(D().ventStyle === "cross" ? `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="#fff" stroke="${col}" stroke-width="${on ? 3 : 1.6}" ${dash}/><path d="M${px} ${c[1]}H${px + pw}M${c[0]} ${py}V${py + ph}" stroke="${col}" stroke-width="1"/>`
+          : `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="#fff" stroke="${col}" stroke-width="${on ? 3 : 1.6}" ${dash}/><rect x="${px + pw * .2}" y="${py + ph * .2}" width="${pw * .6}" height="${ph * .6}" fill="none" stroke="${col}"/><circle cx="${c[0]}" cy="${c[1]}" r="${pw * .18}" fill="none" stroke="${col}"/>`); }
+      else if (it.kind === "hatch") o.push(`<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="#fff" stroke="${col}" stroke-width="${on ? 3 : 1.8}" ${dash}/><path d="M${px} ${py + ph}L${px + pw} ${py}" stroke="${col}"/>`);
+      else if (it.kind === "ladder") { o.push(`<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="#fff" stroke="${col}" stroke-width="${on ? 3 : 1.6}" ${dash}/>`); for (let i = 1; i < 4; i++) o.push(pw > ph ? `<line x1="${px + pw * i / 4}" y1="${py}" x2="${px + pw * i / 4}" y2="${py + ph}" stroke="${col}"/>` : `<line x1="${px}" y1="${py + ph * i / 4}" x2="${px + pw}" y2="${py + ph * i / 4}" stroke="${col}"/>`); }
+      else o.push(`<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="${col}" opacity=".85" stroke="${on ? "#f0a020" : col}" stroke-width="${on ? 3 : 1}"/>`);
+      if (st_ === "ok" && !moved(it)) o.push(`<circle cx="${px + pw}" cy="${py}" r="6" fill="${COL.ok}"/><path d="M${px + pw - 3} ${py}l2 2l4 -4" stroke="#fff" stroke-width="1.6" fill="none"/>`);
+      if (on) o.push(`<rect x="${px - 5}" y="${py - 5}" width="${pw + 10}" height="${ph + 10}" fill="none" stroke="#f0a020" stroke-width="2.5" rx="3"/>`);
+      o.push(`<rect class="hit" data-id="${it.id}" x="${px - 6}" y="${py - 6}" width="${pw + 12}" height="${ph + 12}" fill="transparent"/>`); }
+    o.push(`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${COL.move}"/></marker></defs>`);
+    // legend
+    let ly = oy + 10; const lx = ox + g.W * k + 40;
+    for (const [s, t] of [["open", "จากแบบ ยังไม่ตรวจ"], ["ok", "ตรงแบบ"], ["move", "ย้าย / ขนาดต่าง"], ["miss", "ไม่มีจริง"], ["add", "เพิ่มหน้างาน"]]) {
+      o.push(`<rect x="${lx}" y="${ly - 7}" width="14" height="14" fill="#fff" stroke="${COL[s]}" stroke-width="2" ${s === "open" ? 'stroke-dasharray="4 2"' : ""}/><text x="${lx + 22}" y="${ly + 5}" font-size="13">${t}</text>`); ly += 24; }
+    return { W: Wv, H: Hv, body: o.join("") };
+  }
+  function thumb(d) { const W = sum(d.bx), H = sum(d.by), k = Math.min(56 / W, 40 / H), ox = (64 - W * k) / 2, oy = (48 - H * k) / 2, xs = cum(d.bx), ys = cum(d.by);
+    return `<svg viewBox="0 0 64 48"><rect x="${ox}" y="${oy}" width="${W * k}" height="${H * k}" fill="none" stroke="#333"/>` + d.vents.map(([r, c]) => `<rect x="${ox + (xs[c] + xs[c + 1]) / 2 * k - 1.2}" y="${oy + (ys[r] + ys[r + 1]) / 2 * k - 1.2}" width="2.4" height="2.4" fill="#2f6fb8"/>`).join("") + `</svg>`; }
+
+  // ---- UI ----
+  function counts() { const c = { total: 0, done: 0, ok: 0, miss: 0, move: 0, add: 0 };
+    for (const it of st.items) { c.total++; if (it.state !== "open") c.done++; if (it.state === "add") c.add++; else if (it.state === "miss") c.miss++; else if (it.state === "ok" && moved(it)) c.move++; else if (it.state === "ok") c.ok++; } return c; }
+  function render() {
+    const d = plan(); $("svg").setAttribute("viewBox", `0 0 ${d.W} ${d.H}`); $("svg").innerHTML = d.body;
+    const mw = +$("mW").value, mh = +$("mH").value, has = mw > 0 && mh > 0;
+    const ranked = LIB.map(x => { const W = sum(x.bx), H = sum(x.by), e = has ? Math.min(Math.abs(W - mw) + Math.abs(H - mh), Math.abs(W - mh) + Math.abs(H - mw)) : null; return { x, W, H, e }; })
+      .sort((a, b) => has ? a.e - b.e : 0);
+    $("cards").innerHTML = ranked.map(({ x, W, H, e }) => `<button type="button" class="card" data-design="${x.id}" aria-pressed="${st.design === x.id}">${thumb(x)}<div><b>${esc(x.name)}</b><span>${f2(W)} × ${f2(H)} ม. · ระบาย ${x.vents.length} · ลงถัง ${x.hatches.length} · บันได ${x.ladders.length} · ท่อ ${x.pipes.length}</span>`
+      + (has ? `<span class="m ${e <= TOL ? "good" : "far"}">${e <= TOL ? "ตรงกับขนาดที่วัด" : `ต่างจากที่วัด ${f2(e)} ม.`}</span>` : "") + `<span>${esc(x.src)}</span></div></button>`).join("");
+    const c = counts();
+    $("stats").innerHTML = st.design ? [`<div class="stat hl"><b>${c.done}/${c.total}</b><span>ตรวจแล้ว</span><div class="prog"><i style="width:${c.total ? c.done / c.total * 100 : 0}%"></i></div></div>`,
+      `<div class="stat"><b>${c.ok}</b><span>ตรงแบบ</span></div>`, `<div class="stat"><b style="color:${COL.move}">${c.move}</b><span>ย้าย / ขนาดต่าง</span></div>`,
+      `<div class="stat"><b style="color:${COL.miss}">${c.miss}</b><span>ไม่มีจริง</span></div>`, `<div class="stat"><b style="color:${COL.add}">${c.add}</b><span>เพิ่มหน้างาน</span></div>`].join("") : "";
+    const lines = [];
+    for (const it of st.items) { const nm = KIND[it.kind];
+      if (it.state === "miss") lines.push(["d-miss", `${nm} ${describe(it, true)}: ไม่มีจริง`]);
+      else if (it.state === "add") lines.push(["d-add", `${nm} ${describe(it)}: มีหน้างาน ไม่มีในแบบ`]);
+      else if (it.state === "ok" && moved(it)) lines.push([["dims", "spansX", "spansY"].includes(it.kind) ? "d-dim" : "d-move", `${nm}: แบบ ${describe(it, true)} → หน้างาน ${describe(it)}`]); }
+    $("diff").innerHTML = st.design ? `<b style="font-size:13px">ต่างจากแบบ ${lines.length} รายการ${c.done < c.total ? ` · ยังไม่ตรวจ ${c.total - c.done} จุด` : " · ตรวจครบแล้ว"}</b>` + lines.map(([k, t]) => `<div class="${k}">${esc(t)}</div>`).join("") : "";
+    $("src").textContent = st.design ? `ที่มา: ${D().src}` : "";
+    $("addKind").hidden = mode !== "add"; $("undo").disabled = !undo.length; $("save").disabled = !st.design || c.done < c.total;
+    renderInfo();
+  }
+  function renderInfo() {
+    let h = "";
+    if (!st.design) h = "<b>เริ่มจากขนาดที่วัดได้</b> <span class='k'>ใส่กว้าง × ยาว แล้วเลือกแบบที่ตรง</span>";
+    else if (mode === "add") h = `<b>เพิ่ม${KIND[$("addKind").value]}ที่ไม่มีในแบบ</b> <span class="k">${$("addKind").value === "vent" ? "แตะช่องเสาที่มีช่องระบาย" : "แตะใกล้ผนังตรงตำแหน่งที่พบ"}</span>`;
+    else if (!sel) { const c = counts(); h = `<b>ตรวจทีละจุด</b> <span class="k">แตะแต่ละจุดบนแปลนแล้วเลือกผล · เส้นประสีน้ำเงินคือยังไม่ตรวจ</span> ` + (c.done < c.total ? `<button type="button" id="restOk" class="ghost">ยืนยันที่เหลือ ${c.total - c.done} จุดว่าตรงแบบ</button>` : ""); }
+    else { const it = itm(sel), nm = KIND[it.kind];
+      if (it.kind === "dims" || it.kind === "spansX" || it.kind === "spansY") { const dx = itm("spansX"), dy = itm("spansY");
+        h = `<b>ขนาดและช่วงเสา</b> <span class="k">แบบ ${describe(itm("dims"), true)} · ${describe(dx, true)} × ${describe(dy, true)}</span> <label>ช่วงเสาแนวนอน <input id="eX" class="num" style="width:150px" value="${dx.val.join(",")}"></label> <label>แนวตั้ง <input id="eY" class="num" style="width:150px" value="${dy.val.join(",")}"></label> <span class="acts"><button type="button" class="ok" data-act="ok">ตรงแบบ</button></span>`; }
+      else h = `<b>${nm}</b> <span class="k">แบบ: ${esc(describe(it, true))}${moved(it) ? ` · หน้างาน: ${esc(describe(it))}` : ""}</span> <span class="acts">`
+        + (it.state === "add" ? "" : `<button type="button" class="ok" data-act="ok">ตรงแบบ</button><button type="button" class="bad" data-act="miss">ไม่มีจริง</button>`)
+        + (it.kind === "vent" ? "" : `<label style="display:inline-flex;gap:6px;align-items:center">ระยะตามผนัง <input id="eA" class="num" style="width:70px" value="${f2(it.val[1])}"> ม.</label>`)
+        + `<button type="button" data-act="photo">ถ่ายรูป</button>${it.state === "add" ? '<button type="button" class="bad" data-act="del">ลบ</button>' : ""}</span>`
+        + (it.kind === "vent" && it.state !== "add" ? ` <span class="k">ลากไปช่องอื่นถ้าอยู่คนละช่อง</span>` : ""); }
+    $("info").innerHTML = h;
+    const r = $("restOk"); if (r) r.addEventListener("click", () => { push(); st.items.forEach(x => { if (x.state === "open") x.state = "ok"; }); render(); });
+    document.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => { const it = itm(sel); push();
+      if (b.dataset.act === "ok") { if (["dims", "spansX", "spansY"].includes(it.kind)) { ["dims", "spansX", "spansY"].forEach(k => itm(k).state = "ok"); } else it.state = "ok"; sel = nextOpen(); }
+      else if (b.dataset.act === "miss") { it.state = "miss"; it.val = it.design.slice(); sel = nextOpen(); }
+      else if (b.dataset.act === "del") { st.items = st.items.filter(x => x !== it); sel = null; }
+      else undo.pop();
+      render(); }));
+    const eA = $("eA"); if (eA) eA.addEventListener("change", e => { const v = parseFloat(e.target.value), it = itm(sel); if (!(v >= 0)) return; push(); it.val = [it.val[0], v]; if (it.state === "open") it.state = "ok"; render(); });
+    for (const [id, key] of [["eX", "spansX"], ["eY", "spansY"]]) { const e = $(id); if (e) e.addEventListener("change", ev => { const a = ev.target.value.split(/[,\s]+/).map(Number).filter(v => v > 0); if (!a.length) return;
+      push(); itm(key).val = a; itm(key).state = "ok"; const g = geom(); itm("dims").val = [g.W, g.H]; itm("dims").state = "ok"; render(); }); }
+  }
+  const nextOpen = () => { const n = st.items.find(x => x.state === "open"); return n ? n.id : null; };
+
+  // ---- pointer ----
+  const svg = $("svg"); let drag = null;
+  const toM = e => { const b = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; const x = (e.clientX - b.left) / b.width * vb.width, y = (e.clientY - b.top) / b.height * vb.height; return [(x - T.ox) / T.k, (y - T.oy) / T.k]; };
+  function cellAt(p) { const g = geom(); const c = g.xs.findIndex((x, i) => i < g.xs.length - 1 && p[0] >= x && p[0] < g.xs[i + 1]), r = g.ys.findIndex((y, i) => i < g.ys.length - 1 && p[1] >= y && p[1] < g.ys[i + 1]); return r >= 0 && c >= 0 ? [r, c] : null; }
+  function wallAt(p) { const g = geom(), d = { top: Math.abs(p[1]), bottom: Math.abs(p[1] - g.H), left: Math.abs(p[0]), right: Math.abs(p[0] - g.W) }, e = Object.keys(d).reduce((a, b) => d[a] < d[b] ? a : b);
+    return [e, Math.round((e === "top" || e === "bottom" ? Math.max(0, Math.min(g.W, p[0])) : Math.max(0, Math.min(g.H, p[1]))) * 10) / 10]; }
+  svg.addEventListener("pointerdown", e => { if (mode !== "check" || !st.design) return; const t = e.target.closest("[data-id]"); if (!t) return; const it = itm(t.dataset.id);
+    if (["dims", "spansX", "spansY"].includes(it.kind) || it.state === "miss") return; sel = it.id; push(); drag = { it, moved: false }; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener("pointermove", e => { if (!drag) return; const p = toM(e), it = drag.it;
+    const nv = it.kind === "vent" ? cellAt(p) : wallAt(p); if (!nv || JSON.stringify(nv) === JSON.stringify(it.val)) return; drag.moved = true; it.val = nv; if (it.state === "open") it.state = "ok"; render(); });
+  svg.addEventListener("pointerup", () => { if (drag) { if (!drag.moved) undo.pop(); drag = null; render(); } });
+  svg.addEventListener("click", e => { if (!st.design) return; const t = e.target.closest("[data-id]");
+    if (mode === "add") { const p = toM(e), k = $("addKind").value, v = k === "vent" ? cellAt(p) : wallAt(p); if (!v) return; push();
+      const it = { id: "a" + st.next++, kind: k, state: "add", design: v, val: v, label: k === "pipe" ? "ท่อที่พบหน้างาน" : "" }; st.items.push(it); sel = it.id; setMode("check"); return; }
+    sel = t ? t.dataset.id : null; render(); });
+  function setMode(m) { mode = m; document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m))); render(); }
+  document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => { sel = null; setMode(b.dataset.mode); }));
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); render(); }));
+  $("addKind").addEventListener("change", render);
+  $("cards").addEventListener("click", e => { const b = e.target.closest("[data-design]"); if (!b) return; push(); load(LIB.find(x => x.id === b.dataset.design)); sel = "dims"; render(); });
+  for (const id of ["mW", "mH"]) $(id).addEventListener("input", render);
+  $("undo").addEventListener("click", () => { if (!undo.length) return; st = JSON.parse(undo.pop()); sel = null; render(); });
+  $("save").addEventListener("click", () => { const name = $("saveName").value.trim() || `${D().name} (แก้ตามหน้างาน)`, g = geom(), its = st.items.filter(x => x.state === "ok" || x.state === "add");
+    const nd = { id: "team-" + Date.now(), name, src: `บันทึกจากผลตรวจหน้างาน · อ้างอิง ${D().name}`, bx: itm("spansX").val.slice(), by: itm("spansY").val.slice(), ventStyle: D().ventStyle,
+      vents: its.filter(x => x.kind === "vent").map(x => x.val), hatches: its.filter(x => x.kind === "hatch").map(x => x.val), ladders: its.filter(x => x.kind === "ladder").map(x => x.val), pipes: its.filter(x => x.kind === "pipe").map(x => [...x.val, x.label || "ท่อ"]) };
+    LIB.push(nd); $("saveName").value = ""; render(); $("info").innerHTML = `<b>บันทึกแล้ว</b> <span class="k">“${esc(name)}” อยู่ในคลัง ทีมจะเห็นหลังซิงก์ Drive</span>`; });
+  $("form").addEventListener("submit", e => e.preventDefault());
+  render();
+})();
+</script>

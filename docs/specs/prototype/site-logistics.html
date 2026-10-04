@@ -1,0 +1,421 @@
+<title>สำรวจการขนส่ง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Layout: same drafting table as the tank editor. Controls left, live layout right, quantities under it.
+   The drawing is a paper document and keeps its light paper in both themes. */
+:root {
+  --bg: #eef1f0; --panel: #ffffff; --field: #fbfcfb; --ink: #1d2826; --muted: #5d6b68; --line: #d3dbd8;
+  --accent: #1f4e79; --accent-soft: #e3ecf5; --good: #2f855a; --good-soft: #dcefe3; --warn: #b3372e; --warn-soft: #fbe9e7;
+  --doc: #ffffff; --doc-ink: #1b1b1b; --doc-grid: #9aa6a3; --doc-soft: #6a6a6a; --doc-mod: #1f4e79; --doc-modfill: #e8eff7;
+  --doc-open: #8a8a8a; --doc-clamp: #2ead4b; --doc-lug: #e0433a; --doc-sel: #f0a020; --doc-hover: rgba(240, 160, 32, .18);
+  --f-ui: "IBM Plex Sans Thai", "Sarabun", system-ui, sans-serif;
+  --f-draw: "Sarabun", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+    --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121716; --panel: #1a2120; --field: #161c1b; --ink: #e3ebe9; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #8db8e3; --accent-soft: #1d2c3a; --good: #8fd3a8; --good-soft: #1d3326; --warn: #f08a80; --warn-soft: #3a1f1c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--f-ui); }
+.wrap { max-width: 1520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 80ch; }
+.main { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted); padding: 0; margin-bottom: 2px; }
+.sec { border-top: 1px solid var(--line); padding-top: 12px; }
+label { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 90px; min-width: 0; }
+input, select { font: 14px/1.3 var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+input.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+input[type=range] { padding: 0; accent-color: var(--accent); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 12px; color: var(--muted); }
+button { font: 500 13px/1 var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 9px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+button.go { background: var(--good-soft); color: var(--good); font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+.seg button { flex: 1; border-radius: 0; background: transparent; color: var(--muted); border: 0; padding: 8px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.val { font: 500 12px/1 var(--f-num); color: var(--accent); }
+.board { display: grid; gap: 10px; min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.tools .spacer { flex: 1 1 0; }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 50px; }
+.info b { font-weight: 600; }
+.info .k { color: var(--muted); font-size: 12px; }
+.info .v { font-family: var(--f-num); font-size: 13px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--warn-soft); color: var(--warn); }
+.canvas { background: var(--doc); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 80vh; }
+.canvas svg { display: block; width: 100%; height: auto; font-family: var(--f-draw); user-select: none; -webkit-user-select: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+.stat b { display: block; font: 500 18px/1.2 var(--f-num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.stat.hl { background: var(--good-soft); border-color: transparent; }
+.stat.hl b, .stat.hl span { color: var(--good); }
+.delta { font: 500 11px/1 var(--f-num); margin-left: 4px; }
+.delta.up { color: var(--good); } .delta.down { color: var(--warn); }
+.notes { display: grid; gap: 4px; font-size: 13px; }
+.notes div { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 5px 10px; }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+/* drawing */
+.canvas svg * { pointer-events: none; }
+.canvas svg .hit { pointer-events: all; cursor: pointer; }
+.d-t { fill: var(--doc-ink); font-size: 13px; }
+.d-s { fill: var(--doc-soft); font-size: 12px; }
+.d-b { font-weight: 600; }
+.mod { fill: var(--doc-modfill); stroke: var(--doc-mod); stroke-width: .8; }
+.mod.off { fill: none; stroke: var(--doc-lug); stroke-dasharray: 3 2; }
+.mod.sel { fill: #fde9c4; }
+.hit.m:hover + .mod, .mod.hov { fill: #fde9c4; }
+.canvas svg .hit-seg { pointer-events: stroke; cursor: pointer; }
+.canvas svg.drawing, .canvas svg.drawing .hit, .canvas svg.drawing .hit-seg { cursor: crosshair; }
+table.chk { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+table.chk th, table.chk td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+table.chk th { font-size: 12px; color: var(--muted); font-weight: 600; }
+table.chk td.num { font-family: var(--f-num); text-align: right; white-space: nowrap; }
+table.chk tr.on td { background: var(--accent-soft); }
+.ok { color: var(--good); font-weight: 600; } .no { color: var(--warn); font-weight: 600; }
+.tablewrap { overflow-x: auto; }
+.bring { display: grid; gap: 4px; font-size: 13px; }
+.bring div { background: var(--good-soft); color: var(--good); border-radius: 6px; padding: 5px 10px; }
+.bring div.w { background: var(--warn-soft); color: var(--warn); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>สำรวจการขนส่งและเครื่องจักร <span class="pill ok">ตัวอย่าง: สถานีผลิตน้ำ (ภาพเดียวกับเส้นทางสาย)</span></h1>
+    <p>วาดทางรถจากประตู วัดจุดแคบ วางรถเครนกับจุดยก พื้นที่กองวัสดุ และทางขึ้นหลังคาบนภาพสถานที่ติดตั้ง ระบบตรวจให้ว่ารถแต่ละขนาดเข้าได้ไหม ใช้เครนขนาดไหน เครนห่างสายไฟพอไหม พื้นที่กองพอไหม และต้องเตรียมอะไรไป ทีมติดตั้งไม่ต้องมาดูพื้นที่ซ้ำ</p>
+  </header>
+  <div class="main">
+    <form class="sheet" id="form" autocomplete="off">
+      <fieldset>
+        <legend>เครื่องมือ</legend>
+        <div class="seg" role="group" aria-label="เครื่องมือ"><button type="button" data-tool="select" aria-pressed="true">เลือก / แก้</button><button type="button" data-tool="path" aria-pressed="false">ทางรถ</button><button type="button" data-tool="narrow" aria-pressed="false">จุดแคบ</button></div>
+        <div class="seg" role="group" aria-label="เครื่องมือ 2"><button type="button" data-tool="crane" aria-pressed="false">จุดตั้งเครน</button><button type="button" data-tool="yard" aria-pressed="false">กองวัสดุ</button><button type="button" data-tool="access" aria-pressed="false">ทางขึ้น</button></div>
+        <div class="seg" role="group" aria-label="เครื่องมือ 3"><button type="button" data-tool="line" aria-pressed="false">สายไฟเหนือหัว</button></div>
+        <div class="hint" id="toolHint"></div>
+        <div class="row"><button type="button" class="go" id="finish" hidden>จบเส้น</button><button type="button" class="ghost" id="cancel" hidden>ยกเลิก</button></div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>ของที่ต้องขนเข้า (จากผังแผง)</legend>
+        <div class="row"><label>แผง (แผ่น)<input class="num" id="modules"></label><label>แผ่น/พาเลท<input class="num" id="perPallet"></label><label>ซ้อนได้ (ชั้น)<input class="num" id="stack"></label></div>
+        <div class="row"><label>ราง (ม.)<input class="num" id="railM"></label><label>อินเวอร์เตอร์ (ตัว)<input class="num" id="inv"></label></div>
+        <div class="row"><label>น้ำหนักยกต่อครั้ง (ตัน)<input class="num" id="lift"></label><label>สูงจุดวาง (ม.)<input class="num" id="liftH"></label></div>
+        <div class="hint" id="loadNote"></div>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>รถที่จะใช้</legend>
+        <label>รถส่งของ<select id="truck"></select></label>
+        <label>เครน<select id="craneSel"><option value="auto">เลือกให้อัตโนมัติ (เล็กสุดที่ผ่าน)</option></select></label>
+      </fieldset>
+      <fieldset class="sec">
+        <legend>เงื่อนไขหน้างาน</legend>
+        <label>เวลาเข้างาน<input id="hours" value="08:00–17:00 จ.–ส. (หยุดจ่ายน้ำไม่ได้)"></label>
+        <label>ผิวทาง<select id="surface"><option>ลาดยาง / คอนกรีต</option><option>ลูกรัง</option><option>ดิน / หญ้า</option></select></label>
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="power" style="width:auto" checked> มีไฟชั่วคราวให้ใช้</label>
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="water" style="width:auto" checked> มีน้ำใช้</label>
+      </fieldset>
+    </form>
+
+    <section class="board">
+      <div class="tools">
+        <button type="button" class="ghost" id="undo">↶ ย้อนกลับ</button>
+        <button type="button" class="ghost" id="del" disabled>ลบที่เลือก</button>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="มุมมอง"><button type="button" data-view="edit" aria-pressed="true">แก้ไข</button><button type="button" data-view="report" aria-pressed="false">ใบสรุปทีมติดตั้ง</button></div>
+      </div>
+      <div class="info" id="info"></div>
+      <div class="canvas"><svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ภาพสถานที่ติดตั้งและแผนการขนส่ง"></svg></div>
+      <div class="stats" id="stats"></div>
+      <div class="tablewrap"><table class="chk" id="vtable"></table></div>
+      <div class="bring" id="bring"></div>
+      <div class="foot"><span id="assumed"></span><span>สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แผนยก · ตรวจกับตารางยกของรถเครนจริงและผู้ควบคุมงานยก</span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const f1 = v => (Math.round(v * 10) / 10).toFixed(1), f2 = v => (Math.round(v * 100) / 100).toFixed(2), fmt = v => Math.round(v).toLocaleString("en-US");
+  const IW = 640, IH = 400, S0 = 182.74 / IW, K = 1100 / IW;
+  const M = (x, y) => [x / S0, y / S0];
+  // vehicles (ค่าสมมติ; typical Thai fleet): width, height loaded, wheelbase (effective), outer turning radius (m), gross weight (t)
+  const VEH = {
+    pickup: { t: "กระบะ", w: 1.9, h: 2.2, wb: 3.1, r: 6.0, gvw: 3 },
+    six: { t: "6 ล้อ", w: 2.3, h: 3.4, wb: 4.3, r: 8.0, gvw: 11 },
+    ten: { t: "10 ล้อ (ติดเครน HIAB)", w: 2.5, h: 3.8, wb: 5.6, r: 10.5, gvw: 25, crane: "hiab" },
+    trailer: { t: "หัวลาก + หางพ่วง 12 ม.", w: 2.5, h: 4.0, wb: 11.0, r: 12.5, gvw: 45 },
+    c25: { t: "รถเครน 25 ตัน", w: 2.5, h: 3.6, wb: 4.4, r: 10.0, gvw: 26, crane: "c25" },
+    c50: { t: "รถเครน 50 ตัน", w: 2.75, h: 3.8, wb: 6.5, r: 11.5, gvw: 40, crane: "c50" },
+  };
+  // generic load charts (t at radius m) — ค่าสมมติ, replace with the hired crane's chart
+  const CRANE = {
+    hiab: { t: "10 ล้อติดเครน (HIAB)", veh: "ten", boom: 10.5, out: [5.0, 4.6], chart: [[2, 3.2], [4, 1.6], [6, 1.05], [8, 0.8], [10, 0.6]] },
+    c25: { t: "รถเครน 25 ตัน", veh: "c25", boom: 33.5, out: [6.0, 5.5], chart: [[3, 25], [5, 18], [8, 11], [10, 8.5], [12, 6.5], [14, 5.2], [16, 4.2], [18, 3.4], [20, 2.8], [22, 2.3], [24, 1.9], [26, 1.6], [28, 1.3], [30, 1.1]] },
+    c50: { t: "รถเครน 50 ตัน", veh: "c50", boom: 42, out: [7.2, 6.8], chart: [[3, 50], [5, 36], [8, 24], [10, 19], [12, 15], [14, 12.5], [16, 10.5], [18, 9], [20, 7.6], [24, 5.6], [28, 4.2], [32, 3.2], [36, 2.5], [38, 2.2]] },
+  };
+  const CLEAR = [[1, 1.5, "แรงต่ำ 230/400 V"], [33, 3.0, "22–33 kV"], [115, 5.0, "115 kV"]];     // kV, metres (ค่าสมมติ)
+  const MARGIN = 0.3, HMARGIN = 0.3, UTIL = 0.75, RIG = 3.0;
+  const ACCESS = { stair: "บันไดถาวร", ladder: "บันไดลิง", none: "ไม่มีทางขึ้น" };
+
+  const sample = () => ({
+    roads: [{ pts: [M(92, 114), M(92, 58), M(26, 58)], w: 6 }],
+    path: [M(92, 113), M(92, 64), M(112, 66)],
+    narrow: [{ p: M(92, 105.5), w: 4.0, h: 4.5, label: "ประตูรั้ว" }],
+    cranes: [{ p: M(114, 66), tgt: M(118, 50), sel: "auto" }],
+    yards: [{ a: M(60, 44), b: M(84, 54) }],
+    access: [{ p: M(100, 40), kind: "ladder", h: 6.0, label: "บันไดลิงข้างถัง" }, { p: M(56, 74), kind: "none", h: 4.5, label: "หลังคาอาคารสูบน้ำ" }],
+    lines: [{ pts: [M(0, 110), M(182, 110)], kv: 22 }, { pts: [M(20, 110), M(27, 93)], kv: 22 }],
+    load: { modules: 408, perPallet: 31, stack: 2, railM: 1200, inv: 2, lift: 1.0, liftH: 6.0 }, truck: "trailer",
+  });
+  let st = sample(), tool = "select", view = "edit", sel = null, draft = null, cursor = null, undo = [], R = null, prevQ = null, Q = null;
+  const push = () => { undo.push(JSON.stringify(st)); if (undo.length > 100) undo.shift(); };
+  const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]), s = S0;
+  function distSeg(p, a, b) { const ux = b[0] - a[0], uy = b[1] - a[1], L = ux * ux + uy * uy, t = L ? Math.max(0, Math.min(1, ((p[0] - a[0]) * ux + (p[1] - a[1]) * uy) / L)) : 0; return Math.hypot(p[0] - a[0] - t * ux, p[1] - a[1] - t * uy); }
+  const distLine = (p, pts) => Math.min(...pts.slice(1).map((q, i) => distSeg(p, pts[i], q)));
+  const turn = (a, b, c) => { const u = [b[0] - a[0], b[1] - a[1]], v = [c[0] - b[0], c[1] - b[1]]; return Math.acos(Math.max(-1, Math.min(1, (u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v) || 1)))) * 180 / Math.PI; };
+  const cap = (c, r) => { const ch = CRANE[c].chart; if (r > ch[ch.length - 1][0]) return 0; if (r <= ch[0][0]) return ch[0][1];
+    for (let i = 1; i < ch.length; i++) if (r <= ch[i][0]) return ch[i][1];                     // conservative: next radius up
+    return 0; };
+  const clearOf = kv => (CLEAR.find(c => kv <= c[0]) || CLEAR[CLEAR.length - 1]);
+
+  // ---- checks ----
+  function roadAt(p) { let best = null; for (const rd of st.roads) { const d = distLine(p, rd.pts) * s; if (d <= rd.w / 2 + 0.5 && (!best || rd.w < best.w)) best = rd; } return best; }
+  function vehicleCheck(v) {
+    const V = VEH[v], fails = [], need = [];
+    for (const n of st.narrow) { const rw = V.w + 2 * MARGIN, rh = V.h + HMARGIN;
+      if (n.w < rw) fails.push(`${n.label} กว้าง ${f1(n.w)} ต้องการ ${f1(rw)} ม.`); if (n.h < rh) fails.push(`${n.label} สูง ${f1(n.h)} ต้องการ ${f1(rh)} ม.`); }
+    for (let i = 1; i + 1 < st.path.length; i++) { const th = turn(st.path[i - 1], st.path[i], st.path[i + 1]); if (th < 20) continue;
+      const rd = roadAt(st.path[i]), off = V.r - Math.sqrt(Math.max(0, V.r * V.r - V.wb * V.wb)), req = V.w + off * Math.min(1, th / 90) + 2 * MARGIN;
+      if (rd && rd.w < req) fails.push(`โค้งที่ ${i} (${Math.round(th)}°) ถนนกว้าง ${f1(rd.w)} ต้องการ ${f1(req)} ม.`);
+      else if (!rd) need.push(`โค้งที่ ${i} อยู่นอกถนน`); }
+    return { ok: !fails.length, fails, need };
+  }
+  function offRoad() { let L = 0; for (let i = 0; i + 1 < st.path.length; i++) { const a = st.path[i], b = st.path[i + 1], n = Math.max(2, Math.ceil(d2(a, b) * s / 2));
+    for (let k = 0; k < n; k++) { const t = (k + .5) / n, p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; if (!roadAt(p)) L += d2(a, b) * s / n; } } return L; }
+  function craneCheck(c) {
+    const r = d2(c.p, c.tgt) * s, H = st.load.liftH + RIG, boom = Math.hypot(r, H), out = [];
+    for (const k of ["hiab", "c25", "c50"]) { const C = CRANE[k], capT = cap(k, r), util = capT ? st.load.lift / capT : Infinity, boomOk = boom <= C.boom;
+      const veh = vehicleCheck(C.veh); out.push({ k, capT, util, ok: util <= UTIL && boomOk && veh.ok, boomOk, veh }); }
+    const pick = c.sel === "auto" ? (out.find(x => x.ok) || out[out.length - 1]) : out.find(x => x.k === c.sel);
+    const C = CRANE[pick.k], half = [C.out[0] / 2 / s, C.out[1] / 2 / s];
+    const foot = [[c.p[0] - half[0], c.p[1] - half[1]], [c.p[0] + half[0], c.p[1] - half[1]], [c.p[0] + half[0], c.p[1] + half[1]], [c.p[0] - half[0], c.p[1] + half[1]]];
+    const lines = st.lines.map((ln, i) => { const d = distLine(c.p, ln.pts) * s, cl = clearOf(ln.kv), reach = r + cl[1]; return { i, d, need: reach, ok: d > reach, cl }; });
+    const onRoad = !!roadAt(c.p);
+    return { r, H, boom, out, pick, foot, lines, onRoad, ok: pick.ok && lines.every(l => l.ok) };
+  }
+  function yardNeed() {
+    const L = st.load, pallets = Math.ceil(L.modules / L.perPallet), stacks = Math.ceil(pallets / Math.max(1, L.stack)), bundles = Math.ceil(L.railM / 5.8 / 20);
+    const net = stacks * 2.3 * 1.15 + bundles * 6.2 * 0.6 + L.inv * 1.2 * 1.0; return { pallets, stacks, bundles, net, need: net * 1.8 };
+  }
+  function analyse() {
+    const veh = {}; for (const k of Object.keys(VEH)) veh[k] = vehicleCheck(k);
+    const cranes = st.cranes.map(craneCheck), yn = yardNeed(), yards = st.yards.map(y => Math.abs(y.b[0] - y.a[0]) * Math.abs(y.b[1] - y.a[1]) * s * s);
+    const yardArea = yards.reduce((a, b) => a + b, 0), pathL = st.path.slice(1).reduce((t, q, i) => t + d2(st.path[i], q) * s, 0), off = offRoad();
+    const bring = [];
+    for (const c of cranes) { if (!c.onRoad) bring.push(["แผ่นรองขาเครน (outrigger pads) และตรวจความแน่นดิน เพราะจุดตั้งเครนไม่อยู่บนถนน", true]);
+      c.lines.filter(l => !l.ok).forEach(l => bring.push([`เครนเอื้อมถึงระยะอันตรายของสายไฟ ${l.cl[2]} (ห่าง ${f1(l.d)} ม. ต้องเกิน ${f1(l.need)} ม.): ขอดับไฟหรือหุ้มสาย หรือย้ายจุดตั้งเครน`, false])); }
+    if (off > 0.5 && $("surface").value !== "ลาดยาง / คอนกรีต") bring.push([`แผ่นเหล็กปูทาง ${Math.ceil(off / 1.5)} แผ่น (1.5×6 ม.) ทางรถวิ่งนอกถนน ${f1(off)} ม.`, true]);
+    else if (off > 0.5) bring.push([`ทางรถวิ่งนอกถนน ${f1(off)} ม.: ปูแผ่นเหล็กถ้าดินอ่อน`, true]);
+    for (const a of st.access) { if (a.kind === "none") bring.push([`นั่งร้านบันได (scaffold tower) สูง ${f1(a.h + 1)} ม. ที่${a.label}`, true]);
+      if (a.kind === "ladder" && a.h > 6 - 1e-9) bring.push([`ชุดกันตก + เชือกนิรภัยสำหรับบันไดลิงสูง ${f1(a.h)} ม. (${a.label})`, true]);
+      bring.push([`เชือกและรอกดึงของขึ้น${a.label} หรือใช้เครนวางที่ขอบ`, true]); }
+    if (yardArea < yn.need) bring.push([`พื้นที่กองวัสดุไม่พอ (${fmt(yardArea)} จาก ${fmt(yn.need)} ม²): แบ่งส่งของ ${Math.ceil(yn.need / Math.max(1, yardArea))} รอบ`, false]);
+    if (!$("power").checked) bring.push(["เครื่องปั่นไฟสำหรับเครื่องมือ", true]); if (!$("water").checked) bring.push(["น้ำใช้สำหรับงานคอนกรีตฐานราก", true]);
+    return { veh, cranes, yn, yardArea, pathL, off, bring };
+  }
+
+  // ---- drawing ----
+  const P = p => [p[0] * K, p[1] * K], pts = a => a.map(p => P(p).map(v => v.toFixed(1)).join(",")).join(" ");
+  function background(report) {
+    const g = [], m = (x, y, w, h) => { const a = M(x, y), b = M(x + w, y + h); return [a[0] * K, a[1] * K, (b[0] - a[0]) * K, (b[1] - a[1]) * K]; };
+    const R_ = (x, y, w, h, fill, stroke = "none", sw = 0, extra = "") => { const [a, b, c, d] = m(x, y, w, h); g.push(`<rect x="${a}" y="${b}" width="${c}" height="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${extra}/>`); };
+    R_(0, 0, 182.74, 114.2, report ? "#f4f4f4" : "#6f8a55");
+    if (!report) for (let i = 0; i < 70; i++) { const x = (i * 37.3) % 182, y = (i * 23.9) % 114; g.push(`<circle cx="${M(x, y)[0] * K}" cy="${M(x, y)[1] * K}" r="${6 + (i % 5) * 2}" fill="#5c7747" opacity=".7"/>`); }
+    R_(20, 10, 145, 95, report ? "#fff" : "#8aa06b", report ? "#999" : "#e8e1c8", 1.2, 'stroke-dasharray="6 4"');
+    R_(0, 106, 182.74, 8.2, report ? "#e2e2e2" : "#77736b");
+    R_(100, 16, 40, 40, report ? "#fff" : "#c9c7bf", report ? "#555" : "#9d9a90", 1.5);
+    for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) if ((i === 0 || i === 9 || i === 4) && (j === 0 || j === 9 || j === 4)) R_(101.2 + i * 4, 17.2 + j * 4, 1.6, 1.6, report ? "#ddd" : "#8f8c83");
+    if (!report) for (let r = 0; r < 6; r++) R_(103, 19 + r * 6, 34, 4.3, "#2a4a7a", "#9fb4d6", .4);
+    R_(30, 66, 26, 16, report ? "#fff" : "#9fb3c4", report ? "#555" : "#7f93a3", 1.2); R_(60, 88, 14, 10, report ? "#fff" : "#c7836a", report ? "#555" : "#a86a53", 1.2);
+    R_(24, 89, 7, 7, report ? "#fff" : "#b9b9b9", report ? "#555" : "#8a8a8a", 1); R_(145, 60, 8, 7, report ? "#fff" : "#d8d8d8", report ? "#555" : "#9a9a9a", 1);
+    if (!report) for (const [x, y, r] of [[30, 20, 5], [40, 26, 4], [150, 90, 5], [160, 40, 4.5], [80, 20, 5], [35, 45, 4]]) g.push(`<circle cx="${M(x, y)[0] * K}" cy="${M(x, y)[1] * K}" r="${r / S0 * K}" fill="#3f5a34"/>`);
+    const lab = (x, y, t) => g.push(`<text x="${M(x, y)[0] * K}" y="${M(x, y)[1] * K}" font-size="12" text-anchor="middle" fill="${report ? "#555" : "#fff"}" style="paint-order:stroke;stroke:${report ? "#fff" : "rgba(0,0,0,.45)"};stroke-width:3">${t}</text>`);
+    lab(120, 60, "ถังน้ำใส 40×40 (แผงบนฝาถัง)"); lab(43, 64, "อาคารสูบน้ำ (ห้อง MDB)"); lab(67, 102, "สำนักงาน"); lab(90, 112, "ถนนสาธารณะ");
+    return g.join("");
+  }
+
+  function svgMain(report) {
+    const selNow = window.__sel;
+    const o = [background(report)], W = IW * K, H = IH * K, ink = report ? "#111" : null, sel = report ? null : selNow;
+    st.roads.forEach(rd => o.push(`<polyline points="${pts(rd.pts)}" fill="none" stroke="${report ? "#e2e2e2" : "#b7b2a6"}" stroke-width="${rd.w / s * K}" stroke-linejoin="round"/>`));
+    st.lines.forEach((ln, i) => { const on = sel && sel.t === "line" && sel.i === i;
+      o.push(`<polyline points="${pts(ln.pts)}" fill="none" stroke="${on ? "#f0a020" : ink || "#111"}" stroke-width="${on ? 3 : 1.4}"/>`);
+      ln.pts.forEach(p => { const [x, y] = P(p); o.push(`<circle cx="${x}" cy="${y}" r="3" fill="${ink || "#111"}"/>`); });
+      const m = P(ln.pts[0]).map((v, k) => (v + P(ln.pts[1])[k]) / 2); o.push(`<text x="${m[0] + 6}" y="${m[1] - 5}" font-size="11" font-weight="700" fill="${report ? "#111" : "#fde047"}" style="paint-order:stroke;stroke:${report ? "#fff" : "#111"};stroke-width:3">⚡ ${ln.kv} kV</text>`);
+      if (!report) o.push(`<polyline class="hit-seg" data-line="${i}" points="${pts(ln.pts)}" fill="none" stroke="transparent" stroke-width="14"/>`); });
+    for (const y of st.yards) { const [x0, y0] = P([Math.min(y.a[0], y.b[0]), Math.min(y.a[1], y.b[1])]), [x1, y1] = P([Math.max(y.a[0], y.b[0]), Math.max(y.a[1], y.b[1])]), i = st.yards.indexOf(y), on = sel && sel.t === "yard" && sel.i === i;
+      o.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${report ? "#fff" : "rgba(250,204,21,.35)"}" stroke="${on ? "#f0a020" : report ? "#111" : "#facc15"}" stroke-width="${on ? 3 : 2}" stroke-dasharray="6 3"/><text x="${(x0 + x1) / 2}" y="${(y0 + y1) / 2 + 4}" font-size="12" font-weight="700" text-anchor="middle" fill="${report ? "#111" : "#fff"}" style="paint-order:stroke;stroke:${report ? "#fff" : "rgba(0,0,0,.5)"};stroke-width:3">กองวัสดุ ${fmt(R.yardArea)} ม²</text>`);
+      if (!report) o.push(`<rect class="hit" data-yard="${i}" x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="transparent"/>`); }
+    if (st.path.length > 1) { o.push(`<polyline points="${pts(st.path)}" fill="none" stroke="${report ? "#fff" : "rgba(0,0,0,.35)"}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${pts(st.path)}" fill="none" stroke="${report ? "#111" : "#f97316"}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${report ? "12 5" : ""}"/>`);
+      for (let i = 1; i < st.path.length; i++) { const a = P(st.path[i - 1]), b = P(st.path[i]), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, an = Math.atan2(b[1] - a[1], b[0] - a[0]);
+        o.push(`<path d="M${mx - 7 * Math.cos(an) - 5 * Math.sin(an)} ${my - 7 * Math.sin(an) + 5 * Math.cos(an)}L${mx} ${my}L${mx - 7 * Math.cos(an) + 5 * Math.sin(an)} ${my - 7 * Math.sin(an) - 5 * Math.cos(an)}" fill="none" stroke="${report ? "#111" : "#fff"}" stroke-width="2.2"/>`); }
+      if (!report) { o.push(`<polyline class="hit-seg" data-path="1" points="${pts(st.path)}" fill="none" stroke="transparent" stroke-width="16"/>`);
+        if (sel && sel.t === "path") st.path.forEach((p, i) => { const [x, y] = P(p); o.push(`<circle class="hit" data-pv="${i}" cx="${x}" cy="${y}" r="7" fill="#fff" stroke="#f0a020" stroke-width="2.5"/>`); }); } }
+    st.narrow.forEach((n, i) => { const [x, y] = P(n.p), on = sel && sel.t === "narrow" && sel.i === i, bad = !R.veh[st.truck].ok && R.veh[st.truck].fails.some(f => f.startsWith(n.label));
+      o.push(`<g transform="translate(${x},${y})"><path d="M-16 -9V9M16 -9V9" stroke="${report ? "#111" : bad ? "#ef4444" : "#fff"}" stroke-width="4"/><path d="M-16 0H16" stroke="${report ? "#111" : "#fff"}" stroke-width="1.2" stroke-dasharray="3 2"/>${on ? '<circle r="20" fill="none" stroke="#f0a020" stroke-width="3"/>' : ""}</g>`
+        + `<text x="${x + 22}" y="${y - 2}" font-size="11" font-weight="700" fill="${report ? "#111" : "#fff"}" style="paint-order:stroke;stroke:${report ? "#fff" : "rgba(0,0,0,.55)"};stroke-width:3">${esc(n.label)} กว้าง ${f1(n.w)} สูง ${f1(n.h)} ม.</text>`);
+      if (!report) o.push(`<circle class="hit" data-narrow="${i}" cx="${x}" cy="${y}" r="16" fill="transparent"/>`); });
+    st.cranes.forEach((c, i) => { const a = R.cranes[i], [x, y] = P(c.p), [tx, ty] = P(c.tgt), rr = a.r / s * K, on = sel && sel.t === "crane" && sel.i === i, col = report ? "#111" : a.ok ? "#22c55e" : "#ef4444";
+      o.push(`<circle cx="${x}" cy="${y}" r="${rr}" fill="${report ? "none" : a.ok ? "rgba(34,197,94,.12)" : "rgba(239,68,68,.15)"}" stroke="${col}" stroke-width="1.6" stroke-dasharray="8 4"/>`);
+      a.lines.forEach(l => { if (l.ok) return; const ln = st.lines[l.i]; o.push(`<circle cx="${x}" cy="${y}" r="${l.need / s * K}" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="2 3"/>`); });
+      o.push(`<polygon points="${pts(a.foot)}" fill="${report ? "#fff" : "rgba(255,255,255,.85)"}" stroke="${on ? "#f0a020" : report ? "#111" : "#111"}" stroke-width="${on ? 3 : 1.5}"/>`);
+      a.foot.forEach(p => { const [px, py] = P(p); o.push(`<rect x="${px - 4}" y="${py - 4}" width="8" height="8" fill="${report ? "#111" : "#f97316"}"/>`); });
+      o.push(`<line x1="${x}" y1="${y}" x2="${tx}" y2="${ty}" stroke="${report ? "#111" : "#fff"}" stroke-width="2.5"/><circle cx="${tx}" cy="${ty}" r="6" fill="${report ? "#111" : "#fff"}" stroke="${col}" stroke-width="2"/>`);
+      o.push(`<text x="${x}" y="${y + 4}" font-size="11" font-weight="700" text-anchor="middle" fill="#111">เครน</text><text x="${(x + tx) / 2 + 8}" y="${(y + ty) / 2}" font-size="11" font-weight="700" fill="${report ? "#111" : "#fff"}" style="paint-order:stroke;stroke:${report ? "#fff" : "rgba(0,0,0,.6)"};stroke-width:3">R ${f1(a.r)} ม.</text>`);
+      if (!report) o.push(`<rect class="hit" data-crane="${i}" x="${x - 18}" y="${y - 14}" width="36" height="28" fill="transparent"/><circle class="hit" data-tgt="${i}" cx="${tx}" cy="${ty}" r="10" fill="transparent"/>`); });
+    st.access.forEach((a, i) => { const [x, y] = P(a.p), on = sel && sel.t === "access" && sel.i === i, col = report ? "#111" : a.kind === "none" ? "#ef4444" : "#3b82f6";
+      o.push(`<g transform="translate(${x},${y})"><rect x="-9" y="-12" width="18" height="24" rx="2" fill="#fff" stroke="${on ? "#f0a020" : col}" stroke-width="${on ? 3 : 2}"/><path d="M-4 -12V12M4 -12V12M-4 -6H4M-4 0H4M-4 6H4" stroke="${col}" stroke-width="1.4"/></g><text x="${x + 13}" y="${y + 4}" font-size="11" font-weight="700" fill="${report ? "#111" : "#fff"}" style="paint-order:stroke;stroke:${report ? "#fff" : "rgba(0,0,0,.55)"};stroke-width:3">${esc(ACCESS[a.kind])} ${f1(a.h)} ม.</text>`);
+      if (!report) o.push(`<rect class="hit" data-access="${i}" x="${x - 12}" y="${y - 14}" width="24" height="28" fill="transparent"/>`); });
+    if (draft) { const all = cursor ? draft.pts.concat([cursor]) : draft.pts;
+      if (draft.type === "yard" && all.length === 2) { const [x0, y0] = P([Math.min(all[0][0], all[1][0]), Math.min(all[0][1], all[1][1])]), [x1, y1] = P([Math.max(all[0][0], all[1][0]), Math.max(all[0][1], all[1][1])]); o.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="rgba(250,204,21,.3)" stroke="#facc15" stroke-width="2" stroke-dasharray="6 3"/>`); }
+      else if (all.length > 1) o.push(`<polyline points="${pts(all)}" fill="none" stroke="#fff" stroke-width="5" opacity=".7"/><polyline points="${pts(all)}" fill="none" stroke="${draft.type === "line" ? "#111" : "#f97316"}" stroke-width="3" stroke-dasharray="6 4"/>`);
+      draft.pts.forEach(p => { const [x, y] = P(p); o.push(`<circle cx="${x}" cy="${y}" r="5" fill="#f97316" stroke="#fff" stroke-width="2"/>`); });
+      if (cursor && draft.pts.length && draft.type !== "yard") { let L = 0; for (let i = 0; i + 1 < all.length; i++) L += d2(all[i], all[i + 1]) * s; const [x, y] = P(cursor);
+        o.push(`<rect x="${x + 12}" y="${y - 26}" width="74" height="20" rx="4" fill="#111" opacity=".8"/><text x="${x + 49}" y="${y - 12}" font-size="12" text-anchor="middle" fill="#fff">${f1(L)} ม.</text>`); } }
+    const sb = 20 / s * K; o.push(`<rect x="16" y="${H - 34}" width="${sb + 60}" height="24" rx="4" fill="#fff" opacity=".9"/><path d="M24 ${H - 18}h${sb}M24 ${H - 23}v10M${24 + sb} ${H - 23}v10" stroke="#111" stroke-width="2"/><text x="${32 + sb}" y="${H - 14}" font-size="12">20 ม.</text>`);
+    o.push(`<g transform="translate(${W - 30},34)"><circle r="17" fill="#fff" opacity=".9"/><path d="M0 -12L6 6L0 2L-6 6Z" fill="#111"/><text y="15" font-size="10" text-anchor="middle" font-weight="700">N</text></g>`);
+    if (!report) return { W, H, body: o.join("") };
+    // report: tables under the picture
+    let y = H + 26; const c0 = R.cranes[0];
+    o.push(`<rect x="0" y="${H}" width="${W}" height="600" fill="#fff"/><text x="16" y="${y}" font-size="14" font-weight="700">ใบสรุปงานขนส่งและเครื่องจักรสำหรับทีมติดตั้ง</text>`); y += 22;
+    const row = (cells, xs, bold, col) => { cells.forEach((t, i) => o.push(`<text x="${xs[i]}" y="${y}" font-size="11.5" ${bold ? 'font-weight="700"' : ""} fill="${col && col[i] ? col[i] : "#111"}">${esc(t)}</text>`)); y += 17; };
+    const vx = [16, 210, 290, 360, 430]; row(["รถ", "กว้าง×สูง", "เลี้ยว R", "ผล", "เหตุผล"], vx, true);
+    for (const [k, V] of Object.entries(VEH)) { const c = R.veh[k]; row([V.t, `${V.w}×${V.h}`, `${V.r}`, c.ok ? "เข้าได้" : "เข้าไม่ได้", c.ok ? (c.need[0] || "–") : c.fails[0]], vx, false, [null, null, null, c.ok ? "#15803d" : "#b3372e", null]); }
+    y += 8; o.push(`<line x1="16" y1="${y - 12}" x2="${W - 16}" y2="${y - 12}" stroke="#bbb"/>`);
+    if (c0) { row([`เครน: ${CRANE[c0.pick.k].t} · รัศมี ${f1(c0.r)} ม. · สูงจุดวาง ${f1(st.load.liftH)} ม. · บูมอย่างน้อย ${f1(c0.boom)} ม. · ยก ${f2(st.load.lift)} ตัน จากพิกัด ${f2(c0.pick.capT)} ตัน (${Math.round(c0.pick.util * 100)}%) · ${c0.lines.every(l => l.ok) ? "ห่างสายไฟพอ" : "ใกล้สายไฟเกินระยะ"}`], [16], true, [c0.ok ? "#15803d" : "#b3372e"]); }
+    row([`กองวัสดุ ${fmt(R.yardArea)} ม² · ต้องการ ${fmt(R.yn.need)} ม² (พาเลทแผง ${R.yn.pallets} → ${R.yn.stacks} กอง, มัดราง ${R.yn.bundles}, อินเวอร์เตอร์ ${st.load.inv}) · ทางรถ ${f1(R.pathL)} ม. นอกถนน ${f1(R.off)} ม. · เวลาเข้างาน ${$("hours").value}`], [16]);
+    y += 6; o.push(`<text x="16" y="${y}" font-size="12" font-weight="700">ต้องเตรียมไป</text>`); y += 17;
+    R.bring.forEach(([t, ok]) => { o.push(`<text x="24" y="${y}" font-size="11.5" fill="${ok ? "#111" : "#b3372e"}">• ${esc(t)}</text>`); y += 16; });
+    y += 8; o.push(`<text x="16" y="${y}" font-size="10" fill="#555">ค่าสมมติ: ขนาดรถ วงเลี้ยว และตารางยกเป็นค่าทั่วไป · เผื่อข้างละ ${MARGIN} ม. สูง ${HMARGIN} ม. · ใช้พิกัดยกไม่เกิน ${UTIL * 100}% · ระยะห่างสายไฟ ${CLEAR.map(c => c[2] + " " + c[1] + " ม.").join(", ")}</text>`);
+    o.push(`<text x="${W - 16}" y="${y + 18}" font-size="10" fill="#e0433a" text-anchor="end">สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แผนยก</text>`);
+    return { W, H: y + 30, body: o.join("") };
+  }
+
+  // ---- UI ----
+  function render() {
+    window.__sel = sel; R = analyse(); Q = { veh: Object.values(R.veh).filter(v => v.ok).length, yard: R.yardArea, path: R.pathL };
+    const d = svgMain(view === "report"); $("svg").setAttribute("viewBox", `0 0 ${d.W} ${d.H}`); $("svg").innerHTML = d.body; $("svg").classList.toggle("drawing", tool !== "select");
+    const t = R.veh[st.truck], c = R.cranes[0], yn = R.yn;
+    const tile = (v, lab, good) => `<div class="stat${good === true ? " hl" : ""}"><b${good === false ? ' style="color:var(--warn)"' : ""}>${v}</b><span>${lab}</span></div>`;
+    $("stats").innerHTML = [tile(t.ok ? "เข้าได้" : "เข้าไม่ได้", `รถส่งของ: ${VEH[st.truck].t}`, t.ok), tile(c ? CRANE[c.pick.k].t.replace("รถเครน ", "") : "–", "เครนที่ใช้", c ? c.ok : null),
+      tile(c ? f1(c.r) + " ม." : "–", "รัศมียก"), tile(c ? Math.round(c.pick.util * 100) + "%" : "–", "ใช้พิกัดยก", c ? c.pick.util <= UTIL : null),
+      tile(c ? (c.lines.every(l => l.ok) ? "พอ" : "ไม่พอ") : "–", "ห่างสายไฟ", c ? c.lines.every(l => l.ok) : null),
+      tile(`${fmt(R.yardArea)}/${fmt(yn.need)}`, "กองวัสดุ ม² (มี/ต้องการ)", R.yardArea >= yn.need), tile(f1(R.pathL) + " ม.", `ทางรถ (นอกถนน ${f1(R.off)} ม.)`)].join("");
+    $("vtable").innerHTML = `<tr><th>รถ</th><th>กว้าง × สูง (ม.)</th><th>วงเลี้ยว (ม.)</th><th>ผล</th><th>เหตุผล</th></tr>` + Object.entries(VEH).map(([k, V]) => { const v = R.veh[k];
+      return `<tr class="${k === st.truck ? "on" : ""}"><td>${V.t}</td><td class="num">${V.w} × ${V.h}</td><td class="num">${V.r}</td><td class="${v.ok ? "ok" : "no"}">${v.ok ? "เข้าได้" : "เข้าไม่ได้"}</td><td>${esc(v.ok ? (v.need.join(" · ") || "–") : v.fails.join(" · "))}</td></tr>`; }).join("");
+    $("bring").innerHTML = `<b style="font-size:13px">ต้องเตรียมไป</b>` + R.bring.map(([t, ok]) => `<div class="${ok ? "" : "w"}">${esc(t)}</div>`).join("");
+    $("loadNote").textContent = `พาเลทแผง ${yn.pallets} (${yn.stacks} กอง) · มัดราง ${yn.bundles} · ต้องการพื้นที่ ${fmt(yn.need)} ม² รวมทางเดิน`;
+    $("assumed").textContent = `ค่าสมมติ: เผื่อข้างละ ${MARGIN} ม. สูง ${HMARGIN} ม. · ใช้พิกัดยกไม่เกิน ${UTIL * 100}% · เผื่อสลิง ${RIG} ม. · ระยะห่างสายไฟ 22–33 kV 3.0 ม.`;
+    const tips = { select: "แตะรายการบนภาพเพื่อดูผลตรวจ · ลากจุดตั้งเครน จุดยก หรือมุมทางรถเพื่อย้าย", path: "แตะจากถนนนอกประตูไปถึงจุดตั้งเครนหรือกองวัสดุ แล้วกด “จบเส้น”", narrow: "แตะจุดที่แคบหรือเตี้ยที่สุด (ประตู ซุ้ม สายไฟ กันสาด) แล้วใส่กว้าง × สูง",
+      crane: "แตะจุดตั้งเครน แล้วแตะจุดที่จะวางของ", yard: "แตะมุมหนึ่ง แล้วแตะมุมตรงข้ามของพื้นที่กองวัสดุ", access: "แตะจุดขึ้นหลังคาหรือถัง แล้วเลือกชนิดทางขึ้นและความสูง", line: "แตะตามแนวสายไฟ แล้วกด “จบเส้น” ใส่แรงดัน kV" };
+    $("toolHint").textContent = tips[tool];
+    $("finish").hidden = !(draft && draft.pts.length >= 2 && ["path", "line"].includes(draft.type)); $("cancel").hidden = !draft;
+    $("del").disabled = !(sel && ["narrow", "crane", "yard", "access", "line"].includes(sel.t)); $("undo").disabled = !undo.length;
+    renderInfo();
+  }
+  function renderInfo() {
+    const pill = (ok, t) => `<span class="pill ${ok ? "ok" : "bad"}">${esc(t)}</span>`, kv = (k, v) => `<span><span class="k">${k}</span> <span class="v">${v}</span></span>`;
+    const inp = (id, v, w = 64) => `<input id="${id}" class="num" style="width:${w}px" value="${v}">`;
+    let h = "";
+    if (draft) h = `<b>${{ path: "กำลังวาดทางรถ", line: "กำลังวาดสายไฟเหนือหัว", yard: "กำลังวาดพื้นที่กองวัสดุ", crane: "แตะจุดที่จะวางของ" }[draft.type] || ""}</b> <span class="k">${esc($("toolHint").textContent)}</span>`;
+    else if (!sel) h = `<b>แผนการขนส่ง</b> <span class="k">${esc($("toolHint").textContent)}</span>`;
+    else if (sel.t === "narrow") { const n = st.narrow[sel.i], lim = Object.entries(VEH).filter(([k]) => R.veh[k].fails.some(f => f.startsWith(n.label))).map(([, V]) => V.t);
+      h = `<b>จุดแคบ</b> <label>ชื่อ ${inp("nLabel", esc(n.label), 110)}</label> <label>กว้าง ${inp("nW", n.w)} ม.</label> <label>สูง ${inp("nH", n.h)} ม.</label> ` + (lim.length ? pill(false, `ติด: ${lim.join(", ")}`) : pill(true, "รถทุกขนาดผ่าน")); }
+    else if (sel.t === "crane") { const c = st.cranes[sel.i], a = R.cranes[sel.i];
+      h = `<b>จุดตั้งเครน</b> ${kv("รัศมี", f1(a.r) + " ม.")} ${kv("สูงจุดวาง+สลิง", f1(a.H) + " ม.")} ${kv("บูมอย่างน้อย", f1(a.boom) + " ม.")} <label>เครน <select id="cSel" style="width:auto"><option value="auto" ${c.sel === "auto" ? "selected" : ""}>อัตโนมัติ</option>${Object.entries(CRANE).map(([k, C]) => `<option value="${k}" ${c.sel === k ? "selected" : ""}>${C.t}</option>`).join("")}</select></label> `
+        + a.out.map(x => pill(x.ok, `${CRANE[x.k].t.replace("รถเครน ", "")}: ${x.capT ? `พิกัด ${f2(x.capT)} ตัน ${Math.round(x.util * 100)}%` : "เอื้อมไม่ถึง"}${!x.boomOk ? " บูมสั้น" : ""}${!x.veh.ok ? " รถเข้าไม่ได้" : ""}`)).join(" ")
+        + " " + a.lines.map(l => pill(l.ok, `สาย ${st.lines[l.i].kv} kV ห่าง ${f1(l.d)} ม. (ต้องเกิน ${f1(l.need)})`)).join(" ") + " " + (a.onRoad ? pill(true, "ตั้งบนถนน") : pill(false, "ตั้งบนดิน: ใช้แผ่นรองขา")); }
+    else if (sel.t === "yard") { const y = st.yards[sel.i], w = Math.abs(y.b[0] - y.a[0]) * s, d = Math.abs(y.b[1] - y.a[1]) * s;
+      h = `<b>พื้นที่กองวัสดุ</b> ${kv("ขนาด", `${f1(w)} × ${f1(d)} ม.`)} ${kv("พื้นที่", fmt(w * d) + " ม²")} ${kv("ต้องการรวมทุกจุด", fmt(R.yn.need) + " ม²")} ` + pill(R.yardArea >= R.yn.need, R.yardArea >= R.yn.need ? "พอ" : "ไม่พอ: แบ่งส่งหลายรอบ"); }
+    else if (sel.t === "access") { const a = st.access[sel.i];
+      h = `<b>ทางขึ้น</b> <label>ชื่อ ${inp("aLabel", esc(a.label), 150)}</label> <label>ชนิด <select id="aKind" style="width:auto">${Object.entries(ACCESS).map(([k, v]) => `<option value="${k}" ${a.kind === k ? "selected" : ""}>${v}</option>`).join("")}</select></label> <label>สูง ${inp("aH", a.h)} ม.</label> `
+        + (a.kind === "none" ? pill(false, `ต้องใช้นั่งร้านสูง ${f1(a.h + 1)} ม.`) : a.kind === "ladder" && a.h >= 6 ? pill(false, "ต้องใช้ชุดกันตก") : pill(true, "ขึ้นได้")); }
+    else if (sel.t === "line") { const ln = st.lines[sel.i]; h = `<b>สายไฟเหนือหัว</b> <label>แรงดัน ${inp("lKv", ln.kv)} kV</label> ${kv("ระยะห่างที่ต้องเว้น", clearOf(ln.kv)[1] + " ม.")}`; }
+    else if (sel.t === "path") h = `<b>ทางรถ</b> ${kv("ยาว", f1(R.pathL) + " ม.")} ${kv("นอกถนน", f1(R.off) + " ม.")} ` + pill(R.veh[st.truck].ok, `${VEH[st.truck].t}: ${R.veh[st.truck].ok ? "เข้าได้" : R.veh[st.truck].fails[0]}`) + ` <span class="k">ลากจุดสีส้มเพื่อแก้แนว</span>`;
+    $("info").innerHTML = h;
+    const bind = (id, fn) => { const e = $(id); if (e) e.addEventListener("change", ev => { push(); fn(ev.target.value); render(); }); };
+    if (sel) { const o = sel.t === "narrow" ? st.narrow[sel.i] : sel.t === "access" ? st.access[sel.i] : sel.t === "crane" ? st.cranes[sel.i] : sel.t === "line" ? st.lines[sel.i] : null;
+      bind("nLabel", v => o.label = v); bind("nW", v => { if (+v > 0) o.w = +v; }); bind("nH", v => { if (+v > 0) o.h = +v; });
+      bind("aLabel", v => o.label = v); bind("aKind", v => o.kind = v); bind("aH", v => { if (+v > 0) o.h = +v; }); bind("cSel", v => o.sel = v); bind("lKv", v => { if (+v > 0) o.kv = +v; }); }
+  }
+
+  // ---- pointer ----
+  const svg = $("svg");
+  const toPic = e => { const b = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return [(e.clientX - b.left) / b.width * vb.width / K, (e.clientY - b.top) / b.height * vb.height / K]; };
+  let drag = null;
+  svg.addEventListener("pointerdown", e => { if (view !== "edit" || tool !== "select") return;
+    const t = e.target.closest("[data-crane],[data-tgt],[data-pv],[data-narrow],[data-access]"); if (!t) return;
+    push(); const d = t.dataset;
+    drag = d.crane !== undefined ? { o: st.cranes[+d.crane], k: "p", sel: { t: "crane", i: +d.crane } } : d.tgt !== undefined ? { o: st.cranes[+d.tgt], k: "tgt", sel: { t: "crane", i: +d.tgt } }
+      : d.pv !== undefined ? { o: st.path, k: +d.pv, sel: { t: "path" } } : d.narrow !== undefined ? { o: st.narrow[+d.narrow], k: "p", sel: { t: "narrow", i: +d.narrow } } : { o: st.access[+d.access], k: "p", sel: { t: "access", i: +d.access } };
+    sel = drag.sel; svg.setPointerCapture(e.pointerId); e.preventDefault(); });
+  svg.addEventListener("pointermove", e => { const p = toPic(e);
+    if (drag) { drag.moved = true; drag.o[drag.k] = p; render(); return; }
+    if (draft) { cursor = p; render(); } });
+  svg.addEventListener("pointerup", () => { if (drag) { if (!drag.moved) undo.pop(); drag = null; render(); } });
+  svg.addEventListener("click", e => { if (view !== "edit") return; const p = toPic(e);
+    if (tool === "select") { const t = e.target.closest("[data-crane],[data-tgt],[data-narrow],[data-access],[data-yard],[data-line],[data-path]");
+      if (!t) sel = null; else { const d = t.dataset; sel = d.crane !== undefined ? { t: "crane", i: +d.crane } : d.tgt !== undefined ? { t: "crane", i: +d.tgt } : d.narrow !== undefined ? { t: "narrow", i: +d.narrow }
+        : d.access !== undefined ? { t: "access", i: +d.access } : d.yard !== undefined ? { t: "yard", i: +d.yard } : d.line !== undefined ? { t: "line", i: +d.line } : { t: "path" }; }
+      render(); return; }
+    if (tool === "narrow") { push(); st.narrow.push({ p, w: 3.5, h: 4.0, label: `จุดแคบ ${st.narrow.length + 1}` }); sel = { t: "narrow", i: st.narrow.length - 1 }; setTool("select"); return; }
+    if (tool === "access") { push(); st.access.push({ p, kind: "none", h: 5.0, label: `ทางขึ้น ${st.access.length + 1}` }); sel = { t: "access", i: st.access.length - 1 }; setTool("select"); return; }
+    if (!draft) draft = { type: tool, pts: [] };
+    draft.pts.push(p);
+    if (tool === "crane" && draft.pts.length === 2) { push(); st.cranes.push({ p: draft.pts[0], tgt: draft.pts[1], sel: "auto" }); sel = { t: "crane", i: st.cranes.length - 1 }; draft = null; cursor = null; setTool("select"); return; }
+    if (tool === "yard" && draft.pts.length === 2) { push(); st.yards.push({ a: draft.pts[0], b: draft.pts[1] }); sel = { t: "yard", i: st.yards.length - 1 }; draft = null; cursor = null; setTool("select"); return; }
+    render(); });
+  svg.addEventListener("dblclick", () => { if (draft && draft.pts.length >= 2) finish(); });
+  function finish() { if (!draft) return; push();
+    if (draft.type === "path") { st.path = draft.pts; sel = { t: "path" }; } else if (draft.type === "line") { st.lines.push({ pts: draft.pts, kv: 22 }); sel = { t: "line", i: st.lines.length - 1 }; } else undo.pop();
+    draft = null; cursor = null; setTool("select"); }
+  $("finish").addEventListener("click", finish);
+  $("cancel").addEventListener("click", () => { draft = null; cursor = null; render(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && draft) { draft = null; cursor = null; render(); } if (e.key === "Enter" && draft) finish(); });
+  function setTool(t) { tool = t; draft = null; cursor = null; if (t !== "select") sel = null; document.querySelectorAll("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === t))); render(); }
+  document.querySelectorAll("[data-tool]").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; draft = null; document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); render(); }));
+  $("del").addEventListener("click", () => { if (!sel) return; push(); const m = { narrow: st.narrow, crane: st.cranes, yard: st.yards, access: st.access, line: st.lines }[sel.t]; if (m) m.splice(sel.i, 1); sel = null; render(); });
+  $("undo").addEventListener("click", () => { if (!undo.length) return; st = JSON.parse(undo.pop()); sel = null; draft = null; sync(); render(); });
+  for (const id of Object.keys(sample().load)) $(id).addEventListener("change", e => { const v = parseFloat(e.target.value); if (!(v > 0)) { e.target.value = st.load[id]; return; } push(); st.load[id] = v; render(); });
+  $("truck").innerHTML = Object.entries(VEH).filter(([, V]) => !V.crane || V.crane === "hiab").map(([k, V]) => `<option value="${k}">${V.t}</option>`).join("");
+  $("truck").addEventListener("change", e => { push(); st.truck = e.target.value; render(); });
+  $("craneSel").innerHTML += Object.entries(CRANE).map(([k, C]) => `<option value="${k}">${C.t}</option>`).join("");
+  $("craneSel").addEventListener("change", e => { push(); st.cranes.forEach(c => c.sel = e.target.value); render(); });
+  for (const id of ["surface", "power", "water", "hours"]) $(id).addEventListener("change", render);
+  $("form").addEventListener("submit", e => e.preventDefault());
+  function sync() { for (const [k, v] of Object.entries(st.load)) $(k).value = v; $("truck").value = st.truck; $("craneSel").value = st.cranes[0] ? st.cranes[0].sel : "auto"; }
+  sync(); render();
+})();
+</script>

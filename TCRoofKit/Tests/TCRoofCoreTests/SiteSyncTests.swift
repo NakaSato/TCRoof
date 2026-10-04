@@ -147,6 +147,18 @@ final class SiteSyncTests: XCTestCase {
         XCTAssertEqual(marks(j)[1].label, "MDB-A")
     }
 
+    func testInputsChangeOnlyWithWhatTheSummaryReads() {
+        var j = job(marks: [MapMark(kind: .trafo, x: 0.5, y: 0.5, value: "630")], trafos: [Transformer(kva: "630")])
+        let before = SiteSync.Inputs(j)
+        j.values["meterNo"] = .text("020-123456")
+        XCTAssertEqual(SiteSync.Inputs(j), before)
+        var t = trafos(j)
+        t[0].kva = "500"
+        j.values["trafos"] = .transformers(t)
+        XCTAssertNotEqual(SiteSync.Inputs(j), before)
+        XCTAssertEqual(SiteSync.summary(j).items.first?.status, .conflict(a3: "500", a2: "630"))
+    }
+
     func testZeroExportSymbolLine() {
         XCTAssertEqual(SiteMarks.zeroExportLine(MapMark(kind: .zeroExport, x: 0, y: 0, value: "lv")), "LV")
         XCTAssertEqual(SiteMarks.zeroExportLine(MapMark(kind: .zeroExport, x: 0, y: 0)), "MV")

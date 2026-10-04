@@ -81,6 +81,42 @@ struct PlanCalendarView: View {
         return (appointments, reports)
     }
 
+    /// Installs and survey counts per day (start of day) and the bars' spans over the visible weeks, worked out once per render
+    /// rather than by filtering every job and report again for each of the 35–42 cells.
+    private struct GridData {
+        var installs: [Date: Int] = [:]
+        var surveys: [Date: Int] = [:]
+        /// The visible jobs as `PlanLayout` spans, and by id, for every week's bars.
+        var spans: [(id: PersistentIdentifier, start: Date, end: Date)] = []
+        var byID: [PersistentIdentifier: Job] = [:]
+    }
+
+    /// The same counts as `jobs(on:)` and `surveys(on:)`, for every day from `first` to `last`.
+    private func gridData(from first: Date, to last: Date) -> GridData {
+        var c = GridData()
+        let visible = visibleJobs
+        c.spans = visible.map { (id: $0.persistentModelID, start: $0.installStart, end: $0.installEnd) }
+        c.byID = Dictionary(visible.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { a, _ in a })
+        for job in visible {
+            var d = max(job.installStart.startOfDay, first)
+            let end = min(job.installEnd, last)
+            while d <= end { c.installs[d, default: 0] += 1; d = d.adding(days: 1) }
+        }
+        var covered: [Date: Set<String>] = [:]
+        for job in jobs {
+            let d = job.surveyDate.startOfDay
+            guard d >= first, d <= last else { continue }
+            c.surveys[d, default: 0] += 1
+            if let id = job.syncID { covered[d, default: []].insert(id) }
+        }
+        for r in surveyModel.jobs {
+            guard let d = ISODate.date(r.values.text("date"))?.startOfDay, d >= first, d <= last else { continue }
+            if let id = r.jobSyncID, covered[d]?.contains(id) == true { continue }
+            c.surveys[d, default: 0] += 1
+        }
+        return c
+    }
+
     // MARK: Calendar card
 
     /// `rowHeight` nil: the week rows share the card's height (wide layout, no page scroll).
@@ -115,7 +151,9 @@ struct PlanCalendarView: View {
     }
 
     private func monthGrid(rowHeight: CGFloat?) -> some View {
-        VStack(spacing: 0) {
+        let weeks = weeks
+        let counts = gridData(from: weeks.first?.first ?? month, to: weeks.last?.last ?? month)
+        return VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(Self.weekdays.indices, id: \.self) { i in
                     Text(Self.weekdays[i])
@@ -128,7 +166,7 @@ struct PlanCalendarView: View {
             }
             ForEach(weeks, id: \.first) { week in
                 Rectangle().fill(Theme.borderSubtle).frame(height: 1)
-                weekRow(week)
+                weekRow(week, counts)
                     .frame(height: rowHeight)
                     .frame(maxHeight: rowHeight == nil ? .infinity : nil)
             }
@@ -138,20 +176,17 @@ struct PlanCalendarView: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    private func weekRow(_ week: [Date]) -> some View {
+    private func weekRow(_ week: [Date], _ counts: GridData) -> some View {
         let cal = Calendar.current
-        let byID = Dictionary(visibleJobs.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { a, _ in a })
-        let spans = visibleJobs.map { (id: $0.persistentModelID, start: $0.installStart, end: $0.installEnd) }
-        let bars = PlanLayout.lanes(for: spans, weekStart: week[0]).compactMap { bar in
-            byID[bar.id].map { PlanBarItem(bar: bar, job: $0) }
+        let bars = PlanLayout.lanes(for: counts.spans, weekStart: week[0]).compactMap { bar in
+            counts.byID[bar.id].map { PlanBarItem(bar: bar, job: $0) }
         }
         let days = week.map { day in
-            let s = surveys(on: day)
-            return PlanDayInfo(date: day,
-                               inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
-                               isSelected: cal.isDate(day, inSameDayAs: selected),
-                               installs: jobs(on: day).count,
-                               surveys: s.appointments.count + s.reports.count)
+            PlanDayInfo(date: day,
+                        inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
+                        isSelected: cal.isDate(day, inSameDayAs: selected),
+                        installs: counts.installs[day.startOfDay] ?? 0,
+                        surveys: counts.surveys[day.startOfDay] ?? 0)
         }
         return PlanWeekRow(days: days, bars: bars) { selected = $0.startOfDay }
     }

@@ -77,6 +77,8 @@ Each wide page has a `CLAUDE_CODE_TASK.md` (what to build, constraints, check li
 - Report the spec's open questions at the end.
 - Values in previews are examples; never hardcode them.
 
+`docs/specs/` holds feature specs that are not built yet (auto drawing, cable route, roof PV layout, tank mounting, site logistics, calendar and travel, hardware assist, presentation mode, review lock, standard designs), with images in `img/` and HTML prototypes in `prototype/`. Paths in older specs may still say `SolarSurveyKit` / `SurveyCore`; read them as `TCRoofKit` / `TCRoofCore`.
+
 UI conventions from the specs:
 - Hit areas are at least 44 pt.
 - Plans and PDF drawings are vector (`Sketch`), never bitmaps of icons.

@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 
 /// Logo and a single Google sign-in button on the brand gradient.
 struct LoginView: View {
@@ -53,6 +54,8 @@ struct LoginView: View {
             .padding(.horizontal, 28)
             .padding(.bottom, isPhone ? 24 : 64)
         }
+        // the app runs dark here only for a white status bar; the brand colours stay light
+        .environment(\.colorScheme, .light)
     }
 
     private func signIn() {

@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 
 struct InstallRecordsView: View {
@@ -60,7 +61,8 @@ struct InstallRecordsView: View {
         }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
-            FloatingButton(systemImage: "plus", accessibilityLabel: "เพิ่มบันทึกงานติดตั้ง") { showPicker = true }
+            TCFab("plus", accessibilityLabel: "เพิ่มบันทึกงานติดตั้ง", gradient: Theme.tealGradient) { showPicker = true }
+                .tcFabPlacement(compact: isPhone)
         }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPicker, onDismiss: {

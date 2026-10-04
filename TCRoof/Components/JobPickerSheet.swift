@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 
 struct JobPickerSheet: View {
@@ -21,7 +22,7 @@ struct JobPickerSheet: View {
                             Text(job.code).bold()
                             TeamTag(team: job.team)
                             Spacer()
-                            StatusBadge(title: job.status.title, color: job.status.color)
+                            TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
                         }
                         Text(job.projectName).font(.subheadline)
                         Text("\(job.province) · ติดตั้ง \(job.installStart.thaiLong)")

@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import TCRoofCore
 import SurveyUI
@@ -61,7 +62,7 @@ struct PlanListView: View {
                                         .font(.caption).foregroundStyle(Theme.muted)
                                 }
                                 Spacer()
-                                StatusBadge(title: job.status.title, color: job.status.color)
+                                TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
                             }
                             .foregroundStyle(Theme.navy)
                         }

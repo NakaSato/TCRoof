@@ -1,0 +1,272 @@
+#if canImport(UIKit)
+import SwiftUI
+import UIKit
+
+/// Survey step header (`g-head` + `g-prog` + `g-caps`): the gradient title block, then `5/13`, the step name and 13 capsules.
+/// iPad: title 20 / sub 15, capsules 8 high (mint done · gradient current · grey todo), step name on the right.
+/// iPhone: title 19 / sub 13, capsules 6 high (green done · blue current), the step name after the number and
+/// `status` (usually a `ขาด n ช่อง` chip) at the end of the step line.
+public struct TCSurveyHeader<Status: View>: View {
+    let title: String
+    let subtitle: String
+    /// 1-based.
+    let step: Int
+    let count: Int
+    let stepName: String
+    @ViewBuilder var status: Status
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    public init(title: String, subtitle: String, step: Int, count: Int, stepName: String, @ViewBuilder status: () -> Status) {
+        self.title = title; self.subtitle = subtitle; self.step = step; self.count = count
+        self.stepName = stepName; self.status = status()
+    }
+
+    var compact: Bool { sizeClass == .compact }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.sarabun(compact ? 19 : 20, .bold, relativeTo: .title3))
+                Text(subtitle).font(.sarabun(compact ? 13 : 15, relativeTo: .subheadline)).opacity(0.92)
+            }
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, compact ? 16 : 24).padding(.top, compact ? 10 : 18).padding(.bottom, compact ? 14 : 18)
+            .background(Theme.headerGradient, in: UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15))
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+
+            VStack(alignment: .leading, spacing: compact ? 7 : 10) {
+                HStack(spacing: 8) {
+                    Text("\(step)/\(count)").font(.sarabun(compact ? 14 : 15, .bold)).foregroundStyle(Theme.navy)
+                    if compact {
+                        Text(stepName).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Spacer(minLength: 4)
+                        status
+                    } else {
+                        Spacer(minLength: 8)
+                        Text(stepName).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
+                    }
+                }
+                TCStepCapsules(step: step, count: count)
+            }
+            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, compact ? 10 : 14)
+        }
+        .background(Theme.background)
+    }
+}
+
+public extension TCSurveyHeader where Status == EmptyView {
+    init(title: String, subtitle: String, step: Int, count: Int, stepName: String) {
+        self.init(title: title, subtitle: subtitle, step: step, count: count, stepName: stepName) { EmptyView() }
+    }
+}
+
+/// The 13 capsules under a survey header. Done steps are those before `step`.
+public struct TCStepCapsules: View {
+    let step: Int
+    let count: Int
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    public init(step: Int, count: Int) { self.step = step; self.count = count }
+
+    public var body: some View {
+        let compact = sizeClass == .compact
+        HStack(spacing: compact ? 2 : 6) {
+            ForEach(1...max(count, 1), id: \.self) { i in
+                Capsule().fill(fill(i, compact: compact)).frame(height: compact ? 6 : 8)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("ขั้น \(step) จาก \(count)")
+    }
+
+    func fill(_ i: Int, compact: Bool) -> AnyShapeStyle {
+        if i < step { return AnyShapeStyle(compact ? Theme.stepDone : Theme.mint) }
+        if i == step { return compact ? AnyShapeStyle(Theme.primary) : AnyShapeStyle(Theme.headerGradient) }
+        return AnyShapeStyle(compact ? Theme.borderSubtle : Theme.capsuleTodo)
+    }
+}
+
+/// PWA module header: back tile, title 28–30 over a subtitle, and a search field in the header; bottom corners 15.
+/// On iPhone the search field moves under the title.
+public struct TCPWAHeader: View {
+    let title: String
+    let subtitle: String
+    @Binding var search: String
+    var prompt: String
+    var onBack: (() -> Void)?
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    public init(title: String, subtitle: String, search: Binding<String>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ…", onBack: (() -> Void)? = nil) {
+        self.title = title; self.subtitle = subtitle; self._search = search; self.prompt = prompt; self.onBack = onBack
+    }
+
+    public var body: some View {
+        let compact = sizeClass == .compact
+        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 16))
+        layout {
+            HStack(spacing: 16) {
+                if let onBack {
+                    Button(action: onBack) {
+                        Image(systemName: "chevron.left").font(.system(size: 20, weight: .semibold))
+                            .frame(width: touchMin, height: touchMin)
+                            .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: Radius.lg))
+                            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(.white.opacity(0.35)))
+                    }
+                    .buttonStyle(TCPressStyle())
+                    .accessibilityLabel("กลับ")
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title).font(.sarabun(compact ? 24 : TypeScale.header, .bold, relativeTo: .largeTitle)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(subtitle).font(.sarabun(15)).opacity(0.92).lineLimit(1)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            searchField.frame(maxWidth: compact ? .infinity : 400)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, compact ? 16 : 28).padding(.top, 20).padding(.bottom, compact ? 16 : 24)
+        .background(Theme.headerGradient, in: UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15))
+    }
+
+    var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.navy)
+            TextField("", text: $search, prompt: Text(prompt).foregroundStyle(Theme.inkMuted))
+                .font(.sarabun(17)).foregroundStyle(Theme.navy)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+            if !search.isEmpty {
+                Button { search = "" } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 18)).foregroundStyle(Theme.muted)
+                        .frame(width: touchMin, height: touchMin)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ล้างคำค้นหา")
+            }
+        }
+        .padding(.leading, 16).padding(.trailing, search.isEmpty ? 16 : 0)
+        .frame(minHeight: 52)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+    }
+}
+
+/// White nav bar (`pc-nav`): back, page title over the breadcrumb, and `trailing` (usually a secondary button).
+/// Pages using it hide the system navigation bar.
+public struct TCNavBar<Trailing: View>: View {
+    let title: String
+    /// Pages before this one, e.g. `["หน้าหลัก", "สำรวจหน้างาน"]`.
+    let trail: [String]
+    let current: String
+    var backLabel: String
+    var onBack: (() -> Void)?
+    @ViewBuilder var trailing: Trailing
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    public init(title: String, trail: [String], current: String, backLabel: String = "กลับหน้าหลัก",
+                onBack: (() -> Void)? = nil, @ViewBuilder trailing: () -> Trailing) {
+        self.title = title; self.trail = trail; self.current = current; self.backLabel = backLabel
+        self.onBack = onBack; self.trailing = trailing()
+    }
+
+    public var body: some View {
+        let compact = sizeClass == .compact
+        HStack(spacing: 12) {
+            TCIconButton("chevron.left", accessibilityLabel: backLabel, bordered: !compact) { (onBack ?? { dismiss() })() }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.sarabun(compact ? 20 : TypeScale.pageTitle, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
+                    .lineLimit(1).accessibilityAddTraits(.isHeader)
+                if !compact {
+                    (Text(trail.map { "\($0) › " }.joined()) + Text(current).bold().foregroundColor(Theme.navy))
+                        .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 12)
+            trailing
+        }
+        .padding(.horizontal, compact ? 8 : 24).padding(.vertical, compact ? 4 : 12)
+        .frame(minHeight: compact ? 52 : 72)
+        .background(Theme.surface)
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+    }
+}
+
+public extension TCNavBar where Trailing == EmptyView {
+    init(title: String, trail: [String], current: String, backLabel: String = "กลับหน้าหลัก", onBack: (() -> Void)? = nil) {
+        self.init(title: title, trail: trail, current: current, backLabel: backLabel, onBack: onBack) { EmptyView() }
+    }
+}
+
+/// Columns whose widths follow `fractions` (2 : 1 for form + info card, 1 : 2 : 1.4 for filter · list · detail).
+public struct TCFractionColumns: Layout {
+    public var fractions: [CGFloat]
+    public var spacing: CGFloat
+
+    public init(_ fractions: [CGFloat], spacing: CGFloat = Space.l) { self.fractions = fractions; self.spacing = spacing }
+
+    func widths(_ total: CGFloat, _ n: Int) -> [CGFloat] {
+        let f = (0..<n).map { $0 < fractions.count ? fractions[$0] : 1 }
+        let free = max(0, total - spacing * CGFloat(max(n - 1, 0)))
+        let sum = f.reduce(0, +)
+        return f.map { free * $0 / max(sum, 0.001) }
+    }
+
+    public func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        // measured without a width (or an infinite one): lay out at the board's column width
+        let total = proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 800
+        let w = widths(total, subviews.count)
+        let h = zip(subviews, w).map { $0.sizeThatFits(ProposedViewSize(width: $1, height: proposal.height)).height }.max() ?? 0
+        return CGSize(width: total, height: h)
+    }
+
+    public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        for (s, w) in zip(subviews, widths(bounds.width, subviews.count)) {
+            s.place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: w, height: bounds.height))
+            x += w + spacing
+        }
+    }
+}
+
+/// Page scaffold: iPad columns by `fractions`, top aligned; iPhone one column, margin 16, gap 12, scrolling.
+/// Presets: `.twoColumn` (form / picture · info cards), `.threePane` (filter · list · detail).
+public struct TCPageColumns<Content: View>: View {
+    public static var twoColumn: [CGFloat] { [2, 1] }
+    public static var threePane: [CGFloat] { [1, 2, 1.4] }
+
+    let fractions: [CGFloat]
+    @ViewBuilder var content: Content
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    public init(_ fractions: [CGFloat], @ViewBuilder content: () -> Content) {
+        self.fractions = fractions; self.content = content()
+    }
+
+    public var body: some View {
+        if sizeClass == .compact {
+            ScrollView { VStack(spacing: Space.m) { content }.padding(Space.l) }
+        } else {
+            TCFractionColumns(fractions) { content }.padding(Space.xl)
+        }
+    }
+}
+
+/// Card grid: 3 columns on iPad, 1 on iPhone (gap 16 / 12).
+public struct TCCardGrid<Content: View>: View {
+    var columns: Int
+    @ViewBuilder var content: Content
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    public init(columns: Int = 3, @ViewBuilder content: () -> Content) { self.columns = columns; self.content = content() }
+
+    public var body: some View {
+        let compact = sizeClass == .compact
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: compact ? Space.m : Space.l, alignment: .top), count: compact ? 1 : columns),
+                  spacing: compact ? Space.m : Space.l) { content }
+    }
+}
+#endif

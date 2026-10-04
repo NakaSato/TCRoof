@@ -2,28 +2,29 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// Colours of the home screen (docs/ui/pwa-solar-survey, after grf.css).
 enum Home {
     static let navy = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? .label : UIColor(red: 0.086, green: 0.196, blue: 0.361, alpha: 1) })
     static let muted = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? .secondaryLabel : UIColor(red: 0.357, green: 0.420, blue: 0.510, alpha: 1) })
-    static let primary = Color(red: 0.122, green: 0.435, blue: 0.710)
-    static let primaryLight = Color(red: 0.180, green: 0.561, blue: 0.859)
-    static let teal = Color(red: 0.153, green: 0.663, blue: 0.604)
-    static let mint = Color(red: 0.620, green: 0.902, blue: 0.839)
+    static let primary = Theme.primary
+    static let primaryLight = Theme.primaryLight
+    static let teal = Theme.teal
+    static let mint = Theme.mint
     static let red = Color(red: 0.753, green: 0.224, blue: 0.169)
     static let redSoft = Color(red: 0.949, green: 0.627, blue: 0.604)
     static let orange = Color(red: 0.769, green: 0.416, blue: 0.0)
     static let border = navy.opacity(0.15)
     // design system "TCRoof Survey" (docs/ui/survey-a1), as in the host app's Theme.swift
-    static let danger = Color(red: 0.851, green: 0.271, blue: 0.231)
-    static let primarySoft = Color(red: 0.890, green: 0.933, blue: 0.973)
-    static let borderControl = Color(red: 0.467, green: 0.533, blue: 0.620)
-    static let pending = Color(red: 0.706, green: 0.325, blue: 0.035)
-    static let sun = Color(red: 1.0, green: 0.773, blue: 0.239)
-    static let ok = Color(red: 0.180, green: 0.620, blue: 0.357)
+    static let danger = Theme.danger
+    static let primarySoft = Theme.primarySoft
+    static let borderControl = Theme.borderControl
+    static let pending = Theme.pending
+    static let sun = Theme.sun
+    static let ok = Theme.success
     /// Warning orange #F08C00: the A2 lock, selected building models and the bottom bar's "!" badge (docs/ui/survey-a2 v2).
-    static let warn = Color(red: 0.941, green: 0.549, blue: 0.0)
+    static let warn = Theme.warning
     // surveys moved to installation (docs/ui/pwa-solar-survey, 30/9/2569)
     static let lockedCard = Color(red: 0.961, green: 0.969, blue: 0.980)
     static let lockedAction = Color(red: 0.918, green: 0.945, blue: 0.973)
@@ -32,34 +33,34 @@ enum Home {
     static let disabledText = Color(red: 0.561, green: 0.639, blue: 0.737)
     // home board v2 (docs/ui/pwa-solar-survey, 2/10/2569)
     /// Progress ring track #E6ECF3.
-    static let ringTrack = Color(red: 0.902, green: 0.925, blue: 0.953)
+    static let ringTrack = Theme.track
     /// Finished step and full ring #70AD47.
-    static let stepDone = Color(red: 0.439, green: 0.678, blue: 0.278)
+    static let stepDone = Theme.stepDone
     /// "✓ ซิงก์แล้ว" #2E7D32.
-    static let synced = Color(red: 0.180, green: 0.490, blue: 0.196)
+    static let synced = Theme.progressFull
     /// The footer's synced cloud #3B7420 (docs/ui/pwa-solar-survey-iphone/icons/cloud-synced.svg).
-    static let syncedIcon = Color(red: 0.231, green: 0.455, blue: 0.125)
+    static let syncedIcon = Theme.okTick
     // card tokens of the iPhone and iPad boards (docs/ui/pwa-solar-survey-iphone/icons/README.md, 3/10/2569)
     /// Hairline #DDE4ED: steps not started, the 44 pt ring's track, filter pill borders.
-    static let hairline = Color(red: 0.867, green: 0.894, blue: 0.929)
+    static let hairline = Theme.borderSubtle
     /// "ยังขาด n ช่อง" badge background #FFF4E5 (text `pending`).
-    static let badgeWarnBg = Color(red: 1.0, green: 0.957, blue: 0.898)
+    static let badgeWarnBg = Theme.pendingSoft
     /// "ครบ" badge #E2EFDA / #3B7420.
-    static let badgeOkBg = Color(red: 0.886, green: 0.937, blue: 0.855)
-    static let badgeOkText = Color(red: 0.231, green: 0.455, blue: 0.125)
+    static let badgeOkBg = Theme.okSoft
+    static let badgeOkText = Theme.okTick
     /// "ร่าง" badge text #5B6B82 on `primarySoft`, the same in dark mode.
     static let badgeDraftText = Color(red: 0.357, green: 0.420, blue: 0.510)
     /// Selected filter pill #16325C, the same in dark mode.
     static let pillOn = Color(red: 0.086, green: 0.196, blue: 0.361)
     /// Count chip of an unselected filter pill #EEF2F7.
-    static let pillCount = Color(red: 0.933, green: 0.949, blue: 0.969)
+    static let pillCount = Theme.hairline
     // iPhone bottom bar (docs/ui/components/iphone-bottom-bar, 4/10/2569)
     /// "✓ บันทึกแล้ว" text and border #3B7420.
-    static let okTick = Color(red: 0.231, green: 0.455, blue: 0.125)
+    static let okTick = Theme.okTick
     /// "✓ บันทึกแล้ว" background #F1F8EC.
     static let okSoftBG = Color(red: 0.945, green: 0.973, blue: 0.925)
     /// "กำลังบันทึก…" background #F3F6FA.
-    static let savingBG = Color(red: 0.953, green: 0.965, blue: 0.980)
+    static let savingBG = Theme.background
     /// Disabled ‹ / › rgba(142,142,147,0.4).
     static let navOff = Color(red: 0.557, green: 0.557, blue: 0.576).opacity(0.4)
     // D1 สิ่งกีดขวาง on iPhone (docs/ui/survey-d1-obstacles-iphone/svg/README.md, 4/10/2569)
@@ -68,7 +69,7 @@ enum Home {
     /// D1 จัดแผง: a panel on the plan #2B4FD8 (docs/ui/survey-d1-layout-iphone/svg/README.md).
     static let panelBlue = Color(red: 0.169, green: 0.310, blue: 0.847)
     /// End of the teal gradient #4DB6E0 (from `teal`).
-    static let tealLight = Color(red: 0.302, green: 0.714, blue: 0.878)
+    static let tealLight = Theme.tealLight
 }
 
 /// Icon and title close together, for small badges.

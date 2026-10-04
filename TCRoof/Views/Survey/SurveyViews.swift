@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import CoreLocation
 import TCRoofCore
@@ -33,9 +34,9 @@ struct SurveyListView: View {
                         ForEach(filtered) { job in
                             SurveyJobCard(job: job) {
                                 NavigationLink { SurveyFormView(job: job) } label: {
-                                    GradientButtonLabel(title: buttonTitle(job), systemImage: "list.bullet.clipboard")
+                                    Label(buttonTitle(job), systemImage: "list.bullet.clipboard").labelStyle(TCIconTitleLabel())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(TCButtonStyle(.tealGradient, fullWidth: true))
                             }
                         }
                     }
@@ -44,13 +45,14 @@ struct SurveyListView: View {
             .padding(24)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            PageTopBar(title: "สำรวจหน้างาน", trail: ["หน้าหลัก", "สำรวจหน้างาน"], current: "รายการงานสำรวจ") {
+            TCNavBar(title: "สำรวจหน้างาน", trail: ["หน้าหลัก", "สำรวจหน้างาน"], current: "รายการงานสำรวจ") {
                 TopBarLink(title: "ประวัติการสำรวจ", systemImage: "clock.arrow.circlepath") { SurveyHistoryView() }
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
-            FloatingButton(systemImage: "person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่") { showNewJob = true }
+            TCFab("person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่", gradient: Theme.tealGradient) { showNewJob = true }
+                .tcFabPlacement(compact: isPhone)
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showNewJob) { NewJobView() }

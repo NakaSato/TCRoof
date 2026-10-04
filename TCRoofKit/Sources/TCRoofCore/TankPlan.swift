@@ -59,8 +59,8 @@ public struct TankPlan: Sendable {
             }
         }
 
-        // obstacles (sub-step 2), as on the old plan
-        for ob in v.obstacles(Roof.Key.obstacles) {
+        // obstacles (sub-step 2), as on the old plan; points marked ไม่มีจริง are left out
+        for ob in v.obstacles(Roof.Key.obstacles) where !ob.isAbsent {
             guard let x = NumberInput.value(ob.x), let y = NumberInput.value(ob.y), let ow = NumberInput.value(ob.w), let oh = NumberInput.value(ob.h), ow > 0, oh > 0 else { continue }
             let b = Box(ox + x * k, oy + y * k, ow * k, oh * k)
             o.append(.rect(b, stroke: nil, fill: .white)); o.append(.hatch(b, color: .red)); o.append(.rect(b, stroke: .red, fill: nil, width: 1))
@@ -115,10 +115,8 @@ public struct TankPlan: Sendable {
     /// two totals, the north arrow at the top right. Each span stays on the full plan (`init`).
     public static func compact(_ v: Values) -> Sketch? {
         let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
-        guard !sx.isEmpty, !sy.isEmpty else { return nil }
-        let TW = sx.reduce(0, +), TH = sy.reduce(0, +), side = 240.0
-        let k = min(side / TW, side / TH), w = TW * k, h = TH * k
-        let ox = 30 + (side - w) / 2, oy = 30 + (side - h) / 2
+        guard !sx.isEmpty, !sy.isEmpty, let f = compactFrame(v) else { return nil }
+        let TW = sx.reduce(0, +), TH = sy.reduce(0, +), k = f.k, w = TW * k, h = TH * k, ox = f.ox, oy = f.oy
         let navy = RGBA(hex: 0x16325C), label = RGBA(hex: 0x5B6B82), grid = RGBA(hex: 0xC9D3DF)
         var xs = [0.0]; for s in sx { xs.append(xs.last! + s) }
         var ys = [0.0]; for s in sy { ys.append(ys.last! + s) }
@@ -132,6 +130,14 @@ public struct TankPlan: Sendable {
         o.append(.text(String(format: "%.2f", TH), at: Pt(ox + w + 16, oy + h / 2), size: 9, bold: true, color: navy, align: .center, angle: 90))
         if let az = Tank.azimuth(v) { o += northArrow(at: Pt(298, 42), azimuth: az, radius: 13, ink: navy) }
         return Sketch(width: 330, height: 300, ops: o)
+    }
+
+    /// Where the tank sits on the 330 × 300 iPhone plan: its top-left corner and points per metre (sub-step 2 puts
+    /// the vents and hatches on it).
+    public static func compactFrame(_ v: Values) -> (ox: Double, oy: Double, k: Double)? {
+        guard let t = TankPoints.tankSize(v) else { return nil }
+        let side = 240.0, k = min(side / t.w, side / t.h)
+        return (30 + (side - t.w * k) / 2, 30 + (side - t.h * k) / 2, k)
     }
 
     /// The design's north arrow (`d1-north-arrow`) turned by −azimuth: wall A stays on top, N points to true north.

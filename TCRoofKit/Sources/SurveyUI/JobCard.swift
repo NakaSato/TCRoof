@@ -62,6 +62,9 @@ enum Home {
     static let savingBG = Color(red: 0.953, green: 0.965, blue: 0.980)
     /// Disabled ‹ / › rgba(142,142,147,0.4).
     static let navOff = Color(red: 0.557, green: 0.557, blue: 0.576).opacity(0.4)
+    // D1 สิ่งกีดขวาง on iPhone (docs/ui/survey-d1-obstacles-iphone/svg/README.md, 4/10/2569)
+    /// The selected point and its halo #E8851A.
+    static let pointSelected = Color(red: 0.910, green: 0.522, blue: 0.102)
     /// End of the teal gradient #4DB6E0 (from `teal`).
     static let tealLight = Color(red: 0.302, green: 0.714, blue: 0.878)
 }

@@ -15,12 +15,26 @@ extension TankPageWide {
             if tab == 1 {
                 ScrollView { phoneSizeCards.padding(.top, 2).padding(.bottom, 8) }
                     .scrollIndicators(.hidden)
+            } else if tab == 2 {
+                ScrollView { phoneObstacleCards.padding(.top, 2).padding(.bottom, 8) }
+                    .scrollIndicators(.hidden)
+                    .defaultScrollAnchor(debugBottom ? .bottom : .top)
             } else {
                 phoneTabs
                 formStep
             }
         }
         .fullScreenCover(isPresented: $planFull) { planFullScreen }
+        .fullScreenCover(isPresented: $obsFull) { obstacleFullScreen }
+    }
+
+    /// `-surveyD1 obstbottom`: sub-step 2 scrolled to its end (no scrolling in the simulator here).
+    var debugBottom: Bool {
+        #if DEBUG
+        UserDefaults.standard.string(forKey: "surveyD1") == "obstbottom"
+        #else
+        false
+        #endif
     }
 
     var phoneSizeCards: some View {
@@ -43,7 +57,8 @@ extension TankPageWide {
         let s = steps
         return HStack(spacing: 0) {
             ForEach(Array(Self.phoneTitles.enumerated()), id: \.offset) { i, title in
-                phoneTab(i + 1, title: title, done: s[safe: i]?.done ?? false)
+                // sub-step 2 is done when every standard point is checked (the shading stays in the section's count)
+                phoneTab(i + 1, title: title, done: i == 1 ? TankPoints.done(values) : s[safe: i]?.done ?? false)
             }
         }
         .padding(.horizontal, 4)

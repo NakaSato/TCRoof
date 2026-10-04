@@ -121,7 +121,7 @@ public enum Drawings {
         for (i, s) in sy.enumerated() { o.append(.text(fmt(s), at: Pt(dx - 7, oy + (ys[i] + s / 2) * k), size: 8.5, align: .center, angle: -90)) }
         o.append(.line(Pt(dx - 16, oy), Pt(dx - 16, oy + h), width: 0.6, color: .black))
         o.append(.text(fmt(TH), at: Pt(dx - 22, oy + h / 2), size: 9, bold: true, align: .center, angle: -90))
-        for ob in v.obstacles("obst") {
+        for ob in v.obstacles("obst") where !ob.isAbsent {
             guard let x = NumberInput.value(ob.x), let y = NumberInput.value(ob.y), let ow = NumberInput.value(ob.w), let oh = NumberInput.value(ob.h), ow > 0, oh > 0 else { continue }
             let r = Box(ox + x * k, oy + y * k, ow * k, oh * k)
             o.append(.rect(r, stroke: nil, fill: .white)); o.append(.hatch(r, color: .red)); o.append(.rect(r, stroke: .red, fill: nil, width: 1))

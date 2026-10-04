@@ -215,7 +215,7 @@ extension ReportLayout {
                         s.append(.rect(Box(x, y, cwid, 15), stroke: .black, fill: r == 0 ? .band : nil, width: 0.5))
                         let t: String
                         if r == 0 { t = ["สิ่งกีดขวาง", "ตำแหน่ง X, Y (ม.)", "ขนาด ก x ย (ม.)"][ci] }
-                        else { let q = list[r - 1]; t = [q.label.isEmpty ? "-" : q.label, "\(q.x), \(q.y)", "\(q.w) x \(q.h)"][ci] }
+                        else { let q = list[r - 1]; t = [q.label.isEmpty ? "-" : q.label, q.isAbsent ? "ไม่มีจริง" : "\(q.x), \(q.y)", q.isAbsent ? "-" : "\(q.w) x \(q.h)"][ci] }
                         s.append(.textBox(t, Box(x + 2, y + 2, cwid - 4, 13), size: 7.5, align: ci == 0 ? .left : .center))
                         x += cwid
                     }

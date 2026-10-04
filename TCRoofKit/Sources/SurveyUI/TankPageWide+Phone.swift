@@ -19,6 +19,10 @@ extension TankPageWide {
                 ScrollView { phoneObstacleCards.padding(.top, 2).padding(.bottom, 8) }
                     .scrollIndicators(.hidden)
                     .defaultScrollAnchor(debugBottom ? .bottom : .top)
+            } else if tab == 3 {
+                ScrollView { phoneLayoutCards.padding(.top, 2).padding(.bottom, 8) }
+                    .scrollIndicators(.hidden)
+                    .defaultScrollAnchor(debugBottom ? .bottom : .top)
             } else {
                 phoneTabs
                 formStep
@@ -26,12 +30,13 @@ extension TankPageWide {
         }
         .fullScreenCover(isPresented: $planFull) { planFullScreen }
         .fullScreenCover(isPresented: $obsFull) { obstacleFullScreen }
+        .fullScreenCover(isPresented: $layoutFull) { layoutFullScreen }
     }
 
-    /// `-surveyD1 obstbottom`: sub-step 2 scrolled to its end (no scrolling in the simulator here).
+    /// `-surveyD1 obstbottom` / `layoutbottom`: sub-step 2 / 3 scrolled to its end (no scrolling in the simulator here).
     var debugBottom: Bool {
         #if DEBUG
-        UserDefaults.standard.string(forKey: "surveyD1") == "obstbottom"
+        ["obstbottom", "layoutbottom"].contains(UserDefaults.standard.string(forKey: "surveyD1") ?? "")
         #else
         false
         #endif
@@ -57,8 +62,9 @@ extension TankPageWide {
         let s = steps
         return HStack(spacing: 0) {
             ForEach(Array(Self.phoneTitles.enumerated()), id: \.offset) { i, title in
-                // sub-step 2 is done when every standard point is checked (the shading stays in the section's count)
-                phoneTab(i + 1, title: title, done: i == 1 ? TankPoints.done(values) : s[safe: i]?.done ?? false)
+                // sub-step 2 is done when every standard point is checked (the shading stays in the section's count), sub-step 3
+                // with a layout whose checks all pass
+                phoneTab(i + 1, title: title, done: i == 1 ? TankPoints.done(values) : i == 2 ? TankLayout.done(values) : s[safe: i]?.done ?? false)
             }
         }
         .padding(.horizontal, 4)

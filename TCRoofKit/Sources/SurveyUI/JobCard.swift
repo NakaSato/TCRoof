@@ -65,6 +65,8 @@ enum Home {
     // D1 สิ่งกีดขวาง on iPhone (docs/ui/survey-d1-obstacles-iphone/svg/README.md, 4/10/2569)
     /// The selected point and its halo #E8851A.
     static let pointSelected = Color(red: 0.910, green: 0.522, blue: 0.102)
+    /// D1 จัดแผง: a panel on the plan #2B4FD8 (docs/ui/survey-d1-layout-iphone/svg/README.md).
+    static let panelBlue = Color(red: 0.169, green: 0.310, blue: 0.847)
     /// End of the teal gradient #4DB6E0 (from `teal`).
     static let tealLight = Color(red: 0.302, green: 0.714, blue: 0.878)
 }

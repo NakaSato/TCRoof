@@ -1,0 +1,203 @@
+diff --git a/SolarSurveyKit/Sources/SurveyCore/SiteMarks.swift b/SolarSurveyKit/Sources/SurveyCore/SiteMarks.swift
+index 4e4f47b..e4b7c48 100644
+--- a/SolarSurveyKit/Sources/SurveyCore/SiteMarks.swift
++++ b/SolarSurveyKit/Sources/SurveyCore/SiteMarks.swift
+@@ -2,12 +2,13 @@ import Foundation
+ 
+ /// Symbols engineers place on the site picture (ภาพสถานที่ติดตั้ง).
+ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
+-    case meter, trafo, mdb, inv, water, office
++    case meter, zeroExport, trafo, mdb, inv, water, office
+     public var id: String { rawValue }
+     /// Label printed next to the symbol, as on the company's site drawings.
+     public var title: String {
+         switch self {
+         case .meter: return "PEA METER"
++        case .zeroExport: return "ZERO EXPORT MV"
+         case .trafo: return "TRANSFORMER"
+         case .mdb: return "MDB"
+         case .inv: return "INVERTER STATION"
+@@ -23,6 +24,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
+     public var badge: String {
+         switch self {
+         case .meter: return "M"
++        case .zeroExport: return "ZE"
+         case .trafo: return "TR"
+         case .mdb: return "MDB"
+         case .inv: return "INV"
+@@ -33,6 +35,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
+     public var color: RGBA {
+         switch self {
+         case .meter: return RGBA(hex: 0x7B2CBF)
++        case .zeroExport: return RGBA(hex: 0xD00000)
+         case .trafo: return RGBA(hex: 0xD62828)
+         case .mdb: return RGBA(hex: 0xE36414)
+         case .inv: return RGBA(hex: 0x1D4ED8)
+@@ -44,6 +47,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
+     public var symbol: String {
+         switch self {
+         case .meter: return "gauge.with.dots.needle.33percent"
++        case .zeroExport: return "arrow.uturn.left.circle"
+         case .trafo: return "bolt.fill"
+         case .mdb: return "rectangle.split.3x3"
+         case .inv: return "bolt.batteryblock.fill"
+@@ -72,6 +76,12 @@ public struct MapMark: Codable, Hashable, Identifiable, Sendable {
+         x = try c.decode(Double.self, forKey: .x); y = try c.decode(Double.self, forKey: .y)
+         value = try c.decodeIfPresent(String.self, forKey: .value) ?? ""
+     }
++    /// "500kVA", "630AT" as written in the tag beside the symbol, or "" when there is nothing to show.
++    public var tag: String {
++        let v = value.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: " ", with: "")
++        guard !v.isEmpty, let u = kind.unit else { return "" }
++        return v.hasSuffix(u) ? v : v + u
++    }
+     /// "800 kVA", "1250 AT", or "" when there is nothing to show.
+     public var rating: String {
+         let v = value.trimmingCharacters(in: .whitespaces)
+@@ -92,24 +102,34 @@ public enum SiteMarks {
+         return out
+     }
+ 
+-    /// Formal drawing symbols (black line work on white, IEC-style) centred on each marked point, no labels.
+-    /// Sizes scale with the picture's width. The names appear once, in `legend`.
++    /// The company's site-drawing style: white circles with the name written inside ("PEA METER", "TR 1", "MDB 1"),
++    /// a boxed rating beside transformers and MDBs ("500kVA", "630AT"), a vertical "INV" box and a "Site Office" call-out.
++    /// Sizes scale with the picture's width.
+     public static func ops(_ marks: [MapMark], in box: Box) -> [DrawOp] {
+-        let R = max(6, box.w * 0.019)
++        let R = max(8, box.w * 0.03), numbers = self.numbers(marks)
+         return marks.flatMap { m -> [DrawOp] in
+             let c = Pt(box.x + m.x * box.w, box.y + m.y * box.h)
+-            var o = symbol(m.kind, at: c, radius: R)
+-            let r = m.rating
+-            if !r.isEmpty {   // rating tag under the symbol
+-                let fs = R * 0.72, w = ApproxText.width(r, size: fs, bold: true) + fs * 0.8, h = fs * 1.5
+-                let tag = Box(c.x - w / 2, c.y + R * 1.12, w, h)
+-                o.append(.rect(tag, stroke: m.kind.color, fill: .white, width: max(0.5, R * 0.1)))
+-                o.append(.text(r, at: Pt(c.x, tag.y + h / 2), size: fs, bold: true, color: m.kind.color, align: .center))
++            var o = symbol(m.kind, at: c, radius: R, number: numbers[m.id])
++            let t = m.tag
++            if !t.isEmpty {   // rating box to the right of the circle, as on the drawings
++                let fs = R * 0.75, w = ApproxText.width(t, size: fs) + fs * 0.8, h = fs * 1.45
++                let tag = Box(c.x + R + R * 0.12, c.y - h / 2, w, h)
++                o.append(.rect(tag, stroke: RGBA(hex: 0x555555), fill: .white, width: max(0.5, R * 0.05)))
++                o.append(.text(t, at: Pt(tag.x + w / 2, c.y), size: fs, color: ink, align: .center))
+             }
+             return o
+         }
+     }
+ 
++    /// Running number per kind for the numbered symbols (TR 1, TR 2 …; MDB 1, MDB 2 …).
++    public static func numbers(_ marks: [MapMark]) -> [UUID: Int] {
++        var seen: [MarkKind: Int] = [:], out: [UUID: Int] = [:]
++        for m in marks where m.kind == .trafo || m.kind == .mdb {
++            let n = (seen[m.kind] ?? 0) + 1; seen[m.kind] = n; out[m.id] = n
++        }
++        return out
++    }
++
+     /// Suggested rating for a new symbol from the job's transformer / MDB answers (n-th transformer → its kVA, n-th MDB → n-th breaker size).
+     public static func suggestedValue(_ kind: MarkKind, existing: [MapMark], trafos: [Transformer]) -> String {
+         let n = existing.filter { $0.kind == kind }.count
+@@ -124,38 +144,49 @@ public enum SiteMarks {
+ 
+     public static let ink = RGBA(hex: 0x111111)
+ 
+-    /// One symbol on a 20-unit grid (radius 10), drawn the same way as the web version's SVG.
+-    public static func symbol(_ k: MarkKind, at c: Pt, radius R: Double) -> [DrawOp] {
+-        let u = R / 10, w = 1.7 * u, ink = k.color
+-        func P(_ x: Double, _ y: Double) -> Pt { Pt(c.x + x * u, c.y + y * u) }
+-        func circle(_ x: Double, _ r: Double, fill: RGBA? = .white, stroke: Bool = true) -> DrawOp {
+-            .circle(P(x, 0), r: r * u, stroke: stroke ? ink : nil, fill: fill, width: w)
+-        }
+-        func poly(_ pts: [(Double, Double)], fill: RGBA?, stroke: Bool) -> DrawOp {
+-            .polygon(pts.map { P($0.0, $0.1) }, stroke: stroke ? ink : nil, fill: fill, width: w)
+-        }
+-        func line(_ pts: [(Double, Double)]) -> [DrawOp] {
+-            zip(pts, pts.dropFirst()).map { a, b in .line(P(a.0, a.1), P(b.0, b.1), width: w, color: ink) }
++    /// One symbol centred on `c`. `number` is written after TR / MDB (the toolbar and legend leave it out).
++    /// `callout: false` (toolbar, legend) draws the Site Office label centred, without the leader line.
++    public static func symbol(_ k: MarkKind, at c: Pt, radius R: Double, number: Int? = nil, callout: Bool = true) -> [DrawOp] {
++        let line = max(0.5, R * 0.05), grey = RGBA(hex: 0x666666)
++        /// Lines of text stacked in the middle, sized so the widest fits `maxW`.
++        func words(_ lines: [String], maxW: Double, maxSize: Double, color: RGBA, bold: Bool = false) -> [DrawOp] {
++            let widest = lines.map { ApproxText.width($0, size: 1, bold: bold) }.max() ?? 1
++            let fs = min(maxSize, maxW / max(widest, 0.01)), lh = fs * 1.08
++            let top = c.y - lh * Double(lines.count - 1) / 2
++            return lines.enumerated().map { i, t in .text(t, at: Pt(c.x, top + Double(i) * lh), size: fs, bold: bold, color: color, align: .center) }
+         }
++        func disc(_ stroke: RGBA) -> DrawOp { .circle(c, r: R, stroke: stroke, fill: .white, width: line) }
++        let num = number.map { " \($0)" } ?? ""
+         switch k {
+-        case .meter:   // kWh meter
+-            return [circle(0, 10), .text("kWh", at: c, size: 6.2 * u, bold: true, color: ink, align: .center)]
+-        case .trafo:   // two-winding transformer
+-            return [circle(-3.8, 6.2, stroke: false), circle(3.8, 6.2, stroke: false),
+-                    circle(-3.8, 6.2, fill: nil), circle(3.8, 6.2, fill: nil)]
+-        case .mdb:     // distribution board
+-            return [poly([(-8.5, -6), (8.5, -6), (8.5, 6), (-8.5, 6)], fill: .white, stroke: true),
+-                    poly([(8.5, -6), (8.5, 6), (-8.5, 6)], fill: ink, stroke: false)]
+-        case .inv:     // inverter: DC = / AC ~
+-            let wave: [(Double, Double)] = [(1.6, 3.6), (2.15, 2.65), (2.7, 2.5), (3.25, 2.95), (3.8, 3.6), (4.35, 4.25), (4.9, 4.7), (5.45, 4.55), (6, 3.6)]
+-            return [poly([(-8, -8), (8, -8), (8, 8), (-8, 8)], fill: .white, stroke: true)]
+-                + line([(-8, 8), (8, -8)]) + line([(-6, -4.6), (-1.6, -4.6)]) + line([(-6, -2.2), (-1.6, -2.2)]) + line(wave)
+-        case .water:   // valve in a circle: water connection point
+-            return [circle(0, 10), poly([(-6, -4), (-6, 4), (0, 0)], fill: ink, stroke: false), poly([(6, -4), (6, 4), (0, 0)], fill: ink, stroke: false)]
+-                + line([(0, 0), (0, -6)]) + line([(-2.5, -6), (2.5, -6)])
+-        case .office:  // site office building
+-            return [poly([(-8, 8), (-8, -1.5), (0, -9), (8, -1.5), (8, 8)], fill: .white, stroke: true),
+-                    poly([(-1.8, 8), (-1.8, 3), (1.8, 3), (1.8, 8)], fill: ink, stroke: false)]
++        case .meter:
++            return [disc(grey)] + words(["PEA", "METER"], maxW: R * 1.5, maxSize: R * 0.55, color: ink)
++        case .zeroExport:
++            let red = RGBA(hex: 0xD00000)
++            return [disc(red)] + words(["ZERO", "EXPORT", "MV"], maxW: R * 1.45, maxSize: R * 0.48, color: red, bold: true)
++        case .trafo:
++            return [disc(grey)] + words(["TR" + num], maxW: R * 1.55, maxSize: R * 0.7, color: ink)
++        case .mdb:
++            return [disc(grey)] + words(["MDB" + num], maxW: R * 1.6, maxSize: R * 0.62, color: ink)
++        case .water:
++            let cyan = RGBA(hex: 0x0FA3C4)
++            return [disc(cyan)] + words(["M"], maxW: R * 1.4, maxSize: R * 0.9, color: cyan)
++        case .inv:     // upright box with INV written bottom-to-top
++            let w = R * 0.9, h = R * 2.4, fs = min(R * 0.7, h * 0.8 / max(ApproxText.width("INV", size: 1), 0.01))
++            return [.rect(Box(c.x - w / 2, c.y - h / 2, w, h), stroke: ink, fill: .white, width: line),
++                    .text("INV", at: c, size: fs, color: ink, align: .center, angle: -90)]
++        case .office:  // red-edged label above the point with a leader line down to it
++            let red = RGBA(hex: 0xD00000), fs = R * 0.62, t = "Site Office"
++            let w = ApproxText.width(t, size: fs) + fs * 1.0, h = fs * 1.7, lift = R * 1.3
++            if !callout {
++                let k = min(1, 2 * R / w), b = Box(c.x - w * k / 2, c.y - h * k / 2, w * k, h * k)
++                return [.rect(b, stroke: red, fill: .white, width: line * 1.6),
++                        .text(t, at: c, size: fs * k, color: RGBA(hex: 0x8B0000), align: .center)]
++            }
++            let b = Box(c.x - w / 2, c.y - lift - h, w, h)
++            return [.line(Pt(c.x, b.maxY), c, width: line * 1.6, color: ink),
++                    .circle(c, r: R * 0.12, stroke: nil, fill: ink),
++                    .rect(b, stroke: red, fill: .white, width: line * 1.6),
++                    .text(t, at: Pt(c.x, b.y + h / 2), size: fs, color: RGBA(hex: 0x8B0000), align: .center)]
+         }
+     }
+ 
+@@ -171,7 +202,7 @@ public enum SiteMarks {
+         for k in kinds {
+             let w = 2 * R + 4 + ApproxText.width(k.title, size: fs) + 12
+             if x + w > box.maxX && x > box.x + 6 { x = box.x + 6; y += lineH }
+-            o += symbol(k, at: Pt(x + R, y), radius: R)
++            o += symbol(k, at: Pt(x + R, y), radius: R, callout: false)
+             o.append(.text(k.title, at: Pt(x + 2 * R + 4, y), size: fs, color: ink))
+             x += w
+         }
+diff --git a/SolarSurveyKit/Sources/SurveyUI/SiteMarksEditor.swift b/SolarSurveyKit/Sources/SurveyUI/SiteMarksEditor.swift
+index 4e4c043..c36a6ee 100644
+--- a/SolarSurveyKit/Sources/SurveyUI/SiteMarksEditor.swift
++++ b/SolarSurveyKit/Sources/SurveyUI/SiteMarksEditor.swift
+@@ -63,7 +63,7 @@ struct SiteMarksEditor: View {
+         let on = armed == k
+         return HStack(spacing: 6) {
+             Canvas { ctx, sz in
+-                let ops = SiteMarks.symbol(k, at: Pt(Double(sz.width) / 2, Double(sz.height) / 2), radius: Double(min(sz.width, sz.height)) / 2 - 1)
++                let ops = SiteMarks.symbol(k, at: Pt(Double(sz.width) / 2, Double(sz.height) / 2), radius: Double(min(sz.width, sz.height)) / 2 - 1, callout: false)
+                 ctx.withCGContext { cg in PDFRenderer.draw(ops, in: cg, photo: { _ in nil }) }
+             }
+             .frame(width: 24, height: 24)

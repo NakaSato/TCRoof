@@ -39,6 +39,16 @@ struct TankPageWide: View {
     @State var compass = false
     /// iPhone: the full plan with its span numbers, full screen.
     @State var planFull = false
+    /// iPhone sub-step 2: the selected point, the shading view, the plan full screen and its zoom, the row and delete
+    /// questions.
+    @State var pointSel: UUID?
+    @State var obsShade = false
+    @State var obsFull = false
+    @State var obsZoom: CGFloat = 1
+    @State var rowAsk = false
+    @State var rowCount = 3
+    @State var rowSpacing = 4.0
+    @State var deleteAsk = false
 
     var gap: CGFloat { width >= 1180 ? 20 : 16 }
     static let cardWidth: CGFloat = 330
@@ -217,7 +227,9 @@ struct TankPageWide: View {
 extension TankPageWide {
     /// `-surveyD1 <state>` seeds the design's example tank (40 × 40, ค.ส.ล., กึ่งฝัง, 4.50 / 1.20, คอนกรีต, 12°) and
     /// opens a state of docs/ui/survey-d1-size/states: default, size, t64, t30, t20, above, buried, custom (typed azimuth
-    /// and surface), compass, span, empty; tab2 opens sub-step 2.
+    /// and surface), compass, span, empty; tab2 opens sub-step 2. obst opens sub-step 2 as docs/ui/survey-d1-obstacles-iphone
+    /// (obstbottom scrolled to the end, obstshade the shading view, obstrow the row question, obstfull the plan full screen, obstadded a hatch added
+    /// on site, obstdelete the delete question).
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyD1") else { return }
         update { v in
@@ -246,6 +258,27 @@ extension TankPageWide {
             span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
         case "tab2": tab = 2
+        case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete":
+            // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
+            update { v in
+                v[Roof.Key.obstacles] = nil
+                TankPoints.seed(&v)
+                let list = TankPoints.points(v)
+                for i in [0, 1, 2, 3, 8, 10, 11] { TankPoints.setStatus(&v, list[i].id, TankPoints.ok) }
+                TankPoints.setStatus(&v, list[5].id, TankPoints.absent)
+                TankPoints.move(&v, list[8].id, x: 16.8, y: nil)
+            }
+            pointSel = TankPoints.points(values)[safe: 8]?.id
+            tab = 2
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            switch state {
+            case "obstshade": obsShade = true
+            case "obstrow": rowCount = 3; rowSpacing = TankPoints.rowSpacing(values); rowAsk = true
+            case "obstfull": obsFull = true
+            case "obstadded": addPoint(TankPoints.hatch)
+            case "obstdelete": addPoint(TankPoints.vent); try? await Task.sleep(nanoseconds: 300_000_000); deleteAsk = true
+            default: break
+            }
         default: break
         }
     }

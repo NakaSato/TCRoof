@@ -62,7 +62,7 @@ public extension Job {
         case .fts: return j(d.photo("photoEmg") != nil ? "มีภาพปุ่ม Emergency" : nil, t("emgPlace").isEmpty ? nil : t("emgPlace"),
                             d.photo("photoFTS") != nil ? "มีภาพตู้ FTS" : nil)
         case .roof: return j(o("roofShape"), o("roofMaterial"), o("roofStructure"), t("panelsBefore").isEmpty ? nil : "แผง \(t("panelsBefore"))" + (t("panelsCut").isEmpty ? "" : " (ตัด \(t("panelsCut")))"), size)
-        case .tank: return j(Schema.tankKind(d), t("tankHeight").isEmpty ? nil : "สูง \(t("tankHeight")) ม.", t("surface"), size, d.obstacles("obst").isEmpty ? nil : "สิ่งกีดขวาง \(d.obstacles("obst").count) จุด", Schema.shadeText(d))
+        case .tank: return j(Schema.tankKind(d), t("tankHeight").isEmpty ? nil : "สูง \(t("tankHeight")) ม.", t("surface"), size, d.obstacles("obst").filter { !$0.isAbsent }.isEmpty ? nil : "สิ่งกีดขวาง \(d.obstacles("obst").filter { !$0.isAbsent }.count) จุด", Schema.shadeText(d))
         case .sed: return j(t("distA").isEmpty || t("distB").isEmpty ? nil : "บ่อ \(t("distA")) x \(t("distB")) ซม.")
         case .house: return j(o("buildingType"), o("roofShape"), o("roofMaterial"), t("mainBreaker").isEmpty ? nil : "เมน \(t("mainBreaker")) A", o("facing").isEmpty ? nil : "หันทิศ" + o("facing"))
         case .roofForm: return j(o("roofShape"), o("roofMaterial"), o("facing").isEmpty ? nil : "หันทิศ" + o("facing"),
@@ -193,7 +193,7 @@ public extension FieldSpec {
         case .photo: if case .signature = kind { return "ลงนามแล้ว" }; return "แนบภาพแล้ว"
         case .photos(let a): return a.isEmpty ? "" : "\(a.count) ภาพ"
         case .obstacles(let a):
-            return a.map { "\($0.label.isEmpty ? "สิ่งกีดขวาง" : $0.label) (\($0.w.isEmpty ? "?" : $0.w)x\($0.h.isEmpty ? "?" : $0.h) ม. @\($0.x.isEmpty ? "0" : $0.x),\($0.y.isEmpty ? "0" : $0.y))" }.joined(separator: "; ")
+            return a.map { $0.isAbsent ? "\($0.label.isEmpty ? "สิ่งกีดขวาง" : $0.label) (ไม่มีจริง)" : "\($0.label.isEmpty ? "สิ่งกีดขวาง" : $0.label) (\($0.w.isEmpty ? "?" : $0.w)x\($0.h.isEmpty ? "?" : $0.h) ม. @\($0.x.isEmpty ? "0" : $0.x),\($0.y.isEmpty ? "0" : $0.y))" }.joined(separator: "; ")
         case .transformers(let a):
             return a.enumerated().map { i, t in
                 "TR\(i + 1) \(t.kva.isEmpty ? "-" : t.kva)kVA: " + t.mdb.enumerated().compactMap { $1.isEmpty ? nil : "MDB\($0 + 1)=\($1)A" }.joined(separator: " ")

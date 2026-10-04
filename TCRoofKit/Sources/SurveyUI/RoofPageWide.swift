@@ -366,7 +366,7 @@ struct RoofPageWide: View {
 
     var pvTab: some View {
         let portrait = Roof.pvPortrait(values), rows = Roof.pvRows(values), per = Roof.pvPerTable(values)
-        let pv = RoofPlan(values, mode: .pv).pv, tables = rows > 0 || per > 0
+        let pv = RoofPV(values), tables = rows > 0 || per > 0
         let watts = Int((RoofPlan.Module.catalogDefault.kW * 1000).rounded())
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 8) {

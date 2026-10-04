@@ -47,6 +47,8 @@ enum Theme {
     static let borderSubtle = Color(hex: 0xDDE4ED)
     static let primarySoft = Color(hex: 0xE3EEF8)
     static let paperBand = Color(hex: 0xE2EFDA)
+    /// `paper-page`: weekend and other-month days on the plan calendar, info notes.
+    static let paperPage = Color(hex: 0xF2F2F7)
     static let paperInk = Color(hex: 0x1F2E24)
     static let paperTickStrong = Color(hex: 0x4E7F2E)
     static let pending = Color(hex: 0xB45309)

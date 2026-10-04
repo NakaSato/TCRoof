@@ -61,6 +61,69 @@ struct HeaderLink<Destination: View>: View {
     }
 }
 
+/// Back, page title over the breadcrumb, and `trailing` (usually a `TopBarLink`), on a white bar.
+/// Pages using it hide the navigation bar.
+struct PageTopBar<Trailing: View>: View {
+    let title: String
+    /// Pages before this one, e.g. `["หน้าหลัก", "สำรวจหน้างาน"]`.
+    let trail: [String]
+    let current: String
+    var backLabel = "กลับหน้าหลัก"
+    @ViewBuilder var trailing: Trailing
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .secondaryButtonFrame()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(backLabel)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.navy)
+                (Text(trail.map { "\($0) › " }.joined()) + Text(current).bold().foregroundColor(Theme.navy))
+                    .font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            }
+            Spacer(minLength: 12)
+            trailing
+        }
+        .foregroundStyle(Theme.navy)
+        .padding(.horizontal, 24).padding(.vertical, 12)
+        .frame(minHeight: 72)
+        .background(.white)
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+    }
+}
+
+/// The secondary button on the right of a `PageTopBar`.
+struct TopBarLink<Destination: View>: View {
+    let title: String
+    let systemImage: String
+    @ViewBuilder var destination: () -> Destination
+
+    var body: some View {
+        NavigationLink(destination: destination) {
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 17, weight: .bold))
+                .padding(.horizontal, 16).frame(minHeight: 44)
+                .secondaryButtonFrame()
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+extension View {
+    /// Design system `tc-btn secondary`: white, 1 pt control border, radius 8.
+    func secondaryButtonFrame() -> some View {
+        background(.white, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
 struct FloatingButton: View {
     let systemImage: String
     var accessibilityLabel: String

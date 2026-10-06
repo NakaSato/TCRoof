@@ -518,8 +518,10 @@ public struct TCChoiceChips: View {
 /// Segmented control: grey track, the selected segment white and bold (`10:00 12:00 14:00`, `แปลน / 3 มิติ`).
 /// `.filter` is the iPhone list filter (`7 วัน / 30 วัน / ทั้งหมด`, docs/ui/tcroof-survey-list-iphone):
 /// 44 high, padding and gap 3, track r10, segment r8, regular 14 pt when not selected.
+/// `.view` is the iPhone view switch (`เดือน / สัปดาห์`, docs/ui/tcroof-plan-calendar-iphone):
+/// 44 high, padding and gap 2, track r12, segment r10, bold `inkStrong` when not selected.
 public struct TCSegmented: View {
-    public enum Style { case standard, filter }
+    public enum Style { case standard, filter, view }
 
     let options: [String]
     @Binding var selection: String
@@ -531,20 +533,29 @@ public struct TCSegmented: View {
     }
 
     private var filter: Bool { style == .filter }
+    private var gap: CGFloat { style == .view ? 2 : filter ? 3 : Space.xs }
+    private var segmentHeight: CGFloat { style == .view ? 40 : filter ? 38 : 40 }
+    private var segmentRadius: CGFloat { style == .view ? 10 : filter ? 8 : 9 }
+    private var trackRadius: CGFloat { style == .view ? Radius.lg : filter ? 10 : Radius.lg }
+
+    private func weight(_ on: Bool) -> Font.Weight {
+        if on || style == .view { return .bold }
+        return filter ? .regular : .semibold
+    }
 
     public var body: some View {
-        HStack(spacing: filter ? 3 : Space.xs) {
+        HStack(spacing: gap) {
             ForEach(options, id: \.self) { o in
                 let on = o == selection
                 Button { selection = o } label: {
-                    Text(o).font(.sarabun(fontSize, on ? .bold : filter ? .regular : .semibold, relativeTo: .body))
-                        .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                    Text(o).font(.sarabun(fontSize, weight(on), relativeTo: .body))
+                        .foregroundStyle(on ? Theme.navy : style == .view ? Theme.inkStrong : Theme.inkMuted)
                         .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, minHeight: filter ? 38 : 40)
+                        .frame(maxWidth: .infinity, minHeight: segmentHeight)
                         .background {
                             if on {
-                                RoundedRectangle(cornerRadius: filter ? 8 : 9).fill(Theme.surface)
-                                    .shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1)
+                                RoundedRectangle(cornerRadius: segmentRadius).fill(Theme.surface)
+                                    .shadow(color: Theme.navy.opacity(style == .view ? 0.25 : 0.2), radius: 1.5, y: 1)
                             }
                         }
                         .contentShape(Rectangle())
@@ -553,8 +564,8 @@ public struct TCSegmented: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
-        .padding(filter ? 3 : Space.xs)
-        .background(filter ? Theme.segmentTrack : Theme.track, in: RoundedRectangle(cornerRadius: filter ? 10 : Radius.lg))
+        .padding(gap)
+        .background(style == .standard ? Theme.track : Theme.segmentTrack, in: RoundedRectangle(cornerRadius: trackRadius))
         .animation(.easeOut(duration: 0.15), value: selection)
     }
 }

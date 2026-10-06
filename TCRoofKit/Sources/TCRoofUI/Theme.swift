@@ -124,6 +124,13 @@ public enum Theme {
     public static let headerLine = Color(hex: 0xE6EBF2)
     /// Light dim of the page behind the bell popover.
     public static let popoverDim = navy.opacity(0.12)
+    // iPhone plan calendar (docs/ui/tcroof-plan-calendar-iphone)
+    /// Survey appointment diamond and the survey row's leading rule.
+    public static let survey = Color(light: 0xD6336C, dark: 0xF06595)
+    /// Day numbers outside the shown month.
+    public static let dayOutside = Color(light: 0xC3CBD6, dark: 0x3A4757)
+    /// Selected row of a dropdown menu (the team filter).
+    public static let rowSelected = Color(light: 0xEEF3F9, dark: 0x1C2734)
 
     // component board (docs/ui/components)
     /// Progress ring track, empty segments of a segmented bar.

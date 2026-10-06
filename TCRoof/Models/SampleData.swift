@@ -66,6 +66,27 @@ enum SampleData {
               kw: 11.0, team: .t2, status: .confirmed, surveyOffset: -8, installOffset: 8, days: 3),
     ]
 
+    #if DEBUG
+    /// The board's survey times (docs/ui/tcroof-plan-calendar-iphone/assets/sample-data.json), by seed.
+    private static let surveyTimes = ["09:00", "10:30", "09:30", "13:30", "08:30", "14:00", "10:00", "09:00", "13:00", "15:00"]
+
+    /// `-planDemo YES`: moves the sample jobs back to their offsets from `today`, with the board's survey times,
+    /// so the plan calendar matches docs/ui/tcroof-plan-calendar-iphone however long ago they were seeded.
+    static func redate(_ context: ModelContext, today: Date) {
+        let jobs = (try? context.fetch(FetchDescriptor<Job>())) ?? []
+        for (i, s) in seeds.enumerated() {
+            guard let job = jobs.first(where: { $0.projectName == s.project && $0.phone == s.phone }) else { continue }
+            let hm = surveyTimes[i].split(separator: ":").compactMap { Int($0) }
+            let day = today.startOfDay
+            job.surveyDate = day.adding(days: s.surveyOffset).addingTimeInterval(TimeInterval(hm[0] * 3600 + hm[1] * 60))
+            job.installStart = day.adding(days: s.installOffset)
+            job.installDays = s.days
+            job.team = s.team
+        }
+        try? context.save()
+    }
+    #endif
+
     private static func seed(_ context: ModelContext) {
         let today = Date().startOfDay
         let year = ThaiFormat.year.string(from: today)

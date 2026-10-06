@@ -1,0 +1,106 @@
+{
+ "_note": "EXAMPLE DATA ONLY (mirrors SampleData.swift seeds used by the board). Offsets are days relative to today = 2026-09-30 (30 กันยายน 2569). Use the real Job records in the app.",
+ "today": "2026-09-30",
+ "jobs": [
+  {
+   "code": "TCR2569-23401",
+   "project": "คุณดารา ภัทรปรีดา",
+   "team": "TCR01",
+   "status": "installing",
+   "surveyOffsetDays": -14,
+   "surveyTime": "09:00",
+   "installStartOffsetDays": -1,
+   "installDays": 4
+  },
+  {
+   "code": "TCR2569-23402",
+   "project": "บริษัท คิดดี จำกัด",
+   "team": "TCR02",
+   "status": "confirmed",
+   "surveyOffsetDays": -10,
+   "surveyTime": "10:30",
+   "installStartOffsetDays": 1,
+   "installDays": 5
+  },
+  {
+   "code": "TCR2569-23403",
+   "project": "คุณนพพร วีระโชติ",
+   "team": "TCR03",
+   "status": "interested",
+   "surveyOffsetDays": 0,
+   "surveyTime": "09:30",
+   "installStartOffsetDays": 16,
+   "installDays": 2
+  },
+  {
+   "code": "TCR2569-23404",
+   "project": "คุณรยา จุลพัฒน์",
+   "team": "TCR01",
+   "status": "interested",
+   "surveyOffsetDays": 1,
+   "surveyTime": "13:30",
+   "installStartOffsetDays": 20,
+   "installDays": 3
+  },
+  {
+   "code": "TCR2569-23405",
+   "project": "โรงงานสยามแพ็คกิ้ง",
+   "team": "TCR04",
+   "status": "confirmed",
+   "surveyOffsetDays": -21,
+   "surveyTime": "08:30",
+   "installStartOffsetDays": 3,
+   "installDays": 12
+  },
+  {
+   "code": "TCR2569-23406",
+   "project": "คุณสมศักดิ์ ใจดี",
+   "team": "TCR03",
+   "status": "confirmed",
+   "surveyOffsetDays": -5,
+   "surveyTime": "14:00",
+   "installStartOffsetDays": 5,
+   "installDays": 2
+  },
+  {
+   "code": "TCR2569-23407",
+   "project": "ร้านกาแฟบ้านสวน",
+   "team": "TCR02",
+   "status": "interested",
+   "surveyOffsetDays": 3,
+   "surveyTime": "10:00",
+   "installStartOffsetDays": 25,
+   "installDays": 3
+  },
+  {
+   "code": "TCR2569-23408",
+   "project": "คุณปกรณ์ ศักดิ์สิทธิ์",
+   "team": "TCR01",
+   "status": "completed",
+   "surveyOffsetDays": -30,
+   "surveyTime": "09:00",
+   "installStartOffsetDays": -12,
+   "installDays": 2
+  },
+  {
+   "code": "TCR2569-23409",
+   "project": "หอพักกรีนเพลส",
+   "team": "TCR04",
+   "status": "interested",
+   "surveyOffsetDays": 5,
+   "surveyTime": "13:00",
+   "installStartOffsetDays": 40,
+   "installDays": 4
+  },
+  {
+   "code": "TCR2569-23410",
+   "project": "คุณธนา วงศ์ใหญ่",
+   "team": "TCR02",
+   "status": "confirmed",
+   "surveyOffsetDays": -8,
+   "surveyTime": "15:00",
+   "installStartOffsetDays": 8,
+   "installDays": 3
+  }
+ ]
+}

@@ -7,12 +7,15 @@ import SurveyUI
 /// Construction plan month view: install jobs as bars across the days they run, survey appointments as
 /// dashed pills, and the selected day's work in a panel on the right.
 struct PlanCalendarView: View {
-    @Query(sort: \Job.installStart) private var jobs: [Job]
-    @State private var month = Date().startOfMonth
-    @State private var selected = Date().startOfDay
+    @Query(sort: \Job.installStart) var jobs: [Job]
+    @State var month = Self.today.startOfMonth
+    @State var selected = Self.today.startOfDay
     /// nil shows every team.
-    @State private var team: Team?
-    @State private var surveyModel = SurveyModel.shared
+    @State var team: Team?
+    @State var surveyModel = SurveyModel.shared
+    /// iPhone: `เดือน` or `สัปดาห์`, and whether the team menu is open.
+    @State var phoneMode = PlanPhoneMode.month
+    @State var teamMenuOpen = false
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private static let weekdays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
@@ -53,16 +56,16 @@ struct PlanCalendarView: View {
 
     private var monthEnd: Date { month.adding(months: 1).adding(days: -1) }
 
-    private func overlaps(_ job: Job, from start: Date, to end: Date) -> Bool {
+    func overlaps(_ job: Job, from start: Date, to end: Date) -> Bool {
         job.installStart.startOfDay <= end && job.installEnd >= start
     }
 
     /// Installs overlapping the visible month, every team.
     private var monthJobs: [Job] { jobs.filter { overlaps($0, from: month, to: monthEnd) } }
 
-    private var visibleJobs: [Job] { team.map { t in jobs.filter { $0.team == t } } ?? jobs }
+    var visibleJobs: [Job] { team.map { t in jobs.filter { $0.team == t } } ?? jobs }
 
-    private var weeks: [[Date]] {
+    var weeks: [[Date]] {
         let calendar = Calendar.current
         let leading = calendar.component(.weekday, from: month) - 1
         let start = month.adding(days: -leading)
@@ -71,13 +74,13 @@ struct PlanCalendarView: View {
         return (0..<rows).map { w in (0..<7).map { start.adding(days: w * 7 + $0) } }
     }
 
-    private func jobs(on date: Date) -> [Job] {
+    func jobs(on date: Date) -> [Job] {
         visibleJobs.filter { $0.installDay(on: date) != nil }
     }
 
     /// Survey appointments (TCRoof jobs) and NO.224 reports dated that day. A report whose job already has
     /// its appointment on the same day is shown on that job's row rather than twice.
-    private func surveys(on date: Date) -> (appointments: [Job], reports: [TCRoofCore.Job]) {
+    func surveys(on date: Date) -> (appointments: [Job], reports: [TCRoofCore.Job]) {
         let cal = Calendar.current
         let appointments = jobs.filter { cal.isDate($0.surveyDate, inSameDayAs: date) }
         let covered = Set(appointments.compactMap(\.syncID))
@@ -303,91 +306,5 @@ struct PlanCalendarView: View {
 
     private func sectionCaption(_ title: String) -> some View {
         Text(title).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
-    }
-}
-
-// MARK: - iPhone
-
-/// The compact layout: gradient header with the month's counts, a month grid with a dot per team installing
-/// and a ring for survey appointments, the team chips, then the selected day's work.
-extension PlanCalendarView {
-    private static let weekdaysShort = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
-
-    var phoneBody: some View {
-        let inMonth = monthJobs
-        let appointments = jobs.filter { $0.surveyDate >= month && $0.surveyDate < month.adding(months: 1) }.count
-        return ScrollView {
-            VStack(spacing: 12) {
-                phoneMonthCard
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) { teamChips }.padding(.horizontal, 16)
-                }
-                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-                dayPanel(scrolls: false).padding(.horizontal, 16)
-            }
-            .padding(.top, 12).padding(.bottom, 16)
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            TCGradientHeader(title: "แผนก่อสร้าง", subtitle: "\(inMonth.count) งานติดตั้ง · \(appointments) นัดสำรวจ") {
-                NavigationLink { PlanListView() } label: { TCHeaderIcon("list.bullet") }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("ดูรายการแผนก่อสร้าง")
-            }
-        }
-        .background(Theme.background.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-    }
-
-    private var phoneMonthCard: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(month.thaiMonthYear).font(.sarabun(18, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-                Spacer(minLength: 8)
-                PlanMonthStepper(
-                    previous: { month = month.adding(months: -1) },
-                    today: { month = Date().startOfMonth; selected = Date().startOfDay },
-                    next: { month = month.adding(months: 1) })
-            }
-            phoneGrid
-        }
-        .padding(12)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
-        .padding(.horizontal, 16)
-    }
-
-    private var phoneGrid: some View {
-        let weeks = weeks
-        let data = gridData(from: weeks.first?.first ?? month, to: weeks.last?.last ?? month)
-        let cal = Calendar.current
-        return VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(Self.weekdaysShort.indices, id: \.self) { i in
-                    Text(Self.weekdaysShort[i]).font(.sarabun(12, .bold, relativeTo: .caption))
-                        .foregroundStyle(i % 6 == 0 ? Theme.muted : Theme.inkMuted)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.bottom, 4)
-            ForEach(weeks, id: \.first) { week in
-                HStack(spacing: 0) {
-                    ForEach(week, id: \.self) { day in
-                        let key = day.startOfDay
-                        PlanPhoneDayCell(
-                            day: PlanDayInfo(date: day,
-                                             inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
-                                             isSelected: cal.isDate(day, inSameDayAs: selected),
-                                             installs: data.installs[key] ?? 0,
-                                             surveys: data.surveys[key] ?? 0),
-                            teams: data.teams[key] ?? []) { selected = key }
-                    }
-                }
-            }
-        }
-        // swipe sideways for the next or previous month
-        .simultaneousGesture(DragGesture(minimumDistance: 30).onEnded { v in
-            guard abs(v.translation.width) > abs(v.translation.height) * 1.5, abs(v.translation.width) > 50 else { return }
-            month = month.adding(months: v.translation.width < 0 ? 1 : -1)
-        })
     }
 }

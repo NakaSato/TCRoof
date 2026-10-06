@@ -11,6 +11,7 @@ struct GalleryInputs: View {
     @State var date = Self.sampleDate(hour: 10, minute: 30)
     @State var height = 48.0
     @State var search = ""
+    @State var calendarView = "เดือน"
     @State var model = ""
     @State var type = "ทุกประเภท"
     @State var has: String? = "มี"
@@ -69,6 +70,9 @@ struct GalleryInputs: View {
                 GalleryItem("แท็บแคปซูล") { TCCapsuleTabs(["7 วัน", "30 วัน", "ทั้งหมด"], selection: $window) }
                 GalleryItem("Segmented · ตัวกรอง iPhone", note: "สูง 44 · ราง r10 · ช่องเลือก r8") {
                     TCSegmented(["7 วัน", "30 วัน", "ทั้งหมด"], selection: $window, fontSize: 14, style: .filter)
+                }
+                GalleryItem("Segmented · สลับมุมมอง iPhone", note: "สูง 44 · ราง r12 · ช่องเลือก r10") {
+                    TCSegmented(["เดือน", "สัปดาห์"], selection: $calendarView, fontSize: 14, style: .view)
                 }
             }
             GalleryGrid {

@@ -73,6 +73,13 @@ struct GalleryLayout: View {
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
+        GalleryItem("หัวจอไล่สี (iPhone)", note: "r15 ล่าง · ชื่อ 19 · คำอธิบาย 13 · ปุ่ม 44 r12 ขาว 16 % · ลูกศรกลับเฉพาะเมื่อเปิดซ้อน") {
+            TCGradientHeader(title: "สำรวจหน้างาน", subtitle: "นัดสำรวจ 4 งาน") { TCHeaderIcon("clock") }
+                .padding(.bottom, 12)
+                .background(Theme.background)
+                .framed()
+        }
+        .frame(maxWidth: 390, alignment: .leading)
         GalleryItem("แถบแท็บล่าง (iPhone)", note: "ชิดขอบล่าง · เส้นบน 1 · แท็บ ≥ 48 · เลือก = แคปซูล 52 × 28 สีฟ้าอ่อน · ป้ายแดงนับนัดวันนี้") {
             GalleryTabBar()
                 // the board's 22 pt home-indicator inset

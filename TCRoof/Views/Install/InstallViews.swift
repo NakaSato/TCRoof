@@ -16,12 +16,18 @@ struct InstallRecordsView: View {
     @State private var showPicker = false
     @State private var pendingJob: Job?
     @State private var newLogJob: Job?
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var filtered: [Job] {
         jobs.filter { window.overlaps($0.installInterval) && $0.matches(search) }
     }
 
     var body: some View {
+        if sizeClass == .compact { PhoneInstallList() } else { padList }
+    }
+
+    /// iPad; the phone has `PhoneInstallList`.
+    private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 PageHeader(title: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน", symbol: AppModule.install.symbol) {
@@ -85,18 +91,18 @@ struct InstallRecordsView: View {
             .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
     }
 
-    @ViewBuilder
     private func inspectionFooter(_ job: Job) -> some View {
-        if let inspection = job.inspection {
-            if inspection.submittedAt != nil {
-                footer(inspection.allPassed ? "ตรวจรับแล้ว · ผ่านทุกข้อ" : "ตรวจรับแล้ว · มีข้อไม่ผ่าน",
-                       color: inspection.allPassed ? Color(hex: 0x2E9E5B) : Theme.danger)
-            } else {
-                footer("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", color: .orange)
-            }
-        } else {
-            footer("ยังไม่เริ่มตรวจรับ", color: Theme.muted)
+        let status = Self.inspectionStatus(job)
+        return footer(status.text, color: status.color)
+    }
+
+    /// The ICL state of a job, for the iPad footer and the iPhone status box.
+    static func inspectionStatus(_ job: Job) -> (text: String, color: Color) {
+        guard let inspection = job.inspection else { return ("ยังไม่เริ่มตรวจรับ", Theme.muted) }
+        if inspection.submittedAt != nil {
+            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Color(hex: 0x2E9E5B)) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
         }
+        return ("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", .orange)
     }
 }
 

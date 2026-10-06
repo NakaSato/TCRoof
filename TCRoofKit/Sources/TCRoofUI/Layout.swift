@@ -276,6 +276,62 @@ public struct TCCardGrid<Content: View>: View {
     }
 }
 
+/// iPhone screen header (docs/ui/tcroof-survey-list-iphone): `headerGradient` under the status bar, bottom radius 15,
+/// a 19 pt title over a 13 pt subtitle, and trailing 44 pt buttons (`TCHeaderIcon`). The back chevron shows only when
+/// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead.
+public struct TCGradientHeader<Trailing: View>: View {
+    let title: String
+    let subtitle: String
+    var backLabel: String
+    @ViewBuilder var trailing: Trailing
+    @Environment(\.isPresented) private var isPresented
+    @Environment(\.dismiss) private var dismiss
+
+    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", @ViewBuilder trailing: () -> Trailing) {
+        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.trailing = trailing()
+    }
+
+    public var body: some View {
+        HStack(spacing: 2) {
+            if isPresented {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 21, weight: .semibold))
+                        .frame(width: touchMin, height: touchMin).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(backLabel)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.sarabun(19, .bold, relativeTo: .title3)).lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                Text(subtitle).font(.sarabun(13, relativeTo: .caption)).opacity(0.92).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 6) { trailing }
+        }
+        .foregroundStyle(.white)
+        .padding(.leading, isPresented ? 6 : 16).padding(.trailing, 8)
+        .padding(.top, 6).padding(.bottom, 14)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous)
+                .fill(Theme.headerGradient)
+                .ignoresSafeArea(edges: .top)
+        }
+    }
+}
+
+/// A `TCGradientHeader` button's label: a white glyph in a 44 pt square, radius 12, white 16 %.
+public struct TCHeaderIcon: View {
+    let symbol: String
+    public init(_ symbol: String) { self.symbol = symbol }
+
+    public var body: some View {
+        Image(systemName: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
+            .frame(width: touchMin, height: touchMin)
+            .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
 /// One tab of `TCTabBar`. With `action` the tab runs it instead of becoming selected
 /// (the iPhone's `ตั้งค่า` opens the settings sheet).
 public struct TCTabItem<ID: Hashable>: Identifiable {

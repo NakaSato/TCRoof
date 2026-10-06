@@ -102,6 +102,44 @@ private struct PlanDayCell: View {
     }
 }
 
+/// iPhone month grid day: the number (today white on primary, selected ringed), then a dot per team installing
+/// that day (up to three) and a ring when there are survey appointments.
+struct PlanPhoneDayCell: View {
+    let day: PlanDayInfo
+    let teams: [Team]
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                Text("\(Calendar.current.component(.day, from: day.date))")
+                    .font(.sarabun(15, day.inMonth ? .bold : .regular, relativeTo: .body)).monospacedDigit()
+                    .foregroundStyle(day.date.isToday ? .white : day.inMonth ? Theme.navy : Theme.muted)
+                    .frame(width: 34, height: 34)
+                    .background {
+                        if day.date.isToday { Circle().fill(Theme.primary) }
+                        else if day.isSelected { Circle().fill(Theme.primarySoft) }
+                    }
+                    .overlay {
+                        if day.isSelected { Circle().strokeBorder(day.date.isToday ? Theme.navy : Theme.primary, lineWidth: 2) }
+                    }
+                HStack(spacing: 3) {
+                    ForEach(teams.prefix(3), id: \.self) { t in Circle().fill(t.color).frame(width: 6, height: 6) }
+                    if day.surveys > 0 { Circle().strokeBorder(Theme.primary, lineWidth: 1.5).frame(width: 7, height: 7) }
+                }
+                .frame(height: 7)
+                .opacity(day.inMonth ? 1 : 0.5)
+            }
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(day.date.thaiLong), \(day.installs) งานติดตั้ง" + (day.surveys > 0 ? ", นัดสำรวจ \(day.surveys)" : ""))
+        .accessibilityAddTraits(day.isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
 /// `นัดสำรวจ n`: white, dashed control border, capsule.
 private struct PlanSurveyPill: View {
     let count: Int

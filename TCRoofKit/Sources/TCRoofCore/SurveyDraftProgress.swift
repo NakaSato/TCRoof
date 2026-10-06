@@ -93,3 +93,19 @@ public enum RelativeDay {
         }
     }
 }
+
+/// The iPhone install card's when line: `กำลังติดตั้ง · วันที่ 2/4`, `เริ่มพรุ่งนี้ · 7 ต.ค. 69`,
+/// `เริ่มอีก 3 วัน · 9 ต.ค. 69`, `เริ่มวันนี้ · 6 ต.ค. 69`, `ติดตั้งเสร็จ · 2 ต.ค. 69`.
+public enum InstallWhen {
+    /// `daysToStart` from `RelativeDay.days(from: now, to: start)`; `day` is today's install day (1-based) when it runs today.
+    /// `start` and `end` are already formatted.
+    public static func label(daysToStart: Int, day: Int?, total: Int, start: String, end: String) -> String {
+        if let day, total > 1 { return "กำลังติดตั้ง · วันที่ \(day)/\(total)" }
+        switch daysToStart {
+        case 0: return "เริ่มวันนี้ · \(start)"
+        case 1: return "เริ่มพรุ่งนี้ · \(start)"
+        case let d where d > 1: return "เริ่มอีก \(d) วัน · \(start)"
+        default: return "ติดตั้งเสร็จ · \(end)"
+        }
+    }
+}

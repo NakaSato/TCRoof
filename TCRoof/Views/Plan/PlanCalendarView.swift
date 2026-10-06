@@ -13,10 +13,16 @@ struct PlanCalendarView: View {
     /// nil shows every team.
     @State private var team: Team?
     @State private var surveyModel = SurveyModel.shared
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private static let weekdays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
 
     var body: some View {
+        if sizeClass == .compact { phoneBody } else { padBody }
+    }
+
+    /// iPad (docs/ui/plan-calendar): the wall planner with install bars and the day panel.
+    private var padBody: some View {
         GeometryReader { geo in
             if geo.size.width > 900 {
                 HStack(alignment: .top, spacing: 16) {
@@ -86,6 +92,8 @@ struct PlanCalendarView: View {
     /// rather than by filtering every job and report again for each of the 35–42 cells.
     private struct GridData {
         var installs: [Date: Int] = [:]
+        /// Teams installing that day, in `Team.allCases` order (the iPhone grid's dots).
+        var teams: [Date: [Team]] = [:]
         var surveys: [Date: Int] = [:]
         /// The visible jobs as `PlanLayout` spans, and by id, for every week's bars.
         var spans: [(id: PersistentIdentifier, start: Date, end: Date)] = []
@@ -101,8 +109,13 @@ struct PlanCalendarView: View {
         for job in visible {
             var d = max(job.installStart.startOfDay, first)
             let end = min(job.installEnd, last)
-            while d <= end { c.installs[d, default: 0] += 1; d = d.adding(days: 1) }
+            while d <= end {
+                c.installs[d, default: 0] += 1
+                if c.teams[d]?.contains(job.team) != true { c.teams[d, default: []].append(job.team) }
+                d = d.adding(days: 1)
+            }
         }
+        for (d, t) in c.teams { c.teams[d] = Team.allCases.filter(t.contains) }
         var covered: [Date: Set<String>] = [:]
         for job in jobs {
             let d = job.surveyDate.startOfDay
@@ -290,5 +303,91 @@ struct PlanCalendarView: View {
 
     private func sectionCaption(_ title: String) -> some View {
         Text(title).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
+    }
+}
+
+// MARK: - iPhone
+
+/// The compact layout: gradient header with the month's counts, a month grid with a dot per team installing
+/// and a ring for survey appointments, the team chips, then the selected day's work.
+extension PlanCalendarView {
+    private static let weekdaysShort = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
+
+    var phoneBody: some View {
+        let inMonth = monthJobs
+        let appointments = jobs.filter { $0.surveyDate >= month && $0.surveyDate < month.adding(months: 1) }.count
+        return ScrollView {
+            VStack(spacing: 12) {
+                phoneMonthCard
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) { teamChips }.padding(.horizontal, 16)
+                }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                dayPanel(scrolls: false).padding(.horizontal, 16)
+            }
+            .padding(.top, 12).padding(.bottom, 16)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TCGradientHeader(title: "แผนก่อสร้าง", subtitle: "\(inMonth.count) งานติดตั้ง · \(appointments) นัดสำรวจ") {
+                NavigationLink { PlanListView() } label: { TCHeaderIcon("list.bullet") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("ดูรายการแผนก่อสร้าง")
+            }
+        }
+        .background(Theme.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var phoneMonthCard: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text(month.thaiMonthYear).font(.sarabun(18, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                Spacer(minLength: 8)
+                PlanMonthStepper(
+                    previous: { month = month.adding(months: -1) },
+                    today: { month = Date().startOfMonth; selected = Date().startOfDay },
+                    next: { month = month.adding(months: 1) })
+            }
+            phoneGrid
+        }
+        .padding(12)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .padding(.horizontal, 16)
+    }
+
+    private var phoneGrid: some View {
+        let weeks = weeks
+        let data = gridData(from: weeks.first?.first ?? month, to: weeks.last?.last ?? month)
+        let cal = Calendar.current
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ForEach(Self.weekdaysShort.indices, id: \.self) { i in
+                    Text(Self.weekdaysShort[i]).font(.sarabun(12, .bold, relativeTo: .caption))
+                        .foregroundStyle(i % 6 == 0 ? Theme.muted : Theme.inkMuted)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.bottom, 4)
+            ForEach(weeks, id: \.first) { week in
+                HStack(spacing: 0) {
+                    ForEach(week, id: \.self) { day in
+                        let key = day.startOfDay
+                        PlanPhoneDayCell(
+                            day: PlanDayInfo(date: day,
+                                             inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
+                                             isSelected: cal.isDate(day, inSameDayAs: selected),
+                                             installs: data.installs[key] ?? 0,
+                                             surveys: data.surveys[key] ?? 0),
+                            teams: data.teams[key] ?? []) { selected = key }
+                    }
+                }
+            }
+        }
+        // swipe sideways for the next or previous month
+        .simultaneousGesture(DragGesture(minimumDistance: 30).onEnded { v in
+            guard abs(v.translation.width) > abs(v.translation.height) * 1.5, abs(v.translation.width) > 50 else { return }
+            month = month.adding(months: v.translation.width < 0 ? 1 : -1)
+        })
     }
 }

@@ -9,6 +9,7 @@ struct SurveyListView: View {
     @State private var window: DateWindow = .week
     @State private var search = ""
     @State private var showNewJob = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     /// Three cards across at 1366 pt, two at 1024 pt.
     private let columns = isPhone ? cardColumns : [GridItem(.adaptive(minimum: 400), spacing: 16)]
@@ -24,6 +25,11 @@ struct SurveyListView: View {
     }
 
     var body: some View {
+        if sizeClass == .compact { PhoneSurveyList() } else { padList }
+    }
+
+    /// iPad (docs/ui/survey-list); the phone has `PhoneSurveyList`.
+    private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 QueueFilterBar(listTitle: "รายการงานสำรวจ", prefix: "คิวสำรวจ", window: $window, search: $search, count: filtered.count)

@@ -71,6 +71,22 @@ final class SurveyDraftProgressTests: XCTestCase {
         XCTAssertEqual(fresh.segments, [.current, .todo, .todo, .todo])
     }
 
+    /// The iPhone card's pair (docs/ui/tcroof-survey-list-iphone).
+    func testCardShortLabels() {
+        let none = SurveyCardProgress(draft: nil, hasSaved: false)
+        XCTAssertEqual([none.shortKey, none.shortValue], ["ยังไม่เริ่ม", "เริ่มสำรวจ"])
+
+        let saved = SurveyCardProgress(draft: nil, hasSaved: true)
+        XCTAssertEqual([saved.shortKey, saved.shortValue], ["สำรวจครบ", "ดูแบบสำรวจ"])
+
+        let draft = SurveyCardProgress(draft: progress(filledGroups: [0, 1]), hasSaved: false)
+        XCTAssertEqual([draft.shortKey, draft.shortValue], ["ทำต่อ", "ค่าไฟ"])
+
+        let finished = SurveyCardProgress(draft: progress(filledGroups: [0, 1, 2, 3]), hasSaved: false)
+        XCTAssertEqual([finished.shortKey, finished.shortValue], ["สำรวจครบ", "รอบันทึก"])
+        XCTAssertEqual(finished.tone, .complete)
+    }
+
     func testRelativeDayLabel() {
         XCTAssertEqual(RelativeDay.label(days: -2, time: "14:00"), "2 วันที่แล้ว · 14:00 น.")
         XCTAssertEqual(RelativeDay.label(days: -1, time: "08:30"), "เมื่อวาน 08:30 น.")

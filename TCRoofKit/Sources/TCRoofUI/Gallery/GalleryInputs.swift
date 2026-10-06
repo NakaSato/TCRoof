@@ -67,6 +67,9 @@ struct GalleryInputs: View {
                 GalleryItem("Chip ตอบ \"ไม่ผ่าน\"") { TCChoiceChips(["ผ่าน", "ไม่ผ่าน"], selection: $pass, negative: ["ไม่ผ่าน"]) }
                 GalleryItem("Segmented") { TCSegmented(["10:00", "12:00", "14:00"], selection: $slot) }
                 GalleryItem("แท็บแคปซูล") { TCCapsuleTabs(["7 วัน", "30 วัน", "ทั้งหมด"], selection: $window) }
+                GalleryItem("Segmented · ตัวกรอง iPhone", note: "สูง 44 · ราง r10 · ช่องเลือก r8") {
+                    TCSegmented(["7 วัน", "30 วัน", "ทั้งหมด"], selection: $window, fontSize: 14, style: .filter)
+                }
             }
             GalleryGrid {
                 GalleryItem("เช็กบ็อกซ์") {

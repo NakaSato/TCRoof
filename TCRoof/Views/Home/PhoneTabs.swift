@@ -72,6 +72,8 @@ struct PhoneTabs<HomeRoot: View>: View {
             .safeAreaInset(edge: .bottom, spacing: PhoneTab.barGap) {
                 TCTabBar(items: items, selection: Binding(get: { tab }, set: select))
             }
+            // the bar stays docked behind the keyboard instead of riding up on it (survey list search)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
     }
 

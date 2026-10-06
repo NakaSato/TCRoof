@@ -58,15 +58,16 @@ struct TCRoofApp: App {
 struct RootView: View {
     @Environment(\.modelContext) private var context
     @Environment(GoogleSession.self) private var session
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
-        NavigationStack {
-            HomeView()
-            #if DEBUG
-                .navigationDestination(isPresented: .constant(DebugScreen.isKnown)) {
-                    DebugScreen()
-                }
-            #endif
+        Group {
+            // iPhone: tabs under the floating bar; iPad: one stack from the home
+            if sizeClass == .compact {
+                PhoneTabs { home }
+            } else {
+                NavigationStack { home }
+            }
         }
         .systemNotifications(survey: session.survey)
         .task {
@@ -85,6 +86,15 @@ struct RootView: View {
             NotificationService.shared.syncNow = { survey.cloudPush?() }
             if NotificationService.shared.takePendingSyncNow() { survey.cloudPush?() }
         }
+    }
+
+    private var home: some View {
+        HomeView()
+        #if DEBUG
+            .navigationDestination(isPresented: .constant(DebugScreen.isKnown)) {
+                DebugScreen()
+            }
+        #endif
     }
 }
 

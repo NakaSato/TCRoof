@@ -42,6 +42,8 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
+- `-screen home -homeDemo YES` opens the home with sample appointments; `-homeBoard YES` lays the iPad home out at 1366 × 1024. On iPhone, `-homeTab survey|plan|install` opens with that tab selected; `-homeNotifications YES` / `-homeSettings YES` open those screens.
+- `-noNotificationPrompt YES` skips the notification permission prompt, for screenshots on a fresh install. A prompt already on screen survives a reinstall; reboot the simulator to clear it.
 - `-screen components` opens `ComponentGallery` (also in Settings › นักพัฒนา in DEBUG builds); add `-gallerySection 1…9` to show one board section of `docs/ui/components`.
 - `-surveyA2 layers|fullscreen|trafo|zero` opens A2's layers menu, full screen with the first placed building model selected, or the transformer / กันย้อน symbol's editor.
 - `-surveyAutofill fill|conflict` (with `-surveyPage site` or `electrical`) writes `docs/ui/a2-a3-autofill`'s A2 symbols and a placeholder site picture: `fill` links them into A3 / B4, `conflict` gives A3 a 500 kVA transformer first. Add `-surveyA2Panel YES` on A3 to open the `ดึงจากภาพ A2` panel.

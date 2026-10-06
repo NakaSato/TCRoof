@@ -16,6 +16,7 @@ struct PhoneNotificationsView: View {
     var large = false
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.homeInk) private var ink
     @State private var todoOnly = false
     /// Set when the sync row is tapped; once nothing waits, the row shows as "ซิงก์ครบแล้ว".
     @State private var syncedAt: Date?
@@ -97,7 +98,7 @@ struct PhoneNotificationsView: View {
             .foregroundStyle(on ? .white : Theme.navy)
             .padding(.horizontal, 14).frame(minHeight: 36)
             .background(on ? Theme.navy : Theme.surface, in: Capsule())
-            .overlay(Capsule().stroke(on ? .clear : Theme.borderSubtle))
+            .overlay(Capsule().stroke(on ? .clear : ink.border))
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
@@ -115,7 +116,7 @@ struct PhoneNotificationsView: View {
         let showSynced = syncedAt != nil && !items.contains { $0.kind == .syncPending }
         LazyVStack(spacing: 0) {
             if shown.isEmpty && !showSynced {
-                Text(todoOnly ? "ไม่มีงานที่ต้องทำ" : "ไม่มีการแจ้งเตือน").foregroundStyle(Theme.inkMuted)
+                Text(todoOnly ? "ไม่มีงานที่ต้องทำ" : "ไม่มีการแจ้งเตือน").foregroundStyle(ink.muted)
                     .frame(maxWidth: .infinity).padding(24)
             }
             if !today.isEmpty || showSynced {
@@ -135,7 +136,7 @@ struct PhoneNotificationsView: View {
     }
 
     private func groupHeader(_ title: String) -> some View {
-        Text(title).font(.sarabun(11.5, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+        Text(title).font(.sarabun(11.5, .bold, relativeTo: .caption)).foregroundStyle(ink.muted)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.vertical, 6)
             .background(Theme.phonePage)
@@ -206,6 +207,7 @@ private struct NotificationRowLabel: View {
     let hintColor: Color
     let unread: Bool
     let actionable: Bool
+    @Environment(\.homeInk) private var ink
 
     var body: some View {
         HStack(spacing: 10) {
@@ -216,14 +218,14 @@ private struct NotificationRowLabel: View {
                     Text(title).font(.sarabun(14, unread ? .heavy : .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                         .lineLimit(1)
                     Spacer(minLength: 4)
-                    Text(time).font(.sarabun(11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                    Text(time).font(.sarabun(11.5, relativeTo: .caption)).foregroundStyle(ink.muted).monospacedDigit()
                 }
-                Text(detail).font(.sarabun(12.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(detail).font(.sarabun(12.5, relativeTo: .caption)).foregroundStyle(ink.muted).lineLimit(1)
                 if let hint {
                     Text(hint).font(.sarabun(12.5, .bold, relativeTo: .caption)).foregroundStyle(hintColor).lineLimit(1)
                 }
             }
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
+            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(ink.chevron)
                 .opacity(actionable ? 1 : 0)
         }
         .padding(.leading, 20).padding(.trailing, 12).padding(.vertical, 8)

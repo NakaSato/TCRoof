@@ -105,6 +105,17 @@ public enum Theme {
     public static let warning = Color(hex: 0xF08C00)
     public static let warningSoft = Color(hex: 0xFFF1DE)
     public static let ringDone = Color(hex: 0x8FD16A)
+    // iPhone home v2, outdoor contrast (docs/ui/tcroof-home-iphone-v2); the iPad keeps the tokens above
+    /// `นัดวันนี้` card fill and the text of its white button.
+    public static let heroSolid = Color(light: 0x0E2747, dark: 0x123A66)
+    /// Progress of the hero card's ring.
+    public static let ringOutdoor = Color(hex: 0x9BE26E)
+    /// Secondary text in sun: module subtitles, notification details, settings labels.
+    public static let inkStrong = Color(light: 0x44546A, dark: 0xB4C3D6)
+    /// Unselected tab of `TCTabBar`, secondary icons and labels.
+    public static let inkTab = Color(light: 0x3E4C60, dark: 0xC2CFDF)
+    /// `TCTabBar`'s top line, module rows and card borders.
+    public static let borderOutdoor = Color(light: 0xC9D3E0, dark: 0x34465C)
     // iPad home board (docs/ui/tcroof-home-ipad)
     /// Hairline under the white header #E6EBF2.
     public static let headerLine = Color(hex: 0xE6EBF2)

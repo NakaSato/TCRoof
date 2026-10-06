@@ -165,6 +165,7 @@ public struct TCNavBar<Trailing: View>: View {
     var onBack: (() -> Void)?
     @ViewBuilder var trailing: Trailing
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isPresented) private var isPresented
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     public init(title: String, trail: [String], current: String, backLabel: String = "กลับหน้าหลัก",
@@ -175,8 +176,12 @@ public struct TCNavBar<Trailing: View>: View {
 
     public var body: some View {
         let compact = sizeClass == .compact
+        // a tab's root screen (iPhone floating tab bar) has nothing to go back to
+        let back = onBack != nil || isPresented
         HStack(spacing: 12) {
-            TCIconButton("chevron.left", accessibilityLabel: backLabel, bordered: !compact) { (onBack ?? { dismiss() })() }
+            if back {
+                TCIconButton("chevron.left", accessibilityLabel: backLabel, bordered: !compact) { (onBack ?? { dismiss() })() }
+            }
             VStack(alignment: .leading, spacing: 0) {
                 Text(title).font(.sarabun(compact ? 20 : TypeScale.pageTitle, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
                     .lineLimit(1).accessibilityAddTraits(.isHeader)
@@ -188,7 +193,8 @@ public struct TCNavBar<Trailing: View>: View {
             Spacer(minLength: 12)
             trailing
         }
-        .padding(.horizontal, compact ? 8 : 24).padding(.vertical, compact ? 4 : 12)
+        .padding(.leading, back ? (compact ? 8 : 24) : (compact ? 16 : 28)).padding(.trailing, compact ? 8 : 24)
+        .padding(.vertical, compact ? 4 : 12)
         .frame(minHeight: compact ? 52 : 72)
         .background(Theme.surface)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -267,6 +273,96 @@ public struct TCCardGrid<Content: View>: View {
         let compact = sizeClass == .compact
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: compact ? Space.m : Space.l, alignment: .top), count: compact ? 1 : columns),
                   spacing: compact ? Space.m : Space.l) { content }
+    }
+}
+
+/// One tab of `TCTabBar`. With `action` the tab runs it instead of becoming selected
+/// (the iPhone's `ตั้งค่า` opens the settings sheet).
+public struct TCTabItem<ID: Hashable>: Identifiable {
+    public let id: ID
+    public var title: String
+    /// SF Symbol name, or with `asset` the name of a template image in the main bundle (a board glyph with no matching symbol).
+    public var symbol: String
+    public var asset = false
+    /// Red count badge; hidden at 0.
+    public var badge: Int
+    /// VoiceOver label when it should say more than the title (`สำรวจ · นัดวันนี้ 2`).
+    public var accessibilityLabel: String?
+    public var action: (() -> Void)?
+
+    public init(_ id: ID, title: String, symbol: String, badge: Int = 0, accessibilityLabel: String? = nil, action: (() -> Void)? = nil) {
+        self.id = id; self.title = title; self.symbol = symbol; self.badge = badge
+        self.accessibilityLabel = accessibilityLabel; self.action = action
+    }
+
+    public init(_ id: ID, title: String, asset: String, badge: Int = 0, accessibilityLabel: String? = nil, action: (() -> Void)? = nil) {
+        self.init(id, title: title, symbol: asset, badge: badge, accessibilityLabel: accessibilityLabel, action: action)
+        self.asset = true
+    }
+}
+
+/// iPhone docked bottom tab bar (docs/ui/tcroof-home-iphone-v2): white, a 1 pt top line, padding 4 / 6,
+/// equal tabs at least 48 high with a 22 pt glyph in a 52 × 28 slot over a 10.5 pt label.
+/// The selected tab's glyph sits on a soft blue capsule. Attach it with `.safeAreaInset(edge: .bottom)`
+/// on the tab root screens only; the white runs on under the home indicator.
+public struct TCTabBar<ID: Hashable>: View {
+    let items: [TCTabItem<ID>]
+    @Binding var selection: ID
+
+    public init(items: [TCTabItem<ID>], selection: Binding<ID>) {
+        self.items = items; self._selection = selection
+    }
+
+    public var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items) { item in tab(item) }
+        }
+        .padding(.top, 4).padding(.horizontal, 6)
+        .background(Theme.surface.ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Rectangle().fill(Theme.borderOutdoor).frame(height: 1) }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("เมนูหลัก")
+    }
+
+    func tab(_ item: TCTabItem<ID>) -> some View {
+        let selected = item.action == nil && item.id == selection
+        return Button {
+            if let action = item.action { action() } else { selection = item.id }
+        } label: {
+            VStack(spacing: 2) {
+                glyph(item, selected: selected)
+                    .frame(width: 52, height: 28)
+                    .background { if selected { Capsule().fill(Theme.primarySoft) } }
+                    .overlay(alignment: .topTrailing) {
+                        if item.badge > 0 { badge(item.badge).padding(.trailing, 4).offset(y: -4) }
+                    }
+                Text(item.title).font(.sarabun(10.5, selected ? .heavy : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                    .frame(height: 13)
+            }
+            .foregroundStyle(selected ? Theme.primary : Theme.inkTab)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.accessibilityLabel ?? item.title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    @ViewBuilder func glyph(_ item: TCTabItem<ID>, selected: Bool) -> some View {
+        if item.asset {
+            Image(item.symbol).renderingMode(.template).resizable().frame(width: 22, height: 22)
+        } else {
+            Image(systemName: item.symbol).font(.system(size: 18, weight: selected ? .medium : .regular))
+        }
+    }
+
+    func badge(_ n: Int) -> some View {
+        Text("\(n)").font(.system(size: 10, weight: .heavy)).monospacedDigit().foregroundStyle(.white)
+            .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
+            .background(Theme.danger, in: Capsule())
+            .background(Capsule().fill(Theme.surface).padding(-2))
+            .fixedSize()
+            .accessibilityHidden(true)
     }
 }
 #endif

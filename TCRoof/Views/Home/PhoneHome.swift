@@ -10,8 +10,8 @@ struct OpenReportPage: Identifiable, Hashable {
     var start: MissingGroup.Target?
 }
 
-/// iPhone home (compact width, docs/ui/tcroof-home-iphone): brand header with the AI greeting,
-/// today's appointments as a pager, and one row per module, on one screen.
+/// iPhone home (compact width, docs/ui/tcroof-home-iphone-v2): logo and bell + avatar header,
+/// today's appointments as a pager, and one row per module, on one screen above `PhoneTabs`' tab bar.
 struct PhoneHome: View {
     let appointments: [TodayAppointment]
     let unread: Int
@@ -30,11 +30,12 @@ struct PhoneHome: View {
     var body: some View {
         GeometryReader { geo in
             ScrollView {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     AppointmentHero(size: .phone, appointments: appointments, page: $page, open: open, newSurvey: newSurvey)
                     moduleRows
                 }
-                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 16)
+                // the tab bar and `PhoneTab.barGap` are the bottom safe-area inset; the board leaves 11 pt above the bar
+                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 11 - PhoneTab.barGap)
                 .frame(minHeight: geo.size.height)
             }
             .scrollBounceBehavior(.basedOnSize)

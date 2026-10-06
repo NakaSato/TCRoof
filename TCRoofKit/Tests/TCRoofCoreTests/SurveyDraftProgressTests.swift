@@ -87,6 +87,15 @@ final class SurveyDraftProgressTests: XCTestCase {
         XCTAssertEqual(finished.tone, .complete)
     }
 
+    func testInstallWhenLabel() {
+        let l = { (d: Int, day: Int?, total: Int) in InstallWhen.label(daysToStart: d, day: day, total: total, start: "9 ต.ค. 69", end: "12 ต.ค. 69") }
+        XCTAssertEqual(l(-1, 2, 4), "กำลังติดตั้ง · วันที่ 2/4")
+        XCTAssertEqual(l(0, 1, 1), "เริ่มวันนี้ · 9 ต.ค. 69")
+        XCTAssertEqual(l(1, nil, 3), "เริ่มพรุ่งนี้ · 9 ต.ค. 69")
+        XCTAssertEqual(l(3, nil, 3), "เริ่มอีก 3 วัน · 9 ต.ค. 69")
+        XCTAssertEqual(l(-10, nil, 3), "ติดตั้งเสร็จ · 12 ต.ค. 69")
+    }
+
     func testRelativeDayLabel() {
         XCTAssertEqual(RelativeDay.label(days: -2, time: "14:00"), "2 วันที่แล้ว · 14:00 น.")
         XCTAssertEqual(RelativeDay.label(days: -1, time: "08:30"), "เมื่อวาน 08:30 น.")

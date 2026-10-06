@@ -6,7 +6,7 @@ import SurveyUI
 
 /// iPhone survey list (compact width, docs/ui/tcroof-survey-list-iphone): gradient header with the count,
 /// a segmented date filter, the search field with recent searches, and one compact card per job.
-/// The root of the `สำรวจ` tab; when it is pushed (from the home module row) the header shows a back chevron.
+/// The root of the `สำรวจ` tab; when it is pushed (from the home module row) `TCGradientHeader` shows a back chevron.
 struct PhoneSurveyList: View {
     @Query(sort: \Job.surveyDate) private var jobs: [Job]
     @State private var window: DateWindow = Self.debugWindow ?? .week
@@ -14,8 +14,6 @@ struct PhoneSurveyList: View {
     @State private var showNewJob = false
     @FocusState private var searching: Bool
     @AppStorage("surveyList.recentSearches") private var recentRaw = ""
-    @Environment(\.isPresented) private var isPresented
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
 
     private var query: String { search.trimmingCharacters(in: .whitespaces) }
@@ -98,38 +96,11 @@ struct PhoneSurveyList: View {
     // MARK: header
 
     private var header: some View {
-        HStack(spacing: 2) {
-            // a tab root has nothing to go back to; `หน้าหลัก` is in the tab bar
-            if isPresented {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 21, weight: .semibold))
-                        .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
+        TCGradientHeader(title: "สำรวจหน้างาน",
+                         subtitle: query.isEmpty ? "นัดสำรวจ \(filtered.count) งาน" : "ผลการค้นหา \(filtered.count) งาน") {
+            NavigationLink { SurveyHistoryView() } label: { TCHeaderIcon("clock") }
                 .buttonStyle(.plain)
-                .accessibilityLabel("กลับหน้าหลัก")
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                Text("สำรวจหน้างาน").font(.sarabun(19, .bold, relativeTo: .title3)).lineLimit(1)
-                    .accessibilityAddTraits(.isHeader)
-                Text(query.isEmpty ? "นัดสำรวจ \(filtered.count) งาน" : "ผลการค้นหา \(filtered.count) งาน")
-                    .font(.sarabun(13, relativeTo: .caption)).opacity(0.92).lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            NavigationLink { SurveyHistoryView() } label: {
-                Image(systemName: "clock").font(.system(size: 20, weight: .semibold))
-                    .frame(width: 44, height: 44)
-                    .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("ประวัติการสำรวจ")
-        }
-        .foregroundStyle(.white)
-        .padding(.leading, isPresented ? 6 : 16).padding(.trailing, 8)
-        .padding(.top, 6).padding(.bottom, 14)
-        .background {
-            UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous)
-                .fill(Theme.headerGradient)
-                .ignoresSafeArea(edges: .top)
+                .accessibilityLabel("ประวัติการสำรวจ")
         }
     }
 
@@ -148,36 +119,7 @@ struct PhoneSurveyList: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.inkMuted)
-                .accessibilityHidden(true)
-            TextField(text: $search) { Text("ค้นหาชื่อลูกค้า หรือรหัสโครงการ").foregroundStyle(Theme.inkMuted) }
-                .font(.sarabun(14, search.isEmpty ? .regular : .bold, relativeTo: .body)).foregroundStyle(Theme.navy)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-                .focused($searching)
-                .onSubmit { remember(search) }
-            if !search.isEmpty {
-                Button { search = "" } label: {
-                    Image(systemName: "xmark").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
-                        .frame(width: 32, height: 32).background(Theme.segmentTrack, in: Circle())
-                        .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("ล้างคำค้นหา")
-            }
-        }
-        .padding(.leading, 12).padding(.trailing, search.isEmpty ? 12 : 0)
-        .frame(height: 44)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        // the 2 pt border is drawn inside, so the text does not move when focused
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(searching ? Theme.primary : Theme.borderSubtle, lineWidth: searching ? 2 : 1)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { searching = true }
+        PhoneSearchField(text: $search, focused: $searching) { remember(search) }
     }
 
     private var recentChips: some View {

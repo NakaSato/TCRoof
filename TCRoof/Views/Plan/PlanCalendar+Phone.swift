@@ -61,7 +61,10 @@ extension PlanCalendarView {
     var phoneBody: some View {
         ScrollView {
             VStack(spacing: 10) {
-                phoneTitleRow
+                VStack(alignment: .leading, spacing: 0) {
+                    phoneTitleRow
+                    phoneCounts
+                }
                 phoneControls
                 phoneCalendarCard
                 phoneAgenda
@@ -159,6 +162,22 @@ extension PlanCalendarView {
     }
 
     // MARK: Title row and controls
+
+    /// `ติดตั้ง n งาน · สำรวจ n นัด` for the shown month, or the shown week in week view, team-filtered.
+    private var phoneCounts: some View {
+        let first: Date, last: Date
+        if phoneMode == .week {
+            let week = selectedWeek
+            (first, last) = (week[0], week[6])
+        } else {
+            (first, last) = (month, monthEnd)
+        }
+        let data = phoneData(from: first, to: last)
+        let surveys = data.surveys.values.reduce(0, +)
+        return Text("ติดตั้ง \(data.spans.count) งาน · สำรวจ \(surveys) นัด")
+            .font(.sarabun(13, relativeTo: .subheadline)).foregroundStyle(Theme.inkStrong)
+            .lineLimit(1)
+    }
 
     private var atToday: Bool {
         isToday(selected) && Calendar.current.isDate(month, equalTo: Self.today, toGranularity: .month)

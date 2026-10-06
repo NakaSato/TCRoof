@@ -164,7 +164,8 @@ private struct SurveyEditor: View {
                 }
             }
         }
-        .navigationTitle(form.isDraft ? "แบบสำรวจหน้างาน (ร่าง)" : "แก้ไขแบบสำรวจ")
+        // the phone's bar has room for the shorter title only
+        .navigationTitle(form.isDraft ? (isPhone ? "แบบสำรวจ (ร่าง)" : "แบบสำรวจหน้างาน (ร่าง)") : "แก้ไขแบบสำรวจ")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {

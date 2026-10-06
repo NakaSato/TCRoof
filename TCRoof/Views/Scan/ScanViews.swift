@@ -11,12 +11,18 @@ struct ScanJobListView: View {
     @State private var showPicker = false
     @State private var pendingJob: Job?
     @State private var scanJob: Job?
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var filtered: [Job] {
         jobs.filter { window.overlaps($0.installInterval) && $0.matches(search) }
     }
 
     var body: some View {
+        if sizeClass == .compact { PhoneScanList() } else { padList }
+    }
+
+    /// iPad; the phone has `PhoneScanList`.
+    private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 PageHeader(title: "สแกนอุปกรณ์", symbol: AppModule.scan.symbol) {
@@ -134,6 +140,8 @@ struct JobDevicesView: View {
             }
         }
         .navigationTitle("อุปกรณ์ที่ติดตั้ง")
+        // inline on the phone: the large title drew over the job line while collapsing
+        .navigationBarTitleDisplayMode(isPhone ? .inline : .automatic)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { showManual = true } label: { Label("พิมพ์ซีเรียล", systemImage: "keyboard") }

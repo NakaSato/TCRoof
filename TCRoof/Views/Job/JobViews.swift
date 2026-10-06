@@ -61,7 +61,7 @@ struct JobDetailView: View {
                     Text(job.code).font(.headline).foregroundStyle(Theme.muted)
                     TeamTag(team: job.team)
                 }
-                Text(job.projectName).font(isPhone ? .title.bold() : .largeTitle.bold()).foregroundStyle(Theme.navy)
+                Text(job.projectName).font(isPhone ? .title2.bold() : .largeTitle.bold()).foregroundStyle(Theme.navy)
                 let facts = isPhone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 20))
                 facts {
                     Label(job.capacityKW.kw, systemImage: "bolt.fill")

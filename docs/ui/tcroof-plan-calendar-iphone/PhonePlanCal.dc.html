@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แผนก่อสร้าง — ปฏิทินทีมติดตั้ง (iPhone)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+a{color:#1F6FB5}
+@keyframes svSpin{to{transform:rotate(360deg)}}@keyframes svDraw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}@keyframes svPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head" style="padding:6px 8px 14px 6px;border-bottom-left-radius:15px;border-bottom-right-radius:15px;gap:2px"><a href="PhoneMenu.dc.html" aria-label="กลับหน้าหลัก" style="width:44px;height:44px;flex:none;display:grid;place-items:center;text-decoration:none"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;flex:none;stroke:#fff;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width:0;flex:1"><div style="font-size:19px;line-height:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ปฏิทินทีมติดตั้ง</div><div style="font-size:13px;line-height:18px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">แผนก่อสร้างและเอกสาร</div></div><a href="PhonePlanList.dc.html" aria-label="รายการแผนก่อสร้าง" style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,0.16);text-decoration:none"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;flex:none;stroke:#fff;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></a></header><main style="flex-grow:1;overflow-y:auto;padding:0 16px 20px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:2px;padding-top:12px"><b style="flex:1;min-width:0;font-size:22px;color:#16325C;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{mName}} <span style="font-weight:500;color:#44546A">{{mYear}}</span></b><button onClick="{{goToday}}" style="height:44px;padding:0 10px;border:0;background:none;font-family:inherit;font-size:14px;font-weight:700;color:#1F6FB5;cursor:pointer;{{todaySt}}">วันนี้</button><button onClick="{{mPrev}}" aria-label="ก่อนหน้า" style="width:44px;height:44px;flex:none;border:0;border-radius:50%;background:none;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;flex:none;stroke:#16325C;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M15 5l-7 7 7 7"/></svg></button><button onClick="{{mNext}}" aria-label="ถัดไป" style="width:44px;height:44px;flex:none;border:0;border-radius:50%;background:none;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;flex:none;stroke:#16325C;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M9 5l7 7-7 7"/></svg></button></div><div style="position:relative;display:flex;align-items:center;gap:8px"><div role="tablist" style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;border-radius:12px;background:#EBEFF5;height:44px;box-sizing:border-box"><button role="tab" onClick="{{vMonth}}" style="border:0;font-family:inherit;cursor:pointer;border-radius:10px;font-size:14px;{{vMonthS}}">เดือน</button><button role="tab" onClick="{{vWeek}}" style="border:0;font-family:inherit;cursor:pointer;border-radius:10px;font-size:14px;{{vWeekS}}">สัปดาห์</button></div><button onClick="{{tTog}}" aria-label="กรองทีม {{tLbl}}" aria-expanded="{{tOpen}}" style="flex:none;height:44px;padding:0 10px 0 12px;display:flex;align-items:center;gap:6px;border-radius:12px;border:1px solid #D5DDE7;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer"><i style="width:10px;height:10px;border-radius:50%;{{tDot}}"></i>{{tLbl}}<svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;flex:none;stroke:#44546A;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9l6 6 6-6"/></svg></button><sc-if value="{{tOpen}}" hint-placeholder-val="{{false}}"><div role="listbox" aria-label="เลือกทีม" style="position:absolute;right:0;top:50px;z-index:20;width:170px;padding:6px;border-radius:14px;background:#fff;border:1px solid #D5DDE7;box-shadow:0 10px 28px rgba(22,50,92,0.18)"><sc-for list="{{teams}}" as="t" hint-placeholder-count="5"><button role="option" onClick="{{t.go}}" aria-label="{{t.aria}}" style="width:100%;height:44px;padding:0 10px;display:flex;align-items:center;gap:10px;border:0;border-radius:10px;font-family:inherit;font-size:14.5px;font-weight:600;color:#16325C;cursor:pointer;text-align:left;{{t.st}}"><i style="width:10px;height:10px;border-radius:50%;flex:none;{{t.dot}}"></i><span style="flex:1">{{t.t}}</span><sc-if value="{{t.on}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:#1F6FB5;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></sc-if></button></sc-for></div></sc-if></div><section aria-label="ปฏิทิน" style="background:#fff;border-radius:20px;padding:10px 8px 10px;display:flex;flex-direction:column"><sc-if value="{{isMonth}}" hint-placeholder-val="{{true}}"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding-bottom:6px"><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">อา</span><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">จ</span><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">อ</span><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">พ</span><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">พฤ</span><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">ศ</span><span style="text-align:center;font-size:11.5px;font-weight:600;color:#8A97AA">ส</span></div><div style="display:flex;flex-direction:column;gap:6px"><sc-for list="{{mRows}}" as="r" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:2px"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr))"><sc-for list="{{r.days}}" as="c" hint-placeholder-count="7"><button onClick="{{c.go}}" aria-label="{{c.aria}}" style="height:44px;padding:0;border:0;background:transparent;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:15.5px;font-weight:500;box-sizing:border-box;{{c.numSt}}">{{c.d}}</span><span style="display:flex;align-items:center;gap:3px;height:6px"><sc-for list="{{c.dots}}" as="b" hint-placeholder-count="2"><i style="width:6px;height:6px;border-radius:50%;{{b.st}}"></i></sc-for></span></button></sc-for></div><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:5px;row-gap:3px;min-height:5px"><sc-for list="{{r.bars}}" as="b" hint-placeholder-count="1"><span aria-label="{{b.t}}" style="min-width:0;margin:0 5px;height:5px;border-radius:3px;{{b.st}}"></span></sc-for></div></div></sc-for></div></sc-if><sc-if value="{{isWeek}}" hint-placeholder-val="{{false}}"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr))"><sc-for list="{{week}}" as="c" hint-placeholder-count="7"><button onClick="{{c.go}}" aria-label="{{c.aria}}" style="height:66px;padding:0;border:0;background:none;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="font-size:11.5px;font-weight:600;color:#8A97AA">{{c.wd}}</span><span style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:15.5px;font-weight:500;{{c.capSt}}">{{c.d}}</span><span style="display:flex;gap:3px;height:6px"><sc-for list="{{c.dots}}" as="b" hint-placeholder-count="2"><i style="width:6px;height:6px;border-radius:50%;{{b.st}}"></i></sc-for></span></button></sc-for></div><div style="display:flex;flex-direction:column;gap:2px;padding-top:2px"><sc-for list="{{wBars}}" as="w" hint-placeholder-count="2"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr))"><span style="min-width:0;margin:0 3px;height:20px;border-radius:5px;display:flex;align-items:center;padding:0 8px;text-overflow:ellipsis;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;{{w.st}}">{{w.t}}</span></div></sc-for></div></sc-if><div style="display:flex;align-items:center;justify-content:center;gap:10px;padding-top:8px;font-size:11.5px;font-weight:700;color:#6B7A90"><sc-for list="{{tLeg}}" as="l" hint-placeholder-count="4"><span style="display:flex;align-items:center;gap:4px"><i style="width:14px;height:5px;border-radius:3px;{{l.st}}"></i>{{l.t}}</span></sc-for><span style="display:flex;align-items:center;gap:4px"><i style="width:6px;height:6px;transform:rotate(45deg);border-radius:1px;background:#D6336C"></i>สำรวจ</span></div></section><section aria-label="รายการของวันที่เลือก" style="display:flex;flex-direction:column;gap:8px;padding:8px 0 4px"><div style="display:flex;align-items:baseline;gap:8px"><b style="flex:1;min-width:0;font-size:18px;color:#16325C;white-space:nowrap">{{dTitle}}</b><span style="flex:none;font-size:13px;color:#44546A">{{dSum}}</span></div><sc-for list="{{agenda}}" as="a" hint-placeholder-count="2"><a href="{{a.href}}" aria-label="{{a.aria}}" style="display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #D5DDE7;text-decoration:none;color:#16325C"><i style="width:4px;align-self:stretch;border-radius:2px;flex:none;{{a.rule}}"></i><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:19px"><b style="font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{a.name}}</b><span style="font-size:13px;color:#44546A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{a.kind}} · ทีม {{a.team}}</span><sc-if value="{{a.prog}}" hint-placeholder-val="{{false}}"><span style="display:flex;gap:3px;margin-top:5px"><sc-for list="{{a.segs}}" as="g" hint-placeholder-count="4"><i style="flex:1;height:4px;border-radius:2px;{{g.st}}"></i></sc-for></span></sc-if></span><span style="flex:none;display:flex;flex-direction:column;align-items:flex-end;line-height:1.2"><b style="font-size:15px;font-variant-numeric:tabular-nums">{{a.time}}</b><span style="font-size:12px;color:#44546A">{{a.tSub}}</span></span></a></sc-for><sc-if value="{{dEmpty}}" hint-placeholder-val="{{false}}"><div style="padding:20px 16px;border-radius:14px;border:1.5px dashed #D5DDE7;text-align:center;font-size:14px;color:#44546A">ไม่มีนัดในวันนี้</div></sc-if></section></main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TEAM = { TCR01: '#2E9E5B', TCR02: '#8B3FD9', TCR03: '#2F6FDB', TCR04: '#F08A24' };
+    const STATUS = { interested: ['ลูกค้าสนใจติดตั้ง', '#4DA3E0'], confirmed: ['ลูกค้ายืนยันติดตั้ง', '#27A99A'], installing: ['กำลังติดตั้ง', '#F08A24'], completed: ['ติดตั้งเสร็จสิ้น', '#2E9E5B'] };
+    // SampleData.swift seeds: [project, customer, phone, address, province, kW, team, status, surveyOffset, installOffset, days]
+    const SEEDS = [
+      ['คุณดารา ภัทรปรีดา', 'คุณดารา ภัทรปรีดา', '0812345678', '99/12 ซ.ลาดพร้าว 71 แขวงลาดพร้าว เขตลาดพร้าว', 'กรุงเทพมหานคร', 14.08, 'TCR01', 'installing', -14, -1, 4],
+      ['บริษัท คิดดี จำกัด', 'บริษัท คิดดี จำกัด', '038123456', '88 ม.3 ต.บ้านสวน อ.เมือง', 'ชลบุรี', 49.5, 'TCR02', 'confirmed', -10, 1, 5],
+      ['คุณนพพร วีระโชติ', 'คุณนพพร วีระโชติ', '0891112222', '12 ถ.งามวงศ์วาน ต.บางกระสอ อ.เมือง', 'นนทบุรี', 5.5, 'TCR03', 'interested', 0, 16, 2],
+      ['คุณรยา จุลพัฒน์', 'คุณรยา จุลพัฒน์', '0865554444', '45/8 ซ.สุขุมวิท 101 แขวงบางจาก เขตพระโขนง', 'กรุงเทพมหานคร', 10.23, 'TCR01', 'interested', 1, 20, 3],
+      ['โรงงานสยามแพ็คกิ้ง', 'บริษัท สยามแพ็คกิ้ง จำกัด', '025551234', '234 นิคมอุตสาหกรรมบางปู', 'สมุทรปราการ', 199.8, 'TCR04', 'confirmed', -21, 3, 12],
+      ['คุณสมศักดิ์ ใจดี', 'คุณสมศักดิ์ ใจดี', '0823334444', '7 ม.5 ต.คลองหนึ่ง อ.คลองหลวง', 'ปทุมธานี', 8.25, 'TCR03', 'confirmed', -5, 5, 2],
+      ['ร้านกาแฟบ้านสวน', 'คุณวิภาวรรณ ศรีสุข', '0847778888', '19 ถ.สุขุมวิท ต.เนินพระ อ.เมือง', 'ระยอง', 15.4, 'TCR02', 'interested', 3, 25, 3],
+      ['คุณปกรณ์ ศักดิ์สิทธิ์', 'คุณปกรณ์ ศักดิ์สิทธิ์', '0810009999', '301 ซ.รามอินทรา 40 แขวงนวลจันทร์ เขตบึงกุ่ม', 'กรุงเทพมหานคร', 6.6, 'TCR01', 'completed', -30, -12, 2],
+      ['หอพักกรีนเพลส', 'คุณอารีย์ มั่นคง', '0852221111', '55 ถ.พหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง', 'ปทุมธานี', 30.25, 'TCR04', 'interested', 5, 40, 4],
+      ['คุณธนา วงศ์ใหญ่', 'คุณธนา วงศ์ใหญ่', '0879990000', '8/3 ม.2 ต.บางพูด อ.ปากเกร็ด', 'นนทบุรี', 11.0, 'TCR02', 'confirmed', -8, 8, 3]
+    ];
+    const TODAY = new Date(2026, 8, 30);
+    const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    const TH_M = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    const thaiLong = d => d.getDate() + ' ' + TH_M[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+    const kw = v => (Math.round(v * 100) / 100).toLocaleString('en-US') + ' kW';
+    const plain = v => (Math.round(v * 100) / 100).toLocaleString('en-US');
+    const JOBS = SEEDS.map((s, i) => ({ i, code: 'TCR2569-' + (23401 + i), project: s[0], customer: s[1], phone: s[2], address: s[3], province: s[4], kw: s[5], team: s[6], status: s[7], survey: addD(TODAY, s[8]) }));
+    // Example survey forms (the app starts with none; values here are illustrative)
+    const SURVEYS = [
+      { job: 0, time: '09:20', roof: 'เมทัลชีท', area: 95, ori: 'ทิศใต้', tilt: 10, shade: 'ไม่มี', ok: true, util: 'กฟน.', ca: '010012345678', phase: '1 เฟส', meter: '15(45) A', brk: 63, tariff: 'อัตราปกติ', kwh: 1450, bill: 6800, ground: 'มี', rec: 14.08, notes: 'ติดตั้งแผงด้านทิศใต้ทั้งหมด', photos: [2, 1, 3, 2, 1, 1, 0] },
+      { job: 1, time: '10:05', roof: 'เมทัลชีท', area: 420, ori: 'ทิศตะวันตกเฉียงใต้', tilt: 5, shade: 'มีบางส่วน', ok: true, util: 'กฟภ.', ca: '020098765432', phase: '3 เฟส', meter: '30(100) A', brk: 250, tariff: 'TOU', kwh: 9200, bill: 41000, ground: 'มี', rec: 49.5, notes: '', photos: [1, 2, 4, 2, 1, 2, 1] },
+      { job: 4, time: '13:40', roof: 'เมทัลชีท', area: 1650, ori: 'ทิศใต้', tilt: 5, shade: 'ไม่มี', ok: true, util: 'กฟภ.', ca: '020011122233', phase: '3 เฟส', meter: 'CT 400/5 A', brk: 400, tariff: 'TOU', kwh: 52000, bill: 228000, ground: 'มี', rec: 199.8, notes: 'ต้องตรวจโครงหลังคาโกดัง 2 ก่อนติดตั้ง', photos: [2, 3, 6, 4, 2, 1, 3] },
+      { job: 5, time: '11:15', roof: 'กระเบื้องลอนคู่', area: 60, ori: 'ทิศตะวันออก', tilt: 20, shade: 'มีบางส่วน', ok: false, util: 'กฟภ.', ca: '020055566677', phase: '1 เฟส', meter: '15(45) A', brk: 50, tariff: 'อัตราปกติ', kwh: 980, bill: 4400, ground: 'ไม่แน่ใจ', rec: 8.25, notes: 'ต้องเสริมแปเหล็ก', photos: [1, 1, 2, 1, 0, 1, 0] },
+      { job: 7, time: '09:00', roof: 'กระเบื้องซีแพค', area: 48, ori: 'ทิศใต้', tilt: 25, shade: 'ไม่มี', ok: true, util: 'กฟน.', ca: '010033344455', phase: '1 เฟส', meter: '15(45) A', brk: 50, tariff: 'อัตราปกติ', kwh: 820, bill: 3700, ground: 'มี', rec: 6.6, notes: '', photos: [1, 1, 2, 1, 1, 0, 0] },
+      { job: 9, time: '14:30', roof: 'เมทัลชีท', area: 78, ori: 'ทิศตะวันตก', tilt: 8, shade: 'ไม่มี', ok: true, util: 'กฟภ.', ca: '020077788899', phase: '1 เฟส', meter: '30(100) A', brk: 63, tariff: 'อัตราปกติ', kwh: 1200, bill: 5400, ground: 'มี', rec: 11.0, notes: '', photos: [1, 1, 2, 1, 1, 1, 0] }
+    ];
+    const DRAFT_JOB = 2;
+    const PHOTO_TAGS = [['meter', 'มิเตอร์ไฟฟ้า', true], ['mdb', 'ตู้ไฟ / เมนเบรกเกอร์', true], ['roof', 'หลังคา (ภาพรวม)', true], ['structure', 'โครงหลังคา / แป', false], ['inverter', 'จุดติดตั้งอินเวอร์เตอร์', false], ['bill', 'บิลค่าไฟ', false], ['other', 'อื่น ๆ', false]];
+
+    const instOf = j => addD(TODAY, SEEDS[j.i][9]), daysOf = j => SEEDS[j.i][10];
+    const endOf = j => addD(instOf(j), daysOf(j) - 1);
+    const TH_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const short = d => d.getDate() + ' ' + TH_S[d.getMonth()] + ' ' + String(d.getFullYear() + 543).slice(2);
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const TIMES = { 0: '09:00', 1: '10:30', 2: '09:30', 3: '13:30', 4: '08:30', 5: '14:00', 6: '10:00', 7: '09:00', 8: '13:00', 9: '15:00' };
+    const pill = s => 'color:' + STATUS[s][1] + ';background:' + STATUS[s][1] + '1F';
+    const teamSt = t => 'color:#fff;background:' + TEAM[t];
+
+    const st = this.state || {}, tf = st.tf || 'all', mode = st.vm || 'month';
+    const sel = st.sel ? new Date(st.sel) : TODAY;
+    const vis = j => tf === 'all' || j.team === tf;
+    const inst = JOBS.filter(vis);
+    const mo = st.mo || 0, base = new Date(TODAY.getFullYear(), TODAY.getMonth() + mo, 1), monthEnd = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+    const v = {};
+    const dotsOf = d => { const ds = inst.filter(j => d >= instOf(j) && d <= endOf(j)).slice(0, 2).map(j => ({ st: 'background:' + TEAM[j.team] }));
+      if (JOBS.some(j => vis(j) && sameDay(j.survey, d))) ds.push({ st: 'border:2.5px solid #F08C00;box-sizing:border-box;background:#fff' }); return ds.slice(0, 3); };
+    const lane = {}, laneEnd = [];
+    inst.slice().sort((x, y) => instOf(x) - instOf(y)).forEach(j => { let L = laneEnd.findIndex(e => e < instOf(j)); if (L < 0) L = laneEnd.length; laneEnd[L] = endOf(j); lane[j.i] = L; });
+    const start = addD(base, -base.getDay()), rows = Math.ceil((base.getDay() + monthEnd.getDate()) / 7);
+    v.cells = Array.from({ length: rows * 7 }, (_, k) => { const d = addD(start, k), inM = d.getMonth() === base.getMonth(), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      const bars = [0, 1].map(L => inst.find(j => lane[j.i] === L && d >= instOf(j) && d <= endOf(j))).map(j => { if (!j) return { st: 'visibility:hidden' }; const f = sameDay(d, instOf(j)) || d.getDay() === 0, l = sameDay(d, endOf(j)) || d.getDay() === 6;
+        return { st: 'background:' + TEAM[j.team] + ';margin:0 ' + (l ? '5px' : '0') + ' 0 ' + (f ? '5px' : '0') + ';border-radius:' + (f ? '3px' : '0') + ' ' + (l ? '3px 3px' : '0 0') + ' ' + (f ? '3px' : '0') + (inM ? '' : ';opacity:.3') }; });
+      const sv = inM && JOBS.some(j => vis(j) && sameDay(j.survey, d));
+      return { d: d.getDate(), go: () => this.setState({ sel: d.getTime() }), bars, sv, aria: d.getDate() + ' ' + TH_M[d.getMonth()] + (isT ? ' วันนี้' : ''),
+        numSt: isT ? 'background:#16325C;color:#fff;font-weight:800' + (isSel ? ';box-shadow:0 0 0 2px #fff,0 0 0 4px #1F6FB5' : '')
+          : isSel ? 'border:2px solid #1F6FB5;color:#1F6FB5;font-weight:800;background:#E3EEF8'
+          : inM ? (d.getDay() === 0 ? 'color:#C2413A' : 'color:#16325C') : 'color:#AAB6C5;font-weight:500' }; });
+    // week view (week containing the selected day)
+    const ws = addD(sel, -sel.getDay()), WD = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+    v.week = Array.from({ length: 7 }, (_, k) => { const d = addD(ws, k), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      return { wd: WD[k], d: d.getDate(), go: () => this.setState({ sel: d.getTime() }), dots: dotsOf(d), aria: d.getDate() + ' ' + TH_M[d.getMonth()],
+        box: isT ? 'border:0;background:#16325C' : isSel ? 'border:2px solid #1F6FB5;background:#E3EEF8' : 'border:1px solid #C9D3E0;background:#fff',
+        wdSt: isT ? 'color:rgba(255,255,255,0.92)' : k === 0 ? 'color:#C2413A' : 'color:#44546A', dSt: isT ? 'color:#fff' : isSel ? 'color:#1F6FB5' : 'color:#16325C' }; });
+    const we = addD(ws, 6);
+    v.wBars = inst.filter(j => instOf(j) <= we && endOf(j) >= ws).map(j => { const a = Math.max(0, Math.round((instOf(j) - ws) / 864e5)), b = Math.min(6, Math.round((endOf(j) - ws) / 864e5));
+      return { t: (b - a < 2 ? j.team.slice(3) : j.team + ' · ' + j.project), st: 'grid-column:' + (a + 1) + ' / ' + (b + 2) + ';background:' + TEAM[j.team] }; });
+    v.isMonth = mode === 'month'; v.isWeek = mode === 'week';
+    const ON = 'background:#fff;box-shadow:0 1px 3px rgba(22,50,92,0.25);font-weight:800;color:#16325C', OFF = 'background:transparent;color:#44546A;font-weight:700';
+    v.vMonth = () => this.setState({ vm: 'month' }); v.vWeek = () => this.setState({ vm: 'week' }); v.vMonthS = v.isMonth ? ON : OFF; v.vWeekS = v.isWeek ? ON : OFF;
+    const step = s => mode === 'week' ? this.setState({ sel: addD(sel, 7 * s).getTime(), mo: (addD(sel, 7 * s).getFullYear() - TODAY.getFullYear()) * 12 + addD(sel, 7 * s).getMonth() - TODAY.getMonth() }) : this.setState({ mo: mo + s });
+    v.mPrev = () => step(-1); v.mNext = () => step(1); v.goToday = () => this.setState({ mo: 0, sel: TODAY.getTime() });
+    const showM = mode === 'week' ? sel : base;
+    v.mName = mode === 'week' ? (ws.getMonth() === we.getMonth() ? ws.getDate() + '–' + we.getDate() + ' ' + TH_S[we.getMonth()] : ws.getDate() + ' ' + TH_S[ws.getMonth()] + ' – ' + we.getDate() + ' ' + TH_S[we.getMonth()]) : TH_M[showM.getMonth()];
+    if (mode === 'week') { const wIn = j => instOf(j) <= we && endOf(j) >= ws; v.mSumW = 'ติดตั้ง ' + inst.filter(wIn).length + ' งาน · สำรวจ ' + JOBS.filter(j => vis(j) && j.survey >= ws && j.survey <= addD(we, 1)).length + ' นัด · สัปดาห์นี้'; }
+    v.mYear = mode === 'week' ? '' : String(showM.getFullYear() + 543);
+    const inMonth = j => instOf(j) <= monthEnd && endOf(j) >= base;
+    v.mSum = v.mSumW || 'ติดตั้ง ' + inst.filter(inMonth).length + ' งาน · สำรวจ ' + JOBS.filter(j => vis(j) && j.survey >= base && j.survey <= monthEnd).length + ' นัด';
+    const TON = 'border:0;background:#16325C;color:#fff', TOFF = 'border:1px solid #C9D3E0;background:#fff;color:#16325C';
+    v.teams = [['all', 'ทุกทีม']].concat(Object.keys(TEAM).map(t => [t, t.slice(3)])).map(([k, t]) => ({ t, go: () => this.setState({ tf: k }), st: tf === k ? TON : TOFF,
+      dot: k === 'all' ? 'display:none' : 'background:' + TEAM[k] + (tf === k ? ';box-shadow:0 0 0 2px #fff' : ''), aria: k === 'all' ? 'ทุกทีม' : 'ทีม ' + k }));
+    const ds = JOBS.filter(j => vis(j) && sameDay(j.survey, sel)), di = inst.filter(j => sel >= instOf(j) && sel <= endOf(j));
+    const WDL = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+    v.dWhen = (sameDay(sel, TODAY) ? 'วันนี้ · ' : sameDay(sel, addD(TODAY, 1)) ? 'พรุ่งนี้ · ' : '') + WDL[sel.getDay()];
+    v.dTitle = sel.getDate() + ' ' + TH_M[sel.getMonth()] + ' ' + (sel.getFullYear() + 543);
+    const nT = new Set(di.map(j => j.team)).size;
+    v.dSum = [ds.length ? 'สำรวจ ' + ds.length : '', di.length ? 'ติดตั้ง ' + di.length : '', nT ? nT + ' ทีม' : ''].filter(Boolean).join(' · ');
+    v.agenda = ds.map(j => ({ href: 'PhoneSurveyForm.dc.html', aria: 'นัดสำรวจ ' + j.project + ' ' + TIMES[j.i], kind: 'นัดสำรวจ', team: j.team, name: j.project, s: j.code + ' · ' + j.province,
+        isSv: true, prog: false, time: TIMES[j.i], tSub: 'น.', rule: 'background:#F08C00', pill: 'background:#FFF4E5;color:#B45309', segs: [], right: '' }))
+      .concat(di.map(j => { const n = Math.round((sel - instOf(j)) / 864e5) + 1, D = daysOf(j);
+        return { href: 'PhonePlanJob.dc.html', aria: 'งานติดตั้ง ' + j.project + ' วันที่ ' + n + ' จาก ' + D, kind: 'งานติดตั้ง', team: j.team, name: j.project, s: j.code + ' · ' + kw(j.kw) + ' · ' + j.province,
+          isSv: false, prog: true, time: 'ทั้งวัน', tSub: 'วันที่ ' + n + '/' + D, rule: 'background:' + TEAM[j.team], pill: 'background:' + TEAM[j.team] + '1F;color:' + TEAM[j.team],
+          segs: Array.from({ length: D }, (_, k) => ({ st: 'background:' + (k < n ? TEAM[j.team] : '#E6EBF2') })), right: 'เหลือ ' + (D - n) + ' วัน' }; }));
+    v.dEmpty = !ds.length && !di.length;
+
+    // v3 overrides: simpler day marks, team dropdown, quiet agenda
+    v.cells.forEach((c, k) => { const d = addD(start, k), inM = d.getMonth() === base.getMonth(), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      c.numSt = isSel ? 'background:#16325C;color:#fff;font-weight:700' : isT ? 'color:#1F6FB5;font-weight:800;box-shadow:inset 0 0 0 1.5px #1F6FB5'
+        : inM ? (d.getDay() === 0 ? 'color:#C2413A' : 'color:#16325C') : 'color:#B4BFCD;font-weight:400'; });
+    v.week.forEach((c, k) => { const d = addD(ws, k), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      c.dSt = isSel ? 'background:#16325C;color:#fff' : isT ? 'color:#1F6FB5;box-shadow:inset 0 0 0 1.5px #1F6FB5' : 'color:#16325C';
+      c.wdSt = k === 0 ? 'color:#C2413A' : 'color:#6B7A90'; });
+    v.wBars.forEach(w => { w.st = w.st.replace(/background:(#[0-9A-Fa-f]{6})/, 'background:$11F;color:$1;box-shadow:inset 3px 0 0 $1'); });
+    v.todaySt = sameDay(sel, TODAY) && mo === 0 ? 'opacity:.4' : '';
+    const tOpen = !!st.tOpen; v.tOpen = tOpen; v.tTog = () => this.setState({ tOpen: !tOpen });
+    v.tLbl = tf === 'all' ? 'ทุกทีม' : 'ทีม ' + tf.slice(3); v.tDot = tf === 'all' ? 'display:none' : 'background:' + TEAM[tf];
+    v.teams.forEach((t, k) => { const key = k === 0 ? 'all' : Object.keys(TEAM)[k - 1]; t.on = tf === key; t.t = k === 0 ? 'ทุกทีม' : 'ทีม ' + key.slice(3);
+      t.st = t.on ? 'background:#EEF3F9' : 'background:none'; t.go = () => this.setState({ tf: key, tOpen: false }); if (k === 0) t.dot = 'background:conic-gradient(#2E9E5B 0 25%,#7B4FD6 0 50%,#2F6FDB 0 75%,#F08C00 0)'; });
+    v.agenda.forEach(a => { a.rule = a.isSv ? 'background:#F08C00' : a.rule; if (a.prog) { a.time = a.tSub.replace('วันที่ ', 'วัน '); a.tSub = a.right; } else a.tSub = ''; });
+    v.agenda.forEach(a => { if (!a.prog) a.time = a.time + ' น.'; });
+
+    // v4: month rows with spanning labelled bars
+    const nick = j => j.project.replace(/^(คุณ|บริษัท)\s*/, '').split(' ')[0];
+    v.mRows = Array.from({ length: rows }, (_, r) => { const days = v.cells.slice(r * 7, r * 7 + 7), w0 = addD(start, r * 7), w6 = addD(w0, 6);
+      const bars = inst.filter(j => instOf(j) <= w6 && endOf(j) >= w0).map(j => { const a = Math.max(0, Math.round((instOf(j) - w0) / 864e5)), b = Math.min(6, Math.round((endOf(j) - w0) / 864e5)), c = TEAM[j.team];
+        const cont = instOf(j) < w0, more = endOf(j) > w6, fade = !inst.some(() => true) || (w6 < base || w0 > monthEnd);
+        return { t: (cont ? '‹ ' : '') + j.team.slice(3) + (b - a >= 1 ? ' · ' + nick(j) : ''), st: 'grid-column:' + (a + 1) + ' / ' + (b + 2) + ';grid-row:' + (lane[j.i] + 1) + ';background:' + c + '1F;color:' + c + ';box-shadow:inset ' + (cont ? '0' : '3px') + ' 0 0 ' + c
+          + (cont ? ';border-top-left-radius:0;border-bottom-left-radius:0;margin-left:0' : '') + (more ? ';border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0' : '') }; });
+      return { days, bars, has: bars.length > 0 }; });
+    v.mRows.forEach((r, ri) => r.days.forEach((c, k) => { const d = addD(start, ri * 7 + k); c.sv = d.getMonth() === base.getMonth() && JOBS.some(j => vis(j) && sameDay(j.survey, d)); }));
+
+    // v5: capsule day styling + solid capsule bars
+    const SELC = 'background:linear-gradient(160deg,#2A5A94,#16325C);color:#fff;font-weight:800;box-shadow:0 6px 14px rgba(22,50,92,0.32)';
+    v.mRows.forEach((r, ri) => r.days.forEach((c, k) => { const d = addD(start, ri * 7 + k), inM = d.getMonth() === base.getMonth(), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      c.numSt = isSel ? SELC : isT ? 'background:#E3EEF8;color:#1F6FB5;font-weight:800' : inM ? (d.getDay() === 0 ? 'color:#C2413A' : 'color:#16325C') : 'color:#B4BFCD;font-weight:400';
+      c.mark = c.sv ? 'background:' + (isSel ? '#FFB547' : '#F08C00') : 'visibility:hidden'; }));
+    v.mRows.forEach(r => r.bars.forEach(b => { b.st = b.st.replace(/background:(#[0-9A-Fa-f]{6})1F;color:#[0-9A-Fa-f]{6};box-shadow:inset (?:0|3px) 0 0 #[0-9A-Fa-f]{6}/, 'background:linear-gradient(90deg,$1,$1E6);color:#fff;box-shadow:0 2px 6px $155'); }));
+    v.week.forEach((c, k) => { const d = addD(ws, k), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      c.capSt = isSel ? SELC : isT ? 'background:#E3EEF8;color:#1F6FB5' : 'color:#16325C';
+      c.wdSt = isSel ? 'color:rgba(255,255,255,0.85)' : k === 0 ? 'color:#C2413A' : 'color:#6B7A90';
+      if (isSel) c.dots = c.dots.map(b => ({ st: b.st.replace('background:#fff', 'background:transparent') })); });
+    v.wBars.forEach(w => { const m = w.st.match(/color:(#[0-9A-Fa-f]{6})/); const c = m ? m[1] : '#1F6FB5'; w.st = w.st.replace(/background:#[0-9A-Fa-f]{6}1F;color:#[0-9A-Fa-f]{6};box-shadow:inset 3px 0 0 #[0-9A-Fa-f]{6}/, 'background:linear-gradient(90deg,' + c + ',' + c + 'E6);color:#fff;box-shadow:0 2px 6px ' + c + '55'); });
+
+    // v6 minimal: plain circles, hairline-tinted bars, no shadows
+    const team = h => (h.match(/#[0-9A-Fa-f]{6}/) || ['#1F6FB5'])[0];
+    v.mRows.forEach((r, ri) => { r.days.forEach((c, k) => { const d = addD(start, ri * 7 + k), inM = d.getMonth() === base.getMonth(), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+        c.numSt = isSel ? 'background:#16325C;color:#fff;font-weight:700' : isT ? 'color:#1F6FB5;font-weight:700' : inM ? 'color:#16325C' : 'color:#C3CBD6';
+        c.mark = c.sv ? 'background:' + (isSel ? '#fff' : '#F08C00') : 'visibility:hidden'; });
+      r.bars.forEach(b => { const c = team(b.st.split('background:')[1] || ''), keep = b.st.split(';').filter(x => /^(grid-|border-|margin-)/.test(x)).join(';');
+        b.st = keep + ';background:' + c + '17;color:' + c; }); });
+    v.week.forEach((c, k) => { const d = addD(ws, k), isSel = sameDay(d, sel), isT = sameDay(d, TODAY);
+      c.capSt = isSel ? 'background:#16325C;color:#fff;font-weight:700' : isT ? 'color:#1F6FB5;font-weight:700' : 'color:#16325C';
+      c.dots = c.dots.map(b => ({ st: /border/.test(b.st) ? 'background:#F08C00' : b.st })); });
+    v.wBars.forEach(w => { const c = team(w.st.split('linear-gradient(90deg,')[1] || w.st), g = (w.st.match(/grid-column:[^;]+/) || [''])[0];
+      w.st = g + ';background:' + c + '17;color:' + c; });
+
+    // v7: stronger team tints + solid left edge, pink diamond for surveys, team legend
+    const SV = '#D6336C';
+    const barSt = (keep, c, cont) => keep + ';background:' + c + '33;color:' + c + ';box-shadow:inset ' + (cont ? '0' : '4px') + ' 0 0 ' + c;
+    v.mRows.forEach((r, ri) => { r.days.forEach(c => { if (c.sv) c.mark = 'background:' + (/background:#16325C/.test(c.numSt) ? '#fff' : SV); });
+      r.bars.forEach(b => { const c = team(b.st.split('background:')[1] || ''), keep = b.st.split(';').filter(x => /^(grid-|border-|margin-)/.test(x)).join(';');
+        b.st = barSt(keep, c, /border-top-left-radius:0/.test(keep)); }); });
+    v.week.forEach(c => { c.dots = c.dots.map(b => ({ st: /F08C00/.test(b.st) ? 'background:' + SV + ';border-radius:1px;transform:rotate(45deg) scale(.85)' : b.st })); });
+    v.wBars.forEach(w => { const c = team(w.st.split('background:')[1] || ''), g = (w.st.match(/grid-column:[^;]+/) || [''])[0]; w.st = barSt(g, c, false); });
+    v.tLeg = Object.keys(TEAM).filter(k => tf === 'all' || tf === k).map(k => ({ t: k.slice(3), st: 'background:' + TEAM[k] + '33;box-shadow:inset 4px 0 0 ' + TEAM[k] }));
+    v.agenda.forEach(a => { if (a.isSv) a.rule = 'background:' + SV; });
+
+    // v8: month bars become solid 4px lines (no text); legend uses matching line swatches
+    v.mRows.forEach(r => r.bars.forEach(b => { const c = team(b.st.split('background:')[1] || ''), keep = b.st.split(';').filter(x => /^(grid-|border-|margin-)/.test(x)).join(';');
+      b.st = keep + ';background:' + c; b.t = 'ทีม ' + b.t.replace('‹ ', ''); }));
+    v.tLeg.forEach((l, k) => { const key = Object.keys(TEAM).filter(x => tf === 'all' || tf === x)[k]; l.st = 'background:' + TEAM[key]; });
+
+    // v9: dots per day (team dots for installs in progress, pink diamond for survey)
+    v.cells = v.mRows.reduce((a, r) => a.concat(r.days), []);
+    v.cells.forEach((c, k) => { const d = addD(start, k), inM = d.getMonth() === base.getMonth();
+      const ds = inst.filter(j => d >= instOf(j) && d <= endOf(j)).map(j => ({ st: 'background:' + TEAM[j.team] + (inM ? '' : ';opacity:.35') }));
+      if (inM && JOBS.some(j => vis(j) && sameDay(j.survey, d))) ds.push({ st: 'background:' + SV + ';border-radius:1px;transform:rotate(45deg) scale(.9)' });
+      c.dots = ds.slice(0, 4); });
+
+    // v10: day row keeps only the survey diamond; installs show as team-coloured range lines (one lane per job) under the week
+    v.cells.forEach(c => { c.dots = c.dots.filter(b => /rotate/.test(b.st)); });
+    v.mRows.forEach(r => r.bars.forEach(b => { b.t = b.t + ' · ช่วงติดตั้ง'; }));
+    return v;
+  }
+}
+</script>
+</body>
+</html>

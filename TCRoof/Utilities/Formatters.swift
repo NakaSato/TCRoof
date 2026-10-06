@@ -15,6 +15,10 @@ enum ThaiFormat {
     static let longTime = make("d MMMM yyyy HH:mm")
     static let short = make("d MMM yy")
     static let monthYear = make("MMMM yyyy")
+    /// "กันยายน"
+    static let month = make("MMMM")
+    /// "30 กันยายน"
+    static let dayMonthLong = make("d MMMM")
     static let year = make("yyyy")
     /// "30/9/2569"
     static let numericDate = make("d/M/yyyy")

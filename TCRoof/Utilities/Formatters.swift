@@ -69,6 +69,15 @@ enum DateWindow: Int, CaseIterable, Identifiable {
         }
     }
 
+    /// The iPhone segmented filter: `7 วัน`, `30 วัน`, `ทั้งหมด`.
+    var shortLabel: String {
+        switch self {
+        case .week: "7 วัน"
+        case .month: "30 วัน"
+        case .all: "ทั้งหมด"
+        }
+    }
+
     func overlaps(_ range: ClosedRange<Date>) -> Bool {
         guard self != .all else { return true }
         let start = Date().startOfDay

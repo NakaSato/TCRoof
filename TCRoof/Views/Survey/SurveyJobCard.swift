@@ -99,20 +99,12 @@ struct SurveyJobCard<Footer: View>: View {
             }
             HStack(spacing: 3) {
                 ForEach(p.segments.indices, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 3).fill(color(p.segments[i])).frame(height: 6)
+                    RoundedRectangle(cornerRadius: 3).fill(p.segments[i].color).frame(height: 6)
                 }
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
         .background(p.tone == .draft ? Theme.progressBox : Theme.progressBoxIdle, in: RoundedRectangle(cornerRadius: 10))
         .accessibilityHidden(true)
-    }
-
-    private func color(_ segment: SurveyCardProgress.Segment) -> Color {
-        switch segment {
-        case .done: Theme.stepDone
-        case .current: Theme.primary
-        case .todo: Theme.borderSubtle
-        }
     }
 }

@@ -36,6 +36,10 @@ public struct SurveyCardProgress: Equatable, Sendable {
 
     public let key: String
     public let value: String
+    /// The iPhone card's shorter pair (docs/ui/tcroof-survey-list-iphone): `ยังไม่เริ่ม · เริ่มสำรวจ`,
+    /// `ทำต่อ · ค่าไฟ`, `สำรวจครบ · ดูแบบสำรวจ` (`รอบันทึก` while a finished draft isn't saved).
+    public let shortKey: String
+    public let shortValue: String
     public let percent: Int
     public let tone: Tone
     public let segments: [Segment]
@@ -48,20 +52,24 @@ public struct SurveyCardProgress: Equatable, Sendable {
             if let cur = draft.current {
                 key = "ทำต่อ \(cur + 1)/\(titles.count)"
                 value = titles[cur]
+                shortKey = "ทำต่อ"; shortValue = titles[cur]
                 tone = .draft
                 segments = titles.indices.map { $0 == cur ? .current : draft.groups[$0] ? .done : .todo }
             } else {
                 // every required item filled, the draft just isn't saved yet
                 key = "สำรวจครบ"
                 value = "รอบันทึก"
+                shortKey = key; shortValue = value
                 tone = .complete
                 segments = titles.map { _ in .done }
             }
         } else if hasSaved {
             key = "สำรวจครบ"; value = "มีแบบสำรวจแล้ว"; percent = 100; tone = .complete
+            shortKey = key; shortValue = "ดูแบบสำรวจ"
             segments = titles.map { _ in .done }
         } else {
             key = "ยังไม่เริ่ม"; value = "เริ่มที่ \(titles[0])"; percent = 0; tone = .idle
+            shortKey = key; shortValue = "เริ่มสำรวจ"
             segments = titles.map { _ in .todo }
         }
     }

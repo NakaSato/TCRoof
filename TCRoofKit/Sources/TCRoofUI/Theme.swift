@@ -105,6 +105,9 @@ public enum Theme {
     public static let warning = Color(hex: 0xF08C00)
     public static let warningSoft = Color(hex: 0xFFF1DE)
     public static let ringDone = Color(hex: 0x8FD16A)
+    // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
+    /// `TCSegmented(.filter)` track and the search field's ✕ circle.
+    public static let segmentTrack = Color(light: 0xEEF2F7, dark: 0x1C2734)
     // iPhone home v2, outdoor contrast (docs/ui/tcroof-home-iphone-v2); the iPad keeps the tokens above
     /// `นัดวันนี้` card fill and the text of its white button.
     public static let heroSolid = Color(light: 0x0E2747, dark: 0x123A66)

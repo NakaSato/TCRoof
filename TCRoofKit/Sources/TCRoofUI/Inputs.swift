@@ -516,27 +516,34 @@ public struct TCChoiceChips: View {
 }
 
 /// Segmented control: grey track, the selected segment white and bold (`10:00 12:00 14:00`, `แปลน / 3 มิติ`).
+/// `.filter` is the iPhone list filter (`7 วัน / 30 วัน / ทั้งหมด`, docs/ui/tcroof-survey-list-iphone):
+/// 44 high, padding and gap 3, track r10, segment r8, regular 14 pt when not selected.
 public struct TCSegmented: View {
+    public enum Style { case standard, filter }
+
     let options: [String]
     @Binding var selection: String
     var fontSize: CGFloat
+    var style: Style
 
-    public init(_ options: [String], selection: Binding<String>, fontSize: CGFloat = 14.5) {
-        self.options = options; self._selection = selection; self.fontSize = fontSize
+    public init(_ options: [String], selection: Binding<String>, fontSize: CGFloat = 14.5, style: Style = .standard) {
+        self.options = options; self._selection = selection; self.fontSize = fontSize; self.style = style
     }
 
+    private var filter: Bool { style == .filter }
+
     public var body: some View {
-        HStack(spacing: Space.xs) {
+        HStack(spacing: filter ? 3 : Space.xs) {
             ForEach(options, id: \.self) { o in
                 let on = o == selection
                 Button { selection = o } label: {
-                    Text(o).font(.sarabun(fontSize, on ? .bold : .semibold, relativeTo: .body))
+                    Text(o).font(.sarabun(fontSize, on ? .bold : filter ? .regular : .semibold, relativeTo: .body))
                         .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .frame(maxWidth: .infinity, minHeight: filter ? 38 : 40)
                         .background {
                             if on {
-                                RoundedRectangle(cornerRadius: 9).fill(Theme.surface)
+                                RoundedRectangle(cornerRadius: filter ? 8 : 9).fill(Theme.surface)
                                     .shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1)
                             }
                         }
@@ -546,8 +553,8 @@ public struct TCSegmented: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
-        .padding(Space.xs)
-        .background(Theme.track, in: RoundedRectangle(cornerRadius: Radius.lg))
+        .padding(filter ? 3 : Space.xs)
+        .background(filter ? Theme.segmentTrack : Theme.track, in: RoundedRectangle(cornerRadius: filter ? 10 : Radius.lg))
         .animation(.easeOut(duration: 0.15), value: selection)
     }
 }

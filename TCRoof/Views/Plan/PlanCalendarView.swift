@@ -54,7 +54,7 @@ struct PlanCalendarView: View {
 
     // MARK: Data
 
-    private var monthEnd: Date { month.adding(months: 1).adding(days: -1) }
+    var monthEnd: Date { month.adding(months: 1).adding(days: -1) }
 
     func overlaps(_ job: Job, from start: Date, to end: Date) -> Bool {
         job.installStart.startOfDay <= end && job.installEnd >= start

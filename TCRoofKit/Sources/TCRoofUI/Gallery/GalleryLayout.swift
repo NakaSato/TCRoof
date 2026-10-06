@@ -73,6 +73,15 @@ struct GalleryLayout: View {
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
+        GalleryItem("แถบแท็บล่าง (iPhone)", note: "ชิดขอบล่าง · เส้นบน 1 · แท็บ ≥ 48 · เลือก = แคปซูล 52 × 28 สีฟ้าอ่อน · ป้ายแดงนับนัดวันนี้") {
+            GalleryTabBar()
+                // the board's 22 pt home-indicator inset
+                .padding(.bottom, 22)
+                .padding(.top, 28)
+                .background(alignment: .top) { Theme.phonePage.frame(height: 28) }
+                .framed()
+        }
+        .frame(maxWidth: 390, alignment: .leading)
         GalleryItem("โครงจอ 1 คอลัมน์", note: "ขอบ 16 · การ์ด r16 ห่าง 12 · เลื่อนในแนวตั้ง") {
             VStack(spacing: Space.m) {
                 slot("การ์ด 1", soft: true, height: 100)
@@ -92,6 +101,21 @@ struct GalleryLayout: View {
             .frame(height: height)
             .background(soft ? Theme.progressBox : Theme.background, in: RoundedRectangle(cornerRadius: Radius.md))
             .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.chevron, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+    }
+}
+
+/// The iPhone's five root tabs; `ตั้งค่า` is an action, so tapping it leaves the selection alone.
+private struct GalleryTabBar: View {
+    @State var selection = "home"
+
+    var body: some View {
+        TCTabBar(items: [
+            TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
+            TCTabItem("survey", title: "สำรวจ", symbol: "list.clipboard", badge: 2, accessibilityLabel: "สำรวจ · นัดวันนี้ 2"),
+            TCTabItem("plan", title: "แผนงาน", symbol: "calendar"),
+            TCTabItem("install", title: "ติดตั้ง", asset: "tab-install"),
+            TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
+        ], selection: $selection)
     }
 }
 

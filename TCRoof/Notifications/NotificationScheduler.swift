@@ -24,8 +24,11 @@ private struct NotificationScheduler: ViewModifier {
             .task {
                 let service = NotificationService.shared
                 #if DEBUG
-                // the component gallery's screenshots run on a fresh install; no permission prompt over them
-                if UserDefaults.standard.string(forKey: "screen") != "components" { await service.requestAuthorization() }
+                // the component gallery's screenshots run on a fresh install; no permission prompt over them,
+                // nor with `-noNotificationPrompt YES` (simulator screenshots of other screens)
+                if UserDefaults.standard.string(forKey: "screen") != "components", !UserDefaults.standard.bool(forKey: "noNotificationPrompt") {
+                    await service.requestAuthorization()
+                }
                 #else
                 await service.requestAuthorization()
                 #endif

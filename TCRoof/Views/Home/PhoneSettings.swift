@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// iPhone settings (docs/ui/tcroof-home-iphone states/06): grouped white cards on the page colour.
+/// iPhone settings (docs/ui/tcroof-home-iphone states/06, v2 colours via `homeInk`): grouped white cards on the page colour.
 struct PhoneSettingsList: View {
     @Binding var confirmLogout: Bool
     @Environment(GoogleSession.self) private var session
@@ -11,6 +11,7 @@ struct PhoneSettingsList: View {
     @State private var sync = CloudSync.shared
     @State private var notifications = NotificationService.shared
     @Environment(\.openURL) private var openURL
+    @Environment(\.homeInk) private var ink
     #if DEBUG
     @State private var showGallery = false
     #endif
@@ -21,22 +22,24 @@ struct PhoneSettingsList: View {
                 accountCard.padding(.top, 12)
                 section("ผู้ใช้งาน") {
                     HStack(spacing: 12) {
-                        Text("ชื่อที่แสดง").foregroundStyle(Theme.inkMuted)
+                        Text("ชื่อที่แสดง").foregroundStyle(ink.muted)
                         TextField("ชื่อที่แสดง", text: $userName)
                             .multilineTextAlignment(.trailing).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                             // typed by hand — stop replacing it with the account name
                             .onChange(of: userName) { GoogleSession.userNameEdited() }
                     }
                     .rowFrame()
-                    divider
-                    Toggle(isOn: $aiGreeting) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("คำทักทาย AI").foregroundStyle(Theme.navy)
-                            Text("ข้อความทักทายจาก AI ในเครื่อง บนหน้าหลัก").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                    if ink.greeting {
+                        divider
+                        Toggle(isOn: $aiGreeting) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text("คำทักทาย AI").foregroundStyle(Theme.navy)
+                                Text("ข้อความทักทายจาก AI ในเครื่อง บนหน้าหลัก").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
+                            }
                         }
+                        .tint(Theme.primary)
+                        .rowFrame()
                     }
-                    .tint(Theme.primary)
-                    .rowFrame()
                 }
                 notificationsSection
                 section("GOOGLE DRIVE") {
@@ -106,7 +109,7 @@ struct PhoneSettingsList: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("การแจ้งเตือนถูกปิดอยู่").foregroundStyle(Theme.danger)
-                        Text("แตะเพื่อเปิดในการตั้งค่าของ iPhone ›").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                        Text("แตะเพื่อเปิดในการตั้งค่าของ iPhone ›").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
                     }
                     .rowFrame()
                 }
@@ -134,7 +137,7 @@ struct PhoneSettingsList: View {
                 .frame(width: 48, height: 48).background(Theme.primary, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
                 Text(userName.isEmpty ? (session.email ?? "—") : userName).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text("วิศวกรสำรวจ").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text("วิศวกรสำรวจ").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted).lineLimit(1)
             }
             Spacer(minLength: 8)
             if sync.state == .synced {
@@ -144,22 +147,22 @@ struct PhoneSettingsList: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .card()
+        .card(ink.border)
         .accessibilityElement(children: .combine)
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.sarabun(12.5, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(12.5, .bold, relativeTo: .caption)).foregroundStyle(ink.muted)
                 .padding(.leading, 4).accessibilityAddTraits(.isHeader)
-            VStack(spacing: 0) { content() }.card()
+            VStack(spacing: 0) { content() }.card(ink.border)
         }
         .padding(.top, 18)
     }
 
     private func row(_ title: String, _ value: String) -> some View {
         HStack(spacing: 12) {
-            Text(title).foregroundStyle(Theme.inkMuted)
+            Text(title).foregroundStyle(ink.muted)
             Spacer(minLength: 8)
             Text(value).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1).truncationMode(.middle)
         }
@@ -192,8 +195,8 @@ private extension View {
             .contentShape(Rectangle())
     }
 
-    func card() -> some View {
+    func card(_ border: Color) -> some View {
         background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.borderSubtle))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(border))
     }
 }

@@ -103,11 +103,13 @@ struct HomeView: View {
         }
         .font(.sarabun(17))
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showSettings) { SettingsView().presentationDetents([.large]).formSheetSizing() }
+        .sheet(isPresented: $showSettings) {
+            SettingsView().presentationDetents([.large]).formSheetSizing().environment(\.homeInk, sizeClass == .compact ? .outdoor : .standard)
+        }
         .sheet(isPresented: $showNewJob) { NewJobView() }
         // iPad shows them in the bell's popover
         .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
-            notificationsView(large: false)
+            notificationsView(large: false).environment(\.homeInk, .outdoor)
         }
         .navigationDestination(item: $openReport) { SurveyReportEditor(jobID: $0.id, start: $0.start) }
         .navigationDestination(item: $installLogs) { JobInstallLogsView(job: $0) }

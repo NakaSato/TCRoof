@@ -3,7 +3,8 @@ import TCRoofUI
 import TCRoofCore
 import SurveyUI
 
-/// Sizes of the pieces the iPhone and iPad homes share (docs/ui/tcroof-home-iphone, docs/ui/tcroof-home-ipad).
+/// Sizes of the pieces the iPhone and iPad homes share (docs/ui/tcroof-home-iphone-v2, docs/ui/tcroof-home-ipad).
+/// The iPhone follows the v2 outdoor-contrast board; every v2 change is phone only, so the iPad looks as before.
 struct HomeSize {
     // header
     var logo: CGFloat
@@ -42,7 +43,7 @@ struct HomeSize {
     var chevron: CGFloat
 
     static let phone = HomeSize(
-        logo: 40, logoRadius: 10, headerRadius: 18, greeting: 14, greetingLines: 2, roundButton: 44, bellGlyph: 19, initials: 15,
+        logo: 44, logoRadius: 12, headerRadius: 2, greeting: 14, greetingLines: 2, roundButton: 44, bellGlyph: 20, initials: 13.5,
         heroRadius: 20, heroPadding: EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14), heroGap: 11, heroLabel: 12.5,
         ring: 56, ringStroke: 5, ringText: 13, time: 24, kind: 12.5, name: 15, place: 12.5, action: 46, actionRadius: 12, actionText: 15,
         rowRadius: 16, rowGap: 12, rowPadding: (12, 10), tile: 42, tileRadius: 12, tileGlyph: 19, title: 15, subtitle: 12, chip: 11, chevron: 14)
@@ -56,6 +57,25 @@ struct HomeSize {
     var isPad: Bool { greetingLines == 1 }
 }
 
+/// How the home's notifications and settings look: v2 outdoor contrast on iPhone,
+/// v1 everywhere else (the iPad popover and form sheet).
+struct HomeInk {
+    /// iPhone v2: the header has no greeting, so settings hides its `คำทักทาย AI` toggle.
+    var greeting: Bool
+    /// Details, times, group titles, settings labels.
+    var muted: Color
+    var chevron: Color
+    /// 1 pt card and chip borders.
+    var border: Color
+
+    static let standard = HomeInk(greeting: true, muted: Theme.inkMuted, chevron: Theme.chevron, border: Theme.borderSubtle)
+    static let outdoor = HomeInk(greeting: false, muted: Theme.inkStrong, chevron: Theme.muted, border: Theme.borderOutdoor)
+}
+
+extension EnvironmentValues {
+    @Entry var homeInk: HomeInk = .standard
+}
+
 /// "WC" from "wit.chanthawat", or the first letters of the first two words of the name.
 func userInitials(_ name: String, email: String?) -> String {
     let source = name.trimmingCharacters(in: .whitespaces).isEmpty ? (email?.split(separator: "@").first.map(String.init) ?? "") : name
@@ -66,7 +86,7 @@ func userInitials(_ name: String, email: String?) -> String {
 
 // MARK: - Header
 
-/// App icon, the AI greeting (with the date under it on iPad), bell and account avatar.
+/// App icon, the AI greeting with the date under it (iPad only), bell and account avatar.
 /// On iPad the bell carries the notifications popover; on iPhone the caller presents them full screen.
 struct HomeBrandHeader<Popover: View>: View {
     let size: HomeSize
@@ -82,7 +102,16 @@ struct HomeBrandHeader<Popover: View>: View {
     @AppStorage("home.greetingDay") private var greetingDay = ""
 
     var body: some View {
-        HStack(spacing: size.isPad ? 16 : 10) {
+        if size.isPad {
+            padRow.task(id: aiGreeting) { await refresh(force: false) }
+        } else {
+            // the v2 phone header has no greeting
+            phoneRow
+        }
+    }
+
+    private var padRow: some View {
+        HStack(spacing: 16) {
             Image("AppLogo").resizable().frame(width: size.logo, height: size.logo)
                 .clipShape(RoundedRectangle(cornerRadius: size.logoRadius, style: .continuous))
                 .accessibilityHidden(true)
@@ -95,16 +124,46 @@ struct HomeBrandHeader<Popover: View>: View {
             .buttonStyle(.plain)
             .accessibilityLabel("ตั้งค่าและบัญชี")
         }
-        .padding(.horizontal, size.isPad ? 32 : 16)
-        .padding(.top, size.isPad ? 18 : 4).padding(.bottom, size.isPad ? 16 : 10)
+        .padding(.horizontal, 32)
+        .padding(.top, 18).padding(.bottom, 16)
         .background {
             let shape = UnevenRoundedRectangle(bottomLeadingRadius: size.headerRadius, bottomTrailingRadius: size.headerRadius, style: .continuous)
             shape.fill(Theme.surface)
-                .overlay { if size.isPad { shape.stroke(Theme.headerLine) } }
+                .overlay { shape.stroke(Theme.headerLine) }
                 .shadow(color: Theme.navy.opacity(0.05), radius: 4, y: 2)
                 .ignoresSafeArea(edges: .top)
         }
-        .task(id: aiGreeting) { await refresh(force: false) }
+    }
+
+    /// v2: no text, just the logo and the bell and avatar in one capsule; nearly square, borderless bar.
+    private var phoneRow: some View {
+        HStack(spacing: 10) {
+            Image("AppLogo").resizable().frame(width: size.logo, height: size.logo)
+                .clipShape(RoundedRectangle(cornerRadius: size.logoRadius, style: .continuous))
+                .accessibilityLabel(Text(verbatim: "TC Renewable"))
+            Spacer(minLength: 0)
+            HStack(spacing: 0) {
+                bell
+                Button(action: openSettings) {
+                    Text(initials).font(.sarabun(size.initials, .heavy)).foregroundStyle(.white)
+                        .frame(width: 36, height: 36).background(Theme.navy, in: Circle())
+                        .frame(width: size.roundButton, height: size.roundButton).contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ตั้งค่าและบัญชี")
+            }
+            .padding(.horizontal, 2)
+            .frame(height: 48)
+            .background(Theme.phonePage, in: Capsule())
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 2).padding(.bottom, 12)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: size.headerRadius, bottomTrailingRadius: size.headerRadius, style: .continuous)
+                .fill(Theme.surface)
+                .shadow(color: Theme.navy.opacity(0.06), radius: 5, y: 2)
+                .ignoresSafeArea(edges: .top)
+        }
     }
 
     private var line: String {
@@ -131,22 +190,33 @@ struct HomeBrandHeader<Popover: View>: View {
         .accessibilityValue(aiGreeting ? greeting : "")
     }
 
+    /// iPad: a filled circle with the popover. iPhone: a plain 44 pt target in the capsule, blue while the notifications are open.
     private var bell: some View {
-        let active = size.isPad && notificationsShown
+        let active = notificationsShown
         return Button { notificationsShown.toggle() } label: {
-            Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .semibold)).foregroundStyle(Theme.navy)
-                .frame(width: size.roundButton, height: size.roundButton)
-                .background(active ? Theme.primarySoft : Theme.hairline, in: Circle())
-                .overlay { if active { Circle().strokeBorder(Theme.primary, lineWidth: 2) } }
-                .overlay(alignment: .topTrailing) {
-                    if unread > 0 {
-                        Text("\(unread)").font(.sarabun(12, .bold)).monospacedDigit().foregroundStyle(.white)
-                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
-                            .background(Theme.danger, in: Capsule())
-                            .overlay(Capsule().stroke(.white, lineWidth: 2))
-                            .offset(x: 4, y: -4)
-                    }
+            Group {
+                if size.isPad {
+                    Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .semibold)).foregroundStyle(Theme.navy)
+                        .frame(width: size.roundButton, height: size.roundButton)
+                        .background(active ? Theme.primarySoft : Theme.hairline, in: Circle())
+                        .overlay { if active { Circle().strokeBorder(Theme.primary, lineWidth: 2) } }
+                } else {
+                    Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .semibold)).foregroundStyle(Theme.navy)
+                        .frame(width: size.roundButton, height: size.roundButton)
+                        .background { if active { Circle().fill(Theme.primarySoft) } }
+                        .overlay { if active { Circle().strokeBorder(Theme.primary, lineWidth: 2) } }
+                        .contentShape(Circle())
                 }
+            }
+            .overlay(alignment: .topTrailing) {
+                if unread > 0 {
+                    Text("\(unread)").font(.sarabun(12, .bold)).monospacedDigit().foregroundStyle(.white)
+                        .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
+                        .background(Theme.danger, in: Capsule())
+                        .overlay(Capsule().stroke(.white, lineWidth: 2))
+                        .offset(x: size.isPad ? 4 : 0, y: size.isPad ? -4 : 2)
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel("การแจ้งเตือน")
@@ -208,7 +278,7 @@ struct ModuleRow: View {
                     }
                 }
                 .font(.sarabun(size.title, .bold, relativeTo: size.isPad ? .title3 : .subheadline)).foregroundStyle(Theme.navy)
-                Text(module.shortSubtitle).font(.sarabun(size.subtitle, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                Text(module.shortSubtitle).font(.sarabun(size.subtitle, relativeTo: .caption)).foregroundStyle(size.isPad ? Theme.inkMuted : Theme.inkStrong)
                     .lineLimit(1).truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -218,12 +288,12 @@ struct ModuleRow: View {
                     .background(Theme.primarySoft, in: Capsule())
                     .fixedSize()
             }
-            Image(systemName: "chevron.right").font(.system(size: size.chevron, weight: .semibold)).foregroundStyle(Theme.chevron)
+            Image(systemName: "chevron.right").font(.system(size: size.chevron, weight: .semibold)).foregroundStyle(size.isPad ? Theme.chevron : Theme.muted)
         }
         .padding(.leading, size.rowPadding.leading).padding(.trailing, size.rowPadding.trailing).padding(.vertical, 6)
         .frame(maxWidth: .infinity, minHeight: size.isPad ? 72 : 60, maxHeight: .infinity)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous).stroke(Theme.borderSubtle))
+        .overlay(RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous).stroke(size.isPad ? Theme.borderSubtle : Theme.borderOutdoor))
         .shadow(color: Theme.navy.opacity(0.05), radius: 3, y: 2)
         .contentShape(RoundedRectangle(cornerRadius: size.rowRadius, style: .continuous))
         .accessibilityElement(children: .combine)
@@ -260,8 +330,8 @@ struct AppointmentHero: View {
         }
         .foregroundStyle(.white)
         .padding(size.heroPadding)
-        .background(Theme.heroGradient, in: RoundedRectangle(cornerRadius: size.heroRadius, style: .continuous))
-        .shadow(color: Theme.navy.opacity(0.25), radius: size.isPad ? 11 : 9, y: size.isPad ? 10 : 8)
+        .background { heroFill }
+        .shadow(color: size.isPad ? Theme.navy.opacity(0.25) : Theme.heroSolid.opacity(0.28), radius: size.isPad ? 11 : 9, y: size.isPad ? 10 : 8)
         .contentShape(Rectangle())
         .simultaneousGesture(DragGesture(minimumDistance: 20).onEnded { v in
             guard abs(v.translation.width) > abs(v.translation.height) else { return }
@@ -271,9 +341,18 @@ struct AppointmentHero: View {
         .callDialog($calling, open: open)
     }
 
+    /// iPad: the blue gradient. iPhone v2: solid navy, readable in sun.
+    @ViewBuilder private var heroFill: some View {
+        let shape = RoundedRectangle(cornerRadius: size.heroRadius, style: .continuous)
+        if size.isPad { shape.fill(Theme.heroGradient) } else { shape.fill(Theme.heroSolid) }
+    }
+
+    /// Secondary text on the card: 85 % on iPad, 95 % on iPhone v2.
+    private var labelOpacity: Double { size.isPad ? 0.85 : 0.95 }
+
     private var topRow: some View {
         HStack(spacing: size.isPad ? 8 : 6) {
-            Text("นัดวันนี้").font(.sarabun(size.heroLabel, .bold, relativeTo: .caption)).opacity(0.85)
+            Text("นัดวันนี้").font(.sarabun(size.heroLabel, .bold, relativeTo: .caption)).opacity(labelOpacity)
             if appointments.count > 1 {
                 HStack(spacing: 4) {
                     ForEach(appointments.indices, id: \.self) { i in
@@ -285,7 +364,7 @@ struct AppointmentHero: View {
             }
             Spacer(minLength: 4)
             Text(ThaiFormat.weekdayShort.string(from: .now) + (appointments.isEmpty ? "" : " · \(page + 1)/\(appointments.count)"))
-                .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(0.85).lineLimit(1)
+                .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(labelOpacity).lineLimit(1)
             if appointments.count > 1 {
                 pagerButton("chevron.left", label: "นัดก่อนหน้า", enabled: page > 0) { go(-1) }
                 pagerButton("chevron.right", label: "นัดถัดไป", enabled: page < appointments.count - 1) { go(1) }
@@ -312,7 +391,7 @@ struct AppointmentHero: View {
     }
 
     private func actions(_ a: TodayAppointment) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: size.isPad ? 10 : 8) {
             Button { open(a, a.nextStep?.page) } label: { primaryLabel(a.actionTitle) }
                 .buttonStyle(.plain)
             if let c = a.coordinate {
@@ -325,7 +404,8 @@ struct AppointmentHero: View {
     }
 
     private func primaryLabel(_ title: String) -> some View {
-        Text(title).font(.sarabun(size.actionText, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
+        Text(title).font(.sarabun(size.actionText, size.isPad ? .bold : .heavy, relativeTo: .subheadline))
+            .foregroundStyle(size.isPad ? Theme.navy : Theme.heroSolid)
             .lineLimit(1).minimumScaleFactor(0.8)
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, minHeight: size.action)
@@ -335,9 +415,18 @@ struct AppointmentHero: View {
 
     private func iconButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: size.isPad ? 21 : 18, weight: .semibold))
-                .frame(width: size.isPad ? 56 : 44, height: size.action)
-                .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
+            let shape = RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous)
+            if size.isPad {
+                Image(systemName: symbol).font(.system(size: 21, weight: .semibold))
+                    .frame(width: 56, height: size.action)
+                    .background(.white.opacity(0.16), in: shape)
+            } else {
+                // v2: 44 × 44, white 20 % with a white 35 % border
+                Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(0.2), in: shape)
+                    .overlay(shape.strokeBorder(.white.opacity(0.35)))
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -388,12 +477,12 @@ private struct AppointmentBody: View {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: size.isPad ? 10 : 8) {
                     Text(appointment.time).font(.sarabun(size.time, .bold, relativeTo: .title2)).monospacedDigit()
-                    Text("นัดสำรวจ · \(appointment.countdown)").font(.sarabun(size.kind, relativeTo: .caption)).opacity(0.9).lineLimit(1)
+                    Text("นัดสำรวจ · \(appointment.countdown)").font(.sarabun(size.kind, relativeTo: .caption)).opacity(size.isPad ? 0.9 : 0.95).lineLimit(1)
                 }
                 Text(appointment.name).font(.sarabun(size.name, .bold, relativeTo: .subheadline)).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 if !appointment.place.isEmpty {
-                    Text(appointment.place).font(.sarabun(size.place, relativeTo: .caption)).opacity(0.8).lineLimit(1)
+                    Text(appointment.place).font(.sarabun(size.place, relativeTo: .caption)).opacity(size.isPad ? 0.8 : 0.92).lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -409,9 +498,9 @@ private struct ProgressRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(.white.opacity(0.22), lineWidth: size.ringStroke)
+            Circle().stroke(.white.opacity(size.isPad ? 0.22 : 0.28), lineWidth: size.ringStroke)
             Circle().trim(from: 0, to: fraction)
-                .stroke(Theme.ringDone, style: StrokeStyle(lineWidth: size.ringStroke, lineCap: .round))
+                .stroke(size.isPad ? Theme.ringDone : Theme.ringOutdoor, style: StrokeStyle(lineWidth: size.ringStroke, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text("\(percent)%").font(.sarabun(size.ringText, .bold, relativeTo: .caption)).monospacedDigit()
         }

@@ -254,8 +254,10 @@ final class CloudSync {
 
     // MARK: pull
 
+    /// The listeners take metadata changes too: when the cache already matches the server, the only event
+    /// after the first (cached) snapshot is `isFromCache` turning false, and without it the state stays `.connecting`.
     private func listen<M: CloudSynced>(_ type: M.Type) {
-        let registration = db.collection(M.collection).addSnapshotListener { [weak self] snapshot, error in
+        let registration = db.collection(M.collection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error { return self.failed(error) }
@@ -319,7 +321,7 @@ final class CloudSync {
     }
 
     private func listenSurveys() {
-        let registration = db.collection(Self.surveyCollection).addSnapshotListener { [weak self] snapshot, error in
+        let registration = db.collection(Self.surveyCollection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self, let survey = self.survey else { return }
                 if let error { return self.failed(error) }

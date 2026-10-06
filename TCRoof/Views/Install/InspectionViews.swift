@@ -68,7 +68,8 @@ struct InspectionView: View {
             }
             .accessibilityLabel("ปิด")
             VStack(alignment: .leading, spacing: 2) {
-                Text("ใบตรวจรับงานติดตั้งระบบโซลาร์รูฟ").font(.title3.bold())
+                // one line, scaled down on the phone rather than broken mid-word
+                Text("ใบตรวจรับงานติดตั้งระบบโซลาร์รูฟ").font(.title3.bold()).lineLimit(1).minimumScaleFactor(0.7)
                 Text("\(job.code) · \(job.projectName)").font(.subheadline)
             }
             .foregroundStyle(.white)

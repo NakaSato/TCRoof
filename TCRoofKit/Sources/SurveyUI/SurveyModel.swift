@@ -38,8 +38,9 @@ public final class SurveyModel {
     @ObservationIgnored var uploadWait: [UUID: Task<Void, Never>] = [:]
     /// Jobs whose photo upload waits for the battery (`PowerMonitor`).
     @ObservationIgnored var heldUploads: Set<UUID> = []
-    /// The sensors' reading for the photo the survey camera just returned (`CheckedCamera` → `addPhoto`).
-    @ObservationIgnored var captureStamp: (stamp: PhotoStamp, at: Date)?
+    /// The sensors' reading for the photo the survey camera just returned (`CheckedCamera` / `WideCamera` → `addPhoto`);
+    /// `strip` marks three wide shots side by side, kept larger.
+    @ObservationIgnored var captureStamp: (stamp: PhotoStamp, at: Date, strip: Bool)?
     @ObservationIgnored var uploadRun: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored var manualDriveSave: Set<UUID> = []
 

@@ -250,6 +250,7 @@ struct WaterPageWide: View {
             PhotoSlot(photo: photo, jobID: job.id, hint: hint, required: true, title: title,
                       onPick: { img in if let p = model.addPhoto(img, to: job.id) { set(key, .photo(p)) } },
                       onClear: { set(key, nil) })
+                .photoShot(key)
                 .frame(height: 196)
                 .overlay(alignment: .bottomLeading) {
                     if photo != nil {

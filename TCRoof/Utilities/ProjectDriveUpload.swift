@@ -36,9 +36,17 @@ enum ProjectDriveUpload {
         job.driveFolderURL = folder.url.absoluteString
 
         var done = 0
+        var subfolders: [String: String] = [:]
         for doc in docs {
+            var target = folder.id
+            if let path = doc.folderPath, !path.isEmpty {
+                if subfolders[path] == nil {
+                    subfolders[path] = try await session.survey.driveSubfolder(path.components(separatedBy: "/"), under: folder.id)
+                }
+                target = subfolders[path] ?? folder.id
+            }
             let file = DriveUpload(name: doc.name, data: doc.data, mimeType: mimeType(for: doc.name))
-            doc.driveFileID = try await session.survey.driveUpload(file, to: folder.id)
+            doc.driveFileID = try await session.survey.driveUpload(file, to: target)
             done += 1
             progress(done, total)
         }

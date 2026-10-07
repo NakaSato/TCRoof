@@ -106,6 +106,11 @@ final class Job {
     /// Encoded `MasterSchedule.Input` and `MasterSchedule.Actual`.
     var scheduleInputJSON: String?
     var scheduleActualJSON: String?
+    // Routine reports (docs/specs/routine-reports-swift.md §2.2–2.3); optional for the same reason.
+    /// Encoded `RoutineReport.Settings`.
+    var routineSettingsJSON: String?
+    /// Encoded `[RoutineReport.WeeklyRequest]`, one per week.
+    var weeklyRequestsJSON: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -161,6 +166,18 @@ final class Job {
     var scheduleActual: MasterSchedule.Actual {
         get { scheduleActualJSON.flatMap { try? JSONDecoder().decode(MasterSchedule.Actual.self, from: Data($0.utf8)) } ?? .init() }
         set { scheduleActualJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
+    }
+
+    var routineSettings: RoutineReport.Settings {
+        get { routineSettingsJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Settings.self, from: Data($0.utf8)) } ?? .init() }
+        set { routineSettingsJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
+    }
+    var weeklyRequests: [RoutineReport.WeeklyRequest] {
+        get { weeklyRequestsJSON.flatMap { try? JSONDecoder().decode([RoutineReport.WeeklyRequest].self, from: Data($0.utf8)) } ?? [] }
+        set {
+            let sorted = newValue.sorted { $0.weekStart < $1.weekStart }
+            weeklyRequestsJSON = sorted.isEmpty ? nil : (try? JSONEncoder().encode(sorted)).flatMap { String(data: $0, encoding: .utf8) }
+        }
     }
 
     var estimatedPanels: Int { Int((capacityKW * 1000 / 550).rounded(.up)) }
@@ -274,6 +291,12 @@ final class InstallLog {
     var createdAt: Date
     var job: Job?
     var syncID: String?
+    // Daily report R2 (docs/specs/routine-reports-swift.md §2.1); nil on free-text logs.
+    /// Encoded `RoutineReport.Daily`.
+    var reportJSON: String?
+    var engineerSignedAt: Date?
+    /// When the Inspector acknowledged it (typed in after the paper or LINE reply).
+    var inspectorAckAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.log) var photos: [PhotoAsset] = []
 
@@ -290,6 +313,15 @@ final class InstallLog {
     }
 
     var sortedPhotos: [PhotoAsset] { photos.sorted { $0.createdAt < $1.createdAt } }
+
+    /// The structured daily report; setting it also rewrites `details` as its readable summary.
+    var report: RoutineReport.Daily? {
+        get { reportJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Daily.self, from: Data($0.utf8)) } }
+        set {
+            reportJSON = newValue.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } }
+            if let r = newValue { details = r.summary }
+        }
+    }
 }
 
 // MARK: - Inspection checklist (ICL)
@@ -401,6 +433,8 @@ final class DocumentAsset {
     /// Google Drive file id, once uploaded.
     var driveFileID: String?
     var job: Job?
+    /// Subfolders under the job's Drive folder, "/"-separated (routine reports file by kind and month); nil = the job folder.
+    var folderPath: String?
 
     init(name: String, data: Data) {
         self.name = name

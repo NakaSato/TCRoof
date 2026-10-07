@@ -16,6 +16,7 @@ private struct NotificationScheduler: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(NotificationGroup.survey.defaultsKey) private var surveyOn = true
     @AppStorage(NotificationGroup.syncExport.defaultsKey) private var syncOn = true
+    @AppStorage(NotificationGroup.report.defaultsKey) private var reportOn = true
     /// Bumped when the app comes back, so a new day reschedules.
     @State private var tick = 0
 
@@ -40,6 +41,7 @@ private struct NotificationScheduler: ViewModifier {
                 #endif
             }
             .task(id: surveyPlans(tick)) { await NotificationService.shared.scheduleSurveys(surveyPlans(tick)) }
+            .task(id: reportPlans(tick)) { await NotificationService.shared.schedule(reportPlans(tick), type: .report) }
             .task(id: SyncState(survey: survey, on: syncOn)) {
                 let pending = survey.jobsToSync
                 await NotificationService.shared.updateSync(names: pending.map(Self.label), oldest: pending.map(\.updated).min())
@@ -61,6 +63,26 @@ private struct NotificationScheduler: ViewModifier {
             if report?.completion.isComplete == true { return nil }
             let a = TodayAppointment(job: job, report: report)
             return .survey(jobKey: job.syncID ?? job.code, name: a.name, area: a.area, appointment: job.surveyDate)
+        }
+        .sorted { $0.id < $1.id }
+    }
+
+    /// Routine-report reminders of the stations being installed (docs/specs/routine-reports-swift.md §5): 17:00 when today's
+    /// daily report isn't signed, Friday 15:00 when next week has no request.
+    private func reportPlans(_: Int) -> [NotificationPlan] {
+        guard reportOn else { return [] }
+        let now = Date.now, cal = RoutineReport.calendar
+        return jobs.filter { $0.status == .installing || $0.installInterval.contains(now) }.flatMap { job -> [NotificationPlan] in
+            let key = job.syncID ?? job.code
+            let settings = job.routineSettings
+            let daily = RoutineReportNotification.daily(jobKey: key, station: job.stationName, now: now,
+                                                        isWorkingDay: RoutineReport.isWorkingDay(now, settings: settings),
+                                                        signed: job.dailyState(on: now) == .signed)
+            let nextWeek = cal.date(byAdding: .day, value: 7, to: MasterSchedule.weekStart(now))!
+            let request = job.installEnd >= nextWeek
+                ? RoutineReportNotification.request(jobKey: key, station: job.stationName, now: now, hasNextWeek: job.weeklyRequest(for: nextWeek) != nil)
+                : nil
+            return [daily, request].compactMap { $0 }
         }
         .sorted { $0.id < $1.id }
     }

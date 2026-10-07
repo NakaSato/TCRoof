@@ -5,7 +5,7 @@ import Foundation
 
 /// One notification type, also its `UNNotificationCategory` id and thread id.
 public enum NotificationType: String, CaseIterable, Sendable {
-    case survey, queue, late, cal, sync, done
+    case survey, queue, late, cal, sync, done, report
 
     /// The coloured word after `TCROOF ·` on the board.
     public var category: String {
@@ -16,6 +16,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .cal: "สอบเทียบ"
         case .sync: "ซิงก์"
         case .done: "ส่งออก"
+        case .report: "รายงาน"
         }
     }
 
@@ -23,7 +24,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
     public var level: Level {
         switch self {
         case .late: .timeSensitive
-        case .survey, .queue: .active
+        case .survey, .queue, .report: .active
         case .cal, .sync, .done: .passive
         }
     }
@@ -36,6 +37,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .cal: [.toolRecord, .remind7Days]
         case .sync: [.syncNow, .viewPending]
         case .done: [.openDrive, .shareLink]
+        case .report: []
         }
     }
 
@@ -45,13 +47,14 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .queue, .late: .tools
         case .cal: .calibration
         case .sync, .done: .syncExport
+        case .report: .report
         }
     }
 }
 
 /// A switch in Settings › การแจ้งเตือน.
 public enum NotificationGroup: String, CaseIterable, Sendable {
-    case survey, tools, calibration, syncExport
+    case survey, tools, calibration, syncExport, report
 
     public var title: String {
         switch self {
@@ -59,6 +62,7 @@ public enum NotificationGroup: String, CaseIterable, Sendable {
         case .tools: "คิวและกำหนดคืนเครื่องมือ"
         case .calibration: "สอบเทียบ"
         case .syncExport: "ซิงก์และส่งออก"
+        case .report: "รายงานประจำ"
         }
     }
 
@@ -136,6 +140,8 @@ public enum NotificationInfo {
     public static let appointment = "appointment"
     public static let phone = "phone"
     public static let url = "url"
+    /// Which routine report a `report` notification is about: "daily" or "request".
+    public static let kind = "kind"
 }
 
 /// One local notification to post.
@@ -226,6 +232,32 @@ public extension NotificationPlan {
     }
 }
 
+// MARK: - Routine reports
+
+/// The two routine-report reminders (docs/specs/routine-reports-swift.md §5).
+public enum RoutineReportNotification {
+    /// `ยังไม่ได้ส่งรายงานประจำวัน <สถานี>` at 17:00 today, when today is a working day and today's report isn't signed.
+    public static func daily(jobKey: String, station: String, now: Date, isWorkingDay: Bool, signed: Bool,
+                             calendar cal: Calendar = Calendar.current) -> NotificationPlan? {
+        guard isWorkingDay, !signed, let at = cal.date(bySettingHour: 17, minute: 0, second: 0, of: now), at > now else { return nil }
+        return NotificationPlan(id: "report-daily-\(jobKey)-\(ISODate.string(at))", type: .report,
+                                title: "ยังไม่ได้ส่งรายงานประจำวัน", body: station, sub: "แตะเพื่อทำรายงานวันนี้", fire: .at(at),
+                                info: [NotificationInfo.job: jobKey, NotificationInfo.kind: "daily"])
+    }
+
+    /// `ยังไม่มีคำขอปฏิบัติงานสัปดาห์หน้า` at 15:00 on this week's Friday, when next week has no request yet.
+    public static func request(jobKey: String, station: String, now: Date, hasNextWeek: Bool,
+                               calendar cal: Calendar = Calendar.current) -> NotificationPlan? {
+        guard !hasNextWeek else { return nil }
+        let weekday = cal.component(.weekday, from: now)
+        guard let friday = cal.date(byAdding: .day, value: (6 - weekday + 7) % 7, to: now),
+              let at = cal.date(bySettingHour: 15, minute: 0, second: 0, of: friday), at > now else { return nil }
+        return NotificationPlan(id: "report-request-\(jobKey)-\(ISODate.string(at))", type: .report,
+                                title: "ยังไม่มีคำขอปฏิบัติงานสัปดาห์หน้า", body: station, sub: "แตะเพื่อร่างคำขอจากแผน MP", fire: .at(at),
+                                info: [NotificationInfo.job: jobKey, NotificationInfo.kind: "request"])
+    }
+}
+
 // MARK: - Tools (API only until the app has a tools / loan model)
 
 /// Queue, overdue and calibration notifications for borrowed tools. Nothing in the app calls these yet:
@@ -307,6 +339,10 @@ public enum DeepLink: Equatable, Sendable {
     case pendingList
     case driveFolder(URL)
     case share(URL)
+    /// Today's daily report of a station (docs/specs/routine-reports-swift.md §5).
+    case dailyReport(job: String)
+    /// Next week's request of a station.
+    case weeklyRequest(job: String)
     case home
 
     /// The link for a tap (`action` nil or the system default / dismiss id) or a quick action.
@@ -322,6 +358,7 @@ public enum DeepLink: Equatable, Sendable {
             case .cal: return .toolRecord(tool: tool)
             case .sync: return .pendingList
             case .done: return url.map(DeepLink.driveFolder) ?? .home
+            case .report: return job.isEmpty ? .home : info[NotificationInfo.kind] == "request" ? .weeklyRequest(job: job) : .dailyReport(job: job)
             }
         }
         switch action {

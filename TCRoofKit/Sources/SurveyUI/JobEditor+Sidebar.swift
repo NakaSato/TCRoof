@@ -57,6 +57,7 @@ extension JobEditorView {
                 VStack(alignment: .leading, spacing: 14) {
                     sidebarHeader
                     row(SidebarItem(page: .summary, code: "", title: "สรุปภาพรวม 1 หน้า", completion: Completion()), symbol: "doc.text.magnifyingglass")
+                    if !readOnly { cardImportRow }
                     ForEach(groups) { g in
                         VStack(alignment: .leading, spacing: 4) {
                             groupHeader(g)
@@ -225,6 +226,22 @@ extension JobEditorView {
     func select(_ p: Page) {
         page = p
         if compact { withAnimation { sidebarVisible = false } }
+    }
+
+    /// นำเข้ารูปจากการ์ด / USB (hardware assist §H6), styled as a row.
+    var cardImportRow: some View {
+        Button { showCardImport = true } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "sdcard").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.navy)
+                    .frame(width: 38, height: 26)
+                    .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
+                Text("นำเข้ารูปจากการ์ด / USB").font(.system(size: 16, weight: .medium)).lineLimit(1).foregroundStyle(Home.navy)
+                Spacer(minLength: 4)
+            }
+            .padding(.horizontal, 10).frame(minHeight: 48)
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
     }
 
     /// Code badge tinted by status, one-line title, status mark; the open section gets a blue bar and tint.

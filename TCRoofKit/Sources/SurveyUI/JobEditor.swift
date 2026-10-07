@@ -15,6 +15,7 @@ struct JobEditorView: View {
     @State var page: Page = .info
     @State var preview: PDFPreviewItem?
     @State var showExport = false
+    @State var showCardImport = false
     @State var busy: String?
     @State var error: String?
     @State var confirmDelete: SurveyModule?
@@ -176,8 +177,11 @@ struct JobEditorView: View {
         .onAppear { if UserDefaults.standard.bool(forKey: "surveyWideA1") { sidebarVisible = false } }
         // `-surveyExport YES` opens the export sheet for simulator checks
         .task { if UserDefaults.standard.bool(forKey: "surveyExport") { try? await Task.sleep(nanoseconds: 600_000_000); showExport = true } }
+        // `-surveyCardImport YES` opens นำเข้ารูปจากการ์ด / USB with three sample photos
+        .task { if UserDefaults.standard.bool(forKey: "surveyCardImport") { try? await Task.sleep(nanoseconds: 600_000_000); showCardImport = true } }
         #endif
         .sheet(item: $preview) { p in PDFPreview(item: p) }
+        .sheet(isPresented: $showCardImport) { CardImportSheet(job: $job).environment(model) }
         .fullScreenCover(isPresented: $showSLD) {
             SingleLinePage(job: $job, open: { openFromDiagram($0) }, close: { showSLD = false })
                 .environment(model)

@@ -42,6 +42,7 @@ struct FieldView: View {
                     } else if spec.optional {
                         Text("ไม่บังคับ").font(.caption2).foregroundStyle(.secondary)
                     }
+                    SourceChip(source: values.source(spec.id))
                 }
             }
             control
@@ -59,9 +60,14 @@ struct FieldView: View {
             } else if spec.id == "gps" {
                 GPSInput(text: textBinding)
             } else {
-                TextField(ph.isEmpty ? spec.label : ph, text: textBinding)
-                    .textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
-                    .keyboardType(spec.id == "phone" ? .phonePad : .default)
+                HStack(spacing: 6) {
+                    TextField(ph.isEmpty ? spec.label : ph, text: textBinding)
+                        .textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
+                        .keyboardType(spec.id == "phone" ? .phonePad : .default)
+                    if spec.id == "meterNo" {
+                        NameplateScanButton(target: .meterNumber, apply: { values.set(spec.id, .text($0), source: .nameplate) }, compact: true)
+                    }
+                }
             }
         case .member(let component):
             MemberPicker(value: textBinding, component: component)
@@ -93,6 +99,9 @@ struct FieldView: View {
                         .foregroundStyle(Paper.value).frame(maxWidth: 200)
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(badNumber ? Color.red : Color.clear, lineWidth: 1.5))
                     Text(unit).foregroundStyle(.secondary)
+                    if spec.id == "roofAngle" {
+                        RoofSensorButton(reading: .pitch) { v, _ in values.set(spec.id, .text(v), source: .sensor) }
+                    }
                 }
                 if badNumber {
                     HStack(spacing: 8) {
@@ -114,6 +123,9 @@ struct FieldView: View {
                 }
                 if other && values.choice(spec.id) == "อื่นๆ" {
                     TextField("ระบุ", text: otherBinding).textFieldStyle(.roundedBorder).frame(maxWidth: 360)
+                }
+                if spec.id == "facing" {
+                    RoofSensorButton(reading: .facing) { c, o in values.set(spec.id, .choice(c, other: o), source: .sensor) }
                 }
             }
         case .checks(let options):

@@ -156,6 +156,8 @@ struct SurveyHomeView: View {
         // `-surveyDemo YES` opens a job right away for simulator checks; add `-surveyDemoSection YES` to open its first section.
         // `-surveyNew YES` opens the new-survey sheet.
         .task { if UserDefaults.standard.bool(forKey: "surveyNew") { showNew = true } }
+        // `-surveySettings YES` opens the survey settings (เครื่องนี้ lists the detected hardware).
+        .task { if UserDefaults.standard.bool(forKey: "surveySettings") { showSettings = true } }
         .task {
             guard UserDefaults.standard.bool(forKey: "surveyDemo"), open == nil else { return }
             go(model.jobs.first ?? model.create(JobTemplate.all[0], engineer: model.settings.engineer))

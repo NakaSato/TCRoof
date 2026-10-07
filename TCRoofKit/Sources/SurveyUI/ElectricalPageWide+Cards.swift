@@ -27,12 +27,15 @@ struct A3Input: View {
     var keyboard: UIKeyboardType = .default
     /// The value came from the A2 picture.
     var a2 = false
+    /// The value was read from a nameplate or a sensor.
+    var source: FillSource? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             A3Label(text: label, required: required)
             HStack(spacing: 4) {
                 TextField("", text: $text).keyboardType(keyboard).textInputAutocapitalization(.never).autocorrectionDisabled()
                 if a2 { A2Badge() }
+                SourceChip(source: source)
                 if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Home.muted) }
             }
             .inputBox(minHeight: 44, trailing: 10)
@@ -129,7 +132,10 @@ extension ElectricalPageWide {
                     Text("มิเตอร์ กฟภ.").font(.system(size: 18, weight: .bold))
                     if a2Badges.contains(.meter) { A2Badge() }
                 }
-                A3Input(label: "หมายเลขมิเตอร์", text: vText("meterNo"), required: true)
+                HStack(alignment: .bottom, spacing: 6) {
+                    A3Input(label: "หมายเลขมิเตอร์", text: vText("meterNo"), required: true, source: job.values.source("meterNo"))
+                    NameplateScanButton(target: .meterNumber, apply: { job.values.set("meterNo", .text($0), source: .nameplate) }, compact: true)
+                }
                 VStack(alignment: .leading, spacing: 3) {
                     A3Label(text: "แรงดันที่รับไฟ (kV)", required: true)
                     A3Segments(options: Schema.meterKV, selected: vChoice("meterKV")) { setChoice("meterKV", $0) }
@@ -181,17 +187,28 @@ extension ElectricalPageWide {
 
     func kvaField(_ i: Int) -> some View {
         HStack(spacing: 0) {
-            TextField("", text: tText(i, \.kva, number: true)).keyboardType(.numberPad)
+            TextField("", text: kvaText(i)).keyboardType(.numberPad)
                 .font(.system(size: 17, weight: .semibold))
             Text("kVA").font(.system(size: 14)).foregroundStyle(Home.muted)
             if a2Badges.contains(.kva(i)) { A2Badge().padding(.leading, 4) }
+            SourceChip(source: job.values.source("tr\(i)_kva")).padding(.leading, 4)
+            NameplateScanButton(target: .kva, apply: { v in
+                edit(i) { $0.kva = v }
+                job.values.markSource("tr\(i)_kva", .nameplate)
+            }, compact: true)
             Menu {
-                ForEach(Self.kvaSizes, id: \.self) { k in Button(k + " kVA") { edit(i) { $0.kva = k } } }
+                ForEach(Self.kvaSizes, id: \.self) { k in Button(k + " kVA") { edit(i) { $0.kva = k }; job.values.forgetSource("tr\(i)_kva") } }
             } label: { Image(systemName: "chevron.down").frame(width: 36, height: 44) }
         }
         .padding(.leading, 12).frame(minHeight: 44)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+    }
+
+    /// Typing a kVA by hand forgets that it was read from the nameplate.
+    func kvaText(_ i: Int) -> Binding<String> {
+        let t = tText(i, \.kva, number: true)
+        return Binding(get: { t.wrappedValue }, set: { t.wrappedValue = $0; job.values.forgetSource("tr\(i)_kva") })
     }
 
     func foldedTransformer(_ i: Int) -> some View {

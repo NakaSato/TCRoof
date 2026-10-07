@@ -73,9 +73,13 @@ extension PanelsPageWide {
         HStack(spacing: 10) {
             Text("ขนาดเบรกเกอร์เมน").font(.system(size: 15, weight: .semibold))
             Spacer(minLength: 6)
+            SourceChip(source: values.source(BuildingPanels.Key.breakerAT))
             TextField("–", text: text(BuildingPanels.Key.breakerAT)).keyboardType(.decimalPad)
                 .font(.system(size: 17, weight: .bold)).multilineTextAlignment(.trailing).frame(width: 90)
             Text("AT").foregroundStyle(Home.muted)
+            NameplateScanButton(target: .breakerAT, apply: { v in
+                if let i = index { job.modules[i].values.set(BuildingPanels.Key.breakerAT, .text(v), source: .nameplate) }
+            }, compact: true)
         }
         .padding(.horizontal, 14).frame(minHeight: 48)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))

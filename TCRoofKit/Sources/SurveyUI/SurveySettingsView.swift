@@ -16,6 +16,7 @@ struct SurveySettingsView: View {
                     TextField("ชื่อบริษัท (หัวรายงาน PDF)", text: $s.company)
                     TextField("ชื่อวิศวกรผู้สำรวจ (ใส่ให้งานใหม่อัตโนมัติ)", text: $s.engineer)
                 }
+                DeviceCapsSection()
                 Section {
                     Picker("แผงโซลาร์", selection: $s.pvModule) {
                         ForEach(PVModuleCatalog.all) { spec in

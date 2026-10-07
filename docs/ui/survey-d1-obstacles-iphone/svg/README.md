@@ -7,7 +7,7 @@ These are vector exports from `PhoneD1Obs.dc.html` at display size. Computed sty
 | `obstacle-plan-40x40.svg` | Card 1 plan (326 × 296): tank outline, grid A–K × 1–11, 10 vents V1–V10, 5 hatches H1–H5, alignment guide, distance tag `16.80`, north arrow | Draw in code from `TankPlan` + the obstacle list (not an image) |
 | `marker-vent-{unconfirmed,confirmed,absent,selected}.svg` | Vent symbol: 12 pt square + 3 pt ring | Same shapes in SwiftUI `Canvas` / `Path` |
 | `marker-hatch-{…}.svg` | Hatch / tank access: 12 pt square with 45° hatch | Same shapes in SwiftUI `Canvas` / `Path` |
-| `plan-expand.svg` | Full-screen button on the plan | `arrow.up.left.and.arrow.down.right` |
+| `plan-expand.svg` | Full-screen button on the plan | `arrow.down.left.and.arrow.up.right` |
 | `number-pad.svg` | Trailing icon in the distance fields (opens the number pad) | `keyboard` / custom number pad |
 | `info.svg` | Info line `แนวเดียวกับ V10 · ไม่ทับจุดอื่น` | `info.circle` |
 | `chevron-left.svg`, `chevron-right.svg` | Bottom bar ‹ › | `chevron.left` / `chevron.right` |

@@ -5,7 +5,7 @@ Vector exports from `PhoneD1Layout.dc.html` at display size (computed styles inl
 | File | Where | Build with |
 |---|---|---|
 | `panel-layout-40x40.svg` | Card 1 plan (326 × 296): tank outline + grid, panel tables, row guide lines, slope tag `↓ ลาดลงใต้` (slopes down to the south), north arrow | Draw in code from the layout result (not an image) |
-| `plan-expand.svg` | Full-screen button on the plan | `arrow.up.left.and.arrow.down.right` |
+| `plan-expand.svg` | Full-screen button on the plan | `arrow.down.left.and.arrow.up.right` |
 | `chevron-left.svg`, `chevron-right.svg` | Bottom bar ‹ › | `chevron.left` / `chevron.right` |
 
 ## Drawing styles on the plan

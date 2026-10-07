@@ -161,7 +161,7 @@ extension TankPageWide {
                         emptyPlan.frame(height: 260)
                     }
                     Button { planFull = true } label: {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "arrow.down.left.and.arrow.up.right").font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Home.primary)
                             .frame(width: 36, height: 36)
                             .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))

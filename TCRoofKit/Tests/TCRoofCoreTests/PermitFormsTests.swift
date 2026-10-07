@@ -133,4 +133,35 @@ final class PermitFormsTests: XCTestCase {
         let round = try JSONDecoder().decode(SelfCertification.self, from: JSONEncoder().encode(sc))
         XCTAssertEqual(round, sc)
     }
+
+    func testPhotoFrame() {
+        let cell: [Double] = [0, 0, 200, 114]
+        XCTAssertEqual(PhotoFrame.pictureBox(cell: cell, caption: true), [0, 0, 200, 100])
+        XCTAssertEqual(PhotoFrame.pictureBox(cell: cell, caption: false), cell)
+        XCTAssertEqual(PhotoFrame.captionBox(cell: cell), [0, 100, 200, 14])
+        // a 4:3 photo in a 2:1 box
+        let box: [Double] = [0, 0, 200, 100]
+        let fill = PhotoFrame.placement(size: [400, 300], in: box, fit: .fill)
+        XCTAssertEqual(fill[2], 200, accuracy: 0.001)       // covers the width
+        XCTAssertEqual(fill[3], 150, accuracy: 0.001)       // overflows the height, centred
+        XCTAssertEqual(fill[1], -25, accuracy: 0.001)
+        let fit = PhotoFrame.placement(size: [400, 300], in: box, fit: .fit)
+        XCTAssertEqual(fit[3], 100, accuracy: 0.001)
+        XCTAssertEqual(fit[0], 33.333, accuracy: 0.001)
+        XCTAssertEqual(PhotoFrame.highlight([0.5, 0.5, 0.25, 0.1], drawn: [10, 20, 200, 100]), [110, 70, 50, 10])
+    }
+
+    func testCaptionsAndDefaults() throws {
+        var sc = SelfCertification()
+        sc.photos[3] = ["a.jpg", "b.jpg"]
+        sc.photoInfo["b.jpg"] = { var i = AttachmentPhotoInfo(); i.caption = " S/N อินเวอร์เตอร์ "; return i }()
+        XCTAssertEqual(sc.caption(attachment: 4, index: 0), "รูปที่ 4.1")
+        XCTAssertEqual(sc.caption(attachment: 4, index: 1), "รูปที่ 4.2 S/N อินเวอร์เตอร์")
+        XCTAssertEqual(sc.fit("a.jpg", attachment: 4), .fill)
+        XCTAssertEqual(sc.fit("a.jpg", attachment: 9), .fit)
+        XCTAssertTrue(sc.captionsOn(4))
+        XCTAssertEqual(SelfCertification.captionSuggestions.count, 10)
+        let round = try JSONDecoder().decode(SelfCertification.self, from: JSONEncoder().encode(sc))
+        XCTAssertEqual(round, sc)
+    }
 }

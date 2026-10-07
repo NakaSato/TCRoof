@@ -1,4 +1,5 @@
 import UIKit
+import SwiftUI
 import TCRoofCore
 import TCRoofUI
 
@@ -8,10 +9,21 @@ enum PermitRenderer {
     struct Content {
         var values: [String: String]
         var marks: [String: PermitMark]
-        /// Photos per area key (`att1` … `att10`), in page order.
-        var photos: [String: [UIImage]] = [:]
-        /// Layout per area key; `auto` when missing.
-        var layouts: [String: PhotoLayout] = [:]
+        /// Photo pages by area key (`att1` … `att10`).
+        var attachments: [String: AttachmentPage] = [:]
+    }
+
+    /// The photos of one attachment page, already turned, in page order.
+    struct AttachmentPage {
+        struct Item {
+            var image: UIImage
+            var fit: AttachmentPhotoInfo.Fit
+            var highlights: [[Double]]
+            var caption: String
+        }
+        var layout: PhotoLayout = .auto
+        var captions = true
+        var items: [Item] = []
     }
 
     /// Answers sit this far above the dotted line so Thai descenders stay clear of it.
@@ -65,7 +77,7 @@ enum PermitRenderer {
             ctx.restoreGState()
         }
         for area in map.areas where area.page == index {
-            drawPhotos(content.photos[area.key] ?? [], layout: content.layouts[area.key] ?? .auto, in: area.rect)
+            if let page = content.attachments[area.key] { drawPhotos(page, in: area.rect, ctx) }
         }
         for field in map.fields where field.page == index {
             if let text = content.values[field.key]?.trimmingCharacters(in: .whitespaces), !text.isEmpty {
@@ -118,14 +130,48 @@ enum PermitRenderer {
         path.stroke()
     }
 
-    /// Photos in the cells of `layout`, each fitted to its cell and centred.
-    static func drawPhotos(_ photos: [UIImage], layout: PhotoLayout, in area: [Double]) {
-        guard !photos.isEmpty else { return }
-        for (image, c) in zip(photos, layout.cells(in: area, count: photos.count)) {
-            let cell = rect(c)
-            let s = min(cell.width / image.size.width, cell.height / image.size.height)
-            let size = CGSize(width: image.size.width * s, height: image.size.height * s)
-            image.draw(in: CGRect(x: cell.midX - size.width / 2, y: cell.midY - size.height / 2, width: size.width, height: size.height))
+    /// Light colours of the paper tokens: the page is printed on white whatever the device theme.
+    static func paper(_ color: Color) -> UIColor { UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)) }
+
+    /// Photos in the cells of the page's layout: every picture box gets the same thin frame; `fill` photos are
+    /// cropped to it, `fit` photos (documents) sit whole on a light grey mat; red marks; a numbered caption under each.
+    static func drawPhotos(_ page: AttachmentPage, in area: [Double], _ ctx: CGContext) {
+        let cells = page.layout.cells(in: area, count: page.items.count)
+        for (item, cell) in zip(page.items, cells) {
+            let box = rect(PhotoFrame.pictureBox(cell: cell, caption: page.captions))
+            let drawn = PhotoFrame.placement(size: [Double(item.image.size.width), Double(item.image.size.height)],
+                                             in: PhotoFrame.pictureBox(cell: cell, caption: page.captions), fit: item.fit)
+            ctx.saveGState()
+            ctx.clip(to: box)
+            if item.fit == .fit {
+                paper(Theme.paperPage).setFill()
+                ctx.fill(box)
+            }
+            item.image.draw(in: rect(drawn))
+            paper(Theme.danger).setStroke()
+            for h in item.highlights where h.count == 4 {
+                let r = UIBezierPath(rect: rect(PhotoFrame.highlight(h, drawn: drawn)).intersection(box.insetBy(dx: 0.75, dy: 0.75)))
+                r.lineWidth = 1.5
+                r.stroke()
+            }
+            ctx.restoreGState()
+
+            let frame = UIBezierPath(rect: box)
+            frame.lineWidth = 0.5
+            paper(Theme.borderControl).setStroke()
+            frame.stroke()
+
+            if page.captions { drawCaption(item.caption, in: rect(PhotoFrame.captionBox(cell: cell))) }
         }
+    }
+
+    static func drawCaption(_ text: String, in box: CGRect) {
+        let style = NSMutableParagraphStyle()
+        style.alignment = .center
+        style.lineBreakMode = .byTruncatingTail
+        let f = font(PhotoFrame.captionFontSize)
+        let str = NSAttributedString(string: text, attributes: [.font: f, .foregroundColor: paper(Theme.paperInk), .paragraphStyle: style])
+        str.draw(with: CGRect(x: box.minX, y: box.minY + 2, width: box.width, height: box.height + 2),
+                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil)
     }
 }

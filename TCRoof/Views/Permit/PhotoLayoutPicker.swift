@@ -74,10 +74,12 @@ struct PhotoOrderStrip: View {
     /// Photos the layout prints; the rest show as not printed.
     let capacity: Int
     let move: (_ index: Int, _ step: Int) -> Void
+    /// Opens the photo's caption / crop / marks editor.
+    let edit: (_ index: Int) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            TCFieldLabel("ลำดับในหน้า")
+            TCFieldLabel("ลำดับในหน้า · แตะรูปเพื่อใส่คำบรรยายและกรอบแดง")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.s) {
                     ForEach(images.indices, id: \.self) { item($0) }
@@ -89,6 +91,17 @@ struct PhotoOrderStrip: View {
     private func item(_ i: Int) -> some View {
         let printed = i < capacity
         return VStack(spacing: 2) {
+            Button { edit(i) } label: { thumbnail(i, printed: printed) }
+                .buttonStyle(.plain)
+                .accessibilityLabel("แก้รูปที่ \(i + 1)")
+            HStack(spacing: 0) {
+                arrow("chevron.left", enabled: i > 0, label: "เลื่อนรูปที่ \(i + 1) ไปก่อน") { move(i, -1) }
+                arrow("chevron.right", enabled: i < images.count - 1, label: "เลื่อนรูปที่ \(i + 1) ไปหลัง") { move(i, 1) }
+            }
+        }
+    }
+
+    private func thumbnail(_ i: Int, printed: Bool) -> some View {
             ZStack(alignment: .topLeading) {
                 Group {
                     if let image = UIImage(data: images[i]) {
@@ -107,11 +120,10 @@ struct PhotoOrderStrip: View {
                     .background(printed ? Theme.primary : Theme.inkMuted, in: Capsule())
                     .padding(4)
             }
-            HStack(spacing: 0) {
-                arrow("chevron.left", enabled: i > 0, label: "เลื่อนรูปที่ \(i + 1) ไปก่อน") { move(i, -1) }
-                arrow("chevron.right", enabled: i < images.count - 1, label: "เลื่อนรูปที่ \(i + 1) ไปหลัง") { move(i, 1) }
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: "pencil.circle.fill").font(.system(size: 18)).foregroundStyle(Theme.primary, Theme.surface)
+                    .padding(3)
             }
-        }
     }
 
     private func arrow(_ symbol: String, enabled: Bool, label: String, action: @escaping () -> Void) -> some View {

@@ -11,6 +11,14 @@ struct SelfCertificationView: View {
     @State private var loaded = false
     /// Photo data by file name, read once from the job's permit folder.
     @State private var photoData: [String: Data] = [:]
+    /// The photo open in the editor.
+    @State private var editing: EditTarget?
+
+    struct EditTarget: Identifiable {
+        let attachment: Int
+        let file: String
+        var id: String { file }
+    }
     private let map = PermitFormMap.load(PermitFormMap.selfCertification)
     static let file = "selfcert"
 
@@ -26,6 +34,7 @@ struct SelfCertificationView: View {
             }
             .task { load() }
             .onChange(of: form) { _, new in if loaded { PermitStore(job: job).save(new, Self.file) } }
+            .sheet(item: $editing) { target in editor(target) }
         } else {
             ContentUnavailableView("ไม่พบแบบฟอร์ม", systemImage: "doc.questionmark")
         }
@@ -34,15 +43,20 @@ struct SelfCertificationView: View {
     private var version: Data { (try? JSONEncoder().encode(form)) ?? Data() }
 
     private func content() -> PermitRenderer.Content {
-        var photos: [String: [UIImage]] = [:]
-        var layouts: [String: PhotoLayout] = [:]
+        var pages: [String: PermitRenderer.AttachmentPage] = [:]
         for n in 1...10 {
-            photos["att\(n)"] = form.printedPhotos(n).compactMap { photoData[$0].flatMap(UIImage.init(data:)) }
-            layouts["att\(n)"] = form.layout(n)
+            // attachment 2 stays empty when no limiter is needed (the form says so)
+            if n == 2 && form.exportLimiter == .notRequired { continue }
+            var page = PermitRenderer.AttachmentPage(layout: form.layout(n), captions: form.captionsOn(n))
+            for (i, file) in form.printedPhotos(n).enumerated() {
+                guard let image = photoData[file].flatMap(UIImage.init(data:)) else { continue }
+                let info = form.info(file)
+                page.items.append(.init(image: image.turned(info.quarterTurns), fit: form.fit(file, attachment: n),
+                                        highlights: info.highlights, caption: form.caption(attachment: n, index: i)))
+            }
+            pages["att\(n)"] = page
         }
-        // attachment 2 is left empty when no limiter is needed (the form says so)
-        if form.exportLimiter == .notRequired { photos["att2"] = [] }
-        return PermitRenderer.Content(values: form.values, marks: form.marks, photos: photos, layouts: layouts)
+        return PermitRenderer.Content(values: form.values, marks: form.marks, attachments: pages)
     }
 
     private func load() {
@@ -148,11 +162,23 @@ struct SelfCertificationView: View {
         Text(images.count >= SelfCertification.maxPhotos ? "ครบ \(SelfCertification.maxPhotos) รูปแล้ว"
                                                          : "เก็บได้ \(SelfCertification.maxPhotos) รูปต่อหัวข้อ")
             .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.muted)
-        PhotoLayoutPicker(selection: $form.layouts[n - 1], count: images.count)
-        if images.count > 1 {
-            PhotoOrderStrip(images: images, capacity: form.layout(n).resolved(images.count).capacity) { index, step in
-                form.movePhoto(attachment: n, from: index, by: step)
-            }
+        if !images.isEmpty {
+            PhotoLayoutPicker(selection: $form.layouts[n - 1], count: images.count)
+            TCSwitchRow("คำบรรยายใต้รูป (รูปที่ \(n).1, \(n).2 …)", isOn: $form.showCaptions[n - 1])
+            PhotoOrderStrip(images: images, capacity: form.layout(n).resolved(images.count).capacity,
+                            move: { index, step in form.movePhoto(attachment: n, from: index, by: step) },
+                            edit: { index in
+                                let files = form.photos[n - 1]
+                                if files.indices.contains(index) { editing = EditTarget(attachment: n, file: files[index]) }
+                            })
+        }
+    }
+
+    @ViewBuilder private func editor(_ target: EditTarget) -> some View {
+        if let data = photoData[target.file], let index = form.photos[target.attachment - 1].firstIndex(of: target.file) {
+            AttachmentPhotoEditor(attachment: target.attachment, index: index, data: data,
+                                  info: Binding(get: { form.info(target.file) }, set: { form.photoInfo[target.file] = $0 }),
+                                  defaultFit: SelfCertification.defaultFit(target.attachment))
         }
     }
 
@@ -166,6 +192,7 @@ struct SelfCertificationView: View {
     private func removePhoto(at index: Int, from n: Int) {
         guard form.photos[n - 1].indices.contains(index) else { return }
         let name = form.photos[n - 1].remove(at: index)
+        form.photoInfo[name] = nil
         PermitStore(job: job).deletePhoto(name)
         photoData[name] = nil
     }

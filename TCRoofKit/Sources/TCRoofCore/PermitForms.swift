@@ -314,6 +314,71 @@ public enum PhotoLayout: String, Codable, CaseIterable, Sendable {
     }
 }
 
+// MARK: - One photo on an attachment page
+
+/// How one attachment photo is shown: its caption, crop, turn and red marks.
+public struct AttachmentPhotoInfo: Codable, Equatable, Sendable {
+    public enum Fit: String, Codable, CaseIterable, Sendable {
+        /// Fills its cell, cropped to the cell's shape (site and equipment photos).
+        case fill
+        /// Whole photo inside its cell (documents: กว., bills).
+        case fit
+        public var title: String { self == .fill ? "เต็มกรอบ" : "ทั้งภาพ" }
+    }
+
+    public var caption = ""
+    /// Nil = the attachment's default (`SelfCertification.defaultFit`).
+    public var fit: Fit?
+    /// Clockwise quarter turns, 0…3.
+    public var quarterTurns = 0
+    /// Red boxes pointing at what PEA checks (S/N, settings, ratings): [x, y, w, h] as fractions of the turned photo.
+    public var highlights: [[Double]] = []
+
+    public init() {}
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        caption = try c.decodeIfPresent(String.self, forKey: .caption) ?? ""
+        fit = try c.decodeIfPresent(Fit.self, forKey: .fit)
+        quarterTurns = try c.decodeIfPresent(Int.self, forKey: .quarterTurns) ?? 0
+        highlights = try c.decodeIfPresent([[Double]].self, forKey: .highlights) ?? []
+    }
+    private enum CodingKeys: String, CodingKey { case caption, fit, quarterTurns, highlights }
+}
+
+/// Geometry of a photo cell: the picture above a caption line, and where the picture is drawn.
+public enum PhotoFrame {
+    /// Caption line under each picture (pt).
+    public static let captionHeight = 14.0
+    /// Caption text size (pt): a step under the form's 16 pt TH Sarabun body, like a figure caption.
+    public static let captionFontSize = 9.5
+
+    /// The picture's box in `cell` ([x, y, w, h]), leaving the caption line when `caption` is on.
+    public static func pictureBox(cell: [Double], caption: Bool) -> [Double] {
+        caption ? [cell[0], cell[1], cell[2], max(cell[3] - captionHeight, 1)] : cell
+    }
+
+    /// The caption line under the picture box.
+    public static func captionBox(cell: [Double]) -> [Double] {
+        [cell[0], cell[1] + cell[3] - captionHeight, cell[2], captionHeight]
+    }
+
+    /// Where an image of `size` ([w, h]) is drawn for `fit` in `box`, centred. `fill` covers the box and
+    /// overflows it (clip to the box); `fit` sits inside it.
+    public static func placement(size: [Double], in box: [Double], fit: AttachmentPhotoInfo.Fit) -> [Double] {
+        guard size[0] > 0, size[1] > 0 else { return box }
+        let sx = box[2] / size[0], sy = box[3] / size[1]
+        let s = fit == .fill ? max(sx, sy) : min(sx, sy)
+        let w = size[0] * s, h = size[1] * s
+        return [box[0] + (box[2] - w) / 2, box[1] + (box[3] - h) / 2, w, h]
+    }
+
+    /// A highlight ([x, y, w, h] fractions of the photo) on the page, for a photo drawn at `drawn`.
+    public static func highlight(_ h: [Double], drawn: [Double]) -> [Double] {
+        [drawn[0] + h[0] * drawn[2], drawn[1] + h[1] * drawn[3], h[2] * drawn[2], h[3] * drawn[3]]
+    }
+}
+
 // MARK: - แบบฟอร์มรับรองตนเอง (VSPP)
 
 /// แบบฟอร์ม กฟภ. "แบบฟอร์มรับรองตนเองการติดตั้งอุปกรณ์และการเชื่อมต่อระบบผลิตไฟฟ้าจากพลังงานแสงอาทิตย์ (VSPP) พ.ศ. 2569",
@@ -379,6 +444,40 @@ public struct SelfCertification: Codable, Equatable, Sendable {
     public var photos: [[String]] = Array(repeating: [], count: 10)
     /// Layout per attachment 1…10 (index 0 = attachment 1).
     public var layouts: [PhotoLayout] = Array(repeating: .auto, count: 10)
+    /// Caption, crop, turn and marks per photo file name.
+    public var photoInfo: [String: AttachmentPhotoInfo] = [:]
+    /// Caption lines under the photos, per attachment.
+    public var showCaptions: [Bool] = Array(repeating: true, count: 10)
+
+    /// Documents (9 กว., 10 bill) show whole; site and equipment photos fill their cells.
+    public static func defaultFit(_ attachment: Int) -> AttachmentPhotoInfo.Fit { attachment >= 9 ? .fit : .fill }
+
+    /// Caption ideas per attachment, from what the PEA sample pages show.
+    public static let captionSuggestions: [[String]] = [
+        ["ภาพหน้าบ้าน", "ภาพมุมสูงหลังคา", "ภาพแผนที่ตำแหน่งติดตั้ง", "ภาพแผงบนหลังคา"],
+        ["ตู้ควบคุมกันย้อน", "Export Limiter", "CT ตรวจวัด", "ค่าตั้งจำกัดการส่งออก"],
+        ["แผงบนหลังคา", "ป้ายแผง (Nameplate)", "จำนวนแผง"],
+        ["อินเวอร์เตอร์", "ป้ายอินเวอร์เตอร์ (Nameplate)", "S/N อินเวอร์เตอร์"],
+        ["Grid code", "ค่าป้องกัน (Protection)", "S/N ในแอป", "ค่าตั้งเครื่องที่ 2"],
+        ["ตู้ AC", "อุปกรณ์ป้องกัน (RCBO/RCD)", "ป้ายพิกัดอุปกรณ์"],
+        ["AC SPD", "ป้ายพิกัด SPD"],
+        ["จุดเชื่อมต่อใต้เบรกเกอร์ประธาน", "ตู้ MDB", "สายเชื่อมต่อ"],
+        ["บัตร กว.", "หนังสือรับรองสภาวิศวกร"],
+        ["ใบแจ้งค่าไฟฟ้า"],
+    ]
+
+    public func info(_ file: String) -> AttachmentPhotoInfo { photoInfo[file] ?? AttachmentPhotoInfo() }
+
+    public func fit(_ file: String, attachment: Int) -> AttachmentPhotoInfo.Fit { info(file).fit ?? Self.defaultFit(attachment) }
+
+    public func captionsOn(_ attachment: Int) -> Bool { showCaptions.indices.contains(attachment - 1) ? showCaptions[attachment - 1] : true }
+
+    /// `รูปที่ 4.2 ป้ายอินเวอร์เตอร์ (Nameplate)` — numbered by attachment and place on the page.
+    public func caption(attachment: Int, index: Int) -> String {
+        let list = photos[attachment - 1]
+        let text = list.indices.contains(index) ? info(list[index]).caption.trimmingCharacters(in: .whitespaces) : ""
+        return "รูปที่ \(attachment).\(index + 1)" + (text.isEmpty ? "" : " " + text)
+    }
 
     public init() {}
 
@@ -399,7 +498,8 @@ public struct SelfCertification: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case producerName, ppimSuffix, contractNo, contractDate, caNo, phone, email, address, pvKWp, inverterKW, sellKW,
-             phase, latitude, longitude, overcurrent, engineerName, producerSignDate, engineerSignDate, photos, layouts
+             phase, latitude, longitude, overcurrent, engineerName, producerSignDate, engineerSignDate, photos, layouts,
+             photoInfo, showCaptions
     }
 
     /// Every key is optional so forms saved by older builds still open.
@@ -420,6 +520,9 @@ public struct SelfCertification: Codable, Equatable, Sendable {
         photos = (0..<10).map { saved.indices.contains($0) ? saved[$0] : [] }
         let savedLayouts = try c.decodeIfPresent([PhotoLayout].self, forKey: .layouts) ?? []
         layouts = (0..<10).map { savedLayouts.indices.contains($0) ? savedLayouts[$0] : .auto }
+        photoInfo = try c.decodeIfPresent([String: AttachmentPhotoInfo].self, forKey: .photoInfo) ?? [:]
+        let savedCaptions = try c.decodeIfPresent([Bool].self, forKey: .showCaptions) ?? []
+        showCaptions = (0..<10).map { savedCaptions.indices.contains($0) ? savedCaptions[$0] : true }
     }
 
     static func number(_ s: String) -> Double? { Double(s.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)) }

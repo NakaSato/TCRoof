@@ -40,6 +40,14 @@ public struct PermitFormMap: Decodable, Sendable {
         public let rect: [Double]
     }
 
+    /// On `page`, the template above `until` is drawn `dy` lower (room for the page-1 heading); below it stays put.
+    /// The map's fields, checks and areas on that page are already in the shifted positions.
+    public struct Shift: Decodable, Sendable {
+        public let page: Int
+        public let until: Double
+        public let dy: Double
+    }
+
     public let title: String
     public let template: String
     public let pageSize: [Double]
@@ -50,6 +58,8 @@ public struct PermitFormMap: Decodable, Sendable {
     public let areas: [Area]
     /// Missing in maps without pictures.
     public let logos: [Logo]?
+    /// Missing in maps that draw every page as issued.
+    public let shifts: [Shift]?
 
     public static let powerOfAttorney = "pea-poa-2569"
     public static let selfCertification = "pea-selfcert-2569"

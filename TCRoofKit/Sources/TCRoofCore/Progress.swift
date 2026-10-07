@@ -80,18 +80,6 @@ public extension Job {
         }
     }
 
-    /// Index of the n-th section of a type (1-based), used for names like "R1", "ตู้ไฟฟ้า 2".
-    func ordinal(of module: SurveyModule) -> Int {
-        (modules.filter { $0.type == module.type }.firstIndex { $0.id == module.id } ?? 0) + 1
-    }
-    /// Sections grouped by workbook sheet, in the order the sheets appear in the workbook.
-    var modulesBySheet: [SheetGroup] {
-        let order = ["ระบบไฟฟ้า", "ระบบไฟฟ้า 2", "หลังคาทั่วไป", "บ่อตกตะกอน", "หลังคาทั่วไป R", "บ่อน้ำใส"]
-        return order.compactMap { s in
-            let m = modules.filter { $0.spec.sheet == s }
-            return m.isEmpty ? nil : SheetGroup(sheet: s, modules: m)
-        }
-    }
     /// Sections grouped by category (B, C, D) in code order, numbered "C1.1", "C1.2" when a type repeats.
     var sectionsByCategory: [SectionGroup] {
         SectionCategory.allCases.compactMap { cat in
@@ -171,13 +159,6 @@ public struct SectionGroup: Identifiable, Sendable {
     public let category: SectionCategory
     public let sections: [NumberedSection]
     public var id: String { category.rawValue }
-}
-
-/// Sections that fill the same workbook sheet.
-public struct SheetGroup: Identifiable, Sendable {
-    public let sheet: String
-    public let modules: [SurveyModule]
-    public var id: String { sheet }
 }
 
 public extension FieldSpec {

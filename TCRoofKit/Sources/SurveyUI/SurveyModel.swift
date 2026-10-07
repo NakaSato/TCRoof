@@ -38,6 +38,8 @@ public final class SurveyModel {
     @ObservationIgnored var uploadWait: [UUID: Task<Void, Never>] = [:]
     /// Jobs whose photo upload waits for the battery (`PowerMonitor`).
     @ObservationIgnored var heldUploads: Set<UUID> = []
+    /// The sensors' reading for the photo the survey camera just returned (`CheckedCamera` → `addPhoto`).
+    @ObservationIgnored var captureStamp: (stamp: PhotoStamp, at: Date)?
     @ObservationIgnored var uploadRun: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored var manualDriveSave: Set<UUID> = []
 
@@ -209,6 +211,8 @@ public struct SurveySettings: Codable, Equatable {
     public var autoUploadPhotos = true
     /// PV module rating used for W/panel → kWp (variant id in `PVModuleCatalog`, e.g. "zxm7-uhldd144-580").
     public var pvModule = PVModuleCatalog.defaultVariantID
+    /// Print each camera photo's position, direction and time under it in the PDF report (hardware assist §H4).
+    public var printPhotoStamps = false
 
     public init() {}
     public init(from decoder: Decoder) throws {
@@ -224,6 +228,7 @@ public struct SurveySettings: Codable, Equatable {
         mapZoom = try c.decodeIfPresent(Int.self, forKey: .mapZoom) ?? mapZoom
         autoUploadPhotos = try c.decodeIfPresent(Bool.self, forKey: .autoUploadPhotos) ?? autoUploadPhotos
         pvModule = try c.decodeIfPresent(String.self, forKey: .pvModule) ?? pvModule
+        printPhotoStamps = try c.decodeIfPresent(Bool.self, forKey: .printPhotoStamps) ?? printPhotoStamps
     }
     static let key = "solarSurvey.settings"
 

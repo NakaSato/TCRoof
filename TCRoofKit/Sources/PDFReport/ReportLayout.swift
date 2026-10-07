@@ -15,7 +15,11 @@ public struct ApproxMeasure: TextMeasuring {
 public struct ReportHeader: Sendable {
     public var company: String
     public var logo: Photo?
-    public init(company: String = "", logo: Photo? = nil) { self.company = company; self.logo = logo }
+    /// Print each camera photo's position, direction and time under it (`Photo.stampLine`).
+    public var photoStamps: Bool
+    public init(company: String = "", logo: Photo? = nil, photoStamps: Bool = false) {
+        self.company = company; self.logo = logo; self.photoStamps = photoStamps
+    }
 }
 
 /// The NO.215 report laid out on A4 pages as vector drawing operations.
@@ -134,7 +138,11 @@ public struct ReportLayout {
             ops.append(.line(Pt(x, y + 15), Pt(x + w, y + 15), width: 0.5, color: .black))
             top += 15
         }
-        let area = Box(x, top, w, y + h - top).inset(4)
+        var area = Box(x, top, w, y + h - top).inset(4)
+        if let p, header.photoStamps, let line = p.stampLine {
+            area.h -= 11
+            ops.append(.text(line, at: Pt(x + w / 2, area.maxY + 6), size: 6.5, color: .ink2, align: .center))
+        }
         if let p { ops.append(.photo(p, area)) }
         return ops
     }

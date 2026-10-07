@@ -21,6 +21,11 @@ public enum Orientation {
         normalised(heading + downhill(gx: gx, gy: gy))
     }
 
+    /// Pitch of the back camera, degrees above (+) or below (−) the horizon: held upright 0°, lying face up −90°.
+    public static func cameraPitch(gz: Double) -> Double {
+        asin(min(max(gz, -1), 1)) * 180 / .pi
+    }
+
     /// Below this pitch the downhill direction is noise and no facing is given.
     public static let minimumTiltForFacing = 2.0
 

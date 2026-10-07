@@ -102,7 +102,7 @@ struct RootView: View {
 /// Opens one screen directly for simulator checks: `simctl launch <device> com.tcroof.internal -screen plan`.
 struct DebugScreen: View {
     static let requested = UserDefaults.standard.string(forKey: "screen")
-    static let screens: Set = ["survey", "plan", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "permits", "poa", "selfcert"]
+    static let screens: Set = ["survey", "plan", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "permits", "poa", "selfcert", "homework"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -124,6 +124,7 @@ struct DebugScreen: View {
         case "permits": if let job { PermitFormsView(job: job) }
         case "poa": if let job { PowerOfAttorneyView(job: job) }
         case "selfcert": if let job { SelfCertificationView(job: job) }
+        case "homework": if let job { HomeWorkView(job: job) }
         case "components": ComponentGallery(only: Optional(UserDefaults.standard.integer(forKey: "gallerySection")).flatMap { $0 == 0 ? nil : $0 })
         default: EmptyView()
         }

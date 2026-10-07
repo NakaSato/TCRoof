@@ -70,6 +70,14 @@ struct SelfCertificationView: View {
             form.phone = job.phone
             form.address = [job.address, job.province].filter { !$0.isEmpty }.joined(separator: " ")
             if job.capacityKW > 0 { form.pvKWp = String(format: "%.2f", job.capacityKW) }
+            // sizes from the home job, when it has them
+            if let home = store.load(HomeJob.self, HomeWorkView.file) {
+                if !home.pvKWp.isEmpty { form.pvKWp = home.pvKWp }
+                form.inverterKW = home.inverterKW
+                form.sellKW = home.sellKW
+                form.phase = home.phase
+                form.ppimSuffix = home.ppimRequestNo.replacingOccurrences(of: "PPIM1A6", with: "")
+            }
         }
         loaded = true
     }

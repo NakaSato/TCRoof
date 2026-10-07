@@ -36,6 +36,16 @@ struct PermitStore {
         return name
     }
 
+    /// Stores any file (PDF, image) and returns its file name.
+    func addFile(_ data: Data, ext: String) -> String {
+        ensureFolder()
+        let name = UUID().uuidString + "." + (ext.isEmpty ? "dat" : ext.lowercased())
+        try? data.write(to: folder.appendingPathComponent(name), options: [.atomic, .completeFileProtection])
+        return name
+    }
+
+    func url(_ name: String) -> URL { folder.appendingPathComponent(name) }
+
     func photo(_ name: String) -> Data? { try? Data(contentsOf: folder.appendingPathComponent(name)) }
 
     func deletePhoto(_ name: String) { try? FileManager.default.removeItem(at: folder.appendingPathComponent(name)) }

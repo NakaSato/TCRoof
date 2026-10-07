@@ -2,7 +2,8 @@
 
 **Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 10 tests). Storage (§2), the job card
 (§3.1), ตั้งค่าแผน (§3.2), the full screen (§3.3) and บันทึกความก้าวหน้า (§3.4) built 2026-10-07
-(`TCRoof/Views/Job/MPScheduleViews.swift`, `MPScheduleScreen.swift`); §3.5 and §4 not yet. The progress sheet
+(`TCRoof/Views/Job/MPScheduleViews.swift`, `MPScheduleScreen.swift`), and ภาพรวมทุกสถานี (§3.5, `MPOverviewView`, from
+the Plan tab header) 2026-10-08; §4 not yet. The overview averages plan and actual over the stations' kWp. The progress sheet
 does not take วันเริ่มจริง / วันเสร็จจริง yet.
 **Source:** the company's per-station workbook `MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx` (one sheet,
 5,605 formulas). Every PWA station of โครงการประปา ระยะที่ 3–4 (102 stations) has one copy of it.

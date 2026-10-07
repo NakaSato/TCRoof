@@ -6,18 +6,19 @@ import TCRoofCore
 
 #if DEBUG
 extension Job {
-    /// A plan around today with some progress booked behind it, unless the job has one already.
-    func seedMPDemo() {
+    /// A plan around today with some progress booked behind it, unless the job has one already. `shift` moves the
+    /// plan by that many days and `pace` scales the progress, so several jobs differ on the overview.
+    func seedMPDemo(mp: Int = 189, shift: Int = 0, pace: Double = 1) {
         guard scheduleInput == nil else { return }
         let cal = MasterSchedule.calendar, today = cal.startOfDay(for: .now)
-        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today)! }
-        mpNumber = 189; inverterKW = 80
+        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n + shift, to: today)! }
+        mpNumber = mp; inverterKW = 80
         scheduleInput = MasterSchedule.Input(installStart: day(-20), installEnd: day(26), kickoff: day(-70),
                                              engineeringStart: day(-70), siteHandover: day(-60), over200kVA: false)
         var a = MasterSchedule.Actual()
         for (t, pct, back) in [(MasterSchedule.Task.kickoff, 100.0, -70), (.engineering, 100, -63), (.siteHandover, 100, -56),
                                (.buildingPermit, 100, -42), (.structure, 60, -14), (.inverter, 40, -7), (.controlCabinet, 30, 0)] {
-            a.setPercent(pct, task: t, week: day(back), over200kVA: false)
+            a.setPercent(min(100, pct * pace), task: t, week: day(back), over200kVA: false)
         }
         scheduleActual = a
     }
@@ -160,6 +161,7 @@ struct MPVarianceChip: View {
             .foregroundStyle(behind ? Theme.dangerText : ahead ? Theme.okText : Theme.navy)
             .padding(.horizontal, 10).padding(.vertical, 4)
             .background(behind ? Theme.dangerSoft : ahead ? Theme.okSoft : Theme.primarySoft, in: Capsule())
+            .lineLimit(1).fixedSize()
     }
 }
 

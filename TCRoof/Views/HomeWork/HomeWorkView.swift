@@ -100,6 +100,7 @@ struct HomeWorkView: View {
         guard loaded else { return }
         let poa = store.load(PowerOfAttorney.self, PowerOfAttorneyView.file)
         let cert = store.load(SelfCertification.self, SelfCertificationView.file)
+        let boq = store.load(HomeBOQ.self, BOQView.file)
         markDone([
             "survey": !job.savedSurveys.isEmpty,
             "installLog": !job.logs.isEmpty,
@@ -107,6 +108,7 @@ struct HomeWorkView: View {
             "poa": poa.map { $0.issues.isEmpty } ?? false,
             "selfCert": cert.map { $0.issues.isEmpty } ?? false,
             "installCert": cert.map { $0.issues.isEmpty } ?? false,
+            "boq": boq.map { $0.issues(for: home).isEmpty } ?? false,
         ])
         markDone(homeDone)
         home.applyLibrary(library)
@@ -422,6 +424,7 @@ struct HomeWorkView: View {
         case .installLog: JobInstallLogsView(job: job)
         case .inspection: InspectionView(job: job)
         case .photoReport: PhotoReportView(job: job, home: $home)
+        case .boq: BOQView(job: job, home: home)
         case .roofWeight, nil: EmptyView()
         }
     }

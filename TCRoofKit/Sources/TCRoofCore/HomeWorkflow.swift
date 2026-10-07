@@ -52,7 +52,7 @@ public enum HomeDocStatus: String, Codable, CaseIterable, Sendable {
 
 /// A screen of the app that produces the document instead of an upload.
 public enum HomeFormLink: String, Codable, Sendable {
-    case powerOfAttorney, selfCertification, roofWeight, surveyForm, installLog, inspection, photoReport
+    case powerOfAttorney, selfCertification, roofWeight, surveyForm, installLog, inspection, photoReport, boq
 }
 
 /// One upload slot of PPIM part 4 (self-use request), as the screen shows it. Several documents of the job can go
@@ -414,6 +414,8 @@ public enum HomeCatalog {
                     ppimSlot: 8),
         HomeDocSpec(id: "inverterSpec", title: "Datasheet อินเวอร์เตอร์ / ผลทดสอบและรับรองผลิตภัณฑ์", stage: .design, provider: .team,
                     note: "รุ่นต้องอยู่ใน smartlist.pea.co.th", ppimSlot: 9),
+        HomeDocSpec(id: "boq", title: "BOQ (Bill of quantities) จากแบบ", stage: .design, provider: .engineer,
+                    note: "ร่างจากตารางแผง/อินเวอร์เตอร์ · ราคาจำจากงานก่อน · พิมพ์ฉบับต้นทุนและฉบับส่งลูกค้า", form: .boq),
         HomeDocSpec(id: "buildingPermit", title: "ขออนุญาตดัดแปลงอาคาร ข.1 → อ.1 (แบบและรายการคำนวณโยธา + โฉนด)", stage: .design, provider: .local,
                     note: "เฉพาะน้ำหนักเกิน 20 กก./ตร.ม. · ต้องได้ อ.1 ก่อนติดตั้ง", when: { $0.needsBuildingPermit == true }),
 

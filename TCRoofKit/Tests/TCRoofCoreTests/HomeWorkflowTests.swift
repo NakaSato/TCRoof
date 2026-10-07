@@ -334,3 +334,66 @@ final class HomeLibraryTests: XCTestCase {
         XCTAssertTrue(job.nextActions(on: today, limit: 10).contains { $0.kind == .deadline && $0.detail == "เหลือ 5 วัน" })
     }
 }
+
+/// BOQ drafted from the design, priced from the book, checked against the job.
+final class HomeBOQTests: XCTestCase {
+    func job() -> HomeJob {
+        var j = HomeJob()
+        j.pvKWp = "5.175"; j.inverterKW = "5"; j.phase = .single
+        j.ppim.panels[0].brand = "ZNShine"; j.ppim.panels[0].model = "ZXM7-UHLD144 Series"
+        j.ppim.panels[0].watt = "575"; j.ppim.panels[0].count = "9"
+        j.ppim.inverters[0].brand = "Growatt"; j.ppim.inverters[0].model = "MIN 5000TL-X"; j.ppim.inverters[0].kW = "5"
+        return j
+    }
+
+    func testDraftFromTheDesign() {
+        let b = HomeBOQ.draft(job: job())
+        XCTAssertEqual(b.panelKWp!, 5.175, accuracy: 0.0001)
+        XCTAssertEqual(b.projectTitle, "งานติดตั้งระบบไฟฟ้าจากพลังงานแสงอาทิตย์บนหลังคา (Solar Rooftop) ขนาด 5.175 kWp")
+        XCTAssertEqual(Set(b.lines.map(\.section)), Set(HomeBOQ.Section.allCases))
+        XCTAssertEqual(b.lines(.module).first?.description, "ZNSHINE SOLAR PANEL 575W")
+        XCTAssertTrue(b.lines(.module)[1].isNote)
+        XCTAssertTrue(b.lines(.inverter).contains { HomeBOQ.isExportControl($0.description) })   // self-use: zero export
+        XCTAssertEqual(b.lines(.cable).first?.qty, 40)                                         // 20 m × 2
+        XCTAssertTrue(b.lines(.combiner).first!.description.contains("2P"))
+        var three = job(); three.phase = .multi
+        XCTAssertTrue(HomeBOQ.draft(job: three).lines(.combiner).first!.description.contains("4P"))
+    }
+
+    func testTotalsChecksAndPriceBook() throws {
+        let j = job()
+        var b = HomeBOQ.draft(job: j)
+        XCTAssertTrue(b.issues(for: j).contains { $0.hasPrefix("ยังไม่มีราคา") })
+        for i in b.lines.indices where !b.lines[i].isNote { b.lines[i].material = 100 }
+        b.lines[0].material = 2_333.33
+        XCTAssertFalse(b.issues(for: j).contains { $0.hasPrefix("ยังไม่มีราคา") })
+        let priced = b.lines.filter { !$0.isNote }
+        XCTAssertEqual(b.subtotal, priced.reduce(0) { $0 + $1.amount }, accuracy: 0.001)
+        b.discount = 1000
+        XCTAssertEqual(b.total, b.subtotal - 1000, accuracy: 0.001)
+        XCTAssertEqual(b.grandTotal, b.total * 1.07, accuracy: 0.01)
+        XCTAssertNotNil(b.perWp)
+
+        // the job says 5.13 kWp: the BOQ's panels don't match
+        var other = j; other.pvKWp = "5.13"
+        XCTAssertTrue(b.issues(for: other).contains { $0.hasPrefix("แผงใน BOQ 5.175 kWp ไม่ตรงกับงาน 5.13") })
+        // no export control line on a job that needs one
+        b.lines.removeAll { HomeBOQ.isExportControl($0.description) }
+        XCTAssertTrue(b.issues(for: j).contains { $0.hasPrefix("ต้องมีอุปกรณ์กันไหลย้อน") })
+
+        // prices come back on the next draft
+        let again = HomeBOQ.draft(job: j, prices: b.priceBook)
+        XCTAssertEqual(again.lines[0].material, 2_333.33)
+        XCTAssertEqual(again.lines.first { $0.description == "Labors Cost" }?.material, 100)
+
+        // customer sheet: lots at their totals, pieces keep their count
+        let c = b.customerLines
+        XCTAssertEqual(c[0].unit, "Lot"); XCTAssertEqual(c[0].qty, 1)
+        XCTAssertEqual(c[0].material, 9 * 2_333.33, accuracy: 0.01)
+        XCTAssertEqual(c.reduce(0) { $0 + $1.amount }, b.subtotal, accuracy: 0.01)
+        XCTAssertEqual(c.first { $0.section == .inverter }?.unit, "Pcs")
+
+        XCTAssertEqual(try JSONDecoder().decode(HomeBOQ.self, from: JSONEncoder().encode(b)), b)
+        XCTAssertTrue(HomeJob().checklist.contains { $0.id == "boq" && $0.form == .boq })
+    }
+}

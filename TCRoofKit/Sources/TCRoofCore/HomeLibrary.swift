@@ -69,13 +69,19 @@ public struct HomeLibrary: Codable, Equatable, Sendable {
     }
 
     public var items: [Item] = []
+    /// BOQ unit prices remembered from earlier jobs (`HomeBOQ.priceBook`).
+    public var prices: [String: HomeBOQPrice] = [:]
+    /// The letterhead printed on the BOQ.
+    public var company = HomeCompany()
     public init() {}
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         items = try c.decodeIfPresent([Item].self, forKey: .items) ?? []
+        prices = try c.decodeIfPresent([String: HomeBOQPrice].self, forKey: .prices) ?? [:]
+        company = try c.decodeIfPresent(HomeCompany.self, forKey: .company) ?? HomeCompany()
     }
-    private enum CodingKeys: String, CodingKey { case items }
+    private enum CodingKeys: String, CodingKey { case items, prices, company }
 
     public func items(_ kind: Kind) -> [Item] { items.filter { $0.kind == kind } }
     public func item(_ id: String?) -> Item? { id.flatMap { id in items.first { $0.id == id } } }
@@ -112,6 +118,28 @@ public struct HomeLibrary: Codable, Equatable, Sendable {
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: issued), to: cal.startOfDay(for: date)).day ?? 0
         return HomeJob.coeCertValidDays - days
     }
+}
+
+/// Letterhead of the company's documents.
+public struct HomeCompany: Codable, Equatable, Sendable {
+    public var nameTH = ""
+    public var nameEN = ""
+    public var address = ""
+    public var phone = ""
+    public var taxID = ""
+    public init() {}
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        nameTH = try c.decodeIfPresent(String.self, forKey: .nameTH) ?? ""
+        nameEN = try c.decodeIfPresent(String.self, forKey: .nameEN) ?? ""
+        address = try c.decodeIfPresent(String.self, forKey: .address) ?? ""
+        phone = try c.decodeIfPresent(String.self, forKey: .phone) ?? ""
+        taxID = try c.decodeIfPresent(String.self, forKey: .taxID) ?? ""
+    }
+    private enum CodingKeys: String, CodingKey { case nameTH, nameEN, address, phone, taxID }
+
+    public var isEmpty: Bool { nameTH.isEmpty && nameEN.isEmpty }
 }
 
 // MARK: - What to do next

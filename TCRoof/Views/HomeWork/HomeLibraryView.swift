@@ -21,6 +21,7 @@ struct HomeLibraryView: View {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Text("เก็บครั้งเดียว ใช้ทุกงาน · datasheet จับคู่จากรุ่นที่กรอกในข้อมูล PPIM · วิศวกรและชุดอุปกรณ์ใช้ตัวที่ตั้งเป็นค่าหลัก")
                         .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
+                    companyCard
                     ForEach(HomeLibrary.Kind.allCases, id: \.self) { kindCard($0) }
                 }
                 .padding(isPhone ? Space.l : Space.xl)
@@ -49,6 +50,24 @@ struct HomeLibraryView: View {
                 item.files.forEach(store.deletePhoto)
                 library.items.removeAll { $0.id == item.id }
                 editing = nil
+            }
+        }
+    }
+
+    /// Letterhead of the BOQ.
+    private var companyCard: some View {
+        PermitSection(title: "หัวกระดาษบริษัท", subtitle: "พิมพ์บน BOQ · ราคาที่จำไว้ \(library.prices.count) รายการ") {
+            PermitRow {
+                PermitField("ชื่อบริษัท (ไทย)", text: $library.company.nameTH)
+                PermitField("ชื่อบริษัท (อังกฤษ)", text: $library.company.nameEN)
+            }
+            PermitField("ที่อยู่", text: $library.company.address)
+            PermitRow {
+                PermitField("โทรศัพท์", text: $library.company.phone, keyboard: .phonePad)
+                PermitField("เลขประจำตัวผู้เสียภาษี", text: $library.company.taxID, keyboard: .numberPad)
+            }
+            if !library.prices.isEmpty {
+                TCButton("ล้างราคาที่จำไว้", systemImage: "eraser", kind: .secondary, size: .card) { library.prices = [:] }
             }
         }
     }

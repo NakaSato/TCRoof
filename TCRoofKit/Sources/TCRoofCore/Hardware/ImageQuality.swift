@@ -9,14 +9,26 @@ public struct ImageQuality: Equatable, Sendable {
     public let sharpness: Double
 
     public enum Issue: String, Sendable, CaseIterable {
-        case blurry, dark
+        case blurry, dark, tilted
 
         public var message: String {
             switch self {
             case .blurry: return "ภาพไม่ชัด ถ่ายใหม่?"
             case .dark: return "มืดเกินไป ถ่ายใหม่โดยเปิดแฟลช?"
+            case .tilted: return "ภาพเอียง ถ่ายใหม่?"
             }
         }
+    }
+
+    /// Roll beyond which a square-on photo (`PhotoShot.straight`) counts as tilted, in degrees.
+    public static let tiltLimit = 12.0
+
+    /// How far the device is rolled off the nearest upright or sideways position, 0…45°, from `deviceMotion.gravity`.
+    /// nil when the camera points steeply up or down (under 0.5 g in the screen plane), where roll means nothing.
+    public static func tilt(gx: Double, gy: Double) -> Double? {
+        guard (gx * gx + gy * gy).squareRoot() >= 0.5 else { return nil }
+        let angle = atan2(gx, -gy) * 180 / .pi
+        return abs(remainder(angle, 90))
     }
 
     /// Below this mean luminance a photo is too dark to read.
@@ -52,4 +64,20 @@ public struct ImageQuality: Equatable, Sendable {
         }
         sharpness = n > 0 ? m2 / n : 0
     }
+}
+
+/// How a photo field should be shot (§H4): square-on (nameplates, breakers, meters, bills), a wide view, or either.
+public enum PhotoShot: Sendable {
+    case any, straight, wide
+
+    /// The shot for a schema photo field id ("tr0_plate", "photoBreaker" …).
+    public static func of(_ field: String) -> PhotoShot {
+        let key = field.split(separator: "_").last.map(String.init) ?? field
+        if field.contains("_") ? ["plate", "mdbBreaker"].contains(key) : straightFields.contains(field) { return .straight }
+        if field.contains("_") ? key == "wide" : wideFields.contains(field) { return .wide }
+        return .any
+    }
+
+    static let straightFields: Set<String> = ["meterPic", "photoBreaker", "photoRating", "breakerPhoto", "meterPhoto", "billPhoto"]
+    static let wideFields: Set<String> = ["photoWide", "underRoofPhoto"]
 }

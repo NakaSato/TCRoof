@@ -197,12 +197,12 @@ struct BackfeedPageWide: View {
             }
             Grid(horizontalSpacing: 10, verticalSpacing: 10) {
                 GridRow {
-                    BackfeedPhotoTile(job: job, photo: values.photo(keys[0]), label: ZeroExport.photoLabel(0, hv: hv, board: board), set: { set(keys[0], $0) })
-                    BackfeedPhotoTile(job: job, photo: values.photo(keys[1]), label: ZeroExport.photoLabel(1, hv: hv, board: board), set: { set(keys[1], $0) })
+                    BackfeedPhotoTile(job: job, photo: values.photo(keys[0]), label: ZeroExport.photoLabel(0, hv: hv, board: board), set: { set(keys[0], $0) }).photoShot(keys[0])
+                    BackfeedPhotoTile(job: job, photo: values.photo(keys[1]), label: ZeroExport.photoLabel(1, hv: hv, board: board), set: { set(keys[1], $0) }).photoShot(keys[1])
                 }
                 GridRow {
-                    BackfeedPhotoTile(job: job, photo: values.photo(keys[2]), label: ZeroExport.photoLabel(2, hv: hv, board: board), set: { set(keys[2], $0) })
-                    BackfeedPhotoTile(job: job, photo: values.photo(keys[3]), label: ZeroExport.photoLabel(3, hv: hv, board: board), set: { set(keys[3], $0) })
+                    BackfeedPhotoTile(job: job, photo: values.photo(keys[2]), label: ZeroExport.photoLabel(2, hv: hv, board: board), set: { set(keys[2], $0) }).photoShot(keys[2])
+                    BackfeedPhotoTile(job: job, photo: values.photo(keys[3]), label: ZeroExport.photoLabel(3, hv: hv, board: board), set: { set(keys[3], $0) }).photoShot(keys[3])
                 }
             }
         }

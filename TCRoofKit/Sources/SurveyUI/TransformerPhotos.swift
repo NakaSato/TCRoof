@@ -34,6 +34,7 @@ struct TransformerPhotosView: View {
                                 .font(.caption2).foregroundStyle(values.photo("tr\(i)_\(a.key)") == nil ? Color.red : Paper.tick)
                         }
                         PhotoField(photo: photoBinding("tr\(i)_\(a.key)"), jobID: jobID, label: "TR\(i + 1) " + a.label, height: 150)
+                            .photoShot("tr\(i)_\(a.key)")
                     }
                 }
             }

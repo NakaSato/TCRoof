@@ -35,6 +35,7 @@ extension PanelsPageWide {
             PhotoSlot(photo: values.photo(PhotoField.breaker.rawValue), jobID: job.id, hint: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลขชัด",
                       required: true, onPick: { addPhoto($0, to: .breaker) },
                       onClear: { set(PhotoField.breaker.rawValue, nil) }, onOpen: { viewing = $0 })
+                .photoShot(PhotoField.breaker.rawValue)
                 .frame(height: narrow ? 200 : 250)
         }
     }

@@ -176,10 +176,25 @@ extension View {
     }
 }
 
+extension View {
+    /// How the camera checks shots taken for `field` (`PhotoShot.of`): a nameplate warns when tilted.
+    func photoShot(_ field: String) -> some View { environment(\.photoShot, PhotoShot.of(field)) }
+}
+
+private struct PhotoShotKey: EnvironmentKey { static let defaultValue = PhotoShot.any }
+
+extension EnvironmentValues {
+    var photoShot: PhotoShot {
+        get { self[PhotoShotKey.self] }
+        set { self[PhotoShotKey.self] = newValue }
+    }
+}
+
 private struct PhotoSources: ViewModifier {
     @Binding var showPicker: Bool
     @Binding var showCamera: Bool
     let onPick: (UIImage) -> Void
+    @Environment(\.photoShot) private var shot
     @State private var item: PhotosPickerItem?
 
     func body(content: Content) -> some View {
@@ -192,7 +207,7 @@ private struct PhotoSources: ViewModifier {
                     item = nil
                 }
             }
-            .fullScreenCover(isPresented: $showCamera) { CheckedCamera { img in if let img { onPick(img) } } }
+            .fullScreenCover(isPresented: $showCamera) { CheckedCamera(shot: shot) { img in if let img { onPick(img) } } }
     }
 }
 #endif

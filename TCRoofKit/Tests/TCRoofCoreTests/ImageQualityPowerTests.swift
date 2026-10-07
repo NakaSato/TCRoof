@@ -2,6 +2,27 @@ import XCTest
 @testable import TCRoofCore
 
 final class ImageQualityPowerTests: XCTestCase {
+    func testTilt() throws {
+        XCTAssertEqual(try XCTUnwrap(ImageQuality.tilt(gx: 0, gy: -1)), 0, accuracy: 0.001, "upright portrait")
+        XCTAssertEqual(try XCTUnwrap(ImageQuality.tilt(gx: -1, gy: 0)), 0, accuracy: 0.001, "landscape")
+        let r = 15 * Double.pi / 180
+        XCTAssertEqual(try XCTUnwrap(ImageQuality.tilt(gx: sin(r), gy: -cos(r))), 15, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(ImageQuality.tilt(gx: -cos(r), gy: -sin(r))), 15, accuracy: 0.001, "landscape rolled the other way")
+        XCTAssertNil(ImageQuality.tilt(gx: 0.1, gy: -0.2), "pointing at the floor: no roll")
+        XCTAssertEqual(ImageQuality.Issue.tilted.message, "ภาพเอียง ถ่ายใหม่?")
+    }
+
+    func testPhotoShot() {
+        XCTAssertEqual(PhotoShot.of("tr2_plate"), .straight)
+        XCTAssertEqual(PhotoShot.of("tr0_mdbBreaker"), .straight)
+        XCTAssertEqual(PhotoShot.of("photoBreaker"), .straight)
+        XCTAssertEqual(PhotoShot.of("meterPic"), .straight)
+        XCTAssertEqual(PhotoShot.of("tr1_wide"), .wide)
+        XCTAssertEqual(PhotoShot.of("photoWide"), .wide)
+        XCTAssertEqual(PhotoShot.of("tr0_front"), .any)
+        XCTAssertEqual(PhotoShot.of("aerialPhoto"), .any)
+    }
+
     private let w = 64, h = 48
 
     /// A checkerboard of 4-px squares: hard edges everywhere.

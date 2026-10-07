@@ -139,6 +139,7 @@ struct FieldView: View {
                        height: spec.id == "siteMap" ? 380 : 220,
                        mapGPS: Self.mapFields.contains(spec.id) ? gps : nil)
                 .frame(maxWidth: spec.id == "siteMap" ? .infinity : 520)
+                .photoShot(spec.id)
         case .photos(let max):
             PhotosField(photos: photosBinding, jobID: jobID, max: max)
         case .signature:

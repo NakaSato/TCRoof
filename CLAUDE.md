@@ -42,6 +42,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
+- `-surveyPlatePhoto YES` (with `-surveyPage electrical`) clears TX 1's nameplate fields and gives it a rendered nameplate photo, so A3 offers `พบในรูปป้าย` from the photo text reader.
 - `-surveySettings YES` (with `-screen pwa`) opens the survey settings; its `เครื่องนี้` section lists the hardware the device has (`DeviceCaps`).
 - `-screen home -homeDemo YES` opens the home with sample appointments; `-homeBoard YES` lays the iPad home out at 1366 × 1024. On iPhone, `-homeTab survey|plan|install` opens with that tab selected; `-homeNotifications YES` / `-homeSettings YES` open those screens.
 - `-screen home -homeTab survey` opens the iPhone survey list (`PhoneSurveyList`); `-screen survey` pushes it, with the back chevron. Add `-surveyWindow month|all`, `-surveySearch <text>`, `-surveySearchFocus YES` (seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`) or `-surveyListDraft YES` (today's first job gets a half-done draft) for the states of `docs/ui/tcroof-survey-list-iphone`. Run `-homeDemo YES` on the home tab first to put two appointments on today.

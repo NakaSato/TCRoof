@@ -192,10 +192,7 @@ extension ElectricalPageWide {
             Text("kVA").font(.system(size: 14)).foregroundStyle(Home.muted)
             if a2Badges.contains(.kva(i)) { A2Badge().padding(.leading, 4) }
             SourceChip(source: job.values.source("tr\(i)_kva")).padding(.leading, 4)
-            NameplateScanButton(target: .kva, apply: { v in
-                edit(i) { $0.kva = v }
-                job.values.markSource("tr\(i)_kva", .nameplate)
-            }, compact: true)
+            NameplateScanButton(kind: .transformer, compact: true) { fields, image in applyPlate(i, fields, frame: image) }
             Menu {
                 ForEach(Self.kvaSizes, id: \.self) { k in Button(k + " kVA") { edit(i) { $0.kva = k }; job.values.forgetSource("tr\(i)_kva") } }
             } label: { Image(systemName: "chevron.down").frame(width: 36, height: 44) }
@@ -206,9 +203,34 @@ extension ElectricalPageWide {
     }
 
     /// Typing a kVA by hand forgets that it was read from the nameplate.
-    func kvaText(_ i: Int) -> Binding<String> {
-        let t = tText(i, \.kva, number: true)
-        return Binding(get: { t.wrappedValue }, set: { t.wrappedValue = $0; job.values.forgetSource("tr\(i)_kva") })
+    func kvaText(_ i: Int) -> Binding<String> { plateText(i, \.kva, key: "kva", number: true) }
+
+    /// A nameplate field of transformer `i`: typing forgets that it was read from the plate.
+    func plateText(_ i: Int, _ kp: WritableKeyPath<Transformer, String>, key: String, number: Bool = false) -> Binding<String> {
+        let t = tText(i, kp, number: number)
+        return Binding(get: { t.wrappedValue }, set: { t.wrappedValue = $0; job.values.forgetSource("tr\(i)_\(key)") })
+    }
+
+    /// Writes confirmed nameplate values into transformer `i`, each marked as read from the plate, and keeps the scanned
+    /// frame as its nameplate photo when that slot is empty.
+    func applyPlate(_ i: Int, _ fields: [NameplateParser.Field], frame: UIImage? = nil) {
+        let paths: [String: WritableKeyPath<Transformer, String>] = ["kva": \.kva, "voltage": \.voltage, "vectorGroup": \.vectorGroup,
+                                                                     "impedance": \.impedance, "year": \.year]
+        edit(i) { t in for f in fields { if let kp = paths[f.key] { t[keyPath: kp] = f.value } } }
+        for f in fields { job.values.markSource("tr\(i)_\(f.key)", .nameplate) }
+        if let frame, job.values.photo("tr\(i)_plate") == nil, let p = model.addPhoto(frame, to: job.id) {
+            job.values["tr\(i)_plate"] = .photo(p)
+        }
+    }
+
+    /// Values the transformer's nameplate photo shows that its fields don't have yet.
+    @ViewBuilder func platePhotoSuggestion(_ i: Int) -> some View {
+        if let photo = job.values.photo("tr\(i)_plate"), let t = trafos[safe: i] {
+            PlatePhotoSuggestion(photo: photo, jobID: job.id,
+                                 current: ["kva": t.kva, "voltage": t.voltage, "vectorGroup": t.vectorGroup, "impedance": t.impedance, "year": t.year]) {
+                applyPlate(i, $0)
+            }
+        }
     }
 
     func foldedTransformer(_ i: Int) -> some View {
@@ -260,15 +282,20 @@ extension ElectricalPageWide {
                     VStack(alignment: .leading, spacing: 3) { A3Label(text: "ขนาด", required: true); kvaField(i) }.frame(width: 190)
                     A3Segments(options: ["oil", "dry"], titles: ["Oil immersed", "Dry type"], selected: trafos[safe: i]?.type ?? "") { v in edit(i) { $0.type = v } }
                 }
+                platePhotoSuggestion(i)
                 HStack(spacing: 8) {
-                    A3Input(label: "แรงดัน", text: tText(i, \.voltage), required: true, unit: "V")
-                    A3Input(label: "Vector group", text: tText(i, \.vectorGroup), required: true)
-                    A3Input(label: "%Z", text: tText(i, \.impedance), required: true, unit: "%", keyboard: .decimalPad)
+                    A3Input(label: "แรงดัน", text: plateText(i, \.voltage, key: "voltage"), required: true, unit: "V",
+                            source: job.values.source("tr\(i)_voltage"))
+                    A3Input(label: "Vector group", text: plateText(i, \.vectorGroup, key: "vectorGroup"), required: true,
+                            source: job.values.source("tr\(i)_vectorGroup"))
+                    A3Input(label: "%Z", text: plateText(i, \.impedance, key: "impedance"), required: true, unit: "%", keyboard: .decimalPad,
+                            source: job.values.source("tr\(i)_impedance"))
                 }
                 HStack(spacing: 8) {
                     A3Input(label: "ยี่ห้อ", text: tText(i, \.brand))
                     A3Input(label: "Serial no.", text: tText(i, \.serial))
-                    A3Input(label: "ปีผลิต", text: tText(i, \.year, number: true), keyboard: .numberPad)
+                    A3Input(label: "ปีผลิต", text: plateText(i, \.year, key: "year", number: true), keyboard: .numberPad,
+                            source: job.values.source("tr\(i)_year"))
                 }
                 HStack(alignment: .bottom, spacing: 8) {
                     VStack(alignment: .leading, spacing: 3) {

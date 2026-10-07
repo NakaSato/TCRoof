@@ -20,6 +20,10 @@ final class HardwareAssistTests: XCTestCase {
         XCTAssertEqual(r.hvVolts, 22000)
         XCTAssertEqual(r.lvVolts, 240)
         XCTAssertEqual(r.yearBE, 2565, "2022 is written in B.E.")
+        XCTAssertEqual(r.lvText, "416/240", "A3 writes the LV pair")
+        XCTAssertEqual(NameplateParser.transformerFields(r).map(\.key), ["kva", "voltage", "vectorGroup", "impedance", "year"])
+        XCTAssertEqual(NameplateParser.transformerFields(r).map(\.display), ["630 kVA", "416/240 V", "Dyn11", "4.0 %", "2565"])
+        XCTAssertEqual(NameplateParser.transformerFields(r).map(\.value), ["630", "416/240", "Dyn11", "4.0", "2565"])
     }
 
     func testTransformerPlateWithOCRSpacingAndThousands() {
@@ -30,6 +34,7 @@ final class HardwareAssistTests: XCTestCase {
         XCTAssertEqual(r.hvVolts, 22000)
         XCTAssertEqual(r.lvVolts, 400)
         XCTAssertEqual(r.yearBE, 2564, "a B.E. year stays as it is")
+        XCTAssertEqual(r.lvText, "400")
     }
 
     func testPEAPlateInThaiDigits() {
@@ -58,6 +63,7 @@ final class HardwareAssistTests: XCTestCase {
 
     func testNothingToRead() {
         XCTAssertEqual(NameplateParser.read("ห้ามเปิด อันตราย"), NameplateParser.Reading())
+        XCTAssertTrue(NameplateParser.transformerFields(NameplateParser.Reading()).isEmpty)
         XCTAssertEqual(NameplateParser.Target.kva.display("630"), "630 kVA")
         XCTAssertEqual(NameplateParser.Target.breakerAT.display("225"), "225 AT")
     }
@@ -110,9 +116,12 @@ final class HardwareAssistTests: XCTestCase {
 
         v.markSource("tr1_kva", .nameplate)
         v.markSource("tr2_kva", .sensor)
+        v.markSource("tr2_vectorGroup", .nameplate)
         v.shiftTransformerAnswers(removed: 1)
         XCTAssertEqual(v.source("tr1_kva"), .sensor, "transformer 3 moved up to 2")
+        XCTAssertEqual(v.source("tr1_vectorGroup"), .nameplate)
         XCTAssertNil(v.source("tr2_kva"))
+        XCTAssertNil(v.source("tr2_vectorGroup"))
         v.markSource("tr1_kva", .typed)
         XCTAssertNil(v.source("tr1_kva"))
         XCTAssertEqual(FillSource.nameplate.chip, "จากป้าย")
@@ -127,5 +136,18 @@ final class HardwareAssistTests: XCTestCase {
         v.set("roofAngle", .text("14.8"), source: .sensor)
         let back = try JSONDecoder().decode(Values.self, from: JSONEncoder().encode(v))
         XCTAssertEqual(back.source("roofAngle"), .sensor)
+    }
+}
+
+final class PositionTests: XCTestCase {
+    func testGradesAndNotes() {
+        XCTAssertEqual(GPSGrade(accuracy: 8), .gps)
+        XCTAssertEqual(GPSGrade(accuracy: 20), .gps)
+        XCTAssertEqual(GPSGrade(accuracy: 35), .rough)
+        XCTAssertEqual(GPSGrade(accuracy: 120), .approximate)
+        XCTAssertEqual(GPSGrade(accuracy: -1), .unknown, "Core Location's invalid fix")
+        XCTAssertEqual(GPSGrade.note(accuracy: 7.6), "ความแม่นยำ ± 8 ม.")
+        XCTAssertTrue(GPSGrade.note(accuracy: 120).hasPrefix("ความแม่นยำ ± 120 ม. (เครื่องไม่มี GPS)"))
+        XCTAssertTrue(GPSGrade.approximate.settingsDetail.contains("GNSS"))
     }
 }

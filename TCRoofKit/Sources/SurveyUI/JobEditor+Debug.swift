@@ -37,8 +37,29 @@ extension JobEditorView {
 extension JobEditorView {
     /// `-surveyPage site` opens A2, `electrical` A3, `sld` the single line diagram, `inverter` the first B2, `panels` the first B1, `flood` A4,
     /// `water` the first B3, `backfeed` the first B4, `fts` the first B5, `roof` the first C1, `tank` the first D1, `final` E1.
+    /// `-surveyPlatePhoto YES` gives TX 1 an empty transformer and a rendered nameplate photo (630 kVA, 416/240 V, Dyn11,
+    /// 4.0 %, 2022), so A3 shows `พบในรูปป้าย` from the photo reader.
+    func seedPlatePhoto() {
+        guard UserDefaults.standard.bool(forKey: "surveyPlatePhoto") else { return }
+        var a = job.values.transformers("trafos")
+        if a.isEmpty { a = [Transformer()] }
+        a[0].kva = ""; a[0].voltage = ""; a[0].vectorGroup = ""; a[0].impedance = ""; a[0].year = ""
+        job.values["trafos"] = .transformers(a)
+        let lines = ["THREE PHASE TRANSFORMER", "RATED POWER 630 kVA   FREQ 50 Hz", "HV 22000 V   LV 416/240 V",
+                     "VECTOR GROUP Dyn11", "IMPEDANCE VOLTAGE 4.0 %", "YEAR 2022   SERIAL No. 6S-2207-0153"]
+        let img = UIGraphicsImageRenderer(size: CGSize(width: 1400, height: 900)).image { ctx in
+            UIColor(white: 0.82, alpha: 1).setFill(); ctx.fill(CGRect(x: 0, y: 0, width: 1400, height: 900))
+            let font = UIFont.monospacedSystemFont(ofSize: 54, weight: .bold)
+            for (k, l) in lines.enumerated() {
+                (l as NSString).draw(at: CGPoint(x: 70, y: 90 + k * 125), withAttributes: [.font: font, .foregroundColor: UIColor.black])
+            }
+        }
+        job.values["tr0_plate"] = model.addPhoto(img, to: job.id).map { .photo($0) }
+    }
+
     func openDebugPage() {
         seedAutofill()
+        seedPlatePhoto()
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
         case "site": select(.site)

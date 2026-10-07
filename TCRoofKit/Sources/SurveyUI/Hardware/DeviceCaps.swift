@@ -19,6 +19,8 @@ final class DeviceCaps {
     private(set) var motion = false
     private(set) var lidar = false
     private(set) var ultraWide = false
+    /// From the last location fix on this device; Wi-Fi iPads come out `.approximate`.
+    private(set) var gpsGrade = GPSGrade(rawValue: UserDefaults.standard.string(forKey: "deviceCaps.gpsGrade") ?? "") ?? .unknown
 
     private init() { refresh() }
 
@@ -31,6 +33,14 @@ final class DeviceCaps {
         ultraWide = !AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInUltraWideCamera], mediaType: .video, position: .back).devices.isEmpty
     }
 
+    /// Remembers how good the last fix was, for Settings › เครื่องนี้.
+    func noteFix(accuracy: Double) {
+        let g = GPSGrade(accuracy: accuracy)
+        guard g != .unknown else { return }
+        gpsGrade = g
+        UserDefaults.standard.set(g.rawValue, forKey: "deviceCaps.gpsGrade")
+    }
+
     /// The roof pitch and facing readings need the motion sensors; facing also needs the compass.
     var roofSensors: Bool { motion }
 
@@ -39,6 +49,7 @@ final class DeviceCaps {
         [("อ่านตัวเลขจากป้ายอุปกรณ์", liveText ? "Live Text ในกล้อง" : "เครื่องนี้ไม่รองรับ · พิมพ์เอง", liveText),
          ("วัดมุมเอียงหลังคา", motion ? "เซนเซอร์การเคลื่อนไหว" : "ไม่มีเซนเซอร์ · พิมพ์เอง", motion),
          ("เข็มทิศ (ทิศของหลังคา)", compass ? "ตรวจความแม่นยำทุกครั้ง" : "ไม่มีเข็มทิศ · เลือกทิศเอง", compass),
+         ("ตำแหน่ง (GPS)", gpsGrade.settingsDetail, gpsGrade == .gps || gpsGrade == .rough),
          ("LiDAR", lidar ? "มี" : "ไม่มี", lidar),
          ("เลนส์มุมกว้างพิเศษ (0.5×)", ultraWide ? "มี" : "ไม่มี", ultraWide)]
     }

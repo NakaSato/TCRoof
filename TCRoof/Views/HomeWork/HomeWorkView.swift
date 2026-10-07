@@ -31,6 +31,7 @@ struct HomeWorkView: View {
                 VStack(alignment: .leading, spacing: Space.l) {
                     if home.residentialConfirmed {
                         setupCard
+                        if home.mode == .sell { HomeSellCard(home: $home) }
                         stageStrip
                         ForEach(HomeStage.allCases, id: \.self) { stageCard($0) }
                     } else {
@@ -46,7 +47,11 @@ struct HomeWorkView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task { load() }
         .onAppear { refreshAuto() }
-        .onChange(of: home) { _, new in if loaded { store.save(new, Self.file) } }
+        .onChange(of: home) { _, new in
+            guard loaded else { return }
+            store.save(new, Self.file)
+            markDone(homeDone)
+        }
         .sheet(isPresented: $showWeight) { RoofWeightSheet(result: $home.roofKgPerM2) }
         .sheet(isPresented: $showPack) { PPIMPackView(job: job, home: home) }
         .sheet(isPresented: $showEntry) { PPIMEntryView(home: $home) }
@@ -68,17 +73,33 @@ struct HomeWorkView: View {
         guard loaded else { return }
         let poa = store.load(PowerOfAttorney.self, PowerOfAttorneyView.file)
         let cert = store.load(SelfCertification.self, SelfCertificationView.file)
-        let done: [String: Bool] = [
+        markDone([
             "survey": !job.savedSurveys.isEmpty,
             "installLog": !job.logs.isEmpty,
             "icl": job.inspection?.submittedAt != nil,
-            "roofWeight": home.roofKgPerM2 != nil,
             "poa": poa.map { $0.issues.isEmpty } ?? false,
             "selfCert": cert.map { $0.issues.isEmpty } ?? false,
             "installCert": cert.map { $0.issues.isEmpty } ?? false,
-            "ppimRequest": !home.ppimRequestNo.trimmingCharacters(in: .whitespaces).isEmpty,
+        ])
+        markDone(homeDone)
+    }
+
+    /// Documents this screen's own answers complete.
+    private var homeDone: [String: Bool] {
+        let filed = !home.ppimRequestNo.trimmingCharacters(in: .whitespaces).isEmpty
+        return [
+            "roofWeight": home.roofKgPerM2 != nil,
+            "ppimRequest": filed,
+            "sellRequest": filed && home.offer != nil,
+            "peaApproval": home.mode == .sell && home.announcedOn != nil,
+            "connectRequest": !home.connectRequestNo.trimmingCharacters(in: .whitespaces).isEmpty,
+            "connectionDate": home.cod != nil,
             "sitePhotos": !home.photoReport.pages.isEmpty,
         ]
+    }
+
+    /// Marks received; never lowers a status the team set.
+    private func markDone(_ done: [String: Bool]) {
         for (id, isDone) in done where isDone && !home.document(id).status.isDone {
             var d = home.document(id)
             d.status = .received
@@ -132,7 +153,7 @@ struct HomeWorkView: View {
             roofRow
             ppimRow
             coeRow
-            PermitField("เลขที่คำขอใน PPIM", text: $home.ppimRequestNo)
+            if home.mode == .selfUse { PermitField("เลขที่คำขอใน PPIM", text: $home.ppimRequestNo) }
             ForEach(home.issues, id: \.self) { issue in
                 Text(issue).font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
             }
@@ -178,23 +199,8 @@ struct HomeWorkView: View {
 
     /// หนังสือรับรองสภาวิศวกร for slot 6 is valid 120 days.
     private var coeRow: some View {
-        HStack(spacing: Space.m) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("หนังสือรับรองสภาวิศวกร").font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
-                Text(coeText).font(.sarabun(TypeScale.caption, relativeTo: .caption))
-                    .foregroundStyle((home.coeCertDaysLeft() ?? 1) < 0 ? Theme.dangerText : Theme.inkMuted)
-            }
-            Spacer()
-            if home.coeCertIssued != nil {
-                DatePicker("วันที่ออก", selection: Binding(get: { home.coeCertIssued ?? .now }, set: { home.coeCertIssued = $0 }),
-                           displayedComponents: .date)
-                    .labelsHidden()
-                    .environment(\.locale, Locale(identifier: "th_TH"))
-                    .environment(\.calendar, Calendar(identifier: .buddhist))
-            } else {
-                TCButton("ใส่วันที่ออก", systemImage: "calendar", kind: .secondary, size: .card) { home.coeCertIssued = .now }
-            }
-        }
+        HomeDateRow(title: "หนังสือรับรองสภาวิศวกร", date: $home.coeCertIssued, caption: coeText,
+                    warning: (home.coeCertDaysLeft() ?? 1) < 0, setLabel: "ใส่วันที่ออก")
     }
 
     private var coeText: String {

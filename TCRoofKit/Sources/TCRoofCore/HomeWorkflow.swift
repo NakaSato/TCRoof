@@ -142,6 +142,14 @@ public struct HomeJob: Codable, Equatable, Sendable {
     public var photoReport = PhotoReport()
     /// หนังสือรับรองสภาวิศวกร for slot 6; valid 120 days from this date.
     public var coeCertIssued: Date?
+    /// Selling route: the second PPIM request (ขออนุญาตเชื่อมต่อ, after the contract). `ppimRequestNo` is the first.
+    public var connectRequestNo = ""
+    /// Selling route: sizes filed in the sell request. The connection request can't go above them.
+    public var offer: HomeOffer?
+    /// Selling route: PEA's list announcement, the contract's SCOD and the COD PEA gives.
+    public var announcedOn: Date?
+    public var scod: Date?
+    public var cod: Date?
 
     public init() {}
 
@@ -162,10 +170,16 @@ public struct HomeJob: Codable, Equatable, Sendable {
         ppim = try c.decodeIfPresent(PPIMEntry.self, forKey: .ppim) ?? PPIMEntry()
         photoReport = try c.decodeIfPresent(PhotoReport.self, forKey: .photoReport) ?? PhotoReport()
         coeCertIssued = try c.decodeIfPresent(Date.self, forKey: .coeCertIssued)
+        connectRequestNo = try c.decodeIfPresent(String.self, forKey: .connectRequestNo) ?? ""
+        offer = try c.decodeIfPresent(HomeOffer.self, forKey: .offer)
+        announcedOn = try c.decodeIfPresent(Date.self, forKey: .announcedOn)
+        scod = try c.decodeIfPresent(Date.self, forKey: .scod)
+        cod = try c.decodeIfPresent(Date.self, forKey: .cod)
     }
     private enum CodingKeys: String, CodingKey {
         case residentialConfirmed, caRateCode, mode, teamFiles, wantsTaxDeduction, pvKWp, inverterKW, sellKW, phase,
-             roofKgPerM2, ppimRequestNo, documents, ppim, photoReport, coeCertIssued
+             roofKgPerM2, ppimRequestNo, documents, ppim, photoReport, coeCertIssued,
+             connectRequestNo, offer, announcedOn, scod, cod
     }
 
     /// The council's certificate is valid 120 days from its date (printed on it). Nil until the date is set.
@@ -185,6 +199,61 @@ public struct HomeJob: Codable, Equatable, Sendable {
         return d.isEmpty ? nil : d.hasPrefix("1")
     }
 
+    /// Fourth digit 5: below 400 V, the only voltage the 2569 programme takes. Nil until 4 digits are typed.
+    public var rateCodeIsLowVoltage: Bool? {
+        let d = caRateCode.trimmingCharacters(in: .whitespaces)
+        guard d.count >= 4 else { return nil }
+        return Array(d)[3] == "5"
+    }
+
+    /// PPIM takes sell requests from 1 Jul 2569 08:00 to 30 Nov 2570 17:00 (Bangkok), or until the quota is full.
+    public static let sellWindow: ClosedRange<Date> = {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Bangkok")!
+        let from = cal.date(from: DateComponents(year: 2026, month: 7, day: 1, hour: 8))!
+        let to = cal.date(from: DateComponents(year: 2027, month: 11, day: 30, hour: 17))!
+        return from...to
+    }()
+    public static func sellWindowOpen(on date: Date) -> Bool { sellWindow.contains(date) }
+
+    /// Days PEA gives after the announcement to pay, send the contract papers and sign.
+    public static let announcementDays = 30
+
+    /// Selling route deadlines that have a start date, in order.
+    public var sellDeadlines: [HomeDeadline] {
+        guard mode == .sell else { return [] }
+        var out: [HomeDeadline] = []
+        if let a = announcedOn, let due = Calendar(identifier: .gregorian).date(byAdding: .day, value: Self.announcementDays, to: a) {
+            out.append(HomeDeadline(id: "fee", title: "ชำระค่าตรวจสอบการเชื่อมต่อ 2,140 บาท", due: due, done: document("feeReceipt").status.isDone))
+            out.append(HomeDeadline(id: "contract", title: "ส่งเอกสารสัญญา 2 ชุด และลงนามสัญญา", due: due, done: document("contract").status.isDone))
+        }
+        if let s = scod {
+            out.append(HomeDeadline(id: "scod", title: "จ่ายไฟเข้าระบบ (COD) ภายใน SCOD", due: s, done: cod != nil))
+        }
+        return out
+    }
+
+    /// Sizes now that are above what the sell request filed.
+    public var offerIssues: [String] {
+        guard mode == .sell, let offer else { return [] }
+        var out: [String] = []
+        func over(_ now: Double?, _ filed: Double?, _ what: String) {
+            if let now, let filed, now > filed + 0.0001 { out.append("\(what) เกินที่ยื่นขอขายไฟ (\(HomeOffer.text(now)) > \(HomeOffer.text(filed)))") }
+        }
+        over(Self.number(pvKWp), offer.pvKWp, "แผง kWp")
+        over(Self.number(inverterKW), offer.inverterKW, "อินเวอร์เตอร์ kW")
+        over(Self.number(sellKW), offer.sellKW, "ปริมาณเสนอขาย kW")
+        return out
+    }
+
+    /// Records the sizes of the sell request; false when a size isn't a number yet.
+    @discardableResult
+    public mutating func lockOffer(on date: Date = Date()) -> Bool {
+        guard let pv = Self.number(pvKWp), let inv = Self.number(inverterKW), let sell = Self.number(sellKW) else { return false }
+        offer = HomeOffer(pvKWp: pv, inverterKW: inv, sellKW: sell, phase: phase, lockedAt: date)
+        return true
+    }
+
     /// Over 20 kg/m² needs a building permit (ข.1 → อ.1); nil until weighed.
     public var needsBuildingPermit: Bool? { roofKgPerM2.map { $0 > 20 } }
 
@@ -201,12 +270,22 @@ public struct HomeJob: Codable, Equatable, Sendable {
         return inv > sell && (phase == .single ? inv > 7 : inv > 10)
     }
 
-    public var issues: [String] {
+    public var issues: [String] { issues(on: Date()) }
+
+    public func issues(on now: Date) -> [String] {
         var out: [String] = []
         if !residentialConfirmed { out.append("ยืนยันว่าเป็นบ้านอยู่อาศัย") }
         if rateCodeIsResidential == false { out.append("CA ไม่ได้ขึ้นต้นด้วย 1 — ไม่ใช่บ้านอยู่อาศัย") }
         if mode == .sell, let sell = Self.number(sellKW), sell > 5 { out.append("เสนอขายเกิน 5 kW") }
         if let left = coeCertDaysLeft(), left < 0 { out.append("หนังสือรับรองสภาวิศวกรหมดอายุ (เกิน 120 วัน) ขอฉบับใหม่ก่อนยื่น") }
+        if mode == .sell {
+            if rateCodeIsLowVoltage == false { out.append("Rate code หลักที่ 4 ไม่ใช่ 5 — แรงดันตั้งแต่ 400 V ขึ้นไป ไม่เข้าโครงการภาคประชาชน") }
+            if ppimRequestNo.trimmingCharacters(in: .whitespaces).isEmpty, !Self.sellWindowOpen(on: now) {
+                out.append("อยู่นอกช่วงเปิดรับคำขอขายไฟ (1 ก.ค. 2569 – 30 พ.ย. 2570)")
+            }
+            out += offerIssues
+            out += sellDeadlines.filter { !$0.done && $0.daysLeft(on: now) < 0 }.map { "เลยกำหนด: \($0.title)" }
+        }
         return out
     }
 
@@ -232,6 +311,35 @@ public struct HomeJob: Codable, Equatable, Sendable {
     public var ppimSlots: [PPIMUpload] {
         let docs = checklist
         return HomeCatalog.ppimSlots.map { slot in PPIMUpload(slot: slot, documents: docs.filter { $0.ppimSlot == slot.number }) }
+    }
+}
+
+/// Sizes filed in the sell request.
+public struct HomeOffer: Codable, Equatable, Sendable {
+    public var pvKWp: Double?
+    public var inverterKW: Double?
+    public var sellKW: Double?
+    public var phase: SelfCertification.Phase?
+    public var lockedAt: Date?
+
+    public static func text(_ v: Double) -> String {
+        var s = String(format: "%.2f", v)
+        while s.hasSuffix("0") { s.removeLast() }
+        if s.hasSuffix(".") { s.removeLast() }
+        return s
+    }
+}
+
+/// A date PEA holds the job to.
+public struct HomeDeadline: Equatable, Sendable, Identifiable {
+    public let id: String
+    public let title: String
+    public let due: Date
+    public let done: Bool
+
+    public func daysLeft(on date: Date = Date()) -> Int {
+        let cal = Calendar(identifier: .gregorian)
+        return cal.dateComponents([.day], from: cal.startOfDay(for: date), to: cal.startOfDay(for: due)).day ?? 0
     }
 }
 
@@ -310,8 +418,11 @@ public enum HomeCatalog {
         HomeDocSpec(id: "poa", title: "หนังสือมอบอำนาจ เซ็นสด + อากร 30 บาท + สำเนาบัตรผู้มอบและผู้รับมอบ", stage: .apply, provider: .customer,
                     form: .powerOfAttorney, when: { $0.teamFiles }),
         HomeDocSpec(id: "ppimRequest", title: "ยื่นคำขอใน PPIM และบันทึกเลขคำขอ", stage: .apply, provider: .team,
-                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ · ผลิตใช้เอง: PEA แจ้งผลภายใน 45 วันนับจากเอกสารครบ"),
-        HomeDocSpec(id: "peaApproval", title: "PEA อนุมัติคำขอ / ประกาศรายชื่อ", stage: .apply, provider: .pea),
+                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ · ผลิตใช้เอง: PEA แจ้งผลภายใน 45 วันนับจากเอกสารครบ", when: selfUse),
+        HomeDocSpec(id: "sellRequest", title: "ยื่นคำขอขายไฟใน PPIM และบันทึกเลขคำขอ (ล็อกขนาดที่เสนอ)", stage: .apply, provider: .team,
+                    note: "เลข D… ระหว่างรออัปโหลด เปลี่ยนเป็น PPIM1A6… เมื่อเอกสารครบ · แผงไม่เกิน 10 kWp ยินยอมส่งข้อมูลให้สรรพากร", when: sell),
+        HomeDocSpec(id: "peaApproval", title: "PEA อนุมัติคำขอ / ประกาศรายชื่อ", stage: .apply, provider: .pea,
+                    note: "ขายไฟ: ประกาศภายใน 30 วันนับจากคำขอครบ · บันทึกวันประกาศเพื่อนับเส้นตาย 30 วัน"),
         HomeDocSpec(id: "feeReceipt", title: "ใบเสร็จค่าตรวจสอบการเชื่อมต่อ 2,140 บาท", stage: .apply, provider: .customer,
                     note: "ภายใน 30 วันนับจากประกาศ", when: sell),
         HomeDocSpec(id: "contract", title: "ส่งเอกสารสัญญา 2 ชุด และลงนามสัญญาซื้อขายไฟฟ้า", stage: .apply, provider: .customer,
@@ -328,6 +439,8 @@ public enum HomeCatalog {
         // ขอเชื่อมต่อ
         HomeDocSpec(id: "selfCert", title: "แบบฟอร์มรับรองตนเอง VSPP + เอกสารแนบ 1–10 (วิศวกรเซ็นทุกแผ่น)", stage: .connect, provider: .engineer,
                     form: .selfCertification, when: sell),
+        HomeDocSpec(id: "connectRequest", title: "ยื่นขออนุญาตเชื่อมต่อใน PPIM และบันทึกเลขคำขอ", stage: .connect, provider: .team,
+                    note: "เลือกยืนยันข้อมูลเดิม หรือแก้ไขไม่เกินที่ยื่นขอขายไฟ (แนบแผง/อินเวอร์เตอร์/SLD ที่แก้)", when: sell),
         HomeDocSpec(id: "installCert", title: "แบบรับรองการติดตั้ง + รูปหน้างาน (วิศวกรเซ็น)", stage: .connect, provider: .engineer,
                     note: "ฉบับที่ PEA ใช้กับสายผลิตใช้เองยังไม่ยืนยัน — ใช้แบบรับรองตนเองเป็นโครง", form: .selfCertification, when: selfUse),
         HomeDocSpec(id: "ercNotice", title: "แจ้ง กกพ. การผลิตไฟฟ้าที่ได้รับยกเว้นใบอนุญาต (inverter < 1,000 kW)", stage: .connect, provider: .team,

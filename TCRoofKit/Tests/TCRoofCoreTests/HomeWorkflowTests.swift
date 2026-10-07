@@ -170,3 +170,84 @@ final class HomeWorkflowTests: XCTestCase {
         XCTAssertEqual(job.ppim, PPIMEntry())
     }
 }
+
+/// Selling route: second request, deadlines from the announcement, sizes locked at the sell request.
+final class HomeSellRouteTests: XCTestCase {
+    let cal = Calendar(identifier: .gregorian)
+    func day(_ y: Int, _ m: Int, _ d: Int) -> Date { cal.date(from: DateComponents(year: y, month: m, day: d, hour: 12))! }
+
+    func sellJob() -> HomeJob {
+        var j = HomeJob()
+        j.residentialConfirmed = true
+        j.caRateCode = "1125"
+        j.mode = .sell
+        j.pvKWp = "6.84"; j.inverterKW = "5"; j.sellKW = "5"; j.phase = .single
+        return j
+    }
+
+    func testDocumentsOfEachRoute() {
+        var j = sellJob()
+        let ids = Set(j.checklist.map(\.id))
+        XCTAssertTrue(ids.isSuperset(of: ["sellRequest", "connectRequest", "peaApproval"]))
+        XCTAssertFalse(ids.contains("ppimRequest"))
+        j.mode = .selfUse
+        let own = Set(j.checklist.map(\.id))
+        XCTAssertTrue(own.contains("ppimRequest"))
+        XCTAssertFalse(own.contains("sellRequest") || own.contains("connectRequest"))
+    }
+
+    func testRateCodeVoltageAndWindow() {
+        var j = sellJob()
+        XCTAssertEqual(j.rateCodeIsLowVoltage, true)
+        XCTAssertTrue(j.issues(on: day(2026, 10, 7)).isEmpty)
+        j.caRateCode = "1124"
+        XCTAssertTrue(j.issues(on: day(2026, 10, 7)).contains { $0.hasPrefix("Rate code หลักที่ 4") })
+        j.caRateCode = "1125"
+        XCTAssertTrue(j.issues(on: day(2027, 12, 1)).contains { $0.hasPrefix("อยู่นอกช่วงเปิดรับ") })
+        j.ppimRequestNo = "PPIM1A6000001"                     // filed in time: the window no longer matters
+        XCTAssertFalse(j.issues(on: day(2027, 12, 1)).contains { $0.hasPrefix("อยู่นอกช่วงเปิดรับ") })
+        j.mode = .selfUse; j.caRateCode = "1124"
+        XCTAssertTrue(j.issues(on: day(2027, 12, 1)).isEmpty)  // self-use has neither rule
+    }
+
+    func testDeadlinesFromAnnouncement() {
+        var j = sellJob()
+        XCTAssertTrue(j.sellDeadlines.isEmpty)
+        j.announcedOn = day(2026, 9, 1)
+        let d = j.sellDeadlines
+        XCTAssertEqual(d.map(\.id), ["fee", "contract"])
+        XCTAssertEqual(d[0].due, day(2026, 10, 1))
+        XCTAssertEqual(d[0].daysLeft(on: day(2026, 9, 21)), 10)
+        XCTAssertTrue(j.issues(on: day(2026, 10, 2)).contains("เลยกำหนด: ชำระค่าตรวจสอบการเชื่อมต่อ 2,140 บาท"))
+        var paid = HomeDocument(); paid.status = .received
+        j.documents["feeReceipt"] = paid
+        j.documents["contract"] = paid
+        XCTAssertFalse(j.issues(on: day(2026, 10, 2)).contains { $0.hasPrefix("เลยกำหนด") })
+
+        j.scod = day(2027, 6, 30)
+        XCTAssertEqual(j.sellDeadlines.last?.id, "scod")
+        XCTAssertFalse(j.sellDeadlines.last!.done)
+        j.cod = day(2027, 5, 1)
+        XCTAssertTrue(j.sellDeadlines.last!.done)
+        j.mode = .selfUse
+        XCTAssertTrue(j.sellDeadlines.isEmpty)
+    }
+
+    func testOfferLock() throws {
+        var j = sellJob()
+        j.sellKW = ""
+        XCTAssertFalse(j.lockOffer())
+        j.sellKW = "5"
+        XCTAssertTrue(j.lockOffer(on: day(2026, 8, 1)))
+        XCTAssertEqual(j.offer?.inverterKW, 5)
+        XCTAssertTrue(j.offerIssues.isEmpty)
+        j.inverterKW = "6"; j.pvKWp = "6.5"
+        XCTAssertEqual(j.offerIssues, ["อินเวอร์เตอร์ kW เกินที่ยื่นขอขายไฟ (6 > 5)"])
+        XCTAssertTrue(j.issues(on: day(2026, 10, 7)).contains(j.offerIssues[0]))
+
+        let back = try JSONDecoder().decode(HomeJob.self, from: JSONEncoder().encode(j))
+        XCTAssertEqual(back, j)
+        let old = try JSONDecoder().decode(HomeJob.self, from: Data(#"{"mode":"sell"}"#.utf8))
+        XCTAssertNil(old.offer); XCTAssertNil(old.announcedOn); XCTAssertEqual(old.connectRequestNo, "")
+    }
+}

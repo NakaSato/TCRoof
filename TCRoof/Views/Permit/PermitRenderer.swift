@@ -1,0 +1,134 @@
+import UIKit
+import TCRoofCore
+import TCRoofUI
+
+/// Draws a PEA permit form: the original PEA PDF page, untouched (its own fonts and layout), with the answers
+/// written on top at the positions of `PermitFormMap`. The preview and the exported PDF use the same drawing.
+enum PermitRenderer {
+    struct Content {
+        var values: [String: String]
+        var marks: [String: PermitMark]
+        /// Photos per area key (`att1` … `att10`).
+        var photos: [String: [UIImage]] = [:]
+    }
+
+    /// Answers sit this far above the dotted line so Thai descenders stay clear of it.
+    static let lift: CGFloat = 2.5
+    /// Answers are written in the paper's value colour, always its light value (the page is white).
+    static var ink: UIColor { UIColor(Theme.paperValue).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)) }
+
+    static func pageSize(_ map: PermitFormMap) -> CGSize { CGSize(width: map.pageSize[0], height: map.pageSize[1]) }
+
+    static func document(_ map: PermitFormMap) -> CGPDFDocument? {
+        PermitFormMap.templateURL(map.template).flatMap { CGPDFDocument($0 as CFURL) }
+    }
+
+    // MARK: Output
+
+    /// All pages as one PDF, vector: the template page is copied as is and the answers are real text.
+    static func pdf(_ map: PermitFormMap, _ content: Content) -> Data? {
+        guard let doc = document(map) else { return nil }
+        let bounds = CGRect(origin: .zero, size: pageSize(map))
+        return UIGraphicsPDFRenderer(bounds: bounds).pdfData { r in
+            for i in 0..<map.pages {
+                r.beginPage()
+                draw(page: i, map: map, document: doc, content: content, in: r.cgContext)
+            }
+        }
+    }
+
+    /// One page as an image for the on-screen preview.
+    static func image(page: Int, _ map: PermitFormMap, _ content: Content, document: CGPDFDocument?, scale: CGFloat = 2) -> UIImage? {
+        guard let document else { return nil }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: pageSize(map), format: format).image { r in
+            draw(page: page, map: map, document: document, content: content, in: r.cgContext)
+        }
+    }
+
+    // MARK: Drawing
+
+    static func draw(page index: Int, map: PermitFormMap, document: CGPDFDocument, content: Content, in ctx: CGContext) {
+        let bounds = CGRect(origin: .zero, size: pageSize(map))
+        UIColor.white.setFill()
+        ctx.fill(bounds)
+        if let page = document.page(at: index + 1) {
+            ctx.saveGState()
+            ctx.translateBy(x: 0, y: bounds.height)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.concatenate(page.getDrawingTransform(.mediaBox, rect: bounds, rotate: 0, preserveAspectRatio: true))
+            ctx.drawPDFPage(page)
+            ctx.restoreGState()
+        }
+        for area in map.areas where area.page == index {
+            drawPhotos(content.photos[area.key] ?? [], in: rect(area.rect))
+        }
+        for field in map.fields where field.page == index {
+            if let text = content.values[field.key]?.trimmingCharacters(in: .whitespaces), !text.isEmpty {
+                drawText(text, field, size: map.fontSize)
+            }
+        }
+        for check in map.checks where check.page == index {
+            if let mark = content.marks[check.key] { drawMark(mark, in: rect(check.rect), ctx) }
+        }
+    }
+
+    static func rect(_ r: [Double]) -> CGRect { CGRect(x: r[0], y: r[1], width: r[2], height: r[3]) }
+
+    static func font(_ size: CGFloat) -> UIFont { UIFont(name: "Sarabun-Regular", size: size) ?? .systemFont(ofSize: size) }
+
+    /// The value on its blank, shrunk (down to 8 pt) to stay between the blank's ends.
+    static func drawText(_ text: String, _ field: PermitFormMap.Field, size: Double) {
+        let room = CGFloat(field.x1 - field.x0) - 4
+        var s = CGFloat(size)
+        var f = font(s)
+        var str = NSAttributedString(string: text, attributes: [.font: f, .foregroundColor: ink])
+        while str.size().width > room && s > 8 {
+            s -= 0.5
+            f = font(s)
+            str = NSAttributedString(string: text, attributes: [.font: f, .foregroundColor: ink])
+        }
+        let w = min(str.size().width, room)
+        let x = field.align == .left ? CGFloat(field.x0) + 2 : CGFloat(field.x0) + (CGFloat(field.x1 - field.x0) - w) / 2
+        let top = CGFloat(field.baseline) - lift - f.ascender
+        str.draw(with: CGRect(x: x, y: top, width: room + 2, height: f.lineHeight + 4),
+                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil)
+    }
+
+    /// ✓ or – inside the printed box.
+    static func drawMark(_ mark: PermitMark, in r: CGRect, _ ctx: CGContext) {
+        let path = UIBezierPath()
+        switch mark {
+        case .yes:
+            path.move(to: CGPoint(x: r.minX + 2.2, y: r.minY + r.height * 0.55))
+            path.addLine(to: CGPoint(x: r.minX + r.width * 0.42, y: r.maxY - 2.3))
+            path.addLine(to: CGPoint(x: r.maxX - 1.8, y: r.minY + 2))
+        case .no:
+            path.move(to: CGPoint(x: r.minX + 2.5, y: r.midY))
+            path.addLine(to: CGPoint(x: r.maxX - 2.5, y: r.midY))
+        }
+        ink.setStroke()
+        path.lineWidth = 1.4
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        path.stroke()
+    }
+
+    /// Photos fill the attachment's area: one or two stacked, three or more in two columns; each fits its cell.
+    static func drawPhotos(_ photos: [UIImage], in area: CGRect) {
+        guard !photos.isEmpty else { return }
+        let cols = photos.count <= 2 ? 1 : 2
+        let rows = Int((Double(photos.count) / Double(cols)).rounded(.up))
+        let gap: CGFloat = 8
+        let w = (area.width - gap * CGFloat(cols - 1)) / CGFloat(cols)
+        let h = (area.height - gap * CGFloat(rows - 1)) / CGFloat(rows)
+        for (i, image) in photos.enumerated() {
+            let cell = CGRect(x: area.minX + CGFloat(i % cols) * (w + gap), y: area.minY + CGFloat(i / cols) * (h + gap), width: w, height: h)
+            let s = min(cell.width / image.size.width, cell.height / image.size.height)
+            let size = CGSize(width: image.size.width * s, height: image.size.height * s)
+            image.draw(in: CGRect(x: cell.midX - size.width / 2, y: cell.midY - size.height / 2, width: size.width, height: size.height))
+        }
+    }
+}

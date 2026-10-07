@@ -1,0 +1,179 @@
+import SwiftUI
+import TCRoofUI
+import TCRoofCore
+
+/// แบบฟอร์มรับรองตนเอง VSPP 2569 (12 pages: the statement, signatures and attachments 1–10) of one job.
+/// The printout is the original PEA pages with the answers, ticks and photos on them.
+struct SelfCertificationView: View {
+    let job: Job
+
+    @State private var form = SelfCertification()
+    @State private var loaded = false
+    /// Photo data by file name, read once from the job's permit folder.
+    @State private var photoData: [String: Data] = [:]
+    private let map = PermitFormMap.load(PermitFormMap.selfCertification)
+    static let file = "selfcert"
+
+    var body: some View {
+        if let map {
+            PermitFormScaffold(title: "แบบฟอร์มรับรองตนเอง", job: job, map: map, issues: form.issues,
+                               fileName: "แบบฟอร์มรับรองตนเอง-\(job.code).pdf", version: AnyHashable(version),
+                               content: content) {
+                producerCard
+                systemCard
+                ForEach(1...10, id: \.self) { attachmentCard($0) }
+                signCard
+            }
+            .task { load() }
+            .onChange(of: form) { _, new in if loaded { PermitStore(job: job).save(new, Self.file) } }
+        } else {
+            ContentUnavailableView("ไม่พบแบบฟอร์ม", systemImage: "doc.questionmark")
+        }
+    }
+
+    private var version: Data { (try? JSONEncoder().encode(form)) ?? Data() }
+
+    private func content() -> PermitRenderer.Content {
+        var photos: [String: [UIImage]] = [:]
+        for n in 1...10 {
+            photos["att\(n)"] = form.photos[n - 1].compactMap { photoData[$0].flatMap(UIImage.init(data:)) }
+        }
+        // attachment 2 is left empty when no limiter is needed (the form says so)
+        if form.exportLimiter == .notRequired { photos["att2"] = [] }
+        return PermitRenderer.Content(values: form.values, marks: form.marks, photos: photos)
+    }
+
+    private func load() {
+        guard !loaded else { return }
+        let store = PermitStore(job: job)
+        if let saved = store.load(SelfCertification.self, Self.file) {
+            form = saved
+            for name in saved.photos.flatMap({ $0 }) { photoData[name] = store.photo(name) }
+        } else {
+            form.producerName = job.customerName
+            form.phone = job.phone
+            form.address = [job.address, job.province].filter { !$0.isEmpty }.joined(separator: " ")
+            if job.capacityKW > 0 { form.pvKWp = String(format: "%.2f", job.capacityKW) }
+        }
+        loaded = true
+    }
+
+    // MARK: Cards
+
+    private var producerCard: some View {
+        PermitSection(title: "ผู้ผลิตไฟฟ้าและสัญญา", subtitle: "ผู้ผลิตไฟฟ้า คือผู้เป็นเจ้าของมิเตอร์") {
+            PermitField("ชื่อผู้ผลิตไฟฟ้า", text: $form.producerName, required: true)
+            PermitField("เลขที่คำขอในระบบ PPIM (ต่อจาก PPIM1A6)", text: $form.ppimSuffix, required: true)
+            PermitRow {
+                PermitField("สัญญาซื้อขายไฟฟ้า เลขที่", text: $form.contractNo, required: true)
+                PermitField("ลงวันที่", text: $form.contractDate, required: true)
+            }
+            PermitField("หมายเลขผู้ใช้ไฟฟ้า", text: $form.caNo, required: true, keyboard: .numberPad)
+            PermitRow {
+                PermitField("เบอร์โทรศัพท์", text: $form.phone, required: true, keyboard: .phonePad)
+                PermitField("อีเมล", text: $form.email, required: true, keyboard: .emailAddress)
+            }
+            PermitField("สถานที่ติดตั้งระบบผลิตไฟฟ้า เลขที่", text: $form.address, required: true)
+        }
+    }
+
+    private var systemCard: some View {
+        PermitSection(title: "ขนาดระบบ") {
+            PermitRow {
+                PermitField("แผง PV", text: $form.pvKWp, required: true, keyboard: .decimalPad, unit: "kWp")
+                PermitField("Inverter", text: $form.inverterKW, required: true, keyboard: .decimalPad, unit: "kW")
+            }
+            PermitField("ปริมาณกำลังไฟฟ้าเสนอขาย", text: $form.sellKW, required: true, keyboard: .decimalPad, unit: "kW",
+                        error: (Double(form.sellKW) ?? 0) > 5 ? "เสนอขายได้ไม่เกิน 5 kW" : nil)
+            VStack(alignment: .leading, spacing: 6) {
+                TCFieldLabel("การเชื่อมต่อ", required: true)
+                HStack(spacing: Space.s) {
+                    ForEach(SelfCertification.Phase.allCases, id: \.self) { p in
+                        TCChoiceChip(p.title, selected: form.phase == p) { form.phase = p }
+                    }
+                }
+            }
+            limiterNote
+        }
+    }
+
+    @ViewBuilder private var limiterNote: some View {
+        switch form.exportLimiter {
+        case nil:
+            Text("กรอก Inverter ปริมาณเสนอขาย และการเชื่อมต่อ แล้วแอปจะเลือกช่องในเอกสารแนบ 2 ให้")
+                .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+        case .notRequired?:
+            TCStatusChip("ไม่ต้องติด Export Limiting Device · ไม่ต้องแนบรูปข้อ 2", kind: .ok)
+        case let limiter?:
+            TCStatusChip(limiter == .singleOver7 ? "ต้องติด Export Limiting Device (เฟสเดียว > 7 kW)"
+                                                 : "ต้องติด Export Limiting Device (หลายเฟส > 10 kW)", kind: .pending)
+        }
+    }
+
+    private func attachmentCard(_ n: Int) -> some View {
+        let skip = n == 2 && form.exportLimiter == .notRequired
+        return PermitSection(title: "เอกสารแนบ \(n)", subtitle: SelfCertification.attachments[n - 1]) {
+            if n == 1 {
+                PermitRow {
+                    PermitField("Latitude", text: $form.latitude, required: true, keyboard: .numbersAndPunctuation)
+                    PermitField("Longitude", text: $form.longitude, required: true, keyboard: .numbersAndPunctuation)
+                }
+                if !(form.latitude.isEmpty && form.longitude.isEmpty) && !form.coordinatesValid {
+                    Text("พิกัดควรอยู่ในประเทศไทย (Lat 5–21, Lng 97–106)")
+                        .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
+                }
+            }
+            if n == 6 {
+                ForEach(1...3, id: \.self) { i in
+                    TCRadioCard(SelfCertification.overcurrentOptions[i - 1], selected: form.overcurrent == i) { form.overcurrent = i }
+                }
+            }
+            if skip {
+                Text("ไม่เข้าเงื่อนไข ไม่ต้องแนบรูปถ่ายในหัวข้อนี้")
+                    .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
+            } else {
+                PhotoPickerSection(images: form.photos[n - 1].compactMap { photoData[$0] },
+                                   onAdd: { addPhoto($0, to: n) },
+                                   onDelete: { removePhoto(at: $0, from: n) })
+                Text(form.photos[n - 1].count >= SelfCertification.maxPhotos
+                     ? "ครบ \(SelfCertification.maxPhotos) รูปแล้ว (รูปที่เกินจะไม่ลงหน้าเอกสาร)"
+                     : "ลงได้ \(SelfCertification.maxPhotos) รูปต่อหน้า")
+                    .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.muted)
+            }
+        }
+    }
+
+    private func addPhoto(_ data: Data, to n: Int) {
+        guard form.photos[n - 1].count < SelfCertification.maxPhotos else { return }
+        let name = PermitStore(job: job).addPhoto(data)
+        photoData[name] = data
+        form.photos[n - 1].append(name)
+    }
+
+    private func removePhoto(at index: Int, from n: Int) {
+        guard form.photos[n - 1].indices.contains(index) else { return }
+        let name = form.photos[n - 1].remove(at: index)
+        PermitStore(job: job).deletePhoto(name)
+        photoData[name] = nil
+    }
+
+    private var signCard: some View {
+        PermitSection(title: "ผู้ลงนาม", subtitle: "ช่องลายเซ็นเว้นไว้ให้เซ็นจริง · วิศวกรลงนามรับรองทุกแผ่น") {
+            PermitField("ชื่อวิศวกร (ตัวบรรจง)", text: $form.engineerName, required: true)
+            dateRow("พิมพ์วันที่ลงนามของผู้ผลิตไฟฟ้า", $form.producerSignDate)
+            dateRow("พิมพ์วันที่ลงนามของวิศวกร", $form.engineerSignDate)
+        }
+    }
+
+    /// Off = the date is left for handwriting.
+    private func dateRow(_ title: String, _ date: Binding<Date?>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TCSwitchRow(title, isOn: Binding(get: { date.wrappedValue != nil },
+                                             set: { date.wrappedValue = $0 ? Date() : nil }))
+            if date.wrappedValue != nil {
+                TCDateField(date: Binding(get: { date.wrappedValue ?? Date() }, set: { date.wrappedValue = $0 }),
+                            accessibilityTitle: title)
+            }
+        }
+    }
+}

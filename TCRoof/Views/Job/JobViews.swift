@@ -139,6 +139,7 @@ struct JobDetailView: View {
             action("สแกนอุปกรณ์", "barcode.viewfinder", "\(job.devices.count) รายการ") { JobDevicesView(job: job) }
             action("บันทึกงานติดตั้ง", "hammer", "\(job.logs.count) บันทึก") { JobInstallLogsView(job: job) }
             action("ใบตรวจรับงาน (ICL)", "checkmark.seal", inspectionStatus) { InspectionView(job: job) }
+            action("เอกสารขออนุญาต PEA", "doc.text", "หนังสือมอบอำนาจ · แบบรับรองตนเอง") { PermitFormsView(job: job) }
         }
     }
 

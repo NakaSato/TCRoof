@@ -1,0 +1,358 @@
+{
+ "title": "หนังสือมอบอำนาจ โครงการ Solar Rooftop ภาคประชาชน ประเภทบ้านอยู่อาศัย",
+ "template": "pea-poa-2569",
+ "pageSize": [
+  595.32,
+  841.92
+ ],
+ "pages": 1,
+ "source": "แบบฟอร์ม กฟภ. 01 หนังสือมอบอำนาจ (Word 2019, 26 มิ.ย. 2569) — พิกัดวัดจาก PDF ต้นฉบับ หน่วย pt มุมบนซ้าย",
+ "fontSize": 12.5,
+ "fields": [
+  {
+   "key": "written_at",
+   "page": 0,
+   "x0": 384.6,
+   "x1": 539.4,
+   "baseline": 176.8,
+   "align": "left"
+  },
+  {
+   "key": "day",
+   "page": 0,
+   "x0": 361.7,
+   "x1": 392.9,
+   "baseline": 194.9,
+   "align": "center"
+  },
+  {
+   "key": "month",
+   "page": 0,
+   "x0": 415.2,
+   "x1": 487.4,
+   "baseline": 194.9,
+   "align": "center"
+  },
+  {
+   "key": "year",
+   "page": 0,
+   "x0": 503.4,
+   "x1": 540.1,
+   "baseline": 194.9,
+   "align": "center"
+  },
+  {
+   "key": "grantor.name",
+   "page": 0,
+   "x0": 208.9,
+   "x1": 468.1,
+   "baseline": 231.0,
+   "align": "left"
+  },
+  {
+   "key": "grantor.age",
+   "page": 0,
+   "x0": 485.2,
+   "x1": 524.2,
+   "baseline": 231.0,
+   "align": "center"
+  },
+  {
+   "key": "grantor.national_id",
+   "page": 0,
+   "x0": 147.2,
+   "x1": 282.1,
+   "baseline": 249.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.ethnicity",
+   "page": 0,
+   "x0": 315.0,
+   "x1": 382.6,
+   "baseline": 249.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.nationality",
+   "page": 0,
+   "x0": 414.3,
+   "x1": 484.4,
+   "baseline": 249.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.house_no",
+   "page": 0,
+   "x0": 72.0,
+   "x1": 118.7,
+   "baseline": 267.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.moo",
+   "page": 0,
+   "x0": 131.9,
+   "x1": 162.8,
+   "baseline": 267.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.subdistrict",
+   "page": 0,
+   "x0": 217.2,
+   "x1": 295.1,
+   "baseline": 267.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.district",
+   "page": 0,
+   "x0": 342.3,
+   "x1": 433.2,
+   "baseline": 267.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.province",
+   "page": 0,
+   "x0": 462.2,
+   "x1": 536.4,
+   "baseline": 267.1,
+   "align": "center"
+  },
+  {
+   "key": "grantor.phone",
+   "page": 0,
+   "x0": 129.5,
+   "x1": 243.7,
+   "baseline": 285.3,
+   "align": "center"
+  },
+  {
+   "key": "grantor.email",
+   "page": 0,
+   "x0": 296.9,
+   "x1": 442.1,
+   "baseline": 285.3,
+   "align": "left"
+  },
+  {
+   "key": "grantee.name",
+   "page": 0,
+   "x0": 226.5,
+   "x1": 480.8,
+   "baseline": 303.4,
+   "align": "left"
+  },
+  {
+   "key": "grantee.age",
+   "page": 0,
+   "x0": 498.0,
+   "x1": 531.6,
+   "baseline": 303.4,
+   "align": "center"
+  },
+  {
+   "key": "grantee.national_id",
+   "page": 0,
+   "x0": 147.2,
+   "x1": 284.8,
+   "baseline": 321.4,
+   "align": "center"
+  },
+  {
+   "key": "grantee.ethnicity",
+   "page": 0,
+   "x0": 317.5,
+   "x1": 379.9,
+   "baseline": 321.4,
+   "align": "center"
+  },
+  {
+   "key": "grantee.nationality",
+   "page": 0,
+   "x0": 411.7,
+   "x1": 484.2,
+   "baseline": 321.4,
+   "align": "center"
+  },
+  {
+   "key": "grantee.house_no",
+   "page": 0,
+   "x0": 72.0,
+   "x1": 113.6,
+   "baseline": 339.5,
+   "align": "center"
+  },
+  {
+   "key": "grantee.moo",
+   "page": 0,
+   "x0": 126.7,
+   "x1": 157.7,
+   "baseline": 339.5,
+   "align": "center"
+  },
+  {
+   "key": "grantee.subdistrict",
+   "page": 0,
+   "x0": 208.3,
+   "x1": 303.8,
+   "baseline": 339.5,
+   "align": "center"
+  },
+  {
+   "key": "grantee.district",
+   "page": 0,
+   "x0": 351.0,
+   "x1": 444.1,
+   "baseline": 339.5,
+   "align": "center"
+  },
+  {
+   "key": "grantee.province",
+   "page": 0,
+   "x0": 474.3,
+   "x1": 539.0,
+   "baseline": 339.5,
+   "align": "center"
+  },
+  {
+   "key": "grantee.phone",
+   "page": 0,
+   "x0": 129.5,
+   "x1": 243.7,
+   "baseline": 357.6,
+   "align": "center"
+  },
+  {
+   "key": "grantee.email",
+   "page": 0,
+   "x0": 296.9,
+   "x1": 431.7,
+   "baseline": 357.6,
+   "align": "left"
+  },
+  {
+   "key": "item6_ref",
+   "page": 0,
+   "x0": 341.3,
+   "x1": 404.1,
+   "baseline": 523.4,
+   "align": "center"
+  },
+  {
+   "key": "item7_other",
+   "page": 0,
+   "x0": 189.3,
+   "x1": 474.3,
+   "baseline": 541.4,
+   "align": "left"
+  },
+  {
+   "key": "grantor.print",
+   "page": 0,
+   "x0": 272.5,
+   "x1": 447.9,
+   "baseline": 637.9,
+   "align": "center"
+  },
+  {
+   "key": "grantee.print",
+   "page": 0,
+   "x0": 274.5,
+   "x1": 449.9,
+   "baseline": 692.1,
+   "align": "center"
+  },
+  {
+   "key": "witness_1",
+   "page": 0,
+   "x0": 281.4,
+   "x1": 447.1,
+   "baseline": 746.4,
+   "align": "center"
+  },
+  {
+   "key": "witness_2",
+   "page": 0,
+   "x0": 284.8,
+   "x1": 443.0,
+   "baseline": 800.6,
+   "align": "center"
+  }
+ ],
+ "checks": [
+  {
+   "key": "power_1",
+   "page": 0,
+   "rect": [
+    109.4,
+    403.4,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  },
+  {
+   "key": "power_2",
+   "page": 0,
+   "rect": [
+    109.4,
+    421.4,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  },
+  {
+   "key": "power_3",
+   "page": 0,
+   "rect": [
+    109.4,
+    439.6,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  },
+  {
+   "key": "power_4",
+   "page": 0,
+   "rect": [
+    109.4,
+    457.7,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  },
+  {
+   "key": "power_5",
+   "page": 0,
+   "rect": [
+    109.4,
+    475.7,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  },
+  {
+   "key": "power_6",
+   "page": 0,
+   "rect": [
+    109.4,
+    511.9,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  },
+  {
+   "key": "power_7",
+   "page": 0,
+   "rect": [
+    109.4,
+    529.9,
+    11.399999999999991,
+    11.399999999999977
+   ]
+  }
+ ],
+ "areas": []
+}

@@ -33,6 +33,13 @@ public struct PermitFormMap: Decodable, Sendable {
         public let rect: [Double]
     }
 
+    /// A picture placed on a page ([x, y, w, h], drawn to fit), e.g. the PEA logo heading the attachment pages.
+    public struct Logo: Decodable, Sendable {
+        public let page: Int
+        public let image: String
+        public let rect: [Double]
+    }
+
     public let title: String
     public let template: String
     public let pageSize: [Double]
@@ -41,6 +48,8 @@ public struct PermitFormMap: Decodable, Sendable {
     public let fields: [Field]
     public let checks: [Check]
     public let areas: [Area]
+    /// Missing in maps without pictures.
+    public let logos: [Logo]?
 
     public static let powerOfAttorney = "pea-poa-2569"
     public static let selfCertification = "pea-selfcert-2569"
@@ -50,6 +59,11 @@ public struct PermitFormMap: Decodable, Sendable {
     /// The original PEA PDF the answers are drawn on.
     public static func templateURL(_ template: String) -> URL? {
         folder?.appendingPathComponent(template + ".pdf")
+    }
+
+    /// A picture shipped beside the templates (`Resources/PermitForms/<name>`).
+    public static func assetURL(_ name: String) -> URL? {
+        folder?.appendingPathComponent(name)
     }
 
     public static func load(_ template: String) -> PermitFormMap? {

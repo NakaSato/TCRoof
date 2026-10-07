@@ -164,4 +164,19 @@ final class PermitFormsTests: XCTestCase {
         let round = try JSONDecoder().decode(SelfCertification.self, from: JSONEncoder().encode(sc))
         XCTAssertEqual(round, sc)
     }
+
+    func testLogoHeadsEachAttachmentPage() throws {
+        let map = try XCTUnwrap(PermitFormMap.load(PermitFormMap.selfCertification))
+        let logos = try XCTUnwrap(map.logos)
+        XCTAssertEqual(Set(logos.map(\.page)), Set(2...11))          // attachments 1–10, not the statement pages
+        for logo in logos {
+            XCTAssertNotNil(PermitFormMap.assetURL(logo.image).flatMap { try? Data(contentsOf: $0) }, logo.image)
+            let bottom = logo.rect[1] + logo.rect[3]
+            // above the page's photo area and every answer on that page
+            for area in map.areas where area.page == logo.page { XCTAssertLessThan(bottom, area.rect[1]) }
+            for field in map.fields where field.page == logo.page { XCTAssertLessThan(bottom, field.baseline - 14) }
+            XCTAssertGreaterThanOrEqual(logo.rect[1], 12)              // inside a printer's margin
+        }
+        XCTAssertNil(PermitFormMap.load(PermitFormMap.powerOfAttorney)?.logos)
+    }
 }

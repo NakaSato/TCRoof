@@ -59,6 +59,7 @@ struct PermitFormScaffold<Questions: View>: View {
     private func export() {
         guard let data = PermitRenderer.pdf(map, content()),
               let url = PermitStore(job: job).exportURL(data, fileName: fileName) else { return }
+        HomeArchive.keep(data, name: fileName, job: job)   // kept in แฟ้มเอกสาร, uploaded with the job
         shareURL = ShareItem(url: url)
     }
 

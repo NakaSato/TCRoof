@@ -108,6 +108,17 @@ struct PPIMPackView: View {
     @State private var folder: URL?
     @State private var share: URL?
     @State private var working = false
+    @State private var kept = 0
+
+    /// Each built slot file goes into แฟ้มเอกสาร as "PPIM <file>", replacing the earlier build of the same slot.
+    private func keepSlots() {
+        kept = 0
+        for s in slots {
+            guard let url = s.url, let data = try? Data(contentsOf: url) else { continue }
+            HomeArchive.keep(data, name: "PPIM " + s.upload.slot.file, job: job)
+            kept += 1
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -117,6 +128,13 @@ struct PPIMPackView: View {
                          ? "ส่วนที่ 4 ของคำขอเชื่อมต่อ (ไม่ขายไฟ) ใน PPIM · ช่องละ 1 ไฟล์ PDF · ชื่อไฟล์และขนาดตามหน้าจอ PPIM · ช่อง 7 ไม่มีในงานแสงอาทิตย์"
                          : "สายขายไฟ: ใช้ไฟล์ชุดเดียวกันแนบในคำขอขายไฟ/ขอเชื่อมต่อ · ช่องของหน้าจอขายไฟยังไม่ยืนยัน")
                         .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
+                    HStack(spacing: Space.s) {
+                        TCButton("เก็บเข้าแฟ้มเอกสาร", systemImage: "folder.badge.plus", kind: .secondary, size: .card) { keepSlots() }
+                            .disabled(working || !slots.contains { $0.url != nil })
+                        if kept > 0 {
+                            Text("เก็บแล้ว \(kept) ไฟล์").font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.okText)
+                        }
+                    }
                     ForEach(["เอกสารหลัก", "พลังงานแสงอาทิตย์"], id: \.self) { group in
                         Text(group).font(.sarabun(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                             .accessibilityAddTraits(.isHeader)
@@ -132,7 +150,7 @@ struct PPIMPackView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ปิด") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("ส่งออก ZIP") { if let folder { share = PPIMPack.zip(folder) } }
+                    Button("ส่งออก ZIP") { if let folder { keepSlots(); share = PPIMPack.zip(folder) } }
                         .disabled(working || !slots.contains { $0.url != nil })
                 }
             }

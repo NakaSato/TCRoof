@@ -92,7 +92,9 @@ struct ContractorWorkView: View {
 
     func exportPDF(_ doc: SiteDocRenderer.Doc, name: String) {
         let data = SiteDocRenderer.pdf(doc, company: library.company, store: store)
-        share = store.exportURL(data, fileName: (name + " " + job.code + ".pdf").replacingOccurrences(of: "/", with: "-"))
+        let file = (name + " " + job.code + ".pdf").replacingOccurrences(of: "/", with: "-")
+        HomeArchive.keep(data, name: file, job: job)
+        share = store.exportURL(data, fileName: file)
     }
 
     // MARK: Tabs

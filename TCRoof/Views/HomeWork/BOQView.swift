@@ -271,6 +271,7 @@ struct BOQView: View {
         rememberPrices()
         do {
             let data = try BOQExcel.export(boq)
+            HomeArchive.keep(data, name: fileStem() + ".xlsx", job: job)
             share = store.exportURL(data, fileName: fileStem() + ".xlsx")
         } catch {
             exportError = error.localizedDescription
@@ -315,6 +316,7 @@ struct BOQView: View {
         rememberPrices()
         let data = BOQRenderer.pdf(boq, company: library.company, customer: customer)
         let name = "BOQ \(customer ? "" : "ต้นทุน ")\(job.code) \(HomeBOQ.kw(boq.panelKWp ?? 0)) kWp Rev.\(boq.revision).pdf"
+        HomeArchive.keep(data, name: name, job: job)
         share = store.exportURL(data, fileName: name.replacingOccurrences(of: "/", with: "-"))
     }
 

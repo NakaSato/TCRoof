@@ -16,6 +16,7 @@ struct HomeWorkView: View {
     @State private var showWeight = false
     @State private var showPack = false
     @State private var showEntry = false
+    @State private var showArchive = false
     @State private var library = HomeLibrary()
     /// nil = open while the sizes or the phase are missing.
     @State private var setupOpen: Bool?
@@ -56,6 +57,7 @@ struct HomeWorkView: View {
         .sheet(isPresented: $showWeight) { RoofWeightSheet(result: $home.roofKgPerM2) }
         .sheet(isPresented: $showPack) { PPIMPackView(job: job, home: home, library: library) }
         .sheet(isPresented: $showEntry) { PPIMEntryView(home: $home) }
+        .sheet(isPresented: $showArchive) { HomeArchiveView(job: job) }
     }
 
     /// Library and PPIM pack; icons only on iPhone so the bar keeps its title.
@@ -66,6 +68,9 @@ struct HomeWorkView: View {
         Button { showPack = true } label: { navLabel("ชุดไฟล์ PPIM", "tray.and.arrow.up") }
             .buttonStyle(.plain)
             .accessibilityLabel("ชุดไฟล์ PPIM")
+        Button { showArchive = true } label: { navLabel("แฟ้มเอกสาร (\(job.documents.count))", "folder") }
+            .buttonStyle(.plain)
+            .accessibilityLabel("แฟ้มเอกสาร \(job.documents.count) ไฟล์")
     }
 
     private func navLabel(_ title: String, _ icon: String) -> some View {

@@ -62,6 +62,8 @@ extension JobEditorView {
             // `-surveyFinalRender YES` also writes E1 at free widths 1366 / 1180 to Documents/final-<w>x<h>.png
             if UserDefaults.standard.bool(forKey: "surveyFinalRender") { renderFinal() }
         case "tank":
+            // no template has a tank: the demo job gets an empty D1 so the D1 checks run on any simulator
+            if first(.tank) == nil { job.insertModule(SurveyModule(type: .tank)) }
             if let p = first(.tank) { select(p) }
             // `-surveyTankRender YES` also writes D1 at free widths 1366 / 1180 / 1100 to Documents/tank-<w>x<h>.png
             if UserDefaults.standard.bool(forKey: "surveyTankRender"), let m = job.modules.first(where: { $0.type == .tank }) { renderTank(m.id) }

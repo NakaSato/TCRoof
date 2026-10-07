@@ -199,7 +199,19 @@ struct RoutineSettingsSheet: View {
                     TextField("Inspector", text: $s.inspector)
                 }
                 ListEditor(title: "ตำแหน่งในสถานี", placeholder: "เช่น หลังคา 1, ถังน้ำใส 1, ห้องอินเวอร์เตอร์", items: $s.locations)
-                if !s.locations.isEmpty { taskLocations }
+                if !s.locations.isEmpty {
+                    Section {
+                        NavigationLink {
+                            KeyPlanEditor(job: job, settings: $s)
+                        } label: {
+                            let placed = s.locations.filter { s.keyPoint($0) != nil }.count
+                            LabeledContent("ผังตำแหน่ง (Key plan)", value: "วางแล้ว \(placed)/\(s.locations.count)")
+                        }
+                    } footer: {
+                        Text("วางตำแหน่งบนภาพสถานที่ (A2) ของแบบสำรวจ รายงานประจำวันจะแสดงจุดที่มีงานวันนี้เป็นสีแดง")
+                    }
+                    taskLocations
+                }
                 Section {
                     HStack(spacing: 6) {
                         ForEach(Self.weekdays, id: \.0) { d, label in

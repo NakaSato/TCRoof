@@ -104,10 +104,12 @@ enum RoutineReportFiles {
 
     static func daily(_ job: Job, log: InstallLog) -> Built? {
         guard let r = log.report else { return nil }
-        let (photos, images) = log.dayPhotos(r)
+        var (photos, images) = log.dayPhotos(r)
+        let key = job.reportKeyPlan()
+        if let key { images[key.plan.photo.id] = key.image }
         let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure())
             .daily(.init(report: r, photos: photos, engineerSignedAt: log.engineerSignedAt, inspectorAckAt: log.inspectorAckAt),
-                   all: job.dailyReports)
+                   all: job.dailyReports, keyPlan: key?.plan)
         return Built(pages: pages, images: images, name: RoutineReport.fileName(.daily, date: r.date, station: job.stationName),
                      folder: RoutineReport.folder(.daily, date: r.date), title: RoutineReport.Kind.daily.title)
     }

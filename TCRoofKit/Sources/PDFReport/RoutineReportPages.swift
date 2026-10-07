@@ -35,6 +35,17 @@ public struct RoutineReportPages {
         }
     }
 
+    /// The station picture (A2's site picture) and where each location is on it, as fractions of its size.
+    public struct KeyPlan: Sendable {
+        public var photo: Photo
+        /// Width / height of the picture.
+        public var aspect: Double
+        public var points: [(name: String, x: Double, y: Double)]
+        public init(photo: Photo, aspect: Double, points: [(name: String, x: Double, y: Double)]) {
+            self.photo = photo; self.aspect = aspect; self.points = points
+        }
+    }
+
     /// The MP plan, when the station has one.
     public struct Schedule: Sendable {
         public var input: MasterSchedule.Input
@@ -226,6 +237,23 @@ public struct RoutineReportPages {
         f.place(66, o)
     }
 
+    /// The picture with a marker per placed location: filled for today's, outlined for the others.
+    static func keyPlanHeight(_ k: KeyPlan) -> Double { min(cw / max(k.aspect, 0.1), 320) }
+
+    func keyPlan(_ f: inout Flow, _ k: KeyPlan, today: Set<String>) {
+        let h = Self.keyPlanHeight(k), w = h * k.aspect, x0 = Self.margin + (Self.cw - w) / 2
+        var o: [DrawOp] = [.rect(Box(x0, 0, w, h), stroke: Self.line, fill: nil, width: 0.5), .photo(k.photo, Box(x0, 0, w, h))]
+        for p in k.points {
+            let c = Pt(x0 + p.x * w, p.y * h), on = today.contains(p.name)
+            o.append(.circle(c, r: on ? 7 : 5, stroke: on ? .white : Self.navy, fill: on ? Self.red : .white, width: 1.5))
+            o.append(.rect(Box(c.x + 9, c.y - 7, measure.width(p.name, size: 8, bold: on) + 6, 14), stroke: nil,
+                           fill: RGBA(1, 1, 1, 0.85)))
+            o.append(.text(p.name, at: Pt(c.x + 12, c.y), size: 8, bold: on, color: on ? Self.red : Self.navy))
+        }
+        f.place(h + 8, o)
+        note(&f, "● สีแดง = ตำแหน่งที่มีงานวันนี้")
+    }
+
     var stationLine: String {
         [station.mpNumber.map { "MP \($0)" }, station.name, station.capacityKWp > 0 ? String(format: "%.2f kWp", station.capacityKWp) : nil]
             .compactMap { $0 }.joined(separator: " · ")
@@ -248,7 +276,7 @@ public struct RoutineReportPages {
     // MARK: - R2 daily
 
     /// รายงานประจำวัน. `all` holds every report of the station, for the "วันนี้" column.
-    public func daily(_ e: DailyEntry, all: [RoutineReport.Daily]) -> [ReportLayout.Page] {
+    public func daily(_ e: DailyEntry, all: [RoutineReport.Daily], keyPlan: KeyPlan? = nil) -> [ReportLayout.Page] {
         let r = e.report
         var f = Flow(title: "รายงานประจำวัน (Daily Report)", subtitle: stationLine + " · " + RoutineReport.thaiDate(r.date))
         projectFacts(&f)
@@ -289,6 +317,12 @@ public struct RoutineReportPages {
                       return [l.task?.code ?? "อื่น", l.description.isEmpty ? (l.task?.title ?? "") : l.description, l.location,
                               (delta > 0 ? "+" : "") + RoutineReport.percent(delta), RoutineReport.percent(l.percent)]
                   })
+        }
+
+        if let keyPlan, !keyPlan.points.isEmpty {
+            f.need(Self.keyPlanHeight(keyPlan) + 50)   // keep the heading with the picture
+            heading(&f, "ผังตำแหน่งงานวันนี้ (Key plan)")
+            self.keyPlan(&f, keyPlan, today: Set(r.progress.map(\.location)))
         }
 
         heading(&f, "6. ปัญหา / อุปสรรค")
@@ -483,6 +517,17 @@ public struct RoutineReportPages {
         heading(&f, "ส่วนที่ 2 ความก้าวหน้า")
         if let schedule { progressSummary(&f, schedule, through: range.upperBound, monthOf: range.lowerBound) }
         else { note(&f, "สถานีนี้ยังไม่มีแผน MP") }
+        if let schedule, let plan {
+            heading(&f, "สถานะการยื่นขออนุญาต")
+            let rows = RoutineReport.permits(plan: plan, actual: schedule.actual, at: range.upperBound)
+            table(&f, [Column(title: "ข้อ", width: 0.6, align: .center), Column(title: "เรื่อง", width: 3.8),
+                       Column(title: "ช่วงตามแผน", width: 2.2, align: .center), Column(title: "ทำได้", width: 0.8, align: .right),
+                       Column(title: "สถานะ", width: 1.4, align: .center)],
+                  rows.map { r in
+                      let span = r.start.flatMap { s in r.end.map { e in "\(RoutineReport.thaiDate(s)) – \(RoutineReport.thaiDate(e))" } } ?? "-"
+                      return [r.task.code, r.task.title, span, RoutineReport.percent(r.percent), r.state.title]
+                  }, size: 8.5)
+        }
         let photosPick = days.flatMap { $0.photos.filter { !$0.caption.isEmpty } }
         let chosen = Array((photosPick.isEmpty ? days.flatMap(\.photos) : photosPick).prefix(8))
         if !chosen.isEmpty {

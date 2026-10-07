@@ -42,6 +42,25 @@ final class RoutineReportPagesTests: XCTestCase {
         XCTAssertTrue(t.contains("หน้า 1/1"))
     }
 
+    func testKeyPlanHighlightsTodaysLocations() {
+        let r = report(1, 20)   // หลังคา 1
+        let k = RoutineReportPages.KeyPlan(photo: Photo(fileName: "site.jpg", width: 1600, height: 900), aspect: 16 / 9,
+                                          points: [("หลังคา 1", 0.2, 0.3), ("ถังน้ำใส 1", 0.7, 0.6)])
+        let p = pages.daily(.init(report: r, photos: [], engineerSignedAt: nil, inspectorAckAt: nil), all: [r], keyPlan: k)
+        XCTAssertTrue(texts(p).contains("ผังตำแหน่งงานวันนี้ (Key plan)"))
+        let fills = p.flatMap(\.ops).compactMap { op -> RGBA? in if case let .circle(_, _, _, f?, _) = op { f } else { nil } }
+        XCTAssertEqual(fills, [RoutineReportPages.red, .white])
+        XCTAssertTrue(p.flatMap(\.ops).contains { if case .photo = $0 { true } else { false } })
+        // the heading lands on the page that has the picture
+        let withHeading = p.first { $0.ops.contains { if case let .text(t, _, _, _, _, _, _) = $0 { t == "ผังตำแหน่งงานวันนี้ (Key plan)" } else { false } } }
+        XCTAssertTrue(withHeading?.ops.contains { if case .photo = $0 { true } else { false } } ?? false)
+        // a long day pushes the key plan to the next page with its heading
+        let long = report(1, 20, lines: 14)
+        let q = pages.daily(.init(report: long, photos: [], engineerSignedAt: nil, inspectorAckAt: nil), all: [long], keyPlan: k)
+        let page = q.first { $0.ops.contains { if case .photo = $0 { true } else { false } } }
+        XCTAssertTrue(page?.ops.contains { if case let .text(t, _, _, _, _, _, _) = $0 { t == "ผังตำแหน่งงานวันนี้ (Key plan)" } else { false } } ?? false)
+    }
+
     func testLongTablesContinueOnNextPageWithTheHeader() {
         let r = report(1, 10, lines: 60)
         let p = pages.daily(.init(report: r, photos: [], engineerSignedAt: nil, inspectorAckAt: nil), all: [r])
@@ -76,6 +95,8 @@ final class RoutineReportPagesTests: XCTestCase {
         let partial = texts(pages.monthly(month: d(15), entries: e, all: all, schedule: .init(input: input, actual: .init()), installStart: d(1)))
         XCTAssertTrue(partial.contains("รายงานผลความก้าวหน้าประจำเดือน"))
         XCTAssertTrue(partial.contains("ส่วนที่ 4 สรุปแรงงาน"))
+        XCTAssertTrue(partial.contains("สถานะการยื่นขออนุญาต"))
+        XCTAssertTrue(partial.contains("ยื่นขอขนานไฟ"))
     }
 
     func testRequestShowsApprovalAndRisks() {

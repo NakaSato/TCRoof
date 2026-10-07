@@ -185,6 +185,33 @@ final class RoutineReportTests: XCTestCase {
         XCTAssertEqual(RoutineReport.photoName(date: d(1), index: 12, line: nil), "2568-07-01 12.jpg")
     }
 
+    func testPermitStatusFromTheMPPlan() {
+        let input = MasterSchedule.Input(installStart: d(1, 9), installEnd: d(30, 10), kickoff: d(1), engineeringStart: d(1),
+                                         siteHandover: d(10), over200kVA: false)
+        let plan = MasterSchedule.plan(input)
+        var a = MasterSchedule.Actual()
+        a.setPercent(100, task: .kickoff, week: d(1), over200kVA: false)
+        a.setPercent(50, task: .buildingPermit, week: d(13), over200kVA: false)
+        let rows = RoutineReport.permits(plan: plan, actual: a, at: d(20))
+        let byTask = Dictionary(uniqueKeysWithValues: rows.map { ($0.task, $0) })
+        XCTAssertNil(byTask[.pk2])                                      // not over 200 kVA
+        XCTAssertEqual(byTask[.kickoff]?.state, .done)
+        XCTAssertEqual(byTask[.buildingPermit]?.state, .inProgress)     // 10 Jul + 21 days, half done
+        XCTAssertEqual(byTask[.buildingPermit]?.percent ?? 0, 50, accuracy: 1e-9)
+        XCTAssertEqual(byTask[.engineering]?.state, .late)              // ended 8 Jul, nothing booked
+        XCTAssertEqual(byTask[.gridConnection]?.state, .notDue)
+        XCTAssertEqual(byTask[.cop]?.state, .unplanned)
+    }
+
+    func testKeyPointsDecodeAndRead() throws {
+        var s = RoutineReport.Settings()
+        s.keyPoints = ["หลังคา 1": [0.25, 0.5], "ผิด": [1]]
+        let back = try JSONDecoder().decode(RoutineReport.Settings.self, from: JSONEncoder().encode(s))
+        XCTAssertEqual(back.keyPoint("หลังคา 1")?.x, 0.25)
+        XCTAssertNil(back.keyPoint("ผิด"))
+        XCTAssertNil(back.keyPoint("หลังคา 2"))
+    }
+
     func testWeatherTapCycle() {
         XCTAssertEqual(RoutineReport.Weather.next(nil), .fine)
         XCTAssertEqual(RoutineReport.Weather.next(.fine), .cloudy)

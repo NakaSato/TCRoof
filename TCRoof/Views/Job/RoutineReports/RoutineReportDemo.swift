@@ -8,11 +8,20 @@ extension Job {
     /// empty), unless the job has daily reports already. For `-screen daily|dailies|request|weekly|monthly`.
     func seedRoutineDemo(_ context: ModelContext) {
         seedMPDemo()
-        guard dailyLogs.isEmpty else { return }
+        guard dailyLogs.isEmpty else {
+            if routineSettings.keyPoints.isEmpty, !routineSettings.locations.isEmpty {
+                var s = routineSettings
+                for (i, l) in s.locations.enumerated() { s.keyPoints[l] = [0.2 + 0.15 * Double(i % 5), 0.3 + 0.2 * Double(i % 3)] }
+                routineSettings = s
+            }
+            return
+        }
         var s = routineSettings
         s.contractName = "โครงการติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์บนหลังคา สถานีผลิตน้ำ กปภ."
         s.locations = ["หลังคา 1", "หลังคา 2", "หลังคา 3", "ถังน้ำใส 1", "ห้องอินเวอร์เตอร์"]
         s.siteEngineer = "วิศวกร สนาม"; s.inspector = "ผู้ตรวจ กฟภ."
+        s.keyPoints = ["หลังคา 1": [0.3, 0.35], "หลังคา 2": [0.55, 0.3], "หลังคา 3": [0.7, 0.55],
+                       "ถังน้ำใส 1": [0.25, 0.7], "ห้องอินเวอร์เตอร์": [0.5, 0.75]]
         routineSettings = s
         let cal = RoutineReport.calendar, today = cal.startOfDay(for: .now)
         let days = RoutineReport.workingDays(settings: s, from: cal.date(byAdding: .day, value: -14, to: today)!, to: today.adding(days: -1))

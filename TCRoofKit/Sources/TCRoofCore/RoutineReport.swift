@@ -166,11 +166,14 @@ public enum RoutineReport {
         /// Task raw value → the locations its % is averaged over. A task without an entry averages over the locations
         /// it has been reported at.
         public var taskLocations: [String: [String]] = [:]
+        /// Location → its point on the key plan (the A2 site picture), as fractions [x, y] of the picture's width and height.
+        public var keyPoints: [String: [Double]] = [:]
 
         public init() {}
 
         enum CodingKeys: String, CodingKey {
             case contractName, employer, contractor, locations, workingWeekdays, holidays, siteEngineer, inspector, roles, tools, taskLocations
+            case keyPoints
         }
 
         public init(from decoder: Decoder) throws {
@@ -187,6 +190,13 @@ public enum RoutineReport {
             roles = try c.decodeIfPresent([String].self, forKey: .roles) ?? d.roles
             tools = try c.decodeIfPresent([String].self, forKey: .tools) ?? d.tools
             taskLocations = try c.decodeIfPresent([String: [String]].self, forKey: .taskLocations) ?? d.taskLocations
+            keyPoints = try c.decodeIfPresent([String: [Double]].self, forKey: .keyPoints) ?? d.keyPoints
+        }
+
+        /// The location's key-plan point as fractions, when placed.
+        public func keyPoint(_ location: String) -> (x: Double, y: Double)? {
+            guard let p = keyPoints[location], p.count == 2 else { return nil }
+            return (p[0], p[1])
         }
     }
 
@@ -412,6 +422,47 @@ public enum RoutineReport {
         for l in d.progress where todayDelta(l, on: d.date, in: previous) < -1e-9 { w.append(.wentDown(l.title)) }
         if d.progress.isEmpty, d.stopReason.trimmingCharacters(in: .whitespaces).isEmpty { w.append(.noProgress) }
         return w
+    }
+
+    // MARK: Permits (R4 §4.5)
+
+    public enum PermitState: Equatable, Sendable {
+        case done, inProgress, late, notStarted, notDue, unplanned
+
+        public var title: String {
+            switch self {
+            case .done: "เสร็จแล้ว"
+            case .inProgress: "กำลังดำเนินการ"
+            case .late: "เลยกำหนด"
+            case .notStarted: "ยังไม่เริ่ม"
+            case .notDue: "ยังไม่ถึงกำหนด"
+            case .unplanned: "ไม่มีกำหนด"
+            }
+        }
+    }
+
+    public struct PermitRow: Equatable, Sendable {
+        public let task: MasterSchedule.Task
+        public let start: Date?
+        public let end: Date?
+        /// Done, 0…100 of the task's weight.
+        public let percent: Double
+        public let state: PermitState
+    }
+
+    /// The permit part of the MP plan (อ.1, พค.2, COP, ขนานไฟ …) as of `date`; พค.2 is left out when the station
+    /// doesn't need it. A task with no weight (COP) can only show its dates.
+    public static func permits(plan: [MasterSchedule.PlannedTask], actual: MasterSchedule.Actual, at date: Date) -> [PermitRow] {
+        let d = day(date)
+        return plan.filter { $0.task.part == .permit && ($0.weight > 0 || $0.task == .cop) }.map { p in
+            let pct = p.weight > 0 ? min(100, actual.done(p.task, through: d) / p.weight * 100) : 0
+            let state: PermitState
+            if pct >= 99.95 { state = .done }
+            else if let s = p.start, let e = p.end {
+                state = pct > 0 ? (day(e) < d ? .late : .inProgress) : day(e) < d ? .late : day(s) > d ? .notDue : .notStarted
+            } else { state = pct > 0 ? .inProgress : .unplanned }
+            return PermitRow(task: p.task, start: p.start, end: p.end, percent: pct, state: state)
+        }
     }
 
     // MARK: Periods

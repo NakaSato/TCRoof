@@ -150,7 +150,10 @@ struct DailyReportScreen: View {
     }
 
     private var photoCard: some View {
-        DailyPhotosCard(photos: $photos, lines: report.progress)
+        VStack(spacing: 16) {
+            DailyPhotosCard(photos: $photos, lines: report.progress)
+            KeyPlanCard(job: job, today: Set(report.progress.map(\.location)))
+        }
     }
 
     private var bottomBar: some View {
@@ -278,11 +281,18 @@ struct DailyReportScreen: View {
     }
 
     #if DEBUG
-    /// `-routineDemo sign|ack` opens the sign or acknowledge sheet once the screen is up.
+    /// `-routineDemo sign|ack` opens the sign or acknowledge sheet once the screen is up; `pdf` writes PDFs to Documents.
     private func debugState() {
         switch UserDefaults.standard.string(forKey: "routineDemo") {
         case "sign"?: showSign = true
         case "ack"?: if log?.engineerSignedAt != nil { showAck = true }
+        // the latest daily report's PDF to Documents/daily.pdf, and this month's R4 to monthly.pdf
+        case "pdf"?:
+            guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { break }
+            if let last = job.dailyLogs.last, let built = RoutineReportFiles.daily(job, log: last) {
+                try? built.data.write(to: docs.appendingPathComponent("daily.pdf"))
+            }
+            try? RoutineReportFiles.monthly(job, month: date).data.write(to: docs.appendingPathComponent("monthly.pdf"))
         default: break
         }
     }

@@ -232,6 +232,88 @@ public struct PowerOfAttorney: Codable, Equatable, Sendable {
     }
 }
 
+// MARK: - Photo layouts of an attachment page
+
+/// How the photos of one attachment page are arranged in its area (the PEA sample pages use these).
+public enum PhotoLayout: String, Codable, CaseIterable, Sendable {
+    /// By the number of photos: 1 full, 2 stacked, 3 big top + 2, 4 a 2 × 2 grid, 5–6 a 2 × 3 grid.
+    case auto
+    case single
+    case stack2
+    case side2
+    case stack3
+    case top1bottom2
+    case top2bottom1
+    case grid4
+    case grid6
+
+    public var title: String {
+        switch self {
+        case .auto: "อัตโนมัติ"
+        case .single: "1 รูปเต็มหน้า"
+        case .stack2: "2 รูป บน–ล่าง"
+        case .side2: "2 รูป ซ้าย–ขวา"
+        case .stack3: "3 รูป เรียงลง"
+        case .top1bottom2: "ใหญ่บน + 2 ล่าง"
+        case .top2bottom1: "2 บน + ใหญ่ล่าง"
+        case .grid4: "ตาราง 2 × 2"
+        case .grid6: "ตาราง 2 × 3"
+        }
+    }
+
+    /// Photos the layout places; more are left off the page.
+    public var capacity: Int {
+        switch self {
+        case .auto, .grid6: 6
+        case .single: 1
+        case .stack2, .side2: 2
+        case .stack3, .top1bottom2, .top2bottom1: 3
+        case .grid4: 4
+        }
+    }
+
+    /// The layout `auto` uses for `count` photos.
+    public static func automatic(_ count: Int) -> PhotoLayout {
+        switch count {
+        case ...1: .single
+        case 2: .stack2
+        case 3: .top1bottom2
+        case 4: .grid4
+        default: .grid6
+        }
+    }
+
+    public func resolved(_ count: Int) -> PhotoLayout { self == .auto ? Self.automatic(count) : self }
+
+    /// Cells as fractions of the area, [x, y, w, h], in photo order (left to right, top to bottom).
+    public var unitCells: [[Double]] {
+        switch self {
+        case .auto: Self.automatic(6).unitCells
+        case .single: [[0, 0, 1, 1]]
+        case .stack2: [[0, 0, 1, 0.5], [0, 0.5, 1, 0.5]]
+        case .side2: [[0, 0, 0.5, 1], [0.5, 0, 0.5, 1]]
+        case .stack3: (0..<3).map { [0, Double($0) / 3, 1, 1.0 / 3] }
+        case .top1bottom2: [[0, 0, 1, 0.55], [0, 0.55, 0.5, 0.45], [0.5, 0.55, 0.5, 0.45]]
+        case .top2bottom1: [[0, 0, 0.5, 0.45], [0.5, 0, 0.5, 0.45], [0, 0.45, 1, 0.55]]
+        case .grid4: (0..<4).map { [Double($0 % 2) / 2, Double($0 / 2) / 2, 0.5, 0.5] }
+        case .grid6: (0..<6).map { [Double($0 % 2) / 2, Double($0 / 2) / 3, 0.5, 1.0 / 3] }
+        }
+    }
+
+    /// Cells in page points inside `area` ([x, y, w, h]), `gap` apart, for `count` photos (at most `capacity`).
+    public func cells(in area: [Double], count: Int, gap: Double = 8) -> [[Double]] {
+        let layout = resolved(count)
+        return layout.unitCells.prefix(min(count, layout.capacity)).map { u in
+            // a cell keeps half a gap from each inner edge, none at the area's edges
+            let x0 = area[0] + u[0] * area[2] + (u[0] > 0 ? gap / 2 : 0)
+            let y0 = area[1] + u[1] * area[3] + (u[1] > 0 ? gap / 2 : 0)
+            let x1 = area[0] + (u[0] + u[2]) * area[2] - (u[0] + u[2] < 0.999 ? gap / 2 : 0)
+            let y1 = area[1] + (u[1] + u[3]) * area[3] - (u[1] + u[3] < 0.999 ? gap / 2 : 0)
+            return [x0, y0, x1 - x0, y1 - y0]
+        }
+    }
+}
+
 // MARK: - แบบฟอร์มรับรองตนเอง (VSPP)
 
 /// แบบฟอร์ม กฟภ. "แบบฟอร์มรับรองตนเองการติดตั้งอุปกรณ์และการเชื่อมต่อระบบผลิตไฟฟ้าจากพลังงานแสงอาทิตย์ (VSPP) พ.ศ. 2569",
@@ -270,6 +352,7 @@ public struct SelfCertification: Codable, Equatable, Sendable {
         "สำเนา กว. และหนังสือรับรองสภาวิศวกร ของวิศวกรที่ลงนาม",
         "สำเนาใบแจ้งค่าไฟฟ้าเดือนล่าสุด",
     ]
+    /// Photos kept per attachment (the largest layout prints 6).
     public static let maxPhotos = 6
 
     public var producerName = ""
@@ -294,8 +377,50 @@ public struct SelfCertification: Codable, Equatable, Sendable {
     public var engineerSignDate: Date?
     /// Photo file names per attachment 1…10 (index 0 = attachment 1).
     public var photos: [[String]] = Array(repeating: [], count: 10)
+    /// Layout per attachment 1…10 (index 0 = attachment 1).
+    public var layouts: [PhotoLayout] = Array(repeating: .auto, count: 10)
 
     public init() {}
+
+    public func layout(_ attachment: Int) -> PhotoLayout { layouts.indices.contains(attachment - 1) ? layouts[attachment - 1] : .auto }
+
+    /// Photos that land on the page, in order; the rest are kept but not printed.
+    public func printedPhotos(_ attachment: Int) -> [String] {
+        let list = photos[attachment - 1]
+        return Array(list.prefix(layout(attachment).resolved(list.count).capacity))
+    }
+
+    /// Moves a photo one place earlier (`by: -1`) or later (`by: 1`) on its page.
+    public mutating func movePhoto(attachment: Int, from index: Int, by step: Int) {
+        let i = attachment - 1, j = index + step
+        guard photos[i].indices.contains(index), photos[i].indices.contains(j) else { return }
+        photos[i].swapAt(index, j)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case producerName, ppimSuffix, contractNo, contractDate, caNo, phone, email, address, pvKWp, inverterKW, sellKW,
+             phase, latitude, longitude, overcurrent, engineerName, producerSignDate, engineerSignDate, photos, layouts
+    }
+
+    /// Every key is optional so forms saved by older builds still open.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func text(_ k: CodingKeys) throws -> String { try c.decodeIfPresent(String.self, forKey: k) ?? "" }
+        producerName = try text(.producerName); ppimSuffix = try text(.ppimSuffix)
+        contractNo = try text(.contractNo); contractDate = try text(.contractDate)
+        caNo = try text(.caNo); phone = try text(.phone); email = try text(.email); address = try text(.address)
+        pvKWp = try text(.pvKWp); inverterKW = try text(.inverterKW); sellKW = try text(.sellKW)
+        phase = try c.decodeIfPresent(Phase.self, forKey: .phase)
+        latitude = try text(.latitude); longitude = try text(.longitude)
+        overcurrent = try c.decodeIfPresent(Int.self, forKey: .overcurrent)
+        engineerName = try text(.engineerName)
+        producerSignDate = try c.decodeIfPresent(Date.self, forKey: .producerSignDate)
+        engineerSignDate = try c.decodeIfPresent(Date.self, forKey: .engineerSignDate)
+        let saved = try c.decodeIfPresent([[String]].self, forKey: .photos) ?? []
+        photos = (0..<10).map { saved.indices.contains($0) ? saved[$0] : [] }
+        let savedLayouts = try c.decodeIfPresent([PhotoLayout].self, forKey: .layouts) ?? []
+        layouts = (0..<10).map { savedLayouts.indices.contains($0) ? savedLayouts[$0] : .auto }
+    }
 
     static func number(_ s: String) -> Double? { Double(s.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)) }
 

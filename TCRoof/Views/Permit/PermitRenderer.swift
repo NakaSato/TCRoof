@@ -8,8 +8,10 @@ enum PermitRenderer {
     struct Content {
         var values: [String: String]
         var marks: [String: PermitMark]
-        /// Photos per area key (`att1` … `att10`).
+        /// Photos per area key (`att1` … `att10`), in page order.
         var photos: [String: [UIImage]] = [:]
+        /// Layout per area key; `auto` when missing.
+        var layouts: [String: PhotoLayout] = [:]
     }
 
     /// Answers sit this far above the dotted line so Thai descenders stay clear of it.
@@ -63,7 +65,7 @@ enum PermitRenderer {
             ctx.restoreGState()
         }
         for area in map.areas where area.page == index {
-            drawPhotos(content.photos[area.key] ?? [], in: rect(area.rect))
+            drawPhotos(content.photos[area.key] ?? [], layout: content.layouts[area.key] ?? .auto, in: area.rect)
         }
         for field in map.fields where field.page == index {
             if let text = content.values[field.key]?.trimmingCharacters(in: .whitespaces), !text.isEmpty {
@@ -116,16 +118,11 @@ enum PermitRenderer {
         path.stroke()
     }
 
-    /// Photos fill the attachment's area: one or two stacked, three or more in two columns; each fits its cell.
-    static func drawPhotos(_ photos: [UIImage], in area: CGRect) {
+    /// Photos in the cells of `layout`, each fitted to its cell and centred.
+    static func drawPhotos(_ photos: [UIImage], layout: PhotoLayout, in area: [Double]) {
         guard !photos.isEmpty else { return }
-        let cols = photos.count <= 2 ? 1 : 2
-        let rows = Int((Double(photos.count) / Double(cols)).rounded(.up))
-        let gap: CGFloat = 8
-        let w = (area.width - gap * CGFloat(cols - 1)) / CGFloat(cols)
-        let h = (area.height - gap * CGFloat(rows - 1)) / CGFloat(rows)
-        for (i, image) in photos.enumerated() {
-            let cell = CGRect(x: area.minX + CGFloat(i % cols) * (w + gap), y: area.minY + CGFloat(i / cols) * (h + gap), width: w, height: h)
+        for (image, c) in zip(photos, layout.cells(in: area, count: photos.count)) {
+            let cell = rect(c)
             let s = min(cell.width / image.size.width, cell.height / image.size.height)
             let size = CGSize(width: image.size.width * s, height: image.size.height * s)
             image.draw(in: CGRect(x: cell.midX - size.width / 2, y: cell.midY - size.height / 2, width: size.width, height: size.height))

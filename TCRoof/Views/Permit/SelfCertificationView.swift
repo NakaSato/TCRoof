@@ -35,12 +35,14 @@ struct SelfCertificationView: View {
 
     private func content() -> PermitRenderer.Content {
         var photos: [String: [UIImage]] = [:]
+        var layouts: [String: PhotoLayout] = [:]
         for n in 1...10 {
-            photos["att\(n)"] = form.photos[n - 1].compactMap { photoData[$0].flatMap(UIImage.init(data:)) }
+            photos["att\(n)"] = form.printedPhotos(n).compactMap { photoData[$0].flatMap(UIImage.init(data:)) }
+            layouts["att\(n)"] = form.layout(n)
         }
         // attachment 2 is left empty when no limiter is needed (the form says so)
         if form.exportLimiter == .notRequired { photos["att2"] = [] }
-        return PermitRenderer.Content(values: form.values, marks: form.marks, photos: photos)
+        return PermitRenderer.Content(values: form.values, marks: form.marks, photos: photos, layouts: layouts)
     }
 
     private func load() {
@@ -132,13 +134,24 @@ struct SelfCertificationView: View {
                 Text("ไม่เข้าเงื่อนไข ไม่ต้องแนบรูปถ่ายในหัวข้อนี้")
                     .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
             } else {
-                PhotoPickerSection(images: form.photos[n - 1].compactMap { photoData[$0] },
-                                   onAdd: { addPhoto($0, to: n) },
-                                   onDelete: { removePhoto(at: $0, from: n) })
-                Text(form.photos[n - 1].count >= SelfCertification.maxPhotos
-                     ? "ครบ \(SelfCertification.maxPhotos) รูปแล้ว (รูปที่เกินจะไม่ลงหน้าเอกสาร)"
-                     : "ลงได้ \(SelfCertification.maxPhotos) รูปต่อหน้า")
-                    .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.muted)
+                photoBlock(n)
+            }
+        }
+    }
+
+    /// Add / delete, then the page layout and the order the photos take in it.
+    @ViewBuilder private func photoBlock(_ n: Int) -> some View {
+        let images = form.photos[n - 1].compactMap { photoData[$0] }
+        PhotoPickerSection(images: images,
+                           onAdd: { addPhoto($0, to: n) },
+                           onDelete: { removePhoto(at: $0, from: n) })
+        Text(images.count >= SelfCertification.maxPhotos ? "ครบ \(SelfCertification.maxPhotos) รูปแล้ว"
+                                                         : "เก็บได้ \(SelfCertification.maxPhotos) รูปต่อหัวข้อ")
+            .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.muted)
+        PhotoLayoutPicker(selection: $form.layouts[n - 1], count: images.count)
+        if images.count > 1 {
+            PhotoOrderStrip(images: images, capacity: form.layout(n).resolved(images.count).capacity) { index, step in
+                form.movePhoto(attachment: n, from: index, by: step)
             }
         }
     }

@@ -58,7 +58,8 @@ final class CaptureContext: NSObject, CLLocationManagerDelegate {
     }()
 
     /// JPEG with the stamp in its EXIF / GPS dictionaries, so Drive and other apps see where and which way it was taken.
-    static func jpeg(_ image: UIImage, quality: CGFloat, stamp: PhotoStamp, taken: Date) -> Data? {
+    /// A camera original keeps its orientation as the EXIF flag.
+    nonisolated static func jpeg(_ image: UIImage, quality: CGFloat, stamp: PhotoStamp, taken: Date) -> Data? {
         guard let cg = image.cgImage else { return nil }
         let out = NSMutableData()
         guard let dest = CGImageDestinationCreateWithData(out, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
@@ -72,6 +73,7 @@ final class CaptureContext: NSObject, CLLocationManagerDelegate {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.calendar = Calendar(identifier: .gregorian)
         f.dateFormat = "yyyy:MM:dd HH:mm:ss"
         var props: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: quality,
+                                      kCGImagePropertyOrientation: CGImagePropertyOrientation(image.imageOrientation).rawValue,
                                       kCGImagePropertyExifDictionary: [kCGImagePropertyExifDateTimeOriginal: f.string(from: taken)],
                                       kCGImagePropertyTIFFDictionary: [kCGImagePropertyTIFFModel: stamp.device ?? "", kCGImagePropertyTIFFMake: "Apple"]]
         if !gps.isEmpty { props[kCGImagePropertyGPSDictionary] = gps }

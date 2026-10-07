@@ -1,5 +1,6 @@
 import SwiftUI
 import TCRoofUI
+import SurveyUI
 import PhotosUI
 import PencilKit
 
@@ -65,8 +66,7 @@ struct PhotoPickerSection: View {
             }
         }
         .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { image in onAdd(ImageUtil.compressed(image)) }
-                .ignoresSafeArea()
+            StampedCamera { data in onAdd(data) }
         }
     }
 }
@@ -153,37 +153,6 @@ struct PhotoViewer: View {
 }
 
 // MARK: - UIKit bridges
-
-struct CameraPicker: UIViewControllerRepresentable {
-    let onCapture: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraPicker
-        init(_ parent: CameraPicker) { self.parent = parent }
-
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage { parent.onCapture(image) }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
-        }
-    }
-}
 
 /// Apple Pencil / finger signature pad. Writes a PNG into `signature`; setting it to nil clears the pad.
 struct SignaturePad: UIViewRepresentable {

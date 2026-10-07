@@ -38,9 +38,9 @@ struct CheckedCamera: View {
         }
     }
 
-    /// The page saves the image with `model.addPhoto` right away; the stamp waits there for it.
+    /// The page saves the image with `model.addPhoto` right away; the stamp waits there for it and marks it as a camera shot.
     private func finish(_ img: UIImage?) {
-        if img != nil, let stamp, !stamp.isEmpty { model.captureStamp = (stamp, Date()) }
+        if img != nil { model.captureStamp = (stamp ?? PhotoStamp(), Date()) }
         done(img)
         dismiss()
     }

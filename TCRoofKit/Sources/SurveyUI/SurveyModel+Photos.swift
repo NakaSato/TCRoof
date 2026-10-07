@@ -12,17 +12,19 @@ extension SurveyModel {
 
     /// Scales a picked or captured image to at most `maxSide` px and stores it as JPEG (PNG for signatures).
     /// A photo just taken with the survey camera carries where and which way it was taken (`captureStamp`, kept for
-    /// a few seconds), in its EXIF and on the `Photo`.
+    /// a few seconds), in its EXIF and on the `Photo`, and its full-size original also goes to the photo library.
     public func addPhoto(_ image: UIImage, to job: UUID, maxSide: CGFloat = 1600, png: Bool = false) -> Photo? {
         let img = image.scaled(maxSide: maxSide, opaque: !png)
-        let stamp = png ? nil : captureStamp.flatMap { -$0.at.timeIntervalSinceNow < 10 ? $0.stamp : nil }
+        let shot = png ? nil : captureStamp.flatMap { -$0.at.timeIntervalSinceNow < 10 ? $0.stamp : nil }
         captureStamp = nil
+        let stamp = shot.flatMap { $0.isEmpty ? nil : $0 }
         let taken = Date()
         guard let data = png ? img.pngData() : stamp.flatMap({ CaptureContext.jpeg(img, quality: 0.8, stamp: $0, taken: taken) })
                 ?? img.jpegData(compressionQuality: 0.8) else { return nil }
         let px = CGSize(width: img.size.width * img.scale, height: img.size.height * img.scale)
         var photo = try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, takenAt: taken, to: job)
         if let stamp { photo?.apply(stamp) }
+        if photo != nil, let shot { CameraRoll.save(image, stamp: shot, taken: taken) }
         // the field takes the photo right after this returns; the delay lets that land before the upload looks
         if photo != nil { autoUploadPhotos(job) }
         return photo

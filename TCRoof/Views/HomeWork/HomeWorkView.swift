@@ -140,6 +140,9 @@ struct HomeWorkView: View {
             "connectRequest": !home.connectRequestNo.trimmingCharacters(in: .whitespaces).isEmpty,
             "connectionDate": home.cod != nil,
             "sitePhotos": !home.photoReport.pages.isEmpty,
+            "workOrder": home.site.workOrder.accepted != nil,
+            "delivery": home.site.delivery.isComplete,
+            "contractorAccept": home.site.accepted != nil,
         ]
     }
 
@@ -298,6 +301,7 @@ struct HomeWorkView: View {
             }
             TCSwitchRow("ทีมยื่นแทนเจ้าของ (ใช้หนังสือมอบอำนาจ)", isOn: $home.teamFiles)
             TCSwitchRow("ลูกค้าใช้สิทธิลดหย่อนภาษี (แผงไม่เกิน 10 kWp)", isOn: $home.wantsTaxDeduction)
+            TCSwitchRow("ติดตั้งโดยผู้รับเหมา (ใบสั่งงาน รับของ ตรวจรับ)", isOn: $home.usesContractor)
             roofRow
             ppimRow
             coeRow
@@ -440,6 +444,8 @@ struct HomeWorkView: View {
         case .inspection: InspectionView(job: job)
         case .photoReport: PhotoReportView(job: job, home: $home)
         case .boq: BOQView(job: job, home: home)
+        case .site: ContractorWorkView(job: job, home: $home,
+                                       start: spec.id == "delivery" ? .delivery : spec.id == "contractorAccept" ? .accept : .order)
         case .roofWeight, nil: EmptyView()
         }
     }

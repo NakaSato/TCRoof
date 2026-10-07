@@ -416,3 +416,90 @@ final class HomeBOQTests: XCTestCase {
         XCTAssertEqual(PermitDate.long(Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(identifier: "Asia/Bangkok"), year: 2024, month: 1, day: 31, hour: 12))!), "31 มกราคม 2567")
     }
 }
+
+/// Work with the installer: work order, materials, changes, punch list, acceptance.
+final class HomeSiteTests: XCTestCase {
+    func boq() -> (HomeJob, HomeBOQ) {
+        var j = HomeJob()
+        j.pvKWp = "5.175"; j.inverterKW = "5"; j.phase = .single
+        j.ppim.panels[0].brand = "ZNShine"; j.ppim.panels[0].model = "ZXM7-UHLD144"; j.ppim.panels[0].watt = "575"; j.ppim.panels[0].count = "9"
+        j.ppim.inverters[0].brand = "Growatt"; j.ppim.inverters[0].model = "MIN 5000TL-X"; j.ppim.inverters[0].kW = "5"
+        return (j, HomeBOQ.draft(job: j))
+    }
+
+    func testDeliveryFromBOQ() {
+        let (_, b) = boq()
+        var d = HomeDelivery.from(b)
+        XCTAssertFalse(d.items.contains { $0.description == "Labors Cost" })            // labour isn't material
+        XCTAssertEqual(d.items[0].description, "ZNSHINE SOLAR PANEL 575W · Model : ZXM7-UHLD144")
+        XCTAssertEqual(d.items[0].planned, 9)
+        let inv = d.items.firstIndex { $0.description.contains("MIN 5000TL-X") }!
+        XCTAssertTrue(d.items[inv].needsSerials)
+        XCTAssertTrue(d.items.contains { $0.needsSerials && HomeBOQ.isExportControl($0.description) })
+        d.items[0].delivered = 8
+        XCTAssertTrue(d.issues.contains("ส่งไม่ครบ: ZNSHINE SOLAR PANEL 575W · Model : ZXM7-UHLD144 ขาด 1 Module"))
+        d.items[inv].delivered = 1
+        XCTAssertTrue(d.issues.contains { $0.hasPrefix("ยังไม่มี S/N ครบ") })
+        d.items[inv].serials = ["SN-1"]
+        XCTAssertFalse(d.issues.contains { $0.contains("MIN 5000TL-X") })
+        for i in d.items.indices { d.items[i].delivered = d.items[i].planned; d.items[i].serials = ["S"] }
+        XCTAssertFalse(d.isComplete)                                                    // not signed yet
+        d.received = HomeSignature(name: "ช่าง ก", file: "sig.png")
+        XCTAssertTrue(d.isComplete)
+        d.items[0].returned = 10
+        XCTAssertTrue(d.issues.contains("คืนของมากกว่าที่ส่ง"))
+    }
+
+    func testChangesRespectTheSellRequest() {
+        var (j, _) = boq()
+        j.mode = .sell; j.sellKW = "5"
+        j.lockOffer()
+        var s = HomeSite()
+        var c = HomeChange(number: s.nextChangeNumber, title: "เพิ่มแผง 2 แผง")
+        c.newPVKWp = 6.325; c.laborDelta = 1500; c.priceDelta = 9000
+        s.changes.append(c)
+        XCTAssertEqual(s.nextChangeNumber, 2)
+        var shown = j; shown.site = s
+        XCTAssertTrue(shown.issues(on: Date()).contains("ใบขอเปลี่ยนแปลงรออนุมัติ 1 ใบ"))
+        XCTAssertEqual(s.approve(c.id, by: "วิศวกร", job: &j), ["แผง 6.325 kWp เกินที่ยื่นขอขายไฟ 5.175 kWp"])
+        XCTAssertEqual(s.changes[0].status, .pending)
+        s.changes[0].newPVKWp = 5.0
+        XCTAssertTrue(s.approve(c.id, by: "วิศวกร", job: &j).isEmpty)
+        XCTAssertEqual(j.pvKWp, "5")
+        XCTAssertEqual(s.workOrder.revision, 2)                                         // drawings move on a size change
+        XCTAssertEqual(s.approvedLaborDelta, 1500)
+        XCTAssertEqual(s.approvedPriceDelta, 9000)
+    }
+
+    func testPunchListAndAcceptance() throws {
+        let cal = Calendar(identifier: .gregorian)
+        var s = HomeSite()
+        s.workOrder.labor = 45000
+        XCTAssertEqual(Set(s.acceptanceBlockers), ["ผู้รับเหมายังไม่เซ็นรับใบสั่งงาน", "ยังไม่มีลายเซ็นรับของ"])
+        var p = HomePunch(title: "ท่อ IMC ไม่ยึดแคลมป์")
+        p.due = cal.date(byAdding: .day, value: -1, to: Date())
+        XCTAssertTrue(p.isLate())
+        XCTAssertFalse(p.canClose)
+        s.punches.append(p)
+        var j = HomeJob(); j.site = s
+        XCTAssertTrue(j.issues(on: Date()).contains("Punch list เลยกำหนด 1 รายการ"))
+        s.workOrder.accepted = HomeSignature(name: "ผู้รับเหมา", file: "a.png")
+        s.delivery.received = HomeSignature(name: "ผู้รับเหมา", file: "b.png")
+        XCTAssertEqual(s.acceptanceBlockers, ["Punch list ยังเปิดอยู่ 1 รายการ"])
+        s.punches[0].after = ["fix.jpg"]; s.punches[0].closed = Date()
+        XCTAssertTrue(s.acceptanceBlockers.isEmpty)
+        var c = HomeChange(number: 1, title: "สายเพิ่ม 10 ม."); c.laborDelta = 500
+        s.changes.append(c)
+        var job = HomeJob()
+        s.approve(c.id, by: "PM", job: &job)
+        s.deductions = 1000
+        XCTAssertEqual(s.laborPayable, 44500)
+        XCTAssertEqual(try JSONDecoder().decode(HomeSite.self, from: JSONEncoder().encode(s)), s)
+        let old = try JSONDecoder().decode(HomeJob.self, from: Data(#"{"mode":"selfUse"}"#.utf8))
+        XCTAssertTrue(old.usesContractor); XCTAssertEqual(old.site, HomeSite())
+        XCTAssertTrue(Set(HomeJob().checklist.map(\.id)).isSuperset(of: ["workOrder", "delivery", "contractorAccept"]))
+        var own = HomeJob(); own.usesContractor = false
+        XCTAssertFalse(own.checklist.contains { $0.id == "workOrder" })
+        XCTAssertEqual(HomeWorkOrder.standardScope(HomeJob()).filter { $0.contains("กันไหลย้อน") }.count, 1)   // self-use
+    }
+}

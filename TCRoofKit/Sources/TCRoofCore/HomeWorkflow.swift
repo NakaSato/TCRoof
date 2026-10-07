@@ -52,7 +52,7 @@ public enum HomeDocStatus: String, Codable, CaseIterable, Sendable {
 
 /// A screen of the app that produces the document instead of an upload.
 public enum HomeFormLink: String, Codable, Sendable {
-    case powerOfAttorney, selfCertification, roofWeight, surveyForm, installLog, inspection, photoReport, boq
+    case powerOfAttorney, selfCertification, roofWeight, surveyForm, installLog, inspection, photoReport, boq, site
 }
 
 /// One upload slot of PPIM part 4 (self-use request), as the screen shows it. Several documents of the job can go
@@ -152,6 +152,10 @@ public struct HomeJob: Codable, Equatable, Sendable {
     public var cod: Date?
     /// Document id → `HomeLibrary.Item` id attached to this job (engineer papers, datasheets); "" = don't use the library.
     public var libraryPicks: [String: String] = [:]
+    /// Installed by a contractor (work order, delivery, acceptance) rather than the team's own crew.
+    public var usesContractor = true
+    /// Work order, materials, changes and punch list with the installer.
+    public var site = HomeSite()
 
     public init() {}
 
@@ -178,11 +182,13 @@ public struct HomeJob: Codable, Equatable, Sendable {
         scod = try c.decodeIfPresent(Date.self, forKey: .scod)
         cod = try c.decodeIfPresent(Date.self, forKey: .cod)
         libraryPicks = try c.decodeIfPresent([String: String].self, forKey: .libraryPicks) ?? [:]
+        usesContractor = try c.decodeIfPresent(Bool.self, forKey: .usesContractor) ?? true
+        site = try c.decodeIfPresent(HomeSite.self, forKey: .site) ?? HomeSite()
     }
     private enum CodingKeys: String, CodingKey {
         case residentialConfirmed, caRateCode, mode, teamFiles, wantsTaxDeduction, pvKWp, inverterKW, sellKW, phase,
              roofKgPerM2, ppimRequestNo, documents, ppim, photoReport, coeCertIssued,
-             connectRequestNo, offer, announcedOn, scod, cod, libraryPicks
+             connectRequestNo, offer, announcedOn, scod, cod, libraryPicks, usesContractor, site
     }
 
     /// The council's certificate is valid 120 days from its date (printed on it). Nil until the date is set.
@@ -280,6 +286,9 @@ public struct HomeJob: Codable, Equatable, Sendable {
         if !residentialConfirmed { out.append("ยืนยันว่าเป็นบ้านอยู่อาศัย") }
         if rateCodeIsResidential == false { out.append("CA ไม่ได้ขึ้นต้นด้วย 1 — ไม่ใช่บ้านอยู่อาศัย") }
         if mode == .sell, let sell = Self.number(sellKW), sell > 5 { out.append("เสนอขายเกิน 5 kW") }
+        if !site.pendingChanges.isEmpty { out.append("ใบขอเปลี่ยนแปลงรออนุมัติ \(site.pendingChanges.count) ใบ") }
+        let late = site.punches.filter { $0.isLate(on: now) }.count
+        if late > 0 { out.append("Punch list เลยกำหนด \(late) รายการ") }
         if let left = coeCertDaysLeft(), left < 0 { out.append("หนังสือรับรองสภาวิศวกรหมดอายุ (เกิน 120 วัน) ขอฉบับใหม่ก่อนยื่น") }
         if mode == .sell {
             if rateCodeIsLowVoltage == false { out.append("Rate code หลักที่ 4 ไม่ใช่ 5 — แรงดันตั้งแต่ 400 V ขึ้นไป ไม่เข้าโครงการภาคประชาชน") }
@@ -434,12 +443,18 @@ public enum HomeCatalog {
                     note: "ภายใน 30 วันนับจากประกาศ ไม่ลงนาม = ยกเลิก", when: sell),
 
         // ติดตั้ง
+        HomeDocSpec(id: "workOrder", title: "ใบสั่งงานผู้รับเหมา (ขอบเขต ค่าแรง วันเข้างาน) ผู้รับเหมาเซ็นรับ", stage: .install, provider: .team,
+                    note: "ค่าแรงตั้งต้นจาก BOQ · ชุดแบบ Rev. ล่าสุด", form: .site, when: { $0.usesContractor }),
+        HomeDocSpec(id: "delivery", title: "ใบส่งของ/รับวัสดุหน้างาน ตาม BOQ + S/N อินเวอร์เตอร์", stage: .install, provider: .team,
+                    note: "นับจำนวนจริงเทียบ BOQ · ผู้รับเหมาเซ็นรับ", form: .site, when: { $0.usesContractor }),
         HomeDocSpec(id: "installLog", title: "บันทึกงานติดตั้งและรูประหว่างติดตั้ง", stage: .install, provider: .team, form: .installLog),
         HomeDocSpec(id: "exportLimiter", title: "ติดตั้งและตั้งค่าอุปกรณ์กันไหลย้อน (Export Limiter / zero export) + CT", stage: .install, provider: .team,
                     when: { $0.needsExportLimiter == true }),
         HomeDocSpec(id: "eTax", title: "e-Tax Invoice ในชื่อลูกค้า", stage: .install, provider: .team,
                     note: "ลดหย่อนภาษีสูงสุด 200,000 บาท แผงไม่เกิน 10 kWp", when: { $0.taxEligible }),
         HomeDocSpec(id: "icl", title: "ใบตรวจรับงาน (ICL)", stage: .install, provider: .team, form: .inspection),
+        HomeDocSpec(id: "contractorAccept", title: "ปิด Punch list และตรวจรับงานผู้รับเหมา (ใช้วางบิลค่าแรง)", stage: .install, provider: .team,
+                    note: "ค่าแรงตามใบสั่งงาน + ใบขอเปลี่ยนแปลงที่อนุมัติ − รายการหัก", form: .site, when: { $0.usesContractor }),
 
         // ขอเชื่อมต่อ
         HomeDocSpec(id: "selfCert", title: "แบบฟอร์มรับรองตนเอง VSPP + เอกสารแนบ 1–10 (วิศวกรเซ็นทุกแผ่น)", stage: .connect, provider: .engineer,

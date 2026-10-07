@@ -62,7 +62,10 @@ extension JobEditorView {
         seedPlatePhoto()
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
-        case "site": select(.site)
+        case "site":
+            select(.site)
+            // `-surveySiteDXF YES` also writes the site plan's DXF to Documents/site.dxf (with `-surveyAutofill`'s symbols when given)
+            if UserDefaults.standard.bool(forKey: "surveySiteDXF"), let out = SiteDXF.build(job) { writeDebugFile("site.dxf", out.data) }
         case "electrical": select(.electrical)
         case "sld":
             select(.electrical); showSLD = true

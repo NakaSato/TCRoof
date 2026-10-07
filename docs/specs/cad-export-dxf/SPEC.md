@@ -1,6 +1,6 @@
 # CAD export (DXF) — iPhone / iPad
 
-Status: built for C1, the SLD and D1 (`SketchDXF`, `SingleLineDXF`, `TankDXF`). A2 is not built. Build steps: `CLAUDE_CODE_TASK.md` in this folder.
+Status: built for C1, the SLD, D1 and A2 (`SketchDXF`, `SingleLineDXF`, `TankDXF`, `SiteDXF`). Build steps: `CLAUDE_CODE_TASK.md` in this folder.
 
 ## Goal
 
@@ -113,6 +113,13 @@ task's proposed `SLD_PV` and `SLD_NOTE` were renamed `SLD_NEW` and `SLD_ASSUMED`
 D1 layers: `GRID 8, OUTLINE 7, DIM 3, OBSTACLE 1, NORTH 7, TEXT 7` from `TankPlan.tags`, and `PV 150` (panels switched
 on) / `PV_GROUP 170` (table outlines, footing circles) from `TankLayout.current`. The layout is drawn from
 `TankLayout`'s tank-metre data, not from a sketch (the page draws it in a SwiftUI `Canvas`). Cut columns are not written.
+
+A2 (`SiteDXF`, the picture menu's `ส่งออก DXF`): the site picture's frame in millimetres from its bottom-left corner,
+at real scale from `siteScale` (metres across the picture). Without a scale it is 400 mm wide, the title says so, and
+building models are left out (as on the report). Layers: `FRAME 8`, `PV_AREA 5` / `BUILDING 4` (building models),
+`PANEL_AREA 1`, `CABLE 5`, `MEASURE 3`, `CRANE 30`, `SHADE 30` (drawn shapes), `SYMBOL 7` (marks, their colours kept with
+group 62), `NORTH 7`, `TEXT 7` (title line). Symbol and tag sizes follow the picture's width as on the report, so they
+are not at a real size. Translucent tints (a model's area) are not written; the picture itself is not either.
 
 Not written by any export: fills (R12 has no fill short of `SOLID`), photos (an outline only), bold, line widths.
 

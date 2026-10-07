@@ -256,6 +256,7 @@ extension SitePageWide {
             Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียมตามพิกัด A1", systemImage: "map") }
             Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo") }
             if photo != nil {
+                Button(action: exportDXF) { Label("ส่งออก DXF", systemImage: "square.and.arrow.up") }
                 Button(role: .destructive) { job.values["siteMap"] = nil; job.values[SiteShapes.sourceKey] = nil; job.values[SiteShapes.scaleKey] = nil } label: {
                     Label("ลบภาพ", systemImage: "trash")
                 }
@@ -266,6 +267,11 @@ extension SitePageWide {
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.5)))
         }
+    }
+
+    /// The site plan over the picture's frame as a CAD file (docs/specs/cad-export-dxf), at real scale once it is known.
+    func exportDXF() {
+        do { dxfFile = try model.exportSiteDXF(job) } catch { failure = error.localizedDescription }
     }
 
     /// "ภาพโดรน 29/9/2569 10:12"

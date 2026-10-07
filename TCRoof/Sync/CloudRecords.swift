@@ -36,6 +36,10 @@ extension Job: CloudSynced {
         var surveyDate, installStart, createdAt: Int64
         var installDays: Int
         var driveFolderURL: String?
+        // MP schedule; optional so documents from older app versions still decode.
+        var mpNumber: Int?
+        var inverterKW: Double?
+        var scheduleInput, scheduleActual: String?
     }
 
     static let collection = "jobs"
@@ -44,7 +48,8 @@ extension Job: CloudSynced {
         Record(code: code, projectName: projectName, customerName: customerName, phone: phone, address: address,
                province: province, capacityKW: capacityKW, team: teamRaw, status: statusRaw,
                surveyDate: surveyDate.millis, installStart: installStart.millis, createdAt: createdAt.millis,
-               installDays: installDays, driveFolderURL: driveFolderURL)
+               installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
+               scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -53,6 +58,11 @@ extension Job: CloudSynced {
         teamRaw = r.team; statusRaw = r.status
         surveyDate = Date(millis: r.surveyDate); installStart = Date(millis: r.installStart)
         createdAt = Date(millis: r.createdAt); installDays = r.installDays; driveFolderURL = r.driveFolderURL
+        // a record written by an app version without the MP plan keeps this device's
+        if let v = r.mpNumber { mpNumber = v }
+        if let v = r.inverterKW { inverterKW = v }
+        if let v = r.scheduleInput { scheduleInputJSON = v }
+        if let v = r.scheduleActual { scheduleActualJSON = v }
         return true
     }
 

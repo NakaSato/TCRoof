@@ -1,7 +1,7 @@
 # แผนงาน MP (Master Project Schedule) per station (iPad Swift dev spec)
 
-**Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 10 tests). UI and storage below are ready
-for development, 2026-10-06.
+**Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 10 tests). Storage (§2), the job card
+(§3.1) and ตั้งค่าแผน (§3.2) built 2026-10-07 (`TCRoof/Views/Job/MPScheduleViews.swift`); §3.3 onward not yet.
 **Source:** the company's per-station workbook `MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx` (one sheet,
 5,605 formulas). Every PWA station of โครงการประปา ระยะที่ 3–4 (102 stations) has one copy of it.
 **Goal:** replace the 102 workbook copies with one screen per job: the plan is generated from three dates and one

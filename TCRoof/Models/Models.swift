@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 import TCRoofUI
+import TCRoofCore
 
 // MARK: - Enums
 
@@ -97,6 +98,14 @@ final class Job {
     var driveFolderURL: String?
     /// Firestore document id shared by every device; nil only on records made before cloud sync.
     var syncID: String?
+    // MP schedule (docs/specs/master-schedule-swift.md §2); optional so older stores open without a migration.
+    /// MP number in the PWA project list (e.g. 189).
+    var mpNumber: Int?
+    /// Inverter total in kW; sets the default of the MP plan's "เกิน 200 kVA".
+    var inverterKW: Double?
+    /// Encoded `MasterSchedule.Input` and `MasterSchedule.Actual`.
+    var scheduleInputJSON: String?
+    var scheduleActualJSON: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -135,6 +144,23 @@ final class Job {
     func installDay(on date: Date) -> Int? {
         let diff = Calendar.current.dateComponents([.day], from: installStart.startOfDay, to: date.startOfDay).day ?? -1
         return (0..<max(installDays, 1)).contains(diff) ? diff + 1 : nil
+    }
+
+    /// The MP plan's dates and flag; setting it also moves the install window so the Plan calendar agrees.
+    var scheduleInput: MasterSchedule.Input? {
+        get { scheduleInputJSON.flatMap { try? JSONDecoder().decode(MasterSchedule.Input.self, from: Data($0.utf8)) } }
+        set {
+            scheduleInputJSON = newValue.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } }
+            if let i = newValue {
+                let cal = MasterSchedule.calendar
+                installStart = cal.startOfDay(for: i.installStart)
+                installDays = max(1, (cal.dateComponents([.day], from: installStart, to: cal.startOfDay(for: i.installEnd)).day ?? 0) + 1)
+            }
+        }
+    }
+    var scheduleActual: MasterSchedule.Actual {
+        get { scheduleActualJSON.flatMap { try? JSONDecoder().decode(MasterSchedule.Actual.self, from: Data($0.utf8)) } ?? .init() }
+        set { scheduleActualJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
     }
 
     var estimatedPanels: Int { Int((capacityKW * 1000 / 550).rounded(.up)) }

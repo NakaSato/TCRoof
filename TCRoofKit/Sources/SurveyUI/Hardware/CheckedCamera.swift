@@ -43,25 +43,37 @@ struct CheckedCamera: View {
 
     /// The page saves the image with `model.addPhoto` right away; the stamp waits there for it and marks it as a camera shot.
     private func finish(_ img: UIImage?) {
-        if img != nil { model.captureStamp = (stamp ?? PhotoStamp(), Date()) }
+        if img != nil { model.captureStamp = (stamp ?? PhotoStamp(), Date(), false) }
         done(img)
         dismiss()
     }
 
     private func review(_ img: UIImage) -> some View {
+        PhotoReview(image: img, issues: issues, keep: { finish(img) }, retake: {
+            flash = issues.contains(.dark)
+            taken = nil; issues = []; attempt += 1
+        })
+    }
+}
+
+/// A shot with problems, shown again with the reasons and เก็บไว้ / ถ่ายใหม่.
+struct PhotoReview: View {
+    let image: UIImage
+    let issues: [ImageQuality.Issue]
+    let keep: () -> Void
+    let retake: () -> Void
+
+    var body: some View {
         VStack(spacing: 16) {
-            Image(uiImage: img).resizable().scaledToFit().frame(maxHeight: .infinity)
+            Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: .infinity)
             ForEach(issues, id: \.self) { i in
                 Label(i.message, systemImage: i == .dark ? "moon.fill" : i == .tilted ? "level" : "camera.metering.unknown")
                     .font(.headline).foregroundStyle(Home.orange)
             }
             HStack(spacing: 12) {
-                Button { finish(img) } label: { Text("เก็บไว้").frame(maxWidth: .infinity, minHeight: 50) }
+                Button(action: keep) { Text("เก็บไว้").frame(maxWidth: .infinity, minHeight: 50) }
                     .buttonStyle(.bordered)
-                Button {
-                    flash = issues.contains(.dark)
-                    taken = nil; issues = []; attempt += 1
-                } label: { Text("ถ่ายใหม่").bold().frame(maxWidth: .infinity, minHeight: 50) }
+                Button(action: retake) { Text("ถ่ายใหม่").bold().frame(maxWidth: .infinity, minHeight: 50) }
                     .buttonStyle(.borderedProminent)
             }
             .frame(maxWidth: 520)

@@ -19,6 +19,7 @@ extension PanelsPageWide {
             if values.photo(PhotoField.wide.rawValue) == nil {
                 PhotoSlot(photo: nil, jobID: job.id, hint: "ถ่ายมุมกว้างให้เห็นทั้งตู้และช่องว่าง", required: true,
                           onPick: { addPhoto($0, to: .wide) }, onClear: {})
+                    .photoShot(PhotoField.wide.rawValue)
                     .frame(height: narrow ? 240 : 330)
             } else {
                 GeometryReader { geo in wideStage(geo.size) }

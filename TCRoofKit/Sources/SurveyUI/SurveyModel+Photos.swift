@@ -14,9 +14,10 @@ extension SurveyModel {
     /// A photo just taken with the survey camera carries where and which way it was taken (`captureStamp`, kept for
     /// a few seconds), in its EXIF and on the `Photo`, and its full-size original also goes to the photo library.
     public func addPhoto(_ image: UIImage, to job: UUID, maxSide: CGFloat = 1600, png: Bool = false) -> Photo? {
-        let img = image.scaled(maxSide: maxSide, opaque: !png)
-        let shot = png ? nil : captureStamp.flatMap { -$0.at.timeIntervalSinceNow < 10 ? $0.stamp : nil }
+        let capture = png ? nil : captureStamp.flatMap { -$0.at.timeIntervalSinceNow < 10 ? $0 : nil }
         captureStamp = nil
+        let shot = capture?.stamp
+        let img = image.scaled(maxSide: capture?.strip == true ? max(maxSide, WideCamera.stripMaxSide) : maxSide, opaque: !png)
         let stamp = shot.flatMap { $0.isEmpty ? nil : $0 }
         let taken = Date()
         guard let data = png ? img.pngData() : stamp.flatMap({ CaptureContext.jpeg(img, quality: 0.8, stamp: $0, taken: taken) })

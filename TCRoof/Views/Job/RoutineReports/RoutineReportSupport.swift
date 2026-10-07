@@ -3,6 +3,7 @@ import SwiftData
 import TCRoofUI
 import TCRoofCore
 import PDFReport
+import ExcelExport
 
 /// The routine reports of one job (docs/specs/routine-reports-swift.md): its daily-report logs, the MP feed, and the
 /// PDFs filed into the job's documents (and so to Drive) under the report folders of §4.6.
@@ -137,16 +138,39 @@ enum RoutineReportFiles {
                      folder: RoutineReport.folder(.monthly, date: first), title: RoutineReport.Kind.monthly.title)
     }
 
+    /// A finished file to keep with the job.
+    struct Ready {
+        let name: String
+        let folder: [String]
+        let data: Data
+    }
+
+    /// R2 as the clean Excel workbook, named like its PDF.
+    static func dailyExcel(_ job: Job, log: InstallLog) -> Ready? {
+        guard let r = log.report else { return nil }
+        let s = job.routineSettings
+        let h = DailyReportExcel.Header(project: s.contractName.isEmpty ? job.stationName : s.contractName, station: job.stationName,
+                                        employer: s.employer, contractor: s.contractor, engineer: s.siteEngineer, inspector: s.inspector,
+                                        engineerSignedAt: log.engineerSignedAt, inspectorAckAt: log.inspectorAckAt)
+        guard let data = try? DailyReportExcel.export(r, all: job.dailyReports, header: h) else { return nil }
+        let pdf = RoutineReport.fileName(.daily, date: r.date, station: job.stationName)
+        return Ready(name: String(pdf.dropLast(4)) + ".xlsx", folder: RoutineReport.folder(.daily, date: r.date), data: data)
+    }
+
     /// Adds the PDF to the job's documents, replacing an earlier one of the same name, so the Drive upload files it.
     @discardableResult
     static func file(_ built: Built, job: Job, context: ModelContext) -> Data {
         let data = built.data
-        for old in job.documents where old.name == built.name { context.delete(old) }
-        let doc = DocumentAsset(name: built.name, data: data)
-        doc.folderPath = built.folder.joined(separator: "/")
+        file(Ready(name: built.name, folder: built.folder, data: data), job: job, context: context)
+        return data
+    }
+
+    static func file(_ ready: Ready, job: Job, context: ModelContext) {
+        for old in job.documents where old.name == ready.name { context.delete(old) }
+        let doc = DocumentAsset(name: ready.name, data: ready.data)
+        doc.folderPath = ready.folder.joined(separator: "/")
         context.insert(doc)
         doc.job = job
-        return data
     }
 
     /// Writes the PDF to a temporary file to share or preview.

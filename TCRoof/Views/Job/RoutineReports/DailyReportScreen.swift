@@ -8,6 +8,8 @@ struct DraftPhoto: Identifiable, Equatable {
     let id = UUID()
     var data: Data
     var tag: String
+    /// The stored photo it came from, kept on save so its Drive upload isn't repeated.
+    var asset: PersistentIdentifier?
 }
 
 /// รายงานประจำวัน R2 (docs/specs/routine-reports-swift.md §4.2). iPad wide: sections 1–6 on the left, photos on the
@@ -117,7 +119,10 @@ struct DailyReportScreen: View {
             } else {
                 Button("บันทึก Inspector รับทราบ") { showAck = true }.frame(minHeight: touchMin)
             }
-            Button { exportPDF() } label: { Label("PDF", systemImage: "square.and.arrow.up") }.frame(minHeight: touchMin)
+            Menu {
+                Button { exportPDF() } label: { Label("PDF", systemImage: "doc.richtext") }
+                Button { exportExcel() } label: { Label("Excel", systemImage: "tablecells") }
+            } label: { Label("ส่งออก", systemImage: "square.and.arrow.up").frame(minHeight: touchMin) }
         }
         .font(.subheadline.weight(.semibold))
         if dirty {
@@ -183,7 +188,7 @@ struct DailyReportScreen: View {
         loaded = true
         if let log, let r = log.report {
             report = r
-            photos = log.sortedPhotos.map { DraftPhoto(data: $0.data, tag: $0.tag) }
+            photos = log.sortedPhotos.map { DraftPhoto(data: $0.data, tag: $0.tag, asset: $0.persistentModelID) }
         } else {
             let previous = others.filter { $0.date < date }.last
             report = RoutineReport.nextDay(from: previous, date: date, settings: job.routineSettings)
@@ -210,11 +215,17 @@ struct DailyReportScreen: View {
         if !userName.isEmpty { target.recorder = userName }
         target.report = report
         if saved?.1 != photos {
-            target.photos.forEach(context.delete)
-            for p in photos {
+            let kept = Dictionary(uniqueKeysWithValues: photos.compactMap { p in p.asset.map { ($0, p) } })
+            for asset in target.photos {
+                if let p = kept[asset.persistentModelID] { asset.tag = p.tag } else { context.delete(asset) }
+            }
+            for (i, p) in photos.enumerated() where p.asset == nil {
                 let asset = PhotoAsset(data: p.data, tag: p.tag)
+                // keep the screen's order: new photos sort after the ones already stored
+                asset.createdAt = Date().addingTimeInterval(Double(i) / 1000)
                 context.insert(asset)
                 asset.log = target
+                photos[i].asset = asset.persistentModelID
             }
         }
         job.feedMP()
@@ -238,6 +249,7 @@ struct DailyReportScreen: View {
             let data = RoutineReportFiles.file(built, job: job, context: context)
             if let url = try? RoutineReportFiles.temporaryURL(built, data: data) { share = ReportShare(url: url) }
         }
+        if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()
         withAnimation { toast = "ลงนามแล้ว · เก็บ PDF ในเอกสารโครงการ" }
     }
@@ -249,11 +261,19 @@ struct DailyReportScreen: View {
         }
         target.inspectorAckAt = when
         if let built = RoutineReportFiles.daily(job, log: target) { RoutineReportFiles.file(built, job: job, context: context) }
+        if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()
     }
 
     private func exportPDF() {
         guard let log, let built = RoutineReportFiles.daily(job, log: log), let url = try? RoutineReportFiles.temporaryURL(built) else { return }
+        share = ReportShare(url: url)
+    }
+
+    private func exportExcel() {
+        guard let log, let file = RoutineReportFiles.dailyExcel(job, log: log) else { return }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(file.name)
+        guard (try? file.data.write(to: url, options: .atomic)) != nil else { return }
         share = ReportShare(url: url)
     }
 

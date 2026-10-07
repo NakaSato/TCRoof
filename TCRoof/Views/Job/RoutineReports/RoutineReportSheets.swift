@@ -199,6 +199,7 @@ struct RoutineSettingsSheet: View {
                     TextField("Inspector", text: $s.inspector)
                 }
                 ListEditor(title: "ตำแหน่งในสถานี", placeholder: "เช่น หลังคา 1, ถังน้ำใส 1, ห้องอินเวอร์เตอร์", items: $s.locations)
+                if !s.locations.isEmpty { taskLocations }
                 Section {
                     HStack(spacing: 6) {
                         ForEach(Self.weekdays, id: \.0) { d, label in
@@ -240,6 +241,65 @@ struct RoutineSettingsSheet: View {
                 }
             }
         }
+    }
+}
+
+extension RoutineSettingsSheet {
+    /// Which locations each task's % is averaged over for the MP; a task left empty uses the places it was reported at.
+    var taskLocations: some View {
+        Section {
+            ForEach(MasterSchedule.Task.allCases.filter { $0.part != .permit }) { t in
+                NavigationLink {
+                    TaskLocationsPicker(task: t, all: s.locations, chosen: Binding(
+                        get: { s.taskLocations[t.rawValue] ?? [] },
+                        set: { s.taskLocations[t.rawValue] = $0.isEmpty ? nil : $0 }))
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(t.code).font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.primary)
+                        Text(t.title).lineLimit(1)
+                        Spacer()
+                        let n = s.taskLocations[t.rawValue]?.count ?? 0
+                        Text(n == 0 ? "ตามที่รายงาน" : "\(n) ตำแหน่ง").font(.caption).foregroundStyle(Theme.muted)
+                    }
+                }
+            }
+        } header: {
+            Text("ตำแหน่งของแต่ละงาน (คิด % ให้แผน MP)")
+        } footer: {
+            Text("% ของงานใน MP = เฉลี่ย % สะสมของทุกตำแหน่งที่เลือก ตำแหน่งที่ยังไม่เริ่มนับเป็น 0% ถ้าไม่เลือก ใช้เฉพาะตำแหน่งที่มีในรายงานแล้ว")
+        }
+    }
+}
+
+struct TaskLocationsPicker: View {
+    let task: MasterSchedule.Task
+    let all: [String]
+    @Binding var chosen: [String]
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(all, id: \.self) { l in
+                    Button {
+                        chosen = chosen.contains(l) ? chosen.filter { $0 != l } : all.filter { chosen.contains($0) || $0 == l }
+                    } label: {
+                        HStack {
+                            Text(l).foregroundStyle(Theme.navy)
+                            Spacer()
+                            if chosen.contains(l) { Image(systemName: "checkmark").foregroundStyle(Theme.primary) }
+                        }
+                        .frame(minHeight: touchMin)
+                    }
+                }
+            } footer: {
+                Text(task.title)
+            }
+            if !chosen.isEmpty {
+                Button("ล้าง (ใช้ตามที่รายงาน)", role: .destructive) { chosen = [] }
+            }
+        }
+        .navigationTitle("\(task.code) ตำแหน่ง")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

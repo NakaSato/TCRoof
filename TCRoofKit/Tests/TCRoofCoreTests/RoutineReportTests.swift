@@ -179,6 +179,10 @@ final class RoutineReportTests: XCTestCase {
                        "2568-07 รายงานผลความก้าวหน้าประจำเดือน โชคชัย.pdf")
         XCTAssertEqual(RoutineReport.folder(.daily, date: d(14)), ["2. รายงานประจำวัน", "2568-07 กรกฎาคม"])
         XCTAssertEqual(RoutineReport.thaiDate(d(1)), "1 ก.ค. 2568")
+        XCTAssertEqual(RoutineReport.photoFolder(date: d(1)), ["5. ภาพถ่ายประจำวัน", "2568-07 กรกฎาคม", "2568-07-01"])
+        let line = RoutineReport.ProgressLine(task: .structure, description: "", location: "หลังคา 1/2")
+        XCTAssertEqual(RoutineReport.photoName(date: d(1), index: 3, line: line), "2568-07-01 03 หลังคา 1-2.jpg")
+        XCTAssertEqual(RoutineReport.photoName(date: d(1), index: 12, line: nil), "2568-07-01 12.jpg")
     }
 
     func testWeatherTapCycle() {

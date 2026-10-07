@@ -417,6 +417,8 @@ final class PhotoAsset {
     var survey: SurveyForm?
     var log: InstallLog?
     var inspection: Inspection?
+    /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).
+    var driveFileID: String?
 
     init(data: Data, tag: String = "") {
         self.data = data

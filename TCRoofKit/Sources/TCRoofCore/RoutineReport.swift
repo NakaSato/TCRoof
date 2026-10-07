@@ -512,4 +512,21 @@ public enum RoutineReport {
         let c = calendar.dateComponents([.year, .month], from: date)
         return [top, String(format: "%04d-%02d ", (c.year ?? 0) + 543, c.month ?? 0) + thaiMonths[(c.month ?? 1) - 1]]
     }
+
+    /// The daily photos' Drive folder: `5. ภาพถ่ายประจำวัน/2568-07 กรกฎาคม/2568-07-01`.
+    public static func photoFolder(date: Date) -> [String] {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        let y = (c.year ?? 0) + 543
+        return ["5. ภาพถ่ายประจำวัน", String(format: "%04d-%02d ", y, c.month ?? 0) + thaiMonths[(c.month ?? 1) - 1],
+                String(format: "%04d-%02d-%02d", y, c.month ?? 0, c.day ?? 0)]
+    }
+
+    /// `2568-07-01 03 หลังคา 1.jpg`: date, 1-based number, and the progress line's location or task when tagged.
+    public static func photoName(date: Date, index: Int, line: ProgressLine?) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        let stamp = String(format: "%04d-%02d-%02d %02d", (c.year ?? 0) + 543, c.month ?? 0, c.day ?? 0, index)
+        let what = line.map { $0.location.isEmpty ? ($0.task?.code ?? $0.description) : $0.location } ?? ""
+        let safe = what.replacingOccurrences(of: "/", with: "-").trimmingCharacters(in: .whitespaces)
+        return stamp + (safe.isEmpty ? "" : " " + safe) + ".jpg"
+    }
 }

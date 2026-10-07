@@ -343,7 +343,11 @@ extension PlanCalendarView {
     private func monthDay(_ day: Date, _ data: PlanPhoneData) -> some View {
         let inMonth = Calendar.current.isDate(day, equalTo: month, toGranularity: .month)
         let isSelected = Calendar.current.isDate(day, inSameDayAs: selected)
-        return Button { selected = day.startOfDay } label: {
+        // a grey day of the previous or next month also turns to that month
+        return Button {
+            selected = day.startOfDay
+            if !inMonth { month = day.startOfMonth }
+        } label: {
             VStack(spacing: 3) {
                 PlanPhoneDayNumber(date: day, size: 34, isSelected: isSelected, isToday: isToday(day), inMonth: inMonth)
                 HStack {

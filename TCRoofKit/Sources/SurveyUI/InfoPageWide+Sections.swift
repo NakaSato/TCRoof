@@ -130,12 +130,16 @@ extension InfoPageWide {
     var gpsInput: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                TextField(placeholder("gps"), text: text("gps")).keyboardType(.numbersAndPunctuation).focused($focus, equals: "gps")
-                    .inputBox(focused: focus == "gps")
+                HStack(spacing: 6) {
+                    TextField(placeholder("gps"), text: text("gps")).keyboardType(.numbersAndPunctuation).focused($focus, equals: "gps")
+                    SourceChip(source: job.values.source("gps"))
+                }
+                .inputBox(focused: focus == "gps")
                 Button(action: locate) {
                     HStack(spacing: 8) {
                         if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Home.primary) }
-                        if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
+                        if locating, let a = liveAccuracy { Text("± \(Int(a.rounded())) ม.").font(.system(size: 16, weight: .semibold).monospacedDigit()) }
+                        else if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
@@ -162,18 +166,23 @@ extension InfoPageWide {
             }
         case .ok, .empty:
             if let gpsFailure { Text(gpsFailure).foregroundStyle(Home.danger) }
-            else if let fix { Text("ความแม่นยำ ±\(Int(fix.accuracy.rounded())) ม. · บันทึกเมื่อ \(fix.time.formatted(.dateTime.hour().minute()))").foregroundStyle(Home.muted) }
+            else if let fix {
+                Text(GPSGrade.note(accuracy: fix.accuracy) + " · บันทึกเมื่อ \(fix.time.formatted(.dateTime.hour().minute()))")
+                    .foregroundStyle(GPSGrade(accuracy: fix.accuracy) == .approximate ? Home.pending : Home.muted)
+            }
         }
     }
 
     func locate() {
         locating = true
         gpsFailure = nil
+        liveAccuracy = nil
+        locator.progress = { liveAccuracy = $0 }
         locator.request { result in
             locating = false
             switch result {
             case .success(let loc):
-                job.values["gps"] = .text(GPS.format(loc.coordinate.latitude, loc.coordinate.longitude))
+                job.values.set("gps", .text(GPS.format(loc.coordinate.latitude, loc.coordinate.longitude)), source: .gps)
                 fix = (loc.horizontalAccuracy, loc.timestamp)
             case .failure(let error):
                 gpsFailure = error.localizedDescription

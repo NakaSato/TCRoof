@@ -301,7 +301,9 @@ public struct Values: Codable, Hashable, Sendable {
         let suffixes = ["front", "back", "left", "right", "plate", "wide", "feed", "feedLoc", "feedPhoto", "mdbOpen", "mdbBreaker", "mdbSpace"]
         for j in i..<5 {
             for s in suffixes { storage["tr\(j)_\(s)"] = storage["tr\(j + 1)_\(s)"] }
-            if let src = source("tr\(j + 1)_kva") { markSource("tr\(j)_kva", src) } else { forgetSource("tr\(j)_kva") }
+            for k in NameplateParser.transformerKeys {
+                if let src = source("tr\(j + 1)_\(k)") { markSource("tr\(j)_\(k)", src) } else { forgetSource("tr\(j)_\(k)") }
+            }
         }
     }
     public func number(_ id: String) -> Double? { NumberInput.value(text(id)) }

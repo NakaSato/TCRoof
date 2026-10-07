@@ -34,6 +34,7 @@ struct GPSInput: View {
     @State private var locator = GPSLocator()
     @State private var locating = false
     @State private var failure: String?
+    @State private var accuracy: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -64,6 +65,10 @@ struct GPSInput: View {
                 EmptyView()
             }
             if let failure { Text(failure).font(.caption).foregroundStyle(.red) }
+            else if let accuracy {
+                Text(GPSGrade.note(accuracy: accuracy)).font(.caption)
+                    .foregroundStyle(GPSGrade(accuracy: accuracy) == .approximate ? Color.orange : Color.secondary)
+            }
         }
     }
 
@@ -73,7 +78,9 @@ struct GPSInput: View {
         locator.request { result in
             locating = false
             switch result {
-            case .success(let loc): text = GPS.format(loc.coordinate.latitude, loc.coordinate.longitude)
+            case .success(let loc):
+                text = GPS.format(loc.coordinate.latitude, loc.coordinate.longitude)
+                accuracy = loc.horizontalAccuracy
             case .failure(let error): failure = error.localizedDescription
             }
         }
@@ -95,6 +102,8 @@ final class GPSLocator: NSObject, CLLocationManagerDelegate {
     /// opens a connection to locationd.
     private var manager: CLLocationManager?
     private var completion: ((Result<CLLocation, Error>) -> Void)?
+    /// The best accuracy so far while it listens, for "± 8 ม." on the button.
+    var progress: ((CLLocationAccuracy) -> Void)?
     private var best: CLLocation?
     private var started = Date()
     private var timer: Timer?
@@ -138,6 +147,7 @@ final class GPSLocator: NSObject, CLLocationManagerDelegate {
         for l in locations where l.horizontalAccuracy >= 0 && l.timestamp > started.addingTimeInterval(-10) {
             if best.map({ l.horizontalAccuracy < $0.horizontalAccuracy }) ?? true { best = l }
         }
+        if let best { progress?(best.horizontalAccuracy) }
         if let best, best.horizontalAccuracy <= Self.goodAccuracy { finish(.success(best)) }
     }
 
@@ -156,6 +166,7 @@ final class GPSLocator: NSObject, CLLocationManagerDelegate {
         manager?.stopUpdatingLocation()
         let done = completion
         completion = nil
+        if case .success(let l) = result { MainActor.assumeIsolated { DeviceCaps.shared.noteFix(accuracy: l.horizontalAccuracy) } }
         done?(result)
     }
 }

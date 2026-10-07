@@ -13,6 +13,8 @@ public enum NameplateParser {
         /// Highest and lowest voltage on the plate, in volts: 22000 / 400.
         public var hvVolts: Double?
         public var lvVolts: Double?
+        /// The low-voltage side as A3's แรงดัน field writes it: "416/240", or "400".
+        public var lvText: String?
         /// Year of manufacture in B.E., as the form writes it: 2565.
         public var yearBE: Int?
         /// Breaker rated current In (AT), frame (AF) and breaking capacity Icu (kA).
@@ -23,6 +25,22 @@ public enum NameplateParser {
         public var meterNumber: String?
         public init() {}
     }
+
+    /// A3's transformer fields a nameplate fills, in the card's order: the field key (also `Transformer`'s property and
+    /// the `tr<i>_<key>` source key), its label, the value to write and how to show it.
+    public struct Field: Hashable, Sendable {
+        public let key: String, label: String, value: String, display: String
+        public init(key: String, label: String, value: String, display: String) {
+            self.key = key; self.label = label; self.value = value; self.display = display
+        }
+    }
+    public static func transformerFields(_ r: Reading) -> [Field] {
+        [("kva", "ขนาด", r.kva, " kVA"), ("voltage", "แรงดัน", r.lvText, " V"), ("vectorGroup", "Vector group", r.vectorGroup, ""),
+         ("impedance", "%Z", r.impedance, " %"), ("year", "ปีผลิต", r.yearBE.map(String.init), "")]
+            .compactMap { k, l, v, unit in v.map { Field(key: k, label: l, value: $0, display: $0 + unit) } }
+    }
+    /// Keys of `transformerFields`, for moving their sources when a transformer is removed.
+    public static let transformerKeys = ["kva", "voltage", "vectorGroup", "impedance", "year"]
 
     /// The form fields Live Text can fill in phase 1.
     public enum Target: String, Sendable {
@@ -61,6 +79,11 @@ public enum NameplateParser {
             return m[1].lowercased() == "k" ? v * 1000 : v
         }
         if volts.count >= 2 { r.hvVolts = volts.max(); r.lvVolts = volts.min() }
+        if let pair = match(#"\b(\d{3})\s*/\s*(\d{3})\s*V\b"#, in: t) {
+            r.lvText = "\(pair[0])/\(pair[1])"
+        } else if let lv = r.lvVolts, lv < 1000 {
+            r.lvText = String(Int(lv.rounded()))
+        }
         r.yearBE = year(t)
         r.breakerAT = first(#"\bI\s*n\s*=?\s*(\d{2,4})\s*A\b"#, in: t) ?? first(#"\b(\d{2,4})\s*AT\b"#, in: t)
         r.breakerAF = first(#"\b(\d{2,4})\s*AF\b"#, in: t)

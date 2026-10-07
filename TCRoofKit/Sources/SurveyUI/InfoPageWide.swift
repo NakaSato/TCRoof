@@ -20,6 +20,8 @@ struct InfoPageWide: View {
     @State var locating = false
     @State var fix: (accuracy: Double, time: Date)?
     @State var gpsFailure: String?
+    /// Best accuracy so far while locating, shown on the button.
+    @State var liveAccuracy: Double?
 
     struct AreaChange: Identifiable { let id = UUID(); let losing: [SurveyModule] }
 

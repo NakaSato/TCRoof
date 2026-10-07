@@ -125,12 +125,17 @@ struct PhotoViewer: View {
 
 /// System camera.
 struct CameraPicker: UIViewControllerRepresentable {
+    /// Off when `CheckedCamera` hosts it and decides when the cover closes.
+    var dismissOnFinish = true
+    /// Flash on: a retake after "มืดเกินไป".
+    var flash = false
     let done: (UIImage?) -> Void
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let c = UIImagePickerController()
         c.sourceType = .camera
+        if flash { c.cameraFlashMode = .on }
         c.delegate = context.coordinator
         return c
     }
@@ -142,11 +147,11 @@ struct CameraPicker: UIViewControllerRepresentable {
         init(_ p: CameraPicker) { parent = p }
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             parent.done(info[.originalImage] as? UIImage)
-            parent.dismiss()
+            if parent.dismissOnFinish { parent.dismiss() }
         }
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             parent.done(nil)
-            parent.dismiss()
+            if parent.dismissOnFinish { parent.dismiss() }
         }
     }
 }

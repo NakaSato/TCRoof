@@ -192,7 +192,7 @@ private struct PhotoSources: ViewModifier {
                     item = nil
                 }
             }
-            .fullScreenCover(isPresented: $showCamera) { CameraPicker { img in if let img { onPick(img) } }.ignoresSafeArea() }
+            .fullScreenCover(isPresented: $showCamera) { CheckedCamera { img in if let img { onPick(img) } } }
     }
 }
 #endif

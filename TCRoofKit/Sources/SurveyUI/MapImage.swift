@@ -18,9 +18,10 @@ enum MapImage {
         case mapbox = "m", google = "g", apple = "a"
     }
     enum Failure: Error, LocalizedError {
-        case noGPS, badResponse(String)
+        case noGPS, badResponse(String), hot
         var errorDescription: String? {
             switch self {
+            case .hot: return "เครื่องร้อน หยุดโหลดแผนที่ชั่วคราว · พักในที่ร่มแล้วลองใหม่"
             case .noGPS: return "ยังไม่มีพิกัด GPS — กรอกที่ ข้อมูลโครงการ › พิกัดดาวเทียม Google Map (เช่น 17.0062, 99.8235 หรือวางลิงก์ Google Maps)"
             case .badResponse(let s): return "ดึงภาพแผนที่ไม่สำเร็จ: \(s)"
             }
@@ -64,6 +65,8 @@ enum MapImage {
         for (source, key) in sources(keys) {
             let name = Cache.name(c, zoom: zoom, source: source)
             if let img = Cache.image(name) { return img }
+            // hot: no new downloads (cached pictures still show), so the camera keeps working
+            if ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue { throw Failure.hot }
             do {
                 let img: UIImage
                 switch source {

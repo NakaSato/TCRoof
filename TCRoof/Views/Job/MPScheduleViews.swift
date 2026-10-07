@@ -4,6 +4,26 @@ import TCRoofCore
 
 // MARK: - Card
 
+#if DEBUG
+extension Job {
+    /// A plan around today with some progress booked behind it, unless the job has one already.
+    func seedMPDemo() {
+        guard scheduleInput == nil else { return }
+        let cal = MasterSchedule.calendar, today = cal.startOfDay(for: .now)
+        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today)! }
+        mpNumber = 189; inverterKW = 80
+        scheduleInput = MasterSchedule.Input(installStart: day(-20), installEnd: day(26), kickoff: day(-70),
+                                             engineeringStart: day(-70), siteHandover: day(-60), over200kVA: false)
+        var a = MasterSchedule.Actual()
+        for (t, pct, back) in [(MasterSchedule.Task.kickoff, 100.0, -70), (.engineering, 100, -63), (.siteHandover, 100, -56),
+                               (.buildingPermit, 100, -42), (.structure, 60, -14), (.inverter, 40, -7), (.controlCabinet, 30, 0)] {
+            a.setPercent(pct, task: t, week: day(back), over200kVA: false)
+        }
+        scheduleActual = a
+    }
+}
+#endif
+
 /// Job detail's "แผนงาน MP" card (docs/specs/master-schedule-swift.md §3.1): plan vs actual up to this week, the three
 /// parts, and the tasks planned this week. Without a plan it offers to make one.
 struct MPScheduleCard: View {
@@ -40,24 +60,12 @@ struct MPScheduleCard: View {
     }
 
     #if DEBUG
-    /// `-mpDemo plan` gives the job a plan around today with some progress booked behind it; `-mpDemo setup` also
-    /// opens ตั้งค่าแผน, and `-mpDemo new` opens it on a job without a plan.
+    /// `-mpDemo plan` gives the job a sample plan (`seedMPDemo`); `-mpDemo setup` also opens ตั้งค่าแผน, and
+    /// `-mpDemo new` opens it on the job with its plan cleared.
     private func debugSeed() {
         guard let mode = UserDefaults.standard.string(forKey: "mpDemo") else { return }
-        let cal = MasterSchedule.calendar, today = cal.startOfDay(for: .now)
-        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today)! }
         if mode == "new" { job.scheduleInputJSON = nil; job.scheduleActualJSON = nil; showSetup = true; return }
-        if job.scheduleInput == nil {
-            job.mpNumber = 189; job.inverterKW = 80
-            job.scheduleInput = MasterSchedule.Input(installStart: day(-20), installEnd: day(26), kickoff: day(-70),
-                                                     engineeringStart: day(-70), siteHandover: day(-60), over200kVA: false)
-            var a = MasterSchedule.Actual()
-            for (t, pct, back) in [(MasterSchedule.Task.kickoff, 100.0, -70), (.engineering, 100, -63), (.siteHandover, 100, -56),
-                                   (.buildingPermit, 100, -42), (.structure, 60, -14), (.inverter, 40, -7), (.controlCabinet, 30, 0)] {
-                a.setPercent(pct, task: t, week: day(back), over200kVA: false)
-            }
-            job.scheduleActual = a
-        }
+        job.seedMPDemo()
         if mode == "setup" { showSetup = true }
     }
     #endif
@@ -80,6 +88,11 @@ struct MPScheduleCard: View {
                           planned: st.plannedByPart[part] ?? 0, actual: st.actualByPart[part] ?? 0)
             }
             thisWeek(plan)
+            NavigationLink { MPScheduleScreen(job: job) } label: {
+                Label("เปิดแผนงาน MP", systemImage: "chart.bar.xaxis")
+                    .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+            }
+            .buttonStyle(.bordered).tint(Theme.primary)
         }
     }
 

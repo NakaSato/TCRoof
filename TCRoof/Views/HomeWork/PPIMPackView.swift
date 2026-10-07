@@ -59,7 +59,13 @@ enum PPIMPack {
     }
 
     /// Builds every slot's PDF in a fresh folder; returns the slots and the folder.
-    static func build(job: Job, home: HomeJob) -> (slots: [Slot], folder: URL) {
+    /// A document's files in file order: the library item's (engineer papers, datasheets), then the job's own.
+    static func files(_ doc: String, home: HomeJob, library: HomeLibrary, store: PermitStore) -> [URL] {
+        let shared = library.item(home.libraryPicks[doc])?.files.map(PermitStore.library.url) ?? []
+        return shared + home.document(doc).files.map(store.url)
+    }
+
+    static func build(job: Job, home: HomeJob, library: HomeLibrary) -> (slots: [Slot], folder: URL) {
         let store = PermitStore(job: job)
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("PPIM-\(job.code)", isDirectory: true)
         try? FileManager.default.removeItem(at: folder)
@@ -68,7 +74,7 @@ enum PPIMPack {
         let slots = home.ppimSlots.map { upload -> Slot in
             var slot = Slot(upload: upload)
             // documents in file order: the drawings before the engineer's papers, the ID card before the house registration
-            let files = upload.documents.flatMap { home.document($0.id).files }.map(store.url)
+            let files = upload.documents.flatMap { files($0.id, home: home, library: library, store: store) }
             let lead = upload.documents.contains { $0.form == .photoReport } && !home.photoReport.pages.isEmpty
                 ? Lead(report: home.photoReport, kWp: kWp, store: store) : nil
             guard !files.isEmpty || lead != nil, let data = pdf(lead: lead, files: files, limit: slot.limit) else { return slot }
@@ -95,6 +101,7 @@ enum PPIMPack {
 struct PPIMPackView: View {
     let job: Job
     let home: HomeJob
+    var library = HomeLibrary()
     @Environment(\.dismiss) private var dismiss
 
     @State private var slots: [PPIMPack.Slot] = []
@@ -131,7 +138,7 @@ struct PPIMPackView: View {
             }
             .task {
                 working = true
-                let built = PPIMPack.build(job: job, home: home)
+                let built = PPIMPack.build(job: job, home: home, library: library)
                 slots = built.slots
                 folder = built.folder
                 working = false

@@ -7,10 +7,17 @@ struct PermitStore {
     let folder: URL
 
     init(job: Job) {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let key = (job.syncID ?? job.code).replacingOccurrences(of: "/", with: "-")
-        folder = docs.appendingPathComponent("Permits", isDirectory: true).appendingPathComponent(key, isDirectory: true)
+        self.init(folderName: (job.syncID ?? job.code).replacingOccurrences(of: "/", with: "-"))
     }
+
+    init(folderName: String) {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        folder = docs.appendingPathComponent("Permits", isDirectory: true).appendingPathComponent(folderName, isDirectory: true)
+    }
+
+    /// The company library: engineer papers and datasheets shared by every home job (`HomeLibrary`).
+    static var library: PermitStore { PermitStore(folderName: "_library") }
+    static let libraryFile = "library"
 
     private func ensureFolder() {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true,

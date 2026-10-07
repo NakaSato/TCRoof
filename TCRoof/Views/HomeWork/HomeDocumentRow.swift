@@ -12,6 +12,10 @@ struct HomeDocumentRow<Destination: View>: View {
     let store: PermitStore
     /// Optional for this job's route (`HomeDocSpec.isOptional(for:)`).
     var optional: Bool
+    /// Library-backed documents: the item attached, the items to choose from, and how to change the pick.
+    var libraryItem: HomeLibrary.Item? = nil
+    var libraryChoices: [HomeLibrary.Item] = []
+    var onPick: (String?) -> Void = { _ in }
     @ViewBuilder var destination: () -> Destination
 
     @State private var photoItems: [PhotosPickerItem] = []
@@ -34,6 +38,7 @@ struct HomeDocumentRow<Destination: View>: View {
                 Spacer(minLength: 0)
                 statusMenu
             }
+            if HomeLibrary.Kind(docID: spec.id) != nil { libraryLine }
             actions
             if !document.files.isEmpty { fileList }
         }
@@ -114,6 +119,33 @@ struct HomeDocumentRow<Destination: View>: View {
         }
     }
 
+    /// Which library item this job uses, with a menu to change or detach it.
+    private var libraryLine: some View {
+        Menu {
+            ForEach(libraryChoices) { item in
+                Button { onPick(item.id) } label: {
+                    Label(item.name, systemImage: libraryItem?.id == item.id ? "checkmark" : "doc.on.doc")
+                }
+            }
+            if libraryItem != nil {
+                Button(role: .destructive) { onPick(nil) } label: { Label("ไม่ใช้จากคลัง", systemImage: "xmark") }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "books.vertical")
+                Text(libraryItem.map { "จากคลัง: \($0.name) · \($0.files.count) ไฟล์" }
+                     ?? (libraryChoices.isEmpty ? "ยังไม่มีในคลังเอกสาร" : "เลือกจากคลังเอกสาร"))
+                    .font(.sarabun(13.5, .semibold, relativeTo: .caption))
+                Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(libraryItem == nil ? Theme.inkMuted : Theme.okText)
+            .padding(.horizontal, Space.m).frame(minHeight: touchMin)
+            .background(libraryItem == nil ? Theme.disabledFill : Theme.okSoft, in: RoundedRectangle(cornerRadius: Radius.md))
+        }
+        .disabled(libraryChoices.isEmpty)
+        .accessibilityLabel(libraryItem.map { "ใช้ \($0.name) จากคลังเอกสาร" } ?? "เลือกจากคลังเอกสาร")
+    }
+
     private var fileList: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(document.files.enumerated()), id: \.element) { i, name in
@@ -144,7 +176,7 @@ struct HomeDocumentRow<Destination: View>: View {
     private func remove(_ name: String) {
         store.deletePhoto(name)
         document.files.removeAll { $0 == name }
-        if document.files.isEmpty && spec.form == nil { document.status = .missing }
+        if document.files.isEmpty && spec.form == nil && libraryItem == nil { document.status = .missing }
         document.updatedAt = .now
     }
 

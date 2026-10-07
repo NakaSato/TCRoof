@@ -150,6 +150,8 @@ public struct HomeJob: Codable, Equatable, Sendable {
     public var announcedOn: Date?
     public var scod: Date?
     public var cod: Date?
+    /// Document id → `HomeLibrary.Item` id attached to this job (engineer papers, datasheets); "" = don't use the library.
+    public var libraryPicks: [String: String] = [:]
 
     public init() {}
 
@@ -175,11 +177,12 @@ public struct HomeJob: Codable, Equatable, Sendable {
         announcedOn = try c.decodeIfPresent(Date.self, forKey: .announcedOn)
         scod = try c.decodeIfPresent(Date.self, forKey: .scod)
         cod = try c.decodeIfPresent(Date.self, forKey: .cod)
+        libraryPicks = try c.decodeIfPresent([String: String].self, forKey: .libraryPicks) ?? [:]
     }
     private enum CodingKeys: String, CodingKey {
         case residentialConfirmed, caRateCode, mode, teamFiles, wantsTaxDeduction, pvKWp, inverterKW, sellKW, phase,
              roofKgPerM2, ppimRequestNo, documents, ppim, photoReport, coeCertIssued,
-             connectRequestNo, offer, announcedOn, scod, cod
+             connectRequestNo, offer, announcedOn, scod, cod, libraryPicks
     }
 
     /// The council's certificate is valid 120 days from its date (printed on it). Nil until the date is set.

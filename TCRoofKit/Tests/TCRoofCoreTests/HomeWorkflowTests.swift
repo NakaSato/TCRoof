@@ -251,3 +251,86 @@ final class HomeSellRouteTests: XCTestCase {
         XCTAssertNil(old.offer); XCTAssertNil(old.announcedOn); XCTAssertEqual(old.connectRequestNo, "")
     }
 }
+
+/// The company library and the "ต้องทำต่อ" list.
+final class HomeLibraryTests: XCTestCase {
+    func library() -> HomeLibrary {
+        var lib = HomeLibrary()
+        var eng = HomeLibrary.Item(id: "eng", kind: .engineer, name: "วิศวกร ก")
+        eng.files = ["e.pdf"]; eng.issued = Calendar(identifier: .gregorian).date(byAdding: .day, value: -10, to: Date())
+        var pv = HomeLibrary.Item(id: "pv", kind: .pvSpec, name: "ZXM7 UHLD144")
+        pv.files = ["pv.pdf"]
+        var inv = HomeLibrary.Item(id: "inv", kind: .inverterSpec, name: "SUN2000-10K-MAP0")
+        inv.files = ["inv.pdf"]
+        let empty = HomeLibrary.Item(id: "inv2", kind: .inverterSpec, name: "SUN2000-5K-MAP0")   // no files: never used
+        var eq1 = HomeLibrary.Item(id: "eq1", kind: .equipment, name: "Huawei 3 เฟส"); eq1.files = ["a.pdf"]
+        var eq2 = HomeLibrary.Item(id: "eq2", kind: .equipment, name: "Huawei 1 เฟส"); eq2.files = ["b.pdf"]
+        lib.items = [eng, pv, inv, empty, eq1, eq2]
+        return lib
+    }
+
+    func testSuggestionsByModelAndDefault() {
+        var job = HomeJob()
+        let lib = library()
+        XCTAssertNil(lib.suggestion(for: "pvSpec", job: job))           // no model typed yet
+        job.ppim.panels[0].model = "ZXM7-UHLD144 Series"
+        job.ppim.inverters[0].model = "SUN2000-10K-MAP0"
+        XCTAssertEqual(lib.suggestion(for: "pvSpec", job: job)?.id, "pv")
+        XCTAssertEqual(lib.suggestion(for: "inverterSpec", job: job)?.id, "inv")
+        XCTAssertEqual(lib.suggestion(for: "engineerDocs", job: job)?.id, "eng")   // the only one
+        XCTAssertNil(lib.suggestion(for: "equipment", job: job))                  // two sets, no default
+        var withDefault = lib
+        withDefault.items[5].isDefault = true
+        XCTAssertEqual(withDefault.suggestion(for: "equipment", job: job)?.id, "eq2")
+        XCTAssertNil(lib.suggestion(for: "bill", job: job))
+    }
+
+    func testApplyLibraryFillsEmptyDocuments() throws {
+        var job = HomeJob()
+        job.ppim.panels[0].model = "ZXM7-UHLD144"
+        var own = HomeDocument(); own.files = ["mine.pdf"]; own.status = .received
+        job.documents["inverterSpec"] = own                                        // the job's own file wins
+        job.ppim.inverters[0].model = "SUN2000-10K-MAP0"
+        let picked = job.applyLibrary(library())
+        XCTAssertEqual(Set(picked), ["pvSpec", "engineerDocs"])
+        XCTAssertEqual(job.libraryPicks["pvSpec"], "pv")
+        XCTAssertNil(job.libraryPicks["inverterSpec"])
+        XCTAssertEqual(job.document("pvSpec").status, .received)
+        XCTAssertEqual(job.coeCertDaysLeft(), 110)
+
+        var smaller = library(); smaller.items.removeAll { $0.id == "pv" }
+        job.applyLibrary(smaller)
+        XCTAssertNil(job.libraryPicks["pvSpec"])                                   // item gone, pick dropped
+        job.libraryPicks["engineerDocs"] = ""                                      // team detached it
+        job.documents["engineerDocs"] = HomeDocument()
+        job.applyLibrary(library())
+        XCTAssertEqual(job.libraryPicks["engineerDocs"], "")
+        XCTAssertEqual(job.document("engineerDocs").status, .missing)
+        let back = try JSONDecoder().decode(HomeJob.self, from: JSONEncoder().encode(job))
+        XCTAssertEqual(back.libraryPicks, job.libraryPicks)
+    }
+
+    func testNextActionsOrder() {
+        let cal = Calendar(identifier: .gregorian)
+        let today = cal.date(from: DateComponents(year: 2026, month: 10, day: 7, hour: 12))!
+        var job = HomeJob()
+        job.residentialConfirmed = true
+        job.caRateCode = "1125"
+        let first = job.nextActions(on: today)
+        XCTAssertEqual(first.count, 5)
+        XCTAssertTrue(first.allSatisfy { $0.kind == .document })
+        XCTAssertEqual(first.first?.docID, "survey")
+
+        job.mode = .sell
+        job.pvKWp = "5"; job.inverterKW = "5"; job.sellKW = "6"; job.phase = .single
+        job.announcedOn = cal.date(byAdding: .day, value: -35, to: today)          // fee and contract 5 days late
+        let sell = job.nextActions(on: today, limit: 10)
+        XCTAssertEqual(sell.prefix(2).map(\.kind), [.overdue, .overdue])
+        XCTAssertEqual(sell[0].detail, "เลยกำหนด 5 วัน")
+        XCTAssertEqual(sell[2].kind, .issue)                                       // sells over 5 kW
+        XCTAssertFalse(sell.contains { $0.kind == .issue && $0.title.hasPrefix("เลยกำหนด") })
+
+        job.announcedOn = cal.date(byAdding: .day, value: -25, to: today)
+        XCTAssertTrue(job.nextActions(on: today, limit: 10).contains { $0.kind == .deadline && $0.detail == "เหลือ 5 วัน" })
+    }
+}

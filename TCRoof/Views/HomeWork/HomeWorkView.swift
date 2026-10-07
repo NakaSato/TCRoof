@@ -15,6 +15,7 @@ struct HomeWorkView: View {
     @State private var openStage: HomeStage?
     @State private var showWeight = false
     @State private var showPack = false
+    @State private var showEntry = false
     static let file = "home"
 
     private var store: PermitStore { PermitStore(job: job) }
@@ -48,6 +49,7 @@ struct HomeWorkView: View {
         .onChange(of: home) { _, new in if loaded { store.save(new, Self.file) } }
         .sheet(isPresented: $showWeight) { RoofWeightSheet(result: $home.roofKgPerM2) }
         .sheet(isPresented: $showPack) { PPIMPackView(job: job, home: home) }
+        .sheet(isPresented: $showEntry) { PPIMEntryView(home: $home) }
     }
 
     private func load() {
@@ -75,6 +77,7 @@ struct HomeWorkView: View {
             "selfCert": cert.map { $0.issues.isEmpty } ?? false,
             "installCert": cert.map { $0.issues.isEmpty } ?? false,
             "ppimRequest": !home.ppimRequestNo.trimmingCharacters(in: .whitespaces).isEmpty,
+            "sitePhotos": !home.photoReport.pages.isEmpty,
         ]
         for (id, isDone) in done where isDone && !home.document(id).status.isDone {
             var d = home.document(id)
@@ -127,6 +130,8 @@ struct HomeWorkView: View {
             TCSwitchRow("ทีมยื่นแทนเจ้าของ (ใช้หนังสือมอบอำนาจ)", isOn: $home.teamFiles)
             TCSwitchRow("ลูกค้าใช้สิทธิลดหย่อนภาษี (แผงไม่เกิน 10 kWp)", isOn: $home.wantsTaxDeduction)
             roofRow
+            ppimRow
+            coeRow
             PermitField("เลขที่คำขอใน PPIM", text: $home.ppimRequestNo)
             ForEach(home.issues, id: \.self) { issue in
                 Text(issue).font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
@@ -148,6 +153,53 @@ struct HomeWorkView: View {
             Spacer()
             TCButton("คำนวณ", systemImage: "scalemass", kind: .secondary, size: .card) { showWeight = true }
         }
+    }
+
+    private var ppimRow: some View {
+        HStack(spacing: Space.m) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("ข้อมูลกรอก PPIM ส่วนที่ 3").font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
+                Text(ppimSummary)
+                    .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+            }
+            Spacer()
+            TCButton("กรอก", systemImage: "list.bullet.rectangle", kind: .secondary, size: .card) { showEntry = true }
+        }
+    }
+
+    private var ppimSummary: String {
+        var parts: [String] = []
+        if let kw = home.ppim.inverterKW { parts.append("อินเวอร์เตอร์ " + PPIMEntryView.text(kw) + " kW") }
+        parts.append(home.ppim.peaMeterNo.isEmpty ? "ยังไม่มีเลขเครื่องวัด" : "PEA No. \(home.ppim.peaMeterNo)")
+        if home.ppim.coordinate == nil { parts.append("ยังไม่มีพิกัด") }
+        parts += home.ppim.issues
+        return parts.joined(separator: " · ")
+    }
+
+    /// หนังสือรับรองสภาวิศวกร for slot 6 is valid 120 days.
+    private var coeRow: some View {
+        HStack(spacing: Space.m) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("หนังสือรับรองสภาวิศวกร").font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
+                Text(coeText).font(.sarabun(TypeScale.caption, relativeTo: .caption))
+                    .foregroundStyle((home.coeCertDaysLeft() ?? 1) < 0 ? Theme.dangerText : Theme.inkMuted)
+            }
+            Spacer()
+            if home.coeCertIssued != nil {
+                DatePicker("วันที่ออก", selection: Binding(get: { home.coeCertIssued ?? .now }, set: { home.coeCertIssued = $0 }),
+                           displayedComponents: .date)
+                    .labelsHidden()
+                    .environment(\.locale, Locale(identifier: "th_TH"))
+                    .environment(\.calendar, Calendar(identifier: .buddhist))
+            } else {
+                TCButton("ใส่วันที่ออก", systemImage: "calendar", kind: .secondary, size: .card) { home.coeCertIssued = .now }
+            }
+        }
+    }
+
+    private var coeText: String {
+        guard let left = home.coeCertDaysLeft() else { return "ใช้ได้ 120 วันนับจากวันที่ออก" }
+        return left < 0 ? "หมดอายุแล้ว \(-left) วัน · ขอฉบับใหม่" : "ใช้ได้อีก \(left) วัน"
     }
 
     // MARK: Stages
@@ -176,7 +228,7 @@ struct HomeWorkView: View {
         let p = home.progress(stage)
         return PermitSection(title: stage.title, subtitle: p.done == p.total ? "ครบแล้ว" : "เหลือ \(p.total - p.done) รายการ") {
             ForEach(specs) { spec in
-                HomeDocumentRow(spec: spec, document: binding(spec.id), store: store) { destination(spec) }
+                HomeDocumentRow(spec: spec, document: binding(spec.id), store: store, optional: spec.isOptional(for: home)) { destination(spec) }
             }
         }
     }
@@ -192,6 +244,7 @@ struct HomeWorkView: View {
         case .surveyForm: SurveyFormView(job: job)
         case .installLog: JobInstallLogsView(job: job)
         case .inspection: InspectionView(job: job)
+        case .photoReport: PhotoReportView(job: job, home: $home)
         case .roofWeight, nil: EmptyView()
         }
     }

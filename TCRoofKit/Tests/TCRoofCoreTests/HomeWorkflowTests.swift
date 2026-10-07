@@ -7,11 +7,19 @@ final class HomeWorkflowTests: XCTestCase {
     func testSelfUsePPIMSlotsMatchTheScreen() {
         let job = HomeJob()                                    // self-use by default
         let slots = job.ppimSlots
-        XCTAssertEqual(slots.compactMap(\.ppimSlot), [1, 2, 3, 4, 5, 6, 8, 9])
-        XCTAssertEqual(slots.compactMap(\.maxMB), [5, 5, 5, 5, 50, 50, 5, 25])
-        XCTAssertEqual(slots.first?.ppimFile, "1. ใบแจ้งค่าไฟฟ้า.pdf")
-        // file names are unique and numbered by their slot
-        for s in slots { XCTAssertTrue(s.ppimFile?.hasPrefix("\(s.ppimSlot!). ") == true, s.id) }
+        XCTAssertEqual(slots.map(\.slot.number), [1, 2, 3, 4, 5, 6, 8, 9])   // no 7 for solar
+        XCTAssertEqual(slots.map(\.slot.maxMB), [5, 5, 5, 5, 50, 50, 5, 25])
+        XCTAssertEqual(slots.first?.slot.file, "1. ใบแจ้งค่าไฟฟ้า.pdf")
+        XCTAssertEqual(Set(slots.map(\.slot.group)), ["เอกสารหลัก", "พลังงานแสงอาทิตย์"])
+        for s in slots {
+            XCTAssertTrue(s.slot.file.hasPrefix("\(s.slot.number). "), s.slot.file)
+            XCTAssertFalse(s.documents.isEmpty, "slot \(s.slot.number) has a document")
+        }
+        // several documents share one file, in file order
+        XCTAssertEqual(slots.first { $0.slot.number == 2 }?.documents.map(\.id), ["idCard", "houseReg"])
+        XCTAssertEqual(slots.first { $0.slot.number == 6 }?.documents.map(\.id), ["sld", "engineerDocs"])
+        XCTAssertEqual(HomeCatalog.spec("sitePhotos")?.ppim?.number, 4)
+        XCTAssertEqual(HomeCatalog.spec("sitePhotos")?.form, .photoReport)
     }
 
     func testRouteDecidesTheDocuments() {
@@ -19,13 +27,17 @@ final class HomeWorkflowTests: XCTestCase {
         let selfUse = Set(job.checklist.map(\.id))
         XCTAssertTrue(selfUse.contains("installCert"))
         XCTAssertFalse(selfUse.contains("contract"))
-        XCTAssertFalse(selfUse.contains("houseReg"))
+        XCTAssertTrue(selfUse.contains("houseReg"))            // filed with the ID card in slot 2, optional
+        XCTAssertTrue(HomeCatalog.spec("houseReg")!.isOptional(for: job))
+        XCTAssertFalse(job.missing(in: .survey).contains { $0.id == "houseReg" })
+        XCTAssertTrue(selfUse.contains("engineerDocs"))
         XCTAssertTrue(selfUse.contains("exportLimiter"))        // zero export on every self-use job
 
         job.mode = .sell
         let sell = Set(job.checklist.map(\.id))
         XCTAssertTrue(sell.isSuperset(of: ["houseReg", "feeReceipt", "contract", "selfCert", "ercNotice", "eBill"]))
         XCTAssertFalse(sell.contains("installCert"))
+        XCTAssertFalse(HomeCatalog.spec("houseReg")!.isOptional(for: job))
         XCTAssertFalse(sell.contains("exportLimiter"))          // unknown until sizes and phase are in
         job.inverterKW = "10"; job.sellKW = "5"; job.phase = .single
         XCTAssertTrue(Set(job.checklist.map(\.id)).contains("exportLimiter"))
@@ -89,5 +101,72 @@ final class HomeWorkflowTests: XCTestCase {
         XCTAssertTrue(job.teamFiles)
         XCTAssertEqual(job.document("bill").status, .received)
         XCTAssertEqual(try JSONDecoder().decode(HomeJob.self, from: JSONEncoder().encode(job)), job)
+    }
+
+    func testEngineerCertificateExpires() throws {
+        var job = HomeJob()
+        XCTAssertNil(job.coeCertDaysLeft())
+        let cal = Calendar(identifier: .gregorian)
+        let issued = try XCTUnwrap(cal.date(from: DateComponents(year: 2026, month: 1, day: 22)))
+        job.coeCertIssued = issued
+        XCTAssertEqual(job.coeCertDaysLeft(on: issued), 120)
+        XCTAssertEqual(job.coeCertDaysLeft(on: cal.date(byAdding: .day, value: 120, to: issued)!), 0)
+        XCTAssertEqual(job.coeCertDaysLeft(on: cal.date(byAdding: .day, value: 121, to: issued)!), -1)
+        job.coeCertIssued = cal.date(byAdding: .day, value: -200, to: Date())
+        XCTAssertTrue(job.issues.contains { $0.hasPrefix("หนังสือรับรองสภาวิศวกรหมดอายุ") })
+    }
+
+    func testPPIMEntry() {
+        var e = PPIMEntry()
+        XCTAssertNil(e.panelKWp)
+        e.panels[0].watt = "570"; e.panels[0].count = "17"
+        e.inverters[0].kW = "10"
+        XCTAssertEqual(e.panelKWp!, 9.69, accuracy: 0.0001)
+        XCTAssertEqual(e.inverterKW, 10)
+        e.latitude = "7.025"; e.longitude = "100.49"
+        XCTAssertTrue(e.issues.isEmpty)
+        e.latitude = "100.49"; e.longitude = "7.025"
+        XCTAssertEqual(e.issues, ["ละติจูดกับลองจิจูดสลับกัน"])
+        e.latitude = "35"; e.longitude = "139"
+        XCTAssertEqual(e.issues, ["พิกัดไม่อยู่ในประเทศไทย"])
+        XCTAssertEqual(PPIMEntry.meterVoltage(.multi), "380 V (3 phase)")
+    }
+
+    func testPhotoReportPagesAndGeometry() throws {
+        var r = PhotoReport()
+        XCTAssertEqual(r.missing.count, 9)
+        XCTAssertTrue(r.pages.isEmpty)
+        for s in r.sections where s.required { r.add("\(s.id).jpg", to: s.id) }
+        r.add("sn2.jpg", to: "inverterSN"); r.add("sn3.jpg", to: "inverterSN")   // third is ignored
+        XCTAssertEqual(r.sections.first { $0.id == "inverterSN" }?.photos, ["inverterSN.jpg", "sn2.jpg"])
+        XCTAssertTrue(r.missing.isEmpty)
+        XCTAssertEqual(r.pages.map(\.count), [2, 2, 2, 2, 1])               // 9 sections on 5 pages
+        r.remove("sn2.jpg")
+        XCTAssertEqual(r.photoCount, 9)
+
+        r.address = "บ้านเลขที่ ตัวอย่าง"
+        XCTAssertEqual(r.header(kWp: 9.69), [PhotoReport.defaultTitle, "บ้านเลขที่ ตัวอย่าง", "ขนาดกำลังการผลิตติดตั้ง 9.69 กิโลวัตต์"])
+        XCTAssertEqual(r.header(kWp: 10).last, "ขนาดกำลังการผลิตติดตั้ง 10 กิโลวัตต์")
+
+        XCTAssertEqual(PhotoReport.layout(aspects: [1.5, 1.33]), .stack2)
+        XCTAssertEqual(PhotoReport.layout(aspects: [0.75, 1.5]), .side2)
+        let rects = PhotoReport.photoRects(slot: 1, aspects: [0.75, 0.75])
+        let area = PhotoReport.frame(slot: 1).area
+        XCTAssertEqual(rects.count, 2)
+        for rect in rects {
+            XCTAssertEqual(rect[2] / rect[3], 0.75, accuracy: 0.001)
+            XCTAssertGreaterThanOrEqual(rect[0], area[0] - 0.001)
+            XCTAssertLessThanOrEqual(rect[1] + rect[3], area[1] + area[3] + 0.001)
+        }
+        XCTAssertLessThan(rects[0][0] + rects[0][2], rects[1][0])           // side by side, apart
+
+        // old saved reports pick up sections added later; old jobs decode
+        let old = #"{"sections":[{"id":"panels","title":"x","photos":["a.jpg"]}]}"#
+        let decoded = try JSONDecoder().decode(PhotoReport.self, from: Data(old.utf8))
+        XCTAssertEqual(decoded.sections.count, PhotoReport.standard.count)
+        XCTAssertEqual(decoded.sections.first?.photos, ["a.jpg"])
+        let job = try JSONDecoder().decode(HomeJob.self, from: Data(#"{"mode":"selfUse"}"#.utf8))
+        XCTAssertEqual(job.photoReport, PhotoReport())
+        XCTAssertEqual(job.ppim, PPIMEntry())
     }
 }

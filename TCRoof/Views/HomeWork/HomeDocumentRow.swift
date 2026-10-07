@@ -10,6 +10,8 @@ struct HomeDocumentRow<Destination: View>: View {
     let spec: HomeDocSpec
     @Binding var document: HomeDocument
     let store: PermitStore
+    /// Optional for this job's route (`HomeDocSpec.isOptional(for:)`).
+    var optional: Bool
     @ViewBuilder var destination: () -> Destination
 
     @State private var photoItems: [PhotosPickerItem] = []
@@ -61,7 +63,7 @@ struct HomeDocumentRow<Destination: View>: View {
 
     private var statusMark: some View {
         let done = document.status.isDone
-        return Image(systemName: done ? "checkmark.circle.fill" : (spec.optional ? "circle.dashed" : "circle"))
+        return Image(systemName: done ? "checkmark.circle.fill" : (optional ? "circle.dashed" : "circle"))
             .font(.system(size: 22)).foregroundStyle(done ? Theme.okTick : Theme.borderControl)
             .accessibilityLabel(document.status.title)
     }
@@ -69,10 +71,10 @@ struct HomeDocumentRow<Destination: View>: View {
     private var tags: some View {
         HStack(spacing: 6) {
             TCStatusChip(spec.provider.title, fill: Theme.primarySoft, text: Theme.navy)
-            if let slot = spec.ppimSlot, let mb = spec.maxMB {
-                TCStatusChip("PPIM ช่อง \(slot) · ≤ \(mb) MB", fill: Theme.okSoft, text: Theme.okText)
+            if let slot = spec.ppim {
+                TCStatusChip("PPIM ช่อง \(slot.number) · ≤ \(slot.maxMB) MB", fill: Theme.okSoft, text: Theme.okText)
             }
-            if spec.optional { TCStatusChip("ถ้ามี", fill: Theme.disabledFill, text: Theme.inkMuted) }
+            if optional { TCStatusChip("ถ้ามี", fill: Theme.disabledFill, text: Theme.inkMuted) }
         }
     }
 

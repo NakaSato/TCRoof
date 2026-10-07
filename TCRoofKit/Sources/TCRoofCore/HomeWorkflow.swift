@@ -2,7 +2,9 @@ import Foundation
 
 // งานบ้าน: a residential Solar Rooftop job (PEA area, ผู้ใช้ไฟประเภท 1) from survey to handover, in one place.
 // Two routes: selling the surplus (โครงการภาคประชาชน 2569) or self-use (ขอเชื่อมต่อ ไม่ขายไฟ).
-// The document list follows PEA's forms and the PPIM upload screens (non-sell part 4 slots confirmed from the screen).
+// The document list follows PEA's forms and the PPIM upload screens. The self-use part 4 slots, their titles, limits and
+// what goes in each file are confirmed from a filed request (slots 1–6 เอกสารหลัก, 8–9 พลังงานแสงอาทิตย์; there is no 7
+// for solar).
 
 public enum HomeStage: String, Codable, CaseIterable, Sendable {
     case survey, design, apply, install, connect, handover
@@ -50,7 +52,28 @@ public enum HomeDocStatus: String, Codable, CaseIterable, Sendable {
 
 /// A screen of the app that produces the document instead of an upload.
 public enum HomeFormLink: String, Codable, Sendable {
-    case powerOfAttorney, selfCertification, roofWeight, surveyForm, installLog, inspection
+    case powerOfAttorney, selfCertification, roofWeight, surveyForm, installLog, inspection, photoReport
+}
+
+/// One upload slot of PPIM part 4 (self-use request), as the screen shows it. Several documents of the job can go
+/// into one slot's file (slot 2: ID card and house registration; slot 6: the drawings and the engineer's papers).
+public struct PPIMSlotSpec: Sendable, Equatable, Identifiable {
+    public let number: Int
+    /// PPIM's heading over the slot: เอกสารหลัก (1–6) or พลังงานแสงอาทิตย์ (8–9).
+    public let group: String
+    /// The slot's title on the screen.
+    public let title: String
+    /// File name to upload, numbered as the screen.
+    public let file: String
+    public let maxMB: Int
+    public var id: Int { number }
+}
+
+/// The documents that go into one slot's file, in file order.
+public struct PPIMUpload: Sendable, Identifiable {
+    public let slot: PPIMSlotSpec
+    public let documents: [HomeDocSpec]
+    public var id: Int { slot.number }
 }
 
 /// One document of the job: what it is, at which stage, who brings it, and its PPIM upload slot.
@@ -61,13 +84,16 @@ public struct HomeDocSpec: Sendable, Identifiable {
     public let provider: HomeProvider
     public var note: String?
     public var form: HomeFormLink?
-    /// PPIM part 4 slot of the self-use request (1…9), and its file name and size limit.
+    /// PPIM part 4 slot of the self-use request (1…9); the file name and size limit come from `HomeCatalog.ppimSlots`.
     public var ppimSlot: Int?
-    public var ppimFile: String?
-    public var maxMB: Int?
     /// Optional documents never block a stage.
     public var optional = false
     public var when: @Sendable (HomeJob) -> Bool = { _ in true }
+    /// Optional on some routes only.
+    public var optionalWhen: (@Sendable (HomeJob) -> Bool)? = nil
+
+    public var ppim: PPIMSlotSpec? { ppimSlot.flatMap(HomeCatalog.slot) }
+    public func isOptional(for job: HomeJob) -> Bool { optional || optionalWhen?(job) == true }
 }
 
 public struct HomeDocument: Codable, Equatable, Sendable {
@@ -110,6 +136,12 @@ public struct HomeJob: Codable, Equatable, Sendable {
     public var roofKgPerM2: Double?
     public var ppimRequestNo = ""
     public var documents: [String: HomeDocument] = [:]
+    /// What to type into PPIM parts 3 (meter, location, panels, inverters).
+    public var ppim = PPIMEntry()
+    /// Slot 4's photo pages.
+    public var photoReport = PhotoReport()
+    /// หนังสือรับรองสภาวิศวกร for slot 6; valid 120 days from this date.
+    public var coeCertIssued: Date?
 
     public init() {}
 
@@ -127,13 +159,25 @@ public struct HomeJob: Codable, Equatable, Sendable {
         roofKgPerM2 = try c.decodeIfPresent(Double.self, forKey: .roofKgPerM2)
         ppimRequestNo = try c.decodeIfPresent(String.self, forKey: .ppimRequestNo) ?? ""
         documents = try c.decodeIfPresent([String: HomeDocument].self, forKey: .documents) ?? [:]
+        ppim = try c.decodeIfPresent(PPIMEntry.self, forKey: .ppim) ?? PPIMEntry()
+        photoReport = try c.decodeIfPresent(PhotoReport.self, forKey: .photoReport) ?? PhotoReport()
+        coeCertIssued = try c.decodeIfPresent(Date.self, forKey: .coeCertIssued)
     }
     private enum CodingKeys: String, CodingKey {
         case residentialConfirmed, caRateCode, mode, teamFiles, wantsTaxDeduction, pvKWp, inverterKW, sellKW, phase,
-             roofKgPerM2, ppimRequestNo, documents
+             roofKgPerM2, ppimRequestNo, documents, ppim, photoReport, coeCertIssued
     }
 
-    static func number(_ s: String) -> Double? { Double(s.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)) }
+    /// The council's certificate is valid 120 days from its date (printed on it). Nil until the date is set.
+    public static let coeCertValidDays = 120
+    public func coeCertDaysLeft(on date: Date = Date()) -> Int? {
+        guard let issued = coeCertIssued else { return nil }
+        let cal = Calendar(identifier: .gregorian)
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: issued), to: cal.startOfDay(for: date)).day ?? 0
+        return Self.coeCertValidDays - days
+    }
+
+    public static func number(_ s: String) -> Double? { Double(s.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)) }
 
     /// CA rate code starts with 1 (บ้านอยู่อาศัย). Nil until typed.
     public var rateCodeIsResidential: Bool? {
@@ -162,6 +206,7 @@ public struct HomeJob: Codable, Equatable, Sendable {
         if !residentialConfirmed { out.append("ยืนยันว่าเป็นบ้านอยู่อาศัย") }
         if rateCodeIsResidential == false { out.append("CA ไม่ได้ขึ้นต้นด้วย 1 — ไม่ใช่บ้านอยู่อาศัย") }
         if mode == .sell, let sell = Self.number(sellKW), sell > 5 { out.append("เสนอขายเกิน 5 kW") }
+        if let left = coeCertDaysLeft(), left < 0 { out.append("หนังสือรับรองสภาวิศวกรหมดอายุ (เกิน 120 วัน) ขอฉบับใหม่ก่อนยื่น") }
         return out
     }
 
@@ -171,21 +216,22 @@ public struct HomeJob: Codable, Equatable, Sendable {
     public var checklist: [HomeDocSpec] { HomeCatalog.all.filter { $0.when(self) } }
 
     public func missing(in stage: HomeStage) -> [HomeDocSpec] {
-        checklist.filter { $0.stage == stage && !$0.optional && !document($0.id).status.isDone }
+        checklist.filter { $0.stage == stage && !$0.isOptional(for: self) && !document($0.id).status.isDone }
     }
 
     /// Done / required of a stage.
     public func progress(_ stage: HomeStage) -> (done: Int, total: Int) {
-        let req = checklist.filter { $0.stage == stage && !$0.optional }
+        let req = checklist.filter { $0.stage == stage && !$0.isOptional(for: self) }
         return (req.filter { document($0.id).status.isDone }.count, req.count)
     }
 
     /// The first stage with something missing; nil when the job is complete.
     public var currentStage: HomeStage? { HomeStage.allCases.first { !missing(in: $0).isEmpty } }
 
-    /// PPIM part 4 slots of the self-use request that apply, in slot order.
-    public var ppimSlots: [HomeDocSpec] {
-        checklist.filter { $0.ppimSlot != nil }.sorted { ($0.ppimSlot ?? 0) < ($1.ppimSlot ?? 0) }
+    /// PPIM part 4 slots of the self-use request, in slot order, each with the job's documents that go into its file.
+    public var ppimSlots: [PPIMUpload] {
+        let docs = checklist
+        return HomeCatalog.ppimSlots.map { slot in PPIMUpload(slot: slot, documents: docs.filter { $0.ppimSlot == slot.number }) }
     }
 }
 
@@ -193,30 +239,70 @@ public enum HomeCatalog {
     static let sell: @Sendable (HomeJob) -> Bool = { $0.mode == .sell }
     static let selfUse: @Sendable (HomeJob) -> Bool = { $0.mode == .selfUse }
 
+    /// PPIM part 4 of the self-use request, as on the screen. Slot 7 isn't shown for solar.
+    public static let ppimSlots: [PPIMSlotSpec] = [
+        PPIMSlotSpec(number: 1, group: "เอกสารหลัก",
+                     title: "ใบแจ้งค่าไฟฟ้าของเครื่องวัดหน่วยไฟฟ้าเดือนล่าสุดหรือย้อนหลังไม่เกิน 3 เดือนล่าสุด",
+                     file: "1. ใบแจ้งค่าไฟฟ้า.pdf", maxMB: 5),
+        PPIMSlotSpec(number: 2, group: "เอกสารหลัก",
+                     title: "สำเนาบัตรประชาชน/สำเนาหนังสือรับรองนิติบุคคลของเจ้าของเครื่องวัด/เจ้าของเครื่องกำเนิดไฟฟ้า",
+                     file: "2. เอกสารเจ้าของเครื่องวัด.pdf", maxMB: 5),
+        PPIMSlotSpec(number: 3, group: "เอกสารหลัก",
+                     title: "แผนผังแสดงที่ตั้งเครื่องกำเนิดไฟฟ้าพร้อมระบุพิกัด Latitude และ Longitude",
+                     file: "3. แผนผังแสดงที่ติดตั้ง.pdf", maxMB: 5),
+        PPIMSlotSpec(number: 4, group: "เอกสารหลัก",
+                     title: "รูปถ่าย/ภาพถ่ายของระบบผลิตไฟฟ้าที่ขอเชื่อมต่อฯ หรือสถานที่ตั้งของโครงการที่จะติดตั้งระบบผลิตไฟฟ้า",
+                     file: "4. ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า.pdf", maxMB: 5),
+        PPIMSlotSpec(number: 5, group: "เอกสารหลัก",
+                     title: "เอกสารแสดงรายละเอียดคุณสมบัติของระบบไฟฟ้าและหรืออุปกรณ์ที่ใช้ในการเชื่อมต่อส่วนระบบผลิตไฟฟ้า",
+                     file: "5. อุปกรณ์อื่นๆที่เกี่ยวข้อง.pdf", maxMB: 50),
+        PPIMSlotSpec(number: 6, group: "เอกสารหลัก",
+                     title: "แผนภูมิระบบไฟฟ้า (Single Line Diagram) พร้อมวิศวกรลงนามรับรองทุกแผ่นและใบอนุญาตและหนังสือรับรอง",
+                     file: "6. แบบแปลน + เอกสารวิศวกรไฟฟ้า.pdf", maxMB: 50),
+        PPIMSlotSpec(number: 8, group: "พลังงานแสงอาทิตย์",
+                     title: "เอกสารแสดงรายละเอียดคุณสมบัติของแผงพลังงานแสงอาทิตย์",
+                     file: "8. แผงเซลล์แสงอาทิตย์.pdf", maxMB: 5),
+        PPIMSlotSpec(number: 9, group: "พลังงานแสงอาทิตย์",
+                     title: "เอกสารแสดงรายละเอียดคุณสมบัติของอินเวอร์เตอร์ / ผลการทดสอบและรับรองผลิตภัณฑ์",
+                     file: "9. เครื่องแปลงไฟฟ้า.pdf", maxMB: 25),
+    ]
+
+    public static func slot(_ number: Int) -> PPIMSlotSpec? { ppimSlots.first { $0.number == number } }
+
     public static let all: [HomeDocSpec] = [
         // สำรวจ
         HomeDocSpec(id: "survey", title: "แบบสำรวจหน้างาน (หลังคา ตู้ MDB มิเตอร์ ทิศ เงา)", stage: .survey, provider: .team, form: .surveyForm),
         HomeDocSpec(id: "bill", title: "ใบแจ้งค่าไฟฟ้าของเครื่องวัด เดือนล่าสุดหรือย้อนหลังไม่เกิน 3 เดือน", stage: .survey, provider: .customer,
-                    note: "ชื่อต้องตรงผู้ยื่น · CA ขึ้นต้นด้วย 1", ppimSlot: 1, ppimFile: "1. ใบแจ้งค่าไฟฟ้า.pdf", maxMB: 5),
-        HomeDocSpec(id: "idCard", title: "สำเนาบัตรประชาชนเจ้าของเครื่องวัด (รับรองสำเนา)", stage: .survey, provider: .customer,
-                    ppimSlot: 2, ppimFile: "2. สำเนาบัตรประชาชน.pdf", maxMB: 5),
-        HomeDocSpec(id: "houseReg", title: "สำเนาทะเบียนบ้านหน้าแรก (ที่อยู่ตรงบิล)", stage: .survey, provider: .customer, when: sell),
+                    note: "ชื่อต้องตรงผู้ยื่น · CA ขึ้นต้นด้วย 1", ppimSlot: 1),
+        HomeDocSpec(id: "idCard", title: "สำเนาบัตรประชาชนเจ้าของเครื่องวัด (เซ็นรับรองสำเนา)", stage: .survey, provider: .customer,
+                    ppimSlot: 2),
+        HomeDocSpec(id: "houseReg", title: "สำเนาทะเบียนบ้าน (หน้ารายการเกี่ยวกับบ้าน + หน้าเจ้าของ)", stage: .survey, provider: .customer,
+                    note: "ผลิตใช้เอง: รวมไว้ในไฟล์ช่อง 2 ต่อจากบัตรประชาชน", ppimSlot: 2, optionalWhen: selfUse),
         HomeDocSpec(id: "sitePlan", title: "แผนผังแสดงที่ตั้งเครื่องกำเนิดไฟฟ้า พร้อมพิกัด Latitude / Longitude", stage: .survey, provider: .team,
-                    ppimSlot: 3, ppimFile: "3. แผนผังแสดงที่ติดตั้ง.pdf", maxMB: 5),
-        HomeDocSpec(id: "sitePhotos", title: "รูปถ่ายหน้าบ้าน / สถานที่ตั้งระบบ", stage: .survey, provider: .team,
-                    note: "หลังติดตั้งเปลี่ยนเป็นรูประบบที่ติดตั้งแล้ว", ppimSlot: 4, ppimFile: "4. ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า.pdf", maxMB: 5),
+                    note: "ภาพถ่ายทางอากาศ วางตำแหน่งแผง อินเวอร์เตอร์ แนวสาย DC และตารางข้อมูลโครงการพร้อมพิกัด · ใช้แผ่นผังแผงจากชุดแบบได้",
+                    ppimSlot: 3),
+        HomeDocSpec(id: "sitePhotos", title: "ภาพถ่ายระบบผลิตไฟฟ้า (ชุดรูปมาตรฐาน 9 หัวข้อ)", stage: .survey, provider: .team,
+                    note: "ก่อนติดตั้งใช้รูปสถานที่ตั้งได้ · ยื่นหลังติดตั้งใช้ชุดรูประบบ หน้าละ 2 หัวข้อ มีหัวโครงการ ที่อยู่ และขนาดกำลังผลิต",
+                    form: .photoReport, ppimSlot: 4),
         HomeDocSpec(id: "roofWeight", title: "ใบคำนวณน้ำหนักบนหลังคา (กก./ตร.ม.)", stage: .survey, provider: .engineer,
                     note: "≤ 20 กก./ตร.ม. ไม่ต้องขออนุญาตดัดแปลงอาคาร (กฎกระทรวง ฉบับที่ 72 พ.ศ. 2568)", form: .roofWeight),
 
         // ออกแบบ
-        HomeDocSpec(id: "sld", title: "Single Line Diagram วิศวกรลงนามทุกแผ่น + สำเนา กว. + หนังสือรับรองสภาวิศวกร", stage: .design, provider: .engineer,
-                    note: "ผลิตใช้เอง: แสดงอุปกรณ์กันไหลย้อน (zero export)", ppimSlot: 6, ppimFile: "6. Single Line Diagram + เอกสารวิศวกรไฟฟ้า.pdf", maxMB: 50),
-        HomeDocSpec(id: "equipment", title: "รายละเอียดอุปกรณ์ที่ใช้เชื่อมต่อ: อุปกรณ์กันไหลย้อน + CT, เบรกเกอร์/RCBO, AC SPD", stage: .design, provider: .team,
-                    ppimSlot: 5, ppimFile: "5. อุปกรณ์อื่นๆที่เกี่ยวข้อง.pdf", maxMB: 50),
+        HomeDocSpec(id: "sld", title: "ชุดแบบไฟฟ้า วิศวกรลงนามทุกแผ่น: ปก · ผังติดตั้งแผง · Single Line Diagram · โครงสร้างหลังคา · รายละเอียดการยึดแผง",
+                    stage: .design, provider: .engineer,
+                    note: "SLD แสดงมิเตอร์กันไหลย้อน (zero export) + สายสื่อสาร และตารางสเปกแผง/อินเวอร์เตอร์ · ปกระบุชื่อโครงการ ขนาด kWp และพิกัด GPS",
+                    ppimSlot: 6),
+        HomeDocSpec(id: "engineerDocs", title: "เอกสารวิศวกรไฟฟ้า: สำเนาบัตรประชาชน + สำเนาใบอนุญาต กว. + หนังสือรับรองสภาวิศวกร",
+                    stage: .design, provider: .engineer,
+                    note: "สำเนาเซ็นรับรองและเขียนกำกับว่าใช้กับโครงการนี้ · ไฟฟ้ากำลัง ภาคีวิศวกรขึ้นไป · หนังสือรับรองใช้ได้ 120 วันนับจากวันออก · ต่อท้ายชุดแบบในไฟล์ช่อง 6",
+                    ppimSlot: 6),
+        HomeDocSpec(id: "equipment", title: "Datasheet อุปกรณ์เชื่อมต่อ: มิเตอร์กันไหลย้อน (smart power sensor) · RCBO/เบรกเกอร์ AC · AC SPD · DC fuse · DC SPD · DC breaker",
+                    stage: .design, provider: .team,
+                    note: "รวมเป็นไฟล์เดียวตามลำดับใน SLD", ppimSlot: 5),
         HomeDocSpec(id: "pvSpec", title: "Datasheet แผงโซลาร์ (ระบุมาตรฐาน มอก./IEC)", stage: .design, provider: .team,
-                    ppimSlot: 8, ppimFile: "8. แผงเซลล์แสงอาทิตย์.pdf", maxMB: 5),
+                    ppimSlot: 8),
         HomeDocSpec(id: "inverterSpec", title: "Datasheet อินเวอร์เตอร์ / ผลทดสอบและรับรองผลิตภัณฑ์", stage: .design, provider: .team,
-                    note: "รุ่นต้องอยู่ใน smartlist.pea.co.th", ppimSlot: 9, ppimFile: "9. เครื่องแปลงไฟฟ้า.pdf", maxMB: 25),
+                    note: "รุ่นต้องอยู่ใน smartlist.pea.co.th", ppimSlot: 9),
         HomeDocSpec(id: "buildingPermit", title: "ขออนุญาตดัดแปลงอาคาร ข.1 → อ.1 (แบบและรายการคำนวณโยธา + โฉนด)", stage: .design, provider: .local,
                     note: "เฉพาะน้ำหนักเกิน 20 กก./ตร.ม. · ต้องได้ อ.1 ก่อนติดตั้ง", when: { $0.needsBuildingPermit == true }),
 
@@ -224,7 +310,7 @@ public enum HomeCatalog {
         HomeDocSpec(id: "poa", title: "หนังสือมอบอำนาจ เซ็นสด + อากร 30 บาท + สำเนาบัตรผู้มอบและผู้รับมอบ", stage: .apply, provider: .customer,
                     form: .powerOfAttorney, when: { $0.teamFiles }),
         HomeDocSpec(id: "ppimRequest", title: "ยื่นคำขอใน PPIM และบันทึกเลขคำขอ", stage: .apply, provider: .team,
-                    note: "ผลิตใช้เอง: PEA แจ้งผลภายใน 45 วันนับจากเอกสารครบ"),
+                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ · ผลิตใช้เอง: PEA แจ้งผลภายใน 45 วันนับจากเอกสารครบ"),
         HomeDocSpec(id: "peaApproval", title: "PEA อนุมัติคำขอ / ประกาศรายชื่อ", stage: .apply, provider: .pea),
         HomeDocSpec(id: "feeReceipt", title: "ใบเสร็จค่าตรวจสอบการเชื่อมต่อ 2,140 บาท", stage: .apply, provider: .customer,
                     note: "ภายใน 30 วันนับจากประกาศ", when: sell),

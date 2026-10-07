@@ -69,20 +69,18 @@ enum PermitRenderer {
         UIColor.white.setFill()
         ctx.fill(bounds)
         if let page = document.page(at: index + 1) {
-            if let shift = map.shifts?.first(where: { $0.page == index }) {
-                // the heading block moves down under the logo; the rest of the page (signature line) stays
-                let dy = CGFloat(shift.dy), until = CGFloat(shift.until)
-                drawTemplate(page, in: ctx, bounds: bounds, clip: CGRect(x: 0, y: dy, width: bounds.width, height: until), dy: dy)
-                drawTemplate(page, in: ctx, bounds: bounds,
-                             clip: CGRect(x: 0, y: until + dy, width: bounds.width, height: bounds.height - until - dy), dy: 0)
-            } else {
-                drawTemplate(page, in: ctx, bounds: bounds, clip: bounds, dy: 0)
-            }
+            ctx.saveGState()
+            ctx.translateBy(x: 0, y: bounds.height)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.concatenate(page.getDrawingTransform(.mediaBox, rect: bounds, rotate: 0, preserveAspectRatio: true))
+            ctx.drawPDFPage(page)
+            ctx.restoreGState()
         }
         for logo in map.logos ?? [] where logo.page == index {
             if let image = logoImage(logo.image) {
+                let box = rect(logo.rect)
                 let drawn = PhotoFrame.placement(size: [Double(image.size.width), Double(image.size.height)], in: logo.rect, fit: .fit)
-                image.draw(in: rect(drawn))
+                image.draw(in: rect(drawn).intersection(box))
             }
         }
         for area in map.areas where area.page == index {
@@ -105,17 +103,6 @@ enum PermitRenderer {
         let image = PermitFormMap.assetURL(name).flatMap { UIImage(contentsOfFile: $0.path) }
         logoCache[name] = image
         return image
-    }
-
-    /// The original page, moved down `dy` and shown only inside `clip` (page coordinates, origin top-left).
-    static func drawTemplate(_ page: CGPDFPage, in ctx: CGContext, bounds: CGRect, clip: CGRect, dy: CGFloat) {
-        ctx.saveGState()
-        ctx.clip(to: clip)
-        ctx.translateBy(x: 0, y: bounds.height + dy)
-        ctx.scaleBy(x: 1, y: -1)
-        ctx.concatenate(page.getDrawingTransform(.mediaBox, rect: bounds, rotate: 0, preserveAspectRatio: true))
-        ctx.drawPDFPage(page)
-        ctx.restoreGState()
     }
 
     static func rect(_ r: [Double]) -> CGRect { CGRect(x: r[0], y: r[1], width: r[2], height: r[3]) }

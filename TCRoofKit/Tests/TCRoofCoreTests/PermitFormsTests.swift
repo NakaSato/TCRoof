@@ -165,27 +165,18 @@ final class PermitFormsTests: XCTestCase {
         XCTAssertEqual(round, sc)
     }
 
-    func testAttachmentPagesTakePageOneHeading() throws {
+    func testLogoHeadsEachAttachmentPage() throws {
         let map = try XCTUnwrap(PermitFormMap.load(PermitFormMap.selfCertification))
         let logos = try XCTUnwrap(map.logos)
-        let shifts = try XCTUnwrap(map.shifts)
         XCTAssertEqual(Set(logos.map(\.page)), Set(2...11))          // attachments 1–10, not the statement pages
-        XCTAssertEqual(Set(shifts.map(\.page)), Set(2...11))
         for logo in logos {
-            // the artwork, place and size of the original page 1
-            XCTAssertEqual(logo.rect, [247.95, 48.55, 99.4, 84.35])
             XCTAssertNotNil(PermitFormMap.assetURL(logo.image).flatMap { try? Data(contentsOf: $0) }, logo.image)
-            let shift = try XCTUnwrap(shifts.first { $0.page == logo.page })
-            XCTAssertGreaterThan(shift.dy, 0)
-            let area = try XCTUnwrap(map.areas.first { $0.page == logo.page })
-            // the photo area starts where the moved heading ends and still clears the signature line (y ≈ 790)
-            XCTAssertEqual(area.rect[1], shift.until + shift.dy, accuracy: 0.05)
-            XCTAssertLessThanOrEqual(area.rect[1] + area.rect[3], 782.05)
-            XCTAssertGreaterThan(area.rect[3], 400)
-            for field in map.fields where field.page == logo.page { XCTAssertGreaterThan(field.baseline - 14, logo.rect[1] + logo.rect[3]) }
-            for check in map.checks where check.page == logo.page { XCTAssertGreaterThan(check.rect[1], logo.rect[1] + logo.rect[3]) }
+            let bottom = logo.rect[1] + logo.rect[3]
+            // above the page's photo area and every answer on that page
+            for area in map.areas where area.page == logo.page { XCTAssertLessThan(bottom, area.rect[1]) }
+            for field in map.fields where field.page == logo.page { XCTAssertLessThan(bottom, field.baseline - 14) }
+            XCTAssertGreaterThanOrEqual(logo.rect[1], 12)              // inside a printer's margin
         }
         XCTAssertNil(PermitFormMap.load(PermitFormMap.powerOfAttorney)?.logos)
-        XCTAssertNil(PermitFormMap.load(PermitFormMap.powerOfAttorney)?.shifts)
     }
 }

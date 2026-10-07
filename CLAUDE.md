@@ -43,6 +43,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
 - `-surveySLDDXF YES` (with `-surveyPage sld`) writes the single line diagram's DXF to `Documents/sld.dxf`.
+- `-surveySiteDXF YES` (with `-surveyPage site`) writes the A2 site plan's DXF to `Documents/site.dxf`.
 - `-surveyTankDXF YES` (with `-surveyPage tank`) writes D1's DXF to `Documents/tank.dxf`, 2.5 s after opening so `-surveyD1` has seeded the tank.
 - `-surveyCardImport YES` opens นำเข้ารูปจากการ์ด / USB with three generated photos (a drone shot 92 m up and two ground shots), skipping the file picker.
 - `-surveyPlatePhoto YES` (with `-surveyPage electrical`) clears TX 1's nameplate fields and gives it a rendered nameplate photo, so A3 offers `พบในรูปป้าย` from the photo text reader.

@@ -44,6 +44,8 @@ struct SitePageWide: View {
     @State var showLayers = false
     @State var fetchingMap = false
     @State var failure: String?
+    /// The A2 DXF being shared.
+    @State var dxfFile: SurveyModel.ExportFile?
     @State var pickDrone = false
     @State var droneItem: PhotosPickerItem?
     @State var pickSign = false
@@ -120,6 +122,7 @@ struct SitePageWide: View {
             ForEach(Options.landType, id: \.self) { o in Button(o) { setLand(o) } }
         }
         .errorAlert($failure)
+        .sheet(item: $dxfFile) { f in ShareSheet(items: [f.url]).presentationDetents([.medium, .large]) }
         .fullScreenCover(isPresented: $fullScreen, onDismiss: { zoom = 1; pan = .zero; cardDrag = nil }) {
             fullScreenView.environment(model)
         }

@@ -98,6 +98,15 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Tank plan DXF")
     }
 
+    /// The A2 site plan (models, shapes, symbols over the picture's frame) as DXF R12 (`SiteDXF`): `NO<job no>_A2.dxf`.
+    public func exportSiteDXF(_ job: Job) throws -> ExportFile? {
+        flush(job.id)
+        guard let out = SiteDXF.build(job) else { return nil }
+        let url = tempURL(((job.docNo.isEmpty ? "" : "NO" + job.docNo + "_") + "A2").replacingOccurrences(of: " ", with: "") + ".dxf")
+        try out.data.write(to: url, options: .atomic)
+        return ExportFile(url: url, summary: "Site plan DXF")
+    }
+
     public func exportPDF(_ job: Job) throws -> ExportFile {
         flush(job.id)
         let url = tempURL(baseName(job) + ".pdf")

@@ -76,13 +76,6 @@ enum PermitRenderer {
             ctx.drawPDFPage(page)
             ctx.restoreGState()
         }
-        for logo in map.logos ?? [] where logo.page == index {
-            if let image = logoImage(logo.image) {
-                let box = rect(logo.rect)
-                let drawn = PhotoFrame.placement(size: [Double(image.size.width), Double(image.size.height)], in: logo.rect, fit: .fit)
-                image.draw(in: rect(drawn).intersection(box))
-            }
-        }
         for area in map.areas where area.page == index {
             if let page = content.attachments[area.key] { drawPhotos(page, in: area.rect, ctx) }
         }
@@ -94,15 +87,6 @@ enum PermitRenderer {
         for check in map.checks where check.page == index {
             if let mark = content.marks[check.key] { drawMark(mark, in: rect(check.rect), ctx) }
         }
-    }
-
-    /// Pictures of the maps (the PEA logo), loaded once.
-    private static var logoCache: [String: UIImage] = [:]
-    static func logoImage(_ name: String) -> UIImage? {
-        if let cached = logoCache[name] { return cached }
-        let image = PermitFormMap.assetURL(name).flatMap { UIImage(contentsOfFile: $0.path) }
-        logoCache[name] = image
-        return image
     }
 
     static func rect(_ r: [Double]) -> CGRect { CGRect(x: r[0], y: r[1], width: r[2], height: r[3]) }

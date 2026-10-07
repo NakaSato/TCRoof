@@ -58,11 +58,18 @@ extension TankPageWide {
 
     var phoneTabs: some View {
         let s = steps
+        // sub-step 2 is done when every standard point is checked (the shading stays in the section's count), sub-step 3
+        // with a layout whose checks all pass
+        let done = Self.phoneTitles.indices.map { i in
+            i == 1 ? TankPoints.done(values) : i == 2 ? TankLayout.done(values) : s[safe: i]?.done ?? false
+        }
         return HStack(spacing: 0) {
             ForEach(Array(Self.phoneTitles.enumerated()), id: \.offset) { i, title in
-                // sub-step 2 is done when every standard point is checked (the shading stays in the section's count), sub-step 3
-                // with a layout whose checks all pass
-                phoneTab(i + 1, title: title, done: i == 1 ? TankPoints.done(values) : i == 2 ? TankLayout.done(values) : s[safe: i]?.done ?? false)
+                // a connector is green from a finished sub-step to one that is finished or open
+                let reached = { (k: Int) in done[k] || tab == k + 1 }
+                phoneTab(i + 1, title: title, done: done[i],
+                         greenBefore: i > 0 && done[i - 1] && reached(i),
+                         greenAfter: i + 1 < done.count && done[i] && reached(i + 1))
             }
         }
         .padding(.horizontal, 4)
@@ -70,7 +77,8 @@ extension TankPageWide {
         .accessibilityLabel("ขั้นย่อยของถังน้ำใส")
     }
 
-    func phoneTab(_ n: Int, title: String, done: Bool) -> some View {
+    /// `greenBefore` / `greenAfter`: the connector halves to the neighbours run green.
+    func phoneTab(_ n: Int, title: String, done: Bool, greenBefore: Bool, greenAfter: Bool) -> some View {
         let on = tab == n, last = Self.phoneTitles.count
         return Button { withAnimation(.easeOut(duration: 0.15)) { tab = n; span = nil } } label: {
             VStack(spacing: 3) {
@@ -79,13 +87,13 @@ extension TankPageWide {
                     .background(alignment: .center) {
                         // the 3-pt connector, from this circle's centre to the neighbours'
                         HStack(spacing: 0) {
-                            Rectangle().fill(n > 1 ? Home.hairline : Color.clear)
-                            Rectangle().fill(n < last ? Home.hairline : Color.clear)
+                            Rectangle().fill(n > 1 ? (greenBefore ? Home.stepDone : Home.hairline) : Color.clear)
+                            Rectangle().fill(n < last ? (greenAfter ? Home.stepDone : Home.hairline) : Color.clear)
                         }
                         .frame(height: 3)
                     }
                 Text(title).font(.system(size: 12, weight: on ? .heavy : .semibold))
-                    .foregroundStyle(on ? Home.primary : Home.borderControl).lineLimit(1).minimumScaleFactor(0.8)
+                    .foregroundStyle(on ? Home.primary : done ? Home.navy : Home.borderControl).lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
             .contentShape(Rectangle())

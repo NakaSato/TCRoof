@@ -7,6 +7,9 @@ import TCRoofCore
 struct CheckedCamera: View {
     let done: (UIImage?) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(SurveyModel.self) private var model
+    @State private var sensors = CaptureContext()
+    @State private var stamp: PhotoStamp?
     @State private var shot: UIImage?
     @State private var issues: [ImageQuality.Issue] = []
     @State private var attempt = 0
@@ -22,17 +25,22 @@ struct CheckedCamera: View {
                     .ignoresSafeArea()
             }
         }
+        .onAppear { sensors.start() }
+        .onDisappear { sensors.stop() }
     }
 
     private func check(_ img: UIImage?) {
         guard let img else { return finish(nil) }
+        stamp = sensors.snapshot()
         Task {
             let found = await PhotoCheck.issues(img)
             if found.isEmpty { finish(img) } else { shot = img; issues = found }
         }
     }
 
+    /// The page saves the image with `model.addPhoto` right away; the stamp waits there for it.
     private func finish(_ img: UIImage?) {
+        if img != nil, let stamp, !stamp.isEmpty { model.captureStamp = (stamp, Date()) }
         done(img)
         dismiss()
     }

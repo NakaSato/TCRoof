@@ -11,11 +11,18 @@ extension SurveyModel {
     // MARK: photos
 
     /// Scales a picked or captured image to at most `maxSide` px and stores it as JPEG (PNG for signatures).
+    /// A photo just taken with the survey camera carries where and which way it was taken (`captureStamp`, kept for
+    /// a few seconds), in its EXIF and on the `Photo`.
     public func addPhoto(_ image: UIImage, to job: UUID, maxSide: CGFloat = 1600, png: Bool = false) -> Photo? {
         let img = image.scaled(maxSide: maxSide, opaque: !png)
-        guard let data = png ? img.pngData() : img.jpegData(compressionQuality: 0.8) else { return nil }
+        let stamp = png ? nil : captureStamp.flatMap { -$0.at.timeIntervalSinceNow < 10 ? $0.stamp : nil }
+        captureStamp = nil
+        let taken = Date()
+        guard let data = png ? img.pngData() : stamp.flatMap({ CaptureContext.jpeg(img, quality: 0.8, stamp: $0, taken: taken) })
+                ?? img.jpegData(compressionQuality: 0.8) else { return nil }
         let px = CGSize(width: img.size.width * img.scale, height: img.size.height * img.scale)
-        let photo = try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, to: job)
+        var photo = try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, takenAt: taken, to: job)
+        if let stamp { photo?.apply(stamp) }
         // the field takes the photo right after this returns; the delay lets that land before the upload looks
         if photo != nil { autoUploadPhotos(job) }
         return photo

@@ -156,3 +156,17 @@ final class PDFReportTests: XCTestCase {
         }
     }
 }
+
+final class PhotoStampReportTests: XCTestCase {
+    func testStampsPrintOnlyWhenAskedFor() {
+        var p = Photo(fileName: "a.jpg", width: 4, height: 3)
+        p.apply(PhotoStamp(lat: 17.0062, lon: 99.8235, heading: 195))
+        let line = p.stampLine!
+        func texts(_ header: ReportHeader) -> [String] {
+            ReportLayout(job: Job.new(template: JobTemplate.all[2]), header: header).photoCell(p, label: "ภาพ", x: 0, y: 0, w: 200, h: 160)
+                .compactMap { if case .text(let s, _, _, _, _, _, _) = $0 { return s } else { return nil } }
+        }
+        XCTAssertFalse(texts(ReportHeader()).contains(line), "off by default")
+        XCTAssertTrue(texts(ReportHeader(photoStamps: true)).contains(line))
+    }
+}

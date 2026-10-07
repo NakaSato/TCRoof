@@ -11,10 +11,47 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
     public var width: Int
     public var height: Int
     public var takenAt: Date
+    /// Where and how the survey camera took it (docs/specs/hardware-assist-swift.md §H4). Absent on photos from the
+    /// library, from before this, or when the sensor had nothing.
+    public var lat: Double?
+    public var lon: Double?
+    /// Horizontal accuracy of `lat` / `lon`, in metres.
+    public var accuracy: Double?
+    /// Compass direction the camera faced, degrees from true north.
+    public var heading: Double?
+    /// Camera pitch, degrees above (+) or below (−) the horizon.
+    public var pitch: Double?
+    /// Model identifier, e.g. "iPad14,8".
+    public var device: String?
     public init(id: UUID = UUID(), fileName: String, width: Int, height: Int, takenAt: Date = Date()) {
         self.id = id; self.fileName = fileName; self.width = width; self.height = height; self.takenAt = takenAt
     }
     public var isPNG: Bool { fileName.lowercased().hasSuffix(".png") }
+
+    /// The capture fields of `stamp`, kept on this photo.
+    public mutating func apply(_ stamp: PhotoStamp) {
+        lat = stamp.lat; lon = stamp.lon; accuracy = stamp.accuracy; heading = stamp.heading; pitch = stamp.pitch; device = stamp.device
+    }
+
+    /// "17.0062, 99.8235 · หันทิศ 195° · 29/9/2569 10:42" under the photo in the report; nil without a position or direction.
+    public var stampLine: String? {
+        var parts: [String] = []
+        if let lat, let lon { parts.append(String(format: "%.4f, %.4f", lat, lon)) }
+        if let heading { parts.append("หันทิศ \(Int(heading.rounded()) % 360)°") }
+        guard !parts.isEmpty else { return nil }
+        let c = Calendar(identifier: .buddhist).dateComponents([.day, .month, .year, .hour, .minute], from: takenAt)
+        parts.append(String(format: "%d/%d/%d %02d:%02d", c.day ?? 0, c.month ?? 0, c.year ?? 0, c.hour ?? 0, c.minute ?? 0))
+        return parts.joined(separator: " · ")
+    }
+}
+
+/// What the camera's sensors said when a photo was taken.
+public struct PhotoStamp: Equatable, Sendable {
+    public var lat: Double?, lon: Double?, accuracy: Double?, heading: Double?, pitch: Double?, device: String?
+    public init(lat: Double? = nil, lon: Double? = nil, accuracy: Double? = nil, heading: Double? = nil, pitch: Double? = nil, device: String? = nil) {
+        self.lat = lat; self.lon = lon; self.accuracy = accuracy; self.heading = heading; self.pitch = pitch; self.device = device
+    }
+    public var isEmpty: Bool { lat == nil && heading == nil && pitch == nil }
 }
 
 /// Obstacle on a roof or tank plan, in metres from the top-left corner.

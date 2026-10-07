@@ -151,3 +151,35 @@ final class PositionTests: XCTestCase {
         XCTAssertTrue(GPSGrade.approximate.settingsDetail.contains("GNSS"))
     }
 }
+
+final class PhotoStampTests: XCTestCase {
+    func testStampLine() throws {
+        var c = DateComponents(); c.year = 2026; c.month = 9; c.day = 29; c.hour = 10; c.minute = 42
+        let taken = try XCTUnwrap(Calendar(identifier: .gregorian).date(from: c))
+        var p = Photo(fileName: "a.jpg", width: 4, height: 3, takenAt: taken)
+        XCTAssertNil(p.stampLine, "a library photo has nothing to print")
+        p.apply(PhotoStamp(lat: 17.00621, lon: 99.82354, accuracy: 6, heading: 195.4, pitch: -12, device: "iPad14,8"))
+        XCTAssertEqual(p.stampLine, "17.0062, 99.8235 · หันทิศ 195° · 29/9/2569 10:42")
+        XCTAssertEqual(p.device, "iPad14,8")
+        p.lat = nil; p.lon = nil
+        XCTAssertEqual(p.stampLine, "หันทิศ 195° · 29/9/2569 10:42")
+        XCTAssertTrue(PhotoStamp().isEmpty)
+    }
+
+    func testOldPhotosDecodeAndNewOnesRoundTrip() throws {
+        let old = try JSONDecoder().decode(Photo.self, from: Data(#"{"id":"6B1F3C0E-2D6F-4F0E-9E1B-1C2D3E4F5A6B","fileName":"x.jpg","width":10,"height":8,"takenAt":0}"#.utf8))
+        XCTAssertNil(old.lat)
+        XCTAssertNil(old.heading)
+        var p = Photo(fileName: "y.jpg", width: 1, height: 1)
+        p.apply(PhotoStamp(lat: 13.7, lon: 100.5, heading: 90))
+        let back = try JSONDecoder().decode(Photo.self, from: JSONEncoder().encode(p))
+        XCTAssertEqual(back.lat, 13.7)
+        XCTAssertEqual(back.heading, 90)
+    }
+
+    func testCameraPitch() {
+        XCTAssertEqual(Orientation.cameraPitch(gz: 0), 0, accuracy: 0.001)
+        XCTAssertEqual(Orientation.cameraPitch(gz: -1), -90, accuracy: 0.001, "lying face up, the camera looks down")
+        XCTAssertEqual(Orientation.cameraPitch(gz: 0.5), 30, accuracy: 0.001)
+    }
+}

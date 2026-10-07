@@ -59,7 +59,7 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Excel \(r.sheets.count) แผ่น · \(r.pictures) รูป")
     }
 
-    var reportHeader: ReportHeader { ReportHeader(company: settings.company) }
+    var reportHeader: ReportHeader { ReportHeader(company: settings.company, photoStamps: settings.printPhotoStamps) }
 
     public func pdfData(_ job: Job) -> Data {
         PDFRenderer.render(job: job, header: reportHeader, photo: { [weak self] p in self?.image(p, in: job.id) })

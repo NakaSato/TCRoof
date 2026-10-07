@@ -32,34 +32,16 @@ public enum RoofDXF {
     }
 
     public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, module: RoofPlan.Module = .catalogDefault) -> Output {
-        let u = millimetres ? 1000.0 : 1
-        var ents: [String] = [], count: [String: Int] = [:], order: [String] = []
-        func use(_ l: String) { if count[l] == nil { order.append(l) }; count[l, default: 0] += 1 }
-        func q(_ m: Double) -> String { num((m * u * 1000).rounded() / 1000) }
-        func LINE(_ l: String, _ a: (Double, Double), _ b: (Double, Double)) {
-            guard hypot(b.0 - a.0, b.1 - a.1) > 1e-6 else { return }
-            use(l); ents += ["0", "LINE", "8", l, "10", q(a.0), "20", q(a.1), "30", "0", "11", q(b.0), "21", q(b.1), "31", "0"]
-        }
-        func CIRCLE(_ l: String, _ c: (Double, Double), _ r: Double) {
-            use(l); ents += ["0", "CIRCLE", "8", l, "10", q(c.0), "20", q(c.1), "30", "0", "40", q(r)]
-        }
+        var o = SketchDXF.Options(); o.millimetres = millimetres
+        var dxf = SketchDXF(options: o)
+        func layer(_ name: String) -> SketchDXF.Layer { .init(name, aci: colors[name] ?? 7) }
         func TEXT(_ l: String, _ p: (Double, Double), _ h: Double, _ t: String, mid: Bool) {
-            use(l); ents += ["0", "TEXT", "8", l, "10", q(p.0), "20", q(p.1), "30", "0", "40", q(h), "1", t]
-            if mid { ents += ["72", "1", "73", "2", "11", q(p.0), "21", q(p.1), "31", "0"] }
+            dxf.text(layer(l), p, height: h, t, align: mid ? .center : .left, middle: mid)
         }
         /// Writes one sketch op on a layer, mapped to metres by `tf` (`scale` sketch points per metre).
         func write(_ op: DrawOp, _ l: String, _ tf: (Pt) -> (Double, Double), _ scale: Double, text h: Double) {
-            switch op {
-            case let .line(a, b, _, _, _): LINE(l, tf(a), tf(b))
-            case let .rect(b, _, _, _):
-                let c = [Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY)]
-                for i in 0..<4 { LINE(l, tf(c[i]), tf(c[(i + 1) % 4])) }
-            case let .circle(c, r, _, _, _): CIRCLE(l, tf(c), r / scale)
-            case let .polygon(p, _, _, _): for i in p.indices { LINE(l, tf(p[i]), tf(p[(i + 1) % p.count])) }
-            case let .polyline(p, _, _, _): for i in 0..<max(0, p.count - 1) { LINE(l, tf(p[i]), tf(p[i + 1])) }
-            case let .text(t, at, _, _, _, _, _): TEXT(l, tf(at), h, t, mid: true)
-            default: break
-            }
+            dxf.options.fixedTextHeight = h
+            dxf.add([op], layer: { _, _ in layer(l) }, transform: tf, pointsPerMetre: scale)
         }
 
         let plan = RoofPlan(v, mode: .structure, module: module)
@@ -100,45 +82,14 @@ public enum RoofDXF {
                 let size = Roof.memberSize(v, i + 1)
                 TEXT("TABLE", (tx, ty), th, "\(i + 1)  " + m.name, mid: false)
                 TEXT("TABLE", (tx + 4, ty), th, size.isEmpty ? m.defaultSize : size, mid: false)
-                LINE("TABLE", (tx, ty - 0.2), (tx + 10, ty - 0.2))
+                dxf.line(layer("TABLE"), (tx, ty - 0.2), (tx + 10, ty - 0.2))
                 ty -= 0.6
             }
         }
 
-        var out = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "9", "$DWGCODEPAGE", "3", "ANSI_874",
-                   "9", "$INSUNITS", "70", millimetres ? "4" : "6", "0", "ENDSEC",
-                   "0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LTYPE", "70", "1",
-                   "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0.0", "0", "ENDTAB",
-                   "0", "TABLE", "2", "LAYER", "70", String(order.count)]
-        for l in order { out += ["0", "LAYER", "2", l, "70", "0", "62", String(colors[l] ?? 7), "6", "CONTINUOUS"] }
-        out += ["0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"] + ents + ["0", "ENDSEC", "0", "EOF"]
-        let text = out.joined(separator: "\r\n") + "\r\n"
-        return Output(data: tis620(text), entities: count.values.reduce(0, +), layers: order)
+        return dxf.output
     }
 
-    /// The design's `String(number)`: integers without a decimal point, others without trailing zeros.
-    static func num(_ x: Double) -> String {
-        if x == x.rounded() && abs(x) < 1e15 { return String(Int(x)) }
-        var s = String(format: "%.3f", x)
-        while s.hasSuffix("0") { s.removeLast() }
-        return s
-    }
-
-    /// Thai to TIS-620 bytes; a few symbols to their CAD codes, anything else outside ASCII to "?".
-    static func tis620(_ s: String) -> Data {
-        let swap: [Character: String] = ["·": "-", "×": "x", "□": "SHS ", "–": "-", "°": "%%d", "Ø": "%%c", "½": "1/2", "¼": "1/4"]
-        var bytes: [UInt8] = []
-        bytes.reserveCapacity(s.utf8.count)
-        for ch in s {
-            if ch == "\r\n" { bytes += [13, 10]; continue }
-            for u in ch.unicodeScalars {
-                let v = u.value
-                if v >= 0x20 && v <= 0x7E || v == 10 || v == 13 { bytes.append(UInt8(v)) }
-                else if v >= 0x0E01 && v <= 0x0E5B { bytes.append(UInt8(v - 0x0D60)) }
-                else if let r = swap[Character(u)] { bytes += Array(r.utf8) }
-                else { bytes.append(UInt8(ascii: "?")) }
-            }
-        }
-        return Data(bytes)
-    }
+    static func num(_ x: Double) -> String { SketchDXF.num(x) }
+    static func tis620(_ s: String) -> Data { SketchDXF.tis620(s) }
 }

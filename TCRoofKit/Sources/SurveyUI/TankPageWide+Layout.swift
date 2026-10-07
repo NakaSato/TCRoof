@@ -23,6 +23,7 @@ extension TankPageWide {
             layoutSummaryCard(l)
             layoutChecksCard(l)
         }
+        dxfButton
     }
 
     /// iPad: the plan card on the left, the materials and checks on the right; one column in portrait.

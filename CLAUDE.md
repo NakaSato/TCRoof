@@ -42,6 +42,8 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyExport YES` opens the export sheet.
+- `-surveySLDDXF YES` (with `-surveyPage sld`) writes the single line diagram's DXF to `Documents/sld.dxf`.
+- `-surveyTankDXF YES` (with `-surveyPage tank`) writes D1's DXF to `Documents/tank.dxf`, 2.5 s after opening so `-surveyD1` has seeded the tank.
 - `-surveyCardImport YES` opens นำเข้ารูปจากการ์ด / USB with three generated photos (a drone shot 92 m up and two ground shots), skipping the file picker.
 - `-surveyPlatePhoto YES` (with `-surveyPage electrical`) clears TX 1's nameplate fields and gives it a rendered nameplate photo, so A3 offers `พบในรูปป้าย` from the photo text reader.
 - `-surveySettings YES` (with `-screen pwa`) opens the survey settings; its `เครื่องนี้` section lists the hardware the device has (`DeviceCaps`).
@@ -66,6 +68,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
   - `Progress.swift`: completion, section numbering (`sectionsByCategory`: B1, B1.2 …), `steps`.
   - Feature calculators: `SingleLine` (SLD), `InverterStation` (B2), `BuildingPanels` (B1), `Flood`, `SiteShapes`, `EquipmentCatalog` (bundled JSON).
   - `Sketch` / `DrawOp` vector drawing, shared by the screen and the PDF.
+  - DXF R12 export: `SketchDXF` writes any `Sketch`; `RoofDXF` (C1), `SingleLineDXF` (SLD, A3 paper scale) and `TankDXF` (D1, real scale) call it. `RoofDXF` output is pinned by golden files in `Tests/TCRoofCoreTests/Fixtures`.
 - `PDFReport`: `ReportLayout` turns a `Job` into pages of `DrawOp`s (`ReportLayout+*.swift` per area); `PDFRenderer` draws them. The SLD page is A3.
 - `ExcelExport`: fills `Resources/template.xlsx` by cell address (`ExcelExporter`, `template_meta.json`). Section slots are fixed (`ExcelExporter.slots`); extra sections get a copied sheet.
 - `DriveSync`: Google Drive upload of report files and photos.

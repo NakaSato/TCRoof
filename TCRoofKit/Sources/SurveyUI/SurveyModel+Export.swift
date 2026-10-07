@@ -80,6 +80,24 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Single Line Diagram A3")
     }
 
+    /// The single line diagram as DXF R12 at A3 paper scale (`SingleLineDXF`), for CAD programs.
+    public func exportSingleLineDXF(_ job: Job, hv: Bool? = nil) throws -> ExportFile {
+        flush(job.id)
+        let url = tempURL("SLD " + baseName(job) + ".dxf")
+        try SingleLineDXF.build(job, hv: hv).data.write(to: url, options: .atomic)
+        return ExportFile(url: url, summary: "Single Line Diagram DXF")
+    }
+
+    /// A D1 tank's roof plan and panel layout as DXF R12 at real scale (`TankDXF`), named like C1's: `NO<job no>_D1.dxf`.
+    public func exportTankDXF(_ job: Job, moduleID: UUID) throws -> ExportFile? {
+        flush(job.id)
+        guard let m = job.modules.first(where: { $0.id == moduleID }), let out = TankDXF.build(m.values) else { return nil }
+        let section = job.sectionsByCategory.flatMap(\.sections).first { $0.id == moduleID }?.number ?? "D1"
+        let url = tempURL(((job.docNo.isEmpty ? "" : "NO" + job.docNo + "_") + section).replacingOccurrences(of: " ", with: "") + ".dxf")
+        try out.data.write(to: url, options: .atomic)
+        return ExportFile(url: url, summary: "Tank plan DXF")
+    }
+
     public func exportPDF(_ job: Job) throws -> ExportFile {
         flush(job.id)
         let url = tempURL(baseName(job) + ".pdf")

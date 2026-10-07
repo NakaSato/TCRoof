@@ -58,6 +58,8 @@ struct TankPageWide: View {
     @State var layoutAsk: LayoutRun?
     @State var layoutSearching = false
     @State var drawingOpen = false
+    @State var dxfShare: DXFShare?
+    @State var dxfError: String?
 
     var gap: CGFloat { width >= 1180 ? 20 : 16 }
     static let cardWidth: CGFloat = 330
@@ -88,6 +90,8 @@ struct TankPageWide: View {
         }
         .fullScreenCover(isPresented: $obsFull) { obstacleFullScreen }
         .fullScreenCover(isPresented: $layoutFull) { layoutFullScreen }
+        .sheet(item: $dxfShare) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
+        .errorAlert($dxfError)
         .foregroundStyle(Home.navy)
         #if DEBUG
         .task { await openDebugState() }

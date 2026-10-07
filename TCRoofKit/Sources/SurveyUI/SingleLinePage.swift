@@ -268,7 +268,15 @@ struct SingleLinePage: View {
     /// iPhone: the notes and "แนบในรายงาน" above two equal buttons (docs/ui/components/iphone-bottom-bar, state 08).
     func phoneBar(_ sl: SingleLine) -> some View {
         VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 12) { notes(sl); Spacer(minLength: 0); attachButton(job.values.text("sldAttach") == "1") }
+            // the note keeps the full width; the two buttons share the row under it
+            VStack(alignment: .leading, spacing: 8) {
+                notes(sl)
+                HStack(spacing: 10) {
+                    barButton("ส่งออก DXF", filled: false, action: exportDXF)
+                    attachButton(job.values.text("sldAttach") == "1")
+                }
+            }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24).padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
                 .background(.bar)
@@ -300,6 +308,7 @@ struct SingleLinePage: View {
     func buttons(_ attach: Bool) -> some View {
         HStack(spacing: 10) {
             barButton("‹ แก้ข้อมูลใน A3", filled: false, action: { open(SLTarget(.electrical)) })
+            barButton("ส่งออก DXF", filled: false, action: exportDXF)
             barButton("ส่งออก PDF (A3)", filled: true, action: exportPDF)
             attachButton(attach)
         }
@@ -333,6 +342,15 @@ struct SingleLinePage: View {
         do {
             let hv: Bool? = hasB4 ? nil : hvPreview
             let f = try model.exportSingleLinePDF(job, hv: hv)
+            shared = ShareItem(url: f.url)
+        } catch { self.error = error.localizedDescription }
+    }
+
+    /// The same diagram as `exportPDF`, as a DXF for CAD programs.
+    func exportDXF() {
+        do {
+            let hv: Bool? = hasB4 ? nil : hvPreview
+            let f = try model.exportSingleLineDXF(job, hv: hv)
             shared = ShareItem(url: f.url)
         } catch { self.error = error.localizedDescription }
     }

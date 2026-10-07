@@ -22,7 +22,7 @@ let package = Package(
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),
         .target(name: "TCRoofUI"),
         .target(name: "SurveyUI", dependencies: ["TCRoofCore", "TCRoofUI", "ExcelExport", "PDFReport", "DriveSync"], resources: [.process("Resources")]),
-        .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"]),
+        .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"], resources: [.copy("Fixtures")]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),
         .testTarget(name: "DriveSyncTests", dependencies: ["DriveSync", "TCRoofCore"]),
         .testTarget(name: "ExcelExportTests", dependencies: ["ExcelExport", "TCRoofCore"], resources: [.copy("Fixtures")]),

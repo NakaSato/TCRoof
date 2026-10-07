@@ -14,6 +14,10 @@ public struct TankPlan: Sendable {
     }
     public let sketch: Sketch
     public let chips: [Chip]
+    /// What each op of `sketch` draws, for the DXF layers: grid, out, dim, dimtxt, obst, north, txt; nil the background.
+    public let tags: [String?]
+    /// The tank's top-left corner on the sketch and its points per metre.
+    public let frame: (ox: Double, oy: Double, k: Double)
 
     /// nil without spans. `chips` leaves the span numbers to the page (it draws them as buttons); `hints` adds the
     /// page's note about sub-step 2.
@@ -28,6 +32,11 @@ public struct TankPlan: Sendable {
         var ys = [0.0]; for s in sy { ys.append(ys.last! + s) }
         let minX = sx.map { $0 * k }.min() ?? 40, minY = sy.map { $0 * k }.min() ?? 40
         var o: [DrawOp] = [.rect(Box(0, 0, W, H), stroke: nil, fill: .white)]
+        var tags: [String?] = [nil]
+        /// Tags the ops added since the last call; text ops get `text` when given.
+        func tag(_ t: String, text: String? = nil) {
+            for op in o[tags.count...] { if case .text = op { tags.append(text ?? t) } else { tags.append(t) } }
+        }
         let grid = RGBA(hex: 0xB9C6D6), ink = RGBA(hex: 0x111111)
 
         // grid lines and bubbles
@@ -45,10 +54,12 @@ public struct TankPlan: Sendable {
             o.append(.circle(Pt(bx, Y), r: r, stroke: ink, fill: .white, width: 0.9))
             o.append(.text(Roof.gridName(.y, j), at: Pt(bx, Y), size: min(8, r * 0.95), bold: true, color: ink, align: .center))
         }
+        tag("grid")
         // the wall: a double outline
         o.append(.rect(Box(ox, oy, w, h), stroke: ink, fill: nil, width: 1.4))
         o.append(.rect(Box(ox + 3, oy + 3, max(0, w - 6), max(0, h - 6)), stroke: ink, fill: nil, width: 0.8))
 
+        tag("out")
         // level tags in the four quadrants
         if let e = v.number(Tank.Key.exposed) {
             let t = "ระดับหลังถัง +" + String(format: "%.2f", e)
@@ -59,6 +70,7 @@ public struct TankPlan: Sendable {
             }
         }
 
+        tag("txt")
         // obstacles (sub-step 2), as on the old plan; points marked ไม่มีจริง are left out
         for ob in v.obstacles(Roof.Key.obstacles) where !ob.isAbsent {
             guard let x = NumberInput.value(ob.x), let y = NumberInput.value(ob.y), let ow = NumberInput.value(ob.w), let oh = NumberInput.value(ob.h), ow > 0, oh > 0 else { continue }
@@ -67,6 +79,7 @@ public struct TankPlan: Sendable {
             if !ob.label.isEmpty { o.append(.text("\(ob.label) \(fmt(ow))x\(fmt(oh))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark)) }
         }
 
+        tag("obst", text: "txt")
         // span chains: each span along the bottom and the right, then the totals
         func tick(_ p: Pt) -> DrawOp { .line(Pt(p.x - 3, p.y + 3), Pt(p.x + 3, p.y - 3), width: 0.9, color: ink) }
         let cy = oy + h + 22, ty = cy + 22, cx = ox + w + 22, tx = cx + 22
@@ -96,19 +109,26 @@ public struct TankPlan: Sendable {
         }
         o.append(.text(String(format: "%.2f", TH), at: Pt(tx - 8, oy + h / 2), size: 9, bold: true, color: ink, align: .center, angle: -90))
 
+        tag("dim", text: "dimtxt")
         // note, north arrow, caption
         let wall = Tank.typeName(v).map { "ผนัง " + $0 }
         let note = ([wall] + [hints ? "สิ่งกีดขวางระบุในขั้นที่ 2" : nil]).compactMap { $0 }.joined(separator: " · ")
         if !note.isEmpty { o.append(.text(note, at: Pt(W - 50, 14), size: 8, color: .ink2, align: .right)) }
+        tag("txt")
         if let az = Tank.azimuth(v) { o += Self.northArrow(at: Pt(W - 24, 36), azimuth: az) }
+        tag("north")
         let caption = "แปลนหลังคาถังน้ำใส \(fmt(TW)) × \(fmt(TH)) ม."
         let capY = ty + 26
         o.append(.text(caption, at: Pt(ox, capY), size: 10.5, bold: true, color: RGBA(hex: 0x16325C)))
         o.append(.line(Pt(ox, capY + 8), Pt(ox + Double(caption.count) * 5.6, capY + 8), width: 0.9, color: RGBA(hex: 0x16325C)))
         o.append(.text("หน่วย: เมตร", at: Pt(W - 16, capY), size: 8, color: .ink2, align: .right))
 
+        tag("txt")
+
         sketch = Sketch(width: W, height: max(H, capY + 14), ops: o)
         self.chips = chipList
+        self.tags = tags
+        frame = (ox, oy, k)
     }
 
     /// The iPhone plan (docs/ui/survey-d1-size-iphone, 330 × 300): the outline, the grid lines named 1… / A… and the

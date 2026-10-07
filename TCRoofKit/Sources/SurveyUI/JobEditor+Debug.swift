@@ -64,7 +64,10 @@ extension JobEditorView {
         switch UserDefaults.standard.string(forKey: "surveyPage") {
         case "site": select(.site)
         case "electrical": select(.electrical)
-        case "sld": select(.electrical); showSLD = true
+        case "sld":
+            select(.electrical); showSLD = true
+            // `-surveySLDDXF YES` also writes the diagram's DXF to Documents/sld.dxf
+            if UserDefaults.standard.bool(forKey: "surveySLDDXF") { writeDebugFile("sld.dxf", SingleLineDXF.build(job).data) }
         case "inverter": if let p = first(.inverter) { select(p) }
         case "panels": if let p = first(.panel) { select(p) }
         case "flood": select(.flood)
@@ -88,8 +91,19 @@ extension JobEditorView {
             if let p = first(.tank) { select(p) }
             // `-surveyTankRender YES` also writes D1 at free widths 1366 / 1180 / 1100 to Documents/tank-<w>x<h>.png
             if UserDefaults.standard.bool(forKey: "surveyTankRender"), let m = job.modules.first(where: { $0.type == .tank }) { renderTank(m.id) }
+            // `-surveyTankDXF YES` also writes its DXF to Documents/tank.dxf, after `-surveyD1` has seeded the tank
+            if UserDefaults.standard.bool(forKey: "surveyTankDXF"), let id = job.modules.first(where: { $0.type == .tank })?.id {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 2_500_000_000)
+                    if let v = job.modules.first(where: { $0.id == id })?.values, let out = TankDXF.build(v) { writeDebugFile("tank.dxf", out.data) }
+                }
+            }
         default: break
         }
+    }
+
+    func writeDebugFile(_ name: String, _ data: Data) {
+        try? data.write(to: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name))
     }
 
     func renderRoof(_ id: UUID) {

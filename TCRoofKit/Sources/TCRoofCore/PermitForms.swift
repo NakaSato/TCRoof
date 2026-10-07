@@ -111,6 +111,12 @@ public enum PermitDate {
         let p = parts(date)
         return "\(p.day)/\(p.month)/\(p.year)"
     }
+
+    /// `7 ตุลาคม 2569`, as company documents date their header.
+    public static func long(_ date: Date) -> String {
+        let p = parts(date)
+        return "\(p.day) \(months[p.month - 1]) \(p.year)"
+    }
 }
 
 // MARK: - หนังสือมอบอำนาจ

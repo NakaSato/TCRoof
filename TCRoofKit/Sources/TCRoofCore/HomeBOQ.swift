@@ -34,11 +34,13 @@ public struct HomeBOQ: Codable, Equatable, Sendable {
         /// Unit prices, baht.
         public var material: Double = 0
         public var labor: Double = 0
+        /// Priced inside another line (the sample's AC surge, DC CB and DC SPD inside the RCBO line): listed, no price.
+        public var included = false
 
         public init(id: String = UUID().uuidString, section: Section, description: String, brand: String = "", unit: String = "Lot",
-                    qty: Double = 1, material: Double = 0, labor: Double = 0) {
+                    qty: Double = 1, material: Double = 0, labor: Double = 0, included: Bool = false) {
             self.id = id; self.section = section; self.description = description; self.brand = brand; self.unit = unit
-            self.qty = qty; self.material = material; self.labor = labor
+            self.qty = qty; self.material = material; self.labor = labor; self.included = included
         }
 
         public init(from decoder: Decoder) throws {
@@ -51,12 +53,13 @@ public struct HomeBOQ: Codable, Equatable, Sendable {
             qty = try c.decodeIfPresent(Double.self, forKey: .qty) ?? 1
             material = try c.decodeIfPresent(Double.self, forKey: .material) ?? 0
             labor = try c.decodeIfPresent(Double.self, forKey: .labor) ?? 0
+            included = try c.decodeIfPresent(Bool.self, forKey: .included) ?? false
         }
-        private enum CodingKeys: String, CodingKey { case id, section, description, brand, unit, qty, material, labor }
+        private enum CodingKeys: String, CodingKey { case id, section, description, brand, unit, qty, material, labor, included }
 
         public var isNote: Bool { qty == 0 }
-        public var materialTotal: Double { qty * material }
-        public var laborTotal: Double { qty * labor }
+        public var materialTotal: Double { included ? 0 : qty * material }
+        public var laborTotal: Double { included ? 0 : qty * labor }
         public var amount: Double { materialTotal + laborTotal }
         /// Key of the price book: the description without spaces, dashes or case.
         public var priceKey: String { HomeLibrary.normalize(description) }
@@ -143,7 +146,7 @@ public struct HomeBOQ: Codable, Equatable, Sendable {
            !lines(.inverter).contains(where: { Self.isExportControl($0.description) }) {
             out.append("ต้องมีอุปกรณ์กันไหลย้อน (smart meter / export limiter) ในหมวดอินเวอร์เตอร์")
         }
-        let unpriced = lines.filter { !$0.isNote && $0.material == 0 && $0.labor == 0 }
+        let unpriced = lines.filter { !$0.isNote && !$0.included && $0.material == 0 && $0.labor == 0 }
         if !unpriced.isEmpty {
             out.append("ยังไม่มีราคา \(unpriced.count) รายการ: " + unpriced.prefix(3).map(\.description).joined(separator: ", ")
                        + (unpriced.count > 3 ? " …" : ""))
@@ -208,7 +211,7 @@ public struct HomeBOQ: Codable, Equatable, Sendable {
     /// Price-book entries for every priced line (keyed by section and description).
     public var priceBook: [String: HomeBOQPrice] {
         var out: [String: HomeBOQPrice] = [:]
-        for l in lines where !l.isNote && (l.material > 0 || l.labor > 0) {
+        for l in lines where !l.isNote && !l.included && (l.material > 0 || l.labor > 0) {
             out[l.section.rawValue.description + ":" + l.priceKey] = HomeBOQPrice(material: l.material, labor: l.labor)
         }
         return out

@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import TCRoofUI
 import TCRoofCore
+import ExcelExport
 
 /// The BOQ printed in the company's layout: letterhead, project lines, the nine-section table with material and
 /// labour, and the totals box. A4 portrait; long tables continue on the next page under the column header.
@@ -216,10 +217,7 @@ struct BOQView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TCNavBar(title: "BOQ", trail: ["งานบ้าน", job.code], current: "BOQ") {
-                TCButton("ฉบับต้นทุน", systemImage: "doc.text", kind: .secondary, size: .card) { export(customer: false) }
-                TCButton("ฉบับส่งลูกค้า", systemImage: "paperplane", kind: .secondary, size: .card) { export(customer: true) }
-            }
+            TCNavBar(title: "BOQ", trail: ["งานบ้าน", job.code], current: "BOQ") { exportMenu }
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     headerCard
@@ -241,9 +239,43 @@ struct BOQView: View {
             Button("ร่างใหม่", role: .destructive) { redraft() }
         }
         .sheet(item: Binding(get: { share.map(ShareURL.init) }, set: { share = $0?.url })) { ActivitySheet(items: [$0.url]) }
+        .alert("ส่งออกไม่ได้", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        } message: { Text(exportError ?? "") }
     }
 
     private struct ShareURL: Identifiable { let url: URL; var id: URL { url } }
+
+    /// One menu on every width: Excel (both sheets, the company file) and the two PDFs.
+    private var exportMenu: some View {
+        Menu {
+            Button { exportExcel() } label: { Label("Excel · Cost + Sent", systemImage: "tablecells") }
+            Button { export(customer: true) } label: { Label("PDF ฉบับส่งลูกค้า", systemImage: "paperplane") }
+            Button { export(customer: false) } label: { Label("PDF ฉบับต้นทุน", systemImage: "doc.text") }
+        } label: {
+            Label("ส่งออก", systemImage: "square.and.arrow.up").font(.sarabun(14, .semibold, relativeTo: .body))
+                .padding(.horizontal, Space.m).frame(minHeight: touchMin)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+                .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.45)))
+        }
+        .accessibilityLabel("ส่งออก BOQ")
+    }
+
+    @State private var exportError: String?
+
+    private func fileStem() -> String {
+        "BOQ \(job.code) \(HomeBOQ.kw(boq.panelKWp ?? 0)) kWp Rev.\(boq.revision)".replacingOccurrences(of: "/", with: "-")
+    }
+
+    private func exportExcel() {
+        rememberPrices()
+        do {
+            let data = try BOQExcel.export(boq)
+            share = store.exportURL(data, fileName: fileStem() + ".xlsx")
+        } catch {
+            exportError = error.localizedDescription
+        }
+    }
 
     private func load() {
         guard !loaded else { return }
@@ -346,18 +378,31 @@ struct BOQView: View {
         let line = binding(id)
         return VStack(alignment: .leading, spacing: Space.s) {
             HStack(alignment: .top, spacing: Space.m) {
-                PermitField(line.wrappedValue.isNote ? "รายละเอียด (ไม่มีราคา)" : "รายการ", text: line.description)
-                if !line.wrappedValue.isNote { PermitField("ยี่ห้อ", text: line.brand).frame(maxWidth: 200) }
+                PermitRow {
+                    PermitField(line.wrappedValue.isNote ? "รายละเอียด (ไม่มีราคา)" : "รายการ", text: line.description)
+                    if !line.wrappedValue.isNote { PermitField("ยี่ห้อ", text: line.brand).frame(maxWidth: isPhone ? .infinity : 200) }
+                }
                 Button(role: .destructive) { boq.lines.removeAll { $0.id == id } } label: {
                     Image(systemName: "trash").frame(width: touchMin, height: touchMin)
                 }
                 .buttonStyle(.plain).foregroundStyle(Theme.dangerText).padding(.top, 22)
                 .accessibilityLabel("ลบรายการ")
             }
-            if !line.wrappedValue.isNote { priceRow(line) }
+            if !line.wrappedValue.isNote {
+                TCSwitchRow("รวมในราคารายการอื่น (แสดงรายการ ไม่มีราคา)", isOn: line.included)
+                if line.wrappedValue.included { includedRow(line) } else { priceRow(line) }
+            }
         }
         .padding(Space.m)
         .background(Theme.background, in: RoundedRectangle(cornerRadius: Radius.md))
+    }
+
+    /// Listed with a count only; its price sits in another line of the section.
+    private func includedRow(_ line: Binding<HomeBOQ.Line>) -> some View {
+        PermitRow {
+            PermitField("หน่วย", text: line.unit).frame(maxWidth: isPhone ? .infinity : 110)
+            BOQNumberField(title: "จำนวน", value: line.qty)
+        }
     }
 
     private func priceRow(_ line: Binding<HomeBOQ.Line>) -> some View {

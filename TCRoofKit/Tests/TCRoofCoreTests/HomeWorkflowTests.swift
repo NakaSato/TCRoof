@@ -396,4 +396,23 @@ final class HomeBOQTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(HomeBOQ.self, from: JSONEncoder().encode(b)), b)
         XCTAssertTrue(HomeJob().checklist.contains { $0.id == "boq" && $0.form == .boq })
     }
+
+    /// Lines priced inside another (the company file's AC surge, DC CB, DC SPD under the RCBO line).
+    func testIncludedLines() throws {
+        let j = job()
+        var b = HomeBOQ.draft(job: j)
+        for i in b.lines.indices where !b.lines[i].isNote { b.lines[i].material = 100 }
+        let surge = try XCTUnwrap(b.lines.firstIndex { $0.description == "AC Surge Type II" })
+        let before = b.subtotal
+        b.lines[surge].included = true
+        XCTAssertEqual(b.lines[surge].amount, 0)
+        XCTAssertEqual(b.subtotal, before - 100, accuracy: 0.001)
+        b.lines[surge].material = 0
+        XCTAssertFalse(b.issues(for: j).contains { $0.hasPrefix("ยังไม่มีราคา") })   // no price needed
+        XCTAssertNil(b.priceBook["6:" + b.lines[surge].priceKey])
+        XCTAssertEqual(b.customerLines[surge].amount, 0)
+        let old = try JSONDecoder().decode(HomeBOQ.Line.self, from: Data(#"{"id":"x","section":6,"description":"AC Surge"}"#.utf8))
+        XCTAssertFalse(old.included)
+        XCTAssertEqual(PermitDate.long(Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(identifier: "Asia/Bangkok"), year: 2024, month: 1, day: 31, hour: 12))!), "31 มกราคม 2567")
+    }
 }

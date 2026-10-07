@@ -29,16 +29,7 @@ struct HomeWorkView: View {
     var body: some View {
         VStack(spacing: 0) {
             TCNavBar(title: "งานบ้าน", trail: ["หน้าหลัก", job.code], current: "งานบ้าน ครบวงจร") {
-                if home.residentialConfirmed {
-                    NavigationLink { HomeLibraryView() } label: {
-                        Label("คลังเอกสาร", systemImage: "books.vertical").font(.sarabun(14, .semibold, relativeTo: .body))
-                            .padding(.horizontal, Space.m).frame(minHeight: touchMin)
-                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
-                            .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.45)))
-                    }
-                    .buttonStyle(.plain)
-                    TCButton("ชุดไฟล์ PPIM", systemImage: "tray.and.arrow.up", kind: .secondary, size: .card) { showPack = true }
-                }
+                if home.residentialConfirmed { navActions }
             }
             ScrollViewReader { proxy in
                 ScrollView { content }
@@ -65,6 +56,30 @@ struct HomeWorkView: View {
         .sheet(isPresented: $showWeight) { RoofWeightSheet(result: $home.roofKgPerM2) }
         .sheet(isPresented: $showPack) { PPIMPackView(job: job, home: home, library: library) }
         .sheet(isPresented: $showEntry) { PPIMEntryView(home: $home) }
+    }
+
+    /// Library and PPIM pack; icons only on iPhone so the bar keeps its title.
+    @ViewBuilder private var navActions: some View {
+        NavigationLink { HomeLibraryView() } label: { navLabel("คลังเอกสาร", "books.vertical") }
+            .buttonStyle(.plain)
+            .accessibilityLabel("คลังเอกสาร")
+        Button { showPack = true } label: { navLabel("ชุดไฟล์ PPIM", "tray.and.arrow.up") }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ชุดไฟล์ PPIM")
+    }
+
+    private func navLabel(_ title: String, _ icon: String) -> some View {
+        Group {
+            if isPhone {
+                Image(systemName: icon).font(.system(size: 17, weight: .semibold)).frame(width: touchMin, height: touchMin)
+            } else {
+                Label(title, systemImage: icon).font(.sarabun(14, .semibold, relativeTo: .body))
+                    .padding(.horizontal, Space.m).frame(minHeight: touchMin)
+            }
+        }
+        .foregroundStyle(Theme.navy)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.45)))
     }
 
     private var content: some View {

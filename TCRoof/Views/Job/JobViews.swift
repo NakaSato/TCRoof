@@ -24,6 +24,7 @@ struct JobDetailView: View {
                     customerCard
                     scheduleCard
                 }
+                MPScheduleCard(job: job)
                 actionsGrid
                 PWASurveyCard(job: job)
                 surveysCard

@@ -78,3 +78,34 @@ final class ExcelExportTests: XCTestCase {
         XCTAssertTrue(z.string("xl/worksheets/sheet5.xml")!.contains("1250"))
     }
 }
+
+/// The BOQ workbook: both sheets rebuilt from the template's row styles, formulas with cached values.
+final class BOQExcelTests: XCTestCase {
+    func testBOQWorkbook() throws {
+        var j = HomeJob()
+        j.pvKWp = "5.175"; j.phase = .single
+        j.ppim.panels[0].brand = "ZNShine"; j.ppim.panels[0].model = "ZXM7-UHLD144"; j.ppim.panels[0].watt = "575"; j.ppim.panels[0].count = "9"
+        j.ppim.inverters[0].brand = "Growatt"; j.ppim.inverters[0].model = "MIN 5000TL-X"; j.ppim.inverters[0].kW = "5"
+        var b = HomeBOQ.draft(job: j)
+        for i in b.lines.indices where !b.lines[i].isNote { b.lines[i].material = 100 }
+        b.customer = "ลูกค้า & ทดสอบ"
+        let zip = try ZipArchive(BOQExcel.export(b))
+        let cost = try XCTUnwrap(zip.string("xl/worksheets/sheet1.xml"))
+        let sent = try XCTUnwrap(zip.string("xl/worksheets/sheet2.xml"))
+        XCTAssertTrue(cost.contains("ขนาด 5.175 kWp"))
+        XCTAssertTrue(cost.contains("ลูกค้า &amp; ทดสอบ"))
+        XCTAssertTrue(cost.contains("<f>SUM(M17:M"))
+        XCTAssertTrue(cost.contains("<v>9</v>"))                       // 9 modules on the cost sheet
+        XCTAssertTrue(sent.contains(">Lot<"))                          // one lot a line for the customer
+        XCTAssertFalse(cost.contains("{{DATE}}"))
+        let wb = try XCTUnwrap(zip.string("xl/workbook.xml"))
+        XCTAssertTrue(wb.contains("fullCalcOnLoad=\"1\""))
+        XCTAssertNotNil(wb.range(of: #"Sent!\$A\$1:\$M\$\d+"#, options: .regularExpression))
+        // every merged cell refers to a row that exists
+        let rows = Set(BOQExcel.rows(cost).compactMap(BOQExcel.rowNumber))
+        for m in cost.components(separatedBy: "<mergeCell ref=\"").dropFirst() {
+            let ref = m.prefix { $0 != "\"" }
+            for n in ref.split(separator: ":").map({ Int($0.filter(\.isNumber))! }) where n > 16 { XCTAssertTrue(rows.contains(n), "\(ref)") }
+        }
+    }
+}

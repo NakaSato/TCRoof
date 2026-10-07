@@ -80,9 +80,14 @@ extension PlanCalendarView {
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             TCGradientHeader(title: "ปฏิทินทีมติดตั้ง", subtitle: "แผนก่อสร้างและเอกสาร") {
-                NavigationLink { PlanListView() } label: { TCHeaderIcon("list.bullet") }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("รายการแผนก่อสร้าง")
+                HStack(spacing: 8) {
+                    NavigationLink { MPOverviewView() } label: { TCHeaderIcon("chart.bar.xaxis") }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("แผน MP ทุกสถานี")
+                    NavigationLink { PlanListView() } label: { TCHeaderIcon("list.bullet") }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("รายการแผนก่อสร้าง")
+                }
             }
         }
         .background(Theme.background.ignoresSafeArea())

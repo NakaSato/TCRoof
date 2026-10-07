@@ -1,6 +1,7 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
+import PDFReport
 
 /// แผนงาน MP full screen (docs/specs/master-schedule-swift.md §3.3): a week picker with plan / actual / variance, the
 /// Gantt of the 18 tasks, and the workbook's Weekly or Monthly Update for the chosen week. iPad wide: Gantt left,
@@ -11,6 +12,10 @@ struct MPScheduleScreen: View {
     @State private var monthly = false
     @State private var showProgress = false
     @State private var showSetup = false
+    /// The weekly-meeting PDF being shared.
+    @State private var pdf: SharedFile?
+    struct SharedFile: Identifiable { let id = UUID(); let url: URL }
+    @State private var exportError: String?
 
     var body: some View {
         GeometryReader { g in
@@ -25,13 +30,33 @@ struct MPScheduleScreen: View {
         .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: exportPDF) { Label("PDF ประชุม", systemImage: "square.and.arrow.up") }
+                    .disabled(job.scheduleInput == nil)
+                    .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์ที่เลือก หนึ่งหน้า A3")
+            }
             ToolbarItem(placement: .primaryAction) { Button("ตั้งค่าแผน") { showSetup = true } }
         }
         .sheet(isPresented: $showProgress) { MPProgressSheet(job: job, week: week) }
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
+        .sheet(item: $pdf) { f in ActivitySheet(items: [f.url]).presentationDetents([.medium, .large]) }
+        .alert("สร้าง PDF ไม่สำเร็จ", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        } message: { Text(exportError ?? "") }
         #if DEBUG
         // `-mpDemo screen|progress` (with `-screen mp`) opens this screen, or its progress sheet
-        .task { if UserDefaults.standard.string(forKey: "mpDemo") == "progress" { showProgress = true } }
+        .task {
+            switch UserDefaults.standard.string(forKey: "mpDemo") {
+            case "progress"?: showProgress = true
+            // `-mpDemo pdf` also writes the weekly-meeting page to Documents/mp.pdf
+            case "pdf"?:
+                if let input = job.scheduleInput, let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                    let s = MasterScheduleSheet.page(input: input, actual: job.scheduleActual, week: week, title: "MP \(job.mpNumber ?? 0) " + job.projectName)
+                    try? PDFRenderer.pdf(s, title: "MP").write(to: docs.appendingPathComponent("mp.pdf"))
+                }
+            default: break
+            }
+        }
         #endif
     }
 
@@ -98,6 +123,19 @@ struct MPScheduleScreen: View {
             MPVarianceChip(variance: m.status.variance)
         }
         .foregroundStyle(Theme.navy)
+    }
+
+    /// The Gantt and the Weekly / Monthly Update of the chosen week as one A3 page, named `MP<no>_<yyyy-MM-dd>.pdf`.
+    private func exportPDF() {
+        guard let input = job.scheduleInput else { return }
+        let title = [job.mpNumber.map { "MP \($0)" }, job.projectName.isEmpty ? nil : job.projectName].compactMap { $0 }.joined(separator: " ")
+        let sketch = MasterScheduleSheet.page(input: input, actual: job.scheduleActual, week: week, title: title.isEmpty ? job.code : title)
+        let name = (job.mpNumber.map { "MP\($0)" } ?? job.code) + "_" + ISODate.string(week) + ".pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try PDFRenderer.pdf(sketch, title: "แผนงาน MP " + title).write(to: url, options: .atomic)
+            pdf = SharedFile(url: url)
+        } catch { exportError = error.localizedDescription }
     }
 
     private func shift(_ days: Int) {

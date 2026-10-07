@@ -168,3 +168,25 @@ final class MasterScheduleTests: XCTestCase {
         XCTAssertEqual(MasterSchedule.Actual.key(d(2026, 9, 27)), "2026-09-27")
     }
 }
+
+/// The weekly-meeting PDF page (§4): MP 189 at week 92, as the workbook's Weekly Update.
+extension MasterScheduleTests {
+    func testSheetShowsWeeklyUpdate() {
+        let s = MasterScheduleSheet.page(input: mp189(), actual: mp189Actual(), week: d(2026, 9, 30), title: "MP 189 ทุ่งน้อย")
+        XCTAssertEqual(s.width, 1190.55); XCTAssertEqual(s.height, 841.89)
+        let texts = s.ops.compactMap { op -> String? in
+            switch op { case let .text(t, _, _, _, _, _, _), let .textBox(t, _, _, _, _, _): return t; default: return nil }
+        }
+        XCTAssertTrue(texts.contains("แผนงาน MP · MP 189 ทุ่งน้อย"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("ถึงสัปดาห์ 27/9/69") && $0.contains("แผน 100%") && $0.contains("ทำได้ 96%") && $0.hasSuffix("ช้ากว่า 4%") },
+                      texts.filter { $0.hasPrefix("ถึง") }.joined())
+        // every task has a row; COP and พค.2 (not over 200 kVA) read ไม่ใช้
+        for t in MasterSchedule.Task.allCases { XCTAssertTrue(texts.contains(t.title), t.title) }
+        XCTAssertEqual(texts.filter { $0 == "ไม่ใช้" }.count, 2)
+        // nothing is drawn off the page
+        for op in s.ops {
+            if case let .text(_, at, _, _, _, _, _) = op { XCTAssertTrue(at.x >= 0 && at.x <= s.width && at.y >= 0 && at.y <= s.height) }
+            if case let .rect(b, _, _, _) = op { XCTAssertTrue(b.x >= 0 && b.maxX <= s.width + 0.01 && b.maxY <= s.height) }
+        }
+    }
+}

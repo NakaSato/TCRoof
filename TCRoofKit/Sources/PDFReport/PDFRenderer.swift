@@ -149,6 +149,17 @@ public enum PDFRenderer {
     }
 
     /// A sketch as a PNG (used for the auto plan in the Excel frame).
+    /// One sketch as a one-page PDF the sketch's size (the MP weekly-meeting page).
+    public static func pdf(_ sketch: Sketch, title: String) -> Data {
+        let bounds = CGRect(x: 0, y: 0, width: sketch.width, height: sketch.height)
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = [kCGPDFContextTitle as String: title]
+        return UIGraphicsPDFRenderer(bounds: bounds, format: format).pdfData { ctx in
+            ctx.beginPage()
+            draw(sketch.ops, in: ctx.cgContext, photo: { _ in nil })
+        }
+    }
+
     public static func png(_ sketch: Sketch, scale: CGFloat = 2) -> (Data, Int, Int)? {
         let size = CGSize(width: sketch.width, height: sketch.height)
         let format = UIGraphicsImageRendererFormat(); format.scale = scale; format.opaque = true

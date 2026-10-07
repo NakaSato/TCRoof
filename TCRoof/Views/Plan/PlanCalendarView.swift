@@ -45,7 +45,10 @@ struct PlanCalendarView: View {
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             TCNavBar(title: "แผนก่อสร้าง", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"], current: "ปฏิทิน") {
-                TopBarLink(title: "ดูรายการแผนก่อสร้าง", systemImage: "list.bullet") { PlanListView() }
+                HStack(spacing: 8) {
+                    TopBarLink(title: "แผน MP ทุกสถานี", systemImage: "chart.bar.xaxis") { MPOverviewView() }
+                    TopBarLink(title: "ดูรายการแผนก่อสร้าง", systemImage: "list.bullet") { PlanListView() }
+                }
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())

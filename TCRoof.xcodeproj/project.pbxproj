@@ -209,7 +209,8 @@
 				INFOPLIST_FILE = AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TCRoof;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์และถ่ายรูปหน้างาน";
+				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์ ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์";
+				INFOPLIST_KEY_NSMotionUsageDescription = "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "ใช้ตำแหน่งเพื่อบันทึกพิกัดหน้างานในแบบสำรวจ";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "ใช้คลังภาพเพื่อแนบรูปหน้างานและสแกนบาร์โค้ดจากรูป";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -244,7 +245,8 @@
 				INFOPLIST_FILE = AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TCRoof;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์และถ่ายรูปหน้างาน";
+				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์ ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์";
+				INFOPLIST_KEY_NSMotionUsageDescription = "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "ใช้ตำแหน่งเพื่อบันทึกพิกัดหน้างานในแบบสำรวจ";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "ใช้คลังภาพเพื่อแนบรูปหน้างานและสแกนบาร์โค้ดจากรูป";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

@@ -208,13 +208,53 @@ public enum FieldValue: Codable, Hashable, Sendable {
     case shapes([SiteShape])
 }
 
+/// How an answer was obtained (docs/specs/hardware-assist-swift.md §3). Typed answers keep no entry.
+public enum FillSource: String, Codable, Sendable {
+    case typed, nameplate, sensor, laser, lidar, arEstimate, gps, drone
+
+    /// Chip next to the field ("จากป้าย").
+    public var chip: String? {
+        switch self {
+        case .typed: return nil
+        case .nameplate: return "จากป้าย"
+        case .sensor: return "จากเซนเซอร์"
+        case .laser: return "จากเลเซอร์"
+        case .lidar: return "จาก LiDAR"
+        case .arEstimate: return "ประมาณด้วย AR"
+        case .gps: return "จาก GPS"
+        case .drone: return "จากโดรน"
+        }
+    }
+}
+
 /// Answers for one scope (the job cover or one section), keyed by field id.
 public struct Values: Codable, Hashable, Sendable {
     public var storage: [String: FieldValue] = [:]
+    /// Field id → how a value not typed by hand was obtained. Absent in jobs saved before hardware assist.
+    public var sources: [String: FillSource]? = nil
     public init(_ storage: [String: FieldValue] = [:]) { self.storage = storage }
+    /// Writing a value by hand forgets where an earlier value came from; use `set(_:_:source:)` for a confirmed reading.
     public subscript(_ id: String) -> FieldValue? {
         get { storage[id] }
-        set { storage[id] = newValue }
+        set { storage[id] = newValue; forgetSource(id) }
+    }
+    /// A confirmed reading from the nameplate, a sensor or a meter, remembered with its source.
+    public mutating func set(_ id: String, _ value: FieldValue, source: FillSource) {
+        storage[id] = value
+        markSource(id, source)
+    }
+    public func source(_ id: String) -> FillSource? { sources?[id] }
+    /// For values kept outside `storage`, such as a transformer's kVA (`tr0_kva`).
+    public mutating func markSource(_ id: String, _ source: FillSource) {
+        guard source != .typed else { return forgetSource(id) }
+        var s = sources ?? [:]
+        s[id] = source
+        sources = s
+    }
+    public mutating func forgetSource(_ id: String) {
+        guard sources?[id] != nil else { return }
+        sources?[id] = nil
+        if sources?.isEmpty == true { sources = nil }
     }
     public func text(_ id: String) -> String {
         if case .text(let s)? = storage[id] { return s }
@@ -261,6 +301,7 @@ public struct Values: Codable, Hashable, Sendable {
         let suffixes = ["front", "back", "left", "right", "plate", "wide", "feed", "feedLoc", "feedPhoto", "mdbOpen", "mdbBreaker", "mdbSpace"]
         for j in i..<5 {
             for s in suffixes { storage["tr\(j)_\(s)"] = storage["tr\(j + 1)_\(s)"] }
+            if let src = source("tr\(j + 1)_kva") { markSource("tr\(j)_kva", src) } else { forgetSource("tr\(j)_kva") }
         }
     }
     public func number(_ id: String) -> Double? { NumberInput.value(text(id)) }

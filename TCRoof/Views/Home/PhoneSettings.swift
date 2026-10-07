@@ -1,6 +1,7 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
+import SurveyUI
 
 /// iPhone settings (docs/ui/tcroof-home-iphone states/06, v2 colours via `homeInk`): grouped white cards on the page colour.
 struct PhoneSettingsList: View {
@@ -8,6 +9,7 @@ struct PhoneSettingsList: View {
     @Environment(GoogleSession.self) private var session
     @AppStorage("userName") private var userName = ""
     @AppStorage("home.aiGreeting") private var aiGreeting = true
+    @AppStorage(CameraRoll.defaultsKey) private var saveToLibrary = true
     @State private var sync = CloudSync.shared
     @State private var notifications = NotificationService.shared
     @Environment(\.openURL) private var openURL
@@ -42,6 +44,16 @@ struct PhoneSettingsList: View {
                     }
                 }
                 notificationsSection
+                section("รูปถ่าย") {
+                    Toggle(isOn: $saveToLibrary) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("บันทึกลงคลังภาพของเครื่อง").foregroundStyle(Theme.navy)
+                            Text("รูปจากกล้องในแอป ขนาดเต็ม พร้อมพิกัดและทิศที่ถ่าย").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
+                        }
+                    }
+                    .tint(Theme.primary)
+                    .rowFrame()
+                }
                 section("GOOGLE DRIVE") {
                     row("บัญชี Google", session.email.flatMap { $0.isEmpty ? nil : $0 } ?? "เชื่อมต่อแล้ว")
                     divider

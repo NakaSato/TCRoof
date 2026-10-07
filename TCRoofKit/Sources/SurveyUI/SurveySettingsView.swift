@@ -8,6 +8,7 @@ struct SurveySettingsView: View {
     @State private var s = SurveySettings()
     @State private var error: String?
     @State private var signedIn = false
+    @AppStorage(CameraRoll.defaultsKey) private var saveToLibrary = true
 
     var body: some View {
         NavigationStack {
@@ -16,6 +17,11 @@ struct SurveySettingsView: View {
                     TextField("ชื่อบริษัท (หัวรายงาน PDF)", text: $s.company)
                     TextField("ชื่อวิศวกรผู้สำรวจ (ใส่ให้งานใหม่อัตโนมัติ)", text: $s.engineer)
                     Toggle("พิมพ์พิกัด ทิศ และเวลาใต้รูปในรายงาน", isOn: $s.printPhotoStamps)
+                }
+                Section {
+                    Toggle("บันทึกรูปที่ถ่ายลงคลังภาพของเครื่องด้วย", isOn: $saveToLibrary)
+                } header: { Text("รูปถ่าย") } footer: {
+                    Text("รูปจากกล้องในแอปจะเก็บไว้ในแอป Photos ด้วย ขนาดเต็ม พร้อมพิกัดและทิศที่ถ่าย")
                 }
                 DeviceCapsSection()
                 Section {

@@ -4,21 +4,23 @@ import TCRoofCore
 
 /// The survey camera with a quick check after each shot (docs/specs/hardware-assist-swift.md §H4): a blurred or dark
 /// photo is shown again with "ภาพไม่ชัด ถ่ายใหม่?" and เก็บไว้ / ถ่ายใหม่. It never blocks: เก็บไว้ keeps the photo.
+/// For a square-on field (`PhotoShot.straight`) a roll over `ImageQuality.tiltLimit` also counts ("ภาพเอียง").
 struct CheckedCamera: View {
+    var shot: PhotoShot = .any
     let done: (UIImage?) -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(SurveyModel.self) private var model
     @State private var sensors = CaptureContext()
     @State private var stamp: PhotoStamp?
-    @State private var shot: UIImage?
+    @State private var taken: UIImage?
     @State private var issues: [ImageQuality.Issue] = []
     @State private var attempt = 0
     @State private var flash = false
 
     var body: some View {
         ZStack {
-            if let shot, !issues.isEmpty {
-                review(shot)
+            if let taken, !issues.isEmpty {
+                review(taken)
             } else {
                 CameraPicker(dismissOnFinish: false, flash: flash) { img in check(img) }
                     .id(attempt)
@@ -32,9 +34,10 @@ struct CheckedCamera: View {
     private func check(_ img: UIImage?) {
         guard let img else { return finish(nil) }
         stamp = sensors.snapshot()
+        let tilted = shot == .straight && (sensors.tilt() ?? 0) > ImageQuality.tiltLimit
         Task {
-            let found = await PhotoCheck.issues(img)
-            if found.isEmpty { finish(img) } else { shot = img; issues = found }
+            let found = await PhotoCheck.issues(img) + (tilted ? [.tilted] : [])
+            if found.isEmpty { finish(img) } else { taken = img; issues = found }
         }
     }
 
@@ -49,7 +52,7 @@ struct CheckedCamera: View {
         VStack(spacing: 16) {
             Image(uiImage: img).resizable().scaledToFit().frame(maxHeight: .infinity)
             ForEach(issues, id: \.self) { i in
-                Label(i.message, systemImage: i == .dark ? "moon.fill" : "camera.metering.unknown")
+                Label(i.message, systemImage: i == .dark ? "moon.fill" : i == .tilted ? "level" : "camera.metering.unknown")
                     .font(.headline).foregroundStyle(Home.orange)
             }
             HStack(spacing: 12) {
@@ -57,7 +60,7 @@ struct CheckedCamera: View {
                     .buttonStyle(.bordered)
                 Button {
                     flash = issues.contains(.dark)
-                    shot = nil; issues = []; attempt += 1
+                    taken = nil; issues = []; attempt += 1
                 } label: { Text("ถ่ายใหม่").bold().frame(maxWidth: .infinity, minHeight: 50) }
                     .buttonStyle(.borderedProminent)
             }

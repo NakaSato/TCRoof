@@ -156,6 +156,7 @@ extension ElectricalPageWide {
                     VStack(alignment: .leading, spacing: 3) {
                         A3Label(text: "ภาพมิเตอร์")
                         A3PhotoTile(photo: photoBinding("meterPic"), jobID: job.id, label: "ภาพมิเตอร์", height: 80)
+                            .photoShot("meterPic")
                     }
                 } else if let s = meterSummary {
                     Text(s).font(.system(size: 12)).foregroundStyle(Home.ok).lineLimit(2)
@@ -321,6 +322,7 @@ extension ElectricalPageWide {
                     ForEach(Array(Schema.transformerAngles.enumerated()), id: \.offset) { n, a in
                         A3PhotoTile(photo: photoBinding("tr\(i)_\(a.key)"), jobID: job.id, label: "\(n + 1). \(Self.shortAngles[n])",
                                     required: a.key == "wide" && photoCount(i) > 0 && job.values.photo("tr\(i)_wide") == nil, height: 100)
+                            .photoShot("tr\(i)_\(a.key)")
                     }
                 }
             }
@@ -454,6 +456,7 @@ extension ElectricalPageWide {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
                             ForEach(Array(shots.enumerated()), id: \.offset) { n, s in
                                 A3PhotoTile(photo: photoBinding("tr\(i)_\(s.key)"), jobID: job.id, label: "\(n + 1). \(s.label)", required: s.key == "mdbSpace", height: 104)
+                                    .photoShot("tr\(i)_\(s.key)")
                             }
                         }
                         VStack(alignment: .leading, spacing: 3) {

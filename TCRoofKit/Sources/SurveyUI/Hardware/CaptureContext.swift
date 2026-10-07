@@ -45,6 +45,11 @@ final class CaptureContext: NSObject, CLLocationManagerDelegate {
         return s
     }
 
+    /// Roll off level right now (`ImageQuality.tilt`); nil without motion or when pointing steeply up or down.
+    func tilt() -> Double? {
+        motion.deviceMotion.flatMap { ImageQuality.tilt(gx: $0.gravity.x, gy: $0.gravity.y) }
+    }
+
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateHeading h: CLHeading) {
         let v = h.trueHeading >= 0 ? h.trueHeading : h.magneticHeading
         MainActor.assumeIsolated { heading = v }

@@ -36,6 +36,8 @@ public final class SurveyModel {
     /// Upload progress per job; kept after a failure so the editor can say it will retry.
     public internal(set) var photoUpload: [UUID: PhotoTransfer] = [:]
     @ObservationIgnored var uploadWait: [UUID: Task<Void, Never>] = [:]
+    /// Jobs whose photo upload waits for the battery (`PowerMonitor`).
+    @ObservationIgnored var heldUploads: Set<UUID> = []
     @ObservationIgnored var uploadRun: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored var manualDriveSave: Set<UUID> = []
 

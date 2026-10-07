@@ -114,7 +114,7 @@ struct SitePageWide: View {
         .photosPicker(isPresented: $pickSign, selection: $signItem, matching: .images)
         .onChange(of: signItem) { _, item in load(item) { img in setSignPhoto(img) }; signItem = nil }
         .fullScreenCover(isPresented: $cameraSign) {
-            CameraPicker { img in if let img { setSignPhoto(img) } }.ignoresSafeArea()
+            CheckedCamera { img in if let img { setSignPhoto(img) } }
         }
         .confirmationDialog("ประเภทที่ดิน", isPresented: $chooseLand, titleVisibility: .visible) {
             ForEach(Options.landType, id: \.self) { o in Button(o) { setLand(o) } }

@@ -85,6 +85,12 @@ extension SurveyModel {
     /// Waits until the job has a name, so its Drive folder isn't created as "งานสำรวจ <date>".
     public func autoUploadPhotos(_ id: UUID, after seconds: Double = 5) {
         guard settings.autoUploadPhotos, google.isSignedIn else { return }
+        // low battery off the charger and off Wi-Fi: wait (PowerMonitor runs these again when that ends)
+        if PowerMonitor.shared.advice.holdUploads {
+            heldUploads.insert(id)
+            PowerMonitor.shared.onUploadsResume = { [weak self] in self?.resumeHeldUploads() }
+            return
+        }
         uploadWait[id]?.cancel()
         uploadWait[id] = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
@@ -97,6 +103,13 @@ extension SurveyModel {
             await run.value
             if self.uploadRun[id] == run { self.uploadRun[id] = nil }
         }
+    }
+
+    /// Uploads held for low battery, started once it is charging or on Wi-Fi.
+    func resumeHeldUploads() {
+        let ids = heldUploads
+        heldUploads = []
+        for id in ids { autoUploadPhotos(id, after: 1) }
     }
 
     private func uploadPhotos(_ id: UUID) async {

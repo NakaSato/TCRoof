@@ -149,6 +149,8 @@ struct JobEditorView: View {
                 .onAppear { detailSize = free }
                 .onChange(of: free) { _, f in detailSize = f }
         }
+        // heat, low space or low battery (hardware assist §H8); nothing when all is well
+        .safeAreaInset(edge: .top, spacing: 0) { PowerBanner() }
         .navigationTitle(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }

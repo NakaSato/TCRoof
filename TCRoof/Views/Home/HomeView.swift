@@ -83,6 +83,7 @@ struct HomeView: View {
     /// Appointment whose job has no report yet: pick a template, then open the new report at A1.
     @State private var startReport: Job?
     @State private var showNewJob = false
+    @State private var openedJob: Job?
     @State private var showSurveyList = false
     @State private var installLogs: Job?
     @AppStorage("userName") private var engineerName = ""
@@ -106,7 +107,8 @@ struct HomeView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView().presentationDetents([.large]).formSheetSizing().environment(\.homeInk, sizeClass == .compact ? .outdoor : .standard)
         }
-        .sheet(isPresented: $showNewJob) { NewJobView() }
+        .sheet(isPresented: $showNewJob) { NewJobView { openedJob = $0 } }
+        .navigationDestination(item: $openedJob) { JobDetailView(job: $0) }
         // iPad shows them in the bell's popover
         .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
             notificationsView(large: false).environment(\.homeInk, .outdoor)

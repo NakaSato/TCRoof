@@ -27,6 +27,7 @@ struct DailyReportScreen: View {
     @State private var loaded = false
     @State private var showSign = false
     @State private var showAck = false
+    @State private var askUnsign = false
     @State private var showSettings = false
     @State private var share: ReportShare?
     @State private var toast: String?
@@ -76,6 +77,12 @@ struct DailyReportScreen: View {
             }
         }
         .sheet(isPresented: $showSettings) { RoutineSettingsSheet(job: job) }
+        .confirmationDialog("รายงานนี้ลงนามแล้ว", isPresented: $askUnsign, titleVisibility: .visible) {
+            Button("บันทึกและยกเลิกการลงนาม", role: .destructive, action: saveDraft)
+            Button("กลับไปแก้ไข", role: .cancel) {}
+        } message: {
+            Text("บันทึกแล้วลายเซ็นและการรับทราบของ Inspector จะถูกล้าง ต้องลงนามใหม่")
+        }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
         .overlay(alignment: .top) { toastView }
         .onAppear(perform: load)
@@ -158,7 +165,7 @@ struct DailyReportScreen: View {
 
     private var bottomBar: some View {
         HStack(spacing: 12) {
-            Button(action: saveDraft) {
+            Button(action: requestSaveDraft) {
                 Text("บันทึกร่าง").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(.bordered).tint(Theme.primary)
@@ -235,6 +242,11 @@ struct DailyReportScreen: View {
         try? context.save()
         saved = (report, photos)
         return target
+    }
+
+    /// A signed report that was edited loses its signatures on save, so ask first.
+    private func requestSaveDraft() {
+        if dirty, log?.engineerSignedAt != nil { askUnsign = true } else { saveDraft() }
     }
 
     private func saveDraft() {

@@ -160,6 +160,19 @@ public enum PDFRenderer {
         }
     }
 
+    /// Pages not tied to a survey job (the routine reports), each at its own size.
+    public static func pdf(pages: [ReportLayout.Page], title: String, photo: @escaping (Photo) -> UIImage?) -> Data {
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = [kCGPDFContextTitle as String: title]
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: ReportLayout.pageW, height: ReportLayout.pageH), format: format)
+        return renderer.pdfData { ctx in
+            for page in pages {
+                ctx.beginPage(withBounds: CGRect(x: 0, y: 0, width: page.width, height: page.height), pageInfo: [:])
+                draw(page.ops, in: ctx.cgContext, photo: photo)
+            }
+        }
+    }
+
     public static func png(_ sketch: Sketch, scale: CGFloat = 2) -> (Data, Int, Int)? {
         let size = CGSize(width: sketch.width, height: sketch.height)
         let format = UIGraphicsImageRendererFormat(); format.scale = scale; format.opaque = true

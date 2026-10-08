@@ -1,0 +1,602 @@
+import Foundation
+import TCRoofCore
+
+/// รายงานประจำ R1–R4 (docs/specs/routine-reports-swift.md §4.6) as A4 portrait pages of vector drawing operations.
+/// Tables are vector, rows grow to fit wrapped text, and a section that doesn't fit starts a new page.
+public struct RoutineReportPages {
+    /// The station facts printed on every report.
+    public struct Station: Sendable {
+        public var name: String
+        public var code: String
+        public var mpNumber: Int?
+        public var capacityKWp: Double
+        public var settings: RoutineReport.Settings
+        public init(name: String, code: String, mpNumber: Int?, capacityKWp: Double, settings: RoutineReport.Settings) {
+            self.name = name; self.code = code; self.mpNumber = mpNumber; self.capacityKWp = capacityKWp; self.settings = settings
+        }
+    }
+
+    /// A photo of the day with what it shows.
+    public struct DayPhoto: Sendable {
+        public var photo: Photo
+        public var date: Date
+        public var caption: String
+        public init(photo: Photo, date: Date, caption: String) { self.photo = photo; self.date = date; self.caption = caption }
+    }
+
+    /// The daily report and its signing state, as stored on the install log.
+    public struct DailyEntry: Sendable {
+        public var report: RoutineReport.Daily
+        public var photos: [DayPhoto]
+        public var engineerSignedAt: Date?
+        public var inspectorAckAt: Date?
+        public init(report: RoutineReport.Daily, photos: [DayPhoto], engineerSignedAt: Date?, inspectorAckAt: Date?) {
+            self.report = report; self.photos = photos; self.engineerSignedAt = engineerSignedAt; self.inspectorAckAt = inspectorAckAt
+        }
+    }
+
+    /// The station picture (A2's site picture) and where each location is on it, as fractions of its size.
+    public struct KeyPlan: Sendable {
+        public var photo: Photo
+        /// Width / height of the picture.
+        public var aspect: Double
+        public var points: [(name: String, x: Double, y: Double)]
+        public init(photo: Photo, aspect: Double, points: [(name: String, x: Double, y: Double)]) {
+            self.photo = photo; self.aspect = aspect; self.points = points
+        }
+    }
+
+    /// The MP plan, when the station has one.
+    public struct Schedule: Sendable {
+        public var input: MasterSchedule.Input
+        public var actual: MasterSchedule.Actual
+        public init(input: MasterSchedule.Input, actual: MasterSchedule.Actual) { self.input = input; self.actual = actual }
+    }
+
+    let station: Station
+    let measure: TextMeasuring
+
+    public init(station: Station, measure: TextMeasuring = ApproxMeasure()) {
+        self.station = station; self.measure = measure
+    }
+
+    static let pageW = ReportLayout.pageW, pageH = ReportLayout.pageH
+    static let margin = 32.0
+    static var cw: Double { pageW - 2 * margin }
+    static let navy = RGBA(hex: 0x16325C), primary = RGBA(hex: 0x1F6FB5), muted = RGBA(hex: 0x6B7A90)
+    static let soft = RGBA(hex: 0xE3EEF8), line = RGBA(hex: 0xC9D3DF), red = RGBA(hex: 0xB42318), green = RGBA(hex: 0x2E7D32)
+    static let sun = RGBA(hex: 0xFCE7A6), cloud = RGBA(hex: 0xD5DCE5), rain = RGBA(hex: 0x9CC3E8)
+
+    // MARK: - Flow
+
+    /// Places blocks down the page and starts a new page when one doesn't fit.
+    struct Flow {
+        let title: String
+        let subtitle: String
+        var pages: [[DrawOp]] = []
+        var ops: [DrawOp] = []
+        var y = 0.0
+        var bottom: Double { RoutineReportPages.pageH - RoutineReportPages.margin - 20 }
+
+        init(title: String, subtitle: String) {
+            self.title = title; self.subtitle = subtitle
+            newPage()
+        }
+
+        mutating func newPage() {
+            if !ops.isEmpty { pages.append(ops) }
+            let m = RoutineReportPages.margin
+            ops = [.text(title, at: Pt(m, m + 8), size: 15, bold: true, color: RoutineReportPages.navy),
+                   .text(subtitle, at: Pt(m, m + 26), size: 9.5, color: RoutineReportPages.muted),
+                   .line(Pt(m, m + 38), Pt(RoutineReportPages.pageW - m, m + 38), width: 1.2, color: RoutineReportPages.primary)]
+            y = m + 50
+        }
+
+        /// Starts a new page unless `h` fits below the cursor.
+        mutating func need(_ h: Double) { if y + h > bottom, y > RoutineReportPages.margin + 50 { newPage() } }
+
+        /// Appends ops drawn from y = 0 and moves the cursor by `h`.
+        mutating func place(_ h: Double, _ block: [DrawOp]) {
+            need(h)
+            ops += block.map { $0.offsetY(y) }
+            y += h
+        }
+
+        mutating func finish() -> [ReportLayout.Page] {
+            pages.append(ops); ops = []
+            let n = pages.count, m = RoutineReportPages.margin
+            return pages.enumerated().map { i, p in
+                ReportLayout.Page(ops: p + [
+                    .text("สร้างจาก TCRoof", at: Pt(m, RoutineReportPages.pageH - m + 4), size: 7.5, color: RoutineReportPages.muted),
+                    .text("หน้า \(i + 1)/\(n)", at: Pt(RoutineReportPages.pageW - m, RoutineReportPages.pageH - m + 4), size: 7.5,
+                          color: RoutineReportPages.muted, align: .right),
+                ])
+            }
+        }
+    }
+
+    // MARK: - Blocks
+
+    struct Column { var title: String; var width: Double; var align: TextAlign = .left }
+
+    func heading(_ f: inout Flow, _ text: String) {
+        f.need(60)
+        f.place(22, [.rect(Box(Self.margin, 2, Self.cw, 17), stroke: nil, fill: Self.soft),
+                     .text(text, at: Pt(Self.margin + 6, 10.5), size: 10.5, bold: true, color: Self.navy)])
+    }
+
+    func note(_ f: inout Flow, _ text: String, color: RGBA = muted) {
+        let h = measure.height(text, width: Self.cw - 12, size: 9, bold: false) + 6
+        f.place(h, [.textBox(text, Box(Self.margin + 6, 2, Self.cw - 12, h), size: 9, color: color)])
+    }
+
+    /// A table: header band, then rows tall enough for their wrapped text. Long tables continue on the next page with
+    /// the header repeated.
+    func table(_ f: inout Flow, _ cols: [Column], _ rows: [[String]], bold: Set<Int> = [], size: Double = 9) {
+        let total = cols.reduce(0) { $0 + $1.width }, k = Self.cw / max(total, 1)
+        let widths = cols.map { $0.width * k }
+        let xs = widths.indices.map { i in Self.margin + widths[..<i].reduce(0, +) }
+        func row(_ cells: [String], header: Bool, h: Double) -> [DrawOp] {
+            var o: [DrawOp] = [.rect(Box(Self.margin, 0, Self.cw, h), stroke: Self.line, fill: header ? Self.soft : nil, width: 0.6)]
+            for (i, c) in cells.enumerated() where i < cols.count {
+                if i > 0 { o.append(.line(Pt(xs[i], 0), Pt(xs[i], h), width: 0.6, color: Self.line)) }
+                o.append(.textBox(c, Box(xs[i] + 3, 3, widths[i] - 6, h - 4), size: size, bold: header,
+                                  color: header ? Self.navy : .black, align: header ? .center : cols[i].align))
+            }
+            return o
+        }
+        let headH = cols.enumerated().map { i, c in measure.height(c.title, width: widths[i] - 6, size: size, bold: true) }.max().map { $0 + 6 } ?? 16
+        f.need(headH + 18)
+        f.place(headH, row(cols.map(\.title), header: true, h: headH))
+        for (r, cells) in rows.enumerated() {
+            let h = max(16, cells.enumerated().map { i, c in
+                i < widths.count ? measure.height(c, width: widths[i] - 6, size: size, bold: bold.contains(r)) : 0 }.max() ?? 0) + 8
+            if f.y + h > f.bottom {
+                f.newPage()
+                f.place(headH, row(cols.map(\.title), header: true, h: headH))
+            }
+            var o = row(cells, header: false, h: h)
+            if bold.contains(r) {
+                o = o.map { if case let .textBox(t, b, s, _, c, a) = $0 { .textBox(t, b, size: s, bold: true, color: c, align: a) } else { $0 } }
+            }
+            f.place(h, o)
+        }
+        f.y += 6
+    }
+
+    /// Two-column facts: "label  value" pairs.
+    func facts(_ f: inout Flow, _ pairs: [(String, String)]) {
+        let colW = Self.cw / 2
+        for chunk in stride(from: 0, to: pairs.count, by: 2) {
+            let two = Array(pairs[chunk..<min(chunk + 2, pairs.count)])
+            let h = two.map { measure.height($0.1, width: colW - 96, size: 9, bold: false) }.max().map { max($0 + 4, 15) } ?? 15
+            var o: [DrawOp] = []
+            for (i, p) in two.enumerated() {
+                let x = Self.margin + Double(i) * colW
+                o.append(.text(p.0, at: Pt(x, 7), size: 9, color: Self.muted))
+                o.append(.textBox(p.1, Box(x + 92, 0, colW - 96, h), size: 9, bold: true, color: .black))
+            }
+            f.place(h, o)
+        }
+        f.y += 6
+    }
+
+    /// The weather strip: one row per day, 15 hour cells coloured F / C / R.
+    func weather(_ f: inout Flow, _ days: [(String, [RoutineReport.Weather?])]) {
+        let labelW = 70.0, cell = (Self.cw - labelW) / Double(RoutineReport.weatherHours.count), rowH = 16.0
+        var o: [DrawOp] = []
+        for (i, h) in RoutineReport.weatherHours.enumerated() {
+            o.append(.text(String(format: "%02d", h), at: Pt(Self.margin + labelW + (Double(i) + 0.5) * cell, 7), size: 8,
+                           color: Self.muted, align: .center))
+        }
+        f.place(14, o)
+        for (label, slots) in days {
+            var r: [DrawOp] = [.text(label, at: Pt(Self.margin, rowH / 2), size: 8.5, color: .black)]
+            for (i, w) in slots.enumerated() {
+                let b = Box(Self.margin + labelW + Double(i) * cell, 0, cell, rowH)
+                let fill: RGBA? = switch w { case .fine?: Self.sun; case .cloudy?: Self.cloud; case .rain?: Self.rain; case nil: nil }
+                r.append(.rect(b, stroke: Self.line, fill: fill, width: 0.5))
+                if let w { r.append(.text(w.rawValue, at: Pt(b.x + cell / 2, rowH / 2), size: 8, bold: true, color: Self.navy, align: .center)) }
+            }
+            f.place(rowH, r)
+        }
+        f.place(16, [.text("F = ท้องฟ้าโปร่ง   C = เมฆครึ้ม   R = ฝนตก", at: Pt(Self.margin, 9), size: 8, color: Self.muted)])
+    }
+
+    /// Photos two per row with a caption under each.
+    func photos(_ f: inout Flow, _ list: [DayPhoto], perRow: Int = 2, height: Double = 170) {
+        let gap = 10.0, w = (Self.cw - gap * Double(perRow - 1)) / Double(perRow)
+        for chunk in stride(from: 0, to: list.count, by: perRow) {
+            var o: [DrawOp] = []
+            for (i, p) in list[chunk..<min(chunk + perRow, list.count)].enumerated() {
+                let x = Self.margin + Double(i) * (w + gap)
+                o.append(.rect(Box(x, 0, w, height), stroke: Self.line, fill: nil, width: 0.5))
+                o.append(.photo(p.photo, Box(x + 2, 2, w - 4, height - 4)))
+                o.append(.textBox(p.caption.isEmpty ? RoutineReport.thaiDate(p.date) : p.caption,
+                                  Box(x, height + 2, w, 24), size: 8.5, color: Self.navy, align: .center))
+            }
+            f.place(height + 30, o)
+        }
+    }
+
+    /// Signature boxes side by side: role, name, and the date signed (or a blank line).
+    func signatures(_ f: inout Flow, _ boxes: [(role: String, name: String, signed: Date?, verb: String)]) {
+        let w = Self.cw / Double(max(boxes.count, 1))
+        var o: [DrawOp] = []
+        for (i, s) in boxes.enumerated() {
+            let cx = Self.margin + w * (Double(i) + 0.5)
+            o.append(.line(Pt(cx - 80, 30), Pt(cx + 80, 30), width: 0.6, color: .black))
+            if let d = s.signed {
+                o.append(.text("\(s.verb) \(RoutineReport.thaiDate(d))", at: Pt(cx, 20), size: 9, bold: true, color: Self.green, align: .center))
+            }
+            o.append(.text("(\(s.name.isEmpty ? "                              " : s.name))", at: Pt(cx, 42), size: 9, align: .center))
+            o.append(.text(s.role, at: Pt(cx, 56), size: 9, color: Self.muted, align: .center))
+        }
+        f.need(80)
+        f.y += 10
+        f.place(66, o)
+    }
+
+    /// The picture with a marker per placed location: filled for today's, outlined for the others.
+    static func keyPlanHeight(_ k: KeyPlan) -> Double { min(cw / max(k.aspect, 0.1), 320) }
+
+    func keyPlan(_ f: inout Flow, _ k: KeyPlan, today: Set<String>) {
+        let h = Self.keyPlanHeight(k), w = h * k.aspect, x0 = Self.margin + (Self.cw - w) / 2
+        var o: [DrawOp] = [.rect(Box(x0, 0, w, h), stroke: Self.line, fill: nil, width: 0.5), .photo(k.photo, Box(x0, 0, w, h))]
+        for p in k.points {
+            let c = Pt(x0 + p.x * w, p.y * h), on = today.contains(p.name)
+            o.append(.circle(c, r: on ? 7 : 5, stroke: on ? .white : Self.navy, fill: on ? Self.red : .white, width: 1.5))
+            o.append(.rect(Box(c.x + 9, c.y - 7, measure.width(p.name, size: 8, bold: on) + 6, 14), stroke: nil,
+                           fill: RGBA(1, 1, 1, 0.85)))
+            o.append(.text(p.name, at: Pt(c.x + 12, c.y), size: 8, bold: on, color: on ? Self.red : Self.navy))
+        }
+        f.place(h + 8, o)
+        note(&f, "● สีแดง = ตำแหน่งที่มีงานวันนี้")
+    }
+
+    var stationLine: String {
+        [station.mpNumber.map { "MP \($0)" }, station.name, station.capacityKWp > 0 ? String(format: "%.2f kWp", station.capacityKWp) : nil]
+            .compactMap { $0 }.joined(separator: " · ")
+    }
+
+    func projectFacts(_ f: inout Flow) {
+        let s = station.settings
+        facts(&f, [("โครงการ", s.contractName.isEmpty ? station.name : s.contractName), ("สถานี", station.name),
+                   ("ผู้ว่าจ้าง", s.employer), ("ผู้รับจ้าง", s.contractor)])
+    }
+
+    static func counts(_ list: [RoutineReport.Count]) -> [[String]] {
+        list.filter { $0.count > 0 }.map { [$0.name, "\($0.count)"] }
+    }
+
+    static func num(_ x: Double) -> String {
+        x == x.rounded() ? String(Int(x)) : String(format: "%.2f", x)
+    }
+
+    // MARK: - R2 daily
+
+    /// รายงานประจำวัน. `all` holds every report of the station, for the "วันนี้" column.
+    public func daily(_ e: DailyEntry, all: [RoutineReport.Daily], keyPlan: KeyPlan? = nil) -> [ReportLayout.Page] {
+        let r = e.report
+        var f = Flow(title: "รายงานประจำวัน (Daily Report)", subtitle: stationLine + " · " + RoutineReport.thaiDate(r.date))
+        projectFacts(&f)
+        facts(&f, [("วันที่", RoutineReport.thaiDate(r.date)), ("เวลาทำงาน", "\(r.workStart) – \(r.workEnd) น.")])
+
+        heading(&f, "1. สภาพอากาศ")
+        weather(&f, [(RoutineReport.thaiDate(r.date), r.weather)])
+
+        heading(&f, "2. กำลังคน")
+        let crew = Self.counts(r.crew)
+        if crew.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "ตำแหน่ง", width: 4), Column(title: "จำนวน (คน)", width: 1.4, align: .center)],
+                  crew + [["รวม", "\(r.crewTotal)"]], bold: [crew.count])
+        }
+        if !r.crewConfirmed, r.crewTotal > 0 { note(&f, "* กำลังคนยังไม่ได้ยืนยัน (ใช้ค่าจากรายงานก่อนหน้า)", color: Self.red) }
+
+        heading(&f, "3. เครื่องมือ / เครื่องจักร")
+        let tools = Self.counts(r.tools)
+        if tools.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "รายการ", width: 4), Column(title: "จำนวน", width: 1.4, align: .center)], tools)
+        }
+
+        heading(&f, "4. วัสดุเข้าหน้างาน")
+        if r.materials.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "รายการ", width: 3), Column(title: "ตำแหน่ง", width: 2), Column(title: "จำนวน", width: 1, align: .right),
+                       Column(title: "หน่วย", width: 1, align: .center), Column(title: "หมายเหตุ", width: 2)],
+                  r.materials.map { [$0.name, $0.location, Self.num($0.qty), $0.unit, $0.remark] })
+        }
+
+        heading(&f, "5. ความก้าวหน้างาน")
+        if r.progress.isEmpty {
+            note(&f, r.stopReason.isEmpty ? "ไม่มี" : "หยุดงาน: " + r.stopReason)
+        } else {
+            table(&f, [Column(title: "งาน MP", width: 0.9, align: .center), Column(title: "รายละเอียด", width: 3.6), Column(title: "ตำแหน่ง", width: 1.8),
+                       Column(title: "วันนี้", width: 0.9, align: .right), Column(title: "สะสม", width: 0.9, align: .right)],
+                  r.progress.map { l in
+                      let delta = RoutineReport.todayDelta(l, on: r.date, in: all)
+                      return [l.task?.code ?? "อื่น", l.description.isEmpty ? (l.task?.title ?? "") : l.description, l.location,
+                              (delta > 0 ? "+" : "") + RoutineReport.percent(delta), RoutineReport.percent(l.percent)]
+                  })
+        }
+
+        if let keyPlan, !keyPlan.points.isEmpty {
+            f.need(Self.keyPlanHeight(keyPlan) + 50)   // keep the heading with the picture
+            heading(&f, "ผังตำแหน่งงานวันนี้ (Key plan)")
+            self.keyPlan(&f, keyPlan, today: Set(r.progress.map(\.location)))
+        }
+
+        heading(&f, "6. ปัญหา / อุปสรรค")
+        let problems = r.problems.filter { !$0.description.isEmpty }
+        if problems.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "ปัญหา", width: 3), Column(title: "แนวทางแก้ไข", width: 3), Column(title: "สถานะ", width: 1, align: .center),
+                       Column(title: "ตั้งแต่", width: 1.2, align: .center)],
+                  problems.map { [$0.description, $0.solution, $0.closed ? "ปิดแล้ว" : "ยังเปิด", RoutineReport.thaiDate($0.since)] })
+        }
+
+        if !e.photos.isEmpty {
+            heading(&f, "ภาพถ่ายประจำวัน")
+            photos(&f, e.photos)
+        }
+
+        let s = station.settings
+        signatures(&f, [("Site Engineer", s.siteEngineer, e.engineerSignedAt, "ลงนาม"),
+                        ("Inspector รับทราบ", s.inspector, e.inspectorAckAt, "รับทราบ")])
+        return f.finish()
+    }
+
+    // MARK: - R1 weekly request
+
+    public func request(_ r: RoutineReport.WeeklyRequest) -> [ReportLayout.Page] {
+        let end = RoutineReport.calendar.date(byAdding: .day, value: 6, to: r.weekStart)!
+        let range = "\(RoutineReport.thaiDate(r.weekStart)) – \(RoutineReport.thaiDate(end))"
+        var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " · " + range)
+        projectFacts(&f)
+        facts(&f, [("สัปดาห์", range)])
+
+        heading(&f, "1. กำลังคน")
+        let crew = Self.counts(r.crew)
+        if crew.isEmpty { note(&f, "ไม่มี") } else {
+            let total = r.crew.reduce(0) { $0 + $1.count }
+            table(&f, [Column(title: "ตำแหน่ง", width: 4), Column(title: "จำนวน (คน)", width: 1.4, align: .center)],
+                  crew + [["รวม", "\(total)"]], bold: [crew.count])
+        }
+        heading(&f, "2. เครื่องมือ / เครื่องจักร")
+        let tools = Self.counts(r.tools)
+        if tools.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "รายการ", width: 4), Column(title: "จำนวน", width: 1.4, align: .center)], tools)
+        }
+        heading(&f, "3. แผนงาน")
+        if r.work.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "งาน MP", width: 0.9, align: .center), Column(title: "รายละเอียด", width: 3.6), Column(title: "ตำแหน่ง", width: 1.8),
+                       Column(title: "ปริมาณ", width: 0.9, align: .right), Column(title: "หน่วย", width: 0.8, align: .center)],
+                  r.work.map { [$0.task?.code ?? "อื่น", $0.description, $0.location, $0.qty > 0 ? Self.num($0.qty) : "", $0.unit] })
+        }
+        heading(&f, "4. ประเมินความเสี่ยง")
+        let risks = r.risks.filter { !$0.description.isEmpty }
+        if risks.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "ความเสี่ยง", width: 3), Column(title: "ระดับ", width: 0.9, align: .center), Column(title: "แนวทางป้องกัน", width: 4)],
+                  risks.map { [$0.description, $0.level.title, $0.prevention] })
+        }
+        let s = station.settings
+        signatures(&f, [("Site Engineer ผู้ขออนุมัติ", s.siteEngineer, r.engineerSignedAt, "ลงนาม"),
+                        ("Inspector ผู้อนุมัติ", r.approvedBy.isEmpty ? s.inspector : r.approvedBy, r.approvedAt, "อนุมัติ")])
+        return f.finish()
+    }
+
+    // MARK: - R3 weekly
+
+    /// รายงานประจำสัปดาห์ of the week holding `week`, from that week's daily reports.
+    public func weekly(week: Date, entries: [DailyEntry], all: [RoutineReport.Daily], schedule: Schedule?,
+                       nextRequest: RoutineReport.WeeklyRequest?, installStart: Date?, asOf: Date = Date()) -> [ReportLayout.Page] {
+        let range = RoutineReport.week(of: week)
+        let days = entries.filter { range.contains(RoutineReport.calendar.startOfDay(for: $0.report.date)) }
+            .sorted { $0.report.date < $1.report.date }
+        let reports = days.map(\.report)
+        let rangeText = "\(RoutineReport.thaiDate(range.lowerBound)) – \(RoutineReport.thaiDate(range.upperBound))"
+        var weekNo = ""
+        if let schedule {
+            let plan = MasterSchedule.plan(schedule.input)
+            let first = plan.compactMap(\.start).min() ?? range.lowerBound
+            if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) · " }
+        }
+        var f = Flow(title: "รายงานประจำสัปดาห์ (Weekly Report)", subtitle: stationLine + " · " + weekNo + rangeText)
+        projectFacts(&f)
+        facts(&f, [("สัปดาห์", weekNo + rangeText), ("รายงานประจำวัน", "\(reports.count) วัน")])
+
+        if let schedule { progressSummary(&f, schedule, through: min(range.upperBound, asOf), monthOf: nil) }
+
+        heading(&f, "งานที่ทำในสัปดาห์")
+        if days.isEmpty { note(&f, "ไม่มีรายงานประจำวันในสัปดาห์นี้") }
+        for e in days {
+            let done = RoutineReport.workDone(e.report, in: all)
+            let text = done.isEmpty
+                ? (e.report.stopReason.isEmpty ? "ไม่มีความก้าวหน้า" : "หยุดงาน: " + e.report.stopReason)
+                : done.map { "• \($0.line.title)  +\(RoutineReport.percent($0.delta)) (สะสม \(RoutineReport.percent($0.line.percent)))" }.joined(separator: "\n")
+            let h = measure.height(text, width: Self.cw - 100, size: 9, bold: false) + 8
+            f.place(max(h, 18), [.text(RoutineReport.thaiDate(e.report.date), at: Pt(Self.margin, 8), size: 9.5, bold: true, color: Self.navy),
+                                 .textBox(text, Box(Self.margin + 96, 1, Self.cw - 100, h), size: 9)])
+            let tagged = e.photos.filter { !$0.caption.isEmpty }
+            let pick = Array((tagged.isEmpty ? e.photos : tagged).prefix(4))
+            if !pick.isEmpty { photos(&f, pick, perRow: 4, height: 100) }
+        }
+
+        heading(&f, "สภาพอากาศ")
+        weather(&f, RoutineReport.workingDays(settings: .allDays, from: range.lowerBound, to: range.upperBound).map { d in
+            (RoutineReport.thaiDate(d), reports.first { RoutineReport.dayKey($0.date) == RoutineReport.dayKey(d) }?.weather
+                ?? Array(repeating: nil, count: RoutineReport.weatherHours.count))
+        })
+        note(&f, "ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน")
+
+        labour(&f, reports)
+        problemsBlock(&f, reports)
+        missing(&f, reports, from: max(range.lowerBound, installStart ?? range.lowerBound), to: min(range.upperBound, Date()))
+
+        heading(&f, "แผนงานสัปดาห์ถัดไป")
+        if let n = nextRequest, !n.work.isEmpty {
+            table(&f, [Column(title: "งาน MP", width: 0.9, align: .center), Column(title: "รายละเอียด", width: 4), Column(title: "ตำแหน่ง", width: 2)],
+                  n.work.map { [$0.task?.code ?? "อื่น", $0.description, $0.location] })
+        } else { note(&f, "ยังไม่มีคำขอปฏิบัติงานสัปดาห์ถัดไป") }
+
+        signatures(&f, [("Site Engineer", station.settings.siteEngineer, nil, ""), ("Inspector", station.settings.inspector, nil, "")])
+        return f.finish()
+    }
+
+    /// Plan vs actual: whole station, then by task (only tasks with weight). `date` is clamped to today by the callers, so a
+    /// report of the running week or month doesn't count plan that is still to come against the actual done so far.
+    func progressSummary(_ f: inout Flow, _ s: Schedule, through date: Date, monthOf: Date?) {
+        let plan = MasterSchedule.plan(s.input)
+        let st = MasterSchedule.status(plan: plan, actual: s.actual, through: date)
+        heading(&f, "ความก้าวหน้าตามแผน MP")
+        let v = st.variance
+        facts(&f, [("แผนสะสม", RoutineReport.percent(st.planned)), ("ทำได้สะสม", RoutineReport.percent(st.actual)),
+                   ("ผลต่าง", v < -0.05 ? "ช้ากว่าแผน " + RoutineReport.percent(-v) : v > 0.05 ? "เร็วกว่าแผน " + RoutineReport.percent(v) : "ตามแผน")])
+        if let m = monthOf {
+            let c = MasterSchedule.calendar.dateComponents([.year, .month], from: m)
+            let mo = MasterSchedule.month(plan: plan, actual: s.actual, year: c.year ?? 0, month: c.month ?? 0)
+            facts(&f, [("แผนเดือนนี้", RoutineReport.percent(mo.planned.values.reduce(0, +))),
+                       ("ทำได้เดือนนี้", RoutineReport.percent(mo.actual.values.reduce(0, +)))])
+        }
+        let rows = plan.filter { $0.weight > 0 }.map { p in
+            [p.task.code, p.task.title, RoutineReport.percent(p.weight),
+             RoutineReport.percent(st.plannedByTask[p.task] ?? 0), RoutineReport.percent(st.actualByTask[p.task] ?? 0)]
+        }
+        table(&f, [Column(title: "ข้อ", width: 0.6, align: .center), Column(title: "งาน", width: 5), Column(title: "น้ำหนัก", width: 0.9, align: .right),
+                   Column(title: "แผน", width: 0.9, align: .right), Column(title: "ทำได้", width: 0.9, align: .right)], rows, size: 8.5)
+    }
+
+    func labour(_ f: inout Flow, _ reports: [RoutineReport.Daily]) {
+        heading(&f, "แรงงานและเครื่องมือ")
+        let men = RoutineReport.manDays(reports), tools = RoutineReport.toolDays(reports)
+        if men.isEmpty { note(&f, "ไม่มี") } else {
+            table(&f, [Column(title: "ตำแหน่ง", width: 4), Column(title: "แรงงาน (คน-วัน)", width: 1.6, align: .center)],
+                  men.map { [$0.name, "\($0.days)"] } + [["รวม", "\(men.reduce(0) { $0 + $1.days })"]], bold: [men.count])
+        }
+        if !tools.isEmpty {
+            table(&f, [Column(title: "เครื่องมือ", width: 4), Column(title: "เครื่อง-วัน", width: 1.6, align: .center)], tools.map { [$0.name, "\($0.days)"] })
+        }
+        let unconfirmed = reports.filter { !$0.crewConfirmed && $0.crewTotal > 0 }.count
+        if unconfirmed > 0 { note(&f, "* \(unconfirmed) วันใช้กำลังคนจากวันก่อนโดยไม่ได้ยืนยัน", color: Self.red) }
+    }
+
+    func problemsBlock(_ f: inout Flow, _ reports: [RoutineReport.Daily]) {
+        heading(&f, "ปัญหา / อุปสรรค")
+        let p = RoutineReport.problems(reports)
+        if p.open.isEmpty, p.closed.isEmpty { note(&f, "ไม่มี"); return }
+        table(&f, [Column(title: "ปัญหา", width: 3), Column(title: "แนวทางแก้ไข", width: 3), Column(title: "สถานะ", width: 1, align: .center)],
+              p.open.map { [$0.description, $0.solution, "ยังเปิด"] } + p.closed.map { [$0.description, $0.solution, "ปิดแล้ว"] })
+    }
+
+    func missing(_ f: inout Flow, _ reports: [RoutineReport.Daily], from: Date, to: Date) {
+        guard from <= to else { return }
+        let m = RoutineReport.missingDays(reported: reports.map(\.date), settings: station.settings, from: from, to: to)
+        guard !m.isEmpty else { return }
+        note(&f, "วันทำงานที่ไม่มีรายงานประจำวัน: " + m.map(RoutineReport.thaiDate).joined(separator: ", "), color: Self.red)
+    }
+
+    // MARK: - R4 monthly
+
+    /// รายงานผลความก้าวหน้าประจำเดือน of the month holding `month`; titled ติดตั้งแล้วเสร็จ once the MP actual is 100 %.
+    public func monthly(month: Date, entries: [DailyEntry], all: [RoutineReport.Daily], schedule: Schedule?,
+                        installStart: Date?, asOf: Date = Date()) -> [ReportLayout.Page] {
+        let range = RoutineReport.month(of: month)
+        let days = entries.filter { range.contains(RoutineReport.calendar.startOfDay(for: $0.report.date)) }
+            .sorted { $0.report.date < $1.report.date }
+        let reports = days.map(\.report)
+        let plan = schedule.map { MasterSchedule.plan($0.input) }
+        let done = schedule.flatMap { s in plan.map { MasterSchedule.status(plan: $0, actual: s.actual, through: range.upperBound).actual } } ?? 0
+        let title = done >= 99.95 ? "รายงานผลการติดตั้งแล้วเสร็จ 100%" : "รายงานผลความก้าวหน้าประจำเดือน"
+        var f = Flow(title: title, subtitle: stationLine + " · ประจำเดือน " + RoutineReport.thaiMonth(range.lowerBound))
+
+        heading(&f, "ส่วนที่ 1 รายละเอียดโครงการ")
+        projectFacts(&f)
+        facts(&f, [("กำลังผลิต", station.capacityKWp > 0 ? String(format: "%.2f kWp", station.capacityKWp) : "-"),
+                   ("ประจำเดือน", RoutineReport.thaiMonth(range.lowerBound)),
+                   ("Site Engineer", station.settings.siteEngineer), ("Inspector", station.settings.inspector)])
+
+        f.need(200)
+        f.place(4, [])
+        heading(&f, "ส่วนที่ 2 ความก้าวหน้า")
+        if let schedule { progressSummary(&f, schedule, through: min(range.upperBound, asOf), monthOf: range.lowerBound) }
+        else { note(&f, "สถานีนี้ยังไม่มีแผน MP") }
+        if let schedule, let plan {
+            heading(&f, "สถานะการยื่นขออนุญาต")
+            let rows = RoutineReport.permits(plan: plan, actual: schedule.actual, at: range.upperBound)
+            table(&f, [Column(title: "ข้อ", width: 0.6, align: .center), Column(title: "เรื่อง", width: 3.8),
+                       Column(title: "ช่วงตามแผน", width: 2.2, align: .center), Column(title: "ทำได้", width: 0.8, align: .right),
+                       Column(title: "สถานะ", width: 1.4, align: .center)],
+                  rows.map { r in
+                      let span = r.start.flatMap { s in r.end.map { e in "\(RoutineReport.thaiDate(s)) – \(RoutineReport.thaiDate(e))" } } ?? "-"
+                      return [r.task.code, r.task.title, span, RoutineReport.percent(r.percent), r.state.title]
+                  }, size: 8.5)
+        }
+        let photosPick = days.flatMap { $0.photos.filter { !$0.caption.isEmpty } }
+        let chosen = Array((photosPick.isEmpty ? days.flatMap(\.photos) : photosPick).prefix(8))
+        if !chosen.isEmpty {
+            heading(&f, "ภาพความก้าวหน้า")
+            photos(&f, chosen, perRow: 2, height: 150)
+        }
+
+        heading(&f, "ส่วนที่ 3 แผนงานเดือนถัดไป")
+        if let plan, let schedule {
+            let next = RoutineReport.month(of: RoutineReport.calendar.date(byAdding: .day, value: 1, to: range.upperBound)!)
+            let rows = plan.filter { p in
+                guard p.weight > 0, let s = p.start, let e = p.end else { return false }
+                return s <= next.upperBound && e >= next.lowerBound && schedule.actual.done(p.task, through: range.upperBound) < p.weight - 1e-9
+            }.map { [$0.task.code, $0.task.title, "\(RoutineReport.thaiDate($0.start!)) – \(RoutineReport.thaiDate($0.end!))"] }
+            if rows.isEmpty { note(&f, "ไม่มีงานตามแผน") } else {
+                table(&f, [Column(title: "ข้อ", width: 0.6, align: .center), Column(title: "งาน", width: 4.5), Column(title: "ช่วงตามแผน", width: 2.2, align: .center)], rows)
+            }
+        } else { note(&f, "สถานีนี้ยังไม่มีแผน MP") }
+
+        heading(&f, "ส่วนที่ 4 สรุปแรงงาน")
+        let weeks = MasterSchedule.weeks(from: range.lowerBound, to: range.upperBound)
+        let roles = RoutineReport.manDays(reports).map(\.name)
+        if roles.isEmpty { note(&f, "ไม่มีรายงานประจำวันในเดือนนี้") } else {
+            let cols = [Column(title: "ตำแหน่ง", width: 2.6)] + weeks.map { w in
+                let end = min(RoutineReport.calendar.date(byAdding: .day, value: 6, to: w)!, range.upperBound)
+                return Column(title: "\(RoutineReport.calendar.component(.day, from: max(w, range.lowerBound)))–\(RoutineReport.calendar.component(.day, from: end))",
+                              width: 0.8, align: .center)
+            } + [Column(title: "รวม", width: 0.8, align: .center)]
+            var rows: [[String]] = roles.map { role in
+                let per = weeks.map { w in
+                    reports.filter { MasterSchedule.weekStart($0.date) == w }.flatMap(\.crew).filter { $0.name == role }.reduce(0) { $0 + $1.count }
+                }
+                return [role] + per.map(String.init) + ["\(per.reduce(0, +))"]
+            }
+            let totals = weeks.map { w in reports.filter { MasterSchedule.weekStart($0.date) == w }.reduce(0) { $0 + $1.crewTotal } }
+            rows.append(["รวม"] + totals.map(String.init) + ["\(totals.reduce(0, +))"])
+            table(&f, cols, rows, bold: [rows.count - 1], size: 8.5)
+        }
+        note(&f, "รายงานประจำวัน \(reports.count) วัน · ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน")
+        missing(&f, reports, from: max(range.lowerBound, installStart ?? range.lowerBound), to: min(range.upperBound, Date()))
+        problemsBlock(&f, reports)
+
+        signatures(&f, [("Site Engineer", station.settings.siteEngineer, nil, ""), ("ผู้รับจ้าง", "", nil, "")])
+        return f.finish()
+    }
+}
+
+extension RoutineReport.Settings {
+    /// Every day of the week counts, for tables that list all seven days.
+    static var allDays: Self { var s = Self(); s.workingWeekdays = Set(1...7); return s }
+}
+
+extension DrawOp {
+    /// The same op moved down by `dy`.
+    func offsetY(_ dy: Double) -> DrawOp {
+        func p(_ a: Pt) -> Pt { Pt(a.x, a.y + dy) }
+        func b(_ r: Box) -> Box { r.offset(0, dy) }
+        switch self {
+        case let .line(a, c, w, col, dash): return .line(p(a), p(c), width: w, color: col, dash: dash)
+        case let .rect(r, s, f, w): return .rect(b(r), stroke: s, fill: f, width: w)
+        case let .hatch(r, c, sp): return .hatch(b(r), color: c, spacing: sp)
+        case let .circle(c, r, s, f, w): return .circle(p(c), r: r, stroke: s, fill: f, width: w)
+        case let .polygon(ps, s, f, w): return .polygon(ps.map(p), stroke: s, fill: f, width: w)
+        case let .polyline(ps, w, col, dash): return .polyline(ps.map(p), width: w, color: col, dash: dash)
+        case let .text(t, at, sz, bold, col, al, ang): return .text(t, at: p(at), size: sz, bold: bold, color: col, align: al, angle: ang)
+        case let .textBox(t, r, sz, bold, col, al): return .textBox(t, b(r), size: sz, bold: bold, color: col, align: al)
+        case let .photo(ph, r): return .photo(ph, b(r))
+        case let .checkbox(r, on): return .checkbox(b(r), on: on)
+        }
+    }
+}

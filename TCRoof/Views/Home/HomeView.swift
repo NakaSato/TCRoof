@@ -118,6 +118,10 @@ struct HomeView: View {
             switch screen {
             case .pending: SolarSurveyReportView(unsyncedOnly: true)
             case .tools(let action): ToolsPlaceholderView(request: action)
+            case .dailyReport(let key):
+                if let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) { DailyReportScreen(job: job, date: .now) }
+            case .weeklyRequest(let key):
+                if let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) { WeeklyRequestScreen(job: job) }
             }
         }
         .sheet(item: $shareURL) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
@@ -299,6 +303,8 @@ struct HomeView: View {
             if let url = URL(string: "tel:\(digits)") { openURL(url) }
         case .syncNow: sync()
         case .pendingList: linked = .pending
+        case .dailyReport(let key): linked = .dailyReport(job: key)
+        case .weeklyRequest(let key): linked = .weeklyRequest(job: key)
         case .driveFolder(let url): openURL(url)
         case .share(let url): shareURL = SharedLink(url: url)
         case .remindLater, .home: break
@@ -318,6 +324,9 @@ struct HomeView: View {
 enum LinkedScreen: Hashable {
     case pending
     case tools(action: String)
+    /// A routine-report reminder: today's daily report, or next week's request, of the job with this key.
+    case dailyReport(job: String)
+    case weeklyRequest(job: String)
 }
 
 struct SharedLink: Identifiable {

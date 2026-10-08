@@ -113,6 +113,16 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         plans.forEach(post)
     }
 
+    /// Replaces every waiting notification of `type` with `plans` (the routine-report reminders).
+    func schedule(_ plans: [NotificationPlan], type: NotificationType) async {
+        let plans = Self.isOn(type.group) ? plans : []
+        let keep = Set(plans.map(\.id))
+        let stale = await center.pendingNotificationRequests()
+            .filter { $0.content.categoryIdentifier == type.rawValue && !keep.contains($0.identifier) }
+        center.removePendingNotificationRequests(withIdentifiers: stale.map(\.identifier))
+        plans.forEach(post)
+    }
+
     /// Keeps the one `sync-pending` in step with the reports waiting to sync; `names` are "NO.224"-style labels.
     func updateSync(names: [String], oldest: Date?) async {
         let defaults = UserDefaults.standard

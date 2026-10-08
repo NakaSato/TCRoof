@@ -147,4 +147,24 @@ final class SystemNotificationsTests: XCTestCase {
         XCTAssertEqual(DeepLink.route(type: .late, action: NotificationAction.callWaiting.rawValue, info: [NotificationInfo.tool: "t"]), .toolQueue(tool: "t"))
         XCTAssertEqual(DeepLink.route(type: .done, action: NotificationAction.shareLink.rawValue, info: [:]), .home)
     }
+
+    func testRoutineReportReminders() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Bangkok")!
+        func at(_ day: Int, _ h: Int) -> Date { cal.date(from: DateComponents(year: 2025, month: 7, day: day, hour: h))! }
+        // Wednesday 9 July 2025
+        let daily = RoutineReportNotification.daily(jobKey: "j", station: "โชคชัย", now: at(9, 10), isWorkingDay: true, signed: false, calendar: cal)
+        XCTAssertEqual(daily?.fireDate(now: at(9, 10)), at(9, 17))
+        XCTAssertEqual(daily?.type, .report)
+        XCTAssertNil(RoutineReportNotification.daily(jobKey: "j", station: "", now: at(9, 10), isWorkingDay: true, signed: true, calendar: cal))
+        XCTAssertNil(RoutineReportNotification.daily(jobKey: "j", station: "", now: at(9, 18), isWorkingDay: true, signed: false, calendar: cal))
+        XCTAssertNil(RoutineReportNotification.daily(jobKey: "j", station: "", now: at(13, 10), isWorkingDay: false, signed: false, calendar: cal))
+        let req = RoutineReportNotification.request(jobKey: "j", station: "โชคชัย", now: at(9, 10), hasNextWeek: false, calendar: cal)
+        XCTAssertEqual(req?.fireDate(now: at(9, 10)), at(11, 15))
+        XCTAssertNil(RoutineReportNotification.request(jobKey: "j", station: "", now: at(9, 10), hasNextWeek: true, calendar: cal))
+        XCTAssertNil(RoutineReportNotification.request(jobKey: "j", station: "", now: at(11, 16), hasNextWeek: false, calendar: cal))
+        XCTAssertEqual(DeepLink.route(type: .report, action: nil, info: daily!.info), .dailyReport(job: "j"))
+        XCTAssertEqual(DeepLink.route(type: .report, action: nil, info: req!.info), .weeklyRequest(job: "j"))
+        XCTAssertEqual(NotificationGroup.report.types, [.report])
+    }
 }

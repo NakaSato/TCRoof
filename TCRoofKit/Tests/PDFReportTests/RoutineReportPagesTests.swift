@@ -83,6 +83,22 @@ final class RoutineReportPagesTests: XCTestCase {
         XCTAssertTrue(t.contains("ฝนตกรวม 9 ชั่วโมง ใน 3 วัน"))
     }
 
+    func testMonthlyPlanStopsAtTodayForTheRunningMonth() {
+        let input = MasterSchedule.Input(installStart: d(1), installEnd: d(31), kickoff: d(1, 5), engineeringStart: d(1, 5),
+                                         siteHandover: d(1, 6), over200kVA: false)
+        let all = [report(8, 10)]
+        let e = all.map { RoutineReportPages.DailyEntry(report: $0, photos: [], engineerSignedAt: nil, inspectorAckAt: nil) }
+        func planned(asOf: Date) -> String? {
+            let t = texts(pages.monthly(month: d(15), entries: e, all: all, schedule: .init(input: input, actual: .init()),
+                                        installStart: d(1), asOf: asOf))
+            return t.firstIndex(of: "แผนสะสม").map { t[$0 + 1] }
+        }
+        let midMonth = planned(asOf: d(8)), monthEnd = planned(asOf: d(31))
+        XCTAssertNotNil(midMonth)
+        XCTAssertNotEqual(midMonth, monthEnd)
+        XCTAssertEqual(planned(asOf: d(1, 9)), monthEnd)     // a finished month reports the whole month
+    }
+
     func testMonthlyTitleTurnsToCompleteAt100Percent() {
         let input = MasterSchedule.Input(installStart: d(1), installEnd: d(31), kickoff: d(1, 5), engineeringStart: d(1, 5),
                                          siteHandover: d(1, 6), over200kVA: false)

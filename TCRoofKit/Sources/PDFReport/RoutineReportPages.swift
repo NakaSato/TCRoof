@@ -387,7 +387,7 @@ public struct RoutineReportPages {
 
     /// รายงานประจำสัปดาห์ of the week holding `week`, from that week's daily reports.
     public func weekly(week: Date, entries: [DailyEntry], all: [RoutineReport.Daily], schedule: Schedule?,
-                       nextRequest: RoutineReport.WeeklyRequest?, installStart: Date?) -> [ReportLayout.Page] {
+                       nextRequest: RoutineReport.WeeklyRequest?, installStart: Date?, asOf: Date = Date()) -> [ReportLayout.Page] {
         let range = RoutineReport.week(of: week)
         let days = entries.filter { range.contains(RoutineReport.calendar.startOfDay(for: $0.report.date)) }
             .sorted { $0.report.date < $1.report.date }
@@ -403,7 +403,7 @@ public struct RoutineReportPages {
         projectFacts(&f)
         facts(&f, [("สัปดาห์", weekNo + rangeText), ("รายงานประจำวัน", "\(reports.count) วัน")])
 
-        if let schedule { progressSummary(&f, schedule, through: range.upperBound, monthOf: nil) }
+        if let schedule { progressSummary(&f, schedule, through: min(range.upperBound, asOf), monthOf: nil) }
 
         heading(&f, "งานที่ทำในสัปดาห์")
         if days.isEmpty { note(&f, "ไม่มีรายงานประจำวันในสัปดาห์นี้") }
@@ -441,7 +441,8 @@ public struct RoutineReportPages {
         return f.finish()
     }
 
-    /// Plan vs actual: whole station, then by task (only tasks with weight).
+    /// Plan vs actual: whole station, then by task (only tasks with weight). `date` is clamped to today by the callers, so a
+    /// report of the running week or month doesn't count plan that is still to come against the actual done so far.
     func progressSummary(_ f: inout Flow, _ s: Schedule, through date: Date, monthOf: Date?) {
         let plan = MasterSchedule.plan(s.input)
         let st = MasterSchedule.status(plan: plan, actual: s.actual, through: date)
@@ -496,7 +497,7 @@ public struct RoutineReportPages {
 
     /// รายงานผลความก้าวหน้าประจำเดือน of the month holding `month`; titled ติดตั้งแล้วเสร็จ once the MP actual is 100 %.
     public func monthly(month: Date, entries: [DailyEntry], all: [RoutineReport.Daily], schedule: Schedule?,
-                        installStart: Date?) -> [ReportLayout.Page] {
+                        installStart: Date?, asOf: Date = Date()) -> [ReportLayout.Page] {
         let range = RoutineReport.month(of: month)
         let days = entries.filter { range.contains(RoutineReport.calendar.startOfDay(for: $0.report.date)) }
             .sorted { $0.report.date < $1.report.date }
@@ -515,7 +516,7 @@ public struct RoutineReportPages {
         f.need(200)
         f.place(4, [])
         heading(&f, "ส่วนที่ 2 ความก้าวหน้า")
-        if let schedule { progressSummary(&f, schedule, through: range.upperBound, monthOf: range.lowerBound) }
+        if let schedule { progressSummary(&f, schedule, through: min(range.upperBound, asOf), monthOf: range.lowerBound) }
         else { note(&f, "สถานีนี้ยังไม่มีแผน MP") }
         if let schedule, let plan {
             heading(&f, "สถานะการยื่นขออนุญาต")

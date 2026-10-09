@@ -12,13 +12,14 @@ struct PadHome<Popover: View>: View {
     let unread: Int
     let surveyToday: Int
     let installChip: String?
-    let greetingFacts: HomeGreeting.Facts
     @Binding var notificationsShown: Bool
     let openSettings: () -> Void
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
     let openInstall: (Job) -> Void
     let openReport: (PendingSurvey) -> Void
     let showSurveyList: () -> Void
+    /// The bar's search field.
+    let openSearch: () -> Void
     let newSurvey: () -> Void
     @ViewBuilder let notifications: () -> Popover
 
@@ -52,8 +53,8 @@ struct PadHome<Popover: View>: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomeBrandHeader(size: .pad, initials: userInitials(userName, email: session.email), unread: unread, facts: greetingFacts,
-                            notificationsShown: $notificationsShown, openSettings: openSettings, popover: notifications)
+            HomeBrandHeader(size: .pad, initials: userInitials(userName, email: session.email), unread: unread,
+                            notificationsShown: $notificationsShown, openSettings: openSettings, openSearch: openSearch, popover: notifications)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .overlay {

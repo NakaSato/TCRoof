@@ -17,7 +17,6 @@ struct PhoneHome: View {
     let unread: Int
     let surveyToday: Int
     let installChip: String?
-    let greetingFacts: HomeGreeting.Facts
     @Binding var notificationsShown: Bool
     let openSettings: () -> Void
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
@@ -41,7 +40,7 @@ struct PhoneHome: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread, facts: greetingFacts,
+            HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread,
                             notificationsShown: $notificationsShown, openSettings: openSettings) { EmptyView() }
         }
         .background(Theme.phonePage.ignoresSafeArea())

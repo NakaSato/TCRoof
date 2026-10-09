@@ -84,6 +84,8 @@ struct HomeView: View {
     @State private var startReport: Job?
     @State private var showNewJob = false
     @State private var showSurveyList = false
+    /// The iPad bar's search field: the survey list over every date, its search field focused.
+    @State private var showSearch = false
     @State private var installLogs: Job?
     @AppStorage("userName") private var engineerName = ""
     @State private var notificationService = NotificationService.shared
@@ -114,6 +116,7 @@ struct HomeView: View {
         .navigationDestination(item: $openReport) { SurveyReportEditor(jobID: $0.id, start: $0.start) }
         .navigationDestination(item: $installLogs) { JobInstallLogsView(job: $0) }
         .navigationDestination(isPresented: $showSurveyList) { SurveyListView() }
+        .navigationDestination(isPresented: $showSearch) { SurveyListView(startSearching: true) }
         .navigationDestination(item: $linked) { screen in
             switch screen {
             case .pending: SolarSurveyReportView(unsyncedOnly: true)
@@ -170,7 +173,6 @@ struct HomeView: View {
                          unread: items.filter { !read.contains($0.id) }.count,
                          surveyToday: jobs.filter { $0.surveyDate.isToday }.count,
                          installChip: installChip,
-                         greetingFacts: greetingFacts(appointments.first, pending: survey.jobsToSync.count),
                          notificationsShown: $showNotifications,
                          openSettings: { showSettings = true },
                          open: openAppointment,
@@ -189,13 +191,13 @@ struct HomeView: View {
                        unread: items.filter { !read.contains($0.id) }.count,
                        surveyToday: jobs.filter { $0.surveyDate.isToday }.count,
                        installChip: installChip,
-                       greetingFacts: greetingFacts(appointments.first, pending: survey.jobsToSync.count),
                        notificationsShown: $showNotifications,
                        openSettings: { showSettings = true },
                        open: openAppointment,
                        openInstall: { installLogs = $0 },
                        openReport: { openReport = OpenReportPage(id: $0.report.id, start: $0.target) },
                        showSurveyList: { showSurveyList = true },
+                       openSearch: { showNotifications = false; showSearch = true },
                        newSurvey: { showNewJob = true }) {
             notificationsView(large: true)
         }
@@ -231,13 +233,6 @@ struct HomeView: View {
         session.survey.update(r)
     }
     #endif
-
-    private func greetingFacts(_ next: TodayAppointment?, pending: Int) -> HomeGreeting.Facts {
-        HomeGreeting.Facts(hour: Calendar.current.component(.hour, from: .now),
-                           nextName: next.map { a in a.report.flatMap { $0.docNo.isEmpty ? nil : "NO.\($0.docNo)" } ?? a.job.code },
-                           nextTime: next?.time, percent: next?.report.map { $0.completion.percent },
-                           nextStepTitle: next?.nextStep?.title, pendingSync: pending)
-    }
 
     /// Opens the appointment's report at `start`, or starts one when the job has none.
     private func openAppointment(_ a: TodayAppointment, at start: MissingGroup.Target?) {

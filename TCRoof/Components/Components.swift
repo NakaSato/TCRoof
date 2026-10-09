@@ -99,6 +99,9 @@ struct QueueFilterBar: View {
     @Binding var window: DateWindow
     @Binding var search: String
     let count: Int
+    /// Opened from a search field elsewhere (the iPad home bar): the keyboard comes up at once.
+    var focusOnAppear = false
+    @FocusState private var searching: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -133,6 +136,7 @@ struct QueueFilterBar: View {
                 TextField("ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ", text: $search)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .focused($searching)
                 if !search.isEmpty {
                     Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.muted) }
                 }
@@ -141,6 +145,12 @@ struct QueueFilterBar: View {
             .padding(12)
             .background(.white, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
+        }
+        .task {
+            // after the push animation, or the focus is dropped
+            guard focusOnAppear else { return }
+            try? await Task.sleep(for: .milliseconds(450))
+            searching = true
         }
     }
 }

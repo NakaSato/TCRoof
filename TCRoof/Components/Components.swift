@@ -3,65 +3,6 @@ import TCRoofUI
 
 // MARK: - Page chrome
 
-struct ModuleIllustration: View {
-    let symbol: String
-    var size: CGFloat = 120
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Theme.primarySoft)
-                .frame(width: size * 0.62, height: size * 0.75)
-                .rotationEffect(.degrees(-14))
-                .offset(x: -size * 0.12)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Theme.primary)
-                .frame(width: size * 0.62, height: size * 0.75)
-                .rotationEffect(.degrees(6))
-            Image(systemName: symbol)
-                .font(.system(size: size * 0.32, weight: .semibold))
-                .foregroundStyle(.white)
-                .rotationEffect(.degrees(6))
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
-    }
-}
-
-struct PageHeader<Accessory: View>: View {
-    let title: String
-    let symbol: String
-    @ViewBuilder var accessory: Accessory
-
-    var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title)
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(Theme.navy)
-                accessory
-            }
-            Spacer()
-            ModuleIllustration(symbol: symbol, size: isPhone ? 72 : 120)
-        }
-    }
-}
-
-struct HeaderLink<Destination: View>: View {
-    let title: String
-    var systemImage = "clock.arrow.circlepath"
-    @ViewBuilder var destination: () -> Destination
-
-    var body: some View {
-        NavigationLink(destination: destination) {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.semibold))
-                .underline()
-                .foregroundStyle(Theme.navy)
-        }
-    }
-}
-
 /// The secondary button on the right of a `TCNavBar`.
 struct TopBarLink<Destination: View>: View {
     let title: String
@@ -157,6 +98,8 @@ struct QueueFilterBar: View {
 
 // MARK: - Job card
 
+/// iPad install-queue card (scan, install), in the survey list's card style (docs/ui/survey-list):
+/// project and team, code and status, customer and kW, then the install dates; `footer` below (`JobCardStrip`).
 struct JobCard<Destination: View, Footer: View>: View {
     let job: Job
     let dateLabel: String
@@ -169,6 +112,7 @@ struct JobCard<Destination: View, Footer: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             NavigationLink(destination: destination) { content }
                 .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
             footer()
         }
         .cardStyle()
@@ -176,42 +120,69 @@ struct JobCard<Destination: View, Footer: View>: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Text(job.projectName).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.navy)
+                    .lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: 0)
                 if showTeam {
-                    Label("งานติดตั้งระบบโซลาร์", systemImage: "square.grid.3x3.fill")
-                        .font(.caption.bold())
-                        .foregroundStyle(Theme.navy)
-                    TeamTag(team: job.team)
+                    TCStatusChip("ทีม \(job.team.rawValue)", fill: job.team.color.opacity(0.1), text: job.team.color, dot: true)
                 }
-                Spacer()
-                Image(systemName: "arrow.right.square.fill")
-                    .font(.title3)
-                    .foregroundStyle(Theme.primary)
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.muted)
             }
-            Text("\(dateLabel) : \(date.thaiLong)")
-                .font(.caption)
-                .foregroundStyle(Theme.muted)
-            Divider().padding(.vertical, 4)
-            HStack(spacing: 4) {
-                Text(job.code).fontWeight(.bold).foregroundStyle(Theme.navy)
-                Text(": \(job.status.title)").foregroundStyle(job.status.color)
+            HStack(spacing: 8) {
+                Text(job.code).font(.caption.bold()).foregroundStyle(Theme.inkMuted)
+                TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
             }
-            .font(.subheadline)
-            Text("ชื่อโครงการ : \(job.projectName)")
-                .font(.subheadline)
-                .foregroundStyle(Theme.navy)
             HStack(spacing: 16) {
-                Label(job.customerName, systemImage: "person")
+                if job.customerName != job.projectName { Label(job.customerName, systemImage: "person").lineLimit(1) }
                 Label(job.capacityKW.kw, systemImage: "bolt.fill")
             }
             .font(.footnote)
             .foregroundStyle(Theme.navy.opacity(0.85))
-            Label(job.province, systemImage: "mappin.and.ellipse")
-                .font(.footnote)
-                .foregroundStyle(Theme.navy.opacity(0.85))
+            Divider().padding(.vertical, 4)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Label(date.thaiLong, systemImage: "calendar").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
+                Text(dateLabel).font(.caption).foregroundStyle(Theme.muted)
+            }
+            Label(job.province, systemImage: "mappin.and.ellipse").font(.footnote).foregroundStyle(Theme.navy.opacity(0.85))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .contentShape(Rectangle())
+    }
+}
+
+/// The box under a `JobCard`, like the survey card's progress box: `แผง` · `12/26` · 46 %, an optional bar.
+struct JobCardStrip: View {
+    let key: String
+    let value: String
+    var valueColor: Color = Theme.navy
+    /// 0…1; nil hides the percent and the bar.
+    var progress: Double? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(key).font(.caption).foregroundStyle(Theme.inkMuted)
+                Text(value).font(.subheadline.bold()).foregroundStyle(valueColor).lineLimit(1)
+                Spacer(minLength: 0)
+                if let progress {
+                    Text("\(Int((progress * 100).rounded()))%").font(.subheadline.bold()).monospacedDigit()
+                        .foregroundStyle(progress <= 0 ? Theme.progressZero : progress >= 1 ? Theme.progressFull : Theme.primary)
+                }
+            }
+            if let progress {
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.track)
+                        Capsule().fill(progress >= 1 ? Theme.progressFull : Theme.primary).frame(width: g.size.width * min(max(progress, 0), 1))
+                    }
+                }
+                .frame(height: 6)
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Theme.progressBoxIdle, in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -37,6 +37,14 @@ struct MPScheduleScreen: View {
             }
             ToolbarItem(placement: .primaryAction) { Button("ตั้งค่าแผน") { showSetup = true } }
         }
+        .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
+            HStack(spacing: 12) {
+                TCButton("ตั้งค่าแผน", kind: .secondary) { showSetup = true }
+                TCButton("PDF ประชุม", systemImage: "square.and.arrow.up", kind: .secondary, action: exportPDF)
+                    .disabled(job.scheduleInput == nil)
+                    .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์ที่เลือก หนึ่งหน้า A3")
+            }
+        }
         .sheet(isPresented: $showProgress) { MPProgressSheet(job: job, week: week) }
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
         .sheet(item: $pdf) { f in ActivitySheet(items: [f.url]).presentationDetents([.medium, .large]) }

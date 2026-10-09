@@ -111,6 +111,7 @@ struct DailyReportListView: View {
         }
         .navigationTitle("รายงานประจำวัน")
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code])
     }
 
     private func row(_ d: Date) -> some View {

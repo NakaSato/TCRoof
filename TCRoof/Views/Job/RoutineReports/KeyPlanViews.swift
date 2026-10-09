@@ -158,6 +158,7 @@ struct KeyPlanEditor: View {
         }
         .navigationTitle("ผังตำแหน่ง (Key plan)")
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar("ผังตำแหน่ง (Key plan)", trail: ["หน้าหลัก", job.code])
         .task {
             picture = job.keyPlanPicture?.image
             if selected == nil { selected = settings.locations.first { settings.keyPoint($0) == nil } ?? settings.locations.first }

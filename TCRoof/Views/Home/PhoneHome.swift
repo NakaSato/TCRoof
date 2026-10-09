@@ -80,5 +80,6 @@ struct ToolsPlaceholderView: View {
         .navigationTitle("เครื่องมือและอุปกรณ์วัด")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+        .tcPadNavBar("เครื่องมือและอุปกรณ์วัด", trail: ["หน้าหลัก"])
     }
 }

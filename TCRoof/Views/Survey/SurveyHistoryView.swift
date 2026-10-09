@@ -29,6 +29,7 @@ struct SurveyHistoryView: View {
             }
         }
         .navigationTitle("ประวัติการสำรวจ")
+        .tcPadNavBar("ประวัติการสำรวจ", trail: ["หน้าหลัก", "สำรวจหน้างาน"])
     }
 }
 
@@ -82,6 +83,9 @@ struct SurveyDetailView: View {
             ToolbarItem(placement: .primaryAction) {
                 NavigationLink { SurveyFormView(survey: survey) } label: { Text("แก้ไข") }
             }
+        }
+        .tcPadNavBar("แบบสำรวจ", trail: ["หน้าหลัก", "ประวัติการสำรวจ"], current: survey.job?.code ?? "แบบสำรวจ") {
+            TopBarLink(title: "แก้ไข", systemImage: "pencil") { SurveyFormView(survey: survey) }
         }
     }
 }

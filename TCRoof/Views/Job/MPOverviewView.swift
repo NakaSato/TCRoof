@@ -58,6 +58,7 @@ struct MPOverviewView: View {
         .background(Theme.pageGradient.ignoresSafeArea())
         .navigationTitle("แผน MP ทุกสถานี")
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar("แผน MP ทุกสถานี", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"])
     }
 
     /// Stations, how many are behind, and plan / actual averaged by kWp (equally when no station has a kWp).

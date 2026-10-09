@@ -72,5 +72,8 @@ struct PlanListView: View {
         }
         .searchable(text: $search, prompt: "ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ")
         .navigationTitle("รายการแผนก่อสร้าง")
+        .tcPadNavBar("รายการแผนก่อสร้าง", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"]) {
+            TCBarSearchField(text: $search, prompt: "ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ")
+        }
     }
 }

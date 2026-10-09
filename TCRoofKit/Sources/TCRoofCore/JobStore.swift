@@ -74,10 +74,39 @@ public final class JobStore: @unchecked Sendable {
         try data.write(to: url(of: photo, in: job), options: .atomic)
     }
 
-    /// Removes photo files no longer referenced by the job (after a photo is replaced or deleted).
+    // MARK: issued REVs (docs/specs/review-lock-revisions-swift.md §3.1)
+
+    public enum RevisionError: Error { case exists }
+    public func revisionsFolder(_ job: UUID) -> URL { folder(job).appendingPathComponent("revisions") }
+    /// "revisions/REV00.pdf", relative to the job folder, as stored in `Revision.pdfFile`.
+    public static func revisionPDFPath(rev: String) -> String { "revisions/REV\(rev).pdf" }
+    public func revisionPDF(rev: String, job: UUID) -> URL { folder(job).appendingPathComponent(Self.revisionPDFPath(rev: rev)) }
+    public func revisionJSON(rev: String, job: UUID) -> URL { revisionsFolder(job).appendingPathComponent("REV\(rev).json") }
+
+    /// Writes an issued REV's answers once; an issued REV is never rewritten.
+    public func saveRevision(_ snapshot: FormSnapshot, rev: String, job: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        let u = revisionJSON(rev: rev, job: job)
+        guard !fm.fileExists(atPath: u.path) else { throw RevisionError.exists }
+        try fm.createDirectory(at: revisionsFolder(job), withIntermediateDirectories: true)
+        try Self.encoder.encode(snapshot).write(to: u, options: .withoutOverwriting)
+    }
+
+    public func loadRevision(rev: String, job: UUID) -> FormSnapshot? {
+        guard let d = try? Data(contentsOf: revisionJSON(rev: rev, job: job)) else { return nil }
+        return try? Self.decoder.decode(FormSnapshot.self, from: d)
+    }
+
+    /// Every snapshot stored for the job, whatever `job.revisions` says, so their photos are never purged.
+    public func snapshots(of job: UUID) -> [FormSnapshot] {
+        let files = (try? fm.contentsOfDirectory(at: revisionsFolder(job), includingPropertiesForKeys: nil)) ?? []
+        return files.filter { $0.pathExtension == "json" }.compactMap { try? Self.decoder.decode(FormSnapshot.self, from: Data(contentsOf: $0)) }
+    }
+
+    /// Removes photo files no longer referenced by the job or by any issued REV (after a photo is replaced or deleted).
     @discardableResult
     public func purgeUnusedPhotos(of job: Job) -> Int {
-        let used = Set(job.allPhotos.map(\.fileName))
+        let used = Set(job.allPhotos.map(\.fileName)).union(snapshots(of: job.id).flatMap(\.allPhotos).map(\.fileName))
         let files = (try? fm.contentsOfDirectory(atPath: photosFolder(job.id).path)) ?? []
         var n = 0
         for f in files where !used.contains(f) {
@@ -86,12 +115,15 @@ public final class JobStore: @unchecked Sendable {
         return n
     }
 
-    /// Copy of a job with new ids and its own photo files.
+    /// Copy of a job with new ids and its own photo files. It starts at REV 00, unsigned, with no issued REVs.
     public func duplicate(_ job: Job, now: Date = Date()) throws -> Job {
         var copy = job
         copy.id = UUID(); copy.created = now; copy.updated = now; copy.drive = nil
         // a copy of a survey already moved on is a new survey
         copy.stage = .survey; copy.install = nil
+        copy.revisions = nil; copy.lock = nil; copy.pendingReason = nil
+        copy.values["rev"] = .text("00")
+        for id in RevisionRule.signatureIDs { copy.values[id] = nil }
         copy.values["projectName"] = .text(job.projectName.isEmpty ? "(สำเนา)" : job.projectName + " (สำเนา)")
         copy.modules = job.modules.map { var m = $0; m.id = UUID(); return m }
         try fm.createDirectory(at: photosFolder(copy.id), withIntermediateDirectories: true)

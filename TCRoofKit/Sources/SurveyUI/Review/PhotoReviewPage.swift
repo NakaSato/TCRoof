@@ -80,6 +80,7 @@ struct PhotoReviewPage: View {
     func progress(_ filled: Int, _ total: Int) -> some View {
         HStack(spacing: 10) {
             Text("รูปบังคับ \(filled)/\(total)").font(.title3.bold()).foregroundStyle(Theme.navy).monospacedDigit()
+                .accessibilityIdentifier("photoReview.progress")
             if total > filled { TCStatusChip("ขาด \(total - filled)", kind: .overdue) } else { TCStatusChip("ครบ", kind: .done) }
         }
     }
@@ -160,6 +161,17 @@ struct PhotoReviewPage: View {
 
     func capture(_ s: ReviewSlot, camera: Bool) {
         target = s
+        #if DEBUG
+        // `-surveyCameraStub YES` (UI tests; the simulator has no camera): a generated photo lands in the slot at once
+        if UserDefaults.standard.bool(forKey: "surveyCameraStub") {
+            let img = UIGraphicsImageRenderer(size: CGSize(width: 800, height: 600)).image { c in
+                UIColor.systemTeal.setFill(); c.fill(CGRect(x: 0, y: 0, width: 800, height: 600))
+            }
+            if let p = model.addPhoto(img, to: job.id) { job.setPhoto(p, slot: s) }
+            target = nil
+            return
+        }
+        #endif
         if camera && UIImagePickerController.isSourceTypeAvailable(.camera) { showCamera = true } else { showPicker = true }
     }
 

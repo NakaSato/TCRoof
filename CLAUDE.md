@@ -26,6 +26,7 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 ```
 xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<udid>' -derivedDataPath <scratch>/DerivedData
 ```
+`TCRoofUITests/ReviewLockUITests.swift` runs on an iPad simulator (same command, `-only-testing:TCRoofUITests/ReviewLockUITests`): a missing photo filled from the stubbed camera, then sign → lock → open REV 01 → edit → sign → the change list. UI tests that change answers start from `-surveyFreshJob YES`, since the demo job keeps its answers between runs.
 The first launch in a simulator is slow, so the waits are long (about 90 s). Use `.matching(...).firstMatch` for buttons that share a name, and wait for non-existence with `XCTNSPredicateExpectation` (`waitForExistence` returns at once while the old element is still there).
 
 ### Simulator checks (DEBUG launch arguments)
@@ -50,6 +51,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
 - `-surveyPage photos|revisions` opens ตรวจรูปทั้งหมด or REV และรายการแก้ไข (`docs/specs/review-lock-revisions-swift.md`). `-surveyReview sign|locked|rev01|broken` writes that review-lock state into the opened job: both signatures (the lock sheet opens), REV issued and locked, REV 00 issued then REV 01 opened with three changes, or locked then edited behind the lock (the integrity banner). They change the demo job for good; `rev01` and `broken` only run on a job with no REV yet.
+- `-surveyFreshJob YES` (with `-surveyDemo YES`) opens a new job (docNo `UITEST`, with a station address), deleting the previous one; `-surveyTestJob YES` reopens that job as it was left. `-surveyCameraStub YES` makes ตรวจรูปทั้งหมด put a generated photo into a slot instead of opening the camera.
 - `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 and A2 on iPhone: the lower bands).
 - `-surveySave saving|saved|clean` (iPhone, any step) opens the `บันทึก` button in that state: spinner, green flash, green outline (`docs/ui/survey-a1-iphone/states/04`–`06`). `-surveyA1Internet yes|no` (iPhone A1) picks the `อินเทอร์เน็ต` answer.
 - `-surveyExport YES` opens the export sheet.

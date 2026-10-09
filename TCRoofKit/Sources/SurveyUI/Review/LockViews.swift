@@ -134,6 +134,7 @@ struct NextRevisionSheet: View {
             Form {
                 Section {
                     TextField("เช่น สถานีแจ้งขนาดหม้อแปลงใหม่", text: $reason, axis: .vertical).lineLimit(2...5)
+                        .accessibilityIdentifier("nextRevision.reason")
                 } header: { Text("เหตุผลที่แก้ไข (ต้องกรอก)") } footer: {
                     Text("REV \(job.rev) และ PDF ที่ลงนามไว้จะเก็บไว้ตามเดิม · ลายเซ็นทั้งสองจะถูกล้างเพื่อลงนามใหม่สำหรับ REV \(next)")
                 }

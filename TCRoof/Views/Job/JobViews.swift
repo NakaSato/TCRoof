@@ -38,6 +38,7 @@ struct JobDetailView: View {
         .background(Theme.pageGradient.ignoresSafeArea())
         .navigationTitle(job.code)
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar(job.projectName.isEmpty ? job.code : job.projectName, trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"], current: job.code)
         .sheet(isPresented: $showSchedule) { ScheduleEditSheet(job: job) }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.pdf, .image, .spreadsheet, .presentation, .data],
                       allowsMultipleSelection: true, onCompletion: importDocuments)

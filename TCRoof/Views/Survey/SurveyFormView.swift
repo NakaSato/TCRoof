@@ -1,4 +1,5 @@
 import SwiftUI
+import TCRoofUI
 import SwiftData
 import CoreLocation
 import TCRoofCore
@@ -175,6 +176,12 @@ private struct SurveyEditor: View {
                 ToolbarItem(placement: .secondaryAction) {
                     Button("ทิ้งร่าง", systemImage: "trash", role: .destructive) { confirmDiscard = true }
                 }
+            }
+        }
+        .tcPadNavBar(form.isDraft ? "แบบสำรวจหน้างาน (ร่าง)" : "แก้ไขแบบสำรวจ", trail: ["หน้าหลัก", "สำรวจหน้างาน"]) {
+            HStack(spacing: 12) {
+                if form.isDraft { TCButton("ทิ้งร่าง", systemImage: "trash", kind: .destructive) { confirmDiscard = true } }
+                TCButton(form.isDraft ? "บันทึก" : "เสร็จ", action: finish)
             }
         }
         .alert("ยังกรอกไม่ครบ", isPresented: $showMissing) {

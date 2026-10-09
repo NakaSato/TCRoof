@@ -3,65 +3,6 @@ import TCRoofUI
 
 // MARK: - Page chrome
 
-struct ModuleIllustration: View {
-    let symbol: String
-    var size: CGFloat = 120
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Theme.primarySoft)
-                .frame(width: size * 0.62, height: size * 0.75)
-                .rotationEffect(.degrees(-14))
-                .offset(x: -size * 0.12)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Theme.primary)
-                .frame(width: size * 0.62, height: size * 0.75)
-                .rotationEffect(.degrees(6))
-            Image(systemName: symbol)
-                .font(.system(size: size * 0.32, weight: .semibold))
-                .foregroundStyle(.white)
-                .rotationEffect(.degrees(6))
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
-    }
-}
-
-struct PageHeader<Accessory: View>: View {
-    let title: String
-    let symbol: String
-    @ViewBuilder var accessory: Accessory
-
-    var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title)
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(Theme.navy)
-                accessory
-            }
-            Spacer()
-            ModuleIllustration(symbol: symbol, size: isPhone ? 72 : 120)
-        }
-    }
-}
-
-struct HeaderLink<Destination: View>: View {
-    let title: String
-    var systemImage = "clock.arrow.circlepath"
-    @ViewBuilder var destination: () -> Destination
-
-    var body: some View {
-        NavigationLink(destination: destination) {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.semibold))
-                .underline()
-                .foregroundStyle(Theme.navy)
-        }
-    }
-}
-
 /// The secondary button on the right of a `TCNavBar`.
 struct TopBarLink<Destination: View>: View {
     let title: String

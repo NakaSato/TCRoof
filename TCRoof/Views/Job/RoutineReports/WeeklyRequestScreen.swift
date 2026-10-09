@@ -52,6 +52,9 @@ struct WeeklyRequestScreen: View {
                 Button { exportPDF() } label: { Label("PDF", systemImage: "square.and.arrow.up") }
             }
         }
+        .tcPadNavBar("คำขอปฏิบัติงานรายสัปดาห์", trail: ["หน้าหลัก", job.code]) {
+            TCButton("PDF", systemImage: "square.and.arrow.up", kind: .secondary) { exportPDF() }
+        }
         .sheet(isPresented: $showApprove) {
             InspectorAckSheet(title: "บันทึกอนุมัติแล้ว", name: request.approvedBy.isEmpty ? job.routineSettings.inspector : request.approvedBy,
                               date: request.approvedAt ?? .now) { name, when in

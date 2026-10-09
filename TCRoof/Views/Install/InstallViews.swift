@@ -30,9 +30,6 @@ struct InstallRecordsView: View {
     private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                PageHeader(title: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน", symbol: AppModule.install.symbol) {
-                    HeaderLink(title: "ประวัติบันทึกทั้งหมด") { InstallLogHistoryView() }
-                }
                 Picker("ประเภท", selection: $tab) {
                     ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
                 }
@@ -65,12 +62,17 @@ struct InstallRecordsView: View {
             .frame(maxWidth: 1100)
             .frame(maxWidth: .infinity)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TCNavBar(title: "บันทึกงานติดตั้งและใบตรวจรับงาน", trail: ["หน้าหลัก"], current: "บันทึกงานติดตั้งและใบตรวจรับงาน") {
+                TopBarLink(title: "ประวัติบันทึกทั้งหมด", systemImage: "clock.arrow.circlepath") { InstallLogHistoryView() }
+            }
+        }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
             TCFab("plus", accessibilityLabel: "เพิ่มบันทึกงานติดตั้ง", gradient: Theme.tealGradient) { showPicker = true }
                 .tcFabPlacement(compact: isPhone)
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showPicker, onDismiss: {
             if let job = pendingJob {
                 pendingJob = nil
@@ -150,6 +152,9 @@ struct JobInstallLogsView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button { showForm = true } label: { Label("เพิ่มบันทึก", systemImage: "plus") }
             }
+        }
+        .tcPadNavBar("บันทึกงานติดตั้ง", trail: ["หน้าหลัก", job.code]) {
+            TCButton("เพิ่มบันทึก", systemImage: "plus") { showForm = true }
         }
         .sheet(isPresented: $showForm) { InstallLogFormView(job: job, log: nil) }
     }
@@ -355,6 +360,10 @@ struct InstallLogDetailView: View {
                 Button { showEdit = true } label: { Label("แก้ไข", systemImage: "pencil") }
             }
         }
+        .tcPadNavBar("บันทึกงานติดตั้งและรูป", trail: ["หน้าหลัก", log.job?.code ?? "บันทึกงานติดตั้ง"],
+                     current: log.date.thaiLong) {
+            TCButton("แก้ไข", systemImage: "pencil", kind: .secondary) { showEdit = true }
+        }
         .sheet(isPresented: $showEdit, onDismiss: export) {
             if let job = log.job { InstallLogFormView(job: job, log: log) }
         }
@@ -388,5 +397,6 @@ struct InstallLogHistoryView: View {
             }
         }
         .navigationTitle("ประวัติบันทึกทั้งหมด")
+        .tcPadNavBar("ประวัติบันทึกทั้งหมด", trail: ["หน้าหลัก", "บันทึกงานติดตั้งและใบตรวจรับงาน"])
     }
 }

@@ -25,9 +25,6 @@ struct ScanJobListView: View {
     private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                PageHeader(title: "สแกนอุปกรณ์", symbol: AppModule.scan.symbol) {
-                    HeaderLink(title: "ประวัติการสแกน") { ScanHistoryView() }
-                }
                 QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
                 if filtered.isEmpty {
                     ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
@@ -47,12 +44,17 @@ struct ScanJobListView: View {
             .frame(maxWidth: 1100)
             .frame(maxWidth: .infinity)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TCNavBar(title: "สแกนอุปกรณ์", trail: ["หน้าหลัก"], current: "สแกนอุปกรณ์") {
+                TopBarLink(title: "ประวัติการสแกน", systemImage: "clock.arrow.circlepath") { ScanHistoryView() }
+            }
+        }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
             TCFab("barcode.viewfinder", accessibilityLabel: "สแกนอุปกรณ์", gradient: Theme.tealGradient) { showPicker = true }
                 .tcFabPlacement(compact: isPhone)
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showPicker, onDismiss: {
             if let job = pendingJob {
                 pendingJob = nil
@@ -147,6 +149,12 @@ struct JobDevicesView: View {
                 Button { showManual = true } label: { Label("พิมพ์ซีเรียล", systemImage: "keyboard") }
                 Button { showScanner = true } label: { Label("สแกน", systemImage: "barcode.viewfinder") }
                     .buttonStyle(.borderedProminent)
+            }
+        }
+        .tcPadNavBar("อุปกรณ์ที่ติดตั้ง", trail: ["หน้าหลัก", job.code]) {
+            HStack(spacing: 12) {
+                TCButton("พิมพ์ซีเรียล", systemImage: "keyboard", kind: .secondary) { showManual = true }
+                TCButton("สแกน", systemImage: "barcode.viewfinder") { showScanner = true }
             }
         }
         .fullScreenCover(isPresented: $showScanner) { ScannerView(job: job) }
@@ -505,5 +513,8 @@ struct ScanHistoryView: View {
         }
         .searchable(text: $search, prompt: "ค้นหาซีเรียลหรือโครงการ")
         .navigationTitle("ประวัติการสแกน")
+        .tcPadNavBar("ประวัติการสแกน", trail: ["หน้าหลัก", "สแกนอุปกรณ์"]) {
+            TCBarSearchField(text: $search, prompt: "ค้นหาซีเรียลหรือโครงการ")
+        }
     }
 }

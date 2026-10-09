@@ -18,7 +18,7 @@ struct BottomBar: View {
     }
     enum Variant {
         /// `save` runs before "✓ บันทึกแล้ว" shows; it returns the save time.
-        case steps(save: @MainActor () async -> Date, version: Date = .distantPast, previous: Nav, next: Nav)
+        case steps(save: @MainActor () async -> Date, version: Int = 0, previous: Nav, next: Nav)
         case detail(destructive: Action, primary: Action)
         case pair(secondary: Action, primary: Action)
     }
@@ -122,8 +122,8 @@ struct SaveButton: View {
         return .idle
     }
     let save: @MainActor () async -> Date
-    /// Changes whenever the job is edited (`Job.updated`).
-    var version: Date = .distantPast
+    /// Changes whenever the job's answers are edited (`Job.editVersion`).
+    var version = 0
     @State var phase = SaveButton.startPhase
     /// An edit came in since the page opened or since the last save.
     @State var edited = false
@@ -215,6 +215,15 @@ struct SaveButton: View {
             // an edit during these 1.35 s has already put the button back to idle
             if phase == .justSaved { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { phase = .clean } }
         }
+    }
+}
+
+extension Job {
+    /// Changes when an answer or a section changes, not when the model stamps `updated` or a Drive link lands.
+    var editVersion: Int {
+        var h = Hasher()
+        h.combine(values); h.combine(modules)
+        return h.finalize()
     }
 }
 #endif

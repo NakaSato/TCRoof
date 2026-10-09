@@ -133,7 +133,8 @@ extension InfoPageWide {
                 if job.values.text("officeAddress").isEmpty {
                     Button("คัดลอก") { job.values["officeAddress"] = job.values["address"] }
                         .font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
-                        .frame(minHeight: 44).fixedSize()
+                        // width fits the word; the height stays 44 pt (a plain fixedSize() would shrink it to the text)
+                        .frame(minHeight: 44).fixedSize(horizontal: true, vertical: false).contentShape(Rectangle())
                         .disabled(job.values.text("address").isEmpty)
                         .accessibilityLabel("คัดลอกที่อยู่สถานี")
                 }

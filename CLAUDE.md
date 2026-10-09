@@ -20,6 +20,14 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 - **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it.
 
+### UI tests (iPhone taps)
+
+`TCRoofUITests/PhoneSurveyUITests.swift` taps through the iPhone survey pages (A1 save button and `คัดลอก`, A2 picture to full screen, A3 breaker sheet, single line toggle) in the demo job, using the launch arguments below. Run on an iPhone simulator with your own derived data path:
+```
+xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<udid>' -derivedDataPath <scratch>/DerivedData
+```
+The first launch in a simulator is slow, so the waits are long (about 90 s). Use `.matching(...).firstMatch` for buttons that share a name, and wait for non-existence with `XCTNSPredicateExpectation` (`waitForExistence` returns at once while the old element is still there).
+
 ### Simulator checks (DEBUG launch arguments)
 
 There is no Simulator.app here, so the simulator can't be rotated; landscape checks rely on these flags. Screenshot with `xcrun simctl io <udid> screenshot`.

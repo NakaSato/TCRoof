@@ -334,7 +334,7 @@ struct InfoPageBar: View {
             let now = Date()
             savedNow = now
             return now
-        }, version: job.updated, previous: back, next: forward))
+        }, version: job.editVersion, previous: back, next: forward))
     }
 
     var padBar: some View {

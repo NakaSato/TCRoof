@@ -327,11 +327,15 @@ struct PageStepBar: View {
     var compact = false
     var chip: (text: String, ok: Bool)? = nil
 
+    /// iPhone: pages that don't ask for `compact` get it anyway, with the step's own completion as the chip.
+    @Environment(\.horizontalSizeClass) var sizeClass
+
     var body: some View {
-        if compact { compactBody } else { regularBody }
+        if compact || sizeClass == .compact { compactBody } else { regularBody }
     }
 
     var compactBody: some View {
+        let chip = compact ? chip : job.stepChip(here)
         let steps = job.steps
         let i = steps.firstIndex { $0.page == here } ?? 0
         return VStack(spacing: 7) {

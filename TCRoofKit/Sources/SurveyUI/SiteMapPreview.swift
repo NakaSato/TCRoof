@@ -4,6 +4,14 @@ import UIKit
 import CoreLocation
 import TCRoofCore
 
+/// The picture's own proportions on iPad; a fixed 170 pt on iPhone.
+private struct MapShape: ViewModifier {
+    let phone: Bool
+    func body(content: Content) -> some View {
+        if phone { content.frame(height: 170) } else { content.aspectRatio(1 / SiteMapPreview.aspect, contentMode: .fit) }
+    }
+}
+
 /// Satellite preview of the job's GPS on A1: pick a zoom level for the report's site picture, frame the part the report
 /// uses (`MapCrop`), and long-press the pin to move the GPS.
 /// The view has the picture's own proportions, so a frame in % of the view is the same % of the picture.
@@ -12,6 +20,9 @@ struct SiteMapPreview: View {
     @Binding var zoom: Int
     @Binding var crop: MapCrop
     let keys: MapImage.Keys
+    /// iPhone A1 (docs/ui/survey-a1-iphone): 170 pt high, smaller zoom chips, a hint label, no report frame
+    /// (the frame is in percent of the picture's own proportions, which this height doesn't keep).
+    var phone = false
 
     @State private var image: UIImage?
     @State private var loading = false
@@ -49,16 +60,17 @@ struct SiteMapPreview: View {
                     Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.footnote).foregroundStyle(Home.muted)
                         .multilineTextAlignment(.center).padding(.horizontal, 40)
                 }
-                if coordinate != nil { cropLayer(size); pin }
+                if coordinate != nil { if !phone { cropLayer(size) }; pin }
             }
-            .overlay(alignment: .topLeading) { levelPicker.padding(10) }
-            .overlay(alignment: .topTrailing) { zoomButtons.padding(10) }
-            .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(10) } }
+            .overlay(alignment: .topLeading) { levelPicker.padding(phone ? 8 : 10) }
+            .overlay(alignment: .topTrailing) { zoomButtons.padding(phone ? 8 : 10) }
+            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน").font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
+            .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(phone ? 8 : 10) } }
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { frameSize = $0 }
-        .aspectRatio(1 / Self.aspect, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.2)))
+        .modifier(MapShape(phone: phone))
+        .clipShape(RoundedRectangle(cornerRadius: phone ? 12 : 10))
+        .overlay(RoundedRectangle(cornerRadius: phone ? 12 : 10).stroke(phone ? Home.hairline : Home.navy.opacity(0.2)))
         .task(id: "\(gps)|\(zoom)") { await load() }
     }
 
@@ -165,13 +177,11 @@ struct SiteMapPreview: View {
                 let z = Self.zoom(across: l.meters, lat: lat)
                 let on = z == zoom
                 Button { zoom = z } label: {
-                    VStack(spacing: 0) {
-                        Text(l.name).font(.system(size: 13, weight: on ? .bold : .regular))
-                        Text("\(Int(l.meters)) ม.").font(.system(size: 11)).foregroundStyle(on ? Home.navy : Home.muted)
-                    }
-                    .padding(.horizontal, 10).frame(minHeight: 44)
+                    levelLabel(l, on: on)
+                    .padding(.horizontal, phone ? 8 : 10).frame(minHeight: phone ? 28 : 44)
                     .background(on ? Home.mint : .clear, in: RoundedRectangle(cornerRadius: 8))
-                    .contentShape(Rectangle())
+                    // the 28-pt chip keeps a 44-pt tap area
+                    .contentShape(Rectangle().inset(by: phone ? -8 : 0))
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -181,6 +191,22 @@ struct SiteMapPreview: View {
         .padding(3)
         .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
+    }
+
+    /// Two lines on iPad ("สถานี" over "200 ม."); one line on iPhone ("สถานี 200 ม.").
+    @ViewBuilder func levelLabel(_ l: (name: String, meters: Double), on: Bool) -> some View {
+        if phone {
+            HStack(spacing: 3) {
+                Text(l.name).font(.system(size: 12, weight: on ? .bold : .regular))
+                Text("\(Int(l.meters)) ม.").font(.system(size: 11, weight: on ? .bold : .regular)).foregroundStyle(on ? Home.navy : Home.muted)
+            }
+            .lineLimit(1).fixedSize()
+        } else {
+            VStack(spacing: 0) {
+                Text(l.name).font(.system(size: 13, weight: on ? .bold : .regular))
+                Text("\(Int(l.meters)) ม.").font(.system(size: 11)).foregroundStyle(on ? Home.navy : Home.muted)
+            }
+        }
     }
 
     var zoomButtons: some View {
@@ -196,7 +222,7 @@ struct SiteMapPreview: View {
     func zoomButton(_ icon: String, _ symbol: String, _ label: String, _ step: Int) -> some View {
         Button { zoom += step } label: {
             A2Icon(name: icon, fallback: symbol, size: 20).foregroundStyle(Home.primary)
-                .frame(width: 44, height: 44).contentShape(Rectangle())
+                .frame(width: 44, height: phone ? 40 : 44).contentShape(Rectangle().inset(by: phone ? -2 : 0))
         }
         .buttonStyle(.plain).accessibilityLabel(label)
     }

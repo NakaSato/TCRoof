@@ -329,8 +329,9 @@ struct JobEditorView: View {
                     if readOnly { readOnlyBanner.padding(.horizontal, 24).padding(.top, 16).frame(maxWidth: 1240 + 48) }
                     Group {
                         if cardInfo {
-                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48), twoColumns: infoColumns == 2)
-                                .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16).frame(maxWidth: 1240 + 48)
+                            // iPhone: the bands run edge to edge
+                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2)
+                                .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16).frame(maxWidth: 1240 + 48)
                         } else {
                             detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
                         }
@@ -340,6 +341,10 @@ struct JobEditorView: View {
                     .frame(maxWidth: .infinity).id("top")
                 }
                 .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
+                #if DEBUG
+                // `-surveyScrollEnd YES`: open scrolled to the end (the simulator can't be swiped here)
+                .defaultScrollAnchor(UserDefaults.standard.bool(forKey: "surveyScrollEnd") ? .bottom : .top)
+                #endif
             }
         }
     }

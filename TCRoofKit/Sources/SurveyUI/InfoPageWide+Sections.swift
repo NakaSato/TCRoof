@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// "พื้นที่ติดตั้ง" (how many C1 roof and D1 tank sections the job has) and the location card.
 /// Older jobs may carry a ground-area count (`groundAreas`); it is no longer shown or counted, but stays in the job
@@ -11,12 +12,16 @@ extension InfoPageWide {
 
     var areasBox: some View {
         A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ · รวม \(job.steps.count) ขั้น", spacing: 10) {
-            // two across when the column is wide enough; one per row when the sidebar leaves it too narrow
-            let layout = mainWidth >= 440 ? AnyLayout(RatioRow(weights: [1, 1], spacing: 10)) : AnyLayout(VStackLayout(spacing: 8))
-            layout {
-                areaTile("หลังคา", "หน้า C · หลัง", count: count(.roof)) { setCount(.roof, $0) }
-                areaTile("ถังน้ำใส", "หน้า D1 · ถัง", count: count(.tank)) { setCount(.tank, $0) }
-            }
+            areaTiles
+        }
+    }
+
+    /// Two across when the column is wide enough; one per row when the sidebar leaves it too narrow.
+    var areaTiles: some View {
+        let layout = mainWidth >= 440 ? AnyLayout(RatioRow(weights: [1, 1], spacing: 10)) : AnyLayout(VStackLayout(spacing: 8))
+        return layout {
+            areaTile("หลังคา", "หน้า C · หลัง", count: count(.roof)) { setCount(.roof, $0) }
+            areaTile("ถังน้ำใส", "หน้า D1 · ถัง", count: count(.tank)) { setCount(.tank, $0) }
         }
     }
 
@@ -329,7 +334,7 @@ struct InfoPageBar: View {
             let now = Date()
             savedNow = now
             return now
-        }, previous: back, next: forward))
+        }, version: job.updated, previous: back, next: forward))
     }
 
     var padBar: some View {

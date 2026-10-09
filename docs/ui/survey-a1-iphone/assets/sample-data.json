@@ -1,0 +1,112 @@
+{
+  "_note": "Example data only. Values come from the board PhoneA1.dc.html (PWA survey form NO.224). Use the real Job / Schema.info values in the app.",
+  "header": {
+    "title": "A1 ข้อมูลโครงการ",
+    "subtitle": "แบบสำรวจ NO.224 · GRF2567-23407"
+  },
+  "stepLine": {
+    "counter": "1/13",
+    "name": "ข้อมูลโครงการ",
+    "chip": "ครบ 11/11 ช่อง",
+    "bars": 13,
+    "current": 1
+  },
+  "sections": [
+    {
+      "no": "01",
+      "title": "โครงการ",
+      "chip": "✓ 3/3",
+      "fields": {
+        "projectName": "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1",
+        "capacity": {
+          "value": "120",
+          "unit": "kWp"
+        },
+        "internet": [
+          "มี",
+          "ไม่มี"
+        ],
+        "internetSelected": "มี"
+      }
+    },
+    {
+      "no": "02",
+      "title": "ที่ตั้ง",
+      "chip": "✓ 3/3",
+      "map": {
+        "zoomPresets": [
+          [
+            "พื้นที่",
+            "500 ม."
+          ],
+          [
+            "สถานี",
+            "200 ม."
+          ],
+          [
+            "อาคาร",
+            "50 ม."
+          ]
+        ],
+        "selected": "สถานี",
+        "hint": "ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน",
+        "scale": "50 ม."
+      },
+      "fields": {
+        "gps": "17.0062, 99.8235",
+        "address": "ม.3 ต.หนองบัว อ.เมือง จ.ตัวอย่าง 60000",
+        "officeAddress": {
+          "placeholder": "เหมือนที่อยู่สถานี",
+          "action": "คัดลอก",
+          "optional": "ไม่บังคับ"
+        }
+      }
+    },
+    {
+      "no": "03",
+      "title": "ผู้ประสานงาน",
+      "chip": "✓ 2/2",
+      "fields": {
+        "coordinator": "คุณสมหญิง ใจดี",
+        "phone": "081-234-5678"
+      }
+    },
+    {
+      "no": "04",
+      "title": "เอกสาร",
+      "chip": "✓ 3/3",
+      "fields": {
+        "docNo": "224",
+        "rev": "00",
+        "date": "29/9/2569",
+        "engineer": {
+          "value": "สมชาย ใจดี",
+          "aside": "จากการตั้งค่า",
+          "readOnly": true
+        }
+      }
+    }
+  ],
+  "prefilledMint": [
+    "projectName",
+    "capacity",
+    "address",
+    "coordinator",
+    "phone"
+  ],
+  "bottomBar": {
+    "save": {
+      "idle": "บันทึก",
+      "saving": "บันทึก + spinner",
+      "done": "✓ บันทึกแล้ว (green fill, 1.35 s)",
+      "saved": "✓ บันทึกแล้ว (green 2 pt outline)"
+    },
+    "back": {
+      "disabled": true,
+      "voiceOver": "ก่อนหน้า (ขั้นแรก)"
+    },
+    "next": {
+      "voiceOver": "ถัดไป A2 ภาพสถานที่"
+    }
+  }
+}

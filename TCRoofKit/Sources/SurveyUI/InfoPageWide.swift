@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// A1 on iPad: the cover as cards (docs/ui/survey-a1) — two columns that fit one screen in landscape (location on the left),
 /// one column in portrait.
@@ -13,6 +14,8 @@ struct InfoPageWide: View {
     var twoColumns = true
     @Environment(SurveyModel.self) var model
     @Environment(\.openURL) var openURL
+    /// iPhone: `phoneBody` (docs/ui/survey-a1-iphone) in place of the cards.
+    @Environment(\.horizontalSizeClass) var sizeClass
     @FocusState var focus: String?
     @State var showDate = false
     @State var areaChange: AreaChange?
@@ -36,6 +39,20 @@ struct InfoPageWide: View {
     var phone: Bool { width < 500 }
 
     var body: some View {
+        Group {
+            if sizeClass == .compact { phoneBody } else { padBody }
+        }
+        .foregroundStyle(Home.navy)
+        .confirmationDialog("ลบหัวข้อที่กรอกข้อมูลแล้ว?", isPresented: Binding(get: { areaChange != nil }, set: { if !$0 { areaChange = nil } }),
+                            titleVisibility: .visible, presenting: areaChange) { c in
+            Button("ลบ \(c.losing.count) หัวข้อ", role: .destructive) { remove(c.losing) }
+            Button("ยกเลิก", role: .cancel) { areaChange = nil }
+        } message: { c in
+            Text((c.losing.map(sectionName) + ["ข้อมูลและรูปภาพในหัวข้อเหล่านี้จะถูกลบ"]).joined(separator: "\n"))
+        }
+    }
+
+    var padBody: some View {
         VStack(spacing: 16) {
             stepBar
             if twoColumns {
@@ -47,14 +64,6 @@ struct InfoPageWide: View {
             } else {
                 VStack(spacing: 16) { locationBox; documentBox; projectBox; coordinatorBox; areasBox }
             }
-        }
-        .foregroundStyle(Home.navy)
-        .confirmationDialog("ลบหัวข้อที่กรอกข้อมูลแล้ว?", isPresented: Binding(get: { areaChange != nil }, set: { if !$0 { areaChange = nil } }),
-                            titleVisibility: .visible, presenting: areaChange) { c in
-            Button("ลบ \(c.losing.count) หัวข้อ", role: .destructive) { remove(c.losing) }
-            Button("ยกเลิก", role: .cancel) { areaChange = nil }
-        } message: { c in
-            Text((c.losing.map(sectionName) + ["ข้อมูลและรูปภาพในหัวข้อเหล่านี้จะถูกลบ"]).joined(separator: "\n"))
         }
     }
 
@@ -110,15 +119,18 @@ struct InfoPageWide: View {
 
     // MARK: inputs
 
-    var dateInput: some View {
+    var dateInput: some View { dateButton(compact: false) }
+
+    func dateButton(compact: Bool) -> some View {
         let t = job.values.text("date")
         return Button { showDate = true } label: {
             HStack(spacing: 6) {
                 Text(t.isEmpty ? "เลือกวันที่" : ISODate.thai(t)).foregroundStyle(t.isEmpty ? Home.muted : Home.navy).lineLimit(1)
                 Spacer(minLength: 4)
-                A2Icon(name: "ui-calendar", fallback: "calendar", size: 20).foregroundStyle(Home.primary)
+                A2Icon(name: "ui-calendar", fallback: "calendar", size: compact ? 16 : 20).foregroundStyle(Home.primary)
             }
-            .inputBox(calc: calc("date"), focused: showDate)
+            .inputBox(calc: calc("date"), focused: showDate, minHeight: compact ? 44 : 50, trailing: compact ? 12 : 14,
+                      leading: compact ? 12 : 14, fontSize: compact ? 16 : 17, stroke: compact ? 0.35 : 0.45)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -230,7 +242,30 @@ struct InfoPageWide: View {
 struct FieldLabel: View {
     let spec: FieldSpec
     let filled: Bool
+    /// iPhone (docs/ui/survey-a1-iphone): 14 pt, a red `*` only, and `aside` at the trailing edge in 12 pt
+    /// ("" for none; nil keeps "ไม่บังคับ" on optional fields). `title` replaces the sheet's label on screen.
+    var compact = false
+    var title: String? = nil
+    var aside: String? = nil
     var body: some View {
+        if compact { compactBody } else { regularBody }
+    }
+
+    var compactBody: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(title ?? spec.label.replacingOccurrences(of: "**", with: "")).font(.system(size: 14, weight: .semibold))
+                .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
+            if !spec.optional { Text("*").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.danger) }
+            Spacer(minLength: 4)
+            if let aside = aside ?? (spec.optional ? "ไม่บังคับ" : nil), !aside.isEmpty {
+                Text(aside).font(.system(size: 12)).foregroundStyle(Theme.muted).lineLimit(1).minimumScaleFactor(0.8)
+            }
+        }
+        .foregroundStyle(Home.navy)
+        .frame(height: 18)
+    }
+
+    @ViewBuilder var regularBody: some View {
         let important = spec.label.hasPrefix("**")
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(important ? String(spec.label.dropFirst(2)) : spec.label)
@@ -368,13 +403,15 @@ struct RatioRow: Layout {
 
 extension View {
     /// Outlined input: 50 high, 10-pt corners, navy 45% border (2-pt primary when focused), mint when filled from the job.
-    func inputBox(calc: Bool = false, focused: Bool = false, error: Bool = false, minHeight: CGFloat = 50, trailing: CGFloat = 14) -> some View {
-        font(.system(size: 17)).foregroundStyle(Home.navy)
-            .padding(.leading, 14).padding(.trailing, trailing)
+    /// iPhone A1 passes `minHeight: 44`, `leading: 12`, `fontSize: 16` and a 35% stroke.
+    func inputBox(calc: Bool = false, focused: Bool = false, error: Bool = false, minHeight: CGFloat = 50, trailing: CGFloat = 14,
+                  leading: CGFloat = 14, fontSize: CGFloat = 17, stroke: Double = 0.45) -> some View {
+        font(.system(size: fontSize)).foregroundStyle(Home.navy)
+            .padding(.leading, leading).padding(.trailing, trailing)
             .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .leading)
             .background(calc ? Home.mint.opacity(0.3) : Color.white, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10)
-                .stroke(error ? Home.danger : focused ? Home.primary : Home.navy.opacity(0.45), lineWidth: error || focused ? 2 : 1))
+                .stroke(error ? Home.danger : focused ? Home.primary : Home.navy.opacity(stroke), lineWidth: error || focused ? 2 : 1))
     }
 }
 #endif

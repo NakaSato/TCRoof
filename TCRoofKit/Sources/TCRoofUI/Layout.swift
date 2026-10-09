@@ -293,7 +293,9 @@ public struct TCFractionColumns: Layout {
     public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var x = bounds.minX
         for (s, w) in zip(subviews, widths(bounds.width, subviews.count)) {
-            s.place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: w, height: bounds.height))
+            // the height they were measured with: inside a ScrollView that is nil, and proposing the
+            // tallest column's height instead kept the view graph invalidating (blank screen, full CPU)
+            s.place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: w, height: proposal.height))
             x += w + spacing
         }
     }

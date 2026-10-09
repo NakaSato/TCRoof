@@ -3,11 +3,11 @@ import TCRoofUI
 import TCRoofCore
 
 /// iPad survey form from the components board (docs/ui/components): white cards on the page gradient, the fields
-/// on the left and what is still missing in a 380 column on the right. Same fields and record as the iPhone form.
+/// on the left (2 : 1) and what is still missing on the right. Same fields and record as the iPhone form.
 extension SurveyEditor {
     var padForm: some View {
         ScrollView {
-            HStack(alignment: .top, spacing: 20) {
+            TCFractionColumns([2, 1], spacing: 20) {
                 VStack(spacing: 16) {
                     padJobCard
                     padRoofCard
@@ -15,12 +15,10 @@ extension SurveyEditor {
                     padPhotoCard
                     padNotesCard
                 }
-                .frame(maxWidth: .infinity)
                 VStack(spacing: 16) {
                     padStatusCard
                     padSizingCard
                 }
-                .frame(width: 380)
             }
             .padding(24)
             .frame(maxWidth: 1240)

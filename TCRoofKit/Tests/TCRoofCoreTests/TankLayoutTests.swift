@@ -188,6 +188,26 @@ final class TankLayoutTests: XCTestCase {
         XCTAssertEqual(TankLayout.turn(v), 3)
     }
 
+    /// `current` remembers its last answer; it must equal a fresh layout and follow every change of the answers.
+    func testCurrentMatchesAFreshLayoutAfterEveryChange() {
+        var v = tank()
+        TankLayout.save(&v, TankLayout.auto(v), off: [])
+        func fresh(_ v: Values) -> TankLayout? { TankLayout(v, params: TankLayout.params(v)!, off: TankLayout.off(v)) }
+        let a = TankLayout.current(v)!, again = TankLayout.current(v)!
+        XCTAssertEqual(a.count, again.count)
+        XCTAssertEqual(a.count, fresh(v)!.count)
+        TankLayout.toggle(&v, a.tables[0].panels[0].key)
+        XCTAssertEqual(TankLayout.current(v)!.count, a.count - 1)
+        XCTAssertEqual(TankLayout.current(v)!.count, fresh(v)!.count)
+        // another tank, then the first again: no stale answer
+        var other = tank(1)
+        TankLayout.save(&other, TankLayout.auto(other), off: [])
+        XCTAssertEqual(TankLayout.current(other)!.count, fresh(other)!.count)
+        XCTAssertEqual(TankLayout.current(v)!.count, a.count - 1)
+        // answers cleared: nothing to lay out, and the nil is not hidden by the last layout
+        XCTAssertNil(TankLayout.current(tank()))
+    }
+
     func testSaveToggleRemoveAndCompletion() {
         var v = tank()
         XCTAssertNil(TankLayout.current(v))

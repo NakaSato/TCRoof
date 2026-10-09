@@ -77,28 +77,48 @@ extension TankPageWide {
     func infoCard(fill: Bool) -> some View {
         infoSheets(card {
             Text("ข้อมูลถัง").font(.system(size: 17, weight: .bold))
-            sizeField
-            typeField
-            HStack(alignment: .top, spacing: 10) {
-                field("ความสูงถัง", unit: "(ม.)", required: true) {
-                    TankStepper(value: Tank.height(values), step: 0.1, range: Tank.minHeight...200, label: "ความสูงถัง") { h in update { Tank.setHeight(&$0, h) } }
-                }
-                field("ส่วนพ้นดิน", unit: "(ม.)") {
-                    TankStepper(value: Tank.exposed(values), step: 0.1, range: 0...(Tank.height(values) ?? 200), label: "ส่วนพ้นดิน",
-                                enabled: Tank.exposedEditable(values)) { e in update { Tank.setExposed(&$0, e) } }
-                }
-            }
-            field("ตำแหน่งถัง", required: true) { positionControl }
-            HStack(alignment: .top, spacing: 10) {
-                field("ผิวหลังคา", required: true) { surfaceField }
-                field("ดินกลบลึก", unit: "(ม.)") {
-                    TankStepper(value: values.number(Tank.Key.soil), step: 0.05, range: 0...50, label: "ดินกลบลึก", placeholder: "0.00") { d in update { Tank.setSoil(&$0, d) } }
-                }
-            }
-            azimuthField
+            // each row erased: the card's full concrete type overflows the main thread's stack on the iPad when the
+            // runtime resolves it (SIGSEGV in swift_getTypeByMangledName)
+            AnyView(sizeField)
+            AnyView(typeField)
+            AnyView(heightRow)
+            AnyView(positionRow)
+            AnyView(surfaceRow)
+            AnyView(azimuthField)
             if fill { Spacer(minLength: 8) }
             nextButton("ถัดไป · สิ่งกีดขวาง ›") { withAnimation { tab = 2 } }.padding(.top, fill ? 0 : 6)
         })
+    }
+
+    var heightRow: some View {
+        HStack(alignment: .top, spacing: 10) {
+            field("ความสูงถัง", unit: "(ม.)", required: true) { heightStepper }
+            field("ส่วนพ้นดิน", unit: "(ม.)") { exposedStepper }
+        }
+    }
+
+    var heightStepper: some View {
+        TankStepper(value: Tank.height(values), step: 0.1, range: Tank.minHeight...200, label: "ความสูงถัง") { h in update { Tank.setHeight(&$0, h) } }
+    }
+
+    var exposedStepper: some View {
+        TankStepper(value: Tank.exposed(values), step: 0.1, range: 0...(Tank.height(values) ?? 200), label: "ส่วนพ้นดิน",
+                    enabled: Tank.exposedEditable(values)) { e in update { Tank.setExposed(&$0, e) } }
+    }
+
+    var positionRow: some View {
+        field("ตำแหน่งถัง", required: true) { positionControl }
+    }
+
+    var surfaceRow: some View {
+        HStack(alignment: .top, spacing: 10) {
+            field("ผิวหลังคา", required: true) { surfaceField }
+            field("ดินกลบลึก", unit: "(ม.)") { soilStepper }
+        }
+    }
+
+    var soilStepper: some View {
+        TankStepper(value: values.number(Tank.Key.soil), step: 0.05, range: 0...50, label: "ดินกลบลึก", placeholder: "0.00") { d in update { Tank.setSoil(&$0, d) } }
     }
 
     /// The size change confirmation, the type and azimuth entries and the compass, on the iPad and iPhone cards.

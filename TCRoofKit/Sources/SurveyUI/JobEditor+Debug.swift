@@ -62,6 +62,8 @@ extension JobEditorView {
         seedPlatePhoto()
         seedReview()
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
+        // `-surveyA1Render YES` writes A1 and its bar at free widths 1366 / 1180 to Documents/a1-<w>x<h>.png
+        if UserDefaults.standard.bool(forKey: "surveyA1Render") { renderInfo() }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
         case "site":
             select(.site)
@@ -175,6 +177,33 @@ extension JobEditorView {
                 let r = ImageRenderer(content: page); r.scale = 1
                 if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("roof-\(Int(free))x\(Int(h)).png")) }
             }
+        }
+    }
+
+    /// A1 in landscape (docs/ui/survey-a1-ipad) with the board's example answers on a copy of the job, then its bar
+    /// (`-surveySave` picks the save button's state). Text fields show as placeholders in ImageRenderer.
+    func renderInfo() {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        var sample = job
+        for (k, v) in [("docNo", "224"), ("rev", "00"), ("date", "2026-09-29"), ("engineer", "สมชาย"),
+                       ("projectName", "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1"), ("capacity", "120"),
+                       ("address", "ม.3 ต.หนองบัว อ.เมือง จ.ตัวอย่าง 60000"), ("coordinator", "คุณสมหญิง ใจดี"),
+                       ("phone", "081-234-5678"), ("gps", "17.0062, 99.8235")] { sample.values[k] = .text(v) }
+        sample.values["internet"] = .choice("มี", other: "")
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            for (free, h) in [(1366.0, 848.0), (1180.0, 636.0)] {
+                let page = InfoPageWide(job: .constant(sample), width: min(free, 1240 + 48) - 48, fillHeight: h - 32)
+                    .environment(model).environment(\.horizontalSizeClass, .regular)
+                    .padding(.horizontal, 24).padding(.vertical, 16)
+                    .frame(width: free, height: h, alignment: .top).background(Paper.page)
+                let r = ImageRenderer(content: page); r.scale = 1
+                if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("a1-\(Int(free))x\(Int(h)).png")) }
+            }
+            let bar = InfoPageBar(job: sample, next: {}).environment(model).environment(\.horizontalSizeClass, .regular)
+                .frame(width: 1366).background(Paper.page)
+            let r = ImageRenderer(content: bar); r.scale = 2
+            if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("a1-bar.png")) }
         }
     }
 

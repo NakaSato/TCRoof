@@ -100,7 +100,7 @@ public struct TCStatusButton: View {
 }
 
 /// Bottom bar of a step (`g-bar`, height 53).
-/// iPad: status button · `บันทึกร่าง` · ‹ ก่อนหน้า · ถัดไป ›. iPhone: `บันทึก` stretches, ‹ and › icon only, no status button
+/// iPad: status button · `บันทึกร่างตอนนี้` · ‹ ก่อนหน้า · ถัดไป ›. iPhone: `บันทึก` stretches, ‹ and › icon only, no status button
 /// (the step line in the header carries it).
 public struct TCStepBar: View {
     public struct Step: Sendable {
@@ -116,27 +116,31 @@ public struct TCStepBar: View {
     var missingDetail: String
     var onStatus: () -> Void
     var onSave: () -> Void
+    /// Changes when the answers change; returns the save button from "บันทึกแล้ว" to idle.
+    var saveVersion: Int
     var onPrevious: () -> Void
     var onNext: () -> Void
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     public init(count: Int, previous: Step?, next: Step?, missing: Int, missingDetail: String,
-                onStatus: @escaping () -> Void = {}, onSave: @escaping () -> Void,
+                onStatus: @escaping () -> Void = {}, onSave: @escaping () -> Void, saveVersion: Int = 0,
                 onPrevious: @escaping () -> Void, onNext: @escaping () -> Void) {
         self.count = count; self.previous = previous; self.next = next
         self.missing = missing; self.missingDetail = missingDetail
-        self.onStatus = onStatus; self.onSave = onSave; self.onPrevious = onPrevious; self.onNext = onNext
+        self.onStatus = onStatus; self.onSave = onSave; self.saveVersion = saveVersion; self.onPrevious = onPrevious; self.onNext = onNext
     }
 
     public var body: some View {
         let compact = sizeClass == .compact
         HStack(spacing: 12) {
             if compact {
-                TCButton("บันทึก", kind: .secondary, size: .bar, fullWidth: true, action: onSave)
+                TCSaveButton(width: nil, save: save, version: saveVersion)
             } else {
                 TCStatusButton(missing: missing, detail: missingDetail, action: onStatus).frame(minWidth: 200, maxWidth: 300).layoutPriority(1)
                 Spacer(minLength: 0)
-                TCButton("บันทึกร่างตอนนี้", kind: .secondary, size: .bar, action: onSave).frame(width: 170).padding(.trailing, 12)
+                TCSaveButton(width: 170, height: 53, font: 16, circle: 22, idle: "บันทึกร่างตอนนี้", busy: "กำลังบันทึก",
+                             save: save, version: saveVersion)
+                    .padding(.trailing, 12)
             }
             nav(.previous, previous, onPrevious)
             nav(.next, next, onNext)
@@ -144,6 +148,12 @@ public struct TCStepBar: View {
         .padding(.top, 8).padding(.horizontal, compact ? 16 : 24).padding(.bottom, 12)
         .frame(maxWidth: .infinity)
         .background(Rectangle().fill(Theme.surface.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
+    }
+
+    /// Runs `onSave`; the button then shows "บันทึกแล้ว".
+    @MainActor func save() async -> Date {
+        onSave()
+        return Date()
     }
 
     func nav(_ d: TCStepNavButton.Direction, _ s: Step?, _ action: @escaping () -> Void) -> some View {

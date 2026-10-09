@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// iPhone bottom bar of the survey steps (docs/ui/components/iphone-bottom-bar): "บันทึก" · ‹ · › on every step,
 /// or two buttons on a detail page (delete + done) and on SLD (two equal actions).
@@ -102,121 +103,8 @@ struct BarPress: ButtonStyle {
     }
 }
 
-/// The 104-pt "บันทึก" button of the iPhone bar (docs/ui/survey-a1-iphone): idle → spinner → green "✓ บันทึกแล้ว" for
-/// 1.35 s → white with a green outline until the next edit (`version` changes), which returns it to idle.
-struct SaveButton: View {
-    enum Phase: Equatable { case idle, busy, saving, justSaved, clean }
-
-    static let width: CGFloat = 104
-
-    /// `-surveySave saving|saved|clean` opens the button in that state, for screenshots (`docs/ui/survey-a1-iphone/states/04`–`06`).
-    static var startPhase: Phase {
-        #if DEBUG
-        switch UserDefaults.standard.string(forKey: "surveySave") {
-        case "saving": return .saving
-        case "saved": return .justSaved
-        case "clean": return .clean
-        default: break
-        }
-        #endif
-        return .idle
-    }
-    let save: @MainActor () async -> Date
-    /// Changes whenever the job's answers are edited (`Job.editVersion`).
-    var version = 0
-    @State var phase = SaveButton.startPhase
-    /// An edit came in since the page opened or since the last save.
-    @State var edited = false
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
-
-    var body: some View {
-        Button(action: run) {
-            label
-                .lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, 6)
-                .frame(width: Self.width, height: 53)
-                .background(fill, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(border, lineWidth: phase == .clean ? 2 : 1))
-        }
-        .buttonStyle(BarPress())
-        .allowsHitTesting(phase == .idle || phase == .clean)
-        .accessibilityLabel(accessibilityText)
-        .onChange(of: version) { _, _ in
-            edited = true
-            if phase == .justSaved || phase == .clean { phase = .idle }
-        }
-    }
-
-    @ViewBuilder var label: some View {
-        switch phase {
-        case .idle, .busy:
-            Text("บันทึก").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.navy)
-        case .saving:
-            HStack(spacing: 6) {
-                ProgressView().controlSize(.small).tint(Home.muted)
-                Text("บันทึก").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.muted)
-            }
-        case .justSaved:
-            savedLabel(circle: true)
-        case .clean:
-            savedLabel(circle: false)
-        }
-    }
-
-    /// "✓ บันทึกแล้ว": white check on a green circle right after saving, a plain green check once settled.
-    func savedLabel(circle: Bool) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: "checkmark").font(.system(size: circle ? 9 : 13, weight: .heavy))
-                .foregroundStyle(circle ? Color.white : Home.okTick)
-                .frame(width: 18, height: 18)
-                .background(circle ? Home.stepDone : Color.clear, in: Circle())
-            Text("บันทึกแล้ว").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.okTick)
-        }
-    }
-
-    var fill: Color {
-        switch phase {
-        case .justSaved: Home.okSoftBG
-        default: .white
-        }
-    }
-
-    var border: Color {
-        switch phase {
-        case .justSaved, .clean: Home.stepDone
-        default: Home.navy.opacity(0.6)
-        }
-    }
-
-    var accessibilityText: String {
-        switch phase {
-        case .saving, .busy: "กำลังบันทึก"
-        case .justSaved, .clean: "บันทึกล่าสุดแล้ว · ยังไม่มีการแก้ไขใหม่"
-        case .idle: edited ? "บันทึกแบบร่าง · มีการแก้ไขที่ยังไม่ได้บันทึก" : "บันทึกแบบร่าง"
-        }
-    }
-
-    func run() {
-        guard phase == .idle || phase == .clean else { return }
-        phase = .busy
-        Task { @MainActor in
-            // the spinner shows for at least 0.45 s, so a quick save still reads as a save
-            let slow = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 100_000_000)
-                if !Task.isCancelled, phase == .busy { phase = .saving }
-            }
-            async let minimum: Void = { try? await Task.sleep(nanoseconds: 450_000_000) }()
-            let when = await save()
-            await minimum
-            slow.cancel()
-            edited = false
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { phase = .justSaved }
-            AccessibilityNotification.Announcement("บันทึกแล้ว " + when.formatted(.dateTime.hour().minute())).post()
-            try? await Task.sleep(nanoseconds: 1_350_000_000)
-            // an edit during these 1.35 s has already put the button back to idle
-            if phase == .justSaved { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { phase = .clean } }
-        }
-    }
-}
+/// The bottom bars' save button lives in the design system (`TCSaveButton`, also in `TCStepBar` and the gallery).
+typealias SaveButton = TCSaveButton
 
 extension Job {
     /// Changes when an answer or a section changes, not when the model stamps `updated` or a Drive link lands.

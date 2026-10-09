@@ -80,6 +80,8 @@ public enum Theme {
     public static let okSoft = Color(light: 0xE2EFDA, dark: 0x1E2A22)
     /// Text of the ok chip "พร้อมใช้".
     public static let okText = Color(light: 0x2E7D32, dark: 0x8FD16A)
+    /// Fill of the save button for 1.35 s after a save (`TCSaveButton`).
+    public static let okFlash = Color(light: 0xF1F8EC, dark: 0x1E2A22)
     public static let pending = Color(light: 0xB45309, dark: 0xF5B35C)
     public static let pendingSoft = Color(light: 0xFFF4E5, dark: 0x2E2213)
     public static let danger = Color(light: 0xD9453B, dark: 0xFF8A7F)

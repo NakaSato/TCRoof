@@ -4,17 +4,21 @@ import UIKit
 import CoreLocation
 import TCRoofCore
 
-/// The picture's own proportions on iPad; a fixed 170 pt on iPhone.
+/// The picture's own proportions on iPad; a fixed 170 pt on iPhone; the free height (at least 232) in iPad landscape.
 private struct MapShape: ViewModifier {
     let phone: Bool
+    let fill: Bool
     func body(content: Content) -> some View {
-        if phone { content.frame(height: 170) } else { content.aspectRatio(1 / SiteMapPreview.aspect, contentMode: .fit) }
+        if phone { content.frame(height: 170) }
+        else if fill { content.frame(maxWidth: .infinity, minHeight: 232, maxHeight: .infinity) }
+        else { content.aspectRatio(1 / SiteMapPreview.aspect, contentMode: .fit) }
     }
 }
 
 /// Satellite preview of the job's GPS on A1: pick a zoom level for the report's site picture, frame the part the report
 /// uses (`MapCrop`), and long-press the pin to move the GPS.
-/// The view has the picture's own proportions, so a frame in % of the view is the same % of the picture.
+/// The frame is in % of the picture. With `fill` the picture fills a box of other proportions and its sides (or top and
+/// bottom) are cut off; the frame is drawn on the picture as placed and kept on the part that shows.
 struct SiteMapPreview: View {
     @Binding var gps: String
     @Binding var zoom: Int
@@ -23,6 +27,8 @@ struct SiteMapPreview: View {
     /// iPhone A1 (docs/ui/survey-a1-iphone): 170 pt high, smaller zoom chips, a hint label, no report frame
     /// (the frame is in percent of the picture's own proportions, which this height doesn't keep).
     var phone = false
+    /// iPad landscape (docs/ui/survey-a1-ipad): fill the free height of the card instead of keeping the picture's proportions.
+    var fill = false
 
     @State private var image: UIImage?
     @State private var loading = false
@@ -68,9 +74,9 @@ struct SiteMapPreview: View {
             .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(phone ? 8 : 10) } }
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { frameSize = $0 }
-        .modifier(MapShape(phone: phone))
-        .clipShape(RoundedRectangle(cornerRadius: phone ? 12 : 10))
-        .overlay(RoundedRectangle(cornerRadius: phone ? 12 : 10).stroke(phone ? Home.hairline : Home.navy.opacity(0.2)))
+        .modifier(MapShape(phone: phone, fill: fill))
+        .clipShape(RoundedRectangle(cornerRadius: phone || fill ? 12 : 10))
+        .overlay(RoundedRectangle(cornerRadius: phone || fill ? 12 : 10).stroke(phone ? Home.hairline : Home.navy.opacity(0.2)))
         .task(id: "\(gps)|\(zoom)") { await load() }
     }
 
@@ -102,10 +108,19 @@ struct SiteMapPreview: View {
 
     // MARK: report frame
 
+    /// The picture as `scaledToFill` places it in a view of this size (the view itself when the proportions match).
+    static func pictureRect(in size: CGSize) -> CGRect {
+        let k = max(size.width / MapImage.size.width, size.height / MapImage.size.height)
+        let w = MapImage.size.width * k, h = MapImage.size.height * k
+        return CGRect(x: (size.width - w) / 2, y: (size.height - h) / 2, width: w, height: h)
+    }
+
     /// Blue frame with four corner handles; outside it the map is dimmed.
     func cropLayer(_ size: CGSize) -> some View {
         let c = liveCrop ?? crop
-        let r = c.rect(in: size)
+        let picture = Self.pictureRect(in: size)
+        let r = c.rect(in: picture.size).offsetBy(dx: picture.minX, dy: picture.minY)
+        let shown = MapCrop.visible(picture: MapImage.size, box: size)
         let across = MapImage.metersAcross(lat: coordinate?.latitude ?? 15, zoom: zoom)
         return ZStack(alignment: .topLeading) {
             Path { p in p.addRect(CGRect(origin: .zero, size: size)); p.addRect(r) }
@@ -114,7 +129,7 @@ struct SiteMapPreview: View {
             Rectangle().fill(Color.white.opacity(0.001))
                 .overlay(Rectangle().stroke(Self.cropBlue, lineWidth: 2))
                 .frame(width: r.width, height: r.height)
-                .gesture(cropDrag(size) { $0.moved(dx: $1.width, dy: $1.height) })
+                .gesture(cropDrag(picture.size) { $0.moved(dx: $1.width, dy: $1.height, within: shown) })
                 .offset(x: r.minX, y: r.minY)
             Text(c.label(across: across, aspect: Self.aspect))
                 .font(.system(size: 12, weight: .bold)).foregroundStyle(.white).lineLimit(1)
@@ -124,7 +139,7 @@ struct SiteMapPreview: View {
                 .offset(x: r.minX + 6, y: r.minY + 6)
                 .allowsHitTesting(false)
             ForEach(MapCrop.Corner.allCases, id: \.self) { k in
-                handle.gesture(cropDrag(size) { $0.resized(k, dx: $1.width, dy: $1.height) })
+                handle.gesture(cropDrag(picture.size) { $0.resized(k, dx: $1.width, dy: $1.height, within: shown) })
                     .offset(x: (k == .nw || k == .sw ? r.minX : r.maxX) - 22, y: (k == .nw || k == .ne ? r.minY : r.maxY) - 22)
             }
         }
@@ -141,7 +156,7 @@ struct SiteMapPreview: View {
             .frame(width: 44, height: 44).contentShape(Rectangle())
     }
 
-    /// Applies `change` (translation in % of the map) to the frame as it was when the finger went down.
+    /// Applies `change` (translation in % of the picture, `size` as placed) to the frame as it was when the finger went down.
     func cropDrag(_ size: CGSize, change: @escaping (MapCrop, CGSize) -> MapCrop) -> some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { g in

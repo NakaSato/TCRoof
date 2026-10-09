@@ -56,6 +56,8 @@ struct JobEditorView: View {
     var readOnly: Bool { job.stage != .survey || job.isLocked }
 
     @State var detailSize: CGSize = .zero
+    /// Visible height of the scrolling detail (inside the header and the bottom bar); A1 fills it in landscape.
+    @State var scrollHeight: CGFloat = 0
     /// A1 in the card layout (docs/ui/survey-a1); one column on iPad portrait and iPhone.
     var cardInfo: Bool { page == .info }
     /// A2's picture page (docs/ui/survey-a2): side by side in landscape, one column on iPad portrait and iPhone.
@@ -348,7 +350,9 @@ struct JobEditorView: View {
                     Group {
                         if cardInfo {
                             // iPhone: the bands run edge to edge
-                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2)
+                            // landscape: the cards fill the visible height (less the 16-pt padding above and below)
+                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2,
+                                         fillHeight: compact || readOnly ? 0 : max(0, scrollHeight - 32))
                                 .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16).frame(maxWidth: 1240 + 48)
                         } else {
                             detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
@@ -359,6 +363,7 @@ struct JobEditorView: View {
                     .frame(maxWidth: .infinity).id("top")
                 }
                 .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height - $0.safeAreaInsets.top - $0.safeAreaInsets.bottom } action: { scrollHeight = $0 }
                 #if DEBUG
                 // `-surveyScrollEnd YES`: open scrolled to the end (the simulator can't be swiped here)
                 .defaultScrollAnchor(UserDefaults.standard.bool(forKey: "surveyScrollEnd") ? .bottom : .top)

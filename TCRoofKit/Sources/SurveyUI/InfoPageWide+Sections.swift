@@ -11,7 +11,7 @@ extension InfoPageWide {
     // MARK: installation areas
 
     var areasBox: some View {
-        A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ · รวม \(job.steps.count) ขั้น", spacing: 10) {
+        A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ · รวม \(job.steps.count) ขั้น", spacing: 10, vertical: 14) {
             areaTiles
         }
     }
@@ -25,8 +25,10 @@ extension InfoPageWide {
         }
     }
 
+    /// iPad (docs/ui/survey-a1-ipad): 60 high, 12-pt corners, 44-pt − / + targets. iPhone keeps 50, 10 and 30.
     func areaTile(_ title: String, _ detail: String, count: Int, set: @escaping (Int) -> Void) -> some View {
         let on = count > 0
+        let pad = sizeClass != .compact
         return HStack(spacing: 2) {
             Button { set(on ? 0 : 1) } label: {
                 HStack(spacing: 8) {
@@ -39,23 +41,23 @@ extension InfoPageWide {
                     .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
                     Spacer(minLength: 0)
                 }
-                .frame(minHeight: 50).contentShape(Rectangle())
+                .frame(minHeight: pad ? 60 : 50).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
             .accessibilityAddTraits(on ? .isSelected : [])
-            stepButton("ui-minus", "minus", label: "ลด" + title) { set(count - 1) }.disabled(count == 0)
+            stepButton("ui-minus", "minus", label: "ลด" + title, width: pad ? 44 : 30) { set(count - 1) }.disabled(count == 0)
             Text("\(count)").font(.system(size: 16, weight: .bold)).monospacedDigit().frame(minWidth: 18)
-            stepButton("ui-plus", "plus", label: "เพิ่ม" + title) { set(count + 1) }.disabled(count >= 20)
+            stepButton("ui-plus", "plus", label: "เพิ่ม" + title, width: pad ? 44 : 30) { set(count + 1) }.disabled(count >= 20)
         }
-        .padding(.leading, 12).padding(.trailing, 2)
-        .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.navy.opacity(0.2) : Home.borderControl))
+        .padding(.leading, 12).padding(.trailing, pad ? 4 : 2)
+        .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: pad ? 12 : 10))
+        .overlay(RoundedRectangle(cornerRadius: pad ? 12 : 10).stroke(on ? Home.navy.opacity(0.2) : Home.borderControl))
     }
 
-    func stepButton(_ icon: String, _ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+    func stepButton(_ icon: String, _ symbol: String, label: String, width: CGFloat = 30, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            A2Icon(name: icon, fallback: symbol, size: 18).frame(width: 30, height: 44).contentShape(Rectangle())
+            A2Icon(name: icon, fallback: symbol, size: 18).frame(width: width, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).foregroundStyle(Home.primary)
         .accessibilityLabel(label)
@@ -91,39 +93,27 @@ extension InfoPageWide {
 
     // MARK: location
 
+    /// Map, its hint and the GPS (docs/ui/survey-a1-ipad). In landscape the map takes the card's free height.
+    /// The station address is in `projectCoordinatorBox`; the office address isn't on the iPad page (it stays in the job,
+    /// the iPhone page and the export).
     var locationBox: some View {
         A1Card(title: "ที่ตั้ง") {
             VStack(alignment: .leading, spacing: 8) {
                 SiteMapPreview(gps: text("gps"), zoom: Binding(get: { mapZoom }, set: { job.values["mapZoom"] = .text(String($0)) }),
                                crop: Binding(get: { mapCrop }, set: { job.values[MapCrop.key] = .text($0.text) }),
-                               keys: model.settings.mapKeys)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                               keys: model.settings.mapKeys, fill: twoColumns)
+                HStack(alignment: .center, spacing: 8) {
                     Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย")
-                        .font(.footnote).foregroundStyle(Home.muted).fixedSize(horizontal: false, vertical: true)
+                        .font(.system(size: 13)).foregroundStyle(Home.muted).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button("รีเซ็ตกรอบ") { job.values[MapCrop.key] = .text(MapCrop.standard.text) }
-                        .font(.footnote.weight(.bold)).foregroundStyle(Home.primary)
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.primary)
                         .frame(minWidth: 44, minHeight: 44).fixedSize()
                         .disabled(mapCrop == .standard)
                 }
+                .padding(.vertical, -6)
             }
-            field("gps") { gpsInput }
-            field("address") {
-                TextField("", text: text("address"), axis: .vertical).lineLimit(2...4).focused($focus, equals: "address")
-                    .padding(.vertical, 14)
-                    .inputBox(calc: calc("address"), focused: focus == "address", minHeight: 74)
-            }
-            field("officeAddress") {
-                HStack(spacing: 6) {
-                    TextField("เหมือนที่อยู่สถานี", text: text("officeAddress")).focused($focus, equals: "officeAddress")
-                    Button("คัดลอก") { job.values["officeAddress"] = job.values["address"] }
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.primary)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .disabled(job.values.text("address").isEmpty)
-                        .accessibilityLabel("คัดลอกที่อยู่สถานี")
-                }
-                .inputBox(focused: focus == "officeAddress", trailing: 8)
-            }
+            field("gps", title: "พิกัดดาวเทียม Google Map") { gpsInput }
         }
     }
 
@@ -139,7 +129,7 @@ extension InfoPageWide {
                     TextField(placeholder("gps"), text: text("gps")).keyboardType(.numbersAndPunctuation).focused($focus, equals: "gps")
                     SourceChip(source: job.values.source("gps"))
                 }
-                .inputBox(focused: focus == "gps")
+                .inputBox(focused: focus == "gps", radius: InfoPageWide.inputRadius)
                 Button(action: locate) {
                     HStack(spacing: 8) {
                         if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Home.primary) }
@@ -147,8 +137,8 @@ extension InfoPageWide {
                         else if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
+                    .overlay(RoundedRectangle(cornerRadius: InfoPageWide.inputRadius).stroke(Home.navy.opacity(0.45)))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).disabled(locating).fixedSize()
@@ -300,7 +290,6 @@ struct InfoPageBar: View {
     @Environment(SurveyModel.self) var model
     /// iPhone: `phoneBar` (docs/ui/components/iphone-bottom-bar) in place of the iPad bar.
     @Environment(\.horizontalSizeClass) var sizeClass
-    @State var savedNow: Date?
 
     /// Step names short enough for the previous / next buttons ("A3 หม้อแปลง · MDB", as in docs/ui/survey-a2).
     static func barTitle(_ s: SurveyStep) -> String {
@@ -329,41 +318,29 @@ struct InfoPageBar: View {
     }
 
     func bar(_ back: BottomBar.Nav, _ forward: BottomBar.Nav) -> BottomBar {
-        BottomBar(variant: .steps(save: {
-            model.flush(job.id)
-            let now = Date()
-            savedNow = now
-            return now
-        }, version: job.editVersion, previous: back, next: forward))
+        BottomBar(variant: .steps(save: save, version: job.editVersion, previous: back, next: forward))
+    }
+
+    /// Writes the job now; the save button shows "บันทึกแล้ว" once it returns.
+    @MainActor func save() async -> Date {
+        model.flush(job.id)
+        return Date()
     }
 
     var padBar: some View {
         let steps = job.steps
         let i = steps.firstIndex { $0.page == here } ?? 0
         let c = steps[safe: i]?.completion ?? Completion()
-        let saved = max(job.updated, savedNow ?? .distantPast)
         return HStack(spacing: 12) {
+            // the save button shows the save state, so only the completion line stays (docs/ui/survey-a1-ipad)
             HStack(spacing: 10) {
                 badge(complete: badgeComplete ?? (c.isComplete && !statusAlert && !statusWarn))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("บันทึกอัตโนมัติ " + (Calendar.current.isDateInToday(saved) ? saved.formatted(.dateTime.hour().minute())
-                                                    : saved.formatted(.dateTime.day().month().hour().minute()))).font(.system(size: 15, weight: .semibold))
-                    status(c)
-                }
-                .lineLimit(1)
+                status(c).lineLimit(1)
             }
             Spacer(minLength: 8)
-            Button { model.flush(job.id); savedNow = Date() } label: {
-                Group {
-                    if tight { Image(systemName: "square.and.arrow.down").font(.system(size: 20, weight: .semibold)) }
-                    else { Text("บันทึกร่างตอนนี้").font(.system(size: 16, weight: .semibold)).lineLimit(1) }
-                }
-                .frame(width: tight ? 56 : narrow ? 130 : 170, height: 56)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.6)))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("บันทึกร่างตอนนี้")
+            SaveButton(width: tight ? 56 : narrow ? 130 : 170, height: 56, font: 16, radius: 12, circle: 22,
+                       idle: "บันทึกร่างตอนนี้", busy: "กำลังบันทึก", icon: tight ? "square.and.arrow.down" : nil,
+                       save: save, version: job.editVersion)
             if let previous, let pi = Optional(previousIndex ?? i - 1), let s = steps[safe: pi] {
                 Button(action: previous) {
                     HStack(spacing: narrow ? 6 : 10) {
@@ -382,9 +359,9 @@ struct InfoPageBar: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("ก่อนหน้า " + s.code + " " + Self.barTitle(s))
             } else if !narrow {
-                HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 18); Text("หัวข้อแรก") }
+                HStack(spacing: 8) { A2Icon(name: "ui-prev", fallback: "chevron.left", size: 20); Text("หัวข้อแรก") }
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(white: 0.56))
-                    .frame(width: 180, height: 56)
+                    .frame(width: 210, height: 56)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.5)))
                     .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton).accessibilityHint("ไม่มีหัวข้อก่อนหน้า")
             }

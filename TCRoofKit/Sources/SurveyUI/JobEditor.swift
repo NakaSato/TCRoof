@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// Editor for one survey: sidebar of sections grouped like the workbook sheets, paper-style form on the right.
 struct JobEditorView: View {
@@ -409,7 +410,7 @@ struct JobEditorView: View {
         let done = FinalSummary.isComplete(job)
         return InfoPageBar(job: job, here: .final, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: before.map { p in { withAnimation { page = p } } }, next: nil,
-                           statusText: FinalSummary.statusLine(job), statusAlert: !done, badgeComplete: done, statusOK: done,
+                           statusText: FinalSummary.statusLine(job), statusAlert: !done, statusOK: done,
                            finish: (sub: "ขั้นสุดท้าย", title: "สรุปผล · ส่งออก", action: { model.flush(job.id); checked { showExport = true } }))
     }
 
@@ -438,21 +439,57 @@ struct JobEditorView: View {
         let last = cardPanels != nil ? steps.lastIndex(where: isPanel) : nil
         let before: Page? = module == nil ? nil : first.flatMap { steps[safe: $0 - 1] }.map { page(for: $0.page) }
         let after: Page? = last.map { steps[safe: $0 + 1].map { page(for: $0.page) } } ?? nextPage
-        let panelsMissing = cardPanels != nil && !BuildingPanels.missing(job).isEmpty
-        let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
-            : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
+        let status = cardElectrical ? electricalStatus : cardSite ? siteStatus : cardPanels.map(panelsStatus)
         let sub = tankSubSteps
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: sub?.previous ?? (module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil),
-                           next: sub?.next ?? go(after), gaps: gaps,
-                           statusText: station?.status ?? water ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
-                           statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
+                           next: sub?.next ?? go(after), status: status,
+                           statusText: station?.status ?? water ?? (cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
+                           statusAlert: station.map { !$0.isOK } ?? ((cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
                                                                      backfeedMissing || ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,
                            previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil,
                            statusOK: cardRoof != nil && roofGaps.isEmpty,
                            statusAction: roofGaps.first.map { g in { roofRequest = g.key } },
                            previousLabel: sub?.previousLabel, nextLabel: sub?.nextLabel)
+    }
+
+    /// A3: the photos still missing per transformer / board; tapping opens the first. nil: the page's field count.
+    var electricalStatus: TCBarStatus? {
+        let gaps = ElectricalPageWide.gaps(job)
+        guard let first = gaps.first else { return nil }
+        return .missing("ยังขาดภาพ: " + gaps.map(\.title).joined(separator: " · ") + " · ไปต่อได้ แล้วค่อยกลับมาเติม",
+                        action: { electricalRequest = first.index })
+    }
+
+    /// A2: the LIST items not ticked yet, in a green chip once the required fields are done; tapping opens the first.
+    var siteStatus: TCBarStatus? {
+        let gaps = SitePageWide.gaps(job)
+        guard let first = gaps.first else { return nil }
+        let c = job.steps.first { $0.page == .site }?.completion ?? Completion()
+        let list = gaps.map(\.title).joined(separator: ", ")
+        let go = { siteRequest = first.item }
+        let label = "ยังไม่มี (ไม่บังคับ) \(gaps.count) รายการ: \(list) · แตะเพื่อไปที่รายการ"
+        return c.isComplete
+            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list, label: "ครบช่องบังคับแล้ว · " + label, action: go)
+            : .gapChip(title: "ครบ \(c.filled)/\(c.total) ช่องในหน้านี้", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list,
+                       label: "ครบ \(c.filled)/\(c.total) ช่อง · " + label, action: go)
+    }
+
+    /// B1: the gaps of every building; tapping opens the first building with gaps, starting from this one.
+    func panelsStatus(_ m: SurveyModule) -> TCBarStatus {
+        let panels = job.modules.filter { $0.type == .panel }
+        let missing = panels.map { BuildingPanels.missingItems($0.values) }
+        let total = missing.reduce(0) { $0 + $1.count }
+        let at = panels.firstIndex { $0.id == m.id } ?? 0
+        guard total > 0, let nx = panels.indices.map({ (at + $0) % panels.count }).first(where: { !missing[$0].isEmpty }) else {
+            return .allDone("ครบทุกอาคารแล้ว")
+        }
+        let name = BuildingPanels.name(panels[nx], in: job), id = panels[nx].id
+        return .gapChip(title: "ยังขาด \(total) รายการ ใน \(missing.filter { !$0.isEmpty }.count) อาคาร",
+                        sub: (nx == at ? "อาคารนี้: " : "ถัดไป \(name): ") + missing[nx].joined(separator: ", "),
+                        label: "ไปยังรายการที่ขาด " + (nx == at ? "ในอาคารนี้" : "ที่ " + name),
+                        action: { withAnimation { page = .module(id) } })
     }
 
     /// iPhone D1: ‹ › move between the four sub-steps first ("ถัดไป D1 2/4 สิ่งกีดขวาง"), then to the pages either side.

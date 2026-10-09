@@ -148,6 +148,8 @@ public enum Theme {
     public static let fabShadow = Color(hex: 0x1F6FB5, opacity: 0.35)
     /// Grey todo capsule and the off ‹ › of the bottom bar, rgba(142,142,147,.25).
     public static let capsuleTodo = Color(hex: 0x8E8E93, opacity: 0.25)
+    /// The iPad bar's off `‹ หัวข้อแรก`: grey text, its outline at 50 %.
+    public static let navOff = Color(light: 0x8E8E93, dark: 0x6E6E73)
     /// Text on `sun` (the example-data chip): navy in both modes, since `sun` stays yellow.
     public static let onSun = Color(hex: 0x16325C)
     /// Empty required photo slot: dashed border #E7B3AE on #FFF8F7.

@@ -49,6 +49,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyTankRender YES` (with `-surveyPage tank`) writes D1 offscreen at free widths 1366 / 1180 / 1100 to `Documents/tank-<w>x<h>.png`, and its iPhone sub-step 1 (step line and cards, no scroll view) to `Documents/tank-phone.png`.
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
+- `-surveyPage photos|revisions` opens ตรวจรูปทั้งหมด or REV และรายการแก้ไข (`docs/specs/review-lock-revisions-swift.md`). `-surveyReview sign|locked|rev01|broken` writes that review-lock state into the opened job: both signatures (the lock sheet opens), REV issued and locked, REV 00 issued then REV 01 opened with three changes, or locked then edited behind the lock (the integrity banner). They change the demo job for good; `rev01` and `broken` only run on a job with no REV yet.
 - `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 and A2 on iPhone: the lower bands).
 - `-surveySave saving|saved|clean` (iPhone, any step) opens the `บันทึก` button in that state: spinner, green flash, green outline (`docs/ui/survey-a1-iphone/states/04`–`06`). `-surveyA1Internet yes|no` (iPhone A1) picks the `อินเทอร์เน็ต` answer.
 - `-surveyExport YES` opens the export sheet.

@@ -62,7 +62,9 @@ extension SurveyModel {
     var reportHeader: ReportHeader { ReportHeader(company: settings.company, photoStamps: settings.printPhotoStamps) }
 
     public func pdfData(_ job: Job) -> Data {
-        PDFRenderer.render(job: job, header: reportHeader, photo: { [weak self] p in self?.image(p, in: job.id) })
+        var header = reportHeader
+        header.changes = revisionChanges(job)
+        return PDFRenderer.render(job: job, header: header, photo: { [weak self] p in self?.image(p, in: job.id) })
     }
 
     public func exportSummaryPDF(_ job: Job) throws -> ExportFile {

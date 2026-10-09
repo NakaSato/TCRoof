@@ -31,10 +31,14 @@ extension JobEditorView {
         let groups = job.missingGroups
         let photos = PhotoGap(model: model, job: job)
         let unsigned = job.missingSignatures
-        guard !groups.isEmpty || photos.missing > 0 else { return go() }
+        // ตรวจรูปทั้งหมด: required photo slots still empty, listed by group
+        let slots = job.photoSlots.filter { $0.missingRequired > 0 }
+        guard !groups.isEmpty || photos.missing > 0 || !slots.isEmpty else { return go() }
         let lines = (unsigned.isEmpty ? [] : ["PDF ที่ส่ง กปภ. ยังไม่มี" + unsigned.joined(separator: " และ")])
-            + (photos.missing > 0 ? [photos.message] : []) + groups.map { "\($0.title): \($0.items.count) รายการ" }
-        pendingExport = PendingExport(gaps: lines, target: unsigned.isEmpty ? groups.first?.target : .final, go: go)
+            + (photos.missing > 0 ? [photos.message] : [])
+            + (slots.isEmpty ? [] : ["ยังขาดรูปบังคับ \(job.missingRequiredPhotos) รูป: " + slots.map { "\($0.id) \($0.missingRequired)" }.joined(separator: ", ")])
+            + groups.map { "\($0.title): \($0.items.count) รายการ" }
+        pendingExport = PendingExport(gaps: lines, target: unsigned.isEmpty ? groups.first?.target : .final, photos: !slots.isEmpty, go: go)
     }
 
     /// A tap or link on the single line diagram: close it and open the page (and item) it points at.

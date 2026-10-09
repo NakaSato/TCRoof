@@ -38,7 +38,8 @@ extension SitePageWide {
             .overlay(alignment: .top) { if photo != nil { toolbar(full: full, narrow: size.width < 600).padding(8) } }
             .overlay(alignment: .topTrailing) { if photo != nil && showLayers { layersMenu.padding(.top, 54).padding(.trailing, 8) } }
             .overlay(alignment: .topLeading) { if photo != nil { northButton.padding(.leading, 10).padding(.top, 58) } }
-            .overlay(alignment: .bottomLeading) { if photo != nil { hintStack.padding(10) } }
+            // narrow pictures: the hint sits above the scale button instead of under it
+            .overlay(alignment: .bottomLeading) { if photo != nil { hintStack.padding(10).padding(.bottom, size.width < 600 ? 54 : 0) } }
             .overlay(alignment: .bottomTrailing) { if photo != nil { scaleBar(size, zoom: z).padding(10) } }
     }
 

@@ -22,7 +22,7 @@ extension InfoPageWide {
                 phoneBand("02", "ที่ตั้ง", chip: bandChip(Self.locationIDs)) { locationFields }
                 phoneBand("03", "ผู้ประสานงาน", chip: bandChip(Self.coordinatorIDs)) { coordinatorFields }
                 phoneBand("04", "เอกสาร", chip: bandChip(Self.documentIDs)) { documentFields }
-                phoneBand("05", "พื้นที่ติดตั้ง", chip: ("รวม \(job.steps.count) ขั้น", Home.muted, Home.primarySoft), last: true) { areaFields }
+                phoneBand("05", "พื้นที่ติดตั้ง", chip: PhoneBand<EmptyView>.noteChip("รวม \(job.steps.count) ขั้น"), last: true) { areaFields }
             }
         }
         .onAppear {
@@ -43,34 +43,12 @@ extension InfoPageWide {
     }
 
     func bandChip(_ ids: [String]) -> (text: String, fg: Color, bg: Color) {
-        let done = ids.filter { spec($0).isFilled(job.values) }.count
-        return done == ids.count ? ("✓ \(done)/\(ids.count)", Home.badgeOkText, Home.badgeOkBg)
-                                 : ("\(done)/\(ids.count)", Home.pending, Home.badgeWarnBg)
+        PhoneBand<EmptyView>.countChip(ids.filter { spec($0).isFilled(job.values) }.count, ids.count)
     }
 
-    /// Full-bleed white band: 1-pt borders, a big blue number, a divider, the title and a chip.
-    func phoneBand<Content: View>(_ number: String, _ title: String, chip: (text: String, fg: Color, bg: Color), last: Bool = false,
+    func phoneBand<Content: View>(_ number: String, _ title: String, chip: PhoneBand<Content>.Chip, last: Bool = false,
                                   @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Text(number).font(.system(size: 24, weight: .heavy)).tracking(-0.5).monospacedDigit().foregroundStyle(Home.primary)
-                Rectangle().fill(Home.hairline).frame(width: 1, height: 18)
-                Text(title).font(.system(size: 16, weight: .bold)).lineLimit(1)
-                Spacer(minLength: 4)
-                Text(chip.text).font(.system(size: 11, weight: .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
-                    .padding(.horizontal, 8).padding(.vertical, 1)
-                    .background(chip.bg, in: Capsule())
-            }
-            // the board's 24-pt number sits in a row that makes bands 03 / 04 131 / 210 pt tall
-            .frame(height: 26)
-            .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
-            content()
-        }
-        .padding(.top, 12).padding(.horizontal, 16).padding(.bottom, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .overlay(alignment: .top) { Rectangle().fill(Home.hairline).frame(height: 1) }
-        .overlay(alignment: .bottom) { if last { Rectangle().fill(Home.hairline).frame(height: 1) } }
+        PhoneBand(number: number, title: title, chip: chip, last: last, content: content)
     }
 
     /// Label 14 pt over a control, 5 pt apart.

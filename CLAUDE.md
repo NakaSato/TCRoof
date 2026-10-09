@@ -41,7 +41,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyTankRender YES` (with `-surveyPage tank`) writes D1 offscreen at free widths 1366 / 1180 / 1100 to `Documents/tank-<w>x<h>.png`, and its iPhone sub-step 1 (step line and cards, no scroll view) to `Documents/tank-phone.png`.
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
-- `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 on iPhone: bands `03`–`05`).
+- `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 and A2 on iPhone: the lower bands).
 - `-surveySave saving|saved|clean` (iPhone, any step) opens the `บันทึก` button in that state: spinner, green flash, green outline (`docs/ui/survey-a1-iphone/states/04`–`06`). `-surveyA1Internet yes|no` (iPhone A1) picks the `อินเทอร์เน็ต` answer.
 - `-surveyExport YES` opens the export sheet.
 - `-surveySLDDXF YES` (with `-surveyPage sld`) writes the single line diagram's DXF to `Documents/sld.dxf`.

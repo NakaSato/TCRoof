@@ -4,6 +4,7 @@ import UIKit
 import PhotosUI
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A2 on iPad in landscape (docs/ui/survey-a2): the site picture with drawing tools on the left; picture source,
 /// symbol palette, LIST and site note on the right. Portrait and iPhone keep the schema form (`groupPage`).
@@ -17,6 +18,9 @@ struct SitePageWide: View {
     /// Portrait: the picture on top and the right column below it, the page scrolling (landscape puts them side by side).
     var stacked = false
     @Environment(SurveyModel.self) var model
+    /// iPhone: `phoneBody` (bands; the picture is edited full screen) in place of the picture card.
+    @Environment(\.horizontalSizeClass) var sizeClass
+    var isPhone: Bool { sizeClass == .compact }
 
     /// What a tap on the picture does.
     enum Tool: Hashable { case mark(MarkKind), shape(ShapeKind) }
@@ -60,6 +64,8 @@ struct SitePageWide: View {
     @State var modelGrab: (id: String, dx: Double, dy: Double)?
     @State var cardDrag: CardDrag?
     @State var fullScreen = false
+    /// iPhone full screen: the building list under the picture is open.
+    @State var panelOpen = true
     /// Full-screen zoom and pan; the card always shows the whole picture.
     @State var zoom: CGFloat = 1
     @State var zoomStart: CGFloat?
@@ -72,27 +78,8 @@ struct SitePageWide: View {
     var pictureWidth: CGFloat { (width - 24) * 860 / 1294 }
 
     var body: some View {
-        VStack(spacing: 16) {
-            PageStepBar(job: job, here: .site)
-            if stacked {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        pictureCard.frame(height: max(320, width * 0.78))
-                        rightColumn
-                    }
-                    .padding(.bottom, 8)
-                }
-                .scrollIndicators(.hidden)
-                .frame(maxHeight: .infinity)
-            } else {
-                HStack(alignment: .top, spacing: 24) {
-                    pictureCard.frame(width: pictureWidth).frame(maxHeight: .infinity)
-                    ScrollView { rightColumn.padding(.bottom, 4) }
-                        .scrollIndicators(.hidden)
-                        .frame(maxWidth: .infinity)
-                }
-                .frame(maxHeight: .infinity)
-            }
+        Group {
+            if isPhone { phoneBody } else { padBody }
         }
         .foregroundStyle(Home.navy)
         .onAppear { tickFromCover() }
@@ -125,6 +112,31 @@ struct SitePageWide: View {
         .sheet(item: $dxfFile) { f in ShareSheet(items: [f.url]).presentationDetents([.medium, .large]) }
         .fullScreenCover(isPresented: $fullScreen, onDismiss: { zoom = 1; pan = .zero; cardDrag = nil }) {
             fullScreenView.environment(model)
+        }
+    }
+
+    var padBody: some View {
+        VStack(spacing: 16) {
+            PageStepBar(job: job, here: .site)
+            if stacked {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        pictureCard.frame(height: max(320, width * 0.78))
+                        rightColumn
+                    }
+                    .padding(.bottom, 8)
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxHeight: .infinity)
+            } else {
+                HStack(alignment: .top, spacing: 24) {
+                    pictureCard.frame(width: pictureWidth).frame(maxHeight: .infinity)
+                    ScrollView { rightColumn.padding(.bottom, 4) }
+                        .scrollIndicators(.hidden)
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(maxHeight: .infinity)
+            }
         }
     }
 
@@ -271,6 +283,8 @@ struct SitePageWide: View {
         showLayers = false
         if t != nil { selectedModel = nil }
         tool = tool == t ? nil : t
+        // iPhone: the picture is only drawn on full screen, so arming a symbol or shape opens it
+        if isPhone, tool != nil, !fullScreen { fullScreen = true }
     }
 
     /// LIST items not ticked yet, with the bottom bar's short names.
@@ -295,12 +309,17 @@ struct SitePageWide: View {
         }
     }
 
-    func heading(_ title: String, required: Bool = false, trailing: String) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).layoutPriority(1)
-            if required { Text("*").font(.system(size: 17, weight: .bold)).foregroundStyle(Home.danger) }
-            Spacer(minLength: 8)
-            Text(trailing).font(.system(size: 12)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
+    /// iPad: the section's title with a hint at its end. iPhone: the band already has the title, so only the hint.
+    @ViewBuilder func heading(_ title: String, required: Bool = false, trailing: String) -> some View {
+        if isPhone {
+            Text(trailing).font(.system(size: 12)).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).layoutPriority(1)
+                if required { Text("*").font(.system(size: 17, weight: .bold)).foregroundStyle(Home.danger) }
+                Spacer(minLength: 8)
+                Text(trailing).font(.system(size: 12)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
+            }
         }
     }
 
@@ -386,7 +405,7 @@ struct SitePageWide: View {
     var listSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             heading("LIST — รายการที่ระบุในภาพ", trailing: "ติ๊กอัตโนมัติเมื่อวาง")
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], alignment: .leading, spacing: 0) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: isPhone ? 1 : 2), alignment: .leading, spacing: 0) {
                 ForEach(Options.list, id: \.self) { item in listRow(item) }
             }
             .padding(2)

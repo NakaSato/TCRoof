@@ -13,24 +13,66 @@ extension SitePageWide {
     var fullScreenView: some View {
         ZStack(alignment: .topLeading) {
             Self.fullBackground.ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 14) {
-                fullHeader
-                HStack(alignment: .top, spacing: 16) {
-                    GeometryReader { geo in
-                        picture(geo.size, full: true)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .onAppear { fullFrame = geo.frame(in: .named(Self.fullSpace)) }
-                            .onChange(of: geo.frame(in: .named(Self.fullSpace))) { _, f in fullFrame = f }
-                    }
-                    modelPanel.frame(width: 290)
-                }
+            Group {
+                if isPhone { phoneFull } else { padFull }
             }
-            .padding(.horizontal, 20).padding(.vertical, 12)
             ghost
         }
         .coordinateSpace(name: Self.fullSpace)
         .foregroundStyle(Home.navy)
         .statusBarHidden(true)
+    }
+
+    var padFull: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            fullHeader
+            HStack(alignment: .top, spacing: 16) {
+                fullPicture
+                modelPanel.frame(width: 290)
+            }
+        }
+        .padding(.horizontal, 20).padding(.vertical, 12)
+    }
+
+    var fullPicture: some View {
+        GeometryReader { geo in
+            picture(geo.size, full: true)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .onAppear { fullFrame = geo.frame(in: .named(Self.fullSpace)) }
+                .onChange(of: geo.frame(in: .named(Self.fullSpace))) { _, f in fullFrame = f }
+        }
+    }
+
+    /// iPhone: the picture on top, the building list below it (it can be folded away to give the picture the screen).
+    var phoneFull: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text("ภาพสถานที่ติดตั้ง").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                Spacer(minLength: 8)
+                Button { fullScreen = false } label: {
+                    HStack(spacing: 6) {
+                        A2Icon(name: "action-fullscreenExit", fallback: "arrow.down.right.and.arrow.up.left", size: 18)
+                        Text("เสร็จ").font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundStyle(Home.navy)
+                    .padding(.horizontal, 16).frame(minHeight: 44)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain).accessibilityLabel("ออกจากเต็มจอ")
+            }
+            fullPicture
+            Button { withAnimation(.easeOut(duration: 0.15)) { panelOpen.toggle() } } label: {
+                HStack(spacing: 6) {
+                    Text("อาคารในโครงการ").font(.system(size: 14, weight: .bold))
+                    Image(systemName: panelOpen ? "chevron.down" : "chevron.up").font(.system(size: 12, weight: .bold))
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(.white).frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if panelOpen { modelPanel.frame(height: 250) }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
     }
 
     var fullHeader: some View {

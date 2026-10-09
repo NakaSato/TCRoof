@@ -316,11 +316,12 @@ struct JobEditorView: View {
         } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), request: $siteRequest,
+                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 0 : 48), request: $siteRequest,
                              stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
+            // iPhone: the bands run edge to edge
+            .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else {

@@ -60,6 +60,7 @@ extension JobEditorView {
     func openDebugPage() {
         seedAutofill()
         seedPlatePhoto()
+        seedReview()
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
         case "site":
@@ -67,6 +68,8 @@ extension JobEditorView {
             // `-surveySiteDXF YES` also writes the site plan's DXF to Documents/site.dxf (with `-surveyAutofill`'s symbols when given)
             if UserDefaults.standard.bool(forKey: "surveySiteDXF"), let out = SiteDXF.build(job) { writeDebugFile("site.dxf", out.data) }
         case "electrical": select(.electrical)
+        case "photos": select(.photos)
+        case "revisions": select(.revisions)
         case "sld":
             select(.electrical); showSLD = true
             // `-surveySLDDXF YES` also writes the diagram's DXF to Documents/sld.dxf
@@ -100,6 +103,55 @@ extension JobEditorView {
                     try? await Task.sleep(nanoseconds: 2_500_000_000)
                     if let v = job.modules.first(where: { $0.id == id })?.values, let out = TankDXF.build(v) { writeDebugFile("tank.dxf", out.data) }
                 }
+            }
+        default: break
+        }
+    }
+
+    /// `-surveyReview sign|locked|rev01|broken`: the review lock's states (docs/specs/review-lock-revisions-swift.md) on the demo
+    /// job. `sign` signs both after a moment (the lock sheet opens), `locked` issues REV 00, `rev01` issues it, opens REV 01
+    /// and changes the name and the site picture, `broken` locks then edits job.json's answers behind the lock.
+    func seedReview() {
+        guard let state = UserDefaults.standard.string(forKey: "surveyReview") else { return }
+        func picture(_ text: String, _ size: CGSize, png: Bool) -> Photo? {
+            let img = UIGraphicsImageRenderer(size: size).image { ctx in
+                if !png { UIColor(red: 0.55, green: 0.7, blue: 0.85, alpha: 1).setFill(); ctx.fill(CGRect(origin: .zero, size: size)) }
+                (text as NSString).draw(at: CGPoint(x: 30, y: size.height / 2 - 40),
+                                        withAttributes: [.font: UIFont.italicSystemFont(ofSize: 64), .foregroundColor: UIColor.darkGray])
+            }
+            return model.addPhoto(img, to: job.id, png: png)
+        }
+        func sign(_ j: inout Job) {
+            j.values["surveyorSign"] = picture("สมชาย", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+            j.values["customerSign"] = picture("ประสาน", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+        }
+        if job.values.photo("siteMap") == nil { job.values["siteMap"] = picture("ภาพสถานที่", CGSize(width: 1200, height: 900), png: false).map { .photo($0) } }
+        switch state {
+        case "sign":
+            job.values["surveyorSign"] = picture("สมชาย", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                job.values["customerSign"] = picture("ประสาน", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+            }
+        case "locked", "rev01", "broken":
+            guard !job.isLocked, state == "locked" || (job.revisions ?? []).isEmpty else { return }
+            var j = job
+            sign(&j)
+            job = j
+            model.update(j)
+            try? model.issue(job.id)
+            if let issued = model.job(job.id) { job = issued }
+            if state == "rev01" {
+                openNextRevision(reason: "สถานีแจ้งขนาดหม้อแปลงใหม่", updateDate: true)
+                job.values["projectName"] = .text(job.projectName + " (แก้ไข)")
+                job.values["siteMap"] = picture("ภาพใหม่", CGSize(width: 1200, height: 900), png: false).map { .photo($0) }
+                job.values["internet"] = .choice("ไม่มี", other: "")
+            } else if state == "broken" {
+                var edited = job
+                edited.values["projectName"] = .text("แก้นอกแอป")
+                model.applyRemote(edited)
+                job = edited
+                checkIntegrity()
             }
         default: break
         }

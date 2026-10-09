@@ -66,7 +66,8 @@ final class PhoneSurveyUITests: XCTestCase {
 
     /// `คัดลอก` copies the station address and then disappears, so it never overwrites an office address.
     func testA1CopyAddressHidesButton() {
-        let app = launch()
+        // a new job each run: the copy fills the office address, which would hide the button on the demo job for good
+        let app = launch(page: nil, ["-surveyFreshJob", "YES"])
         let copy = app.buttons["คัดลอกที่อยู่สถานี"]
         XCTAssertTrue(copy.waitForExistence(timeout: slow))
         reveal(copy, in: app)

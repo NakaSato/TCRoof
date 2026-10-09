@@ -32,6 +32,8 @@ public final class SurveyModel {
     /// Download progress per job of photos taken on another iPad.
     public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]
     var photoRevision = 0
+    /// Bumped when an issued REV arrives from another device, so pages showing REVs read the files again.
+    public internal(set) var revisionArrivals = 0
 
     /// Upload progress per job; kept after a failure so the editor can say it will retry.
     public internal(set) var photoUpload: [UUID: PhotoTransfer] = [:]
@@ -70,8 +72,14 @@ public final class SurveyModel {
         return j
     }
 
-    /// Keeps the list current at once and writes to disk shortly after the last change.
-    public func update(_ job: Job) {
+    /// Keeps the list current at once and writes to disk shortly after the last change. A change to the answers of a
+    /// locked job is refused (false): only `openNextRevision` unlocks it, so no stray binding can bypass the lock.
+    @discardableResult
+    public func update(_ job: Job) -> Bool {
+        if let old = self.job(job.id), let lock = old.lock, job.lock == lock, old.values != job.values || old.modules != job.modules {
+            print("SurveyModel: refused an edit to locked REV \(lock.rev) of \(job.id)")
+            return false
+        }
         var j = job
         // only answers count as an edit — a Drive link landing after a save mustn't make the job look unsaved again
         if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID,
@@ -86,6 +94,7 @@ public final class SurveyModel {
             try? store.save(snapshot)
         }
         onChange?()
+        return true
     }
 
     public func flush(_ id: UUID) {

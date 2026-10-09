@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import PDFKit
 import TCRoofCore
+import TCRoofUI
 import PDFReport
 import DriveSync
 
@@ -45,7 +46,7 @@ extension JobEditorView {
         switch p {
         case .summary: return nil
         case .info, .site, .electrical, .flood: return .general
-        case .final: return .summary
+        case .final, .photos, .revisions: return .summary
         case .module(let id): return job.modules.first { $0.id == id }?.spec.category
         }
     }
@@ -75,6 +76,7 @@ extension JobEditorView {
                             }
                         }
                     }
+                    reviewRows
                 }
                 .padding(.horizontal, 14).padding(.vertical, 14)
             }
@@ -113,7 +115,10 @@ extension JobEditorView {
             }
             .font(.caption).foregroundStyle(Home.muted).monospacedDigit()
             photoStatus
-            if readOnly {
+            if job.isLocked && job.stage == .survey {
+                Label("REV \(job.rev) ล็อก · \(FormHash.short(job.lock?.hash ?? ""))", systemImage: "lock.fill").font(.caption.weight(.bold)).foregroundStyle(Home.navy)
+                    .padding(.horizontal, 10).padding(.vertical, 6).background(Home.lockBadge, in: Capsule())
+            } else if readOnly {
                 Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.caption.weight(.bold)).foregroundStyle(Home.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6).background(Home.lockBadge, in: Capsule())
             } else if let next = nextIncomplete, next.page != page {
@@ -264,6 +269,11 @@ extension JobEditorView {
                 Text(item.title).font(.system(size: 16, weight: selected ? .bold : .medium)).lineLimit(1)
                     .foregroundStyle(selected ? Home.primary : c.total > 0 && c.isComplete ? Home.muted : Home.navy)
                 Spacer(minLength: 4)
+                if let n = changedPages[item.page] {
+                    Text("แก้ \(n)").font(.caption2.weight(.bold)).foregroundStyle(Theme.pending)
+                        .padding(.horizontal, 6).padding(.vertical, 2).background(Theme.pendingSoft, in: Capsule())
+                        .accessibilityLabel("แก้จาก REV ก่อน \(n) รายการ")
+                }
                 StatusMark(completion: c)
             }
             .padding(.leading, 10).padding(.trailing, 10).frame(minHeight: 48)

@@ -8,7 +8,7 @@ import DriveSync
 
 /// Editor for one survey: sidebar of sections grouped like the workbook sheets, paper-style form on the right.
 struct JobEditorView: View {
-    enum Page: Hashable { case summary, info, site, electrical, flood, module(UUID), final }
+    enum Page: Hashable { case summary, info, site, electrical, flood, module(UUID), final, photos, revisions }
 
     @Environment(SurveyModel.self) var model
     @State var job: Job
@@ -22,7 +22,18 @@ struct JobEditorView: View {
     @State var sidebarVisible = true
     @State var collapsed: Set<SectionCategory> = []
     @State var pendingExport: PendingExport?
-    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; let go: () -> Void }
+    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; var photos = false; let go: () -> Void }
+    // review lock (docs/specs/review-lock-revisions-swift.md)
+    @State var showLockSheet = false
+    @State var showNextRevision = false
+    /// An edit to a signed, unlocked form, held until the signatures may be cleared.
+    @State var pendingSignedEdit: Job?
+    @State var photoFilter = PhotoReviewPage.Filter.all
+    /// The REV the comparison page starts from (the integrity banner's เทียบกับ REV nn).
+    @State var revisionCompare: String?
+    /// The previous issued REV's answers, for the sidebar's change dots.
+    @State var revisionBase: FormSnapshot?
+    @State var integrityBroken = false
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dismiss) var dismiss
 
@@ -41,8 +52,8 @@ struct JobEditorView: View {
     /// iPhone (and narrow iPad split view): the section list and the form take turns filling the screen.
     var compact: Bool { sizeClass == .compact }
 
-    /// A survey moved to installation is kept as it was: view and export only.
-    var readOnly: Bool { job.stage != .survey }
+    /// A survey moved to installation, or a REV locked after both signatures, is kept as it was: view and export only.
+    var readOnly: Bool { job.stage != .survey || job.isLocked }
 
     @State var detailSize: CGSize = .zero
     /// A1 in the card layout (docs/ui/survey-a1); one column on iPad portrait and iPhone.
@@ -158,7 +169,7 @@ struct JobEditorView: View {
         // the card pages' blue header carries back, sidebar and export itself
         .toolbar(cardPage ? .hidden : .visible, for: .navigationBar)
         // the model owns the Drive link (uploads and other devices change it); this copy only mirrors it
-        .onChange(of: job) { _, new in var j = new; j.drive = model.job(new.id)?.drive ?? new.drive; model.update(j) }
+        .onChange(of: job) { old, new in jobChanged(old, new) }
         // the Drive link changes elsewhere (export sheet, another device) — take it so the next edit doesn't drop it
         .onChange(of: model.job(job.id)?.drive) { _, d in if let d, d != job.drive { job.drive = d } }
         // photos taken on another iPad: fetch them from Drive now, and again when that iPad uploads more
@@ -190,9 +201,11 @@ struct JobEditorView: View {
         .sheet(isPresented: $showExport, onDismiss: { if let d = model.job(job.id)?.drive { job.drive = d } }) {
             ExportSheet(jobID: job.id) { select(page(for: $0)) }.environment(model)
         }
+        .modifier(ReviewLockModifiers(editor: self))
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .alert("ข้อมูลยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in
+            if p.photos { Button("ไปตรวจรูป") { pendingExport = nil; photoFilter = .missing; select(.photos) } }
             if let t = p.target { Button("ไปกรอกให้ครบ") { pendingExport = nil; select(page(for: t)) } }
             Button("ส่งออกต่อ") { let go = p.go; pendingExport = nil; go() }
             Button("ยกเลิก", role: .cancel) { pendingExport = nil }
@@ -297,6 +310,7 @@ struct JobEditorView: View {
         } else if cardFinal {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
+                finalBanners
                 FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
                               stacked: compact || infoColumns != 2 || detailSize.width < 1100,
                               open: { select(page(for: $0)) })
@@ -325,6 +339,8 @@ struct JobEditorView: View {
             .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
+        } else if page == .photos || page == .revisions {
+            reviewDetail.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -444,7 +460,7 @@ struct JobEditorView: View {
                 t < names.count ? { withAnimation { tankTab = t + 1 } } : nil, t < names.count ? "ถัดไป " + label(t + 1) : nil)
     }
 
-    var readOnlyBanner: some View {
+    var stageBanner: some View {
         Label("งานนี้ย้ายไปงานติดตั้งแล้ว · งดแก้ไข ดูและส่งออกได้อย่างเดียว", systemImage: "lock")
             .font(.subheadline.weight(.semibold)).foregroundStyle(Home.navy)
             .frame(maxWidth: .infinity, alignment: .leading)

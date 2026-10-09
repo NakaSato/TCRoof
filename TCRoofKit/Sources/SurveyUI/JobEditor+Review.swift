@@ -158,7 +158,7 @@ struct ReviewLockModifiers: ViewModifier {
                 Button("ล้างลายเซ็นและแก้ไข", role: .destructive) { e.confirmSignedEdit() }
                 Button("ยกเลิก", role: .cancel) { e.pendingSignedEdit = nil }
             } message: { Text("ลายเซ็นต้องตรงกับข้อมูลที่ลงนาม · แก้แล้วต้องลงนามใหม่ทั้งสองฝ่าย") }
-            .task(id: e.job.previousRevision?.rev) { e.loadRevisionBase() }
+            .task(id: "\(e.job.previousRevision?.rev ?? "")|\(e.model.revisionArrivals)") { e.loadRevisionBase(); e.checkIntegrity() }
             .onAppear { e.checkIntegrity() }
     }
 }

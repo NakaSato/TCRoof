@@ -92,6 +92,19 @@ public final class JobStore: @unchecked Sendable {
         try Self.encoder.encode(snapshot).write(to: u, options: .withoutOverwriting)
     }
 
+    /// A snapshot received from another device, stored as it came. It must decode, and an issued REV here is never replaced.
+    public func saveRevisionData(_ data: Data, rev: String, job: UUID) throws {
+        _ = try Self.decoder.decode(FormSnapshot.self, from: data)
+        lock.lock(); defer { lock.unlock() }
+        let u = revisionJSON(rev: rev, job: job)
+        guard !fm.fileExists(atPath: u.path) else { throw RevisionError.exists }
+        try fm.createDirectory(at: revisionsFolder(job), withIntermediateDirectories: true)
+        try data.write(to: u, options: .withoutOverwriting)
+    }
+
+    /// The stored bytes of an issued REV, to send to other devices.
+    public func revisionData(rev: String, job: UUID) -> Data? { try? Data(contentsOf: revisionJSON(rev: rev, job: job)) }
+
     public func loadRevision(rev: String, job: UUID) -> FormSnapshot? {
         guard let d = try? Data(contentsOf: revisionJSON(rev: rev, job: job)) else { return nil }
         return try? Self.decoder.decode(FormSnapshot.self, from: d)

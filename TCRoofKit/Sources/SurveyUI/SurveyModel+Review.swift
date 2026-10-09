@@ -62,6 +62,46 @@ extension SurveyModel {
         flush(id)
     }
 
+    // MARK: other devices
+
+    /// One issued REV's snapshot as the host's cloud stores it: written once, never changed.
+    public struct RevisionDoc: Sendable {
+        public let job: UUID
+        public let rev: String
+        public let json: String
+        public init(job: UUID, rev: String, json: String) { self.job = job; self.rev = rev; self.json = json }
+    }
+
+    /// The issued REVs of a job that this device holds.
+    public func revisionDocs(_ job: Job) -> [RevisionDoc] {
+        (job.revisions ?? []).compactMap { r in
+            store.revisionData(rev: r.rev, job: job.id).flatMap { String(data: $0, encoding: .utf8) }.map { RevisionDoc(job: job.id, rev: r.rev, json: $0) }
+        }
+    }
+
+    /// A REV issued on another device. One already here is kept as it is.
+    public func receiveRevision(_ doc: RevisionDoc) {
+        guard (try? store.saveRevisionData(Data(doc.json.utf8), rev: doc.rev, job: doc.job)) != nil else { return }
+        revisionArrivals += 1
+    }
+
+    /// The PDF as signed; on a device without the file, the report rebuilt from the REV's snapshot (kept once every
+    /// photo is here, so it matches the signed one).
+    func revisionPDF(_ job: Job, rev: String) -> URL? {
+        let url = store.revisionPDF(rev: rev, job: job.id)
+        if FileManager.default.fileExists(atPath: url.path) { return url }
+        guard let list = job.revisions, let i = list.firstIndex(where: { $0.rev == rev }), let snap = snapshot(job, rev: rev) else { return nil }
+        var j = job
+        j.values = snap.values; j.modules = snap.modules
+        j.revisions = Array(list[...i]); j.pendingReason = nil
+        j.lock = FormLock(rev: rev, lockedAt: list[i].issuedAt, hash: list[i].hash)
+        let complete = missingPhotos(j).isEmpty
+        let out = complete ? url : tempURL("REV\(rev) " + baseName(j) + ".pdf")
+        try? FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
+        guard (try? pdfData(j).write(to: out, options: .atomic)) != nil else { return nil }
+        return out
+    }
+
     /// แก้ไข (เปิด REV nn+1) (§4.4).
     func openNextRevision(_ id: UUID, reason: String, updateDate: Bool) {
         guard var j = job(id), j.isLocked else { return }

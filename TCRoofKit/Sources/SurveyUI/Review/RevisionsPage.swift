@@ -23,6 +23,7 @@ struct RevisionsPage: View {
         // default: the last issued REV against the current draft, or the two last REVs while locked
         let a = from ?? (job.isLocked ? job.previousRevision?.rev : revs.last?.rev) ?? revs.first?.rev ?? "00"
         let b = to ?? (job.isLocked ? job.rev : Self.current)
+        _ = model.revisionArrivals   // a REV from another device: read the files again
         let changes = compare(a, b)
         return ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -57,12 +58,13 @@ struct RevisionsPage: View {
                         Label(r.shortCode, systemImage: "lock.fill").font(.caption.monospaced()).foregroundStyle(Theme.inkMuted)
                     }
                     Spacer(minLength: 8)
-                    let url = model.store.revisionPDF(rev: r.rev, job: job.id)
-                    if r.pdfFile != nil, FileManager.default.fileExists(atPath: url.path) {
-                        TCButton("เปิด PDF", systemImage: "doc.richtext", kind: .secondary, size: .card) { openPDF(url, "REV \(r.rev) " + job.projectName) }
-                            .fixedSize()
+                    if model.snapshot(job, rev: r.rev) != nil || FileManager.default.fileExists(atPath: model.store.revisionPDF(rev: r.rev, job: job.id).path) {
+                        TCButton("เปิด PDF", systemImage: "doc.richtext", kind: .secondary, size: .card) {
+                            if let url = model.revisionPDF(job, rev: r.rev) { openPDF(url, "REV \(r.rev) " + job.projectName) }
+                        }
+                        .fixedSize()
                     } else {
-                        Text("ไม่มี PDF ในเครื่องนี้").font(.caption).foregroundStyle(Theme.inkMuted)
+                        Text("รอข้อมูล REV จากเครื่องที่ลงนาม").font(.caption).foregroundStyle(Theme.inkMuted)
                     }
                 }
                 .padding(12)

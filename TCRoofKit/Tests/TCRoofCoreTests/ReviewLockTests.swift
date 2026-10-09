@@ -204,6 +204,18 @@ final class ReviewLockTests: XCTestCase {
         XCTAssertNil(s.loadRevision(rev: "01", job: j.id))
     }
 
+    /// A REV received from another device is stored as sent, once; garbage is refused.
+    func testReceivedRevision() throws {
+        let here = tmpStore(), there = tmpStore(), j = station()
+        try here.saveRevision(j.snapshot, rev: "00", job: j.id)
+        let sent = try XCTUnwrap(here.revisionData(rev: "00", job: j.id))
+        try there.saveRevisionData(sent, rev: "00", job: j.id)
+        XCTAssertEqual(there.loadRevision(rev: "00", job: j.id), j.snapshot)
+        XCTAssertThrowsError(try there.saveRevisionData(sent, rev: "00", job: j.id))
+        XCTAssertThrowsError(try there.saveRevisionData(Data("x".utf8), rev: "01", job: j.id))
+        XCTAssertNil(there.revisionData(rev: "01", job: j.id))
+    }
+
     func testPurgeKeepsIssuedPhotos() throws {
         let s = tmpStore()
         var j = station()

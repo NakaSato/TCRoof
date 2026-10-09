@@ -32,14 +32,23 @@ public struct TCSaveButton: View {
     var busy = "บันทึก"
     /// In place of the idle words (a tight iPad bar); the other states keep their icons without words.
     var icon: String? = nil
+    /// A soft ring spreads from the check circle as it pops in (the iPad bar).
+    var pulse = false
     let save: @MainActor () async -> Date
     /// Changes whenever the job's answers are edited (`Job.editVersion`).
     var version = 0
     public init(width: CGFloat? = 104, height: CGFloat = 53, font: CGFloat = 15, radius: CGFloat = 10, circle: CGFloat = 18,
-                idle: String = "บันทึก", busy: String = "บันทึก", icon: String? = nil,
+                idle: String = "บันทึก", busy: String = "บันทึก", icon: String? = nil, pulse: Bool = false,
                 save: @escaping @MainActor () async -> Date, version: Int = 0) {
         self.width = width; self.height = height; self.font = font; self.radius = radius; self.circle = circle
-        self.idle = idle; self.busy = busy; self.icon = icon; self.save = save; self.version = version
+        self.idle = idle; self.busy = busy; self.icon = icon; self.pulse = pulse; self.save = save; self.version = version
+    }
+
+    /// The iPad step bar's `บันทึกร่างตอนนี้` (docs/ui/survey-bar-ipad): 170 × 53, 16 pt, a 22-pt check with a pulse ring.
+    /// `width` / `icon` for narrower bars.
+    public static func pad(width: CGFloat = 170, icon: String? = nil, save: @escaping @MainActor () async -> Date, version: Int) -> TCSaveButton {
+        TCSaveButton(width: width, height: 53, font: 16, radius: Radius.md, circle: 22, idle: "บันทึกร่างตอนนี้", busy: "กำลังบันทึก",
+                     icon: icon, pulse: true, save: save, version: version)
     }
 
     @State var phase = TCSaveButton.startPhase
@@ -48,6 +57,7 @@ public struct TCSaveButton: View {
     /// The check circle's pop-in and its tick drawing, run each time `justSaved` begins.
     @State var popped = false
     @State var drawn = false
+    @State var ringOut = false
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     public var body: some View {
@@ -97,6 +107,11 @@ public struct TCSaveButton: View {
                         .frame(width: d * 0.6, height: d * 0.6)
                         .frame(width: d, height: d)
                         .background(Theme.stepDone, in: Circle())
+                        .background {
+                            if pulse && !reduceMotion {
+                                Circle().fill(Theme.stepDone.opacity(ringOut ? 0 : 0.45)).scaleEffect(ringOut ? (d + 24) / d : 1)
+                            }
+                        }
                         .scaleEffect(popped || reduceMotion ? 1 : 0.6)
                         .opacity(popped || reduceMotion ? 1 : 0)
                         .onAppear(perform: pop)
@@ -110,12 +125,13 @@ public struct TCSaveButton: View {
         }
     }
 
-    /// scale 0.6 → 1.15 → 1 in 0.35 s, the tick drawn from 0.15 s.
+    /// scale 0.6 → 1.15 → 1 in 0.35 s, the tick drawn from 0.15 s, the pulse ring spreading 12 pt over 0.8 s from 0.2 s.
     func pop() {
-        popped = false; drawn = false
+        popped = false; drawn = false; ringOut = false
         guard !reduceMotion else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.5)) { popped = true }
         withAnimation(.easeOut(duration: 0.35).delay(0.15)) { drawn = true }
+        if pulse { withAnimation(.easeOut(duration: 0.8).delay(0.2)) { ringOut = true } }
     }
 
     var fill: Color {

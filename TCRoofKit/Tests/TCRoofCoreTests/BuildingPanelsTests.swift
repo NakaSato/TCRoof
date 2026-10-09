@@ -107,6 +107,11 @@ final class BuildingPanelsTests: XCTestCase {
         job.modules[office].values["photoWide"] = .photo(Self.photo)
         job.modules[office].values["photoBreaker"] = .photo(Self.photo)
         XCTAssertEqual(BuildingPanels.statusLine(job), "ยังขาด: ภาพเบรกเกอร์ โรงสูบน้ำ · โรงกรอง ทั้ง 2 ภาพ · โหลด โรงกรอง")
+        // the iPad bar's chip counts the same gaps per building
+        XCTAssertEqual(BuildingPanels.missingItems(job.modules[pump].values), ["ภาพเบรกเกอร์"])
+        XCTAssertEqual(BuildingPanels.missingItems(job.modules[office].values), [])
+        let filter = try XCTUnwrap(job.modules.first { $0.name == "โรงกรอง" })
+        XCTAssertEqual(BuildingPanels.missingItems(filter.values), ["ภาพมุมกว้าง", "ภาพเบรกเกอร์", "โหลด"])
         for k in job.modules.indices where job.modules[k].type == .panel {
             job.modules[k].values["photoWide"] = .photo(Self.photo); job.modules[k].values["photoBreaker"] = .photo(Self.photo)
             job.modules[k].values["loadKW"] = .text("10")

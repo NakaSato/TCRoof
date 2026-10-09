@@ -41,7 +41,7 @@ struct PhoneHome: View {
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread,
-                            notificationsShown: $notificationsShown, openSettings: openSettings) { EmptyView() }
+                            notificationsShown: $notificationsShown, openSettings: openSettings)
         }
         .background(Theme.phonePage.ignoresSafeArea())
     }

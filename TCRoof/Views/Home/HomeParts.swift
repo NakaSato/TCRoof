@@ -83,8 +83,8 @@ func userInitials(_ name: String, email: String?) -> String {
 
 /// iPad (docs/ui/home-navbar-ipad): brand, search field, and the bell + account capsule.
 /// iPhone (docs/ui/tcroof-home-iphone-v2): the logo, and the bell and avatar in one capsule.
-/// On iPad the bell carries the notifications popover; on iPhone the caller presents them full screen.
-struct HomeBrandHeader<Popover: View>: View {
+/// The caller shows the notifications: under the bell on iPad (`BellAnchorKey`), full screen on iPhone.
+struct HomeBrandHeader: View {
     let size: HomeSize
     let initials: String
     let unread: Int
@@ -92,7 +92,6 @@ struct HomeBrandHeader<Popover: View>: View {
     let openSettings: () -> Void
     /// iPad: the search field opens the job search.
     var openSearch: () -> Void = {}
-    @ViewBuilder let popover: () -> Popover
 
     /// iPad bar width; under ~900 pt the `INTERNAL` line goes before the search placeholder truncates.
     @State private var width: CGFloat = 1366
@@ -211,7 +210,7 @@ struct HomeBrandHeader<Popover: View>: View {
         }
     }
 
-    /// A 52 / 44 pt target in the capsule, light blue with a blue ring while the notifications are open; iPad carries the popover.
+    /// A 52 / 44 pt target in the capsule, light blue with a blue ring while the notifications are open.
     private var bell: some View {
         let active = notificationsShown
         return Button { notificationsShown.toggle() } label: {
@@ -244,25 +243,15 @@ struct HomeBrandHeader<Popover: View>: View {
         .buttonStyle(.plain)
         .accessibilityLabel(size.isPad && unread > 0 ? "การแจ้งเตือน · ใหม่ \(unread)" : "การแจ้งเตือน")
         .accessibilityValue(size.isPad || unread == 0 ? "" : "ยังไม่อ่าน \(unread)")
-        .modifier(BellPopover(enabled: size.isPad, shown: $notificationsShown, popover: popover))
+        .anchorPreference(key: BellAnchorKey.self, value: .bounds) { size.isPad ? $0 : nil }
     }
 
 }
 
-private struct BellPopover<P: View>: ViewModifier {
-    let enabled: Bool
-    @Binding var shown: Bool
-    let popover: () -> P
-
-    func body(content: Content) -> some View {
-        if enabled {
-            content.popover(isPresented: $shown, arrowEdge: .top) {
-                popover().presentationCompactAdaptation(.fullScreenCover)
-            }
-        } else {
-            content
-        }
-    }
+/// Where the iPad bell is, so the home can hang the notifications panel under it.
+struct BellAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = value ?? nextValue() }
 }
 
 // MARK: - Module row

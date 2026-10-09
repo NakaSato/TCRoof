@@ -52,15 +52,41 @@ struct PadHome<Popover: View>: View {
                 }
             }
         }
+        // a tap on the page outside the panel closes it; the bar's buttons stay live, so the account button
+        // closes it and opens settings in one tap (a system popover would swallow that tap)
+        .overlay { if notificationsShown { Color.clear.contentShape(Rectangle()).onTapGesture { notificationsShown = false } } }
         .safeAreaInset(edge: .top, spacing: 0) {
             HomeBrandHeader(size: .pad, initials: userInitials(userName, email: session.email), unread: unread,
-                            notificationsShown: $notificationsShown, openSettings: openSettings, openSearch: openSearch, popover: notifications)
+                            notificationsShown: $notificationsShown, openSettings: openSettings, openSearch: openSearch)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .overlay {
-            // the board dims the page lightly behind the bell popover
+            // the board dims the page lightly behind the bell's panel
             if notificationsShown { Theme.popoverDim.ignoresSafeArea().allowsHitTesting(false) }
         }
+        .overlayPreferenceValue(BellAnchorKey.self) { anchor in
+            GeometryReader { g in
+                if notificationsShown, let anchor { bellPanel(under: g[anchor], in: g.size) }
+            }
+        }
+    }
+
+    /// The notifications under the bell (board: 440 wide, r18, its arrow on the bell), kept on screen.
+    private func bellPanel(under bell: CGRect, in area: CGSize) -> some View {
+        let width: CGFloat = 440
+        let right = min(area.width - 16, bell.midX + 27)
+        return VStack(alignment: .leading, spacing: 0) {
+            BellArrow().fill(Theme.surface).frame(width: 20, height: 9)
+                .offset(x: bell.midX - (right - width) - 10)
+            notifications()
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .compositingGroup()
+        .shadow(color: Theme.navy.opacity(0.28), radius: 20, y: 16)
+        .frame(width: width, alignment: .leading)
+        .offset(x: right - width, y: bell.maxY + 11)
+        .transition(.opacity)
     }
 
     private var hero: some View {
@@ -437,5 +463,17 @@ private struct StepsRing: View {
         .padding(2)
         .frame(width: 44, height: 44)
         .accessibilityLabel("ทำแล้ว \(done) จาก \(total) ขั้น")
+    }
+}
+
+/// The panel's arrow pointing up at the bell.
+private struct BellArrow: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        p.closeSubpath()
+        return p
     }
 }

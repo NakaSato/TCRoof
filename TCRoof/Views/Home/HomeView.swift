@@ -109,7 +109,7 @@ struct HomeView: View {
             SettingsView().presentationDetents([.large]).formSheetSizing().environment(\.homeInk, sizeClass == .compact ? .outdoor : .standard)
         }
         .sheet(isPresented: $showNewJob) { NewJobView() }
-        // iPad shows them in the bell's popover
+        // iPad shows them in a panel under the bell (PadHome)
         .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
             notificationsView(large: false).environment(\.homeInk, .outdoor)
         }
@@ -154,9 +154,9 @@ struct HomeView: View {
         #endif
     }
 
-    private func notificationsView(large: Bool) -> PhoneNotificationsView {
+    private func notificationsView(large: Bool, close: (() -> Void)? = nil) -> PhoneNotificationsView {
         PhoneNotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: sync,
-                               surveyHint: surveyHint, openSurvey: openSurvey, large: large)
+                               surveyHint: surveyHint, openSurvey: openSurvey, large: large, close: close)
     }
 
     private var installChip: String? {
@@ -199,7 +199,7 @@ struct HomeView: View {
                        showSurveyList: { showSurveyList = true },
                        openSearch: { showNotifications = false; showSearch = true },
                        newSurvey: { showNewJob = true }) {
-            notificationsView(large: true)
+            notificationsView(large: true) { showNotifications = false }
         }
     }
 

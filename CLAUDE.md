@@ -26,7 +26,8 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 ```
 xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<udid>' -derivedDataPath <scratch>/DerivedData
 ```
-`TCRoofUITests/ReviewLockUITests.swift` runs on an iPad simulator (same command, `-only-testing:TCRoofUITests/ReviewLockUITests`): a missing photo filled from the stubbed camera, then sign → lock → open REV 01 → edit → sign → the change list. UI tests that change answers start from `-surveyFreshJob YES`, since the demo job keeps its answers between runs.
+`TCRoofUITests/ReviewLockUITests.swift` runs on an iPad simulator (same command, `-only-testing:TCRoofUITests/ReviewLockUITests`): a missing photo filled from the stubbed camera, then sign → lock → open REV 01 → edit → sign → the change list. `TCRoofUITests/HomeNavbarUITests.swift` (iPad, `-only-testing:TCRoofUITests/HomeNavbarUITests`) checks the home bar: the bell toggles its panel, the account button closes it and opens settings, `อ่านทั้งหมด` clears the count, and search opens the survey list focused. The read state stays on the simulator.
+UI tests that change answers start from `-surveyFreshJob YES`, since the demo job keeps its answers between runs.
 The first launch in a simulator is slow, so the waits are long (about 90 s). Use `.matching(...).firstMatch` for buttons that share a name, and wait for non-existence with `XCTNSPredicateExpectation` (`waitForExistence` returns at once while the old element is still there).
 
 ### Simulator checks (DEBUG launch arguments)

@@ -1,0 +1,8 @@
+{
+  "_note": "All values are EXAMPLE DATA from the board. Bind to the real notification store and signed-in user.",
+  "bar": { "height": 91, "padding": [18, 32, 16, 32], "gap": 16, "bottomRadius": 22 },
+  "brand": { "icon": "assets/tc-renewable-icon.png", "iconSize": 56, "word1": "TC", "word2": "Roof", "tag": "INTERNAL", "a11y": "TC Roof Internal" },
+  "search": { "placeholder": "ค้นหาเลขที่ ชื่อโครงการ สถานี…", "maxWidth": 600, "height": 52 },
+  "bell": { "a11y": "การแจ้งเตือน", "unread": 2, "size": 52 },
+  "account": { "a11y": "ตั้งค่าและบัญชี", "initials": "WC", "username": "wit.chanthawat", "role": "วิศวกรสำรวจ", "avatar": 42 }
+}

@@ -10,8 +10,7 @@ struct HomeSize {
     var logo: CGFloat
     var logoRadius: CGFloat
     var headerRadius: CGFloat
-    var greeting: CGFloat
-    var greetingLines: Int
+    var isPad: Bool
     var roundButton: CGFloat
     var bellGlyph: CGFloat
     var initials: CGFloat
@@ -43,33 +42,29 @@ struct HomeSize {
     var chevron: CGFloat
 
     static let phone = HomeSize(
-        logo: 44, logoRadius: 12, headerRadius: 2, greeting: 14, greetingLines: 2, roundButton: 44, bellGlyph: 20, initials: 13.5,
+        logo: 44, logoRadius: 12, headerRadius: 2, isPad: false, roundButton: 44, bellGlyph: 20, initials: 13.5,
         heroRadius: 20, heroPadding: EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14), heroGap: 11, heroLabel: 12.5,
         ring: 56, ringStroke: 5, ringText: 13, time: 24, kind: 12.5, name: 15, place: 12.5, action: 46, actionRadius: 12, actionText: 15,
         rowRadius: 16, rowGap: 12, rowPadding: (12, 10), tile: 42, tileRadius: 12, tileGlyph: 19, title: 15, subtitle: 12, chip: 11, chevron: 14)
 
     static let pad = HomeSize(
-        logo: 56, logoRadius: 14, headerRadius: 22, greeting: 21, greetingLines: 1, roundButton: 52, bellGlyph: 22, initials: 17,
+        logo: 56, logoRadius: 14, headerRadius: 22, isPad: true, roundButton: 52, bellGlyph: 22, initials: 17,
         heroRadius: 22, heroPadding: EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20), heroGap: 16, heroLabel: 14,
         ring: 88, ringStroke: 8, ringText: 20, time: 38, kind: 14, name: 19, place: 14, action: 56, actionRadius: 14, actionText: 17,
         rowRadius: 18, rowGap: 16, rowPadding: (18, 18), tile: 56, tileRadius: 15, tileGlyph: 26, title: 19, subtitle: 14, chip: 13, chevron: 18)
-
-    var isPad: Bool { greetingLines == 1 }
 }
 
 /// How the home's notifications and settings look: v2 outdoor contrast on iPhone,
 /// v1 everywhere else (the iPad popover and form sheet).
 struct HomeInk {
-    /// iPhone v2: the header has no greeting, so settings hides its `คำทักทาย AI` toggle.
-    var greeting: Bool
     /// Details, times, group titles, settings labels.
     var muted: Color
     var chevron: Color
     /// 1 pt card and chip borders.
     var border: Color
 
-    static let standard = HomeInk(greeting: true, muted: Theme.inkMuted, chevron: Theme.chevron, border: Theme.borderSubtle)
-    static let outdoor = HomeInk(greeting: false, muted: Theme.inkStrong, chevron: Theme.muted, border: Theme.borderOutdoor)
+    static let standard = HomeInk(muted: Theme.inkMuted, chevron: Theme.chevron, border: Theme.borderSubtle)
+    static let outdoor = HomeInk(muted: Theme.inkStrong, chevron: Theme.muted, border: Theme.borderOutdoor)
 }
 
 extension EnvironmentValues {
@@ -86,28 +81,23 @@ func userInitials(_ name: String, email: String?) -> String {
 
 // MARK: - Header
 
-/// App icon, the AI greeting with the date under it (iPad only), bell and account avatar.
-/// On iPad the bell carries the notifications popover; on iPhone the caller presents them full screen.
-struct HomeBrandHeader<Popover: View>: View {
+/// iPad (docs/ui/home-navbar-ipad): brand, search field, and the bell + account capsule.
+/// iPhone (docs/ui/tcroof-home-iphone-v2): the logo, and the bell and avatar in one capsule.
+/// The caller shows the notifications: under the bell on iPad (`BellAnchorKey`), full screen on iPhone.
+struct HomeBrandHeader: View {
     let size: HomeSize
     let initials: String
     let unread: Int
-    let facts: HomeGreeting.Facts
     @Binding var notificationsShown: Bool
     let openSettings: () -> Void
-    @ViewBuilder let popover: () -> Popover
+    /// iPad: the search field opens the job search.
+    var openSearch: () -> Void = {}
 
-    @AppStorage("home.aiGreeting") private var aiGreeting = true
-    @AppStorage("home.greeting") private var greeting = ""
-    @AppStorage("home.greetingDay") private var greetingDay = ""
+    /// iPad bar width; under ~900 pt the `INTERNAL` line goes before the search placeholder truncates.
+    @State private var width: CGFloat = 1366
 
     var body: some View {
-        if size.isPad {
-            padRow.task(id: aiGreeting) { await refresh(force: false) }
-        } else {
-            // the v2 phone header has no greeting
-            phoneRow
-        }
+        if size.isPad { padRow } else { phoneRow }
     }
 
     private var padRow: some View {
@@ -115,17 +105,30 @@ struct HomeBrandHeader<Popover: View>: View {
             Image("AppLogo").resizable().frame(width: size.logo, height: size.logo)
                 .clipShape(RoundedRectangle(cornerRadius: size.logoRadius, style: .continuous))
                 .accessibilityHidden(true)
-            greetingButton
-            bell
-            Button(action: openSettings) {
-                Text(initials).font(.sarabun(size.initials, .heavy)).foregroundStyle(.white)
-                    .frame(width: size.roundButton, height: size.roundButton).background(Theme.primary, in: Circle())
+            brand
+            // the spacer and the search share the free width evenly, the search capped at 600 (the board's flex: 1 pair)
+            Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
+            searchField.frame(maxWidth: .infinity, alignment: .trailing)
+            HStack(spacing: 0) {
+                bell
+                Button {
+                    notificationsShown = false
+                    openSettings()
+                } label: {
+                    Text(initials).font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                        .frame(width: 42, height: 42).background(Theme.navy, in: Circle())
+                        .frame(width: size.roundButton, height: size.roundButton).contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ตั้งค่าและบัญชี")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("ตั้งค่าและบัญชี")
+            .padding(.horizontal, 2)
+            .frame(height: 56)
+            .background(Theme.phonePage, in: Capsule())
         }
         .padding(.horizontal, 32)
         .padding(.top, 18).padding(.bottom, 16)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .background {
             let shape = UnevenRoundedRectangle(bottomLeadingRadius: size.headerRadius, bottomTrailingRadius: size.headerRadius, style: .continuous)
             shape.fill(Theme.surface)
@@ -133,6 +136,47 @@ struct HomeBrandHeader<Popover: View>: View {
                 .shadow(color: Theme.navy.opacity(0.05), radius: 4, y: 2)
                 .ignoresSafeArea(edges: .top)
         }
+    }
+
+    /// `TC Roof` in the rounded face, a teal dash and `INTERNAL` under it.
+    private var brand: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            (Text(verbatim: "TC").font(.system(size: 27, weight: .heavy, design: .rounded)).foregroundStyle(Theme.navy)
+             + Text(verbatim: " Roof").font(.system(size: 27, weight: .bold, design: .rounded)).foregroundStyle(Theme.primary))
+                .tracking(-0.6)
+                .frame(height: 28)
+            if width >= 900 {
+                HStack(spacing: 6) {
+                    Capsule().fill(Theme.teal).frame(width: 14, height: 2)
+                    Text(verbatim: "INTERNAL").font(.system(size: 10.5, weight: .bold, design: .rounded)).tracking(2.4)
+                        .foregroundStyle(Theme.muted)
+                }
+                .frame(height: 13)
+            }
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: "TC Roof Internal"))
+    }
+
+    /// Looks like a field; tapping opens the job search.
+    private var searchField: some View {
+        Button(action: openSearch) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass").font(.system(size: 19, weight: .semibold)).foregroundStyle(Theme.inkMuted)
+                    .frame(width: 22, height: 22)
+                Text("ค้นหาเลขที่ ชื่อโครงการ สถานี…").font(.system(size: 16)).foregroundStyle(Theme.muted)
+                    .lineLimit(1).truncationMode(.tail)
+            }
+            .padding(.horizontal, 16)
+            .frame(maxWidth: 600, minHeight: 52, maxHeight: 52, alignment: .leading)
+            .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.headerLine))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isSearchField)
     }
 
     /// v2: no text, just the logo and the bell and avatar in one capsule; nearly square, borderless bar.
@@ -166,40 +210,17 @@ struct HomeBrandHeader<Popover: View>: View {
         }
     }
 
-    private var line: String {
-        aiGreeting ? (greeting.isEmpty ? HomeGreeting.plain(hour: facts.hour) : greeting) : HomeGreeting.plain(hour: facts.hour)
-    }
-
-    private var greetingButton: some View {
-        Button { Task { await refresh(force: true) } } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(line)
-                    .font(.sarabun(size.greeting, .bold, relativeTo: size.isPad ? .title3 : .subheadline)).foregroundStyle(Theme.navy)
-                    .lineLimit(size.greetingLines).truncationMode(.tail).multilineTextAlignment(.leading)
-                if size.isPad {
-                    Text(ThaiFormat.longDate.string(from: .now)).font(.sarabun(14, relativeTo: .subheadline))
-                        .foregroundStyle(Theme.inkMuted).lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!aiGreeting)
-        .accessibilityLabel(aiGreeting ? "คำทักทายจาก AI ในเครื่อง · แตะเพื่อสุ่มใหม่" : HomeGreeting.plain(hour: facts.hour))
-        .accessibilityValue(aiGreeting ? greeting : "")
-    }
-
-    /// iPad: a filled circle with the popover. iPhone: a plain 44 pt target in the capsule, blue while the notifications are open.
+    /// A 52 / 44 pt target in the capsule, light blue with a blue ring while the notifications are open.
     private var bell: some View {
         let active = notificationsShown
         return Button { notificationsShown.toggle() } label: {
             Group {
                 if size.isPad {
-                    Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .semibold)).foregroundStyle(Theme.navy)
+                    Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .medium)).foregroundStyle(Theme.navy)
                         .frame(width: size.roundButton, height: size.roundButton)
-                        .background(active ? Theme.primarySoft : Theme.hairline, in: Circle())
+                        .background { if active { Circle().fill(Theme.primarySoft) } }
                         .overlay { if active { Circle().strokeBorder(Theme.primary, lineWidth: 2) } }
+                        .contentShape(Circle())
                 } else {
                     Image(systemName: "bell").font(.system(size: size.bellGlyph, weight: .semibold)).foregroundStyle(Theme.navy)
                         .frame(width: size.roundButton, height: size.roundButton)
@@ -214,42 +235,23 @@ struct HomeBrandHeader<Popover: View>: View {
                         .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
                         .background(Theme.danger, in: Capsule())
                         .overlay(Capsule().stroke(.white, lineWidth: 2))
-                        .offset(x: size.isPad ? 4 : 0, y: size.isPad ? -4 : 2)
+                        .padding(.top, size.isPad ? 4 : 0).padding(.trailing, size.isPad ? 2 : 0)
+                        .offset(y: size.isPad ? 0 : 2)
                 }
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("การแจ้งเตือน")
-        .accessibilityValue(unread > 0 ? "ยังไม่อ่าน \(unread)" : "")
-        .modifier(BellPopover(enabled: size.isPad, shown: $notificationsShown, popover: popover))
+        .accessibilityLabel(size.isPad && unread > 0 ? "การแจ้งเตือน · ใหม่ \(unread)" : "การแจ้งเตือน")
+        .accessibilityValue(size.isPad || unread == 0 ? "" : "ยังไม่อ่าน \(unread)")
+        .anchorPreference(key: BellAnchorKey.self, value: .bounds) { size.isPad ? $0 : nil }
     }
 
-    /// Once a day, or on tap: the on-device model's line, else the next template.
-    private func refresh(force: Bool) async {
-        guard aiGreeting else { return }
-        let today = ISODate.string(.now)
-        guard force || greetingDay != today || greeting.isEmpty else { return }
-        let previous = greeting
-        greeting = HomeGreeting.template(facts, after: previous)
-        greetingDay = today
-        if let line = await HomeGreeting.onDevice(facts, avoiding: previous) { greeting = line }
-    }
 }
 
-private struct BellPopover<P: View>: ViewModifier {
-    let enabled: Bool
-    @Binding var shown: Bool
-    let popover: () -> P
-
-    func body(content: Content) -> some View {
-        if enabled {
-            content.popover(isPresented: $shown, arrowEdge: .top) {
-                popover().presentationCompactAdaptation(.fullScreenCover)
-            }
-        } else {
-            content
-        }
-    }
+/// Where the iPad bell is, so the home can hang the notifications panel under it.
+struct BellAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = value ?? nextValue() }
 }
 
 // MARK: - Module row

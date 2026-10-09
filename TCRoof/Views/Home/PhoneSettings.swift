@@ -8,7 +8,6 @@ struct PhoneSettingsList: View {
     @Binding var confirmLogout: Bool
     @Environment(GoogleSession.self) private var session
     @AppStorage("userName") private var userName = ""
-    @AppStorage("home.aiGreeting") private var aiGreeting = true
     @AppStorage(CameraRoll.defaultsKey) private var saveToLibrary = true
     @State private var sync = CloudSync.shared
     @State private var notifications = NotificationService.shared
@@ -31,17 +30,6 @@ struct PhoneSettingsList: View {
                             .onChange(of: userName) { GoogleSession.userNameEdited() }
                     }
                     .rowFrame()
-                    if ink.greeting {
-                        divider
-                        Toggle(isOn: $aiGreeting) {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text("คำทักทาย AI").foregroundStyle(Theme.navy)
-                                Text("ข้อความทักทายจาก AI ในเครื่อง บนหน้าหลัก").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
-                            }
-                        }
-                        .tint(Theme.primary)
-                        .rowFrame()
-                    }
                 }
                 notificationsSection
                 section("รูปถ่าย") {

@@ -212,7 +212,8 @@ struct JobEditorView: View {
                                    narrow: compact)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
+            // iPhone: the page pads and scrolls itself
+            .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardPanels {

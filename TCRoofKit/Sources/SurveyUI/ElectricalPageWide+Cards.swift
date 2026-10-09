@@ -124,6 +124,21 @@ struct A3PhotoTile: View {
 // MARK: meter
 
 extension ElectricalPageWide {
+    /// Side by side on iPad; one above the other on iPhone.
+    func rowStack<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        let layout = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .bottom, spacing: 8))
+        return layout { content() }
+    }
+
+    /// Fields in a row on iPad; two across on iPhone.
+    @ViewBuilder func inputRow<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        if narrow {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8, alignment: .top), GridItem(.flexible(), spacing: 8, alignment: .top)], spacing: 8) { content() }
+        } else {
+            HStack(spacing: 8) { content() }
+        }
+    }
+
     var meterCard: some View {
         A3Panel {
             VStack(alignment: .leading, spacing: 8) {
@@ -241,10 +256,11 @@ extension ElectricalPageWide {
                 HStack(spacing: 8) {
                     A3Badge(text: "TX \(i + 1)")
                     Text("หม้อแปลง TX \(i + 1)").font(.system(size: 16, weight: .bold)).lineLimit(1)
-                    kvaField(i).frame(width: 150)
+                    if !narrow { kvaField(i).frame(width: 150) }
                     Spacer(minLength: 0)
                     a3Chip(n == 6 ? "6/6 ✓" : "\(n)/6", ok: n == 6)
                 }
+                if narrow { kvaField(i) }
                 HStack(spacing: 5) {
                     ForEach(Array(Schema.transformerAngles.enumerated()), id: \.offset) { _, a in
                         let has = job.values.photo("tr\(i)_\(a.key)") != nil
@@ -279,12 +295,12 @@ extension ElectricalPageWide {
                     }
                     .buttonStyle(.plain).accessibilityLabel("ลบหม้อแปลง TX \(i + 1)")
                 }
-                HStack(alignment: .bottom, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 3) { A3Label(text: "ขนาด", required: true); kvaField(i) }.frame(width: 190)
+                rowStack {
+                    VStack(alignment: .leading, spacing: 3) { A3Label(text: "ขนาด", required: true); kvaField(i) }.frame(width: narrow ? nil : 190)
                     A3Segments(options: ["oil", "dry"], titles: ["Oil immersed", "Dry type"], selected: trafos[safe: i]?.type ?? "") { v in edit(i) { $0.type = v } }
                 }
                 platePhotoSuggestion(i)
-                HStack(spacing: 8) {
+                inputRow {
                     A3Input(label: "แรงดัน", text: plateText(i, \.voltage, key: "voltage"), required: true, unit: "V",
                             source: job.values.source("tr\(i)_voltage"))
                     A3Input(label: "Vector group", text: plateText(i, \.vectorGroup, key: "vectorGroup"), required: true,
@@ -292,13 +308,13 @@ extension ElectricalPageWide {
                     A3Input(label: "%Z", text: plateText(i, \.impedance, key: "impedance"), required: true, unit: "%", keyboard: .decimalPad,
                             source: job.values.source("tr\(i)_impedance"))
                 }
-                HStack(spacing: 8) {
+                inputRow {
                     A3Input(label: "ยี่ห้อ", text: tText(i, \.brand))
                     A3Input(label: "Serial no.", text: tText(i, \.serial))
                     A3Input(label: "ปีผลิต", text: plateText(i, \.year, key: "year", number: true), keyboard: .numberPad,
                             source: job.values.source("tr\(i)_year"))
                 }
-                HStack(alignment: .bottom, spacing: 8) {
+                rowStack {
                     VStack(alignment: .leading, spacing: 3) {
                         A3Label(text: "อุปกรณ์ตัดตอนแรงสูง", required: true)
                         A3Segments(options: ["DO fuse", "DS", "VCB"], selected: trafos[safe: i]?.hvProtection ?? "") { v in edit(i) { $0.hvProtection = v } }
@@ -309,9 +325,9 @@ extension ElectricalPageWide {
                             edit(i) { $0.hasLA = v.isEmpty ? nil : v == "มี" }
                         }
                     }
-                    .frame(width: 150)
+                    .frame(width: narrow ? nil : 150)
                 }
-                HStack(alignment: .bottom, spacing: 8) {
+                rowStack {
                     VStack(alignment: .leading, spacing: 3) {
                         A3Label(text: "สภาพ", required: true)
                         A3Segments(options: ["ดี", "พอใช้", "ชำรุด"], selected: trafos[safe: i]?.condition ?? "") { v in edit(i) { $0.condition = v } }
@@ -426,7 +442,7 @@ extension ElectricalPageWide {
                     Text("ตู้หลัก · ปลายสาย").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.ok)
                         .padding(.horizontal, 10).frame(minHeight: 26).background(Home.mint.opacity(0.4), in: Capsule())
                 }
-                HStack(alignment: .top, spacing: 14) {
+                (narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .top, spacing: 14))) {
                     VStack(alignment: .leading, spacing: 8) {
                         VStack(alignment: .leading, spacing: 3) {
                             A3Label(text: "เมนเบรกเกอร์ (Main CB)", required: true)
@@ -470,7 +486,7 @@ extension ElectricalPageWide {
                         }
                         A3Input(label: "ตำแหน่งตู้", text: vText("tr\(i)_feedLoc"))
                     }
-                    .frame(width: 258)
+                    .frame(width: narrow ? nil : 258)
                 }
             }
         }
@@ -481,14 +497,13 @@ extension ElectricalPageWide {
         let list = boards(i)[safe: k]?.breakers ?? []
         return VStack(alignment: .leading, spacing: 6) {
             A3Label(text: "CB ลูกย่อย · แตะแถวเพื่อแก้")
-            ScrollView {
-                VStack(spacing: 6) {
-                    ForEach(Array(list.enumerated()), id: \.element.id) { n, br in
-                        Button { editBreaker = BreakerEdit(id: br.id, trafo: i, board: k) } label: { breakerRow(n + 1, br) }.buttonStyle(.plain)
-                    }
+            let rows = VStack(spacing: 6) {
+                ForEach(Array(list.enumerated()), id: \.element.id) { n, br in
+                    Button { editBreaker = BreakerEdit(id: br.id, trafo: i, board: k) } label: { breakerRow(n + 1, br) }.buttonStyle(.plain)
                 }
             }
-            .scrollIndicators(.hidden)
+            // iPhone: the page scrolls, so the list takes its own height
+            if narrow { rows } else { ScrollView { rows }.scrollIndicators(.hidden) }
             Button {
                 let br = Breaker()
                 editBoards(i) { $0[k].breakers.append(br) }

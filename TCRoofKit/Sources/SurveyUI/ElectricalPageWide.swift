@@ -61,9 +61,15 @@ struct ElectricalPageWide: View {
     var meterH: CGFloat { moreMeter ? 560 : 400 }
 
     var body: some View {
-        VStack(spacing: 16) {
-            PageStepBar(job: job, here: .electrical)
-            card.frame(maxHeight: .infinity)
+        Group {
+            if narrow {
+                phoneBody
+            } else {
+                VStack(spacing: 16) {
+                    PageStepBar(job: job, here: .electrical)
+                    card.frame(maxHeight: .infinity)
+                }
+            }
         }
         .foregroundStyle(Home.navy)
         // marks placed on A2 (or before links existed) fill this page's empty fields

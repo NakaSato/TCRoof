@@ -3,6 +3,14 @@ import SwiftUI
 import TCRoofCore
 import TCRoofUI
 
+extension Job {
+    /// The step line's chip on iPhone: `ครบ n/m ช่อง` (green) or `ขาด n ช่อง` (orange), from the page's own completion.
+    func stepChip(_ page: MissingGroup.Target) -> (text: String, ok: Bool)? {
+        guard let c = steps.first(where: { $0.page == page })?.completion, c.total > 0 else { return nil }
+        return c.isComplete ? ("ครบ \(c.filled)/\(c.total) ช่อง", true) : ("ขาด \(c.total - c.filled) ช่อง", false)
+    }
+}
+
 /// iPhone full-width white band (docs/ui/survey-a1-iphone): 1-pt borders, a big blue number, a divider, the title and a chip.
 /// Shared by the phone bodies of the card pages (A1, A2).
 struct PhoneBand<Content: View>: View {

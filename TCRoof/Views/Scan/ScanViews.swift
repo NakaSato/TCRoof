@@ -73,18 +73,8 @@ private struct DeviceSummaryStrip: View {
     var body: some View {
         let panels = job.devices.filter { $0.kind == .panel }.count
         let others = job.devices.count - panels
-        HStack(spacing: 16) {
-            Label("แผง \(panels)/\(job.estimatedPanels)", systemImage: DeviceKind.panel.symbol)
-            Label("อุปกรณ์อื่น \(others)", systemImage: DeviceKind.inverter.symbol)
-            Spacer()
-            ProgressView(value: min(Double(panels), Double(job.estimatedPanels)), total: Double(max(job.estimatedPanels, 1)))
-                .frame(width: 100)
-                .tint(Theme.teal)
-        }
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(Theme.navy)
-        .padding(10)
-        .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
+        JobCardStrip(key: "แผงที่สแกน", value: "\(panels)/\(job.estimatedPanels)" + (others > 0 ? " · อุปกรณ์อื่น \(others)" : ""),
+                     progress: job.estimatedPanels > 0 ? Double(panels) / Double(job.estimatedPanels) : nil)
     }
 }
 
@@ -99,6 +89,10 @@ struct JobDevicesView: View {
     @State private var showManual = false
     @State private var manualSerial = ""
     @State private var manualKind: DeviceKind = .panel
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPad: the page gradient with white count cards (docs/ui/components); iPhone keeps the grouped list.
+    private var pad: Bool { sizeClass != .compact }
 
     var body: some View {
         List {
@@ -106,18 +100,20 @@ struct JobDevicesView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
                     ForEach(DeviceKind.allCases) { kind in
                         let count = job.devices.filter { $0.kind == kind }.count
-                        VStack(alignment: .leading, spacing: 6) {
+                        let tile = VStack(alignment: .leading, spacing: 6) {
                             Image(systemName: kind.symbol).font(.title2).foregroundStyle(Theme.primary)
                             Text(kind.title).font(.subheadline).foregroundStyle(Theme.navy)
                             Text(kind == .panel ? "\(count) / \(job.estimatedPanels)" : "\(count)")
                                 .font(.title2.bold()).foregroundStyle(Theme.navy)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
-                        .background(Theme.background, in: RoundedRectangle(cornerRadius: 12))
+                        .padding(pad ? 16 : 12)
+                        if pad { tile.tcCard() } else { tile.background(Theme.background, in: RoundedRectangle(cornerRadius: 12)) }
                     }
                 }
                 .padding(.vertical, 6)
+                .listRowBackground(pad ? Color.clear : nil)
+                .listRowInsets(pad ? EdgeInsets() : nil)
             } header: {
                 Text("\(job.code) · \(job.projectName)")
             }
@@ -141,6 +137,8 @@ struct JobDevicesView: View {
                 }
             }
         }
+        .scrollContentBackground(pad ? .hidden : .automatic)
+        .background { if pad { Theme.pageGradient.ignoresSafeArea() } }
         .navigationTitle("อุปกรณ์ที่ติดตั้ง")
         // inline on the phone: the large title drew over the job line while collapsing
         .navigationBarTitleDisplayMode(isPhone ? .inline : .automatic)

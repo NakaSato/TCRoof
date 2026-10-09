@@ -1,6 +1,10 @@
 # รายงานประจำ (Routine Reports): คำขอปฏิบัติงานรายสัปดาห์, รายงานประจำวัน, สัปดาห์, เดือน (iPad Swift design spec)
 
-**Status:** Design for review, 2026-10-06. No code yet.
+**Status:** Built 2026-10-09 (PR #4): rules in `TCRoofCore/RoutineReport.swift` with tests, the รายงานประจำ card
+(§4.1), R2 daily report with signing, Excel and key plan (§4.2), R1 weekly request (§4.3), R3 and R4 (§4.4–4.5), A4 PDFs
+filed to the Drive report folders and daily photos to `5. ภาพถ่ายประจำวัน` (§4.6), and the 17:00 / Friday 15:00
+reminders (§5). R1 is stored as JSON on the job (`Job.weeklyRequestsJSON`), so it syncs with `jobs` and needed no new
+Firestore collection (§2.4). Not built: the R3 PowerPoint export (open question 2).
 **Platform:** TCRoof host app (SwiftUI, SwiftData, iPadOS 17+, also iPhone). Pure logic in `TCRoofCore`
 (`RoutineReport.swift`, testable with `swift test`); PDF through `PDFReport`; Excel through `ExcelExport`.
 **Depends on:** `docs/specs/master-schedule-swift.md` (แผน MP). The daily report feeds the MP actual.

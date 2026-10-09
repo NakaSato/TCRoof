@@ -10,8 +10,7 @@ struct HomeSize {
     var logo: CGFloat
     var logoRadius: CGFloat
     var headerRadius: CGFloat
-    var greeting: CGFloat
-    var greetingLines: Int
+    var isPad: Bool
     var roundButton: CGFloat
     var bellGlyph: CGFloat
     var initials: CGFloat
@@ -43,33 +42,29 @@ struct HomeSize {
     var chevron: CGFloat
 
     static let phone = HomeSize(
-        logo: 44, logoRadius: 12, headerRadius: 2, greeting: 14, greetingLines: 2, roundButton: 44, bellGlyph: 20, initials: 13.5,
+        logo: 44, logoRadius: 12, headerRadius: 2, isPad: false, roundButton: 44, bellGlyph: 20, initials: 13.5,
         heroRadius: 20, heroPadding: EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14), heroGap: 11, heroLabel: 12.5,
         ring: 56, ringStroke: 5, ringText: 13, time: 24, kind: 12.5, name: 15, place: 12.5, action: 46, actionRadius: 12, actionText: 15,
         rowRadius: 16, rowGap: 12, rowPadding: (12, 10), tile: 42, tileRadius: 12, tileGlyph: 19, title: 15, subtitle: 12, chip: 11, chevron: 14)
 
     static let pad = HomeSize(
-        logo: 56, logoRadius: 14, headerRadius: 22, greeting: 21, greetingLines: 1, roundButton: 52, bellGlyph: 22, initials: 17,
+        logo: 56, logoRadius: 14, headerRadius: 22, isPad: true, roundButton: 52, bellGlyph: 22, initials: 17,
         heroRadius: 22, heroPadding: EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20), heroGap: 16, heroLabel: 14,
         ring: 88, ringStroke: 8, ringText: 20, time: 38, kind: 14, name: 19, place: 14, action: 56, actionRadius: 14, actionText: 17,
         rowRadius: 18, rowGap: 16, rowPadding: (18, 18), tile: 56, tileRadius: 15, tileGlyph: 26, title: 19, subtitle: 14, chip: 13, chevron: 18)
-
-    var isPad: Bool { greetingLines == 1 }
 }
 
 /// How the home's notifications and settings look: v2 outdoor contrast on iPhone,
 /// v1 everywhere else (the iPad popover and form sheet).
 struct HomeInk {
-    /// iPhone v2: the header has no greeting, so settings hides its `คำทักทาย AI` toggle.
-    var greeting: Bool
     /// Details, times, group titles, settings labels.
     var muted: Color
     var chevron: Color
     /// 1 pt card and chip borders.
     var border: Color
 
-    static let standard = HomeInk(greeting: true, muted: Theme.inkMuted, chevron: Theme.chevron, border: Theme.borderSubtle)
-    static let outdoor = HomeInk(greeting: false, muted: Theme.inkStrong, chevron: Theme.muted, border: Theme.borderOutdoor)
+    static let standard = HomeInk(muted: Theme.inkMuted, chevron: Theme.chevron, border: Theme.borderSubtle)
+    static let outdoor = HomeInk(muted: Theme.inkStrong, chevron: Theme.muted, border: Theme.borderOutdoor)
 }
 
 extension EnvironmentValues {

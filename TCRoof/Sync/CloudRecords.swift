@@ -41,6 +41,7 @@ extension Job: CloudSynced {
         var inverterKW: Double?
         var scheduleInput, scheduleActual: String?
         var routineSettings, weeklyRequests: String?
+        var stationDocs: String?
     }
 
     static let collection = "jobs"
@@ -51,7 +52,7 @@ extension Job: CloudSynced {
                surveyDate: surveyDate.millis, installStart: installStart.millis, createdAt: createdAt.millis,
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
-               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON)
+               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -67,6 +68,7 @@ extension Job: CloudSynced {
         if let v = r.scheduleActual { scheduleActualJSON = v }
         if let v = r.routineSettings { routineSettingsJSON = v }
         if let v = r.weeklyRequests { weeklyRequestsJSON = v }
+        if let v = r.stationDocs { stationDocsJSON = v }
         return true
     }
 

@@ -118,52 +118,27 @@ enum SurveyOptions {
     }
 }
 
-private struct SurveyEditor: View {
+/// iPhone: the grouped form. iPad: cards from the components board (`SurveyFormView+Pad.swift`).
+/// Both edit the same record; the bar, the checks and the actions are shared.
+struct SurveyEditor: View {
     @Bindable var form: SurveyForm
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("userName") private var userName = "สมชาย"
 
     @State private var locator = LocationFetcher()
-    @State private var locating = false
-    @State private var locationError: String?
+    @State var locating = false
+    @State var locationError: String?
     @State private var showMissing = false
     @State private var confirmDiscard = false
 
-    private var missing: [String] { SurveyOptions.missing(form) }
+    var missing: [String] { SurveyOptions.missing(form) }
 
     var body: some View {
-        Form {
-            Section {
-                if let job = form.job {
-                    InfoRow(title: "รหัสโครงการ", value: job.code)
-                    InfoRow(title: "ลูกค้า", value: job.customerName)
-                    InfoRow(title: "ที่อยู่", value: "\(job.address) \(job.province)")
-                }
-            } footer: {
-                if form.isDraft {
-                    Text("ร่าง: บันทึกอัตโนมัติทุกครั้งที่แก้ไข ออกจากหน้านี้แล้วกลับมาทำต่อได้")
-                }
-            }
-
-            locationSection
-            roofSection
-            electricalSection
-            sizingSection
-            photoSections
-
-            Section("หมายเหตุ") {
-                TextField("รายละเอียดเพิ่มเติม", text: $form.notes, axis: .vertical).lineLimit(3...8)
-            }
-
-            if !missing.isEmpty {
-                Section {
-                    ForEach(missing, id: \.self) { Label($0, systemImage: "exclamationmark.circle").foregroundStyle(.orange) }
-                } header: {
-                    Text("ยังขาด \(missing.count) รายการ")
-                }
-            }
+        Group {
+            if sizeClass == .compact { phoneForm } else { padForm }
         }
         // the phone's bar has room for the shorter title only
         .navigationTitle(form.isDraft ? (isPhone ? "แบบสำรวจ (ร่าง)" : "แบบสำรวจหน้างาน (ร่าง)") : "แก้ไขแบบสำรวจ")
@@ -195,6 +170,42 @@ private struct SurveyEditor: View {
         }
         .task {
             if form.isDraft && form.latitude == nil { locate() }
+        }
+    }
+
+    // MARK: iPhone
+
+    private var phoneForm: some View {
+        Form {
+            Section {
+                if let job = form.job {
+                    InfoRow(title: "รหัสโครงการ", value: job.code)
+                    InfoRow(title: "ลูกค้า", value: job.customerName)
+                    InfoRow(title: "ที่อยู่", value: "\(job.address) \(job.province)")
+                }
+            } footer: {
+                if form.isDraft {
+                    Text("ร่าง: บันทึกอัตโนมัติทุกครั้งที่แก้ไข ออกจากหน้านี้แล้วกลับมาทำต่อได้")
+                }
+            }
+
+            locationSection
+            roofSection
+            electricalSection
+            sizingSection
+            photoSections
+
+            Section("หมายเหตุ") {
+                TextField("รายละเอียดเพิ่มเติม", text: $form.notes, axis: .vertical).lineLimit(3...8)
+            }
+
+            if !missing.isEmpty {
+                Section {
+                    ForEach(missing, id: \.self) { Label($0, systemImage: "exclamationmark.circle").foregroundStyle(.orange) }
+                } header: {
+                    Text("ยังขาด \(missing.count) รายการ")
+                }
+            }
         }
     }
 
@@ -286,7 +297,7 @@ private struct SurveyEditor: View {
     }
 
     /// Standard sizes, plus the stored value when an older record used another size.
-    private var breakerOptions: [Int] {
+    var breakerOptions: [Int] {
         let current = form.mainBreakerAmp
         return current > 0 && !SurveyOptions.breakers.contains(current)
             ? (SurveyOptions.breakers + [current]).sorted() : SurveyOptions.breakers
@@ -331,25 +342,25 @@ private struct SurveyEditor: View {
     // MARK: Actions
 
     /// A number field that shows empty for 0 instead of a made-up value.
-    private func optional(_ keyPath: ReferenceWritableKeyPath<SurveyForm, Double>) -> Binding<Double?> {
+    func optional(_ keyPath: ReferenceWritableKeyPath<SurveyForm, Double>) -> Binding<Double?> {
         Binding(get: { form[keyPath: keyPath] > 0 ? form[keyPath: keyPath] : nil },
                 set: { form[keyPath: keyPath] = max($0 ?? 0, 0) })
     }
 
-    private func addPhoto(_ data: Data, tag: String) {
+    func addPhoto(_ data: Data, tag: String) {
         let photo = PhotoAsset(data: data, tag: tag)
         context.insert(photo)
         photo.survey = form
         try? context.save()
     }
 
-    private func deletePhoto(_ photos: [PhotoAsset], at index: Int) {
+    func deletePhoto(_ photos: [PhotoAsset], at index: Int) {
         guard photos.indices.contains(index) else { return }
         context.delete(photos[index])
         try? context.save()
     }
 
-    private func locate() {
+    func locate() {
         locating = true
         locationError = nil
         locator.request { result in

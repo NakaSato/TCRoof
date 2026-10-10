@@ -93,7 +93,7 @@ struct InspectionView: View {
                 ForEach(steps.indices, id: \.self) { i in
                     Capsule()
                         .fill(i <= step ? AnyShapeStyle(Theme.headerGradient)
-                                        : AnyShapeStyle(inspection.isComplete(i) ? Theme.mint : Color.gray.opacity(0.25)))
+                                        : AnyShapeStyle(inspection.isComplete(i) ? Theme.mint : Theme.track))
                         .frame(height: 8)
                         .onTapGesture { step = i }
                 }
@@ -128,11 +128,9 @@ struct InspectionView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.title3.bold())
-                .foregroundStyle(.white)
-                .frame(width: 120, height: 56)
-                .background(disabled ? AnyShapeStyle(Color.gray.opacity(0.4)) : AnyShapeStyle(Theme.headerGradient),
-                            in: RoundedRectangle(cornerRadius: 12))
+                .frame(width: 84, height: 56)
         }
+        .buttonStyle(TCButtonStyle(.primaryGradient, size: .bar))
         .disabled(disabled)
     }
 
@@ -296,11 +294,9 @@ private struct InspectionSignOff: View {
                 Button(action: submit) {
                     Label("ส่งใบตรวจรับงาน", systemImage: "paperplane.fill")
                         .font(.headline)
-                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 56)
-                        .background(canSubmit ? AnyShapeStyle(Theme.tealGradient) : AnyShapeStyle(Color.gray.opacity(0.4)),
-                                    in: RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(TCButtonStyle(.tealGradient, size: .bar, fullWidth: true))
                 .disabled(!canSubmit)
                 if !inspection.allComplete {
                     Text("กรอกข้อมูลที่มี * ให้ครบทุกขั้นตอนก่อนส่ง (\(inspection.completedCount)/\(InspectionStep.all.count))")
@@ -351,7 +347,7 @@ private struct StepSummaryRow: View {
 
     private func color(_ r: InspectionResult, complete: Bool) -> Color {
         guard complete else { return Theme.muted }
-        return r.passed == true ? Color(hex: 0x2E9E5B) : Theme.danger
+        return r.passed == true ? Theme.success : Theme.danger
     }
 }
 
@@ -378,13 +374,13 @@ private struct InspectionReportScreen: View {
                     Label("แก้ไขใบตรวจรับ", systemImage: "pencil")
                         .frame(maxWidth: .infinity, minHeight: 50)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 if let pdfURL {
                     ShareLink(item: pdfURL) {
                         Label("ส่งออก PDF", systemImage: "square.and.arrow.up")
                             .frame(maxWidth: .infinity, minHeight: 50)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
                 }
             }
             .font(.headline)
@@ -412,7 +408,7 @@ struct InspectionReport: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 6)
-                    .background(inspection.allPassed ? Color(hex: 0x2E9E5B) : Theme.danger, in: Capsule())
+                    .background(inspection.allPassed ? Theme.success : Theme.danger, in: Capsule())
             }
             Divider()
             if let job = inspection.job {
@@ -435,7 +431,7 @@ struct InspectionReport: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(r.passed == true ? "ผ่าน" : r.passed == false ? "ไม่ผ่าน" : "-")
                             .bold()
-                            .foregroundStyle(r.passed == true ? Color(hex: 0x2E9E5B) : Theme.danger)
+                            .foregroundStyle(r.passed == true ? Theme.success : Theme.danger)
                         if let unit = step.unit {
                             Text("\(r.value) \(unit)").font(.caption)
                         }

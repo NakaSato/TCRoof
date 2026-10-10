@@ -49,7 +49,7 @@ struct MPScheduleCard: View {
                     Label("สร้างแผน MP", systemImage: "calendar.badge.plus")
                         .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
                 }
-                .buttonStyle(.borderedProminent).tint(Theme.primary)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -93,7 +93,7 @@ struct MPScheduleCard: View {
                 Label("เปิดแผนงาน MP", systemImage: "chart.bar.xaxis")
                     .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.bordered).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
 

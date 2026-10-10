@@ -146,7 +146,7 @@ struct JobDevicesView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { showManual = true } label: { Label("พิมพ์ซีเรียล", systemImage: "keyboard") }
                 Button { showScanner = true } label: { Label("สแกน", systemImage: "barcode.viewfinder") }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
         }
         .tcPadNavBar("อุปกรณ์ที่ติดตั้ง", trail: ["หน้าหลัก", job.code]) {

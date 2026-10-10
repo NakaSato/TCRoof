@@ -171,11 +171,11 @@ struct DailyReportScreen: View {
             Button(action: requestSaveDraft) {
                 Text("บันทึกร่าง").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.bordered).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button { showSign = true } label: {
                 Text("ตรวจ & ลงนาม").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.borderedProminent).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.primary, size: .card))
         }
         .padding(.horizontal, isPhone ? 16 : 24).padding(.vertical, 10)
         .frame(maxWidth: 700)

@@ -206,7 +206,7 @@ struct CountStepper: View {
             }
             .accessibilityLabel("เพิ่ม \(title)")
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(TCButtonStyle(.secondary, size: .card))
     }
 }
 

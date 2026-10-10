@@ -172,7 +172,7 @@ extension RoofPageWide {
                 }
                 Spacer()
                 Button { sectionBig = false } label: {
-                    Text("ปิด").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Text("ปิด").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 110, height: 48).background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -261,7 +261,7 @@ struct SaveRoofStandardSheet: View {
                     let t = name.trimmingCharacters(in: .whitespaces)
                     save(t.isEmpty ? defaultName : t, team); dismiss()
                 } label: {
-                    Text("บันทึกแบบ").font(.system(size: 16, weight: .bold)).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 46)
+                    Text("บันทึกแบบ").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 46)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -325,7 +325,7 @@ struct RoofCADSheet: View {
             Text("เลเยอร์: " + (chosen.isEmpty ? "—" : RoofDXF.layerSummary(chosen))).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
             Button(action: export) {
                 Label("ส่งออก " + fileName, systemImage: "square.and.arrow.down").font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(chosen.isEmpty ? Theme.disabledText : .white)
+                    .foregroundStyle(chosen.isEmpty ? Theme.disabledText : Theme.onPrimary)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(chosen.isEmpty ? Theme.disabledFill : Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }
@@ -362,7 +362,7 @@ struct RoofCADSheet: View {
                 }
                 .buttonStyle(.plain)
                 Button { sharing = true } label: {
-                    Text("ส่งอีกครั้ง").font(.system(size: 15, weight: .bold)).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 44)
+                    Text("ส่งอีกครั้ง").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 44)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)

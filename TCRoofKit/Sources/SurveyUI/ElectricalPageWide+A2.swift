@@ -112,7 +112,7 @@ extension ElectricalPageWide {
                         .font(.system(size: 14)).foregroundStyle(Theme.pending).lineLimit(2)
                     Spacer(minLength: 4)
                     Button { SiteSync.useA2(&job, mark: it.id) } label: {
-                        Text("ใช้ค่า A2").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                        Text("ใช้ค่า A2").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
                             .padding(.horizontal, 14).frame(minHeight: 44)
                             .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                     }

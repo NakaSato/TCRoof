@@ -106,7 +106,7 @@ extension TankPageWide {
 
     @ViewBuilder func phoneCircle(_ n: Int, done: Bool, current: Bool) -> some View {
         if current {
-            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(.white)
+            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 26, height: 26)
                 .background(Circle().fill(Theme.primary))
                 .background(Circle().fill(Theme.primary.opacity(0.18)).frame(width: 34, height: 34))

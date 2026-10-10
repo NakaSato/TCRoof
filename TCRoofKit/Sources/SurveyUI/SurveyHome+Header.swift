@@ -66,7 +66,7 @@ extension SurveyHomeView {
                 let on = tab == t
                 Button { withAnimation(.snappy) { tab = t } } label: {
                     HStack(spacing: 8) {
-                        Text("\(i + 1)").font(.caption.weight(.bold)).foregroundStyle(.white)
+                        Text("\(i + 1)").font(.caption.weight(.bold)).foregroundStyle(Theme.onPrimary)
                             .frame(width: 22, height: 22).background(on ? Theme.primary : Theme.disabledText, in: Circle())
                         // iPhone: drop the count before the name gets cut
                         ViewThatFits(in: .horizontal) {
@@ -116,12 +116,12 @@ extension SurveyHomeView {
             Button { showNew = true } label: {
                 if compact {
                     // iPhone: 60 pt with the board's gradient (icons/fab-60.svg)
-                    Image(systemName: "plus").font(.system(size: 28, weight: .bold)).foregroundStyle(.white)
+                    Image(systemName: "plus").font(.system(size: 28, weight: .bold)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 60, height: 60)
                         .background(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
                         .shadow(color: Theme.navySolid.opacity(0.35), radius: 8, y: 6)
                 } else {
-                    Image(systemName: "plus").font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
+                    Image(systemName: "plus").font(.system(size: 28, weight: .semibold)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 68, height: 68)
                         .background(Theme.primary, in: Circle())
                         .shadow(color: Theme.navy.opacity(0.3), radius: 8, y: 4)
@@ -130,7 +130,7 @@ extension SurveyHomeView {
             .accessibilityLabel("งานสำรวจใหม่")
         case .install:
             Button { showInstallPicker = true } label: {
-                Label("เพิ่มโครงการ", systemImage: "plus").font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
+                Label("เพิ่มโครงการ", systemImage: "plus").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 28).frame(height: 64)
                     .background(Theme.primary, in: Capsule())
                     .shadow(color: Theme.navy.opacity(0.3), radius: 8, y: 4)

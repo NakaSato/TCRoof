@@ -41,7 +41,7 @@ struct NewJobSheet: View {
             }
             .accessibilityLabel("ยกเลิก")
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(20)
         .background(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing))
     }

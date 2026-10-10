@@ -60,7 +60,7 @@ struct SpanEditor: View {
                     if ref.index < spans.count - 1 { select(.init(axis: ref.axis, index: ref.index + 1)) }
                     else { select(.init(axis: ref.axis == .x ? .y : .x, index: 0)) }
                 } label: {
-                    Text("ถัดไป ›").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                    Text("ถัดไป ›").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 16).frame(minHeight: 44).background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)

@@ -157,7 +157,7 @@ extension SitePageWide {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.danger))
             }
             Button { done(); editing = nil } label: {
-                Text("เสร็จ").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text("เสร็จ").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }

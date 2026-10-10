@@ -92,7 +92,7 @@ struct SingleLinePage: View {
                 .buttonStyle(.plain).accessibilityLabel("ข้อมูลฝั่ง PV")
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, phone ? 8 : 24).padding(.vertical, phone ? 6 : 10)
         .frame(maxWidth: .infinity)
         .background(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing).ignoresSafeArea(edges: .top))
@@ -375,7 +375,7 @@ struct SingleLinePage: View {
     func barButton(_ t: String, filled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(t).font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
-                .foregroundStyle(filled ? .white : Theme.navy)
+                .foregroundStyle(filled ? Theme.onPrimary : Theme.navy)
                 .background(filled ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(filled ? Theme.primary : Theme.borderControl))
         }

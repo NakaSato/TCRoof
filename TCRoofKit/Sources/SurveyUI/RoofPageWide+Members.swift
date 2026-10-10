@@ -179,7 +179,7 @@ struct RoofShotTile: View {
         .overlay(alignment: .topTrailing) {
             if extra > 0 {
                 Text("+\(extra)").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 5).padding(.vertical, 1).background(Theme.navy.opacity(0.75), in: Capsule())
+                    .padding(.horizontal, 5).padding(.vertical, 1).background(Theme.navySolid.opacity(0.75), in: Capsule())
                     .padding(4).allowsHitTesting(false)
                     .accessibilityLabel("ภาพโครงสร้างเดิมอีก \(extra) ภาพ")
             }

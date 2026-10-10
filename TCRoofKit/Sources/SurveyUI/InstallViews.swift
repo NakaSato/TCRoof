@@ -64,7 +64,7 @@ struct InstallPickerSheet: View {
             Spacer(minLength: 0)
             if ok {
                 Button { add(j.id) } label: {
-                    Text("เพิ่มได้").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                    Text("เพิ่มได้").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
                         .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12))
                 }

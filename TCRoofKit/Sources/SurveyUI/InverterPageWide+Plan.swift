@@ -198,7 +198,7 @@ extension InverterPageWide {
         let cb = s.breaker(kw: kw), inv = s.catalog.inverter(kw: kw)
         return HStack(spacing: 8) {
             Text("\(i + 1)").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
-                .frame(width: 26, height: 26).background(Theme.navy, in: Circle())
+                .frame(width: 26, height: 26).background(Theme.navySolid, in: Circle())
             HStack(spacing: 0) {
                 boxButton("minus", enabled: s.stepSize(kw, by: -1) != kw) { setSize(i, s.stepSize(kw, by: -1)) }
                     .accessibilityLabel("ลดขนาดเครื่อง \(i + 1)")

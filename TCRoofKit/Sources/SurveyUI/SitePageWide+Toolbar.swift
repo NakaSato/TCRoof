@@ -190,7 +190,7 @@ extension SitePageWide {
             (Text(toolHint.name).bold() + Text("  " + toolHint.hint))
                 .font(.system(size: 13)).foregroundStyle(.white)
                 .padding(.horizontal, 12).padding(.vertical, 8)
-                .background(Theme.navy.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.navySolid.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 420, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .allowsHitTesting(false)

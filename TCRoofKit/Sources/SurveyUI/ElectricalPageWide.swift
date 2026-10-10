@@ -150,7 +150,7 @@ struct ElectricalPageWide: View {
     var diagramButton: some View {
         Button(action: openDiagram) {
             Text(narrow ? "Single Line →" : "สร้าง Single Line Diagram →").font(.system(size: narrow ? 15 : 16, weight: .bold)).lineLimit(1)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, narrow ? 12 : 18).frame(minHeight: 44)
                 .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
         }

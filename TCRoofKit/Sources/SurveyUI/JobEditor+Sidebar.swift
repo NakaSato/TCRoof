@@ -130,7 +130,7 @@ extension JobEditorView {
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right").font(.caption.weight(.bold))
                     }
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
@@ -183,7 +183,7 @@ extension JobEditorView {
         return Button { withAnimation(.snappy) { if open { collapsed.insert(g.category) } else { collapsed.remove(g.category) } } } label: {
             HStack(spacing: 8) {
                 Text(g.category.rawValue).font(.caption.weight(.heavy)).foregroundStyle(.white)
-                    .frame(width: 22, height: 22).background(Theme.navy, in: RoundedRectangle(cornerRadius: 6))
+                    .frame(width: 22, height: 22).background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6))
                 Text(g.category.title).font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 4)
                 Text("\(done)/\(g.items.count)").font(.caption.weight(.bold)).monospacedDigit()

@@ -159,7 +159,7 @@ struct TankPageWide: View {
         if done {
             A2Icon(name: "d1-step-done", fallback: "checkmark.circle.fill", size: 24).foregroundStyle(Theme.success)
         } else {
-            Text("\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(current ? Color.white : Theme.inkMuted)
+            Text("\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(current ? Theme.onPrimary : Theme.inkMuted)
                 .frame(width: 24, height: 24)
                 .background(Circle().fill(current ? Theme.primary : Theme.surface))
                 .overlay(Circle().stroke(current ? Color.clear : Theme.navy.opacity(0.25)))
@@ -229,7 +229,7 @@ struct TankPageWide: View {
 
     func nextButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+            Text(title).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
         }

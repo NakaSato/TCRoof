@@ -279,7 +279,7 @@ extension RoofPageWide {
             update { Roof.setSpans(&$0, a, s) }
             span = SpanRef(axis: a, index: s.count - 1)
         } label: {
-            Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+            Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 26, height: 26).background(Theme.primary, in: RoundedRectangle(cornerRadius: 4))
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
@@ -348,7 +348,7 @@ extension RoofPageWide {
         let n = Roof.areas(values).filter { $0.kind == Roof.skylightKind }.count
         return Button { tool = tool == .skylight ? nil : .skylight; span = nil } label: {
             Text(tool == .skylight ? "เสร็จ · แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.system(size: 13, weight: .bold))
-                .foregroundStyle(tool == .skylight ? Color.white : Theme.primary)
+                .foregroundStyle(tool == .skylight ? Theme.onPrimary : Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 36)
                 .background(tool == .skylight ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.primary.opacity(0.6)))

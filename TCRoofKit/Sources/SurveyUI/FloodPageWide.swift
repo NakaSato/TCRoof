@@ -422,7 +422,7 @@ struct FloodPageWide: View {
                 if fetching { ProgressView().tint(.white) } else { Image(systemName: "arrow.down.circle") }
                 Text(fetching ? ("กำลังดึงข้อมูล \(attempt)/\(FloodLookup.gregorianYears.count) ปี…") : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
             }
-            .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.onPrimary)
             .padding(.horizontal, 18).frame(minHeight: 48)
             .background(ready && !fetching ? Theme.primary : Theme.disabledText, in: RoundedRectangle(cornerRadius: 12))
         }

@@ -211,7 +211,7 @@ struct WaterPageWide: View {
 
     var infoRow: some View {
         HStack(alignment: .top, spacing: 8) {
-            Text("i").font(.system(size: 13, weight: .heavy)).foregroundStyle(.white)
+            Text("i").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 20, height: 20).background(Theme.primary, in: Circle())
             Text(shownMode.hint).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
         }

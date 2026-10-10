@@ -121,8 +121,8 @@ extension SitePageWide {
     }
 
     @ViewBuilder var emptyButtons: some View {
-        Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียม", systemImage: "map").frame(minHeight: 36) }.buttonStyle(.borderedProminent)
-        Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(.bordered)
+        Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียม", systemImage: "map").frame(minHeight: 36) }.buttonStyle(TCButtonStyle(.primary, size: .card))
+        Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(TCButtonStyle(.secondary, size: .card))
     }
 
     /// Grid, building models, shapes, the shape being drawn and symbols, drawn like the report does.

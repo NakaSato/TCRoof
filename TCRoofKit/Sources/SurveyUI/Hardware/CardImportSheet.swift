@@ -86,7 +86,7 @@ struct CardImportSheet: View {
             Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
                 .multilineTextAlignment(.center)
             Button { picking = true } label: { Text("เลือกรูป").bold().frame(minWidth: 160, minHeight: 44) }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
         }
         .padding(24)
@@ -118,7 +118,7 @@ struct CardImportSheet: View {
                         Button(job.values.photo("siteMap") == nil ? "ใช้เป็นภาพ A2" : "แทนภาพ A2") {
                             if job.values.photo("siteMap") == nil { useAsSite(item) } else { replaceSite = item }
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(TCButtonStyle(.primary, size: .card))
                     }
                 } header: { Text("ภาพมุมสูงจากโดรน") } footer: {
                     Text(item.shot.altitude.map { "สูงจากระดับน้ำทะเล \(Int($0.rounded())) ม. ใช้เป็นภาพสถานที่ติดตั้งได้ (ต้องวัดมาตราส่วนในหน้า A2)" } ?? "")
@@ -130,7 +130,7 @@ struct CardImportSheet: View {
                     ForEach(group.items, id: \.0.id) { item, meters in
                         row(item, detail: "ห่าง \(Int(meters.rounded())) ม.") {
                             if let first = slots.first {
-                                Button("ใส่ " + first.label) { place(item, first) }.buttonStyle(.borderedProminent)
+                                Button("ใส่ " + first.label) { place(item, first) }.buttonStyle(TCButtonStyle(.primary, size: .card))
                             }
                             slotMenu(item, slots: slots)
                         }

@@ -150,11 +150,11 @@ extension ExportSheet {
                 Button { share() } label: {
                     Label("แชร์ไฟล์", systemImage: "square.and.arrow.up").lineLimit(1).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent).disabled(!canShare)
+                .buttonStyle(TCButtonStyle(.primary, size: .card)).disabled(!canShare)
                 Button { saveToDrive() } label: {
                     Label("Google Drive", systemImage: "icloud.and.arrow.up").lineLimit(1).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered).disabled(!canDrive)
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).disabled(!canDrive)
             }
             .controlSize(.large)
             .disabled(busy != nil)

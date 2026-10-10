@@ -130,11 +130,11 @@ struct NameplateScannerView: View {
             Button { rejected.formUnion(found); found = []; off = [] } label: {
                 Text("ไม่ใช่").frame(maxWidth: .infinity, minHeight: 48)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button { confirmSelection() } label: {
                 Group { if saving { ProgressView() } else { Text(confirm).bold() } }.frame(maxWidth: .infinity, minHeight: 48)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(TCButtonStyle(.primary, size: .card))
             .disabled(saving || found.allSatisfy { off.contains($0.key) })
         }
     }

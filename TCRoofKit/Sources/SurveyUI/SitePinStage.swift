@@ -100,7 +100,7 @@ struct SitePinStage<Pin: View, Legend: View>: View {
                 Button(action: openSite) {
                     Text("เปิด A2 เพื่อเลือกภาพ").font(.system(size: 15, weight: .bold)).padding(.horizontal, 16).frame(minHeight: 44)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             } else {
                 PhotoSlot.notDownloaded
             }

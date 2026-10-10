@@ -57,7 +57,7 @@ struct RoofSensorSheet: View {
                 Button { confirm() } label: {
                     Text("ใช้ค่านี้").bold().frame(maxWidth: .infinity, minHeight: 50)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
                 .disabled(!ready)
             }
             .padding(24)

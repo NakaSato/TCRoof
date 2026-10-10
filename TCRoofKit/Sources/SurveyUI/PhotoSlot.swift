@@ -59,9 +59,9 @@ struct PhotoSlot: View {
             PhotoSourceButtons(compact: true, onUpload: { showPicker = true }, onCamera: { showCamera = true })
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .background(required ? Theme.photoEmptyFill : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12)
-            .stroke(required ? Theme.danger : Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+            .stroke(required ? Theme.photoEmptyBorder : Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
     }
 
     func filled(_ p: Photo) -> some View {
@@ -95,7 +95,7 @@ struct PhotoSlot: View {
     }
 
     /// The grey-blue behind a photo scaled to fit.
-    static let stageColor = Color(red: 0.91, green: 0.933, blue: 0.961)
+    static let stageColor = Theme.mapLand
 
     /// A photo saved in the job but taken on another device.
     static var notDownloaded: some View {
@@ -122,26 +122,31 @@ struct PhotoSourceButtons: View {
         }
     }
 
+    @ViewBuilder
     func button(_ title: String, icon: String, fallback: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Group {
-                if compact {
-                    A2Icon(name: icon, fallback: fallback, size: 20).foregroundStyle(Theme.primary)
-                        .frame(width: 44, height: 44)
-                } else {
-                    HStack(spacing: 8) {
-                        A2Icon(name: icon, fallback: fallback, size: 18).foregroundStyle(Theme.primary)
-                        Text(title).font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
-                    }
-                    .frame(width: 150, height: height)
-                }
+        if compact {
+            Button(action: action) {
+                A2Icon(name: icon, fallback: fallback, size: 20).foregroundStyle(Theme.primary)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                    .contentShape(Rectangle())
             }
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+        } else {
+            // the board's photo slot: อัปโหลด secondary, กล้อง gradient (docs/ui/components, section 6)
+            let camera = icon == "ui-camera"
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    A2Icon(name: icon, fallback: fallback, size: 18).foregroundStyle(camera ? Theme.onPrimary : Theme.primary)
+                    Text(title)
+                }
+                .frame(minWidth: 114, minHeight: height)
+            }
+            .buttonStyle(TCButtonStyle(camera ? .primaryGradient : .secondary, size: .card))
+            .accessibilityLabel(title)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
     }
 }
 

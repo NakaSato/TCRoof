@@ -73,9 +73,9 @@ struct PhotoReview: View {
             }
             HStack(spacing: 12) {
                 Button(action: keep) { Text("เก็บไว้").frame(maxWidth: .infinity, minHeight: 50) }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 Button(action: retake) { Text("ถ่ายใหม่").bold().frame(maxWidth: .infinity, minHeight: 50) }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
             .frame(maxWidth: 520)
         }

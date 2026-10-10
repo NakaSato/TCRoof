@@ -71,7 +71,7 @@ struct PhotoField: View {
 
     @ViewBuilder var mapButton: some View {
         if mapGPS != nil {
-            Button { fetchMap() } label: { Label("แผนที่ดาวเทียม", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(.bordered)
+            Button { fetchMap() } label: { Label("แผนที่ดาวเทียม", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
 

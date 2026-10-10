@@ -251,7 +251,7 @@ struct ObstaclesEditor: View {
                 .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             Button { items.append(Obstacle()) } label: { Label("เพิ่มสิ่งกีดขวาง", systemImage: "plus") }
-                .buttonStyle(.bordered)
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
     func bind(_ id: UUID, _ kp: WritableKeyPath<Obstacle, String>) -> Binding<String> {
@@ -285,7 +285,7 @@ struct TransformersEditor: View {
                 .padding(10).background(Paper.band.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
             }
             if items.count < 5 {
-                Button { items.append(Transformer()) } label: { Label("เพิ่มหม้อแปลง", systemImage: "plus") }.buttonStyle(.bordered)
+                Button { items.append(Transformer()) } label: { Label("เพิ่มหม้อแปลง", systemImage: "plus") }.buttonStyle(TCButtonStyle(.secondary, size: .card))
             }
         }
     }

@@ -205,7 +205,7 @@ struct InverterPageWide: View {
         guard tab == .boundary, let p = values.photo("photoArea"), let img = model.image(p, in: job.id) else { return nil }
         return AnyView(Button { addPhoto(img) } label: {
             Label("ใช้ภาพพื้นที่", systemImage: "photo").font(.system(size: 15, weight: .bold)).frame(minHeight: 44)
-        }.buttonStyle(.borderedProminent))
+        }.buttonStyle(TCButtonStyle(.primary, size: .card)))
     }
 
     var boundaryTools: some View {

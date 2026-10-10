@@ -643,7 +643,7 @@ struct BreakerSheet: View {
                         Button(role: .destructive, action: onDelete) {
                             Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)
                         }
-                        .buttonStyle(.bordered).padding(.top, 8)
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).padding(.top, 8)
                     }
                 }
                 .padding(20)

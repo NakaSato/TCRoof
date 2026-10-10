@@ -4,6 +4,7 @@ import UIKit
 import UniformTypeIdentifiers
 import TCRoofCore
 import DriveSync
+import TCRoofUI
 
 /// Entry point of the survey-report feature. Put it inside a NavigationStack
 /// (TCRoof pushes it from "สำรวจหน้างาน"; a standalone app wraps it in `SolarSurveyScene`).
@@ -279,7 +280,7 @@ struct SurveyHomeView: View {
             Text(model.jobs.isEmpty ? "เริ่มงานใหม่ หรือเปิดงานที่บันทึกไว้จาก Google Drive / ไฟล์สำรอง"
                  : search.isEmpty ? "ไม่มีงานในกลุ่ม \"\(filter.title)\"" : "ลองคำค้นอื่น")
         } actions: {
-            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(.borderedProminent) }
+            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(TCButtonStyle(.primary, size: .card)) }
         }
         .padding(.top, 40)
     }

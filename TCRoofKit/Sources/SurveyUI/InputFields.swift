@@ -2,6 +2,7 @@
 import SwiftUI
 import CoreLocation
 import TCRoofCore
+import TCRoofUI
 
 /// The cover's "วันที่" field: a date picker in the Thai calendar, still stored as yyyy-MM-dd.
 struct DateInput: View {
@@ -21,7 +22,7 @@ struct DateInput: View {
                     Text("ค่าเดิม \"\(text)\" อ่านเป็นวันที่ไม่ได้").font(.caption).foregroundStyle(.orange)
                 }
                 Button(text.isEmpty ? "ใส่วันที่วันนี้" : "เปลี่ยนเป็นวันนี้") { text = ISODate.string(Date()) }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
             }
         }
     }
@@ -45,7 +46,7 @@ struct GPSInput: View {
                 Button(action: locate) {
                     if locating { ProgressView() } else { Label("ตำแหน่งปัจจุบัน", systemImage: "location.fill") }
                 }
-                .buttonStyle(.bordered).disabled(locating)
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).disabled(locating)
             }
             switch GPS.check(text) {
             case .invalid:

@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import TCRoofCore
+import TCRoofUI
 
 /// D1 `ส่งออก DXF` (docs/specs/cad-export-dxf phase 3): the tank plan and its panel layout at real scale, shared as a file.
 extension TankPageWide {
@@ -9,10 +10,10 @@ extension TankPageWide {
     var dxfButton: some View {
         Button(action: exportDXF) {
             Label("ส่งออก DXF", systemImage: "square.and.arrow.up")
-                .font(.system(size: 16, weight: .bold)).foregroundStyle(Home.navy)
+                .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.borderControl))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
         }
         .buttonStyle(.plain)
         .disabled(TankPlan(values) == nil)

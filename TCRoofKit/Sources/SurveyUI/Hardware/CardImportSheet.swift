@@ -3,6 +3,7 @@ import SwiftUI
 import ImageIO
 import UniformTypeIdentifiers
 import TCRoofCore
+import TCRoofUI
 
 /// นำเข้ารูปจากการ์ด / USB (docs/specs/hardware-assist-swift.md §H6): pick photos from an SD card reader, a drone's
 /// USB connection or Files. Each is copied (the card keeps its originals), and offered where it fits (`CardImport`):
@@ -81,12 +82,12 @@ struct CardImportSheet: View {
 
     private var empty: some View {
         VStack(spacing: 16) {
-            Image(systemName: "sdcard").font(.system(size: 44)).foregroundStyle(Home.primary)
-            Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.system(size: 16)).foregroundStyle(Home.muted)
+            Image(systemName: "sdcard").font(.system(size: 44)).foregroundStyle(Theme.primary)
+            Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
                 .multilineTextAlignment(.center)
             Button { picking = true } label: { Text("เลือกรูป").bold().frame(minWidth: 160, minHeight: 44) }
                 .buttonStyle(.borderedProminent)
-            Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.system(size: 13)).foregroundStyle(Home.muted)
+            Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
         }
         .padding(24)
     }
@@ -149,7 +150,7 @@ struct CardImportSheet: View {
             if !done.isEmpty {
                 Section("ใส่แล้ว (\(done.count))") {
                     ForEach(done) { item in
-                        row(item, detail: placed[item.id]) { Image(systemName: "checkmark.circle.fill").foregroundStyle(Home.ok) }
+                        row(item, detail: placed[item.id]) { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.success) }
                     }
                 }
             }
@@ -172,9 +173,9 @@ struct CardImportSheet: View {
             .frame(width: 64, height: 64).clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.shot.date.map { $0.formatted(.dateTime.day().month().year().hour().minute().locale(Locale(identifier: "th_TH"))) } ?? "ไม่มีวันที่")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.navy)
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.navy)
                 Text([item.shot.camera, item.shot.lat == nil ? "ไม่มีพิกัด" : nil, detail].compactMap { $0 }.joined(separator: " · "))
-                    .font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(2)
+                    .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
         }
     }

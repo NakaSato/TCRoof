@@ -3,6 +3,7 @@ import SwiftUI
 import CoreMotion
 import CoreLocation
 import TCRoofCore
+import TCRoofUI
 
 /// "วัดด้วยเครื่อง" beside the roof pitch and facing fields (docs/specs/hardware-assist-swift.md §H3).
 /// Both come from one reading: the iPad lying on the roof sheet, top edge up the slope.
@@ -20,7 +21,7 @@ struct RoofSensorButton: View {
                 Label("วัดด้วยเครื่อง", systemImage: reading == .pitch ? "level" : "location.north.line")
                     .font(.system(size: 14, weight: .semibold)).frame(minHeight: 44)
             }
-            .buttonStyle(.plain).foregroundStyle(Home.primary)
+            .buttonStyle(.plain).foregroundStyle(Theme.primary)
             .sheet(isPresented: $open) {
                 RoofSensorSheet(reading: reading) { v, o in
                     open = false
@@ -41,16 +42,16 @@ struct RoofSensorSheet: View {
         NavigationStack {
             VStack(spacing: 18) {
                 Text("วาง iPad ราบบนแผ่นหลังคา ให้ขอบด้านบนของจอชี้ขึ้นตามแนวลาด · บนหลังคาลอนให้วางขวางลอน")
-                    .font(.callout).foregroundStyle(Home.muted).multilineTextAlignment(.center)
+                    .font(.callout).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
                 VStack(spacing: 4) {
                     Text(String(format: "%.1f°", sensor.tilt)).font(.system(size: 56, weight: .bold).monospacedDigit())
-                        .foregroundStyle(reading == .pitch ? Home.navy : Home.muted)
-                    Text("มุมเอียง").font(.footnote).foregroundStyle(Home.muted)
+                        .foregroundStyle(reading == .pitch ? Theme.navy : Theme.inkMuted)
+                    Text("มุมเอียง").font(.footnote).foregroundStyle(Theme.inkMuted)
                 }
                 VStack(spacing: 4) {
                     Text(sensor.facing.map(Orientation.describe) ?? "–").font(.system(size: reading == .facing ? 34 : 22, weight: .bold))
-                        .foregroundStyle(reading == .facing ? Home.navy : Home.muted)
-                    Text(sensor.trueNorth ? "หลังคาหันไปทางทิศ (ทิศจริง)" : "หลังคาหันไปทางทิศ (ทิศแม่เหล็ก)").font(.footnote).foregroundStyle(Home.muted)
+                        .foregroundStyle(reading == .facing ? Theme.navy : Theme.inkMuted)
+                    Text(sensor.trueNorth ? "หลังคาหันไปทางทิศ (ทิศจริง)" : "หลังคาหันไปทางทิศ (ทิศแม่เหล็ก)").font(.footnote).foregroundStyle(Theme.inkMuted)
                 }
                 status
                 Button { confirm() } label: {
@@ -70,13 +71,13 @@ struct RoofSensorSheet: View {
 
     @ViewBuilder private var status: some View {
         if reading == .facing, sensor.tilt < Orientation.minimumTiltForFacing {
-            Label("หลังคาเกือบราบ บอกทิศไม่ได้", systemImage: "exclamationmark.triangle").foregroundStyle(Home.orange)
+            Label("หลังคาเกือบราบ บอกทิศไม่ได้", systemImage: "exclamationmark.triangle").foregroundStyle(Theme.pending)
         } else if reading == .facing, sensor.headingDisturbed {
-            Label("ตรวจทิศอีกครั้ง (ใกล้โลหะ) ± \(Int(sensor.headingAccuracy))°", systemImage: "exclamationmark.triangle").foregroundStyle(Home.orange)
+            Label("ตรวจทิศอีกครั้ง (ใกล้โลหะ) ± \(Int(sensor.headingAccuracy))°", systemImage: "exclamationmark.triangle").foregroundStyle(Theme.pending)
         } else if sensor.steady {
-            Label("ค่านิ่งแล้ว", systemImage: "checkmark.circle.fill").foregroundStyle(Home.ok)
+            Label("ค่านิ่งแล้ว", systemImage: "checkmark.circle.fill").foregroundStyle(Theme.success)
         } else {
-            Label("ถือนิ่ง ๆ สักครู่", systemImage: "hand.raised").foregroundStyle(Home.muted)
+            Label("ถือนิ่ง ๆ สักครู่", systemImage: "hand.raised").foregroundStyle(Theme.inkMuted)
         }
     }
 

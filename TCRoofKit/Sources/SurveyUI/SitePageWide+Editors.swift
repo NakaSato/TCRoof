@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A2's symbol and shape editors on the picture.
 extension SitePageWide {
@@ -40,7 +41,7 @@ extension SitePageWide {
             editorButtons { change { a, _ in a.removeAll { $0.id == m.id } }; editing = nil }
         }
         .padding(16).frame(width: 340)
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
     }
 
     /// `↔ A3 TX 1` once the symbol fills A3; tapping it takes A3's values again (the old `ดึงจาก A3`).
@@ -55,9 +56,9 @@ extension SitePageWide {
 
     /// Blue pill `↔ A3 TX 1` / `↔ B4`.
     func linkChip(_ title: String) -> some View {
-        Text("↔ " + title).font(.system(size: 11.5, weight: .bold)).foregroundStyle(Home.primary).lineLimit(1)
+        Text("↔ " + title).font(.system(size: 11.5, weight: .bold)).foregroundStyle(Theme.primary).lineLimit(1)
             .padding(.horizontal, 8).frame(height: 22)
-            .background(Home.primarySoft, in: Capsule())
+            .background(Theme.primarySoft, in: Capsule())
     }
 
     static let zeroExportChoices: [(value: String, title: String, detail: String)] = [
@@ -79,27 +80,27 @@ extension SitePageWide {
                 Button { value.wrappedValue = c.value } label: {
                     HStack(spacing: 12) {
                         Image(systemName: on ? "record.circle.fill" : "circle")
-                            .font(.system(size: 20)).foregroundStyle(on ? Home.danger : Home.borderControl)
+                            .font(.system(size: 20)).foregroundStyle(on ? Theme.danger : Theme.borderControl)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(c.title).font(.system(size: 16, weight: .bold))
-                            Text(c.detail).font(.system(size: 12)).foregroundStyle(Home.muted)
+                            Text(c.detail).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 12).frame(minHeight: 52)
-                    .background(on ? Home.danger.opacity(0.06) : Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.danger : Home.hairline, lineWidth: on ? 2 : 1))
+                    .background(on ? Theme.danger.opacity(0.06) : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.danger : Theme.borderSubtle, lineWidth: on ? 2 : 1))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
             Text("ส่งไป B4 กันย้อน: MV = \(ZeroExport.hv) · LV = \(ZeroExport.lv)")
-                .font(.system(size: 12)).foregroundStyle(Home.muted)
+                .font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
             editorButtons { change { a, _ in a.removeAll { $0.id == m.id } }; editing = nil }
         }
         .padding(16).frame(width: 340)
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
     }
 
     func shapeEditor(_ s: SiteShape, rect r: CGRect) -> some View {
@@ -110,7 +111,7 @@ extension SitePageWide {
                 Text(names[s.kind] ?? "").font(.headline)
                 Spacer()
                 if s.kind == .measure, let m = metersAcross, let l = SiteShapes.length(s, aspect: aspect, metersAcross: m) {
-                    Text(SiteShapes.meters(l)).font(.headline).monospacedDigit().foregroundStyle(Home.primary)
+                    Text(SiteShapes.meters(l)).font(.headline).monospacedDigit().foregroundStyle(Theme.primary)
                 }
             }
             if s.kind == .shade || s.kind == .craneEntry {
@@ -132,33 +133,33 @@ extension SitePageWide {
             }
         }
         .padding(16).frame(width: 340)
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
     }
 
     func editorField(_ title: String, text: Binding<String>, placeholder: String, unit: String? = nil, numeric: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 13)).foregroundStyle(Home.muted)
+            Text(title).font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 6) {
                 TextField(placeholder, text: text).font(.system(size: 17, weight: .semibold))
                     .keyboardType(numeric ? .decimalPad : .default)
-                if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Home.muted) }
+                if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Theme.inkMuted) }
             }
             .padding(.horizontal, 12).frame(minHeight: 44)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.borderControl.opacity(0.7)))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl.opacity(0.7)))
         }
     }
 
     func editorButtons(delete: @escaping () -> Void, done: @escaping () -> Void = {}) -> some View {
         HStack(spacing: 10) {
             Button(role: .destructive, action: delete) {
-                Text("ลบ").font(.system(size: 16, weight: .semibold)).foregroundStyle(Home.danger)
+                Text("ลบ").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.danger)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.danger))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.danger))
             }
             Button { done(); editing = nil } label: {
                 Text("เสร็จ").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }
         }
         .buttonStyle(.plain)

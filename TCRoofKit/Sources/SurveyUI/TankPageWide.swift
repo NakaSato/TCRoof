@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// D1 clear-water tank (docs/ui/survey-d1-size): four sub-steps in a tab bar. Sub-step 1 "ขนาดถัง"
 /// is the designed page (the tank plan on the left, the tank's data on the right); sub-steps 2 "สิ่งกีดขวาง" and 3 "จัดแผง"
@@ -92,7 +93,7 @@ struct TankPageWide: View {
         .fullScreenCover(isPresented: $layoutFull) { layoutFullScreen }
         .sheet(item: $dxfShare) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
         .errorAlert($dxfError)
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         #if DEBUG
         .task { await openDebugState() }
         #endif
@@ -137,15 +138,15 @@ struct TankPageWide: View {
             HStack(spacing: 10) {
                 stepCircle(n, done: s.done, current: on)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(s.title).font(.system(size: 15, weight: .bold)).foregroundStyle(on ? Home.navy : Home.muted).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(s.status).font(.system(size: 12, weight: .semibold)).foregroundStyle(s.statusOK ? Home.ok : Home.orange).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(s.title).font(.system(size: 15, weight: .bold)).foregroundStyle(on ? Theme.navy : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(s.status).font(.system(size: 12, weight: .semibold)).foregroundStyle(s.statusOK ? Theme.success : Theme.pending).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, minHeight: 50)
             .background {
-                if on { RoundedRectangle(cornerRadius: 10).fill(Color.white).shadow(color: Home.navy.opacity(0.2), radius: 1.5, y: 1) }
+                if on { RoundedRectangle(cornerRadius: 10).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
             }
             .contentShape(Rectangle())
         }
@@ -156,12 +157,12 @@ struct TankPageWide: View {
 
     @ViewBuilder func stepCircle(_ n: Int, done: Bool, current: Bool) -> some View {
         if done {
-            A2Icon(name: "d1-step-done", fallback: "checkmark.circle.fill", size: 24).foregroundStyle(Home.ok)
+            A2Icon(name: "d1-step-done", fallback: "checkmark.circle.fill", size: 24).foregroundStyle(Theme.success)
         } else {
-            Text("\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(current ? Color.white : Home.muted)
+            Text("\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(current ? Color.white : Theme.inkMuted)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(current ? Home.primary : Color.white))
-                .overlay(Circle().stroke(current ? Color.clear : Home.navy.opacity(0.25)))
+                .background(Circle().fill(current ? Theme.primary : Color.white))
+                .overlay(Circle().stroke(current ? Color.clear : Theme.navy.opacity(0.25)))
         }
     }
 
@@ -196,7 +197,7 @@ struct TankPageWide: View {
             .padding(14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 
     // MARK: sub-step 4 (the section's generic group until its design arrives)
@@ -230,7 +231,7 @@ struct TankPageWide: View {
         Button(action: action) {
             Text(title).font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
     }

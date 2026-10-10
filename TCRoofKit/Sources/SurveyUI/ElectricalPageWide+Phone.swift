@@ -47,7 +47,7 @@ extension ElectricalPageWide {
 
     /// The diagram's connecting line, between two cards.
     var link: some View {
-        Rectangle().fill(Home.primary).frame(width: 2, height: 14).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 30)
+        Rectangle().fill(Theme.primary).frame(width: 2, height: 14).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 30)
             .accessibilityHidden(true)
     }
 
@@ -64,9 +64,9 @@ extension ElectricalPageWide {
             }
             if bs.count < Transformer.maxBoards {
                 Button { editBoards(i) { $0.append(Board(name: "SDB \($0.count)")) }; withAnimation { open = i } } label: {
-                    Text("+ เพิ่มตู้").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                    Text("+ เพิ่มตู้").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 48)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

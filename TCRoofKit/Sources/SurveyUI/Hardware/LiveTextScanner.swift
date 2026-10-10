@@ -3,6 +3,7 @@ import SwiftUI
 import VisionKit
 import Vision
 import TCRoofCore
+import TCRoofUI
 
 /// What a nameplate scan reads: one field, or a transformer plate's kVA, voltage, vector group, %Z and year.
 enum PlateKind {
@@ -58,7 +59,7 @@ struct NameplateScanButton: View {
                         .frame(minHeight: 44)
                 }
             }
-            .buttonStyle(.plain).foregroundStyle(Home.primary)
+            .buttonStyle(.plain).foregroundStyle(Theme.primary)
             .accessibilityLabel("อ่านจากป้ายด้วยกล้อง")
             .fullScreenCover(isPresented: $open) {
                 NameplateScannerView(kind: kind) { fields, image in
@@ -109,7 +110,7 @@ struct NameplateScannerView: View {
                     Button { if off.contains(f.key) { off.remove(f.key) } else { off.insert(f.key) } } label: {
                         HStack {
                             Image(systemName: off.contains(f.key) ? "circle" : "checkmark.circle.fill")
-                                .foregroundStyle(off.contains(f.key) ? Color.secondary : Home.primary)
+                                .foregroundStyle(off.contains(f.key) ? Color.secondary : Theme.primary)
                             Text(f.label).foregroundStyle(.secondary)
                             Spacer()
                             Text(f.display).bold()
@@ -269,14 +270,14 @@ struct PlatePhotoSuggestion: View {
             Color.clear.frame(height: 0)
             if dismissed != photo.id, !fresh.isEmpty {
                 HStack(spacing: 10) {
-                    Image(systemName: "text.viewfinder").foregroundStyle(Home.primary)
+                    Image(systemName: "text.viewfinder").foregroundStyle(Theme.primary)
                     Text("พบในรูปป้าย: " + fresh.map(\.display).joined(separator: " · ")).font(.system(size: 14, weight: .semibold))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Button("ไม่ใช่") { dismissed = photo.id }.frame(minHeight: 44)
                     Button("ใช้ค่านี้") { apply(fresh); dismissed = photo.id }.bold().frame(minHeight: 44)
                 }
                 .padding(.horizontal, 12)
-                .background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
             }
         }
         .task(id: photo.id) {

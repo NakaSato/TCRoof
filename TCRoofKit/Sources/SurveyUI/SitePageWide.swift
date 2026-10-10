@@ -81,7 +81,7 @@ struct SitePageWide: View {
         Group {
             if isPhone { phoneBody } else { padBody }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .onAppear { tickFromCover() }
         #if DEBUG
         // `-surveyA2 layers|fullscreen` opens the layers menu or full screen (with the first placed model selected) for simulator checks
@@ -316,9 +316,9 @@ struct SitePageWide: View {
         } else {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).layoutPriority(1)
-                if required { Text("*").font(.system(size: 17, weight: .bold)).foregroundStyle(Home.danger) }
+                if required { Text("*").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.danger) }
                 Spacer(minLength: 8)
-                Text(trailing).font(.system(size: 12)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
+                Text(trailing).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
             }
         }
     }
@@ -339,16 +339,16 @@ struct SitePageWide: View {
     func sourceButton(_ title: String, _ detail: String, icon: String, symbol: String, on: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                A2Icon(name: icon, fallback: symbol).foregroundStyle(Home.primary).frame(width: 26)
+                A2Icon(name: icon, fallback: symbol).foregroundStyle(Theme.primary).frame(width: 26)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.85)
-                    Text(detail).font(.system(size: 12)).foregroundStyle(Home.muted).lineLimit(1)
+                    Text(detail).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 48)
-            .background(on ? Home.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.teal : Home.borderControl.opacity(0.6)))
+            .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.borderControl.opacity(0.6)))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? .isSelected : [])
@@ -387,14 +387,14 @@ struct SitePageWide: View {
                 ToolIcon(tool: t).frame(width: 28, height: 28)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title).font(.system(size: 13, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                    Text(detail).font(.system(size: 10.5)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(detail).font(.system(size: 10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 0)
-                Circle().fill(placed(t) ? Home.ok : Color.gray.opacity(0.35)).frame(width: 7, height: 7)
+                Circle().fill(placed(t) ? Theme.success : Color.gray.opacity(0.35)).frame(width: 7, height: 7)
             }
             .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
-            .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.primary : Home.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
+            .background(on ? Theme.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.primary : Theme.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title + " " + detail)
@@ -410,7 +410,7 @@ struct SitePageWide: View {
             }
             .padding(2)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.15)))
         }
     }
 
@@ -422,7 +422,7 @@ struct SitePageWide: View {
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 19))
-                        .foregroundStyle(on ? Home.primary : Home.pending).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 4 }
+                        .foregroundStyle(on ? Theme.primary : Theme.pending).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 4 }
                     Text(item).font(.system(size: 12)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
@@ -434,7 +434,7 @@ struct SitePageWide: View {
             if !on { shortcut(item) }
         }
         .padding(.leading, 6)
-        .background(on ? Color.clear : Home.pending.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .background(on ? Color.clear : Theme.pending.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder func shortcut(_ item: String) -> some View {
@@ -453,21 +453,21 @@ struct SitePageWide: View {
 
     /// v2: the place / photo shortcuts are icon-only 44 × 44.
     func shortcutIcon(_ icon: String, symbol: String) -> some View {
-        A2Icon(name: icon, fallback: symbol, size: 18).foregroundStyle(Home.pending)
+        A2Icon(name: icon, fallback: symbol, size: 18).foregroundStyle(Theme.pending)
             .frame(width: 32, height: 30)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.pending.opacity(0.6)))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.pending.opacity(0.6)))
             // laid out 34 wide so the LIST text keeps its line; the touch target still reaches 44 × 44
             .frame(width: 34, height: 44).contentShape(Rectangle().inset(by: -5))
     }
 
     func shortcutLabel(_ title: String, icon: String?, symbol: String) -> some View {
         Label { Text(title) } icon: { A2Icon(name: icon, fallback: symbol, size: 16) }
-            .font(.system(size: 12, weight: .bold)).foregroundStyle(Home.pending)
+            .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.pending)
             .labelStyle(TightLabel()).fixedSize()
             .padding(.horizontal, 8).frame(minHeight: 30)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.pending.opacity(0.6)))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.pending.opacity(0.6)))
             .frame(minHeight: 44).contentShape(Rectangle())
     }
 
@@ -480,7 +480,7 @@ struct SitePageWide: View {
                 .lineLimit(1...2).font(.system(size: 15))
                 .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 44)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.borderControl.opacity(0.6)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
         }
     }
 }

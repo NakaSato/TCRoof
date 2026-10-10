@@ -43,15 +43,15 @@ struct BottomBar: View {
             // widths 1 : 1.4
             GeometryReader { g in
                 HStack(spacing: 12) {
-                    outline(destructive, size: 15, weight: .bold, tint: Home.red, border: Home.danger.opacity(0.5))
+                    outline(destructive, size: 15, weight: .bold, tint: Theme.dangerText, border: Theme.danger.opacity(0.5))
                         .frame(width: max(0, g.size.width - 12) / 2.4)
-                    gradient(primary, colors: [Home.primary, Home.primaryLight], size: 17)
+                    gradient(primary, colors: [Theme.primary, Theme.primaryLight], size: 17)
                 }
             }
             .frame(height: 53)
         case let .pair(secondary, primary):
-            outline(secondary, size: 16, weight: .semibold, tint: Home.navy, border: Home.navy.opacity(0.6))
-            gradient(primary, colors: [Home.teal, Home.tealLight], size: 16)
+            outline(secondary, size: 16, weight: .semibold, tint: Theme.navy, border: Theme.navy.opacity(0.6))
+            gradient(primary, colors: [Theme.teal, Theme.tealLight], size: 16)
         }
     }
 
@@ -60,7 +60,7 @@ struct BottomBar: View {
             Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 53, maxHeight: 53)
                 .frame(minWidth: 72)
-                .background(nav.action == nil ? AnyShapeStyle(Home.navOff) : AnyShapeStyle(Self.blue), in: RoundedRectangle(cornerRadius: 10))
+                .background(nav.action == nil ? AnyShapeStyle(Theme.navOff.opacity(0.4)) : AnyShapeStyle(Self.blue), in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(BarPress())
         .disabled(nav.action == nil)
@@ -90,7 +90,7 @@ struct BottomBar: View {
     }
 
     /// #1F6FB5 → #2E8FDB.
-    static let blue = LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing)
+    static let blue = LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing)
 }
 
 /// Pressed: a little darker and 2% smaller.

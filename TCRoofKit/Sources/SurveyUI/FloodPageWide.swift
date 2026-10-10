@@ -4,6 +4,7 @@ import UIKit
 import PhotosUI
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A4 (docs/ui/survey-a4): a live water-level cross-section, the equipment height check and flood photos on the left;
 /// the flood questions, the GISTDA lookup and the note on the right. Landscape puts them side by side, portrait and iPhone stack them and scroll.
@@ -47,7 +48,7 @@ struct FloodPageWide: View {
                 .frame(maxHeight: .infinity)
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         // the recommended install height is what the report summary quotes
         .onChange(of: check.minCm) { _, n in if state == .flooded { job.values["equipHeight"] = .text(String(n)) } }
         .photoSources(picker: $showPicker, camera: $showCamera, onPick: addPhoto)
@@ -91,17 +92,17 @@ struct FloodPageWide: View {
                 if state == .flooded {
                     let wy = (FloodSection.groundY - check.level * k) * s
                     Label("ลากเส้นน้ำเพื่อปรับระดับ", systemImage: "arrow.up.and.down")
-                        .font(.system(size: 12.5, weight: .bold)).foregroundStyle(Home.primary)
+                        .font(.system(size: 12.5, weight: .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Color.white).overlay(Rectangle().stroke(Home.primary))
+                        .background(Color.white).overlay(Rectangle().stroke(Theme.primary))
                         .position(x: 375 * s, y: min(wy + 26 * s, (FloodSection.groundY - 14) * s))
                         .allowsHitTesting(false)
                 }
                 if state == .unknownEmpty && !narrow { fetchOverlay }
                 if state == .unknownFetched, let g = values.gistda {
-                    Text(g.banner).font(.system(size: 12.5, weight: .bold)).foregroundStyle(Home.pending)
+                    Text(g.banner).font(.system(size: 12.5, weight: .bold)).foregroundStyle(Theme.pending)
                         .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 3).stroke(Home.orange))
+                        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.pending))
                         .padding(8).allowsHitTesting(false)
                 }
             }
@@ -127,14 +128,14 @@ struct FloodPageWide: View {
     var fetchBox: some View {
         VStack(spacing: 10) {
             Text("ยังไม่มีข้อมูลระดับน้ำ").font(.system(size: 15, weight: .bold))
-            Text("ดึงประวัติน้ำท่วมจาก GISTDA ตามพิกัด A1").font(.system(size: 13)).foregroundStyle(Home.muted).multilineTextAlignment(.center)
+            Text("ดึงประวัติน้ำท่วมจาก GISTDA ตามพิกัด A1").font(.system(size: 13)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
             fetchButton
-            if let failure { Text(failure).font(.system(size: 12.5)).foregroundStyle(Home.danger).multilineTextAlignment(.center); estimateButton }
+            if let failure { Text(failure).font(.system(size: 12.5)).foregroundStyle(Theme.danger).multilineTextAlignment(.center); estimateButton }
         }
         .padding(.vertical, 14).padding(.horizontal, 16).frame(maxWidth: .infinity)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.borderControl))
-        .shadow(color: Home.navy.opacity(0.12), radius: 6, y: 3)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderControl))
+        .shadow(color: Theme.navy.opacity(0.12), radius: 6, y: 3)
     }
 
     // MARK: equipment height check
@@ -152,14 +153,14 @@ struct FloodPageWide: View {
             }
             if narrow { requirementText }
             if check.rows.isEmpty {
-                Text("ยังไม่มีหัวข้อ Inverter / SMDB / Emergency ในงานนี้").font(.system(size: 13)).foregroundStyle(Home.muted).padding(.vertical, 6)
+                Text("ยังไม่มีหัวข้อ Inverter / SMDB / Emergency ในงานนี้").font(.system(size: 13)).foregroundStyle(Theme.inkMuted).padding(.vertical, 6)
             }
             ForEach(check.rows) { r in
                 HStack(spacing: 6) {
                     Text(r.name).font(.system(size: 15)).lineLimit(1).minimumScaleFactor(0.8)
-                    Text(r.tag).font(.system(size: 12.5)).foregroundStyle(Home.muted)
+                    Text(r.tag).font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 6)
-                    Text(r.height).font(.system(size: 14)).monospacedDigit().foregroundStyle(Home.navy)
+                    Text(r.height).font(.system(size: 14)).monospacedDigit().foregroundStyle(Theme.navy)
                     pill(r.status).frame(width: narrow ? nil : 130, alignment: .trailing)
                 }
                 .frame(minHeight: 30)
@@ -169,13 +170,13 @@ struct FloodPageWide: View {
     }
 
     var requirementText: some View {
-        Text(FloodCheck.requirement(values)).font(.system(size: 12.5)).foregroundStyle(Home.muted)
+        Text(FloodCheck.requirement(values)).font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted)
     }
 
     func pill(_ s: FloodCheck.Status) -> some View {
         let c: (Color, Color) = s.tone == .good ? (Color(red: 0.886, green: 0.937, blue: 0.855), Color(red: 0.231, green: 0.455, blue: 0.125))
             : s.tone == .bad ? (Color(red: 0.992, green: 0.925, blue: 0.918), Color(red: 0.706, green: 0.137, blue: 0.094))
-            : (Color(red: 1, green: 0.957, blue: 0.898), Home.pending)
+            : (Color(red: 1, green: 0.957, blue: 0.898), Theme.pending)
         return Text(s.text).font(.system(size: 12.5, weight: .bold)).foregroundStyle(c.1).lineLimit(1)
             .padding(.horizontal, 8).padding(.vertical, 2).background(c.0, in: RoundedRectangle(cornerRadius: 6))
     }
@@ -192,7 +193,7 @@ struct FloodPageWide: View {
     }
     func heightField(_ label: String, _ id: String, placeholder: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.system(size: 14)).foregroundStyle(Home.muted)
+            Text(label).font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             TextField(String(placeholder), text: text(id)).keyboardType(.decimalPad).inputBox()
         }
     }
@@ -213,7 +214,7 @@ struct FloodPageWide: View {
             head {
                 Text("ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม").font(.system(size: 16, weight: .bold))
                 if !narrow { Spacer() }
-                Text("ไม่บังคับ · แนะนำถ่ายคู่ตลับเมตร").font(.footnote).foregroundStyle(Home.muted)
+                Text("ไม่บังคับ · แนะนำถ่ายคู่ตลับเมตร").font(.footnote).foregroundStyle(Theme.inkMuted)
             }
             ScrollView(.horizontal) {
                 HStack(spacing: 10) {
@@ -258,7 +259,7 @@ struct FloodPageWide: View {
                     .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                     .frame(minHeight: 140).frame(maxHeight: stacked ? 200 : .infinity)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
             }
             .frame(maxHeight: stacked ? nil : .infinity)
         }
@@ -266,9 +267,9 @@ struct FloodPageWide: View {
 
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            (Text(t) + (required ? Text(" *").foregroundColor(Home.danger) : Text(""))).font(.system(size: 17, weight: .bold))
+            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold))
             Spacer(minLength: 8)
-            if let aside { Text(aside).font(.footnote).foregroundStyle(Home.muted) }
+            if let aside { Text(aside).font(.footnote).foregroundStyle(Theme.inkMuted) }
         }
     }
 
@@ -289,8 +290,8 @@ struct FloodPageWide: View {
         return Button { choose(id, o) } label: {
             Text(o).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: height)
-                .background(on ? Home.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.teal : Home.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
+                .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
         }
         .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
     }
@@ -300,7 +301,7 @@ struct FloodPageWide: View {
             label(title, required: required)
             HStack(spacing: 6) {
                 TextField("", text: text(id)).keyboardType(keyboard).font(.system(size: 20, weight: .bold))
-                if !unit.isEmpty { Text(unit).font(.system(size: 15)).foregroundStyle(Home.muted) }
+                if !unit.isEmpty { Text(unit).font(.system(size: 15)).foregroundStyle(Theme.inkMuted) }
             }
             .inputBox(minHeight: 52)
         }
@@ -346,7 +347,7 @@ struct FloodPageWide: View {
             job.values["floodHit"] = .multi(a)
         } label: {
             HStack(alignment: .top, spacing: 8) {
-                Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 22)).foregroundStyle(on ? Home.primary : Home.navy.opacity(0.5))
+                Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 22)).foregroundStyle(on ? Theme.primary : Theme.navy.opacity(0.5))
                 Text(h).font(.system(size: 14)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
@@ -356,12 +357,12 @@ struct FloodPageWide: View {
 
     var neverNote: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("ไม่เคยท่วม · ข้ามรายละเอียดได้", systemImage: "checkmark.circle.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(Home.ok)
-            Text("ระดับติดตั้งอุปกรณ์ใช้แค่ระยะเผื่อจากพื้น").font(.system(size: 14)).foregroundStyle(Home.muted)
+            Label("ไม่เคยท่วม · ข้ามรายละเอียดได้", systemImage: "checkmark.circle.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.success)
+            Text("ระดับติดตั้งอุปกรณ์ใช้แค่ระยะเผื่อจากพื้น").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 0.886, green: 0.937, blue: 0.855).opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.ok.opacity(0.4)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.success.opacity(0.4)))
     }
 
     // MARK: GISTDA
@@ -375,7 +376,7 @@ struct FloodPageWide: View {
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(g.headline).font(.system(size: 20, weight: .bold)).foregroundStyle(tone(g.floodedYears.isEmpty ? .good : .warn))
-                        if let d = g.detail { Text(d).font(.system(size: 15)).foregroundStyle(Home.navy) }
+                        if let d = g.detail { Text(d).font(.system(size: 15)).foregroundStyle(Theme.navy) }
                     }
                     let sk = g.chart()
                     Canvas { ctx, size in
@@ -388,24 +389,24 @@ struct FloodPageWide: View {
                     .aspectRatio(CGFloat(sk.width / sk.height), contentMode: .fit)
                     .accessibilityElement().accessibilityLabel(g.headline + (g.detail.map { ". " + $0 } ?? ""))
                     HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Home.pending)
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.pending)
                         Text("GISTDA ไม่มีข้อมูลความลึกน้ำ · ใช้ค่าประเมิน \(g.estimatedDepthCm) ซม. ควรยืนยันกับเจ้าหน้าที่สถานี")
                             .font(.system(size: 14, weight: .semibold)).foregroundStyle(tone(.bad))
                     }
                 }
-                Text(g.footnote).font(.system(size: 12)).foregroundStyle(Home.muted)
+                Text(g.footnote).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                 HStack { fetchButton(again: true); Spacer() }
             } else {
-                Text("ยังไม่มีข้อมูลจากหน้างาน ดึงประวัติพื้นที่น้ำท่วมซ้ำซากจากภาพดาวเทียม GISTDA ได้ทันที").font(.system(size: 15)).foregroundStyle(Home.muted)
+                Text("ยังไม่มีข้อมูลจากหน้างาน ดึงประวัติพื้นที่น้ำท่วมซ้ำซากจากภาพดาวเทียม GISTDA ได้ทันที").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
                 fetchButton
             }
             if failure != nil { estimateButton }
-            if let failure { Text(failure).font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.danger) }
-            else if gps == nil { Text("ใส่พิกัด GPS ในหน้า A1 ก่อน (เช่น 17.0062, 99.8235)").font(.system(size: 13)).foregroundStyle(Home.pending) }
-            else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " · ตั้งค่าได้ในหน้าตั้งค่า").font(.system(size: 13)).foregroundStyle(Home.pending) }
+            if let failure { Text(failure).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.danger) }
+            else if gps == nil { Text("ใส่พิกัด GPS ในหน้า A1 ก่อน (เช่น 17.0062, 99.8235)").font(.system(size: 13)).foregroundStyle(Theme.pending) }
+            else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " · ตั้งค่าได้ในหน้าตั้งค่า").font(.system(size: 13)).foregroundStyle(Theme.pending) }
         }
     }
-    func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Color(red: 0.231, green: 0.455, blue: 0.125) : t == .warn ? Home.pending : t == .bad ? Color(red: 0.706, green: 0.137, blue: 0.094) : Home.navy }
+    func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Color(red: 0.231, green: 0.455, blue: 0.125) : t == .warn ? Theme.pending : t == .bad ? Color(red: 0.706, green: 0.137, blue: 0.094) : Theme.navy }
 
     var gistdaKey: String {
         let k = model.settings.gistdaKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -421,7 +422,7 @@ struct FloodPageWide: View {
             }
             .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
             .padding(.horizontal, 18).frame(minHeight: 48)
-            .background(ready && !fetching ? Home.primary : Home.disabledText, in: RoundedRectangle(cornerRadius: 12))
+            .background(ready && !fetching ? Theme.primary : Theme.disabledText, in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain).disabled(!ready || fetching)
     }
@@ -429,9 +430,9 @@ struct FloodPageWide: View {
     /// GISTDA is slow or down: carry on with the default estimate instead of waiting.
     var estimateButton: some View {
         Button { failure = nil; job.values.setGistda(.estimate()) } label: {
-            Text("ใช้ค่าประเมิน \(FloodGistda.defaultDepthCm) ซม. ไปก่อน").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.primary)
+            Text("ใช้ค่าประเมิน \(FloodGistda.defaultDepthCm) ซม. ไปก่อน").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.primary)
                 .padding(.horizontal, 16).frame(minHeight: 44)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary))
         }
         .buttonStyle(.plain)
     }

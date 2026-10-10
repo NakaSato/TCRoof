@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// C1 roof (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof /
 /// PV-layout tabs, member sizes 1–7 and the six photo angles on the right, on one screen. Field ids, choices and Excel
@@ -84,7 +85,7 @@ struct RoofPageWide: View {
             PageStepBar(job: job, here: .module(moduleID), title: "แปลนและโครงสร้างหลังคา")
             if stacked { stackedLayout } else { wideLayout }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         #if DEBUG
         .task { await openDebugState() }
         #endif
@@ -184,12 +185,12 @@ struct RoofPageWide: View {
             .padding(.horizontal, 14).padding(.vertical, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 
-    func cardTitle(_ t: String, trailing: String? = nil, trailingColor: Color = Home.muted, bold: Bool = false) -> some View {
+    func cardTitle(_ t: String, trailing: String? = nil, trailingColor: Color = Theme.inkMuted, bold: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            (Text(t) + Text(" *").foregroundColor(Home.danger)).font(.system(size: 17, weight: .bold)).lineLimit(1)
+            (Text(t) + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 17, weight: .bold)).lineLimit(1)
             Spacer(minLength: 8)
             if let trailing {
                 Text(trailing).font(.system(size: 12.5, weight: bold ? .bold : .regular)).foregroundStyle(trailingColor).lineLimit(1).minimumScaleFactor(0.7)
@@ -209,7 +210,7 @@ struct RoofPageWide: View {
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 
     func setMode(_ m: RoofPlan.Mode) {
@@ -284,9 +285,9 @@ struct RoofPageWide: View {
             Button { dropdown = open ? nil : "purlin" } label: {
                 HStack(spacing: 4) {
                     Text(String(format: "%.2f", p)).font(.system(size: 18, weight: .bold)).foregroundStyle(Self.amber).monospacedDigit()
-                    Text("ม.").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    Text("ม.").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 2)
-                    Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Home.primary)
+                    Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Theme.primary)
                 }
                 .inputBox(focused: open, minHeight: 44, trailing: 10)
                 .contentShape(Rectangle())
@@ -306,9 +307,9 @@ struct RoofPageWide: View {
             A3Label(text: label)
             Button { dropdown = open ? nil : key } label: {
                 HStack {
-                    Text(shown ?? "เลือก").font(.system(size: 16)).foregroundStyle(shown == nil ? Home.muted : Home.navy).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(shown ?? "เลือก").font(.system(size: 16)).foregroundStyle(shown == nil ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.6)
                     Spacer(minLength: 2)
-                    Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Home.primary)
+                    Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Theme.primary)
                 }
                 .inputBox(focused: open, minHeight: 44, trailing: 10)
                 .contentShape(Rectangle())
@@ -332,10 +333,10 @@ struct RoofPageWide: View {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(o.name).font(.system(size: 16, weight: on ? .bold : .regular))
-                            Text(o.sub).font(.system(size: 12)).foregroundStyle(Home.muted)
+                            Text(o.sub).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 8)
-                        if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary) }
+                        if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 48)
                     .background(on ? Self.soft : Color.white)
@@ -349,7 +350,7 @@ struct RoofPageWide: View {
                 HStack {
                     Text(other ? "อื่นๆ: " + (Roof.shown(values, key, in: list) ?? "") : "อื่นๆ (ระบุเอง)").font(.system(size: 15, weight: other ? .bold : .regular))
                     Spacer()
-                    if other { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary) }
+                    if other { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary) }
                 }
                 .padding(.horizontal, 14).frame(minHeight: 44)
                 .background(other ? Self.soft : Color.white)
@@ -357,7 +358,7 @@ struct RoofPageWide: View {
             }
             .buttonStyle(.plain)
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .frame(width: narrow ? 280 : 300)
         .padding(.vertical, 6)
     }
@@ -373,11 +374,11 @@ struct RoofPageWide: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(pv.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
-                        Text("แผง").font(.system(size: 14)).foregroundStyle(Home.muted)
+                        Text("แผง").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                         Text(String(format: "%.1f", pv.kWp)).font(.system(size: 26, weight: .bold)).monospacedDigit().padding(.leading, 8)
-                        Text("kWp").font(.system(size: 14)).foregroundStyle(Home.muted)
+                        Text("kWp").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                     }
-                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1)
+                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .accessibilityElement(children: .combine)
                 Spacer(minLength: 6)
@@ -401,7 +402,7 @@ struct RoofPageWide: View {
             }
             let perRow = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 3)) : AnyLayout(HStackLayout(spacing: 10))
             perRow {
-                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(2).fixedSize()
+                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize()
                 RoofSegments(options: ["ต่อเนื่อง", "ทุก 2 แผง", "ทุก 4 แผง", "ทุก 6 แผง"], selected: [0, 2, 4, 6].firstIndex(of: per), minSegment: 64) { i in
                     update { Roof.setPV(&$0, perTable: [0, 2, 4, 6][i]) }
                 }
@@ -416,7 +417,7 @@ struct RoofPageWide: View {
             Text("ระยะห่างระหว่างชุด").font(.system(size: 14))
             Spacer(minLength: 6)
             stepButton("minus", enabled: g > 0) { update { Roof.setPV(&$0, gap: g - 0.05) } }
-            (Text(String(format: "%.2f", g)).font(.system(size: 20, weight: .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.system(size: 13)).foregroundColor(Home.muted))
+            (Text(String(format: "%.2f", g)).font(.system(size: 20, weight: .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.system(size: 13)).foregroundColor(Theme.inkMuted))
                 .monospacedDigit().frame(minWidth: 70)
             stepButton("plus", enabled: g < 2) { update { Roof.setPV(&$0, gap: g + 0.05) } }
         }
@@ -428,22 +429,22 @@ struct RoofPageWide: View {
     func panelsField(_ count: Int) -> some View {
         let cur = values.text(Roof.Key.panels)
         return VStack(alignment: .trailing, spacing: 2) {
-            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Home.danger)).font(.system(size: 11.5)).foregroundStyle(Home.muted).lineLimit(1)
+            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
                         .keyboardType(.numberPad).multilineTextAlignment(.trailing)
-                    Text("แผง").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    Text("แผง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
                 }
                 .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 8)
                 .frame(width: 100)
                 .accessibilityLabel("จำนวนแผงก่อนเข้าสำรวจ")
                 if count > 0 && cur != String(count) {
                     Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
-                        Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                        Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                             .padding(.horizontal, 8).frame(minHeight: 44)
                             .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary.opacity(0.5)))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.5)))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("ใช้จำนวนแผงจากการจัดแผง \(count) แผง")
@@ -526,10 +527,10 @@ struct RoofSegments: View {
                 let on = selected == i
                 Button { set(i) } label: {
                     Text(o).font(.system(size: 15, weight: on ? .bold : .medium)).lineLimit(1).minimumScaleFactor(0.7)
-                        .foregroundStyle(on ? Home.navy : Home.muted)
+                        .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: height)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Home.navy.opacity(0.25), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.25), radius: 1.5, y: 1) }
                         }
                         .contentShape(Rectangle())
                 }
@@ -550,9 +551,9 @@ struct RoofSegments: View {
         } label: {
             HStack(spacing: 4) {
                 Text(selected.map { options[$0] } ?? "เลือก").font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                    .foregroundStyle(selected == nil ? Home.muted : Home.navy)
+                    .foregroundStyle(selected == nil ? Theme.inkMuted : Theme.navy)
                 Spacer(minLength: 2)
-                Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .semibold)).foregroundStyle(Home.primary)
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.primary)
             }
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: 44)

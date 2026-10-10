@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import PhotosUI
 import TCRoofCore
+import TCRoofUI
 
 // MARK: small controls of the diagram
 
@@ -12,8 +13,8 @@ struct A3Label: View {
     var required = false
     var body: some View {
         HStack(spacing: 3) {
-            Text(text).font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
-            if required { Text("*").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.danger) }
+            Text(text).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            if required { Text("*").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.danger) }
         }
     }
 }
@@ -36,7 +37,7 @@ struct A3Input: View {
                 TextField("", text: $text).keyboardType(keyboard).textInputAutocapitalization(.never).autocorrectionDisabled()
                 if a2 { A2Badge() }
                 SourceChip(source: source)
-                if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Home.muted) }
+                if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Theme.inkMuted) }
             }
             .inputBox(minHeight: 44, trailing: 10)
         }
@@ -56,8 +57,8 @@ struct A3Segments: View {
                 Button { set(on ? "" : o) } label: {
                     Text(titles?[n] ?? o).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(on ? Home.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.teal : Home.borderControl.opacity(0.6), lineWidth: on ? 2 : 1))
+                        .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.borderControl.opacity(0.6), lineWidth: on ? 2 : 1))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -76,7 +77,7 @@ struct A3Panel<Content: View>: View {
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent ? Home.primary : Home.navy.opacity(0.25), lineWidth: accent ? 2 : 1))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent ? Theme.primary : Theme.navy.opacity(0.25), lineWidth: accent ? 2 : 1))
     }
 }
 
@@ -86,15 +87,15 @@ struct A3Badge: View {
     var body: some View {
         Text(text).font(.system(size: 11, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
             .frame(width: 40, height: 40)
-            .overlay(Circle().stroke(Home.navy, lineWidth: 1.5))
+            .overlay(Circle().stroke(Theme.navy, lineWidth: 1.5))
     }
 }
 
 func a3Chip(_ text: String, ok: Bool) -> some View {
     Text(text).font(.system(size: 13, weight: .bold)).lineLimit(1)
-        .foregroundStyle(ok ? Home.ok : Home.danger)
+        .foregroundStyle(ok ? Theme.success : Theme.danger)
         .padding(.horizontal, 10).frame(minHeight: 26)
-        .background((ok ? Home.mint.opacity(0.4) : Home.danger.opacity(0.1)), in: Capsule())
+        .background((ok ? Theme.mint.opacity(0.4) : Theme.danger.opacity(0.1)), in: Capsule())
 }
 
 /// A small photo frame on the shared `PhotoSlot`: the compact empty layout, and the label on the filled photo.
@@ -160,8 +161,8 @@ extension ElectricalPageWide {
                     A3Segments(options: Schema.meterPhases, selected: vChoice("meterPhase")) { setChoice("meterPhase", $0) }
                 }
                 Button { withAnimation { moreMeter.toggle() } } label: {
-                    Text(moreMeter ? "ซ่อนข้อมูลเพิ่มเติม ▴" : "แสดงข้อมูลเพิ่มเติม (4) ▾").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
-                        .frame(maxWidth: .infinity, minHeight: 44).background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 10))
+                    Text(moreMeter ? "ซ่อนข้อมูลเพิ่มเติม ▴" : "แสดงข้อมูลเพิ่มเติม (4) ▾").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                        .frame(maxWidth: .infinity, minHeight: 44).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
                 if moreMeter {
@@ -174,7 +175,7 @@ extension ElectricalPageWide {
                             .photoShot("meterPic")
                     }
                 } else if let s = meterSummary {
-                    Text(s).font(.system(size: 12)).foregroundStyle(Home.ok).lineLimit(2)
+                    Text(s).font(.system(size: 12)).foregroundStyle(Theme.success).lineLimit(2)
                 }
             }
         }
@@ -205,7 +206,7 @@ extension ElectricalPageWide {
         HStack(spacing: 0) {
             TextField("", text: kvaText(i)).keyboardType(.numberPad)
                 .font(.system(size: 17, weight: .semibold))
-            Text("kVA").font(.system(size: 14)).foregroundStyle(Home.muted)
+            Text("kVA").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             if a2Badges.contains(.kva(i)) { A2Badge().padding(.leading, 4) }
             SourceChip(source: job.values.source("tr\(i)_kva")).padding(.leading, 4)
             NameplateScanButton(kind: .transformer, compact: true) { fields, image in applyPlate(i, fields, frame: image) }
@@ -215,7 +216,7 @@ extension ElectricalPageWide {
         }
         .padding(.leading, 12).frame(minHeight: 44)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
     }
 
     /// Typing a kVA by hand forgets that it was read from the nameplate.
@@ -265,8 +266,8 @@ extension ElectricalPageWide {
                     ForEach(Array(Schema.transformerAngles.enumerated()), id: \.offset) { _, a in
                         let has = job.values.photo("tr\(i)_\(a.key)") != nil
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(has ? Home.mint.opacity(0.55) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(has ? Home.teal : Home.danger, style: StrokeStyle(lineWidth: 1, dash: has ? [] : [3, 2])))
+                            .fill(has ? Theme.mint.opacity(0.55) : Color.clear)
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(has ? Theme.teal : Theme.danger, style: StrokeStyle(lineWidth: 1, dash: has ? [] : [3, 2])))
                             .frame(height: 22)
                     }
                 }
@@ -290,8 +291,8 @@ extension ElectricalPageWide {
                     Spacer(minLength: 0)
                     a3Chip("ภาพ \(n)/6", ok: n == 6)
                     Button { confirmRemove = i } label: {
-                        Image(systemName: "trash").foregroundStyle(Home.danger).frame(width: 44, height: 44)
-                            .background(Home.danger.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        Image(systemName: "trash").foregroundStyle(Theme.danger).frame(width: 44, height: 44)
+                            .background(Theme.danger.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                     }
                     .buttonStyle(.plain).accessibilityLabel("ลบหม้อแปลง TX \(i + 1)")
                 }
@@ -387,9 +388,9 @@ extension ElectricalPageWide {
             Group {
                 if bs.count < Transformer.maxBoards {
                     Button { editBoards(i) { $0.append(Board(name: "SDB \($0.count)")) }; withAnimation { open = i } } label: {
-                        Text("+ เพิ่มตู้").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                        Text("+ เพิ่มตู้").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                             .frame(width: Self.addW, height: 56)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -405,16 +406,16 @@ extension ElectricalPageWide {
                 HStack(spacing: 6) {
                     Text(boardName(i, k)).font(.system(size: 14, weight: .bold)).lineLimit(1)
                     Spacer(minLength: 0)
-                    Text("ปลายสาย").font(.system(size: 10, weight: .bold)).foregroundStyle(Home.ok)
-                        .padding(.horizontal, 6).frame(minHeight: 20).background(Home.mint.opacity(0.4), in: Capsule())
+                    Text("ปลายสาย").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.success)
+                        .padding(.horizontal, 6).frame(minHeight: 20).background(Theme.mint.opacity(0.4), in: Capsule())
                 }
                 HStack(spacing: 6) {
                     Text(b.at.isEmpty ? "—" : b.at).font(.system(size: 16, weight: .bold))
-                    Text("AT").font(.system(size: 11)).foregroundStyle(Home.muted)
+                    Text("AT").font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 0)
                 }
                 Text("CB ย่อย \(breakerTotal(b.breakers))" + (sizeSummary(b.breakers).isEmpty ? "" : " · " + sizeSummary(b.breakers)))
-                    .font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1)
+                    .font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
         }
         .contentShape(Rectangle())
@@ -438,9 +439,9 @@ extension ElectricalPageWide {
                     }
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.3)))
-                    Text("ตู้หลัก · ปลายสาย").font(.system(size: 12, weight: .bold)).foregroundStyle(Home.ok)
-                        .padding(.horizontal, 10).frame(minHeight: 26).background(Home.mint.opacity(0.4), in: Capsule())
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.3)))
+                    Text("ตู้หลัก · ปลายสาย").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.success)
+                        .padding(.horizontal, 10).frame(minHeight: 26).background(Theme.mint.opacity(0.4), in: Capsule())
                 }
                 (narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .top, spacing: 14))) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -509,9 +510,9 @@ extension ElectricalPageWide {
                 editBoards(i) { $0[k].breakers.append(br) }
                 editBreaker = BreakerEdit(id: br.id, trafo: i, board: k)
             } label: {
-                Text("+ เพิ่ม CB ลูกย่อย").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                Text("+ เพิ่ม CB ลูกย่อย").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -519,22 +520,22 @@ extension ElectricalPageWide {
     }
 
     func breakerRow(_ n: Int, _ b: Breaker) -> some View {
-        func v(_ s: String, _ unit: String) -> Text { s.isEmpty ? Text("?" + unit).foregroundColor(Home.danger).bold() : Text(s + unit) }
+        func v(_ s: String, _ unit: String) -> Text { s.isEmpty ? Text("?" + unit).foregroundColor(Theme.danger).bold() : Text(s + unit) }
         let unknown = b.at.isEmpty || b.af.isEmpty || b.ic.isEmpty || b.brand.isEmpty
         let line1 = Text(b.poles.isEmpty ? "" : "\(b.poles)P · ") + v(b.at, "AT") + Text("/") + v(b.af, "AF") + Text(" · ") + v(b.ic, "kA")
         let line2 = [b.brand.isEmpty ? "ยี่ห้อ ?" : b.brand, b.target.isEmpty ? nil : "→ " + b.target].compactMap { $0 }.joined(separator: " ")
         return HStack(spacing: 8) {
-            Text("\(n)").font(.system(size: 13, weight: .bold)).frame(width: 24, height: 24).background(Home.primarySoft, in: Circle())
+            Text("\(n)").font(.system(size: 13, weight: .bold)).frame(width: 24, height: 24).background(Theme.primarySoft, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
                 line1.font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                Text(line2).font(.system(size: 12)).foregroundStyle(b.brand.isEmpty ? Home.danger : Home.muted).lineLimit(1)
+                Text(line2).font(.system(size: 12)).foregroundStyle(b.brand.isEmpty ? Theme.danger : Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 0)
             if !b.condition.isEmpty { a3Chip(b.condition, ok: b.condition != "ชำรุด") }
         }
         .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(unknown ? Home.danger.opacity(0.7) : Home.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(unknown ? Theme.danger.opacity(0.7) : Theme.navy.opacity(0.2)))
         .contentShape(Rectangle())
     }
 
@@ -549,7 +550,7 @@ extension ElectricalPageWide {
                     TextField("ชื่อตู้", text: bText(i, k, \.name)).font(.system(size: 16, weight: .bold)).lineLimit(1)
                         .padding(.horizontal, 8).frame(minHeight: 44)
                     Button { editBoards(i) { if $0.indices.contains(k) { $0.remove(at: k) } } } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(Home.muted).frame(width: 44, height: 44)
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain).accessibilityLabel("ลบตู้")
                 }
@@ -557,13 +558,13 @@ extension ElectricalPageWide {
                 HStack {
                     A3Label(text: "CB ลูกย่อย")
                     Spacer(minLength: 0)
-                    Text("รวม \(breakerTotal(b.breakers)) ลูก").font(.system(size: 12)).foregroundStyle(Home.muted)
+                    Text("รวม \(breakerTotal(b.breakers)) ลูก").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                 }
                 ForEach(b.breakers) { br in sizeRow(i, k, br) }
                 Button { editBoards(i) { $0[k].breakers.append(Breaker()) } } label: {
-                    Text("+ เพิ่มขนาด CB").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
+                    Text("+ เพิ่มขนาด CB").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -584,7 +585,7 @@ extension ElectricalPageWide {
         return HStack(spacing: 4) {
             TextField("", text: Binding(get: { br.at }, set: { v in set { $0.at = NumberInput.clean(v) } })).keyboardType(.numberPad)
                 .frame(width: 44).multilineTextAlignment(.trailing)
-            Text("A ×").font(.system(size: 13)).foregroundStyle(Home.muted)
+            Text("A ×").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
             stepper("minus") {
                 editBoards(i) { b in
                     guard b.indices.contains(k), let n = b[k].breakers.firstIndex(where: { $0.id == br.id }) else { return }
@@ -596,12 +597,12 @@ extension ElectricalPageWide {
         }
         .padding(.leading, 8).frame(maxWidth: .infinity, minHeight: 44)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.navy.opacity(0.3)))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
     }
 
     func stepper(_ symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(Home.primary).frame(width: 34, height: 44)
+            Image(systemName: symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary).frame(width: 34, height: 44)
         }
         .buttonStyle(.plain).accessibilityLabel(symbol == "plus" ? "เพิ่ม" : "ลด")
     }

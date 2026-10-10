@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A `Sketch` drawn at a scale and offset (the plan and section of C1), with the report's renderer.
 struct SketchCanvas: View {
@@ -90,7 +91,7 @@ extension RoofPageWide {
     }
 
     var planCaption: some View {
-        (Text("แปลนโครงหลังคา").bold().underline() + Text(" · " + planHint).foregroundColor(mode == .pv && tool == nil ? Home.navy : Home.muted)
+        (Text("แปลนโครงหลังคา").bold().underline() + Text(" · " + planHint).foregroundColor(mode == .pv && tool == nil ? Theme.navy : Theme.inkMuted)
             .fontWeight(mode == .pv && tool == nil ? .bold : .regular))
             .font(.system(size: 14)).minimumScaleFactor(0.6)
     }
@@ -108,7 +109,7 @@ extension RoofPageWide {
             HStack(spacing: 8) {
                 NorthArrow(degrees: turn).frame(width: 32, height: 32)
                 Text("ทิศเหนือ").font(.system(size: 13, weight: .bold))
-                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1)
+                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .accessibilityElement(children: .combine)
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], spacing: 4) {
@@ -132,7 +133,7 @@ extension RoofPageWide {
                 NorthArrow(degrees: turn).frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 0) {
                     Text("ทิศเหนือ").font(.system(size: 13, weight: .bold))
-                    Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Home.muted)
+                    Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -162,7 +163,7 @@ extension RoofPageWide {
         return [(.post, "เสา")] + two + [(.skyOK, "แผ่นใส · วางทับได้"), (.skyNo, "แผ่นใส · ห้ามวางทับ"), (.ridge, "สันหลังคา"), (.section, "แนวรูปตัด A–A")]
     }
 
-    func footerButton(_ title: String, icon: String? = nil, on: Bool = false, tint: Color = Home.navy, action: @escaping () -> Void) -> some View {
+    func footerButton(_ title: String, icon: String? = nil, on: Bool = false, tint: Color = Theme.navy, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 5) {
                 if let icon { Image(systemName: icon).font(.system(size: 12, weight: .bold)) }
@@ -179,7 +180,7 @@ extension RoofPageWide {
 
     @ViewBuilder var structureButtons: some View {
         let n = Roof.posts(values).count
-        footerButton(editPosts ? "เสร็จ · เสา \(n) ต้น" : "แก้เสา (\(n))", icon: editPosts ? nil : "square.fill", on: editPosts, tint: editPosts ? Home.primary : Home.navy) {
+        footerButton(editPosts ? "เสร็จ · เสา \(n) ต้น" : "แก้เสา (\(n))", icon: editPosts ? nil : "square.fill", on: editPosts, tint: editPosts ? Theme.primary : Theme.navy) {
             editPosts.toggle(); tool = nil; span = nil
         }
         if let p = values.photo("planPhoto") {
@@ -189,9 +190,9 @@ extension RoofPageWide {
                 Button("อัปโหลดใหม่") { sketchPicker = true }
                 Button("ลบแบบร่าง", role: .destructive) { set("planPhoto", nil) }
             } label: {
-                Label("แบบร่าง ✓", systemImage: "doc.richtext").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.ok)
+                Label("แบบร่าง ✓", systemImage: "doc.richtext").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.success)
                     .padding(.horizontal, 10).frame(minHeight: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.ok.opacity(0.6)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.success.opacity(0.6)))
             }
         } else {
             Menu {
@@ -200,7 +201,7 @@ extension RoofPageWide {
             } label: {
                 Label("ถ่ายแบบร่าง", systemImage: "camera").font(.system(size: 14, weight: .bold))
                     .padding(.horizontal, 10).frame(minHeight: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.5)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
             }
             .accessibilityHint("ภาพแบบร่างที่วาดเองจะใช้แทนแปลนอัตโนมัติในรายงาน")
         }
@@ -260,10 +261,10 @@ extension RoofPageWide {
         let ref = SpanRef(axis: c.axis, index: c.index), on = span == ref
         let size: CGFloat = max(11, 13 * fit.s)
         let label = Text(fmt(c.value)).font(.system(size: size, weight: on ? .bold : .regular)).underline(!on)
-            .foregroundStyle(Home.primary).padding(.horizontal, 4).frame(minWidth: 34 * fit.s, minHeight: 20 * fit.s)
+            .foregroundStyle(Theme.primary).padding(.horizontal, 4).frame(minWidth: 34 * fit.s, minHeight: 20 * fit.s)
         let chip = label
             .background(on ? Self.soft : Color.white.opacity(0.01), in: RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(on ? Home.primary : Color.clear, lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(on ? Theme.primary : Color.clear, lineWidth: 1.5))
             .rotationEffect(.degrees(c.axis == .y ? -90 : 0))
         return Button { span = on ? nil : ref } label: { chip.frame(width: 44, height: 44).contentShape(Rectangle()) }
             .buttonStyle(.plain).disabled(!live)
@@ -278,7 +279,7 @@ extension RoofPageWide {
             span = SpanRef(axis: a, index: s.count - 1)
         } label: {
             Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                .frame(width: 26, height: 26).background(Home.primary, in: RoundedRectangle(cornerRadius: 4))
+                .frame(width: 26, height: 26).background(Theme.primary, in: RoundedRectangle(cornerRadius: 4))
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -290,8 +291,8 @@ extension RoofPageWide {
             ForEach(Array(L.nodes.enumerated()), id: \.offset) { _, n in
                 let d = 22 * fit.s
                 Button { update { Roof.togglePost(&$0, i: n.i, j: n.j) } } label: {
-                    Circle().fill(n.post ? Self.red.opacity(0.18) : Home.primary.opacity(0.1))
-                        .overlay(Circle().stroke(n.post ? Self.red : Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: n.post ? [] : [3, 2])))
+                    Circle().fill(n.post ? Self.red.opacity(0.18) : Theme.primary.opacity(0.1))
+                        .overlay(Circle().stroke(n.post ? Self.red : Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: n.post ? [] : [3, 2])))
                         .frame(width: d, height: d)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
@@ -331,7 +332,7 @@ extension RoofPageWide {
 
     func drawSurface(_ L: RoofPlan.Layout, _ fit: SketchFit) -> some View {
         Color.clear.contentShape(Rectangle())
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(tool == .keepOut ? Self.red : Home.primary, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(tool == .keepOut ? Self.red : Theme.primary, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
             .gesture(DragGesture(minimumDistance: 2).onChanged { g in
                 let a = L.metres(fit.sketch(g.startLocation)), b = L.metres(fit.sketch(g.location))
                 drag = (a.x, a.y, b.x, b.y)
@@ -346,10 +347,10 @@ extension RoofPageWide {
         let n = Roof.areas(values).filter { $0.kind == Roof.skylightKind }.count
         return Button { tool = tool == .skylight ? nil : .skylight; span = nil } label: {
             Text(tool == .skylight ? "เสร็จ · แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.system(size: 13, weight: .bold))
-                .foregroundStyle(tool == .skylight ? Color.white : Home.primary)
+                .foregroundStyle(tool == .skylight ? Color.white : Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 36)
-                .background(tool == .skylight ? Home.primary : Color.white, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.primary.opacity(0.6)))
+                .background(tool == .skylight ? Theme.primary : Color.white, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.primary.opacity(0.6)))
                 .frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import TCRoofCore
+import TCRoofUI
 
 /// The survey camera with a quick check after each shot (docs/specs/hardware-assist-swift.md §H4): a blurred or dark
 /// photo is shown again with "ภาพไม่ชัด ถ่ายใหม่?" and เก็บไว้ / ถ่ายใหม่. It never blocks: เก็บไว้ keeps the photo.
@@ -68,7 +69,7 @@ struct PhotoReview: View {
             Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: .infinity)
             ForEach(issues, id: \.self) { i in
                 Label(i.message, systemImage: i == .dark ? "moon.fill" : i == .tilted ? "level" : "camera.metering.unknown")
-                    .font(.headline).foregroundStyle(Home.orange)
+                    .font(.headline).foregroundStyle(Theme.pending)
             }
             HStack(spacing: 12) {
                 Button(action: keep) { Text("เก็บไว้").frame(maxWidth: .infinity, minHeight: 50) }

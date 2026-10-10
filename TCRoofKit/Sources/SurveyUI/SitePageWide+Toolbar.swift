@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A2's picture toolbar, scale bar, tool hint and caption row.
 extension SitePageWide {
@@ -26,7 +27,7 @@ extension SitePageWide {
                     showLayers = false
                 } label: {
                     itemLabel(allLocked ? "ล็อกอยู่" : "ล็อก", icon: allLocked ? "action-lock" : "action-unlock", symbol: allLocked ? "lock" : "lock.open",
-                              fill: allLocked ? Home.warn : .clear, on: allLocked, narrow: narrow)
+                              fill: allLocked ? Theme.warning : .clear, on: allLocked, narrow: narrow)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("ล็อกโมเดลอาคาร").accessibilityAddTraits(allLocked ? .isSelected : [])
@@ -35,7 +36,7 @@ extension SitePageWide {
             toolGroup {
                 Button { showLayers.toggle() } label: {
                     itemLabel("ชั้น \(layers.count)/\(Layer.allCases.count)", icon: "action-layers", symbol: "square.3.layers.3d",
-                              fill: showLayers ? Home.primarySoft : .clear, on: false, narrow: narrow)
+                              fill: showLayers ? Theme.primarySoft : .clear, on: false, narrow: narrow)
                 }
                 .buttonStyle(.plain).accessibilityLabel("ชั้นที่แสดง \(layers.count) จาก \(Layer.allCases.count)")
                 iconItem(full ? "ออกจากเต็มจอ" : "ดูภาพเต็มจอ", icon: full ? "action-fullscreenExit" : "action-fullscreen",
@@ -61,7 +62,7 @@ extension SitePageWide {
             A2Icon(name: icon, fallback: symbol, size: 16)
             if !narrow { Text(title).font(.system(size: 11.5, weight: .semibold)).lineLimit(1).fixedSize() }
         }
-        .foregroundStyle(on ? Color.white : Home.navy)
+        .foregroundStyle(on ? Color.white : Theme.navy)
         .padding(.horizontal, narrow ? 0 : 10).frame(minWidth: narrow ? 36 : nil).frame(height: 36)
         .background(fill, in: RoundedRectangle(cornerRadius: 7))
         // 36 pt button + the group's padding: a 44 pt target
@@ -72,13 +73,13 @@ extension SitePageWide {
     /// One tool of the segmented group; nil is Select.
     func toolItem(_ title: String, icon: String, symbol: String, _ t: Tool?, narrow: Bool = false) -> some View {
         let on = tool == t
-        return Button { arm(t) } label: { itemLabel(title, icon: icon, symbol: symbol, fill: on ? Home.navy : .clear, on: on, narrow: narrow) }
+        return Button { arm(t) } label: { itemLabel(title, icon: icon, symbol: symbol, fill: on ? Theme.navy : .clear, on: on, narrow: narrow) }
             .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
     }
 
     func iconItem(_ label: String, icon: String, symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            A2Icon(name: icon, fallback: symbol, size: 16).foregroundStyle(Home.navy)
+            A2Icon(name: icon, fallback: symbol, size: 16).foregroundStyle(Theme.navy)
                 .frame(width: 36, height: 36).contentShape(Rectangle().inset(by: -4))
         }
         .buttonStyle(.plain)
@@ -95,10 +96,10 @@ extension SitePageWide {
             job.values["north"] = .choice(next, other: "")
         } label: {
             A2Icon(name: "ui-north", fallback: "location.north.circle.fill", size: 38)
-                .foregroundStyle(i == nil ? Home.muted : Home.danger)
+                .foregroundStyle(i == nil ? Theme.inkMuted : Theme.danger)
                 .rotationEffect(.degrees(Double(i ?? 0) * 90))
                 .background(Color.white, in: Circle())
-                .overlay(Circle().stroke(i == nil ? Home.pending : .clear, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
+                .overlay(Circle().stroke(i == nil ? Theme.pending : .clear, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
                 .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
                 .frame(width: 44, height: 44).contentShape(Circle())
         }
@@ -119,9 +120,9 @@ extension SitePageWide {
                         Text(l.title).font(.system(size: 13, weight: .semibold)).strikethrough(!on)
                         Spacer(minLength: 0)
                     }
-                    .foregroundStyle(on ? Home.navy : Home.muted)
+                    .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                     .padding(.horizontal, 10).frame(height: 36)
-                    .background(on ? Home.primarySoft : .clear, in: RoundedRectangle(cornerRadius: 8))
+                    .background(on ? Theme.primarySoft : .clear, in: RoundedRectangle(cornerRadius: 8))
                     .contentShape(Rectangle().inset(by: -1))
                 }
                 .buttonStyle(.plain)
@@ -141,8 +142,8 @@ extension SitePageWide {
             let w = CGFloat(length / m) * r.width * z
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 0) {
-                    Rectangle().fill(Home.navy).frame(width: w / 2, height: 5)
-                    Rectangle().fill(Color.white).frame(width: w / 2, height: 5).overlay(Rectangle().stroke(Home.navy, lineWidth: 1))
+                    Rectangle().fill(Theme.navy).frame(width: w / 2, height: 5)
+                    Rectangle().fill(Color.white).frame(width: w / 2, height: 5).overlay(Rectangle().stroke(Theme.navy, lineWidth: 1))
                 }
                 HStack(spacing: 0) {
                     Text("0").frame(width: w / 2, alignment: .leading)
@@ -155,7 +156,7 @@ extension SitePageWide {
             .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         } else if photo != nil {
             Button { arm(.shape(.measure)) } label: {
-                Label("ตั้งมาตราส่วน", systemImage: "ruler").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.pending)
+                Label("ตั้งมาตราส่วน", systemImage: "ruler").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.pending)
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
             }
@@ -189,7 +190,7 @@ extension SitePageWide {
             (Text(toolHint.name).bold() + Text("  " + toolHint.hint))
                 .font(.system(size: 13)).foregroundStyle(.white)
                 .padding(.horizontal, 12).padding(.vertical, 8)
-                .background(Home.navy.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.navy.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 420, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .allowsHitTesting(false)
@@ -207,7 +208,7 @@ extension SitePageWide {
                         .disabled(draft.count < k.minPoints)
                         .padding(.horizontal, 14).frame(minHeight: 36)
                         .background(Color.white.opacity(draft.count < k.minPoints ? 0.4 : 1), in: Capsule())
-                        .foregroundStyle(Home.navy)
+                        .foregroundStyle(Theme.navy)
                         .contentShape(Capsule().inset(by: -4))
                 }
                 Button("ยกเลิก") { arm(nil) }.font(.system(size: 14, weight: .bold))
@@ -217,7 +218,7 @@ extension SitePageWide {
                     .contentShape(Capsule().inset(by: -4))
             }
             .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 4)
-            .background(Home.navy.opacity(0.92), in: Capsule())
+            .background(Theme.navy.opacity(0.92), in: Capsule())
         }
     }
 
@@ -246,7 +247,7 @@ extension SitePageWide {
     var captionTitle: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("ภาพสถานที่ติดตั้ง").font(.system(size: 14, weight: .bold)).underline()
-            Text(photoLine).font(.system(size: 12)).foregroundStyle(Home.muted)
+            Text(photoLine).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
         }
         .lineLimit(1)
     }
@@ -265,7 +266,7 @@ extension SitePageWide {
             Text(photo == nil ? "เลือกภาพ" : "เปลี่ยนภาพ").font(.system(size: 15, weight: .semibold))
                 .padding(.horizontal, 14).frame(minHeight: 44)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.5)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
         }
     }
 
@@ -287,18 +288,18 @@ extension SitePageWide {
             sum + max(0, (m.values.number("panelsBefore") ?? 0) - (m.values.number("panelsCut") ?? 0))
         }
         return HStack(spacing: 4) {
-            Text("C1").foregroundStyle(Home.muted)
+            Text("C1").foregroundStyle(Theme.inkMuted)
             Text(n > 0 ? "\(Int(n)) แผง" : "— แผง").bold()
             if let w = PVModuleCatalog.variant(model.settings.pvModule)?.variant.pmaxW {
-                Text("× \(Int(w)) W =").foregroundStyle(Home.muted)
+                Text("× \(Int(w)) W =").foregroundStyle(Theme.inkMuted)
                 Text(n > 0 ? String(format: "%.1f kWp", n * w / 1000) : "— kWp").bold()
             } else {
-                Text("× [W/แผง] = [kWp]").foregroundStyle(Home.muted)
+                Text("× [W/แผง] = [kWp]").foregroundStyle(Theme.inkMuted)
             }
         }
         .font(.system(size: 13)).lineLimit(1).fixedSize()
         .padding(.horizontal, 10).frame(minHeight: 36)
-        .background(Home.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+        .background(Theme.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityLabel("หน้า C จำนวนแผง \(Int(n))")
     }
 }

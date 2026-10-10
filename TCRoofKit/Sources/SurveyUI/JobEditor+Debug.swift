@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 #if DEBUG
 extension JobEditorView {
@@ -258,7 +259,7 @@ extension JobEditorView {
             // iPhone: the step line and sub-step 1 at 393 pt, without its scroll view (ImageRenderer leaves those blank)
             let phone = TankPageWide(job: .constant(job), moduleID: id, width: 361, stacked: true, tab: .constant(1), phoneLayout: true)
             let cards = VStack(spacing: 8) { PageStepBar(job: job, here: .module(id), compact: true, chip: phone.photoChip); phone.phoneSizeCards }
-                .foregroundStyle(Home.navy).environment(model).padding(16).frame(width: 393).background(Home.lockedCard)
+                .foregroundStyle(Theme.navy).environment(model).padding(16).frame(width: 393).background(Theme.background)
             let r = ImageRenderer(content: cards); r.scale = 3
             if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("tank-phone.png")) }
         }

@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// E1 (docs/ui/survey-e1): the verdict, remarks with on-device suggestions and the gaps on other pages
 /// on the left; both signatures and the reviewer on the right. Binds to the existing `Schema.final` fields only, so
@@ -68,7 +69,7 @@ struct FinalPageWide: View {
                 .frame(maxHeight: .infinity)
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         #if DEBUG
         .task { await debugState() }
         #endif
@@ -116,7 +117,7 @@ struct FinalPageWide: View {
 
     var verdictField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            (Text("ผลการประเมินความเหมาะสมในการติดตั้ง ") + Text("*").foregroundColor(Home.danger)).font(.system(size: 16, weight: .bold))
+            (Text("ผลการประเมินความเหมาะสมในการติดตั้ง ") + Text("*").foregroundColor(Theme.danger)).font(.system(size: 16, weight: .bold))
             ForEach(Array(Options.verdict.enumerated()), id: \.offset) { i, option in verdictButton(i, option) }
         }
     }
@@ -126,14 +127,14 @@ struct FinalPageWide: View {
         return Button { set("verdict", .choice(option, other: "")) } label: {
             HStack(spacing: 8) {
                 Circle().fill(on ? c.0 : Color.clear).frame(width: 12, height: 12)
-                    .overlay(Circle().stroke(on ? Color.clear : Home.navy.opacity(0.45), lineWidth: 1.5))
-                Text(option).font(.system(size: 15, weight: .bold)).foregroundStyle(on ? c.0 : Home.navy)
+                    .overlay(Circle().stroke(on ? Color.clear : Theme.navy.opacity(0.45), lineWidth: 1.5))
+                Text(option).font(.system(size: 15, weight: .bold)).foregroundStyle(on ? c.0 : Theme.navy)
                 Spacer(minLength: 0)
             }
             .padding(.leading, 14).padding(.trailing, 8)
             .frame(maxWidth: .infinity, minHeight: 48)
             .background(on ? c.1 : Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? c.0 : Home.navy.opacity(0.45), lineWidth: on ? 2 : 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? c.0 : Theme.navy.opacity(0.45), lineWidth: on ? 2 : 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -148,7 +149,7 @@ struct FinalPageWide: View {
         switch Options.verdict.firstIndex(of: v.choice("verdict") ?? "") {
         case 1?: return ("ระบุเงื่อนไขให้ครบ", Self.verdictColors[1].0, true)
         case 2?: return ("ระบุเหตุผล", Self.verdictColors[2].0, true)
-        default: return ("ไม่บังคับ", Home.muted, false)
+        default: return ("ไม่บังคับ", Theme.inkMuted, false)
         }
     }
 
@@ -163,18 +164,18 @@ struct FinalPageWide: View {
                 Text(aside.0).font(.system(size: 13, weight: aside.2 ? .bold : .regular)).foregroundStyle(aside.1).fixedSize()
             }
             TextEditor(text: Binding(get: { remarks }, set: { set("remarks", $0.isEmpty ? nil : .text($0)) }))
-                .font(.system(size: 14.5)).lineSpacing(4).foregroundStyle(Home.navy)
+                .font(.system(size: 14.5)).lineSpacing(4).foregroundStyle(Theme.navy)
                 .scrollContentBackground(.hidden)
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .overlay(alignment: .topLeading) {
                     if remarks.isEmpty {
-                        Text("พิมพ์ความเห็น หรือแตะข้อเสนอแนะด้านล่าง").font(.system(size: 14.5)).foregroundStyle(Home.muted)
+                        Text("พิมพ์ความเห็น หรือแตะข้อเสนอแนะด้านล่าง").font(.system(size: 14.5)).foregroundStyle(Theme.inkMuted)
                             .padding(.horizontal, 14).padding(.vertical, 12).allowsHitTesting(false)
                     }
                 }
                 .frame(height: lines > 2 ? 236 : 150)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.borderControl.opacity(0.6)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
                 .accessibilityLabel("ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง")
         }
     }
@@ -189,7 +190,7 @@ struct FinalPageWide: View {
                 HStack(spacing: 6) {
                     A2Icon(name: "e1-ai-sparkle", fallback: "sparkle", size: 15).foregroundStyle(Self.purple)
                     Text("ข้อเสนอแนะอัตโนมัติจาก AI").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.purple)
-                    if !narrow { Text("· บนเครื่อง").font(.system(size: 13)).foregroundStyle(Home.muted) }
+                    if !narrow { Text("· บนเครื่อง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted) }
                     Spacer(minLength: 4)
                     if rest.count >= 2 {
                         Button { add(rest) } label: {
@@ -220,7 +221,7 @@ struct FinalPageWide: View {
         Button { add([s]) } label: {
             HStack(spacing: 10) {
                 (Text(s.text + " ") + Text(s.source).bold().foregroundColor(Self.purpleText))
-                    .font(.system(size: 13.5)).foregroundStyle(Home.navy).lineSpacing(2)
+                    .font(.system(size: 13.5)).foregroundStyle(Theme.navy).lineSpacing(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .multilineTextAlignment(.leading)
                 Text("+ เพิ่ม").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.purple).fixedSize()
@@ -245,19 +246,19 @@ struct FinalPageWide: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("ยังขาดในหน้าอื่น").font(.system(size: 16, weight: .bold))
                     Spacer(minLength: 8)
-                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.75)
+                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
                 }
                 .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
                 ForEach(groups.prefix(4)) { g in gapRow(g) }
                 if groups.count > 4 {
-                    Text("และอีก \(groups.count - 4) หน้า").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    Text("และอีก \(groups.count - 4) หน้า").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
                         .padding(.horizontal, 14).frame(minHeight: 36)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .overlay(alignment: .top) { Rectangle().fill(Self.hairline).frame(height: 1) }
                 }
             }
             .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
         }
     }
 
@@ -270,7 +271,7 @@ struct FinalPageWide: View {
                 Text("ไปที่หน้า ›").font(.system(size: 14, weight: .semibold)).fixedSize()
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.6)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.6)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("ไปที่หน้า " + g.title)

@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// D1 sub-step 2 on iPhone (docs/ui/survey-d1-obstacles-iphone): the 330 × 300 tank plan (`TankPlan.compact`) with
 /// the vents and hatches drawn on it (svg/marker-*), tap to select and drag to move. While a point is selected or
@@ -25,10 +26,10 @@ struct TankPointsPlan: View {
 
     static func color(_ s: Look) -> Color {
         switch s {
-        case .unconfirmed: return Home.primary
-        case .confirmed: return Home.pillOn
-        case .absent: return Home.danger
-        case .selected: return Home.pointSelected
+        case .unconfirmed: return Theme.primary
+        case .confirmed: return Theme.navySolid
+        case .absent: return Theme.danger
+        case .selected: return Theme.warning
         }
     }
     static func stateName(_ s: Look) -> String {
@@ -83,7 +84,7 @@ struct TankPointsPlan: View {
                 var p = Path()
                 if let x = g.x { p.move(to: CGPoint(x: f.ox + x * f.k, y: f.oy)); p.addLine(to: CGPoint(x: f.ox + x * f.k, y: f.oy + t.h * f.k)) }
                 if let y = g.y { p.move(to: CGPoint(x: f.ox, y: f.oy + y * f.k)); p.addLine(to: CGPoint(x: f.ox + t.w * f.k, y: f.oy + y * f.k)) }
-                ctx.stroke(p, with: .color(Home.teal), lineWidth: 1)
+                ctx.stroke(p, with: .color(Theme.teal), lineWidth: 1)
             }
         }
         for m in all where m.state != .selected { symbol(&ctx, m, f) }
@@ -92,8 +93,8 @@ struct TankPointsPlan: View {
             // distance from the left wall, under the symbol
             let c = centre(s.rect, f), box = CGRect(x: c.x - 30, y: c.y + 12, width: 42, height: 13)
             ctx.fill(Path(roundedRect: box, cornerRadius: 6), with: .color(.white))
-            ctx.stroke(Path(roundedRect: box, cornerRadius: 6), with: .color(Home.pointSelected), lineWidth: 1)
-            ctx.draw(Text(String(format: "%.2f", s.rect.x)).font(.system(size: 8, weight: .bold)).foregroundColor(Home.pending),
+            ctx.stroke(Path(roundedRect: box, cornerRadius: 6), with: .color(Theme.warning), lineWidth: 1)
+            ctx.draw(Text(String(format: "%.2f", s.rect.x)).font(.system(size: 8, weight: .bold)).foregroundColor(Theme.pending),
                      at: CGPoint(x: box.midX, y: box.midY))
         }
     }
@@ -113,8 +114,8 @@ struct TankPointsPlan: View {
         let dash: [CGFloat] = m.state == .absent ? [3, 2] : []
         if m.state == .selected {
             let halo = CGRect(x: c.x - 11, y: c.y - 11, width: 22, height: 22)
-            ctx.fill(Path(roundedRect: halo, cornerRadius: 5), with: .color(Home.pointSelected.opacity(0.18)))
-            ctx.stroke(Path(roundedRect: halo, cornerRadius: 5), with: .color(Home.pointSelected), lineWidth: 1)
+            ctx.fill(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning.opacity(0.18)))
+            ctx.stroke(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning), lineWidth: 1)
         }
         if m.point.kind == TankPoints.vent {
             ctx.fill(Path(sq), with: .color(.white))

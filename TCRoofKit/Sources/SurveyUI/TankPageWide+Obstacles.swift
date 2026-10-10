@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// D1 sub-step 2 "สิ่งกีดขวาง" on iPhone (docs/ui/survey-d1-obstacles-iphone, 390 × 844): verify on site. The tank's
 /// standard vents and hatches (`TankPoints`) are on the plan; the surveyor marks each one มีตรงแบบ / ไม่มีจริง, moves
@@ -72,7 +73,7 @@ extension TankPageWide {
 
     var obstaclePlanCard: some View {
         let c = TankPoints.checked(values), all = c.total > 0 && c.n == c.total
-        let chip = all ? ("✓ ตรวจครบ", Home.badgeOkText, Home.badgeOkBg) : ("ตรวจแล้ว \(c.n)/\(c.total)", Home.pending, Home.badgeWarnBg)
+        let chip = all ? ("✓ ตรวจครบ", Theme.okTick, Theme.okSoft) : ("ตรวจแล้ว \(c.n)/\(c.total)", Theme.pending, Theme.pendingSoft)
         return phoneCard(1, "แปลนสิ่งกีดขวาง", chip: chip) {
             obstacleSegment
             if obsShade { shadeFields } else {
@@ -90,11 +91,11 @@ extension TankPageWide {
             ForEach(items, id: \.0) { item in
                 let on = obsShade == item.0
                 Button { withAnimation(.easeOut(duration: 0.15)) { obsShade = item.0 } } label: {
-                    Text(item.1).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Home.navy : Home.muted)
+                    Text(item.1).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Home.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         .contentShape(Rectangle().inset(by: -3))
                 }
@@ -104,7 +105,7 @@ extension TankPageWide {
         }
         .padding(3)
         .frame(minHeight: 44)
-        .background(Home.disabledFill, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
     }
 
     var obstaclePlanFrame: some View {
@@ -117,10 +118,10 @@ extension TankPageWide {
                 }
                 Button { obsZoom = 1; obsFull = true } label: {
                     Image(systemName: "arrow.down.left.and.arrow.up.right").font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Home.primary)
+                        .foregroundStyle(Theme.primary)
                         .frame(width: 36, height: 36)
                         .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
-                        .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
+                        .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -129,24 +130,24 @@ extension TankPageWide {
                 .disabled(!Tank.hasSize(values))
             }
             Text(Tank.hasSize(values) ? "แตะจุดเพื่อเลือก · ลากเพื่อย้าย" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
-                .font(.system(size: 11)).foregroundStyle(Home.muted)
+                .font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.hairline))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     /// The legend draws "ยังไม่ยืนยัน" dashed as on the board; the plan draws it solid.
     var obstacleLegend: some View {
-        let items: [(String, Color, Bool, CGFloat)] = [("ยังไม่ยืนยัน", Home.primary, true, 0), ("ยืนยันแล้ว", Home.pillOn, false, 0),
-                                                        ("ไม่มีจริง", Home.danger, true, 0), ("จุดที่เลือก", Home.pointSelected, false, 3)]
+        let items: [(String, Color, Bool, CGFloat)] = [("ยังไม่ยืนยัน", Theme.primary, true, 0), ("ยืนยันแล้ว", Theme.navySolid, false, 0),
+                                                        ("ไม่มีจริง", Theme.danger, true, 0), ("จุดที่เลือก", Theme.warning, false, 3)]
         return HStack(spacing: 12) {
             ForEach(items, id: \.0) { t, c, dashed, r in
                 HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: r).strokeBorder(c, style: StrokeStyle(lineWidth: 1.5, dash: dashed ? [3, 2] : []))
                         .frame(width: 10, height: 10)
-                    Text(t).font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1)
+                    Text(t).font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
         }
@@ -191,7 +192,7 @@ extension TankPageWide {
                 }
             }
             .padding(16)
-            .background(Home.lockedCard)
+            .background(Theme.background)
             .navigationTitle("แปลนสิ่งกีดขวาง")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -204,7 +205,7 @@ extension TankPageWide {
                 ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { obsFull = false } }
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
     }
 
     // MARK: card 2 · the selected point
@@ -212,8 +213,8 @@ extension TankPageWide {
     @ViewBuilder var pointCard: some View {
         if let p = selectedPoint {
             let moved = TankPoints.moved(p)
-            let chip = !TankPoints.isStandard(p) ? ("เพิ่มหน้างาน", Home.muted, Home.primarySoft)
-                : moved ? ("ย้ายแล้ว", Home.badgeOkText, Home.badgeOkBg) : ("ตามแบบ", Home.muted, Home.primarySoft)
+            let chip = !TankPoints.isStandard(p) ? ("เพิ่มหน้างาน", Theme.inkMuted, Theme.primarySoft)
+                : moved ? ("ย้ายแล้ว", Theme.okTick, Theme.okSoft) : ("ตามแบบ", Theme.inkMuted, Theme.primarySoft)
             phoneCard(2, "จุด \(p.label) · \(TankPoints.kindName(p.kind))", chip: chip) {
                 pointPicker(p)
                 field("สถานะ", required: true) { statusChoice(p) }
@@ -223,8 +224,8 @@ extension TankPageWide {
                 field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(p) }
             }
         } else if Tank.hasSize(values) {
-            phoneCard(2, "จุดสิ่งกีดขวาง", chip: ("ไม่มีจุด", Home.muted, Home.primarySoft)) {
-                Text("ยังไม่มีจุดบนแปลน").font(.system(size: 14)).foregroundStyle(Home.muted)
+            phoneCard(2, "จุดสิ่งกีดขวาง", chip: ("ไม่มีจุด", Theme.inkMuted, Theme.primarySoft)) {
+                Text("ยังไม่มีจุดบนแปลน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                 field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(nil) }
             }
         }
@@ -248,11 +249,11 @@ extension TankPageWide {
             ForEach(chips) { o in
                 let on = o.id == p.id
                 Button { withAnimation(.easeOut(duration: 0.15)) { pointSel = o.id } } label: {
-                    Text(o.label).font(.system(size: 14, weight: .heavy)).foregroundStyle(on ? Color.white : Home.primary).lineLimit(1)
+                    Text(o.label).font(.system(size: 14, weight: .heavy)).foregroundStyle(on ? Color.white : Theme.primary).lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(on ? Home.pointSelected : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(on ? Theme.warning : Color.white, in: RoundedRectangle(cornerRadius: 10))
                         .overlay {
-                            if !on { RoundedRectangle(cornerRadius: 10).strokeBorder(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: o.status.isEmpty ? [4, 3] : [])) }
+                            if !on { RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: o.status.isEmpty ? [4, 3] : [])) }
                         }
                 }
                 .buttonStyle(.plain)
@@ -265,10 +266,10 @@ extension TankPageWide {
 
     func arrowChip(_ t: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(t).font(.system(size: 18, weight: .bold)).foregroundStyle(Home.primary)
+            Text(t).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 44, height: 44)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.35)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -277,8 +278,8 @@ extension TankPageWide {
     /// `มีตรงแบบ` (mint when on) / `ไม่มีจริง` (danger tint when on).
     func statusChoice(_ p: Obstacle) -> some View {
         HStack(spacing: 8) {
-            statusButton(p, TankPoints.ok, "มีตรงแบบ", on: Home.mint, ink: Home.navy)
-            statusButton(p, TankPoints.absent, "ไม่มีจริง", on: Home.danger.opacity(0.14), ink: Home.red)
+            statusButton(p, TankPoints.ok, "มีตรงแบบ", on: Theme.mint, ink: Theme.navy)
+            statusButton(p, TankPoints.absent, "ไม่มีจริง", on: Theme.danger.opacity(0.14), ink: Theme.dangerText)
         }
     }
 
@@ -287,10 +288,10 @@ extension TankPageWide {
         return Button {
             update { TankPoints.setStatus(&$0, p.id, on ? "" : s) }
         } label: {
-            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(on ? ink : Home.navy).lineLimit(1)
+            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(on ? ink : Theme.navy).lineLimit(1)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(on ? bg : Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on && s == TankPoints.absent ? Home.danger : Home.navy.opacity(on ? 0.2 : 0.35)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on && s == TankPoints.absent ? Theme.danger : Theme.navy.opacity(on ? 0.2 : 0.35)))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("สถานะ " + title)
@@ -324,12 +325,12 @@ extension TankPageWide {
         if let c = TankPoints.check(values, p.id) {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: c.warning ? "exclamationmark.triangle" : "info.circle").font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(c.warning ? Home.pending : Home.okTick)
+                    .foregroundStyle(c.warning ? Theme.pending : Theme.okTick)
                 Text(c.text).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
-            .background(c.warning ? Home.badgeWarnBg : Home.badgeOkBg, in: RoundedRectangle(cornerRadius: 10))
+            .background(c.warning ? Theme.pendingSoft : Theme.okSoft, in: RoundedRectangle(cornerRadius: 10))
             .accessibilityElement(children: .combine)
         }
     }
@@ -338,13 +339,13 @@ extension TankPageWide {
     func pointActions(_ p: Obstacle?) -> some View {
         let canDelete = p.map(TankPoints.canDelete) ?? false
         return LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-            actionButton("+ ช่องระบาย", ink: Home.primary, border: Home.primary) { addPoint(TankPoints.vent) }
-            actionButton("+ ช่องลงถัง", ink: Home.primary, border: Home.primary) { addPoint(TankPoints.hatch) }
-            actionButton("ทำซ้ำเป็นแถว", ink: Home.navy, border: Home.navy.opacity(0.35)) {
+            actionButton("+ ช่องระบาย", ink: Theme.primary, border: Theme.primary) { addPoint(TankPoints.vent) }
+            actionButton("+ ช่องลงถัง", ink: Theme.primary, border: Theme.primary) { addPoint(TankPoints.hatch) }
+            actionButton("ทำซ้ำเป็นแถว", ink: Theme.navy, border: Theme.navy.opacity(0.35)) {
                 rowCount = 3; rowSpacing = TankPoints.rowSpacing(values); rowAsk = true
             }
             .disabled(p == nil).opacity(p == nil ? 0.45 : 1)
-            actionButton("ลบจุดนี้", ink: Home.red, border: Home.danger.opacity(0.45)) { deleteAsk = true }
+            actionButton("ลบจุดนี้", ink: Theme.dangerText, border: Theme.danger.opacity(0.45)) { deleteAsk = true }
                 .disabled(!canDelete).opacity(canDelete ? 1 : 0.45)
                 .accessibilityHint(canDelete ? "" : "จุดตามแบบใช้ ไม่มีจริง แทนการลบ")
         }
@@ -379,7 +380,7 @@ extension TankPageWide {
     var rowSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Text("ทำซ้ำ \(selectedPoint?.label ?? "") ไปทางขวาตามแถวเดียวกัน").font(.system(size: 14)).foregroundStyle(Home.muted)
+                Text("ทำซ้ำ \(selectedPoint?.label ?? "") ไปทางขวาตามแถวเดียวกัน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                 field("จำนวนจุดที่เพิ่ม") {
                     Stepper(value: $rowCount, in: 1...20) {
                         Text("\(rowCount) จุด").font(.system(size: 16, weight: .semibold)).monospacedDigit()
@@ -409,7 +410,7 @@ extension TankPageWide {
                 }
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .presentationDetents([.height(320)])
     }
 }
@@ -432,13 +433,13 @@ struct PointDistanceField: View {
                 .onSubmit(commit)
                 .onChange(of: typing) { _, on in if !on { commit() } }
                 .accessibilityLabel(label + " (เมตร)")
-            Text("ม.").font(.system(size: 13)).foregroundStyle(Home.borderControl).accessibilityHidden(true)
-            Image(systemName: "keyboard").font(.system(size: 14)).foregroundStyle(Home.primary).accessibilityHidden(true)
+            Text("ม.").font(.system(size: 13)).foregroundStyle(Theme.borderControl).accessibilityHidden(true)
+            Image(systemName: "keyboard").font(.system(size: 14)).foregroundStyle(Theme.primary).accessibilityHidden(true)
         }
         .padding(.leading, 12).padding(.trailing, 10)
         .frame(maxWidth: .infinity, minHeight: 44)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(typing ? Home.primary : Home.navy.opacity(0.35), lineWidth: typing ? 2 : 1))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(typing ? Theme.primary : Theme.navy.opacity(0.35), lineWidth: typing ? 2 : 1))
         .contentShape(Rectangle())
         .onTapGesture { typing = true }
         .onAppear { typed = text(value) }

@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// The span popover: ± 0.5 m, quick values, split, delete, next, equalise and "all 4.00".
 struct SpanEditor: View {
@@ -24,9 +25,9 @@ struct SpanEditor: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("ระยะช่วงกริด " + Roof.spanName(ref.axis, ref.index)).font(.system(size: 17, weight: .bold))
                 Spacer(minLength: 8)
-                Text("ช่วงที่ \(ref.index + 1) จาก \(spans.count)").font(.system(size: 12)).foregroundStyle(Home.muted)
+                Text("ช่วงที่ \(ref.index + 1) จาก \(spans.count)").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                 Button { select(nil) } label: {
-                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.muted).frame(width: 44, height: 32)
+                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 32)
                 }
                 .buttonStyle(.plain).accessibilityLabel("ปิด")
             }
@@ -37,8 +38,8 @@ struct SpanEditor: View {
                     Button { with(v) } label: {
                         Text(fmt(v)).font(.system(size: 15, weight: on ? .bold : .regular))
                             .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(on ? Home.mint : Color.white, in: RoundedRectangle(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Color.clear : Home.navy.opacity(0.45)))
+                            .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 8))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Color.clear : Theme.navy.opacity(0.45)))
                     }
                     .buttonStyle(.plain)
                 }
@@ -48,11 +49,11 @@ struct SpanEditor: View {
                     var a = spans; let h = r2(cur / 2)
                     a.replaceSubrange(ref.index...ref.index, with: [h, r2(cur - h)]); set(a, ref.index)
                 }
-                .font(.system(size: 15, weight: .bold)).foregroundStyle(Home.primary).frame(minHeight: 44)
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
                 Button("ลบช่วง") {
                     var a = spans; a.remove(at: ref.index); set(a, min(ref.index, a.count - 1))
                 }
-                .font(.system(size: 15, weight: .bold)).foregroundStyle(spans.count > 1 ? RoofPageWide.red : Home.disabledText).frame(minHeight: 44)
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(spans.count > 1 ? RoofPageWide.red : Theme.disabledText).frame(minHeight: 44)
                 .disabled(spans.count <= 1)
                 Spacer()
                 Button {
@@ -60,7 +61,7 @@ struct SpanEditor: View {
                     else { select(.init(axis: ref.axis == .x ? .y : .x, index: 0)) }
                 } label: {
                     Text("ถัดไป ›").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 16).frame(minHeight: 44).background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+                        .padding(.horizontal, 16).frame(minHeight: 44).background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
             }
@@ -73,9 +74,9 @@ struct SpanEditor: View {
             }
             Divider()
             (Text("ทั้งแนว: ") + Text(spans.map { fmt($0) }.joined(separator: ", ")).bold() + Text(" · รวม " + String(format: "%.2f", total) + " ม."))
-                .font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(2)
+                .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .padding(16)
         .frame(width: 340)
         .onAppear { typed = String(format: "%.2f", cur) }
@@ -91,10 +92,10 @@ struct SpanEditor: View {
                     .font(.system(size: 24, weight: .bold)).monospacedDigit()
                     .onSubmit(commit)
                     .onChange(of: typing) { _, on in if !on { commit() } }
-                Text("ม.").font(.system(size: 15)).foregroundStyle(Home.muted)
+                Text("ม.").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52)
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.primary, lineWidth: 2))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, lineWidth: 2))
             square("plus") { with(r2(cur + 0.5)) }
         }
     }
@@ -105,9 +106,9 @@ struct SpanEditor: View {
 
     func square(_ symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Home.primary)
+            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 48, height: 52)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(symbol == "plus" ? "เพิ่ม 0.5 เมตร" : "ลด 0.5 เมตร")
@@ -115,9 +116,9 @@ struct SpanEditor: View {
 
     func outline(_ t: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(t).font(.system(size: 14, weight: .bold)).foregroundStyle(enabled ? Home.primary : Home.disabledText).lineLimit(1).minimumScaleFactor(0.8)
+            Text(t).font(.system(size: 14, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText).lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Home.primary.opacity(0.6) : Home.disabledFill))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Theme.primary.opacity(0.6) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)
     }
@@ -130,12 +131,12 @@ struct NorthArrow: View {
             let s = min(size.width, size.height) / 48, c = CGPoint(x: size.width / 2, y: size.height / 2)
             ctx.translateBy(x: c.x, y: c.y); ctx.scaleBy(x: s, y: s)
             ctx.fill(Path(ellipseIn: CGRect(x: -21, y: -21, width: 42, height: 42)), with: .color(.white))
-            ctx.stroke(Path(ellipseIn: CGRect(x: -21, y: -21, width: 42, height: 42)), with: .color(Home.navy), lineWidth: 1.2)
+            ctx.stroke(Path(ellipseIn: CGRect(x: -21, y: -21, width: 42, height: 42)), with: .color(Theme.navy), lineWidth: 1.2)
             ctx.rotate(by: .degrees(degrees))
             var n = Path(); n.move(to: CGPoint(x: 0, y: -18)); n.addLine(to: CGPoint(x: 6, y: 4)); n.addLine(to: .zero); n.addLine(to: CGPoint(x: -6, y: 4)); n.closeSubpath()
-            ctx.fill(n, with: .color(Home.navy))
+            ctx.fill(n, with: .color(Theme.navy))
             var so = Path(); so.move(to: CGPoint(x: 0, y: 18)); so.addLine(to: CGPoint(x: 6, y: 4)); so.addLine(to: .zero); so.addLine(to: CGPoint(x: -6, y: 4)); so.closeSubpath()
-            ctx.fill(so, with: .color(.white)); ctx.stroke(so, with: .color(Home.navy), lineWidth: 1)
+            ctx.fill(so, with: .color(.white)); ctx.stroke(so, with: .color(Theme.navy), lineWidth: 1)
         }
         .accessibilityHidden(true)
     }
@@ -168,7 +169,7 @@ struct LegendGlyph: View {
             case .pv:
                 ctx.fill(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.122, green: 0.31, blue: 0.561).opacity(0.85)))
                 ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.863, green: 0.902, blue: 0.949)), lineWidth: 1)
-            case .table: ctx.stroke(Path(r(2, 2, 20, 10)), with: .color(Home.navy), lineWidth: 1.6)
+            case .table: ctx.stroke(Path(r(2, 2, 20, 10)), with: .color(Theme.navy), lineWidth: 1.6)
             case .gap:
                 ctx.stroke(h(7, 2, 22), with: .color(RoofPageWide.amber), lineWidth: 1.2)
                 var t = Path(); t.move(to: CGPoint(x: 2 * sx, y: 4 * sy)); t.addLine(to: CGPoint(x: 2 * sx, y: 10 * sy))

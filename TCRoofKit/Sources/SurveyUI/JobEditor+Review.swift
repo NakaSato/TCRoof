@@ -55,7 +55,7 @@ extension JobEditorView {
         let photos = job.photoSlots.flatMap(\.slots).filter(\.required)
         let filled = photos.filter { $0.photo != nil }.count
         return VStack(alignment: .leading, spacing: 4) {
-            Text("ตรวจก่อนส่ง").font(.caption.weight(.heavy)).foregroundStyle(Home.muted).padding(.horizontal, 6).padding(.top, 4)
+            Text("ตรวจก่อนส่ง").font(.caption.weight(.heavy)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 6).padding(.top, 4)
             row(SidebarItem(page: .photos, code: "", title: "ตรวจรูปทั้งหมด", completion: Completion(filled: filled, total: photos.count)),
                 symbol: "photo.on.rectangle.angled")
             if !(job.revisions ?? []).isEmpty {

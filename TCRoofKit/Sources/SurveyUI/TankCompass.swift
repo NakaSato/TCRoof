@@ -4,6 +4,7 @@ import UIKit
 import AVFoundation
 import CoreLocation
 import TCRoofCore
+import TCRoofUI
 
 /// D1 "วัดด้วย iPad" (docs/ui/survey-d1-size, states/08): aim the camera along wall A from corner A-1, hold still for
 /// 2 s and the heading locks; the top wall faces that heading − 90°. Without a compass (the simulator) the azimuth is
@@ -63,7 +64,7 @@ struct TankCompassView: View {
                     .accessibilityLabel("ทิศที่เล็ง " + (reader.heading.map { "\(Int($0.rounded()) % 360) องศา" } ?? "ยังไม่มีค่า"))
                 if let a = reader.accuracy {
                     Text(a < 0 ? "±?" : "±\(Int(a.rounded()))°").font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(reader.accuracyOK ? Self.green : Home.danger)
+                        .foregroundStyle(reader.accuracyOK ? Self.green : Theme.danger)
                         .padding(.horizontal, 12).frame(minHeight: 36).background(Color.black.opacity(0.65), in: Capsule())
                 }
             }
@@ -79,7 +80,7 @@ struct TankCompassView: View {
                 Path { p in p.move(to: CGPoint(x: x, y: 90)); p.addLine(to: CGPoint(x: x, y: geo.size.height)) }
                     .stroke(Self.yellow, style: StrokeStyle(lineWidth: 3, dash: [8, 4]))
                 A2Icon(name: "d1-aim-reticle", fallback: "scope", size: 44).foregroundStyle(Self.yellow).position(x: x, y: y)
-                Text("มุม \(corner)").font(.system(size: 15, weight: .bold)).foregroundStyle(Home.navy)
+                Text("มุม \(corner)").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 6).padding(.vertical, 2).background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 4))
                     .position(x: x + 46, y: y - 70)
             }
@@ -106,7 +107,7 @@ struct TankCompassView: View {
                 }
                 Text("ยืนห่างเหล็กเสริม ราวเหล็ก ท่อ ≥ 1 ม. · เกิน ±10° ให้หมุนเครื่องเป็นเลข 8")
                     .font(.system(size: 13, weight: reader.accuracyOK ? .regular : .bold))
-                    .foregroundStyle(reader.accuracyOK ? Self.yellow : Home.danger)
+                    .foregroundStyle(reader.accuracyOK ? Self.yellow : Theme.danger)
             }
             Spacer(minLength: 8)
             if let az {
@@ -124,7 +125,7 @@ struct TankCompassView: View {
             }
             Button { if let az { save(az, reader.accuracy) } } label: {
                 Text("บันทึกมุม").font(.system(size: 17, weight: .bold)).padding(.horizontal, 22).frame(minHeight: 52)
-                    .background(ok ? Home.primary : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+                    .background(ok ? Theme.primary : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain).disabled(!ok)
         }
@@ -135,19 +136,19 @@ struct TankCompassView: View {
     /// No compass here (the simulator, or a device without a magnetometer): type the azimuth.
     var manualEntry: some View {
         VStack(spacing: 16) {
-            Image(systemName: "location.north.circle").font(.system(size: 54)).foregroundStyle(Home.disabledText)
+            Image(systemName: "location.north.circle").font(.system(size: 54)).foregroundStyle(Theme.disabledText)
             Text("อุปกรณ์นี้ไม่มีเข็มทิศ · ป้อนมุมเอง").font(.system(size: 20, weight: .bold))
             Text("ผนังบน (แนว A) หันไปทิศ (องศา 0–359)").font(.system(size: 15)).foregroundStyle(.white.opacity(0.8))
             HStack(spacing: 10) {
                 TextField("เช่น 90", text: $typed).keyboardType(.numberPad)
                     .font(.system(size: 24, weight: .bold)).monospacedDigit().multilineTextAlignment(.center)
-                    .foregroundStyle(Home.navy)
+                    .foregroundStyle(Theme.navy)
                     .frame(width: 140, height: 52).background(Color.white, in: RoundedRectangle(cornerRadius: 10))
                 if let a = typedAzimuth { Text(Tank.directionName(a)).font(.system(size: 17, weight: .bold)) }
             }
             Button { if let a = typedAzimuth { save(a, nil) } } label: {
                 Text("บันทึกมุม").font(.system(size: 17, weight: .bold)).padding(.horizontal, 28).frame(minHeight: 52)
-                    .background(typedAzimuth != nil ? Home.primary : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+                    .background(typedAzimuth != nil ? Theme.primary : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain).disabled(typedAzimuth == nil)
         }

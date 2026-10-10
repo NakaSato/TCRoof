@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// Colours of the paper form (green bands of the NO.224 workbook).
 enum Paper {

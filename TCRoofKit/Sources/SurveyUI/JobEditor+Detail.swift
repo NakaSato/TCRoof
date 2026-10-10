@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// The form for the selected page.
 extension JobEditorView {

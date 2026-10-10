@@ -12,10 +12,8 @@ struct DateInput: View {
         let parsed = ISODate.date(text)
         HStack(spacing: 10) {
             if let d = parsed {
-                DatePicker("วันที่", selection: Binding(get: { d }, set: { text = ISODate.string($0) }), displayedComponents: .date)
-                    .labelsHidden()
-                    .environment(\.locale, Locale(identifier: "th_TH"))
-                    .environment(\.calendar, Calendar(identifier: .buddhist))
+                TCDateField(date: Binding(get: { d }, set: { text = ISODate.string($0) }), accessibilityTitle: "วันที่")
+                    .frame(maxWidth: 220)
                 Text("ในรายงาน: " + ISODate.thai(text)).font(.caption).foregroundStyle(.secondary)
             } else {
                 if !text.isEmpty {
@@ -40,13 +38,8 @@ struct GPSInput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                TextField("17.0062, 99.8235", text: $text)
-                    .keyboardType(.numbersAndPunctuation)
-                    .textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
-                Button(action: locate) {
-                    if locating { ProgressView() } else { Label("ตำแหน่งปัจจุบัน", systemImage: "location.fill") }
-                }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card)).disabled(locating)
+                TCTextField("17.0062, 99.8235", text: $text, keyboard: .numbersAndPunctuation)
+                TCLocationButton(working: locating, action: locate)
             }
             switch GPS.check(text) {
             case .invalid:

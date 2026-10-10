@@ -119,7 +119,7 @@ struct FieldView: View {
             VStack(alignment: .leading, spacing: 8) {
                 FlowLayout(spacing: 8, lineSpacing: 8) {
                     ForEach(options, id: \.self) { o in
-                        CheckChip(label: o, on: values.choice(spec.id) == o) { choose(o) }
+                        TCChoiceChip(o, selected: values.choice(spec.id) == o) { choose(o) }
                     }
                 }
                 if other && values.choice(spec.id) == "อื่นๆ" {
@@ -132,7 +132,7 @@ struct FieldView: View {
         case .checks(let options):
             FlowLayout(spacing: 8, lineSpacing: 8) {
                 ForEach(options, id: \.self) { o in
-                    CheckChip(label: o, on: values.multi(spec.id).contains(o)) { toggle(o) }
+                    TCChoiceChip(o, selected: values.multi(spec.id).contains(o)) { toggle(o) }
                 }
             }
         case .photo:

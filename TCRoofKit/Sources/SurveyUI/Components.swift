@@ -46,32 +46,6 @@ public struct FlowLayout: Layout {
     }
 }
 
-/// Square checkbox with a label, like the boxes printed on the form.
-struct CheckChip: View {
-    let label: String
-    let on: Bool
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 3).fill(on ? Paper.tick : Theme.surface)
-                    RoundedRectangle(cornerRadius: 3).stroke(Color.black.opacity(0.8), lineWidth: 1)
-                    if on { Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white) }
-                }
-                .frame(width: 22, height: 22)
-                Text(label).font(.body.weight(on ? .semibold : .regular)).foregroundStyle(Paper.ink)
-            }
-            .padding(.vertical, 6).padding(.horizontal, 10)
-            .background(on ? Paper.band : Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Paper.tick : Color.secondary.opacity(0.3), lineWidth: 1))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-}
-
 /// A form box with the green title band.
 struct PaperBox<Content: View>: View {
     let title: String
@@ -113,20 +87,6 @@ struct SketchView: View {
         }
         .aspectRatio(CGFloat(sketch.width / max(sketch.height, 1)), contentMode: .fit)
         .background(Theme.paper)
-    }
-}
-
-/// Circular progress used on job cards and in the sidebar.
-struct ProgressRing: View {
-    let value: Double
-    var size: CGFloat = 34
-    var body: some View {
-        ZStack {
-            Circle().stroke(Color.secondary.opacity(0.2), lineWidth: 4)
-            Circle().trim(from: 0, to: value).stroke(value >= 1 ? Paper.tick : Color.accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90))
-            Text("\(Int((value * 100).rounded()))").font(.system(size: size * 0.3, weight: .bold)).monospacedDigit()
-        }
-        .frame(width: size, height: size)
     }
 }
 

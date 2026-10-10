@@ -38,7 +38,7 @@ There is no Simulator.app here, so the simulator can't be rotated; landscape che
 xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surveyDemoSection YES -surveyWideA1 YES -surveyPage <page>
 ```
 
-- `-screen <name>` skips sign-in and opens one app screen (`TCRoofApp.swift` `DebugScreen`; `pwa` is the survey module).
+- `-screen <name>` skips sign-in and opens one app screen as the root of its own stack, with no way back to the home (`TCRoofApp.swift` `DebugScreen`; `pwa` is the survey module). On iOS 27 a screen pushed over the home at launch stays blank, so don't push it.
 - `-surveyDemo YES` opens a demo job; add `-surveyDemoSection YES` to open its first section.
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
 - `-surveyStacked YES` forces the one-column (portrait) layout of the wide pages in a landscape simulator.
@@ -64,7 +64,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyPlatePhoto YES` (with `-surveyPage electrical`) clears TX 1's nameplate fields and gives it a rendered nameplate photo, so A3 offers `พบในรูปป้าย` from the photo text reader.
 - `-surveySettings YES` (with `-screen pwa`) opens the survey settings; its `เครื่องนี้` section lists the hardware the device has (`DeviceCaps`).
 - `-screen home -homeDemo YES` opens the home with sample appointments; `-homeBoard YES` lays the iPad home out at 1366 × 1024. On iPhone, `-homeTab survey|plan|install` opens with that tab selected; `-homeNotifications YES` / `-homeSettings YES` open those screens.
-- `-screen home -homeTab survey` opens the iPhone survey list (`PhoneSurveyList`); `-screen survey` pushes it, with the back chevron. Add `-surveyWindow month|all`, `-surveySearch <text>`, `-surveySearchFocus YES` (seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`) or `-surveyListDraft YES` (today's first job gets a half-done draft) for the states of `docs/ui/tcroof-survey-list-iphone`. Run `-homeDemo YES` on the home tab first to put two appointments on today.
+- `-screen home -homeTab survey` opens the iPhone survey list (`PhoneSurveyList`); `-screen survey` opens the list on its own. Add `-surveyWindow month|all`, `-surveySearch <text>`, `-surveySearchFocus YES` (seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`) or `-surveyListDraft YES` (today's first job gets a half-done draft) for the states of `docs/ui/tcroof-survey-list-iphone`. Run `-homeDemo YES` on the home tab first to put two appointments on today.
 - `-screen plan` (or `-screen home -homeTab plan`) opens the plan calendar; on iPhone that is `docs/ui/tcroof-plan-calendar-iphone`. Add `-planToday 2026-09-30` to fix "today" and `-planDemo YES` to move the sample jobs back to their offsets from it, with the board's survey times. Then `-planDay <yyyy-MM-dd>` selects a day (and shows its month), `-planView week` opens the week view, `-planTeam TCR01` filters a team and `-planTeamMenu YES` opens the team menu.
 - `-screen job -mpDemo plan|setup|new` opens the first job's detail with a sample MP plan around today (`MPScheduleCard`), also opening ตั้งค่าแผน (`setup`), or opens it on the job with its plan cleared (`new`).
 - `-screen mp` opens that job's แผนงาน MP full screen (`MPScheduleScreen`), seeding the same plan when it has none; add `-mpDemo progress` to open บันทึกความก้าวหน้า, or `-mpDemo pdf` to write the weekly-meeting page to `Documents/mp.pdf`.

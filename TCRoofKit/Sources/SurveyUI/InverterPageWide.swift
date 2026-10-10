@@ -94,7 +94,7 @@ struct InverterPageWide: View {
                 TextEditor(text: text("detail"))
                     .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                     .frame(minHeight: 110)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
             }
         }
@@ -145,7 +145,7 @@ struct InverterPageWide: View {
             Text(title).font(.system(size: 15, weight: on ? .bold : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
                 .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(on ? Color.white : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+                .background(on ? Theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 9))
                 .shadow(color: on ? Theme.navy.opacity(0.12) : .clear, radius: 2, y: 1)
         }
         .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
@@ -195,7 +195,7 @@ struct InverterPageWide: View {
                 Text(drawing ? "แตะทีละมุม · แตะจุดแรกเพื่อปิดขอบเขต (\(draft.count) จุด)" : "วาดขอบเขตแล้วใส่ระยะบนเส้น")
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(Color.white.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
+                    .background(Theme.surface.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
             }
         }
     }
@@ -258,7 +258,7 @@ struct InverterPageWide: View {
                     Text(e.isEmpty ? "ใส่ระยะ" : e + " ม.").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(e.isEmpty ? Theme.teal : .white)
                         .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(e.isEmpty ? Color.white : Theme.teal, in: RoundedRectangle(cornerRadius: 6))
+                        .background(e.isEmpty ? Theme.surface : Theme.teal, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.teal))
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
@@ -356,7 +356,7 @@ struct InverterPageWide: View {
                 stepButton("plus", action: up)
             }
             .frame(minHeight: 48)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(error ? Theme.danger : Theme.navy.opacity(0.45)))
         }
     }
@@ -417,7 +417,7 @@ struct InverterPageWide: View {
             Text(String(format: "%.2f", v)).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
                 .foregroundStyle(last ? (s.spansOK ? Theme.inkMuted : Color(red: 0.706, green: 0.137, blue: 0.094)) : Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Theme.danger.opacity(0.08)) : i == sel ? Theme.primarySoft : Color.white,
+                .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Theme.danger.opacity(0.08)) : i == sel ? Theme.primarySoft : Theme.surface,
                             in: RoundedRectangle(cornerRadius: 9))
                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(last ? (s.spansOK ? Theme.borderControl : Theme.danger) : i == sel ? Theme.primary : Theme.borderControl,
                                                                   style: StrokeStyle(lineWidth: !last && i == sel ? 2 : 1, dash: last ? [4, 3] : [])))
@@ -440,7 +440,7 @@ struct InverterPageWide: View {
             Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                 .foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 9))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9))
                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(enabled ? Theme.primary.opacity(0.5) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)
@@ -452,7 +452,7 @@ extension View {
     func toolChip(on: Bool) -> some View {
         font(.system(size: 14, weight: .semibold)).foregroundStyle(on ? .white : Theme.navy)
             .padding(.horizontal, 12).frame(minHeight: 44)
-            .background(on ? Theme.teal : Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+            .background(on ? Theme.teal : Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -471,11 +471,11 @@ struct PlanViewer: View {
                 ScrollView([.horizontal, .vertical]) {
                     SketchView(sketch: sketch)
                         .frame(width: geo.size.width * k, height: geo.size.width * k * CGFloat(sketch.height / sketch.width))
-                        .background(Color.white)
+                        .background(Theme.paper)
                 }
                 .gesture(MagnifyGesture().updating($pinch) { v, s, _ in s = v.magnification }.onEnded { v in zoom = min(8, max(1, zoom * v.magnification)) })
             }
-            .background(Color.white)
+            .background(Theme.paper)
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { Button("ปิด") { dismiss() } }

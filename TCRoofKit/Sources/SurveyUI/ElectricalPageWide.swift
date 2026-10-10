@@ -120,7 +120,7 @@ struct ElectricalPageWide: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(narrow ? 10 : 16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.navy.opacity(0.2)))
     }
 
@@ -206,7 +206,7 @@ struct ElectricalPageWide: View {
                 .buttonStyle(.plain)
             }
             .padding(6)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
             .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
         }
     }

@@ -18,7 +18,7 @@ extension SitePageWide {
             captionRow
         }
         .padding(10)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 

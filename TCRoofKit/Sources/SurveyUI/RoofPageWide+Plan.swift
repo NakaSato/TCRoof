@@ -17,6 +17,7 @@ struct SketchCanvas: View {
                 PDFRenderer.draw(ops, in: cg, photo: { _ in nil })
             }
         }
+        .background(Theme.paper)
     }
 }
 
@@ -171,7 +172,7 @@ extension RoofPageWide {
             }
             .foregroundStyle(on ? Color.white : tint)
             .padding(.horizontal, 10).frame(minHeight: 44)
-            .background(on ? tint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(on ? tint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Color.clear : tint.opacity(0.5)))
             .contentShape(Rectangle())
         }
@@ -349,7 +350,7 @@ extension RoofPageWide {
             Text(tool == .skylight ? "เสร็จ · แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.system(size: 13, weight: .bold))
                 .foregroundStyle(tool == .skylight ? Color.white : Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 36)
-                .background(tool == .skylight ? Theme.primary : Color.white, in: RoundedRectangle(cornerRadius: 8))
+                .background(tool == .skylight ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.primary.opacity(0.6)))
                 .frame(minHeight: 44).contentShape(Rectangle())
         }

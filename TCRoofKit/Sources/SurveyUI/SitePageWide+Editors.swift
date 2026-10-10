@@ -88,7 +88,7 @@ extension SitePageWide {
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 12).frame(minHeight: 52)
-                    .background(on ? Theme.danger.opacity(0.06) : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(on ? Theme.danger.opacity(0.06) : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.danger : Theme.borderSubtle, lineWidth: on ? 2 : 1))
                     .contentShape(Rectangle())
                 }

@@ -117,7 +117,7 @@ extension TankPageWide {
         } else {
             Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Theme.borderControl)
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Color.white))
+                .background(Circle().fill(Theme.surface))
                 .overlay(Circle().strokeBorder(Theme.navy.opacity(0.25), lineWidth: 1.5))
         }
     }
@@ -142,7 +142,7 @@ extension TankPageWide {
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.borderSubtle))
         .shadow(color: Theme.navy.opacity(0.05), radius: 3, y: 2)
     }
@@ -165,7 +165,7 @@ extension TankPageWide {
                         Image(systemName: "arrow.down.left.and.arrow.up.right").font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Theme.primary)
                             .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+                            .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
                             .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
                             .frame(width: 44, height: 44).contentShape(Rectangle())
                     }
@@ -179,7 +179,7 @@ extension TankPageWide {
                         .padding(.horizontal, 10).padding(.bottom, 8)
                 }
             }
-            .background(Color.white)
+            .background(Theme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         }
@@ -261,7 +261,7 @@ extension TankPageWide {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         // 44 pt with the track's padding
                         .contentShape(Rectangle().inset(by: -3))

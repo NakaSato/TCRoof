@@ -98,7 +98,7 @@ struct BackfeedPageWide: View {
         VStack(alignment: .leading, spacing: 12, content: content)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.navy.opacity(0.16)))
             .shadow(color: Theme.navy.opacity(0.06), radius: 3, y: 2)
     }
@@ -145,7 +145,7 @@ struct BackfeedPageWide: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
-            .background(on ? Self.tealSoft : Color.white, in: RoundedRectangle(cornerRadius: 14))
+            .background(on ? Self.tealSoft : Theme.surface, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Theme.teal : Self.line, lineWidth: on ? 2 : 1))
             .background(RoundedRectangle(cornerRadius: 16).stroke(on ? Theme.teal.opacity(0.18) : .clear, lineWidth: 6).padding(-1))
             .overlay(alignment: .topTrailing) {
@@ -174,7 +174,7 @@ struct BackfeedPageWide: View {
                     Button { set(ZeroExport.poleKey, .choice(p, other: "")) } label: {
                         Text(p).font(.system(size: 16, weight: .bold))
                             .frame(maxWidth: .infinity, minHeight: 46)
-                            .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                            .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
                             .contentShape(Rectangle())
                     }
@@ -225,7 +225,7 @@ struct BackfeedPageWide: View {
                             .padding(.horizontal, 13).padding(.vertical, 16).allowsHitTesting(false)
                     }
                 }
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
                 .accessibilityLabel("รายละเอียดเพิ่มเติม")
         }
@@ -258,7 +258,7 @@ struct BackfeedPhotoTile: View {
             .overlay(alignment: .bottomLeading) {
                 Text(label).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
+                    .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                     .padding(8).allowsHitTesting(false)
             }
     }
@@ -274,7 +274,7 @@ struct BackfeedPhotoTile: View {
             }
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.danger, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
             .contentShape(Rectangle())
         }

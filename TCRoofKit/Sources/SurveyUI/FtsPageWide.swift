@@ -85,7 +85,7 @@ struct FtsPageWide: View {
         VStack(alignment: .leading, spacing: 12, content: content)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.navy.opacity(0.16)))
             .shadow(color: Theme.navy.opacity(0.06), radius: 3, y: 2)
     }
@@ -127,7 +127,7 @@ struct FtsPageWide: View {
                 if p != nil {
                     Text("วงจุดติดตั้งปุ่ม · ระบุความสูง").font(.system(size: 12, weight: .semibold)).lineLimit(1)
                         .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
+                        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                         .padding(8).allowsHitTesting(false)
                 }
             }
@@ -173,7 +173,7 @@ struct FtsPageWide: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 16, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Theme.navy.opacity(0.3) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)
@@ -194,7 +194,7 @@ struct FtsPageWide: View {
                     Text("ปุ่ม FTS switch (Emergency)").font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
             }
             .frame(maxHeight: .infinity)
         }
@@ -223,7 +223,7 @@ struct FtsPageWide: View {
                 }
             }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.1)))
                 .accessibilityLabel("แผนภาพเส้นเดียวส่วน FTS และปุ่ม Emergency")
         }
@@ -250,6 +250,7 @@ struct SLDCrop: View {
             ctx.scaleBy(x: k, y: k)
             ctx.withCGContext { cg in PDFRenderer.draw(drawing.sketch.ops, in: cg, photo: { _ in nil }) }
         }
+        .background(Theme.paper)
         .clipped()
     }
 

@@ -100,7 +100,7 @@ extension InfoPageWide {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         // 44 pt with the track's padding
                         .contentShape(Rectangle().inset(by: -3))
@@ -157,7 +157,7 @@ extension InfoPageWide {
                         if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Theme.primary) }
                     }
                     .frame(width: 44, height: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
                     .contentShape(Rectangle())
                 }

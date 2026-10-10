@@ -47,7 +47,7 @@ extension BackfeedPageWide {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: phone ? nil : .infinity)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.1)))
             .accessibilityLabel(hv ? "แผนภาพเส้นเดียวส่วนกันย้อนแรงสูง" : "แผนภาพเส้นเดียวส่วนกันย้อนแรงต่ำ")
@@ -160,7 +160,7 @@ struct SiteMarkCrop: View {
                 .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(mark == nil ? Theme.pending : Theme.navy)
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
+                .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                 .padding(10)
         }
         .allowsHitTesting(false)

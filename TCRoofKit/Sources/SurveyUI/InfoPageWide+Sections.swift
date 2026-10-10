@@ -51,7 +51,7 @@ extension InfoPageWide {
             stepButton("ui-plus", "plus", label: "เพิ่ม" + title, width: pad ? 44 : 30) { set(count + 1) }.disabled(count >= 20)
         }
         .padding(.leading, 12).padding(.trailing, pad ? 4 : 2)
-        .background(on ? Theme.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: pad ? 12 : 10))
+        .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: pad ? 12 : 10))
         .overlay(RoundedRectangle(cornerRadius: pad ? 12 : 10).stroke(on ? Theme.navy.opacity(0.2) : Theme.borderControl))
     }
 
@@ -137,7 +137,7 @@ extension InfoPageWide {
                         else if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
                     .overlay(RoundedRectangle(cornerRadius: InfoPageWide.inputRadius).stroke(Theme.navy.opacity(0.45)))
                     .contentShape(Rectangle())
                 }
@@ -246,7 +246,7 @@ struct InfoPageHeader: View {
     func squareButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.primary)
-                .frame(width: 36, height: 36).background(.white, in: RoundedRectangle(cornerRadius: 8))
+                .frame(width: 36, height: 36).background(Theme.onPrimary, in: RoundedRectangle(cornerRadius: 8))
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityLabel(label)

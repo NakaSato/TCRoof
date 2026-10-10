@@ -203,7 +203,7 @@ struct InfoPageWide: View {
                 } label: {
                     Text(o).font(.system(size: 17, weight: .semibold))
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: Self.inputRadius))
+                        .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: Self.inputRadius))
                         .overlay(RoundedRectangle(cornerRadius: Self.inputRadius).stroke(Theme.navy.opacity(on ? 0.2 : 0.5)))
                         .contentShape(Rectangle())
                 }
@@ -339,7 +339,7 @@ struct A1Card<Content: View>: View {
         }
         .padding(.vertical, vertical).padding(.horizontal, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 }
@@ -454,7 +454,7 @@ extension View {
         font(.system(size: fontSize)).foregroundStyle(Theme.navy)
             .padding(.leading, leading).padding(.trailing, trailing)
             .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .leading)
-            .background(calc ? Theme.mint.opacity(0.3) : Color.white, in: RoundedRectangle(cornerRadius: radius))
+            .background(calc ? Theme.mint.opacity(0.3) : Theme.surface, in: RoundedRectangle(cornerRadius: radius))
             .overlay(RoundedRectangle(cornerRadius: radius)
                 .stroke(error ? Theme.danger : focused ? Theme.primary : Theme.navy.opacity(stroke), lineWidth: error || focused ? 2 : 1))
     }

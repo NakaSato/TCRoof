@@ -242,7 +242,7 @@ extension TankPageWide {
                         if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 48)
-                    .background(on ? RoofPageWide.soft : Color.white)
+                    .background(on ? RoofPageWide.soft : Theme.surface)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -326,7 +326,7 @@ extension TankPageWide {
                 Button { update { Tank.setPosition(&$0, p) } } label: {
                     Text(p).font(.system(size: 15, weight: on ? .bold : .semibold)).foregroundStyle(Theme.navy)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(on ? Self.teal : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(on ? Self.teal : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.3), lineWidth: on ? 1.5 : 1))
                         .contentShape(Rectangle())
                 }
@@ -412,7 +412,7 @@ extension TankPageWide {
                     }
                     .foregroundStyle(Theme.primary)
                     .padding(.horizontal, phone ? 10 : 12).frame(minHeight: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(phone ? Theme.primary : Theme.primary.opacity(0.7), lineWidth: phone ? 1 : 1.5))
                     .contentShape(Rectangle())
                 }
@@ -459,7 +459,7 @@ struct TankStepper: View {
                 .font(.system(size: 16, weight: .bold)).monospacedDigit().multilineTextAlignment(.center)
                 .foregroundStyle(enabled ? Theme.navy : Theme.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(enabled ? Color.white : Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
+                .background(enabled ? Theme.surface : Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(typing ? Theme.primary : Theme.navy.opacity(enabled ? 0.3 : 0.12), lineWidth: typing ? 2 : 1))
                 .disabled(!enabled)
                 .onSubmit(commit)
@@ -481,7 +481,7 @@ struct TankStepper: View {
         }
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity, minHeight: 44)
-        .background(enabled ? Color.white : Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
+        .background(enabled ? Theme.surface : Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(typing ? Theme.primary : Theme.navy.opacity(enabled ? 0.35 : 0.12), lineWidth: typing ? 2 : 1))
         .contentShape(Rectangle())
         .onTapGesture { if enabled { typing = true } }
@@ -501,7 +501,7 @@ struct TankStepper: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: glyph, weight: .bold)).foregroundStyle(on ? Theme.primary : Theme.disabledText)
                 .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.navy.opacity(0.3) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!on)

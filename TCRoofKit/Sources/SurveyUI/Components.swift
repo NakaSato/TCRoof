@@ -54,7 +54,7 @@ struct CheckChip: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 3).fill(on ? Paper.tick : Color.white)
+                    RoundedRectangle(cornerRadius: 3).fill(on ? Paper.tick : Theme.surface)
                     RoundedRectangle(cornerRadius: 3).stroke(Color.black.opacity(0.8), lineWidth: 1)
                     if on { Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white) }
                 }
@@ -111,6 +111,7 @@ struct SketchView: View {
             }
         }
         .aspectRatio(CGFloat(sketch.width / max(sketch.height, 1)), contentMode: .fit)
+        .background(Theme.paper)
     }
 }
 

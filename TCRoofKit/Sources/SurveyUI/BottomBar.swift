@@ -30,7 +30,7 @@ struct BottomBar: View {
         HStack(spacing: 12) { content }
             .padding(.top, 8).padding(.horizontal, 24).padding(.bottom, 12)
             .frame(maxWidth: .infinity)
-            .background(Rectangle().fill(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
+            .background(Rectangle().fill(Theme.surface.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
     }
 
     @ViewBuilder var content: some View {
@@ -73,7 +73,7 @@ struct BottomBar: View {
             Text(a.title).font(.system(size: size, weight: weight)).foregroundStyle(tint)
                 .lineLimit(1).minimumScaleFactor(0.7).padding(.horizontal, 8)
                 .frame(maxWidth: .infinity).frame(height: 53)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(border))
         }
         .buttonStyle(BarPress())

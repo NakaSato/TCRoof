@@ -57,7 +57,7 @@ struct A3Segments: View {
                 Button { set(on ? "" : o) } label: {
                     Text(titles?[n] ?? o).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.borderControl.opacity(0.6), lineWidth: on ? 2 : 1))
                         .contentShape(Rectangle())
                 }
@@ -76,7 +76,7 @@ struct A3Panel<Content: View>: View {
         content
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent ? Theme.primary : Theme.navy.opacity(0.25), lineWidth: accent ? 2 : 1))
     }
 }
@@ -215,7 +215,7 @@ extension ElectricalPageWide {
             } label: { Image(systemName: "chevron.down").frame(width: 36, height: 44) }
         }
         .padding(.leading, 12).frame(minHeight: 44)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
     }
 
@@ -438,7 +438,7 @@ extension ElectricalPageWide {
                         if a2Badges.contains(.boardName(i, 0)) { A2Badge() }
                     }
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.3)))
                     Text("ตู้หลัก · ปลายสาย").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.success)
                         .padding(.horizontal, 10).frame(minHeight: 26).background(Theme.mint.opacity(0.4), in: Capsule())
@@ -534,7 +534,7 @@ extension ElectricalPageWide {
             if !b.condition.isEmpty { a3Chip(b.condition, ok: b.condition != "ชำรุด") }
         }
         .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(unknown ? Theme.danger.opacity(0.7) : Theme.navy.opacity(0.2)))
         .contentShape(Rectangle())
     }
@@ -596,7 +596,7 @@ extension ElectricalPageWide {
             stepper("plus") { set { $0.count = max($0.count, 1) + 1 } }
         }
         .padding(.leading, 8).frame(maxWidth: .infinity, minHeight: 44)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
     }
 

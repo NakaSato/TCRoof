@@ -166,7 +166,7 @@ struct SignatureField: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             ZStack {
-                Rectangle().fill(Color.white)
+                Rectangle().fill(Theme.paper)
                 if let p = photo, let img = model.image(p, in: jobID) { Image(uiImage: img).resizable().scaledToFit().padding(6) }
                 else { Text(photo == nil ? "แตะเพื่อเซ็นชื่อ" : "ลายเซ็นอยู่บนเครื่องอื่น").foregroundStyle(.secondary) }
             }
@@ -226,7 +226,7 @@ struct SignaturePad: View {
                 Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, phone ? 16 : 20).padding(.top, 14).padding(.bottom, 18)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
             .shadow(color: .black.opacity(phone ? 0 : 0.3), radius: 24, y: 16)
             .padding(phone ? 0 : 32)
         }
@@ -264,7 +264,7 @@ struct SignaturePad: View {
         Button(action: action) {
             Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.navy)
                 .frame(minWidth: width, minHeight: 48)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.35)))
         }
         .buttonStyle(.plain)

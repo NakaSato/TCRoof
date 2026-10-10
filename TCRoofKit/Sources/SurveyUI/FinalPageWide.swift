@@ -133,7 +133,7 @@ struct FinalPageWide: View {
             }
             .padding(.leading, 14).padding(.trailing, 8)
             .frame(maxWidth: .infinity, minHeight: 48)
-            .background(on ? c.1 : Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(on ? c.1 : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? c.0 : Theme.navy.opacity(0.45), lineWidth: on ? 2 : 1))
             .contentShape(Rectangle())
         }
@@ -174,7 +174,7 @@ struct FinalPageWide: View {
                     }
                 }
                 .frame(height: lines > 2 ? 236 : 150)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
                 .accessibilityLabel("ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง")
         }
@@ -257,7 +257,7 @@ struct FinalPageWide: View {
                         .overlay(alignment: .top) { Rectangle().fill(Self.hairline).frame(height: 1) }
                 }
             }
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
         }
     }
@@ -270,7 +270,7 @@ struct FinalPageWide: View {
             Button { open(g.target) } label: {
                 Text("ไปที่หน้า ›").font(.system(size: 14, weight: .semibold)).fixedSize()
                     .padding(.horizontal, 12).frame(minHeight: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.6)))
             }
             .buttonStyle(.plain)

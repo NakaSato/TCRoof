@@ -120,7 +120,7 @@ extension ElectricalPageWide {
                     Button { SiteSync.keepA3(&job, mark: it.id) } label: {
                         Text("คงค่านี้").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 14).frame(minHeight: 44)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
                     }
                     .buttonStyle(.plain)

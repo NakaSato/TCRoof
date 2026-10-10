@@ -12,7 +12,7 @@ extension TankPageWide {
             Label("ส่งออก DXF", systemImage: "square.and.arrow.up")
                 .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
         }
         .buttonStyle(.plain)

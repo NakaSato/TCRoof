@@ -36,7 +36,7 @@ extension JobEditorView {
                 }
             }
             .aspectRatio(CGFloat(sheet.width / sheet.height), contentMode: .fit)
-            .background(Color.white)
+            .background(Theme.paper)
             .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
             Button { checked { run("กำลังสร้าง PDF สรุป…") { let f = try model.exportSummaryPDF(job); preview = PDFPreviewItem(url: f.url, title: "สรุป " + job.projectName) } } } label: {
                 Label("บันทึก PDF สรุป 1 หน้า", systemImage: "doc.richtext")

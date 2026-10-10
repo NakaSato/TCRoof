@@ -47,7 +47,7 @@ struct PhoneBand<Content: View>: View {
         }
         .padding(.top, 12).padding(.horizontal, 16).padding(.bottom, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .background(Theme.surface)
         .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
         .overlay(alignment: .bottom) { if last { Rectangle().fill(Theme.borderSubtle).frame(height: 1) } }
     }

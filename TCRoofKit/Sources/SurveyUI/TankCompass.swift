@@ -81,7 +81,7 @@ struct TankCompassView: View {
                     .stroke(Self.yellow, style: StrokeStyle(lineWidth: 3, dash: [8, 4]))
                 A2Icon(name: "d1-aim-reticle", fallback: "scope", size: 44).foregroundStyle(Self.yellow).position(x: x, y: y)
                 Text("มุม \(corner)").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
-                    .padding(.horizontal, 6).padding(.vertical, 2).background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 4))
+                    .padding(.horizontal, 6).padding(.vertical, 2).background(Theme.surface.opacity(0.85), in: RoundedRectangle(cornerRadius: 4))
                     .position(x: x + 46, y: y - 70)
             }
         }
@@ -143,7 +143,7 @@ struct TankCompassView: View {
                 TextField("เช่น 90", text: $typed).keyboardType(.numberPad)
                     .font(.system(size: 24, weight: .bold)).monospacedDigit().multilineTextAlignment(.center)
                     .foregroundStyle(Theme.navy)
-                    .frame(width: 140, height: 52).background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .frame(width: 140, height: 52).background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 if let a = typedAzimuth { Text(Tank.directionName(a)).font(.system(size: 17, weight: .bold)) }
             }
             Button { if let a = typedAzimuth { save(a, nil) } } label: {

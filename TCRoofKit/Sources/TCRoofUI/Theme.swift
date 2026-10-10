@@ -60,6 +60,8 @@ public enum Theme {
     public static let sun = Color(hex: 0xFFC53D)
     public static let background = Color(light: 0xF3F6FA, dark: 0x0E141C)
     public static let surface = Color(light: 0xFFFFFF, dark: 0x121A24)
+    /// Behind plans, diagrams and the signature pad: white in both modes, since their ink is dark.
+    public static let paper = Color.white
     public static let muted = Color(hex: 0x7A8BA3)
     public static let inkMuted = Color(light: 0x5B6B82, dark: 0x9DB0C7)
     public static let borderControl = Color(light: 0x77889E, dark: 0x6B7D93)

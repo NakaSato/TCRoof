@@ -72,7 +72,7 @@ struct SingleLinePage: View {
         HStack(spacing: phone ? 6 : 12) {
             Button(action: close) {
                 Image("ui-back", bundle: .module).renderingMode(.template).resizable().scaledToFit().frame(width: 24, height: 24)
-                    .foregroundStyle(Theme.primary).frame(width: 44, height: 44).background(.white, in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(Theme.primary).frame(width: 44, height: 44).background(Theme.onPrimary, in: RoundedRectangle(cornerRadius: 12))
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
@@ -156,7 +156,7 @@ struct SingleLinePage: View {
             Text(title).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, phone ? 6 : 14)
                 .frame(maxWidth: phone ? .infinity : nil, minHeight: 44)
                 .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
-                .background(on ? Color.white : .clear, in: RoundedRectangle(cornerRadius: 10))
+                .background(on ? Theme.surface : .clear, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
     }
@@ -202,7 +202,7 @@ struct SingleLinePage: View {
             }
             .buttonStyle(.plain).accessibilityLabel("พอดีจอ")
         }
-        .padding(4).background(Color.white, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
+        .padding(4).background(Theme.surface, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 
     func zoomButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
@@ -233,7 +233,7 @@ struct SingleLinePage: View {
                     }
                 }
                 .frame(width: w, height: h)
-                .background(Color.white)
+                .background(Theme.paper)
                 .contentShape(Rectangle())
                 .onTapGesture(count: 1, coordinateSpace: .local) { p in tap(p, d) }
                 .overlay(alignment: .topLeading) {
@@ -243,7 +243,7 @@ struct SingleLinePage: View {
             }
             .onChange(of: focusPoint) { _, _ in DispatchQueue.main.async { withAnimation { proxy.scrollTo("focus", anchor: .center) } } }
         }
-        .background(Color.white)
+        .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         .simultaneousGesture(MagnifyGesture()
@@ -366,7 +366,7 @@ struct SingleLinePage: View {
             }
             .font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
             .foregroundStyle(attach ? .white : Theme.navy)
-            .background(attach ? Theme.success : .white, in: RoundedRectangle(cornerRadius: 12))
+            .background(attach ? Theme.success : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(attach ? Theme.success : Theme.borderControl))
         }
         .buttonStyle(.plain).accessibilityAddTraits(attach ? .isSelected : [])
@@ -376,7 +376,7 @@ struct SingleLinePage: View {
         Button(action: action) {
             Text(t).font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
                 .foregroundStyle(filled ? .white : Theme.navy)
-                .background(filled ? Theme.primary : .white, in: RoundedRectangle(cornerRadius: 12))
+                .background(filled ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(filled ? Theme.primary : Theme.borderControl))
         }
         .buttonStyle(.plain)

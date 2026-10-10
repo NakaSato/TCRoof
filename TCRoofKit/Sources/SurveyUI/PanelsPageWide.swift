@@ -116,7 +116,7 @@ struct PanelsPageWide: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(on ? Theme.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
             .contentShape(Rectangle())
         }
@@ -157,7 +157,7 @@ struct PanelsPageWide: View {
                             pillView(pill)
                         }
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(on ? Theme.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 12))
+                        .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
                     }
                     .buttonStyle(.plain)

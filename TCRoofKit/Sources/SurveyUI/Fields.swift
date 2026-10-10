@@ -210,10 +210,10 @@ struct PlanPreview: View {
             }
             if let sk = Drawings.plan(values, tank: tank) {
                 SketchView(sketch: sk).frame(maxWidth: .infinity).padding(8)
-                    .background(Color.white).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
+                    .background(Theme.paper).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
             } else {
                 Text("— กรอกระยะช่วงเสาแนวนอนและแนวตั้ง เช่น 1.5,4,4,1.5 —").font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 90).background(Color.white).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
+                    .frame(maxWidth: .infinity, minHeight: 90).background(Theme.paper).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
             }
         }
         .padding(14)

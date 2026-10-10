@@ -42,7 +42,7 @@ extension PanelsPageWide {
                     Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.horizontal, 14).frame(minHeight: 52)
-                .background(link == nil ? Color.white : Theme.mint.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
+                .background(link == nil ? Theme.surface : Theme.mint.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(link == nil ? Theme.navy.opacity(0.45) : Theme.teal))
                 .contentShape(Rectangle())
             }
@@ -83,7 +83,7 @@ extension PanelsPageWide {
             }, compact: true)
         }
         .padding(.horizontal, 14).frame(minHeight: 48)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.3)))
     }
 
@@ -100,7 +100,7 @@ extension PanelsPageWide {
                 Text("kW").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(minHeight: 52)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, lineWidth: 1.5))
             HStack(spacing: 8) {
                 timeChip(now.map { "ตอนนี้ \($0)" } ?? "ตอนนี้", on: now != nil) {
@@ -117,7 +117,7 @@ extension PanelsPageWide {
         Button(action: action) {
             Text(title).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.45), lineWidth: on ? 1.5 : 1))
         }
         .buttonStyle(.plain)
@@ -143,7 +143,7 @@ extension PanelsPageWide {
             Text("ช่อง").foregroundStyle(Theme.inkMuted)
         }
         .padding(.horizontal, 14).frame(minHeight: 48)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.3)))
     }
 
@@ -153,7 +153,7 @@ extension PanelsPageWide {
             TextEditor(text: text("detail"))
                 .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                 .frame(minHeight: 180)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
         }
     }

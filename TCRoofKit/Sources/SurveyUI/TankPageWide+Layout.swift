@@ -118,7 +118,7 @@ extension TankPageWide {
                 Button { askLayout(.auto) } label: {
                     Text("จัดแผงใหม่").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 46)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary))
                 }
                 .buttonStyle(.plain)
@@ -147,7 +147,7 @@ extension TankPageWide {
                     Text(item.1).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         .contentShape(Rectangle().inset(by: -3))
                 }
@@ -179,7 +179,7 @@ extension TankPageWide {
                     Image(systemName: "arrow.down.left.and.arrow.up.right").font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Theme.primary)
                         .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
                         .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
@@ -192,7 +192,7 @@ extension TankPageWide {
                 .font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
-        .background(Color.white)
+        .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
@@ -206,7 +206,7 @@ extension TankPageWide {
                     let w = g.size.width * layoutZoom
                     ScrollView([.horizontal, .vertical]) {
                         if let l = TankLayout.current(values) {
-                            layoutPlan(l).frame(width: w, height: w * 300 / 330).background(Color.white)
+                            layoutPlan(l).frame(width: w, height: w * 300 / 330).background(Theme.paper)
                         }
                     }
                     .scrollIndicators(.hidden)
@@ -281,7 +281,7 @@ extension TankPageWide {
                 Text("ดูแบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary))
             }
             .buttonStyle(.plain)

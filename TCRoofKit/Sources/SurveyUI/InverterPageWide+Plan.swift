@@ -30,7 +30,7 @@ extension InverterPageWide {
         }
         .padding(.vertical, 16).padding(.horizontal, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 
@@ -63,7 +63,7 @@ extension InverterPageWide {
             }
         }
         .padding(14)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 
@@ -89,11 +89,11 @@ extension InverterPageWide {
             SketchView(sketch: InverterStationDrawing.sketch(s))
                 .frame(maxWidth: .infinity, maxHeight: 270)
                 .padding(6)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.12)))
                 .overlay(alignment: .bottomTrailing) {
                     Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary)
-                        .frame(width: 30, height: 30).background(Color.white.opacity(0.9), in: Circle()).padding(6)
+                        .frame(width: 30, height: 30).background(Theme.surface.opacity(0.9), in: Circle()).padding(6)
                 }
         }
         .buttonStyle(.plain)
@@ -122,7 +122,7 @@ extension InverterPageWide {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 36, height: 34)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.45)))
                 .opacity(enabled ? 1 : 0.35)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
@@ -144,7 +144,7 @@ extension InverterPageWide {
                 Button { if let i = b4Index { job.modules[i].values["level"] = .choice(value, other: "") } } label: {
                     Text(title).font(.system(size: 15, weight: .bold))
                         .frame(width: 84, height: 40)
-                        .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
                         .frame(height: 44).contentShape(Rectangle())
                 }
@@ -219,7 +219,7 @@ extension InverterPageWide {
             .accessibilityLabel("ลบเครื่อง \(i + 1)")
         }
         .padding(.horizontal, 10).padding(.vertical, 2)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
     }
 

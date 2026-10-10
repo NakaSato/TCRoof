@@ -84,7 +84,7 @@ extension FinalPageWide {
             .overlay(alignment: .bottom) { Rectangle().fill(Self.hairline).frame(height: 1) }
             signatureBody(photo: photo, role: role, emptyTint: emptyTint, signing: signing, name: name)
         }
-        .background(Color.white)
+        .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.navy.opacity(0.18)))
         .shadow(color: Theme.navy.opacity(0.08), radius: 2, y: 1)
@@ -179,7 +179,7 @@ extension FinalPageWide {
         }
         .padding(.leading, 18).padding(.trailing, 8)
         .frame(minHeight: 52)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.navy.opacity(0.18)))
     }
 }

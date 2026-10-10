@@ -88,13 +88,14 @@ struct FloodPageWide: View {
                         PDFRenderer.draw(sketch.ops, in: cg, photo: { model.image($0, in: jobID) })
                     }
                 }
+                .background(Theme.paper)
                 .accessibilityElement().accessibilityLabel(FloodSection.accessibilityLabel(job))
                 if state == .flooded {
                     let wy = (FloodSection.groundY - check.level * k) * s
                     Label("ลากเส้นน้ำเพื่อปรับระดับ", systemImage: "arrow.up.and.down")
                         .font(.system(size: 12.5, weight: .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Color.white).overlay(Rectangle().stroke(Theme.primary))
+                        .background(Theme.surface).overlay(Rectangle().stroke(Theme.primary))
                         .position(x: 375 * s, y: min(wy + 26 * s, (FloodSection.groundY - 14) * s))
                         .allowsHitTesting(false)
                 }
@@ -102,7 +103,7 @@ struct FloodPageWide: View {
                 if state == .unknownFetched, let g = values.gistda {
                     Text(g.banner).font(.system(size: 12.5, weight: .bold)).foregroundStyle(Theme.pending)
                         .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.pending))
+                        .background(Theme.surface).overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.pending))
                         .padding(8).allowsHitTesting(false)
                 }
             }
@@ -133,7 +134,7 @@ struct FloodPageWide: View {
             if let failure { Text(failure).font(.system(size: 12.5)).foregroundStyle(Theme.danger).multilineTextAlignment(.center); estimateButton }
         }
         .padding(.vertical, 14).padding(.horizontal, 16).frame(maxWidth: .infinity)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderControl))
         .shadow(color: Theme.navy.opacity(0.12), radius: 6, y: 3)
     }
@@ -258,7 +259,7 @@ struct FloodPageWide: View {
                 TextEditor(text: text("floodNote"))
                     .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                     .frame(minHeight: 140).frame(maxHeight: stacked ? 200 : .infinity)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
             }
             .frame(maxHeight: stacked ? nil : .infinity)
@@ -290,7 +291,7 @@ struct FloodPageWide: View {
         return Button { choose(id, o) } label: {
             Text(o).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: height)
-                .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
         }
         .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
@@ -387,6 +388,7 @@ struct FloodPageWide: View {
                         }
                     }
                     .aspectRatio(CGFloat(sk.width / sk.height), contentMode: .fit)
+                    .background(Theme.paper)
                     .accessibilityElement().accessibilityLabel(g.headline + (g.detail.map { ". " + $0 } ?? ""))
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.pending)

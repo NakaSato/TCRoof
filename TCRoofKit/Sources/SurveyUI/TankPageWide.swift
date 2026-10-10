@@ -146,7 +146,7 @@ struct TankPageWide: View {
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, minHeight: 50)
             .background {
-                if on { RoundedRectangle(cornerRadius: 10).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+                if on { RoundedRectangle(cornerRadius: 10).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
             }
             .contentShape(Rectangle())
         }
@@ -161,7 +161,7 @@ struct TankPageWide: View {
         } else {
             Text("\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(current ? Color.white : Theme.inkMuted)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(current ? Theme.primary : Color.white))
+                .background(Circle().fill(current ? Theme.primary : Theme.surface))
                 .overlay(Circle().stroke(current ? Color.clear : Theme.navy.opacity(0.25)))
         }
     }
@@ -196,7 +196,7 @@ struct TankPageWide: View {
         VStack(alignment: .leading, spacing: 8, content: content)
             .padding(14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 

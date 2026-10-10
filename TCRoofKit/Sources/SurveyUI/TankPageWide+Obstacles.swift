@@ -95,7 +95,7 @@ extension TankPageWide {
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         .contentShape(Rectangle().inset(by: -3))
                 }
@@ -120,7 +120,7 @@ extension TankPageWide {
                     Image(systemName: "arrow.down.left.and.arrow.up.right").font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Theme.primary)
                         .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
                         .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
@@ -133,7 +133,7 @@ extension TankPageWide {
                 .font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
-        .background(Color.white)
+        .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
@@ -177,7 +177,7 @@ extension TankPageWide {
                     ScrollView([.horizontal, .vertical]) {
                         TankPointsPlan(values: values, selected: $pointSel) { id, x, y in update { TankPoints.move(&$0, id, x: x, y: y) } }
                             .frame(width: w, height: w * 300 / 330)
-                            .background(Color.white)
+                            .background(Theme.paper)
                     }
                     .scrollIndicators(.hidden)
                     .simultaneousGesture(MagnifyGesture().onChanged { m in obsZoom = min(4, max(1, obsZoom * sqrt(m.magnification))) })
@@ -188,7 +188,7 @@ extension TankPageWide {
                         statusChoice(p)
                     }
                     .padding(14)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
                 }
             }
             .padding(16)
@@ -251,7 +251,7 @@ extension TankPageWide {
                 Button { withAnimation(.easeOut(duration: 0.15)) { pointSel = o.id } } label: {
                     Text(o.label).font(.system(size: 14, weight: .heavy)).foregroundStyle(on ? Color.white : Theme.primary).lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(on ? Theme.warning : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(on ? Theme.warning : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay {
                             if !on { RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: o.status.isEmpty ? [4, 3] : [])) }
                         }
@@ -268,7 +268,7 @@ extension TankPageWide {
         Button(action: action) {
             Text(t).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
         }
         .buttonStyle(.plain)
@@ -290,7 +290,7 @@ extension TankPageWide {
         } label: {
             Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(on ? ink : Theme.navy).lineLimit(1)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(on ? bg : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(on ? bg : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(on && s == TankPoints.absent ? Theme.danger : Theme.navy.opacity(on ? 0.2 : 0.35)))
         }
         .buttonStyle(.plain)
@@ -356,7 +356,7 @@ extension TankPageWide {
         Button(action: action) {
             Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(border))
         }
         .buttonStyle(.plain)
@@ -438,7 +438,7 @@ struct PointDistanceField: View {
         }
         .padding(.leading, 12).padding(.trailing, 10)
         .frame(maxWidth: .infinity, minHeight: 44)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(typing ? Theme.primary : Theme.navy.opacity(0.35), lineWidth: typing ? 2 : 1))
         .contentShape(Rectangle())
         .onTapGesture { typing = true }

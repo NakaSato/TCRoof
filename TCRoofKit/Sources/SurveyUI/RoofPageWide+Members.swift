@@ -77,7 +77,7 @@ extension RoofPageWide {
                         if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(on ? Self.soft : Color.white).contentShape(Rectangle())
+                    .background(on ? Self.soft : Theme.surface).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -130,7 +130,7 @@ extension RoofPageWide {
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 }
@@ -167,7 +167,7 @@ struct RoofShotTile: View {
                     .foregroundStyle(Theme.danger)
                     .padding(3)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.danger, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
                     .contentShape(Rectangle())
                 }

@@ -38,7 +38,7 @@ struct SpanEditor: View {
                     Button { with(v) } label: {
                         Text(fmt(v)).font(.system(size: 15, weight: on ? .bold : .regular))
                             .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 8))
+                            .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Color.clear : Theme.navy.opacity(0.45)))
                     }
                     .buttonStyle(.plain)

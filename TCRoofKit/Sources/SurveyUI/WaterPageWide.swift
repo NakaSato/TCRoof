@@ -109,7 +109,7 @@ struct WaterPageWide: View {
         VStack(alignment: .leading, spacing: 12, content: content)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.navy.opacity(0.16)))
             .shadow(color: Theme.navy.opacity(0.06), radius: 3, y: 2)
     }
@@ -142,7 +142,7 @@ struct WaterPageWide: View {
                     Text(shownMode.legend).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
             }
             .frame(maxHeight: .infinity)
             summaryStrip
@@ -193,7 +193,7 @@ struct WaterPageWide: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
-            .background(on ? Self.tealSoft : Color.white, in: RoundedRectangle(cornerRadius: 14))
+            .background(on ? Self.tealSoft : Theme.surface, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Self.teal : Self.line, lineWidth: on ? 2 : 1))
             .background(RoundedRectangle(cornerRadius: 16).stroke(on ? Self.teal.opacity(0.14) : .clear, lineWidth: 6).padding(-1))
             .overlay(alignment: .topTrailing) {
@@ -257,7 +257,7 @@ struct WaterPageWide: View {
                     if photo != nil {
                         Text(caption).font(.system(size: 12, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                             .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
+                            .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                             .padding(8).allowsHitTesting(false)
                     }
                 }
@@ -279,7 +279,7 @@ struct WaterPageWide: View {
                             .padding(.horizontal, 13).padding(.vertical, 16).allowsHitTesting(false)
                     }
                 }
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
                 .accessibilityLabel("รายละเอียดเพิ่มเติม")
         }

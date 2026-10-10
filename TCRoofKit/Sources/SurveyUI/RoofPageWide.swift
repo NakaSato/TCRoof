@@ -184,7 +184,7 @@ struct RoofPageWide: View {
         VStack(alignment: .leading, spacing: 8, content: content)
             .padding(.horizontal, 14).padding(.vertical, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 
@@ -209,7 +209,7 @@ struct RoofPageWide: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
     }
 
@@ -339,7 +339,7 @@ struct RoofPageWide: View {
                         if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 48)
-                    .background(on ? Self.soft : Color.white)
+                    .background(on ? Self.soft : Theme.surface)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -353,7 +353,7 @@ struct RoofPageWide: View {
                     if other { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary) }
                 }
                 .padding(.horizontal, 14).frame(minHeight: 44)
-                .background(other ? Self.soft : Color.white)
+                .background(other ? Self.soft : Theme.surface)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -443,7 +443,7 @@ struct RoofPageWide: View {
                     Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
                         Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
                             .padding(.horizontal, 8).frame(minHeight: 44)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.5)))
                     }
                     .buttonStyle(.plain)
@@ -530,7 +530,7 @@ struct RoofSegments: View {
                         .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: height)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Theme.navy.opacity(0.25), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.25), radius: 1.5, y: 1) }
                         }
                         .contentShape(Rectangle())
                 }

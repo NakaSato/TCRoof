@@ -55,7 +55,7 @@ extension SurveyHomeView {
             }
         }
         .padding(.horizontal, compact ? 12 : 14).frame(height: compact ? 44 : 46)
-        .background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: stage tabs
@@ -79,7 +79,7 @@ extension SurveyHomeView {
                     .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 48)
                     .background {
-                        if on { RoundedRectangle(cornerRadius: 10).fill(.white).shadow(color: Theme.navy.opacity(0.15), radius: 3, y: 1) }
+                        if on { RoundedRectangle(cornerRadius: 10).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.15), radius: 3, y: 1) }
                     }
                     .contentShape(Rectangle())
                 }
@@ -218,7 +218,7 @@ extension SurveyHomeView {
                     .foregroundStyle(on ? Color.white : Theme.navySolid)
                     .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(on ? Theme.navySolid : Color.white, in: Capsule())
+                    .background(on ? Theme.navySolid : Theme.surface, in: Capsule())
                     .overlay { if !on { Capsule().stroke(Theme.borderSubtle) } }
                     .contentShape(Capsule())
                 }

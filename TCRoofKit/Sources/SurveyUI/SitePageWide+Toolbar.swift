@@ -52,7 +52,7 @@ extension SitePageWide {
     func toolGroup<C: View>(@ViewBuilder _ content: () -> C) -> some View {
         HStack(spacing: 0) { content() }
             .padding(2)
-            .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface.opacity(0.96), in: RoundedRectangle(cornerRadius: 10))
             .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.28), radius: 2.5, y: 1)
     }
 
@@ -98,7 +98,7 @@ extension SitePageWide {
             A2Icon(name: "ui-north", fallback: "location.north.circle.fill", size: 38)
                 .foregroundStyle(i == nil ? Theme.inkMuted : Theme.danger)
                 .rotationEffect(.degrees(Double(i ?? 0) * 90))
-                .background(Color.white, in: Circle())
+                .background(Theme.surface, in: Circle())
                 .overlay(Circle().stroke(i == nil ? Theme.pending : .clear, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
                 .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
                 .frame(width: 44, height: 44).contentShape(Circle())
@@ -131,7 +131,7 @@ extension SitePageWide {
         }
         .padding(6)
         .frame(width: 180)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.3), radius: 10, y: 6)
     }
 
@@ -153,12 +153,12 @@ extension SitePageWide {
                 .font(.system(size: 11, weight: .semibold)).monospacedDigit().fixedSize()
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+            .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         } else if photo != nil {
             Button { arm(.shape(.measure)) } label: {
                 Label("ตั้งมาตราส่วน", systemImage: "ruler").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.pending)
                     .padding(.horizontal, 12).frame(minHeight: 44)
-                    .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain)
             .accessibilityHint("วัดระยะที่รู้ความยาวจริงบนภาพ แล้วใส่ระยะจริง")
@@ -207,7 +207,7 @@ extension SitePageWide {
                     Button("เสร็จ") { finishDraft() }.font(.system(size: 14, weight: .bold))
                         .disabled(draft.count < k.minPoints)
                         .padding(.horizontal, 14).frame(minHeight: 36)
-                        .background(Color.white.opacity(draft.count < k.minPoints ? 0.4 : 1), in: Capsule())
+                        .background(Theme.surface.opacity(draft.count < k.minPoints ? 0.4 : 1), in: Capsule())
                         .foregroundStyle(Theme.navy)
                         .contentShape(Capsule().inset(by: -4))
                 }
@@ -265,7 +265,7 @@ extension SitePageWide {
         } label: {
             Text(photo == nil ? "เลือกภาพ" : "เปลี่ยนภาพ").font(.system(size: 15, weight: .semibold))
                 .padding(.horizontal, 14).frame(minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
         }
     }

@@ -59,7 +59,7 @@ struct PhotoSlot: View {
             PhotoSourceButtons(compact: true, onUpload: { showPicker = true }, onCamera: { showCamera = true })
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12)
             .stroke(required ? Theme.danger : Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
     }
@@ -136,7 +136,7 @@ struct PhotoSourceButtons: View {
                     .frame(width: 150, height: height)
                 }
             }
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
             .contentShape(Rectangle())
         }

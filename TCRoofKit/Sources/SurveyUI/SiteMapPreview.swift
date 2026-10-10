@@ -205,7 +205,7 @@ struct SiteMapPreview: View {
         }
         .foregroundStyle(Theme.navy)
         .padding(3)
-        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
     }
 
@@ -231,7 +231,7 @@ struct SiteMapPreview: View {
             Rectangle().fill(Theme.navy.opacity(0.12)).frame(width: 44, height: 1)
             zoomButton("ui-minus", "minus", "ซูมออก", -1).disabled(zoom <= Self.zoomRange.lowerBound)
         }
-        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
     }
 
@@ -256,7 +256,7 @@ struct SiteMapPreview: View {
     }
 
     func tag<V: View>(_ v: V) -> some View {
-        v.padding(.horizontal, 8).padding(.vertical, 3).background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 6))
+        v.padding(.horizontal, 8).padding(.vertical, 3).background(Theme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: loading

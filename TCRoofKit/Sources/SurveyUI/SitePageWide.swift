@@ -347,7 +347,7 @@ struct SitePageWide: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 48)
-            .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.borderControl.opacity(0.6)))
         }
         .buttonStyle(.plain)
@@ -393,7 +393,7 @@ struct SitePageWide: View {
                 Circle().fill(placed(t) ? Theme.success : Color.gray.opacity(0.35)).frame(width: 7, height: 7)
             }
             .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
-            .background(on ? Theme.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.primary : Theme.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
         }
         .buttonStyle(.plain)
@@ -409,7 +409,7 @@ struct SitePageWide: View {
                 ForEach(Options.list, id: \.self) { item in listRow(item) }
             }
             .padding(2)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.15)))
         }
     }
@@ -455,7 +455,7 @@ struct SitePageWide: View {
     func shortcutIcon(_ icon: String, symbol: String) -> some View {
         A2Icon(name: icon, fallback: symbol, size: 18).foregroundStyle(Theme.pending)
             .frame(width: 32, height: 30)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.pending.opacity(0.6)))
             // laid out 34 wide so the LIST text keeps its line; the touch target still reaches 44 × 44
             .frame(width: 34, height: 44).contentShape(Rectangle().inset(by: -5))
@@ -466,7 +466,7 @@ struct SitePageWide: View {
             .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.pending)
             .labelStyle(TightLabel()).fixedSize()
             .padding(.horizontal, 8).frame(minHeight: 30)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.pending.opacity(0.6)))
             .frame(minHeight: 44).contentShape(Rectangle())
     }
@@ -479,7 +479,7 @@ struct SitePageWide: View {
                 set: { job.values["siteNote"] = $0.isEmpty ? nil : .text($0) }), axis: .vertical)
                 .lineLimit(1...2).font(.system(size: 15))
                 .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
         }
     }

@@ -57,7 +57,7 @@ extension SitePageWide {
                     }
                     .foregroundStyle(Theme.navy)
                     .padding(.horizontal, 16).frame(minHeight: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain).accessibilityLabel("ออกจากเต็มจอ")
             }
@@ -89,7 +89,7 @@ extension SitePageWide {
                 }
                 .foregroundStyle(Theme.navy)
                 .padding(.horizontal, 16).frame(minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain)
         }
@@ -125,7 +125,7 @@ extension SitePageWide {
             }
         }
         .padding(14)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     /// No scale yet: models can't be sized, so offer the Measure tool (never guess a scale).
@@ -169,7 +169,7 @@ extension SitePageWide {
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .background(on ? Theme.warning.opacity(0.08) : placed ? Color.white : Theme.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .background(on ? Theme.warning.opacity(0.08) : placed ? Theme.surface : Theme.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
         .overlay {
             if on { RoundedRectangle(cornerRadius: 10).stroke(Theme.warning, lineWidth: 2) }
             else if placed { RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.18), lineWidth: 1) }
@@ -233,7 +233,7 @@ extension SitePageWide {
                     Text(m.locked ? "ปลดล็อกตำแหน่ง" : "ล็อกตำแหน่งตามที่วาง").font(.system(size: 14, weight: .bold))
                         .foregroundStyle(m.locked ? Color.white : Color(red: 0.698, green: 0.416, blue: 0))
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(m.locked ? Theme.warning : Color.white, in: RoundedRectangle(cornerRadius: 10))
+                        .background(m.locked ? Theme.warning : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.warning, lineWidth: m.locked ? 0 : 1))
                 }
                 .buttonStyle(.plain).disabled(allLocked).opacity(allLocked ? 0.45 : 1)

@@ -81,7 +81,7 @@ extension RoofPageWide {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 14, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Theme.navy.opacity(0.3) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)

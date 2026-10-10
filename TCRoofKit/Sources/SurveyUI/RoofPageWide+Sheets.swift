@@ -147,7 +147,7 @@ extension RoofPageWide {
                     Button { update { Roof.setPurlinSpacing(&$0, q) } } label: {
                         Text(String(format: "%.2f", q)).font(.system(size: 14, weight: on ? .bold : .regular))
                             .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(on ? Theme.mint : Color.white, in: RoundedRectangle(cornerRadius: 8))
+                            .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Color.clear : Theme.navy.opacity(0.45)))
                     }
                     .buttonStyle(.plain)
@@ -191,7 +191,7 @@ extension RoofPageWide {
                                 Text(name).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? .white : Theme.navy)
                             }
                             .padding(.horizontal, 12).frame(minHeight: 44)
-                            .background(on ? Self.red : Color.white, in: Capsule())
+                            .background(on ? Self.red : Theme.surface, in: Capsule())
                             .overlay(Capsule().stroke(on ? Color.clear : Theme.navy.opacity(0.25)))
                         }
                         .buttonStyle(.plain)
@@ -203,7 +203,7 @@ extension RoofPageWide {
         }
         .foregroundStyle(Theme.navy)
         .padding(20)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18))
         .padding(32)
     }
 

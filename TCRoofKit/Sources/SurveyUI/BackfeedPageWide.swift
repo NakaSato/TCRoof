@@ -98,8 +98,7 @@ struct BackfeedPageWide: View {
         VStack(alignment: .leading, spacing: 12, content: content)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.navy.opacity(0.16)))
+            .tcCard()
             .shadow(color: Theme.navy.opacity(0.06), radius: 3, y: 2)
     }
 
@@ -226,7 +225,7 @@ struct BackfeedPageWide: View {
                     }
                 }
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
                 .accessibilityLabel("รายละเอียดเพิ่มเติม")
         }
     }

@@ -89,7 +89,7 @@ struct PhotoSlot: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.15)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         .overlay(alignment: .topLeading) { PhotoDoneBadge(inset: dense ? 4 : 10) }
         .overlay(alignment: .topTrailing) { PhotoClearButton(label: clearLabel, inset: dense ? -4 : 4, action: onClear) }
     }
@@ -129,7 +129,7 @@ struct PhotoSourceButtons: View {
                 A2Icon(name: icon, fallback: fallback, size: 20).foregroundStyle(Theme.primary)
                     .frame(width: 44, height: 44)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

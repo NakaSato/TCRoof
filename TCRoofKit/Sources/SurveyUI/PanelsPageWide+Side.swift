@@ -154,7 +154,7 @@ extension PanelsPageWide {
                 .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                 .frame(minHeight: 180)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
         }
     }
 }

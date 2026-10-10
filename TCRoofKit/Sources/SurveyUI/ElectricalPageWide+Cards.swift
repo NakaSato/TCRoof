@@ -216,7 +216,7 @@ extension ElectricalPageWide {
         }
         .padding(.leading, 12).frame(minHeight: 44)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
     }
 
     /// Typing a kVA by hand forgets that it was read from the nameplate.

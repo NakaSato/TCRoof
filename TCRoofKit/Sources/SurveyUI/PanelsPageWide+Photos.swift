@@ -26,7 +26,7 @@ extension PanelsPageWide {
                 GeometryReader { geo in wideStage(geo.size) }
                     .frame(height: narrow ? 240 : 330)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.15)))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             }
         }
     }

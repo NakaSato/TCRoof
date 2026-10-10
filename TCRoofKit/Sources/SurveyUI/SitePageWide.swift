@@ -410,7 +410,7 @@ struct SitePageWide: View {
             }
             .padding(2)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.15)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         }
     }
 

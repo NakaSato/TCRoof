@@ -142,8 +142,7 @@ extension TankPageWide {
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.borderSubtle))
+        .tcCard()
         .shadow(color: Theme.navy.opacity(0.05), radius: 3, y: 2)
     }
 

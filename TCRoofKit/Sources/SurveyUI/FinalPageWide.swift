@@ -258,7 +258,7 @@ struct FinalPageWide: View {
                 }
             }
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         }
     }
 

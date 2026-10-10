@@ -129,7 +129,7 @@ extension TankPageWide {
                     .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(Theme.mint, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.2)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
                 }
                 .buttonStyle(.plain)
                 .disabled(layoutSearching)

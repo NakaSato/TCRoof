@@ -180,7 +180,7 @@ extension RoofPageWide {
             sectionStage(big: true)
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.15)))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             ScrollView(.horizontal) {
                 HStack(spacing: 6) {
                     ForEach(1...7, id: \.self) { n in

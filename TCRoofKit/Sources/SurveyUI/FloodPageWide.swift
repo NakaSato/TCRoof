@@ -260,7 +260,7 @@ struct FloodPageWide: View {
                     .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                     .frame(minHeight: 140).frame(maxHeight: stacked ? 200 : .infinity)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
             }
             .frame(maxHeight: stacked ? nil : .infinity)
         }

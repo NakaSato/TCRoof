@@ -197,7 +197,7 @@ struct TankPageWide: View {
             .padding(14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     // MARK: sub-step 4 (the section's generic group until its design arrives)

@@ -185,7 +185,7 @@ struct RoofPageWide: View {
             .padding(.horizontal, 14).padding(.vertical, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     func cardTitle(_ t: String, trailing: String? = nil, trailingColor: Color = Theme.inkMuted, bold: Bool = false) -> some View {
@@ -210,7 +210,7 @@ struct RoofPageWide: View {
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     func setMode(_ m: RoofPlan.Mode) {

@@ -108,7 +108,7 @@ struct SpanEditor: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 48, height: 52)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.45)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(symbol == "plus" ? "เพิ่ม 0.5 เมตร" : "ลด 0.5 เมตร")

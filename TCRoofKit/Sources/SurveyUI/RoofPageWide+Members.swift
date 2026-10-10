@@ -131,7 +131,7 @@ extension RoofPageWide {
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 }
 /// One photo angle: a flexible tile at least 44 pt tall. Empty, the whole tile is a menu (อัปโหลด / กล้อง); filled, it is

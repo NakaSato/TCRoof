@@ -86,7 +86,7 @@ extension FinalPageWide {
         }
         .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.navy.opacity(0.18)))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
         .shadow(color: Theme.navy.opacity(0.08), radius: 2, y: 1)
         .signaturePad(isPresented: signing, who: who) { img in
             if let img, let p = model.addPhoto(img, to: job.id, maxSide: 900, png: true) { set(field, .photo(p)) }
@@ -180,7 +180,7 @@ extension FinalPageWide {
         .padding(.leading, 18).padding(.trailing, 8)
         .frame(minHeight: 52)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.navy.opacity(0.18)))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 }
 

@@ -340,7 +340,7 @@ struct A1Card<Content: View>: View {
         .padding(.vertical, vertical).padding(.horizontal, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 }
 

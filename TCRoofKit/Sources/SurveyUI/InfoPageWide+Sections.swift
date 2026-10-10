@@ -138,7 +138,7 @@ extension InfoPageWide {
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
-                    .overlay(RoundedRectangle(cornerRadius: InfoPageWide.inputRadius).stroke(Theme.navy.opacity(0.45)))
+                    .overlay(RoundedRectangle(cornerRadius: InfoPageWide.inputRadius).stroke(Theme.borderControl))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).disabled(locating).fixedSize()

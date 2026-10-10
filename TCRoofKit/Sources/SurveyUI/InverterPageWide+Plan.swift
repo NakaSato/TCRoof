@@ -31,7 +31,7 @@ extension InverterPageWide {
         .padding(.vertical, 16).padding(.horizontal, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     // MARK: plan
@@ -123,7 +123,7 @@ extension InverterPageWide {
             Image(systemName: symbol).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 36, height: 34)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.45)))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
                 .opacity(enabled ? 1 : 0.35)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }

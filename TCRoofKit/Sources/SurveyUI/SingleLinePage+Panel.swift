@@ -153,6 +153,7 @@ extension SingleLinePage {
                     if sl.assumptions.isEmpty { Text("ไม่มีค่าสมมติ").foregroundStyle(Theme.inkMuted) }
                 }
             }
+            .tcFormStyle()
             .navigationTitle(kind == .others ? "ข้อมูลที่ขาดอื่นๆ" : kind == .conditions ? "สภาพอุปกรณ์" : "ค่าสมมติ")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { listSheet = nil } } }

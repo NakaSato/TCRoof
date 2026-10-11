@@ -166,6 +166,7 @@ struct JobDevicesView: View {
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                 }
+                .tcFormStyle()
                 .navigationTitle("เพิ่มซีเรียลด้วยตนเอง")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -350,7 +351,7 @@ struct ScannerView: View {
         }
         .padding(14)
         .frame(maxWidth: 640)
-        .background(.white, in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var foundList: some View {
@@ -359,6 +360,7 @@ struct ScannerView: View {
                 ForEach(found, id: \.self) { Text($0).font(.body.monospaced()) }
                     .onDelete { found.remove(atOffsets: $0) }
             }
+            .tcFormStyle()
             .navigationTitle("\(kind.title) ที่พบ (\(found.count))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { showFound = false } } }

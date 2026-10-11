@@ -2,6 +2,7 @@
 import SwiftUI
 import TCRoofCore
 import DriveSync
+import TCRoofUI
 
 /// One place to export a survey: readiness check, pick the files, then share them or save them to Google Drive.
 struct ExportSheet: View {
@@ -21,7 +22,7 @@ struct ExportSheet: View {
              "photos": "แยกโฟลเดอร์ตามหัวข้อใน Drive · ส่งเฉพาะรูปใหม่"][rawValue]!
         }
         var symbol: String { ["report": "doc.richtext", "summary": "doc.text.magnifyingglass", "excel": "tablecells", "data": "curlybraces", "photos": "photo.on.rectangle.angled"][rawValue]! }
-        var tint: Color { ["report": Color.red, "summary": Color.orange, "excel": Paper.tick, "data": Color.indigo, "photos": Color.teal][rawValue]! }
+        var tint: Color { ["report": Theme.danger, "summary": Theme.warning, "excel": Paper.tick, "data": Theme.primary, "photos": Theme.teal][rawValue]! }
         var isPDF: Bool { self == .report || self == .summary }
         /// Drive keeps the full report, the workbook and the job data; the one-page summary is share-only.
         var driveKind: DriveSync.Kind? { ["report": .pdf, "excel": .xlsx, "data": .json][rawValue] }
@@ -90,9 +91,10 @@ struct ExportSheet: View {
                 if !log.isEmpty {
                     Section("ความคืบหน้า") { ForEach(Array(log.enumerated()), id: \.offset) { Text($0.element).font(.callout) } }
                 }
-                if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red) } }
+                if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.dangerText) } }
             }
             .listStyle(.insetGrouped)
+            .tcFormStyle()
             .safeAreaInset(edge: .bottom) { actionBar }
             .navigationTitle("ส่งออกงาน").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("ปิด") { dismiss() }.disabled(busy != nil) } }

@@ -48,7 +48,7 @@ struct PhotoField: View {
         .frame(height: height)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: photo == nil ? [5, 4] : [])))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.borderControl, style: StrokeStyle(lineWidth: 1, dash: photo == nil ? [5, 4] : [])))
         .overlay(alignment: .topTrailing) {
             if photo != nil {
                 Menu {
@@ -104,7 +104,7 @@ struct PhotosField: View {
                 PhotoField(photo: Binding(get: { nil }, set: { if let p = $0 { photos.append(p) } }), jobID: jobID, height: 180)
             }
         }
-        Text("\(photos.count) / \(max) ภาพ").font(.caption).foregroundStyle(.secondary)
+        Text("\(photos.count) / \(max) ภาพ").font(.caption).foregroundStyle(Theme.inkMuted)
     }
 }
 
@@ -168,10 +168,10 @@ struct SignatureField: View {
             ZStack {
                 Rectangle().fill(Theme.paper)
                 if let p = photo, let img = model.image(p, in: jobID) { Image(uiImage: img).resizable().scaledToFit().padding(6) }
-                else { Text(photo == nil ? "แตะเพื่อเซ็นชื่อ" : "ลายเซ็นอยู่บนเครื่องอื่น").foregroundStyle(.secondary) }
+                else { Text(photo == nil ? "แตะเพื่อเซ็นชื่อ" : "ลายเซ็นอยู่บนเครื่องอื่น").foregroundStyle(Theme.inkMuted) }
             }
             .frame(maxWidth: 320).frame(height: 110)
-            .overlay(Rectangle().stroke(Color.secondary.opacity(0.4)))
+            .overlay(Rectangle().stroke(Theme.borderControl))
             .onTapGesture { signing = true }
             if photo != nil { Button("ลบลายเซ็น", role: .destructive) { photo = nil } }
         }

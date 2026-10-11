@@ -14,10 +14,10 @@ struct DateInput: View {
             if let d = parsed {
                 TCDateField(date: Binding(get: { d }, set: { text = ISODate.string($0) }), accessibilityTitle: "วันที่")
                     .frame(maxWidth: 220)
-                Text("ในรายงาน: " + ISODate.thai(text)).font(.caption).foregroundStyle(.secondary)
+                Text("ในรายงาน: " + ISODate.thai(text)).font(.caption).foregroundStyle(Theme.inkMuted)
             } else {
                 if !text.isEmpty {
-                    Text("ค่าเดิม \"\(text)\" อ่านเป็นวันที่ไม่ได้").font(.caption).foregroundStyle(.orange)
+                    Text("ค่าเดิม \"\(text)\" อ่านเป็นวันที่ไม่ได้").font(.caption).foregroundStyle(Theme.pending)
                 }
                 Button(text.isEmpty ? "ใส่วันที่วันนี้" : "เปลี่ยนเป็นวันนี้") { text = ISODate.string(Date()) }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card))
@@ -43,12 +43,12 @@ struct GPSInput: View {
             }
             switch GPS.check(text) {
             case .invalid:
-                Text("รูปแบบไม่ถูกต้อง ใช้ ละติจูด, ลองจิจูด เช่น 17.0062, 99.8235").font(.caption).foregroundStyle(.red)
+                Text("รูปแบบไม่ถูกต้อง ใช้ ละติจูด, ลองจิจูด เช่น 17.0062, 99.8235").font(.caption).foregroundStyle(Theme.dangerText)
             case .outsideThailand:
-                Text("พิกัดอยู่นอกประเทศไทย ตรวจค่าอีกครั้ง").font(.caption).foregroundStyle(.orange)
+                Text("พิกัดอยู่นอกประเทศไทย ตรวจค่าอีกครั้ง").font(.caption).foregroundStyle(Theme.pending)
             case .swapped(let fixed):
                 HStack(spacing: 8) {
-                    Text("ดูเหมือนสลับละติจูดกับลองจิจูด").font(.caption).foregroundStyle(.orange)
+                    Text("ดูเหมือนสลับละติจูดกับลองจิจูด").font(.caption).foregroundStyle(Theme.pending)
                     Button("สลับเป็น \(fixed)") { text = fixed }.font(.caption)
                 }
             case .ok:
@@ -58,10 +58,10 @@ struct GPSInput: View {
             case .empty:
                 EmptyView()
             }
-            if let failure { Text(failure).font(.caption).foregroundStyle(.red) }
+            if let failure { Text(failure).font(.caption).foregroundStyle(Theme.dangerText) }
             else if let accuracy {
                 Text(GPSGrade.note(accuracy: accuracy)).font(.caption)
-                    .foregroundStyle(GPSGrade(accuracy: accuracy) == .approximate ? Color.orange : Color.secondary)
+                    .foregroundStyle(GPSGrade(accuracy: accuracy) == .approximate ? Theme.pending : Theme.inkMuted)
             }
         }
     }

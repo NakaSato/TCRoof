@@ -68,6 +68,7 @@ struct AddWorkSheet: View {
                     TextField(task?.title ?? "รายละเอียดงาน", text: $description, axis: .vertical)
                 }
             }
+            .tcFormStyle()
             .navigationTitle("เพิ่มงาน")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -122,6 +123,7 @@ struct DailySignSheet: View {
                         .font(.footnote).foregroundStyle(Theme.inkMuted)
                 }
             }
+            .tcFormStyle()
             .navigationTitle("ตรวจ & ลงนาม")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -157,6 +159,7 @@ struct InspectorAckSheet: View {
                 TextField("ชื่อ Inspector", text: $name)
                 DatePicker("วันที่", selection: $date, displayedComponents: .date)
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -243,6 +246,7 @@ struct RoutineSettingsSheet: View {
                 ListEditor(title: "ตำแหน่งงาน (กำลังคน)", placeholder: "เพิ่มตำแหน่ง", items: $s.roles)
                 ListEditor(title: "เครื่องมือ", placeholder: "เพิ่มเครื่องมือ", items: $s.tools)
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("ตั้งค่ารายงานประจำ")
             .navigationBarTitleDisplayMode(.inline)
@@ -310,6 +314,7 @@ struct TaskLocationsPicker: View {
                 Button("ล้าง (ใช้ตามที่รายงาน)", role: .destructive) { chosen = [] }
             }
         }
+        .tcFormStyle()
         .navigationTitle("\(task.code) ตำแหน่ง")
         .navigationBarTitleDisplayMode(.inline)
     }

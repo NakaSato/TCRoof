@@ -92,7 +92,7 @@ public struct TCPhotoSlot<Photo: View>: View {
             if let caption {
                 Text(caption).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, Space.s).padding(.vertical, 2)
-                    .background(Color.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 6))
+                    .background(Theme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 6))
                     .padding(Space.s)
             }
         }
@@ -129,7 +129,7 @@ public struct TCMapControls: View {
                 }
             }
             .padding(.horizontal, 4)
-            .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: Radius.sm))
+            .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: Radius.sm))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             VStack(spacing: 0) {
@@ -137,13 +137,13 @@ public struct TCMapControls: View {
                 Rectangle().fill(Theme.borderSubtle).frame(width: touchMin, height: 1)
                 zoom("minus", label: "ซูมออก", action: onZoomOut)
             }
-            .background(Color.white, in: RoundedRectangle(cornerRadius: Radius.sm))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.sm))
             .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 
             Text(scale).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.navy)
                 .padding(.horizontal, Space.s).padding(.vertical, 3)
-                .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 6))
+                .background(Theme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 6))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .accessibilityLabel("มาตราส่วน " + scale)
         }

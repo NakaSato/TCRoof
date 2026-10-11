@@ -207,6 +207,67 @@ public extension TCNavBar where Trailing == EmptyView {
     }
 }
 
+/// iPad: the system navigation bar gives way to a `TCNavBar`. iPhone: nothing changes, so the screen's own
+/// `navigationTitle` and `toolbar` still drive its bar (they don't show while the iPad bar is hidden).
+private struct TCPadNavBar<Trailing: View>: ViewModifier {
+    let title: String
+    let trail: [String]
+    let current: String
+    @ViewBuilder var trailing: Trailing
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    func body(content: Content) -> some View {
+        if sizeClass == .compact {
+            content
+        } else {
+            content
+                .safeAreaInset(edge: .top, spacing: 0) { TCNavBar(title: title, trail: trail, current: current) { trailing } }
+                .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+}
+
+public extension View {
+    /// The white nav bar on iPad (`pc-nav`); iPhone keeps the system bar. `current` defaults to `title`.
+    func tcPadNavBar<Trailing: View>(_ title: String, trail: [String], current: String? = nil,
+                                     @ViewBuilder trailing: () -> Trailing) -> some View {
+        modifier(TCPadNavBar(title: title, trail: trail, current: current ?? title, trailing: trailing))
+    }
+
+    func tcPadNavBar(_ title: String, trail: [String], current: String? = nil) -> some View {
+        tcPadNavBar(title, trail: trail, current: current) { EmptyView() }
+    }
+}
+
+/// A search field for the right of a `TCNavBar` (screens whose iPhone bar uses `.searchable`, which the iPad bar hides).
+public struct TCBarSearchField: View {
+    @Binding var text: String
+    let prompt: String
+
+    public init(text: Binding<String>, prompt: String) { self._text = text; self.prompt = prompt }
+
+    public var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.inkMuted)
+            TextField("", text: $text, prompt: Text(prompt).foregroundStyle(Theme.muted))
+                .font(.sarabun(16)).foregroundStyle(Theme.navy)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 17)).foregroundStyle(Theme.muted)
+                        .frame(width: touchMin, height: touchMin)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ล้างคำค้นหา")
+            }
+        }
+        .padding(.leading, 14).padding(.trailing, text.isEmpty ? 14 : 0)
+        .frame(width: 360, height: 48)
+        .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.headerLine))
+    }
+}
+
 /// Columns whose widths follow `fractions` (2 : 1 for form + info card, 1 : 2 : 1.4 for filter · list · detail).
 public struct TCFractionColumns: Layout {
     public var fractions: [CGFloat]
@@ -232,7 +293,9 @@ public struct TCFractionColumns: Layout {
     public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var x = bounds.minX
         for (s, w) in zip(subviews, widths(bounds.width, subviews.count)) {
-            s.place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: w, height: bounds.height))
+            // the height they were measured with: inside a ScrollView that is nil, and proposing the
+            // tallest column's height instead kept the view graph invalidating (blank screen, full CPU)
+            s.place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: w, height: proposal.height))
             x += w + spacing
         }
     }
@@ -278,22 +341,34 @@ public struct TCCardGrid<Content: View>: View {
 
 /// iPhone screen header (docs/ui/tcroof-survey-list-iphone): `headerGradient` under the status bar, bottom radius 15,
 /// a 19 pt title over a 13 pt subtitle, and trailing 44 pt buttons (`TCHeaderIcon`). The back chevron shows only when
-/// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead.
+/// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead. A sheet passes `onClose` for a leading ✕
+/// (`ยกเลิก`) in place of the chevron.
 public struct TCGradientHeader<Trailing: View>: View {
     let title: String
     let subtitle: String
     var backLabel: String
+    var onClose: (() -> Void)?
     @ViewBuilder var trailing: Trailing
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
 
-    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", @ViewBuilder trailing: () -> Trailing) {
-        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.trailing = trailing()
+    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", onClose: (() -> Void)? = nil,
+                @ViewBuilder trailing: () -> Trailing) {
+        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.onClose = onClose; self.trailing = trailing()
     }
+
+    private var hasLeading: Bool { onClose != nil || isPresented }
 
     public var body: some View {
         HStack(spacing: 2) {
-            if isPresented {
+            if let onClose {
+                Button(action: onClose) {
+                    Image(systemName: "xmark").font(.system(size: 22, weight: .semibold))
+                        .frame(width: touchMin, height: touchMin).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ยกเลิก")
+            } else if isPresented {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left").font(.system(size: 21, weight: .semibold))
                         .frame(width: touchMin, height: touchMin).contentShape(Rectangle())
@@ -310,7 +385,7 @@ public struct TCGradientHeader<Trailing: View>: View {
             HStack(spacing: 6) { trailing }
         }
         .foregroundStyle(.white)
-        .padding(.leading, isPresented ? 6 : 16).padding(.trailing, 8)
+        .padding(.leading, hasLeading ? 6 : 16).padding(.trailing, 8)
         .padding(.top, 6).padding(.bottom, 14)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous)

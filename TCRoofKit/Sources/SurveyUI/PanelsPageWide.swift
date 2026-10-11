@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import PhotosUI
 import TCRoofCore
+import TCRoofUI
 
 /// B1 (docs/ui/survey-b1): every building panel (`.panel` section) on one page. Landscape has the master list, the
 /// selected building's photos and its A3 link / load side by side; portrait and iPhone stack them under a row of building chips.
@@ -46,9 +47,9 @@ struct PanelsPageWide: View {
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
         let row = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
         return row {
-            (Text(t) + (required ? Text(" *").foregroundColor(Home.danger) : Text(""))).font(.system(size: 17, weight: .bold))
+            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold))
             if !narrow { Spacer(minLength: 8) }
-            if let aside { Text(aside).font(.footnote).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8) }
+            if let aside { Text(aside).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
         }
     }
 
@@ -57,7 +58,7 @@ struct PanelsPageWide: View {
             PageStepBar(job: job, here: .module(moduleID), title: "ตู้ไฟฟ้าอาคาร · \(panels.count) อาคาร")
             if stacked { stackedLayout } else { wideLayout }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: title) } }
         .alert("ชื่ออาคาร", isPresented: $renaming) {
             TextField("เช่น โรงสูบน้ำ", text: $nameText)
@@ -111,12 +112,12 @@ struct PanelsPageWide: View {
                     Spacer(minLength: 4)
                     pillView(pill)
                 }
-                Text(BuildingPanels.subLine(m, in: job)).font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.75)
+                Text(BuildingPanels.subLine(m, in: job)).font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Home.primary : Home.border, lineWidth: on ? 2 : 1))
+            .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -125,9 +126,9 @@ struct PanelsPageWide: View {
 
     func pillView(_ p: BuildingPanels.Pill) -> some View {
         Text(p.text).font(.system(size: 12, weight: .bold)).lineLimit(1)
-            .foregroundStyle(p.ok ? Home.ok : Home.red)
+            .foregroundStyle(p.ok ? Theme.success : Theme.dangerText)
             .padding(.horizontal, 7).padding(.vertical, 2)
-            .background((p.ok ? Home.ok : Home.red).opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+            .background((p.ok ? Theme.success : Theme.dangerText).opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
     }
 
     var addButton: some View {
@@ -136,9 +137,9 @@ struct PanelsPageWide: View {
                 A2Icon(name: "ui-add", fallback: "plus", size: 14)
                 Text("เพิ่มอาคาร").font(.system(size: 15, weight: .semibold))
             }
-            .foregroundStyle(Home.primary)
+            .foregroundStyle(Theme.primary)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -156,8 +157,8 @@ struct PanelsPageWide: View {
                             pillView(pill)
                         }
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Home.primary : Home.border, lineWidth: on ? 2 : 1))
+                        .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
                     }
                     .buttonStyle(.plain)
                 }
@@ -220,7 +221,7 @@ struct PanelsPageWide: View {
         Button { nameText = module?.name ?? ""; renaming = true } label: {
             HStack(spacing: 6) {
                 Text(title).font(.system(size: narrow ? 22 : 26, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.muted)
+                Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted)
             }
             .frame(minHeight: 44).contentShape(Rectangle())
         }
@@ -230,14 +231,14 @@ struct PanelsPageWide: View {
 
     @ViewBuilder var headingActions: some View {
         Button { openForm() } label: {
-            Text("แบบฟอร์มเดิม").font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.primary)
+            Text("แบบฟอร์มเดิม").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         Button { confirmDelete = true } label: {
-            Text("ลบอาคาร").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.red)
+            Text("ลบอาคาร").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.dangerText)
                 .padding(.horizontal, 14).frame(minHeight: 44)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.red.opacity(0.8)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.dangerText.opacity(0.8)))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -12,6 +12,7 @@ struct PhoneSurveyList: View {
     @State private var window: DateWindow = Self.debugWindow ?? .week
     @State private var search = Self.debugQuery ?? ""
     @State private var showNewJob = false
+    @State private var openedJob: Job?
     @FocusState private var searching: Bool
     @AppStorage("surveyList.recentSearches") private var recentRaw = ""
     @Environment(\.modelContext) private var context
@@ -51,13 +52,15 @@ struct PhoneSurveyList: View {
                 .tcFabPlacement(compact: true)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showNewJob) { NewJobView() }
+        .sheet(isPresented: $showNewJob) { NewJobView { openedJob = $0 } }
+        .navigationDestination(item: $openedJob) { JobDetailView(job: $0) }
         .onChange(of: searching) { _, focused in
             if !focused { remember(search) }
         }
         #if DEBUG
         .task {
             seedDraft()
+            if UserDefaults.standard.string(forKey: "surveyNewJob") != nil { try? await Task.sleep(for: .milliseconds(500)); showNewJob = true }
             if UserDefaults.standard.bool(forKey: "surveySearchFocus") { try? await Task.sleep(for: .seconds(1)); searching = true }
         }
         #endif

@@ -47,7 +47,7 @@ struct TCRoofApp: App {
             }
             .animation(.easeInOut, value: session.isSignedIn)
             .environment(session)
-            // dark only on the login gradient so the status bar turns white
+            // dark only on the login gradient so the status bar turns white; signed in, always light
             .preferredColorScheme(session.isSignedIn ? .light : .dark)
             .tint(Theme.primary)
         }
@@ -62,12 +62,25 @@ struct RootView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            // `-screen <name>` opens that screen as the stack's root. Pushed over the home at launch
+            // (`.navigationDestination(isPresented: .constant(true))`), iOS 27 never draws a frame: a blank
+            // screen and "Observation tracking feedback loop detected".
+            if DebugScreen.isKnown {
+                NavigationStack { DebugScreen() }
+            } else if sizeClass == .compact {
+                PhoneTabs { home }
+            } else {
+                NavigationStack { home }
+            }
+            #else
             // iPhone: tabs under the floating bar; iPad: one stack from the home
             if sizeClass == .compact {
                 PhoneTabs { home }
             } else {
                 NavigationStack { home }
             }
+            #endif
         }
         .systemNotifications(survey: session.survey)
         .task {
@@ -94,11 +107,6 @@ struct RootView: View {
 
     private var home: some View {
         HomeView()
-        #if DEBUG
-            .navigationDestination(isPresented: .constant(DebugScreen.isKnown)) {
-                DebugScreen()
-            }
-        #endif
     }
 }
 
@@ -106,8 +114,8 @@ struct RootView: View {
 /// Opens one screen directly for simulator checks: `simctl launch <device> com.tcroof.internal -screen plan`.
 struct DebugScreen: View {
     static let requested = UserDefaults.standard.string(forKey: "screen")
-    static let screens: Set = ["survey", "plan", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine"]
+    static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -117,6 +125,10 @@ struct DebugScreen: View {
         switch Self.requested {
         case "survey": SurveyListView()
         case "plan": PlanCalendarView()
+        case "planlist": PlanListView()
+        case "surveyhistory": SurveyHistoryView()
+        case "scanhistory": ScanHistoryView()
+        case "loghistory": InstallLogHistoryView()
         case "scan": ScanJobListView()
         case "install": InstallRecordsView()
         case "job": if let job { JobDetailView(job: job) }
@@ -135,6 +147,7 @@ struct DebugScreen: View {
         case "poa": if let job { PowerOfAttorneyView(job: job) }
         case "selfcert": if let job { SelfCertificationView(job: job) }
         case "homework": if let job { HomeWorkView(job: job) }
+        case "stationdocs": if let job { StationDocsScreen(job: job) }
         case "daily", "dailies", "request", "weekly", "monthly", "routine":
             if let job { RoutineDebugScreen(job: job, screen: Self.requested ?? "") }
         case "components": ComponentGallery(only: Optional(UserDefaults.standard.integer(forKey: "gallerySection")).flatMap { $0 == 0 ? nil : $0 })

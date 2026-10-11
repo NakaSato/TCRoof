@@ -26,7 +26,7 @@ struct GalleryLayout: View {
                 }
             }
             GalleryGrid(columns: 1) {
-                GalleryItem("แถบล่าง (g-bar)", note: "ปุ่มสถานะ (แตะไปยังรายการที่ขาด) · บันทึกร่าง · ก่อนหน้า ติดกับ ถัดไป · สูง 53") {
+                GalleryItem("แถบล่าง (g-bar)", note: "ปุ่มสถานะ (แตะไปยังรายการที่ขาด) · บันทึกร่าง (แตะ: กำลังบันทึก → บันทึกแล้ว) · ก่อนหน้า ติดกับ ถัดไป · สูง 53") {
                     TCStepBar(count: 13, previous: .init(index: 4, title: "A4 น้ำท่วม"), next: .init(index: 6, title: "B2 พื้นที่อินเวอร์เตอร์"),
                               missing: 7, missingDetail: "อาคารนี้: ภาพเบรกเกอร์", onSave: {}, onPrevious: {}, onNext: {})
                         .framed()
@@ -66,7 +66,7 @@ struct GalleryLayout: View {
             .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
-        GalleryItem("แถบล่าง", note: "บันทึก ยืดเต็ม · ‹ › 72 × 53 ไอคอนอย่างเดียว · ไม่มีปุ่มสถานะ (ป้ายอยู่ที่บรรทัดขั้น)") {
+        GalleryItem("แถบล่าง", note: "บันทึก ยืดเต็ม (แตะ: กำลังบันทึก → บันทึกแล้ว) · ‹ › 72 × 53 ไอคอนอย่างเดียว · ไม่มีปุ่มสถานะ (ป้ายอยู่ที่บรรทัดขั้น)") {
             TCStepBar(count: 13, previous: .init(index: 4, title: "A4 น้ำท่วม"), next: .init(index: 6, title: "B2 พื้นที่อินเวอร์เตอร์"),
                       missing: 2, missingDetail: "", onSave: {}, onPrevious: {}, onNext: {})
                 .environment(\.horizontalSizeClass, .compact)

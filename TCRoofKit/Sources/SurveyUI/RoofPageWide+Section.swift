@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// C1's section card: the frame section, bays stepper and length editors.
 extension RoofPageWide {
@@ -13,9 +14,9 @@ extension RoofPageWide {
         return card {
             sectionStage(big: false).frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            let caption = (Text("รูปตัด A-A · " + f.title).bold().underline() + Text(" · หน่วย ม.").foregroundColor(Home.muted))
+            let caption = (Text("รูปตัด A-A · " + f.title).bold().underline() + Text(" · หน่วย ม.").foregroundColor(Theme.inkMuted))
                 .font(.system(size: 14)).lineLimit(1).minimumScaleFactor(0.6).truncationMode(.tail)
-            let zoom = footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Home.primary) { sectionBig = true }
+            let zoom = footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Theme.primary) { sectionBig = true }
                 .accessibilityLabel("ขยายรูปตัดเต็มจอ")
             if narrow {
                 // iPhone: the caption and ขยาย on one line, the bays stepper under them
@@ -60,15 +61,15 @@ extension RoofPageWide {
         let n = Roof.bays(values), auto = Roof.baysAreAuto(values), w = Roof.span(values) / 2 / Double(n)
         return HStack(spacing: 8) {
             // the whole row is labelled for VoiceOver; iPhone has no room for the word
-            if !narrow { Text("ช่อง/ข้าง").font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).fixedSize() }
+            if !narrow { Text("ช่อง/ข้าง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize() }
             stepButton("minus", enabled: n > Roof.baysRange.lowerBound) { update { Roof.setBays(&$0, n - 1) } }
             Text("\(n) × " + String(format: "%.2f ม.", w)).font(.system(size: 16, weight: .bold)).monospacedDigit()
                 .lineLimit(1).fixedSize()
             stepButton("plus", enabled: n < Roof.baysRange.upperBound) { update { Roof.setBays(&$0, n + 1) } }
             Button { update { Roof.setBays(&$0, nil) } } label: {
-                Text("อัตโนมัติ").font(.system(size: 13, weight: .bold)).lineLimit(1).fixedSize().foregroundStyle(auto ? Home.disabledText : Home.primary)
+                Text("อัตโนมัติ").font(.system(size: 13, weight: .bold)).lineLimit(1).fixedSize().foregroundStyle(auto ? Theme.disabledText : Theme.primary)
                     .padding(.horizontal, 10).frame(minHeight: 44)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(auto ? Home.disabledFill : Home.primary.opacity(0.5)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(auto ? Theme.disabledFill : Theme.primary.opacity(0.5)))
             }
             .buttonStyle(.plain).disabled(auto)
         }
@@ -78,10 +79,10 @@ extension RoofPageWide {
 
     func stepButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 14, weight: .bold)).foregroundStyle(enabled ? Home.primary : Home.disabledText)
+            Image(systemName: symbol).font(.system(size: 14, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Home.navy.opacity(0.3) : Home.disabledFill))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Theme.navy.opacity(0.3) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)
         .accessibilityLabel(symbol == "plus" ? "เพิ่ม" : "ลด")
@@ -108,11 +109,11 @@ extension RoofPageWide {
                 stepButton("plus", enabled: m < range.upperBound) { update { Roof.setLength(&$0, key, min(range.upperBound, m + 0.05)) } }
             }
             Button { update { Roof.setLength(&$0, key, nil) } } label: {
-                Text("ใช้ค่าตามแบบ (" + (overhang ? "0.70" : "4.00") + ")").font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.primary).frame(minHeight: 44)
+                Text("ใช้ค่าตามแบบ (" + (overhang ? "0.70" : "4.00") + ")").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
             }
             .buttonStyle(.plain)
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .padding(14)
     }
 }

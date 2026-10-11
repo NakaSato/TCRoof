@@ -2,6 +2,7 @@
 import SwiftUI
 import CoreLocation
 import TCRoofCore
+import TCRoofUI
 
 /// The cover's "วันที่" field: a date picker in the Thai calendar, still stored as yyyy-MM-dd.
 struct DateInput: View {
@@ -11,17 +12,15 @@ struct DateInput: View {
         let parsed = ISODate.date(text)
         HStack(spacing: 10) {
             if let d = parsed {
-                DatePicker("วันที่", selection: Binding(get: { d }, set: { text = ISODate.string($0) }), displayedComponents: .date)
-                    .labelsHidden()
-                    .environment(\.locale, Locale(identifier: "th_TH"))
-                    .environment(\.calendar, Calendar(identifier: .buddhist))
+                TCDateField(date: Binding(get: { d }, set: { text = ISODate.string($0) }), accessibilityTitle: "วันที่")
+                    .frame(maxWidth: 220)
                 Text("ในรายงาน: " + ISODate.thai(text)).font(.caption).foregroundStyle(.secondary)
             } else {
                 if !text.isEmpty {
                     Text("ค่าเดิม \"\(text)\" อ่านเป็นวันที่ไม่ได้").font(.caption).foregroundStyle(.orange)
                 }
                 Button(text.isEmpty ? "ใส่วันที่วันนี้" : "เปลี่ยนเป็นวันนี้") { text = ISODate.string(Date()) }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
             }
         }
     }
@@ -39,13 +38,8 @@ struct GPSInput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                TextField("17.0062, 99.8235", text: $text)
-                    .keyboardType(.numbersAndPunctuation)
-                    .textFieldStyle(.roundedBorder).foregroundStyle(Paper.value)
-                Button(action: locate) {
-                    if locating { ProgressView() } else { Label("ตำแหน่งปัจจุบัน", systemImage: "location.fill") }
-                }
-                .buttonStyle(.bordered).disabled(locating)
+                TCTextField("17.0062, 99.8235", text: $text, keyboard: .numbersAndPunctuation)
+                TCLocationButton(working: locating, action: locate)
             }
             switch GPS.check(text) {
             case .invalid:

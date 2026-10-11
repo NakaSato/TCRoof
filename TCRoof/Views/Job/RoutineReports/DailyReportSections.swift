@@ -270,10 +270,10 @@ struct ProgressRow: View {
             }
             HStack(spacing: 8) {
                 Button { line.percent = max(0, line.percent - 5) } label: { Image(systemName: "minus").frame(width: touchMin, height: touchMin) }
-                    .buttonStyle(.bordered).accessibilityLabel("ลด 5%")
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).accessibilityLabel("ลด 5%")
                 Slider(value: $line.percent, in: 0...100, step: 5)
                 Button { line.percent = min(100, line.percent + 5) } label: { Image(systemName: "plus").frame(width: touchMin, height: touchMin) }
-                    .buttonStyle(.bordered).accessibilityLabel("เพิ่ม 5%")
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).accessibilityLabel("เพิ่ม 5%")
                 Text("สะสม " + RoutineReport.percent(line.percent)).font(.subheadline.monospacedDigit().weight(.semibold))
                     .foregroundStyle(Theme.navy).frame(minWidth: 90, alignment: .trailing)
             }
@@ -337,7 +337,7 @@ struct DailyPhotosCard: View {
                     Button { showCamera = true } label: { Label("ถ่ายรูป", systemImage: "camera").frame(minHeight: touchMin) }
                 }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
             if photos.isEmpty {
                 Text("ยังไม่มีรูป").font(.subheadline).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, minHeight: 80)
             }

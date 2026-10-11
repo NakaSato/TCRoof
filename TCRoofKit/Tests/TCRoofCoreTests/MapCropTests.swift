@@ -45,6 +45,30 @@ final class MapCropTests: XCTestCase {
         XCTAssertEqual(sw, MapCrop(x: 27, y: 16, w: 49, h: 70))
     }
 
+    /// iPad A1 (docs/ui/survey-a1-ipad): the map fills a box taller than the picture, so its sides are cut off and
+    /// the frame stays on the part that shows.
+    func testVisiblePartOfAFilledMap() {
+        let v = MapCrop.visible(picture: CGSize(width: 640, height: 400), box: CGSize(width: 682, height: 553))
+        XCTAssertEqual(v.y, 0); XCTAssertEqual(v.h, 100)
+        XCTAssertEqual(v.w, 682.0 / (640 * 553.0 / 400) * 100, accuracy: 1e-9)
+        XCTAssertEqual(v.x, (100 - v.w) / 2, accuracy: 1e-9)
+        XCTAssertEqual(MapCrop.visible(picture: CGSize(width: 640, height: 400), box: CGSize(width: 320, height: 200)), .full)
+        XCTAssertEqual(MapCrop.visible(picture: CGSize(width: 640, height: 400), box: .zero), .full)
+
+        let c = MapCrop.standard
+        XCTAssertEqual(c.moved(dx: -50, dy: 0, within: v).x, v.x, accuracy: 1e-9)
+        XCTAssertEqual(c.moved(dx: 50, dy: 0, within: v).x + c.w, v.x + v.w, accuracy: 1e-9)
+        XCTAssertEqual(c.moved(dx: 3, dy: 2, within: v), c.moved(dx: 3, dy: 2), "inside the visible part it moves as before")
+        // the whole map (an old job) shrinks to the visible part on the first move
+        let full = MapCrop.full.moved(dx: 0, dy: 0, within: v)
+        XCTAssertEqual(full.x, v.x, accuracy: 1e-9); XCTAssertEqual(full.w, v.w, accuracy: 1e-9)
+
+        let grown = c.resized(.nw, dx: -200, dy: -200, within: v)
+        XCTAssertEqual(grown.x, v.x, accuracy: 1e-9); XCTAssertEqual(grown.y, 0)
+        XCTAssertEqual(grown.x + grown.w, c.x + c.w, accuracy: 1e-9, "the opposite corner stays")
+        XCTAssertEqual(c.resized(.se, dx: 200, dy: 0, within: v).x + c.resized(.se, dx: 200, dy: 0, within: v).w, v.x + v.w, accuracy: 1e-9)
+    }
+
     func testLabelInMetres() {
         // 200 m across: w 54 → 108 m, as in the design sample; H uses the map's proportions
         let c = MapCrop.standard

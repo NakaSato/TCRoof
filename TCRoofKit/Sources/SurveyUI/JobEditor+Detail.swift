@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// The form for the selected page.
 extension JobEditorView {
@@ -16,6 +17,7 @@ extension JobEditorView {
         case .electrical: groupPage(Schema.electrical, code: "A3", title: "มิเตอร์ หม้อแปลง และตู้ MDB", subtitle: "แผ่น ระบบไฟฟ้า — ผังมิเตอร์ หม้อแปลง และตู้ MDB")
         case .flood: groupPage(Schema.flood, code: "A4", title: "ประวัติน้ำท่วม", subtitle: "ใช้กำหนดความสูงติดตั้งอินเวอร์เตอร์ ตู้ SMDB/กันย้อน และแนวรางสายไฟ · แสดงในรายงาน PDF")
         case .final: groupPage(Schema.final, code: "E1", title: "สรุปผลและลงนาม", subtitle: "หน้าสุดท้ายของรายงาน PDF")
+        case .photos, .revisions: EmptyView()
         case .module(let id):
             if let i = job.modules.firstIndex(where: { $0.id == id }) { modulePage(i) }
             else { ContentUnavailableView("เลือกหัวข้อทางซ้าย", systemImage: "sidebar.left") }
@@ -35,12 +37,12 @@ extension JobEditorView {
                 }
             }
             .aspectRatio(CGFloat(sheet.width / sheet.height), contentMode: .fit)
-            .background(Color.white)
+            .background(Theme.paper)
             .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
             Button { checked { run("กำลังสร้าง PDF สรุป…") { let f = try model.exportSummaryPDF(job); preview = PDFPreviewItem(url: f.url, title: "สรุป " + job.projectName) } } } label: {
                 Label("บันทึก PDF สรุป 1 หน้า", systemImage: "doc.richtext")
             }
-            .buttonStyle(.borderedProminent).controlSize(.large)
+            .buttonStyle(TCButtonStyle(.primary, size: .card)).controlSize(.large)
         }
     }
 
@@ -61,7 +63,7 @@ extension JobEditorView {
             }
             if page == .electrical {
                 Button { showSLD = true } label: { Label("สร้าง Single Line Diagram", systemImage: "bolt.horizontal").frame(minHeight: 44) }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
             }
             nextButton
         }
@@ -120,7 +122,7 @@ extension JobEditorView {
             HStack {
                 Spacer()
                 Button { withAnimation { page = next } } label: { Label("หัวข้อถัดไป", systemImage: "arrow.right") }
-                    .buttonStyle(.borderedProminent).controlSize(.large)
+                    .buttonStyle(TCButtonStyle(.primary, size: .card)).controlSize(.large)
             }
         }
     }

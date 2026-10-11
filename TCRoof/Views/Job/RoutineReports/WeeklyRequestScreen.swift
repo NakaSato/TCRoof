@@ -52,6 +52,9 @@ struct WeeklyRequestScreen: View {
                 Button { exportPDF() } label: { Label("PDF", systemImage: "square.and.arrow.up") }
             }
         }
+        .tcPadNavBar("คำขอปฏิบัติงานรายสัปดาห์", trail: ["หน้าหลัก", job.code]) {
+            TCButton("PDF", systemImage: "square.and.arrow.up", kind: .secondary) { exportPDF() }
+        }
         .sheet(isPresented: $showApprove) {
             InspectorAckSheet(title: "บันทึกอนุมัติแล้ว", name: request.approvedBy.isEmpty ? job.routineSettings.inspector : request.approvedBy,
                               date: request.approvedAt ?? .now) { name, when in
@@ -156,18 +159,18 @@ struct WeeklyRequestScreen: View {
             Button { save(file: false) } label: {
                 Text("บันทึกร่าง").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.bordered).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
             if request.engineerSignedAt == nil {
                 Button { request.engineerSignedAt = .now; save(file: true); exportPDF() } label: {
                     Text("ส่งขออนุมัติ").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
                 }
-                .buttonStyle(.borderedProminent).tint(Theme.primary)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             } else {
                 Button { showApprove = true } label: {
                     Text(request.approvedAt == nil ? "บันทึกอนุมัติแล้ว" : "แก้วันที่อนุมัติ").font(.body.weight(.semibold))
                         .frame(maxWidth: .infinity, minHeight: touchMin)
                 }
-                .buttonStyle(.borderedProminent).tint(Theme.primary)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
         }
         .padding(.horizontal, isPhone ? 16 : 24).padding(.vertical, 10)

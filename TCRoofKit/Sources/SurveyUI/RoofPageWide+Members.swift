@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 extension RoofPageWide {
     // MARK: member sizes 1–7
@@ -29,16 +30,16 @@ extension RoofPageWide {
                 Image("c1-member-\(f.iconFamily)-\(n)", bundle: .module).resizable().scaledToFit().frame(width: 60, height: 32)
                 Text(m.name).font(.system(size: 16)).lineLimit(1).minimumScaleFactor(0.7).truncationMode(.tail)
                 Spacer(minLength: 6)
-                if off { Circle().fill(Home.warn).frame(width: 8, height: 8).accessibilityLabel("ขนาดนี้ไม่อยู่ในรายการของชนิดโครงนี้") }
+                if off { Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("ขนาดนี้ไม่อยู่ในรายการของชนิดโครงนี้") }
                 if !size.isEmpty {
                     Image("c1-profile-\(Roof.profile(size))", bundle: .module).resizable().scaledToFit().frame(width: 20, height: 20)
                 }
                 Text(size.isEmpty ? "เลือกขนาด" : size + (spacing.isEmpty ? "" : " " + spacing))
                     .font(.system(size: 16, weight: !size.isEmpty && size != "-" && size != m.defaultSize ? .bold : .regular))
-                    .foregroundStyle(size.isEmpty ? Home.primary : size == "-" ? Home.disabledText : Home.navy)
+                    .foregroundStyle(size.isEmpty ? Theme.primary : size == "-" ? Theme.disabledText : Theme.navy)
                     .lineLimit(1).minimumScaleFactor(0.8).truncationMode(.middle)
                     .layoutPriority(1)
-                Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8)).foregroundStyle(Home.primary)
+                Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8)).foregroundStyle(Theme.primary)
             }
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity, minHeight: 44)
@@ -60,7 +61,7 @@ extension RoofPageWide {
                 Text("\(n) \(m.name) · เลือกขนาด").font(.system(size: 16, weight: .bold))
                 Spacer()
                 Button { member = nil } label: {
-                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.muted).frame(width: 44, height: 44)
+                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain).accessibilityLabel("ปิด")
             }
@@ -71,12 +72,12 @@ extension RoofPageWide {
                     HStack(spacing: 10) {
                         Image("c1-profile-\(Roof.profile(s))", bundle: .module).resizable().scaledToFit().frame(width: 18, height: 18)
                         Text(s == "-" ? "-  (ไม่มี / ไม่ใช้)" : s).font(.system(size: 15, weight: on ? .bold : .regular))
-                        if s == m.defaultSize && s != "-" { Text("มาตรฐาน").font(.system(size: 11, weight: .semibold)).foregroundStyle(Home.ok) }
+                        if s == m.defaultSize && s != "-" { Text("มาตรฐาน").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.success) }
                         Spacer()
-                        if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.primary) }
+                        if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(on ? Self.soft : Color.white).contentShape(Rectangle())
+                    .background(on ? Self.soft : Theme.surface).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -91,7 +92,7 @@ extension RoofPageWide {
                     }
                     Button("พิมพ์เอง…") { memberText = cur == "-" ? "" : cur; member = nil; typingMember = n }
                 } label: {
-                    Text("ขนาดอื่น ›").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary).frame(minHeight: 44)
+                    Text("ขนาดอื่น ›").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
                 }
                 Spacer()
                 Menu {
@@ -99,13 +100,13 @@ extension RoofPageWide {
                     ForEach(StructureSizes.spacings, id: \.self) { s in Button(s) { update { Roof.setSpacing(&$0, n, spacing: s) } } }
                 } label: {
                     Text("ระยะห่าง " + (spacing.isEmpty ? "-" : spacing) + " ▾").font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(cur.isEmpty || cur == "-" ? Home.disabledText : Home.primary).frame(minHeight: 44)
+                        .foregroundStyle(cur.isEmpty || cur == "-" ? Theme.disabledText : Theme.primary).frame(minHeight: 44)
                 }
                 .disabled(cur.isEmpty || cur == "-")
             }
             .padding(.horizontal, 14)
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .frame(width: 340)
         .padding(.vertical, 6)
     }
@@ -116,21 +117,21 @@ extension RoofPageWide {
         let missing = Roof.missingShots(values).count, extra = Roof.extraStructPhotos(values)
         return VStack(alignment: .leading, spacing: 8) {
             cardTitle("ภาพหลังคา", trailing: missing == 0 ? "ครบ 6 มุมที่แนะนำ ✓" : "\(6 - missing)/6 มุม · ต้องถ่ายครบทุกมุม",
-                      trailingColor: missing == 0 ? Home.ok : Self.red, bold: missing > 0)
+                      trailingColor: missing == 0 ? Theme.success : Self.red, bold: missing > 0)
             // 6 in a row when the column has room, else 3 × 2
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: cardsWidth >= 440 ? 6 : 3), spacing: 6) {
                 ForEach(Roof.Shot.allCases, id: \.rawValue) { s in
                     RoofShotTile(photo: Binding(get: { Roof.photo(values, s) }, set: { p in update { Roof.setPhoto(&$0, s, p) } }),
                                  jobID: job.id, name: s.name, extra: s == .joint ? extra : 0)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.warn, lineWidth: flashShot == s ? 3 : 0).allowsHitTesting(false))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.warning, lineWidth: flashShot == s ? 3 : 0).allowsHitTesting(false))
                         .animation(.easeInOut(duration: 0.3).repeatCount(3), value: flashShot)
                 }
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 }
 /// One photo angle: a flexible tile at least 44 pt tall. Empty, the whole tile is a menu (อัปโหลด / กล้อง); filled, it is
@@ -163,11 +164,11 @@ struct RoofShotTile: View {
                         Image(systemName: "camera").font(.system(size: 14, weight: .semibold))
                         Text(name).font(.system(size: 11)).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(Home.danger)
+                    .foregroundStyle(Theme.danger)
                     .padding(3)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Home.danger, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.danger, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
                     .contentShape(Rectangle())
                 }
                 .accessibilityLabel("ถ่ายหรืออัปโหลดภาพ " + name)
@@ -178,7 +179,7 @@ struct RoofShotTile: View {
         .overlay(alignment: .topTrailing) {
             if extra > 0 {
                 Text("+\(extra)").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 5).padding(.vertical, 1).background(Home.navy.opacity(0.75), in: Capsule())
+                    .padding(.horizontal, 5).padding(.vertical, 1).background(Theme.navySolid.opacity(0.75), in: Capsule())
                     .padding(4).allowsHitTesting(false)
                     .accessibilityLabel("ภาพโครงสร้างเดิมอีก \(extra) ภาพ")
             }

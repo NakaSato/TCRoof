@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// D1 on iPhone (docs/ui/survey-d1-size-iphone, 390 × 844): the step line with the photo chip, the four sub-steps as
 /// numbered circles, then sub-step 1 as two cards (the plan drawn from the size, the tank's data) in one scroll.
@@ -87,13 +88,13 @@ extension TankPageWide {
                     .background(alignment: .center) {
                         // the 3-pt connector, from this circle's centre to the neighbours'
                         HStack(spacing: 0) {
-                            Rectangle().fill(n > 1 ? (greenBefore ? Home.stepDone : Home.hairline) : Color.clear)
-                            Rectangle().fill(n < last ? (greenAfter ? Home.stepDone : Home.hairline) : Color.clear)
+                            Rectangle().fill(n > 1 ? (greenBefore ? Theme.stepDone : Theme.borderSubtle) : Color.clear)
+                            Rectangle().fill(n < last ? (greenAfter ? Theme.stepDone : Theme.borderSubtle) : Color.clear)
                         }
                         .frame(height: 3)
                     }
                 Text(title).font(.system(size: 12, weight: on ? .heavy : .semibold))
-                    .foregroundStyle(on ? Home.primary : done ? Home.navy : Home.borderControl).lineLimit(1).minimumScaleFactor(0.8)
+                    .foregroundStyle(on ? Theme.primary : done ? Theme.navy : Theme.borderControl).lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
             .contentShape(Rectangle())
@@ -105,19 +106,19 @@ extension TankPageWide {
 
     @ViewBuilder func phoneCircle(_ n: Int, done: Bool, current: Bool) -> some View {
         if current {
-            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(.white)
+            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 26, height: 26)
-                .background(Circle().fill(Home.primary))
-                .background(Circle().fill(Home.primary.opacity(0.18)).frame(width: 34, height: 34))
+                .background(Circle().fill(Theme.primary))
+                .background(Circle().fill(Theme.primary.opacity(0.18)).frame(width: 34, height: 34))
         } else if done {
             Image(systemName: "checkmark").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Home.stepDone))
+                .background(Circle().fill(Theme.stepDone))
         } else {
-            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Home.borderControl)
+            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Theme.borderControl)
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Color.white))
-                .overlay(Circle().strokeBorder(Home.navy.opacity(0.25), lineWidth: 1.5))
+                .background(Circle().fill(Theme.surface))
+                .overlay(Circle().strokeBorder(Theme.navy.opacity(0.25), lineWidth: 1.5))
         }
     }
 
@@ -128,8 +129,8 @@ extension TankPageWide {
                                   @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("\(n)").font(.system(size: 13, weight: .heavy)).foregroundStyle(Home.primary)
-                    .frame(width: 24, height: 24).background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 7))
+                Text("\(n)").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.primary)
+                    .frame(width: 24, height: 24).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 7))
                 Text(title).font(.system(size: 16, weight: .bold)).lineLimit(1)
                 Spacer(minLength: 4)
                 Text(chip.text).font(.system(size: 11, weight: .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
@@ -141,13 +142,12 @@ extension TankPageWide {
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Home.hairline))
-        .shadow(color: Home.navy.opacity(0.05), radius: 3, y: 2)
+        .tcCard()
+        .shadow(color: Theme.navy.opacity(0.05), radius: 3, y: 2)
     }
 
     var phonePlanCard: some View {
-        phoneCard(1, "แปลนหลังคาถัง", chip: ("วาดจากขนาดถัง", Home.muted, Home.primarySoft)) {
+        phoneCard(1, "แปลนหลังคาถัง", chip: ("วาดจากขนาดถัง", Theme.inkMuted, Theme.primarySoft)) {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     if let sketch = TankPlan.compact(values) {
@@ -162,10 +162,10 @@ extension TankPageWide {
                     }
                     Button { planFull = true } label: {
                         Image(systemName: "arrow.down.left.and.arrow.up.right").font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Home.primary)
+                            .foregroundStyle(Theme.primary)
                             .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
-                            .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
+                            .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+                            .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
                             .frame(width: 44, height: 44).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -174,13 +174,13 @@ extension TankPageWide {
                     .disabled(!Tank.hasSize(values))
                 }
                 if let caption = planCaption {
-                    Text(caption).font(.system(size: 12)).foregroundStyle(Home.muted)
+                    Text(caption).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                         .padding(.horizontal, 10).padding(.bottom, 8)
                 }
             }
-            .background(Color.white)
+            .background(Theme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.hairline))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         }
     }
 
@@ -196,14 +196,14 @@ extension TankPageWide {
         NavigationStack {
             planCard
                 .padding(16)
-                .background(Home.lockedCard)
+                .background(Theme.background)
                 .navigationTitle("แปลนหลังคาถัง")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { span = nil; planFull = false } }
                 }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
     }
 
     /// Required fields of sub-step 1 still empty.
@@ -214,7 +214,7 @@ extension TankPageWide {
 
     var phoneInfoCard: some View {
         let k = sizeMissing
-        let chip = k == 0 ? ("✓ ครบ", Home.badgeOkText, Home.badgeOkBg) : ("ขาด \(k) ช่อง", Home.pending, Home.badgeWarnBg)
+        let chip = k == 0 ? ("✓ ครบ", Theme.okTick, Theme.okSoft) : ("ขาด \(k) ช่อง", Theme.pending, Theme.pendingSoft)
         return infoSheets(phoneCard(2, "ข้อมูลถัง", chip: chip) {
             sizeField
             typeField
@@ -256,11 +256,11 @@ extension TankPageWide {
             ForEach(Tank.positions, id: \.self) { p in
                 let on = cur == p
                 Button { update { Tank.setPosition(&$0, p) } } label: {
-                    Text(p).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Home.navy : Home.muted)
+                    Text(p).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Home.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         // 44 pt with the track's padding
                         .contentShape(Rectangle().inset(by: -3))
@@ -271,7 +271,7 @@ extension TankPageWide {
         }
         .padding(3)
         .frame(minHeight: 44)
-        .background(Home.disabledFill, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 #endif

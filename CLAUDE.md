@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a solar installer: jobs, install plans, device scans, install logs, and the **solar site survey** module, which produces the company's PDF report and Excel workbook. UI text is Thai. `SolarSurveyWeb/` is an old web version that is no longer used; do not port changes to it.
+TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a solar installer: jobs, install plans, device scans, install logs, and the **solar site survey** module, which produces the company's PDF report and Excel workbook. UI text is Thai.
 
 ## Build and test
 
@@ -20,6 +20,16 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 - **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it.
 
+### UI tests (iPhone taps)
+
+`TCRoofUITests/PhoneSurveyUITests.swift` taps through the iPhone survey pages (A1 save button and `คัดลอก`, A2 picture to full screen, A3 breaker sheet, single line toggle) in the demo job, using the launch arguments below. Run on an iPhone simulator with your own derived data path:
+```
+xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<udid>' -derivedDataPath <scratch>/DerivedData
+```
+`TCRoofUITests/ReviewLockUITests.swift` runs on an iPad simulator (same command, `-only-testing:TCRoofUITests/ReviewLockUITests`): a missing photo filled from the stubbed camera, then sign → lock → open REV 01 → edit → sign → the change list. `TCRoofUITests/HomeNavbarUITests.swift` (iPad, `-only-testing:TCRoofUITests/HomeNavbarUITests`) checks the home bar: the bell toggles its panel, the account button closes it and opens settings, `อ่านทั้งหมด` clears the count, and search opens the survey list focused. The read state stays on the simulator.
+UI tests that change answers start from `-surveyFreshJob YES`, since the demo job keeps its answers between runs.
+The first launch in a simulator is slow, so the waits are long (about 90 s). Use `.matching(...).firstMatch` for buttons that share a name, and wait for non-existence with `XCTNSPredicateExpectation` (`waitForExistence` returns at once while the old element is still there).
+
 ### Simulator checks (DEBUG launch arguments)
 
 There is no Simulator.app here, so the simulator can't be rotated; landscape checks rely on these flags. Screenshot with `xcrun simctl io <udid> screenshot`.
@@ -28,7 +38,7 @@ There is no Simulator.app here, so the simulator can't be rotated; landscape che
 xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surveyDemoSection YES -surveyWideA1 YES -surveyPage <page>
 ```
 
-- `-screen <name>` skips sign-in and opens one app screen (`TCRoofApp.swift` `DebugScreen`; `pwa` is the survey module).
+- `-screen <name>` skips sign-in and opens one app screen as the root of its own stack, with no way back to the home (`TCRoofApp.swift` `DebugScreen`; `pwa` is the survey module). On iOS 27 a screen pushed over the home at launch stays blank, so don't push it.
 - `-surveyDemo YES` opens a demo job; add `-surveyDemoSection YES` to open its first section.
 - `-surveyWideA1 YES` forces the two-column (landscape) wide pages and hides the sidebar.
 - `-surveyStacked YES` forces the one-column (portrait) layout of the wide pages in a landscape simulator.
@@ -39,11 +49,15 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyRoofRender YES` (with `-surveyPage roof`) writes C1 offscreen at several free widths and heights to `Documents/roof-<w>x<h>.png`, for layout checks without rotating. ImageRenderer can't draw menus, text fields or scroll views; they show as placeholders or blank.
 - `-surveyD1 default|size|t64|t30|t20|above|buried|custom|compass|span|empty|tab2|obst|obstbottom|obstshade|obstrow|obstfull|obstadded|obstdelete|layout|layoutbottom|layoutedit|layoutask|layoutfull|layoutmax|layoutdrawing` (with `-surveyPage tank`) writes the design's example tank into the opened job and opens that state of `docs/ui/survey-d1-size/states` (`tab2` opens sub-step 2). The `obst…` states seed the standard points as `docs/ui/survey-d1-obstacles-iphone` (8 of 15 checked, V9 moved and selected) and open sub-step 2: scrolled to its end, its shading view, the row question, the plan full screen, a hatch added on site, or the delete question. The `layout…` states check every point and open sub-step 3 (`docs/ui/survey-d1-layout-iphone`) with the automatic layout: scrolled to its end, แก้แผง with a panel off and a table removed, the question before จัดแผงใหม่, the plan full screen, หาผังแผงมากสุด, or the B1-C3 sheet.
 - `-surveyTankRender YES` (with `-surveyPage tank`) writes D1 offscreen at free widths 1366 / 1180 / 1100 to `Documents/tank-<w>x<h>.png`, and its iPhone sub-step 1 (step line and cards, no scroll view) to `Documents/tank-phone.png`.
+- `-surveyA1Render YES` (any page) writes A1 with the board's example answers offscreen at free widths 1366 / 1180 to `Documents/a1-<w>x<h>.png`, and its bottom bar at 1366 to `Documents/a1-bar.png` (with `-surveySave` for the save states).
 - `-surveyFinalRender YES` (with `-surveyPage final`) writes E1 offscreen at free widths 1366 / 1180 to `Documents/final-<w>x<h>.png`.
 - `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` (with `-surveyPage final`) writes that state of `docs/ui/survey-e1/states` into the opened job, or opens a signature pad.
-- `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 on iPhone: bands `03`–`05`).
-- `-surveySave saving|saved|clean` (iPhone, any step) opens the `บันทึก` button in that state: spinner, green flash, green outline (`docs/ui/survey-a1-iphone/states/04`–`06`). `-surveyA1Internet yes|no` (iPhone A1) picks the `อินเทอร์เน็ต` answer.
+- `-surveyPage photos|revisions` opens ตรวจรูปทั้งหมด or REV และรายการแก้ไข (`docs/specs/review-lock-revisions-swift.md`). `-surveyReview sign|locked|rev01|broken` writes that review-lock state into the opened job: both signatures (the lock sheet opens), REV issued and locked, REV 00 issued then REV 01 opened with three changes, or locked then edited behind the lock (the integrity banner). They change the demo job for good; `rev01` and `broken` only run on a job with no REV yet.
+- `-surveyFreshJob YES` (with `-surveyDemo YES`) opens a new job (docNo `UITEST`, with a station address), deleting the previous one; `-surveyTestJob YES` reopens that job as it was left. `-surveyCameraStub YES` makes ตรวจรูปทั้งหมด put a generated photo into a slot instead of opening the camera.
+- `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 and A2 on iPhone: the lower bands; with `-screen surveyForm`, the iPad survey form's photos and notes).
+- `-surveySave saving|saved|clean` (any step) opens the save button in that state: spinner, green flash, green outline. iPhone `บันทึก`: `docs/ui/survey-a1-iphone/states/04`–`06`; iPad card pages' `บันทึกร่างตอนนี้`: `docs/ui/survey-a1-ipad/states/03`–`05`. `-surveyA1Internet yes|no` (iPhone A1) picks the `อินเทอร์เน็ต` answer.
 - `-surveyExport YES` opens the export sheet.
+- `-surveyNewJob empty|filled|details|date|time|kwp|team|install|province|search|invalid|saved` (with `-screen survey` or `-screen home -homeTab survey`) opens the iPhone add-customer sheet (`NewJobPhoneView`) in that state of `docs/ui/tcroof-new-job-iphone/states`; `saved` also saves the example customer, so it adds a job.
 - `-surveySLDDXF YES` (with `-surveyPage sld`) writes the single line diagram's DXF to `Documents/sld.dxf`.
 - `-surveySiteDXF YES` (with `-surveyPage site`) writes the A2 site plan's DXF to `Documents/site.dxf`.
 - `-surveyTankDXF YES` (with `-surveyPage tank`) writes D1's DXF to `Documents/tank.dxf`, 2.5 s after opening so `-surveyD1` has seeded the tank.
@@ -51,11 +65,13 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyPlatePhoto YES` (with `-surveyPage electrical`) clears TX 1's nameplate fields and gives it a rendered nameplate photo, so A3 offers `พบในรูปป้าย` from the photo text reader.
 - `-surveySettings YES` (with `-screen pwa`) opens the survey settings; its `เครื่องนี้` section lists the hardware the device has (`DeviceCaps`).
 - `-screen home -homeDemo YES` opens the home with sample appointments; `-homeBoard YES` lays the iPad home out at 1366 × 1024. On iPhone, `-homeTab survey|plan|install` opens with that tab selected; `-homeNotifications YES` / `-homeSettings YES` open those screens.
-- `-screen home -homeTab survey` opens the iPhone survey list (`PhoneSurveyList`); `-screen survey` pushes it, with the back chevron. Add `-surveyWindow month|all`, `-surveySearch <text>`, `-surveySearchFocus YES` (seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`) or `-surveyListDraft YES` (today's first job gets a half-done draft) for the states of `docs/ui/tcroof-survey-list-iphone`. Run `-homeDemo YES` on the home tab first to put two appointments on today.
+- `-screen home -homeTab survey` opens the iPhone survey list (`PhoneSurveyList`); `-screen survey` opens the list on its own. Add `-surveyWindow month|all`, `-surveySearch <text>`, `-surveySearchFocus YES` (seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`) or `-surveyListDraft YES` (today's first job gets a half-done draft) for the states of `docs/ui/tcroof-survey-list-iphone`. Run `-homeDemo YES` on the home tab first to put two appointments on today.
+- `-screen planlist` opens the plan list (`PlanListView`); `-screen surveyhistory`, `scanhistory` and `loghistory` the survey, scan and install-log histories.
 - `-screen plan` (or `-screen home -homeTab plan`) opens the plan calendar; on iPhone that is `docs/ui/tcroof-plan-calendar-iphone`. Add `-planToday 2026-09-30` to fix "today" and `-planDemo YES` to move the sample jobs back to their offsets from it, with the board's survey times. Then `-planDay <yyyy-MM-dd>` selects a day (and shows its month), `-planView week` opens the week view, `-planTeam TCR01` filters a team and `-planTeamMenu YES` opens the team menu.
 - `-screen job -mpDemo plan|setup|new` opens the first job's detail with a sample MP plan around today (`MPScheduleCard`), also opening ตั้งค่าแผน (`setup`), or opens it on the job with its plan cleared (`new`).
 - `-screen mp` opens that job's แผนงาน MP full screen (`MPScheduleScreen`), seeding the same plan when it has none; add `-mpDemo progress` to open บันทึกความก้าวหน้า, or `-mpDemo pdf` to write the weekly-meeting page to `Documents/mp.pdf`.
 - `-screen routine|daily|dailies|request|weekly|monthly` seeds the first installing job with station settings, an MP plan and two weeks of signed daily reports (one day missing, today empty), then opens the รายงานประจำ card, today's daily report (`-routineDay yyyy-MM-dd` for another day; `-routineDemo sign|ack` opens its sheets, `-routineDemo pdf` writes the latest daily report to `Documents/daily.pdf` and this month's R4 to `monthly.pdf`; `-routineKeyPlan YES` stands a drawn picture in for the A2 site picture), the daily report list, next week's request, last week's R3 or this month's R4 (`docs/specs/routine-reports-swift.md`).
+- `-screen stationdocs` opens เอกสารสถานี กปภ. (`StationDocsScreen`) for the first installing job: the station's papers by submission and the พค.2 check list (`TCRoofCore/StationDocs`).
 - `-screen mpall` opens แผน MP ทุกสถานี (`MPOverviewView`, also from the Plan tab's header), seeding plans on the first four jobs that have none.
 - `-noNotificationPrompt YES` skips the notification permission prompt, for screenshots on a fresh install. A prompt already on screen survives a reinstall; reboot the simulator to clear it.
 - `-screen components` opens `ComponentGallery` (also in Settings › นักพัฒนา in DEBUG builds); add `-gallerySection 1…9` to show one board section of `docs/ui/components`.
@@ -68,7 +84,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 **App target (`TCRoof/`)** handles Google sign-in (`Auth/`), SwiftData models, Firestore sync (`Sync/CloudSync.swift`) and the non-survey screens. Firestore access is limited by `firestore.rules` (Firebase project `tcroof-1564c`): only accounts with a `members/<email>` document, and only the collections the app syncs, so a newly synced collection needs a rule. It hosts the survey module via `Views/Survey/` (`SolarSurveyEntry`, `PWASurveyLink`).
 
 **`TCRoofKit` Swift package** holds all survey work, layered as follows:
-- `TCRoofUI`: the design system shared by the app and the survey module (`docs/ui/components`). `Theme` tokens (light and dark), `Space` / `Radius` / `TypeScale`, `Font.sarabun`, and `TC*` components by board section, plus the DEBUG `ComponentGallery`. It has no dependencies, so it type-checks in seconds: `xcrun swiftc -typecheck -D DEBUG -sdk $(xcrun --sdk iphonesimulator --show-sdk-path) -target arm64-apple-ios17.0-simulator -module-name TCRoofUI $(find Sources/TCRoofUI -name '*.swift')` from `TCRoofKit/`. New screens build from these components; colours come from `Theme`, never hex literals in views.
+- `TCRoofUI`: the design system shared by the app and the survey module (`docs/ui/components`). `Theme` tokens (light and dark), `Space` / `Radius` / `TypeScale`, `Font.sarabun`, and `TC*` components by board section, plus the DEBUG `ComponentGallery`. It has no dependencies, so it type-checks in seconds: `xcrun swiftc -typecheck -D DEBUG -sdk $(xcrun --sdk iphonesimulator --show-sdk-path) -target arm64-apple-ios17.0-simulator -module-name TCRoofUI $(find Sources/TCRoofUI -name '*.swift')` from `TCRoofKit/`. New screens build from these components; colours come from `Theme`, never hex literals in views. No `Color.white` either: cards and fields use `Theme.surface`, text on `Theme.primary` uses `Theme.onPrimary`, and plans and diagrams sit on `Theme.paper` (white in both modes, since their ink is dark). Buttons use `TCButtonStyle`, not `.bordered` / `.borderedProminent`: a page's `.foregroundStyle` overrides the system style's white label. The app is light only: it forces light mode for signed-in users (`TCRoofApp.swift`). `Theme` keeps its dark values, but dark mode is not shown.
 - `TCRoofCore`: pure values and rules, no UI.
   - `Models.swift`: `Job`, `SurveyModule`, `Values` / `FieldValue`, `Transformer` / `Board` / `Breaker`.
   - `Schema.swift`: every page and section as `ModuleSpec` / `GroupSpec` / `FieldSpec` with field ids.

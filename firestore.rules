@@ -20,6 +20,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // An issued REV of a survey report is written once: it may be created, sent again unchanged, or deleted
+    // with its job, never changed.
+    match /pwaSurveyRevisions/{doc} {
+      allow read, create, delete: if isMember();
+      allow update: if isMember() && request.resource.data.json == resource.data.json;
+    }
+
     match /{collection}/{doc} {
       allow read, write: if isMember()
         && collection in ['jobs', 'surveyForms', 'devices', 'installLogs', 'inspections', 'pwaSurveys'];

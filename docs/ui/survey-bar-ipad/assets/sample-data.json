@@ -1,0 +1,20 @@
+{
+  "_note": "All values are EXAMPLE DATA from the boards. Bind to the real job, schema and step list.",
+  "bar": { "height": 73, "padding": [8, 24, 12, 24], "contentWidth": 1240, "gap": 12, "afterSaveExtra": 12, "buttonHeight": 53, "radius": 10 },
+  "save": {
+    "width": 170,
+    "labels": { "idle": "บันทึกร่างตอนนี้", "saving": "กำลังบันทึก", "saved": "บันทึกแล้ว" },
+    "a11y": { "idle": "บันทึกแบบร่าง · มีการแก้ไขที่ยังไม่ได้บันทึก", "saving": "กำลังบันทึก", "saved": "บันทึกล่าสุดแล้ว · ยังไม่มีการแก้ไขใหม่" },
+    "timingSec": { "boardSaveDelay": 0.65, "justSaved": 1.35, "pop": 0.35, "drawTick": 0.35 }
+  },
+  "prev": { "width": 230, "kicker": "ก่อนหน้า 4/13", "title": "A4 น้ำท่วม", "firstStep": "หัวข้อแรก" },
+  "next": { "width": 230, "kicker": "ถัดไป 6/13", "title": "B2 พื้นที่อินเวอร์เตอร์", "lastStepKicker": "ขั้นสุดท้าย", "lastStepTitle": "สรุปผล · ส่งออก" },
+  "status": {
+    "complete": "ครบ 11/11 ช่องในหน้านี้",
+    "missing": "ยังขาดภาพ: TX 1 (1) · MDP-1 (1) · TX 5 (4) · ไปต่อได้ แล้วค่อยกลับมาเติม",
+    "missingE1": "ยังขาดในหน้านี้: ลายเซ็นผู้ประสานงาน · และอีก 2 หน้า",
+    "gapChip": { "title": "ยังขาด 7 รายการ ใน 2 อาคาร", "sub": "อาคารนี้: ภาพเบรกเกอร์", "a11y": "ไปยังรายการที่ขาด ในอาคารนี้" },
+    "okChip": { "title": "ครบช่องบังคับแล้ว", "sub": "ยังไม่มี (ไม่บังคับ): รูปป้ายโครงการ" },
+    "allDone": "ครบทุกอาคารแล้ว"
+  }
+}

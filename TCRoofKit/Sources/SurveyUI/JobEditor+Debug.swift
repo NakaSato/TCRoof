@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 #if DEBUG
 extension JobEditorView {
@@ -60,13 +61,18 @@ extension JobEditorView {
     func openDebugPage() {
         seedAutofill()
         seedPlatePhoto()
+        seedReview()
         let first: (ModuleType) -> Page? = { t in job.modules.first { $0.type == t }.map { .module($0.id) } }
+        // `-surveyA1Render YES` writes A1 and its bar at free widths 1366 / 1180 to Documents/a1-<w>x<h>.png
+        if UserDefaults.standard.bool(forKey: "surveyA1Render") { renderInfo() }
         switch UserDefaults.standard.string(forKey: "surveyPage") {
         case "site":
             select(.site)
             // `-surveySiteDXF YES` also writes the site plan's DXF to Documents/site.dxf (with `-surveyAutofill`'s symbols when given)
             if UserDefaults.standard.bool(forKey: "surveySiteDXF"), let out = SiteDXF.build(job) { writeDebugFile("site.dxf", out.data) }
         case "electrical": select(.electrical)
+        case "photos": select(.photos)
+        case "revisions": select(.revisions)
         case "sld":
             select(.electrical); showSLD = true
             // `-surveySLDDXF YES` also writes the diagram's DXF to Documents/sld.dxf
@@ -105,6 +111,55 @@ extension JobEditorView {
         }
     }
 
+    /// `-surveyReview sign|locked|rev01|broken`: the review lock's states (docs/specs/review-lock-revisions-swift.md) on the demo
+    /// job. `sign` signs both after a moment (the lock sheet opens), `locked` issues REV 00, `rev01` issues it, opens REV 01
+    /// and changes the name and the site picture, `broken` locks then edits job.json's answers behind the lock.
+    func seedReview() {
+        guard let state = UserDefaults.standard.string(forKey: "surveyReview") else { return }
+        func picture(_ text: String, _ size: CGSize, png: Bool) -> Photo? {
+            let img = UIGraphicsImageRenderer(size: size).image { ctx in
+                if !png { UIColor(red: 0.55, green: 0.7, blue: 0.85, alpha: 1).setFill(); ctx.fill(CGRect(origin: .zero, size: size)) }
+                (text as NSString).draw(at: CGPoint(x: 30, y: size.height / 2 - 40),
+                                        withAttributes: [.font: UIFont.italicSystemFont(ofSize: 64), .foregroundColor: UIColor.darkGray])
+            }
+            return model.addPhoto(img, to: job.id, png: png)
+        }
+        func sign(_ j: inout Job) {
+            j.values["surveyorSign"] = picture("สมชาย", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+            j.values["customerSign"] = picture("ประสาน", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+        }
+        if job.values.photo("siteMap") == nil { job.values["siteMap"] = picture("ภาพสถานที่", CGSize(width: 1200, height: 900), png: false).map { .photo($0) } }
+        switch state {
+        case "sign":
+            job.values["surveyorSign"] = picture("สมชาย", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                job.values["customerSign"] = picture("ประสาน", CGSize(width: 600, height: 200), png: true).map { .photo($0) }
+            }
+        case "locked", "rev01", "broken":
+            guard !job.isLocked, state == "locked" || (job.revisions ?? []).isEmpty else { return }
+            var j = job
+            sign(&j)
+            job = j
+            model.update(j)
+            try? model.issue(job.id)
+            if let issued = model.job(job.id) { job = issued }
+            if state == "rev01" {
+                openNextRevision(reason: "สถานีแจ้งขนาดหม้อแปลงใหม่", updateDate: true)
+                job.values["projectName"] = .text(job.projectName + " (แก้ไข)")
+                job.values["siteMap"] = picture("ภาพใหม่", CGSize(width: 1200, height: 900), png: false).map { .photo($0) }
+                job.values["internet"] = .choice("ไม่มี", other: "")
+            } else if state == "broken" {
+                var edited = job
+                edited.values["projectName"] = .text("แก้นอกแอป")
+                model.applyRemote(edited)
+                job = edited
+                checkIntegrity()
+            }
+        default: break
+        }
+    }
+
     func writeDebugFile(_ name: String, _ data: Data) {
         try? data.write(to: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name))
     }
@@ -123,6 +178,33 @@ extension JobEditorView {
                 let r = ImageRenderer(content: page); r.scale = 1
                 if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("roof-\(Int(free))x\(Int(h)).png")) }
             }
+        }
+    }
+
+    /// A1 in landscape (docs/ui/survey-a1-ipad) with the board's example answers on a copy of the job, then its bar
+    /// (`-surveySave` picks the save button's state). Text fields show as placeholders in ImageRenderer.
+    func renderInfo() {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        var sample = job
+        for (k, v) in [("docNo", "224"), ("rev", "00"), ("date", "2026-09-29"), ("engineer", "สมชาย"),
+                       ("projectName", "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1"), ("capacity", "120"),
+                       ("address", "ม.3 ต.หนองบัว อ.เมือง จ.ตัวอย่าง 60000"), ("coordinator", "คุณสมหญิง ใจดี"),
+                       ("phone", "081-234-5678"), ("gps", "17.0062, 99.8235")] { sample.values[k] = .text(v) }
+        sample.values["internet"] = .choice("มี", other: "")
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            for (free, h) in [(1366.0, 848.0), (1180.0, 636.0)] {
+                let page = InfoPageWide(job: .constant(sample), width: min(free, 1240 + 48) - 48, fillHeight: h - 32)
+                    .environment(model).environment(\.horizontalSizeClass, .regular)
+                    .padding(.horizontal, 24).padding(.vertical, 16)
+                    .frame(width: free, height: h, alignment: .top).background(Paper.page)
+                let r = ImageRenderer(content: page); r.scale = 1
+                if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("a1-\(Int(free))x\(Int(h)).png")) }
+            }
+            let bar = InfoPageBar(job: sample, next: {}).environment(model).environment(\.horizontalSizeClass, .regular)
+                .frame(width: 1366).background(Paper.page)
+            let r = ImageRenderer(content: bar); r.scale = 2
+            if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("a1-bar.png")) }
         }
     }
 
@@ -177,7 +259,7 @@ extension JobEditorView {
             // iPhone: the step line and sub-step 1 at 393 pt, without its scroll view (ImageRenderer leaves those blank)
             let phone = TankPageWide(job: .constant(job), moduleID: id, width: 361, stacked: true, tab: .constant(1), phoneLayout: true)
             let cards = VStack(spacing: 8) { PageStepBar(job: job, here: .module(id), compact: true, chip: phone.photoChip); phone.phoneSizeCards }
-                .foregroundStyle(Home.navy).environment(model).padding(16).frame(width: 393).background(Home.lockedCard)
+                .foregroundStyle(Theme.navy).environment(model).padding(16).frame(width: 393).background(Theme.background)
             let r = ImageRenderer(content: cards); r.scale = 3
             if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("tank-phone.png")) }
         }

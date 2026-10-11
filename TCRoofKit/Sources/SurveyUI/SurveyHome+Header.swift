@@ -21,12 +21,12 @@ extension SurveyHomeView {
                     .accessibilityLabel("ย้อนกลับ")
                 }
                 VStack(alignment: .leading, spacing: compact ? 1 : 4) {
-                    Text(title).font(.system(size: compact ? 22 : 30, weight: .bold))
+                    Text(title).font(.sarabunFixed(compact ? 22 : 30, .bold))
                     // iPhone: the subtitle only (docs/ui/pwa-solar-survey-iphone)
                     if compact {
-                        Text(subtitle).font(.system(size: 13)).opacity(0.9).lineLimit(1).truncationMode(.tail)
+                        Text(subtitle).font(.sarabunFixed(13)).opacity(0.9).lineLimit(1).truncationMode(.tail)
                     } else {
-                        Text(engineerLine).font(.system(size: 15)).opacity(0.92).lineLimit(1)
+                        Text(engineerLine).font(.sarabunFixed(15)).opacity(0.92).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 12)
@@ -130,7 +130,7 @@ extension SurveyHomeView {
             .accessibilityLabel("งานสำรวจใหม่")
         case .install:
             Button { showInstallPicker = true } label: {
-                Label("เพิ่มโครงการ", systemImage: "plus").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.onPrimary)
+                Label("เพิ่มโครงการ", systemImage: "plus").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 28).frame(height: 64)
                     .background(Theme.primary, in: Capsule())
                     .shadow(color: Theme.navy.opacity(0.3), radius: 8, y: 4)
@@ -184,7 +184,7 @@ extension SurveyHomeView {
                 let on = filter == f
                 Button { withAnimation(.snappy) { filter = f } } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(jobs.filter { matches($0, f) }.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
+                        Text("\(jobs.filter { matches($0, f) }.count)").font(.sarabunFixed(26, .bold)).monospacedDigit()
                         Text(f.title).font(.sarabun(15, .bold, relativeTo: .subheadline))
                         Text(f.detail).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     }
@@ -210,8 +210,8 @@ extension SurveyHomeView {
                 let n = jobs.filter { matches($0, f) }.count
                 Button { withAnimation(.snappy) { filter = f } } label: {
                     HStack(spacing: 5) {
-                        Text(f.shortTitle).font(.system(size: 13, weight: on ? .bold : .semibold)).lineLimit(1)
-                        Text("\(n)").font(.system(size: 12, weight: .bold)).monospacedDigit()
+                        Text(f.shortTitle).font(.sarabunFixed(13, on ? .bold : .semibold)).lineLimit(1)
+                        Text("\(n)").font(.sarabunFixed(12, .bold)).monospacedDigit()
                             .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
                             .background(on ? Theme.onPrimary.opacity(0.22) : Theme.hairline, in: RoundedRectangle(cornerRadius: 10))
                     }
@@ -233,8 +233,8 @@ extension SurveyHomeView {
     /// iPhone: heading, count and a sort menu on one row.
     var compactListHeading: some View {
         HStack(alignment: .center, spacing: 8) {
-            Text(tab == .survey ? filter.heading : tab.title).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-            Text("\(shown.count) งาน").font(.system(size: 13)).foregroundStyle(Theme.inkMuted).monospacedDigit().lineLimit(1)
+            Text(tab == .survey ? filter.heading : tab.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            Text("\(shown.count) งาน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().lineLimit(1)
             Spacer(minLength: 8)
             Menu {
                 Picker("เรียงตาม", selection: $sort) {
@@ -242,7 +242,7 @@ extension SurveyHomeView {
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text(sort.title).font(.system(size: 12.5, weight: .semibold))
+                    Text(sort.title).font(.sarabunFixed(12.5, .semibold))
                     Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
                 }
                 .foregroundStyle(Theme.primary)

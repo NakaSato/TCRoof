@@ -7,7 +7,7 @@ import TCRoofUI
 /// Small `A2` tag on a field whose value came from, or matches, a symbol on the A2 picture (docs/ui/a2-a3-autofill).
 struct A2Badge: View {
     var body: some View {
-        Text("A2").font(.system(size: 10.5, weight: .bold)).foregroundStyle(Theme.primary)
+        Text("A2").font(.sarabunFixed(10.5, .bold)).foregroundStyle(Theme.primary)
             .padding(.horizontal, 5).frame(height: 18)
             .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).stroke(Theme.primary.opacity(0.35), lineWidth: 1))
@@ -44,8 +44,8 @@ extension ElectricalPageWide {
                 HStack(spacing: 8) {
                     Image(systemName: "link").font(.system(size: 15, weight: .semibold))
                     Text(conflicts > 0 ? "ดึงจากภาพ A2 · ต่างกัน \(conflicts)" : "ดึงจากภาพ A2 · \(linked) รายการ")
-                        .font(.system(size: narrow ? 14 : 16, weight: .bold)).lineLimit(1)
-                    Text("▾").font(.system(size: 12))
+                        .font(.sarabunFixed(narrow ? 14 : 16, .bold)).lineLimit(1)
+                    Text("▾").font(.sarabunFixed(12))
                 }
                 .foregroundStyle(tint)
                 .padding(.horizontal, 14).frame(minHeight: 44)
@@ -63,7 +63,7 @@ extension ElectricalPageWide {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("ใส่ให้อัตโนมัติจากภาพ A2").font(.system(size: 20, weight: .bold))
+                    Text("ใส่ให้อัตโนมัติจากภาพ A2").font(.sarabunFixed(20, .bold))
                     Spacer()
                     Button { showA2 = false } label: {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.inkMuted)
@@ -78,7 +78,7 @@ extension ElectricalPageWide {
                         + Text(" กรอกให้อัตโนมัติจากสัญลักษณ์บนภาพ A2 · วางหม้อแปลง / MDB ใหม่บน A2 จะสร้างการ์ดในผังนี้ให้ · แก้ที่หน้านี้แล้วป้ายบนภาพ A2 เปลี่ยนตาม · ช่องที่กรอกเองไว้แล้วจะไม่ถูกทับ ให้เลือกเอง"))
                     Text(SiteSync.notSent)
                 }
-                .font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                 .fixedSize(horizontal: false, vertical: true)
             }
             .padding(16)
@@ -91,34 +91,34 @@ extension ElectricalPageWide {
         let skipped = { if case .skipped = it.status { return true }; return false }()
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Text(it.symbol).font(.system(size: 14, weight: .bold)).lineLimit(1)
+                Text(it.symbol).font(.sarabunFixed(14, .bold)).lineLimit(1)
                     .padding(.horizontal, 10).frame(minWidth: 64, minHeight: 30)
                     .overlay(Capsule().stroke(Theme.navy, lineWidth: 1.5))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(it.title).font(.system(size: 17, weight: .bold)).lineLimit(1)
-                    if !it.target.isEmpty { Text("→ " + it.target).font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(2) }
+                    Text(it.title).font(.sarabunFixed(17, .bold)).lineLimit(1)
+                    if !it.target.isEmpty { Text("→ " + it.target).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2) }
                 }
                 Spacer(minLength: 4)
                 if conflict != nil {
-                    Text("ต่างกัน").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.pending)
+                    Text("ต่างกัน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.pending)
                         .padding(.horizontal, 10).frame(minHeight: 26).background(Theme.warning.opacity(0.15), in: Capsule())
                 } else if !skipped {
-                    Text("✓ ใส่แล้ว").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.success).fixedSize()
+                    Text("✓ ใส่แล้ว").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.success).fixedSize()
                 }
             }
             if let c = conflict {
                 HStack(spacing: 8) {
                     Text("หน้านี้ \(c.a3) · A2 \(c.a2)" + (it.unit.map { " " + $0 } ?? ""))
-                        .font(.system(size: 14)).foregroundStyle(Theme.pending).lineLimit(2)
+                        .font(.sarabunFixed(14)).foregroundStyle(Theme.pending).lineLimit(2)
                     Spacer(minLength: 4)
                     Button { SiteSync.useA2(&job, mark: it.id) } label: {
-                        Text("ใช้ค่า A2").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
+                        Text("ใช้ค่า A2").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
                             .padding(.horizontal, 14).frame(minHeight: 44)
                             .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                     }
                     .buttonStyle(.plain)
                     Button { SiteSync.keepA3(&job, mark: it.id) } label: {
-                        Text("คงค่านี้").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
+                        Text("คงค่านี้").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 14).frame(minHeight: 44)
                             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))

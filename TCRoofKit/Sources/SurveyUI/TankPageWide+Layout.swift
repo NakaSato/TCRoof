@@ -116,7 +116,7 @@ extension TankPageWide {
             layoutPlanFrame
             HStack(spacing: 8) {
                 Button { askLayout(.auto) } label: {
-                    Text("จัดแผงใหม่").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary)
+                    Text("จัดแผงใหม่").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 46)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary))
@@ -126,7 +126,7 @@ extension TankPageWide {
                     Group {
                         if layoutSearching { ProgressView().tint(Theme.navy) } else { Text("หาผังแผงมากสุด") }
                     }
-                    .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
+                    .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(Theme.mint, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
@@ -144,7 +144,7 @@ extension TankPageWide {
             ForEach([(false, "เลื่อนผัง"), (true, "แก้แผง")], id: \.0) { item in
                 let on = layoutEditing == item.0
                 Button { withAnimation(.easeOut(duration: 0.15)) { layoutEditing = item.0 } } label: {
-                    Text(item.1).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                    Text(item.1).font(.sarabunFixed(14, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
                             if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
@@ -189,7 +189,7 @@ extension TankPageWide {
                 .disabled(TankLayout.current(values) == nil)
             }
             Text(Tank.hasSize(values) ? "แผงโมโน \(fmt(TankLayout.defaults().moduleKW * 1000)) W · แตะแผงเพื่อแก้" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
-                .font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
         .background(Theme.surface)
@@ -213,7 +213,7 @@ extension TankPageWide {
                     .simultaneousGesture(MagnifyGesture().onChanged { m in layoutZoom = min(4, max(1, layoutZoom * sqrt(m.magnification))) })
                 }
                 if let l = TankLayout.current(values) {
-                    Text("\(l.count) แผง · " + String(format: "%.1f kWp", l.kWp)).font(.system(size: 15, weight: .bold))
+                    Text("\(l.count) แผง · " + String(format: "%.1f kWp", l.kWp)).font(.sarabunFixed(15, .bold))
                 }
             }
             .padding(16)
@@ -253,9 +253,9 @@ extension TankPageWide {
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, r in
                     HStack(alignment: .firstTextBaseline) {
-                        Text(r.0).font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
+                        Text(r.0).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
                         Spacer(minLength: 8)
-                        Text(r.1).font(.system(size: 15, weight: .bold)).monospacedDigit()
+                        Text(r.1).font(.sarabunFixed(15, .bold)).monospacedDigit()
                     }
                     .padding(.vertical, 10)
                     .overlay(alignment: .top) { if i > 0 { Rectangle().fill(Theme.borderSubtle).frame(height: 1) } }
@@ -278,7 +278,7 @@ extension TankPageWide {
                 checkRow("ขาโครงสร้างไม่ชนสิ่งกีดขวาง", "เสา \(c.posts) ต้น · ตัดแผง \(c.cutColumns) คอลัมน์", ok: c.legsOK)
             }
             Button { drawingOpen = true } label: {
-                Text("ดูแบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                Text("ดูแบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -295,8 +295,8 @@ extension TankPageWide {
                 .background(Circle().fill(ok ? Theme.success : Theme.warning))
                 .padding(.top, 2)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 14.5, weight: .bold)).fixedSize(horizontal: false, vertical: true)
-                Text(value).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                Text(title).font(.sarabunFixed(14.5, .bold)).fixedSize(horizontal: false, vertical: true)
+                Text(value).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             }
             Spacer(minLength: 0)
         }
@@ -311,8 +311,8 @@ extension TankPageWide {
         NavigationStack {
             VStack(spacing: 12) {
                 Image(systemName: "doc.text.magnifyingglass").font(.system(size: 40)).foregroundStyle(Theme.disabledText)
-                Text("แบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.system(size: 16, weight: .bold))
-                Text("ยังไม่มีไฟล์แบบในแอป").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                Text("แบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.sarabunFixed(16, .bold))
+                Text("ยังไม่มีไฟล์แบบในแอป").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(24)

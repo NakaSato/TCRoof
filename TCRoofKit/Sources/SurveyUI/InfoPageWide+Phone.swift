@@ -81,9 +81,9 @@ extension InfoPageWide {
                 let c = NumberInput.clean($0)
                 job.values["capacity"] = c.isEmpty ? nil : .text(c)
             }))
-            .font(.system(size: 16, weight: .semibold))
+            .font(.sarabunFixed(16, .semibold))
             .keyboardType(.decimalPad).focused($focus, equals: "capacity")
-            Text(unit("capacity")).font(.system(size: 14)).foregroundStyle(Theme.muted).fixedSize()
+            Text(unit("capacity")).font(.sarabunFixed(14)).foregroundStyle(Theme.muted).fixedSize()
         }
         .inputBox(calc: calc("capacity"), focused: focus == "capacity", error: bad,
                   minHeight: 44, trailing: 12, leading: 12, fontSize: 16, stroke: 0.35)
@@ -96,7 +96,7 @@ extension InfoPageWide {
             ForEach(Options.yesNo, id: \.self) { o in
                 let on = chosen == o
                 Button { job.values["internet"] = .choice(o, other: "") } label: {
-                    Text(o).font(.system(size: 15, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                    Text(o).font(.sarabunFixed(15, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
@@ -132,7 +132,7 @@ extension InfoPageWide {
                 // only offered while the field is empty, so it never overwrites an address someone typed
                 if job.values.text("officeAddress").isEmpty {
                     Button("คัดลอก") { job.values["officeAddress"] = job.values["address"] }
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                         // width fits the word; the height stays 44 pt (a plain fixedSize() would shrink it to the text)
                         .frame(minHeight: 44).fixedSize(horizontal: true, vertical: false).contentShape(Rectangle())
                         .disabled(job.values.text("address").isEmpty)
@@ -222,7 +222,7 @@ extension InfoPageWide {
                 Spacer(minLength: 4)
                 Image(systemName: "lock").font(.system(size: 15)).foregroundStyle(Theme.muted)
             }
-            .font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
+            .font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
             .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
@@ -241,7 +241,7 @@ extension InfoPageWide {
     // MARK: 05 พื้นที่ติดตั้ง
 
     @ViewBuilder var areaFields: some View {
-        Text("กำหนดหน้า C / D ในแบบสำรวจ").font(.system(size: 12)).foregroundStyle(Theme.muted)
+        Text("กำหนดหน้า C / D ในแบบสำรวจ").font(.sarabunFixed(12)).foregroundStyle(Theme.muted)
         areaTiles
     }
 }

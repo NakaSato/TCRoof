@@ -71,7 +71,7 @@ struct SiteMapPreview: View {
             }
             .overlay(alignment: .topLeading) { levelPicker.padding(phone ? 8 : 10) }
             .overlay(alignment: .topTrailing) { zoomButtons.padding(phone ? 8 : 10) }
-            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
+            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
             .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(phone ? 8 : 10) } }
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { frameSize = $0 }
@@ -133,7 +133,7 @@ struct SiteMapPreview: View {
                 .gesture(cropDrag(picture.size) { $0.moved(dx: $1.width, dy: $1.height, within: shown) })
                 .offset(x: r.minX, y: r.minY)
             Text(c.label(across: across, aspect: Self.aspect))
-                .font(.system(size: 12, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                .font(.sarabunFixed(12, .bold)).foregroundStyle(.white).lineLimit(1)
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(Self.cropBlue, in: RoundedRectangle(cornerRadius: 4))
                 .fixedSize()
@@ -213,14 +213,14 @@ struct SiteMapPreview: View {
     @ViewBuilder func levelLabel(_ l: (name: String, meters: Double), on: Bool) -> some View {
         if phone {
             HStack(spacing: 3) {
-                Text(l.name).font(.system(size: 12, weight: on ? .bold : .regular))
-                Text("\(Int(l.meters)) ม.").font(.system(size: 11, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                Text(l.name).font(.sarabunFixed(12, on ? .bold : .regular))
+                Text("\(Int(l.meters)) ม.").font(.sarabunFixed(11, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
             }
             .lineLimit(1).fixedSize()
         } else {
             VStack(spacing: 0) {
-                Text(l.name).font(.system(size: 13, weight: on ? .bold : .regular))
-                Text("\(Int(l.meters)) ม.").font(.system(size: 11)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                Text(l.name).font(.sarabunFixed(13, on ? .bold : .regular))
+                Text("\(Int(l.meters)) ม.").font(.sarabunFixed(11)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
             }
         }
     }
@@ -251,7 +251,7 @@ struct SiteMapPreview: View {
             let w = length / across * size.width
             Path { p in p.addLines([CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 5), CGPoint(x: w, y: 5), CGPoint(x: w, y: 0)]) }
                 .stroke(Theme.navy, lineWidth: 1.5).frame(width: w, height: 5)
-            Text(length >= 1000 ? "\(Int(length / 1000)) กม." : "\(Int(length)) ม.").font(.system(size: 11))
+            Text(length >= 1000 ? "\(Int(length / 1000)) กม." : "\(Int(length)) ม.").font(.sarabunFixed(11))
         })
     }
 

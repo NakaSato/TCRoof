@@ -55,7 +55,7 @@ struct NameplateScanButton: View {
                     Image(systemName: "text.viewfinder").font(.system(size: 17, weight: .semibold))
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 } else {
-                    Label("อ่านจากป้าย", systemImage: "text.viewfinder").font(.system(size: 14, weight: .semibold))
+                    Label("อ่านจากป้าย", systemImage: "text.viewfinder").font(.sarabunFixed(14, .semibold))
                         .frame(minHeight: 44)
                 }
             }
@@ -102,7 +102,7 @@ struct NameplateScannerView: View {
             } else if found.isEmpty {
                 Text(kind.hint).multilineTextAlignment(.center).foregroundStyle(Theme.inkMuted)
             } else if case .single = kind, let f = found.first {
-                Text("พบ \(f.display)").font(.system(size: 22, weight: .bold))
+                Text("พบ \(f.display)").font(.sarabunFixed(22, .bold))
                 buttons(confirm: "ใช้ค่านี้")
             } else {
                 Text("พบในป้าย").font(.sarabun(17, .semibold, relativeTo: .headline))
@@ -271,7 +271,7 @@ struct PlatePhotoSuggestion: View {
             if dismissed != photo.id, !fresh.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "text.viewfinder").foregroundStyle(Theme.primary)
-                    Text("พบในรูปป้าย: " + fresh.map(\.display).joined(separator: " · ")).font(.system(size: 14, weight: .semibold))
+                    Text("พบในรูปป้าย: " + fresh.map(\.display).joined(separator: " · ")).font(.sarabunFixed(14, .semibold))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Button("ไม่ใช่") { dismissed = photo.id }.frame(minHeight: 44)
                     Button("ใช้ค่านี้") { apply(fresh); dismissed = photo.id }.bold().frame(minHeight: 44)

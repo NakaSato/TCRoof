@@ -97,9 +97,9 @@ struct WaterPageWide: View {
 
     func header<Trailing: View>(_ n: Int, _ title: String, required: Bool = false, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 10) {
-            Text("\(n)").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.primary)
+            Text("\(n)").font(.sarabunFixed(14, .heavy)).foregroundStyle(Theme.primary)
                 .frame(width: 28, height: 28).background(Self.chipFill, in: RoundedRectangle(cornerRadius: 8))
-            (Text(title) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold)).lineLimit(1)
+            (Text(title) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.sarabunFixed(17, .bold)).lineLimit(1)
                 .layoutPriority(1)
             trailing()
         }
@@ -120,14 +120,14 @@ struct WaterPageWide: View {
             header(1, "ตำแหน่งจุดจ่ายน้ำ", required: true) {
                 // the grey tag gives way first when the column is narrow (portrait with the sidebar)
                 ViewThatFits(in: .horizontal) {
-                    Text("ภาพจากหน้า A2 · แตะบนภาพเพื่อย้ายจุด").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize()
+                    Text("ภาพจากหน้า A2 · แตะบนภาพเพื่อย้ายจุด").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize()
                         .padding(.horizontal, 8).padding(.vertical, 4).background(Self.tileFill, in: RoundedRectangle(cornerRadius: 6))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Color.clear.frame(height: 1)
                 }
                 .layoutPriority(-1)
                 Button(action: openSite) {
-                    Text("เปิด A2 →").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary).lineLimit(1).fixedSize()
+                    Text("เปิด A2 →").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).lineLimit(1).fixedSize()
                         .padding(.horizontal, 14).frame(minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.5)))
                 }
@@ -138,7 +138,7 @@ struct WaterPageWide: View {
             } legend: {
                 HStack(spacing: 6) {
                     Circle().stroke(Self.blue, lineWidth: 3).frame(width: 11, height: 11)
-                    Text(shownMode.legend).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                    Text(shownMode.legend).font(.sarabunFixed(12.5, .semibold)).lineLimit(1)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
@@ -158,8 +158,8 @@ struct WaterPageWide: View {
 
     func summaryTile(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabunFixed(16, .bold)).lineLimit(1).minimumScaleFactor(0.7)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,11 +183,11 @@ struct WaterPageWide: View {
         let on = mode == m
         return Button { set(WaterPoint.modeKey, .choice(m.rawValue, other: "")) } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(m.tag).font(.system(size: 12, weight: .bold)).foregroundStyle(on ? .white : Theme.inkMuted)
+                Text(m.tag).font(.sarabunFixed(12, .bold)).foregroundStyle(on ? .white : Theme.inkMuted)
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(on ? Self.teal : Self.tileFill, in: RoundedRectangle(cornerRadius: 5))
-                Text(m.cardTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                Text(m.cardSub).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(narrow ? 2 : 1).minimumScaleFactor(0.75)
+                Text(m.cardTitle).font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                Text(m.cardSub).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(narrow ? 2 : 1).minimumScaleFactor(0.75)
                     .fixedSize(horizontal: false, vertical: narrow)
             }
             .padding(14)
@@ -210,9 +210,9 @@ struct WaterPageWide: View {
 
     var infoRow: some View {
         HStack(alignment: .top, spacing: 8) {
-            Text("i").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.onPrimary)
+            Text("i").font(.sarabunFixed(13, .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 20, height: 20).background(Theme.primary, in: Circle())
-            Text(shownMode.hint).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+            Text(shownMode.hint).font(.sarabunFixed(13)).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -227,7 +227,7 @@ struct WaterPageWide: View {
             header(3, "ภาพประกอบ", required: true) {
                 Spacer(minLength: 8)
                 Text(missing == 0 ? "2/2 ภาพ ✓" : "\(2 - missing)/2 ภาพ · ขาดอีก \(missing) ภาพ")
-                    .font(.system(size: 13, weight: missing == 0 ? .semibold : .bold))
+                    .font(.sarabunFixed(13, missing == 0 ? .semibold : .bold))
                     .foregroundStyle(missing == 0 ? Theme.success : Theme.danger).lineLimit(1)
             }
             HStack(alignment: .top, spacing: 10) {
@@ -246,7 +246,7 @@ struct WaterPageWide: View {
     func photoTile(_ title: String, key: String, caption: String, hint: String) -> some View {
         let photo = values.photo(key)
         return VStack(alignment: .leading, spacing: 6) {
-            (Text(title) + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 14, weight: .bold))
+            (Text(title) + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(14, .bold))
             PhotoSlot(photo: photo, jobID: job.id, hint: hint, required: true, title: title,
                       onPick: { img in if let p = model.addPhoto(img, to: job.id) { set(key, .photo(p)) } },
                       onClear: { set(key, nil) })
@@ -254,7 +254,7 @@ struct WaterPageWide: View {
                 .frame(height: 196)
                 .overlay(alignment: .bottomLeading) {
                     if photo != nil {
-                        Text(caption).font(.system(size: 12, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                        Text(caption).font(.sarabunFixed(12, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                             .padding(.horizontal, 8).padding(.vertical, 4)
                             .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                             .padding(8).allowsHitTesting(false)
@@ -270,11 +270,11 @@ struct WaterPageWide: View {
         card {
             header(4, "รายละเอียดเพิ่มเติม") { Spacer(minLength: 0) }
             TextEditor(text: Binding(get: { values.text("detail") }, set: { set("detail", $0.isEmpty ? nil : .text($0)) }))
-                .font(.system(size: 16)).scrollContentBackground(.hidden).padding(8)
+                .font(.sarabunFixed(16)).scrollContentBackground(.hidden).padding(8)
                 .frame(maxHeight: .infinity)
                 .overlay(alignment: .topLeading) {
                     if values.text("detail").isEmpty {
-                        Text(shownMode.placeholder).font(.system(size: 16)).foregroundStyle(Theme.inkMuted.opacity(0.8))
+                        Text(shownMode.placeholder).font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted.opacity(0.8))
                             .padding(.horizontal, 13).padding(.vertical, 16).allowsHitTesting(false)
                     }
                 }

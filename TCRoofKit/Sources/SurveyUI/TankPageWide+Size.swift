@@ -40,7 +40,7 @@ extension TankPageWide {
             .overlay {
                 VStack(spacing: 8) {
                     Image(systemName: "square.grid.3x3").font(.system(size: 34)).foregroundStyle(Theme.disabledText)
-                    Text("เลือกขนาดถัง").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                    Text("เลือกขนาดถัง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.inkMuted)
                 }
             }
             .padding(24)
@@ -55,7 +55,7 @@ extension TankPageWide {
     /// The span's number: tap to edit it with C1's span editor.
     func spanChip(_ c: TankPlan.Chip, fit: SketchFit) -> some View {
         let ref = RoofPageWide.SpanRef(axis: c.axis, index: c.index), on = span == ref
-        let chip = Text(String(format: "%.2f", c.value)).font(.system(size: max(10, 8.5 * fit.s), weight: on ? .bold : .regular)).underline(!on)
+        let chip = Text(String(format: "%.2f", c.value)).font(.sarabunFixed(max(10, 8.5 * fit.s), on ? .bold : .regular)).underline(!on)
             .foregroundStyle(Theme.primary).lineLimit(1).fixedSize().padding(.horizontal, 3)
             .background(on ? RoofPageWide.soft : Color.white.opacity(0.01), in: RoundedRectangle(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: 4).stroke(on ? Theme.primary : Color.clear, lineWidth: 1.5))
@@ -77,7 +77,7 @@ extension TankPageWide {
 
     func infoCard(fill: Bool) -> some View {
         infoSheets(card {
-            Text("ข้อมูลถัง").font(.system(size: 17, weight: .bold))
+            Text("ข้อมูลถัง").font(.sarabunFixed(17, .bold))
             // each row erased: the card's full concrete type overflows the main thread's stack on the iPad when the
             // runtime resolves it (SIGSEGV in swift_getTypeByMangledName)
             AnyView(sizeField)
@@ -159,11 +159,11 @@ extension TankPageWide {
                               @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .firstTextBaseline, spacing: phone ? 6 : 4) {
-                Text(label).font(.system(size: phone ? 14 : 15, weight: phone ? .semibold : .bold)).lineLimit(1)
-                if let unit { Text(unit).font(.system(size: 12)).foregroundStyle(Theme.inkMuted) }
-                if required { Text("*").font(.system(size: phone ? 14 : 15, weight: .bold)).foregroundStyle(Theme.danger) }
+                Text(label).font(.sarabunFixed(phone ? 14 : 15, phone ? .semibold : .bold)).lineLimit(1)
+                if let unit { Text(unit).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+                if required { Text("*").font(.sarabunFixed(phone ? 14 : 15, .bold)).foregroundStyle(Theme.danger) }
                 Spacer(minLength: 4)
-                if let aside { Text(aside).font(.system(size: 12)).foregroundStyle(phone ? Theme.borderControl : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
+                if let aside { Text(aside).font(.sarabunFixed(12)).foregroundStyle(phone ? Theme.borderControl : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
             }
             content()
         }
@@ -198,7 +198,7 @@ extension TankPageWide {
             Button("+ กำหนดขนาดเอง (กว้าง × ยาว)") { customSize() }
         } label: {
             HStack(spacing: 6) {
-                Text(shown.map { $0.name + " · " + $0.sub } ?? "เลือกจากรายการ").font(.system(size: 16, weight: shown == nil ? .regular : .semibold))
+                Text(shown.map { $0.name + " · " + $0.sub } ?? "เลือกจากรายการ").font(.sarabunFixed(16, shown == nil ? .regular : .semibold))
                     .foregroundStyle(shown == nil ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 4)
                 dropIcon
@@ -213,10 +213,10 @@ extension TankPageWide {
             Button { sizeOpen.toggle() } label: {
                 HStack(spacing: 6) {
                     if let shown {
-                        (Text(shown.name).font(.system(size: 17, weight: .bold)) + Text(" · " + shown.sub).font(.system(size: 13)).foregroundColor(Theme.inkMuted))
+                        (Text(shown.name).font(.sarabunFixed(17, .bold)) + Text(" · " + shown.sub).font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
                             .lineLimit(1).minimumScaleFactor(0.7)
                     } else {
-                        Text("เลือกจากรายการ").font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
+                        Text("เลือกจากรายการ").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
                     }
                     Spacer(minLength: 4)
                     dropIcon
@@ -236,9 +236,9 @@ extension TankPageWide {
                 let on = cur == p
                 Button { choose(p) } label: {
                     HStack(spacing: 10) {
-                        Text(p.name).font(.system(size: 16, weight: .bold))
+                        Text(p.name).font(.sarabunFixed(16, .bold))
                         Spacer(minLength: 8)
-                        Text(p.sub).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                        Text(p.sub).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                         if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 48)
@@ -251,7 +251,7 @@ extension TankPageWide {
             }
             Button { customSize() } label: {
                 HStack {
-                    Text("+ กำหนดขนาดเอง (กว้าง × ยาว)").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary)
+                    Text("+ กำหนดขนาดเอง (กว้าง × ยาว)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
                     Spacer()
                     if cur == nil && Tank.hasSize(values) { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary) }
                 }
@@ -300,7 +300,7 @@ extension TankPageWide {
                 }
             } label: {
                 HStack {
-                    Text(name ?? "เลือก").font(.system(size: 16, weight: name == nil ? .regular : .bold))
+                    Text(name ?? "เลือก").font(.sarabunFixed(16, name == nil ? .regular : .bold))
                         .foregroundStyle(name == nil ? Theme.inkMuted : Theme.navy).lineLimit(1)
                     Spacer(minLength: 4)
                     dropIcon
@@ -324,7 +324,7 @@ extension TankPageWide {
             ForEach(Tank.positions, id: \.self) { p in
                 let on = cur == p
                 Button { update { Tank.setPosition(&$0, p) } } label: {
-                    Text(p).font(.system(size: 15, weight: on ? .bold : .semibold)).foregroundStyle(Theme.navy)
+                    Text(p).font(.sarabunFixed(15, on ? .bold : .semibold)).foregroundStyle(Theme.navy)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(on ? Self.teal : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.3), lineWidth: on ? 1.5 : 1))
@@ -347,7 +347,7 @@ extension TankPageWide {
                     .focused($surfaceFocus)
                     .onSubmit { surfaceTyping = false }
                     .onChange(of: surfaceFocus) { _, f in if !f { surfaceTyping = false } }
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.sarabunFixed(15, .bold))
                 surfaceMenu { Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.primary).frame(width: 30, height: 44) }
             }
             .inputBox(focused: true, minHeight: 44, trailing: 4)
@@ -355,7 +355,7 @@ extension TankPageWide {
         } else {
             surfaceMenu {
                 HStack {
-                    Text(s.isEmpty ? "เลือก" : s).font(.system(size: 15, weight: s.isEmpty ? .regular : .bold))
+                    Text(s.isEmpty ? "เลือก" : s).font(.sarabunFixed(15, s.isEmpty ? .regular : .bold))
                         .foregroundStyle(s.isEmpty ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
                     Spacer(minLength: 2)
                     dropIcon
@@ -389,14 +389,14 @@ extension TankPageWide {
                 Button { azText = az.map(String.init) ?? ""; azEntry = true } label: {
                     HStack(spacing: 6) {
                         if let az, phone {
-                            Text("\(az)°").font(.system(size: 16, weight: .semibold)).monospacedDigit()
-                            Text(Tank.directionName(az)).font(.system(size: 13)).foregroundStyle(Theme.borderControl).lineLimit(1).minimumScaleFactor(0.7)
+                            Text("\(az)°").font(.sarabunFixed(16, .semibold)).monospacedDigit()
+                            Text(Tank.directionName(az)).font(.sarabunFixed(13)).foregroundStyle(Theme.borderControl).lineLimit(1).minimumScaleFactor(0.7)
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                         } else if let az {
-                            Text("\(az)°").font(.system(size: 17, weight: .bold)).monospacedDigit()
-                            Text(Tank.directionName(az)).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                            Text("\(az)°").font(.sarabunFixed(17, .bold)).monospacedDigit()
+                            Text(Tank.directionName(az)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
                         } else {
-                            Text("แตะเพื่อป้อน").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
+                            Text("แตะเพื่อป้อน").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 0)
                     }
@@ -408,7 +408,7 @@ extension TankPageWide {
                 Button { compass = true } label: {
                     HStack(spacing: 6) {
                         A2Icon(name: "d1-compass", fallback: "location.north.circle", size: phone ? 16 : 18)
-                        Text(phone ? "วัดด้วยเข็มทิศ" : "วัดด้วย iPad").font(.system(size: phone ? 14 : 15, weight: .bold)).lineLimit(1).fixedSize()
+                        Text(phone ? "วัดด้วยเข็มทิศ" : "วัดด้วย iPad").font(.sarabunFixed(phone ? 14 : 15, .bold)).lineLimit(1).fixedSize()
                     }
                     .foregroundStyle(Theme.primary)
                     .padding(.horizontal, phone ? 10 : 12).frame(minHeight: 44)
@@ -419,7 +419,7 @@ extension TankPageWide {
                 .buttonStyle(.plain)
             }
             if let line = phone ? Tank.sourceLine(values, device: "iPhone", tail: "แปลนหมุนตามค่านี้") : Tank.sourceLine(values) {
-                Text(line).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                Text(line).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -456,7 +456,7 @@ struct TankStepper: View {
     var valueField: some View {
             TextField(placeholder, text: $typed)
                 .keyboardType(.decimalPad).focused($typing)
-                .font(.system(size: 16, weight: .bold)).monospacedDigit().multilineTextAlignment(.center)
+                .font(.sarabunFixed(16, .bold)).monospacedDigit().multilineTextAlignment(.center)
                 .foregroundStyle(enabled ? Theme.navy : Theme.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(enabled ? Theme.surface : Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
@@ -471,13 +471,13 @@ struct TankStepper: View {
         HStack(spacing: 3) {
             TextField(placeholder, text: $typed)
                 .keyboardType(.decimalPad).focused($typing)
-                .font(.system(size: 16, weight: .semibold)).monospacedDigit().multilineTextAlignment(.center)
+                .font(.sarabunFixed(16, .semibold)).monospacedDigit().multilineTextAlignment(.center)
                 .foregroundStyle(enabled ? Theme.navy : Theme.disabledText)
                 .fixedSize()
                 .onSubmit(commit)
                 .onChange(of: typing) { _, on in if !on { commit() } }
                 .accessibilityLabel(label + " (" + unit + ")")
-            Text(unit).font(.system(size: 12)).foregroundStyle(Theme.borderControl).accessibilityHidden(true)
+            Text(unit).font(.sarabunFixed(12)).foregroundStyle(Theme.borderControl).accessibilityHidden(true)
         }
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity, minHeight: 44)

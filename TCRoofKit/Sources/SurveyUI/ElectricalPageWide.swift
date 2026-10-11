@@ -127,7 +127,7 @@ struct ElectricalPageWide: View {
         if narrow {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Text("ผังการจ่ายไฟ").font(.system(size: 19, weight: .bold)).lineLimit(1)
+                    Text("ผังการจ่ายไฟ").font(.sarabunFixed(19, .bold)).lineLimit(1)
                     Spacer(minLength: 4)
                     diagramButton
                 }
@@ -136,8 +136,8 @@ struct ElectricalPageWide: View {
             .padding(.bottom, 8)
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text("ผังการจ่ายไฟ").font(.system(size: 22, weight: .bold))
-                Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text("ผังการจ่ายไฟ").font(.sarabunFixed(22, .bold))
+                Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 8)
                 a2Button
                 diagramButton
@@ -148,7 +148,7 @@ struct ElectricalPageWide: View {
 
     var diagramButton: some View {
         Button(action: openDiagram) {
-            Text(narrow ? "Single Line →" : "สร้าง Single Line Diagram →").font(.system(size: narrow ? 15 : 16, weight: .bold)).lineLimit(1)
+            Text(narrow ? "Single Line →" : "สร้าง Single Line Diagram →").font(.sarabunFixed(narrow ? 15 : 16, .bold)).lineLimit(1)
                 .foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, narrow ? 12 : 18).frame(minHeight: 44)
                 .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
@@ -192,13 +192,13 @@ struct ElectricalPageWide: View {
 
     var zoomPanel: some View {
         HStack(spacing: 10) {
-            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.system(size: 13)).foregroundStyle(Theme.inkMuted) }
+            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
             HStack(spacing: 6) {
                 zoomButton("minus", "ย่อ") { step(-1) }
-                Text("\(Int((scale * 100).rounded()))%").font(.system(size: 16, weight: .bold)).frame(minWidth: 52)
+                Text("\(Int((scale * 100).rounded()))%").font(.sarabunFixed(16, .bold)).frame(minWidth: 52)
                 zoomButton("plus", "ขยาย") { step(1) }
                 Button { withAnimation { fit() } } label: {
-                    Text("พอดีจอ").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary)
+                    Text("พอดีจอ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
                 }
@@ -289,14 +289,14 @@ struct ElectricalPageWide: View {
         Group {
             if trafos.count < Transformer.maxTransformers {
                 Button { add() } label: {
-                    Label("เพิ่มหม้อแปลง", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
+                    Label("เพิ่มหม้อแปลง", systemImage: "plus").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 56)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             } else {
-                Text("ครบ 5 ลูกแล้ว (สูงสุด) · แตะหม้อแปลงเพื่อขยายมาแก้").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                Text("ครบ 5 ลูกแล้ว (สูงสุด) · แตะหม้อแปลงเพื่อขยายมาแก้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderControl.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6, 4])))
             }

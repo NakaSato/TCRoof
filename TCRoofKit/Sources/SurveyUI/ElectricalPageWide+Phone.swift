@@ -15,7 +15,7 @@ extension ElectricalPageWide {
                         .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
                     VStack(spacing: 0) {
                         HStack(spacing: 8) {
-                            Text("ผังการจ่ายไฟ").font(.system(size: 19, weight: .bold)).lineLimit(1)
+                            Text("ผังการจ่ายไฟ").font(.sarabunFixed(19, .bold)).lineLimit(1)
                             Spacer(minLength: 4)
                             diagramButton
                         }
@@ -64,7 +64,7 @@ extension ElectricalPageWide {
             }
             if bs.count < Transformer.maxBoards {
                 Button { editBoards(i) { $0.append(Board(name: "SDB \($0.count)")) }; withAnimation { open = i } } label: {
-                    Text("+ เพิ่มตู้").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                    Text("+ เพิ่มตู้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                         .contentShape(Rectangle())

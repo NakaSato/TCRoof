@@ -53,17 +53,17 @@ struct TankCompassView: View {
             }
             .buttonStyle(.plain).accessibilityLabel("ปิด")
             VStack(alignment: .leading, spacing: 2) {
-                Text("เล็งแนวผนัง A").font(.system(size: 18, weight: .bold))
-                Text("ยืนที่มุม A-1 · ให้เส้นเหลืองทับขอบผนังที่วิ่งไปมุม \(corner)").font(.system(size: 14)).lineLimit(2)
+                Text("เล็งแนวผนัง A").font(.sarabunFixed(18, .bold))
+                Text("ยืนที่มุม A-1 · ให้เส้นเหลืองทับขอบผนังที่วิ่งไปมุม \(corner)").font(.sarabunFixed(14)).lineLimit(2)
             }
             .shadow(color: .black.opacity(0.6), radius: 3)
             Spacer(minLength: 8)
             if reader.available {
-                Text(reader.heading.map { "\(Int($0.rounded()) % 360)°" } ?? "—").font(.system(size: 30, weight: .bold)).monospacedDigit()
+                Text(reader.heading.map { "\(Int($0.rounded()) % 360)°" } ?? "—").font(.sarabunFixed(30, .bold)).monospacedDigit()
                     .padding(.horizontal, 18).frame(minHeight: 50).background(Color.black.opacity(0.65), in: Capsule())
                     .accessibilityLabel("ทิศที่เล็ง " + (reader.heading.map { "\(Int($0.rounded()) % 360) องศา" } ?? "ยังไม่มีค่า"))
                 if let a = reader.accuracy {
-                    Text(a < 0 ? "±?" : "±\(Int(a.rounded()))°").font(.system(size: 15, weight: .bold))
+                    Text(a < 0 ? "±?" : "±\(Int(a.rounded()))°").font(.sarabunFixed(15, .bold))
                         .foregroundStyle(reader.accuracyOK ? Self.green : Theme.danger)
                         .padding(.horizontal, 12).frame(minHeight: 36).background(Color.black.opacity(0.65), in: Capsule())
                 }
@@ -80,7 +80,7 @@ struct TankCompassView: View {
                 Path { p in p.move(to: CGPoint(x: x, y: 90)); p.addLine(to: CGPoint(x: x, y: geo.size.height)) }
                     .stroke(Self.yellow, style: StrokeStyle(lineWidth: 3, dash: [8, 4]))
                 A2Icon(name: "d1-aim-reticle", fallback: "scope", size: 44).foregroundStyle(Self.yellow).position(x: x, y: y)
-                Text("มุม \(corner)").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
+                Text("มุม \(corner)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 6).padding(.vertical, 2).background(Theme.surface.opacity(0.85), in: RoundedRectangle(cornerRadius: 4))
                     .position(x: x + 46, y: y - 70)
             }
@@ -101,30 +101,30 @@ struct TankCompassView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(reader.locked != nil ? "ถือนิ่งครบ 2 วินาที · จับค่าแล้ว" : "ถือเครื่องนิ่ง 2 วินาที")
-                    .font(.system(size: 16, weight: .bold)).foregroundStyle(reader.locked != nil ? Self.green : .white)
+                    .font(.sarabunFixed(16, .bold)).foregroundStyle(reader.locked != nil ? Self.green : .white)
                 if let wall {
-                    Text("แนวผนัง A \(Int(wall.rounded()) % 360)° − 90° = ผนังบนหันไปทิศ").font(.system(size: 14))
+                    Text("แนวผนัง A \(Int(wall.rounded()) % 360)° − 90° = ผนังบนหันไปทิศ").font(.sarabunFixed(14))
                 }
                 Text("ยืนห่างเหล็กเสริม ราวเหล็ก ท่อ ≥ 1 ม. · เกิน ±10° ให้หมุนเครื่องเป็นเลข 8")
-                    .font(.system(size: 13, weight: reader.accuracyOK ? .regular : .bold))
+                    .font(.sarabunFixed(13, reader.accuracyOK ? .regular : .bold))
                     .foregroundStyle(reader.accuracyOK ? Self.yellow : Theme.danger)
             }
             Spacer(minLength: 8)
             if let az {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(az)°").font(.system(size: 34, weight: .bold)).monospacedDigit()
-                    Text(Tank.directionName(az)).font(.system(size: 16, weight: .bold))
+                    Text("\(az)°").font(.sarabunFixed(34, .bold)).monospacedDigit()
+                    Text(Tank.directionName(az)).font(.sarabunFixed(16, .bold))
                 }
             }
             if reader.locked != nil {
                 Button { reader.unlock() } label: {
-                    Text("วัดใหม่").font(.system(size: 15, weight: .bold)).padding(.horizontal, 14).frame(minHeight: 48)
+                    Text("วัดใหม่").font(.sarabunFixed(15, .bold)).padding(.horizontal, 14).frame(minHeight: 48)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.6)))
                 }
                 .buttonStyle(.plain)
             }
             Button { if let az { save(az, reader.accuracy) } } label: {
-                Text("บันทึกมุม").font(.system(size: 17, weight: .bold)).padding(.horizontal, 22).frame(minHeight: 52)
+                Text("บันทึกมุม").font(.sarabunFixed(17, .bold)).padding(.horizontal, 22).frame(minHeight: 52)
                     .background(ok ? Theme.primary : Theme.progressZero, in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain).disabled(!ok)
@@ -137,17 +137,17 @@ struct TankCompassView: View {
     var manualEntry: some View {
         VStack(spacing: 16) {
             Image(systemName: "location.north.circle").font(.system(size: 54)).foregroundStyle(Theme.disabledText)
-            Text("อุปกรณ์นี้ไม่มีเข็มทิศ · ป้อนมุมเอง").font(.system(size: 20, weight: .bold))
-            Text("ผนังบน (แนว A) หันไปทิศ (องศา 0–359)").font(.system(size: 15)).foregroundStyle(.white.opacity(0.8))
+            Text("อุปกรณ์นี้ไม่มีเข็มทิศ · ป้อนมุมเอง").font(.sarabunFixed(20, .bold))
+            Text("ผนังบน (แนว A) หันไปทิศ (องศา 0–359)").font(.sarabunFixed(15)).foregroundStyle(.white.opacity(0.8))
             HStack(spacing: 10) {
                 TextField("เช่น 90", text: $typed).keyboardType(.numberPad)
-                    .font(.system(size: 24, weight: .bold)).monospacedDigit().multilineTextAlignment(.center)
+                    .font(.sarabunFixed(24, .bold)).monospacedDigit().multilineTextAlignment(.center)
                     .foregroundStyle(Theme.navy)
                     .frame(width: 140, height: 52).background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                if let a = typedAzimuth { Text(Tank.directionName(a)).font(.system(size: 17, weight: .bold)) }
+                if let a = typedAzimuth { Text(Tank.directionName(a)).font(.sarabunFixed(17, .bold)) }
             }
             Button { if let a = typedAzimuth { save(a, nil) } } label: {
-                Text("บันทึกมุม").font(.system(size: 17, weight: .bold)).padding(.horizontal, 28).frame(minHeight: 52)
+                Text("บันทึกมุม").font(.sarabunFixed(17, .bold)).padding(.horizontal, 28).frame(minHeight: 52)
                     .background(typedAzimuth != nil ? Theme.primary : Theme.progressZero, in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain).disabled(typedAzimuth == nil)

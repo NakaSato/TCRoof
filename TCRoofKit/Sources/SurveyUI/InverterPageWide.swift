@@ -92,7 +92,7 @@ struct InverterPageWide: View {
             VStack(alignment: .leading, spacing: 6) {
                 label("รายละเอียดเพิ่มเติม", aside: "เช่น พื้นเดิม หลังคา ตู้ที่ต้องย้าย")
                 TextEditor(text: text("detail"))
-                    .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
+                    .font(.sarabunFixed(17)).scrollContentBackground(.hidden).padding(8)
                     .frame(minHeight: 110)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
@@ -103,7 +103,7 @@ struct InverterPageWide: View {
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
         let row = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
         return row {
-            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold))
+            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.sarabunFixed(17, .bold))
             if !narrow { Spacer(minLength: 8) }
             if let aside { Text(aside).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
         }
@@ -142,7 +142,7 @@ struct InverterPageWide: View {
 
     func segment(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 15, weight: on ? .bold : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+            Text(title).font(.sarabunFixed(15, on ? .bold : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
                 .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(on ? Theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 9))
@@ -193,7 +193,7 @@ struct InverterPageWide: View {
         .overlay(alignment: .bottomLeading) {
             if photo != nil && tab == .boundary {
                 Text(drawing ? "แตะทีละมุม · แตะจุดแรกเพื่อปิดขอบเขต (\(draft.count) จุด)" : "วาดขอบเขตแล้วใส่ระยะบนเส้น")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.navy)
+                    .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(Theme.surface.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
             }
@@ -204,7 +204,7 @@ struct InverterPageWide: View {
     var useAreaPhoto: AnyView? {
         guard tab == .boundary, let p = values.photo("photoArea"), let img = model.image(p, in: job.id) else { return nil }
         return AnyView(Button { addPhoto(img) } label: {
-            Label("ใช้ภาพพื้นที่", systemImage: "photo").font(.system(size: 15, weight: .bold)).frame(minHeight: 44)
+            Label("ใช้ภาพพื้นที่", systemImage: "photo").font(.sarabunFixed(15, .bold)).frame(minHeight: 44)
         }.buttonStyle(TCButtonStyle(.primary, size: .card)))
     }
 
@@ -255,7 +255,7 @@ struct InverterPageWide: View {
             if let b = boundary, let m = b.edgeMid(i) {
                 let e = b.edges[safe: i] ?? ""
                 Button { edgeText = e; editingEdge = i } label: {
-                    Text(e.isEmpty ? "ใส่ระยะ" : e + " ม.").font(.system(size: 13, weight: .bold))
+                    Text(e.isEmpty ? "ใส่ระยะ" : e + " ม.").font(.sarabunFixed(13, .bold))
                         .foregroundStyle(e.isEmpty ? Theme.teal : .white)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(e.isEmpty ? Theme.surface : Theme.teal, in: RoundedRectangle(cornerRadius: 6))
@@ -331,10 +331,10 @@ struct InverterPageWide: View {
 
     func heightField(_ s: InverterStation) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("ส สูง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text("ส สูง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             TextField("3.0", text: Binding(get: { s.height.map { fmt($0) } ?? "" },
                                           set: { t in update { $0.height = NumberInput.value(t) } }))
-                .keyboardType(.decimalPad).font(.system(size: 20, weight: .bold)).inputBox(minHeight: 48)
+                .keyboardType(.decimalPad).font(.sarabunFixed(20, .bold)).inputBox(minHeight: 48)
         }
     }
 
@@ -348,10 +348,10 @@ struct InverterPageWide: View {
 
     func stepper(_ title: String, value: Double?, digits: Int, error: Bool, down: @escaping () -> Void, up: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 0) {
                 stepButton("minus", action: down)
-                Text(value.map { String(format: "%.\(digits)f", $0) } ?? "–").font(.system(size: 20, weight: .bold)).monospacedDigit()
+                Text(value.map { String(format: "%.\(digits)f", $0) } ?? "–").font(.sarabunFixed(20, .bold)).monospacedDigit()
                     .foregroundStyle(error ? Theme.danger : Theme.navy).frame(maxWidth: .infinity)
                 stepButton("plus", action: up)
             }
@@ -381,7 +381,7 @@ struct InverterPageWide: View {
                 // iPhone: the stepper on its own line, the spans five to a row under it
                 HStack(spacing: 6) {
                     stepButton("minus", enabled: !editable.isEmpty) { setSpan(sel, by: -InverterStation.spanStep) }
-                    Text(editable.isEmpty ? "–" : "ช่วงที่ \(sel + 1)").font(.system(size: 14, weight: .semibold)).frame(maxWidth: .infinity)
+                    Text(editable.isEmpty ? "–" : "ช่วงที่ \(sel + 1)").font(.sarabunFixed(14, .semibold)).frame(maxWidth: .infinity)
                     stepButton("plus", enabled: !editable.isEmpty) { setSpan(sel, by: InverterStation.spanStep) }
                 }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
@@ -396,7 +396,7 @@ struct InverterPageWide: View {
             }
             Text(s.spansOK ? "\(s.spans.count) ช่วง · รวม \(String(format: "%.2f", s.planLength)) ม. " + (custom ? "✓" : "· อัตโนมัติ ✓")
                            : "ช่วงสุดท้ายเหลือ \(String(format: "%.2f", s.lastSpan)) ม. ✗")
-                .font(.system(size: 13, weight: s.spansOK ? .regular : .bold)).foregroundStyle(s.spansOK ? Theme.success : Theme.danger)
+                .font(.sarabunFixed(13, s.spansOK ? .regular : .bold)).foregroundStyle(s.spansOK ? Theme.success : Theme.danger)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
                 smallButton(s.spans.count < InverterStation.maxSpans ? "+ เพิ่มช่วง" : "ครบ 10 ช่วง", enabled: s.spans.count < InverterStation.maxSpans) {
                     update { $0.userSpans = $0.editableSpans + [2.5] }; spanSel = editable.count
@@ -414,7 +414,7 @@ struct InverterPageWide: View {
     func spanButton(_ i: Int, _ v: Double, _ s: InverterStation, sel: Int) -> some View {
         let last = i == s.spans.count - 1
         return Button { if !last { spanSel = i } } label: {
-            Text(String(format: "%.2f", v)).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(String(format: "%.2f", v)).font(.sarabunFixed(14, .bold)).lineLimit(1).minimumScaleFactor(0.6)
                 .foregroundStyle(last ? (s.spansOK ? Theme.inkMuted : Theme.dangerText) : Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(last ? (s.spansOK ? Theme.progressBoxIdle : Theme.danger.opacity(0.08)) : i == sel ? Theme.primarySoft : Theme.surface,
@@ -437,7 +437,7 @@ struct InverterPageWide: View {
 
     func smallButton(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(title).font(.sarabunFixed(13, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                 .foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9))

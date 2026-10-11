@@ -70,7 +70,7 @@ struct BottomBar: View {
 
     func outline(_ a: Action, size: CGFloat, weight: Font.Weight, tint: Color, border: Color) -> some View {
         Button(action: a.action) {
-            Text(a.title).font(.system(size: size, weight: weight)).foregroundStyle(tint)
+            Text(a.title).font(.sarabunFixed(size, weight)).foregroundStyle(tint)
                 .lineLimit(1).minimumScaleFactor(0.7).padding(.horizontal, 8)
                 .frame(maxWidth: .infinity).frame(height: 53)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -81,7 +81,7 @@ struct BottomBar: View {
 
     func gradient(_ a: Action, colors: [Color], size: CGFloat) -> some View {
         Button(action: a.action) {
-            Text(a.title).font(.system(size: size, weight: .semibold)).foregroundStyle(Theme.onPrimary)
+            Text(a.title).font(.sarabunFixed(size, .semibold)).foregroundStyle(Theme.onPrimary)
                 .lineLimit(1).minimumScaleFactor(0.7).padding(.horizontal, 8)
                 .frame(maxWidth: .infinity).frame(height: 53)
                 .background(LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 10))

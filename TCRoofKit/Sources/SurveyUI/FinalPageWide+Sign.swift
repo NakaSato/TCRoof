@@ -21,9 +21,9 @@ extension FinalPageWide {
     var right: some View {
         VStack(spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                Text("ลงนาม").font(.system(size: 17, weight: .bold))
+                Text("ลงนาม").font(.sarabunFixed(17, .bold))
                 Spacer(minLength: 8)
-                Text("เซ็นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                Text("เซ็นด้วย Apple Pencil หรือนิ้ว").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             surveyorCard.frame(maxHeight: .infinity)
             customerCard.frame(maxHeight: .infinity)
@@ -35,7 +35,7 @@ extension FinalPageWide {
         let name = v.text("engineer").trimmingCharacters(in: .whitespaces)
         return signatureCard(title: Self.surveyorRole, field: "surveyorSign", role: Self.surveyorRole, emptyTint: Theme.inkMuted,
                              signing: $signingSurveyor, who: Self.surveyorRole + (name.isEmpty ? "" : " · " + name)) {
-            Text("( \(name.isEmpty ? "ยังไม่ระบุชื่อใน A1" : name) )").font(.system(size: 15, weight: .semibold))
+            Text("( \(name.isEmpty ? "ยังไม่ระบุชื่อใน A1" : name) )").font(.sarabunFixed(15, .semibold))
                 .foregroundStyle(name.isEmpty ? Theme.inkMuted : Theme.navy).lineLimit(1)
                 .frame(minHeight: 36).allowsHitTesting(false)
         }
@@ -53,7 +53,7 @@ extension FinalPageWide {
                     .accessibilityLabel("ชื่อผู้ประสานงาน / เจ้าของสถานที่")
                 Text(")")
             }
-            .font(.system(size: 15, weight: .semibold))
+            .font(.sarabunFixed(15, .semibold))
             .frame(minWidth: 220, minHeight: 36)
             .overlay(alignment: .bottom) {
                 Line().stroke(Theme.primary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(height: 1.5)
@@ -94,12 +94,12 @@ extension FinalPageWide {
     }
 
     func signatureTitle(_ title: String) -> some View {
-        (Text(title + " ") + Text("*").foregroundColor(Theme.danger)).font(.system(size: 16, weight: .bold)).lineLimit(1)
+        (Text(title + " ") + Text("*").foregroundColor(Theme.danger)).font(.sarabunFixed(16, .bold)).lineLimit(1)
     }
 
     @ViewBuilder func signatureStatus(field: String, title: String) -> some View {
         let signed = v.photo(field) != nil
-        Text(signed ? "✓ ลงนามแล้ว" : "รอลงนาม").font(.system(size: 12.5, weight: .bold))
+        Text(signed ? "✓ ลงนามแล้ว" : "รอลงนาม").font(.sarabunFixed(12.5, .bold))
             .foregroundStyle(signed ? Self.okText : Self.chipRed)
             .padding(.horizontal, 10).padding(.vertical, 3)
             .background((signed ? Theme.success.opacity(0.14) : Theme.danger.opacity(0.12)), in: Capsule())
@@ -109,7 +109,7 @@ extension FinalPageWide {
             Button { set(field, nil) } label: {
                 HStack(spacing: 6) {
                     A2Icon(name: "e1-resign", fallback: "arrow.counterclockwise", size: 16)
-                    Text("เซ็นใหม่").font(.system(size: 14, weight: .semibold))
+                    Text("เซ็นใหม่").font(.sarabunFixed(14, .semibold))
                 }
                 .foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
@@ -134,7 +134,7 @@ extension FinalPageWide {
                     .accessibilityLabel((photo == nil ? "เซ็นชื่อ" : "เซ็นชื่อใหม่ ") + role)
                 Rectangle().fill(Theme.navy.opacity(0.35)).frame(width: max(0, w - 112), height: 1.5)
                     .position(x: w / 2, y: base).allowsHitTesting(false)
-                Text("✕").font(.system(size: 18)).foregroundStyle(Theme.navy.opacity(0.45))
+                Text("✕").font(.sarabunFixed(18)).foregroundStyle(Theme.navy.opacity(0.45))
                     .position(x: 40, y: base - 14).allowsHitTesting(false)
                 Group {
                     if let image {
@@ -142,12 +142,12 @@ extension FinalPageWide {
                             .frame(width: min(380, w * 0.8), height: min(124, base))
                             .position(x: w / 2, y: base + 14 - min(124, base) / 2)
                     } else if photo != nil {
-                        Text("ลายเซ็นอยู่บนเครื่องอื่น").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.inkMuted)
+                        Text("ลายเซ็นอยู่บนเครื่องอื่น").font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.inkMuted)
                             .position(x: w / 2, y: h * 0.34 + 20)
                     } else {
                         VStack(spacing: 6) {
                             A2Icon(name: "e1-sign-pen", fallback: "pencil.tip", size: 28)
-                            Text("แตะเพื่อเซ็นชื่อ").font(.system(size: 15, weight: .semibold))
+                            Text("แตะเพื่อเซ็นชื่อ").font(.sarabunFixed(15, .semibold))
                         }
                         .foregroundStyle(emptyTint)
                         .position(x: w / 2, y: h * 0.34 + 28)
@@ -156,7 +156,7 @@ extension FinalPageWide {
                 .allowsHitTesting(false)
                 VStack(spacing: 2) {
                     label
-                    Text(role + " · " + Self.thaiDate(photo?.takenAt ?? Date())).font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted)
+                    Text(role + " · " + Self.thaiDate(photo?.takenAt ?? Date())).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(1).allowsHitTesting(false)
                 }
                 .fixedSize()
@@ -168,11 +168,11 @@ extension FinalPageWide {
 
     var reviewerRow: some View {
         HStack(spacing: 12) {
-            Text("ผู้ตรวจสอบ").font(.system(size: 15, weight: .bold))
-            if !narrow { Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+            Text("ผู้ตรวจสอบ").font(.sarabunFixed(15, .bold))
+            if !narrow { Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             Spacer(minLength: 8)
             TextField(narrow ? "ไม่บังคับ" : "ชื่อผู้ตรวจสอบ", text: Binding(get: { v.text("reviewer") }, set: { set("reviewer", $0.isEmpty ? nil : .text($0)) }))
-                .font(.system(size: 15))
+                .font(.sarabunFixed(15))
                 .padding(.horizontal, 12).frame(width: narrow ? nil : 220, height: 44).frame(maxWidth: narrow ? .infinity : nil)
                 .background(Self.fieldFill, in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityLabel("ผู้ตรวจสอบ")

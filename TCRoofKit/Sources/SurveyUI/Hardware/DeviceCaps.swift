@@ -61,7 +61,7 @@ struct SourceChip: View {
     let source: FillSource?
     var body: some View {
         if let text = source?.chip {
-            Text(text).font(.system(size: 10.5, weight: .bold)).foregroundStyle(Theme.primary)
+            Text(text).font(.sarabunFixed(10.5, .bold)).foregroundStyle(Theme.primary)
                 .padding(.horizontal, 6).frame(height: 18)
                 .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 5))
                 .fixedSize()

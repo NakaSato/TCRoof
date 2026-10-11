@@ -83,11 +83,11 @@ struct CardImportSheet: View {
     private var empty: some View {
         VStack(spacing: 16) {
             Image(systemName: "sdcard").font(.system(size: 44)).foregroundStyle(Theme.primary)
-            Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
+            Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
                 .multilineTextAlignment(.center)
             Button { picking = true } label: { Text("เลือกรูป").bold().frame(minWidth: 160, minHeight: 44) }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
-            Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
         }
         .padding(24)
     }
@@ -173,9 +173,9 @@ struct CardImportSheet: View {
             .frame(width: 64, height: 64).clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.shot.date.map { $0.formatted(.dateTime.day().month().year().hour().minute().locale(Locale(identifier: "th_TH"))) } ?? "ไม่มีวันที่")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.navy)
+                    .font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.navy)
                 Text([item.shot.camera, item.shot.lat == nil ? "ไม่มีพิกัด" : nil, detail].compactMap { $0 }.joined(separator: " · "))
-                    .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
         }
     }

@@ -51,7 +51,7 @@ struct NewJobSheet: View {
             Image(systemName: Self.symbol[t.id] ?? "doc").font(.sarabun(22, relativeTo: .title2)).foregroundStyle(Theme.primary)
                 .frame(width: 48, height: 48).background(Theme.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 8) {
-                Text(t.label).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.navy)
+                Text(t.label).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
                 if t.modules.isEmpty {
                     Text("ยังไม่มีหัวข้อสำรวจ — เพิ่มเองทีละรายการ").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 } else {

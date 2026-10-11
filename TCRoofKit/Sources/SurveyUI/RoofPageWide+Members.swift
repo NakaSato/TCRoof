@@ -26,16 +26,16 @@ extension RoofPageWide {
         let off = Roof.memberOffList(values, n)
         return Button { member = member == n ? nil : n } label: {
             HStack(spacing: 10) {
-                Text("\(n)").font(.system(size: 17, weight: .bold)).foregroundStyle(Self.red).frame(width: 14)
+                Text("\(n)").font(.sarabunFixed(17, .bold)).foregroundStyle(Self.red).frame(width: 14)
                 Image("c1-member-\(f.iconFamily)-\(n)", bundle: .module).resizable().scaledToFit().frame(width: 60, height: 32)
-                Text(m.name).font(.system(size: 16)).lineLimit(1).minimumScaleFactor(0.7).truncationMode(.tail)
+                Text(m.name).font(.sarabunFixed(16)).lineLimit(1).minimumScaleFactor(0.7).truncationMode(.tail)
                 Spacer(minLength: 6)
                 if off { Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("ขนาดนี้ไม่อยู่ในรายการของชนิดโครงนี้") }
                 if !size.isEmpty {
                     Image("c1-profile-\(Roof.profile(size))", bundle: .module).resizable().scaledToFit().frame(width: 20, height: 20)
                 }
                 Text(size.isEmpty ? "เลือกขนาด" : size + (spacing.isEmpty ? "" : " " + spacing))
-                    .font(.system(size: 16, weight: !size.isEmpty && size != "-" && size != m.defaultSize ? .bold : .regular))
+                    .font(.sarabunFixed(16, !size.isEmpty && size != "-" && size != m.defaultSize ? .bold : .regular))
                     .foregroundStyle(size.isEmpty ? Theme.primary : size == "-" ? Theme.disabledText : Theme.navy)
                     .lineLimit(1).minimumScaleFactor(0.8).truncationMode(.middle)
                     .layoutPriority(1)
@@ -58,7 +58,7 @@ extension RoofPageWide {
         let spacing = StructureSizes.split(Roof.member(values, n)).spacing
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("\(n) \(m.name) · เลือกขนาด").font(.system(size: 16, weight: .bold))
+                Text("\(n) \(m.name) · เลือกขนาด").font(.sarabunFixed(16, .bold))
                 Spacer()
                 Button { member = nil } label: {
                     Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44)
@@ -71,8 +71,8 @@ extension RoofPageWide {
                 Button { update { Roof.setMember(&$0, n, size: s) }; member = nil } label: {
                     HStack(spacing: 10) {
                         Image("c1-profile-\(Roof.profile(s))", bundle: .module).resizable().scaledToFit().frame(width: 18, height: 18)
-                        Text(s == "-" ? "-  (ไม่มี / ไม่ใช้)" : s).font(.system(size: 15, weight: on ? .bold : .regular))
-                        if s == m.defaultSize && s != "-" { Text("มาตรฐาน").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.success) }
+                        Text(s == "-" ? "-  (ไม่มี / ไม่ใช้)" : s).font(.sarabunFixed(15, on ? .bold : .regular))
+                        if s == m.defaultSize && s != "-" { Text("มาตรฐาน").font(.sarabunFixed(11, .semibold)).foregroundStyle(Theme.success) }
                         Spacer()
                         if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.primary) }
                     }
@@ -92,14 +92,14 @@ extension RoofPageWide {
                     }
                     Button("พิมพ์เอง…") { memberText = cur == "-" ? "" : cur; member = nil; typingMember = n }
                 } label: {
-                    Text("ขนาดอื่น ›").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
+                    Text("ขนาดอื่น ›").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
                 }
                 Spacer()
                 Menu {
                     Button("ไม่ระบุ") { update { Roof.setSpacing(&$0, n, spacing: "") } }
                     ForEach(StructureSizes.spacings, id: \.self) { s in Button(s) { update { Roof.setSpacing(&$0, n, spacing: s) } } }
                 } label: {
-                    Text("ระยะห่าง " + (spacing.isEmpty ? "-" : spacing) + " ▾").font(.system(size: 14, weight: .bold))
+                    Text("ระยะห่าง " + (spacing.isEmpty ? "-" : spacing) + " ▾").font(.sarabunFixed(14, .bold))
                         .foregroundStyle(cur.isEmpty || cur == "-" ? Theme.disabledText : Theme.primary).frame(minHeight: 44)
                 }
                 .disabled(cur.isEmpty || cur == "-")
@@ -151,7 +151,7 @@ struct RoofShotTile: View {
                 PhotoSlot(photo: photo, jobID: jobID, hint: name, required: true, title: name, dense: true,
                           onPick: pick, onClear: { photo = nil })
                     .overlay(alignment: .bottomLeading) {
-                        Text(name).font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.onMedia).lineLimit(1).minimumScaleFactor(0.7)
+                        Text(name).font(.sarabunFixed(10, .bold)).foregroundStyle(Theme.onMedia).lineLimit(1).minimumScaleFactor(0.7)
                             .padding(.horizontal, 4).padding(.vertical, 1).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4))
                             .padding(3).allowsHitTesting(false)
                     }
@@ -162,7 +162,7 @@ struct RoofShotTile: View {
                 } label: {
                     VStack(spacing: 2) {
                         Image(systemName: "camera").font(.system(size: 14, weight: .semibold))
-                        Text(name).font(.system(size: 11)).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
+                        Text(name).font(.sarabunFixed(11)).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(Theme.danger)
                     .padding(3)
@@ -178,7 +178,7 @@ struct RoofShotTile: View {
         .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
         .overlay(alignment: .topTrailing) {
             if extra > 0 {
-                Text("+\(extra)").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.onMedia)
+                Text("+\(extra)").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.onMedia)
                     .padding(.horizontal, 5).padding(.vertical, 1).background(Theme.navySolid.opacity(0.75), in: Capsule())
                     .padding(4).allowsHitTesting(false)
                     .accessibilityLabel("ภาพโครงสร้างเดิมอีก \(extra) ภาพ")

@@ -37,9 +37,9 @@ struct JobCard: View {
                         } else { badge }
                     }
                     if job.projectName.isEmpty {
-                        Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.system(size: compact ? 16 : 17, weight: .bold)).italic().foregroundStyle(Theme.inkMuted)
+                        Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.sarabunFixed(compact ? 16 : 17, .bold)).italic().foregroundStyle(Theme.inkMuted)
                     } else {
-                        Text(job.projectName).font(.system(size: compact ? 16 : 17, weight: .bold)).foregroundStyle(Theme.navy)
+                        Text(job.projectName).font(.sarabunFixed(compact ? 16 : 17, .bold)).foregroundStyle(Theme.navy)
                     }
                     Text(detailLine).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
@@ -59,7 +59,7 @@ struct JobCard: View {
             } else if !job.sectionsByCategory.isEmpty {
                 FlowLayout(spacing: compact ? 4 : 6, lineSpacing: compact ? 4 : 6) {
                     ForEach(job.sectionsByCategory) { g in
-                        Text("\(g.category.rawValue) \(g.category.title) ×\(g.sections.count)").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.navy)
+                        Text("\(g.category.rawValue) \(g.category.title) ×\(g.sections.count)").font(.sarabunFixed(11, .semibold)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 8).padding(.vertical, 1).background(Theme.primarySoft, in: Capsule())
                     }
                 }
@@ -140,7 +140,7 @@ struct JobCard: View {
         let (text, fg, bg): (String, Color, Color) = job.projectName.isEmpty ? ("ร่าง", Theme.inkMuted, Theme.primarySoft)
             : missing > 0 ? ("ยังขาด \(missing) ช่อง", Theme.pending, Theme.pendingSoft)
             : ("ครบ", Theme.okTick, Theme.okSoft)
-        return Text(text).font(.system(size: 11, weight: .bold)).foregroundStyle(fg)
+        return Text(text).font(.sarabunFixed(11, .bold)).foregroundStyle(fg)
             .padding(.horizontal, 8).padding(.vertical, 2).background(bg, in: Capsule())
     }
 
@@ -225,7 +225,7 @@ struct PercentRing: View {
             ZStack {
                 Circle().stroke(Theme.track, lineWidth: 5)
                 Circle().trim(from: 0, to: Double(percent) / 100).stroke(tint, style: StrokeStyle(lineWidth: 5, lineCap: .round)).rotationEffect(.degrees(-90))
-                Text("\(percent)%").font(.system(size: 13, weight: .bold)).monospacedDigit().foregroundStyle(Theme.navy)
+                Text("\(percent)%").font(.sarabunFixed(13, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
             }
             .frame(width: size, height: size)
         case .card:
@@ -234,8 +234,8 @@ struct PercentRing: View {
                 Circle().trim(from: 0, to: Double(percent) / 100)
                     .stroke(percent >= 100 ? Theme.stepDone : Theme.primary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                (Text("\(percent)").font(.system(size: 16, weight: .bold)).foregroundColor(Theme.navy)
-                    + Text("%").font(.system(size: 10)).foregroundColor(Theme.inkMuted))
+                (Text("\(percent)").font(.sarabunFixed(16, .bold)).foregroundColor(Theme.navy)
+                    + Text("%").font(.sarabunFixed(10)).foregroundColor(Theme.inkMuted))
                     .monospacedDigit()
             }
             .frame(width: 58, height: 58)
@@ -246,7 +246,7 @@ struct PercentRing: View {
                 Circle().trim(from: 0, to: Double(percent) / 100)
                     .stroke(percent >= 100 ? Theme.stepDone : Theme.primary, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                Text("\(percent)%").font(.system(size: 13, weight: .bold)).monospacedDigit().foregroundStyle(Theme.navy)
+                Text("\(percent)%").font(.sarabunFixed(13, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
             }
             // the svg's 22 pt radius in a 52 box, scaled to 44: the stroke sits inside the frame
             .padding(2.5)

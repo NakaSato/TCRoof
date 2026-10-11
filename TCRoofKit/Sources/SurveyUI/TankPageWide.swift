@@ -138,8 +138,8 @@ struct TankPageWide: View {
             HStack(spacing: 10) {
                 stepCircle(n, done: s.done, current: on)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(s.title).font(.system(size: 15, weight: .bold)).foregroundStyle(on ? Theme.navy : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(s.status).font(.system(size: 12, weight: .semibold)).foregroundStyle(s.statusOK ? Theme.success : Theme.pending).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(s.title).font(.sarabunFixed(15, .bold)).foregroundStyle(on ? Theme.navy : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(s.status).font(.sarabunFixed(12, .semibold)).foregroundStyle(s.statusOK ? Theme.success : Theme.pending).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 Spacer(minLength: 0)
             }
@@ -159,7 +159,7 @@ struct TankPageWide: View {
         if done {
             A2Icon(name: "d1-step-done", fallback: "checkmark.circle.fill", size: 24).foregroundStyle(Theme.success)
         } else {
-            Text("\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(current ? Theme.onPrimary : Theme.inkMuted)
+            Text("\(n)").font(.sarabunFixed(13, .bold)).foregroundStyle(current ? Theme.onPrimary : Theme.inkMuted)
                 .frame(width: 24, height: 24)
                 .background(Circle().fill(current ? Theme.primary : Theme.surface))
                 .overlay(Circle().stroke(current ? Color.clear : Theme.navy.opacity(0.25)))
@@ -229,7 +229,7 @@ struct TankPageWide: View {
 
     func nextButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
+            Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
         }

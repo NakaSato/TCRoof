@@ -58,7 +58,7 @@ struct WideCamera: View {
 
     private var topBar: some View {
         Text(multi ? guide?.cue ?? "" : cam.ultraWide ? "เลนส์มุมกว้าง 0.5×" : "ถ่ายภาพเดียว")
-            .font(.system(size: 16, weight: .bold)).foregroundStyle(.white).multilineTextAlignment(.center)
+            .font(.sarabunFixed(16, .bold)).foregroundStyle(.white).multilineTextAlignment(.center)
             .padding(.horizontal, 16).padding(.vertical, 10)
             .background(.black.opacity(0.55), in: Capsule())
             .padding(.top, 12).padding(.horizontal, 16)
@@ -97,7 +97,7 @@ struct WideCamera: View {
     private var bottomBar: some View {
         HStack(alignment: .center) {
             Button("ยกเลิก") { done(nil); dismiss() }
-                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                .font(.sarabunFixed(17, .semibold)).foregroundStyle(.white)
                 .frame(minWidth: 90, minHeight: 44, alignment: .leading)
             Spacer()
             shutter
@@ -109,7 +109,7 @@ struct WideCamera: View {
                 }
                 if !cam.ultraWide && shots.isEmpty {
                     Button(multi ? "ภาพเดียว" : "3 ภาพ") { toggleMode() }
-                        .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                        .font(.sarabunFixed(15, .bold)).foregroundStyle(.white)
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(.white.opacity(0.2), in: Capsule())
                 }

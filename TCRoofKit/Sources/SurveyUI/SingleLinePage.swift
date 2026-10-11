@@ -78,8 +78,8 @@ struct SingleLinePage: View {
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
-                Text(phone ? "แผนภาพเส้นเดียว" : "แผนภาพเส้นเดียว (Single Line Diagram)").font(.system(size: phone ? 17 : 20, weight: .bold)).lineLimit(1)
-                Text(phone ? "สร้างอัตโนมัติจากข้อมูลสำรวจ" : subtitle).font(.system(size: phone ? 13 : 15)).opacity(0.92).lineLimit(1)
+                Text(phone ? "แผนภาพเส้นเดียว" : "แผนภาพเส้นเดียว (Single Line Diagram)").font(.sarabunFixed(phone ? 17 : 20, .bold)).lineLimit(1)
+                Text(phone ? "สร้างอัตโนมัติจากข้อมูลสำรวจ" : subtitle).font(.sarabunFixed(phone ? 13 : 15)).opacity(0.92).lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
@@ -88,7 +88,7 @@ struct SingleLinePage: View {
                     Group {
                         if phone { Image(systemName: "list.bullet.rectangle") } else { Label("ข้อมูล PV", systemImage: "list.bullet.rectangle") }
                     }
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.sarabunFixed(16, .semibold))
                     .padding(.horizontal, phone ? 0 : 14).frame(minWidth: 44, minHeight: 44).background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain).accessibilityLabel("ข้อมูลฝั่ง PV")
@@ -130,32 +130,32 @@ struct SingleLinePage: View {
     @ViewBuilder func toggle(_ sl: SingleLine) -> some View {
         if phone {
             VStack(alignment: .leading, spacing: 6) {
-                Text("ตำแหน่งกันย้อน (B4)").font(.system(size: 16, weight: .bold)).lineLimit(1)
+                Text("ตำแหน่งกันย้อน (B4)").font(.sarabunFixed(16, .bold)).lineLimit(1)
                 HStack(spacing: 2) {
                     seg("แรงต่ำ · ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
                     seg("แรงสูง · หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
                 }
                 .padding(3).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-                if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.system(size: 12)).foregroundStyle(Theme.pending).lineLimit(1) }
+                if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.sarabunFixed(12)).foregroundStyle(Theme.pending).lineLimit(1) }
             }
         } else { padToggle(sl) }
     }
 
     func padToggle(_ sl: SingleLine) -> some View {
         HStack(spacing: 10) {
-            Text("ตำแหน่งกันย้อน (B4)").font(.system(size: 17, weight: .bold)).lineLimit(1)
+            Text("ตำแหน่งกันย้อน (B4)").font(.sarabunFixed(17, .bold)).lineLimit(1)
             HStack(spacing: 2) {
                 seg("แรงต่ำ · ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
                 seg("แรงสูง · หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
             }
             .padding(3).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-            if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.system(size: 13)).foregroundStyle(Theme.pending).lineLimit(1) }
+            if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.sarabunFixed(13)).foregroundStyle(Theme.pending).lineLimit(1) }
         }
     }
 
     func seg(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, phone ? 6 : 14)
+            Text(title).font(.sarabunFixed(15, .bold)).lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, phone ? 6 : 14)
                 .frame(maxWidth: phone ? .infinity : nil, minHeight: 44)
                 .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                 .background(on ? Theme.surface : .clear, in: RoundedRectangle(cornerRadius: 10))
@@ -183,7 +183,7 @@ struct SingleLinePage: View {
                 }
             }
         } label: {
-            Label("เชื่อมต่อ PV ที่ \(sl.connectionBoard?.name ?? "—")", systemImage: "bolt.fill").font(.system(size: 15, weight: .bold)).lineLimit(1)
+            Label("เชื่อมต่อ PV ที่ \(sl.connectionBoard?.name ?? "—")", systemImage: "bolt.fill").font(.sarabunFixed(15, .bold)).lineLimit(1)
                 .padding(.horizontal, 14).frame(minHeight: 44).foregroundStyle(Theme.primary)
                 .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
         }
@@ -193,12 +193,12 @@ struct SingleLinePage: View {
     var zoomControl: some View {
         HStack(spacing: 6) {
             zoomButton("minus", "ย่อ") { step(-1) }
-            Text("\(Int((scale * 100).rounded()))%").font(.system(size: 16, weight: .bold)).frame(minWidth: phone ? 46 : 52).monospacedDigit()
+            Text("\(Int((scale * 100).rounded()))%").font(.sarabunFixed(16, .bold)).frame(minWidth: phone ? 46 : 52).monospacedDigit()
             zoomButton("plus", "ขยาย") { step(1) }
             Button { withAnimation { fit() } } label: {
                 Group {
                     if phone { Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 16, weight: .bold)) }
-                    else { Text("พอดีจอ").font(.system(size: 15, weight: .bold)) }
+                    else { Text("พอดีจอ").font(.sarabunFixed(15, .bold)) }
                 }
                 .foregroundStyle(Theme.primary).padding(.horizontal, phone ? 0 : 12).frame(minWidth: 44, minHeight: 44)
             }
@@ -279,7 +279,7 @@ struct SingleLinePage: View {
     @ViewBuilder var footer: some View {
         if phone {
             VStack(alignment: .leading, spacing: 4) {
-                Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 HStack(spacing: 10) {
                     legend("legend-existing", "อุปกรณ์เดิม"); legend("legend-new-pv", "อุปกรณ์ใหม่ (PV)"); legend("legend-control", "สายสัญญาณควบคุม")
                 }
@@ -290,7 +290,7 @@ struct SingleLinePage: View {
 
     var padFooter: some View {
         HStack(spacing: 16) {
-            Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             Spacer(minLength: 8)
             legend("legend-existing", "อุปกรณ์เดิม")
             legend("legend-new-pv", "อุปกรณ์ใหม่ (PV)")
@@ -301,7 +301,7 @@ struct SingleLinePage: View {
     func legend(_ icon: String, _ t: String) -> some View {
         HStack(spacing: 6) {
             Image(icon, bundle: .module).resizable().scaledToFit().frame(width: phone ? 18 : 24, height: 8)
-            Text(t).font(.system(size: phone ? 12 : 14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            Text(t).font(.sarabunFixed(phone ? 12 : 14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 
@@ -346,8 +346,8 @@ struct SingleLinePage: View {
 
     func notes(_ sl: SingleLine) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.danger)
-            Text("ข้อมูลล่าสุด \(stamp.formatted(.dateTime.hour().minute())) · ยังขาด \(sl.missing.count) จุด").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
+            Text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3").font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.danger)
+            Text("ข้อมูลล่าสุด \(stamp.formatted(.dateTime.hour().minute())) · ยังขาด \(sl.missing.count) จุด").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -366,7 +366,7 @@ struct SingleLinePage: View {
                 if attach { Image(systemName: "checkmark") }
                 Text("แนบในรายงาน")
             }
-            .font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
+            .font(.sarabunFixed(16, .bold)).padding(.horizontal, 18).frame(minHeight: 48)
             .foregroundStyle(attach ? .white : Theme.navy)
             .background(attach ? Theme.success : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(attach ? Theme.success : Theme.borderControl))
@@ -376,7 +376,7 @@ struct SingleLinePage: View {
 
     func barButton(_ t: String, filled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(t).font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
+            Text(t).font(.sarabunFixed(16, .bold)).padding(.horizontal, 18).frame(minHeight: 48)
                 .foregroundStyle(filled ? Theme.onPrimary : Theme.navy)
                 .background(filled ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(filled ? Theme.primary : Theme.borderControl))

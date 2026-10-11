@@ -19,6 +19,13 @@ public extension Font {
         let bold = [Font.Weight.semibold, .bold, .heavy, .black].contains(weight)
         return .custom(bold ? "Sarabun-Bold" : "Sarabun-Regular", size: size, relativeTo: style)
     }
+
+    /// Sarabun at a fixed size, for the survey's wide pages: they are laid out to fit one screen, so their text
+    /// does not grow with the text-size setting (as `.system(size:)` did not).
+    static func sarabunFixed(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        let bold = [Font.Weight.semibold, .bold, .heavy, .black].contains(weight)
+        return .custom(bold ? "Sarabun-Bold" : "Sarabun-Regular", fixedSize: size)
+    }
 }
 
 public extension Color {

@@ -99,7 +99,7 @@ extension JobEditorView {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName)
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(job.projectName.isEmpty ? Theme.inkMuted : Theme.navy)
+                        .font(.sarabunFixed(17, .bold)).foregroundStyle(job.projectName.isEmpty ? Theme.inkMuted : Theme.navy)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -217,7 +217,7 @@ extension JobEditorView {
                 }
             } label: {
                 // same dashed add button as A3's "เพิ่มหม้อแปลง" and "+ เพิ่มตู้"
-                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
+                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                     .contentShape(Rectangle())
@@ -240,7 +240,7 @@ extension JobEditorView {
                 Image(systemName: "sdcard").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy)
                     .frame(width: 38, height: 26)
                     .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 7))
-                Text("นำเข้ารูปจากการ์ด / USB").font(.system(size: 16, weight: .medium)).lineLimit(1).foregroundStyle(Theme.navy)
+                Text("นำเข้ารูปจากการ์ด / USB").font(.sarabunFixed(16, .medium)).lineLimit(1).foregroundStyle(Theme.navy)
                 Spacer(minLength: 4)
             }
             .padding(.horizontal, 10).frame(minHeight: 48)
@@ -266,7 +266,7 @@ extension JobEditorView {
                 .foregroundStyle(badgeText)
                 .frame(width: 38, height: 26)
                 .background(badgeFill, in: RoundedRectangle(cornerRadius: 7))
-                Text(item.title).font(.system(size: 16, weight: selected ? .bold : .medium)).lineLimit(1)
+                Text(item.title).font(.sarabunFixed(16, selected ? .bold : .medium)).lineLimit(1)
                     .foregroundStyle(selected ? Theme.primary : c.total > 0 && c.isComplete ? Theme.inkMuted : Theme.navy)
                 Spacer(minLength: 4)
                 if let n = changedPages[item.page] {

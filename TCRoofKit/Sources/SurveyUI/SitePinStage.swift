@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A section's point on the A2 picture (B3's water point, B5's FTS switch): the site picture with A2's drawings and
 /// symbols, read-only, and this module's pin on top. A tap or a drag anywhere on the picture moves the pin (creating it
@@ -94,12 +95,12 @@ struct SitePinStage<Pin: View, Legend: View>: View {
     func empty(noPicture: Bool) -> some View {
         VStack(spacing: 14) {
             if noPicture {
-                Image(systemName: "photo").font(.system(size: 34)).foregroundStyle(Home.muted)
+                Image(systemName: "photo").font(.system(size: 34)).foregroundStyle(Theme.inkMuted)
                 Text("ยังไม่มีภาพสถานที่ติดตั้งในหน้า A2").font(.headline)
                 Button(action: openSite) {
                     Text("เปิด A2 เพื่อเลือกภาพ").font(.system(size: 15, weight: .bold)).padding(.horizontal, 16).frame(minHeight: 44)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             } else {
                 PhotoSlot.notDownloaded
             }

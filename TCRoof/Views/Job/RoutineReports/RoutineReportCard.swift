@@ -78,9 +78,9 @@ struct RoutineReportCard: View {
         let label = Label(title, systemImage: symbol).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
             .frame(maxWidth: .infinity, minHeight: touchMin)
         if prominent {
-            NavigationLink(destination: destination) { label }.buttonStyle(.borderedProminent).tint(Theme.primary)
+            NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.primary, size: .card))
         } else {
-            NavigationLink(destination: destination) { label }.buttonStyle(.bordered).tint(Theme.primary)
+            NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
 }
@@ -100,17 +100,20 @@ struct DailyReportListView: View {
     }
 
     var body: some View {
-        List {
+        PadForm {
             if days.isEmpty {
                 ContentUnavailableView("ยังไม่ถึงช่วงติดตั้ง", systemImage: "calendar",
                                        description: Text("เริ่มติดตั้ง \(job.installStart.thaiLong)"))
             }
-            ForEach(days, id: \.self) { d in
-                NavigationLink { DailyReportScreen(job: job, date: d) } label: { row(d) }
+            PadSection {
+                ForEach(days, id: \.self) { d in
+                    PadLink { DailyReportScreen(job: job, date: d) } label: { row(d) }
+                }
             }
         }
         .navigationTitle("รายงานประจำวัน")
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code])
     }
 
     private func row(_ d: Date) -> some View {

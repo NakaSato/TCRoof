@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// D1 sub-step 3 on iPhone (docs/ui/survey-d1-layout-iphone): the 330 × 300 tank plan (`TankPlan.compact`) with the
 /// panel tables of `TankLayout` (svg/README.md: blue panels, teal row guides, the slope tag). `เลื่อนผัง` drags the
@@ -57,36 +58,36 @@ struct TankLayoutPlan: View {
         for o in TankPoints.points(values) where !o.isAbsent {
             guard let r = TankPoints.rect(o) else { continue }
             let b = rect(r.x, r.y, r.w, r.h, f).insetBy(dx: -1, dy: -1)
-            ctx.stroke(Path(b), with: .color(Home.borderControl.opacity(0.6)), style: StrokeStyle(lineWidth: 0.8, dash: o.kind == TankPoints.vent ? [] : [2, 1.5]))
+            ctx.stroke(Path(b), with: .color(Theme.borderControl.opacity(0.6)), style: StrokeStyle(lineWidth: 0.8, dash: o.kind == TankPoints.vent ? [] : [2, 1.5]))
         }
         for t in l.tables {
             for p in t.panels {
                 let b = rect(p.x, p.y, p.w, p.h, f)
                 if p.on {
-                    ctx.fill(Path(b), with: .color(Home.panelBlue.opacity(0.85)))
+                    ctx.fill(Path(b), with: .color(Theme.panelBlue.opacity(0.85)))
                     ctx.stroke(Path(b), with: .color(.white), lineWidth: 0.5)
                 } else {
-                    ctx.stroke(Path(b.insetBy(dx: 0.4, dy: 0.4)), with: .color(Home.panelBlue.opacity(0.5)), style: StrokeStyle(lineWidth: 0.6, dash: [2, 1.5]))
+                    ctx.stroke(Path(b.insetBy(dx: 0.4, dy: 0.4)), with: .color(Theme.panelBlue.opacity(0.5)), style: StrokeStyle(lineWidth: 0.6, dash: [2, 1.5]))
                 }
             }
         }
         // columns cut so no leg touches an opening
         for c in l.cuts {
-            ctx.stroke(Path(rect(c.x, c.y, c.w, c.h, f).insetBy(dx: 0.4, dy: 0.4)), with: .color(Home.danger), style: StrokeStyle(lineWidth: 0.7, dash: [2, 1.5]))
+            ctx.stroke(Path(rect(c.x, c.y, c.w, c.h, f).insetBy(dx: 0.4, dy: 0.4)), with: .color(Theme.danger), style: StrokeStyle(lineWidth: 0.7, dash: [2, 1.5]))
         }
         // the row guide along each table, and its posts
         for t in l.builtTables {
             let (a, b) = t.guide
             var p = Path()
             p.move(to: CGPoint(x: f.ox + a.x * f.k, y: f.oy + a.y * f.k)); p.addLine(to: CGPoint(x: f.ox + b.x * f.k, y: f.oy + b.y * f.k))
-            ctx.stroke(p, with: .color(Home.teal), lineWidth: 0.8)
+            ctx.stroke(p, with: .color(Theme.teal), lineWidth: 0.8)
             for q in t.posts {
-                ctx.fill(Path(ellipseIn: CGRect(x: f.ox + q.x * f.k - 1, y: f.oy + q.y * f.k - 1, width: 2, height: 2)), with: .color(Home.pillOn))
+                ctx.fill(Path(ellipseIn: CGRect(x: f.ox + q.x * f.k - 1, y: f.oy + q.y * f.k - 1, width: 2, height: 2)), with: .color(Theme.navySolid))
             }
         }
         // slope tag at the bottom left inside the tank; the arrow points to the wall the panels face
         let pill = CGRect(x: f.ox + 1.5 * f.k, y: f.oy + (l.size.h - 0.6) * f.k - 13, width: 50, height: 12)
-        ctx.fill(Path(roundedRect: pill, cornerRadius: 6), with: .color(Home.primary))
+        ctx.fill(Path(roundedRect: pill, cornerRadius: 6), with: .color(Theme.primary))
         ctx.draw(Text(["↓", "→", "↑", "←"][l.turn] + " ลาดลงใต้").font(.system(size: 7.5, weight: .bold)).foregroundColor(.white), at: CGPoint(x: pill.midX, y: pill.midY))
     }
 

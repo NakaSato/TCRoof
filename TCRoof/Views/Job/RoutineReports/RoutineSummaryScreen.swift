@@ -66,6 +66,13 @@ struct RoutineSummaryScreen: View {
                 Button(action: exportPDF) { Label("PDF", systemImage: "square.and.arrow.up") }.disabled(pdf == nil)
             }
         }
+        .tcPadNavBar(period == .week ? "รายงานประจำสัปดาห์" : "รายงานประจำเดือน", trail: ["หน้าหลัก", job.code]) {
+            HStack(spacing: 12) {
+                TCButton(filed ? "เก็บแล้ว" : "เก็บในเอกสาร", systemImage: filed ? "checkmark" : "tray.and.arrow.down", kind: .secondary, action: fileIt)
+                    .disabled(pdf == nil || filed)
+                TCButton("PDF", systemImage: "square.and.arrow.up", kind: .secondary, action: exportPDF).disabled(pdf == nil)
+            }
+        }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
         .task(id: anchor) { pdf = built.data; filed = false }
     }

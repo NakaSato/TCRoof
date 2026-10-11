@@ -3,6 +3,7 @@ import SwiftUI
 @preconcurrency import AVFoundation
 import CoreMotion
 import TCRoofCore
+import TCRoofUI
 
 /// The camera for "มุมกว้าง" fields (docs/specs/hardware-assist-swift.md §H4.3). With an ultra-wide lens it opens at
 /// 0.5× for one shot. Without one (iPad Air) it offers ถ่ายต่อกัน 3 ภาพ: left → centre → right, with the last shot's
@@ -85,7 +86,7 @@ struct WideCamera: View {
         return ZStack {
             Capsule().fill(.white.opacity(0.3)).frame(width: 240, height: 6)
             Rectangle().fill(.white).frame(width: 2, height: 22)
-            Circle().fill(g.ready ? Home.ok : Home.orange).frame(width: 22, height: 22)
+            Circle().fill(g.ready ? Theme.success : Theme.pending).frame(width: 22, height: 22)
                 .offset(x: x * 120)
         }
         .frame(height: 30).padding(.bottom, 12)

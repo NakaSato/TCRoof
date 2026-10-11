@@ -39,6 +39,7 @@ struct JobDetailView: View {
         .background(Theme.pageGradient.ignoresSafeArea())
         .navigationTitle(job.code)
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar(job.projectName.isEmpty ? job.code : job.projectName, trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"], current: job.code)
         .sheet(isPresented: $showSchedule) { ScheduleEditSheet(job: job) }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.pdf, .image, .spreadsheet, .presentation, .data],
                       allowsMultipleSelection: true, onCompletion: importDocuments)
@@ -260,7 +261,7 @@ struct JobDetailView: View {
                 Label(pending > 0 ? "อัปโหลดขึ้น Google Drive (\(pending))" : "อัปโหลดครบแล้ว",
                       systemImage: pending > 0 ? "icloud.and.arrow.up" : "checkmark.icloud")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(TCButtonStyle(.primary, size: .card))
             .disabled(pending == 0 || uploadProgress != nil)
             if let link = job.driveFolderURL, let url = URL(string: link) {
                 Link(destination: url) { Label("เปิดโฟลเดอร์ใน Drive", systemImage: "arrow.up.right.square") }
@@ -330,6 +331,7 @@ struct ScheduleEditSheet: View {
                     }
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("แก้ไขแผนงาน")
             .navigationBarTitleDisplayMode(.inline)
@@ -380,6 +382,7 @@ struct NewJobView: View {
                     Picker("ทีม", selection: $team) { ForEach(Team.allCases) { Text($0.rawValue).tag($0) } }
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("เพิ่มลูกค้าใหม่")
             .navigationBarTitleDisplayMode(.inline)

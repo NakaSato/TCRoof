@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import PhotosUI
 import TCRoofCore
+import TCRoofUI
 
 /// The survey's one photo slot (docs/ui/photo-picker): empty is a dashed frame (red when required) with a hint and
 /// "อัปโหลด" / "กล้อง"; filled shows the photo with a done badge and a clear button, and opens full screen on tap.
@@ -41,7 +42,7 @@ struct PhotoSlot: View {
     var empty: some View {
         ViewThatFits {
             VStack(spacing: 14) {
-                Text(hint).font(.system(size: 15)).foregroundStyle(Home.muted).multilineTextAlignment(.center)
+                Text(hint).font(.system(size: 15)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
                 PhotoSourceButtons(onUpload: { showPicker = true }, onCamera: { showCamera = true })
                 extra
             }
@@ -49,7 +50,7 @@ struct PhotoSlot: View {
             .frame(minWidth: 330, minHeight: 120)
             VStack(spacing: 4) {
                 // a small ideal width so ViewThatFits keeps the hint and lets it shrink
-                Text(hint).font(.system(size: 12, weight: .bold)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.7)
+                Text(hint).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(minWidth: 0, idealWidth: 60, maxWidth: .infinity)
                 PhotoSourceButtons(compact: true, onUpload: { showPicker = true }, onCamera: { showCamera = true })
                 extra
@@ -58,9 +59,9 @@ struct PhotoSlot: View {
             PhotoSourceButtons(compact: true, onUpload: { showPicker = true }, onCamera: { showCamera = true })
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        .background(required ? Theme.photoEmptyFill : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12)
-            .stroke(required ? Home.danger : Home.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+            .stroke(required ? Theme.photoEmptyBorder : Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
     }
 
     func filled(_ p: Photo) -> some View {
@@ -79,7 +80,7 @@ struct PhotoSlot: View {
                 .buttonStyle(.plain).accessibilityLabel(title.isEmpty ? "ดูภาพเต็มจอ" : "\(title) แตะเพื่อดูเต็มจอ")
             } else {
                 if dense {
-                    Image(systemName: "icloud.and.arrow.down").font(.system(size: 20)).foregroundStyle(Home.muted)
+                    Image(systemName: "icloud.and.arrow.down").font(.system(size: 20)).foregroundStyle(Theme.inkMuted)
                         .accessibilityLabel("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด")
                 } else {
                     PhotoSlot.notDownloaded
@@ -88,18 +89,18 @@ struct PhotoSlot: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         .overlay(alignment: .topLeading) { PhotoDoneBadge(inset: dense ? 4 : 10) }
         .overlay(alignment: .topTrailing) { PhotoClearButton(label: clearLabel, inset: dense ? -4 : 4, action: onClear) }
     }
 
     /// The grey-blue behind a photo scaled to fit.
-    static let stageColor = Color(red: 0.91, green: 0.933, blue: 0.961)
+    static let stageColor = Theme.mapLand
 
     /// A photo saved in the job but taken on another device.
     static var notDownloaded: some View {
         Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
-            .font(.callout).foregroundStyle(Home.muted).multilineTextAlignment(.center).padding(8)
+            .font(.callout).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center).padding(8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -121,26 +122,31 @@ struct PhotoSourceButtons: View {
         }
     }
 
+    @ViewBuilder
     func button(_ title: String, icon: String, fallback: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Group {
-                if compact {
-                    A2Icon(name: icon, fallback: fallback, size: 20).foregroundStyle(Home.primary)
-                        .frame(width: 44, height: 44)
-                } else {
-                    HStack(spacing: 8) {
-                        A2Icon(name: icon, fallback: fallback, size: 18).foregroundStyle(Home.primary)
-                        Text(title).font(.system(size: 15, weight: .bold)).foregroundStyle(Home.navy)
-                    }
-                    .frame(width: 150, height: height)
-                }
+        if compact {
+            Button(action: action) {
+                A2Icon(name: icon, fallback: fallback, size: 20).foregroundStyle(Theme.primary)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
+                    .contentShape(Rectangle())
             }
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+        } else {
+            // the board's photo slot: อัปโหลด secondary, กล้อง gradient (docs/ui/components, section 6)
+            let camera = icon == "ui-camera"
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    A2Icon(name: icon, fallback: fallback, size: 18).foregroundStyle(camera ? Theme.onPrimary : Theme.primary)
+                    Text(title)
+                }
+                .frame(minWidth: 114, minHeight: height)
+            }
+            .buttonStyle(TCButtonStyle(camera ? .primaryGradient : .secondary, size: .card))
+            .accessibilityLabel(title)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
     }
 }
 
@@ -148,7 +154,7 @@ struct PhotoSourceButtons: View {
 struct PhotoDoneBadge: View {
     var inset: CGFloat = 10
     var body: some View {
-        A2Icon(name: "b1-photo-done", fallback: "checkmark.circle.fill", size: 28).foregroundStyle(Home.ok)
+        A2Icon(name: "b1-photo-done", fallback: "checkmark.circle.fill", size: 28).foregroundStyle(Theme.success)
             .padding(inset).allowsHitTesting(false).accessibilityHidden(true)
     }
 }

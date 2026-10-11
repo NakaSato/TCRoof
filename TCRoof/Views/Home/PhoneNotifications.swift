@@ -16,6 +16,8 @@ struct PhoneNotificationsView: View {
     var large = false
 
     @Environment(\.dismiss) private var dismiss
+    /// iPad: closes the panel under the bell; iPhone dismisses the full-screen cover.
+    var close: (() -> Void)? = nil
     @Environment(\.homeInk) private var ink
     @State private var todoOnly = false
     /// Set when the sync row is tapped; once nothing waits, the row shows as "ซิงก์ครบแล้ว".
@@ -29,6 +31,10 @@ struct PhoneNotificationsView: View {
         case .syncPending: true
         case .install, .saved: false
         }
+    }
+
+    private func closePanel() {
+        if let close { close() } else { dismiss() }
     }
 
     var body: some View {
@@ -65,7 +71,7 @@ struct PhoneNotificationsView: View {
                     .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
                     .padding(.horizontal, 6).frame(minHeight: 44)
             }
-            Button { dismiss() } label: {
+            Button { closePanel() } label: {
                 Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.navy)
                     .frame(width: 44, height: 44).background(Theme.hairline, in: Circle())
             }
@@ -150,7 +156,7 @@ struct PhoneNotificationsView: View {
             markRead([n])
             switch n.kind {
             case .syncPending: syncedAt = .now; sync()
-            case .survey where n.job != nil: dismiss(); openSurvey(n)
+            case .survey where n.job != nil: closePanel(); openSurvey(n)
             default: break
             }
         } label: {

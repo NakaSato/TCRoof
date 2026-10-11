@@ -41,7 +41,7 @@ struct PhotoPickerSection: View {
                     Text("\(images.count) รูป").font(.subheadline).foregroundStyle(Theme.muted)
                 }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
 
             if images.isEmpty {
                 Text("ยังไม่มีรูปภาพ")

@@ -66,6 +66,9 @@ struct DailyReportScreen: View {
                 Button { showSettings = true } label: { Label("ตั้งค่ารายงาน", systemImage: "gearshape") }
             }
         }
+        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code], current: date.thaiLong) {
+            TCButton("ตั้งค่ารายงาน", systemImage: "gearshape", kind: .secondary) { showSettings = true }
+        }
         .sheet(isPresented: $showSign) {
             DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), engineer: job.routineSettings.siteEngineer) { name in
                 sign(engineer: name)
@@ -168,11 +171,11 @@ struct DailyReportScreen: View {
             Button(action: requestSaveDraft) {
                 Text("บันทึกร่าง").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.bordered).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button { showSign = true } label: {
                 Text("ตรวจ & ลงนาม").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.borderedProminent).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.primary, size: .card))
         }
         .padding(.horizontal, isPhone ? 16 : 24).padding(.vertical, 10)
         .frame(maxWidth: 700)

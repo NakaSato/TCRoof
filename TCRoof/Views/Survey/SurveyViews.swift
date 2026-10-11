@@ -6,10 +6,17 @@ import TCRoofCore
 
 struct SurveyListView: View {
     @Query(sort: \Job.surveyDate) private var jobs: [Job]
-    @State private var window: DateWindow = .week
+    /// From the iPad home's search field: every date, the search field focused.
+    let startSearching: Bool
+    @State private var window: DateWindow
     @State private var search = ""
     @State private var showNewJob = false
     @Environment(\.horizontalSizeClass) private var sizeClass
+
+    init(startSearching: Bool = false) {
+        self.startSearching = startSearching
+        _window = State(initialValue: startSearching ? .all : .week)
+    }
 
     /// Three cards across at 1366 pt, two at 1024 pt.
     private let columns = isPhone ? cardColumns : [GridItem(.adaptive(minimum: 400), spacing: 16)]
@@ -32,7 +39,8 @@ struct SurveyListView: View {
     private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                QueueFilterBar(listTitle: "รายการงานสำรวจ", prefix: "คิวสำรวจ", window: $window, search: $search, count: filtered.count)
+                QueueFilterBar(listTitle: "รายการงานสำรวจ", prefix: "คิวสำรวจ", window: $window, search: $search, count: filtered.count,
+                               focusOnAppear: startSearching)
                 if filtered.isEmpty {
                     ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
                 } else {

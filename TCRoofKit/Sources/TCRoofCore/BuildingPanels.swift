@@ -244,6 +244,14 @@ public enum BuildingPanels {
         if !load.isEmpty { out.append("โหลด " + load.joined(separator: ", ")) }
         return out
     }
+    /// One building's gaps, the same checks as `missing`: "ภาพมุมกว้าง", "ภาพเบรกเกอร์", "โหลด" (the iPad bar's chip).
+    public static func missingItems(_ v: Values) -> [String] {
+        var out: [String] = []
+        if v.photo(Key.photoWide) == nil { out.append("ภาพมุมกว้าง") }
+        if v.photo(Key.photoBreaker) == nil { out.append("ภาพเบรกเกอร์") }
+        if !hasLoad(v) { out.append("โหลด") }
+        return out
+    }
     /// "ยังขาด: ภาพเบรกเกอร์ โรงสูบน้ำ · โรงกรอง ทั้ง 2 ภาพ" / "ครบทุกอาคาร"
     public static func statusLine(_ job: Job) -> String {
         let m = missing(job)

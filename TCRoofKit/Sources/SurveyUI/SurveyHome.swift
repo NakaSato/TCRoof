@@ -4,6 +4,7 @@ import UIKit
 import UniformTypeIdentifiers
 import TCRoofCore
 import DriveSync
+import TCRoofUI
 
 /// Entry point of the survey-report feature. Put it inside a NavigationStack
 /// (TCRoof pushes it from "สำรวจหน้างาน"; a standalone app wraps it in `SolarSurveyScene`).
@@ -160,6 +161,17 @@ struct SurveyHomeView: View {
         .task { if UserDefaults.standard.bool(forKey: "surveySettings") { showSettings = true } }
         .task {
             guard UserDefaults.standard.bool(forKey: "surveyDemo"), open == nil else { return }
+            // `-surveyFreshJob YES` (UI tests): a new job each run, replacing the last test job, so earlier runs leave no state
+            if UserDefaults.standard.bool(forKey: "surveyFreshJob") {
+                for j in model.jobs where j.docNo == "UITEST" { model.delete(j.id) }
+                var j = model.create(JobTemplate.all[0], engineer: "สมชาย")
+                j.values["docNo"] = .text("UITEST"); j.values["projectName"] = .text("ทดสอบ REV")
+                j.values["address"] = .text("55 ถ.พหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง ปทุมธานี")
+                model.update(j)
+                return go(j)
+            }
+            // `-surveyTestJob YES`: the job `-surveyFreshJob` made last time, as it was left
+            if UserDefaults.standard.bool(forKey: "surveyTestJob"), let j = model.jobs.first(where: { $0.docNo == "UITEST" }) { return go(j) }
             go(model.jobs.first ?? model.create(JobTemplate.all[0], engineer: model.settings.engineer))
         }
         #endif
@@ -268,7 +280,7 @@ struct SurveyHomeView: View {
             Text(model.jobs.isEmpty ? "เริ่มงานใหม่ หรือเปิดงานที่บันทึกไว้จาก Google Drive / ไฟล์สำรอง"
                  : search.isEmpty ? "ไม่มีงานในกลุ่ม \"\(filter.title)\"" : "ลองคำค้นอื่น")
         } actions: {
-            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(.borderedProminent) }
+            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(TCButtonStyle(.primary, size: .card)) }
         }
         .padding(.top, 40)
     }

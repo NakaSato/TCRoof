@@ -96,11 +96,11 @@ extension InfoPageWide {
             ForEach(Options.yesNo, id: \.self) { o in
                 let on = chosen == o
                 Button { job.values["internet"] = .choice(o, other: "") } label: {
-                    Text(o).font(.system(size: 15, weight: on ? .bold : .regular)).foregroundStyle(on ? Home.navy : Home.muted)
+                    Text(o).font(.system(size: 15, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
-                            if on { RoundedRectangle(cornerRadius: 8).fill(Color.white).shadow(color: Home.navy.opacity(0.2), radius: 1.5, y: 1) }
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
                         }
                         // 44 pt with the track's padding
                         .contentShape(Rectangle().inset(by: -3))
@@ -132,8 +132,9 @@ extension InfoPageWide {
                 // only offered while the field is empty, so it never overwrites an address someone typed
                 if job.values.text("officeAddress").isEmpty {
                     Button("คัดลอก") { job.values["officeAddress"] = job.values["address"] }
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary)
-                        .frame(minHeight: 44).fixedSize()
+                        .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                        // width fits the word; the height stays 44 pt (a plain fixedSize() would shrink it to the text)
+                        .frame(minHeight: 44).fixedSize(horizontal: true, vertical: false).contentShape(Rectangle())
                         .disabled(job.values.text("address").isEmpty)
                         .accessibilityLabel("คัดลอกที่อยู่สถานี")
                 }
@@ -153,18 +154,18 @@ extension InfoPageWide {
                 .inputBox(focused: focus == "gps", minHeight: 44, trailing: 12, leading: 12, fontSize: 16, stroke: 0.35)
                 Button(action: locate) {
                     Group {
-                        if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Home.primary) }
+                        if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Theme.primary) }
                     }
                     .frame(width: 44, height: 44)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.35)))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).disabled(locating)
                 .accessibilityLabel("ตำแหน่งปัจจุบัน")
             }
             if locating, let a = liveAccuracy {
-                Text("กำลังหาตำแหน่ง · ± \(Int(a.rounded())) ม.").font(.footnote).foregroundStyle(Home.muted)
+                Text("กำลังหาตำแหน่ง · ± \(Int(a.rounded())) ม.").font(.footnote).foregroundStyle(Theme.inkMuted)
             }
             gpsNote.font(.footnote)
         }
@@ -185,7 +186,7 @@ extension InfoPageWide {
         return HStack(spacing: 0) {
             TextField("0xx-xxx-xxxx", text: text("phone")).keyboardType(.phonePad).focused($focus, equals: "phone")
             Button { if let u = URL(string: "tel:" + digits) { openURL(u) } } label: {
-                A2Icon(name: "ui-phone", fallback: "phone", size: 16).foregroundStyle(Home.primary).frame(width: 36, height: 44).contentShape(Rectangle())
+                A2Icon(name: "ui-phone", fallback: "phone", size: 16).foregroundStyle(Theme.primary).frame(width: 36, height: 44).contentShape(Rectangle())
             }
             .disabled(digits.isEmpty)
             .accessibilityLabel("โทรหาผู้ประสานงาน")
@@ -221,10 +222,10 @@ extension InfoPageWide {
                 Spacer(minLength: 4)
                 Image(systemName: "lock").font(.system(size: 15)).foregroundStyle(Theme.muted)
             }
-            .font(.system(size: 15)).foregroundStyle(Home.muted)
+            .font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
             .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(Home.disabledFill, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.hairline))
+            .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("วิศวกรผู้สำรวจ \(value.isEmpty ? myEngineer : value) · ดึงจากการตั้งค่า แก้ไขไม่ได้")
         }

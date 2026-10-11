@@ -31,21 +31,36 @@ public struct MapCrop: Equatable, Sendable {
 
     public var text: String { [x, y, w, h].map { String(format: "%g", ($0 * 10).rounded() / 10) }.joined(separator: ",") }
 
-    /// Dragged from inside: same size, kept on the map.
-    public func moved(dx: Double, dy: Double) -> MapCrop { MapCrop(x: x + dx, y: y + dy, w: w, h: h) }
+    /// Dragged from inside: same size, kept on the map, or inside `bounds` (the part of the map on screen),
+    /// shrinking to fit it when the frame is bigger.
+    public func moved(dx: Double, dy: Double, within bounds: MapCrop = .full) -> MapCrop {
+        let w = min(w, bounds.w), h = min(h, bounds.h)
+        return MapCrop(x: min(max(x + dx, bounds.x), bounds.x + bounds.w - w),
+                       y: min(max(y + dy, bounds.y), bounds.y + bounds.h - h), w: w, h: h)
+    }
 
-    /// Dragged by a corner: that corner's two edges move, the opposite corner stays.
-    public func resized(_ c: Corner, dx: Double, dy: Double) -> MapCrop {
-        var l = x, t = y, r = x + w, b = y + h
+    /// Dragged by a corner: that corner's two edges move, the opposite corner stays. The frame stays on the map,
+    /// or inside `bounds`.
+    public func resized(_ c: Corner, dx: Double, dy: Double, within bounds: MapCrop = .full) -> MapCrop {
+        let minX = bounds.x, maxX = bounds.x + bounds.w, minY = bounds.y, maxY = bounds.y + bounds.h
+        var l = max(x, minX), t = max(y, minY), r = min(x + w, maxX), b = min(y + h, maxY)
         switch c {
-        case .nw, .sw: l = min(max(l + dx, 0), r - Self.minSize)
-        case .ne, .se: r = max(min(r + dx, 100), l + Self.minSize)
+        case .nw, .sw: l = min(max(l + dx, minX), r - Self.minSize)
+        case .ne, .se: r = max(min(r + dx, maxX), l + Self.minSize)
         }
         switch c {
-        case .nw, .ne: t = min(max(t + dy, 0), b - Self.minSize)
-        case .sw, .se: b = max(min(b + dy, 100), t + Self.minSize)
+        case .nw, .ne: t = min(max(t + dy, minY), b - Self.minSize)
+        case .sw, .se: b = max(min(b + dy, maxY), t + Self.minSize)
         }
         return MapCrop(x: l, y: t, w: r - l, h: b - t)
+    }
+
+    /// The part of a picture that shows when it is scaled to fill `box` and centred, in % of the picture.
+    public static func visible(picture: CGSize, box: CGSize) -> MapCrop {
+        guard picture.width > 0, picture.height > 0, box.width > 0, box.height > 0 else { return .full }
+        let k = max(box.width / picture.width, box.height / picture.height)
+        let w = Double(box.width / (picture.width * k)) * 100, h = Double(box.height / (picture.height * k)) * 100
+        return MapCrop(x: (100 - w) / 2, y: (100 - h) / 2, w: w, h: h)
     }
 
     /// Ground size in whole metres: `across` is the map's width in metres, `aspect` its height / width.

@@ -179,7 +179,7 @@ struct ElectricalPageWide: View {
                 withAnimation { proxy.scrollTo(i, anchor: .topLeading) }
             }
         }
-        .background(Color(red: 0.965, green: 0.972, blue: 0.985))
+        .background(Theme.phonePage)
         .simultaneousGesture(MagnifyGesture()
             .onChanged { v in
                 let base = pinchBase ?? scale

@@ -162,7 +162,7 @@ extension SitePageWide {
             }
             Spacer(minLength: 4)
             Text(placed ? "วางแล้ว" : "ลากไปวาง").font(.system(size: 11.5, weight: .bold))
-                .foregroundStyle(placed ? Color(red: 0.118, green: 0.482, blue: 0.271) : Theme.primary)
+                .foregroundStyle(placed ? Theme.okText : Theme.primary)
                 .padding(.horizontal, 8).padding(.vertical, 2)
                 .background(placed ? Theme.success.opacity(0.14) : Theme.primary.opacity(0.12), in: Capsule())
                 .opacity(canDrop || placed ? 1 : 0.45)

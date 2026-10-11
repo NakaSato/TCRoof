@@ -27,12 +27,12 @@ struct FinalPageWide: View {
     func set(_ id: String, _ value: FieldValue?) { job.values[id] = value }
 
     static let purple = Color(red: 0.357, green: 0.294, blue: 0.769)
-    static let purpleText = Color(red: 0.416, green: 0.353, blue: 0.878)
-    static let purpleSoft = Color(red: 0.945, green: 0.933, blue: 1.0)
-    static let purpleFill = Color(red: 0.984, green: 0.980, blue: 1.0)
-    static let okText = Color(red: 0.118, green: 0.482, blue: 0.271)
-    static let hairline = Color(red: 0.933, green: 0.945, blue: 0.961)
-    static let bodyText = Color(red: 0.231, green: 0.290, blue: 0.376)
+    static let purpleText = Color(light: 0x6A5AE0, dark: 0xB3A8FF)
+    static let purpleSoft = Color(light: 0xF1EEFF, dark: 0x241F3D)
+    static let purpleFill = Color(light: 0xFBFAFF, dark: 0x1A1730)
+    static let okText = Theme.okText
+    static let hairline = Theme.hairline
+    static let bodyText = Theme.inkStrong
     /// Selected colour and tint of each `Options.verdict` choice.
     static let verdictColors: [(Color, Color)] = [
         (Color(red: 0.180, green: 0.490, blue: 0.196), Color(red: 0.180, green: 0.490, blue: 0.196).opacity(0.12)),

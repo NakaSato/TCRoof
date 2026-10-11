@@ -94,24 +94,24 @@ public enum Theme {
     public static let dangerLine = Color(light: 0xF2A09A, dark: 0x7A3A35)
     public static let dangerSoft = Color(light: 0xFDECEA, dark: 0x3A1C1A)
 
-    public static let unreadRow = Color(hex: 0xF3F8FD)
+    public static let unreadRow = Color(light: 0xF3F8FD, dark: 0x15212D)
     /// Survey job card progress box: fill while a draft is open, fill otherwise, finished-group bar,
     /// percent at 100 % and at 0 %.
-    public static let progressBox = Color(hex: 0xEEF4FB)
-    public static let progressBoxIdle = Color(hex: 0xF3F6FA)
+    public static let progressBox = Color(light: 0xEEF4FB, dark: 0x16273A)
+    public static let progressBoxIdle = Color(light: 0xF3F6FA, dark: 0x161E29)
     public static let stepDone = Color(hex: 0x70AD47)
-    public static let progressFull = Color(hex: 0x2E7D32)
+    public static let progressFull = Color(light: 0x2E7D32, dark: 0x8FD16A)
     public static let progressZero = Color(hex: 0x9AA6B6)
 
     // iPhone home board (docs/ui/tcroof-home-iphone)
-    public static let phonePage = Color(hex: 0xF5F8FB)
+    public static let phonePage = Color(light: 0xF5F8FB, dark: 0x0E141C)
     /// Quiet fill of round icon buttons, and row separators.
-    public static let hairline = Color(hex: 0xEEF2F7)
-    public static let chevron = Color(hex: 0xAAB6C5)
+    public static let hairline = Color(light: 0xEEF2F7, dark: 0x1C2734)
+    public static let chevron = Color(light: 0xAAB6C5, dark: 0x5E6E83)
     public static let success = Color(hex: 0x2E9E5B)
-    public static let successInk = Color(hex: 0x3B7420)
+    public static let successInk = Color(light: 0x3B7420, dark: 0x8FD16A)
     public static let warning = Color(hex: 0xF08C00)
-    public static let warningSoft = Color(hex: 0xFFF1DE)
+    public static let warningSoft = Color(light: 0xFFF1DE, dark: 0x2E2213)
     public static let ringDone = Color(hex: 0x8FD16A)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
@@ -129,7 +129,7 @@ public enum Theme {
     public static let borderOutdoor = Color(light: 0xC9D3E0, dark: 0x34465C)
     // iPad home board (docs/ui/tcroof-home-ipad)
     /// Hairline under the white header #E6EBF2.
-    public static let headerLine = Color(hex: 0xE6EBF2)
+    public static let headerLine = Color(light: 0xE6EBF2, dark: 0x243142)
     /// Light dim of the page behind the bell popover.
     public static let popoverDim = navy.opacity(0.12)
     // iPhone plan calendar (docs/ui/tcroof-plan-calendar-iphone)

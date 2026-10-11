@@ -74,8 +74,8 @@ struct RoofPageWide: View {
     func update(_ f: (inout Values) -> Void) { if let i = index { f(&job.modules[i].values) } }
     func set(_ id: String, _ v: FieldValue?) { update { $0[id] = v } }
 
-    static let track = Color(red: 0.933, green: 0.949, blue: 0.969)
-    static let soft = Color(red: 0.890, green: 0.933, blue: 0.973)
+    static let track = Theme.hairline
+    static let soft = Theme.primarySoft
     static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
     static let line = Color(red: 0.867, green: 0.894, blue: 0.929)
     static let amber = Color(red: 0.706, green: 0.325, blue: 0.035)

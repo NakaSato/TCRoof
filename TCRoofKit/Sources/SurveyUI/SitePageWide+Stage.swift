@@ -81,7 +81,7 @@ extension SitePageWide {
     /// The picture, drawings and handles in unzoomed coordinates (`stageSpace`).
     @ViewBuilder func stage(_ size: CGSize, full: Bool) -> some View {
         ZStack(alignment: .topLeading) {
-            Color(red: 0.91, green: 0.933, blue: 0.961)
+            Theme.mapLand
             if let p = photo, let img = model.image(p, in: job.id) {
                 let r = imageRect(img, in: size)
                 Image(uiImage: img).resizable().frame(width: r.width, height: r.height).position(x: r.midX, y: r.midY)

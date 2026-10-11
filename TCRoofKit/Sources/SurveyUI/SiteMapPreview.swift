@@ -58,7 +58,7 @@ struct SiteMapPreview: View {
         GeometryReader { geo in
             let size = geo.size
             ZStack {
-                Color(red: 0.91, green: 0.933, blue: 0.961)
+                Theme.mapLand
                 if let image {
                     Image(uiImage: image).resizable().scaledToFill().frame(width: size.width, height: size.height).clipped()
                 } else if loading {

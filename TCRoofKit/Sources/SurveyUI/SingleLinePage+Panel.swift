@@ -98,7 +98,7 @@ extension SingleLinePage {
             }
         }
         .padding(14)
-        .background(Color(red: 0.99, green: 0.91, blue: 0.90), in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 14))
     }
 
     func floodCard(_ f: SLFlood) -> some View {
@@ -113,7 +113,7 @@ extension SingleLinePage {
             .buttonStyle(.plain)
         }
         .padding(14)
-        .background(Color(red: 1, green: 0.95, blue: 0.87), in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.warningSoft, in: RoundedRectangle(cornerRadius: 14))
     }
 
     func disclosure(_ title: String, _ detail: String, _ kind: ListKind) -> some View {

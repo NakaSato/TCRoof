@@ -181,6 +181,8 @@ struct LegendGlyph: View {
                 ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(RoofPageWide.red), lineWidth: 1)
             }
         }
+        // drawn in the plan's dark ink, so it keeps the plan's white paper in dark mode
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 3))
         .accessibilityHidden(true)
     }
 }

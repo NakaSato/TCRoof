@@ -249,7 +249,7 @@ extension TankPageWide {
             ForEach(chips) { o in
                 let on = o.id == p.id
                 Button { withAnimation(.easeOut(duration: 0.15)) { pointSel = o.id } } label: {
-                    Text(o.label).font(.system(size: 14, weight: .heavy)).foregroundStyle(on ? Color.white : Theme.primary).lineLimit(1)
+                    Text(o.label).font(.system(size: 14, weight: .heavy)).foregroundStyle(on ? Theme.onMedia : Theme.primary).lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(on ? Theme.warning : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay {

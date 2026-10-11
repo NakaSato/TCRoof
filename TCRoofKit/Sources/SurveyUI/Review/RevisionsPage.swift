@@ -50,7 +50,7 @@ struct RevisionsPage: View {
             Text("ประวัติ REV").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             ForEach(revs.reversed()) { r in
                 HStack(alignment: .top, spacing: 12) {
-                    Text("REV \(r.rev)").font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(.white)
+                    Text("REV \(r.rev)").font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 8).padding(.vertical, 4).background(Theme.navy, in: RoundedRectangle(cornerRadius: 6))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(ISODate.thai(ISODate.string(r.issuedAt))) · \(r.issuedBy.isEmpty ? "—" : r.issuedBy)").font(.sarabun(15, .semibold, relativeTo: .subheadline))

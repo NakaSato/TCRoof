@@ -35,9 +35,9 @@ struct FinalPageWide: View {
     static let bodyText = Theme.inkStrong
     /// Selected colour and tint of each `Options.verdict` choice.
     static let verdictColors: [(Color, Color)] = [
-        (Color(red: 0.180, green: 0.490, blue: 0.196), Color(red: 0.180, green: 0.490, blue: 0.196).opacity(0.12)),
-        (Color(red: 0.698, green: 0.416, blue: 0.0), Color(red: 0.941, green: 0.549, blue: 0.0).opacity(0.13)),
-        (Color(red: 0.851, green: 0.271, blue: 0.231), Color(red: 0.851, green: 0.271, blue: 0.231).opacity(0.12)),
+        (Theme.okText, Theme.okText.opacity(0.12)),
+        (Color(red: 0.698, green: 0.416, blue: 0.0), Theme.warning.opacity(0.13)),
+        (Theme.danger, Theme.danger.opacity(0.12)),
     ]
 
     var leftWidth: CGFloat { max(320, (width - 28) / 3) }

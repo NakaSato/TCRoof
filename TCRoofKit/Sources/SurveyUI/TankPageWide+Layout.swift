@@ -290,7 +290,7 @@ extension TankPageWide {
 
     func checkRow(_ title: String, _ value: String, ok: Bool, first: Bool = false) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(.white)
+            Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onMedia)
                 .frame(width: 24, height: 24)
                 .background(Circle().fill(ok ? Theme.success : Theme.warning))
                 .padding(.top, 2)

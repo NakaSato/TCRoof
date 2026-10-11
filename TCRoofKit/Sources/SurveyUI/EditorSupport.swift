@@ -53,7 +53,7 @@ struct BusyOverlay: View {
         ZStack {
             Color.black.opacity(0.25).ignoresSafeArea()
             VStack(spacing: 12) { ProgressView().controlSize(.large); Text(text) }
-                .padding(28).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(28).background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 }

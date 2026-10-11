@@ -75,7 +75,7 @@ struct JobCard: View {
         }
         .padding(.horizontal, compact ? 14 : 16).padding(.top, compact ? 12 : 14).padding(.bottom, compact ? 10 : 14)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(mode == .locked ? Theme.background : Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(mode == .locked ? Theme.background : Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(recent ? Theme.primary.opacity(compact ? 1 : 0.55) : Theme.borderSubtle, lineWidth: recent && !compact ? 1.5 : 1))
         .contentShape(RoundedRectangle(cornerRadius: 16))
     }

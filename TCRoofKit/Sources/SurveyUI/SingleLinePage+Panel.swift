@@ -6,7 +6,7 @@ import TCRoofUI
 
 /// Right-hand panel of the single line page: PV data, breaker check, what must be collected, flood note, lists.
 extension SingleLinePage {
-    static let navyCard = Color(red: 0.086, green: 0.196, blue: 0.361)
+    static let navyCard = Theme.navySolid
 
     func panel(_ sl: SingleLine) -> some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -43,7 +43,7 @@ extension SingleLinePage {
                 .overlay(alignment: .top) { if i > 0 { Rectangle().fill(.white.opacity(0.14)).frame(height: 1) } }
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onMedia)
         .padding(16)
         .background(Self.navyCard, in: RoundedRectangle(cornerRadius: 16))
     }

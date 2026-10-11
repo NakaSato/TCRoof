@@ -70,10 +70,10 @@ struct SiteMarksEditor: View {
         let on = armed == k
         return HStack(spacing: 6) {
             ToolIcon(tool: .mark(k)).frame(width: 24, height: 24)
-            Text(k.paletteTitle).font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(on ? Color.white : Color.primary)
+            Text(k.paletteTitle).font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(on ? Theme.onPrimary : Theme.navy)
         }
         .padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
-        .background(on ? Theme.primary : Color(uiColor: .systemBackground), in: Capsule())
+        .background(on ? Theme.primary : Theme.surface, in: Capsule())
         .overlay(Capsule().stroke(on ? Theme.primary : Theme.borderControl, lineWidth: 1.2))
     }
 

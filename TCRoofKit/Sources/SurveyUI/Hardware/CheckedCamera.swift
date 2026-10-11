@@ -80,7 +80,7 @@ struct PhotoReview: View {
             .frame(maxWidth: 520)
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
     }
 }
 

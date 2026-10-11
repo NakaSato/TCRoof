@@ -80,7 +80,7 @@ extension JobEditorView {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 14)
             }
-            .background(Color(uiColor: .systemBackground))
+            .background(Theme.surface)
             .overlay(alignment: .trailing) { if !compact { Rectangle().fill(Theme.borderSubtle).frame(width: 1) } }
             .safeAreaInset(edge: .bottom, spacing: 0) { if !readOnly { sidebarFooter } }
             // keep the open section visible when "next" or "continue" jumps into a collapsed group
@@ -182,7 +182,7 @@ extension JobEditorView {
         let open = !collapsed.contains(g.category)
         return Button { withAnimation(.snappy) { if open { collapsed.insert(g.category) } else { collapsed.remove(g.category) } } } label: {
             HStack(spacing: 8) {
-                Text(g.category.rawValue).font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(.white)
+                Text(g.category.rawValue).font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(Theme.onMedia)
                     .frame(width: 22, height: 22).background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6))
                 Text(g.category.title).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 4)
@@ -225,7 +225,7 @@ extension JobEditorView {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Color(uiColor: .systemBackground).shadow(.drop(color: Theme.navy.opacity(0.08), radius: 6, y: -2)))
+        .background(Theme.surface.shadow(.drop(color: Theme.navy.opacity(0.08), radius: 6, y: -2)))
     }
 
     func select(_ p: Page) {

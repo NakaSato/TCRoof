@@ -321,7 +321,7 @@ private struct TodayTimelineCard: View {
             Button {
                 if item.isInstall { openInstall(a.job) } else { open(a, a.nextStep?.page) }
             } label: {
-                Text(item.action).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(.white)
+                Text(item.action).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.onPrimary)
                     .lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, 10)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(Theme.actionGradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))

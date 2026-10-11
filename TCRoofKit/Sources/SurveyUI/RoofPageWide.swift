@@ -76,9 +76,9 @@ struct RoofPageWide: View {
 
     static let track = Theme.hairline
     static let soft = Theme.primarySoft
-    static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
-    static let line = Color(red: 0.867, green: 0.894, blue: 0.929)
-    static let amber = Color(red: 0.706, green: 0.325, blue: 0.035)
+    static let red = Theme.danger
+    static let line = Theme.borderSubtle
+    static let amber = Theme.pending
 
     var body: some View {
         VStack(spacing: 16) {

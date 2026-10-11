@@ -48,7 +48,7 @@ struct InstallPickerSheet: View {
                 }
             }
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(Theme.surface)
     }
 
     func row(_ j: Job) -> some View {

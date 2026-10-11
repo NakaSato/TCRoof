@@ -227,13 +227,13 @@ struct InfoPageHeader: View {
                 .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
                 .overlay(alignment: .topTrailing) {
                     // the export sheet explains the gap; this dot just says there is one
-                    if !job.missingGroups.isEmpty { Circle().fill(.orange).frame(width: 9, height: 9).offset(x: 3, y: -3) }
+                    if !job.missingGroups.isEmpty { Circle().fill(Theme.warning).frame(width: 9, height: 9).offset(x: 3, y: -3) }
                 }
             }
             .accessibilityLabel("ส่งออก")
             .buttonStyle(.plain)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, phone ? 8 : 24).padding(.vertical, phone ? 6 : 10)
         .frame(maxWidth: .infinity)
         // runs up under the status bar

@@ -325,7 +325,7 @@ struct SingleLinePage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24).padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
-                .background(.bar)
+                .background(Theme.surface)
                 .overlay(alignment: .top) { Divider() }
             BottomBar(variant: .pair(secondary: .init(title: "แก้ข้อมูลใน A3") { open(SLTarget(.electrical)) },
                                      primary: .init(title: "ส่งออก PDF (A3)", action: exportPDF)))
@@ -340,7 +340,7 @@ struct SingleLinePage: View {
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background(Theme.surface)
         .overlay(alignment: .top) { Divider() }
     }
 

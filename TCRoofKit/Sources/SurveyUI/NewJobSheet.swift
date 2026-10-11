@@ -67,7 +67,7 @@ struct NewJobSheet: View {
             Image(systemName: "chevron.right").font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary).padding(.top, 14)
         }
         .padding(16)
-        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
         .contentShape(RoundedRectangle(cornerRadius: 14))
     }

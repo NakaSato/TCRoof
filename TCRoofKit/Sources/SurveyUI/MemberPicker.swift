@@ -45,7 +45,7 @@ struct MemberPicker: View {
             Image(systemName: "chevron.up.chevron.down").font(.sarabun(11, relativeTo: .caption2)).foregroundStyle(Theme.inkMuted)
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+        .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
     }
 
     func setSize(_ s: String) {

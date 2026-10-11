@@ -151,7 +151,7 @@ struct RoofShotTile: View {
                 PhotoSlot(photo: photo, jobID: jobID, hint: name, required: true, title: name, dense: true,
                           onPick: pick, onClear: { photo = nil })
                     .overlay(alignment: .bottomLeading) {
-                        Text(name).font(.system(size: 10, weight: .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                        Text(name).font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.onMedia).lineLimit(1).minimumScaleFactor(0.7)
                             .padding(.horizontal, 4).padding(.vertical, 1).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4))
                             .padding(3).allowsHitTesting(false)
                     }
@@ -178,7 +178,7 @@ struct RoofShotTile: View {
         .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
         .overlay(alignment: .topTrailing) {
             if extra > 0 {
-                Text("+\(extra)").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                Text("+\(extra)").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.onMedia)
                     .padding(.horizontal, 5).padding(.vertical, 1).background(Theme.navySolid.opacity(0.75), in: Capsule())
                     .padding(4).allowsHitTesting(false)
                     .accessibilityLabel("ภาพโครงสร้างเดิมอีก \(extra) ภาพ")

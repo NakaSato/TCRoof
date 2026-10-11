@@ -39,7 +39,7 @@ struct CardImportSheet: View {
                     ToolbarItem(placement: .primaryAction) { Button { picking = true } label: { Label("เพิ่มรูป", systemImage: "plus") } }
                 }
             }
-            .overlay { if reading { ProgressView("กำลังอ่านรูป…").padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
+            .overlay { if reading { ProgressView("กำลังอ่านรูป…").padding(20).background(Theme.surface, in: RoundedRectangle(cornerRadius: 12)) } }
         }
         .fileImporter(isPresented: $picking, allowedContentTypes: [.image], allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { load(urls) }

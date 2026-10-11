@@ -214,7 +214,7 @@ struct SignaturePad: View {
 
     static let fill = Color(red: 0.988, green: 0.992, blue: 0.996)
     static let line = Color(red: 0.357, green: 0.420, blue: 0.510)
-    static let save = Color(red: 0.122, green: 0.435, blue: 0.710)
+    static let save = Theme.primary
 
     var body: some View {
         let phone = sizeClass == .compact
@@ -252,7 +252,7 @@ struct SignaturePad: View {
                 }
                 dismiss()
             } label: {
-                Text("บันทึก").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text("บันทึก").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(minWidth: phone ? 80 : 130, minHeight: 48)
                     .background(Self.save, in: RoundedRectangle(cornerRadius: 12))
             }

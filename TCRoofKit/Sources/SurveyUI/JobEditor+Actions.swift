@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// The editor toolbar, the export check, links from the diagram, and adding or removing sections.
 extension JobEditorView {
@@ -21,7 +22,7 @@ extension JobEditorView {
             }
             .overlay(alignment: .topTrailing) {
                 // the export sheet explains the gap; this dot just says there is one
-                if !job.missingGroups.isEmpty { Circle().fill(.orange).frame(width: 8, height: 8).offset(x: 4, y: -2) }
+                if !job.missingGroups.isEmpty { Circle().fill(Theme.warning).frame(width: 8, height: 8).offset(x: 4, y: -2) }
             }
         }
     }

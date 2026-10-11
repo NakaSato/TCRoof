@@ -28,8 +28,8 @@ struct FtsPageWide: View {
     var values: Values { index.map { job.modules[$0].values } ?? Values() }
     func set(_ id: String, _ v: FieldValue?) { if let i = index { job.modules[i].values[id] = v } }
 
-    static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
-    static let orange = Color(red: 0.941, green: 0.549, blue: 0.0)
+    static let red = Theme.danger
+    static let orange = Theme.warning
     static let warnRed = Theme.dangerText
     static let slotFill = Theme.progressBoxIdle
 

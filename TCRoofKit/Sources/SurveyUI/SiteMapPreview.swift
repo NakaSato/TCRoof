@@ -125,7 +125,7 @@ struct SiteMapPreview: View {
         let across = MapImage.metersAcross(lat: coordinate?.latitude ?? 15, zoom: zoom)
         return ZStack(alignment: .topLeading) {
             Path { p in p.addRect(CGRect(origin: .zero, size: size)); p.addRect(r) }
-                .fill(Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.32), style: FillStyle(eoFill: true))
+                .fill(Theme.navySolid.opacity(0.32), style: FillStyle(eoFill: true))
                 .allowsHitTesting(false)
             Rectangle().fill(Color.white.opacity(0.001))
                 .overlay(Rectangle().stroke(Self.cropBlue, lineWidth: 2))

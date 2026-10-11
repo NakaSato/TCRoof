@@ -175,9 +175,9 @@ struct FloodPageWide: View {
     }
 
     func pill(_ s: FloodCheck.Status) -> some View {
-        let c: (Color, Color) = s.tone == .good ? (Color(red: 0.886, green: 0.937, blue: 0.855), Color(red: 0.231, green: 0.455, blue: 0.125))
-            : s.tone == .bad ? (Color(red: 0.992, green: 0.925, blue: 0.918), Color(red: 0.706, green: 0.137, blue: 0.094))
-            : (Color(red: 1, green: 0.957, blue: 0.898), Theme.pending)
+        let c: (Color, Color) = s.tone == .good ? (Theme.okSoft, Theme.okTick)
+            : s.tone == .bad ? (Theme.dangerSoft, Theme.dangerText)
+            : (Theme.pendingSoft, Theme.pending)
         return Text(s.text).font(.system(size: 12.5, weight: .bold)).foregroundStyle(c.1).lineLimit(1)
             .padding(.horizontal, 8).padding(.vertical, 2).background(c.0, in: RoundedRectangle(cornerRadius: 6))
     }
@@ -228,7 +228,7 @@ struct FloodPageWide: View {
                             .frame(width: 92, height: 60).clipShape(RoundedRectangle(cornerRadius: 8))
                             .onTapGesture { viewing = p }
                             Button { setPhotos(photos.filter { $0.id != p.id }) } label: {
-                                Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                                Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.onMedia)
                                     .frame(width: 20, height: 20).background(Color.black.opacity(0.6), in: Circle())
                                     .frame(width: 44, height: 44).contentShape(Rectangle())
                             }
@@ -362,7 +362,7 @@ struct FloodPageWide: View {
             Text("ระดับติดตั้งอุปกรณ์ใช้แค่ระยะเผื่อจากพื้น").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(red: 0.886, green: 0.937, blue: 0.855).opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.okSoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.success.opacity(0.4)))
     }
 
@@ -408,7 +408,7 @@ struct FloodPageWide: View {
             else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " · ตั้งค่าได้ในหน้าตั้งค่า").font(.system(size: 13)).foregroundStyle(Theme.pending) }
         }
     }
-    func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Color(red: 0.231, green: 0.455, blue: 0.125) : t == .warn ? Theme.pending : t == .bad ? Color(red: 0.706, green: 0.137, blue: 0.094) : Theme.navy }
+    func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Theme.okTick : t == .warn ? Theme.pending : t == .bad ? Color(red: 0.706, green: 0.137, blue: 0.094) : Theme.navy }
 
     var gistdaKey: String {
         let k = model.settings.gistdaKey.trimmingCharacters(in: .whitespacesAndNewlines)

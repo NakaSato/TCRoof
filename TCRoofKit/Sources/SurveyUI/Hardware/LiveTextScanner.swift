@@ -90,7 +90,7 @@ struct NameplateScannerView: View {
             panel
                 .padding(20)
                 .frame(maxWidth: 520)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
                 .padding(16)
         }
     }

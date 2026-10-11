@@ -197,7 +197,7 @@ struct WaterPageWide: View {
             .background(RoundedRectangle(cornerRadius: 16).stroke(on ? Self.teal.opacity(0.14) : .clear, lineWidth: 6).padding(-1))
             .overlay(alignment: .topTrailing) {
                 if on {
-                    Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white)
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onMedia)
                         .frame(width: 24, height: 24).background(Self.teal, in: Circle()).padding(10)
                 }
             }

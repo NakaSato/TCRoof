@@ -160,6 +160,7 @@ extension ExportSheet {
             .disabled(busy != nil)
         }
         .padding(.horizontal, 20).padding(.vertical, 12)
+        // stays `.bar`: `Theme.surface` here crashed the sheet on opening (SIGBUS in Color._apply, Debug, iPad simulator)
         .background(.bar)
     }
 }

@@ -114,7 +114,7 @@ struct A3PhotoTile: View {
             .frame(maxWidth: .infinity).frame(height: height)
             .overlay(alignment: .bottomLeading) {
                 if photo != nil {
-                    Text(label).font(.system(size: 11, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                    Text(label).font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.onMedia).lineLimit(1)
                         .padding(.horizontal, 5).padding(.vertical, 2).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4)).padding(4)
                         .allowsHitTesting(false)
                 }

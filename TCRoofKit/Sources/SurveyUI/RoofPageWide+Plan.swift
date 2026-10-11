@@ -170,7 +170,7 @@ extension RoofPageWide {
                 if let icon { Image(systemName: icon).font(.system(size: 12, weight: .bold)) }
                 Text(title).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
             }
-            .foregroundStyle(on ? Color.white : tint)
+            .foregroundStyle(on ? Theme.onMedia : tint)
             .padding(.horizontal, 10).frame(minHeight: 44)
             .background(on ? tint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Color.clear : tint.opacity(0.5)))
@@ -319,7 +319,7 @@ extension RoofPageWide {
                 }
                 if (a.kind == Roof.keepOutKind && mode == .pv) || (a.kind == Roof.skylightKind && tool == .skylight) {
                     Button { update { Roof.removeArea(&$0, index: a.index) } } label: {
-                        Text("×").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                        Text("×").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
                             .frame(width: 20, height: 20).background(Self.red, in: Circle())
                             .frame(width: 44, height: 44).contentShape(Rectangle())
                     }

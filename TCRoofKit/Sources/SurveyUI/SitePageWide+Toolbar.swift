@@ -53,7 +53,7 @@ extension SitePageWide {
         HStack(spacing: 0) { content() }
             .padding(2)
             .background(Theme.surface.opacity(0.96), in: RoundedRectangle(cornerRadius: 10))
-            .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.28), radius: 2.5, y: 1)
+            .shadow(color: Theme.navySolid.opacity(0.28), radius: 2.5, y: 1)
     }
 
     /// `narrow` drops the title (VoiceOver keeps it) so the toolbar fits an iPhone.
@@ -62,7 +62,7 @@ extension SitePageWide {
             A2Icon(name: icon, fallback: symbol, size: 16)
             if !narrow { Text(title).font(.system(size: 11.5, weight: .semibold)).lineLimit(1).fixedSize() }
         }
-        .foregroundStyle(on ? Color.white : Theme.navy)
+        .foregroundStyle(on ? Theme.onPrimary : Theme.navy)
         .padding(.horizontal, narrow ? 0 : 10).frame(minWidth: narrow ? 36 : nil).frame(height: 36)
         .background(fill, in: RoundedRectangle(cornerRadius: 7))
         // 36 pt button + the group's padding: a 44 pt target
@@ -132,7 +132,7 @@ extension SitePageWide {
         .padding(6)
         .frame(width: 180)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.3), radius: 10, y: 6)
+        .shadow(color: Theme.navySolid.opacity(0.3), radius: 10, y: 6)
     }
 
     @ViewBuilder func scaleBar(_ size: CGSize, zoom z: CGFloat) -> some View {

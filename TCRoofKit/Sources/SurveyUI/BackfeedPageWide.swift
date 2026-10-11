@@ -149,7 +149,7 @@ struct BackfeedPageWide: View {
             .background(RoundedRectangle(cornerRadius: 16).stroke(on ? Theme.teal.opacity(0.18) : .clear, lineWidth: 6).padding(-1))
             .overlay(alignment: .topTrailing) {
                 if on {
-                    Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white)
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onMedia)
                         .frame(width: 24, height: 24).background(Theme.teal, in: Circle()).padding(10)
                 }
             }

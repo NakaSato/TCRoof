@@ -167,7 +167,7 @@ extension SurveyHomeView {
             Label("ซิงก์ \(n) งาน", systemImage: "arrow.triangle.2.circlepath.icloud")
                 .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 .padding(.horizontal, 14).frame(minHeight: 44)
-                .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
         }
         .buttonStyle(.plain)
@@ -191,7 +191,7 @@ extension SurveyHomeView {
                     .foregroundStyle(Theme.navy)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(14)
-                    .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
                     .shadow(color: on ? Theme.primary.opacity(0.15) : .clear, radius: 6, y: 2)
                 }

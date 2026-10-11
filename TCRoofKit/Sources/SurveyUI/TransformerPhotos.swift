@@ -51,7 +51,7 @@ struct TransformerPhotosView: View {
                         Image(systemName: "chevron.up.chevron.down").font(.sarabun(11, relativeTo: .caption2))
                     }
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+                    .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
                 }
                 TextField("หรือพิมพ์ชื่อตู้", text: textBinding("tr\(i)_feed")).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(maxWidth: 160)
             }

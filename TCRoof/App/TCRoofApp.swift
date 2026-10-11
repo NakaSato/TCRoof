@@ -114,7 +114,7 @@ struct RootView: View {
 /// Opens one screen directly for simulator checks: `simctl launch <device> com.tcroof.internal -screen plan`.
 struct DebugScreen: View {
     static let requested = UserDefaults.standard.string(forKey: "screen")
-    static let screens: Set = ["survey", "plan", "planlist", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
+    static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
                               "daily", "dailies", "request", "weekly", "monthly", "routine"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
@@ -126,6 +126,9 @@ struct DebugScreen: View {
         case "survey": SurveyListView()
         case "plan": PlanCalendarView()
         case "planlist": PlanListView()
+        case "surveyhistory": SurveyHistoryView()
+        case "scanhistory": ScanHistoryView()
+        case "loghistory": InstallLogHistoryView()
         case "scan": ScanJobListView()
         case "install": InstallRecordsView()
         case "job": if let job { JobDetailView(job: job) }

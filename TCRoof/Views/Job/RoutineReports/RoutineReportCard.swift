@@ -100,13 +100,15 @@ struct DailyReportListView: View {
     }
 
     var body: some View {
-        List {
+        PadForm {
             if days.isEmpty {
                 ContentUnavailableView("ยังไม่ถึงช่วงติดตั้ง", systemImage: "calendar",
                                        description: Text("เริ่มติดตั้ง \(job.installStart.thaiLong)"))
             }
-            ForEach(days, id: \.self) { d in
-                NavigationLink { DailyReportScreen(job: job, date: d) } label: { row(d) }
+            PadSection {
+                ForEach(days, id: \.self) { d in
+                    PadLink { DailyReportScreen(job: job, date: d) } label: { row(d) }
+                }
             }
         }
         .navigationTitle("รายงานประจำวัน")

@@ -373,15 +373,15 @@ private struct NewJobFormView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("ลูกค้า") {
+            PadForm(maxWidth: 640) {
+                PadSection("ลูกค้า") {
                     TextField("ชื่อลูกค้า / บริษัท *", text: $customerName)
                     TextField("ชื่อโครงการ (ว่างไว้ = ใช้ชื่อลูกค้า)", text: $projectName)
                     TextField("เบอร์โทรศัพท์", text: $phone).keyboardType(.phonePad)
                     TextField("ที่อยู่", text: $address, axis: .vertical)
                     TextField("จังหวัด", text: $province)
                 }
-                Section("แผนงาน") {
+                PadSection("แผนงาน") {
                     LabeledContent("ขนาดระบบโดยประมาณ (kWp)") {
                         TextField("0", value: $capacity, format: .number)
                             .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
@@ -389,10 +389,9 @@ private struct NewJobFormView: View {
                     DatePicker("นัดสำรวจ", selection: $surveyDate)
                     DatePicker("เริ่มติดตั้ง (ประมาณ)", selection: $installStart, displayedComponents: .date)
                     Stepper("ระยะเวลาติดตั้ง \(installDays) วัน", value: $installDays, in: 1...60)
-                    Picker("ทีม", selection: $team) { ForEach(Team.allCases) { Text($0.rawValue).tag($0) } }
+                    PadPicker("ทีม", selection: $team) { ForEach(Team.allCases) { Text($0.rawValue).tag($0) } }
                 }
             }
-            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("เพิ่มลูกค้าใหม่")
             .navigationBarTitleDisplayMode(.inline)

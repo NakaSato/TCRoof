@@ -266,7 +266,7 @@ extension SurveyHomeView {
                 Text("เรียงตาม").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 TCSegmented(Sort.allCases.map(\.title), selection: Binding(
                     get: { sort.title }, set: { t in if let s = Sort.allCases.first(where: { $0.title == t }) { sort = s } }))
-                    .fixedSize().accessibilityLabel("เรียงตาม")
+                    .frame(width: 330).accessibilityLabel("เรียงตาม")
             }
         }
     }

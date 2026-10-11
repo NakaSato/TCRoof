@@ -241,8 +241,10 @@ struct ObstaclesEditor: View {
                             TextField("0", text: bind(o.id, \.y)).keyboardType(.decimalPad).frame(width: 70)
                             TextField("0", text: bind(o.id, \.w)).keyboardType(.decimalPad).frame(width: 70)
                             TextField("0", text: bind(o.id, \.h)).keyboardType(.decimalPad).frame(width: 70)
-                            Button(role: .destructive) { items.removeAll { $0.id == o.id } } label: { Image(systemName: "minus.circle.fill") }
-                                .buttonStyle(.borderless)
+                            Button(role: .destructive) { items.removeAll { $0.id == o.id } } label: {
+                                Image(systemName: "minus.circle.fill").foregroundStyle(Theme.danger).frame(width: 44, height: 44).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).accessibilityLabel("ลบสิ่งกีดขวาง")
                         }
                         .textFieldStyle(OutlinedFieldStyle())
                     }
@@ -271,7 +273,10 @@ struct TransformersEditor: View {
                         TextField("kVA", text: kva(t.id)).keyboardType(.numberPad).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 110)
                         Text("kVA").foregroundStyle(Theme.inkMuted)
                         Spacer()
-                        Button(role: .destructive) { items.removeAll { $0.id == t.id } } label: { Image(systemName: "trash") }.buttonStyle(.borderless)
+                        Button(role: .destructive) { items.removeAll { $0.id == t.id } } label: {
+                            Image(systemName: "trash").foregroundStyle(Theme.danger).frame(width: 44, height: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).accessibilityLabel("ลบหม้อแปลง")
                     }
                     HStack(spacing: 6) {
                         ForEach(0..<6, id: \.self) { k in

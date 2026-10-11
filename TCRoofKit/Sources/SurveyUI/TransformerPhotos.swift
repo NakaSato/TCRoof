@@ -1,5 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
+import TCRoofUI
 import TCRoofCore
 
 /// Every transformer must be photographed from all sides plus its nameplate, and must name the MDB it feeds.
@@ -22,16 +23,16 @@ struct TransformerPhotosView: View {
                 Text("ภาพหม้อแปลง TR\(i + 1)" + (t.kva.isEmpty ? "" : " · \(t.kva) kVA")).font(.headline)
                 Spacer()
                 if missing.isEmpty { Label("ครบทุกมุม", systemImage: "checkmark.seal.fill").foregroundStyle(Paper.tick).font(.callout) }
-                else { Label("ขาด \(missing.count) ภาพ", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.callout) }
+                else { Label("ขาด \(missing.count) ภาพ", systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.dangerText).font(.callout) }
             }
-            Text("บังคับถ่าย: ด้านหน้า ด้านหลัง ด้านซ้าย ด้านขวา ป้ายพิกัด และมุมกว้าง").font(.caption).foregroundStyle(.secondary)
+            Text("บังคับถ่าย: ด้านหน้า ด้านหลัง ด้านซ้าย ด้านขวา ป้ายพิกัด และมุมกว้าง").font(.caption).foregroundStyle(Theme.inkMuted)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 10)], spacing: 10) {
                 ForEach(Schema.transformerAngles, id: \.key) { a in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 4) {
                             Text(a.label).font(.caption.weight(.semibold))
                             Image(systemName: values.photo("tr\(i)_\(a.key)") == nil ? "asterisk" : "checkmark.circle.fill")
-                                .font(.caption2).foregroundStyle(values.photo("tr\(i)_\(a.key)") == nil ? Color.red : Paper.tick)
+                                .font(.caption2).foregroundStyle(values.photo("tr\(i)_\(a.key)") == nil ? Theme.danger : Paper.tick)
                         }
                         PhotoField(photo: photoBinding("tr\(i)_\(a.key)"), jobID: jobID, label: "TR\(i + 1) " + a.label, height: 150)
                             .photoShot("tr\(i)_\(a.key)")
@@ -46,7 +47,7 @@ struct TransformerPhotosView: View {
                 } label: {
                     HStack {
                         Text(values.text("tr\(i)_feed").isEmpty ? "เลือกตู้" : values.text("tr\(i)_feed"))
-                            .foregroundStyle(values.text("tr\(i)_feed").isEmpty ? Color.red : Paper.value)
+                            .foregroundStyle(values.text("tr\(i)_feed").isEmpty ? Theme.danger : Paper.value)
                         Image(systemName: "chevron.up.chevron.down").font(.caption2)
                     }
                     .padding(.horizontal, 10).padding(.vertical, 6)
@@ -59,7 +60,7 @@ struct TransformerPhotosView: View {
         }
         .padding(12)
         .background(Paper.band.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(missing.isEmpty ? Paper.tick : Color.red.opacity(0.5)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(missing.isEmpty ? Paper.tick : Theme.dangerLine))
     }
 
     func photoBinding(_ id: String) -> Binding<Photo?> {

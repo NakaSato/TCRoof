@@ -17,12 +17,12 @@ struct FieldView: View {
     var body: some View {
         switch spec.kind {
         case .note(let text):
-            Text(text).font(.footnote).foregroundStyle(.red).padding(.horizontal, 14).padding(.vertical, 8)
+            Text(text).font(.footnote).foregroundStyle(Theme.dangerText).padding(.horizontal, 14).padding(.vertical, 8)
         case .plan(let tank):
             PlanPreview(values: values, tank: tank)
         case .diagram:
             VStack(alignment: .leading, spacing: 6) {
-                Text(spec.label).font(.footnote).foregroundStyle(.secondary)
+                Text(spec.label).font(.footnote).foregroundStyle(Theme.inkMuted)
                 SketchView(sketch: Drawings.truss()).frame(maxWidth: 420)
             }
             .padding(14)
@@ -39,9 +39,9 @@ struct FieldView: View {
                     Text(spec.label).font(.callout.weight(.medium)).foregroundStyle(Paper.ink)
                     if !spec.optional && spec.countable {
                         Image(systemName: filled ? "checkmark.circle.fill" : "circle")
-                            .font(.caption).foregroundStyle(filled ? Paper.tick : Color.orange)
+                            .font(.caption).foregroundStyle(filled ? Paper.tick : Theme.pending)
                     } else if spec.optional {
-                        Text("ไม่บังคับ").font(.caption2).foregroundStyle(.secondary)
+                        Text("ไม่บังคับ").font(.caption2).foregroundStyle(Theme.inkMuted)
                     }
                     SourceChip(source: values.source(spec.id))
                 }
@@ -50,7 +50,7 @@ struct FieldView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .bottom) { Rectangle().fill(Color.secondary.opacity(0.18)).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
     }
 
     @ViewBuilder var control: some View {
@@ -84,29 +84,29 @@ struct FieldView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Text(values.text(spec.id).isEmpty ? "เลือก" : values.text(spec.id))
-                            .foregroundStyle(values.text(spec.id).isEmpty ? Color.secondary : Paper.value).font(.callout.weight(.semibold))
-                        Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.secondary)
+                            .foregroundStyle(values.text(spec.id).isEmpty ? Theme.inkMuted : Paper.value).font(.callout.weight(.semibold))
+                        Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(Theme.inkMuted)
                     }
                     .padding(.horizontal, 10).padding(.vertical, 7)
                     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
                 }
                 TextField("หรือพิมพ์เอง", text: textBinding).textFieldStyle(.roundedBorder).frame(maxWidth: 200)
-                Text(unit).foregroundStyle(.secondary)
+                Text(unit).foregroundStyle(Theme.inkMuted)
             }
         case .number(let unit):
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     TextField("0", text: numberBinding).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                         .foregroundStyle(Paper.value).frame(maxWidth: 200)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(badNumber ? Color.red : Color.clear, lineWidth: 1.5))
-                    Text(unit).foregroundStyle(.secondary)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(badNumber ? Theme.danger : Color.clear, lineWidth: 1.5))
+                    Text(unit).foregroundStyle(Theme.inkMuted)
                     if spec.id == "roofAngle" {
                         RoofSensorButton(reading: .pitch) { v, _ in values.set(spec.id, .text(v), source: .sensor) }
                     }
                 }
                 if badNumber {
                     HStack(spacing: 8) {
-                        Text("อ่านเป็นตัวเลขไม่ได้").font(.caption).foregroundStyle(.red)
+                        Text("อ่านเป็นตัวเลขไม่ได้").font(.caption).foregroundStyle(Theme.dangerText)
                         if !cleanedNumber.isEmpty {
                             Button("แก้เป็น \(cleanedNumber)") { values[spec.id] = .text(cleanedNumber) }.font(.caption)
                         }
@@ -205,16 +205,16 @@ struct PlanPreview: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("แปลน (วาดอัตโนมัติจากระยะช่วงเสาและสิ่งกีดขวาง)").font(.footnote).foregroundStyle(.secondary)
+                Text("แปลน (วาดอัตโนมัติจากระยะช่วงเสาและสิ่งกีดขวาง)").font(.footnote).foregroundStyle(Theme.inkMuted)
                 Spacer()
-                if values.photo("planPhoto") != nil { Text("ใช้แบบร่างที่แนบแทน").font(.caption).foregroundStyle(.orange) }
+                if values.photo("planPhoto") != nil { Text("ใช้แบบร่างที่แนบแทน").font(.caption).foregroundStyle(Theme.pending) }
             }
             if let sk = Drawings.plan(values, tank: tank) {
                 SketchView(sketch: sk).frame(maxWidth: .infinity).padding(8)
-                    .background(Theme.paper).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
+                    .background(Theme.paper).overlay(Rectangle().stroke(Theme.borderControl))
             } else {
-                Text("— กรอกระยะช่วงเสาแนวนอนและแนวตั้ง เช่น 1.5,4,4,1.5 —").font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 90).background(Theme.paper).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
+                Text("— กรอกระยะช่วงเสาแนวนอนและแนวตั้ง เช่น 1.5,4,4,1.5 —").font(.callout).foregroundStyle(Theme.inkMuted)
+                    .frame(maxWidth: .infinity, minHeight: 90).background(Theme.paper).overlay(Rectangle().stroke(Theme.borderControl))
             }
         }
         .padding(14)
@@ -233,7 +233,7 @@ struct ObstaclesEditor: View {
                         Text("ชื่อ").gridColumnAlignment(.leading)
                         Text("X (ม.)"); Text("Y (ม.)"); Text("กว้าง"); Text("ยาว"); Text("")
                     }
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Theme.inkMuted)
                     ForEach(items) { o in
                         GridRow {
                             TextField("เช่น ช่องเซอร์วิส", text: bind(o.id, \.label)).frame(minWidth: 160)
@@ -269,14 +269,14 @@ struct TransformersEditor: View {
                     HStack {
                         Text("หม้อแปลง TR\((items.firstIndex { $0.id == t.id } ?? 0) + 1)").font(.callout.weight(.semibold))
                         TextField("kVA", text: kva(t.id)).keyboardType(.numberPad).textFieldStyle(.roundedBorder).frame(width: 110)
-                        Text("kVA").foregroundStyle(.secondary)
+                        Text("kVA").foregroundStyle(Theme.inkMuted)
                         Spacer()
                         Button(role: .destructive) { items.removeAll { $0.id == t.id } } label: { Image(systemName: "trash") }.buttonStyle(.borderless)
                     }
                     HStack(spacing: 6) {
                         ForEach(0..<6, id: \.self) { k in
                             VStack(spacing: 2) {
-                                Text("MDB\(k + 1)").font(.caption2).foregroundStyle(.secondary)
+                                Text("MDB\(k + 1)").font(.caption2).foregroundStyle(Theme.inkMuted)
                                 TextField("A", text: mdb(t.id, k)).keyboardType(.numberPad).textFieldStyle(.roundedBorder).multilineTextAlignment(.center)
                             }
                         }

@@ -29,18 +29,18 @@ struct SiteMarksEditor: View {
                     Button { armed = armed == k ? nil : k; selected = nil } label: { chip(k) }.buttonStyle(.plain)
                 }
             }
-            Text(hint).font(.footnote).foregroundStyle(armed == nil ? Color.secondary : Color.accentColor)
+            Text(hint).font(.footnote).foregroundStyle(armed == nil ? Theme.inkMuted : Theme.primary)
             if let p = photo, let img = model.image(p, in: jobID), img.size.height > 0 {
                 stage(img)
                 HStack {
-                    Text("วางแล้ว \(marks.count) จุด").font(.caption).foregroundStyle(.secondary)
+                    Text("วางแล้ว \(marks.count) จุด").font(.caption).foregroundStyle(Theme.inkMuted)
                     Spacer()
                     if let sel = selected, let i = marks.firstIndex(where: { $0.id == sel }), let unit = marks[i].kind.unit {
                         Text(marks[i].kind == .trafo ? "ขนาดหม้อแปลง" : "ขนาดเบรกเกอร์ MDB").font(.caption)
                         TextField("0", text: Binding(get: { marks.indices.contains(i) ? marks[i].value : "" },
                                                      set: { v in if marks.indices.contains(i) { marks[i].value = v } }))
                             .keyboardType(.numberPad).textFieldStyle(.roundedBorder).frame(width: 90)
-                        Text(unit).font(.caption).foregroundStyle(.secondary)
+                        Text(unit).font(.caption).foregroundStyle(Theme.inkMuted)
                     }
                     if let sel = selected, let m = marks.first(where: { $0.id == sel }) {
                         Button(role: .destructive) { marks.removeAll { $0.id == sel }; selected = nil } label: {
@@ -55,7 +55,7 @@ struct SiteMarksEditor: View {
                     }
                 }
             } else {
-                Text("ถ่ายหรือเลือก ภาพสถานที่ติดตั้ง ด้านบนก่อน แล้วจึงวางสัญลักษณ์").font(.callout).foregroundStyle(.secondary)
+                Text("ถ่ายหรือเลือก ภาพสถานที่ติดตั้ง ด้านบนก่อน แล้วจึงวางสัญลักษณ์").font(.callout).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 60)
             }
         }
@@ -73,8 +73,8 @@ struct SiteMarksEditor: View {
             Text(k.paletteTitle).font(.caption.weight(.semibold)).foregroundStyle(on ? Color.white : Color.primary)
         }
         .padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
-        .background(on ? Color.accentColor : Color(uiColor: .systemBackground), in: Capsule())
-        .overlay(Capsule().stroke(on ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 1.2))
+        .background(on ? Theme.primary : Color(uiColor: .systemBackground), in: Capsule())
+        .overlay(Capsule().stroke(on ? Theme.primary : Theme.borderControl, lineWidth: 1.2))
     }
 
     func stage(_ img: UIImage) -> some View {
@@ -105,7 +105,7 @@ struct SiteMarksEditor: View {
         }
         .aspectRatio(img.size.width / img.size.height, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(armed == nil ? Color.secondary.opacity(0.3) : Color.accentColor, lineWidth: armed == nil ? 1 : 2))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(armed == nil ? Theme.borderControl : Theme.primary, lineWidth: armed == nil ? 1 : 2))
     }
 
     func place(at p: CGPoint, in size: CGSize) {

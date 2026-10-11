@@ -58,7 +58,7 @@ struct PaperBox<Content: View>: View {
                 if let number { Text(number).font(.subheadline.weight(.heavy)).monospacedDigit() }
                 Text(title).font(.subheadline.weight(.bold))
                 Spacer()
-                if let trailing { Text(trailing).font(.caption).foregroundStyle(.secondary) }
+                if let trailing { Text(trailing).font(.caption).foregroundStyle(Theme.inkMuted) }
             }
             .foregroundStyle(Paper.ink)
             .padding(.horizontal, 14).padding(.vertical, 8)

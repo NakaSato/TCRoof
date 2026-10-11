@@ -28,7 +28,7 @@ struct StationDocsCard: View {
                 Label("เปิดรายการเอกสาร", systemImage: "folder").font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity, minHeight: touchMin)
             }
-            .buttonStyle(.bordered).tint(Theme.primary)
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()

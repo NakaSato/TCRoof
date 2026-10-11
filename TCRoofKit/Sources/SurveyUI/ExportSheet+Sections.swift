@@ -14,7 +14,7 @@ extension ExportSheet {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName).font(.headline).lineLimit(2)
                     Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo) · กรอกแล้ว \(job.completion.filled)/\(job.completion.total) · รูป \(job.photoCount)")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(Theme.inkMuted)
                 }
             }
             .padding(.vertical, 4)
@@ -30,13 +30,13 @@ extension ExportSheet {
                     Text("กำลังดาวน์โหลดรูปจาก Google Drive \(f.done)/\(f.total)").font(.callout)
                 }
             } else {
-                Label("มีรูป \(gap.missing) รูปที่ยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash").font(.headline).foregroundStyle(.orange)
+                Label("มีรูป \(gap.missing) รูปที่ยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash").font(.headline).foregroundStyle(Theme.pending)
                 if gap.onDrive > 0 {
                     Button { fetchPhotos() } label: { Label("ดาวน์โหลด \(gap.onDrive) รูปจาก Google Drive", systemImage: "icloud.and.arrow.down") }
                         .disabled(busy != nil)
                 }
                 if let e = fetch?.error, fetch?.failed ?? 0 > 0 {
-                    Text("ดาวน์โหลดไม่สำเร็จ \(fetch!.failed) รูป: \(e)").font(.caption).foregroundStyle(.red)
+                    Text("ดาวน์โหลดไม่สำเร็จ \(fetch!.failed) รูป: \(e)").font(.caption).foregroundStyle(Theme.dangerText)
                 }
             }
         } footer: {
@@ -49,7 +49,7 @@ extension ExportSheet {
     /// A PDF is selected but the report isn't signed by both sides yet.
     func signatureSection(_ names: [String]) -> some View {
         Section {
-            Label("PDF ยังไม่มีลายเซ็น", systemImage: "signature").font(.headline).foregroundStyle(.red)
+            Label("PDF ยังไม่มีลายเซ็น", systemImage: "signature").font(.headline).foregroundStyle(Theme.dangerText)
             ForEach(names, id: \.self) { Text("• " + $0).font(.callout) }
             Button { dismiss(); goTo(.final) } label: { Label("ไปลงนามที่หน้า E1", systemImage: "arrow.right.circle") }
                 .font(.callout)
@@ -62,7 +62,7 @@ extension ExportSheet {
     func missingSection(_ groups: [MissingGroup]) -> some View {
         let count = groups.reduce(0) { $0 + $1.items.count }
         return Section {
-            Label("ยังขาด \(count) รายการ", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(.orange)
+            Label("ยังขาด \(count) รายการ", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(Theme.pending)
             ForEach(groups) { g in
                 DisclosureGroup {
                     ForEach(Array(g.items.enumerated()), id: \.offset) { Text("• " + $0.element).font(.callout) }
@@ -72,7 +72,7 @@ extension ExportSheet {
                     HStack {
                         Text(g.title).font(.callout.weight(.semibold))
                         Spacer()
-                        Text("\(g.items.count)").font(.caption.monospacedDigit()).foregroundStyle(.orange)
+                        Text("\(g.items.count)").font(.caption.monospacedDigit()).foregroundStyle(Theme.pending)
                     }
                 }
             }
@@ -94,19 +94,19 @@ extension ExportSheet {
     func formatRow(_ f: Format) -> some View {
         let on = selected.contains(f)
         return HStack(spacing: 12) {
-            Image(systemName: f.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+            Image(systemName: f.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 36, height: 36).background(f.tint, in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
                 Text(f.title).font(.body.weight(.semibold))
-                Text(f == .photos ? photoDetail : f.detail).font(.caption).foregroundStyle(.secondary)
+                Text(f == .photos ? photoDetail : f.detail).font(.caption).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 8)
             if f.isPDF {
-                Button { previewPDF(f) } label: { Image(systemName: "eye").frame(width: 32, height: 32) }
-                    .buttonStyle(.borderless).disabled(busy != nil).accessibilityLabel("ดูตัวอย่าง " + f.title)
+                Button { previewPDF(f) } label: { Image(systemName: "eye").frame(width: 44, height: 44) }
+                    .buttonStyle(.plain).foregroundStyle(Theme.primary).disabled(busy != nil).accessibilityLabel("ดูตัวอย่าง " + f.title)
             }
             Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.title2)
-                .foregroundStyle(on ? Paper.tick : Color.secondary.opacity(0.5))
+                .foregroundStyle(on ? Paper.tick : Theme.borderControl)
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
@@ -144,7 +144,7 @@ extension ExportSheet {
     var actionBar: some View {
         VStack(spacing: 8) {
             if let busy {
-                HStack(spacing: 8) { ProgressView(); Text(busy).font(.callout).foregroundStyle(.secondary) }
+                HStack(spacing: 8) { ProgressView(); Text(busy).font(.callout).foregroundStyle(Theme.inkMuted) }
             }
             HStack(spacing: 12) {
                 Button { share() } label: {

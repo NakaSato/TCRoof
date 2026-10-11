@@ -15,13 +15,14 @@ struct StationDocsScreen: View {
     @State private var library = StationDocsStore.loadLibrary()
     @State private var editing: StationDocs.Kind?
     @State private var showStation = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var ctx: StationDocs.Context { job.stationContext }
 
     var body: some View {
-        List {
-            Section { stationSummary }
-            Section { tabPicker }
+        PadForm {
+            PadSection { stationSummary }
+            PadSection { tabPicker }
             switch tab {
             case .package(let p): packageRows(p)
             case .checklist: checklistRows
@@ -29,6 +30,9 @@ struct StationDocsScreen: View {
         }
         .navigationTitle("เอกสารสถานี กปภ.")
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar("เอกสารสถานี กปภ.", trail: ["หน้าหลัก", job.code]) {
+            TCButton("แก้ข้อมูลสถานี", systemImage: "slider.horizontal.3", kind: .secondary) { showStation = true }
+        }
         .sheet(item: $editing) { kind in
             StationDocSheet(job: job, kind: kind, library: $library)
         }
@@ -48,7 +52,8 @@ struct StationDocsScreen: View {
                     .font(.caption).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
-            Button("แก้ข้อมูลสถานี") { showStation = true }.frame(minHeight: touchMin)
+            // iPad: in the nav bar
+            if sizeClass == .compact { Button("แก้ข้อมูลสถานี") { showStation = true }.frame(minHeight: touchMin) }
         }
     }
 
@@ -70,7 +75,7 @@ struct StationDocsScreen: View {
             Text(title).font(.subheadline.weight(selected ? .semibold : .regular))
                 .padding(.horizontal, 14).frame(minHeight: touchMin)
                 .background(selected ? Theme.primary : Theme.segmentTrack, in: Capsule())
-                .foregroundStyle(selected ? Color.white : Theme.navy)
+                .foregroundStyle(selected ? Theme.onPrimary : Theme.navy)
         }
         .buttonStyle(.plain)
     }
@@ -81,7 +86,7 @@ struct StationDocsScreen: View {
         ForEach(StationDocs.Origin.allCases, id: \.self) { origin in
             let kinds = StationDocs.papers(in: p, ctx).filter { $0.origin == origin }
             if !kinds.isEmpty {
-                Section(origin.title) {
+                PadSection(origin.title) {
                     ForEach(kinds) { k in
                         Button { editing = k } label: { StationDocRow(kind: k, state: StationDocs.state(k, station: job.stationDocs, library: library)) }
                             .buttonStyle(.plain)
@@ -94,12 +99,10 @@ struct StationDocsScreen: View {
     // MARK: Check list
 
     private var checklistRows: some View {
-        Section {
+        PadSection("Check list เอกสารประกอบคำขอ พค.2 (แบบ กกพ.)") {
             ForEach(StationDocs.pk2Checklist) { item in
                 checkRow(item, StationDocs.check(item, station: job.stationDocs, library: library, ctx))
             }
-        } header: {
-            Text("Check list เอกสารประกอบคำขอ พค.2 (แบบ กกพ.)")
         } footer: {
             Text("ติ๊กให้เมื่อเอกสารทุกฉบับของข้อนั้นลงนาม ยื่น หรืออนุมัติแล้ว · ข้อที่ไม่มีเอกสารในแอป ให้ทีมติ๊กบนแบบฟอร์มเอง")
         }
@@ -137,7 +140,7 @@ struct StationDocRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(kind.name).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
                     .multilineTextAlignment(.leading)
-                Text(detail).font(.caption).foregroundStyle(Theme.inkMuted)
+                if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(Theme.inkMuted) }
                 if let e = StationDocs.expiry(kind, state) {
                     Text(e == .expired ? "หมดอายุแล้ว" : "ใกล้หมดอายุ")
                         .font(.caption.weight(.semibold)).foregroundStyle(Theme.dangerText)
@@ -228,6 +231,7 @@ struct StationDocSheet: View {
                          : "เก็บในแฟ้มเอกสารของงาน และอัปโหลดขึ้น Drive พร้อมเอกสารอื่น")
                 }
             }
+            .tcFormStyle()
             .navigationTitle("เอกสาร")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -327,6 +331,7 @@ struct StationFactsSheet: View {
                     Text("ยังไม่รู้ = แสดงทั้งคำขออนุญาตและหนังสือแจ้งยกเว้นไว้ก่อน")
                 }
             }
+            .tcFormStyle()
             .navigationTitle("ข้อมูลสถานี")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

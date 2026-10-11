@@ -64,8 +64,8 @@ struct TankPageWide: View {
 
     var gap: CGFloat { width >= 1180 ? 20 : 16 }
     static let cardWidth: CGFloat = 330
-    static let track = Color(red: 0.933, green: 0.949, blue: 0.969)
-    static let teal = Color(red: 0.624, green: 0.890, blue: 0.827)
+    static let track = Theme.hairline
+    static let teal = Theme.mint
 
     var index: Int? { job.modules.firstIndex { $0.id == moduleID } }
     var values: Values { index.map { job.modules[$0].values } ?? Values() }

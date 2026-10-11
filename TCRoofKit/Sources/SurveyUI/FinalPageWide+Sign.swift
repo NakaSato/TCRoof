@@ -8,9 +8,9 @@ import TCRoofUI
 extension FinalPageWide {
     static let surveyorRole = "วิศวกรผู้สำรวจ"
     static let customerRole = "ผู้ประสานงาน / เจ้าของสถานที่"
-    static let canvasFill = Color(red: 0.988, green: 0.992, blue: 0.996)
-    static let fieldFill = Color(red: 0.953, green: 0.965, blue: 0.980)
-    static let chipRed = Color(red: 0.753, green: 0.224, blue: 0.169)
+    static let canvasFill = Theme.paper
+    static let fieldFill = Theme.background
+    static let chipRed = Theme.dangerText
 
     /// "29/9/2569": day/month/Buddhist year.
     static func thaiDate(_ d: Date) -> String {

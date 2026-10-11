@@ -88,12 +88,12 @@ struct WaterPageWide: View {
 
     // MARK: card frame
 
-    static let blue = Color(red: 0.122, green: 0.435, blue: 0.710)
-    static let chipFill = Color(red: 0.890, green: 0.933, blue: 0.973)
-    static let tileFill = Color(red: 0.961, green: 0.973, blue: 0.988)
-    static let teal = Color(red: 0.153, green: 0.663, blue: 0.604)
-    static let tealSoft = Color(red: 0.910, green: 0.969, blue: 0.953)
-    static let line = Color(red: 0.788, green: 0.827, blue: 0.875)
+    static let blue = Theme.primary
+    static let chipFill = Theme.primarySoft
+    static let tileFill = Theme.phonePage
+    static let teal = Theme.teal
+    static let tealSoft = Color(light: 0xE8F7F3, dark: 0x163530)
+    static let line = Theme.borderOutdoor
 
     func header<Trailing: View>(_ n: Int, _ title: String, required: Bool = false, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 10) {

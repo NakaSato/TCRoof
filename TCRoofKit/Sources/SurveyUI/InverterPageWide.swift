@@ -415,9 +415,9 @@ struct InverterPageWide: View {
         let last = i == s.spans.count - 1
         return Button { if !last { spanSel = i } } label: {
             Text(String(format: "%.2f", v)).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
-                .foregroundStyle(last ? (s.spansOK ? Theme.inkMuted : Color(red: 0.706, green: 0.137, blue: 0.094)) : Theme.navy)
+                .foregroundStyle(last ? (s.spansOK ? Theme.inkMuted : Theme.dangerText) : Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Theme.danger.opacity(0.08)) : i == sel ? Theme.primarySoft : Theme.surface,
+                .background(last ? (s.spansOK ? Theme.progressBoxIdle : Theme.danger.opacity(0.08)) : i == sel ? Theme.primarySoft : Theme.surface,
                             in: RoundedRectangle(cornerRadius: 9))
                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(last ? (s.spansOK ? Theme.borderControl : Theme.danger) : i == sel ? Theme.primary : Theme.borderControl,
                                                                   style: StrokeStyle(lineWidth: !last && i == sel ? 2 : 1, dash: last ? [4, 3] : [])))

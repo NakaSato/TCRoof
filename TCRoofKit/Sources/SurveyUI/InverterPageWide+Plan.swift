@@ -212,7 +212,7 @@ extension InverterPageWide {
             }
             Spacer(minLength: 4)
             Button { update { $0.sizes.remove(at: i); $0.sizesAssumed = false } } label: {
-                A2Icon(name: "ui-close", fallback: "xmark", size: 14).foregroundStyle(Color(red: 0.706, green: 0.137, blue: 0.094))
+                A2Icon(name: "ui-close", fallback: "xmark", size: 14).foregroundStyle(Theme.dangerText)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain).opacity(s.sizes.count > 1 ? 1 : 0).disabled(s.sizes.count <= 1)
@@ -250,7 +250,7 @@ extension InverterPageWide {
         return VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
             Text(value).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
-                .foregroundStyle(good == false ? Color(red: 0.706, green: 0.137, blue: 0.094) : Theme.navy)
+                .foregroundStyle(good == false ? Theme.dangerText : Theme.navy)
             Text(sub).font(.system(size: 12, weight: .semibold)).foregroundStyle(tint).lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

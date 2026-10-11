@@ -130,7 +130,7 @@ extension PanelsPageWide {
             .font(.system(size: 14))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(Color(red: 1.0, green: 0.953, blue: 0.894), in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.pendingSoft, in: RoundedRectangle(cornerRadius: 10))
     }
 
     var spareSlotsRow: some View {

@@ -38,9 +38,9 @@ struct BackfeedPageWide: View {
     var hv: Bool { ZeroExport.isHV(values) }
     var line: SingleLine { SingleLine.build(job) }
 
-    static let tealSoft = Color(red: 0.910, green: 0.969, blue: 0.953)
-    static let line = Color(red: 0.788, green: 0.827, blue: 0.875)
-    static let tagGrey = Color(red: 0.902, green: 0.918, blue: 0.937)
+    static let tealSoft = WaterPageWide.tealSoft
+    static let line = Theme.borderOutdoor
+    static let tagGrey = Theme.headerLine
 
     var body: some View {
         let sl = line

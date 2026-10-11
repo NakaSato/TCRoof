@@ -30,8 +30,8 @@ struct FtsPageWide: View {
 
     static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
     static let orange = Color(red: 0.941, green: 0.549, blue: 0.0)
-    static let warnRed = Color(red: 0.753, green: 0.224, blue: 0.169)
-    static let slotFill = Color(red: 0.969, green: 0.976, blue: 0.988)
+    static let warnRed = Theme.dangerText
+    static let slotFill = Theme.progressBoxIdle
 
     var body: some View {
         VStack(spacing: 16) {

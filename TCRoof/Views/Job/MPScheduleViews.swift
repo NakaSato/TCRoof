@@ -263,6 +263,7 @@ struct MPSetupSheet: View {
                     ForEach(plan) { p in MPPlanRow(task: p) }
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(job.scheduleInput == nil ? "สร้างแผน MP" : "ตั้งค่าแผน MP")
             .navigationBarTitleDisplayMode(.inline)

@@ -140,6 +140,7 @@ struct NextRevisionSheet: View {
                 }
                 Section { Toggle("อัปเดตวันที่เป็นวันนี้", isOn: $updateDate) }
             }
+            .tcFormStyle()
             .navigationTitle("เปิดแก้ไขเป็น REV \(next)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

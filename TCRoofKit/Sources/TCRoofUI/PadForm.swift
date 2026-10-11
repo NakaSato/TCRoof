@@ -99,4 +99,21 @@ public struct PadLink<Destination: View, Label: View>: View {
         }
     }
 }
+
+/// The board's look for a system `Form` or `List` that stays one (sheets with text fields, pickers and toggles):
+/// the page gradient behind white rows, controls in `Theme.primary`.
+private struct TCFormStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .scrollContentBackground(.hidden)
+            .background(Theme.pageGradient.ignoresSafeArea())
+            .tint(Theme.primary)
+            .foregroundStyle(Theme.navy)
+    }
+}
+
+public extension View {
+    /// A system `Form` / `List` on the page gradient with white rows (`TCFormStyle`).
+    func tcFormStyle() -> some View { modifier(TCFormStyle()) }
+}
 #endif

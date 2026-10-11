@@ -445,6 +445,7 @@ struct MPProgressSheet: View {
                     Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้")
                 }
             }
+            .tcFormStyle()
             .navigationTitle("บันทึกความก้าวหน้า")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -482,6 +482,7 @@ private struct ScanTipsView: View {
             List(tips, id: \.1) { tip in
                 Label(tip.1, systemImage: tip.0).padding(.vertical, 4)
             }
+            .tcFormStyle()
             .navigationTitle("คำแนะนำในการสแกนอุปกรณ์")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เข้าใจแล้ว") { dismiss() } } }

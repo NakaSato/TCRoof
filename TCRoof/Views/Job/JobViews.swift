@@ -330,6 +330,7 @@ struct ScheduleEditSheet: View {
                     }
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("แก้ไขแผนงาน")
             .navigationBarTitleDisplayMode(.inline)
@@ -380,6 +381,7 @@ struct NewJobView: View {
                     Picker("ทีม", selection: $team) { ForEach(Team.allCases) { Text($0.rawValue).tag($0) } }
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("เพิ่มลูกค้าใหม่")
             .navigationBarTitleDisplayMode(.inline)

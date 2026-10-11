@@ -156,6 +156,7 @@ struct KeyPlanEditor: View {
                 }
             }
         }
+        .tcFormStyle()
         .navigationTitle("ผังตำแหน่ง (Key plan)")
         .navigationBarTitleDisplayMode(.inline)
         .tcPadNavBar("ผังตำแหน่ง (Key plan)", trail: ["หน้าหลัก", job.code])

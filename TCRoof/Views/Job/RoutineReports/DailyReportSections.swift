@@ -86,10 +86,12 @@ struct CrewCard: View {
         }) {
             if !report.crewConfirmed {
                 Button { report.crewConfirmed = true } label: {
-                    Label("ใช้ค่าเมื่อวาน — แตะเพื่อยืนยันกำลังคนวันนี้", systemImage: "exclamationmark.circle")
-                        .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin, alignment: .leading)
+                    TCWarningBanner("ใช้ค่าเมื่อวาน", message: "แตะเพื่อยืนยันกำลังคนวันนี้")
+                        .frame(maxWidth: .infinity, minHeight: touchMin, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.bordered).tint(Theme.pending)
+                .buttonStyle(.plain)
+                .accessibilityLabel("ใช้ค่าเมื่อวาน แตะเพื่อยืนยันกำลังคนวันนี้")
             } else {
                 Label("ยืนยันกำลังคนวันนี้แล้ว", systemImage: "checkmark.circle.fill").font(.subheadline).foregroundStyle(Theme.okText)
             }

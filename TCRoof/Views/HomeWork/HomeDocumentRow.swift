@@ -75,11 +75,44 @@ struct HomeDocumentRow<Destination: View>: View {
 
     private var tags: some View {
         HStack(spacing: 6) {
-            TCStatusChip(spec.provider.title, fill: Theme.primarySoft, text: Theme.navy)
+            TCStatusChip(spec.provider.title, fill: providerColors.fill, text: providerColors.text)
             if let slot = spec.ppim {
                 TCStatusChip("PPIM ช่อง \(slot.number) · ≤ \(slot.maxMB) MB", fill: Theme.okSoft, text: Theme.okText)
             }
             if optional { TCStatusChip("ถ้ามี", fill: Theme.disabledFill, text: Theme.inkMuted) }
+        }
+    }
+
+    /// Who brings it, by colour: team blue, customer amber, engineer navy, PEA green, council and กกพ. grey.
+    private var providerColors: (fill: Color, text: Color) {
+        switch spec.provider {
+        case .team: (Theme.primarySoft, Theme.primary)
+        case .customer: (Theme.pendingSoft, Theme.pending)
+        case .engineer: (Theme.segmentTrack, Theme.navy)
+        case .pea: (Theme.okSoft, Theme.okText)
+        case .local, .erc: (Theme.disabledFill, Theme.inkMuted)
+        }
+    }
+
+    /// PEA and กกพ. send these; until then the row waits rather than lacks.
+    private var waitsForAuthority: Bool { (spec.provider == .pea || spec.provider == .erc) && spec.form == nil }
+
+    private var statusTitle: String {
+        waitsForAuthority && document.status == .missing ? "รอผล" : document.status.title
+    }
+
+    /// The button that opens the screen making this document, named for what it does there.
+    private var formAction: (title: String, icon: String) {
+        switch spec.form {
+        case .surveyForm: ("ทำแบบสำรวจ", "list.clipboard")
+        case .photoReport: ("ถ่ายรูป 9 หัวข้อ", "camera")
+        case .powerOfAttorney: ("เซ็นมอบอำนาจ", "signature")
+        case .selfCertification: ("เปิดแบบรับรอง", "checkmark.seal")
+        case .installLog: ("เปิดบันทึกติดตั้ง", "hammer")
+        case .inspection: ("เปิด ICL", "checkmark.shield")
+        case .boq: ("ตรวจ BOQ", "tablecells")
+        case .site: ("เปิดงานผู้รับเหมา", "person.2")
+        case .roofWeight, nil: ("เปิดแบบฟอร์ม", "square.and.pencil")
         }
     }
 
@@ -89,17 +122,17 @@ struct HomeDocumentRow<Destination: View>: View {
                 Button { set(s) } label: { Label(s.title, systemImage: document.status == s ? "checkmark" : "") }
             }
         } label: {
-            TCStatusChip(document.status.title, kind: document.status.isDone ? .done : .pending)
+            TCStatusChip(statusTitle, kind: document.status.isDone ? .done : .pending)
                 .frame(minHeight: touchMin)
         }
-        .accessibilityLabel("สถานะ \(document.status.title)")
+        .accessibilityLabel("สถานะ \(statusTitle)")
     }
 
     @ViewBuilder private var actions: some View {
         HStack(spacing: Space.s) {
             if spec.form != nil && spec.form != .roofWeight {
                 NavigationLink(destination: destination) {
-                    Label("เปิดแบบฟอร์ม", systemImage: "square.and.pencil").font(.sarabun(14, .semibold, relativeTo: .body))
+                    Label(formAction.title, systemImage: formAction.icon).font(.sarabun(14, .semibold, relativeTo: .body))
                         .padding(.horizontal, Space.m).frame(minHeight: touchMin)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
                         .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.45)))
@@ -114,7 +147,7 @@ struct HomeDocumentRow<Destination: View>: View {
                         .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.45)))
                 }
                 .buttonStyle(.plain)
-                TCButton("ไฟล์ PDF", systemImage: "doc", kind: .secondary, size: .card) { showImporter = true }
+                TCButton(waitsForAuthority ? "แนบผล" : "ไฟล์ PDF", systemImage: "doc", kind: .secondary, size: .card) { showImporter = true }
             }
         }
     }

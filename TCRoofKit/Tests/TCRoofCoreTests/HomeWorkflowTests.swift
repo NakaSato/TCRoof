@@ -35,7 +35,7 @@ final class HomeWorkflowTests: XCTestCase {
 
         job.mode = .sell
         let sell = Set(job.checklist.map(\.id))
-        XCTAssertTrue(sell.isSuperset(of: ["houseReg", "feeReceipt", "contract", "selfCert", "ercNotice", "eBill"]))
+        XCTAssertTrue(sell.isSuperset(of: ["houseReg", "feeReceipt", "contract", "selfCert", "ercResult", "eBill"]))
         XCTAssertFalse(sell.contains("installCert"))
         XCTAssertFalse(HomeCatalog.spec("houseReg")!.isOptional(for: job))
         XCTAssertFalse(sell.contains("exportLimiter"))          // unknown until sizes and phase are in
@@ -75,7 +75,45 @@ final class HomeWorkflowTests: XCTestCase {
         let p = job.progress(.survey)
         XCTAssertEqual(p.done, p.total)
         // optional documents never block
-        XCTAssertFalse(job.missing(in: .connect).contains { $0.id == "ercNoticeSelfUse" })
+        XCTAssertFalse(job.missing(in: .connect).contains { $0.id == "ercResult" })
+    }
+
+    func testERCResultIsOneOptionalRowOnBothRoutes() {
+        var job = HomeJob()
+        for mode in HomeJob.Mode.allCases {
+            job.mode = mode
+            let erc = job.checklist.filter { $0.provider == .erc }
+            XCTAssertEqual(erc.map(\.id), ["ercResult"])
+            XCTAssertTrue(erc[0].isOptional(for: job))
+            XCTAssertFalse(job.missing(in: .connect).contains { $0.id == "ercResult" })
+            XCTAssertNil(HomeCatalog.spec("ercNotice"))
+            XCTAssertNil(HomeCatalog.spec("ercNoticeSelfUse"))
+        }
+    }
+
+    func testOldERCRowsMoveToTheResult() throws {
+        let json = #"{"documents":{"ercNotice":{"status":"submitted","files":["a.pdf"]}}}"#
+        let job = try JSONDecoder().decode(HomeJob.self, from: Data(json.utf8))
+        XCTAssertEqual(job.document("ercResult").status, .submitted)
+        XCTAssertEqual(job.document("ercResult").files, ["a.pdf"])
+        XCTAssertNil(job.documents["ercNotice"])
+    }
+
+    func testPermitStepsFollowTheDocuments() {
+        var job = HomeJob()                                    // self-use
+        XCTAssertEqual(job.permitSteps.map(\.id), ["request", "review", "install", "inspect", "cod"])
+        XCTAssertEqual(job.permitSteps.map(\.state), [.current, .todo, .todo, .todo, .todo])
+        XCTAssertEqual(job.permitSteps[1].limit, "≤ 15 วันทำการ")
+        func receive(_ id: String) { var d = HomeDocument(); d.status = .received; job.documents[id] = d }
+        receive("ppimRequest"); receive("peaApproval")
+        XCTAssertEqual(job.permitSteps.map(\.state), [.done, .done, .current, .todo, .todo])
+
+        job.mode = .sell
+        XCTAssertEqual(job.permitSteps.map(\.id), ["request", "announce", "contract", "connect", "cod"])
+        XCTAssertEqual(job.permitSteps[0].state, .current)    // sellRequest not in yet
+        receive("sellRequest"); receive("feeReceipt")
+        XCTAssertEqual(job.permitSteps.map(\.state), [.done, .done, .current, .todo, .todo])   // contract still missing
+        XCTAssertTrue(job.permitNote.contains("ภาคประชาชน 2569"))
     }
 
     func testResidentialOnly() {

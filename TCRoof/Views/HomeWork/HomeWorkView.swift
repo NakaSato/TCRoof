@@ -23,7 +23,44 @@ struct HomeWorkView: View {
     /// Finished stages the team opened again.
     @State private var openStages: Set<HomeStage> = []
     @State private var scrollTarget: String?
+    /// iPhone: which part of the job the screen shows; iPad shows every part.
+    @State private var tab: HomeTab = .overview
     static let file = "home"
+
+    /// iPhone menu bar of the job: ภาพรวม · สำรวจ · ติดตั้ง · เอกสาร.
+    enum HomeTab: CaseIterable {
+        case overview, survey, install, docs
+
+        var title: String {
+            switch self {
+            case .overview: "ภาพรวม"
+            case .survey: "สำรวจ"
+            case .install: "ติดตั้ง"
+            case .docs: "เอกสาร"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .overview: "house"
+            case .survey: "list.clipboard"
+            case .install: "hammer"
+            case .docs: "doc.text"
+            }
+        }
+
+        /// Stages whose documents the tab lists. Permits (design to handover) sit under เอกสาร with the PEA steps.
+        var stages: [HomeStage] {
+            switch self {
+            case .overview: []
+            case .survey: [.survey]
+            case .install: [.install]
+            case .docs: [.design, .apply, .connect, .handover]
+            }
+        }
+
+        static func of(_ stage: HomeStage) -> HomeTab { allCases.first { $0.stages.contains(stage) } ?? .docs }
+    }
 
     private var store: PermitStore { PermitStore(job: job) }
 
@@ -38,6 +75,10 @@ struct HomeWorkView: View {
                         guard let target else { return }
                         withAnimation { proxy.scrollTo(target, anchor: .top) }
                         scrollTarget = nil
+                    }
+                    .onChange(of: tab) { _, _ in proxy.scrollTo("top", anchor: .top) }
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        if isPhone && home.residentialConfirmed { tabBar }
                     }
             }
         }
@@ -89,12 +130,16 @@ struct HomeWorkView: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: Space.l) {
+            Color.clear.frame(height: 0).id("top")
             if home.residentialConfirmed {
-                nextCard
-                setupSection.id("setup")
-                if home.mode == .sell { HomeSellCard(home: $home).id("sell") }
-                stageStrip
-                ForEach(HomeStage.allCases, id: \.self) { stageCard($0) }
+                if !isPhone || tab == .overview {
+                    nextCard
+                    setupSection.id("setup")
+                    if home.mode == .sell { HomeSellCard(home: $home).id("sell") }
+                    stageStrip
+                }
+                if !isPhone || tab == .docs { HomePermitCard(home: home).id("permit") }
+                ForEach(isPhone ? tab.stages : HomeStage.allCases, id: \.self) { stageCard($0) }
             } else {
                 residentialGate
             }
@@ -230,15 +275,65 @@ struct HomeWorkView: View {
     }
 
     private func go(_ a: HomeAction) {
+        let target: String
         if let doc = a.docID {
-            if let stage = HomeCatalog.spec(doc)?.stage { openStages.insert(stage) }
-            scrollTarget = doc
+            if let stage = HomeCatalog.spec(doc)?.stage {
+                openStages.insert(stage)
+                tab = HomeTab.of(stage)
+            }
+            target = doc
         } else if a.kind == .issue {
             setupOpen = true
-            scrollTarget = "setup"
+            tab = .overview
+            target = "setup"
         } else {
-            scrollTarget = home.mode == .sell ? "sell" : "setup"
+            tab = .overview
+            target = home.mode == .sell ? "sell" : "setup"
         }
+        // after the tab's rows are on screen
+        DispatchQueue.main.async { scrollTarget = target }
+    }
+
+    // MARK: iPhone menu bar
+
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(HomeTab.allCases, id: \.self) { t in
+                let on = tab == t
+                let left = missingCount(t)
+                Button { tab = t } label: {
+                    VStack(spacing: 2) {
+                        Image(systemName: t.icon).font(.system(size: 19, weight: on ? .semibold : .regular))
+                            .frame(width: 52, height: 28)
+                            .background(on ? Theme.primarySoft : Color.clear, in: Capsule())
+                            .overlay(alignment: .topTrailing) {
+                                if left > 0 {
+                                    Text("\(left)").font(.sarabun(10, .heavy, relativeTo: .caption2)).foregroundStyle(Color.white)
+                                        .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
+                                        .background(Theme.danger, in: Capsule())
+                                        .offset(x: 2, y: -4)
+                                }
+                            }
+                        Text(t.title).font(.sarabun(11, on ? .bold : .semibold, relativeTo: .caption2))
+                    }
+                    .foregroundStyle(on ? Theme.primary : Theme.inkTab)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(left > 0 ? "\(t.title) ยังขาด \(left) รายการ" : t.title)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.top, 4)
+        .background(Theme.surface.ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Rectangle().fill(Theme.borderOutdoor).frame(height: 1) }
+    }
+
+    /// Required documents still missing in the tab's stages.
+    private func missingCount(_ t: HomeTab) -> Int {
+        t.stages.reduce(0) { $0 + home.missing(in: $1).count }
     }
 
     // MARK: Setup

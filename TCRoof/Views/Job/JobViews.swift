@@ -260,7 +260,7 @@ struct JobDetailView: View {
                 Label(pending > 0 ? "อัปโหลดขึ้น Google Drive (\(pending))" : "อัปโหลดครบแล้ว",
                       systemImage: pending > 0 ? "icloud.and.arrow.up" : "checkmark.icloud")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(TCButtonStyle(.primary, size: .card))
             .disabled(pending == 0 || uploadProgress != nil)
             if let link = job.driveFolderURL, let url = URL(string: link) {
                 Link(destination: url) { Label("เปิดโฟลเดอร์ใน Drive", systemImage: "arrow.up.right.square") }

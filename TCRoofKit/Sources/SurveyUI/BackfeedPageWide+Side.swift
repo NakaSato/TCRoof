@@ -2,12 +2,13 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// B4's right column: the SLD crop, the A2 crop and the equipment list.
 extension BackfeedPageWide {
     func link(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary).lineLimit(1).fixedSize().frame(minHeight: 44)
+            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).lineLimit(1).fixedSize().frame(minHeight: 44)
         }
         .buttonStyle(.plain)
     }
@@ -16,7 +17,7 @@ extension BackfeedPageWide {
         let layout = phone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
         return layout {
             Text(t).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
-            Text(sub).font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.7)
+            Text(sub).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
         }
     }
 
@@ -41,14 +42,14 @@ extension BackfeedPageWide {
                 } else if let b = drawing.zeroExportBox {
                     SLDCrop(drawing: drawing, box: b, fill: true)
                 } else {
-                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.system(size: 14)).foregroundStyle(Home.muted)
+                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: phone ? nil : .infinity)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.1)))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.1)))
             .accessibilityLabel(hv ? "แผนภาพเส้นเดียวส่วนกันย้อนแรงสูง" : "แผนภาพเส้นเดียวส่วนกันย้อนแรงต่ำ")
         }
     }
@@ -89,11 +90,11 @@ extension BackfeedPageWide {
                 ForEach(Array(items.enumerated()), id: \.offset) { i, item in
                     Divider()
                     HStack(alignment: .top, spacing: 12) {
-                        Text("\(i + 1)").font(.system(size: 13, weight: .heavy)).foregroundStyle(Home.teal)
+                        Text("\(i + 1)").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.teal)
                             .frame(width: 26, height: 26).background(Self.tealSoft, in: Circle())
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                            Text(item.sub).font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(2).minimumScaleFactor(0.8)
+                            Text(item.sub).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2).minimumScaleFactor(0.8)
                         }
                         Spacer(minLength: 0)
                     }
@@ -147,7 +148,7 @@ struct SiteMarkCrop: View {
             Image(uiImage: img).resizable().frame(width: r.width, height: r.height).position(x: r.midX, y: r.midY)
             siteDrawing(job, in: r)
             if let m = mark {
-                Circle().stroke(Home.teal, lineWidth: 3).background(Circle().fill(Home.teal.opacity(0.15)))
+                Circle().stroke(Theme.teal, lineWidth: 3).background(Circle().fill(Theme.teal.opacity(0.15)))
                     .frame(width: 46, height: 46)
                     .position(x: r.minX + m.x * r.width, y: r.minY + m.y * r.height)
             }
@@ -156,10 +157,10 @@ struct SiteMarkCrop: View {
         .clipped()
         .overlay(alignment: .bottomLeading) {
             Text(mark == nil ? "ยังไม่มีสัญลักษณ์ กันย้อน · วางบนภาพในหน้า A2" : caption)
-                .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(mark == nil ? Home.pending : Home.navy)
+                .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(mark == nil ? Theme.pending : Theme.navy)
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
+                .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                 .padding(10)
         }
         .allowsHitTesting(false)
@@ -170,12 +171,12 @@ struct SiteMarkCrop: View {
     func empty(noPicture: Bool) -> some View {
         VStack(spacing: 12) {
             if noPicture {
-                Image(systemName: "photo").font(.system(size: 30)).foregroundStyle(Home.muted)
+                Image(systemName: "photo").font(.system(size: 30)).foregroundStyle(Theme.inkMuted)
                 Text("ยังไม่มีภาพสถานที่ติดตั้งในหน้า A2").font(.system(size: 15, weight: .semibold)).multilineTextAlignment(.center)
                 Button(action: openSite) {
                     Text("เปิด A2 เพื่อเลือกภาพ").font(.system(size: 15, weight: .bold)).padding(.horizontal, 16).frame(minHeight: 44)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             } else {
                 PhotoSlot.notDownloaded
             }

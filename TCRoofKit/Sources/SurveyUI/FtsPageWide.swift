@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// B5 (docs/ui/survey-b5): the Emergency button's photo, place, what it cuts and its height on the
 /// left; its point on the A2 picture and the FTS part of the single line diagram on the right. The height is A4's
@@ -37,7 +38,7 @@ struct FtsPageWide: View {
             PageStepBar(job: job, here: .module(moduleID), title: width < 600 ? "ปุ่ม Emergency" : "ตำแหน่งติดตั้งปุ่ม FTS switch (Emergency)")
             if stacked { stackedColumn } else { sideBySide }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .alert("ตำแหน่งปุ่ม Emergency", isPresented: $editingPlace) {
             TextField("เช่น ผนังข้างประตู Site Office", text: $placeText)
             Button("ตกลง") {
@@ -84,15 +85,14 @@ struct FtsPageWide: View {
         VStack(alignment: .leading, spacing: 12, content: content)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Home.navy.opacity(0.16)))
-            .shadow(color: Home.navy.opacity(0.06), radius: 3, y: 2)
+            .tcCard()
+            .shadow(color: Theme.navy.opacity(0.06), radius: 3, y: 2)
     }
 
     func title(_ t: String, sub: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(t).font(.system(size: 17, weight: .bold)).lineLimit(1)
-            Text(sub).font(.system(size: 13)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.7)
+            Text(sub).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
         }
     }
 
@@ -101,11 +101,11 @@ struct FtsPageWide: View {
     var buttonCard: some View {
         card {
             HStack(alignment: .top, spacing: 10) {
-                Text("1").font(.system(size: 14, weight: .heavy)).foregroundStyle(Home.primary)
+                Text("1").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.primary)
                     .frame(width: 28, height: 28).background(WaterPageWide.chipFill, in: RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 2) {
-                    (Text("ภาพพื้นที่ติดตั้งปุ่ม Emergency") + Text(" *").foregroundColor(Home.danger)).font(.system(size: 17, weight: .bold))
-                    Text("จุดที่เข้าถึงได้ทันที").font(.system(size: 13)).foregroundStyle(Home.muted)
+                    (Text("ภาพพื้นที่ติดตั้งปุ่ม Emergency") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 17, weight: .bold))
+                    Text("จุดที่เข้าถึงได้ทันที").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
                 }
             }
             photo.frame(height: stacked ? (width < 600 ? 260 : 380) : nil).frame(maxHeight: stacked ? nil : .infinity)
@@ -126,7 +126,7 @@ struct FtsPageWide: View {
                 if p != nil {
                     Text("วงจุดติดตั้งปุ่ม · ระบุความสูง").font(.system(size: 12, weight: .semibold)).lineLimit(1)
                         .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
+                        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                         .padding(8).allowsHitTesting(false)
                 }
             }
@@ -134,7 +134,7 @@ struct FtsPageWide: View {
 
     func infoRow<V: View>(_ label: String, @ViewBuilder value: () -> V) -> some View {
         HStack(spacing: 12) {
-            Text(label).font(.system(size: 14)).foregroundStyle(Home.muted)
+            Text(label).font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             Spacer(minLength: 8)
             value()
         }
@@ -146,8 +146,8 @@ struct FtsPageWide: View {
         return Button { placeText = place; editingPlace = true } label: {
             HStack(spacing: 6) {
                 Text(place.isEmpty ? "แตะเพื่อระบุ" : place).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                    .foregroundStyle(place.isEmpty ? Home.primary : Home.navy)
-                Image(systemName: "pencil").font(.system(size: 12, weight: .semibold)).foregroundStyle(Home.primary)
+                    .foregroundStyle(place.isEmpty ? Theme.primary : Theme.navy)
+                Image(systemName: "pencil").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.primary)
             }
             .frame(minHeight: 44).contentShape(Rectangle())
         }
@@ -161,7 +161,7 @@ struct FtsPageWide: View {
         return HStack(spacing: 12) {
             stepButton("minus", enabled: cm > EmergencyButton.rangeCm.lowerBound) { EmergencyButton.step(&job, by: -1) }
             Text(EmergencyButton.meters(cm) + (ok ? " ✓" : " ⚠")).font(.system(size: 16, weight: .bold)).monospacedDigit()
-                .foregroundStyle(ok ? Home.navy : Self.warnRed).frame(minWidth: 88)
+                .foregroundStyle(ok ? Theme.navy : Self.warnRed).frame(minWidth: 88)
             stepButton("plus", enabled: cm < EmergencyButton.rangeCm.upperBound) { EmergencyButton.step(&job, by: 1) }
         }
         .accessibilityElement(children: .contain)
@@ -170,10 +170,10 @@ struct FtsPageWide: View {
 
     func stepButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 16, weight: .bold)).foregroundStyle(enabled ? Home.primary : Home.disabledText)
+            Image(systemName: symbol).font(.system(size: 16, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(width: 44, height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Home.navy.opacity(0.3) : Home.disabledFill))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Theme.navy.opacity(0.3) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)
         .accessibilityLabel(symbol == "plus" ? "เพิ่มความสูง 5 ซม." : "ลดความสูง 5 ซม.")
@@ -193,7 +193,7 @@ struct FtsPageWide: View {
                     Text("ปุ่ม FTS switch (Emergency)").font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+                .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
             }
             .frame(maxHeight: .infinity)
         }
@@ -207,7 +207,7 @@ struct FtsPageWide: View {
                 title("ใน SLD", sub: "FTS ตัดวงจร DC · ปุ่ม Emergency สั่งตัด")
                 Spacer(minLength: 8)
                 Button(action: openDiagram) {
-                    Text("ดู SLD ทั้งหมด →").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary).frame(minHeight: 44)
+                    Text("ดู SLD ทั้งหมด →").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
             }
@@ -217,13 +217,13 @@ struct FtsPageWide: View {
                 if drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)
                 } else {
-                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.system(size: 14)).foregroundStyle(Home.muted)
+                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()
                 }
             }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.1)))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.1)))
                 .accessibilityLabel("แผนภาพเส้นเดียวส่วน FTS และปุ่ม Emergency")
         }
     }
@@ -249,6 +249,7 @@ struct SLDCrop: View {
             ctx.scaleBy(x: k, y: k)
             ctx.withCGContext { cg in PDFRenderer.draw(drawing.sketch.ops, in: cg, photo: { _ in nil }) }
         }
+        .background(Theme.paper)
         .clipped()
     }
 

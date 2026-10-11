@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// Place symbols on the site picture (portrait and iPhone; landscape iPad uses `SitePageWide`).
 /// Pick a symbol, tap the picture to drop it, drag to move, tap a symbol to select it for removal.
@@ -45,7 +46,7 @@ struct SiteMarksEditor: View {
                         Button(role: .destructive) { marks.removeAll { $0.id == sel }; selected = nil } label: {
                             Label("ลบ \(SiteMarks.labels(marks)[m.id] ?? m.kind.title)", systemImage: "trash")
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card))
                     }
                     if !marks.isEmpty {
                         Menu {

@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// The form for the selected page.
 extension JobEditorView {
@@ -36,12 +37,12 @@ extension JobEditorView {
                 }
             }
             .aspectRatio(CGFloat(sheet.width / sheet.height), contentMode: .fit)
-            .background(Color.white)
+            .background(Theme.paper)
             .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
             Button { checked { run("กำลังสร้าง PDF สรุป…") { let f = try model.exportSummaryPDF(job); preview = PDFPreviewItem(url: f.url, title: "สรุป " + job.projectName) } } } label: {
                 Label("บันทึก PDF สรุป 1 หน้า", systemImage: "doc.richtext")
             }
-            .buttonStyle(.borderedProminent).controlSize(.large)
+            .buttonStyle(TCButtonStyle(.primary, size: .card)).controlSize(.large)
         }
     }
 
@@ -62,7 +63,7 @@ extension JobEditorView {
             }
             if page == .electrical {
                 Button { showSLD = true } label: { Label("สร้าง Single Line Diagram", systemImage: "bolt.horizontal").frame(minHeight: 44) }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
             }
             nextButton
         }
@@ -121,7 +122,7 @@ extension JobEditorView {
             HStack {
                 Spacer()
                 Button { withAnimation { page = next } } label: { Label("หัวข้อถัดไป", systemImage: "arrow.right") }
-                    .buttonStyle(.borderedProminent).controlSize(.large)
+                    .buttonStyle(TCButtonStyle(.primary, size: .card)).controlSize(.large)
             }
         }
     }

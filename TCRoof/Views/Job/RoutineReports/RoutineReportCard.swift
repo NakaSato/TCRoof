@@ -78,9 +78,9 @@ struct RoutineReportCard: View {
         let label = Label(title, systemImage: symbol).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
             .frame(maxWidth: .infinity, minHeight: touchMin)
         if prominent {
-            NavigationLink(destination: destination) { label }.buttonStyle(.borderedProminent).tint(Theme.primary)
+            NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.primary, size: .card))
         } else {
-            NavigationLink(destination: destination) { label }.buttonStyle(.bordered).tint(Theme.primary)
+            NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
 }

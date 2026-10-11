@@ -4,6 +4,7 @@ import UIKit
 import PhotosUI
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// B2 (docs/ui/survey-b2): the area photo with its drawn boundary, the measured size and column spans on the left;
 /// the live station plan and the Growatt inverters on the right. Everything else (cabinets, breakers, cables, tray, ladder, room)
@@ -71,7 +72,7 @@ struct InverterPageWide: View {
                 .frame(maxHeight: .infinity)
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: "พื้นที่ติดตั้งอินเวอร์เตอร์") } }
         .fullScreenCover(isPresented: $showPlan) { PlanViewer(sketch: InverterStationDrawing.sketch(station), title: planTitle) }
         .alert("ระยะด้านนี้ (ม.)", isPresented: Binding(get: { editingEdge != nil }, set: { if !$0 { editingEdge = nil } })) {
@@ -93,8 +94,8 @@ struct InverterPageWide: View {
                 TextEditor(text: text("detail"))
                     .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                     .frame(minHeight: 110)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
             }
         }
     }
@@ -102,9 +103,9 @@ struct InverterPageWide: View {
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
         let row = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
         return row {
-            (Text(t) + (required ? Text(" *").foregroundColor(Home.danger) : Text(""))).font(.system(size: 17, weight: .bold))
+            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold))
             if !narrow { Spacer(minLength: 8) }
-            if let aside { Text(aside).font(.footnote).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8) }
+            if let aside { Text(aside).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
         }
     }
 
@@ -125,7 +126,7 @@ struct InverterPageWide: View {
                 segment(values.photo("photoArea") != nil ? "ภาพพื้นที่ ✓" : "ภาพพื้นที่", on: tab == .area) { tab = .area; drawing = false; draft = [] }
                 segment(boundary != nil ? "ภาพระบุขอบเขต ✓" : "ภาพระบุขอบเขต", on: tab == .boundary) { tab = .boundary }
             }
-            .padding(3).background(Home.navy.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
+            .padding(3).background(Theme.navy.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
             if values.photo(photoField) == nil {
                 PhotoSlot(photo: nil, jobID: job.id, hint: tab == .area ? "ถ่ายภาพพื้นที่ติดตั้ง Inverter Station" : "ภาพสำหรับวาดขอบเขตพื้นที่",
                           required: tab == .area, extra: useAreaPhoto, onPick: addPhoto, onClear: {})
@@ -134,7 +135,7 @@ struct InverterPageWide: View {
                 GeometryReader { geo in stage(geo.size) }
                     .frame(height: photoHeight)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(drawing ? Home.teal : Home.navy.opacity(0.15), lineWidth: drawing ? 2 : 1))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(drawing ? Theme.teal : Theme.navy.opacity(0.15), lineWidth: drawing ? 2 : 1))
             }
         }
     }
@@ -142,10 +143,10 @@ struct InverterPageWide: View {
     func segment(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.system(size: 15, weight: on ? .bold : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
-                .foregroundStyle(on ? Home.navy : Home.muted)
+                .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(on ? Color.white : Color.clear, in: RoundedRectangle(cornerRadius: 9))
-                .shadow(color: on ? Home.navy.opacity(0.12) : .clear, radius: 2, y: 1)
+                .background(on ? Theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+                .shadow(color: on ? Theme.navy.opacity(0.12) : .clear, radius: 2, y: 1)
         }
         .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
     }
@@ -192,9 +193,9 @@ struct InverterPageWide: View {
         .overlay(alignment: .bottomLeading) {
             if photo != nil && tab == .boundary {
                 Text(drawing ? "แตะทีละมุม · แตะจุดแรกเพื่อปิดขอบเขต (\(draft.count) จุด)" : "วาดขอบเขตแล้วใส่ระยะบนเส้น")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.navy)
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(Color.white.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
+                    .background(Theme.surface.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
             }
         }
     }
@@ -204,14 +205,14 @@ struct InverterPageWide: View {
         guard tab == .boundary, let p = values.photo("photoArea"), let img = model.image(p, in: job.id) else { return nil }
         return AnyView(Button { addPhoto(img) } label: {
             Label("ใช้ภาพพื้นที่", systemImage: "photo").font(.system(size: 15, weight: .bold)).frame(minHeight: 44)
-        }.buttonStyle(.borderedProminent))
+        }.buttonStyle(TCButtonStyle(.primary, size: .card)))
     }
 
     var boundaryTools: some View {
         HStack(spacing: 6) {
             Button { drawing.toggle(); draft = [] } label: {
                 HStack(spacing: 6) {
-                    A2Icon(name: "ui-draw-boundary", fallback: "pencil", size: 16).foregroundStyle(Home.teal)
+                    A2Icon(name: "ui-draw-boundary", fallback: "pencil", size: 16).foregroundStyle(Theme.teal)
                     Text(drawing ? "เลิกวาด" : "วาดขอบเขต")
                 }
                 .toolChip(on: drawing)
@@ -233,7 +234,7 @@ struct InverterPageWide: View {
                 let pts = draft.map { point($0, in: r) }
                 for (a, b) in zip(pts, pts.dropFirst()) {
                     var p = Path(); p.move(to: a); p.addLine(to: b)
-                    ctx.stroke(p, with: .color(Home.teal), style: StrokeStyle(lineWidth: 2, dash: [8, 5]))
+                    ctx.stroke(p, with: .color(Theme.teal), style: StrokeStyle(lineWidth: 2, dash: [8, 5]))
                 }
             }
             let ops = SiteShapes.ops(shapes, in: box, metersAcross: nil)
@@ -242,7 +243,7 @@ struct InverterPageWide: View {
                 for (i, p) in draft.enumerated() {
                     let c = point(p, in: r), rad: CGFloat = i == 0 ? 9 : 5
                     let e = Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad))
-                    ctx.fill(e, with: .color(.white)); ctx.stroke(e, with: .color(Home.teal), lineWidth: 2)
+                    ctx.fill(e, with: .color(.white)); ctx.stroke(e, with: .color(Theme.teal), lineWidth: 2)
                 }
             }
         }
@@ -255,10 +256,10 @@ struct InverterPageWide: View {
                 let e = b.edges[safe: i] ?? ""
                 Button { edgeText = e; editingEdge = i } label: {
                     Text(e.isEmpty ? "ใส่ระยะ" : e + " ม.").font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(e.isEmpty ? Home.teal : .white)
+                        .foregroundStyle(e.isEmpty ? Theme.teal : .white)
                         .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(e.isEmpty ? Color.white : Home.teal, in: RoundedRectangle(cornerRadius: 6))
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Home.teal))
+                        .background(e.isEmpty ? Theme.surface : Theme.teal, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.teal))
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -330,7 +331,7 @@ struct InverterPageWide: View {
 
     func heightField(_ s: InverterStation) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("ส สูง").font(.system(size: 13)).foregroundStyle(Home.muted)
+            Text("ส สูง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
             TextField("3.0", text: Binding(get: { s.height.map { fmt($0) } ?? "" },
                                           set: { t in update { $0.height = NumberInput.value(t) } }))
                 .keyboardType(.decimalPad).font(.system(size: 20, weight: .bold)).inputBox(minHeight: 48)
@@ -347,22 +348,22 @@ struct InverterPageWide: View {
 
     func stepper(_ title: String, value: Double?, digits: Int, error: Bool, down: @escaping () -> Void, up: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 13)).foregroundStyle(Home.muted)
+            Text(title).font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 0) {
                 stepButton("minus", action: down)
                 Text(value.map { String(format: "%.\(digits)f", $0) } ?? "–").font(.system(size: 20, weight: .bold)).monospacedDigit()
-                    .foregroundStyle(error ? Home.danger : Home.navy).frame(maxWidth: .infinity)
+                    .foregroundStyle(error ? Theme.danger : Theme.navy).frame(maxWidth: .infinity)
                 stepButton("plus", action: up)
             }
             .frame(minHeight: 48)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(error ? Home.danger : Home.navy.opacity(0.45)))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(error ? Theme.danger : Theme.navy.opacity(0.45)))
         }
     }
 
     func stepButton(_ symbol: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(enabled ? Home.primary : Home.disabledText)
+            Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).disabled(!enabled)
@@ -395,7 +396,7 @@ struct InverterPageWide: View {
             }
             Text(s.spansOK ? "\(s.spans.count) ช่วง · รวม \(String(format: "%.2f", s.planLength)) ม. " + (custom ? "✓" : "· อัตโนมัติ ✓")
                            : "ช่วงสุดท้ายเหลือ \(String(format: "%.2f", s.lastSpan)) ม. ✗")
-                .font(.system(size: 13, weight: s.spansOK ? .regular : .bold)).foregroundStyle(s.spansOK ? Home.ok : Home.danger)
+                .font(.system(size: 13, weight: s.spansOK ? .regular : .bold)).foregroundStyle(s.spansOK ? Theme.success : Theme.danger)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
                 smallButton(s.spans.count < InverterStation.maxSpans ? "+ เพิ่มช่วง" : "ครบ 10 ช่วง", enabled: s.spans.count < InverterStation.maxSpans) {
                     update { $0.userSpans = $0.editableSpans + [2.5] }; spanSel = editable.count
@@ -414,11 +415,11 @@ struct InverterPageWide: View {
         let last = i == s.spans.count - 1
         return Button { if !last { spanSel = i } } label: {
             Text(String(format: "%.2f", v)).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
-                .foregroundStyle(last ? (s.spansOK ? Home.muted : Color(red: 0.706, green: 0.137, blue: 0.094)) : Home.navy)
+                .foregroundStyle(last ? (s.spansOK ? Theme.inkMuted : Color(red: 0.706, green: 0.137, blue: 0.094)) : Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Home.danger.opacity(0.08)) : i == sel ? Home.primarySoft : Color.white,
+                .background(last ? (s.spansOK ? Color(red: 0.957, green: 0.965, blue: 0.976) : Theme.danger.opacity(0.08)) : i == sel ? Theme.primarySoft : Theme.surface,
                             in: RoundedRectangle(cornerRadius: 9))
-                .overlay(RoundedRectangle(cornerRadius: 9).stroke(last ? (s.spansOK ? Home.borderControl : Home.danger) : i == sel ? Home.primary : Home.borderControl,
+                .overlay(RoundedRectangle(cornerRadius: 9).stroke(last ? (s.spansOK ? Theme.borderControl : Theme.danger) : i == sel ? Theme.primary : Theme.borderControl,
                                                                   style: StrokeStyle(lineWidth: !last && i == sel ? 2 : 1, dash: last ? [4, 3] : [])))
         }
         .buttonStyle(.plain).disabled(last)
@@ -437,10 +438,10 @@ struct InverterPageWide: View {
     func smallButton(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-                .foregroundStyle(enabled ? Home.primary : Home.disabledText)
+                .foregroundStyle(enabled ? Theme.primary : Theme.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 9))
-                .overlay(RoundedRectangle(cornerRadius: 9).stroke(enabled ? Home.primary.opacity(0.5) : Home.disabledFill))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9))
+                .overlay(RoundedRectangle(cornerRadius: 9).stroke(enabled ? Theme.primary.opacity(0.5) : Theme.disabledFill))
         }
         .buttonStyle(.plain).disabled(!enabled)
     }
@@ -449,9 +450,9 @@ struct InverterPageWide: View {
 extension View {
     /// White chip on the photo (draw / undo), teal when active.
     func toolChip(on: Bool) -> some View {
-        font(.system(size: 14, weight: .semibold)).foregroundStyle(on ? .white : Home.navy)
+        font(.system(size: 14, weight: .semibold)).foregroundStyle(on ? .white : Theme.navy)
             .padding(.horizontal, 12).frame(minHeight: 44)
-            .background(on ? Home.teal : Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+            .background(on ? Theme.teal : Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -470,11 +471,11 @@ struct PlanViewer: View {
                 ScrollView([.horizontal, .vertical]) {
                     SketchView(sketch: sketch)
                         .frame(width: geo.size.width * k, height: geo.size.width * k * CGFloat(sketch.height / sketch.width))
-                        .background(Color.white)
+                        .background(Theme.paper)
                 }
                 .gesture(MagnifyGesture().updating($pinch) { v, s, _ in s = v.magnification }.onEnded { v in zoom = min(8, max(1, zoom * v.magnification)) })
             }
-            .background(Color.white)
+            .background(Theme.paper)
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { Button("ปิด") { dismiss() } }

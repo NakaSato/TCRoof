@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// Single line diagram page (docs/ui/survey-sld), opened from A3's "สร้าง Single Line Diagram →".
 /// The diagram is generated from the survey by `SingleLine` / `SingleLineLayout` — the same ops the A3 PDF draws — and is not edited here;
@@ -50,7 +51,7 @@ struct SingleLinePage: View {
             bottomBar(sl)
         }
         .background(Paper.page)
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .sheet(isPresented: $showPanel) { NavigationStack { ScrollView { panel(sl).padding(16) }.navigationTitle("ข้อมูลฝั่ง PV")
             .navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { showPanel = false } } } } }
         .sheet(item: $listSheet) { k in listView(k, sl) }
@@ -71,7 +72,7 @@ struct SingleLinePage: View {
         HStack(spacing: phone ? 6 : 12) {
             Button(action: close) {
                 Image("ui-back", bundle: .module).renderingMode(.template).resizable().scaledToFit().frame(width: 24, height: 24)
-                    .foregroundStyle(Home.primary).frame(width: 44, height: 44).background(.white, in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(Theme.primary).frame(width: 44, height: 44).background(Theme.onPrimary, in: RoundedRectangle(cornerRadius: 12))
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
@@ -91,10 +92,10 @@ struct SingleLinePage: View {
                 .buttonStyle(.plain).accessibilityLabel("ข้อมูลฝั่ง PV")
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, phone ? 8 : 24).padding(.vertical, phone ? 6 : 10)
         .frame(maxWidth: .infinity)
-        .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing).ignoresSafeArea(edges: .top))
+        .background(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing).ignoresSafeArea(edges: .top))
     }
 
     // MARK: diagram area
@@ -132,8 +133,8 @@ struct SingleLinePage: View {
                     seg("แรงต่ำ · ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
                     seg("แรงสูง · หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
                 }
-                .padding(3).background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-                if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.system(size: 12)).foregroundStyle(Home.pending).lineLimit(1) }
+                .padding(3).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
+                if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.system(size: 12)).foregroundStyle(Theme.pending).lineLimit(1) }
             }
         } else { padToggle(sl) }
     }
@@ -145,8 +146,8 @@ struct SingleLinePage: View {
                 seg("แรงต่ำ · ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
                 seg("แรงสูง · หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
             }
-            .padding(3).background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-            if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.system(size: 13)).foregroundStyle(Home.pending).lineLimit(1) }
+            .padding(3).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
+            if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.system(size: 13)).foregroundStyle(Theme.pending).lineLimit(1) }
         }
     }
 
@@ -154,8 +155,8 @@ struct SingleLinePage: View {
         Button(action: action) {
             Text(title).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, phone ? 6 : 14)
                 .frame(maxWidth: phone ? .infinity : nil, minHeight: 44)
-                .foregroundStyle(on ? Home.navy : Home.muted)
-                .background(on ? Color.white : .clear, in: RoundedRectangle(cornerRadius: 10))
+                .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                .background(on ? Theme.surface : .clear, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
     }
@@ -181,8 +182,8 @@ struct SingleLinePage: View {
             }
         } label: {
             Label("เชื่อมต่อ PV ที่ \(sl.connectionBoard?.name ?? "—")", systemImage: "bolt.fill").font(.system(size: 15, weight: .bold)).lineLimit(1)
-                .padding(.horizontal, 14).frame(minHeight: 44).foregroundStyle(Home.primary)
-                .background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 14).frame(minHeight: 44).foregroundStyle(Theme.primary)
+                .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
         }
         .disabled(sl.transformers.isEmpty)
     }
@@ -197,16 +198,16 @@ struct SingleLinePage: View {
                     if phone { Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 16, weight: .bold)) }
                     else { Text("พอดีจอ").font(.system(size: 15, weight: .bold)) }
                 }
-                .foregroundStyle(Home.primary).padding(.horizontal, phone ? 0 : 12).frame(minWidth: 44, minHeight: 44)
+                .foregroundStyle(Theme.primary).padding(.horizontal, phone ? 0 : 12).frame(minWidth: 44, minHeight: 44)
             }
             .buttonStyle(.plain).accessibilityLabel("พอดีจอ")
         }
-        .padding(4).background(Color.white, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Home.border))
+        .padding(4).background(Theme.surface, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 
     func zoomButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Home.primary).frame(width: 44, height: 44)
+            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary).frame(width: 44, height: 44)
         }
         .buttonStyle(.plain).accessibilityLabel(label)
     }
@@ -232,7 +233,7 @@ struct SingleLinePage: View {
                     }
                 }
                 .frame(width: w, height: h)
-                .background(Color.white)
+                .background(Theme.paper)
                 .contentShape(Rectangle())
                 .onTapGesture(count: 1, coordinateSpace: .local) { p in tap(p, d) }
                 .overlay(alignment: .topLeading) {
@@ -242,13 +243,13 @@ struct SingleLinePage: View {
             }
             .onChange(of: focusPoint) { _, _ in DispatchQueue.main.async { withAnimation { proxy.scrollTo("focus", anchor: .center) } } }
         }
-        .background(Color.white)
+        .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.border))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         .simultaneousGesture(MagnifyGesture()
             .onChanged { v in let b = pinchBase ?? scale; pinchBase = b; scale = min(max(b * v.magnification, 0.3), 1.2) }
             .onEnded { _ in pinchBase = nil })
-        .overlay(alignment: .bottomTrailing) { if phone { zoomControl.shadow(color: Home.navy.opacity(0.15), radius: 4, y: 1).padding(8) } }
+        .overlay(alignment: .bottomTrailing) { if phone { zoomControl.shadow(color: Theme.navy.opacity(0.15), radius: 4, y: 1).padding(8) } }
         .frame(maxHeight: .infinity)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { s in
             if !fitted, s.width > 0 { fitted = true; DispatchQueue.main.async { fit() } }
@@ -276,7 +277,7 @@ struct SingleLinePage: View {
     @ViewBuilder var footer: some View {
         if phone {
             VStack(alignment: .leading, spacing: 4) {
-                Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.system(size: 12)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
+                Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 HStack(spacing: 10) {
                     legend("legend-existing", "อุปกรณ์เดิม"); legend("legend-new-pv", "อุปกรณ์ใหม่ (PV)"); legend("legend-control", "สายสัญญาณควบคุม")
                 }
@@ -287,7 +288,7 @@ struct SingleLinePage: View {
 
     var padFooter: some View {
         HStack(spacing: 16) {
-            Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(2)
+            Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             Spacer(minLength: 8)
             legend("legend-existing", "อุปกรณ์เดิม")
             legend("legend-new-pv", "อุปกรณ์ใหม่ (PV)")
@@ -298,7 +299,7 @@ struct SingleLinePage: View {
     func legend(_ icon: String, _ t: String) -> some View {
         HStack(spacing: 6) {
             Image(icon, bundle: .module).resizable().scaledToFit().frame(width: phone ? 18 : 24, height: 8)
-            Text(t).font(.system(size: phone ? 12 : 14)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)
+            Text(t).font(.system(size: phone ? 12 : 14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 
@@ -343,8 +344,8 @@ struct SingleLinePage: View {
 
     func notes(_ sl: SingleLine) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.danger)
-            Text("ข้อมูลล่าสุด \(stamp.formatted(.dateTime.hour().minute())) · ยังขาด \(sl.missing.count) จุด").font(.system(size: 15)).foregroundStyle(Home.muted)
+            Text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.danger)
+            Text("ข้อมูลล่าสุด \(stamp.formatted(.dateTime.hour().minute())) · ยังขาด \(sl.missing.count) จุด").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -364,9 +365,9 @@ struct SingleLinePage: View {
                 Text("แนบในรายงาน")
             }
             .font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
-            .foregroundStyle(attach ? .white : Home.navy)
-            .background(attach ? Home.ok : .white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(attach ? Home.ok : Home.borderControl))
+            .foregroundStyle(attach ? .white : Theme.navy)
+            .background(attach ? Theme.success : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(attach ? Theme.success : Theme.borderControl))
         }
         .buttonStyle(.plain).accessibilityAddTraits(attach ? .isSelected : [])
     }
@@ -374,9 +375,9 @@ struct SingleLinePage: View {
     func barButton(_ t: String, filled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(t).font(.system(size: 16, weight: .bold)).padding(.horizontal, 18).frame(minHeight: 48)
-                .foregroundStyle(filled ? .white : Home.navy)
-                .background(filled ? Home.primary : .white, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(filled ? Home.primary : Home.borderControl))
+                .foregroundStyle(filled ? Theme.onPrimary : Theme.navy)
+                .background(filled ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(filled ? Theme.primary : Theme.borderControl))
         }
         .buttonStyle(.plain)
     }

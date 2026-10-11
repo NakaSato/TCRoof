@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// Right-hand panel of the single line page: PV data, breaker check, what must be collected, flood note, lists.
 extension SingleLinePage {
@@ -50,8 +51,8 @@ extension SingleLinePage {
     func checkSection(_ sl: SingleLine) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("เบรกเกอร์ทนลัดวงจร \(sl.isc.map { SingleLine.fmt($0) } ?? "?") kA ได้ไหม").font(.system(size: 17, weight: .bold))
-            if sl.iscAssumedZ { Text("ใช้ %Z สมมติ \(SingleLine.fmt(SLConstants.defaultZPercent)) % ในการคำนวณ").font(.system(size: 13)).foregroundStyle(Home.pending) }
-            if sl.checks.isEmpty { Text("ยังไม่มีเบรกเกอร์ในตู้ที่ต่อ PV").font(.system(size: 14)).foregroundStyle(Home.muted) }
+            if sl.iscAssumedZ { Text("ใช้ %Z สมมติ \(SingleLine.fmt(SLConstants.defaultZPercent)) % ในการคำนวณ").font(.system(size: 13)).foregroundStyle(Theme.pending) }
+            if sl.checks.isEmpty { Text("ยังไม่มีเบรกเกอร์ในตู้ที่ต่อ PV").font(.system(size: 14)).foregroundStyle(Theme.inkMuted) }
             ForEach(sl.checks) { c in
                 Button { open(c.target) } label: {
                     HStack(spacing: 10) {
@@ -70,10 +71,10 @@ extension SingleLinePage {
 
     func mark(_ s: SLCheckState) -> (String, Color) {
         switch s {
-        case .ok: return ("ui-check-ok", Home.ok)
-        case .marginal: return ("ui-check-marginal", Home.pending)
-        case .insufficient: return ("ui-check-insufficient", Home.danger)
-        case .unknown: return ("ui-check-unknown", Home.danger)
+        case .ok: return ("ui-check-ok", Theme.success)
+        case .marginal: return ("ui-check-marginal", Theme.pending)
+        case .insufficient: return ("ui-check-insufficient", Theme.danger)
+        case .unknown: return ("ui-check-unknown", Theme.danger)
         }
     }
 
@@ -84,13 +85,13 @@ extension SingleLinePage {
                 Spacer()
                 Text("\(sl.blocking.count) จาก \(sl.missing.count)").font(.system(size: 14, weight: .bold))
             }
-            .foregroundStyle(Home.danger)
+            .foregroundStyle(Theme.danger)
             ForEach(sl.blocking) { b in
                 HStack(spacing: 8) {
                     Text(b.label).font(.system(size: 14)).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button { open(b.target) } label: {
-                        Text(b.target.linkLabel).font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary).frame(minWidth: 52, minHeight: 44)
+                        Text(b.target.linkLabel).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).frame(minWidth: 52, minHeight: 44)
                     }
                     .buttonStyle(.plain)
                 }
@@ -103,11 +104,11 @@ extension SingleLinePage {
     func floodCard(_ f: SLFlood) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image("ui-flood-alert", bundle: .module).resizable().scaledToFit().frame(width: 28, height: 28)
-            Text("จุดเชื่อมต่อเคยน้ำท่วม").font(.system(size: 16, weight: .bold)).foregroundStyle(Home.pending)
+            Text("จุดเชื่อมต่อเคยน้ำท่วม").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.pending)
                 + Text("\n" + f.text).font(.system(size: 14))
             Spacer(minLength: 4)
             Button { open(SLTarget(.flood)) } label: {
-                Text("A4 →").font(.system(size: 14, weight: .bold)).foregroundStyle(Home.primary).frame(minWidth: 48, minHeight: 44)
+                Text("A4 →").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).frame(minWidth: 48, minHeight: 44)
             }
             .buttonStyle(.plain)
         }
@@ -119,9 +120,9 @@ extension SingleLinePage {
         Button { listSheet = kind } label: {
             HStack(spacing: 8) {
                 Text(title).font(.system(size: 16, weight: .bold))
-                Text(detail).font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(1)
+                Text(detail).font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.muted)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.inkMuted)
             }
             .frame(minHeight: 48).contentShape(Rectangle())
         }
@@ -138,18 +139,18 @@ extension SingleLinePage {
                 case .others:
                     ForEach(sl.others) { m in
                         Button { listSheet = nil; open(m.target) } label: {
-                            HStack { Text(m.label).foregroundStyle(Home.navy); Spacer(); Text(m.target.linkLabel).bold() }.frame(minHeight: 44)
+                            HStack { Text(m.label).foregroundStyle(Theme.navy); Spacer(); Text(m.target.linkLabel).bold() }.frame(minHeight: 44)
                         }
                     }
-                    if sl.others.isEmpty { Text("ไม่มีข้อมูลที่ขาดเพิ่ม").foregroundStyle(Home.muted) }
+                    if sl.others.isEmpty { Text("ไม่มีข้อมูลที่ขาดเพิ่ม").foregroundStyle(Theme.inkMuted) }
                 case .conditions:
                     ForEach(conditionRows(sl), id: \.0) { r in
-                        HStack { Text(r.0); Spacer(); Text(r.1).bold().foregroundStyle(r.1 == "ชำรุด" ? Home.danger : Home.pending) }
+                        HStack { Text(r.0); Spacer(); Text(r.1).bold().foregroundStyle(r.1 == "ชำรุด" ? Theme.danger : Theme.pending) }
                     }
-                    if conditionRows(sl).isEmpty { Text("ไม่มีอุปกรณ์ชำรุดหรือพอใช้").foregroundStyle(Home.muted) }
+                    if conditionRows(sl).isEmpty { Text("ไม่มีอุปกรณ์ชำรุดหรือพอใช้").foregroundStyle(Theme.inkMuted) }
                 case .assumptions:
                     ForEach(sl.assumptions) { a in Text(a.text).font(.callout) }
-                    if sl.assumptions.isEmpty { Text("ไม่มีค่าสมมติ").foregroundStyle(Home.muted) }
+                    if sl.assumptions.isEmpty { Text("ไม่มีค่าสมมติ").foregroundStyle(Theme.inkMuted) }
                 }
             }
             .navigationTitle(kind == .others ? "ข้อมูลที่ขาดอื่นๆ" : kind == .conditions ? "สภาพอุปกรณ์" : "ค่าสมมติ")

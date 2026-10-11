@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// B1's right column: the A3 breaker feeding the panel, the load and when it was read, the daytime load note and details.
 extension PanelsPageWide {
@@ -36,13 +37,13 @@ extension PanelsPageWide {
             } label: {
                 HStack {
                     Text(link?.label ?? "ยังไม่ได้เลือก").font(.system(size: 18, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                        .foregroundStyle(link == nil ? Home.muted : Home.navy)
+                        .foregroundStyle(link == nil ? Theme.inkMuted : Theme.navy)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.muted)
+                    Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.horizontal, 14).frame(minHeight: 52)
-                .background(link == nil ? Color.white : Home.mint.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(link == nil ? Home.navy.opacity(0.45) : Home.teal))
+                .background(link == nil ? Theme.surface : Theme.mint.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(link == nil ? Theme.navy.opacity(0.45) : Theme.teal))
                 .contentShape(Rectangle())
             }
             .disabled(options.isEmpty)
@@ -76,14 +77,14 @@ extension PanelsPageWide {
             SourceChip(source: values.source(BuildingPanels.Key.breakerAT))
             TextField("–", text: text(BuildingPanels.Key.breakerAT)).keyboardType(.decimalPad)
                 .font(.system(size: 17, weight: .bold)).multilineTextAlignment(.trailing).frame(width: 90)
-            Text("AT").foregroundStyle(Home.muted)
+            Text("AT").foregroundStyle(Theme.inkMuted)
             NameplateScanButton(target: .breakerAT, apply: { v in
                 if let i = index { job.modules[i].values.set(BuildingPanels.Key.breakerAT, .text(v), source: .nameplate) }
             }, compact: true)
         }
         .padding(.horizontal, 14).frame(minHeight: 48)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.3)))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.3)))
     }
 
     // MARK: load
@@ -96,11 +97,11 @@ extension PanelsPageWide {
             label("ปริมาณการใช้ไฟ", required: true, aside: time == nil && !stored.isEmpty ? "เวลาที่บันทึกไว้: \(stored)" : nil)
             HStack {
                 TextField("เช่น 85", text: text(BuildingPanels.Key.loadKW)).keyboardType(.decimalPad).font(.system(size: 20, weight: .bold))
-                Text("kW").font(.system(size: 16, weight: .semibold)).foregroundStyle(Home.muted)
+                Text("kW").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(minHeight: 52)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary, lineWidth: 1.5))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, lineWidth: 1.5))
             HStack(spacing: 8) {
                 timeChip(now.map { "ตอนนี้ \($0)" } ?? "ตอนนี้", on: now != nil) {
                     set(BuildingPanels.Key.loadTime, .text(BuildingPanels.nowTime()))
@@ -116,8 +117,8 @@ extension PanelsPageWide {
         Button(action: action) {
             Text(title).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(on ? Home.mint : Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Home.teal : Home.navy.opacity(0.45), lineWidth: on ? 1.5 : 1))
+                .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.45), lineWidth: on ? 1.5 : 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("เวลาที่อ่านโหลด " + title)
@@ -125,7 +126,7 @@ extension PanelsPageWide {
     }
 
     func daytimeNote(_ n: BuildingPanels.DaytimeNote) -> some View {
-        (Text(n.lead + " → ") + Text(n.conclusion).bold().foregroundColor(n.needsZeroExport ? Home.pending : Home.navy))
+        (Text(n.lead + " → ") + Text(n.conclusion).bold().foregroundColor(n.needsZeroExport ? Theme.pending : Theme.navy))
             .font(.system(size: 14))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
@@ -135,15 +136,15 @@ extension PanelsPageWide {
     var spareSlotsRow: some View {
         HStack(spacing: 10) {
             Text("ช่องว่างในตู้").font(.system(size: 15, weight: .semibold))
-            if !narrow { Text("แสดงที่จุดเชื่อมต่อ").font(.footnote).foregroundStyle(Home.muted) }
+            if !narrow { Text("แสดงที่จุดเชื่อมต่อ").font(.footnote).foregroundStyle(Theme.inkMuted) }
             Spacer(minLength: 6)
             TextField("–", text: text(BuildingPanels.Key.spareSlots)).keyboardType(.numberPad)
                 .font(.system(size: 17, weight: .bold)).multilineTextAlignment(.trailing).frame(width: 60)
-            Text("ช่อง").foregroundStyle(Home.muted)
+            Text("ช่อง").foregroundStyle(Theme.inkMuted)
         }
         .padding(.horizontal, 14).frame(minHeight: 48)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.3)))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.3)))
     }
 
     var detailCard: some View {
@@ -152,8 +153,8 @@ extension PanelsPageWide {
             TextEditor(text: text("detail"))
                 .font(.system(size: 17)).scrollContentBackground(.hidden).padding(8)
                 .frame(minHeight: 180)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.navy.opacity(0.45)))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
         }
     }
 }

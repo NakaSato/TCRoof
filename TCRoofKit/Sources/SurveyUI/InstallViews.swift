@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import TCRoofCore
+import TCRoofUI
 
 /// "เพิ่มโครงการติดตั้ง": every survey still in the survey stage, complete ones first; only those can be added.
 struct InstallPickerSheet: View {
@@ -19,14 +20,14 @@ struct InstallPickerSheet: View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("เพิ่มโครงการติดตั้ง").font(.system(size: 22, weight: .bold)).foregroundStyle(Home.navy)
-                    Text("ดึงข้อมูลจากงานสำรวจ · เลือกได้เฉพาะงานที่สำรวจครบ 100%").font(.subheadline).foregroundStyle(Home.muted)
+                    Text("เพิ่มโครงการติดตั้ง").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.navy)
+                    Text("ดึงข้อมูลจากงานสำรวจ · เลือกได้เฉพาะงานที่สำรวจครบ 100%").font(.subheadline).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Home.navy)
+                    Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.navy)
                         .frame(width: 44, height: 44)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Home.border))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).accessibilityLabel("ปิด")
@@ -54,25 +55,25 @@ struct InstallPickerSheet: View {
         let ok = j.canMoveToInstall
         return HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(j.docNo.isEmpty ? "NO. —" : "NO.\(j.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Home.muted)
-                Text(j.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : j.projectName).font(.system(size: 17, weight: .bold)).foregroundStyle(Home.navy)
-                Text(detail(j)).font(.caption).foregroundStyle(Home.muted)
+                Text(j.docNo.isEmpty ? "NO. —" : "NO.\(j.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Theme.inkMuted)
+                Text(j.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : j.projectName).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.navy)
+                Text(detail(j)).font(.caption).foregroundStyle(Theme.inkMuted)
             }
             .lineLimit(1)
             .opacity(ok ? 1 : 0.55)
             Spacer(minLength: 0)
             if ok {
                 Button { add(j.id) } label: {
-                    Text("เพิ่มได้").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                    Text("เพิ่มได้").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
                         .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
-                        .background(Home.primary, in: RoundedRectangle(cornerRadius: 12))
+                        .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("เพิ่ม \(j.projectName) เป็นงานติดตั้ง")
             } else {
-                Text("เพิ่มไม่ได้").font(.system(size: 15, weight: .bold)).foregroundStyle(Home.disabledText)
+                Text("เพิ่มไม่ได้").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.disabledText)
                     .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
-                    .background(Home.disabledFill, in: RoundedRectangle(cornerRadius: 12))
+                    .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 12))
                     .accessibilityLabel("เพิ่มไม่ได้ สำรวจยังไม่ครบ")
             }
         }
@@ -94,10 +95,10 @@ struct InstallTrackingView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Text(job.docNo.isEmpty ? "NO. —" : "NO.\(job.docNo)").font(.subheadline.weight(.heavy)).foregroundStyle(Home.muted)
-            Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName).font(.title2.bold()).foregroundStyle(Home.navy)
+            Text(job.docNo.isEmpty ? "NO. —" : "NO.\(job.docNo)").font(.subheadline.weight(.heavy)).foregroundStyle(Theme.inkMuted)
+            Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName).font(.title2.bold()).foregroundStyle(Theme.navy)
                 .multilineTextAlignment(.center)
-            Label("อยู่ระหว่างพัฒนา", systemImage: "hammer").font(.headline).foregroundStyle(Home.muted).padding(.top, 8)
+            Label("อยู่ระหว่างพัฒนา", systemImage: "hammer").font(.headline).foregroundStyle(Theme.inkMuted).padding(.top, 8)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

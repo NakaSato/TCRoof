@@ -504,10 +504,10 @@ struct JobEditorView: View {
 
     var stageBanner: some View {
         Label("งานนี้ย้ายไปงานติดตั้งแล้ว · งดแก้ไข ดูและส่งออกได้อย่างเดียว", systemImage: "lock")
-            .font(.subheadline.weight(.semibold)).foregroundStyle(Home.navy)
+            .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(Home.lockBadge, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.borderSubtle, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 

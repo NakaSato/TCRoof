@@ -118,7 +118,7 @@ struct MPScheduleScreen: View {
                     Label(isPhone ? "อัปเดต" : "อัปเดตสัปดาห์นี้", systemImage: "square.and.pencil").font(.body.weight(.semibold))
                         .lineLimit(1).frame(minHeight: touchMin)
                 }
-                .buttonStyle(.borderedProminent).tint(Theme.primary)
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
         }
         .cardStyle()

@@ -18,7 +18,7 @@ struct LockBanner: View {
         return layout
             .padding(.horizontal, 14).padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Home.lockBadge, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.borderSubtle, in: RoundedRectangle(cornerRadius: 10))
     }
     func text(_ lock: FormLock?) -> some View {
         VStack(alignment: .leading, spacing: 2) {

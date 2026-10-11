@@ -97,7 +97,7 @@ struct InstallRecordsView: View {
     static func inspectionStatus(_ job: Job) -> (text: String, color: Color) {
         guard let inspection = job.inspection else { return ("ยังไม่เริ่มตรวจรับ", Theme.muted) }
         if inspection.submittedAt != nil {
-            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Color(hex: 0x2E9E5B)) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
+            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Theme.success) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
         }
         return ("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", .orange)
     }
@@ -125,7 +125,7 @@ struct JobInstallLogsView: View {
                     NavigationLink { InspectionView(job: job) } label: {
                         Label("ใบตรวจรับงาน (ICL)", systemImage: "checkmark.seal")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 }
                 if logs.isEmpty {
                     ContentUnavailableView("ยังไม่มีบันทึกงานติดตั้ง", systemImage: "hammer",
@@ -169,7 +169,7 @@ private struct LogCard: View {
                 Spacer()
                 Text(log.recorder)
                     .font(.caption.bold())
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.pending)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.orange.opacity(0.12), in: Capsule())
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
@@ -305,7 +305,7 @@ struct InstallLogDetailView: View {
                             Text("ผู้บันทึก :")
                             Text(log.recorder)
                                 .bold()
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Theme.pending)
                                 .padding(.horizontal, 8).padding(.vertical, 2)
                                 .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
                             Spacer()

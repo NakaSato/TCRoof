@@ -46,6 +46,8 @@ public enum Theme {
     public static let primary = Color(light: 0x1F6FB5, dark: 0x5BB0F0)
     /// Text and icons on `primary` and the blue gradients.
     public static let onPrimary = Color(light: 0xFFFFFF, dark: 0x0B1A2E)
+    /// Selected filter pill and confirmed plan points: navy in both modes, under white text.
+    public static let navySolid = Color(hex: 0x16325C)
     public static let primaryLight = Color(hex: 0x2E8FDB)
     public static let primarySoft = Color(light: 0xE3EEF8, dark: 0x16273A)
     public static let teal = Color(hex: 0x27A99A)
@@ -58,6 +60,8 @@ public enum Theme {
     public static let sun = Color(hex: 0xFFC53D)
     public static let background = Color(light: 0xF3F6FA, dark: 0x0E141C)
     public static let surface = Color(light: 0xFFFFFF, dark: 0x121A24)
+    /// Behind plans, diagrams and the signature pad: white in both modes, since their ink is dark.
+    public static let paper = Color.white
     public static let muted = Color(hex: 0x7A8BA3)
     public static let inkMuted = Color(light: 0x5B6B82, dark: 0x9DB0C7)
     public static let borderControl = Color(light: 0x77889E, dark: 0x6B7D93)
@@ -86,6 +90,8 @@ public enum Theme {
     public static let pendingSoft = Color(light: 0xFFF4E5, dark: 0x2E2213)
     public static let danger = Color(light: 0xD9453B, dark: 0xFF8A7F)
     public static let dangerText = Color(light: 0xB42318, dark: 0xFF8A7F)
+    /// Light red of a missing section in the editor sidebar.
+    public static let dangerLine = Color(light: 0xF2A09A, dark: 0x7A3A35)
     public static let dangerSoft = Color(light: 0xFDECEA, dark: 0x3A1C1A)
 
     public static let unreadRow = Color(hex: 0xF3F8FD)
@@ -133,6 +139,10 @@ public enum Theme {
     public static let dayOutside = Color(light: 0xC3CBD6, dark: 0x3A4757)
     /// Selected row of a dropdown menu (the team filter).
     public static let rowSelected = Color(light: 0xEEF3F9, dark: 0x1C2734)
+
+    // D1 จัดแผง (docs/ui/survey-d1-layout-iphone)
+    /// A panel on the tank plan.
+    public static let panelBlue = Color(light: 0x2B4FD8, dark: 0x6C8CFF)
 
     // component board (docs/ui/components)
     /// Progress ring track, empty segments of a segmented bar.

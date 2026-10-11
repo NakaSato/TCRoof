@@ -48,7 +48,7 @@ struct InfoPageWide: View {
         Group {
             if sizeClass == .compact { phoneBody } else { padBody }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .confirmationDialog("ลบหัวข้อที่กรอกข้อมูลแล้ว?", isPresented: Binding(get: { areaChange != nil }, set: { if !$0 { areaChange = nil } }),
                             titleVisibility: .visible, presenting: areaChange) { c in
             Button("ลบ \(c.losing.count) หัวข้อ", role: .destructive) { remove(c.losing) }
@@ -147,9 +147,9 @@ struct InfoPageWide: View {
         let t = job.values.text("date")
         return Button { showDate = true } label: {
             HStack(spacing: 6) {
-                Text(t.isEmpty ? "เลือกวันที่" : ISODate.thai(t)).foregroundStyle(t.isEmpty ? Home.muted : Home.navy).lineLimit(1)
+                Text(t.isEmpty ? "เลือกวันที่" : ISODate.thai(t)).foregroundStyle(t.isEmpty ? Theme.inkMuted : Theme.navy).lineLimit(1)
                 Spacer(minLength: 4)
-                A2Icon(name: "ui-calendar", fallback: "calendar", size: compact ? 16 : 20).foregroundStyle(Home.primary)
+                A2Icon(name: "ui-calendar", fallback: "calendar", size: compact ? 16 : 20).foregroundStyle(Theme.primary)
             }
             .inputBox(calc: calc("date"), focused: showDate, minHeight: compact ? 44 : 50, trailing: compact ? 12 : 14,
                       leading: compact ? 12 : 14, fontSize: compact ? 16 : 17, stroke: compact ? 0.35 : 0.45, radius: compact ? 10 : Self.inputRadius)
@@ -174,7 +174,7 @@ struct InfoPageWide: View {
             TextField(mine.isEmpty ? "ชื่อวิศวกร" : mine, text: text("engineer")).focused($focus, equals: "engineer")
             if !mine.isEmpty && value.isEmpty {
                 Button("ใช้ชื่อฉัน") { job.values["engineer"] = .text(mine) }
-                    .font(.footnote.weight(.semibold)).foregroundStyle(Home.primary).frame(minHeight: 44).fixedSize()
+                    .font(.footnote.weight(.semibold)).foregroundStyle(Theme.primary).frame(minHeight: 44).fixedSize()
             }
         }
         .inputBox(focused: focus == "engineer", radius: Self.inputRadius)
@@ -188,7 +188,7 @@ struct InfoPageWide: View {
                 job.values["capacity"] = c.isEmpty ? nil : .text(c)
             }))
             .keyboardType(.decimalPad).focused($focus, equals: "capacity")
-            Text(unit("capacity")).font(.system(size: 16)).foregroundStyle(Home.muted)
+            Text(unit("capacity")).font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
         }
         .inputBox(calc: calc("capacity"), focused: focus == "capacity", error: bad, radius: Self.inputRadius)
     }
@@ -203,8 +203,8 @@ struct InfoPageWide: View {
                 } label: {
                     Text(o).font(.system(size: 17, weight: .semibold))
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(on ? Home.mint : Color.white, in: RoundedRectangle(cornerRadius: Self.inputRadius))
-                        .overlay(RoundedRectangle(cornerRadius: Self.inputRadius).stroke(Home.navy.opacity(on ? 0.2 : 0.5)))
+                        .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: Self.inputRadius))
+                        .overlay(RoundedRectangle(cornerRadius: Self.inputRadius).stroke(Theme.navy.opacity(on ? 0.2 : 0.5)))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -218,7 +218,7 @@ struct InfoPageWide: View {
         return HStack(spacing: 4) {
             TextField("0xx-xxx-xxxx", text: text("phone")).keyboardType(.phonePad).focused($focus, equals: "phone")
             Button { if let u = URL(string: "tel:" + digits) { openURL(u) } } label: {
-                A2Icon(name: "ui-phone", fallback: "phone", size: 20).foregroundStyle(Home.primary).frame(width: 40, height: 44)
+                A2Icon(name: "ui-phone", fallback: "phone", size: 20).foregroundStyle(Theme.primary).frame(width: 40, height: 44)
             }
             .disabled(digits.isEmpty)
             .accessibilityLabel("โทรหาผู้ประสานงาน")
@@ -278,13 +278,13 @@ struct FieldLabel: View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(title ?? spec.label.replacingOccurrences(of: "**", with: "")).font(.system(size: 14, weight: .semibold))
                 .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
-            if !spec.optional { Text("*").font(.system(size: 14, weight: .semibold)).foregroundStyle(Home.danger) }
+            if !spec.optional { Text("*").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.danger) }
             Spacer(minLength: 4)
             if let aside = aside ?? (spec.optional ? "ไม่บังคับ" : nil), !aside.isEmpty {
                 Text(aside).font(.system(size: 12)).foregroundStyle(Theme.muted).lineLimit(1).minimumScaleFactor(0.8)
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .frame(height: 18)
     }
 
@@ -293,28 +293,28 @@ struct FieldLabel: View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title ?? spec.label.replacingOccurrences(of: "**", with: ""))
                 .font(.system(size: 17, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.75).layoutPriority(1)
-            if !spec.optional { Text("*").font(.system(size: 17, weight: .semibold)).foregroundStyle(Home.danger) }
+            if !spec.optional { Text("*").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.danger) }
             if important {
                 Text("สำคัญ").font(.caption.weight(.bold)).padding(.horizontal, 8).padding(.vertical, 1)
-                    .background(Home.sun, in: Capsule())
+                    .background(Theme.sun, in: Capsule())
             }
             Spacer(minLength: 4)
             // narrow columns keep the label and drop the words (the dot stays)
             if spec.optional {
                 // `aside: ""` (iPad A1's REV.) shows no "ไม่บังคับ"
                 if aside != "" {
-                    ViewThatFits { Text("ไม่บังคับ").font(.footnote).foregroundStyle(Home.muted).fixedSize(); Color.clear.frame(width: 0, height: 0) }
+                    ViewThatFits { Text("ไม่บังคับ").font(.footnote).foregroundStyle(Theme.inkMuted).fixedSize(); Color.clear.frame(width: 0, height: 0) }
                 }
             } else if !filled {
-                let dot = Circle().fill(Home.pending).frame(width: 7, height: 7)
+                let dot = Circle().fill(Theme.pending).frame(width: 7, height: 7)
                 ViewThatFits {
-                    HStack(spacing: 4) { dot; Text("ยังขาด").font(.footnote.weight(.semibold)).foregroundStyle(Home.pending) }.fixedSize()
+                    HStack(spacing: 4) { dot; Text("ยังขาด").font(.footnote.weight(.semibold)).foregroundStyle(Theme.pending) }.fixedSize()
                     dot
                 }
                 .accessibilityLabel("ยังขาด")
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
     }
 }
 
@@ -331,16 +331,16 @@ struct A1Card<Content: View>: View {
         VStack(alignment: .leading, spacing: spacing) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(title).font(.system(size: 18, weight: .bold))
-                if required { Text("*").font(.system(size: 18, weight: .bold)).foregroundStyle(Home.danger) }
+                if required { Text("*").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.danger) }
                 Spacer(minLength: 8)
-                if let trailing { Text(trailing).font(.footnote).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8) }
+                if let trailing { Text(trailing).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
             }
             content
         }
         .padding(.vertical, vertical).padding(.horizontal, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 }
 
@@ -369,18 +369,18 @@ struct PageStepBar: View {
         return VStack(spacing: 7) {
             HStack(spacing: 8) {
                 Text("\(i + 1)/\(steps.count)").font(.system(size: 14, weight: .bold)).monospacedDigit()
-                Text(title ?? steps[safe: i]?.title ?? "").font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(1)
+                Text(title ?? steps[safe: i]?.title ?? "").font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 4)
                 if let chip {
-                    Text(chip.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(chip.ok ? Home.badgeOkText : Home.pending)
+                    Text(chip.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(chip.ok ? Theme.okTick : Theme.pending)
                         .lineLimit(1).fixedSize()
                         .padding(.horizontal, 8).padding(.vertical, 1)
-                        .background(chip.ok ? Home.badgeOkBg : Home.badgeWarnBg, in: Capsule())
+                        .background(chip.ok ? Theme.okSoft : Theme.pendingSoft, in: Capsule())
                 }
             }
             HStack(spacing: 2) {
                 ForEach(Array(steps.enumerated()), id: \.offset) { n, s in
-                    Capsule().fill(n == i ? Home.primary : s.completion.total > 0 && s.completion.isComplete ? Home.stepDone : Home.hairline)
+                    Capsule().fill(n == i ? Theme.primary : s.completion.total > 0 && s.completion.isComplete ? Theme.stepDone : Theme.borderSubtle)
                         .frame(height: 6)
                 }
             }
@@ -401,8 +401,8 @@ struct PageStepBar: View {
             .font(.system(size: 15))
             HStack(spacing: 6) {
                 ForEach(Array(steps.enumerated()), id: \.offset) { n, s in
-                    Capsule().fill(n == i ? AnyShapeStyle(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing))
-                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Home.mint) : AnyShapeStyle(Color.gray.opacity(0.25)))
+                    Capsule().fill(n == i ? AnyShapeStyle(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing))
+                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Theme.mint) : AnyShapeStyle(Color.gray.opacity(0.25)))
                         .frame(height: 8)
                 }
             }
@@ -451,12 +451,12 @@ extension View {
     /// iPhone A1 passes `minHeight: 44`, `leading: 12`, `fontSize: 16` and a 35% stroke.
     func inputBox(calc: Bool = false, focused: Bool = false, error: Bool = false, minHeight: CGFloat = 50, trailing: CGFloat = 14,
                   leading: CGFloat = 14, fontSize: CGFloat = 17, stroke: Double = 0.45, radius: CGFloat = 10) -> some View {
-        font(.system(size: fontSize)).foregroundStyle(Home.navy)
+        font(.system(size: fontSize)).foregroundStyle(Theme.navy)
             .padding(.leading, leading).padding(.trailing, trailing)
             .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .leading)
-            .background(calc ? Home.mint.opacity(0.3) : Color.white, in: RoundedRectangle(cornerRadius: radius))
+            .background(calc ? Theme.mint.opacity(0.3) : Theme.surface, in: RoundedRectangle(cornerRadius: radius))
             .overlay(RoundedRectangle(cornerRadius: radius)
-                .stroke(error ? Home.danger : focused ? Home.primary : Home.navy.opacity(stroke), lineWidth: error || focused ? 2 : 1))
+                .stroke(error ? Theme.danger : focused ? Theme.primary : Theme.navy.opacity(stroke), lineWidth: error || focused ? 2 : 1))
     }
 }
 #endif

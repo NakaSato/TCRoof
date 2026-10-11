@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// E1's right column: the two signature cards and the reviewer.
 extension FinalPageWide {
@@ -22,7 +23,7 @@ extension FinalPageWide {
             HStack(alignment: .firstTextBaseline) {
                 Text("ลงนาม").font(.system(size: 17, weight: .bold))
                 Spacer(minLength: 8)
-                Text("เซ็นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 13)).foregroundStyle(Home.muted)
+                Text("เซ็นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
             }
             surveyorCard.frame(maxHeight: .infinity)
             customerCard.frame(maxHeight: .infinity)
@@ -32,17 +33,17 @@ extension FinalPageWide {
 
     var surveyorCard: some View {
         let name = v.text("engineer").trimmingCharacters(in: .whitespaces)
-        return signatureCard(title: Self.surveyorRole, field: "surveyorSign", role: Self.surveyorRole, emptyTint: Home.muted,
+        return signatureCard(title: Self.surveyorRole, field: "surveyorSign", role: Self.surveyorRole, emptyTint: Theme.inkMuted,
                              signing: $signingSurveyor, who: Self.surveyorRole + (name.isEmpty ? "" : " · " + name)) {
             Text("( \(name.isEmpty ? "ยังไม่ระบุชื่อใน A1" : name) )").font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(name.isEmpty ? Home.muted : Home.navy).lineLimit(1)
+                .foregroundStyle(name.isEmpty ? Theme.inkMuted : Theme.navy).lineLimit(1)
                 .frame(minHeight: 36).allowsHitTesting(false)
         }
     }
 
     var customerCard: some View {
         let name = v.text("customerName").trimmingCharacters(in: .whitespaces)
-        return signatureCard(title: Self.customerRole, field: "customerSign", role: Self.customerRole, emptyTint: Home.danger,
+        return signatureCard(title: Self.customerRole, field: "customerSign", role: Self.customerRole, emptyTint: Theme.danger,
                              signing: $signingCustomer, who: Self.customerRole + (name.isEmpty ? "" : " · " + name)) {
             HStack(spacing: 4) {
                 Text("(")
@@ -55,7 +56,7 @@ extension FinalPageWide {
             .font(.system(size: 15, weight: .semibold))
             .frame(minWidth: 220, minHeight: 36)
             .overlay(alignment: .bottom) {
-                Line().stroke(Home.primary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(height: 1.5)
+                Line().stroke(Theme.primary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(height: 1.5)
             }
         }
     }
@@ -83,17 +84,17 @@ extension FinalPageWide {
             .overlay(alignment: .bottom) { Rectangle().fill(Self.hairline).frame(height: 1) }
             signatureBody(photo: photo, role: role, emptyTint: emptyTint, signing: signing, name: name)
         }
-        .background(Color.white)
+        .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Home.navy.opacity(0.18)))
-        .shadow(color: Home.navy.opacity(0.08), radius: 2, y: 1)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
+        .shadow(color: Theme.navy.opacity(0.08), radius: 2, y: 1)
         .signaturePad(isPresented: signing, who: who) { img in
             if let img, let p = model.addPhoto(img, to: job.id, maxSide: 900, png: true) { set(field, .photo(p)) }
         }
     }
 
     func signatureTitle(_ title: String) -> some View {
-        (Text(title + " ") + Text("*").foregroundColor(Home.danger)).font(.system(size: 16, weight: .bold)).lineLimit(1)
+        (Text(title + " ") + Text("*").foregroundColor(Theme.danger)).font(.system(size: 16, weight: .bold)).lineLimit(1)
     }
 
     @ViewBuilder func signatureStatus(field: String, title: String) -> some View {
@@ -101,7 +102,7 @@ extension FinalPageWide {
         Text(signed ? "✓ ลงนามแล้ว" : "รอลงนาม").font(.system(size: 12.5, weight: .bold))
             .foregroundStyle(signed ? Self.okText : Self.chipRed)
             .padding(.horizontal, 10).padding(.vertical, 3)
-            .background((signed ? Home.ok.opacity(0.14) : Home.danger.opacity(0.12)), in: Capsule())
+            .background((signed ? Theme.success.opacity(0.14) : Theme.danger.opacity(0.12)), in: Capsule())
             .fixedSize()
         Spacer(minLength: 0)
         if signed {
@@ -110,7 +111,7 @@ extension FinalPageWide {
                     A2Icon(name: "e1-resign", fallback: "arrow.counterclockwise", size: 16)
                     Text("เซ็นใหม่").font(.system(size: 14, weight: .semibold))
                 }
-                .foregroundStyle(Home.muted)
+                .foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -124,16 +125,16 @@ extension FinalPageWide {
         return GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height, base = h * 0.7
             ZStack(alignment: .topLeading) {
-                DotGrid().fill(Home.navy.opacity(0.07))
+                DotGrid().fill(Theme.navy.opacity(0.07))
                     .background(Self.canvasFill)
                     .contentShape(Rectangle())
                     .onTapGesture { signing.wrappedValue = true }
                     .accessibilityElement()
                     .accessibilityAddTraits(.isButton)
                     .accessibilityLabel((photo == nil ? "เซ็นชื่อ" : "เซ็นชื่อใหม่ ") + role)
-                Rectangle().fill(Home.navy.opacity(0.35)).frame(width: max(0, w - 112), height: 1.5)
+                Rectangle().fill(Theme.navy.opacity(0.35)).frame(width: max(0, w - 112), height: 1.5)
                     .position(x: w / 2, y: base).allowsHitTesting(false)
-                Text("✕").font(.system(size: 18)).foregroundStyle(Home.navy.opacity(0.45))
+                Text("✕").font(.system(size: 18)).foregroundStyle(Theme.navy.opacity(0.45))
                     .position(x: 40, y: base - 14).allowsHitTesting(false)
                 Group {
                     if let image {
@@ -141,7 +142,7 @@ extension FinalPageWide {
                             .frame(width: min(380, w * 0.8), height: min(124, base))
                             .position(x: w / 2, y: base + 14 - min(124, base) / 2)
                     } else if photo != nil {
-                        Text("ลายเซ็นอยู่บนเครื่องอื่น").font(.system(size: 15, weight: .semibold)).foregroundStyle(Home.muted)
+                        Text("ลายเซ็นอยู่บนเครื่องอื่น").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.inkMuted)
                             .position(x: w / 2, y: h * 0.34 + 20)
                     } else {
                         VStack(spacing: 6) {
@@ -155,7 +156,7 @@ extension FinalPageWide {
                 .allowsHitTesting(false)
                 VStack(spacing: 2) {
                     label
-                    Text(role + " · " + Self.thaiDate(photo?.takenAt ?? Date())).font(.system(size: 12.5)).foregroundStyle(Home.muted)
+                    Text(role + " · " + Self.thaiDate(photo?.takenAt ?? Date())).font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(1).allowsHitTesting(false)
                 }
                 .fixedSize()
@@ -168,7 +169,7 @@ extension FinalPageWide {
     var reviewerRow: some View {
         HStack(spacing: 12) {
             Text("ผู้ตรวจสอบ").font(.system(size: 15, weight: .bold))
-            if !narrow { Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.system(size: 12.5)).foregroundStyle(Home.muted).lineLimit(1) }
+            if !narrow { Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             Spacer(minLength: 8)
             TextField(narrow ? "ไม่บังคับ" : "ชื่อผู้ตรวจสอบ", text: Binding(get: { v.text("reviewer") }, set: { set("reviewer", $0.isEmpty ? nil : .text($0)) }))
                 .font(.system(size: 15))
@@ -178,8 +179,8 @@ extension FinalPageWide {
         }
         .padding(.leading, 18).padding(.trailing, 8)
         .frame(minHeight: 52)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Home.navy.opacity(0.18)))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 }
 

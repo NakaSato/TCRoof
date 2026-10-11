@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import CoreLocation
 import TCRoofCore
+import TCRoofUI
 
 /// The picture's own proportions on iPad; a fixed 170 pt on iPhone; the free height (at least 232) in iPad landscape.
 private struct MapShape: ViewModifier {
@@ -63,20 +64,20 @@ struct SiteMapPreview: View {
                 } else if loading {
                     ProgressView()
                 } else {
-                    Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.footnote).foregroundStyle(Home.muted)
+                    Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.footnote).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding(.horizontal, 40)
                 }
                 if coordinate != nil { if !phone { cropLayer(size) }; pin }
             }
             .overlay(alignment: .topLeading) { levelPicker.padding(phone ? 8 : 10) }
             .overlay(alignment: .topTrailing) { zoomButtons.padding(phone ? 8 : 10) }
-            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน").font(.system(size: 11)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
+            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
             .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(phone ? 8 : 10) } }
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { frameSize = $0 }
         .modifier(MapShape(phone: phone, fill: fill))
         .clipShape(RoundedRectangle(cornerRadius: phone || fill ? 12 : 10))
-        .overlay(RoundedRectangle(cornerRadius: phone || fill ? 12 : 10).stroke(phone ? Home.hairline : Home.navy.opacity(0.2)))
+        .overlay(RoundedRectangle(cornerRadius: phone || fill ? 12 : 10).stroke(phone ? Theme.borderSubtle : Theme.navy.opacity(0.2)))
         .task(id: "\(gps)|\(zoom)") { await load() }
     }
 
@@ -194,7 +195,7 @@ struct SiteMapPreview: View {
                 Button { zoom = z } label: {
                     levelLabel(l, on: on)
                     .padding(.horizontal, phone ? 8 : 10).frame(minHeight: phone ? 28 : 44)
-                    .background(on ? Home.mint : .clear, in: RoundedRectangle(cornerRadius: 8))
+                    .background(on ? Theme.mint : .clear, in: RoundedRectangle(cornerRadius: 8))
                     // the 28-pt chip keeps a 44-pt tap area
                     .contentShape(Rectangle().inset(by: phone ? -8 : 0))
                 }
@@ -202,10 +203,10 @@ struct SiteMapPreview: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         .padding(3)
-        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
-        .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
+        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+        .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
     }
 
     /// Two lines on iPad ("สถานี" over "200 ม."); one line on iPhone ("สถานี 200 ม.").
@@ -213,13 +214,13 @@ struct SiteMapPreview: View {
         if phone {
             HStack(spacing: 3) {
                 Text(l.name).font(.system(size: 12, weight: on ? .bold : .regular))
-                Text("\(Int(l.meters)) ม.").font(.system(size: 11, weight: on ? .bold : .regular)).foregroundStyle(on ? Home.navy : Home.muted)
+                Text("\(Int(l.meters)) ม.").font(.system(size: 11, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
             }
             .lineLimit(1).fixedSize()
         } else {
             VStack(spacing: 0) {
                 Text(l.name).font(.system(size: 13, weight: on ? .bold : .regular))
-                Text("\(Int(l.meters)) ม.").font(.system(size: 11)).foregroundStyle(on ? Home.navy : Home.muted)
+                Text("\(Int(l.meters)) ม.").font(.system(size: 11)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
             }
         }
     }
@@ -227,16 +228,16 @@ struct SiteMapPreview: View {
     var zoomButtons: some View {
         VStack(spacing: 0) {
             zoomButton("ui-plus", "plus", "ซูมเข้า", +1).disabled(zoom >= Self.zoomRange.upperBound)
-            Rectangle().fill(Home.navy.opacity(0.12)).frame(width: 44, height: 1)
+            Rectangle().fill(Theme.navy.opacity(0.12)).frame(width: 44, height: 1)
             zoomButton("ui-minus", "minus", "ซูมออก", -1).disabled(zoom <= Self.zoomRange.lowerBound)
         }
-        .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
-        .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
+        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+        .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
     }
 
     func zoomButton(_ icon: String, _ symbol: String, _ label: String, _ step: Int) -> some View {
         Button { zoom += step } label: {
-            A2Icon(name: icon, fallback: symbol, size: 20).foregroundStyle(Home.primary)
+            A2Icon(name: icon, fallback: symbol, size: 20).foregroundStyle(Theme.primary)
                 .frame(width: 44, height: phone ? 40 : 44).contentShape(Rectangle().inset(by: phone ? -2 : 0))
         }
         .buttonStyle(.plain).accessibilityLabel(label)
@@ -249,13 +250,13 @@ struct SiteMapPreview: View {
         tag(HStack(spacing: 6) {
             let w = length / across * size.width
             Path { p in p.addLines([CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 5), CGPoint(x: w, y: 5), CGPoint(x: w, y: 0)]) }
-                .stroke(Home.navy, lineWidth: 1.5).frame(width: w, height: 5)
+                .stroke(Theme.navy, lineWidth: 1.5).frame(width: w, height: 5)
             Text(length >= 1000 ? "\(Int(length / 1000)) กม." : "\(Int(length)) ม.").font(.system(size: 11))
         })
     }
 
     func tag<V: View>(_ v: V) -> some View {
-        v.padding(.horizontal, 8).padding(.vertical, 3).background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 6))
+        v.padding(.horizontal, 8).padding(.vertical, 3).background(Theme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: loading

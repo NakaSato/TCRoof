@@ -53,13 +53,13 @@ extension SitePageWide {
             }
             .frame(height: 240)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.hairline))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             .overlay(alignment: .bottomTrailing) {
                 Label(photo == nil ? "เลือกภาพก่อน" : "แตะเพื่อแก้ไขเต็มจอ", systemImage: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(Home.primary)
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.primary)
                     .padding(.horizontal, 10).frame(minHeight: 32)
-                    .background(Color.white.opacity(0.95), in: Capsule())
-                    .shadow(color: Home.navy.opacity(0.2), radius: 2, y: 1)
+                    .background(Theme.surface.opacity(0.95), in: Capsule())
+                    .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
                     .padding(8)
             }
             .contentShape(Rectangle())

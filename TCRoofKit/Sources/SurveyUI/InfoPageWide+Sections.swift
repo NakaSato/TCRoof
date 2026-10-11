@@ -33,10 +33,10 @@ extension InfoPageWide {
             Button { set(on ? 0 : 1) } label: {
                 HStack(spacing: 8) {
                     A2Icon(name: on ? "a1-checkbox-on" : "a1-checkbox-off", fallback: on ? "checkmark.square.fill" : "square", size: 22)
-                        .foregroundStyle(Home.primary)
+                        .foregroundStyle(Theme.primary)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(title).font(.system(size: 15, weight: .bold))
-                        Text(detail).font(.system(size: 12)).foregroundStyle(Home.muted)
+                        Text(detail).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
                     }
                     .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
                     Spacer(minLength: 0)
@@ -51,15 +51,15 @@ extension InfoPageWide {
             stepButton("ui-plus", "plus", label: "เพิ่ม" + title, width: pad ? 44 : 30) { set(count + 1) }.disabled(count >= 20)
         }
         .padding(.leading, 12).padding(.trailing, pad ? 4 : 2)
-        .background(on ? Home.primarySoft : Color.white, in: RoundedRectangle(cornerRadius: pad ? 12 : 10))
-        .overlay(RoundedRectangle(cornerRadius: pad ? 12 : 10).stroke(on ? Home.navy.opacity(0.2) : Home.borderControl))
+        .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: pad ? 12 : 10))
+        .overlay(RoundedRectangle(cornerRadius: pad ? 12 : 10).stroke(on ? Theme.navy.opacity(0.2) : Theme.borderControl))
     }
 
     func stepButton(_ icon: String, _ symbol: String, label: String, width: CGFloat = 30, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             A2Icon(name: icon, fallback: symbol, size: 18).frame(width: width, height: 44).contentShape(Rectangle())
         }
-        .buttonStyle(.plain).foregroundStyle(Home.primary)
+        .buttonStyle(.plain).foregroundStyle(Theme.primary)
         .accessibilityLabel(label)
     }
 
@@ -104,10 +104,10 @@ extension InfoPageWide {
                                keys: model.settings.mapKeys, fill: twoColumns)
                 HStack(alignment: .center, spacing: 8) {
                     Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย")
-                        .font(.system(size: 13)).foregroundStyle(Home.muted).fixedSize(horizontal: false, vertical: true)
+                        .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button("รีเซ็ตกรอบ") { job.values[MapCrop.key] = .text(MapCrop.standard.text) }
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.primary)
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.primary)
                         .frame(minWidth: 44, minHeight: 44).fixedSize()
                         .disabled(mapCrop == .standard)
                 }
@@ -132,13 +132,13 @@ extension InfoPageWide {
                 .inputBox(focused: focus == "gps", radius: InfoPageWide.inputRadius)
                 Button(action: locate) {
                     HStack(spacing: 8) {
-                        if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Home.primary) }
+                        if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Theme.primary) }
                         if locating, let a = liveAccuracy { Text("± \(Int(a.rounded())) ม.").font(.system(size: 16, weight: .semibold).monospacedDigit()) }
                         else if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
-                    .overlay(RoundedRectangle(cornerRadius: InfoPageWide.inputRadius).stroke(Home.navy.opacity(0.45)))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
+                    .overlay(RoundedRectangle(cornerRadius: InfoPageWide.inputRadius).stroke(Theme.borderControl))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).disabled(locating).fixedSize()
@@ -151,19 +151,19 @@ extension InfoPageWide {
     @ViewBuilder var gpsNote: some View {
         switch GPS.check(job.values.text("gps")) {
         case .invalid:
-            Text("รูปแบบไม่ถูกต้อง ใช้ ละติจูด, ลองจิจูด เช่น 17.0062, 99.8235").foregroundStyle(Home.danger)
+            Text("รูปแบบไม่ถูกต้อง ใช้ ละติจูด, ลองจิจูด เช่น 17.0062, 99.8235").foregroundStyle(Theme.danger)
         case .outsideThailand:
-            Text("พิกัดอยู่นอกประเทศไทย ตรวจค่าอีกครั้ง").foregroundStyle(Home.pending)
+            Text("พิกัดอยู่นอกประเทศไทย ตรวจค่าอีกครั้ง").foregroundStyle(Theme.pending)
         case .swapped(let fixed):
             HStack(spacing: 8) {
-                Text("ดูเหมือนสลับละติจูดกับลองจิจูด").foregroundStyle(Home.pending)
+                Text("ดูเหมือนสลับละติจูดกับลองจิจูด").foregroundStyle(Theme.pending)
                 Button("สลับเป็น \(fixed)") { job.values["gps"] = .text(fixed) }.frame(minHeight: 44)
             }
         case .ok, .empty:
-            if let gpsFailure { Text(gpsFailure).foregroundStyle(Home.danger) }
+            if let gpsFailure { Text(gpsFailure).foregroundStyle(Theme.danger) }
             else if let fix {
                 Text(GPSGrade.note(accuracy: fix.accuracy) + " · บันทึกเมื่อ \(fix.time.formatted(.dateTime.hour().minute()))")
-                    .foregroundStyle(GPSGrade(accuracy: fix.accuracy) == .approximate ? Home.pending : Home.muted)
+                    .foregroundStyle(GPSGrade(accuracy: fix.accuracy) == .approximate ? Theme.pending : Theme.inkMuted)
             }
         }
     }
@@ -237,7 +237,7 @@ struct InfoPageHeader: View {
         .padding(.horizontal, phone ? 8 : 24).padding(.vertical, phone ? 6 : 10)
         .frame(maxWidth: .infinity)
         // runs up under the status bar
-        .background(LinearGradient(colors: [Home.primary, Home.primaryLight], startPoint: .leading, endPoint: .trailing)
+        .background(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing)
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15))
             .ignoresSafeArea(edges: .top))
     }
@@ -245,8 +245,8 @@ struct InfoPageHeader: View {
     /// White 36-pt square like the design's close button, inside a 44-pt tap area.
     func squareButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(Home.primary)
-                .frame(width: 36, height: 36).background(.white, in: RoundedRectangle(cornerRadius: 8))
+            Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.primary)
+                .frame(width: 36, height: 36).background(Theme.onPrimary, in: RoundedRectangle(cornerRadius: 8))
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityLabel(label)
@@ -350,7 +350,7 @@ struct InfoPageBar: View {
                             save: .pad(width: tight ? 56 : narrow ? 130 : 170, icon: tight ? "square.and.arrow.down" : nil,
                                        save: save, version: job.editVersion),
                             previous: back, next: forward, sides: tight ? 16 : 24)
-            .foregroundStyle(Home.navy)
+            .foregroundStyle(Theme.navy)
     }
 
     /// `ครบ 11/11 ช่องในหน้านี้`, or the page's own line; green ✓ only when nothing is missing or warned about.

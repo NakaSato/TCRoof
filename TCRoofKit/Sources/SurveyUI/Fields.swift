@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// One question of the form, drawn from its schema entry.
 struct FieldView: View {
@@ -118,7 +119,7 @@ struct FieldView: View {
             VStack(alignment: .leading, spacing: 8) {
                 FlowLayout(spacing: 8, lineSpacing: 8) {
                     ForEach(options, id: \.self) { o in
-                        CheckChip(label: o, on: values.choice(spec.id) == o) { choose(o) }
+                        TCChoiceChip(o, selected: values.choice(spec.id) == o) { choose(o) }
                     }
                 }
                 if other && values.choice(spec.id) == "อื่นๆ" {
@@ -131,7 +132,7 @@ struct FieldView: View {
         case .checks(let options):
             FlowLayout(spacing: 8, lineSpacing: 8) {
                 ForEach(options, id: \.self) { o in
-                    CheckChip(label: o, on: values.multi(spec.id).contains(o)) { toggle(o) }
+                    TCChoiceChip(o, selected: values.multi(spec.id).contains(o)) { toggle(o) }
                 }
             }
         case .photo:
@@ -210,10 +211,10 @@ struct PlanPreview: View {
             }
             if let sk = Drawings.plan(values, tank: tank) {
                 SketchView(sketch: sk).frame(maxWidth: .infinity).padding(8)
-                    .background(Color.white).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
+                    .background(Theme.paper).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
             } else {
                 Text("— กรอกระยะช่วงเสาแนวนอนและแนวตั้ง เช่น 1.5,4,4,1.5 —").font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 90).background(Color.white).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
+                    .frame(maxWidth: .infinity, minHeight: 90).background(Theme.paper).overlay(Rectangle().stroke(Color.secondary.opacity(0.3)))
             }
         }
         .padding(14)
@@ -250,7 +251,7 @@ struct ObstaclesEditor: View {
                 .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             Button { items.append(Obstacle()) } label: { Label("เพิ่มสิ่งกีดขวาง", systemImage: "plus") }
-                .buttonStyle(.bordered)
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
     func bind(_ id: UUID, _ kp: WritableKeyPath<Obstacle, String>) -> Binding<String> {
@@ -284,7 +285,7 @@ struct TransformersEditor: View {
                 .padding(10).background(Paper.band.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
             }
             if items.count < 5 {
-                Button { items.append(Transformer()) } label: { Label("เพิ่มหม้อแปลง", systemImage: "plus") }.buttonStyle(.bordered)
+                Button { items.append(Transformer()) } label: { Label("เพิ่มหม้อแปลง", systemImage: "plus") }.buttonStyle(TCButtonStyle(.secondary, size: .card))
             }
         }
     }

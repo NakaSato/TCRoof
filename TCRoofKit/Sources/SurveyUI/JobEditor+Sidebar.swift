@@ -81,7 +81,7 @@ extension JobEditorView {
                 .padding(.horizontal, 14).padding(.vertical, 14)
             }
             .background(Color(uiColor: .systemBackground))
-            .overlay(alignment: .trailing) { if !compact { Rectangle().fill(Home.border).frame(width: 1) } }
+            .overlay(alignment: .trailing) { if !compact { Rectangle().fill(Theme.borderSubtle).frame(width: 1) } }
             .safeAreaInset(edge: .bottom, spacing: 0) { if !readOnly { sidebarFooter } }
             // keep the open section visible when "next" or "continue" jumps into a collapsed group
             .onChange(of: page) { _, p in
@@ -97,9 +97,9 @@ extension JobEditorView {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Home.muted)
+                    Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Theme.inkMuted)
                     Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName)
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(job.projectName.isEmpty ? Home.muted : Home.navy)
+                        .font(.system(size: 17, weight: .bold)).foregroundStyle(job.projectName.isEmpty ? Theme.inkMuted : Theme.navy)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -113,14 +113,14 @@ extension JobEditorView {
                 Spacer()
                 Label("\(job.photoCount)", systemImage: "photo")
             }
-            .font(.caption).foregroundStyle(Home.muted).monospacedDigit()
+            .font(.caption).foregroundStyle(Theme.inkMuted).monospacedDigit()
             photoStatus
             if job.isLocked && job.stage == .survey {
-                Label("REV \(job.rev) ล็อก · \(FormHash.short(job.lock?.hash ?? ""))", systemImage: "lock.fill").font(.caption.weight(.bold)).foregroundStyle(Home.navy)
-                    .padding(.horizontal, 10).padding(.vertical, 6).background(Home.lockBadge, in: Capsule())
+                Label("REV \(job.rev) ล็อก · \(FormHash.short(job.lock?.hash ?? ""))", systemImage: "lock.fill").font(.caption.weight(.bold)).foregroundStyle(Theme.navy)
+                    .padding(.horizontal, 10).padding(.vertical, 6).background(Theme.borderSubtle, in: Capsule())
             } else if readOnly {
-                Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.caption.weight(.bold)).foregroundStyle(Home.navy)
-                    .padding(.horizontal, 10).padding(.vertical, 6).background(Home.lockBadge, in: Capsule())
+                Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.caption.weight(.bold)).foregroundStyle(Theme.navy)
+                    .padding(.horizontal, 10).padding(.vertical, 6).background(Theme.borderSubtle, in: Capsule())
             } else if let next = nextIncomplete, next.page != page {
                 Button { select(next.page) } label: {
                     HStack(spacing: 6) {
@@ -130,23 +130,23 @@ extension JobEditorView {
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right").font(.caption.weight(.bold))
                     }
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 12).frame(minHeight: 44)
-                    .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(14)
-        .background(Home.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Home.border))
+        .background(Theme.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 
     func stepColor(_ s: SurveyStep.Status) -> Color {
         switch s {
-        case .complete: return Home.mint
-        case .current: return Home.primary
-        case .missing: return Home.redSoft
+        case .complete: return Theme.mint
+        case .current: return Theme.primary
+        case .missing: return Theme.dangerLine
         case .notStarted: return Color.secondary.opacity(0.2)
         }
     }
@@ -183,14 +183,14 @@ extension JobEditorView {
         return Button { withAnimation(.snappy) { if open { collapsed.insert(g.category) } else { collapsed.remove(g.category) } } } label: {
             HStack(spacing: 8) {
                 Text(g.category.rawValue).font(.caption.weight(.heavy)).foregroundStyle(.white)
-                    .frame(width: 22, height: 22).background(Home.navy, in: RoundedRectangle(cornerRadius: 6))
-                Text(g.category.title).font(.subheadline.weight(.bold)).foregroundStyle(Home.navy).lineLimit(1)
+                    .frame(width: 22, height: 22).background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6))
+                Text(g.category.title).font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 4)
                 Text("\(done)/\(g.items.count)").font(.caption.weight(.bold)).monospacedDigit()
-                    .foregroundStyle(all ? Home.navy : Home.muted)
+                    .foregroundStyle(all ? Theme.navy : Theme.inkMuted)
                     .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(all ? Home.mint.opacity(0.6) : Color.secondary.opacity(0.12), in: Capsule())
-                Image(systemName: "chevron.down").font(.caption.weight(.bold)).foregroundStyle(Home.muted)
+                    .background(all ? Theme.mint.opacity(0.6) : Color.secondary.opacity(0.12), in: Capsule())
+                Image(systemName: "chevron.down").font(.caption.weight(.bold)).foregroundStyle(Theme.inkMuted)
                     .rotationEffect(.degrees(open ? 0 : -90))
             }
             .padding(.horizontal, 6).frame(minHeight: 44)
@@ -205,7 +205,7 @@ extension JobEditorView {
         VStack(spacing: 8) {
             if !job.stationOverflow.isEmpty {
                 Label("หัวข้อระบบไฟฟ้าเกินช่องในแผ่นงาน — Excel จะเพิ่มแผ่น \"ระบบไฟฟ้า (2)\" ให้อัตโนมัติ", systemImage: "info.circle")
-                    .font(.caption2).foregroundStyle(Home.muted).frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.caption2).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
             }
             Menu {
                 ForEach([SectionCategory.electrical, .roof, .water]) { cat in
@@ -217,15 +217,15 @@ extension JobEditorView {
                 }
             } label: {
                 // same dashed add button as A3's "เพิ่มหม้อแปลง" and "+ เพิ่มตู้"
-                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Home.primary)
+                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 56)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Color(uiColor: .systemBackground).shadow(.drop(color: Home.navy.opacity(0.08), radius: 6, y: -2)))
+        .background(Color(uiColor: .systemBackground).shadow(.drop(color: Theme.navy.opacity(0.08), radius: 6, y: -2)))
     }
 
     func select(_ p: Page) {
@@ -237,10 +237,10 @@ extension JobEditorView {
     var cardImportRow: some View {
         Button { showCardImport = true } label: {
             HStack(spacing: 10) {
-                Image(systemName: "sdcard").font(.system(size: 13, weight: .bold)).foregroundStyle(Home.navy)
+                Image(systemName: "sdcard").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy)
                     .frame(width: 38, height: 26)
                     .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
-                Text("นำเข้ารูปจากการ์ด / USB").font(.system(size: 16, weight: .medium)).lineLimit(1).foregroundStyle(Home.navy)
+                Text("นำเข้ารูปจากการ์ด / USB").font(.system(size: 16, weight: .medium)).lineLimit(1).foregroundStyle(Theme.navy)
                 Spacer(minLength: 4)
             }
             .padding(.horizontal, 10).frame(minHeight: 48)
@@ -253,10 +253,10 @@ extension JobEditorView {
     func row(_ item: SidebarItem, symbol: String? = nil) -> some View {
         let c = item.completion
         let selected = !compact && page == item.page
-        let (badgeFill, badgeText): (Color, Color) = selected ? (Home.primary, .white)
-            : c.total > 0 && c.isComplete ? (Home.mint.opacity(0.6), Home.navy)
-            : c.filled > 0 ? (Home.redSoft.opacity(0.35), Home.red)
-            : (Color.secondary.opacity(0.12), Home.navy)
+        let (badgeFill, badgeText): (Color, Color) = selected ? (Theme.primary, .white)
+            : c.total > 0 && c.isComplete ? (Theme.mint.opacity(0.6), Theme.navy)
+            : c.filled > 0 ? (Theme.dangerLine.opacity(0.35), Theme.dangerText)
+            : (Color.secondary.opacity(0.12), Theme.navy)
         return Button { select(item.page) } label: {
             HStack(spacing: 10) {
                 Group {
@@ -267,7 +267,7 @@ extension JobEditorView {
                 .frame(width: 38, height: 26)
                 .background(badgeFill, in: RoundedRectangle(cornerRadius: 7))
                 Text(item.title).font(.system(size: 16, weight: selected ? .bold : .medium)).lineLimit(1)
-                    .foregroundStyle(selected ? Home.primary : c.total > 0 && c.isComplete ? Home.muted : Home.navy)
+                    .foregroundStyle(selected ? Theme.primary : c.total > 0 && c.isComplete ? Theme.inkMuted : Theme.navy)
                 Spacer(minLength: 4)
                 if let n = changedPages[item.page] {
                     Text("แก้ \(n)").font(.caption2.weight(.bold)).foregroundStyle(Theme.pending)
@@ -277,9 +277,9 @@ extension JobEditorView {
                 StatusMark(completion: c)
             }
             .padding(.leading, 10).padding(.trailing, 10).frame(minHeight: 48)
-            .background(selected ? Home.primarySoft : .clear, in: RoundedRectangle(cornerRadius: 10))
+            .background(selected ? Theme.primarySoft : .clear, in: RoundedRectangle(cornerRadius: 10))
             .overlay(alignment: .leading) {
-                if selected { Capsule().fill(Home.primary).frame(width: 4).padding(.vertical, 10) }
+                if selected { Capsule().fill(Theme.primary).frame(width: 4).padding(.vertical, 10) }
             }
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }

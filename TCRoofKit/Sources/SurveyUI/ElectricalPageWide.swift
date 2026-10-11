@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import TCRoofCore
+import TCRoofUI
 
 /// A3 (docs/ui/survey-a3): the power-flow diagram meter → transformers → boards, filled in place, on iPad and iPhone. Field ids are unchanged; the new answers are optional
 /// (`Transformer.boards`, `meterKV` …), so A3's completion counts as before.
@@ -71,7 +72,7 @@ struct ElectricalPageWide: View {
                 }
             }
         }
-        .foregroundStyle(Home.navy)
+        .foregroundStyle(Theme.navy)
         // marks placed on A2 (or before links existed) fill this page's empty fields
         .onAppear { SiteSync.push(&job) }
         #if DEBUG
@@ -119,8 +120,7 @@ struct ElectricalPageWide: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(narrow ? 10 : 16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Home.navy.opacity(0.2)))
+        .tcCard()
     }
 
     @ViewBuilder var cardHeader: some View {
@@ -137,7 +137,7 @@ struct ElectricalPageWide: View {
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text("ผังการจ่ายไฟ").font(.system(size: 22, weight: .bold))
-                Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Home.muted).lineLimit(1)
+                Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.system(size: 15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 8)
                 a2Button
                 diagramButton
@@ -149,9 +149,9 @@ struct ElectricalPageWide: View {
     var diagramButton: some View {
         Button(action: openDiagram) {
             Text(narrow ? "Single Line →" : "สร้าง Single Line Diagram →").font(.system(size: narrow ? 15 : 16, weight: .bold)).lineLimit(1)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, narrow ? 12 : 18).frame(minHeight: 44)
-                .background(Home.primary, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("สร้าง Single Line Diagram").accessibilityHint("เปิดแผนภาพเส้นเดียวที่สร้างจากข้อมูลสำรวจ")
@@ -192,27 +192,27 @@ struct ElectricalPageWide: View {
 
     var zoomPanel: some View {
         HStack(spacing: 10) {
-            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.system(size: 13)).foregroundStyle(Home.muted) }
+            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.system(size: 13)).foregroundStyle(Theme.inkMuted) }
             HStack(spacing: 6) {
                 zoomButton("minus", "ย่อ") { step(-1) }
                 Text("\(Int((scale * 100).rounded()))%").font(.system(size: 16, weight: .bold)).frame(minWidth: 52)
                 zoomButton("plus", "ขยาย") { step(1) }
                 Button { withAnimation { fit() } } label: {
-                    Text("พอดีจอ").font(.system(size: 15, weight: .bold)).foregroundStyle(Home.primary)
+                    Text("พอดีจอ").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(Home.primarySoft, in: RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
             }
             .padding(6)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
             .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
         }
     }
 
     func zoomButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Home.primary)
+            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain).accessibilityLabel(label)
@@ -279,7 +279,7 @@ struct ElectricalPageWide: View {
                 p.move(to: CGPoint(x: Self.trunkX, y: y)); p.addLine(to: CGPoint(x: Self.trafoX, y: y))
                 p.move(to: CGPoint(x: Self.trafoX + Self.trafoW, y: y)); p.addLine(to: CGPoint(x: boardsEnd(i) - Self.addW - Self.boardGap, y: y))
             }
-            ctx.stroke(p, with: .color(Home.primary), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            ctx.stroke(p, with: .color(Theme.primary), style: StrokeStyle(lineWidth: 2, lineCap: .round))
         }
         .frame(width: contentW, height: contentH)
         .allowsHitTesting(false)
@@ -289,16 +289,16 @@ struct ElectricalPageWide: View {
         Group {
             if trafos.count < Transformer.maxTransformers {
                 Button { add() } label: {
-                    Label("เพิ่มหม้อแปลง", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Home.primary)
+                    Label("เพิ่มหม้อแปลง", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 56)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             } else {
-                Text("ครบ 5 ลูกแล้ว (สูงสุด) · แตะหม้อแปลงเพื่อขยายมาแก้").font(.system(size: 14)).foregroundStyle(Home.muted)
+                Text("ครบ 5 ลูกแล้ว (สูงสุด) · แตะหม้อแปลงเพื่อขยายมาแก้").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 56)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.borderControl.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6, 4])))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderControl.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6, 4])))
             }
         }
     }

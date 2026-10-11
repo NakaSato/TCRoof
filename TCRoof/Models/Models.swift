@@ -111,6 +111,8 @@ final class Job {
     var routineSettingsJSON: String?
     /// Encoded `[RoutineReport.WeeklyRequest]`, one per week.
     var weeklyRequestsJSON: String?
+    /// Encoded `StationDocs.Station`: the station's papers for a PWA job (เอกสารสถานี กปภ.); optional for the same reason.
+    var stationDocsJSON: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -171,6 +173,13 @@ final class Job {
     var routineSettings: RoutineReport.Settings {
         get { routineSettingsJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Settings.self, from: Data($0.utf8)) } ?? .init() }
         set { routineSettingsJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
+    }
+    var stationDocs: StationDocs.Station {
+        get { StationDocs.Station.decode(stationDocsJSON) }
+        set { stationDocsJSON = newValue.json }
+    }
+    var stationContext: StationDocs.Context {
+        StationDocs.Context(stationDocs, inverterKW: inverterKW ?? (scheduleInput?.over200kVA == true ? 200 : nil))
     }
     var weeklyRequests: [RoutineReport.WeeklyRequest] {
         get { weeklyRequestsJSON.flatMap { try? JSONDecoder().decode([RoutineReport.WeeklyRequest].self, from: Data($0.utf8)) } ?? [] }

@@ -48,7 +48,7 @@ struct ContractorWorkView: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .task { load() }
         .sheet(item: $signing) { target in

@@ -23,8 +23,8 @@ struct LockBanner: View {
     func text(_ lock: FormLock?) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Label("REV \(lock?.rev ?? job.rev) ลงนามแล้ว · ล็อก", systemImage: "lock.fill")
-                .font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy)
-            Text("รหัสตรวจสอบ \(FormHash.short(lock?.hash ?? "")) · แก้ไขได้เมื่อเปิด REV ใหม่").font(.caption).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
+            Text("รหัสตรวจสอบ \(FormHash.short(lock?.hash ?? "")) · แก้ไขได้เมื่อเปิด REV ใหม่").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         }
     }
     var button: some View {
@@ -41,8 +41,8 @@ struct IntegrityBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Label("ข้อมูลไม่ตรงกับที่ลงนามใน REV \(rev)", systemImage: "exclamationmark.octagon.fill")
-                .font(.subheadline.weight(.bold)).foregroundStyle(Theme.dangerText)
-            Text("ไฟล์งานถูกแก้นอกแอป หรือกู้คืนจากข้อมูลอื่น · ฟอร์มยังล็อกอยู่").font(.caption).foregroundStyle(Theme.dangerText)
+                .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.dangerText)
+            Text("ไฟล์งานถูกแก้นอกแอป หรือกู้คืนจากข้อมูลอื่น · ฟอร์มยังล็อกอยู่").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
             HStack(spacing: Space.s) {
                 TCButton("เทียบกับ REV \(rev)", systemImage: "arrow.left.arrow.right", kind: .secondary, size: .card, action: compare).fixedSize()
                 TCButton("เปิด REV ใหม่", systemImage: "pencil", kind: .danger, size: .card, action: openNext).fixedSize()
@@ -61,7 +61,7 @@ struct SignedUnlockedBanner: View {
     var body: some View {
         HStack(spacing: Space.m) {
             Label("ลงนามครบแต่ยังไม่ล็อก · แก้ข้อมูลแล้วต้องลงนามใหม่", systemImage: "signature")
-                .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.pending)
+                .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
             Spacer(minLength: Space.s)
             TCButton("ล็อกตอนนี้", systemImage: "lock", kind: .primary, size: .card, action: lock).fixedSize()
         }
@@ -77,7 +77,7 @@ struct MissingPhotosBanner: View {
     var body: some View {
         HStack(spacing: Space.m) {
             Label("ยังขาดรูปบังคับ \(missing) รูป", systemImage: "camera.badge.ellipsis")
-                .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.dangerText)
+                .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.dangerText)
             Spacer(minLength: Space.s)
             TCButton("ไปตรวจรูป", systemImage: "photo.on.rectangle", kind: .secondary, size: .card, action: review).fixedSize()
         }
@@ -97,7 +97,7 @@ struct LockSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Space.l) {
                 Text("ลายเซ็นทั้งสองตรงกับข้อมูลฉบับนี้ เมื่อล็อกแล้วจะแก้ไขได้เฉพาะเมื่อเปิด REV ใหม่ และ REV \(job.rev) จะถูกเก็บไว้พร้อม PDF ตามที่ลงนาม")
-                    .font(.callout).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                    .font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: Space.s) {
                     row(missing == 0 ? "กรอกครบทุกช่องบังคับ" : "ยังไม่กรอก \(missing) รายการ", ok: missing == 0)
                     row(photos == 0 ? "รูปบังคับครบ" : "ยังขาดรูปบังคับ \(photos) รูป", ok: photos == 0)
@@ -116,7 +116,7 @@ struct LockSheet: View {
     }
     func row(_ text: String, ok: Bool, symbol: String? = nil) -> some View {
         Label(text, systemImage: symbol ?? (ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"))
-            .font(.body.weight(.semibold)).foregroundStyle(ok ? Theme.okText : Theme.pending)
+            .font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(ok ? Theme.okText : Theme.pending)
     }
 }
 
@@ -131,16 +131,15 @@ struct NextRevisionSheet: View {
         let next = RevisionRule.next(after: job.rev)
         let ok = !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         NavigationStack {
-            Form {
-                Section {
+            PadForm(maxWidth: 640) {
+                PadSection("เหตุผลที่แก้ไข (ต้องกรอก)") {
                     TextField("เช่น สถานีแจ้งขนาดหม้อแปลงใหม่", text: $reason, axis: .vertical).lineLimit(2...5)
                         .accessibilityIdentifier("nextRevision.reason")
-                } header: { Text("เหตุผลที่แก้ไข (ต้องกรอก)") } footer: {
+                } footer: {
                     Text("REV \(job.rev) และ PDF ที่ลงนามไว้จะเก็บไว้ตามเดิม · ลายเซ็นทั้งสองจะถูกล้างเพื่อลงนามใหม่สำหรับ REV \(next)")
                 }
-                Section { Toggle("อัปเดตวันที่เป็นวันนี้", isOn: $updateDate) }
+                PadSection { Toggle("อัปเดตวันที่เป็นวันนี้", isOn: $updateDate) }
             }
-            .tcFormStyle()
             .navigationTitle("เปิดแก้ไขเป็น REV \(next)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -35,7 +35,7 @@ struct InstallRecordsView: View {
                     .frame(maxWidth: 560)
                 QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
                 if filtered.isEmpty {
-                    ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
+                    TCEmptyState("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
                 } else {
                     LazyVGrid(columns: cardColumns, spacing: 16) {
                         ForEach(filtered) { job in
@@ -117,9 +117,9 @@ struct JobInstallLogsView: View {
                 let header = isPhone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
                 header {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(job.projectName).font(.title.bold()).foregroundStyle(Theme.navy)
+                        Text(job.projectName).font(.sarabun(28, .bold, relativeTo: .title)).foregroundStyle(Theme.navy)
                         Text("\(job.code) · \(job.installStart.thaiLong) – \(job.installEnd.thaiLong)")
-                            .font(.subheadline).foregroundStyle(Theme.muted)
+                            .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                     }
                     if !isPhone { Spacer() }
                     NavigationLink { InspectionView(job: job) } label: {
@@ -128,7 +128,7 @@ struct JobInstallLogsView: View {
                     .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 }
                 if logs.isEmpty {
-                    ContentUnavailableView("ยังไม่มีบันทึกงานติดตั้ง", systemImage: "hammer",
+                    TCEmptyState("ยังไม่มีบันทึกงานติดตั้ง", systemImage: "hammer",
                                            description: Text("กด + เพื่อบันทึกงานประจำวันพร้อมรูปถ่าย"))
                 }
                 ForEach(logs) { log in
@@ -162,20 +162,20 @@ private struct LogCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(log.date.thaiLong).font(.headline)
+                Text(log.date.thaiLong).font(.sarabun(17, .semibold, relativeTo: .headline))
                 if let day = job.installDay(on: log.date) {
-                    Text("Day \(day)/\(job.installDays)").font(.caption.bold()).foregroundStyle(Theme.primary)
+                    Text("Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
                 }
                 Spacer()
                 Text(log.recorder)
-                    .font(.caption.bold())
+                    .font(.sarabun(12, .bold, relativeTo: .caption))
                     .foregroundStyle(Theme.pending)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.orange.opacity(0.12), in: Capsule())
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
             }
             Text(log.detailLines.prefix(3).joined(separator: " · "))
-                .font(.subheadline)
+                .font(.sarabun(15, relativeTo: .subheadline))
                 .lineLimit(2)
             let photos = log.sortedPhotos
             if !photos.isEmpty {
@@ -183,7 +183,7 @@ private struct LogCard: View {
                 HStack(spacing: 8) {
                     ForEach(photos.prefix(limit)) { Thumbnail(data: $0.data).frame(width: isPhone ? 56 : 72, height: isPhone ? 56 : 72) }
                     if photos.count > limit {
-                        Text("+\(photos.count - limit)").font(.headline).foregroundStyle(Theme.muted)
+                        Text("+\(photos.count - limit)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.muted)
                     }
                 }
             }
@@ -212,25 +212,22 @@ struct InstallLogFormView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            PadForm(maxWidth: 720) {
+                PadSection {
                     InfoRow(title: "โครงการ", value: "\(job.code) · \(job.projectName)")
                     DatePicker("วันที่บันทึก", selection: $date, displayedComponents: .date)
                     TextField("ผู้บันทึก", text: $recorder)
                 }
-                Section {
+                PadSection("รายละเอียดงาน") {
                     TextField("เช่น งานติดตั้ง Pull Box", text: $details, axis: .vertical)
                         .lineLimit(4...12)
-                } header: {
-                    Text("รายละเอียดงาน")
                 } footer: {
                     Text("พิมพ์หนึ่งรายการต่อบรรทัด")
                 }
-                Section("รูปภาพงานติดตั้ง") {
+                PadSection("รูปภาพงานติดตั้ง") {
                     PhotoPickerSection(images: $photos)
                 }
             }
-            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(log == nil ? "เพิ่มบันทึกงานติดตั้ง" : "แก้ไขบันทึก")
             .navigationBarTitleDisplayMode(.inline)
@@ -297,7 +294,7 @@ struct InstallLogDetailView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(spacing: 10) {
                         HStack {
-                            Text("วันที่บันทึก").font(.headline)
+                            Text("วันที่บันทึก").font(.sarabun(17, .semibold, relativeTo: .headline))
                             Spacer()
                             Text(log.date.thaiLong)
                         }
@@ -316,11 +313,11 @@ struct InstallLogDetailView: View {
                     .cardStyle()
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("รายละเอียด").font(.headline)
+                        Text("รายละเอียด").font(.sarabun(17, .semibold, relativeTo: .headline))
                         ForEach(Array(log.detailLines.enumerated()), id: \.offset) { index, line in
                             Text("\(index + 1). \(line)")
                         }
-                        Text("รูปภาพงานติดตั้ง").font(.headline).padding(.top, 12)
+                        Text("รูปภาพงานติดตั้ง").font(.sarabun(17, .semibold, relativeTo: .headline)).padding(.top, 12)
                         if log.photos.isEmpty {
                             Text("ไม่มีรูปภาพ").foregroundStyle(Theme.muted)
                         } else {
@@ -338,14 +335,14 @@ struct InstallLogDetailView: View {
             if !exportURLs.isEmpty {
                 ShareLink(items: exportURLs) {
                     Label("ดาวน์โหลดไฟล์ทั้งหมด (\(exportURLs.count))", systemImage: "arrow.down.doc.fill")
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.sarabun(17, .semibold, relativeTo: .headline))
+                        .foregroundStyle(Theme.onPrimary)
                         .frame(maxWidth: 600, minHeight: 54)
                         .background(Theme.headerGradient, in: RoundedRectangle(cornerRadius: 12))
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(.white)
+                .background(Theme.surface)
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
@@ -378,7 +375,7 @@ struct InstallLogHistoryView: View {
     var body: some View {
         PadForm {
             if logs.isEmpty {
-                ContentUnavailableView("ยังไม่มีบันทึก", systemImage: "hammer")
+                TCEmptyState("ยังไม่มีบันทึก", systemImage: "hammer")
             }
             PadSection {
                 ForEach(logs) { log in
@@ -386,8 +383,8 @@ struct InstallLogHistoryView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
                             Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
-                                .font(.caption).foregroundStyle(Theme.muted)
-                            Text(log.detailLines.joined(separator: " · ")).font(.subheadline).lineLimit(1)
+                                .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+                            Text(log.detailLines.joined(separator: " · ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
                         }
                         .foregroundStyle(Theme.navy)
                     }

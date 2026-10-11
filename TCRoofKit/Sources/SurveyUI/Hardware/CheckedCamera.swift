@@ -69,7 +69,7 @@ struct PhotoReview: View {
             Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: .infinity)
             ForEach(issues, id: \.self) { i in
                 Label(i.message, systemImage: i == .dark ? "moon.fill" : i == .tilted ? "level" : "camera.metering.unknown")
-                    .font(.headline).foregroundStyle(Theme.pending)
+                    .font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.pending)
             }
             HStack(spacing: 12) {
                 Button(action: keep) { Text("เก็บไว้").frame(maxWidth: .infinity, minHeight: 50) }

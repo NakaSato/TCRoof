@@ -26,7 +26,7 @@ struct PermitFormsView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             let store = PermitStore(job: job)
@@ -39,7 +39,7 @@ struct PermitFormsView: View {
                               @ViewBuilder destination: @escaping () -> D) -> some View {
         NavigationLink(destination: destination) {
             HStack(spacing: 14) {
-                Image(systemName: symbol).font(.title2).foregroundStyle(.white)
+                Image(systemName: symbol).font(.system(size: 22)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 52, height: 52)
                     .background(Theme.headerGradient, in: RoundedRectangle(cornerRadius: Radius.lg))
                 VStack(alignment: .leading, spacing: 4) {

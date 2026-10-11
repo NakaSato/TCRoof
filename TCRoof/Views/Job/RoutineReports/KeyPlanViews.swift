@@ -70,12 +70,12 @@ struct KeyPlanImage: View {
 
     private func marker(_ p: (name: String, x: Double, y: Double)) -> some View {
         let on = highlight.contains(p.name), sel = selected == p.name
-        return Circle().fill(on ? Theme.danger : Color.white).frame(width: 14, height: 14)
-            .overlay(Circle().stroke(sel ? Theme.primary : on ? Color.white : Theme.navy, lineWidth: sel ? 3 : 1.5))
+        return Circle().fill(on ? Theme.danger : Theme.paper).frame(width: 14, height: 14)
+            .overlay(Circle().stroke(sel ? Theme.primary : on ? Theme.paper : Theme.navy, lineWidth: sel ? 3 : 1.5))
             // the label hangs to the right without moving the circle off the point
             .overlay(alignment: .leading) {
-                Text(p.name).font(.caption2.weight(on || sel ? .bold : .regular)).foregroundStyle(on ? Theme.dangerText : Theme.navy)
-                    .padding(.horizontal, 4).background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 4))
+                Text(p.name).font(.sarabun(11, on || sel ? .bold : .regular, relativeTo: .caption2)).foregroundStyle(on ? Theme.dangerText : Theme.navy)
+                    .padding(.horizontal, 4).background(Theme.paper.opacity(0.85), in: RoundedRectangle(cornerRadius: 4))
                     .fixedSize().offset(x: 18)
             }
             .allowsHitTesting(false)
@@ -99,12 +99,12 @@ struct KeyPlanCard: View {
         ReportCard("ผังตำแหน่ง (Key plan)") {
             if let picture, !points.isEmpty {
                 KeyPlanImage(image: picture, points: points, highlight: today)
-                Text("จุดสีแดง = มีงานวันนี้").font(.caption).foregroundStyle(Theme.inkMuted)
+                Text("จุดสีแดง = มีงานวันนี้").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             } else {
                 Text(picture == nil ? "ยังไม่มีภาพสถานที่ (A2) ในแบบสำรวจของงานนี้" : "ยังไม่ได้วางตำแหน่งบนภาพ")
-                    .font(.subheadline).foregroundStyle(Theme.muted)
+                    .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 if picture != nil {
-                    Button("วางตำแหน่งบนภาพ") { showSettings = true }.font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+                    Button("วางตำแหน่งบนภาพ") { showSettings = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
                 }
             }
         }
@@ -122,8 +122,8 @@ struct KeyPlanEditor: View {
 
     var body: some View {
         let points = settings.locations.compactMap { l in settings.keyPoint(l).map { (name: l, x: $0.x, y: $0.y) } }
-        List {
-            Section {
+        PadForm(maxWidth: 900) {
+            PadSection {
                 if let picture {
                     KeyPlanImage(image: picture, points: points, selected: selected) { x, y in
                         guard let sel = selected else { return }
@@ -131,32 +131,33 @@ struct KeyPlanEditor: View {
                         // move on to the next location still without a point
                         selected = settings.locations.first { settings.keyPoint($0) == nil } ?? sel
                     }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
                 } else {
                     Text("ยังไม่มีภาพสถานที่ (A2) ในแบบสำรวจของงานนี้ ถ่ายหรือนำเข้าภาพในหน้า A2 ก่อน").foregroundStyle(Theme.muted)
                 }
             } footer: {
                 Text(selected.map { "แตะบนภาพเพื่อวาง \($0)" } ?? "เพิ่มตำแหน่งในสถานีก่อน")
             }
-            Section("ตำแหน่ง") {
+            PadSection("ตำแหน่ง") {
                 ForEach(settings.locations, id: \.self) { l in
-                    Button { selected = l } label: {
-                        HStack {
-                            Image(systemName: selected == l ? "largecircle.fill.circle" : "circle").foregroundStyle(Theme.primary)
-                            Text(l).foregroundStyle(Theme.navy)
-                            Spacer()
-                            Text(settings.keyPoint(l) == nil ? "ยังไม่วาง" : "วางแล้ว").font(.caption)
-                                .foregroundStyle(settings.keyPoint(l) == nil ? Theme.muted : Theme.okText)
+                    HStack(spacing: 8) {
+                        Button { selected = l } label: {
+                            HStack {
+                                Image(systemName: selected == l ? "largecircle.fill.circle" : "circle").foregroundStyle(Theme.primary)
+                                Text(l).foregroundStyle(Theme.navy)
+                                Spacer()
+                                Text(settings.keyPoint(l) == nil ? "ยังไม่วาง" : "วางแล้ว").font(.sarabun(12, relativeTo: .caption))
+                                    .foregroundStyle(settings.keyPoint(l) == nil ? Theme.muted : Theme.okText)
+                            }
+                            .frame(minHeight: touchMin).contentShape(Rectangle())
                         }
-                        .frame(minHeight: touchMin)
-                    }
-                    .swipeActions {
-                        if settings.keyPoint(l) != nil { Button("ลบจุด", role: .destructive) { settings.keyPoints[l] = nil } }
+                        .buttonStyle(.plain)
+                        if settings.keyPoint(l) != nil {
+                            PadRowButton("ลบจุด \(l)", systemImage: "mappin.slash", destructive: true) { settings.keyPoints[l] = nil }
+                        }
                     }
                 }
             }
         }
-        .tcFormStyle()
         .navigationTitle("ผังตำแหน่ง (Key plan)")
         .navigationBarTitleDisplayMode(.inline)
         .tcPadNavBar("ผังตำแหน่ง (Key plan)", trail: ["หน้าหลัก", job.code])

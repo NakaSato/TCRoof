@@ -21,7 +21,7 @@ struct InstallPickerSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("เพิ่มโครงการติดตั้ง").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.navy)
-                    Text("ดึงข้อมูลจากงานสำรวจ · เลือกได้เฉพาะงานที่สำรวจครบ 100%").font(.subheadline).foregroundStyle(Theme.inkMuted)
+                    Text("ดึงข้อมูลจากงานสำรวจ · เลือกได้เฉพาะงานที่สำรวจครบ 100%").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
                 Button { dismiss() } label: {
@@ -35,7 +35,7 @@ struct InstallPickerSheet: View {
             .padding(.horizontal, 24).padding(.vertical, 20)
             Divider()
             if rows.isEmpty {
-                ContentUnavailableView("ไม่มีงานสำรวจ", systemImage: "list.clipboard", description: Text("งานสำรวจทุกงานย้ายไปงานติดตั้งแล้ว"))
+                TCEmptyState("ไม่มีงานสำรวจ", systemImage: "list.clipboard", description: Text("งานสำรวจทุกงานย้ายไปงานติดตั้งแล้ว"))
                     .padding(.vertical, 40)
             } else {
                 ScrollView {
@@ -55,9 +55,9 @@ struct InstallPickerSheet: View {
         let ok = j.canMoveToInstall
         return HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(j.docNo.isEmpty ? "NO. —" : "NO.\(j.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Theme.inkMuted)
+                Text(j.docNo.isEmpty ? "NO. —" : "NO.\(j.docNo)").font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 Text(j.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : j.projectName).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.navy)
-                Text(detail(j)).font(.caption).foregroundStyle(Theme.inkMuted)
+                Text(detail(j)).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             .lineLimit(1)
             .opacity(ok ? 1 : 0.55)
@@ -95,10 +95,10 @@ struct InstallTrackingView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Text(job.docNo.isEmpty ? "NO. —" : "NO.\(job.docNo)").font(.subheadline.weight(.heavy)).foregroundStyle(Theme.inkMuted)
-            Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName).font(.title2.bold()).foregroundStyle(Theme.navy)
+            Text(job.docNo.isEmpty ? "NO. —" : "NO.\(job.docNo)").font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+            Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName).font(.sarabun(22, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
                 .multilineTextAlignment(.center)
-            Label("อยู่ระหว่างพัฒนา", systemImage: "hammer").font(.headline).foregroundStyle(Theme.inkMuted).padding(.top, 8)
+            Label("อยู่ระหว่างพัฒนา", systemImage: "hammer").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.inkMuted).padding(.top, 8)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

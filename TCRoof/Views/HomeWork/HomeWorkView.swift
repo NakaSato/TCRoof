@@ -41,9 +41,21 @@ struct HomeWorkView: View {
                     }
             }
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .task { load() }
+        // `-homeworkSheet weight|pack|entry|archive` opens that sheet for simulator checks
+        .task {
+            guard let sheet = UserDefaults.standard.string(forKey: "homeworkSheet") else { return }
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            switch sheet {
+            case "weight": showWeight = true
+            case "pack": showPack = true
+            case "entry": showEntry = true
+            case "archive": showArchive = true
+            default: break
+            }
+        }
         .onAppear {
             library = PermitStore.library.load(HomeLibrary.self, PermitStore.libraryFile) ?? HomeLibrary()
             refreshAuto()

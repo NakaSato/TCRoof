@@ -8,13 +8,13 @@ import TCRoofUI
 /// Sections of the sheet: readiness checks, file choice, Drive account and the action bar.
 extension ExportSheet {
     func statusSection(_ job: Job) -> some View {
-        Section {
+        PadSection {
             HStack(spacing: 14) {
                 TCProgressRing(.percent(job.completion.fraction), size: 48)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName).font(.headline).lineLimit(2)
+                    Text(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName).font(.sarabun(17, .semibold, relativeTo: .headline)).lineLimit(2)
                     Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo) · กรอกแล้ว \(job.completion.filled)/\(job.completion.total) · รูป \(job.photoCount)")
-                        .font(.subheadline).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
             }
             .padding(.vertical, 4)
@@ -24,19 +24,19 @@ extension ExportSheet {
     /// Photos taken on another iPad: download progress, or a button to fetch the ones already on Drive.
     func photoSection(_ gap: PhotoGap) -> some View {
         let fetch = model.photoFetch[jobID]
-        return Section {
+        return PadSection {
             if let f = fetch, f.running {
                 ProgressView(value: Double(f.done + f.failed), total: Double(f.total)) {
-                    Text("กำลังดาวน์โหลดรูปจาก Google Drive \(f.done)/\(f.total)").font(.callout)
+                    Text("กำลังดาวน์โหลดรูปจาก Google Drive \(f.done)/\(f.total)").font(.sarabun(16, relativeTo: .callout))
                 }
             } else {
-                Label("มีรูป \(gap.missing) รูปที่ยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash").font(.headline).foregroundStyle(Theme.pending)
+                Label("มีรูป \(gap.missing) รูปที่ยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.pending)
                 if gap.onDrive > 0 {
                     Button { fetchPhotos() } label: { Label("ดาวน์โหลด \(gap.onDrive) รูปจาก Google Drive", systemImage: "icloud.and.arrow.down") }
                         .disabled(busy != nil)
                 }
                 if let e = fetch?.error, fetch?.failed ?? 0 > 0 {
-                    Text("ดาวน์โหลดไม่สำเร็จ \(fetch!.failed) รูป: \(e)").font(.caption).foregroundStyle(Theme.dangerText)
+                    Text("ดาวน์โหลดไม่สำเร็จ \(fetch!.failed) รูป: \(e)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
                 }
             }
         } footer: {
@@ -48,11 +48,11 @@ extension ExportSheet {
 
     /// A PDF is selected but the report isn't signed by both sides yet.
     func signatureSection(_ names: [String]) -> some View {
-        Section {
-            Label("PDF ยังไม่มีลายเซ็น", systemImage: "signature").font(.headline).foregroundStyle(Theme.dangerText)
-            ForEach(names, id: \.self) { Text("• " + $0).font(.callout) }
+        PadSection {
+            Label("PDF ยังไม่มีลายเซ็น", systemImage: "signature").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.dangerText)
+            ForEach(names, id: \.self) { Text("• " + $0).font(.sarabun(16, relativeTo: .callout)) }
             Button { dismiss(); goTo(.final) } label: { Label("ไปลงนามที่หน้า E1", systemImage: "arrow.right.circle") }
-                .font(.callout)
+                .font(.sarabun(16, relativeTo: .callout))
         } footer: {
             Text("ส่งออกเป็นฉบับร่างได้ แต่ PDF ที่ส่ง กปภ. ต้องมีลายเซ็นทั้งวิศวกรผู้สำรวจและผู้ประสานงาน")
         }
@@ -61,18 +61,18 @@ extension ExportSheet {
     /// Every required answer still missing, grouped by editor page; each group opens its page.
     func missingSection(_ groups: [MissingGroup]) -> some View {
         let count = groups.reduce(0) { $0 + $1.items.count }
-        return Section {
-            Label("ยังขาด \(count) รายการ", systemImage: "exclamationmark.triangle.fill").font(.headline).foregroundStyle(Theme.pending)
+        return PadSection {
+            Label("ยังขาด \(count) รายการ", systemImage: "exclamationmark.triangle.fill").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.pending)
             ForEach(groups) { g in
                 DisclosureGroup {
-                    ForEach(Array(g.items.enumerated()), id: \.offset) { Text("• " + $0.element).font(.callout) }
+                    ForEach(Array(g.items.enumerated()), id: \.offset) { Text("• " + $0.element).font(.sarabun(16, relativeTo: .callout)) }
                     Button { dismiss(); goTo(g.target) } label: { Label("ไปกรอกหัวข้อนี้", systemImage: "arrow.right.circle") }
-                        .font(.callout)
+                        .font(.sarabun(16, relativeTo: .callout))
                 } label: {
                     HStack {
-                        Text(g.title).font(.callout.weight(.semibold))
+                        Text(g.title).font(.sarabun(16, .semibold, relativeTo: .callout))
                         Spacer()
-                        Text("\(g.items.count)").font(.caption.monospacedDigit()).foregroundStyle(Theme.pending)
+                        Text("\(g.items.count)").font(.sarabun(12, relativeTo: .caption).monospacedDigit()).foregroundStyle(Theme.pending)
                     }
                 }
             }
@@ -82,9 +82,9 @@ extension ExportSheet {
     }
 
     var formatsSection: some View {
-        Section {
+        PadSection("ไฟล์ที่จะส่งออก") {
             ForEach(Format.allCases) { f in formatRow(f) }
-        } header: { Text("ไฟล์ที่จะส่งออก") } footer: {
+        } footer: {
             let notes = [selected.contains(.summary) ? "PDF สรุป 1 หน้า แชร์ได้อย่างเดียว ไม่บันทึกลง Google Drive" : nil,
                          selected.contains(.photos) ? "รูปภาพบันทึกลง Google Drive เท่านั้น" : nil].compactMap { $0 }
             if !notes.isEmpty { Text(notes.joined(separator: "\n")) }
@@ -97,15 +97,15 @@ extension ExportSheet {
             Image(systemName: f.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 36, height: 36).background(f.tint, in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
-                Text(f.title).font(.body.weight(.semibold))
-                Text(f == .photos ? photoDetail : f.detail).font(.caption).foregroundStyle(Theme.inkMuted)
+                Text(f.title).font(.sarabun(17, .semibold, relativeTo: .body))
+                Text(f == .photos ? photoDetail : f.detail).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 8)
             if f.isPDF {
                 Button { previewPDF(f) } label: { Image(systemName: "eye").frame(width: 44, height: 44) }
                     .buttonStyle(.plain).foregroundStyle(Theme.primary).disabled(busy != nil).accessibilityLabel("ดูตัวอย่าง " + f.title)
             }
-            Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.title2)
+            Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.sarabun(22, relativeTo: .title2))
                 .foregroundStyle(on ? Paper.tick : Theme.borderControl)
         }
         .padding(.vertical, 2)
@@ -127,7 +127,7 @@ extension ExportSheet {
     }
 
     func driveSection(_ job: Job) -> some View {
-        Section("Google Drive") {
+        PadSection("Google Drive") {
             if signedIn {
                 LabeledContent("บัญชี", value: model.google.email ?? "ลงชื่อเข้าใช้แล้ว")
             } else {
@@ -144,7 +144,7 @@ extension ExportSheet {
     var actionBar: some View {
         VStack(spacing: 8) {
             if let busy {
-                HStack(spacing: 8) { ProgressView(); Text(busy).font(.callout).foregroundStyle(Theme.inkMuted) }
+                HStack(spacing: 8) { ProgressView(); Text(busy).font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted) }
             }
             HStack(spacing: 12) {
                 Button { share() } label: {

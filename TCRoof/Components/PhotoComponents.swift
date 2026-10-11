@@ -38,17 +38,17 @@ struct PhotoPickerSection: View {
                 }
                 Spacer()
                 if !images.isEmpty {
-                    Text("\(images.count) รูป").font(.subheadline).foregroundStyle(Theme.muted)
+                    Text("\(images.count) รูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 }
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
 
             if images.isEmpty {
                 Text("ยังไม่มีรูปภาพ")
-                    .font(.subheadline)
+                    .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity, minHeight: 80)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.muted.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6])))
             } else {
                 PhotoGrid(images: images, onDelete: onDelete)
@@ -90,9 +90,9 @@ struct PhotoGrid: View {
                     if let onDelete {
                         Button { onDelete(index) } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title3)
+                                .font(.sarabun(20, relativeTo: .title3))
                                 .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.6))
+                                .foregroundStyle(Theme.onMedia, .black.opacity(0.6))
                         }
                         .padding(4)
                         .accessibilityLabel("ลบรูป")
@@ -112,7 +112,7 @@ struct Thumbnail: View {
     let data: Data
 
     var body: some View {
-        Color.gray.opacity(0.15)
+        Theme.track
             .overlay {
                 if let image = UIImage(data: data) {
                     Image(uiImage: image).resizable().scaledToFill()
@@ -141,10 +141,10 @@ struct PhotoViewer: View {
             .tabViewStyle(.page)
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.title2.bold())
-                    .foregroundStyle(.white)
+                    .font(.sarabun(22, .bold, relativeTo: .title2))
+                    .foregroundStyle(Theme.onMedia)
                     .padding(12)
-                    .background(.white.opacity(0.2), in: Circle())
+                    .background(Theme.onMedia.opacity(0.2), in: Circle())
             }
             .padding(24)
             .accessibilityLabel("ปิด")

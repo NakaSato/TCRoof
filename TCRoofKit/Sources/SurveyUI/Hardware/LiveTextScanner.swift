@@ -100,18 +100,18 @@ struct NameplateScannerView: View {
             if unavailable {
                 Text("ใช้กล้องไม่ได้ · อนุญาตการใช้กล้องใน การตั้งค่า แล้วลองใหม่").multilineTextAlignment(.center)
             } else if found.isEmpty {
-                Text(kind.hint).multilineTextAlignment(.center).foregroundStyle(.secondary)
+                Text(kind.hint).multilineTextAlignment(.center).foregroundStyle(Theme.inkMuted)
             } else if case .single = kind, let f = found.first {
                 Text("พบ \(f.display)").font(.system(size: 22, weight: .bold))
                 buttons(confirm: "ใช้ค่านี้")
             } else {
-                Text("พบในป้าย").font(.headline)
+                Text("พบในป้าย").font(.sarabun(17, .semibold, relativeTo: .headline))
                 ForEach(found, id: \.key) { f in
                     Button { if off.contains(f.key) { off.remove(f.key) } else { off.insert(f.key) } } label: {
                         HStack {
                             Image(systemName: off.contains(f.key) ? "circle" : "checkmark.circle.fill")
-                                .foregroundStyle(off.contains(f.key) ? Color.secondary : Theme.primary)
-                            Text(f.label).foregroundStyle(.secondary)
+                                .foregroundStyle(off.contains(f.key) ? Theme.disabledText : Theme.primary)
+                            Text(f.label).foregroundStyle(Theme.inkMuted)
                             Spacer()
                             Text(f.display).bold()
                         }

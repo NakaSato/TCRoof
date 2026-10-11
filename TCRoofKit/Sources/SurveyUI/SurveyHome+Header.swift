@@ -15,8 +15,8 @@ extension SurveyHomeView {
             HStack(alignment: .center, spacing: 12) {
                 if isPushed {
                     Button { dismiss() } label: {
-                        Image(systemName: "chevron.left").font(.title3.weight(.semibold)).frame(width: 40, height: 40)
-                            .background(.white.opacity(0.18), in: Circle())
+                        Image(systemName: "chevron.left").font(.sarabun(20, .semibold, relativeTo: .title3)).frame(width: 40, height: 40)
+                            .background(Theme.onPrimary.opacity(0.18), in: Circle())
                     }
                     .accessibilityLabel("ย้อนกลับ")
                 }
@@ -35,7 +35,7 @@ extension SurveyHomeView {
             }
             if compact { searchField }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, compact ? 16 : 24).padding(.top, compact ? 6 : 22).padding(.bottom, compact ? 14 : 26)
         .frame(maxWidth: 1240).frame(maxWidth: .infinity)
         // runs up under the status bar
@@ -66,13 +66,13 @@ extension SurveyHomeView {
                 let on = tab == t
                 Button { withAnimation(.snappy) { tab = t } } label: {
                     HStack(spacing: 8) {
-                        Text("\(i + 1)").font(.caption.weight(.bold)).foregroundStyle(Theme.onPrimary)
+                        Text("\(i + 1)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.onPrimary)
                             .frame(width: 22, height: 22).background(on ? Theme.primary : Theme.disabledText, in: Circle())
                         // iPhone: drop the count before the name gets cut
                         ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 8) { Text(t.title).font(.subheadline.weight(.bold)); countText(t) }
-                            Text(t.title).font(.subheadline.weight(.bold))
-                            Text(t.shortTitle).font(.subheadline.weight(.bold))
+                            HStack(spacing: 8) { Text(t.title).font(.sarabun(15, .bold, relativeTo: .subheadline)); countText(t) }
+                            Text(t.title).font(.sarabun(15, .bold, relativeTo: .subheadline))
+                            Text(t.shortTitle).font(.sarabun(15, .bold, relativeTo: .subheadline))
                         }
                         .lineLimit(1)
                     }
@@ -93,15 +93,15 @@ extension SurveyHomeView {
     }
 
     func countText(_ t: JobStage) -> some View {
-        Text("\(model.jobs(in: t).count) งาน").font(.caption.weight(.semibold)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+        Text("\(model.jobs(in: t).count) งาน").font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
     }
 
     /// Installation or maintenance tab with nothing in it yet.
     var stageEmpty: some View {
         VStack(spacing: 8) {
-            Text(tab == .install ? "ยังไม่มีงานติดตั้งในเครื่องนี้" : "ยังไม่มีงานบำรุงรักษา").font(.headline).foregroundStyle(Theme.navy)
+            Text(tab == .install ? "ยังไม่มีงานติดตั้งในเครื่องนี้" : "ยังไม่มีงานบำรุงรักษา").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             if tab == .install {
-                Text("กด \"เพิ่มโครงการ\" เพื่อดึงงานสำรวจที่ครบ 100% มาเป็นงานติดตั้ง").font(.subheadline).foregroundStyle(Theme.inkMuted)
+                Text("กด \"เพิ่มโครงการ\" เพื่อดึงงานสำรวจที่ครบ 100% มาเป็นงานติดตั้ง").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                     .multilineTextAlignment(.center)
             }
         }
@@ -154,8 +154,8 @@ extension SurveyHomeView {
             Divider()
             Button { showSettings = true } label: { Label("ตั้งค่า", systemImage: "gearshape") }
         } label: {
-            Image(systemName: "ellipsis").font(.title3.weight(.semibold)).frame(width: compact ? 44 : 40, height: compact ? 44 : 40)
-                .background(.white.opacity(0.18), in: Circle())
+            Image(systemName: "ellipsis").font(.sarabun(20, .semibold, relativeTo: .title3)).frame(width: compact ? 44 : 40, height: compact ? 44 : 40)
+                .background(Theme.onPrimary.opacity(0.18), in: Circle())
         }
         .accessibilityLabel("เมนูเพิ่มเติม")
     }
@@ -165,7 +165,7 @@ extension SurveyHomeView {
         let n = model.jobsToSync.count
         return Button { syncAll() } label: {
             Label("ซิงก์ \(n) งาน", systemImage: "arrow.triangle.2.circlepath.icloud")
-                .font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy)
+                .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 .padding(.horizontal, 14).frame(minHeight: 44)
                 .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
@@ -185,8 +185,8 @@ extension SurveyHomeView {
                 Button { withAnimation(.snappy) { filter = f } } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(jobs.filter { matches($0, f) }.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
-                        Text(f.title).font(.subheadline.weight(.bold))
-                        Text(f.detail).font(.caption).foregroundStyle(Theme.inkMuted)
+                        Text(f.title).font(.sarabun(15, .bold, relativeTo: .subheadline))
+                        Text(f.detail).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     }
                     .foregroundStyle(Theme.navy)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,9 +213,9 @@ extension SurveyHomeView {
                         Text(f.shortTitle).font(.system(size: 13, weight: on ? .bold : .semibold)).lineLimit(1)
                         Text("\(n)").font(.system(size: 12, weight: .bold)).monospacedDigit()
                             .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
-                            .background(on ? Color.white.opacity(0.22) : Theme.hairline, in: RoundedRectangle(cornerRadius: 10))
+                            .background(on ? Theme.onPrimary.opacity(0.22) : Theme.hairline, in: RoundedRectangle(cornerRadius: 10))
                     }
-                    .foregroundStyle(on ? Color.white : Theme.navySolid)
+                    .foregroundStyle(on ? Theme.onPrimary : Theme.navySolid)
                     .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(on ? Theme.navySolid : Theme.surface, in: Capsule())
@@ -257,17 +257,16 @@ extension SurveyHomeView {
         let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
         return layout {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(tab == .survey ? filter.heading : tab.title).font(.title3.bold()).foregroundStyle(Theme.navy)
-                Text("\(shown.count) งาน").font(.subheadline).foregroundStyle(Theme.inkMuted)
+                Text(tab == .survey ? filter.heading : tab.title).font(.sarabun(20, .bold, relativeTo: .title3)).foregroundStyle(Theme.navy)
+                Text("\(shown.count) งาน").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
             }
             if !compact { Spacer() }
             HStack(spacing: 8) {
                 if tab == .survey && filter == .unsynced { syncListButton.padding(.trailing, 4) }
-                Text("เรียงตาม").font(.caption).foregroundStyle(Theme.inkMuted)
-                Picker("เรียงตาม", selection: $sort) {
-                    ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented).fixedSize()
+                Text("เรียงตาม").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                TCSegmented(Sort.allCases.map(\.title), selection: Binding(
+                    get: { sort.title }, set: { t in if let s = Sort.allCases.first(where: { $0.title == t }) { sort = s } }))
+                    .fixedSize().accessibilityLabel("เรียงตาม")
             }
         }
     }

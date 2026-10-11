@@ -40,14 +40,14 @@ struct RoutineSummaryScreen: View {
             HStack(spacing: 8) {
                 Button { shift(-1) } label: { Image(systemName: "chevron.left").frame(width: touchMin, height: touchMin) }
                     .accessibilityLabel(period == .week ? "สัปดาห์ก่อน" : "เดือนก่อน")
-                Text(label).font(.headline).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
+                Text(label).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
                 Button { shift(1) } label: { Image(systemName: "chevron.right").frame(width: touchMin, height: touchMin) }
                     .accessibilityLabel(period == .week ? "สัปดาห์ถัดไป" : "เดือนถัดไป")
                 Spacer()
-                Button(period == .week ? "สัปดาห์นี้" : "เดือนนี้") { anchor = .now }.font(.subheadline.weight(.semibold))
+                Button(period == .week ? "สัปดาห์นี้" : "เดือนนี้") { anchor = .now }.font(.sarabun(15, .semibold, relativeTo: .subheadline))
             }
             .padding(.horizontal, 16).padding(.vertical, 6)
-            .background(.bar)
+            .background(Theme.surface)
             if let pdf {
                 PDFPreview(data: pdf)
             } else {

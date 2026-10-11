@@ -78,7 +78,7 @@ struct NewJobProvinceSheet: View {
                 ForEach(ThaiProvince.frequent, id: \.self) { name in
                     let on = name == province
                     Button { pick(name) } label: {
-                        Text(name).font(.sarabun(15, .semibold)).foregroundStyle(on ? Color.white : Color.primary)
+                        Text(name).font(.sarabun(15, .semibold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy)
                             .padding(.horizontal, 13).frame(minHeight: 40)
                             .background(on ? Theme.iosBlue : Theme.surface, in: Capsule())
                             .overlay { if !on { Capsule().strokeBorder(Theme.separatorLine, lineWidth: 1) } }

@@ -196,7 +196,7 @@ extension TankPageWide {
         NavigationStack {
             planCard
                 .padding(16)
-                .background(Theme.background)
+                .tcPageBackground()
                 .navigationTitle("แปลนหลังคาถัง")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {

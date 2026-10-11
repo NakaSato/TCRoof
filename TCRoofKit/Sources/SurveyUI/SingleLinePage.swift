@@ -52,12 +52,14 @@ struct SingleLinePage: View {
         }
         .background(Paper.page)
         .foregroundStyle(Theme.navy)
-        .sheet(isPresented: $showPanel) { NavigationStack { ScrollView { panel(sl).padding(16) }.navigationTitle("ข้อมูลฝั่ง PV")
+        .sheet(isPresented: $showPanel) { NavigationStack { ScrollView { panel(sl).padding(16) }.tcPageBackground().navigationTitle("ข้อมูลฝั่ง PV")
             .navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { showPanel = false } } } } }
         .sheet(item: $listSheet) { k in listView(k, sl) }
         .sheet(item: $shared) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
         .errorAlert($error)
         .onAppear { stamp = Date() }
+        // `-surveySLDPanel YES` opens the iPhone's ข้อมูลฝั่ง PV sheet for simulator checks
+        .task { if UserDefaults.standard.bool(forKey: "surveySLDPanel") { try? await Task.sleep(nanoseconds: 600_000_000); showPanel = true } }
     }
 
     // MARK: header

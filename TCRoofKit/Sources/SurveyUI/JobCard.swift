@@ -41,7 +41,7 @@ struct JobCard: View {
                     } else {
                         Text(job.projectName).font(.system(size: compact ? 16 : 17, weight: .bold)).foregroundStyle(Theme.navy)
                     }
-                    Text(detailLine).font(.caption).foregroundStyle(Theme.inkMuted)
+                    Text(detailLine).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
                 .lineLimit(1)
                 Spacer(minLength: 0)
@@ -49,7 +49,7 @@ struct JobCard: View {
             }
             if mode == .install { installProgress } else { surveyProgress }
             if mode != .install, let id = job.jobSyncID, let label = model.linkedJobLabel?(id) {
-                Label(label, systemImage: "link").font(.caption.weight(.semibold)).foregroundStyle(Theme.primary).lineLimit(1)
+                Label(label, systemImage: "link").font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.primary).lineLimit(1)
             }
             if mode == .install {
                 HStack(spacing: 6) {
@@ -71,7 +71,7 @@ struct JobCard: View {
                 Label("\(job.photoCount)", systemImage: "photo")
                 syncMark
             }
-            .font(.caption).foregroundStyle(Theme.inkMuted).monospacedDigit()
+            .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
         }
         .padding(.horizontal, compact ? 14 : 16).padding(.top, compact ? 12 : 14).padding(.bottom, compact ? 10 : 14)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -101,7 +101,7 @@ struct JobCard: View {
         let n = InstallInfo.steps.count
         HStack(spacing: 4) {
             ForEach(0..<n, id: \.self) { i in
-                Capsule().fill(i < install.doneSteps ? Theme.mint : i == install.doneSteps ? Theme.primary : Color.secondary.opacity(0.2)).frame(height: 5)
+                Capsule().fill(i < install.doneSteps ? Theme.mint : i == install.doneSteps ? Theme.primary : Theme.track).frame(height: 5)
             }
         }
         actionRow(Text("ขั้น \(min(install.doneSteps + 1, n))/\(n)").monospacedDigit(), Text(install.currentStep ?? "ส่งมอบแล้ว"),
@@ -109,18 +109,18 @@ struct JobCard: View {
     }
 
     var installBadge: some View {
-        Text(install.doneSteps > 0 ? "กำลังติดตั้ง" : "รอเริ่มงาน").font(.caption2.weight(.bold)).foregroundStyle(Theme.primary)
+        Text(install.doneSteps > 0 ? "กำลังติดตั้ง" : "รอเริ่มงาน").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.primary)
             .padding(.horizontal, 7).padding(.vertical, 2).background(Theme.primarySoft, in: Capsule())
     }
 
     var lockBadge: some View {
-        Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.caption2.weight(.bold)).foregroundStyle(Theme.navy)
+        Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.navy)
             .labelStyle(TightLabel()).fixedSize()
             .padding(.horizontal, 8).padding(.vertical, 2).background(Theme.borderSubtle, in: Capsule())
     }
 
     func chip(_ text: String) -> some View {
-        Text(text).font(.caption.weight(.bold)).foregroundStyle(Theme.navy)
+        Text(text).font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
             .padding(.horizontal, 9).padding(.vertical, 4).background(Theme.primarySoft, in: Capsule())
     }
 
@@ -129,7 +129,7 @@ struct JobCard: View {
             lead.font(compact ? .system(size: 11) : .caption).foregroundStyle(Theme.inkMuted)
             title.font(compact ? .system(size: 13, weight: .bold) : .subheadline.weight(.bold)).foregroundStyle(Theme.navy).lineLimit(1)
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Theme.primary)
+            Image(systemName: "chevron.right").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
         }
         .stripFrame(compact: compact)
         .background(background, in: RoundedRectangle(cornerRadius: compact ? 9 : 10))
@@ -176,14 +176,14 @@ struct JobCard: View {
                     // code and title on one line, cut at the end
                     Text(next.code + " " + next.title).font(font).foregroundStyle(Theme.navy).lineLimit(1)
                 } else {
-                    Text(next.code).font(.subheadline.weight(.heavy)).foregroundStyle(Theme.navy)
+                    Text(next.code).font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                     Text(next.title).font(font).foregroundStyle(Theme.navy).lineLimit(1)
                 }
             } else {
                 Label("กรอกครบทุกขั้นแล้ว", systemImage: "checkmark.circle.fill").font(font).foregroundStyle(Theme.teal)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Theme.primary)
+            Image(systemName: "chevron.right").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
         }
         .stripFrame(compact: compact)
         .background(compact ? Theme.primarySoft : next == nil || last ? Theme.mint.opacity(0.25) : Theme.primary.opacity(0.08),
@@ -223,7 +223,7 @@ struct PercentRing: View {
         case .compact:
             let tint = percent >= 80 ? Theme.teal : Theme.primary
             ZStack {
-                Circle().stroke(Color.secondary.opacity(0.18), lineWidth: 5)
+                Circle().stroke(Theme.track, lineWidth: 5)
                 Circle().trim(from: 0, to: Double(percent) / 100).stroke(tint, style: StrokeStyle(lineWidth: 5, lineCap: .round)).rotationEffect(.degrees(-90))
                 Text("\(percent)%").font(.system(size: 13, weight: .bold)).monospacedDigit().foregroundStyle(Theme.navy)
             }

@@ -37,7 +37,7 @@ struct MPOverviewView: View {
         ScrollView {
             VStack(spacing: 16) {
                 if rows.isEmpty {
-                    ContentUnavailableView("ยังไม่มีสถานีที่มีแผน MP", systemImage: "chart.bar.xaxis",
+                    TCEmptyState("ยังไม่มีสถานีที่มีแผน MP", systemImage: "chart.bar.xaxis",
                                            description: Text("สร้างแผนจากการ์ดแผนงาน MP ในหน้างาน"))
                 } else {
                     totals(rows)
@@ -81,8 +81,8 @@ struct MPOverviewView: View {
 
     private func figure(_ title: String, _ value: String, color: Color = Theme.navy) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.subheadline).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.title2.bold().monospacedDigit()).foregroundStyle(color)
+            Text(title).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(22, .bold, relativeTo: .title2).monospacedDigit()).foregroundStyle(color)
         }
     }
 }
@@ -96,12 +96,12 @@ struct MPOverviewRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(job.mpNumber.map { "MP \($0)" } ?? job.code).font(.subheadline.monospacedDigit().weight(.semibold))
+                    Text(job.mpNumber.map { "MP \($0)" } ?? job.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit())
                         .foregroundStyle(Theme.primary)
-                    Text(job.projectName).font(.body.weight(.semibold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(job.projectName).font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy).lineLimit(1)
                 }
                 Text(row.current.map { "\($0.task.code) \($0.task.title)" } ?? "ไม่มีงานตามแผนสัปดาห์นี้")
-                    .font(.subheadline).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 if isPhone {
                     HStack(spacing: 10) { numbers(st); MPVarianceChip(variance: st.variance) }
                 }
@@ -111,7 +111,7 @@ struct MPOverviewRow: View {
                 numbers(st)
                 MPVarianceChip(variance: st.variance).frame(width: 150, alignment: .trailing)
             }
-            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.chevron)
+            Image(systemName: "chevron.right").font(.sarabun(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.chevron)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
         .frame(minHeight: touchMin)
@@ -123,7 +123,7 @@ struct MPOverviewRow: View {
             Text("แผน \(MPFormat.percent(st.planned))").foregroundStyle(Theme.inkMuted)
             Text("ทำได้ \(MPFormat.percent(st.actual))").fontWeight(.semibold).foregroundStyle(Theme.navy)
         }
-        .font(.subheadline.monospacedDigit())
+        .font(.sarabun(15, relativeTo: .subheadline).monospacedDigit())
         .lineLimit(1).minimumScaleFactor(0.75)
     }
 }

@@ -29,7 +29,7 @@ struct HomeLibraryView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .task {
             guard !loaded else { return }
@@ -151,7 +151,7 @@ struct HomeLibraryItemSheet: View {
                 }
                 .padding(Space.l)
             }
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle(item.name.isEmpty ? "เพิ่มในคลัง" : item.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

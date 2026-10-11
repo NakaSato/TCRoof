@@ -42,7 +42,7 @@ struct SurveyListView: View {
                 QueueFilterBar(listTitle: "รายการงานสำรวจ", prefix: "คิวสำรวจ", window: $window, search: $search, count: filtered.count,
                                focusOnAppear: startSearching)
                 if filtered.isEmpty {
-                    ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
+                    TCEmptyState("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
                 } else {
                     LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(filtered) { job in

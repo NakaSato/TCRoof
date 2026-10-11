@@ -100,7 +100,7 @@ struct PhotoSlot: View {
     /// A photo saved in the job but taken on another device.
     static var notDownloaded: some View {
         Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
-            .font(.callout).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center).padding(8)
+            .font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center).padding(8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

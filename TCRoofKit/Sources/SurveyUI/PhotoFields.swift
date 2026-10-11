@@ -57,7 +57,7 @@ struct PhotoField: View {
                     if mapGPS != nil { Button { fetchMap() } label: { Label("ดึงใหม่จากแผนที่ดาวเทียม", systemImage: "map") } }
                     Button(role: .destructive) { photo = nil } label: { Label("ลบภาพ", systemImage: "trash") }
                 } label: {
-                    Image(systemName: "ellipsis.circle.fill").font(.title2).symbolRenderingMode(.palette)
+                    Image(systemName: "ellipsis.circle.fill").font(.sarabun(22, relativeTo: .title2)).symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .black.opacity(0.55)).padding(8)
                 }
             }
@@ -97,14 +97,14 @@ struct PhotosField: View {
                     if let new { photos[i] = new } else { photos.removeAll { $0.id == p.id } }
                 }), jobID: jobID, height: 180)
                 .overlay(alignment: .topLeading) {
-                    Text("\(i + 1)").font(.caption.bold()).padding(6).background(.thinMaterial, in: Circle()).padding(6)
+                    Text("\(i + 1)").font(.sarabun(12, .bold, relativeTo: .caption)).padding(6).background(.thinMaterial, in: Circle()).padding(6)
                 }
             }
             if photos.count < max {
                 PhotoField(photo: Binding(get: { nil }, set: { if let p = $0 { photos.append(p) } }), jobID: jobID, height: 180)
             }
         }
-        Text("\(photos.count) / \(max) ภาพ").font(.caption).foregroundStyle(Theme.inkMuted)
+        Text("\(photos.count) / \(max) ภาพ").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
     }
 }
 

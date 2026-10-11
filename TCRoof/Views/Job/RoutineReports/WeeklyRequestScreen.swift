@@ -71,8 +71,8 @@ struct WeeklyRequestScreen: View {
             Button { shift(-7) } label: { Image(systemName: "chevron.left").frame(width: touchMin, height: touchMin) }
                 .accessibilityLabel("สัปดาห์ก่อน")
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(RoutineReport.thaiDate(week)) – \(RoutineReport.thaiDate(weekEnd))").font(.headline).foregroundStyle(Theme.navy)
-                Text(stored ? "บันทึกแล้ว" : "ร่างจากแผน MP · ยังไม่บันทึก").font(.caption).foregroundStyle(Theme.muted)
+                Text("\(RoutineReport.thaiDate(week)) – \(RoutineReport.thaiDate(weekEnd))").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                Text(stored ? "บันทึกแล้ว" : "ร่างจากแผน MP · ยังไม่บันทึก").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
             Spacer()
             Button { shift(7) } label: { Image(systemName: "chevron.right").frame(width: touchMin, height: touchMin) }
@@ -92,9 +92,9 @@ struct WeeklyRequestScreen: View {
 
     private var workCard: some View {
         ReportCard("3. แผนงาน", trailing: {
-            Button("+ งาน") { request.work.append(.init(task: nil, description: "")) }.font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+            Button("+ งาน") { request.work.append(.init(task: nil, description: "")) }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }) {
-            if request.work.isEmpty { Text("ไม่มีงานตามแผนในสัปดาห์นี้").font(.subheadline).foregroundStyle(Theme.muted) }
+            if request.work.isEmpty { Text("ไม่มีงานตามแผนในสัปดาห์นี้").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted) }
             ForEach($request.work) { $w in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -102,11 +102,11 @@ struct WeeklyRequestScreen: View {
                             ForEach(MasterSchedule.Task.allCases.filter { $0.part != .permit }) { t in Button("\(t.code) \(t.title)") { w.task = t } }
                             Button("งานอื่น") { w.task = nil }
                         } label: {
-                            Text(w.task?.code ?? "อื่น").font(.subheadline.monospacedDigit().weight(.bold)).foregroundStyle(Theme.primary)
+                            Text(w.task?.code ?? "อื่น").font(.sarabun(15, .bold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
                                 .padding(.horizontal, 8).padding(.vertical, 4).background(Theme.primarySoft, in: Capsule())
                                 .frame(minHeight: touchMin)
                         }
-                        TextField("รายละเอียด", text: $w.description, axis: .vertical).textFieldStyle(.roundedBorder)
+                        TextField("รายละเอียด", text: $w.description, axis: .vertical).textFieldStyle(OutlinedFieldStyle())
                         Button(role: .destructive) { request.work.removeAll { $0.id == w.id } } label: {
                             Image(systemName: "trash").frame(width: touchMin, height: touchMin)
                         }
@@ -115,8 +115,8 @@ struct WeeklyRequestScreen: View {
                     HStack {
                         LocationMenu(location: $w.location, locations: job.routineSettings.locations)
                         Spacer()
-                        TextField("ปริมาณ", value: Binding(get: { w.qty > 0 ? w.qty : nil }, set: { w.qty = $0 ?? 0 }), format: .number).keyboardType(.decimalPad).textFieldStyle(.roundedBorder).frame(width: 90)
-                        TextField("หน่วย", text: $w.unit).textFieldStyle(.roundedBorder).frame(width: 80)
+                        TextField("ปริมาณ", value: Binding(get: { w.qty > 0 ? w.qty : nil }, set: { w.qty = $0 ?? 0 }), format: .number).keyboardType(.decimalPad).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 90)
+                        TextField("หน่วย", text: $w.unit).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 80)
                     }
                 }
                 Divider()
@@ -131,23 +131,23 @@ struct WeeklyRequestScreen: View {
                     Button(r) { request.risks.append(.init(description: r)) }
                 }
                 Button("อื่น ๆ") { request.risks.append(.init()) }
-            } label: { Text("+ ความเสี่ยง").font(.subheadline.weight(.semibold)).frame(minHeight: touchMin) }
+            } label: { Text("+ ความเสี่ยง").font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin) }
         }) {
-            if request.risks.isEmpty { Text("ยังไม่ได้ประเมิน").font(.subheadline).foregroundStyle(Theme.muted) }
+            if request.risks.isEmpty { Text("ยังไม่ได้ประเมิน").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted) }
             ForEach($request.risks) { $r in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        TextField("ความเสี่ยง", text: $r.description).textFieldStyle(.roundedBorder)
+                        TextField("ความเสี่ยง", text: $r.description).textFieldStyle(OutlinedFieldStyle())
                         Button(role: .destructive) { request.risks.removeAll { $0.id == r.id } } label: {
                             Image(systemName: "trash").frame(width: touchMin, height: touchMin)
                         }
                         .accessibilityLabel("ลบความเสี่ยง")
                     }
-                    Picker("ระดับ", selection: $r.level) {
-                        ForEach(RoutineReport.RiskLevel.allCases, id: \.self) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    TextField("แนวทางป้องกัน", text: $r.prevention, axis: .vertical).textFieldStyle(.roundedBorder)
+                    TCSegmented(RoutineReport.RiskLevel.allCases.map(\.title), selection: Binding(
+                        get: { r.level.title },
+                        set: { t in if let l = RoutineReport.RiskLevel.allCases.first(where: { $0.title == t }) { $r.level.wrappedValue = l } }))
+                        .accessibilityLabel("ระดับ")
+                    TextField("แนวทางป้องกัน", text: $r.prevention, axis: .vertical).textFieldStyle(OutlinedFieldStyle())
                 }
                 Divider()
             }
@@ -157,17 +157,17 @@ struct WeeklyRequestScreen: View {
     private var bottomBar: some View {
         HStack(spacing: 12) {
             Button { save(file: false) } label: {
-                Text("บันทึกร่าง").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+                Text("บันทึกร่าง").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             if request.engineerSignedAt == nil {
                 Button { request.engineerSignedAt = .now; save(file: true); exportPDF() } label: {
-                    Text("ส่งขออนุมัติ").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+                    Text("ส่งขออนุมัติ").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
             } else {
                 Button { showApprove = true } label: {
-                    Text(request.approvedAt == nil ? "บันทึกอนุมัติแล้ว" : "แก้วันที่อนุมัติ").font(.body.weight(.semibold))
+                    Text(request.approvedAt == nil ? "บันทึกอนุมัติแล้ว" : "แก้วันที่อนุมัติ").font(.sarabun(17, .semibold, relativeTo: .body))
                         .frame(maxWidth: .infinity, minHeight: touchMin)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -176,7 +176,7 @@ struct WeeklyRequestScreen: View {
         .padding(.horizontal, isPhone ? 16 : 24).padding(.vertical, 10)
         .frame(maxWidth: 700)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background(Theme.surface)
     }
 
     private func shift(_ days: Int) {

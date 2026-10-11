@@ -324,4 +324,39 @@ public extension View {
         modifier(TCToastModifier(message: message, duration: duration))
     }
 }
+/// An empty list or missing item in the board's type (in place of the system `ContentUnavailableView`):
+/// the symbol in a soft circle, a bold line, a muted description and optional buttons.
+public struct TCEmptyState<Actions: View>: View {
+    var title: String
+    var systemImage: String
+    var description: Text?
+    var actions: Actions
+
+    public init(_ title: String, systemImage: String, description: Text? = nil, @ViewBuilder actions: () -> Actions) {
+        self.title = title; self.systemImage = systemImage; self.description = description; self.actions = actions()
+    }
+
+    public var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: systemImage).font(.system(size: 26, weight: .semibold)).foregroundStyle(Theme.primary)
+                .frame(width: 60, height: 60).background(Theme.primarySoft, in: Circle())
+                .accessibilityHidden(true)
+            Text(title).font(.sarabun(17, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            if let description {
+                description.font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+            }
+            actions.padding(.top, 4)
+        }
+        .multilineTextAlignment(.center)
+        .padding(.vertical, 32).padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+public extension TCEmptyState where Actions == EmptyView {
+    init(_ title: String, systemImage: String, description: Text? = nil) {
+        self.init(title, systemImage: systemImage, description: description) { EmptyView() }
+    }
+}
 #endif

@@ -48,7 +48,7 @@ struct JobDetailView: View {
             if let uploadProgress {
                 ProgressView(uploadProgress)
                     .padding(24)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .alert("อัปโหลดไม่สำเร็จ", isPresented: Binding(get: { uploadError != nil }, set: { if !$0 { uploadError = nil } })) {
@@ -62,17 +62,17 @@ struct JobDetailView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(job.code).font(.headline).foregroundStyle(Theme.muted)
+                    Text(job.code).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.muted)
                     TeamTag(team: job.team)
                 }
-                Text(job.projectName).font(isPhone ? .title2.bold() : .largeTitle.bold()).foregroundStyle(Theme.navy)
+                Text(job.projectName).font(isPhone ? .sarabun(22, .bold, relativeTo: .title2) : .sarabun(34, .bold, relativeTo: .largeTitle)).foregroundStyle(Theme.navy)
                 let facts = isPhone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 20))
                 facts {
                     Label(job.capacityKW.kw, systemImage: "bolt.fill")
                     Label("~\(job.estimatedPanels) แผง", systemImage: "square.grid.3x3.fill")
                     Label(job.province, systemImage: "mappin.and.ellipse")
                 }
-                .font(.subheadline)
+                .font(.sarabun(15, relativeTo: .subheadline))
                 .foregroundStyle(Theme.navy)
             }
             Spacer()
@@ -83,7 +83,7 @@ struct JobDetailView: View {
             } label: {
                 HStack(spacing: 4) {
                     TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
-                    Image(systemName: "chevron.down").font(.caption).foregroundStyle(job.status.color)
+                    Image(systemName: "chevron.down").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(job.status.color)
                 }
             }
         }
@@ -92,7 +92,7 @@ struct JobDetailView: View {
 
     private var customerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ข้อมูลลูกค้า").font(.headline).foregroundStyle(Theme.navy)
+            Text("ข้อมูลลูกค้า").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             InfoRow(title: "ชื่อ", value: job.customerName)
             if !job.phone.isEmpty {
                 HStack {
@@ -102,12 +102,12 @@ struct JobDetailView: View {
                         Link(job.phone, destination: url)
                     }
                 }
-                .font(.subheadline)
+                .font(.sarabun(15, relativeTo: .subheadline))
             }
             InfoRow(title: "ที่อยู่", value: "\(job.address) \(job.province)")
             if let url = mapsURL {
                 Link(destination: url) {
-                    Label("เปิดแผนที่", systemImage: "map").font(.subheadline.weight(.semibold))
+                    Label("เปิดแผนที่", systemImage: "map").font(.sarabun(15, .semibold, relativeTo: .subheadline))
                 }
             }
         }
@@ -124,9 +124,9 @@ struct JobDetailView: View {
     private var scheduleCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("แผนงาน").font(.headline).foregroundStyle(Theme.navy)
+                Text("แผนงาน").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
-                Button("แก้ไข") { showSchedule = true }.font(.subheadline.weight(.semibold))
+                Button("แก้ไข") { showSchedule = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline))
             }
             InfoRow(title: "วันที่สำรวจ", value: job.surveyDate.thaiLong)
             InfoRow(title: "เริ่มติดตั้ง", value: job.installStart.thaiLong)
@@ -158,13 +158,13 @@ struct JobDetailView: View {
         NavigationLink(destination: destination) {
             HStack(spacing: 14) {
                 Image(systemName: symbol)
-                    .font(.title2)
-                    .foregroundStyle(.white)
+                    .font(.sarabun(22, relativeTo: .title2))
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 52, height: 52)
                     .background(Theme.headerGradient, in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.headline).foregroundStyle(Theme.navy)
-                    Text(detail).font(.caption).foregroundStyle(Theme.muted)
+                    Text(title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                    Text(detail).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
@@ -176,14 +176,14 @@ struct JobDetailView: View {
 
     private var surveysCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("แบบสำรวจ").font(.headline).foregroundStyle(Theme.navy)
+            Text("แบบสำรวจ").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             if job.savedSurveys.isEmpty {
-                Text("ยังไม่มีแบบสำรวจ").font(.subheadline).foregroundStyle(Theme.muted)
+                Text("ยังไม่มีแบบสำรวจ").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
             if job.surveyDraft != nil {
                 NavigationLink { SurveyFormView(job: job) } label: {
                     Label("มีร่างแบบสำรวจที่ยังไม่บันทึก · แตะเพื่อทำต่อ", systemImage: "pencil.and.list.clipboard")
-                        .font(.subheadline).foregroundStyle(.orange)
+                        .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
                 }
                 .buttonStyle(.plain)
             }
@@ -195,7 +195,7 @@ struct JobDetailView: View {
                         Spacer()
                         Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
                     }
-                    .font(.subheadline)
+                    .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.navy)
                     .padding(.vertical, 6)
                 }
@@ -209,14 +209,14 @@ struct JobDetailView: View {
     private var documentsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("เอกสารโครงการ").font(.headline).foregroundStyle(Theme.navy)
+                Text("เอกสารโครงการ").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 Button { showImporter = true } label: { Label("แนบไฟล์", systemImage: "paperclip") }
-                    .font(.subheadline.weight(.semibold))
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline))
             }
             if job.documents.isEmpty {
                 Text("แนบแบบติดตั้ง ใบเสนอราคา หรือเอกสารขออนุญาต (PDF, รูปภาพ)")
-                    .font(.subheadline).foregroundStyle(Theme.muted)
+                    .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
             if !job.documents.isEmpty || job.inspection?.submittedAt != nil || job.driveFolderURL != nil {
                 driveRow
@@ -230,7 +230,7 @@ struct JobDetailView: View {
                             VStack(alignment: .leading) {
                                 Text(doc.name).lineLimit(1)
                                 Text("\(doc.addedAt.thaiLong) · \(ByteCountFormatter.string(fromByteCount: Int64(doc.data.count), countStyle: .file))")
-                                    .font(.caption).foregroundStyle(Theme.muted)
+                                    .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                             }
                         }
                         .foregroundStyle(Theme.navy)
@@ -265,13 +265,13 @@ struct JobDetailView: View {
             .disabled(pending == 0 || uploadProgress != nil)
             if let link = job.driveFolderURL, let url = URL(string: link) {
                 Link(destination: url) { Label("เปิดโฟลเดอร์ใน Drive", systemImage: "arrow.up.right.square") }
-                    .font(.subheadline.weight(.semibold))
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline))
             }
         }
         .padding(.vertical, 4)
         if job.inspection?.submittedAt != nil {
             Text("รวมรายงานใบตรวจรับงาน (ICL) ที่ลงนามแล้วเป็น PDF")
-                .font(.caption).foregroundStyle(Theme.muted)
+                .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
         }
     }
 
@@ -315,23 +315,22 @@ struct ScheduleEditSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("ขนาดระบบ") {
+            PadForm(maxWidth: 640) {
+                PadSection("ขนาดระบบ") {
                     LabeledContent("กำลังการผลิต (kWp)") {
                         TextField("0", value: $job.capacityKW, format: .number)
                             .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                     }
                 }
-                Section("แผนงาน") {
+                PadSection("แผนงาน") {
                     DatePicker("วันที่สำรวจ", selection: $job.surveyDate)
                     DatePicker("เริ่มติดตั้ง", selection: $job.installStart, displayedComponents: .date)
                     Stepper("ระยะเวลาติดตั้ง \(job.installDays) วัน", value: $job.installDays, in: 1...60)
-                    Picker("ทีมติดตั้ง", selection: $job.team) {
+                    PadPicker("ทีมติดตั้ง", selection: $job.team) {
                         ForEach(Team.allCases) { Text($0.rawValue).tag($0) }
                     }
                 }
             }
-            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("แก้ไขแผนงาน")
             .navigationBarTitleDisplayMode(.inline)

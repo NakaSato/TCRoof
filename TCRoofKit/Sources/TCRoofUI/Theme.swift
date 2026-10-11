@@ -62,6 +62,8 @@ public enum Theme {
     public static let surface = Color(light: 0xFFFFFF, dark: 0x121A24)
     /// Behind plans, diagrams and the signature pad: white in both modes, since their ink is dark.
     public static let paper = Color.white
+    /// Text and icons over the camera, photos and the full-screen viewer: white in both modes.
+    public static let onMedia = Color.white
     public static let muted = Color(hex: 0x7A8BA3)
     public static let inkMuted = Color(light: 0x5B6B82, dark: 0x9DB0C7)
     public static let borderControl = Color(light: 0x77889E, dark: 0x6B7D93)
@@ -246,10 +248,12 @@ public extension View {
 }
 
 public struct OutlinedFieldStyle: TextFieldStyle {
-    public init() {}
+    /// Narrower padding for short fields in a row (times, quantities, units); still 44 pt tall.
+    var dense: Bool
+    public init(dense: Bool = false) { self.dense = dense }
     public func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
-            .padding(14)
+            .padding(.horizontal, dense ? 10 : 14).padding(.vertical, dense ? 12 : 14)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
             .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Theme.navy.opacity(0.45)))
     }

@@ -402,7 +402,7 @@ struct PageStepBar: View {
             HStack(spacing: 6) {
                 ForEach(Array(steps.enumerated()), id: \.offset) { n, s in
                     Capsule().fill(n == i ? AnyShapeStyle(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing))
-                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Theme.mint) : AnyShapeStyle(Color.gray.opacity(0.25)))
+                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Theme.mint) : AnyShapeStyle(Theme.track))
                         .frame(height: 8)
                 }
             }

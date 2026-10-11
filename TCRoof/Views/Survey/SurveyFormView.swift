@@ -176,8 +176,8 @@ struct SurveyEditor: View {
     // MARK: iPhone
 
     private var phoneForm: some View {
-        Form {
-            Section {
+        PadForm {
+            PadSection {
                 if let job = form.job {
                     InfoRow(title: "รหัสโครงการ", value: job.code)
                     InfoRow(title: "ลูกค้า", value: job.customerName)
@@ -195,15 +195,13 @@ struct SurveyEditor: View {
             sizingSection
             photoSections
 
-            Section("หมายเหตุ") {
+            PadSection("หมายเหตุ") {
                 TextField("รายละเอียดเพิ่มเติม", text: $form.notes, axis: .vertical).lineLimit(3...8)
             }
 
             if !missing.isEmpty {
-                Section {
-                    ForEach(missing, id: \.self) { Label($0, systemImage: "exclamationmark.circle").foregroundStyle(.orange) }
-                } header: {
-                    Text("ยังขาด \(missing.count) รายการ")
+                PadSection("ยังขาด \(missing.count) รายการ") {
+                    ForEach(missing, id: \.self) { TCMissingLine($0) }
                 }
             }
         }
@@ -212,7 +210,7 @@ struct SurveyEditor: View {
     // MARK: Sections
 
     private var locationSection: some View {
-        Section("ตำแหน่งหน้างาน") {
+        PadSection("ตำแหน่งหน้างาน") {
             if let lat = form.latitude, let lon = form.longitude {
                 LabeledContent("พิกัด", value: String(format: "%.6f, %.6f", lat, lon))
                 if let url = URL(string: "https://maps.apple.com/?ll=\(lat),\(lon)&q=\(form.job?.code ?? "หน้างาน")") {
@@ -227,14 +225,14 @@ struct SurveyEditor: View {
             }
             .disabled(locating)
             if let locationError {
-                Text(locationError).font(.caption).foregroundStyle(.red)
+                Text(locationError).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
             }
         }
     }
 
     private var roofSection: some View {
-        Section("ข้อมูลหลังคา") {
-            Picker("ประเภทหลังคา", selection: $form.roofType) {
+        PadSection("ข้อมูลหลังคา") {
+            PadPicker("ประเภทหลังคา", selection: $form.roofType) {
                 Text("เลือก").tag("")
                 ForEach(SurveyOptions.roofTypes, id: \.self) { Text($0).tag($0) }
             }
@@ -242,12 +240,12 @@ struct SurveyEditor: View {
                 TextField("กรอก", value: optional(\.roofAreaSqm), format: .number)
                     .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
             }
-            Picker("ทิศทางหลังคา", selection: $form.orientation) {
+            PadPicker("ทิศทางหลังคา", selection: $form.orientation) {
                 Text("เลือก").tag("")
                 ForEach(SurveyOptions.orientations, id: \.self) { Text($0).tag($0) }
             }
             Stepper("ความลาดชัน \(form.tiltDegree)°", value: $form.tiltDegree, in: 0...60)
-            Picker("เงาบัง", selection: $form.shading) {
+            PadPicker("เงาบัง", selection: $form.shading) {
                 Text("เลือก").tag("")
                 ForEach(SurveyOptions.shadings, id: \.self) { Text($0).tag($0) }
             }
@@ -256,28 +254,27 @@ struct SurveyEditor: View {
     }
 
     private var electricalSection: some View {
-        Section("ระบบไฟฟ้า") {
-            Picker("การไฟฟ้า", selection: $form.utility) {
-                ForEach(SurveyOptions.utilities, id: \.self) { Text($0).tag($0) }
+        PadSection("ระบบไฟฟ้า") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("การไฟฟ้า").foregroundStyle(Theme.inkMuted)
+                TCSegmented(SurveyOptions.utilities, selection: $form.utility).accessibilityLabel("การไฟฟ้า")
             }
-            .pickerStyle(.segmented)
             LabeledContent("เลขผู้ใช้ไฟฟ้า (CA)") {
                 TextField("ดูจากบิลค่าไฟ", text: $form.caNumber)
                     .keyboardType(.numberPad).multilineTextAlignment(.trailing)
             }
-            Picker("ระบบมิเตอร์", selection: $form.meterPhase) {
-                Text("1 เฟส").tag("1 เฟส")
-                Text("3 เฟส").tag("3 เฟส")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("ระบบมิเตอร์").foregroundStyle(Theme.inkMuted)
+                TCSegmented(["1 เฟส", "3 เฟส"], selection: $form.meterPhase).accessibilityLabel("ระบบมิเตอร์")
             }
-            .pickerStyle(.segmented)
             LabeledContent("ขนาดมิเตอร์") {
                 TextField("เช่น 15(45) A", text: $form.meterSize).multilineTextAlignment(.trailing)
             }
-            Picker("เมนเบรกเกอร์", selection: $form.mainBreakerAmp) {
+            PadPicker("เมนเบรกเกอร์", selection: $form.mainBreakerAmp) {
                 Text("เลือก").tag(0)
                 ForEach(breakerOptions, id: \.self) { Text("\($0) A").tag($0) }
             }
-            Picker("อัตราค่าไฟ", selection: $form.tariff) {
+            PadPicker("อัตราค่าไฟ", selection: $form.tariff) {
                 Text("ไม่ระบุ").tag("")
                 ForEach(SurveyOptions.tariffs, id: \.self) { Text($0).tag($0) }
             }
@@ -289,7 +286,7 @@ struct SurveyEditor: View {
                 TextField("กรอก", value: optional(\.monthlyBill), format: .number)
                     .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
             }
-            Picker("สายดินเดิม", selection: $form.grounding) {
+            PadPicker("สายดินเดิม", selection: $form.grounding) {
                 Text("ไม่ระบุ").tag("")
                 ForEach(SurveyOptions.groundings, id: \.self) { Text($0).tag($0) }
             }
@@ -304,7 +301,7 @@ struct SurveyEditor: View {
     }
 
     private var sizingSection: some View {
-        Section {
+        PadSection("ขนาดระบบที่เสนอ") {
             LabeledContent("ขนาดแนะนำจากการใช้ไฟ", value: SurveyOptions.suggestedKW(form).kw)
             LabeledContent("ขนาดสูงสุดตามพื้นที่หลังคา", value: SurveyOptions.maxKWByRoof(form).kw)
             LabeledContent("ขนาดที่เสนอ (kWp)") {
@@ -313,8 +310,6 @@ struct SurveyEditor: View {
                     .multilineTextAlignment(.trailing)
                     .bold()
             }
-        } header: {
-            Text("ขนาดระบบที่เสนอ")
         } footer: {
             Text("ใช้หน่วย kWh ถ้ากรอก ไม่เช่นนั้นคิดจากค่าไฟ 4.5 บาท/หน่วย · ใช้ไฟกลางวัน 60% · แดดเฉลี่ย 4 ชม./วัน · เว้นว่างเพื่อใช้ค่าที่คำนวณ")
         }
@@ -323,17 +318,15 @@ struct SurveyEditor: View {
     private var photoSections: some View {
         ForEach(SurveyOptions.photoTags) { tag in
             let photos = SurveyOptions.photos(form, tag.id)
-            Section {
-                PhotoPickerSection(images: photos.map(\.data),
-                                   onAdd: { addPhoto($0, tag: tag.id) },
-                                   onDelete: { index in deletePhoto(photos, at: index) })
-            } header: {
-                HStack {
-                    Text("รูป\(tag.title)")
+            PadSection("รูป\(tag.title)") {
+                VStack(alignment: .leading, spacing: 8) {
                     if tag.required {
-                        Text(photos.isEmpty ? "จำเป็น" : "ครบ")
-                            .foregroundStyle(photos.isEmpty ? .orange : .green)
+                        Text(photos.isEmpty ? "จำเป็น" : "ครบ").font(.sarabun(12.5, .bold, relativeTo: .caption))
+                            .foregroundStyle(photos.isEmpty ? Theme.pending : Theme.okText)
                     }
+                    PhotoPickerSection(images: photos.map(\.data),
+                                       onAdd: { addPhoto($0, tag: tag.id) },
+                                       onDelete: { index in deletePhoto(photos, at: index) })
                 }
             }
         }

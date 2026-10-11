@@ -15,17 +15,17 @@ struct StationDocsCard: View {
         }
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("เอกสารสถานี กปภ.").font(.headline).foregroundStyle(Theme.navy)
+                Text("เอกสารสถานี กปภ.").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 if ctx.over200kVA { TCStatusChip("ต้องยื่น พค.2", fill: Theme.warningSoft, text: Theme.pending) }
             }
             packages(ctx, station)
             ForEach(expiring, id: \.0.id) { pair in
                 Label(expiryText(pair.0, pair.1), systemImage: "exclamationmark.triangle.fill")
-                    .font(.subheadline).foregroundStyle(Theme.dangerText)
+                    .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.dangerText)
             }
             NavigationLink { StationDocsScreen(job: job) } label: {
-                Label("เปิดรายการเอกสาร", systemImage: "folder").font(.subheadline.weight(.semibold))
+                Label("เปิดรายการเอกสาร", systemImage: "folder").font(.sarabun(15, .semibold, relativeTo: .subheadline))
                     .frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
@@ -40,8 +40,8 @@ struct StationDocsCard: View {
             ForEach(StationDocs.packages(ctx)) { p in
                 let pr = StationDocs.progress(p, station: station, library: library, ctx)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(p.title).font(.caption).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                    Text("\(pr.ready)/\(pr.total)").font(.title3.weight(.semibold))
+                    Text(p.title).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text("\(pr.ready)/\(pr.total)").font(.sarabun(20, .semibold, relativeTo: .title3))
                         .foregroundStyle(pr.isComplete ? Theme.okText : Theme.navy)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -192,7 +192,7 @@ extension TankPageWide {
                 }
             }
             .padding(16)
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("แปลนสิ่งกีดขวาง")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

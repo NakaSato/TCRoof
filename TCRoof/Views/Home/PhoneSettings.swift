@@ -133,7 +133,7 @@ struct PhoneSettingsList: View {
 
     private var accountCard: some View {
         HStack(spacing: 12) {
-            Text(userInitials(userName, email: session.email)).font(.sarabun(17, .heavy)).foregroundStyle(.white)
+            Text(userInitials(userName, email: session.email)).font(.sarabun(17, .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 48, height: 48).background(Theme.primary, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
                 Text(userName.isEmpty ? (session.email ?? "—") : userName).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)

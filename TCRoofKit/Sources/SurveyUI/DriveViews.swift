@@ -16,25 +16,13 @@ struct DriveOpenView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if let error { Text(error).foregroundStyle(.red) }
-                if files.isEmpty && !loading && error == nil { Text("ไม่พบไฟล์ข้อมูลงาน (survey-data) ใน Drive").foregroundStyle(.secondary) }
-                ForEach(files) { f in
-                    Button { open(f) } label: {
-                        HStack {
-                            Image(systemName: "doc.text").foregroundStyle(.blue)
-                            VStack(alignment: .leading) {
-                                Text(f.name).foregroundStyle(.primary)
-                                if let d = f.modified { Text(d.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }
-                            }
-                            Spacer()
-                            if opening == f.id { ProgressView() }
-                        }
-                    }
-                    .disabled(opening != nil)
+            PadForm(maxWidth: 720) {
+                if let error { PadSection { Text(error).foregroundStyle(Theme.dangerText) } }
+                if files.isEmpty && !loading && error == nil {
+                    PadSection { Text("ไม่พบไฟล์ข้อมูลงาน (survey-data) ใน Drive").foregroundStyle(Theme.inkMuted) }
                 }
+                if !files.isEmpty { PadSection { ForEach(files) { f in fileRow(f) } } }
             }
-            .tcFormStyle()
             .overlay { if loading { ProgressView("กำลังค้นหาใน Google Drive…") } }
             .navigationTitle("เปิดงานจาก Google Drive").navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -43,6 +31,23 @@ struct DriveOpenView: View {
             }
             .task { load() }
         }
+    }
+
+    func fileRow(_ f: DriveFile) -> some View {
+        Button { open(f) } label: {
+            HStack {
+                Image(systemName: "doc.text").foregroundStyle(Theme.primary)
+                VStack(alignment: .leading) {
+                    Text(f.name).foregroundStyle(Theme.navy)
+                    if let d = f.modified { Text(d.formatted(date: .abbreviated, time: .shortened)).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted) }
+                }
+                Spacer()
+                if opening == f.id { ProgressView() }
+            }
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(opening != nil)
     }
 
     func load() {

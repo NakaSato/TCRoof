@@ -13,7 +13,7 @@ struct SurveyHistoryView: View {
     var body: some View {
         PadForm {
             if surveys.isEmpty {
-                ContentUnavailableView("ยังไม่มีประวัติการสำรวจ", systemImage: "list.clipboard")
+                TCEmptyState("ยังไม่มีประวัติการสำรวจ", systemImage: "list.clipboard")
             }
             PadSection {
                 ForEach(surveys) { survey in
@@ -21,9 +21,9 @@ struct SurveyHistoryView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(survey.job?.code ?? "-") · \(survey.job?.projectName ?? "")").bold()
                             Text("\(survey.createdAt.thaiLongTime) · โดย \(survey.surveyor)")
-                                .font(.caption).foregroundStyle(Theme.muted)
+                                .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                             Text("\(survey.roofType) · \(survey.roofAreaSqm.plain) ตร.ม. · เสนอ \(survey.recommendedKW.kw)")
-                                .font(.subheadline)
+                                .font(.sarabun(15, relativeTo: .subheadline))
                         }
                         .foregroundStyle(Theme.navy)
                     }

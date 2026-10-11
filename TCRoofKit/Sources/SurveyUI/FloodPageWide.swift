@@ -188,7 +188,7 @@ struct FloodPageWide: View {
             heightField("พื้นห้อง Inverter จากพื้นดิน", "invFloorCm", placeholder: Int(FloodCheck.defaultFloorCm))
             heightField("ติดตั้ง Inverter / SMDB สูงจากพื้นห้อง", "invMountCm", placeholder: Int(FloodCheck.defaultMountCm))
             heightField("ปุ่ม Emergency จากพื้นดิน", "emgMountCm", placeholder: Int(FloodCheck.defaultEmergencyCm))
-            Text("เว้นว่างเพื่อใช้ค่าเริ่มต้น").font(.footnote).foregroundStyle(.secondary)
+            Text("เว้นว่างเพื่อใช้ค่าเริ่มต้น").font(.footnote).foregroundStyle(Theme.inkMuted)
         }
         .padding(18).frame(width: 360)
     }
@@ -223,7 +223,7 @@ struct FloodPageWide: View {
                         ZStack(alignment: .topTrailing) {
                             Group {
                                 if let img = model.image(p, in: job.id) { Image(uiImage: img).resizable().scaledToFill() }
-                                else { Color(uiColor: .tertiarySystemFill).overlay(Image(systemName: "icloud.and.arrow.down").foregroundStyle(.secondary)) }
+                                else { Theme.track.overlay(Image(systemName: "icloud.and.arrow.down").foregroundStyle(Theme.inkMuted)) }
                             }
                             .frame(width: 92, height: 60).clipShape(RoundedRectangle(cornerRadius: 8))
                             .onTapGesture { viewing = p }

@@ -47,9 +47,9 @@ struct StationDocsScreen: View {
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(ctx.over200kVA ? "อินเวอร์เตอร์ 200 kVA ขึ้นไป · ต้องยื่น พค.2" : "อินเวอร์เตอร์ต่ำกว่า 200 kVA · ไม่ต้องยื่น พค.2")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 Text("อาคาร: \(s.buildingRoute.title) · คำขอ พค.2: \(s.requestType.title)")
-                    .font(.caption).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             // iPad: in the nav bar
@@ -72,7 +72,7 @@ struct StationDocsScreen: View {
 
     private func chip(_ title: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.subheadline.weight(selected ? .semibold : .regular))
+            Text(title).font(.sarabun(15, relativeTo: .subheadline).weight(selected ? .semibold : .regular))
                 .padding(.horizontal, 14).frame(minHeight: touchMin)
                 .background(selected ? Theme.primary : Theme.segmentTrack, in: Capsule())
                 .foregroundStyle(selected ? Theme.onPrimary : Theme.navy)
@@ -110,12 +110,12 @@ struct StationDocsScreen: View {
 
     private func checkRow(_ item: StationDocs.CheckItem, _ state: StationDocs.CheckState) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Text("\(item.number)").font(.subheadline.weight(.semibold).monospacedDigit()).foregroundStyle(Theme.inkMuted)
+            Text("\(item.number)").font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.inkMuted)
                 .frame(width: 28, alignment: .trailing)
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.text).font(.subheadline).foregroundStyle(state == .notApplicable ? Theme.inkMuted : Theme.navy)
+                Text(item.text).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(state == .notApplicable ? Theme.inkMuted : Theme.navy)
                 if case .missing(let names) = state {
-                    Text("ยังขาด: " + names.joined(separator: " · ")).font(.caption).foregroundStyle(Theme.dangerText)
+                    Text("ยังขาด: " + names.joined(separator: " · ")).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
                 }
             }
             Spacer()
@@ -138,19 +138,19 @@ struct StationDocRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(kind.name).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
+                Text(kind.name).font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                     .multilineTextAlignment(.leading)
-                if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(Theme.inkMuted) }
+                if !detail.isEmpty { Text(detail).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted) }
                 if let e = StationDocs.expiry(kind, state) {
                     Text(e == .expired ? "หมดอายุแล้ว" : "ใกล้หมดอายุ")
-                        .font(.caption.weight(.semibold)).foregroundStyle(Theme.dangerText)
+                        .font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
                 }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 6) {
                 statusChip
                 if state.fileName != nil {
-                    Label("มีไฟล์", systemImage: "doc.fill").font(.caption).foregroundStyle(Theme.primary)
+                    Label("มีไฟล์", systemImage: "doc.fill").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.primary)
                 }
             }
         }
@@ -190,18 +190,18 @@ struct StationDocSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Text(kind.name).font(.headline).foregroundStyle(Theme.navy)
-                    if let n = kind.note { Text(n).font(.subheadline).foregroundStyle(Theme.inkMuted) }
+            PadForm(maxWidth: 640) {
+                PadSection {
+                    Text(kind.name).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                    if let n = kind.note { Text(n).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted) }
                     LabeledContent("ต้นทาง", value: kind.origin.title)
                     LabeledContent("ใช้ซ้ำ", value: kind.scope.title)
                     if let s = kind.signBy { LabeledContent("ผู้ลงนาม", value: s) }
                     if let o = kind.obtainFrom { LabeledContent("ขอจาก", value: o) }
                     LabeledContent("ใช้ในชุด", value: kind.packages.map(\.title).joined(separator: " · "))
                 }
-                Section("สถานะ") {
-                    Picker("สถานะ", selection: $state.status) {
+                PadSection("สถานะ") {
+                    PadPicker("สถานะ", selection: $state.status) {
                         ForEach(StationDocs.Status.choices(for: kind.origin), id: \.self) { Text($0.title).tag($0) }
                     }
                     if kind.expires {
@@ -213,25 +213,22 @@ struct StationDocSheet: View {
                     }
                     TextField("หมายเหตุ เช่น ส่งให้ ผจก.สาขาแล้ว รอลงนาม", text: $state.note, axis: .vertical)
                 }
-                Section {
+                PadSection("ไฟล์") {
                     if let name = state.fileName {
                         Button { open(name) } label: { Label(name, systemImage: "doc.text.magnifyingglass") }
                             .frame(minHeight: touchMin)
                         Button("เปลี่ยนไฟล์") { importing = true }.frame(minHeight: touchMin)
-                        Button("เอาไฟล์ออก", role: .destructive) { removeFile() }.frame(minHeight: touchMin)
+                        Button("เอาไฟล์ออก", role: .destructive) { removeFile() }.foregroundStyle(Theme.danger).frame(minHeight: touchMin)
                     } else {
                         Button { importing = true } label: { Label("แนบไฟล์", systemImage: "paperclip") }
                             .frame(minHeight: touchMin)
                     }
-                } header: {
-                    Text("ไฟล์")
                 } footer: {
                     Text(kind.scope.isShared
                          ? "เก็บไว้ในเครื่องครั้งเดียว ใช้กับทุกสถานี ไม่อัปโหลดขึ้น Drive"
                          : "เก็บในแฟ้มเอกสารของงาน และอัปโหลดขึ้น Drive พร้อมเอกสารอื่น")
                 }
             }
-            .tcFormStyle()
             .navigationTitle("เอกสาร")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -305,33 +302,28 @@ struct StationFactsSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Picker("พค.2", selection: Binding(get: { s.over200kVA.map { $0 ? 1 : 0 } ?? -1 },
+            PadForm(maxWidth: 640) {
+                PadSection("ใบอนุญาต พค.2") {
+                    PadPicker("พค.2", selection: Binding(get: { s.over200kVA.map { $0 ? 1 : 0 } ?? -1 },
                                                      set: { s.over200kVA = $0 < 0 ? nil : $0 == 1 })) {
                         Text(autoTitle).tag(-1)
                         Text("ต้องยื่น (200 kVA ขึ้นไป)").tag(1)
                         Text("ไม่ต้องยื่น").tag(0)
                     }
-                    Picker("คำขอ พค.2", selection: $s.requestType) {
+                    PadPicker("คำขอ พค.2", selection: $s.requestType) {
                         ForEach(StationDocs.RequestType.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                     Toggle("โครงการ SRT (แนบสัญญา / ใบสั่งจ้าง)", isOn: $s.srtProject)
                     Toggle("จำหน่ายไฟฟ้า (แนบสัญญาซื้อขายไฟ)", isOn: $s.sellsPower)
-                } header: {
-                    Text("ใบอนุญาต พค.2")
                 }
-                Section {
-                    Picker("เทศบาลให้", selection: $s.buildingRoute) {
+                PadSection("อาคาร") {
+                    PadPicker("เทศบาลให้", selection: $s.buildingRoute) {
                         ForEach(StationDocs.BuildingRoute.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
-                } header: {
-                    Text("อาคาร")
                 } footer: {
                     Text("ยังไม่รู้ = แสดงทั้งคำขออนุญาตและหนังสือแจ้งยกเว้นไว้ก่อน")
                 }
             }
-            .tcFormStyle()
             .navigationTitle("ข้อมูลสถานี")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -217,7 +217,7 @@ extension TankPageWide {
                 }
             }
             .padding(16)
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("การวางผังแผง")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

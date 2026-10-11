@@ -74,17 +74,17 @@ struct SourceChip: View {
 struct DeviceCapsSection: View {
     @State private var caps = DeviceCaps.shared
     var body: some View {
-        Section {
+        PadSection("เครื่องนี้") {
             ForEach(caps.rows, id: \.title) { r in
                 HStack {
                     Image(systemName: r.on ? "checkmark.circle.fill" : "minus.circle").foregroundStyle(r.on ? Theme.success : Theme.inkMuted)
                     Text(r.title)
                     Spacer()
-                    Text(r.detail).font(.footnote).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.trailing)
+                    Text(r.detail).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.trailing)
                 }
                 .accessibilityElement(children: .combine)
             }
-        } header: { Text("เครื่องนี้") } footer: {
+        } footer: {
             Text("ปุ่มอ่านจากป้ายและวัดด้วยเครื่องจะแสดงเฉพาะเมื่อเครื่องนี้ทำได้")
         }
         .onAppear { caps.refresh() }

@@ -45,7 +45,7 @@ struct RoofWeightSheet: View {
                 }
                 .padding(Space.l)
             }
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("น้ำหนักบนหลังคา")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

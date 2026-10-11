@@ -144,7 +144,7 @@ struct PPIMPackView: View {
                 }
                 .padding(Space.l)
             }
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("ชุดไฟล์ PPIM")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

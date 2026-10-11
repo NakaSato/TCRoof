@@ -90,7 +90,7 @@ private struct PlanDayCell: View {
     @ViewBuilder private var dateLabel: some View {
         if day.date.isToday {
             Text(number)
-                .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 6).frame(minWidth: 26, minHeight: 24)
                 .background(Theme.primary, in: Capsule())
         } else {
@@ -111,7 +111,7 @@ private struct PlanSurveyPill: View {
             .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.navy)
             .lineLimit(1).fixedSize()
             .padding(.horizontal, 8).frame(height: 20)
-            .background(.white, in: Capsule())
+            .background(Theme.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(Theme.borderControl, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
     }
 }
@@ -165,7 +165,7 @@ struct PlanMonthStepper: View {
                 Text("วันนี้")
                     .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 12).frame(minWidth: 52, minHeight: 38)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 8))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                     .cardShadow()
             }
             .buttonStyle(.plain)
@@ -251,7 +251,7 @@ struct PlanSurveyRow: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        .background(.white, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderSubtle))
         .contentShape(RoundedRectangle(cornerRadius: 10))
     }
@@ -288,7 +288,7 @@ struct PlanDayJobRow: View {
         .padding(14).padding(.leading, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(alignment: .leading) { Rectangle().fill(job.team.color).frame(width: 4) }
-        .background(.white)
+        .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderSubtle))
         .contentShape(RoundedRectangle(cornerRadius: 10))

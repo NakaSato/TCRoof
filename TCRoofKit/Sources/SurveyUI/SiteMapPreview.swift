@@ -64,7 +64,7 @@ struct SiteMapPreview: View {
                 } else if loading {
                     ProgressView()
                 } else {
-                    Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.footnote).foregroundStyle(Theme.inkMuted)
+                    Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding(.horizontal, 40)
                 }
                 if coordinate != nil { if !phone { cropLayer(size) }; pin }

@@ -390,7 +390,7 @@ struct SitePageWide: View {
                     Text(detail).font(.system(size: 10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 0)
-                Circle().fill(placed(t) ? Theme.success : Color.gray.opacity(0.35)).frame(width: 7, height: 7)
+                Circle().fill(placed(t) ? Theme.success : Theme.progressZero).frame(width: 7, height: 7)
             }
             .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
             .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))

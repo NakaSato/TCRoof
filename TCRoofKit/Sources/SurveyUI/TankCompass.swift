@@ -125,7 +125,7 @@ struct TankCompassView: View {
             }
             Button { if let az { save(az, reader.accuracy) } } label: {
                 Text("บันทึกมุม").font(.system(size: 17, weight: .bold)).padding(.horizontal, 22).frame(minHeight: 52)
-                    .background(ok ? Theme.primary : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+                    .background(ok ? Theme.primary : Theme.progressZero, in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain).disabled(!ok)
         }
@@ -148,7 +148,7 @@ struct TankCompassView: View {
             }
             Button { if let a = typedAzimuth { save(a, nil) } } label: {
                 Text("บันทึกมุม").font(.system(size: 17, weight: .bold)).padding(.horizontal, 28).frame(minHeight: 52)
-                    .background(typedAzimuth != nil ? Theme.primary : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+                    .background(typedAzimuth != nil ? Theme.primary : Theme.progressZero, in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain).disabled(typedAzimuth == nil)
         }

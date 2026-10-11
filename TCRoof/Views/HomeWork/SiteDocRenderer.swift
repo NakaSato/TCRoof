@@ -141,7 +141,7 @@ struct SiteSignatureSheet: View {
                 Spacer()
             }
             .padding(Space.l)
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

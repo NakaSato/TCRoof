@@ -51,7 +51,7 @@ struct PWASurveyCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("แบบสำรวจ กปภ. NO.224").font(.headline).foregroundStyle(Theme.navy)
+                Text("แบบสำรวจ กปภ. NO.224").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 if !unlinked.isEmpty {
                     Menu {
@@ -61,14 +61,14 @@ struct PWASurveyCard: View {
                             }
                         }
                     } label: { Label("ผูกแบบที่มีอยู่", systemImage: "link") }
-                    .font(.subheadline.weight(.semibold))
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline))
                 }
                 Button { pickTemplate = true } label: { Label("สร้างแบบ กปภ.", systemImage: "plus") }
-                    .font(.subheadline.weight(.semibold))
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline))
             }
             if linked.isEmpty {
                 Text("สร้างแบบสำรวจ NO.224 จากงานนี้ ข้อมูลลูกค้า ที่อยู่ และขนาดระบบจะกรอกให้อัตโนมัติ")
-                    .font(.subheadline).foregroundStyle(Theme.muted)
+                    .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
             ForEach(linked) { r in
                 NavigationLink { SurveyReportEditor(jobID: r.id) } label: {
@@ -76,12 +76,12 @@ struct PWASurveyCard: View {
                         Image(systemName: "doc.text.image").foregroundStyle(Theme.primary)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(r.projectName.isEmpty ? "แบบสำรวจ กปภ." : r.projectName)
-                            Text(surveyReportSummary(r)).font(.caption).foregroundStyle(Theme.muted)
+                            Text(surveyReportSummary(r)).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                         }
                         Spacer()
                         Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
                     }
-                    .font(.subheadline)
+                    .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.navy)
                     .padding(.vertical, 6)
                 }

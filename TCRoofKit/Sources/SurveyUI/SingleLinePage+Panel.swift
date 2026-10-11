@@ -134,26 +134,29 @@ extension SingleLinePage {
 
     @ViewBuilder func listView(_ kind: ListKind, _ sl: SingleLine) -> some View {
         NavigationStack {
-            List {
-                switch kind {
-                case .others:
-                    ForEach(sl.others) { m in
-                        Button { listSheet = nil; open(m.target) } label: {
-                            HStack { Text(m.label).foregroundStyle(Theme.navy); Spacer(); Text(m.target.linkLabel).bold() }.frame(minHeight: 44)
+            PadForm(maxWidth: 640) {
+                PadSection {
+                    switch kind {
+                    case .others:
+                        ForEach(sl.others) { m in
+                            Button { listSheet = nil; open(m.target) } label: {
+                                HStack { Text(m.label).foregroundStyle(Theme.navy); Spacer(); Text(m.target.linkLabel).bold().foregroundStyle(Theme.primary) }
+                                    .frame(minHeight: 44).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
+                        if sl.others.isEmpty { Text("ไม่มีข้อมูลที่ขาดเพิ่ม").foregroundStyle(Theme.inkMuted) }
+                    case .conditions:
+                        ForEach(conditionRows(sl), id: \.0) { r in
+                            HStack { Text(r.0); Spacer(); Text(r.1).bold().foregroundStyle(r.1 == "ชำรุด" ? Theme.danger : Theme.pending) }
+                        }
+                        if conditionRows(sl).isEmpty { Text("ไม่มีอุปกรณ์ชำรุดหรือพอใช้").foregroundStyle(Theme.inkMuted) }
+                    case .assumptions:
+                        ForEach(sl.assumptions) { a in Text(a.text).font(.sarabun(16, relativeTo: .callout)) }
+                        if sl.assumptions.isEmpty { Text("ไม่มีค่าสมมติ").foregroundStyle(Theme.inkMuted) }
                     }
-                    if sl.others.isEmpty { Text("ไม่มีข้อมูลที่ขาดเพิ่ม").foregroundStyle(Theme.inkMuted) }
-                case .conditions:
-                    ForEach(conditionRows(sl), id: \.0) { r in
-                        HStack { Text(r.0); Spacer(); Text(r.1).bold().foregroundStyle(r.1 == "ชำรุด" ? Theme.danger : Theme.pending) }
-                    }
-                    if conditionRows(sl).isEmpty { Text("ไม่มีอุปกรณ์ชำรุดหรือพอใช้").foregroundStyle(Theme.inkMuted) }
-                case .assumptions:
-                    ForEach(sl.assumptions) { a in Text(a.text).font(.callout) }
-                    if sl.assumptions.isEmpty { Text("ไม่มีค่าสมมติ").foregroundStyle(Theme.inkMuted) }
                 }
             }
-            .tcFormStyle()
             .navigationTitle(kind == .others ? "ข้อมูลที่ขาดอื่นๆ" : kind == .conditions ? "สภาพอุปกรณ์" : "ค่าสมมติ")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { listSheet = nil } } }

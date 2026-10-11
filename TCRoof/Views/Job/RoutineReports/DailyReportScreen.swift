@@ -96,22 +96,22 @@ struct DailyReportScreen: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(RoutineReport.thaiDate(date)).font(.title2.bold()).foregroundStyle(Theme.navy)
+                Text(RoutineReport.thaiDate(date)).font(.sarabun(22, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
                 if let day = job.installDay(on: date) {
-                    Text("Day \(day)/\(job.installDays)").font(.caption.bold()).foregroundStyle(Theme.primary)
+                    Text("Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
                 }
                 Spacer()
                 statusChip
             }
-            Text(job.stationName).font(.subheadline).foregroundStyle(Theme.inkMuted)
+            Text(job.stationName).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 12) {
-                Text("เวลาทำงาน").font(.subheadline).foregroundStyle(Theme.inkMuted)
-                TextField("08.00", text: $report.workStart).frame(width: 64).textFieldStyle(.roundedBorder)
+                Text("เวลาทำงาน").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                TextField("08.00", text: $report.workStart).frame(width: 76).textFieldStyle(OutlinedFieldStyle(dense: true))
                 Text("–")
-                TextField("18.00", text: $report.workEnd).frame(width: 64).textFieldStyle(.roundedBorder)
+                TextField("18.00", text: $report.workEnd).frame(width: 76).textFieldStyle(OutlinedFieldStyle(dense: true))
                 Text("น.").foregroundStyle(Theme.inkMuted)
             }
-            .font(.body.monospacedDigit())
+            .font(.sarabun(17, relativeTo: .body).monospacedDigit())
             if let signed = log?.engineerSignedAt {
                 signedRow(signed)
             }
@@ -134,9 +134,9 @@ struct DailyReportScreen: View {
                 Button { exportExcel() } label: { Label("Excel", systemImage: "tablecells") }
             } label: { Label("ส่งออก", systemImage: "square.and.arrow.up").frame(minHeight: touchMin) }
         }
-        .font(.subheadline.weight(.semibold))
+        .font(.sarabun(15, .semibold, relativeTo: .subheadline))
         if dirty {
-            Text("แก้ไขหลังลงนาม: บันทึกแล้วต้องลงนามใหม่").font(.caption).foregroundStyle(Theme.dangerText)
+            Text("แก้ไขหลังลงนาม: บันทึกแล้วต้องลงนามใหม่").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
         }
     }
 
@@ -169,23 +169,23 @@ struct DailyReportScreen: View {
     private var bottomBar: some View {
         HStack(spacing: 12) {
             Button(action: requestSaveDraft) {
-                Text("บันทึกร่าง").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+                Text("บันทึกร่าง").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button { showSign = true } label: {
-                Text("ตรวจ & ลงนาม").font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+                Text("ตรวจ & ลงนาม").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.primary, size: .card))
         }
         .padding(.horizontal, isPhone ? 16 : 24).padding(.vertical, 10)
         .frame(maxWidth: 700)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background(Theme.surface)
     }
 
     @ViewBuilder private var toastView: some View {
         if let toast {
-            Text(toast).font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+            Text(toast).font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.onMedia)
                 .padding(.horizontal, 16).padding(.vertical, 10)
                 .background(Theme.toast, in: Capsule())
                 .padding(.top, 8)

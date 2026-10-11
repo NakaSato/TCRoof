@@ -230,6 +230,7 @@ struct InstallLogFormView: View {
                     PhotoPickerSection(images: $photos)
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(log == nil ? "เพิ่มบันทึกงานติดตั้ง" : "แก้ไขบันทึก")
             .navigationBarTitleDisplayMode(.inline)

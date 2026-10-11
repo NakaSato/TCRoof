@@ -341,22 +341,34 @@ public struct TCCardGrid<Content: View>: View {
 
 /// iPhone screen header (docs/ui/tcroof-survey-list-iphone): `headerGradient` under the status bar, bottom radius 15,
 /// a 19 pt title over a 13 pt subtitle, and trailing 44 pt buttons (`TCHeaderIcon`). The back chevron shows only when
-/// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead.
+/// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead. A sheet passes `onClose` for a leading ✕
+/// (`ยกเลิก`) in place of the chevron.
 public struct TCGradientHeader<Trailing: View>: View {
     let title: String
     let subtitle: String
     var backLabel: String
+    var onClose: (() -> Void)?
     @ViewBuilder var trailing: Trailing
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
 
-    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", @ViewBuilder trailing: () -> Trailing) {
-        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.trailing = trailing()
+    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", onClose: (() -> Void)? = nil,
+                @ViewBuilder trailing: () -> Trailing) {
+        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.onClose = onClose; self.trailing = trailing()
     }
+
+    private var hasLeading: Bool { onClose != nil || isPresented }
 
     public var body: some View {
         HStack(spacing: 2) {
-            if isPresented {
+            if let onClose {
+                Button(action: onClose) {
+                    Image(systemName: "xmark").font(.system(size: 22, weight: .semibold))
+                        .frame(width: touchMin, height: touchMin).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ยกเลิก")
+            } else if isPresented {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left").font(.system(size: 21, weight: .semibold))
                         .frame(width: touchMin, height: touchMin).contentShape(Rectangle())
@@ -373,7 +385,7 @@ public struct TCGradientHeader<Trailing: View>: View {
             HStack(spacing: 6) { trailing }
         }
         .foregroundStyle(.white)
-        .padding(.leading, isPresented ? 6 : 16).padding(.trailing, 8)
+        .padding(.leading, hasLeading ? 6 : 16).padding(.trailing, 8)
         .padding(.top, 6).padding(.bottom, 14)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous)

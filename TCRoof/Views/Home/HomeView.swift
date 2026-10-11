@@ -83,6 +83,7 @@ struct HomeView: View {
     /// Appointment whose job has no report yet: pick a template, then open the new report at A1.
     @State private var startReport: Job?
     @State private var showNewJob = false
+    @State private var openedJob: Job?
     @State private var showSurveyList = false
     /// The iPad bar's search field: the survey list over every date, its search field focused.
     @State private var showSearch = false
@@ -108,7 +109,8 @@ struct HomeView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView().presentationDetents([.large]).formSheetSizing().environment(\.homeInk, sizeClass == .compact ? .outdoor : .standard)
         }
-        .sheet(isPresented: $showNewJob) { NewJobView() }
+        .sheet(isPresented: $showNewJob) { NewJobView { openedJob = $0 } }
+        .navigationDestination(item: $openedJob) { JobDetailView(job: $0) }
         // iPad shows them in a panel under the bell (PadHome)
         .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
             notificationsView(large: false).environment(\.homeInk, .outdoor)

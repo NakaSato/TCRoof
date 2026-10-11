@@ -57,6 +57,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-surveyScrollEnd YES` opens a card page scrolled to its end (A1 and A2 on iPhone: the lower bands; with `-screen surveyForm`, the iPad survey form's photos and notes).
 - `-surveySave saving|saved|clean` (any step) opens the save button in that state: spinner, green flash, green outline. iPhone `บันทึก`: `docs/ui/survey-a1-iphone/states/04`–`06`; iPad card pages' `บันทึกร่างตอนนี้`: `docs/ui/survey-a1-ipad/states/03`–`05`. `-surveyA1Internet yes|no` (iPhone A1) picks the `อินเทอร์เน็ต` answer.
 - `-surveyExport YES` opens the export sheet.
+- `-surveyNewJob empty|filled|details|date|time|kwp|team|install|province|search|invalid|saved` (with `-screen survey` or `-screen home -homeTab survey`) opens the iPhone add-customer sheet (`NewJobPhoneView`) in that state of `docs/ui/tcroof-new-job-iphone/states`; `saved` also saves the example customer, so it adds a job.
 - `-surveySLDDXF YES` (with `-surveyPage sld`) writes the single line diagram's DXF to `Documents/sld.dxf`.
 - `-surveySiteDXF YES` (with `-surveyPage site`) writes the A2 site plan's DXF to `Documents/site.dxf`.
 - `-surveyTankDXF YES` (with `-surveyPage tank`) writes D1's DXF to `Documents/tank.dxf`, 2.5 s after opening so `-surveyD1` has seeded the tank.

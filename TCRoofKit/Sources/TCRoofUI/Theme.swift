@@ -158,6 +158,27 @@ public enum Theme {
     public static let fabShadow = Color(hex: 0x1F6FB5, opacity: 0.35)
     /// Grey todo capsule and the off ‹ › of the bottom bar, rgba(142,142,147,.25).
     public static let capsuleTodo = Color(hex: 0x8E8E93, opacity: 0.25)
+    // Grouped iOS lists and bottom sheets (docs/ui/tcroof-new-job-iphone).
+    /// Page and sheet background behind white group cards (≈ systemGroupedBackground).
+    public static let groupedPage = Color(light: 0xF7F7FA, dark: 0x000000)
+    /// Group header text.
+    public static let groupHeader = Color(light: 0x6D6D72, dark: 0x98989D)
+    /// Group footer text.
+    public static let groupFooter = Color(light: 0x8E8E93, dark: 0x8E8E93)
+    /// Placeholder text and disclosure chevrons.
+    public static let placeholder = Color(light: 0xC4C4C7, dark: 0x5A5A5E)
+    /// Row separators and unselected option borders.
+    public static let separatorLine = Color(light: 0xE5E5EA, dark: 0x38383A)
+    /// Tappable values, `เสร็จ`, `แสดง`.
+    public static let iosBlue = Color(light: 0x007AFF, dark: 0x0A84FF)
+    /// Selected option in a grid picker.
+    public static let optionSelected = Color(light: 0xEAF3FF, dark: 0x0F2540)
+    /// Search field fill.
+    public static let searchFill = Color(light: 0xEEEEF0, dark: 0x1C1C1E)
+    /// Saved banner: navy in both modes, since its text is white.
+    public static let bannerFill = Color(hex: 0x16325C)
+    /// Sheet grabber.
+    public static let grabber = Color(light: 0xC7C7CC, dark: 0x48484A)
     /// The iPad bar's off `‹ หัวข้อแรก`: grey text, its outline at 50 %.
     public static let navOff = Color(light: 0x8E8E93, dark: 0x6E6E73)
     /// Text on `sun` (the example-data chip): navy in both modes, since `sun` stays yellow.

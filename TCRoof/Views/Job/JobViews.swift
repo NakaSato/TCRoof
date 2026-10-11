@@ -342,7 +342,18 @@ struct ScheduleEditSheet: View {
 
 // MARK: - New job
 
+/// The add-customer sheet: the iOS grouped design at compact width (docs/ui/tcroof-new-job-iphone), the plain form otherwise.
+/// `onOpen` receives the new job when `เปิดงาน` is tapped on the compact sheet's saved banner.
 struct NewJobView: View {
+    var onOpen: ((Job) -> Void)?
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    var body: some View {
+        if sizeClass == .compact { NewJobPhoneView(onOpen: onOpen) } else { NewJobFormView() }
+    }
+}
+
+private struct NewJobFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
 

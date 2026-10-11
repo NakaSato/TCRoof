@@ -1,2 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 40 24" fill="none" stroke="#16325C" stroke-width="1.4" xmlns="http://www.w3.org/2000/svg" font-size="15px" font-weight="400" font-family="-apple-system, 'SF Pro Text', Sarabun, system-ui, sans-serif" width="40" height="24"><path d="M1 16L20 3L39 16M1 20L20 7L39 20M8 22V18M32 22V18" fill="none" stroke="rgb(22, 50, 92)" stroke-width="1.4px"></path></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="24" fill="none" stroke="#16325C" stroke-width="1.4" font-family="-apple-system, 'SF Pro Text', Sarabun, system-ui, sans-serif" font-size="15" font-weight="400" viewBox="0 0 40 24"><path fill="none" stroke="#16325C" stroke-width="1.4" d="M1 16L20 3L39 16M1 20L20 7L39 20M8 22V18M32 22V18"/></svg>

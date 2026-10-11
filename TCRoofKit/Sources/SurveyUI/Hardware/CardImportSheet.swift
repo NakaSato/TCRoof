@@ -39,7 +39,7 @@ struct CardImportSheet: View {
                     ToolbarItem(placement: .primaryAction) { Button { picking = true } label: { Label("เพิ่มรูป", systemImage: "plus") } }
                 }
             }
-            .overlay { if reading { ProgressView("กำลังอ่านรูป…").padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
+            .overlay { if reading { ProgressView("กำลังอ่านรูป…").padding(20).background(Theme.surface, in: RoundedRectangle(cornerRadius: 12)) } }
         }
         .fileImporter(isPresented: $picking, allowedContentTypes: [.image], allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { load(urls) }
@@ -83,11 +83,11 @@ struct CardImportSheet: View {
     private var empty: some View {
         VStack(spacing: 16) {
             Image(systemName: "sdcard").font(.system(size: 44)).foregroundStyle(Theme.primary)
-            Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
+            Text("เสียบการ์ด SD หรือต่อโดรนผ่าน USB-C แล้วเลือกรูป").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
                 .multilineTextAlignment(.center)
             Button { picking = true } label: { Text("เลือกรูป").bold().frame(minWidth: 160, minHeight: 44) }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
-            Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text("รูปถูกคัดลอกเข้างาน รูปต้นฉบับยังอยู่ในการ์ด").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
         }
         .padding(24)
     }
@@ -111,22 +111,22 @@ struct CardImportSheet: View {
             } else { tray.append(item) }
         }
         let targets = job.emptyPhotoTargets
-        return List {
+        return PadForm(maxWidth: 900) {
             if let aerial, let item = open.first(where: { $0.id == aerial.id }) {
-                Section {
+                PadSection("ภาพมุมสูงจากโดรน") {
                     row(item) {
                         Button(job.values.photo("siteMap") == nil ? "ใช้เป็นภาพ A2" : "แทนภาพ A2") {
                             if job.values.photo("siteMap") == nil { useAsSite(item) } else { replaceSite = item }
                         }
                         .buttonStyle(TCButtonStyle(.primary, size: .card))
                     }
-                } header: { Text("ภาพมุมสูงจากโดรน") } footer: {
+                } footer: {
                     Text(item.shot.altitude.map { "สูงจากระดับน้ำทะเล \(Int($0.rounded())) ม. ใช้เป็นภาพสถานที่ติดตั้งได้ (ต้องวัดมาตราส่วนในหน้า A2)" } ?? "")
                 }
             }
             ForEach(near, id: \.mark.id) { group in
                 let slots = job.photoTargets(for: group.mark)
-                Section("ใกล้ \(markName(group.mark))") {
+                PadSection("ใกล้ \(markName(group.mark))") {
                     ForEach(group.items, id: \.0.id) { item, meters in
                         row(item, detail: "ห่าง \(Int(meters.rounded())) ม.") {
                             if let first = slots.first {
@@ -138,9 +138,9 @@ struct CardImportSheet: View {
                 }
             }
             if !tray.isEmpty {
-                Section {
+                PadSection("ภาพอื่น (\(tray.count))") {
                     ForEach(tray) { item in row(item) { slotMenu(item, slots: targets) } }
-                } header: { Text("ภาพอื่น (\(tray.count))") } footer: {
+                } footer: {
                     if geo == nil, !marks.isEmpty {
                         Text("ภาพ A2 ไม่ใช่ภาพดาวเทียมที่ดึงจากพิกัด จึงจับคู่รูปกับสัญลักษณ์ตามตำแหน่งที่ถ่ายไม่ได้")
                     }
@@ -148,7 +148,7 @@ struct CardImportSheet: View {
             }
             let done = items.filter { placed[$0.id] != nil }
             if !done.isEmpty {
-                Section("ใส่แล้ว (\(done.count))") {
+                PadSection("ใส่แล้ว (\(done.count))") {
                     ForEach(done) { item in
                         row(item, detail: placed[item.id]) { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.success) }
                     }
@@ -168,14 +168,14 @@ struct CardImportSheet: View {
     private func info(_ item: Item, _ detail: String?) -> some View {
         HStack(spacing: 12) {
             Group {
-                if let t = item.thumb { Image(uiImage: t).resizable().scaledToFill() } else { Color.secondary.opacity(0.15) }
+                if let t = item.thumb { Image(uiImage: t).resizable().scaledToFill() } else { Theme.track }
             }
             .frame(width: 64, height: 64).clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.shot.date.map { $0.formatted(.dateTime.day().month().year().hour().minute().locale(Locale(identifier: "th_TH"))) } ?? "ไม่มีวันที่")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.navy)
+                    .font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.navy)
                 Text([item.shot.camera, item.shot.lat == nil ? "ไม่มีพิกัด" : nil, detail].compactMap { $0 }.joined(separator: " · "))
-                    .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
         }
     }

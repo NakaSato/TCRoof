@@ -26,7 +26,7 @@ struct PowerOfAttorneyView: View {
             .task { load() }
             .onChange(of: poa) { _, new in if loaded { PermitStore(job: job).save(new, Self.file) } }
         } else {
-            ContentUnavailableView("ไม่พบแบบฟอร์ม", systemImage: "doc.questionmark")
+            TCEmptyState("ไม่พบแบบฟอร์ม", systemImage: "doc.questionmark")
         }
     }
 

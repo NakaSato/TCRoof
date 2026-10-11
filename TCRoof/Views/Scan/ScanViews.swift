@@ -27,7 +27,7 @@ struct ScanJobListView: View {
             VStack(alignment: .leading, spacing: 20) {
                 QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
                 if filtered.isEmpty {
-                    ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
+                    TCEmptyState("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
                 } else {
                     LazyVGrid(columns: cardColumns, spacing: 16) {
                         ForEach(filtered) { job in
@@ -91,54 +91,53 @@ struct JobDevicesView: View {
     @State private var manualKind: DeviceKind = .panel
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    /// iPad: the page gradient with white count cards (docs/ui/components); iPhone keeps the grouped list.
+    @State private var pendingDelete: ScannedDevice?
+
+    /// White count cards (docs/ui/components), then the serials of each kind with a delete button.
     private var pad: Bool { sizeClass != .compact }
 
     var body: some View {
-        List {
-            Section {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
-                    ForEach(DeviceKind.allCases) { kind in
-                        let count = job.devices.filter { $0.kind == kind }.count
-                        let tile = VStack(alignment: .leading, spacing: 6) {
-                            Image(systemName: kind.symbol).font(.title2).foregroundStyle(Theme.primary)
-                            Text(kind.title).font(.subheadline).foregroundStyle(Theme.navy)
-                            Text(kind == .panel ? "\(count) / \(job.estimatedPanels)" : "\(count)")
-                                .font(.title2.bold()).foregroundStyle(Theme.navy)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(pad ? 16 : 12)
-                        if pad { tile.tcCard() } else { tile.background(Theme.background, in: RoundedRectangle(cornerRadius: 12)) }
+        PadForm(maxWidth: 1100) {
+            Text("\(job.code) · \(job.projectName)").font(.sarabun(12.5, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                .padding(.leading, 4)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
+                ForEach(DeviceKind.allCases) { kind in
+                    let count = job.devices.filter { $0.kind == kind }.count
+                    VStack(alignment: .leading, spacing: 6) {
+                        Image(systemName: kind.symbol).font(.sarabun(22, relativeTo: .title2)).foregroundStyle(Theme.primary)
+                        Text(kind.title).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
+                        Text(kind == .panel ? "\(count) / \(job.estimatedPanels)" : "\(count)")
+                            .font(.sarabun(22, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(pad ? 16 : 12)
+                    .tcCard()
                 }
-                .padding(.vertical, 6)
-                .listRowBackground(pad ? Color.clear : nil)
-                .listRowInsets(pad ? EdgeInsets() : nil)
-            } header: {
-                Text("\(job.code) · \(job.projectName)")
             }
 
             ForEach(DeviceKind.allCases) { kind in
                 let items = job.devices.filter { $0.kind == kind }.sorted { $0.scannedAt > $1.scannedAt }
                 if !items.isEmpty {
-                    Section("\(kind.title) (\(items.count))") {
+                    PadSection("\(kind.title) (\(items.count))") {
                         ForEach(items) { device in
-                            HStack {
-                                Text(device.serial).font(.body.monospaced()).textSelection(.enabled)
-                                Spacer()
-                                Text("\(device.scannedAt.thaiShort) · \(device.scannedBy)")
-                                    .font(.caption).foregroundStyle(Theme.muted)
+                            HStack(spacing: 8) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(device.serial).font(.body.monospaced()).textSelection(.enabled)
+                                    Text("\(device.scannedAt.thaiShort) · \(device.scannedBy)")
+                                        .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+                                }
+                                Spacer(minLength: 0)
+                                PadRowButton("ลบ \(device.serial)", systemImage: "trash", destructive: true) { pendingDelete = device }
                             }
-                        }
-                        .onDelete { offsets in
-                            offsets.map { items[$0] }.forEach(context.delete)
                         }
                     }
                 }
             }
         }
-        .scrollContentBackground(pad ? .hidden : .automatic)
-        .background { if pad { Theme.pageGradient.ignoresSafeArea() } }
+        .confirmationDialog("ลบซีเรียลนี้?", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+                            titleVisibility: .visible, presenting: pendingDelete) { device in
+            Button("ลบ \(device.serial)", role: .destructive) { context.delete(device); pendingDelete = nil }
+        }
         .navigationTitle("อุปกรณ์ที่ติดตั้ง")
         // inline on the phone: the large title drew over the job line while collapsing
         .navigationBarTitleDisplayMode(isPhone ? .inline : .automatic)
@@ -158,15 +157,16 @@ struct JobDevicesView: View {
         .fullScreenCover(isPresented: $showScanner) { ScannerView(job: job) }
         .sheet(isPresented: $showManual) {
             NavigationStack {
-                Form {
-                    Picker("ประเภทอุปกรณ์", selection: $manualKind) {
-                        ForEach(DeviceKind.allCases) { Text($0.title).tag($0) }
+                PadForm(maxWidth: 560) {
+                    PadSection {
+                        PadPicker("ประเภทอุปกรณ์", selection: $manualKind) {
+                            ForEach(DeviceKind.allCases) { Text($0.title).tag($0) }
+                        }
+                        TextField("Serial No.", text: $manualSerial)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
                     }
-                    TextField("Serial No.", text: $manualSerial)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
                 }
-                .tcFormStyle()
                 .navigationTitle("เพิ่มซีเรียลด้วยตนเอง")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -222,10 +222,13 @@ struct ScannerView: View {
             if scannerAvailable {
                 BarcodeScannerView(onFound: add).ignoresSafeArea()
             } else {
-                ContentUnavailableView("กล้องสแกนไม่พร้อมใช้งาน",
-                                       systemImage: "camera.metering.unknown",
-                                       description: Text("อุปกรณ์นี้ไม่รองรับการสแกนสด เลือกรูปจากคลังภาพหรือพิมพ์ซีเรียลแทน"))
-                    .foregroundStyle(.white)
+                // on the black camera page, so not `TCEmptyState` (its ink is navy)
+                VStack(spacing: 10) {
+                    Image(systemName: "camera.metering.unknown").font(.system(size: 40, weight: .semibold)).accessibilityHidden(true)
+                    Text("กล้องสแกนไม่พร้อมใช้งาน").font(.sarabun(17, .bold, relativeTo: .headline))
+                    Text("อุปกรณ์นี้ไม่รองรับการสแกนสด เลือกรูปจากคลังภาพหรือพิมพ์ซีเรียลแทน").font(.sarabun(14, relativeTo: .subheadline))
+                }
+                .multilineTextAlignment(.center).foregroundStyle(Theme.onMedia).padding(.horizontal, 24)
             }
             ScanFrame().allowsHitTesting(false)
             VStack(spacing: 16) {
@@ -234,17 +237,17 @@ struct ScannerView: View {
                 Spacer()
                 if let message {
                     Text(message)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                        .foregroundStyle(Theme.onMedia)
                         .padding(.horizontal, 16).padding(.vertical, 8)
                         .background(Theme.teal, in: Capsule())
                         .transition(.opacity)
                 }
                 Button { showTips = true } label: {
                     Label("คำแนะนำในการสแกนอุปกรณ์", systemImage: "doc.text.magnifyingglass")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.sarabun(15, .semibold, relativeTo: .subheadline))
                         .underline()
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.onMedia)
                 }
                 resultBar
             }
@@ -284,10 +287,10 @@ struct ScannerView: View {
             }
             Spacer()
             VStack(spacing: 2) {
-                Text(job.code).font(.headline)
-                Text(job.projectName).font(.caption)
+                Text(job.code).font(.sarabun(17, .semibold, relativeTo: .headline))
+                Text(job.projectName).font(.sarabun(12, relativeTo: .caption))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.onMedia)
             Spacer()
             circle("keyboard", label: "พิมพ์ซีเรียล") { showManual = true }
             PhotosPicker(selection: $photoItem, matching: .images) {
@@ -303,10 +306,10 @@ struct ScannerView: View {
 
     private func circleLabel(_ symbol: String) -> some View {
         Image(systemName: symbol)
-            .font(.title3.bold())
+            .font(.sarabun(20, .bold, relativeTo: .title3))
             .foregroundStyle(Theme.navy)
             .frame(width: 48, height: 48)
-            .background(.white.opacity(0.9), in: Circle())
+            .background(Theme.surface.opacity(0.9), in: Circle())
     }
 
     private var kindPicker: some View {
@@ -315,10 +318,10 @@ struct ScannerView: View {
                 ForEach(DeviceKind.allCases) { option in
                     Button { kind = option } label: {
                         Label(option.title, systemImage: option.symbol)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(kind == option ? .white : Theme.navy)
+                            .font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                            .foregroundStyle(kind == option ? Theme.onPrimary : Theme.navy)
                             .padding(.horizontal, 14).padding(.vertical, 8)
-                            .background(kind == option ? Theme.primary : .white.opacity(0.9), in: Capsule())
+                            .background(kind == option ? Theme.primary : Theme.surface.opacity(0.9), in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
@@ -332,7 +335,7 @@ struct ScannerView: View {
                 Text(first).font(.body.monospaced()).foregroundStyle(Theme.navy)
                 if found.count > 1 {
                     Button("ดูเพิ่มเติม (\(found.count))") { showFound = true }
-                        .font(.subheadline.weight(.semibold))
+                        .font(.sarabun(15, .semibold, relativeTo: .subheadline))
                 }
             } else {
                 Text("เล็งกล้องไปที่บาร์โค้ด\(kind.title)")
@@ -341,8 +344,8 @@ struct ScannerView: View {
             Spacer()
             Button(action: saveFound) {
                 Image(systemName: "checkmark")
-                    .font(.title3.bold())
-                    .foregroundStyle(.white)
+                    .font(.sarabun(20, .bold, relativeTo: .title3))
+                    .foregroundStyle(Theme.onMedia)
                     .frame(width: 48, height: 48)
                     .background(found.isEmpty ? Theme.muted : Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }
@@ -356,11 +359,17 @@ struct ScannerView: View {
 
     private var foundList: some View {
         NavigationStack {
-            List {
-                ForEach(found, id: \.self) { Text($0).font(.body.monospaced()) }
-                    .onDelete { found.remove(atOffsets: $0) }
+            PadForm(maxWidth: 640) {
+                PadSection {
+                    ForEach(found, id: \.self) { code in
+                        HStack {
+                            Text(code).font(.body.monospaced())
+                            Spacer(minLength: 0)
+                            PadRowButton("เอา \(code) ออก", systemImage: "xmark.circle", destructive: true) { found.removeAll { $0 == code } }
+                        }
+                    }
+                }
             }
-            .tcFormStyle()
             .navigationTitle("\(kind.title) ที่พบ (\(found.count))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { showFound = false } } }
@@ -481,10 +490,13 @@ private struct ScanTipsView: View {
 
     var body: some View {
         NavigationStack {
-            List(tips, id: \.1) { tip in
-                Label(tip.1, systemImage: tip.0).padding(.vertical, 4)
+            PadForm(maxWidth: 560) {
+                PadSection {
+                    ForEach(tips, id: \.1) { tip in
+                        Label { Text(tip.1) } icon: { Image(systemName: tip.0).foregroundStyle(Theme.primary) }
+                    }
+                }
             }
-            .tcFormStyle()
             .navigationTitle("คำแนะนำในการสแกนอุปกรณ์")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เข้าใจแล้ว") { dismiss() } } }
@@ -496,9 +508,12 @@ private struct ScanTipsView: View {
 struct ScanHistoryView: View {
     @Query(sort: \ScannedDevice.scannedAt, order: .reverse) private var devices: [ScannedDevice]
     @State private var search = ""
+    @FocusState private var searching: Bool
 
     var body: some View {
         PadForm {
+            // iPad searches from its nav bar
+            if isPhone { PhoneSearchField(text: $search, focused: $searching, prompt: "ค้นหาซีเรียลหรือโครงการ") }
             PadSection {
                 ForEach(devices.filter { search.isEmpty || $0.serial.localizedCaseInsensitiveContains(search) || ($0.job?.matches(search) ?? false) }) { device in
                     HStack(spacing: 12) {
@@ -506,15 +521,14 @@ struct ScanHistoryView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(device.serial).font(.body.monospaced())
                             Text("\(device.kind.title) · \(device.job?.code ?? "-") · \(device.job?.projectName ?? "")")
-                                .font(.caption).foregroundStyle(Theme.muted)
+                                .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                         }
                         Spacer()
-                        Text(device.scannedAt.thaiShort).font(.caption).foregroundStyle(Theme.muted)
+                        Text(device.scannedAt.thaiShort).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                     }
                 }
             }
         }
-        .searchable(text: $search, prompt: "ค้นหาซีเรียลหรือโครงการ")
         .navigationTitle("ประวัติการสแกน")
         .tcPadNavBar("ประวัติการสแกน", trail: ["หน้าหลัก", "สแกนอุปกรณ์"]) {
             TCBarSearchField(text: $search, prompt: "ค้นหาซีเรียลหรือโครงการ")

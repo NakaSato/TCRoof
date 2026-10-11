@@ -36,7 +36,7 @@ struct SelfCertificationView: View {
             .onChange(of: form) { _, new in if loaded { PermitStore(job: job).save(new, Self.file) } }
             .sheet(item: $editing) { target in editor(target) }
         } else {
-            ContentUnavailableView("ไม่พบแบบฟอร์ม", systemImage: "doc.questionmark")
+            TCEmptyState("ไม่พบแบบฟอร์ม", systemImage: "doc.questionmark")
         }
     }
 

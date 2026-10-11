@@ -53,6 +53,8 @@ extension JobEditorView {
 
     var sidebar: some View {
         let groups = sidebarGroups
+        // one diff against the previous REV for the whole sidebar, not one per row
+        let changed = changedPages
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
@@ -65,12 +67,12 @@ extension JobEditorView {
                             if !collapsed.contains(g.category) {
                                 ForEach(g.items) { item in
                                     if let m = item.module, !readOnly {
-                                        row(item).contextMenu {
+                                        row(item, changed: changed).contextMenu {
                                             Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
                                             Button(role: .destructive) { confirmDelete = m } label: { Label("ลบหัวข้อ", systemImage: "trash") }
                                         }
                                     } else {
-                                        row(item)
+                                        row(item, changed: changed)
                                     }
                                 }
                             }
@@ -80,7 +82,7 @@ extension JobEditorView {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 14)
             }
-            .background(Color(uiColor: .systemBackground))
+            .background(Theme.surface)
             .overlay(alignment: .trailing) { if !compact { Rectangle().fill(Theme.borderSubtle).frame(width: 1) } }
             .safeAreaInset(edge: .bottom, spacing: 0) { if !readOnly { sidebarFooter } }
             // keep the open section visible when "next" or "continue" jumps into a collapsed group
@@ -97,9 +99,9 @@ extension JobEditorView {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.caption.weight(.heavy)).foregroundStyle(Theme.inkMuted)
+                    Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName)
-                        .font(.system(size: 17, weight: .bold)).foregroundStyle(job.projectName.isEmpty ? Theme.inkMuted : Theme.navy)
+                        .font(.sarabunFixed(17, .bold)).foregroundStyle(job.projectName.isEmpty ? Theme.inkMuted : Theme.navy)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -113,22 +115,22 @@ extension JobEditorView {
                 Spacer()
                 Label("\(job.photoCount)", systemImage: "photo")
             }
-            .font(.caption).foregroundStyle(Theme.inkMuted).monospacedDigit()
+            .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             photoStatus
             if job.isLocked && job.stage == .survey {
-                Label("REV \(job.rev) ล็อก · \(FormHash.short(job.lock?.hash ?? ""))", systemImage: "lock.fill").font(.caption.weight(.bold)).foregroundStyle(Theme.navy)
+                Label("REV \(job.rev) ล็อก · \(FormHash.short(job.lock?.hash ?? ""))", systemImage: "lock.fill").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6).background(Theme.borderSubtle, in: Capsule())
             } else if readOnly {
-                Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.caption.weight(.bold)).foregroundStyle(Theme.navy)
+                Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6).background(Theme.borderSubtle, in: Capsule())
             } else if let next = nextIncomplete, next.page != page {
                 Button { select(next.page) } label: {
                     HStack(spacing: 6) {
-                        Text("ทำต่อ").font(.caption).opacity(0.85)
-                        Text(next.code).font(.subheadline.weight(.heavy))
-                        Text(next.title).font(.subheadline.weight(.bold)).lineLimit(1)
+                        Text("ทำต่อ").font(.sarabun(12, relativeTo: .caption)).opacity(0.85)
+                        Text(next.code).font(.sarabun(15, .heavy, relativeTo: .subheadline))
+                        Text(next.title).font(.sarabun(15, .bold, relativeTo: .subheadline)).lineLimit(1)
                         Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.caption.weight(.bold))
+                        Image(systemName: "chevron.right").font(.sarabun(12, .bold, relativeTo: .caption))
                     }
                     .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 12).frame(minHeight: 44)
@@ -147,7 +149,7 @@ extension JobEditorView {
         case .complete: return Theme.mint
         case .current: return Theme.primary
         case .missing: return Theme.dangerLine
-        case .notStarted: return Color.secondary.opacity(0.2)
+        case .notStarted: return Theme.track
         }
     }
 
@@ -156,22 +158,22 @@ extension JobEditorView {
         let gap = PhotoGap(model: model, job: job)
         if let f = model.photoFetch[job.id], f.running {
             HStack(spacing: 6) {
-                ProgressView(value: Double(f.done + f.failed), total: Double(f.total)).frame(width: 60)
+                ProgressView(value: Double(f.done + f.failed), total: Double(f.total)).tint(Theme.primary).frame(width: 60)
                 Text("กำลังดึงรูปจาก Drive \(f.done)/\(f.total)")
             }
-            .font(.caption).foregroundStyle(.secondary)
+            .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         } else if let u = model.photoUpload[job.id], u.running {
             HStack(spacing: 6) {
-                ProgressView(value: Double(u.done), total: Double(max(u.total, 1))).frame(width: 60)
+                ProgressView(value: Double(u.done), total: Double(max(u.total, 1))).tint(Theme.primary).frame(width: 60)
                 Text("กำลังอัปรูปขึ้น Drive \(u.done)/\(u.total)")
             }
-            .font(.caption).foregroundStyle(.secondary)
+            .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         } else if let e = model.photoUpload[job.id]?.error, model.photosToUpload(job) > 0 {
             Label("อัปรูปขึ้น Drive ไม่สำเร็จ: \(e)", systemImage: "exclamationmark.icloud")
-                .font(.caption).foregroundStyle(.orange).lineLimit(3)
+                .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.pending).lineLimit(3)
         } else if gap.missing > 0 {
             Label("รูป \(gap.missing) รูปยังไม่อยู่ในเครื่องนี้", systemImage: "icloud.slash")
-                .font(.caption).foregroundStyle(.orange)
+                .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.pending)
         }
     }
 
@@ -182,15 +184,15 @@ extension JobEditorView {
         let open = !collapsed.contains(g.category)
         return Button { withAnimation(.snappy) { if open { collapsed.insert(g.category) } else { collapsed.remove(g.category) } } } label: {
             HStack(spacing: 8) {
-                Text(g.category.rawValue).font(.caption.weight(.heavy)).foregroundStyle(.white)
+                Text(g.category.rawValue).font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(Theme.onMedia)
                     .frame(width: 22, height: 22).background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6))
-                Text(g.category.title).font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(g.category.title).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 4)
-                Text("\(done)/\(g.items.count)").font(.caption.weight(.bold)).monospacedDigit()
+                Text("\(done)/\(g.items.count)").font(.sarabun(12, .bold, relativeTo: .caption)).monospacedDigit()
                     .foregroundStyle(all ? Theme.navy : Theme.inkMuted)
                     .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(all ? Theme.mint.opacity(0.6) : Color.secondary.opacity(0.12), in: Capsule())
-                Image(systemName: "chevron.down").font(.caption.weight(.bold)).foregroundStyle(Theme.inkMuted)
+                    .background(all ? Theme.mint.opacity(0.6) : Theme.segmentTrack, in: Capsule())
+                Image(systemName: "chevron.down").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     .rotationEffect(.degrees(open ? 0 : -90))
             }
             .padding(.horizontal, 6).frame(minHeight: 44)
@@ -205,7 +207,7 @@ extension JobEditorView {
         VStack(spacing: 8) {
             if !job.stationOverflow.isEmpty {
                 Label("หัวข้อระบบไฟฟ้าเกินช่องในแผ่นงาน — Excel จะเพิ่มแผ่น \"ระบบไฟฟ้า (2)\" ให้อัตโนมัติ", systemImage: "info.circle")
-                    .font(.caption2).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.sarabun(11, relativeTo: .caption2)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
             }
             Menu {
                 ForEach([SectionCategory.electrical, .roof, .water]) { cat in
@@ -217,7 +219,7 @@ extension JobEditorView {
                 }
             } label: {
                 // same dashed add button as A3's "เพิ่มหม้อแปลง" and "+ เพิ่มตู้"
-                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.primary)
+                Label("เพิ่มหัวข้อสำรวจ", systemImage: "plus").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                     .contentShape(Rectangle())
@@ -225,7 +227,7 @@ extension JobEditorView {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Color(uiColor: .systemBackground).shadow(.drop(color: Theme.navy.opacity(0.08), radius: 6, y: -2)))
+        .background(Theme.surface.shadow(.drop(color: Theme.navy.opacity(0.08), radius: 6, y: -2)))
     }
 
     func select(_ p: Page) {
@@ -239,8 +241,8 @@ extension JobEditorView {
             HStack(spacing: 10) {
                 Image(systemName: "sdcard").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy)
                     .frame(width: 38, height: 26)
-                    .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
-                Text("นำเข้ารูปจากการ์ด / USB").font(.system(size: 16, weight: .medium)).lineLimit(1).foregroundStyle(Theme.navy)
+                    .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 7))
+                Text("นำเข้ารูปจากการ์ด / USB").font(.sarabunFixed(16, .medium)).lineLimit(1).foregroundStyle(Theme.navy)
                 Spacer(minLength: 4)
             }
             .padding(.horizontal, 10).frame(minHeight: 48)
@@ -250,27 +252,27 @@ extension JobEditorView {
     }
 
     /// Code badge tinted by status, one-line title, status mark; the open section gets a blue bar and tint.
-    func row(_ item: SidebarItem, symbol: String? = nil) -> some View {
+    func row(_ item: SidebarItem, symbol: String? = nil, changed: [Page: Int] = [:]) -> some View {
         let c = item.completion
         let selected = !compact && page == item.page
         let (badgeFill, badgeText): (Color, Color) = selected ? (Theme.primary, .white)
             : c.total > 0 && c.isComplete ? (Theme.mint.opacity(0.6), Theme.navy)
             : c.filled > 0 ? (Theme.dangerLine.opacity(0.35), Theme.dangerText)
-            : (Color.secondary.opacity(0.12), Theme.navy)
+            : (Theme.segmentTrack, Theme.navy)
         return Button { select(item.page) } label: {
             HStack(spacing: 10) {
                 Group {
                     if let symbol { Image(systemName: symbol).font(.system(size: 13, weight: .bold)) }
-                    else { Text(item.code).font(.caption.weight(.heavy)).monospacedDigit() }
+                    else { Text(item.code).font(.sarabun(12, .heavy, relativeTo: .caption)).monospacedDigit() }
                 }
                 .foregroundStyle(badgeText)
                 .frame(width: 38, height: 26)
                 .background(badgeFill, in: RoundedRectangle(cornerRadius: 7))
-                Text(item.title).font(.system(size: 16, weight: selected ? .bold : .medium)).lineLimit(1)
+                Text(item.title).font(.sarabunFixed(16, selected ? .bold : .medium)).lineLimit(1)
                     .foregroundStyle(selected ? Theme.primary : c.total > 0 && c.isComplete ? Theme.inkMuted : Theme.navy)
                 Spacer(minLength: 4)
-                if let n = changedPages[item.page] {
-                    Text("แก้ \(n)").font(.caption2.weight(.bold)).foregroundStyle(Theme.pending)
+                if let n = changed[item.page] {
+                    Text("แก้ \(n)").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.pending)
                         .padding(.horizontal, 6).padding(.vertical, 2).background(Theme.pendingSoft, in: Capsule())
                         .accessibilityLabel("แก้จาก REV ก่อน \(n) รายการ")
                 }

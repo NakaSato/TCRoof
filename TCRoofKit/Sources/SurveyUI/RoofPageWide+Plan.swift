@@ -94,7 +94,7 @@ extension RoofPageWide {
     var planCaption: some View {
         (Text("แปลนโครงหลังคา").bold().underline() + Text(" · " + planHint).foregroundColor(mode == .pv && tool == nil ? Theme.navy : Theme.inkMuted)
             .fontWeight(mode == .pv && tool == nil ? .bold : .regular))
-            .font(.system(size: 14)).minimumScaleFactor(0.6)
+            .font(.sarabunFixed(14)).minimumScaleFactor(0.6)
     }
 
     var cadButton: some View {
@@ -109,15 +109,15 @@ extension RoofPageWide {
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 NorthArrow(degrees: turn).frame(width: 32, height: 32)
-                Text("ทิศเหนือ").font(.system(size: 13, weight: .bold))
-                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text("ทิศเหนือ").font(.sarabunFixed(13, .bold))
+                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .accessibilityElement(children: .combine)
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], spacing: 4) {
                 ForEach(Array(legendItems.enumerated()), id: \.offset) { _, item in
                     HStack(spacing: 6) {
                         LegendGlyph(kind: item.0).frame(width: 24, height: 14)
-                        Text(item.1).font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.75)
+                        Text(item.1).font(.sarabunFixed(12)).lineLimit(1).minimumScaleFactor(0.75)
                     }
                 }
             }
@@ -133,18 +133,18 @@ extension RoofPageWide {
             HStack(spacing: 8) {
                 NorthArrow(degrees: turn).frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ทิศเหนือ").font(.system(size: 13, weight: .bold))
-                    Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
+                    Text("ทิศเหนือ").font(.sarabunFixed(13, .bold))
+                    Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .accessibilityElement(children: .combine)
             Self.line.frame(height: 1)
-            Text("สัญลักษณ์").font(.system(size: 13, weight: .bold))
+            Text("สัญลักษณ์").font(.sarabunFixed(13, .bold))
             ForEach(Array(legendItems.enumerated()), id: \.offset) { _, item in
                 HStack(spacing: 6) {
                     LegendGlyph(kind: item.0).frame(width: 24, height: 14)
-                    Text(item.1).font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(item.1).font(.sarabunFixed(12)).lineLimit(1).minimumScaleFactor(0.75)
                 }
             }
             Spacer(minLength: 0)
@@ -168,9 +168,9 @@ extension RoofPageWide {
         Button(action: action) {
             HStack(spacing: 5) {
                 if let icon { Image(systemName: icon).font(.system(size: 12, weight: .bold)) }
-                Text(title).font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(title).font(.sarabunFixed(14, .bold)).lineLimit(1).minimumScaleFactor(0.7)
             }
-            .foregroundStyle(on ? Color.white : tint)
+            .foregroundStyle(on ? Theme.onMedia : tint)
             .padding(.horizontal, 10).frame(minHeight: 44)
             .background(on ? tint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Color.clear : tint.opacity(0.5)))
@@ -191,7 +191,7 @@ extension RoofPageWide {
                 Button("อัปโหลดใหม่") { sketchPicker = true }
                 Button("ลบแบบร่าง", role: .destructive) { set("planPhoto", nil) }
             } label: {
-                Label("แบบร่าง ✓", systemImage: "doc.richtext").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.success)
+                Label("แบบร่าง ✓", systemImage: "doc.richtext").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.success)
                     .padding(.horizontal, 10).frame(minHeight: 44)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.success.opacity(0.6)))
             }
@@ -200,7 +200,7 @@ extension RoofPageWide {
                 Button { sketchCamera = true } label: { Label("ถ่ายภาพ", systemImage: "camera") }
                 Button { sketchPicker = true } label: { Label("อัปโหลด", systemImage: "photo") }
             } label: {
-                Label("ถ่ายแบบร่าง", systemImage: "camera").font(.system(size: 14, weight: .bold))
+                Label("ถ่ายแบบร่าง", systemImage: "camera").font(.sarabunFixed(14, .bold))
                     .padding(.horizontal, 10).frame(minHeight: 44)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
             }
@@ -261,7 +261,7 @@ extension RoofPageWide {
     func spanChip(_ c: RoofPlan.Chip, fit: SketchFit, live: Bool) -> some View {
         let ref = SpanRef(axis: c.axis, index: c.index), on = span == ref
         let size: CGFloat = max(11, 13 * fit.s)
-        let label = Text(fmt(c.value)).font(.system(size: size, weight: on ? .bold : .regular)).underline(!on)
+        let label = Text(fmt(c.value)).font(.sarabunFixed(size, on ? .bold : .regular)).underline(!on)
             .foregroundStyle(Theme.primary).padding(.horizontal, 4).frame(minWidth: 34 * fit.s, minHeight: 20 * fit.s)
         let chip = label
             .background(on ? Self.soft : Color.white.opacity(0.01), in: RoundedRectangle(cornerRadius: 4))
@@ -319,7 +319,7 @@ extension RoofPageWide {
                 }
                 if (a.kind == Roof.keepOutKind && mode == .pv) || (a.kind == Roof.skylightKind && tool == .skylight) {
                     Button { update { Roof.removeArea(&$0, index: a.index) } } label: {
-                        Text("×").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                        Text("×").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
                             .frame(width: 20, height: 20).background(Self.red, in: Circle())
                             .frame(width: 44, height: 44).contentShape(Rectangle())
                     }
@@ -347,7 +347,7 @@ extension RoofPageWide {
     var skylightTool: some View {
         let n = Roof.areas(values).filter { $0.kind == Roof.skylightKind }.count
         return Button { tool = tool == .skylight ? nil : .skylight; span = nil } label: {
-            Text(tool == .skylight ? "เสร็จ · แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.system(size: 13, weight: .bold))
+            Text(tool == .skylight ? "เสร็จ · แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.sarabunFixed(13, .bold))
                 .foregroundStyle(tool == .skylight ? Theme.onPrimary : Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 36)
                 .background(tool == .skylight ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 8))

@@ -7,12 +7,12 @@ import TCRoofUI
 
 /// Colours of the paper form (green bands of the NO.224 workbook).
 enum Paper {
-    static let band = Color(red: 0.886, green: 0.937, blue: 0.855)
-    static let tick = Color(red: 0.439, green: 0.678, blue: 0.278)
-    static let ink = Color(red: 0.12, green: 0.18, blue: 0.14)
-    static let value = Color(red: 0.12, green: 0.31, blue: 0.47)
-    static let rule = Color.black.opacity(0.75)
-    static let page = Color(uiColor: .secondarySystemBackground)
+    static let band = Theme.paperBand
+    static let tick = Theme.paperTick
+    static let ink = Theme.paperInk
+    static let value = Theme.paperValue
+    static let rule = Theme.paperRule
+    static let page = Theme.paperPage
 }
 
 /// Lays children left to right and wraps to new lines.
@@ -55,10 +55,10 @@ struct PaperBox<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                if let number { Text(number).font(.subheadline.weight(.heavy)).monospacedDigit() }
-                Text(title).font(.subheadline.weight(.bold))
+                if let number { Text(number).font(.sarabun(15, .heavy, relativeTo: .subheadline)).monospacedDigit() }
+                Text(title).font(.sarabun(15, .bold, relativeTo: .subheadline))
                 Spacer()
-                if let trailing { Text(trailing).font(.caption).foregroundStyle(Theme.inkMuted) }
+                if let trailing { Text(trailing).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted) }
             }
             .foregroundStyle(Paper.ink)
             .padding(.horizontal, 14).padding(.vertical, 8)
@@ -67,7 +67,7 @@ struct PaperBox<Content: View>: View {
             Rectangle().fill(Paper.rule).frame(height: 1)
             VStack(alignment: .leading, spacing: 0) { content }
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(Theme.surface)
         .overlay(Rectangle().stroke(Paper.rule, lineWidth: 1))
     }
 }

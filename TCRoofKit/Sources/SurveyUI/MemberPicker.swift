@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import TCRoofCore
+import TCRoofUI
 
 /// "ขนาด @ระยะห่าง" for one roof-structure member: pick the section and spacing from lists, or type anything else.
 struct MemberPicker: View {
@@ -34,17 +35,17 @@ struct MemberPicker: View {
                 .disabled(parts.size.isEmpty || parts.size == "-")
             }
             TextField("หรือพิมพ์เอง เช่น C-100x50x20x3.2 @1.00M หรือ -", text: $value)
-                .textFieldStyle(.roundedBorder).font(.callout).foregroundStyle(Paper.value)
+                .textFieldStyle(OutlinedFieldStyle(dense: true)).font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Paper.value)
         }
     }
 
     func pickerLabel(_ text: String, placeholder: Bool) -> some View {
         HStack(spacing: 6) {
-            Text(text).font(.callout.weight(placeholder ? .regular : .semibold)).foregroundStyle(placeholder ? Color.secondary : Paper.value)
-            Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.secondary)
+            Text(text).font(.sarabun(16, relativeTo: .callout).weight(placeholder ? .regular : .semibold)).foregroundStyle(placeholder ? Theme.inkMuted : Paper.value)
+            Image(systemName: "chevron.up.chevron.down").font(.sarabun(11, relativeTo: .caption2)).foregroundStyle(Theme.inkMuted)
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+        .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
     }
 
     func setSize(_ s: String) {

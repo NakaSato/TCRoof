@@ -17,13 +17,13 @@ struct RoutineReportCard: View {
         let next = job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: week.lowerBound)!)
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("รายงานประจำ").font(.headline).foregroundStyle(Theme.navy)
+                Text("รายงานประจำ").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 Button { showSettings = true } label: { Label("ตั้งค่า", systemImage: "gearshape").labelStyle(.iconOnly).frame(width: touchMin, height: touchMin) }
                     .accessibilityLabel("ตั้งค่ารายงานประจำ")
             }
             HStack(spacing: 10) {
-                Text("วันนี้").font(.subheadline).foregroundStyle(Theme.inkMuted)
+                Text("วันนี้").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 todayChip(today, working: RoutineReport.isWorkingDay(today, settings: settings))
                 Spacer()
             }
@@ -60,7 +60,7 @@ struct RoutineReportCard: View {
             Label("คำขอสัปดาห์หน้า: \(request)", systemImage: "doc.badge.clock")
             Label("รายงานทั้งหมด \(job.dailyLogs.count) วัน", systemImage: "doc.text")
         }
-        .font(.subheadline).foregroundStyle(Theme.navy)
+        .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
     }
 
     private func buttons(_ today: Date) -> some View {
@@ -75,7 +75,7 @@ struct RoutineReportCard: View {
 
     @ViewBuilder
     private func link<D: View>(_ title: String, _ symbol: String, prominent: Bool = false, @ViewBuilder _ destination: @escaping () -> D) -> some View {
-        let label = Label(title, systemImage: symbol).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+        let label = Label(title, systemImage: symbol).font(.sarabun(15, .semibold, relativeTo: .subheadline)).lineLimit(1).minimumScaleFactor(0.8)
             .frame(maxWidth: .infinity, minHeight: touchMin)
         if prominent {
             NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -102,7 +102,7 @@ struct DailyReportListView: View {
     var body: some View {
         PadForm {
             if days.isEmpty {
-                ContentUnavailableView("ยังไม่ถึงช่วงติดตั้ง", systemImage: "calendar",
+                TCEmptyState("ยังไม่ถึงช่วงติดตั้ง", systemImage: "calendar",
                                        description: Text("เริ่มติดตั้ง \(job.installStart.thaiLong)"))
             }
             PadSection {
@@ -121,10 +121,10 @@ struct DailyReportListView: View {
         let r = log?.report
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(RoutineReport.thaiDate(d)).font(.headline).foregroundStyle(Theme.navy)
+                Text(RoutineReport.thaiDate(d)).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 if let r {
                     Text("\(r.crewTotal) คน · \(r.progress.count) งาน" + (r.rainHours > 0 ? " · ฝน \(r.rainHours) ชม." : ""))
-                        .font(.caption).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
             }
             Spacer()

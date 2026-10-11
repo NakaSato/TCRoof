@@ -35,9 +35,9 @@ struct FinalPageWide: View {
     static let bodyText = Theme.inkStrong
     /// Selected colour and tint of each `Options.verdict` choice.
     static let verdictColors: [(Color, Color)] = [
-        (Color(red: 0.180, green: 0.490, blue: 0.196), Color(red: 0.180, green: 0.490, blue: 0.196).opacity(0.12)),
-        (Color(red: 0.698, green: 0.416, blue: 0.0), Color(red: 0.941, green: 0.549, blue: 0.0).opacity(0.13)),
-        (Color(red: 0.851, green: 0.271, blue: 0.231), Color(red: 0.851, green: 0.271, blue: 0.231).opacity(0.12)),
+        (Theme.okText, Theme.okText.opacity(0.12)),
+        (Color(red: 0.698, green: 0.416, blue: 0.0), Theme.warning.opacity(0.13)),
+        (Theme.danger, Theme.danger.opacity(0.12)),
     ]
 
     var leftWidth: CGFloat { max(320, (width - 28) / 3) }
@@ -117,7 +117,7 @@ struct FinalPageWide: View {
 
     var verdictField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            (Text("ผลการประเมินความเหมาะสมในการติดตั้ง ") + Text("*").foregroundColor(Theme.danger)).font(.system(size: 16, weight: .bold))
+            (Text("ผลการประเมินความเหมาะสมในการติดตั้ง ") + Text("*").foregroundColor(Theme.danger)).font(.sarabunFixed(16, .bold))
             ForEach(Array(Options.verdict.enumerated()), id: \.offset) { i, option in verdictButton(i, option) }
         }
     }
@@ -128,7 +128,7 @@ struct FinalPageWide: View {
             HStack(spacing: 8) {
                 Circle().fill(on ? c.0 : Color.clear).frame(width: 12, height: 12)
                     .overlay(Circle().stroke(on ? Color.clear : Theme.navy.opacity(0.45), lineWidth: 1.5))
-                Text(option).font(.system(size: 15, weight: .bold)).foregroundStyle(on ? c.0 : Theme.navy)
+                Text(option).font(.sarabunFixed(15, .bold)).foregroundStyle(on ? c.0 : Theme.navy)
                 Spacer(minLength: 0)
             }
             .padding(.leading, 14).padding(.trailing, 8)
@@ -158,18 +158,18 @@ struct FinalPageWide: View {
         let lines = remarks.split(whereSeparator: \.isNewline).count
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง").font(.system(size: 16, weight: .bold))
+                Text("ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง").font(.sarabunFixed(16, .bold))
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
-                Text(aside.0).font(.system(size: 13, weight: aside.2 ? .bold : .regular)).foregroundStyle(aside.1).fixedSize()
+                Text(aside.0).font(.sarabunFixed(13, aside.2 ? .bold : .regular)).foregroundStyle(aside.1).fixedSize()
             }
             TextEditor(text: Binding(get: { remarks }, set: { set("remarks", $0.isEmpty ? nil : .text($0)) }))
-                .font(.system(size: 14.5)).lineSpacing(4).foregroundStyle(Theme.navy)
+                .font(.sarabunFixed(14.5)).lineSpacing(4).foregroundStyle(Theme.navy)
                 .scrollContentBackground(.hidden)
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .overlay(alignment: .topLeading) {
                     if remarks.isEmpty {
-                        Text("พิมพ์ความเห็น หรือแตะข้อเสนอแนะด้านล่าง").font(.system(size: 14.5)).foregroundStyle(Theme.inkMuted)
+                        Text("พิมพ์ความเห็น หรือแตะข้อเสนอแนะด้านล่าง").font(.sarabunFixed(14.5)).foregroundStyle(Theme.inkMuted)
                             .padding(.horizontal, 14).padding(.vertical, 12).allowsHitTesting(false)
                     }
                 }
@@ -189,12 +189,12 @@ struct FinalPageWide: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     A2Icon(name: "e1-ai-sparkle", fallback: "sparkle", size: 15).foregroundStyle(Self.purple)
-                    Text("ข้อเสนอแนะอัตโนมัติจาก AI").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.purple)
-                    if !narrow { Text("· บนเครื่อง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted) }
+                    Text("ข้อเสนอแนะอัตโนมัติจาก AI").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple)
+                    if !narrow { Text("· บนเครื่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
                     Spacer(minLength: 4)
                     if rest.count >= 2 {
                         Button { add(rest) } label: {
-                            Text("เพิ่มทั้งหมด").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.purple)
+                            Text("เพิ่มทั้งหมด").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple)
                                 .padding(.horizontal, 10).frame(minHeight: 36)
                                 .background(Self.purpleSoft, in: RoundedRectangle(cornerRadius: 8))
                                 .frame(minHeight: 44).contentShape(Rectangle())
@@ -205,7 +205,7 @@ struct FinalPageWide: View {
                 .frame(minHeight: 44)
                 ForEach(rest) { s in suggestionRow(s) }
                 if rest.isEmpty {
-                    Text("✓ ใส่ข้อเสนอแนะครบแล้ว · แก้ข้อความในช่องได้").font(.system(size: 13)).foregroundStyle(Self.okText)
+                    Text("✓ ใส่ข้อเสนอแนะครบแล้ว · แก้ข้อความในช่องได้").font(.sarabunFixed(13)).foregroundStyle(Self.okText)
                 }
             }
             .padding(.top, -10)
@@ -221,10 +221,10 @@ struct FinalPageWide: View {
         Button { add([s]) } label: {
             HStack(spacing: 10) {
                 (Text(s.text + " ") + Text(s.source).bold().foregroundColor(Self.purpleText))
-                    .font(.system(size: 13.5)).foregroundStyle(Theme.navy).lineSpacing(2)
+                    .font(.sarabunFixed(13.5)).foregroundStyle(Theme.navy).lineSpacing(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .multilineTextAlignment(.leading)
-                Text("+ เพิ่ม").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.purple).fixedSize()
+                Text("+ เพิ่ม").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple).fixedSize()
             }
             .padding(.leading, 12).padding(.trailing, 10).padding(.vertical, 4)
             .frame(minHeight: 48)
@@ -244,14 +244,14 @@ struct FinalPageWide: View {
         if !groups.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("ยังขาดในหน้าอื่น").font(.system(size: 16, weight: .bold))
+                    Text("ยังขาดในหน้าอื่น").font(.sarabunFixed(16, .bold))
                     Spacer(minLength: 8)
-                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
+                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
                 }
                 .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
                 ForEach(groups.prefix(4)) { g in gapRow(g) }
                 if groups.count > 4 {
-                    Text("และอีก \(groups.count - 4) หน้า").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                    Text("และอีก \(groups.count - 4) หน้า").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                         .padding(.horizontal, 14).frame(minHeight: 36)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .overlay(alignment: .top) { Rectangle().fill(Self.hairline).frame(height: 1) }
@@ -264,11 +264,11 @@ struct FinalPageWide: View {
 
     func gapRow(_ g: MissingGroup) -> some View {
         HStack(spacing: 10) {
-            Text(FinalSummary.code(g)).font(.system(size: 14, weight: .bold)).frame(minWidth: 30, alignment: .leading).fixedSize()
-            Text(g.items.joined(separator: " · ")).font(.system(size: 14)).foregroundStyle(Self.bodyText).lineLimit(2)
+            Text(FinalSummary.code(g)).font(.sarabunFixed(14, .bold)).frame(minWidth: 30, alignment: .leading).fixedSize()
+            Text(g.items.joined(separator: " · ")).font(.sarabunFixed(14)).foregroundStyle(Self.bodyText).lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button { open(g.target) } label: {
-                Text("ไปที่หน้า ›").font(.system(size: 14, weight: .semibold)).fixedSize()
+                Text("ไปที่หน้า ›").font(.sarabunFixed(14, .semibold)).fixedSize()
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.6)))

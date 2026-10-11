@@ -26,7 +26,7 @@ extension RoofPageWide {
             A3Label(text: "หลังคามาตรฐาน")
             Button { dropdown = open ? nil : "std" } label: {
                 HStack {
-                    Text(label).font(.system(size: 16)).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(label).font(.sarabunFixed(16)).lineLimit(1).minimumScaleFactor(0.6)
                     Spacer(minLength: 2)
                     Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Theme.primary)
                 }
@@ -57,7 +57,7 @@ extension RoofPageWide {
                     }
                 }
                 Button { dropdown = nil; savingStandard = true } label: {
-                    Label("บันทึกค่าปัจจุบันเป็นแบบใหม่", systemImage: "plus").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary)
+                    Label("บันทึกค่าปัจจุบันเป็นแบบใหม่", systemImage: "plus").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 46)
                         .background(Self.soft.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.6), style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
@@ -72,7 +72,7 @@ extension RoofPageWide {
     }
 
     func listHeader(_ t: String) -> some View {
-        Text(t).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 2)
+        Text(t).font(.sarabunFixed(12.5, .semibold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 2)
     }
 
     func standardRow(_ s: Roof.Standard, on: Bool) -> some View {
@@ -81,8 +81,8 @@ extension RoofPageWide {
                 Image("c1-std-\(s.frame)", bundle: .module).renderingMode(.template).resizable().scaledToFit()
                     .foregroundStyle(Theme.navy).frame(width: 40, height: 24)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(s.title()).font(.system(size: 16, weight: on ? .bold : .regular)).lineLimit(1)
-                    Text(s.subtitle).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(s.title()).font(.sarabunFixed(16, on ? .bold : .regular)).lineLimit(1)
+                    Text(s.subtitle).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 6)
                 if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.success) }
@@ -126,8 +126,8 @@ extension RoofPageWide {
         let p = Roof.purlinSpacing(values), r = Roof.purlinRange
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("ระยะแป").font(.system(size: 17, weight: .bold))
-                Text("วัดตามแนวลาด").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                Text("ระยะแป").font(.sarabunFixed(17, .bold))
+                Text("วัดตามแนวลาด").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 Spacer()
                 Button { dropdown = nil } label: {
                     Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 32)
@@ -136,7 +136,7 @@ extension RoofPageWide {
             }
             HStack(spacing: 10) {
                 stepButton("minus", enabled: p > r.lowerBound + 0.001) { update { Roof.setPurlinSpacing(&$0, p - 0.05) } }
-                (Text(String(format: "%.2f", p)).font(.system(size: 24, weight: .bold)) + Text(" ม.").font(.system(size: 14)).foregroundColor(Theme.inkMuted))
+                (Text(String(format: "%.2f", p)).font(.sarabunFixed(24, .bold)) + Text(" ม.").font(.sarabunFixed(14)).foregroundColor(Theme.inkMuted))
                     .monospacedDigit().frame(maxWidth: .infinity, minHeight: 50)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, lineWidth: 2))
                 stepButton("plus", enabled: p < r.upperBound - 0.001) { update { Roof.setPurlinSpacing(&$0, p + 0.05) } }
@@ -145,7 +145,7 @@ extension RoofPageWide {
                 ForEach([0.8, 0.9, 1.0, 1.1, 1.2], id: \.self) { q in
                     let on = abs(q - p) < 0.001
                     Button { update { Roof.setPurlinSpacing(&$0, q) } } label: {
-                        Text(String(format: "%.2f", q)).font(.system(size: 14, weight: on ? .bold : .regular))
+                        Text(String(format: "%.2f", q)).font(.sarabunFixed(14, on ? .bold : .regular))
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Color.clear : Theme.navy.opacity(0.45)))
@@ -153,7 +153,7 @@ extension RoofPageWide {
                     .buttonStyle(.plain)
                 }
             }
-            Text(Roof.purlinNote(values) + " · 0.60–1.50 ม.").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted)
+            Text(Roof.purlinNote(values) + " · 0.60–1.50 ม.").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
         }
         .foregroundStyle(Theme.navy)
         .padding(16)
@@ -167,12 +167,12 @@ extension RoofPageWide {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("รูปตัด A–A · " + f.title).font(.system(size: 20, weight: .bold))
-                    Text("หน่วย ม. · แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                    Text("รูปตัด A–A · " + f.title).font(.sarabunFixed(20, .bold))
+                    Text("หน่วย ม. · แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button { sectionBig = false } label: {
-                    Text("ปิด").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
+                    Text("ปิด").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 110, height: 48).background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -187,8 +187,8 @@ extension RoofPageWide {
                         let on = member == n, name = f.members[n - 1].name
                         Button { member = on ? nil : n } label: {
                             HStack(spacing: 6) {
-                                Text("\(n)").font(.system(size: 14, weight: .bold)).foregroundStyle(on ? .white : Self.red)
-                                Text(name).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? .white : Theme.navy)
+                                Text("\(n)").font(.sarabunFixed(14, .bold)).foregroundStyle(on ? .white : Self.red)
+                                Text(name).font(.sarabunFixed(14, on ? .bold : .regular)).foregroundStyle(on ? .white : Theme.navy)
                             }
                             .padding(.horizontal, 12).frame(minHeight: 44)
                             .background(on ? Self.red : Theme.surface, in: Capsule())
@@ -228,32 +228,32 @@ struct SaveRoofStandardSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("บันทึกเป็นแบบโครงสร้าง").font(.system(size: 19, weight: .bold))
+                Text("บันทึกเป็นแบบโครงสร้าง").font(.sarabunFixed(19, .bold))
                 Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44) }
                     .buttonStyle(.plain).accessibilityLabel("ปิด")
             }
-            Text(summary).font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text(summary).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     A3Label(text: "ชื่อแบบ")
                     Spacer()
-                    Button("เปลี่ยนใหม่") { name = "" }.font(.system(size: 13, weight: .semibold)).frame(minHeight: 32)
+                    Button("เปลี่ยนใหม่") { name = "" }.font(.sarabunFixed(13, .semibold)).frame(minHeight: 32)
                 }
-                TextField("ชื่อแบบ", text: $name).font(.system(size: 17)).inputBox(minHeight: 46)
+                TextField("ชื่อแบบ", text: $name).font(.sarabunFixed(17)).inputBox(minHeight: 46)
                     .onChange(of: name) { _, t in if t.count > 40 { name = String(t.prefix(40)) } }
                 Text("ในวงเล็บคือชื่อสถานที่ (จาก A1) · ขนาดใส่ให้อัตโนมัติ · สูงสุด 40 ตัวอักษร · \(name.count)/40")
-                    .font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(alignment: .leading, spacing: 4) {
                 A3Label(text: "ใครใช้ได้")
                 RoofSegments(options: ["ทั้งทีม", "เฉพาะฉัน"], selected: team ? 0 : 1, minSegment: 90) { team = $0 == 0 }
                 Text(team ? "ทุกคนในทีมเห็นในรายการ \"แบบที่ทีมบันทึก\" และเลือกใช้ได้ทันที" : "เห็นเฉพาะในเครื่อง/บัญชีของคุณ")
-                    .font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 10) {
                 Button { dismiss() } label: {
-                    Text("ยกเลิก").font(.system(size: 16, weight: .bold)).frame(maxWidth: .infinity, minHeight: 46)
+                    Text("ยกเลิก").font(.sarabunFixed(16, .bold)).frame(maxWidth: .infinity, minHeight: 46)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
                 }
                 .buttonStyle(.plain)
@@ -261,7 +261,7 @@ struct SaveRoofStandardSheet: View {
                     let t = name.trimmingCharacters(in: .whitespaces)
                     save(t.isEmpty ? defaultName : t, team); dismiss()
                 } label: {
-                    Text("บันทึกแบบ").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 46)
+                    Text("บันทึกแบบ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 46)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -297,8 +297,8 @@ struct RoofCADSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("ส่งออก CAD").font(.system(size: 17, weight: .bold))
-                    Text("DXF R12 · เปิดได้ใน CAD ทั่วไป").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    Text("ส่งออก CAD").font(.sarabunFixed(17, .bold))
+                    Text("DXF R12 · เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button(action: close) { Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 36) }
@@ -319,12 +319,12 @@ struct RoofCADSheet: View {
             row(.table, "ตารางชิ้นส่วน 1–7", "ขนาดหน้าตัด")
             row(.pv, "ตำแหน่งแผงโซลาร์", pvMode ? "ตามการจัดแผง" : "เปิดโหมดจัดแผงก่อน", enabled: pvMode)
             HStack(spacing: 8) {
-                Text("หน่วย").font(.system(size: 14))
+                Text("หน่วย").font(.sarabunFixed(14))
                 RoofSegments(options: ["มม. (1:1)", "ม."], selected: mm ? 0 : 1, minSegment: 80) { mm = $0 == 0 }
             }
-            Text("เลเยอร์: " + (chosen.isEmpty ? "—" : RoofDXF.layerSummary(chosen))).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+            Text("เลเยอร์: " + (chosen.isEmpty ? "—" : RoofDXF.layerSummary(chosen))).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             Button(action: export) {
-                Label("ส่งออก " + fileName, systemImage: "square.and.arrow.down").font(.system(size: 15, weight: .bold))
+                Label("ส่งออก " + fileName, systemImage: "square.and.arrow.down").font(.sarabunFixed(15, .bold))
                     .foregroundStyle(chosen.isEmpty ? Theme.disabledText : Theme.onPrimary)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(chosen.isEmpty ? Theme.disabledFill : Theme.primary, in: RoundedRectangle(cornerRadius: 10))
@@ -339,8 +339,8 @@ struct RoofCADSheet: View {
             HStack(spacing: 10) {
                 Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 20)).foregroundStyle(on ? Theme.primary : Theme.inkMuted)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(t).font(.system(size: 15, weight: .semibold))
-                    Text(s).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    Text(t).font(.sarabunFixed(15, .semibold))
+                    Text(s).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
             }
@@ -352,17 +352,17 @@ struct RoofCADSheet: View {
 
     func done(_ r: (url: URL, out: RoofDXF.Output)) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(r.url.lastPathComponent, systemImage: "checkmark.circle.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.success)
+            Label(r.url.lastPathComponent, systemImage: "checkmark.circle.fill").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.success)
             Text("\(r.out.entities) วัตถุ · \(r.out.layers.count) เลเยอร์ · \(max(1, r.out.data.count / 1024)) KB · " + (mm ? "มม. 1:1" : "ม."))
-                .font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 8) {
                 Button { result = nil } label: {
-                    Text("ย้อนกลับ").font(.system(size: 15, weight: .bold)).frame(maxWidth: .infinity, minHeight: 44)
+                    Text("ย้อนกลับ").font(.sarabunFixed(15, .bold)).frame(maxWidth: .infinity, minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
                 }
                 .buttonStyle(.plain)
                 Button { sharing = true } label: {
-                    Text("ส่งอีกครั้ง").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 44)
+                    Text("ส่งอีกครั้ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 44)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)

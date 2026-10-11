@@ -230,7 +230,7 @@ struct BOQView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .task { load() }
         .onChange(of: boq) { _, new in if loaded { store.save(new, Self.file) } }

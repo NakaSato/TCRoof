@@ -20,7 +20,7 @@ extension InverterPageWide {
         VStack(alignment: .leading, spacing: 12) {
             let head = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
             head {
-                Text("คำนวณห้องและแบบให้เอง").font(.system(size: 18, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                Text("คำนวณห้องและแบบให้เอง").font(.sarabunFixed(18, .bold)).lineLimit(1).minimumScaleFactor(0.8)
                 if !narrow { Spacer(minLength: 8) }
                 zeroExport
             }
@@ -42,14 +42,14 @@ extension InverterPageWide {
             if narrow {
                 // iPhone: title and verdict on one line, the site switch full width under them
                 HStack(spacing: 10) {
-                    Text(planTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(planTitle).font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                     Spacer(minLength: 6)
                     planVerdict(s)
                 }
                 siteSwitch(s, segmentWidth: nil)
             } else {
                 HStack(spacing: 10) {
-                    Text(planTitle).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(planTitle).font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
                     Spacer(minLength: 6)
                     siteSwitch(s, segmentWidth: 118)
                     planVerdict(s)
@@ -77,7 +77,7 @@ extension InverterPageWide {
     }
 
     func planVerdict(_ s: InverterStation) -> some View {
-            Text(!s.measured ? "ยังไม่ได้วัด" : s.isOK ? "พื้นที่พอ ✓" : "พื้นที่ไม่พอ ✗").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+            Text(!s.measured ? "ยังไม่ได้วัด" : s.isOK ? "พื้นที่พอ ✓" : "พื้นที่ไม่พอ ✗").font(.sarabunFixed(12, .semibold)).lineLimit(1)
                 .foregroundStyle(!s.measured ? Theme.pending : s.isOK ? Theme.success : Theme.danger)
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background((!s.measured ? Theme.pending : s.isOK ? Theme.success : Theme.danger).opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
@@ -105,8 +105,8 @@ extension InverterPageWide {
         let down = InverterStation.step(sizes, from: value, by: -1, min: min), up = InverterStation.step(sizes, from: value, by: 1, min: min)
         return HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 1) {
-                Text("\(title) \(value) มม.").font(.system(size: 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                Text(value > min ? "ขั้นต่ำ \(min) · ปรับเพิ่มเอง" : "ขั้นต่ำตามคำนวณ").font(.system(size: 12)).foregroundStyle(value > min ? Theme.pending : Theme.inkMuted)
+                Text("\(title) \(value) มม.").font(.sarabunFixed(14, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(value > min ? "ขั้นต่ำ \(min) · ปรับเพิ่มเอง" : "ขั้นต่ำตามคำนวณ").font(.sarabunFixed(12)).foregroundStyle(value > min ? Theme.pending : Theme.inkMuted)
             }
             Spacer(minLength: 4)
             boxButton("minus", enabled: down != nil) { if let down { set(down) } }
@@ -138,11 +138,11 @@ extension InverterPageWide {
     var zeroExport: some View {
         let level = b4Index.flatMap { job.modules[$0].values.choice("level") }
         return HStack(spacing: 8) {
-            (Text("กันย้อน (B4)") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 14, weight: .bold)).lineLimit(1)
+            (Text("กันย้อน (B4)") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(14, .bold)).lineLimit(1)
             ForEach(Array(zip(Self.zeroExportLevels, ["แรงต่ำ", "แรงสูง"])), id: \.0) { value, title in
                 let on = level == value
                 Button { if let i = b4Index { job.modules[i].values["level"] = .choice(value, other: "") } } label: {
-                    Text(title).font(.system(size: 15, weight: .bold))
+                    Text(title).font(.sarabunFixed(15, .bold))
                         .frame(width: 84, height: 40)
                         .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
@@ -161,19 +161,19 @@ extension InverterPageWide {
         let s = station, n = s.sizes.count, full = n >= InverterStation.maxInverters
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                let count = Text("\(n) / \(InverterStation.maxInverters) เครื่อง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                let count = Text("\(n) / \(InverterStation.maxInverters) เครื่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 if narrow {
                     VStack(alignment: .leading, spacing: 0) {
-                        (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 17, weight: .bold))
+                        (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(17, .bold))
                         count
                     }
                 } else {
-                    (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 17, weight: .bold))
+                    (Text("อินเวอร์เตอร์ Growatt") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(17, .bold))
                     count
                 }
                 Spacer()
                 Button { update { $0.sizes.append($0.sizes.last ?? 60); $0.sizesAssumed = false } } label: {
-                    Text(full ? "ครบแล้ว" : "+ เพิ่มเครื่อง").font(.system(size: 13, weight: .semibold))
+                    Text(full ? "ครบแล้ว" : "+ เพิ่มเครื่อง").font(.sarabunFixed(13, .semibold))
                         .foregroundStyle(full ? Theme.borderControl : Theme.primary)
                         .padding(.horizontal, 14).frame(minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 9).stroke(full ? Theme.disabledFill : Theme.primary.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
@@ -183,9 +183,9 @@ extension InverterPageWide {
             if s.sizesAssumed && values.number(InverterStation.Key.count) != nil {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.pending)
-                    Text("ขนาดยังเป็นค่าสมมติจากจำนวนเครื่องเดิม · เลือก kW ให้ตรงหน้างาน").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.pending)
+                    Text("ขนาดยังเป็นค่าสมมติจากจำนวนเครื่องเดิม · เลือก kW ให้ตรงหน้างาน").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.pending)
                     Spacer(minLength: 4)
-                    Button("ยืนยัน") { update { $0.sizesAssumed = false } }.font(.system(size: 13, weight: .bold)).frame(minHeight: 44)
+                    Button("ยืนยัน") { update { $0.sizesAssumed = false } }.font(.sarabunFixed(13, .bold)).frame(minHeight: 44)
                 }
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: narrow ? 1 : 2), spacing: 8) {
@@ -197,18 +197,18 @@ extension InverterPageWide {
     func inverterRow(_ i: Int, _ kw: Int, _ s: InverterStation) -> some View {
         let cb = s.breaker(kw: kw), inv = s.catalog.inverter(kw: kw)
         return HStack(spacing: 8) {
-            Text("\(i + 1)").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+            Text("\(i + 1)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onMedia)
                 .frame(width: 26, height: 26).background(Theme.navySolid, in: Circle())
             HStack(spacing: 0) {
                 boxButton("minus", enabled: s.stepSize(kw, by: -1) != kw) { setSize(i, s.stepSize(kw, by: -1)) }
                     .accessibilityLabel("ลดขนาดเครื่อง \(i + 1)")
-                Text("\(kw) kW").font(.system(size: 16, weight: .bold)).monospacedDigit().frame(width: 62)
+                Text("\(kw) kW").font(.sarabunFixed(16, .bold)).monospacedDigit().frame(width: 62)
                 boxButton("plus", enabled: s.stepSize(kw, by: 1) != kw) { setSize(i, s.stepSize(kw, by: 1)) }
                     .accessibilityLabel("เพิ่มขนาดเครื่อง \(i + 1)")
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(inv.model).font(.system(size: 14, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-                Text("CB \(cb.at)AT · \(s.cable(kw: kw).label)").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                Text(inv.model).font(.sarabunFixed(14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text("CB \(cb.at)AT · \(s.cable(kw: kw).label)").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
             }
             Spacer(minLength: 4)
             Button { update { $0.sizes.remove(at: i); $0.sizesAssumed = false } } label: {
@@ -248,10 +248,10 @@ extension InverterPageWide {
     func summaryCell(_ title: String, _ value: String, sub: String, good: Bool?) -> some View {
         let tint: Color = good == nil ? Theme.navy : good! ? Theme.success : Theme.danger
         return VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.6)
                 .foregroundStyle(good == false ? Theme.dangerText : Theme.navy)
-            Text(sub).font(.system(size: 12, weight: .semibold)).foregroundStyle(tint).lineLimit(1).minimumScaleFactor(0.7)
+            Text(sub).font(.sarabunFixed(12, .semibold)).foregroundStyle(tint).lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)

@@ -1,4 +1,6 @@
 import SwiftUI
+import CryptoKit
+import ImageIO
 import TCRoofUI
 import SurveyUI
 import PhotosUI
@@ -38,17 +40,17 @@ struct PhotoPickerSection: View {
                 }
                 Spacer()
                 if !images.isEmpty {
-                    Text("\(images.count) รูป").font(.subheadline).foregroundStyle(Theme.muted)
+                    Text("\(images.count) รูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 }
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
 
             if images.isEmpty {
                 Text("ยังไม่มีรูปภาพ")
-                    .font(.subheadline)
+                    .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity, minHeight: 80)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.muted.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6])))
             } else {
                 PhotoGrid(images: images, onDelete: onDelete)
@@ -90,9 +92,9 @@ struct PhotoGrid: View {
                     if let onDelete {
                         Button { onDelete(index) } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title3)
+                                .font(.sarabun(20, relativeTo: .title3))
                                 .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.6))
+                                .foregroundStyle(Theme.onMedia, .black.opacity(0.6))
                         }
                         .padding(4)
                         .accessibilityLabel("ลบรูป")
@@ -108,18 +110,41 @@ struct PhotoGrid: View {
 
 private struct IndexBox: Identifiable { let id: Int }
 
+/// A photo tile: a 600 px thumbnail decoded off the main thread and cached, so a list of logs does not decode
+/// every full-size photo each time its body runs.
 struct Thumbnail: View {
     let data: Data
+    @State private var image: UIImage?
+    private static let cache = NSCache<NSString, UIImage>()
 
     var body: some View {
-        Color.gray.opacity(0.15)
+        Theme.track
             .overlay {
-                if let image = UIImage(data: data) {
-                    Image(uiImage: image).resizable().scaledToFill()
-                }
+                if let image { Image(uiImage: image).resizable().scaledToFill() }
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
+            .task(id: Self.key(data)) {
+                let key = Self.key(data) as NSString
+                if let hit = Self.cache.object(forKey: key) { image = hit; return }
+                let made = await Task.detached(priority: .userInitiated) { [data] in Self.thumbnail(data) }.value
+                if let made { Self.cache.setObject(made, forKey: key) }
+                image = made
+            }
+    }
+
+    /// The size and a hash of both ends: cheap, and two photos do not share it.
+    private static func key(_ data: Data) -> String {
+        var hash = SHA256()
+        hash.update(data: data.prefix(4096)); hash.update(data: data.suffix(4096))
+        return "\(data.count)-" + hash.finalize().prefix(8).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private nonisolated static func thumbnail(_ data: Data) -> UIImage? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 600,
+                                     kCGImageSourceCreateThumbnailWithTransform: true]
+        return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
     }
 }
 
@@ -141,10 +166,10 @@ struct PhotoViewer: View {
             .tabViewStyle(.page)
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.title2.bold())
-                    .foregroundStyle(.white)
+                    .font(.sarabun(22, .bold, relativeTo: .title2))
+                    .foregroundStyle(Theme.onMedia)
                     .padding(12)
-                    .background(.white.opacity(0.2), in: Circle())
+                    .background(Theme.onMedia.opacity(0.2), in: Circle())
             }
             .padding(24)
             .accessibilityLabel("ปิด")

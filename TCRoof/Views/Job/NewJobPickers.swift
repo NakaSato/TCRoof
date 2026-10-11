@@ -193,7 +193,7 @@ struct NewJobPickerSheet: View {
                 Button {
                     if let value { kWp = value; close() }
                 } label: {
-                    Text("ตกลง").font(.sarabun(17, .bold)).foregroundStyle(value == nil ? Theme.groupFooter : .white)
+                    Text("ตกลง").font(.sarabun(17, .bold)).foregroundStyle(value == nil ? Theme.groupFooter : Theme.onPrimary)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(value == nil ? AnyShapeStyle(Theme.separatorLine) : AnyShapeStyle(Theme.actionGradient),
                                     in: RoundedRectangle(cornerRadius: 14, style: .continuous))

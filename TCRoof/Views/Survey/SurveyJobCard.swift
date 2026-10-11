@@ -39,7 +39,7 @@ struct SurveyJobCard<Footer: View>: View {
             Divider().padding(.vertical, 4)
             whenRow
             Label(job.province, systemImage: "mappin.and.ellipse")
-                .font(.footnote)
+                .font(.sarabun(13, relativeTo: .footnote))
                 .foregroundStyle(Theme.navy.opacity(0.85))
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -56,14 +56,14 @@ struct SurveyJobCard<Footer: View>: View {
             Spacer(minLength: 0)
             TCStatusChip("ทีม \(job.team.rawValue)", fill: job.team.color.opacity(0.1), text: job.team.color, dot: true)
             Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
+                .font(.sarabun(13, .semibold, relativeTo: .footnote))
                 .foregroundStyle(Theme.muted)
         }
     }
 
     private var codeRow: some View {
         HStack(spacing: 8) {
-            Text(job.code).font(.caption.bold()).foregroundStyle(Theme.inkMuted)
+            Text(job.code).font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
         }
     }
@@ -75,7 +75,7 @@ struct SurveyJobCard<Footer: View>: View {
             }
             Label(job.capacityKW.kw, systemImage: "bolt.fill")
         }
-        .font(.footnote)
+        .font(.sarabun(13, relativeTo: .footnote))
         .foregroundStyle(Theme.navy.opacity(0.85))
     }
 
@@ -84,17 +84,17 @@ struct SurveyJobCard<Footer: View>: View {
             Label(when, systemImage: "calendar")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(days == 0 ? Theme.primary : days < 0 ? Theme.muted : Theme.navy)
-            Text(job.surveyDate.thaiShort).font(.caption).foregroundStyle(Theme.muted)
+            Text(job.surveyDate.thaiShort).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
         }
     }
 
     private func progressBox(_ p: SurveyCardProgress) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(p.key).font(.caption).foregroundStyle(Theme.inkMuted)
-                Text(p.value).font(.subheadline.bold()).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(p.key).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                Text(p.value).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 0)
-                Text("\(p.percent)%").font(.subheadline.bold()).monospacedDigit()
+                Text("\(p.percent)%").font(.sarabun(15, .bold, relativeTo: .subheadline)).monospacedDigit()
                     .foregroundStyle(p.percent == 0 ? Theme.progressZero : p.tone == .complete ? Theme.progressFull : Theme.primary)
             }
             HStack(spacing: 3) {

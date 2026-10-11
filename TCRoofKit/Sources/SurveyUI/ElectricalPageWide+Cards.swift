@@ -13,8 +13,8 @@ struct A3Label: View {
     var required = false
     var body: some View {
         HStack(spacing: 3) {
-            Text(text).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
-            if required { Text("*").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.danger) }
+            Text(text).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            if required { Text("*").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.danger) }
         }
     }
 }
@@ -37,7 +37,7 @@ struct A3Input: View {
                 TextField("", text: $text).keyboardType(keyboard).textInputAutocapitalization(.never).autocorrectionDisabled()
                 if a2 { A2Badge() }
                 SourceChip(source: source)
-                if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Theme.inkMuted) }
+                if let unit { Text(unit).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
             }
             .inputBox(minHeight: 44, trailing: 10)
         }
@@ -55,7 +55,7 @@ struct A3Segments: View {
             ForEach(Array(options.enumerated()), id: \.offset) { n, o in
                 let on = selected == o
                 Button { set(on ? "" : o) } label: {
-                    Text(titles?[n] ?? o).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(titles?[n] ?? o).font(.sarabunFixed(15, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.borderControl.opacity(0.6), lineWidth: on ? 2 : 1))
@@ -85,14 +85,14 @@ struct A3Panel<Content: View>: View {
 struct A3Badge: View {
     let text: String
     var body: some View {
-        Text(text).font(.system(size: 11, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+        Text(text).font(.sarabunFixed(11, .bold)).lineLimit(1).minimumScaleFactor(0.6)
             .frame(width: 40, height: 40)
             .overlay(Circle().stroke(Theme.navy, lineWidth: 1.5))
     }
 }
 
 func a3Chip(_ text: String, ok: Bool) -> some View {
-    Text(text).font(.system(size: 13, weight: .bold)).lineLimit(1)
+    Text(text).font(.sarabunFixed(13, .bold)).lineLimit(1)
         .foregroundStyle(ok ? Theme.success : Theme.danger)
         .padding(.horizontal, 10).frame(minHeight: 26)
         .background((ok ? Theme.mint.opacity(0.4) : Theme.danger.opacity(0.1)), in: Capsule())
@@ -114,7 +114,7 @@ struct A3PhotoTile: View {
             .frame(maxWidth: .infinity).frame(height: height)
             .overlay(alignment: .bottomLeading) {
                 if photo != nil {
-                    Text(label).font(.system(size: 11, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                    Text(label).font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.onMedia).lineLimit(1)
                         .padding(.horizontal, 5).padding(.vertical, 2).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4)).padding(4)
                         .allowsHitTesting(false)
                 }
@@ -145,7 +145,7 @@ extension ElectricalPageWide {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     A3Badge(text: "PEA")
-                    Text("มิเตอร์ กฟภ.").font(.system(size: 18, weight: .bold))
+                    Text("มิเตอร์ กฟภ.").font(.sarabunFixed(18, .bold))
                     if a2Badges.contains(.meter) { A2Badge() }
                 }
                 HStack(alignment: .bottom, spacing: 6) {
@@ -161,7 +161,7 @@ extension ElectricalPageWide {
                     A3Segments(options: Schema.meterPhases, selected: vChoice("meterPhase")) { setChoice("meterPhase", $0) }
                 }
                 Button { withAnimation { moreMeter.toggle() } } label: {
-                    Text(moreMeter ? "ซ่อนข้อมูลเพิ่มเติม ▴" : "แสดงข้อมูลเพิ่มเติม (4) ▾").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                    Text(moreMeter ? "ซ่อนข้อมูลเพิ่มเติม ▴" : "แสดงข้อมูลเพิ่มเติม (4) ▾").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 44).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -175,7 +175,7 @@ extension ElectricalPageWide {
                             .photoShot("meterPic")
                     }
                 } else if let s = meterSummary {
-                    Text(s).font(.system(size: 12)).foregroundStyle(Theme.success).lineLimit(2)
+                    Text(s).font(.sarabunFixed(12)).foregroundStyle(Theme.success).lineLimit(2)
                 }
             }
         }
@@ -205,8 +205,8 @@ extension ElectricalPageWide {
     func kvaField(_ i: Int) -> some View {
         HStack(spacing: 0) {
             TextField("", text: kvaText(i)).keyboardType(.numberPad)
-                .font(.system(size: 17, weight: .semibold))
-            Text("kVA").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabunFixed(17, .semibold))
+            Text("kVA").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             if a2Badges.contains(.kva(i)) { A2Badge().padding(.leading, 4) }
             SourceChip(source: job.values.source("tr\(i)_kva")).padding(.leading, 4)
             NameplateScanButton(kind: .transformer, compact: true) { fields, image in applyPlate(i, fields, frame: image) }
@@ -256,7 +256,7 @@ extension ElectricalPageWide {
             VStack(spacing: 6) {
                 HStack(spacing: 8) {
                     A3Badge(text: "TX \(i + 1)")
-                    Text("หม้อแปลง TX \(i + 1)").font(.system(size: 16, weight: .bold)).lineLimit(1)
+                    Text("หม้อแปลง TX \(i + 1)").font(.sarabunFixed(16, .bold)).lineLimit(1)
                     if !narrow { kvaField(i).frame(width: 150) }
                     Spacer(minLength: 0)
                     a3Chip(n == 6 ? "6/6 ✓" : "\(n)/6", ok: n == 6)
@@ -287,7 +287,7 @@ extension ElectricalPageWide {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     A3Badge(text: "TX \(i + 1)")
-                    Text("หม้อแปลง TX \(i + 1)").font(.system(size: 18, weight: .bold))
+                    Text("หม้อแปลง TX \(i + 1)").font(.sarabunFixed(18, .bold))
                     Spacer(minLength: 0)
                     a3Chip("ภาพ \(n)/6", ok: n == 6)
                     Button { confirmRemove = i } label: {
@@ -388,7 +388,7 @@ extension ElectricalPageWide {
             Group {
                 if bs.count < Transformer.maxBoards {
                     Button { editBoards(i) { $0.append(Board(name: "SDB \($0.count)")) }; withAnimation { open = i } } label: {
-                        Text("+ เพิ่มตู้").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                        Text("+ เพิ่มตู้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                             .frame(width: Self.addW, height: 56)
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                             .contentShape(Rectangle())
@@ -404,18 +404,18 @@ extension ElectricalPageWide {
         A3Panel {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(boardName(i, k)).font(.system(size: 14, weight: .bold)).lineLimit(1)
+                    Text(boardName(i, k)).font(.sarabunFixed(14, .bold)).lineLimit(1)
                     Spacer(minLength: 0)
-                    Text("ปลายสาย").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.success)
+                    Text("ปลายสาย").font(.sarabunFixed(10, .bold)).foregroundStyle(Theme.success)
                         .padding(.horizontal, 6).frame(minHeight: 20).background(Theme.mint.opacity(0.4), in: Capsule())
                 }
                 HStack(spacing: 6) {
-                    Text(b.at.isEmpty ? "—" : b.at).font(.system(size: 16, weight: .bold))
-                    Text("AT").font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
+                    Text(b.at.isEmpty ? "—" : b.at).font(.sarabunFixed(16, .bold))
+                    Text("AT").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 0)
                 }
                 Text("CB ย่อย \(breakerTotal(b.breakers))" + (sizeSummary(b.breakers).isEmpty ? "" : " · " + sizeSummary(b.breakers)))
-                    .font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
         }
         .contentShape(Rectangle())
@@ -434,13 +434,13 @@ extension ElectricalPageWide {
                 HStack(spacing: 8) {
                     A3Badge(text: "MDB")
                     HStack(spacing: 6) {
-                        TextField("MDP-1", text: mainName(i)).font(.system(size: 18, weight: .bold))
+                        TextField("MDP-1", text: mainName(i)).font(.sarabunFixed(18, .bold))
                         if a2Badges.contains(.boardName(i, 0)) { A2Badge() }
                     }
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.3)))
-                    Text("ตู้หลัก · ปลายสาย").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.success)
+                    Text("ตู้หลัก · ปลายสาย").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.success)
                         .padding(.horizontal, 10).frame(minHeight: 26).background(Theme.mint.opacity(0.4), in: Capsule())
                 }
                 (narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .top, spacing: 14))) {
@@ -510,7 +510,7 @@ extension ElectricalPageWide {
                 editBoards(i) { $0[k].breakers.append(br) }
                 editBreaker = BreakerEdit(id: br.id, trafo: i, board: k)
             } label: {
-                Text("+ เพิ่ม CB ลูกย่อย").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                Text("+ เพิ่ม CB ลูกย่อย").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                     .contentShape(Rectangle())
@@ -525,10 +525,10 @@ extension ElectricalPageWide {
         let line1 = Text(b.poles.isEmpty ? "" : "\(b.poles)P · ") + v(b.at, "AT") + Text("/") + v(b.af, "AF") + Text(" · ") + v(b.ic, "kA")
         let line2 = [b.brand.isEmpty ? "ยี่ห้อ ?" : b.brand, b.target.isEmpty ? nil : "→ " + b.target].compactMap { $0 }.joined(separator: " ")
         return HStack(spacing: 8) {
-            Text("\(n)").font(.system(size: 13, weight: .bold)).frame(width: 24, height: 24).background(Theme.primarySoft, in: Circle())
+            Text("\(n)").font(.sarabunFixed(13, .bold)).frame(width: 24, height: 24).background(Theme.primarySoft, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                line1.font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                Text(line2).font(.system(size: 12)).foregroundStyle(b.brand.isEmpty ? Theme.danger : Theme.inkMuted).lineLimit(1)
+                line1.font(.sarabunFixed(13, .semibold)).lineLimit(1)
+                Text(line2).font(.sarabunFixed(12)).foregroundStyle(b.brand.isEmpty ? Theme.danger : Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 0)
             if !b.condition.isEmpty { a3Chip(b.condition, ok: b.condition != "ชำรุด") }
@@ -547,7 +547,7 @@ extension ElectricalPageWide {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     A3Badge(text: "SDB")
-                    TextField("ชื่อตู้", text: bText(i, k, \.name)).font(.system(size: 16, weight: .bold)).lineLimit(1)
+                    TextField("ชื่อตู้", text: bText(i, k, \.name)).font(.sarabunFixed(16, .bold)).lineLimit(1)
                         .padding(.horizontal, 8).frame(minHeight: 44)
                     Button { editBoards(i) { if $0.indices.contains(k) { $0.remove(at: k) } } } label: {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44)
@@ -558,11 +558,11 @@ extension ElectricalPageWide {
                 HStack {
                     A3Label(text: "CB ลูกย่อย")
                     Spacer(minLength: 0)
-                    Text("รวม \(breakerTotal(b.breakers)) ลูก").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    Text("รวม \(breakerTotal(b.breakers)) ลูก").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 ForEach(b.breakers) { br in sizeRow(i, k, br) }
                 Button { editBoards(i) { $0[k].breakers.append(Breaker()) } } label: {
-                    Text("+ เพิ่มขนาด CB").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                    Text("+ เพิ่มขนาด CB").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                         .contentShape(Rectangle())
@@ -585,14 +585,14 @@ extension ElectricalPageWide {
         return HStack(spacing: 4) {
             TextField("", text: Binding(get: { br.at }, set: { v in set { $0.at = NumberInput.clean(v) } })).keyboardType(.numberPad)
                 .frame(width: 44).multilineTextAlignment(.trailing)
-            Text("A ×").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text("A ×").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             stepper("minus") {
                 editBoards(i) { b in
                     guard b.indices.contains(k), let n = b[k].breakers.firstIndex(where: { $0.id == br.id }) else { return }
                     if b[k].breakers[n].count <= 1 { b[k].breakers.remove(at: n) } else { b[k].breakers[n].count -= 1 }
                 }
             }
-            Text("\(max(br.count, 1))").font(.system(size: 15, weight: .bold)).frame(minWidth: 18)
+            Text("\(max(br.count, 1))").font(.sarabunFixed(15, .bold)).frame(minWidth: 18)
             stepper("plus") { set { $0.count = max($0.count, 1) + 1 } }
         }
         .padding(.leading, 8).frame(maxWidth: .infinity, minHeight: 44)

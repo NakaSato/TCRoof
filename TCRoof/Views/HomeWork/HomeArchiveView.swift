@@ -74,7 +74,7 @@ struct HomeArchiveView: View {
                 .frame(maxWidth: 900)
                 .frame(maxWidth: .infinity)
             }
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("แฟ้มเอกสาร")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }

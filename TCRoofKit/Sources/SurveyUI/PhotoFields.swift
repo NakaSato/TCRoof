@@ -57,7 +57,7 @@ struct PhotoField: View {
                     if mapGPS != nil { Button { fetchMap() } label: { Label("ดึงใหม่จากแผนที่ดาวเทียม", systemImage: "map") } }
                     Button(role: .destructive) { photo = nil } label: { Label("ลบภาพ", systemImage: "trash") }
                 } label: {
-                    Image(systemName: "ellipsis.circle.fill").font(.title2).symbolRenderingMode(.palette)
+                    Image(systemName: "ellipsis.circle.fill").font(.sarabun(22, relativeTo: .title2)).symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .black.opacity(0.55)).padding(8)
                 }
             }
@@ -97,14 +97,14 @@ struct PhotosField: View {
                     if let new { photos[i] = new } else { photos.removeAll { $0.id == p.id } }
                 }), jobID: jobID, height: 180)
                 .overlay(alignment: .topLeading) {
-                    Text("\(i + 1)").font(.caption.bold()).padding(6).background(.thinMaterial, in: Circle()).padding(6)
+                    Text("\(i + 1)").font(.sarabun(12, .bold, relativeTo: .caption)).padding(6).background(.thinMaterial, in: Circle()).padding(6)
                 }
             }
             if photos.count < max {
                 PhotoField(photo: Binding(get: { nil }, set: { if let p = $0 { photos.append(p) } }), jobID: jobID, height: 180)
             }
         }
-        Text("\(photos.count) / \(max) ภาพ").font(.caption).foregroundStyle(Theme.inkMuted)
+        Text("\(photos.count) / \(max) ภาพ").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
     }
 }
 
@@ -214,7 +214,7 @@ struct SignaturePad: View {
 
     static let fill = Color(red: 0.988, green: 0.992, blue: 0.996)
     static let line = Color(red: 0.357, green: 0.420, blue: 0.510)
-    static let save = Color(red: 0.122, green: 0.435, blue: 0.710)
+    static let save = Theme.primary
 
     var body: some View {
         let phone = sizeClass == .compact
@@ -223,7 +223,7 @@ struct SignaturePad: View {
             VStack(spacing: 12) {
                 topBar(phone: phone)
                 pad(phone: phone)
-                Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, phone ? 16 : 20).padding(.top, 14).padding(.bottom, 18)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
@@ -237,8 +237,8 @@ struct SignaturePad: View {
         HStack(spacing: 10) {
             outline("ยกเลิก", width: phone ? 80 : 110) { dismiss() }
             VStack(spacing: 0) {
-                Text("ลายเซ็น").font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.navy)
-                if let who { Text(who).font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7) }
+                Text("ลายเซ็น").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy)
+                if let who { Text(who).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7) }
             }
             .frame(maxWidth: .infinity)
             outline("ล้าง", width: phone ? 64 : 96) { canvas.drawing = PKDrawing() }
@@ -252,7 +252,7 @@ struct SignaturePad: View {
                 }
                 dismiss()
             } label: {
-                Text("บันทึก").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text("บันทึก").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(minWidth: phone ? 80 : 130, minHeight: 48)
                     .background(Self.save, in: RoundedRectangle(cornerRadius: 12))
             }
@@ -262,7 +262,7 @@ struct SignaturePad: View {
 
     func outline(_ title: String, width: CGFloat, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabunFixed(16, .semibold)).foregroundStyle(Theme.navy)
                 .frame(minWidth: width, minHeight: 48)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.35)))
@@ -277,7 +277,7 @@ struct SignaturePad: View {
             ZStack(alignment: .topLeading) {
                 Rectangle().fill(Self.line.opacity(0.5)).frame(width: max(0, geo.size.width - 2 * inset), height: 1.5)
                     .offset(x: inset, y: y)
-                Text("×").font(.system(size: 28)).foregroundStyle(Self.line.opacity(0.55))
+                Text("×").font(.sarabunFixed(28)).foregroundStyle(Self.line.opacity(0.55))
                     .offset(x: inset, y: y - 44)
                 CanvasRepresentable(canvas: canvas)
             }

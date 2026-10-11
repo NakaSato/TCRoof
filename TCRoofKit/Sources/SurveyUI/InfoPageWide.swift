@@ -188,7 +188,7 @@ struct InfoPageWide: View {
                 job.values["capacity"] = c.isEmpty ? nil : .text(c)
             }))
             .keyboardType(.decimalPad).focused($focus, equals: "capacity")
-            Text(unit("capacity")).font(.system(size: 16)).foregroundStyle(Theme.inkMuted)
+            Text(unit("capacity")).font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
         }
         .inputBox(calc: calc("capacity"), focused: focus == "capacity", error: bad, radius: Self.inputRadius)
     }
@@ -201,7 +201,7 @@ struct InfoPageWide: View {
                 Button {
                     job.values["internet"] = on ? nil : .choice(o, other: "")
                 } label: {
-                    Text(o).font(.system(size: 17, weight: .semibold))
+                    Text(o).font(.sarabunFixed(17, .semibold))
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: Self.inputRadius))
                         .overlay(RoundedRectangle(cornerRadius: Self.inputRadius).stroke(Theme.navy.opacity(on ? 0.2 : 0.5)))
@@ -276,12 +276,12 @@ struct FieldLabel: View {
 
     var compactBody: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(title ?? spec.label.replacingOccurrences(of: "**", with: "")).font(.system(size: 14, weight: .semibold))
+            Text(title ?? spec.label.replacingOccurrences(of: "**", with: "")).font(.sarabunFixed(14, .semibold))
                 .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
-            if !spec.optional { Text("*").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.danger) }
+            if !spec.optional { Text("*").font(.sarabunFixed(14, .semibold)).foregroundStyle(Theme.danger) }
             Spacer(minLength: 4)
             if let aside = aside ?? (spec.optional ? "ไม่บังคับ" : nil), !aside.isEmpty {
-                Text(aside).font(.system(size: 12)).foregroundStyle(Theme.muted).lineLimit(1).minimumScaleFactor(0.8)
+                Text(aside).font(.sarabunFixed(12)).foregroundStyle(Theme.muted).lineLimit(1).minimumScaleFactor(0.8)
             }
         }
         .foregroundStyle(Theme.navy)
@@ -292,8 +292,8 @@ struct FieldLabel: View {
         let important = title == nil && spec.label.hasPrefix("**")
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title ?? spec.label.replacingOccurrences(of: "**", with: ""))
-                .font(.system(size: 17, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.75).layoutPriority(1)
-            if !spec.optional { Text("*").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.danger) }
+                .font(.sarabunFixed(17, .semibold)).lineLimit(1).minimumScaleFactor(0.75).layoutPriority(1)
+            if !spec.optional { Text("*").font(.sarabunFixed(17, .semibold)).foregroundStyle(Theme.danger) }
             if important {
                 Text("สำคัญ").font(.caption.weight(.bold)).padding(.horizontal, 8).padding(.vertical, 1)
                     .background(Theme.sun, in: Capsule())
@@ -330,8 +330,8 @@ struct A1Card<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: spacing) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(title).font(.system(size: 18, weight: .bold))
-                if required { Text("*").font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.danger) }
+                Text(title).font(.sarabunFixed(18, .bold))
+                if required { Text("*").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.danger) }
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
             }
@@ -368,11 +368,11 @@ struct PageStepBar: View {
         let i = steps.firstIndex { $0.page == here } ?? 0
         return VStack(spacing: 7) {
             HStack(spacing: 8) {
-                Text("\(i + 1)/\(steps.count)").font(.system(size: 14, weight: .bold)).monospacedDigit()
-                Text(title ?? steps[safe: i]?.title ?? "").font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text("\(i + 1)/\(steps.count)").font(.sarabunFixed(14, .bold)).monospacedDigit()
+                Text(title ?? steps[safe: i]?.title ?? "").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 4)
                 if let chip {
-                    Text(chip.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(chip.ok ? Theme.okTick : Theme.pending)
+                    Text(chip.text).font(.sarabunFixed(11.5, .bold)).foregroundStyle(chip.ok ? Theme.okTick : Theme.pending)
                         .lineLimit(1).fixedSize()
                         .padding(.horizontal, 8).padding(.vertical, 1)
                         .background(chip.ok ? Theme.okSoft : Theme.pendingSoft, in: Capsule())
@@ -398,11 +398,11 @@ struct PageStepBar: View {
                 Spacer()
                 Text(title ?? steps[safe: i]?.title ?? "")
             }
-            .font(.system(size: 15))
+            .font(.sarabunFixed(15))
             HStack(spacing: 6) {
                 ForEach(Array(steps.enumerated()), id: \.offset) { n, s in
                     Capsule().fill(n == i ? AnyShapeStyle(LinearGradient(colors: [Theme.primary, Theme.primaryLight], startPoint: .leading, endPoint: .trailing))
-                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Theme.mint) : AnyShapeStyle(Color.gray.opacity(0.25)))
+                                   : s.completion.total > 0 && s.completion.isComplete ? AnyShapeStyle(Theme.mint) : AnyShapeStyle(Theme.track))
                         .frame(height: 8)
                 }
             }

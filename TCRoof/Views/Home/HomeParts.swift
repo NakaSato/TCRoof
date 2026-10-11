@@ -13,7 +13,6 @@ struct HomeSize {
     var isPad: Bool
     var roundButton: CGFloat
     var bellGlyph: CGFloat
-    var initials: CGFloat
     // hero
     var heroRadius: CGFloat
     var heroPadding: EdgeInsets
@@ -42,13 +41,13 @@ struct HomeSize {
     var chevron: CGFloat
 
     static let phone = HomeSize(
-        logo: 44, logoRadius: 12, headerRadius: 2, isPad: false, roundButton: 44, bellGlyph: 20, initials: 13.5,
+        logo: 44, logoRadius: 12, headerRadius: 2, isPad: false, roundButton: 44, bellGlyph: 20,
         heroRadius: 20, heroPadding: EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14), heroGap: 11, heroLabel: 12.5,
         ring: 56, ringStroke: 5, ringText: 13, time: 24, kind: 12.5, name: 15, place: 12.5, action: 46, actionRadius: 12, actionText: 15,
         rowRadius: 16, rowGap: 12, rowPadding: (12, 10), tile: 42, tileRadius: 12, tileGlyph: 19, title: 15, subtitle: 12, chip: 11, chevron: 14)
 
     static let pad = HomeSize(
-        logo: 56, logoRadius: 14, headerRadius: 22, isPad: true, roundButton: 52, bellGlyph: 22, initials: 17,
+        logo: 56, logoRadius: 14, headerRadius: 22, isPad: true, roundButton: 52, bellGlyph: 22,
         heroRadius: 22, heroPadding: EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20), heroGap: 16, heroLabel: 14,
         ring: 88, ringStroke: 8, ringText: 20, time: 38, kind: 14, name: 19, place: 14, action: 56, actionRadius: 14, actionText: 17,
         rowRadius: 18, rowGap: 16, rowPadding: (18, 18), tile: 56, tileRadius: 15, tileGlyph: 26, title: 19, subtitle: 14, chip: 13, chevron: 18)
@@ -82,7 +81,7 @@ func userInitials(_ name: String, email: String?) -> String {
 // MARK: - Header
 
 /// iPad (docs/ui/home-navbar-ipad): brand, search field, and the bell + account capsule.
-/// iPhone (docs/ui/tcroof-home-iphone-v2): the logo, and the bell and avatar in one capsule.
+/// iPhone (docs/ui/tcroof-home-iphone-v2): the logo and the bell; settings are the tab bar's `ตั้งค่า`.
 /// The caller shows the notifications: under the bell on iPad (`BellAnchorKey`), full screen on iPhone.
 struct HomeBrandHeader: View {
     let size: HomeSize
@@ -115,7 +114,7 @@ struct HomeBrandHeader: View {
                     notificationsShown = false
                     openSettings()
                 } label: {
-                    Text(initials).font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                    Text(initials).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 42, height: 42).background(Theme.navy, in: Circle())
                         .frame(width: size.roundButton, height: size.roundButton).contentShape(Circle())
                 }
@@ -179,26 +178,17 @@ struct HomeBrandHeader: View {
         .accessibilityAddTraits(.isSearchField)
     }
 
-    /// v2: no text, just the logo and the bell and avatar in one capsule; nearly square, borderless bar.
+    /// v2: no text, just the logo and the bell in a capsule; nearly square, borderless bar.
     private var phoneRow: some View {
         HStack(spacing: 10) {
             Image("AppLogo").resizable().frame(width: size.logo, height: size.logo)
                 .clipShape(RoundedRectangle(cornerRadius: size.logoRadius, style: .continuous))
                 .accessibilityLabel(Text(verbatim: "TC Renewable"))
             Spacer(minLength: 0)
-            HStack(spacing: 0) {
-                bell
-                Button(action: openSettings) {
-                    Text(initials).font(.sarabun(size.initials, .heavy)).foregroundStyle(.white)
-                        .frame(width: 36, height: 36).background(Theme.navy, in: Circle())
-                        .frame(width: size.roundButton, height: size.roundButton).contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("ตั้งค่าและบัญชี")
-            }
-            .padding(.horizontal, 2)
-            .frame(height: 48)
-            .background(Theme.phonePage, in: Capsule())
+            bell
+                .padding(.horizontal, 2)
+                .frame(height: 48)
+                .background(Theme.phonePage, in: Capsule())
         }
         .padding(.horizontal, 16)
         .padding(.top, 2).padding(.bottom, 12)
@@ -231,7 +221,7 @@ struct HomeBrandHeader: View {
             }
             .overlay(alignment: .topTrailing) {
                 if unread > 0 {
-                    Text("\(unread)").font(.sarabun(12, .bold)).monospacedDigit().foregroundStyle(.white)
+                    Text("\(unread)").font(.sarabun(12, .bold)).monospacedDigit().foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
                         .background(Theme.danger, in: Capsule())
                         .overlay(Capsule().stroke(.white, lineWidth: 2))
@@ -263,7 +253,7 @@ struct ModuleRow: View {
 
     var body: some View {
         HStack(spacing: size.rowGap) {
-            Image(systemName: module.symbol).font(.system(size: size.tileGlyph, weight: .semibold)).foregroundStyle(.white)
+            Image(systemName: module.symbol).font(.system(size: size.tileGlyph, weight: .semibold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: size.tile, height: size.tile)
                 .background(Theme.primary, in: RoundedRectangle(cornerRadius: size.tileRadius, style: .continuous))
             VStack(alignment: .leading, spacing: size.isPad ? 2 : 1) {
@@ -330,7 +320,7 @@ struct AppointmentHero: View {
                 Button(action: newSurvey) { primaryLabel("งานสำรวจใหม่ ›") }.buttonStyle(.plain)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(size.heroPadding)
         .background { heroFill }
         .shadow(color: size.isPad ? Theme.navy.opacity(0.25) : Theme.heroSolid.opacity(0.28), radius: size.isPad ? 11 : 9, y: size.isPad ? 10 : 8)
@@ -411,7 +401,7 @@ struct AppointmentHero: View {
             .lineLimit(1).minimumScaleFactor(0.8)
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, minHeight: size.action)
-            .background(.white, in: RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: size.actionRadius, style: .continuous))
     }
 

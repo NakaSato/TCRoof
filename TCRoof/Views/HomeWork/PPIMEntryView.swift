@@ -19,7 +19,7 @@ struct PPIMEntryView: View {
                 }
                 .padding(Space.l)
             }
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("ข้อมูลกรอก PPIM")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

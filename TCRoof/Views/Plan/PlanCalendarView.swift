@@ -148,7 +148,7 @@ struct PlanCalendarView: View {
         }
         .padding(16)
         .frame(maxHeight: rowHeight == nil ? .infinity : nil, alignment: .top)
-        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .cardShadow()
     }
 
@@ -259,7 +259,7 @@ struct PlanCalendarView: View {
             }
         }
         .frame(maxHeight: scrolls ? .infinity : nil, alignment: .top)
-        .background(.white)
+        .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .cardShadow()
     }

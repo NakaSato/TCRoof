@@ -48,12 +48,12 @@ extension SitePageWide {
     var phoneFull: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text("ภาพสถานที่ติดตั้ง").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).lineLimit(1)
+                Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(.white).lineLimit(1)
                 Spacer(minLength: 8)
                 Button { fullScreen = false } label: {
                     HStack(spacing: 6) {
                         A2Icon(name: "action-fullscreenExit", fallback: "arrow.down.right.and.arrow.up.left", size: 18)
-                        Text("เสร็จ").font(.system(size: 15, weight: .bold))
+                        Text("เสร็จ").font(.sarabunFixed(15, .bold))
                     }
                     .foregroundStyle(Theme.navy)
                     .padding(.horizontal, 16).frame(minHeight: 44)
@@ -64,7 +64,7 @@ extension SitePageWide {
             fullPicture
             Button { withAnimation(.easeOut(duration: 0.15)) { panelOpen.toggle() } } label: {
                 HStack(spacing: 6) {
-                    Text("อาคารในโครงการ").font(.system(size: 14, weight: .bold))
+                    Text("อาคารในโครงการ").font(.sarabunFixed(14, .bold))
                     Image(systemName: panelOpen ? "chevron.down" : "chevron.up").font(.system(size: 12, weight: .bold))
                     Spacer(minLength: 0)
                 }
@@ -78,14 +78,14 @@ extension SitePageWide {
 
     var fullHeader: some View {
         HStack(spacing: 14) {
-            Text("ภาพสถานที่ติดตั้ง").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
+            Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(.white)
             Text("เต็มจอ · ใช้เครื่องมือวาด / วางสัญลักษณ์ได้เหมือนเดิม · หนีบ 2 นิ้วเพื่อซูม")
-                .font(.system(size: 13)).foregroundStyle(.white.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
+                .font(.sarabunFixed(13)).foregroundStyle(.white.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 8)
             Button { fullScreen = false } label: {
                 HStack(spacing: 8) {
                     A2Icon(name: "action-fullscreenExit", fallback: "arrow.down.right.and.arrow.up.left", size: 18)
-                    Text("ออกจากเต็มจอ").font(.system(size: 15, weight: .bold))
+                    Text("ออกจากเต็มจอ").font(.sarabunFixed(15, .bold))
                 }
                 .foregroundStyle(Theme.navy)
                 .padding(.horizontal, 16).frame(minHeight: 44)
@@ -103,15 +103,15 @@ extension SitePageWide {
         let selected = src.first { $0.id == selectedModel }
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text("อาคารในโครงการ").font(.system(size: 15, weight: .bold))
+                Text("อาคารในโครงการ").font(.sarabunFixed(15, .bold))
                 Spacer(minLength: 6)
-                Text("วางแล้ว \(src.filter { ids.contains($0.id) }.count)/\(src.count)").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                Text("วางแล้ว \(src.filter { ids.contains($0.id) }.count)/\(src.count)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             Text("โมเดลจากขั้นที่บันทึกแล้ว ขนาดจริงตามสเกลภาพ · ลากการ์ดไปวางบนภาพ แล้วลากโมเดลบนภาพเพื่อย้าย")
-                .font(.system(size: 12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             if metersAcross == nil { scaleNeeded }
             if src.isEmpty {
-                Text("ยังไม่มีขั้นหลังคา ถังน้ำ ตู้ไฟฟ้า หรือห้องอินเวอร์เตอร์").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                Text("ยังไม่มีขั้นหลังคา ถังน้ำ ตู้ไฟฟ้า หรือห้องอินเวอร์เตอร์").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             ScrollView {
                 VStack(spacing: 8) { ForEach(src) { s in modelCard(s, placed: ids.contains(s.id)) } }
@@ -131,10 +131,10 @@ extension SitePageWide {
     /// No scale yet: models can't be sized, so offer the Measure tool (never guess a scale).
     var scaleNeeded: some View {
         HStack(spacing: 8) {
-            Text("ต้องตั้งสเกลก่อน").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.pending)
+            Text("ต้องตั้งสเกลก่อน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.pending)
             Spacer(minLength: 4)
             Button { arm(.shape(.measure)) } label: {
-                Label("วัดระยะ", systemImage: "ruler").font(.system(size: 13, weight: .bold))
+                Label("วัดระยะ", systemImage: "ruler").font(.sarabunFixed(13, .bold))
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.pending))
             }
@@ -157,11 +157,11 @@ extension SitePageWide {
                 .frame(width: 40, height: 34)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(col, lineWidth: 1.5))
             VStack(alignment: .leading, spacing: 1) {
-                Text(s.title).font(.system(size: 13, weight: .bold)).lineLimit(2)
-                Text(metersAcross == nil ? "ต้องตั้งสเกลก่อน" : s.subtitle).font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(s.title).font(.sarabunFixed(13, .bold)).lineLimit(2)
+                Text(metersAcross == nil ? "ต้องตั้งสเกลก่อน" : s.subtitle).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 4)
-            Text(placed ? "วางแล้ว" : "ลากไปวาง").font(.system(size: 11.5, weight: .bold))
+            Text(placed ? "วางแล้ว" : "ลากไปวาง").font(.sarabunFixed(11.5, .bold))
                 .foregroundStyle(placed ? Theme.okText : Theme.primary)
                 .padding(.horizontal, 8).padding(.vertical, 2)
                 .background(placed ? Theme.success.opacity(0.14) : Theme.primary.opacity(0.12), in: Capsule())
@@ -225,12 +225,12 @@ extension SitePageWide {
         let m = models.first { $0.id == s.id }
         let locked = m.map(isLocked) ?? false
         return VStack(alignment: .leading, spacing: 8) {
-            Text(s.title + " · " + s.sizeText).font(.system(size: 13, weight: .bold)).lineLimit(2)
+            Text(s.title + " · " + s.sizeText).font(.sarabunFixed(13, .bold)).lineLimit(2)
             if let m {
                 Text("หมุน \(Int(m.rotation))° · " + (locked ? (allLocked ? "ล็อกทั้งหมดจากแถบเครื่องมือ" : "ล็อกตำแหน่งแล้ว") : "ลากโมเดลบนภาพเพื่อย้าย"))
-                    .font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 Button { changeModels { a in if let i = a.firstIndex(where: { $0.id == s.id }) { a[i].locked.toggle() } } } label: {
-                    Text(m.locked ? "ปลดล็อกตำแหน่ง" : "ล็อกตำแหน่งตามที่วาง").font(.system(size: 14, weight: .bold))
+                    Text(m.locked ? "ปลดล็อกตำแหน่ง" : "ล็อกตำแหน่งตามที่วาง").font(.sarabunFixed(14, .bold))
                         .foregroundStyle(m.locked ? Color.white : Color(red: 0.698, green: 0.416, blue: 0))
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(m.locked ? Theme.warning : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -244,13 +244,13 @@ extension SitePageWide {
                 }
                 .disabled(locked).opacity(locked ? 0.4 : 1)
                 Button { changeModels { a in a.removeAll { $0.id == s.id } } } label: {
-                    Text("เอาโมเดลออกจากภาพ").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.danger)
+                    Text("เอาโมเดลออกจากภาพ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.danger)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.danger))
                 }
                 .buttonStyle(.plain).disabled(locked).opacity(locked ? 0.4 : 1)
             } else {
-                Text(s.hasSize ? "ลากการ์ดไปวางบนภาพ" : "ใส่ขนาดอาคารก่อนวางบนภาพ").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                Text(s.hasSize ? "ลากการ์ดไปวางบนภาพ" : "ใส่ขนาดอาคารก่อนวางบนภาพ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             if let i = job.modules.firstIndex(where: { $0.id.uuidString == s.id && $0.type == .panel }) { buildingSize(i) }
         }
@@ -262,7 +262,7 @@ extension SitePageWide {
                 if let i = a.firstIndex(where: { $0.id == id }) { a[i].rotation = ((a[i].rotation + d).truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) }
             }
         } label: {
-            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+            Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.25)))
         }
@@ -275,16 +275,16 @@ extension SitePageWide {
             TextField(placeholder, text: Binding(
                 get: { job.modules[safe: i]?.values.text(key) ?? "" },
                 set: { v in if job.modules.indices.contains(i) { job.modules[i].values[key] = v.isEmpty ? nil : .text(v) } }))
-                .keyboardType(.decimalPad).font(.system(size: 15, weight: .semibold))
+                .keyboardType(.decimalPad).font(.sarabunFixed(15, .semibold))
                 .padding(.horizontal, 10).frame(minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl.opacity(0.7)))
         }
         return HStack(spacing: 6) {
-            Text("ขนาดอาคาร").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+            Text("ขนาดอาคาร").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             field(SiteModels.buildingWidthKey, "ก")
             Text("×").foregroundStyle(Theme.inkMuted)
             field(SiteModels.buildingLengthKey, "ย")
-            Text("ม.").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+            Text("ม.").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
         }
     }
 }

@@ -23,9 +23,9 @@ struct SpanEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("ระยะช่วงกริด " + Roof.spanName(ref.axis, ref.index)).font(.system(size: 17, weight: .bold))
+                Text("ระยะช่วงกริด " + Roof.spanName(ref.axis, ref.index)).font(.sarabunFixed(17, .bold))
                 Spacer(minLength: 8)
-                Text("ช่วงที่ \(ref.index + 1) จาก \(spans.count)").font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                Text("ช่วงที่ \(ref.index + 1) จาก \(spans.count)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 Button { select(nil) } label: {
                     Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 32)
                 }
@@ -36,7 +36,7 @@ struct SpanEditor: View {
                 ForEach([1.5, 3, 4, 4.5, 6], id: \.self) { v in
                     let on = abs(v - cur) < 0.001
                     Button { with(v) } label: {
-                        Text(fmt(v)).font(.system(size: 15, weight: on ? .bold : .regular))
+                        Text(fmt(v)).font(.sarabunFixed(15, on ? .bold : .regular))
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Color.clear : Theme.navy.opacity(0.45)))
@@ -49,18 +49,18 @@ struct SpanEditor: View {
                     var a = spans; let h = r2(cur / 2)
                     a.replaceSubrange(ref.index...ref.index, with: [h, r2(cur - h)]); set(a, ref.index)
                 }
-                .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
+                .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
                 Button("ลบช่วง") {
                     var a = spans; a.remove(at: ref.index); set(a, min(ref.index, a.count - 1))
                 }
-                .font(.system(size: 15, weight: .bold)).foregroundStyle(spans.count > 1 ? RoofPageWide.red : Theme.disabledText).frame(minHeight: 44)
+                .font(.sarabunFixed(15, .bold)).foregroundStyle(spans.count > 1 ? RoofPageWide.red : Theme.disabledText).frame(minHeight: 44)
                 .disabled(spans.count <= 1)
                 Spacer()
                 Button {
                     if ref.index < spans.count - 1 { select(.init(axis: ref.axis, index: ref.index + 1)) }
                     else { select(.init(axis: ref.axis == .x ? .y : .x, index: 0)) }
                 } label: {
-                    Text("ถัดไป ›").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.onPrimary)
+                    Text("ถัดไป ›").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 16).frame(minHeight: 44).background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -74,7 +74,7 @@ struct SpanEditor: View {
             }
             Divider()
             (Text("ทั้งแนว: ") + Text(spans.map { fmt($0) }.joined(separator: ", ")).bold() + Text(" · รวม " + String(format: "%.2f", total) + " ม."))
-                .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
         }
         .foregroundStyle(Theme.navy)
         .padding(16)
@@ -89,10 +89,10 @@ struct SpanEditor: View {
             square("minus") { with(max(0.5, r2(cur - 0.5))) }
             HStack {
                 TextField("", text: $typed).keyboardType(.decimalPad).focused($typing)
-                    .font(.system(size: 24, weight: .bold)).monospacedDigit()
+                    .font(.sarabunFixed(24, .bold)).monospacedDigit()
                     .onSubmit(commit)
                     .onChange(of: typing) { _, on in if !on { commit() } }
-                Text("ม.").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
+                Text("ม.").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52)
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary, lineWidth: 2))
@@ -116,7 +116,7 @@ struct SpanEditor: View {
 
     func outline(_ t: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(t).font(.system(size: 14, weight: .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText).lineLimit(1).minimumScaleFactor(0.8)
+            Text(t).font(.sarabunFixed(14, .bold)).foregroundStyle(enabled ? Theme.primary : Theme.disabledText).lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(enabled ? Theme.primary.opacity(0.6) : Theme.disabledFill))
         }

@@ -14,7 +14,7 @@ struct WeatherCard: View {
     var body: some View {
         ReportCard("1. สภาพอากาศ", trailing: {
             Button("ทั้งวันโปร่ง") { weather = weather.map { _ in .fine } }
-                .font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+                .font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }) {
             GeometryReader { g in
                 let n = RoutineReport.weatherHours.count, w = g.size.width / CGFloat(n)
@@ -44,18 +44,18 @@ struct WeatherCard: View {
                 let blank = weather.filter { $0 == nil }.count
                 if blank > 0 { Text("ว่าง \(blank) ชม.").foregroundStyle(Theme.dangerText) }
             }
-            .font(.caption).foregroundStyle(Theme.inkMuted)
+            .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         }
     }
 
     private func cell(_ i: Int) -> some View {
         let w = weather[safe: i] ?? nil
         return VStack(spacing: 4) {
-            Text(String(format: "%02d", RoutineReport.weatherHours[i])).font(.caption2.monospacedDigit()).foregroundStyle(Theme.muted)
+            Text(String(format: "%02d", RoutineReport.weatherHours[i])).font(.sarabun(11, relativeTo: .caption2).monospacedDigit()).foregroundStyle(Theme.muted)
             RoundedRectangle(cornerRadius: 6)
                 .fill(w.map(Self.color) ?? Theme.surface)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.borderSubtle))
-                .overlay(Text(w?.rawValue ?? "").font(.headline).foregroundStyle(Theme.navy))
+                .overlay(Text(w?.rawValue ?? "").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy))
                 .frame(height: 44)
                 .padding(.horizontal, 1)
         }
@@ -82,7 +82,7 @@ struct CrewCard: View {
 
     var body: some View {
         ReportCard("2. กำลังคน", trailing: {
-            Text("รวม \(report.crewTotal) คน").font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.navy)
+            Text("รวม \(report.crewTotal) คน").font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.navy)
         }) {
             if !report.crewConfirmed {
                 Button { report.crewConfirmed = true } label: {
@@ -93,7 +93,7 @@ struct CrewCard: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("ใช้ค่าเมื่อวาน แตะเพื่อยืนยันกำลังคนวันนี้")
             } else {
-                Label("ยืนยันกำลังคนวันนี้แล้ว", systemImage: "checkmark.circle.fill").font(.subheadline).foregroundStyle(Theme.okText)
+                Label("ยืนยันกำลังคนวันนี้แล้ว", systemImage: "checkmark.circle.fill").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.okText)
             }
             CountList(counts: $report.crew, names: roles, addTitle: "+ ตำแหน่ง", onChange: { report.crewConfirmed = true })
         }
@@ -129,7 +129,7 @@ struct CountList: View {
             ForEach(missing, id: \.self) { n in Button(n) { counts.append(.init(name: n, count: 1)); onChange() } }
             Button("พิมพ์ชื่อ…") { askName = true }
         } label: {
-            Text(addTitle).font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+            Text(addTitle).font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }
         .alert(addTitle, isPresented: $askName) {
             TextField("ชื่อ", text: $newName)
@@ -152,15 +152,15 @@ struct MaterialsCard: View {
 
     var body: some View {
         ReportCard("4. วัสดุเข้าหน้างาน", trailing: {
-            Button("+ เพิ่ม") { materials.append(.init()); open = true }.font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+            Button("+ เพิ่ม") { materials.append(.init()); open = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }) {
             if materials.isEmpty {
-                Text("ไม่มี").font(.subheadline).foregroundStyle(Theme.muted)
+                Text("ไม่มี").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             } else {
                 DisclosureGroup(isExpanded: $open) {
                     ForEach($materials) { $m in row($m) }
                 } label: {
-                    Text("\(materials.count) รายการ").font(.subheadline).foregroundStyle(Theme.navy)
+                    Text("\(materials.count) รายการ").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 }
             }
         }
@@ -169,18 +169,18 @@ struct MaterialsCard: View {
     private func row(_ m: Binding<RoutineReport.Material>) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                TextField("รายการวัสดุ", text: m.name).textFieldStyle(.roundedBorder)
+                TextField("รายการวัสดุ", text: m.name).textFieldStyle(OutlinedFieldStyle())
                 Button(role: .destructive) { materials.removeAll { $0.id == m.wrappedValue.id } } label: {
                     Image(systemName: "trash").frame(width: touchMin, height: touchMin)
                 }
                 .accessibilityLabel("ลบวัสดุ")
             }
             HStack {
-                TextField("จำนวน", value: Binding(get: { m.wrappedValue.qty > 0 ? m.wrappedValue.qty : nil }, set: { m.wrappedValue.qty = $0 ?? 0 }), format: .number).keyboardType(.decimalPad).textFieldStyle(.roundedBorder).frame(width: 90)
-                TextField("หน่วย", text: m.unit).textFieldStyle(.roundedBorder).frame(width: 80)
+                TextField("จำนวน", value: Binding(get: { m.wrappedValue.qty > 0 ? m.wrappedValue.qty : nil }, set: { m.wrappedValue.qty = $0 ?? 0 }), format: .number).keyboardType(.decimalPad).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 90)
+                TextField("หน่วย", text: m.unit).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 80)
                 LocationMenu(location: m.location, locations: locations)
             }
-            TextField("หมายเหตุ", text: m.remark).textFieldStyle(.roundedBorder)
+            TextField("หมายเหตุ", text: m.remark).textFieldStyle(OutlinedFieldStyle())
         }
         .padding(.vertical, 6)
     }
@@ -200,7 +200,7 @@ struct LocationMenu: View {
             if !location.isEmpty { Button("ไม่ระบุ", role: .destructive) { location = "" } }
         } label: {
             Label(location.isEmpty ? "ตำแหน่ง" : location, systemImage: "mappin")
-                .font(.subheadline).lineLimit(1).frame(minHeight: touchMin)
+                .font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1).frame(minHeight: touchMin)
         }
         .alert("ตำแหน่ง", isPresented: $ask) {
             TextField("เช่น หลังคา 1", text: $typed)
@@ -220,11 +220,11 @@ struct ProgressCard: View {
 
     var body: some View {
         ReportCard("5. ความก้าวหน้า", trailing: {
-            Button("+ งาน") { showAdd = true }.font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+            Button("+ งาน") { showAdd = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }) {
             if report.progress.isEmpty {
-                Text("ยังไม่มีงาน · ถ้าวันนี้หยุดงาน ระบุเหตุผล").font(.subheadline).foregroundStyle(Theme.muted)
-                TextField("เหตุหยุดงาน เช่น ฝนตกทั้งวัน", text: $report.stopReason).textFieldStyle(.roundedBorder)
+                Text("ยังไม่มีงาน · ถ้าวันนี้หยุดงาน ระบุเหตุผล").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                TextField("เหตุหยุดงาน เช่น ฝนตกทั้งวัน", text: $report.stopReason).textFieldStyle(OutlinedFieldStyle())
             }
             ForEach($report.progress) { $line in
                 ProgressRow(line: $line, before: RoutineReport.previousPercent(line, before: report.date, in: previous),
@@ -256,9 +256,9 @@ struct ProgressRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text(line.task?.code ?? "อื่น").font(.subheadline.monospacedDigit().weight(.bold)).foregroundStyle(Theme.primary)
+                Text(line.task?.code ?? "อื่น").font(.sarabun(15, .bold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
                     .padding(.horizontal, 8).padding(.vertical, 4).background(Theme.primarySoft, in: Capsule())
-                TextField(line.task?.title ?? "รายละเอียดงาน", text: $line.description).textFieldStyle(.roundedBorder)
+                TextField(line.task?.title ?? "รายละเอียดงาน", text: $line.description).textFieldStyle(OutlinedFieldStyle())
                 Button(role: .destructive, action: onDelete) { Image(systemName: "trash").frame(width: touchMin, height: touchMin) }
                     .accessibilityLabel("ลบงาน")
             }
@@ -267,7 +267,7 @@ struct ProgressRow: View {
                 Spacer()
                 let delta = line.percent - before
                 Text(delta == 0 ? "วันนี้ 0%" : (delta > 0 ? "+" : "") + RoutineReport.percent(delta) + " วันนี้")
-                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit())
                     .foregroundStyle(delta < 0 ? Theme.dangerText : delta > 0 ? Theme.okText : Theme.muted)
             }
             HStack(spacing: 8) {
@@ -276,7 +276,7 @@ struct ProgressRow: View {
                 Slider(value: $line.percent, in: 0...100, step: 5)
                 Button { line.percent = min(100, line.percent + 5) } label: { Image(systemName: "plus").frame(width: touchMin, height: touchMin) }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).accessibilityLabel("เพิ่ม 5%")
-                Text("สะสม " + RoutineReport.percent(line.percent)).font(.subheadline.monospacedDigit().weight(.semibold))
+                Text("สะสม " + RoutineReport.percent(line.percent)).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit())
                     .foregroundStyle(Theme.navy).frame(minWidth: 90, alignment: .trailing)
             }
         }
@@ -292,24 +292,24 @@ struct ProblemsCard: View {
 
     var body: some View {
         ReportCard("6. ปัญหา / อุปสรรค", trailing: {
-            Button("+ ปัญหา") { problems.append(.init(since: date)) }.font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+            Button("+ ปัญหา") { problems.append(.init(since: date)) }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }) {
-            if problems.isEmpty { Text("ไม่มี").font(.subheadline).foregroundStyle(Theme.muted) }
+            if problems.isEmpty { Text("ไม่มี").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted) }
             // open ones carried from earlier days first
             ForEach($problems.sorted { a, b in (a.wrappedValue.closed ? 1 : 0, a.wrappedValue.since) < (b.wrappedValue.closed ? 1 : 0, b.wrappedValue.since) }) { $p in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        if p.since < date { Text("ตั้งแต่ \(RoutineReport.thaiDate(p.since))").font(.caption).foregroundStyle(Theme.muted) }
+                        if p.since < date { Text("ตั้งแต่ \(RoutineReport.thaiDate(p.since))").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted) }
                         Spacer()
                         Button(p.closed ? "เปิดเรื่องอีกครั้ง" : "ปิดเรื่อง") { p.closed.toggle() }
-                            .font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+                            .font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
                         Button(role: .destructive) { problems.removeAll { $0.id == p.id } } label: {
                             Image(systemName: "trash").frame(width: touchMin, height: touchMin)
                         }
                         .accessibilityLabel("ลบปัญหา")
                     }
-                    TextField("ปัญหา", text: $p.description, axis: .vertical).textFieldStyle(.roundedBorder)
-                    TextField("แนวทางแก้ไข", text: $p.solution, axis: .vertical).textFieldStyle(.roundedBorder)
+                    TextField("ปัญหา", text: $p.description, axis: .vertical).textFieldStyle(OutlinedFieldStyle())
+                    TextField("แนวทางแก้ไข", text: $p.solution, axis: .vertical).textFieldStyle(OutlinedFieldStyle())
                 }
                 .opacity(p.closed ? 0.6 : 1)
                 Divider()
@@ -329,7 +329,7 @@ struct DailyPhotosCard: View {
 
     var body: some View {
         ReportCard("ภาพถ่ายประจำวัน", trailing: {
-            Text("\(photos.count) รูป").font(.subheadline).foregroundStyle(Theme.muted)
+            Text("\(photos.count) รูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
         }) {
             HStack(spacing: 12) {
                 PhotosPicker(selection: $items, maxSelectionCount: 20, matching: .images) {
@@ -341,7 +341,7 @@ struct DailyPhotosCard: View {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             if photos.isEmpty {
-                Text("ยังไม่มีรูป").font(.subheadline).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, minHeight: 80)
+                Text("ยังไม่มีรูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, minHeight: 80)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
                 ForEach($photos) { $p in tile($p) }
@@ -364,7 +364,7 @@ struct DailyPhotosCard: View {
             Thumbnail(data: p.wrappedValue.data).frame(height: 110).clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(alignment: .topTrailing) {
                     Button { photos.removeAll { $0.id == p.wrappedValue.id } } label: {
-                        Image(systemName: "xmark.circle.fill").font(.title3).symbolRenderingMode(.palette)
+                        Image(systemName: "xmark.circle.fill").font(.sarabun(20, relativeTo: .title3)).symbolRenderingMode(.palette)
                             .foregroundStyle(.white, .black.opacity(0.6)).frame(width: touchMin, height: touchMin)
                     }
                     .accessibilityLabel("ลบรูป")
@@ -374,7 +374,7 @@ struct DailyPhotosCard: View {
                 ForEach(lines) { l in Button(l.title) { p.wrappedValue.tag = l.id.uuidString } }
             } label: {
                 let title = lines.first { $0.id.uuidString == p.wrappedValue.tag }?.title
-                Label(title ?? "ระบุงาน", systemImage: "tag").font(.caption).lineLimit(1).frame(minHeight: touchMin, alignment: .leading)
+                Label(title ?? "ระบุงาน", systemImage: "tag").font(.sarabun(12, relativeTo: .caption)).lineLimit(1).frame(minHeight: touchMin, alignment: .leading)
             }
         }
     }

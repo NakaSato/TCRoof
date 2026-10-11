@@ -19,18 +19,18 @@ struct LoginView: View {
                     .font(.system(size: 36, weight: .semibold))
                     .foregroundStyle(Theme.primary)
                     .frame(width: 84, height: 84)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                     .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
                 Text("TCRoof")
                     .font(.system(size: 30, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.top, 18)
                 Spacer()
 
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.85))
+                        .font(.sarabun(13, relativeTo: .footnote))
+                        .foregroundStyle(Theme.onPrimary.opacity(0.85))
                         .multilineTextAlignment(.center)
                         .padding(.bottom, 14)
                         .transition(.opacity)
@@ -41,10 +41,10 @@ struct LoginView: View {
                         if isLoading { ProgressView().tint(Theme.navy) } else { GoogleMark() }
                         Text("เข้าสู่ระบบด้วย Google")
                     }
-                    .font(.headline)
+                    .font(.sarabun(17, .semibold, relativeTo: .headline))
                     .foregroundStyle(Theme.navy)
                     .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(.white, in: Capsule())
+                    .background(Theme.surface, in: Capsule())
                 }
                 .buttonStyle(PressableStyle())
                 .disabled(isLoading || !session.hasValidClientID)

@@ -32,11 +32,11 @@ struct PhoneBand<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text(number).font(.system(size: 24, weight: .heavy)).tracking(-0.5).monospacedDigit().foregroundStyle(Theme.primary)
+                Text(number).font(.sarabunFixed(24, .heavy)).tracking(-0.5).monospacedDigit().foregroundStyle(Theme.primary)
                 Rectangle().fill(Theme.borderSubtle).frame(width: 1, height: 18)
-                Text(title).font(.system(size: 16, weight: .bold)).lineLimit(1)
+                Text(title).font(.sarabunFixed(16, .bold)).lineLimit(1)
                 Spacer(minLength: 4)
-                Text(chip.text).font(.system(size: 11, weight: .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
+                Text(chip.text).font(.sarabunFixed(11, .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
                     .padding(.horizontal, 8).padding(.vertical, 1)
                     .background(chip.bg, in: Capsule())
             }

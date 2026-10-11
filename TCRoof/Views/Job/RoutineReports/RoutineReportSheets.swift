@@ -31,15 +31,21 @@ struct AddWorkSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("งาน MP") {
-                    Picker("งาน", selection: $task) {
-                        ForEach(tasks) { t in Text("\(t.code) \(t.title)").tag(Optional(t)) }
-                        Text("งานอื่น").tag(MasterSchedule.Task?.none)
+            PadForm(maxWidth: 720) {
+                PadSection("งาน MP") {
+                    ForEach(tasks.map(Optional.some) + [nil], id: \.self) { t in
+                        Button { task = t } label: {
+                            HStack {
+                                Text(t.map { "\($0.code) \($0.title)" } ?? "งานอื่น").foregroundStyle(Theme.navy)
+                                Spacer()
+                                if task == t { Image(systemName: "checkmark").foregroundStyle(Theme.primary) }
+                            }
+                            .frame(minHeight: touchMin).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .pickerStyle(.inline).labelsHidden()
                 }
-                Section {
+                PadSection("ตำแหน่ง (เลือกได้หลายที่)") {
                     ForEach(locations + extra, id: \.self) { l in
                         Button { if picked.contains(l) { picked.remove(l) } else { picked.insert(l) } } label: {
                             HStack {
@@ -47,8 +53,9 @@ struct AddWorkSheet: View {
                                 Spacer()
                                 if picked.contains(l) { Image(systemName: "checkmark").foregroundStyle(Theme.primary) }
                             }
-                            .frame(minHeight: touchMin)
+                            .frame(minHeight: touchMin).contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                     HStack {
                         TextField("เพิ่มตำแหน่ง เช่น หลังคา 6", text: $typed)
@@ -59,16 +66,13 @@ struct AddWorkSheet: View {
                             typed = ""
                         }
                     }
-                } header: {
-                    Text("ตำแหน่ง (เลือกได้หลายที่)")
                 } footer: {
                     Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง · ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
                 }
-                Section("รายละเอียด") {
+                PadSection("รายละเอียด") {
                     TextField(task?.title ?? "รายละเอียดงาน", text: $description, axis: .vertical)
                 }
             }
-            .tcFormStyle()
             .navigationTitle("เพิ่มงาน")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -102,28 +106,25 @@ struct DailySignSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            PadForm(maxWidth: 640) {
+                PadSection("ตรวจก่อนลงนาม") {
                     if warnings.isEmpty {
                         Label("ครบถ้วน พร้อมลงนาม", systemImage: "checkmark.circle.fill").foregroundStyle(Theme.okText)
                     }
                     ForEach(warnings, id: \.self) { w in
                         Label(w.text, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.dangerText)
                     }
-                } header: {
-                    Text("ตรวจก่อนลงนาม")
                 } footer: {
                     if !warnings.isEmpty { Text("ลงนามได้ แต่ควรแก้รายการด้านบนก่อน") }
                 }
-                Section("Site Engineer") {
+                PadSection("Site Engineer") {
                     TextField("ชื่อผู้ลงนาม", text: $engineer)
                 }
-                Section {
+                PadSection {
                     Text("ลงนามแล้วระบบจะสร้าง PDF เก็บในเอกสารโครงการ (อัปโหลดขึ้น Drive ได้จากหน้างาน) และอัปเดตความก้าวหน้าในแผน MP")
-                        .font(.footnote).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                 }
             }
-            .tcFormStyle()
             .navigationTitle("ตรวจ & ลงนาม")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -155,11 +156,12 @@ struct InspectorAckSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("ชื่อ Inspector", text: $name)
-                DatePicker("วันที่", selection: $date, displayedComponents: .date)
+            PadForm(maxWidth: 560) {
+                PadSection {
+                    TextField("ชื่อ Inspector", text: $name)
+                    DatePicker("วันที่", selection: $date, displayedComponents: .date)
+                }
             }
-            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -193,8 +195,8 @@ struct RoutineSettingsSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("โครงการ") {
+            PadForm(maxWidth: 720) {
+                PadSection("โครงการ") {
                     TextField("ชื่อสัญญา / โครงการ", text: $s.contractName, axis: .vertical)
                     TextField("ผู้ว่าจ้าง", text: $s.employer)
                     TextField("ผู้รับจ้าง", text: $s.contractor)
@@ -203,8 +205,8 @@ struct RoutineSettingsSheet: View {
                 }
                 ListEditor(title: "ตำแหน่งในสถานี", placeholder: "เช่น หลังคา 1, ถังน้ำใส 1, ห้องอินเวอร์เตอร์", items: $s.locations)
                 if !s.locations.isEmpty {
-                    Section {
-                        NavigationLink {
+                    PadSection {
+                        PadLink {
                             KeyPlanEditor(job: job, settings: $s)
                         } label: {
                             let placed = s.locations.filter { s.keyPoint($0) != nil }.count
@@ -215,12 +217,12 @@ struct RoutineSettingsSheet: View {
                     }
                     taskLocations
                 }
-                Section {
+                PadSection("วันทำงาน") {
                     HStack(spacing: 6) {
                         ForEach(Self.weekdays, id: \.0) { d, label in
                             let on = s.workingWeekdays.contains(d)
                             Button(label) { if on { s.workingWeekdays.remove(d) } else { s.workingWeekdays.insert(d) } }
-                                .font(.subheadline.weight(.semibold))
+                                .font(.sarabun(15, .semibold, relativeTo: .subheadline))
                                 .frame(maxWidth: .infinity, minHeight: touchMin)
                                 .background(on ? Theme.primary : Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 8))
                                 .foregroundStyle(on ? Theme.onPrimary : Theme.navy)
@@ -228,9 +230,12 @@ struct RoutineSettingsSheet: View {
                         }
                     }
                     ForEach(s.holidays, id: \.self) { h in
-                        Text(ISODate.date(h).map(RoutineReport.thaiDate) ?? h)
+                        HStack {
+                            Text(ISODate.date(h).map(RoutineReport.thaiDate) ?? h)
+                            Spacer(minLength: 0)
+                            PadRowButton("ลบวันหยุด", systemImage: "trash", destructive: true) { s.holidays.removeAll { $0 == h } }
+                        }
                     }
-                    .onDelete { s.holidays.remove(atOffsets: $0) }
                     HStack {
                         DatePicker("วันหยุด", selection: $holiday, displayedComponents: .date)
                         Button("เพิ่ม") {
@@ -238,15 +243,12 @@ struct RoutineSettingsSheet: View {
                             if !s.holidays.contains(k) { s.holidays.append(k); s.holidays.sort() }
                         }
                     }
-                } header: {
-                    Text("วันทำงาน")
                 } footer: {
                     Text("วันทำงานที่ไม่มีรายงานจะแสดงเป็นวันที่ขาดในรายงานสัปดาห์และเดือน")
                 }
                 ListEditor(title: "ตำแหน่งงาน (กำลังคน)", placeholder: "เพิ่มตำแหน่ง", items: $s.roles)
                 ListEditor(title: "เครื่องมือ", placeholder: "เพิ่มเครื่องมือ", items: $s.tools)
             }
-            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle("ตั้งค่ารายงานประจำ")
             .navigationBarTitleDisplayMode(.inline)
@@ -263,24 +265,22 @@ struct RoutineSettingsSheet: View {
 extension RoutineSettingsSheet {
     /// Which locations each task's % is averaged over for the MP; a task left empty uses the places it was reported at.
     var taskLocations: some View {
-        Section {
+        PadSection("ตำแหน่งของแต่ละงาน (คิด % ให้แผน MP)") {
             ForEach(MasterSchedule.Task.allCases.filter { $0.part != .permit }) { t in
-                NavigationLink {
+                PadLink {
                     TaskLocationsPicker(task: t, all: s.locations, chosen: Binding(
                         get: { s.taskLocations[t.rawValue] ?? [] },
                         set: { s.taskLocations[t.rawValue] = $0.isEmpty ? nil : $0 }))
                 } label: {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Text(t.code).font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.primary)
+                        Text(t.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
                         Text(t.title).lineLimit(1)
                         Spacer()
                         let n = s.taskLocations[t.rawValue]?.count ?? 0
-                        Text(n == 0 ? "ตามที่รายงาน" : "\(n) ตำแหน่ง").font(.caption).foregroundStyle(Theme.muted)
+                        Text(n == 0 ? "ตามที่รายงาน" : "\(n) ตำแหน่ง").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                     }
                 }
             }
-        } header: {
-            Text("ตำแหน่งของแต่ละงาน (คิด % ให้แผน MP)")
         } footer: {
             Text("% ของงานใน MP = เฉลี่ย % สะสมของทุกตำแหน่งที่เลือก ตำแหน่งที่ยังไม่เริ่มนับเป็น 0% ถ้าไม่เลือก ใช้เฉพาะตำแหน่งที่มีในรายงานแล้ว")
         }
@@ -293,8 +293,8 @@ struct TaskLocationsPicker: View {
     @Binding var chosen: [String]
 
     var body: some View {
-        List {
-            Section {
+        PadForm(maxWidth: 560) {
+            PadSection {
                 ForEach(all, id: \.self) { l in
                     Button {
                         chosen = chosen.contains(l) ? chosen.filter { $0 != l } : all.filter { chosen.contains($0) || $0 == l }
@@ -304,23 +304,26 @@ struct TaskLocationsPicker: View {
                             Spacer()
                             if chosen.contains(l) { Image(systemName: "checkmark").foregroundStyle(Theme.primary) }
                         }
-                        .frame(minHeight: touchMin)
+                        .frame(minHeight: touchMin).contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
             } footer: {
                 Text(task.title)
             }
             if !chosen.isEmpty {
-                Button("ล้าง (ใช้ตามที่รายงาน)", role: .destructive) { chosen = [] }
+                PadSection {
+                    Button("ล้าง (ใช้ตามที่รายงาน)", role: .destructive) { chosen = [] }
+                        .foregroundStyle(Theme.danger).frame(maxWidth: .infinity, minHeight: touchMin)
+                }
             }
         }
-        .tcFormStyle()
         .navigationTitle("\(task.code) ตำแหน่ง")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-/// A section of strings with delete, move and an add row.
+/// A section of strings with delete, move up and an add row.
 struct ListEditor: View {
     let title: String
     let placeholder: String
@@ -328,10 +331,15 @@ struct ListEditor: View {
     @State private var typed = ""
 
     var body: some View {
-        Section(title) {
-            ForEach(items, id: \.self) { Text($0) }
-                .onDelete { items.remove(atOffsets: $0) }
-                .onMove { items.move(fromOffsets: $0, toOffset: $1) }
+        PadSection(title) {
+            ForEach(Array(items.enumerated()), id: \.element) { i, item in
+                HStack(spacing: 0) {
+                    Text(item)
+                    Spacer(minLength: 8)
+                    if i > 0 { PadRowButton("เลื่อน \(item) ขึ้น", systemImage: "arrow.up") { items.swapAt(i, i - 1) } }
+                    PadRowButton("ลบ \(item)", systemImage: "trash", destructive: true) { items.remove(at: i) }
+                }
+            }
             HStack {
                 TextField(placeholder, text: $typed).onSubmit(add)
                 Button("เพิ่ม", action: add).disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty)

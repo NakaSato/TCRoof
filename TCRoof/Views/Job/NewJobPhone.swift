@@ -228,7 +228,7 @@ struct NewJobPhoneView: View {
         let ink: Color = switch s {
         case .empty: Theme.groupFooter
         case .invalid, .phone: Theme.dangerText
-        case .ready: .white
+        case .ready: Theme.onPrimary
         case .saved: Theme.okTick
         }
         return VStack(spacing: 1) {
@@ -272,7 +272,7 @@ struct NewJobPhoneView: View {
     @ViewBuilder private var savedBanner: some View {
         if let job = saved {
             HStack(spacing: 10) {
-                Image(systemName: "checkmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(.white)
+                Image(systemName: "checkmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 28, height: 28).background(Theme.paperTick, in: Circle())
                 VStack(alignment: .leading, spacing: 0) {
                     Text("เพิ่มลูกค้าแล้ว").font(.sarabun(14, .bold))
@@ -286,12 +286,12 @@ struct NewJobPhoneView: View {
                     } label: {
                         Text("เปิดงาน").font(.sarabun(14, .bold)).foregroundStyle(Theme.mint)
                             .padding(.horizontal, 10).frame(minHeight: 44)
-                            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.onPrimary)
             .padding(.leading, 12).padding(.trailing, 8).padding(.vertical, 10)
             .background(Theme.bannerFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .shadow(color: Theme.bannerFill.opacity(0.35), radius: 13, y: 10)
@@ -366,7 +366,7 @@ private struct FormRow<Value: View>: View {
 
     private var row: some View {
         HStack(alignment: multiline ? .top : .center, spacing: 12) {
-            (Text(label) + (required ? Text(" *").foregroundColor(.red) : Text("")))
+            (Text(label) + (required ? Text(" *").foregroundColor(Theme.danger) : Text("")))
                 .font(.sarabun(16)).foregroundStyle(Theme.navy)
                 .frame(width: 96, alignment: .leading)
                 .padding(.top, multiline ? 15 : 0)

@@ -56,7 +56,7 @@ extension SitePageWide {
 
     /// Blue pill `↔ A3 TX 1` / `↔ B4`.
     func linkChip(_ title: String) -> some View {
-        Text("↔ " + title).font(.system(size: 11.5, weight: .bold)).foregroundStyle(Theme.primary).lineLimit(1)
+        Text("↔ " + title).font(.sarabunFixed(11.5, .bold)).foregroundStyle(Theme.primary).lineLimit(1)
             .padding(.horizontal, 8).frame(height: 22)
             .background(Theme.primarySoft, in: Capsule())
     }
@@ -82,8 +82,8 @@ extension SitePageWide {
                         Image(systemName: on ? "record.circle.fill" : "circle")
                             .font(.system(size: 20)).foregroundStyle(on ? Theme.danger : Theme.borderControl)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(c.title).font(.system(size: 16, weight: .bold))
-                            Text(c.detail).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                            Text(c.title).font(.sarabunFixed(16, .bold))
+                            Text(c.detail).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 0)
                     }
@@ -96,7 +96,7 @@ extension SitePageWide {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
             Text("ส่งไป B4 กันย้อน: MV = \(ZeroExport.hv) · LV = \(ZeroExport.lv)")
-                .font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             editorButtons { change { a, _ in a.removeAll { $0.id == m.id } }; editing = nil }
         }
         .padding(16).frame(width: 340)
@@ -138,11 +138,11 @@ extension SitePageWide {
 
     func editorField(_ title: String, text: Binding<String>, placeholder: String, unit: String? = nil, numeric: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 6) {
-                TextField(placeholder, text: text).font(.system(size: 17, weight: .semibold))
+                TextField(placeholder, text: text).font(.sarabunFixed(17, .semibold))
                     .keyboardType(numeric ? .decimalPad : .default)
-                if let unit { Text(unit).font(.system(size: 14)).foregroundStyle(Theme.inkMuted) }
+                if let unit { Text(unit).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
             }
             .padding(.horizontal, 12).frame(minHeight: 44)
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl.opacity(0.7)))
@@ -152,12 +152,12 @@ extension SitePageWide {
     func editorButtons(delete: @escaping () -> Void, done: @escaping () -> Void = {}) -> some View {
         HStack(spacing: 10) {
             Button(role: .destructive, action: delete) {
-                Text("ลบ").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.danger)
+                Text("ลบ").font(.sarabunFixed(16, .semibold)).foregroundStyle(Theme.danger)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.danger))
             }
             Button { done(); editing = nil } label: {
-                Text("เสร็จ").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.onPrimary)
+                Text("เสร็จ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }

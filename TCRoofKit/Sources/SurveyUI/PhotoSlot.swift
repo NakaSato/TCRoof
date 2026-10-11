@@ -42,7 +42,7 @@ struct PhotoSlot: View {
     var empty: some View {
         ViewThatFits {
             VStack(spacing: 14) {
-                Text(hint).font(.system(size: 15)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
+                Text(hint).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
                 PhotoSourceButtons(onUpload: { showPicker = true }, onCamera: { showCamera = true })
                 extra
             }
@@ -50,7 +50,7 @@ struct PhotoSlot: View {
             .frame(minWidth: 330, minHeight: 120)
             VStack(spacing: 4) {
                 // a small ideal width so ViewThatFits keeps the hint and lets it shrink
-                Text(hint).font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                Text(hint).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(minWidth: 0, idealWidth: 60, maxWidth: .infinity)
                 PhotoSourceButtons(compact: true, onUpload: { showPicker = true }, onCamera: { showCamera = true })
                 extra
@@ -100,7 +100,7 @@ struct PhotoSlot: View {
     /// A photo saved in the job but taken on another device.
     static var notDownloaded: some View {
         Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
-            .font(.callout).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center).padding(8)
+            .font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center).padding(8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

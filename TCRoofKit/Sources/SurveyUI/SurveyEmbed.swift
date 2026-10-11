@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import TCRoofCore
+import TCRoofUI
 
 /// One report's editor, for a host app to push from its own screens (e.g. a job's detail page).
 public struct SurveyReportEditor: View {
@@ -13,7 +14,7 @@ public struct SurveyReportEditor: View {
         if let j = model.job(jobID) {
             JobEditorView(job: j, start: start).environment(model)
         } else {
-            ContentUnavailableView("ไม่พบแบบสำรวจ", systemImage: "doc.questionmark", description: Text("อาจถูกลบจากเครื่องอื่นแล้ว"))
+            TCEmptyState("ไม่พบแบบสำรวจ", systemImage: "doc.questionmark", description: Text("อาจถูกลบจากเครื่องอื่นแล้ว"))
         }
     }
 }

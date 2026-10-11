@@ -62,7 +62,7 @@ struct AttachmentPhotoEditor: View {
                 }
                 .padding(Space.l)
             }
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("รูปที่ \(attachment).\(index + 1)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -73,7 +73,7 @@ extension PanelsPageWide {
         .overlay(alignment: .bottomLeading) {
             if photo != nil {
                 Text(pvPoint == nil ? "แตะภาพเพื่อวงจุดเชื่อมต่อ" : "ลากใหม่เพื่อย้ายจุดเชื่อมต่อ")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.navy)
+                    .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(Theme.surface.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
             }

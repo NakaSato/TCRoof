@@ -91,7 +91,7 @@ extension TankPageWide {
             ForEach(items, id: \.0) { item in
                 let on = obsShade == item.0
                 Button { withAnimation(.easeOut(duration: 0.15)) { obsShade = item.0 } } label: {
-                    Text(item.1).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                    Text(item.1).font(.sarabunFixed(14, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {
@@ -130,7 +130,7 @@ extension TankPageWide {
                 .disabled(!Tank.hasSize(values))
             }
             Text(Tank.hasSize(values) ? "แตะจุดเพื่อเลือก · ลากเพื่อย้าย" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
-                .font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
         .background(Theme.surface)
@@ -147,7 +147,7 @@ extension TankPageWide {
                 HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: r).strokeBorder(c, style: StrokeStyle(lineWidth: 1.5, dash: dashed ? [3, 2] : []))
                         .frame(width: 10, height: 10)
-                    Text(t).font(.system(size: 11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(t).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
         }
@@ -184,7 +184,7 @@ extension TankPageWide {
                 }
                 if let p = selectedPoint {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("จุด \(p.label) · \(TankPoints.kindName(p.kind))").font(.system(size: 16, weight: .bold))
+                        Text("จุด \(p.label) · \(TankPoints.kindName(p.kind))").font(.sarabunFixed(16, .bold))
                         statusChoice(p)
                     }
                     .padding(14)
@@ -192,7 +192,7 @@ extension TankPageWide {
                 }
             }
             .padding(16)
-            .background(Theme.background)
+            .tcPageBackground()
             .navigationTitle("แปลนสิ่งกีดขวาง")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -225,7 +225,7 @@ extension TankPageWide {
             }
         } else if Tank.hasSize(values) {
             phoneCard(2, "จุดสิ่งกีดขวาง", chip: ("ไม่มีจุด", Theme.inkMuted, Theme.primarySoft)) {
-                Text("ยังไม่มีจุดบนแปลน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                Text("ยังไม่มีจุดบนแปลน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                 field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(nil) }
             }
         }
@@ -249,7 +249,7 @@ extension TankPageWide {
             ForEach(chips) { o in
                 let on = o.id == p.id
                 Button { withAnimation(.easeOut(duration: 0.15)) { pointSel = o.id } } label: {
-                    Text(o.label).font(.system(size: 14, weight: .heavy)).foregroundStyle(on ? Color.white : Theme.primary).lineLimit(1)
+                    Text(o.label).font(.sarabunFixed(14, .heavy)).foregroundStyle(on ? Theme.onMedia : Theme.primary).lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(on ? Theme.warning : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay {
@@ -266,7 +266,7 @@ extension TankPageWide {
 
     func arrowChip(_ t: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(t).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
+            Text(t).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 44, height: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
@@ -288,7 +288,7 @@ extension TankPageWide {
         return Button {
             update { TankPoints.setStatus(&$0, p.id, on ? "" : s) }
         } label: {
-            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(on ? ink : Theme.navy).lineLimit(1)
+            Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(on ? ink : Theme.navy).lineLimit(1)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(on ? bg : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(on && s == TankPoints.absent ? Theme.danger : Theme.navy.opacity(on ? 0.2 : 0.35)))
@@ -326,7 +326,7 @@ extension TankPageWide {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: c.warning ? "exclamationmark.triangle" : "info.circle").font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(c.warning ? Theme.pending : Theme.okTick)
-                Text(c.text).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+                Text(c.text).font(.sarabunFixed(13)).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
@@ -354,7 +354,7 @@ extension TankPageWide {
 
     func actionButton(_ title: String, ink: Color, border: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
+            Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(border))
@@ -380,10 +380,10 @@ extension TankPageWide {
     var rowSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Text("ทำซ้ำ \(selectedPoint?.label ?? "") ไปทางขวาตามแถวเดียวกัน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                Text("ทำซ้ำ \(selectedPoint?.label ?? "") ไปทางขวาตามแถวเดียวกัน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                 field("จำนวนจุดที่เพิ่ม") {
                     Stepper(value: $rowCount, in: 1...20) {
-                        Text("\(rowCount) จุด").font(.system(size: 16, weight: .semibold)).monospacedDigit()
+                        Text("\(rowCount) จุด").font(.sarabunFixed(16, .semibold)).monospacedDigit()
                     }
                     .frame(minHeight: 44)
                 }
@@ -429,11 +429,11 @@ struct PointDistanceField: View {
         HStack(spacing: 4) {
             TextField("0.00", text: $typed)
                 .keyboardType(.decimalPad).focused($typing)
-                .font(.system(size: 16, weight: .semibold)).monospacedDigit()
+                .font(.sarabunFixed(16, .semibold)).monospacedDigit()
                 .onSubmit(commit)
                 .onChange(of: typing) { _, on in if !on { commit() } }
                 .accessibilityLabel(label + " (เมตร)")
-            Text("ม.").font(.system(size: 13)).foregroundStyle(Theme.borderControl).accessibilityHidden(true)
+            Text("ม.").font(.sarabunFixed(13)).foregroundStyle(Theme.borderControl).accessibilityHidden(true)
             Image(systemName: "keyboard").font(.system(size: 14)).foregroundStyle(Theme.primary).accessibilityHidden(true)
         }
         .padding(.leading, 12).padding(.trailing, 10)

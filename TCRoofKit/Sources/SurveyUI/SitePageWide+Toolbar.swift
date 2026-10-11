@@ -53,16 +53,16 @@ extension SitePageWide {
         HStack(spacing: 0) { content() }
             .padding(2)
             .background(Theme.surface.opacity(0.96), in: RoundedRectangle(cornerRadius: 10))
-            .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.28), radius: 2.5, y: 1)
+            .shadow(color: Theme.navySolid.opacity(0.28), radius: 2.5, y: 1)
     }
 
     /// `narrow` drops the title (VoiceOver keeps it) so the toolbar fits an iPhone.
     func itemLabel(_ title: String, icon: String, symbol: String, fill: Color, on: Bool, narrow: Bool = false) -> some View {
         HStack(spacing: 5) {
             A2Icon(name: icon, fallback: symbol, size: 16)
-            if !narrow { Text(title).font(.system(size: 11.5, weight: .semibold)).lineLimit(1).fixedSize() }
+            if !narrow { Text(title).font(.sarabunFixed(11.5, .semibold)).lineLimit(1).fixedSize() }
         }
-        .foregroundStyle(on ? Color.white : Theme.navy)
+        .foregroundStyle(on ? Theme.onPrimary : Theme.navy)
         .padding(.horizontal, narrow ? 0 : 10).frame(minWidth: narrow ? 36 : nil).frame(height: 36)
         .background(fill, in: RoundedRectangle(cornerRadius: 7))
         // 36 pt button + the group's padding: a 44 pt target
@@ -116,8 +116,8 @@ extension SitePageWide {
                 let on = layers.contains(l)
                 Button { if on { layers.remove(l) } else { layers.insert(l) } } label: {
                     HStack(spacing: 10) {
-                        Text(on ? "✓" : "○").font(.system(size: 13, weight: .bold)).frame(width: 16)
-                        Text(l.title).font(.system(size: 13, weight: .semibold)).strikethrough(!on)
+                        Text(on ? "✓" : "○").font(.sarabunFixed(13, .bold)).frame(width: 16)
+                        Text(l.title).font(.sarabunFixed(13, .semibold)).strikethrough(!on)
                         Spacer(minLength: 0)
                     }
                     .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
@@ -132,7 +132,7 @@ extension SitePageWide {
         .padding(6)
         .frame(width: 180)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color(red: 22 / 255, green: 50 / 255, blue: 92 / 255).opacity(0.3), radius: 10, y: 6)
+        .shadow(color: Theme.navySolid.opacity(0.3), radius: 10, y: 6)
     }
 
     @ViewBuilder func scaleBar(_ size: CGSize, zoom z: CGFloat) -> some View {
@@ -150,13 +150,13 @@ extension SitePageWide {
                     Text(fmt(length / 2)).frame(width: w / 2, alignment: .leading)
                     Text(fmt(length) + " ม.")
                 }
-                .font(.system(size: 11, weight: .semibold)).monospacedDigit().fixedSize()
+                .font(.sarabunFixed(11, .semibold)).monospacedDigit().fixedSize()
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         } else if photo != nil {
             Button { arm(.shape(.measure)) } label: {
-                Label("ตั้งมาตราส่วน", systemImage: "ruler").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.pending)
+                Label("ตั้งมาตราส่วน", systemImage: "ruler").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.pending)
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
             }
@@ -188,7 +188,7 @@ extension SitePageWide {
         VStack(alignment: .leading, spacing: 8) {
             drawControl
             (Text(toolHint.name).bold() + Text("  " + toolHint.hint))
-                .font(.system(size: 13)).foregroundStyle(.white)
+                .font(.sarabunFixed(13)).foregroundStyle(.white)
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .background(Theme.navySolid.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 420, alignment: .leading)
@@ -203,15 +203,15 @@ extension SitePageWide {
         if palette || (polyline != nil && !draft.isEmpty) {
             HStack(spacing: 10) {
                 if let k = polyline {
-                    Text("\(draft.count) จุด").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white).monospacedDigit()
-                    Button("เสร็จ") { finishDraft() }.font(.system(size: 14, weight: .bold))
+                    Text("\(draft.count) จุด").font(.sarabunFixed(14, .semibold)).foregroundStyle(.white).monospacedDigit()
+                    Button("เสร็จ") { finishDraft() }.font(.sarabunFixed(14, .bold))
                         .disabled(draft.count < k.minPoints)
                         .padding(.horizontal, 14).frame(minHeight: 36)
                         .background(Theme.surface.opacity(draft.count < k.minPoints ? 0.4 : 1), in: Capsule())
                         .foregroundStyle(Theme.navy)
                         .contentShape(Capsule().inset(by: -4))
                 }
-                Button("ยกเลิก") { arm(nil) }.font(.system(size: 14, weight: .bold))
+                Button("ยกเลิก") { arm(nil) }.font(.sarabunFixed(14, .bold))
                     .padding(.horizontal, 14).frame(minHeight: 36)
                     .overlay(Capsule().stroke(.white.opacity(0.7)))
                     .foregroundStyle(.white)
@@ -246,8 +246,8 @@ extension SitePageWide {
 
     var captionTitle: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("ภาพสถานที่ติดตั้ง").font(.system(size: 14, weight: .bold)).underline()
-            Text(photoLine).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+            Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(14, .bold)).underline()
+            Text(photoLine).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
         }
         .lineLimit(1)
     }
@@ -263,7 +263,7 @@ extension SitePageWide {
                 }
             }
         } label: {
-            Text(photo == nil ? "เลือกภาพ" : "เปลี่ยนภาพ").font(.system(size: 15, weight: .semibold))
+            Text(photo == nil ? "เลือกภาพ" : "เปลี่ยนภาพ").font(.sarabunFixed(15, .semibold))
                 .padding(.horizontal, 14).frame(minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
@@ -297,7 +297,7 @@ extension SitePageWide {
                 Text("× [W/แผง] = [kWp]").foregroundStyle(Theme.inkMuted)
             }
         }
-        .font(.system(size: 13)).lineLimit(1).fixedSize()
+        .font(.sarabunFixed(13)).lineLimit(1).fixedSize()
         .padding(.horizontal, 10).frame(minHeight: 36)
         .background(Theme.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityLabel("หน้า C จำนวนแผง \(Int(n))")

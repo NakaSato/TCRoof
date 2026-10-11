@@ -96,12 +96,12 @@ struct PhoneNotificationsView: View {
                 Text(title).font(.sarabun(13.5, .bold, relativeTo: .footnote))
                 if let count {
                     Text("\(count)").font(.sarabun(12, .bold, relativeTo: .caption)).monospacedDigit()
-                        .foregroundStyle(on ? .white : Theme.pending)
+                        .foregroundStyle(on ? Theme.onPrimary : Theme.pending)
                         .frame(minWidth: 20, minHeight: 20)
-                        .background(on ? Color.white.opacity(0.2) : Theme.warningSoft, in: Circle())
+                        .background(on ? Theme.onPrimary.opacity(0.2) : Theme.warningSoft, in: Circle())
                 }
             }
-            .foregroundStyle(on ? .white : Theme.navy)
+            .foregroundStyle(on ? Theme.onPrimary : Theme.navy)
             .padding(.horizontal, 14).frame(minHeight: 36)
             .background(on ? Theme.navy : Theme.surface, in: Capsule())
             .overlay(Capsule().stroke(on ? .clear : ink.border))
@@ -217,7 +217,7 @@ private struct NotificationRowLabel: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+            Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 32, height: 32).background(tile, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {

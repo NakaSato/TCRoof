@@ -34,20 +34,20 @@ struct MPScheduleCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? "")).font(.headline).foregroundStyle(Theme.navy)
+                Text("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? "")).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 if job.scheduleInput != nil {
-                    Button("แก้ไข") { showSetup = true }.font(.subheadline.weight(.semibold)).frame(minHeight: touchMin)
+                    Button("แก้ไข") { showSetup = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
                 }
             }
             if let input = job.scheduleInput {
                 summary(input)
             } else {
                 Text("สร้างแผนจากวันติดตั้งและวันยื่นขออนุญาต ระบบจัดวัน 18 งานตามไฟล์ MP ให้")
-                    .font(.subheadline).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 Button { showSetup = true } label: {
                     Label("สร้างแผน MP", systemImage: "calendar.badge.plus")
-                        .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+                        .font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
@@ -80,8 +80,8 @@ struct MPScheduleCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     MPVarianceChip(variance: st.variance)
                     Text("แผน \(MPFormat.percent(st.planned)) · ทำได้ \(MPFormat.percent(st.actual))")
-                        .font(.subheadline).foregroundStyle(Theme.inkMuted)
-                    Text("ถึงสัปดาห์ \(MasterSchedule.weekStart(.now).thaiShort)").font(.caption).foregroundStyle(Theme.muted)
+                        .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                    Text("ถึงสัปดาห์ \(MasterSchedule.weekStart(.now).thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                 }
             }
             ForEach(MasterSchedule.Part.allCases, id: \.self) { part in
@@ -91,7 +91,7 @@ struct MPScheduleCard: View {
             thisWeek(plan)
             NavigationLink { MPScheduleScreen(job: job) } label: {
                 Label("เปิดแผนงาน MP", systemImage: "chart.bar.xaxis")
-                    .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: touchMin)
+                    .font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
@@ -105,14 +105,14 @@ struct MPScheduleCard: View {
             return s <= weekEnd && e >= week
         }
         VStack(alignment: .leading, spacing: 4) {
-            Text("งานสัปดาห์นี้").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
+            Text("งานสัปดาห์นี้").font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
             if now.isEmpty {
-                Text("ไม่มีงานตามแผน").font(.subheadline).foregroundStyle(Theme.muted)
+                Text("ไม่มีงานตามแผน").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
             ForEach(now) { p in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(p.task.code).font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.primary)
-                    Text(p.task.title).font(.subheadline).lineLimit(1)
+                    Text(p.task.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
+                    Text(p.task.title).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
                 }
             }
         }
@@ -140,7 +140,7 @@ struct MPRing: View {
             Capsule().fill(Theme.navy).frame(width: 3, height: 14)
                 .offset(y: -32)
                 .rotationEffect(.degrees(min(planned, 100) / 100 * 360))
-            Text(MPFormat.percent(actual)).font(.headline.monospacedDigit()).foregroundStyle(Theme.navy)
+            Text(MPFormat.percent(actual)).font(.sarabun(17, .semibold, relativeTo: .headline).monospacedDigit()).foregroundStyle(Theme.navy)
                 .minimumScaleFactor(0.6).padding(10)
         }
         .frame(width: 72, height: 72)
@@ -157,7 +157,7 @@ struct MPVarianceChip: View {
         let behind = variance < -0.05, ahead = variance > 0.05
         let text = behind ? "ช้ากว่า \(MPFormat.percent(-variance))" : ahead ? "เร็วกว่า \(MPFormat.percent(variance))" : "ตามแผน"
         Text(text)
-            .font(.subheadline.weight(.bold))
+            .font(.sarabun(15, .bold, relativeTo: .subheadline))
             .foregroundStyle(behind ? Theme.dangerText : ahead ? Theme.okText : Theme.navy)
             .padding(.horizontal, 10).padding(.vertical, 4)
             .background(behind ? Theme.dangerSoft : ahead ? Theme.okSoft : Theme.primarySoft, in: Capsule())
@@ -173,9 +173,9 @@ struct MPPartBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(part.reportTitle).font(.subheadline)
+                Text(part.reportTitle).font(.sarabun(15, relativeTo: .subheadline))
                 Spacer()
-                Text("\(MPFormat.percent(actual)) / \(MPFormat.percent(total))").font(.subheadline.monospacedDigit()).foregroundStyle(Theme.inkMuted)
+                Text("\(MPFormat.percent(actual)) / \(MPFormat.percent(total))").font(.sarabun(15, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.inkMuted)
             }
             GeometryReader { g in
                 let w = g.size.width, k = total > 0 ? w / total : 0
@@ -220,8 +220,8 @@ struct MPSetupSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("สถานี") {
+            PadForm(maxWidth: 720) {
+                PadSection("สถานี") {
                     LabeledContent("MP เลขที่") {
                         TextField("เช่น 189", value: $mpNumber, format: .number.grouping(.never))
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing)
@@ -234,21 +234,19 @@ struct MPSetupSheet: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("inverter เกิน 200 kVA (ต้องยื่น พค.2)")
                             if let kw = inverterKW, kw > 0 {
-                                Text("สถานีนี้ \(kw.formatted()) kW").font(.caption).foregroundStyle(Theme.muted)
+                                Text("สถานีนี้ \(kw.formatted()) kW").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                             }
                         }
                     }
                     .onChange(of: inverterKW) { _, kw in if let kw { input.over200kVA = MasterSchedule.Input.isOver200kVA(inverterKW: kw) } }
                 }
-                Section {
+                PadSection("ช่วงติดตั้ง") {
                     DatePicker("วันเริ่มติดตั้ง", selection: $input.installStart, displayedComponents: .date)
                     DatePicker("วันจบติดตั้ง", selection: $input.installEnd, in: input.installStart..., displayedComponents: .date)
-                } header: {
-                    Text("ช่วงติดตั้ง")
                 } footer: {
                     Text("วันติดตั้งในปฏิทินแผนงานจะเปลี่ยนตามช่วงนี้")
                 }
-                Section("ขออนุญาต") {
+                PadSection("ขออนุญาต") {
                     DatePicker("Kick off", selection: $input.kickoff, displayedComponents: .date)
                     DatePicker("Engineering เริ่ม", selection: $input.engineeringStart, displayedComponents: .date)
                     DatePicker("ส่งมอบพื้นที่", selection: $input.siteHandover, displayedComponents: .date)
@@ -259,11 +257,10 @@ struct MPSetupSheet: View {
                         Stepper("ขนานไฟ \(input.gridConnectionDays) วัน", value: $input.gridConnectionDays, in: 1...60)
                     }
                 }
-                Section("ตัวอย่างแผน 18 งาน") {
+                PadSection("ตัวอย่างแผน 18 งาน") {
                     ForEach(plan) { p in MPPlanRow(task: p) }
                 }
             }
-            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(job.scheduleInput == nil ? "สร้างแผน MP" : "ตั้งค่าแผน MP")
             .navigationBarTitleDisplayMode(.inline)
@@ -288,17 +285,17 @@ struct MPPlanRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(task.task.code).font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.primary)
+            Text(task.task.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
                 .frame(width: 32, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.task.title).font(.subheadline)
+                Text(task.task.title).font(.sarabun(15, relativeTo: .subheadline))
                 if let s = task.start, let e = task.end {
                     Text(s == e ? s.thaiShort : "\(s.thaiShort) – \(e.thaiShort) · \(task.days() ?? 0) วัน")
-                        .font(.caption).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
             }
             Spacer(minLength: 8)
-            Text(task.weight > 0 ? MPFormat.percent(task.weight) : "ไม่ใช้").font(.caption.monospacedDigit()).foregroundStyle(Theme.muted)
+            Text(task.weight > 0 ? MPFormat.percent(task.weight) : "ไม่ใช้").font(.sarabun(12, relativeTo: .caption).monospacedDigit()).foregroundStyle(Theme.muted)
         }
         .opacity(task.weight > 0 ? 1 : 0.5)
     }

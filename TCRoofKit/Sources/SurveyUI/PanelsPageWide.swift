@@ -47,7 +47,7 @@ struct PanelsPageWide: View {
     func label(_ t: String, required: Bool = false, aside: String? = nil) -> some View {
         let row = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
         return row {
-            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold))
+            (Text(t) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.sarabunFixed(17, .bold))
             if !narrow { Spacer(minLength: 8) }
             if let aside { Text(aside).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
         }
@@ -97,7 +97,7 @@ struct PanelsPageWide: View {
 
     var buildingList: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("อาคาร").font(.system(size: 17, weight: .bold))
+            Text("อาคาร").font(.sarabunFixed(17, .bold))
             ForEach(panels) { m in buildingCard(m) }
             addButton
         }
@@ -108,11 +108,11 @@ struct PanelsPageWide: View {
         return Button { select(m.id) } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(BuildingPanels.name(m, in: job)).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(BuildingPanels.name(m, in: job)).font(.sarabunFixed(16, .bold)).lineLimit(1).minimumScaleFactor(0.8)
                     Spacer(minLength: 4)
                     pillView(pill)
                 }
-                Text(BuildingPanels.subLine(m, in: job)).font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
+                Text(BuildingPanels.subLine(m, in: job)).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -125,7 +125,7 @@ struct PanelsPageWide: View {
     }
 
     func pillView(_ p: BuildingPanels.Pill) -> some View {
-        Text(p.text).font(.system(size: 12, weight: .bold)).lineLimit(1)
+        Text(p.text).font(.sarabunFixed(12, .bold)).lineLimit(1)
             .foregroundStyle(p.ok ? Theme.success : Theme.dangerText)
             .padding(.horizontal, 7).padding(.vertical, 2)
             .background((p.ok ? Theme.success : Theme.dangerText).opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
@@ -135,7 +135,7 @@ struct PanelsPageWide: View {
         Button { add() } label: {
             HStack(spacing: 6) {
                 A2Icon(name: "ui-add", fallback: "plus", size: 14)
-                Text("เพิ่มอาคาร").font(.system(size: 15, weight: .semibold))
+                Text("เพิ่มอาคาร").font(.sarabunFixed(15, .semibold))
             }
             .foregroundStyle(Theme.primary)
             .frame(maxWidth: .infinity, minHeight: 44)
@@ -153,7 +153,7 @@ struct PanelsPageWide: View {
                     let on = m.id == moduleID, pill = BuildingPanels.pill(m.values)
                     Button { select(m.id) } label: {
                         HStack(spacing: 6) {
-                            Text(BuildingPanels.name(m, in: job)).font(.system(size: 15, weight: .bold)).lineLimit(1)
+                            Text(BuildingPanels.name(m, in: job)).font(.sarabunFixed(15, .bold)).lineLimit(1)
                             pillView(pill)
                         }
                         .padding(.horizontal, 12).frame(minHeight: 44)
@@ -220,7 +220,7 @@ struct PanelsPageWide: View {
     var nameButton: some View {
         Button { nameText = module?.name ?? ""; renaming = true } label: {
             HStack(spacing: 6) {
-                Text(title).font(.system(size: narrow ? 22 : 26, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(title).font(.sarabunFixed(narrow ? 22 : 26, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                 Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted)
             }
             .frame(minHeight: 44).contentShape(Rectangle())
@@ -231,12 +231,12 @@ struct PanelsPageWide: View {
 
     @ViewBuilder var headingActions: some View {
         Button { openForm() } label: {
-            Text("แบบฟอร์มเดิม").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.primary)
+            Text("แบบฟอร์มเดิม").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         Button { confirmDelete = true } label: {
-            Text("ลบอาคาร").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.dangerText)
+            Text("ลบอาคาร").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.dangerText)
                 .padding(.horizontal, 14).frame(minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.dangerText.opacity(0.8)))
                 .contentShape(Rectangle())

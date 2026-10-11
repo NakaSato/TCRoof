@@ -96,9 +96,9 @@ struct SitePinStage<Pin: View, Legend: View>: View {
         VStack(spacing: 14) {
             if noPicture {
                 Image(systemName: "photo").font(.system(size: 34)).foregroundStyle(Theme.inkMuted)
-                Text("ยังไม่มีภาพสถานที่ติดตั้งในหน้า A2").font(.headline)
+                Text("ยังไม่มีภาพสถานที่ติดตั้งในหน้า A2").font(.sarabun(17, .semibold, relativeTo: .headline))
                 Button(action: openSite) {
-                    Text("เปิด A2 เพื่อเลือกภาพ").font(.system(size: 15, weight: .bold)).padding(.horizontal, 16).frame(minHeight: 44)
+                    Text("เปิด A2 เพื่อเลือกภาพ").font(.sarabunFixed(15, .bold)).padding(.horizontal, 16).frame(minHeight: 44)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
             } else {
@@ -138,7 +138,7 @@ struct SitePin: View {
         }
         .frame(width: 44, height: 44)
         .overlay(alignment: .bottom) {
-            Text(label).font(.system(size: 12.5, weight: .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
+            Text(label).font(.sarabunFixed(12.5, .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(ring, in: Capsule())
                 .overlay(Capsule().stroke(Color.white, lineWidth: 1.5))

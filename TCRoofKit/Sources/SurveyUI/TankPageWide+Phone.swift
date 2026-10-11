@@ -93,7 +93,7 @@ extension TankPageWide {
                         }
                         .frame(height: 3)
                     }
-                Text(title).font(.system(size: 12, weight: on ? .heavy : .semibold))
+                Text(title).font(.sarabunFixed(12, on ? .heavy : .semibold))
                     .foregroundStyle(on ? Theme.primary : done ? Theme.navy : Theme.borderControl).lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
@@ -106,7 +106,7 @@ extension TankPageWide {
 
     @ViewBuilder func phoneCircle(_ n: Int, done: Bool, current: Bool) -> some View {
         if current {
-            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Theme.onPrimary)
+            Text("\(n)").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 26, height: 26)
                 .background(Circle().fill(Theme.primary))
                 .background(Circle().fill(Theme.primary.opacity(0.18)).frame(width: 34, height: 34))
@@ -115,7 +115,7 @@ extension TankPageWide {
                 .frame(width: 22, height: 22)
                 .background(Circle().fill(Theme.stepDone))
         } else {
-            Text("\(n)").font(.system(size: 11.5, weight: .heavy)).foregroundStyle(Theme.borderControl)
+            Text("\(n)").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.borderControl)
                 .frame(width: 22, height: 22)
                 .background(Circle().fill(Theme.surface))
                 .overlay(Circle().strokeBorder(Theme.navy.opacity(0.25), lineWidth: 1.5))
@@ -129,11 +129,11 @@ extension TankPageWide {
                                   @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("\(n)").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.primary)
+                Text("\(n)").font(.sarabunFixed(13, .heavy)).foregroundStyle(Theme.primary)
                     .frame(width: 24, height: 24).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 7))
-                Text(title).font(.system(size: 16, weight: .bold)).lineLimit(1)
+                Text(title).font(.sarabunFixed(16, .bold)).lineLimit(1)
                 Spacer(minLength: 4)
-                Text(chip.text).font(.system(size: 11, weight: .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
+                Text(chip.text).font(.sarabunFixed(11, .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
                     .padding(.horizontal, 8).padding(.vertical, 1)
                     .background(chip.bg, in: Capsule())
             }
@@ -174,7 +174,7 @@ extension TankPageWide {
                     .disabled(!Tank.hasSize(values))
                 }
                 if let caption = planCaption {
-                    Text(caption).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                    Text(caption).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                         .padding(.horizontal, 10).padding(.bottom, 8)
                 }
             }
@@ -196,7 +196,7 @@ extension TankPageWide {
         NavigationStack {
             planCard
                 .padding(16)
-                .background(Theme.background)
+                .tcPageBackground()
                 .navigationTitle("แปลนหลังคาถัง")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -256,7 +256,7 @@ extension TankPageWide {
             ForEach(Tank.positions, id: \.self) { p in
                 let on = cur == p
                 Button { update { Tank.setPosition(&$0, p) } } label: {
-                    Text(p).font(.system(size: 14, weight: on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+                    Text(p).font(.sarabunFixed(14, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: 38)
                         .background {

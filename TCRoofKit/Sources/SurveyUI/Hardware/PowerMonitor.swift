@@ -61,7 +61,7 @@ struct PowerBanner: View {
                 Text(notes.joined(separator: " · ")).lineLimit(2)
                 Spacer(minLength: 0)
             }
-            .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.pending)
+            .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.pending)
             .padding(.horizontal, 16).padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(Theme.warningSoft)

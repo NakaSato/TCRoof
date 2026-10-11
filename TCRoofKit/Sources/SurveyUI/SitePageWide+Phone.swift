@@ -56,7 +56,7 @@ extension SitePageWide {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             .overlay(alignment: .bottomTrailing) {
                 Label(photo == nil ? "เลือกภาพก่อน" : "แตะเพื่อแก้ไขเต็มจอ", systemImage: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.primary)
+                    .font(.sarabunFixed(12, .semibold)).foregroundStyle(Theme.primary)
                     .padding(.horizontal, 10).frame(minHeight: 32)
                     .background(Theme.surface.opacity(0.95), in: Capsule())
                     .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)

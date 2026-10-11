@@ -13,12 +13,12 @@ struct NewJobSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("เลือกประเภทสถานที่").font(.subheadline.weight(.bold)).foregroundStyle(Theme.inkMuted)
+                    Text("เลือกประเภทสถานที่").font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                     ForEach(JobTemplate.all) { t in
                         Button { create(t) } label: { card(t) }.buttonStyle(.plain)
                     }
                     Label("ทุกแบบมี A ข้อมูลทั่วไป และ E สรุปผลและลงนาม · เพิ่มหรือลบหัวข้อภายหลังได้ในหน้าแก้ไขงาน", systemImage: "info.circle")
-                        .font(.caption).foregroundStyle(Theme.inkMuted).padding(.top, 4)
+                        .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).padding(.top, 4)
                 }
                 .padding(20)
             }
@@ -31,12 +31,12 @@ struct NewJobSheet: View {
     var header: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("เริ่มงานสำรวจใหม่").font(.title2.bold())
-                Text("แบบสำรวจเพื่อออกแบบ (เบื้องต้น)").font(.subheadline).opacity(0.9)
+                Text("เริ่มงานสำรวจใหม่").font(.sarabun(22, .bold, relativeTo: .title2))
+                Text("แบบสำรวจเพื่อออกแบบ (เบื้องต้น)").font(.sarabun(15, relativeTo: .subheadline)).opacity(0.9)
             }
             Spacer()
             Button { dismiss() } label: {
-                Image(systemName: "xmark").font(.body.weight(.bold)).frame(width: 36, height: 36)
+                Image(systemName: "xmark").font(.sarabun(17, .bold, relativeTo: .body)).frame(width: 36, height: 36)
                     .background(.white.opacity(0.18), in: Circle())
             }
             .accessibilityLabel("ยกเลิก")
@@ -48,26 +48,26 @@ struct NewJobSheet: View {
 
     func card(_ t: JobTemplate) -> some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: Self.symbol[t.id] ?? "doc").font(.title2).foregroundStyle(Theme.primary)
+            Image(systemName: Self.symbol[t.id] ?? "doc").font(.sarabun(22, relativeTo: .title2)).foregroundStyle(Theme.primary)
                 .frame(width: 48, height: 48).background(Theme.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 8) {
-                Text(t.label).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.navy)
+                Text(t.label).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
                 if t.modules.isEmpty {
-                    Text("ยังไม่มีหัวข้อสำรวจ — เพิ่มเองทีละรายการ").font(.subheadline).foregroundStyle(Theme.inkMuted)
+                    Text("ยังไม่มีหัวข้อสำรวจ — เพิ่มเองทีละรายการ").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 } else {
                     FlowLayout(spacing: 6, lineSpacing: 6) {
                         ForEach(t.modules, id: \.self) { m in
-                            Text("\(m.code) \(Schema.spec(m).short)").font(.caption.weight(.bold)).foregroundStyle(Theme.navy)
+                            Text("\(m.code) \(Schema.spec(m).short)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
                                 .padding(.horizontal, 9).padding(.vertical, 4).background(Theme.mint.opacity(0.45), in: Capsule())
                         }
                     }
                 }
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.subheadline.weight(.bold)).foregroundStyle(Theme.primary).padding(.top, 14)
+            Image(systemName: "chevron.right").font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary).padding(.top, 14)
         }
         .padding(16)
-        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
         .contentShape(RoundedRectangle(cornerRadius: 14))
     }

@@ -5,6 +5,7 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// Sidebar status: empty circle, partial ring with count, or a green check.
 struct StatusMark: View {
@@ -16,13 +17,13 @@ struct StatusMark: View {
         } else if c.isComplete {
             Image(systemName: "checkmark.circle.fill").foregroundStyle(Paper.tick)
         } else if c.filled == 0 {
-            Circle().strokeBorder(Color.secondary.opacity(0.45), lineWidth: 1.5).frame(width: 17, height: 17)
+            Circle().strokeBorder(Theme.borderControl.opacity(0.6), lineWidth: 1.5).frame(width: 17, height: 17)
         } else {
             HStack(spacing: 5) {
-                Text("\(c.filled)/\(c.total)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                Text("\(c.filled)/\(c.total)").font(.sarabun(11, relativeTo: .caption2).monospacedDigit()).foregroundStyle(Theme.inkMuted)
                 ZStack {
-                    Circle().stroke(Color.secondary.opacity(0.25), lineWidth: 2.5)
-                    Circle().trim(from: 0, to: c.fraction).stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round)).rotationEffect(.degrees(-90))
+                    Circle().stroke(Theme.track, lineWidth: 2.5)
+                    Circle().trim(from: 0, to: c.fraction).stroke(Theme.primary, style: StrokeStyle(lineWidth: 2.5, lineCap: .round)).rotationEffect(.degrees(-90))
                 }
                 .frame(width: 15, height: 15)
             }
@@ -52,7 +53,7 @@ struct BusyOverlay: View {
         ZStack {
             Color.black.opacity(0.25).ignoresSafeArea()
             VStack(spacing: 12) { ProgressView().controlSize(.large); Text(text) }
-                .padding(28).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(28).background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 }
@@ -82,7 +83,7 @@ struct PDFKitView: UIViewRepresentable {
         let v = PDFView()
         v.autoScales = true
         v.displayMode = .singlePageContinuous
-        v.backgroundColor = .secondarySystemBackground
+        v.backgroundColor = UIColor(Theme.phonePage)
         v.document = PDFDocument(url: url)
         return v
     }

@@ -40,7 +40,7 @@ struct PermitFormScaffold<Questions: View>: View {
                 }
             }
         }
-        .background(Theme.background.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $shareURL) { ActivitySheet(items: [$0.url]) }
     }

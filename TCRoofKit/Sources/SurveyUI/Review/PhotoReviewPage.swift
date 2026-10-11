@@ -47,7 +47,7 @@ struct PhotoReviewPage: View {
                     }
                 }
                 if groups.allSatisfy({ $0.slots.filter(shows).isEmpty }) {
-                    ContentUnavailableView(filter == .missing ? "รูปบังคับครบแล้ว" : "ยังไม่มีรูป", systemImage: filter == .missing ? "checkmark.circle" : "photo")
+                    TCEmptyState(filter == .missing ? "รูปบังคับครบแล้ว" : "ยังไม่มีรูป", systemImage: filter == .missing ? "checkmark.circle" : "photo")
                         .frame(maxWidth: .infinity).padding(.top, 40)
                 }
             }
@@ -79,7 +79,7 @@ struct PhotoReviewPage: View {
 
     func progress(_ filled: Int, _ total: Int) -> some View {
         HStack(spacing: 10) {
-            Text("รูปบังคับ \(filled)/\(total)").font(.title3.bold()).foregroundStyle(Theme.navy).monospacedDigit()
+            Text("รูปบังคับ \(filled)/\(total)").font(.sarabun(20, .bold, relativeTo: .title3)).foregroundStyle(Theme.navy).monospacedDigit()
                 .accessibilityIdentifier("photoReview.progress")
             if total > filled { TCStatusChip("ขาด \(total - filled)", kind: .overdue) } else { TCStatusChip("ครบ", kind: .done) }
         }
@@ -87,8 +87,8 @@ struct PhotoReviewPage: View {
 
     var filters: some View {
         HStack(spacing: 10) {
-            Picker("แสดง", selection: $filter) { ForEach(Filter.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
-                .pickerStyle(.segmented).frame(width: 240)
+            TCSegmented(Filter.allCases.map(\.rawValue), selection: Binding(get: { filter.rawValue }, set: { filter = Filter(rawValue: $0) ?? filter }))
+                .frame(maxWidth: 240).accessibilityLabel("แสดง")
             if filter == .missing { Toggle("เฉพาะที่บังคับ", isOn: $requiredOnly).fixedSize() }
         }
     }
@@ -104,9 +104,9 @@ struct PhotoReviewPage: View {
 
     func header(_ g: ReviewSlotGroup) -> some View {
         HStack(spacing: 8) {
-            Text(g.title).font(.headline).foregroundStyle(Theme.navy).lineLimit(1)
+            Text(g.title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy).lineLimit(1)
             if g.requiredCount > 0 {
-                Text("· \(g.filledRequired)/\(g.requiredCount)").font(.subheadline.weight(.semibold)).monospacedDigit()
+                Text("· \(g.filledRequired)/\(g.requiredCount)").font(.sarabun(15, .semibold, relativeTo: .subheadline)).monospacedDigit()
                     .foregroundStyle(g.missingRequired > 0 ? Theme.dangerText : Theme.okText)
             }
             Spacer(minLength: 0)
@@ -121,7 +121,7 @@ struct PhotoReviewPage: View {
         Button { tap(s) } label: {
             VStack(alignment: .leading, spacing: 4) {
                 frame(s).aspectRatio(4 / 3, contentMode: .fit)
-                Text(s.label).font(.caption).foregroundStyle(Theme.navy).lineLimit(2, reservesSpace: true)
+                Text(s.label).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.navy).lineLimit(2, reservesSpace: true)
             }
             .contentShape(Rectangle())
         }
@@ -142,7 +142,7 @@ struct PhotoReviewPage: View {
             VStack(spacing: 6) {
                 Image(systemName: s.kind == .signature ? "signature" : s.kind == .photosAdd ? "plus.viewfinder" : "camera")
                     .font(.system(size: 22, weight: .semibold))
-                Text(s.kind == .signature ? "ไปลงนาม" : readOnly ? "ยังไม่มีรูป" : "แตะเพื่อถ่าย").font(.caption.weight(.semibold))
+                Text(s.kind == .signature ? "ไปลงนาม" : readOnly ? "ยังไม่มีรูป" : "แตะเพื่อถ่าย").font(.sarabun(12, .semibold, relativeTo: .caption))
             }
             .foregroundStyle(red ? Theme.dangerText : Theme.inkMuted)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

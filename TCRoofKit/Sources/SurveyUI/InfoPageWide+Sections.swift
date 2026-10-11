@@ -35,8 +35,8 @@ extension InfoPageWide {
                     A2Icon(name: on ? "a1-checkbox-on" : "a1-checkbox-off", fallback: on ? "checkmark.square.fill" : "square", size: 22)
                         .foregroundStyle(Theme.primary)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(title).font(.system(size: 15, weight: .bold))
-                        Text(detail).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                        Text(title).font(.sarabunFixed(15, .bold))
+                        Text(detail).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                     }
                     .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
                     Spacer(minLength: 0)
@@ -47,7 +47,7 @@ extension InfoPageWide {
             .accessibilityLabel(title)
             .accessibilityAddTraits(on ? .isSelected : [])
             stepButton("ui-minus", "minus", label: "ลด" + title, width: pad ? 44 : 30) { set(count - 1) }.disabled(count == 0)
-            Text("\(count)").font(.system(size: 16, weight: .bold)).monospacedDigit().frame(minWidth: 18)
+            Text("\(count)").font(.sarabunFixed(16, .bold)).monospacedDigit().frame(minWidth: 18)
             stepButton("ui-plus", "plus", label: "เพิ่ม" + title, width: pad ? 44 : 30) { set(count + 1) }.disabled(count >= 20)
         }
         .padding(.leading, 12).padding(.trailing, pad ? 4 : 2)
@@ -104,10 +104,10 @@ extension InfoPageWide {
                                keys: model.settings.mapKeys, fill: twoColumns)
                 HStack(alignment: .center, spacing: 8) {
                     Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย")
-                        .font(.system(size: 13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button("รีเซ็ตกรอบ") { job.values[MapCrop.key] = .text(MapCrop.standard.text) }
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.primary)
+                        .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
                         .frame(minWidth: 44, minHeight: 44).fixedSize()
                         .disabled(mapCrop == .standard)
                 }
@@ -133,8 +133,8 @@ extension InfoPageWide {
                 Button(action: locate) {
                     HStack(spacing: 8) {
                         if locating { ProgressView() } else { A2Icon(name: "ui-gps-locate", fallback: "scope", size: 20).foregroundStyle(Theme.primary) }
-                        if locating, let a = liveAccuracy { Text("± \(Int(a.rounded())) ม.").font(.system(size: 16, weight: .semibold).monospacedDigit()) }
-                        else if !phone { Text("ตำแหน่งปัจจุบัน").font(.system(size: 16, weight: .semibold)) }
+                        if locating, let a = liveAccuracy { Text("± \(Int(a.rounded())) ม.").font(.sarabunFixed(16, .semibold).monospacedDigit()) }
+                        else if !phone { Text("ตำแหน่งปัจจุบัน").font(.sarabunFixed(16, .semibold)) }
                     }
                     .padding(.horizontal, 14).frame(minHeight: 50)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: InfoPageWide.inputRadius))
@@ -212,8 +212,8 @@ struct InfoPageHeader: View {
             squareButton("chevron.left", "ย้อนกลับ", action: back)
             squareButton("sidebar.left", "แสดง/ซ่อนรายการหัวข้อ", action: toggleSidebar)
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.system(size: phone ? 17 : 20, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
-                Text(subtitle).font(.system(size: phone ? 13 : 15)).opacity(0.92).lineLimit(1)
+                Text(title).font(.sarabunFixed(phone ? 17 : 20, .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                Text(subtitle).font(.sarabunFixed(phone ? 13 : 15)).opacity(0.92).lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             .padding(.leading, 4)
@@ -222,18 +222,18 @@ struct InfoPageHeader: View {
                 Group {
                     if phone { Image(systemName: "square.and.arrow.up") } else { Label("ส่งออก", systemImage: "square.and.arrow.up") }
                 }
-                .font(.system(size: 16, weight: .semibold))
+                .font(.sarabunFixed(16, .semibold))
                 .padding(.horizontal, phone ? 0 : 14).frame(minWidth: 44, minHeight: 44)
                 .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
                 .overlay(alignment: .topTrailing) {
                     // the export sheet explains the gap; this dot just says there is one
-                    if !job.missingGroups.isEmpty { Circle().fill(.orange).frame(width: 9, height: 9).offset(x: 3, y: -3) }
+                    if !job.missingGroups.isEmpty { Circle().fill(Theme.warning).frame(width: 9, height: 9).offset(x: 3, y: -3) }
                 }
             }
             .accessibilityLabel("ส่งออก")
             .buttonStyle(.plain)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, phone ? 8 : 24).padding(.vertical, phone ? 6 : 10)
         .frame(maxWidth: .infinity)
         // runs up under the status bar

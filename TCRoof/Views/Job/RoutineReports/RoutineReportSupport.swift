@@ -193,14 +193,14 @@ struct CountStepper: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(title).font(.body).foregroundStyle(Theme.navy).lineLimit(2)
+            Text(title).font(.sarabun(17, relativeTo: .body)).foregroundStyle(Theme.navy).lineLimit(2)
             Spacer(minLength: 8)
             Button { value = max(range.lowerBound, value - 1) } label: {
                 Image(systemName: "minus").frame(width: touchMin, height: touchMin)
             }
             .disabled(value <= range.lowerBound)
             .accessibilityLabel("ลด \(title)")
-            Text("\(value)").font(.title3.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.navy).frame(minWidth: 36)
+            Text("\(value)").font(.sarabun(20, .semibold, relativeTo: .title3).monospacedDigit()).foregroundStyle(Theme.navy).frame(minWidth: 36)
             Button { value = min(range.upperBound, value + 1) } label: {
                 Image(systemName: "plus").frame(width: touchMin, height: touchMin)
             }
@@ -223,7 +223,7 @@ struct ReportCard<Content: View, Trailing: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(title).font(.headline).foregroundStyle(Theme.navy)
+                Text(title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 trailing()
             }

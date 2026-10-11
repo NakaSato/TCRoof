@@ -104,9 +104,9 @@ struct BackfeedPageWide: View {
 
     func header<Trailing: View>(_ n: Int, _ title: String, required: Bool = false, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 10) {
-            Text("\(n)").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.primary)
+            Text("\(n)").font(.sarabunFixed(14, .heavy)).foregroundStyle(Theme.primary)
                 .frame(width: 28, height: 28).background(WaterPageWide.chipFill, in: RoundedRectangle(cornerRadius: 8))
-            (Text(title) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.system(size: 17, weight: .bold)).lineLimit(1)
+            (Text(title) + (required ? Text(" *").foregroundColor(Theme.danger) : Text(""))).font(.sarabunFixed(17, .bold)).lineLimit(1)
                 .layoutPriority(1)
             Spacer(minLength: 8)
             trailing()
@@ -114,7 +114,7 @@ struct BackfeedPageWide: View {
     }
 
     func hint(_ s: String) -> some View {
-        Text(s).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+        Text(s).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
     }
 
     // MARK: 1 level
@@ -136,11 +136,11 @@ struct BackfeedPageWide: View {
         let on = values.choice(ZeroExport.levelKey) == value
         return Button { set(ZeroExport.levelKey, .choice(value, other: "")) } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(tag).font(.system(size: 12, weight: .bold)).foregroundStyle(on ? .white : Theme.inkMuted)
+                Text(tag).font(.sarabunFixed(12, .bold)).foregroundStyle(on ? .white : Theme.inkMuted)
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(on ? Theme.teal : Self.tagGrey, in: RoundedRectangle(cornerRadius: 5))
-                Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                Text(sub).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(2).minimumScaleFactor(0.7)
+                Text(title).font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                Text(sub).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2).minimumScaleFactor(0.7)
             }
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
@@ -149,7 +149,7 @@ struct BackfeedPageWide: View {
             .background(RoundedRectangle(cornerRadius: 16).stroke(on ? Theme.teal.opacity(0.18) : .clear, lineWidth: 6).padding(-1))
             .overlay(alignment: .topTrailing) {
                 if on {
-                    Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white)
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onMedia)
                         .frame(width: 24, height: 24).background(Theme.teal, in: Circle()).padding(10)
                 }
             }
@@ -163,7 +163,7 @@ struct BackfeedPageWide: View {
     var poleRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                (Text("เสา") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 16, weight: .bold))
+                (Text("เสา") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(16, .bold))
                 Spacer(minLength: 8)
                 hint("สำหรับติดตั้ง CT/VT แรงสูง")
             }
@@ -171,7 +171,7 @@ struct BackfeedPageWide: View {
                 ForEach(ZeroExport.poles, id: \.self) { p in
                     let on = values.choice(ZeroExport.poleKey) == p
                     Button { set(ZeroExport.poleKey, .choice(p, other: "")) } label: {
-                        Text(p).font(.system(size: 16, weight: .bold))
+                        Text(p).font(.sarabunFixed(16, .bold))
                             .frame(maxWidth: .infinity, minHeight: 46)
                             .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
@@ -192,7 +192,7 @@ struct BackfeedPageWide: View {
         return card {
             header(2, "ภาพประกอบ", required: true) {
                 Text(missing == 0 ? "\(n) ภาพ · ครบขั้นต่ำ \(ZeroExport.minPhotos) ภาพ ✓" : "\(n)/\(ZeroExport.minPhotos) ภาพ · ขาดอีก \(missing) ภาพ")
-                    .font(.system(size: 13, weight: missing == 0 ? .semibold : .bold))
+                    .font(.sarabunFixed(13, missing == 0 ? .semibold : .bold))
                     .foregroundStyle(missing == 0 ? Theme.success : Theme.danger).lineLimit(1).minimumScaleFactor(0.7)
             }
             Grid(horizontalSpacing: 10, verticalSpacing: 10) {
@@ -215,12 +215,12 @@ struct BackfeedPageWide: View {
         card {
             header(3, "รายละเอียดเพิ่มเติม") { hint("ไม่บังคับ") }
             TextEditor(text: Binding(get: { values.text("detail") }, set: { set("detail", $0.isEmpty ? nil : .text($0)) }))
-                .font(.system(size: 16)).scrollContentBackground(.hidden).padding(8)
+                .font(.sarabunFixed(16)).scrollContentBackground(.hidden).padding(8)
                 .frame(minHeight: 60, maxHeight: .infinity)
                 .overlay(alignment: .topLeading) {
                     if values.text("detail").isEmpty {
                         Text(hv ? "เช่น ระยะจากมิเตอร์ถึงเสา · การขออนุญาต กฟภ." : "เช่น ตำแหน่ง CT · ช่องว่างในตู้สำหรับรีเลย์")
-                            .font(.system(size: 16)).foregroundStyle(Theme.inkMuted.opacity(0.8))
+                            .font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted.opacity(0.8))
                             .padding(.horizontal, 13).padding(.vertical, 16).allowsHitTesting(false)
                     }
                 }
@@ -255,7 +255,7 @@ struct BackfeedPhotoTile: View {
     func filled(_ p: Photo) -> some View {
         PhotoSlot(photo: p, jobID: job.id, hint: label, required: true, title: label, dense: true, fill: true, onPick: pick, onClear: { set(nil) })
             .overlay(alignment: .bottomLeading) {
-                Text(label).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
+                Text(label).font(.sarabunFixed(12, .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                     .padding(8).allowsHitTesting(false)
@@ -268,8 +268,8 @@ struct BackfeedPhotoTile: View {
         } label: {
             VStack(spacing: 6) {
                 A2Icon(name: "ui-camera", fallback: "camera", size: 26).foregroundStyle(Theme.primary)
-                Text("ถ่ายภาพ / อัปโหลด").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
-                Text(label).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                Text("ถ่ายภาพ / อัปโหลด").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
             }
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

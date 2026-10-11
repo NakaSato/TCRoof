@@ -10,7 +10,7 @@ extension TankPageWide {
     var dxfButton: some View {
         Button(action: exportDXF) {
             Label("ส่งออก DXF", systemImage: "square.and.arrow.up")
-                .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy)
+                .font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))

@@ -76,7 +76,7 @@ struct ExportSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            PadForm(maxWidth: 720) {
                 if let job = model.job(jobID) {
                     statusSection(job)
                     let gap = PhotoGap(model: model, job: job)
@@ -89,12 +89,10 @@ struct ExportSheet: View {
                 formatsSection
                 if let job = model.job(jobID) { driveSection(job) }
                 if !log.isEmpty {
-                    Section("ความคืบหน้า") { ForEach(Array(log.enumerated()), id: \.offset) { Text($0.element).font(.callout) } }
+                    PadSection("ความคืบหน้า") { ForEach(Array(log.enumerated()), id: \.offset) { Text($0.element).font(.sarabun(16, relativeTo: .callout)) } }
                 }
-                if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.dangerText) } }
+                if let error { PadSection { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.dangerText) } }
             }
-            .listStyle(.insetGrouped)
-            .tcFormStyle()
             .safeAreaInset(edge: .bottom) { actionBar }
             .navigationTitle("ส่งออกงาน").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("ปิด") { dismiss() }.disabled(busy != nil) } }

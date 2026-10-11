@@ -24,8 +24,8 @@ struct TeamTag: View {
 
     var body: some View {
         Text(team.rawValue)
-            .font(.caption2.bold())
-            .foregroundStyle(.white)
+            .font(.sarabun(11, .bold, relativeTo: .caption2))
+            .foregroundStyle(Theme.onPrimary)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(team.color, in: RoundedRectangle(cornerRadius: 4))
@@ -47,10 +47,10 @@ struct QueueFilterBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
-                Text(listTitle).font(.headline).foregroundStyle(Theme.navy)
+                Text(listTitle).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Text("\(count)")
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
+                    .font(.sarabun(12, .bold, relativeTo: .caption))
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(minWidth: 20, minHeight: 20)
                     .background(Theme.navy, in: Circle())
             }
@@ -61,8 +61,8 @@ struct QueueFilterBar: View {
                         window = option
                     } label: {
                         Text(option.label(prefix))
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                            .foregroundStyle(Theme.onPrimary)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
                             .background(window == option ? Theme.primary : Theme.chip.opacity(0.75), in: Capsule())
@@ -84,7 +84,7 @@ struct QueueFilterBar: View {
                 Image(systemName: "magnifyingglass").foregroundStyle(Theme.navy)
             }
             .padding(12)
-            .background(.white, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.5)))
         }
         .task {
@@ -127,24 +127,24 @@ struct JobCard<Destination: View, Footer: View>: View {
                 if showTeam {
                     TCStatusChip("ทีม \(job.team.rawValue)", fill: job.team.color.opacity(0.1), text: job.team.color, dot: true)
                 }
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.muted)
+                Image(systemName: "chevron.right").font(.sarabun(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.muted)
             }
             HStack(spacing: 8) {
-                Text(job.code).font(.caption.bold()).foregroundStyle(Theme.inkMuted)
+                Text(job.code).font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
             }
             HStack(spacing: 16) {
                 if job.customerName != job.projectName { Label(job.customerName, systemImage: "person").lineLimit(1) }
                 Label(job.capacityKW.kw, systemImage: "bolt.fill")
             }
-            .font(.footnote)
+            .font(.sarabun(13, relativeTo: .footnote))
             .foregroundStyle(Theme.navy.opacity(0.85))
             Divider().padding(.vertical, 4)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Label(date.thaiLong, systemImage: "calendar").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.navy)
-                Text(dateLabel).font(.caption).foregroundStyle(Theme.muted)
+                Text(dateLabel).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
-            Label(job.province, systemImage: "mappin.and.ellipse").font(.footnote).foregroundStyle(Theme.navy.opacity(0.85))
+            Label(job.province, systemImage: "mappin.and.ellipse").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.navy.opacity(0.85))
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .contentShape(Rectangle())
@@ -162,11 +162,11 @@ struct JobCardStrip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(key).font(.caption).foregroundStyle(Theme.inkMuted)
-                Text(value).font(.subheadline.bold()).foregroundStyle(valueColor).lineLimit(1)
+                Text(key).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                Text(value).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(valueColor).lineLimit(1)
                 Spacer(minLength: 0)
                 if let progress {
-                    Text("\(Int((progress * 100).rounded()))%").font(.subheadline.bold()).monospacedDigit()
+                    Text("\(Int((progress * 100).rounded()))%").font(.sarabun(15, .bold, relativeTo: .subheadline)).monospacedDigit()
                         .foregroundStyle(progress <= 0 ? Theme.progressZero : progress >= 1 ? Theme.progressFull : Theme.primary)
                 }
             }
@@ -218,6 +218,6 @@ struct InfoRow: View {
             Spacer(minLength: 16)
             Text(value).foregroundStyle(Theme.navy).multilineTextAlignment(.trailing)
         }
-        .font(.subheadline)
+        .font(.sarabun(15, relativeTo: .subheadline))
     }
 }

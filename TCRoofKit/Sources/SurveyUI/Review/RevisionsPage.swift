@@ -47,14 +47,14 @@ struct RevisionsPage: View {
 
     func history(_ revs: [Revision]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("ประวัติ REV").font(.headline).foregroundStyle(Theme.navy)
+            Text("ประวัติ REV").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             ForEach(revs.reversed()) { r in
                 HStack(alignment: .top, spacing: 12) {
-                    Text("REV \(r.rev)").font(.subheadline.weight(.heavy)).foregroundStyle(.white)
+                    Text("REV \(r.rev)").font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 8).padding(.vertical, 4).background(Theme.navy, in: RoundedRectangle(cornerRadius: 6))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(ISODate.thai(ISODate.string(r.issuedAt))) · \(r.issuedBy.isEmpty ? "—" : r.issuedBy)").font(.subheadline.weight(.semibold))
-                        Text(r.reason.isEmpty ? "ออกครั้งแรก" : r.reason).font(.subheadline).foregroundStyle(Theme.inkMuted)
+                        Text("\(ISODate.thai(ISODate.string(r.issuedAt))) · \(r.issuedBy.isEmpty ? "—" : r.issuedBy)").font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                        Text(r.reason.isEmpty ? "ออกครั้งแรก" : r.reason).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                         Label(r.shortCode, systemImage: "lock.fill").font(.caption.monospaced()).foregroundStyle(Theme.inkMuted)
                     }
                     Spacer(minLength: 8)
@@ -64,7 +64,7 @@ struct RevisionsPage: View {
                         }
                         .fixedSize()
                     } else {
-                        Text("รอข้อมูล REV จากเครื่องที่ลงนาม").font(.caption).foregroundStyle(Theme.inkMuted)
+                        Text("รอข้อมูล REV จากเครื่องที่ลงนาม").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     }
                 }
                 .padding(12)
@@ -73,7 +73,7 @@ struct RevisionsPage: View {
             }
             if !job.isLocked {
                 Label("REV \(job.rev) กำลังแก้ไข" + ((job.pendingReason ?? "").isEmpty ? "" : " · " + job.pendingReason!), systemImage: "pencil")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.pending)
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
             }
         }
     }
@@ -99,26 +99,26 @@ struct RevisionsPage: View {
             Menu(name(b)) { ForEach(options, id: \.self) { r in Button(name(r)) { to = r } } }
                 .frame(minHeight: 44)
         }
-        .font(.headline)
+        .font(.sarabun(17, .semibold, relativeTo: .headline))
     }
 
     var filters: some View {
-        Picker("แสดง", selection: $filter) { ForEach(Filter.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
-            .pickerStyle(.segmented).frame(width: 240)
+        TCSegmented(Filter.allCases.map(\.rawValue), selection: Binding(get: { filter.rawValue }, set: { filter = Filter(rawValue: $0) ?? filter }))
+            .frame(maxWidth: 240).accessibilityLabel("แสดง")
     }
 
     @ViewBuilder func list(_ changes: [FieldChange]?) -> some View {
         if let changes {
             let shown = changes.filter { filter == .all || (filter == .photos) == $0.isPhoto }
             if shown.isEmpty {
-                ContentUnavailableView("ไม่มีรายการแก้ไข", systemImage: "checkmark.circle").frame(maxWidth: .infinity).padding(.top, 24)
+                TCEmptyState("ไม่มีรายการแก้ไข", systemImage: "checkmark.circle").frame(maxWidth: .infinity).padding(.top, 24)
             } else {
                 let groups = Dictionary(grouping: shown, by: \.group)
                 let order = shown.map(\.group).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
-                Text("\(shown.count) รายการ").font(.subheadline).foregroundStyle(Theme.inkMuted)
+                Text("\(shown.count) รายการ").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 ForEach(order, id: \.self) { g in
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(g).font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy)
+                        Text(g).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 12).padding(.vertical, 8)
                             .frame(maxWidth: .infinity, alignment: .leading).background(Theme.paperBand)
                         ForEach(groups[g] ?? []) { c in row(c); Divider() }
@@ -135,7 +135,7 @@ struct RevisionsPage: View {
 
     func row(_ c: FieldChange) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(c.field).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
+            Text(c.field).font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
             if c.isPhoto {
                 Button { photoPair = c } label: {
                     HStack(spacing: 10) {
@@ -176,7 +176,7 @@ struct RevisionsPage: View {
             HStack(spacing: 12) {
                 ForEach([(c.oldPhoto, "เดิม"), (c.newPhoto, "ใหม่")], id: \.1) { p, title in
                     VStack(spacing: 8) {
-                        Text(title).font(.headline).foregroundStyle(.white)
+                        Text(title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(.white)
                         if let p, let img = model.image(p, in: job.id) { Image(uiImage: img).resizable().scaledToFit() }
                         else { Text("—").foregroundStyle(.white).frame(maxWidth: .infinity, maxHeight: .infinity) }
                     }

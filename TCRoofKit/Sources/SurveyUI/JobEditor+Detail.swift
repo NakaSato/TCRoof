@@ -20,7 +20,7 @@ extension JobEditorView {
         case .photos, .revisions: EmptyView()
         case .module(let id):
             if let i = job.modules.firstIndex(where: { $0.id == id }) { modulePage(i) }
-            else { ContentUnavailableView("เลือกหัวข้อทางซ้าย", systemImage: "sidebar.left") }
+            else { TCEmptyState("เลือกหัวข้อทางซ้าย", systemImage: "sidebar.left") }
         }
     }
 
@@ -56,10 +56,10 @@ extension JobEditorView {
             }
             if page == .flood, let h = Schema.recommendedEquipHeight(job.values) {
                 Label("แนะนำติดตั้งอุปกรณ์สูงจากพื้นดินอย่างน้อย \(h) ซม. (\(Schema.flooded(job.values) ? "ระดับน้ำสูงสุด" : "ระดับน้ำประเมิน GISTDA") + 50 ซม.)", systemImage: "arrow.up.to.line")
-                    .font(.callout).foregroundStyle(.blue)
+                    .font(.sarabun(15, relativeTo: .callout)).foregroundStyle(Theme.primary)
             }
             if page == .electrical, job.values.transformers("trafos").isEmpty == false || !job.values.text("meterNo").isEmpty {
-                Text("ค่าที่กรอกจะลงในผัง SmartArt ของแผ่น ระบบไฟฟ้า").font(.footnote).foregroundStyle(.secondary)
+                Text("ค่าที่กรอกจะลงในผัง SmartArt ของแผ่น ระบบไฟฟ้า").font(.sarabun(TypeScale.caption, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
             }
             if page == .electrical {
                 Button { showSLD = true } label: { Label("สร้าง Single Line Diagram", systemImage: "bolt.horizontal").frame(minHeight: 44) }
@@ -75,8 +75,8 @@ extension JobEditorView {
         return VStack(alignment: .leading, spacing: 16) {
             header(number + " " + spec.label, subtitle: "ไฟล์ Excel แผ่น \(spec.sheet) · ในรายงาน: \(spec.reportTitle)", completion: m.completion)
             HStack {
-                Text("ชื่อ/อาคาร").foregroundStyle(.secondary)
-                TextField(spec.namePlaceholder, text: $job.modules[i].name).textFieldStyle(.roundedBorder).frame(maxWidth: 360)
+                Text("ชื่อ/อาคาร").font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.inkStrong)
+                TextField(spec.namePlaceholder, text: $job.modules[i].name).textFieldStyle(OutlinedFieldStyle()).frame(maxWidth: 360)
             }
             ForEach(spec.groups) { g in
                 let c = g.completion(m.values)
@@ -94,20 +94,7 @@ extension JobEditorView {
     }
 
     func header(_ title: String, subtitle: String, completion c: Completion) -> some View {
-        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(alignment: .center, spacing: 14))
-        return layout {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.title2.bold())
-                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
-            }
-            if !compact { Spacer() }
-            if c.total > 0 {
-                VStack(alignment: compact ? .leading : .trailing, spacing: 2) {
-                    ProgressView(value: c.fraction).frame(width: 140).tint(c.isComplete ? Paper.tick : .accentColor)
-                    Text("กรอกแล้ว \(c.filled) จาก \(c.total)").font(.caption).foregroundStyle(.secondary)
-                }
-            }
-        }
+        PageHeader(title: title, subtitle: subtitle, completion: c, compact: compact)
     }
 
     var pages: [Page] {
@@ -123,6 +110,33 @@ extension JobEditorView {
                 Spacer()
                 Button { withAnimation { page = next } } label: { Label("หัวข้อถัดไป", systemImage: "arrow.right") }
                     .buttonStyle(TCButtonStyle(.primary, size: .card)).controlSize(.large)
+            }
+        }
+    }
+}
+
+/// Code and title, subtitle and the filled count over the schema form; its own view so the page's type stays short
+/// (a deep expression crashes SwiftUI in Debug).
+struct PageHeader: View {
+    let title: String
+    let subtitle: String
+    let completion: Completion
+    let compact: Bool
+
+    var body: some View {
+        let c = completion
+        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(alignment: .center, spacing: 14))
+        layout {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.sarabun(TypeScale.pageTitle, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
+                Text(subtitle).font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+            }
+            if !compact { Spacer() }
+            if c.total > 0 {
+                VStack(alignment: compact ? .leading : .trailing, spacing: 2) {
+                    ProgressView(value: c.fraction).frame(width: 140).tint(c.isComplete ? Paper.tick : Theme.primary)
+                    Text("กรอกแล้ว \(c.filled) จาก \(c.total)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                }
             }
         }
     }

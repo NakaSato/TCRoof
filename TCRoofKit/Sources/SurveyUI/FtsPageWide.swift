@@ -28,8 +28,8 @@ struct FtsPageWide: View {
     var values: Values { index.map { job.modules[$0].values } ?? Values() }
     func set(_ id: String, _ v: FieldValue?) { if let i = index { job.modules[i].values[id] = v } }
 
-    static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
-    static let orange = Color(red: 0.941, green: 0.549, blue: 0.0)
+    static let red = Theme.danger
+    static let orange = Theme.warning
     static let warnRed = Theme.dangerText
     static let slotFill = Theme.progressBoxIdle
 
@@ -91,8 +91,8 @@ struct FtsPageWide: View {
 
     func title(_ t: String, sub: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(t).font(.system(size: 17, weight: .bold)).lineLimit(1)
-            Text(sub).font(.system(size: 13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+            Text(t).font(.sarabunFixed(17, .bold)).lineLimit(1)
+            Text(sub).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
         }
     }
 
@@ -101,17 +101,17 @@ struct FtsPageWide: View {
     var buttonCard: some View {
         card {
             HStack(alignment: .top, spacing: 10) {
-                Text("1").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.primary)
+                Text("1").font(.sarabunFixed(14, .heavy)).foregroundStyle(Theme.primary)
                     .frame(width: 28, height: 28).background(WaterPageWide.chipFill, in: RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 2) {
-                    (Text("ภาพพื้นที่ติดตั้งปุ่ม Emergency") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 17, weight: .bold))
-                    Text("จุดที่เข้าถึงได้ทันที").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                    (Text("ภาพพื้นที่ติดตั้งปุ่ม Emergency") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(17, .bold))
+                    Text("จุดที่เข้าถึงได้ทันที").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
             }
             photo.frame(height: stacked ? (width < 600 ? 260 : 380) : nil).frame(maxHeight: stacked ? nil : .infinity)
             VStack(spacing: 0) {
                 infoRow("ตำแหน่ง") { placeButton }
-                infoRow("สั่งตัด") { Text(EmergencyButton.cuts(job)).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7) }
+                infoRow("สั่งตัด") { Text(EmergencyButton.cuts(job)).font(.sarabunFixed(15, .bold)).lineLimit(1).minimumScaleFactor(0.7) }
                 infoRow("ความสูงปุ่ม") { heightStepper }
             }
         }
@@ -124,7 +124,7 @@ struct FtsPageWide: View {
                          onClear: { set(EmergencyButton.photoKey, nil) })
             .overlay(alignment: .bottomLeading) {
                 if p != nil {
-                    Text("วงจุดติดตั้งปุ่ม · ระบุความสูง").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                    Text("วงจุดติดตั้งปุ่ม · ระบุความสูง").font(.sarabunFixed(12, .semibold)).lineLimit(1)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                         .padding(8).allowsHitTesting(false)
@@ -134,7 +134,7 @@ struct FtsPageWide: View {
 
     func infoRow<V: View>(_ label: String, @ViewBuilder value: () -> V) -> some View {
         HStack(spacing: 12) {
-            Text(label).font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+            Text(label).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             Spacer(minLength: 8)
             value()
         }
@@ -145,7 +145,7 @@ struct FtsPageWide: View {
         let place = values.text(EmergencyButton.placeKey)
         return Button { placeText = place; editingPlace = true } label: {
             HStack(spacing: 6) {
-                Text(place.isEmpty ? "แตะเพื่อระบุ" : place).font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(place.isEmpty ? "แตะเพื่อระบุ" : place).font(.sarabunFixed(15, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                     .foregroundStyle(place.isEmpty ? Theme.primary : Theme.navy)
                 Image(systemName: "pencil").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.primary)
             }
@@ -160,7 +160,7 @@ struct FtsPageWide: View {
         let cm = EmergencyButton.heightCm(job), ok = EmergencyButton.isRecommended(cm)
         return HStack(spacing: 12) {
             stepButton("minus", enabled: cm > EmergencyButton.rangeCm.lowerBound) { EmergencyButton.step(&job, by: -1) }
-            Text(EmergencyButton.meters(cm) + (ok ? " ✓" : " ⚠")).font(.system(size: 16, weight: .bold)).monospacedDigit()
+            Text(EmergencyButton.meters(cm) + (ok ? " ✓" : " ⚠")).font(.sarabunFixed(16, .bold)).monospacedDigit()
                 .foregroundStyle(ok ? Theme.navy : Self.warnRed).frame(minWidth: 88)
             stepButton("plus", enabled: cm < EmergencyButton.rangeCm.upperBound) { EmergencyButton.step(&job, by: 1) }
         }
@@ -190,7 +190,7 @@ struct FtsPageWide: View {
             } legend: {
                 HStack(spacing: 6) {
                     Circle().fill(Self.red).frame(width: 11, height: 11)
-                    Text("ปุ่ม FTS switch (Emergency)").font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                    Text("ปุ่ม FTS switch (Emergency)").font(.sarabunFixed(12.5, .semibold)).lineLimit(1)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
@@ -207,7 +207,7 @@ struct FtsPageWide: View {
                 title("ใน SLD", sub: "FTS ตัดวงจร DC · ปุ่ม Emergency สั่งตัด")
                 Spacer(minLength: 8)
                 Button(action: openDiagram) {
-                    Text("ดู SLD ทั้งหมด →").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
+                    Text("ดู SLD ทั้งหมด →").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
             }
@@ -217,7 +217,7 @@ struct FtsPageWide: View {
                 if drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)
                 } else {
-                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()
                 }
             }

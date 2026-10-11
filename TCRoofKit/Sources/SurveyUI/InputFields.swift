@@ -14,10 +14,10 @@ struct DateInput: View {
             if let d = parsed {
                 TCDateField(date: Binding(get: { d }, set: { text = ISODate.string($0) }), accessibilityTitle: "วันที่")
                     .frame(maxWidth: 220)
-                Text("ในรายงาน: " + ISODate.thai(text)).font(.caption).foregroundStyle(Theme.inkMuted)
+                Text("ในรายงาน: " + ISODate.thai(text)).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             } else {
                 if !text.isEmpty {
-                    Text("ค่าเดิม \"\(text)\" อ่านเป็นวันที่ไม่ได้").font(.caption).foregroundStyle(Theme.pending)
+                    Text("ค่าเดิม \"\(text)\" อ่านเป็นวันที่ไม่ได้").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.pending)
                 }
                 Button(text.isEmpty ? "ใส่วันที่วันนี้" : "เปลี่ยนเป็นวันนี้") { text = ISODate.string(Date()) }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card))
@@ -43,24 +43,24 @@ struct GPSInput: View {
             }
             switch GPS.check(text) {
             case .invalid:
-                Text("รูปแบบไม่ถูกต้อง ใช้ ละติจูด, ลองจิจูด เช่น 17.0062, 99.8235").font(.caption).foregroundStyle(Theme.dangerText)
+                Text("รูปแบบไม่ถูกต้อง ใช้ ละติจูด, ลองจิจูด เช่น 17.0062, 99.8235").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
             case .outsideThailand:
-                Text("พิกัดอยู่นอกประเทศไทย ตรวจค่าอีกครั้ง").font(.caption).foregroundStyle(Theme.pending)
+                Text("พิกัดอยู่นอกประเทศไทย ตรวจค่าอีกครั้ง").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.pending)
             case .swapped(let fixed):
                 HStack(spacing: 8) {
-                    Text("ดูเหมือนสลับละติจูดกับลองจิจูด").font(.caption).foregroundStyle(Theme.pending)
-                    Button("สลับเป็น \(fixed)") { text = fixed }.font(.caption)
+                    Text("ดูเหมือนสลับละติจูดกับลองจิจูด").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.pending)
+                    Button("สลับเป็น \(fixed)") { text = fixed }.font(.sarabun(12, relativeTo: .caption))
                 }
             case .ok:
                 if let p = GPS.parse(text), let url = URL(string: "https://maps.apple.com/?ll=\(p.lat),\(p.lon)") {
-                    Link(destination: url) { Label("ตรวจตำแหน่งในแผนที่", systemImage: "map") }.font(.caption)
+                    Link(destination: url) { Label("ตรวจตำแหน่งในแผนที่", systemImage: "map") }.font(.sarabun(12, relativeTo: .caption))
                 }
             case .empty:
                 EmptyView()
             }
-            if let failure { Text(failure).font(.caption).foregroundStyle(Theme.dangerText) }
+            if let failure { Text(failure).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText) }
             else if let accuracy {
-                Text(GPSGrade.note(accuracy: accuracy)).font(.caption)
+                Text(GPSGrade.note(accuracy: accuracy)).font(.sarabun(12, relativeTo: .caption))
                     .foregroundStyle(GPSGrade(accuracy: accuracy) == .approximate ? Theme.pending : Theme.inkMuted)
             }
         }

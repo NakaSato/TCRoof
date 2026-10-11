@@ -23,7 +23,7 @@ struct MPScheduleScreen: View {
                 let model = MPModel(input: input, actual: job.scheduleActual, week: week)
                 content(model, wide: !isPhone && g.size.width >= 1000)
             } else {
-                ContentUnavailableView("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP"))
+                TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP"))
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
@@ -96,26 +96,23 @@ struct MPScheduleScreen: View {
                 Button { shift(-7) } label: { Image(systemName: "chevron.left").frame(width: touchMin, height: touchMin) }
                     .accessibilityLabel("สัปดาห์ก่อน")
                 VStack(spacing: 2) {
-                    Text("สัปดาห์ \(week.thaiShort)").font(.headline).foregroundStyle(Theme.navy)
-                    if let i = m.weekIndex(week) { Text("W\(i)").font(.caption.monospacedDigit()).foregroundStyle(Theme.muted) }
+                    Text("สัปดาห์ \(week.thaiShort)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                    if let i = m.weekIndex(week) { Text("W\(i)").font(.sarabun(12, relativeTo: .caption).monospacedDigit()).foregroundStyle(Theme.muted) }
                 }
                 .frame(minWidth: isPhone ? 0 : 150).layoutPriority(1)
                 Button { shift(7) } label: { Image(systemName: "chevron.right").frame(width: touchMin, height: touchMin) }
                     .accessibilityLabel("สัปดาห์ถัดไป")
-                Button("สัปดาห์นี้") { week = MasterSchedule.weekStart(.now) }.font(.subheadline.weight(.semibold)).fixedSize()
+                Button("สัปดาห์นี้") { week = MasterSchedule.weekStart(.now) }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).fixedSize()
                 Spacer(minLength: 8)
                 if !isPhone { figures(m) }
             }
             if isPhone { HStack { figures(m); Spacer() } }
             HStack {
-                Picker("รายงาน", selection: $monthly) {
-                    Text("Weekly").tag(false)
-                    Text("Monthly").tag(true)
-                }
-                .pickerStyle(.segmented).frame(maxWidth: 260)
+                TCSegmented(["Weekly", "Monthly"], selection: Binding(get: { monthly ? "Monthly" : "Weekly" }, set: { monthly = $0 == "Monthly" }))
+                    .frame(maxWidth: 260).accessibilityLabel("รายงาน")
                 Spacer()
                 Button { showProgress = true } label: {
-                    Label(isPhone ? "อัปเดต" : "อัปเดตสัปดาห์นี้", systemImage: "square.and.pencil").font(.body.weight(.semibold))
+                    Label(isPhone ? "อัปเดต" : "อัปเดตสัปดาห์นี้", systemImage: "square.and.pencil").font(.sarabun(17, .semibold, relativeTo: .body))
                         .lineLimit(1).frame(minHeight: touchMin)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -126,8 +123,8 @@ struct MPScheduleScreen: View {
 
     private func figures(_ m: MPModel) -> some View {
         HStack(spacing: 12) {
-            Text("แผน \(MPFormat.percent(m.status.planned))").font(.subheadline.monospacedDigit())
-            Text("ทำได้ \(MPFormat.percent(m.status.actual))").font(.subheadline.monospacedDigit().weight(.semibold))
+            Text("แผน \(MPFormat.percent(m.status.planned))").font(.sarabun(15, relativeTo: .subheadline).monospacedDigit())
+            Text("ทำได้ \(MPFormat.percent(m.status.actual))").font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit())
             MPVarianceChip(variance: m.status.variance)
         }
         .foregroundStyle(Theme.navy)
@@ -232,7 +229,7 @@ struct MPGantt: View {
 
     private var labels: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("งาน").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
+            Text("งาน").font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.muted)
                 .frame(width: Self.labelW, height: Self.headerH, alignment: .leading).padding(.leading, 12)
             ForEach(rows) { row in label(row) }
         }
@@ -242,17 +239,17 @@ struct MPGantt: View {
     @ViewBuilder private func label(_ row: Row) -> some View {
         switch row {
         case let .part(p):
-            Text(p.reportTitle).font(.subheadline.weight(.bold)).foregroundStyle(Theme.navy)
+            Text(p.reportTitle).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 .frame(width: Self.labelW, height: Self.rowH, alignment: .leading).padding(.leading, 12)
                 .background(Theme.primarySoft)
         case let .task(t):
             Button(action: onRow) {
                 HStack(spacing: 6) {
-                    Text(t.task.code).font(.caption.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.primary)
+                    Text(t.task.code).font(.sarabun(12, .semibold, relativeTo: .caption).monospacedDigit()).foregroundStyle(Theme.primary)
                         .frame(width: 26, alignment: .leading)
-                    Text(t.task.title).font(.caption).foregroundStyle(Theme.navy).lineLimit(2)
+                    Text(t.task.title).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.navy).lineLimit(2)
                     Spacer(minLength: 4)
-                    Text(t.weight > 0 ? MPFormat.percent(t.weight) : "ไม่ใช้").font(.caption2.monospacedDigit()).foregroundStyle(Theme.muted)
+                    Text(t.weight > 0 ? MPFormat.percent(t.weight) : "ไม่ใช้").font(.sarabun(11, relativeTo: .caption2).monospacedDigit()).foregroundStyle(Theme.muted)
                 }
                 .padding(.horizontal, 12)
                 .frame(width: Self.labelW + 12, height: Self.rowH)
@@ -339,13 +336,13 @@ struct MPWeeklyReport: View {
     var body: some View {
         let st = model.status
         VStack(alignment: .leading, spacing: 12) {
-            Text("Weekly Update · ถึงสัปดาห์ \(model.week.thaiShort)").font(.headline).foregroundStyle(Theme.navy)
+            Text("Weekly Update · ถึงสัปดาห์ \(model.week.thaiShort)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             MPReportRow(title: "รวมทั้งสถานี", planned: st.planned, actual: st.actual, bold: true)
             ForEach(MasterSchedule.Part.allCases, id: \.self) { p in
                 MPReportRow(title: p.reportTitle, planned: st.plannedByPart[p] ?? 0, actual: st.actualByPart[p] ?? 0)
             }
             Divider()
-            Text("งานติดตั้ง (% ของแต่ละงาน)").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
+            Text("งานติดตั้ง (% ของแต่ละงาน)").font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
             ForEach(model.plan.filter { $0.task.part == .construction && $0.weight > 0 }) { t in
                 MPReportRow(title: "\(t.task.code) \(t.task.title)", planned: st.plannedByTask[t.task] ?? 0, actual: st.actualByTask[t.task] ?? 0)
             }
@@ -365,12 +362,12 @@ struct MPMonthlyReport: View {
         let c = cal.dateComponents([.year, .month], from: monday)
         let m = MasterSchedule.month(plan: model.plan, actual: model.actual, year: c.year ?? 0, month: c.month ?? 0)
         VStack(alignment: .leading, spacing: 12) {
-            Text("Monthly Update · \(monday.thaiMonthYear)").font(.headline).foregroundStyle(Theme.navy)
+            Text("Monthly Update · \(monday.thaiMonthYear)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             MPReportRow(title: "รวมเดือนนี้", planned: m.planned.values.reduce(0, +), actual: m.actual.values.reduce(0, +), bold: true)
             ForEach(MasterSchedule.Part.allCases, id: \.self) { p in
                 MPReportRow(title: p.reportTitle, planned: m.planned[p] ?? 0, actual: m.actual[p] ?? 0)
             }
-            Text("% เดือนนี้ของทั้งสถานี").font(.caption).foregroundStyle(Theme.muted)
+            Text("% เดือนนี้ของทั้งสถานี").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
@@ -386,7 +383,7 @@ struct MPReportRow: View {
     var body: some View {
         let v = actual - planned
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(title).font(bold ? .subheadline.weight(.bold) : .subheadline).lineLimit(2)
+            Text(title).font(bold ? .sarabun(15, .bold, relativeTo: .subheadline) : .sarabun(15, relativeTo: .subheadline)).lineLimit(2)
             Spacer(minLength: 8)
             Text(MPFormat.percent(planned)).frame(width: 56, alignment: .trailing).foregroundStyle(Theme.inkMuted)
             Text(MPFormat.percent(actual)).frame(width: 56, alignment: .trailing).fontWeight(.semibold)
@@ -394,7 +391,7 @@ struct MPReportRow: View {
                 .frame(width: 48, alignment: .trailing)
                 .foregroundStyle(v < -0.05 ? Theme.dangerText : v > 0.05 ? Theme.okText : Theme.muted)
         }
-        .font(.subheadline.monospacedDigit())
+        .font(.sarabun(15, relativeTo: .subheadline).monospacedDigit())
         .foregroundStyle(Theme.navy)
         .accessibilityElement(children: .combine)
     }
@@ -435,17 +432,14 @@ struct MPProgressSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            PadForm(maxWidth: 720) {
+                PadSection("สัปดาห์ \(week.thaiShort) · % สะสมของแต่ละงาน") {
                     if tasks.isEmpty { Text("ไม่มีงานตามแผนหรืองานค้างในสัปดาห์นี้").foregroundStyle(Theme.muted) }
                     ForEach(tasks) { t in row(t) }
-                } header: {
-                    Text("สัปดาห์ \(week.thaiShort) · % สะสมของแต่ละงาน")
                 } footer: {
                     Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้")
                 }
             }
-            .tcFormStyle()
             .navigationTitle("บันทึกความก้าวหน้า")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -459,16 +453,16 @@ struct MPProgressSheet: View {
         let p = Binding(get: { percent[t.task] ?? 0 }, set: { percent[t.task] = ($0 / 5).rounded() * 5 })
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(t.task.code).font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(Theme.primary)
-                Text(t.task.title).font(.subheadline)
+                Text(t.task.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
+                Text(t.task.title).font(.sarabun(15, relativeTo: .subheadline))
             }
             HStack(spacing: 12) {
                 Slider(value: p, in: 0...100, step: 5).tint(Theme.primary)
                 Stepper("\(Int((percent[t.task] ?? 0).rounded()))%", value: p, in: 0...100, step: 5)
-                    .font(.body.monospacedDigit().weight(.semibold)).fixedSize()
+                    .font(.sarabun(17, .semibold, relativeTo: .body).monospacedDigit()).fixedSize()
             }
             if let s = t.start, let e = t.end {
-                Text("แผน \(s.thaiShort) – \(e.thaiShort)").font(.caption).foregroundStyle(Theme.muted)
+                Text("แผน \(s.thaiShort) – \(e.thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
         }
         .padding(.vertical, 4)

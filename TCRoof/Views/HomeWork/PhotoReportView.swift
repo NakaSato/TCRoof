@@ -101,7 +101,7 @@ struct PhotoReportView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             if home.photoReport.address.isEmpty { home.photoReport.address = job.address }

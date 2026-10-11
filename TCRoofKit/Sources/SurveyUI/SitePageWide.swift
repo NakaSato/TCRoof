@@ -312,13 +312,13 @@ struct SitePageWide: View {
     /// iPad: the section's title with a hint at its end. iPhone: the band already has the title, so only the hint.
     @ViewBuilder func heading(_ title: String, required: Bool = false, trailing: String) -> some View {
         if isPhone {
-            Text(trailing).font(.system(size: 12)).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, alignment: .leading)
+            Text(trailing).font(.sarabunFixed(12)).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, alignment: .leading)
         } else {
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.system(size: 17, weight: .bold)).lineLimit(1).layoutPriority(1)
-                if required { Text("*").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.danger) }
+                Text(title).font(.sarabunFixed(17, .bold)).lineLimit(1).layoutPriority(1)
+                if required { Text("*").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.danger) }
                 Spacer(minLength: 8)
-                Text(trailing).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                Text(trailing).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
             }
         }
     }
@@ -341,8 +341,8 @@ struct SitePageWide: View {
             HStack(spacing: 10) {
                 A2Icon(name: icon, fallback: symbol).foregroundStyle(Theme.primary).frame(width: 26)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.85)
-                    Text(detail).font(.system(size: 12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(title).font(.sarabunFixed(16, .bold)).lineLimit(1).minimumScaleFactor(0.85)
+                    Text(detail).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
@@ -386,11 +386,11 @@ struct SitePageWide: View {
             HStack(spacing: 6) {
                 ToolIcon(tool: t).frame(width: 28, height: 28)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.system(size: 13, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                    Text(detail).font(.system(size: 10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(title).font(.sarabunFixed(13, .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(detail).font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 0)
-                Circle().fill(placed(t) ? Theme.success : Color.gray.opacity(0.35)).frame(width: 7, height: 7)
+                Circle().fill(placed(t) ? Theme.success : Theme.progressZero).frame(width: 7, height: 7)
             }
             .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
             .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -423,7 +423,7 @@ struct SitePageWide: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 19))
                         .foregroundStyle(on ? Theme.primary : Theme.pending).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 4 }
-                    Text(item).font(.system(size: 12)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    Text(item).font(.sarabunFixed(12)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
                 .padding(.vertical, 2)
@@ -463,7 +463,7 @@ struct SitePageWide: View {
 
     func shortcutLabel(_ title: String, icon: String?, symbol: String) -> some View {
         Label { Text(title) } icon: { A2Icon(name: icon, fallback: symbol, size: 16) }
-            .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.pending)
+            .font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.pending)
             .labelStyle(TightLabel()).fixedSize()
             .padding(.horizontal, 8).frame(minHeight: 30)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
@@ -477,7 +477,7 @@ struct SitePageWide: View {
             TextField("เช่น รถเครนเข้าทางถนนด้านตะวันออก · ต้นไม้บังแดดเช้า", text: Binding(
                 get: { job.values.text("siteNote") },
                 set: { job.values["siteNote"] = $0.isEmpty ? nil : .text($0) }), axis: .vertical)
-                .lineLimit(1...2).font(.system(size: 15))
+                .lineLimit(1...2).font(.sarabunFixed(15))
                 .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))

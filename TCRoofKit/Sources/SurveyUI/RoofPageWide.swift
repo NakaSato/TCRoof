@@ -76,9 +76,9 @@ struct RoofPageWide: View {
 
     static let track = Theme.hairline
     static let soft = Theme.primarySoft
-    static let red = Color(red: 0.851, green: 0.271, blue: 0.231)
-    static let line = Color(red: 0.867, green: 0.894, blue: 0.929)
-    static let amber = Color(red: 0.706, green: 0.325, blue: 0.035)
+    static let red = Theme.danger
+    static let line = Theme.borderSubtle
+    static let amber = Theme.pending
 
     var body: some View {
         VStack(spacing: 16) {
@@ -190,10 +190,10 @@ struct RoofPageWide: View {
 
     func cardTitle(_ t: String, trailing: String? = nil, trailingColor: Color = Theme.inkMuted, bold: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            (Text(t) + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 17, weight: .bold)).lineLimit(1)
+            (Text(t) + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(17, .bold)).lineLimit(1)
             Spacer(minLength: 8)
             if let trailing {
-                Text(trailing).font(.system(size: 12.5, weight: bold ? .bold : .regular)).foregroundStyle(trailingColor).lineLimit(1).minimumScaleFactor(0.7)
+                Text(trailing).font(.sarabunFixed(12.5, bold ? .bold : .regular)).foregroundStyle(trailingColor).lineLimit(1).minimumScaleFactor(0.7)
             }
         }
     }
@@ -284,8 +284,8 @@ struct RoofPageWide: View {
             A3Label(text: "ระยะแป")
             Button { dropdown = open ? nil : "purlin" } label: {
                 HStack(spacing: 4) {
-                    Text(String(format: "%.2f", p)).font(.system(size: 18, weight: .bold)).foregroundStyle(Self.amber).monospacedDigit()
-                    Text("ม.").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                    Text(String(format: "%.2f", p)).font(.sarabunFixed(18, .bold)).foregroundStyle(Self.amber).monospacedDigit()
+                    Text("ม.").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 2)
                     Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Theme.primary)
                 }
@@ -307,7 +307,7 @@ struct RoofPageWide: View {
             A3Label(text: label)
             Button { dropdown = open ? nil : key } label: {
                 HStack {
-                    Text(shown ?? "เลือก").font(.system(size: 16)).foregroundStyle(shown == nil ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(shown ?? "เลือก").font(.sarabunFixed(16)).foregroundStyle(shown == nil ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.6)
                     Spacer(minLength: 2)
                     Image(systemName: "arrowtriangle.down.fill").font(.system(size: 9)).foregroundStyle(Theme.primary)
                 }
@@ -332,8 +332,8 @@ struct RoofPageWide: View {
                 Button { update { Roof.choose(&$0, key, o) }; dropdown = nil } label: {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(o.name).font(.system(size: 16, weight: on ? .bold : .regular))
-                            Text(o.sub).font(.system(size: 12)).foregroundStyle(Theme.inkMuted)
+                            Text(o.name).font(.sarabunFixed(16, on ? .bold : .regular))
+                            Text(o.sub).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 8)
                         if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary) }
@@ -348,7 +348,7 @@ struct RoofPageWide: View {
             Divider()
             Button { otherText = values.other(key); otherKey = key; dropdown = nil } label: {
                 HStack {
-                    Text(other ? "อื่นๆ: " + (Roof.shown(values, key, in: list) ?? "") : "อื่นๆ (ระบุเอง)").font(.system(size: 15, weight: other ? .bold : .regular))
+                    Text(other ? "อื่นๆ: " + (Roof.shown(values, key, in: list) ?? "") : "อื่นๆ (ระบุเอง)").font(.sarabunFixed(15, other ? .bold : .regular))
                     Spacer()
                     if other { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary) }
                 }
@@ -373,12 +373,12 @@ struct RoofPageWide: View {
             HStack(alignment: .center, spacing: 8) {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(pv.count)").font(.system(size: 26, weight: .bold)).monospacedDigit()
-                        Text("แผง").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
-                        Text(String(format: "%.1f", pv.kWp)).font(.system(size: 26, weight: .bold)).monospacedDigit().padding(.leading, 8)
-                        Text("kWp").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
+                        Text("\(pv.count)").font(.sarabunFixed(26, .bold)).monospacedDigit()
+                        Text("แผง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text(String(format: "%.1f", pv.kWp)).font(.sarabunFixed(26, .bold)).monospacedDigit().padding(.leading, 8)
+                        Text("kWp").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     }
-                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .accessibilityElement(children: .combine)
                 Spacer(minLength: 6)
@@ -402,7 +402,7 @@ struct RoofPageWide: View {
             }
             let perRow = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 3)) : AnyLayout(HStackLayout(spacing: 10))
             perRow {
-                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.system(size: 12.5)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize()
+                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize()
                 RoofSegments(options: ["ต่อเนื่อง", "ทุก 2 แผง", "ทุก 4 แผง", "ทุก 6 แผง"], selected: [0, 2, 4, 6].firstIndex(of: per), minSegment: 64) { i in
                     update { Roof.setPV(&$0, perTable: [0, 2, 4, 6][i]) }
                 }
@@ -414,10 +414,10 @@ struct RoofPageWide: View {
     var gapRow: some View {
         let g = Roof.pvGap(values)
         return HStack(spacing: 8) {
-            Text("ระยะห่างระหว่างชุด").font(.system(size: 14))
+            Text("ระยะห่างระหว่างชุด").font(.sarabunFixed(14))
             Spacer(minLength: 6)
             stepButton("minus", enabled: g > 0) { update { Roof.setPV(&$0, gap: g - 0.05) } }
-            (Text(String(format: "%.2f", g)).font(.system(size: 20, weight: .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.system(size: 13)).foregroundColor(Theme.inkMuted))
+            (Text(String(format: "%.2f", g)).font(.sarabunFixed(20, .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
                 .monospacedDigit().frame(minWidth: 70)
             stepButton("plus", enabled: g < 2) { update { Roof.setPV(&$0, gap: g + 0.05) } }
         }
@@ -429,19 +429,19 @@ struct RoofPageWide: View {
     func panelsField(_ count: Int) -> some View {
         let cur = values.text(Roof.Key.panels)
         return VStack(alignment: .trailing, spacing: 2) {
-            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.system(size: 11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
                         .keyboardType(.numberPad).multilineTextAlignment(.trailing)
-                    Text("แผง").font(.system(size: 13)).foregroundStyle(Theme.inkMuted)
+                    Text("แผง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 8)
                 .frame(width: 100)
                 .accessibilityLabel("จำนวนแผงก่อนเข้าสำรวจ")
                 if count > 0 && cur != String(count) {
                     Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
-                        Text("ใช้ \(count)").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                        Text("ใช้ \(count)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                             .padding(.horizontal, 8).frame(minHeight: 44)
                             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.5)))
@@ -526,7 +526,7 @@ struct RoofSegments: View {
             ForEach(Array(options.enumerated()), id: \.offset) { i, o in
                 let on = selected == i
                 Button { set(i) } label: {
-                    Text(o).font(.system(size: 15, weight: on ? .bold : .medium)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(o).font(.sarabunFixed(15, on ? .bold : .medium)).lineLimit(1).minimumScaleFactor(0.7)
                         .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: height)
                         .background {
@@ -550,7 +550,7 @@ struct RoofSegments: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text(selected.map { options[$0] } ?? "เลือก").font(.system(size: 15, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                Text(selected.map { options[$0] } ?? "เลือก").font(.sarabunFixed(15, .bold)).lineLimit(1).minimumScaleFactor(0.75)
                     .foregroundStyle(selected == nil ? Theme.inkMuted : Theme.navy)
                 Spacer(minLength: 2)
                 Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.primary)

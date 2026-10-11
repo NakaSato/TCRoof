@@ -29,18 +29,18 @@ struct SiteMarksEditor: View {
                     Button { armed = armed == k ? nil : k; selected = nil } label: { chip(k) }.buttonStyle(.plain)
                 }
             }
-            Text(hint).font(.footnote).foregroundStyle(armed == nil ? Theme.inkMuted : Theme.primary)
+            Text(hint).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(armed == nil ? Theme.inkMuted : Theme.primary)
             if let p = photo, let img = model.image(p, in: jobID), img.size.height > 0 {
                 stage(img)
                 HStack {
-                    Text("วางแล้ว \(marks.count) จุด").font(.caption).foregroundStyle(Theme.inkMuted)
+                    Text("วางแล้ว \(marks.count) จุด").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     Spacer()
                     if let sel = selected, let i = marks.firstIndex(where: { $0.id == sel }), let unit = marks[i].kind.unit {
-                        Text(marks[i].kind == .trafo ? "ขนาดหม้อแปลง" : "ขนาดเบรกเกอร์ MDB").font(.caption)
+                        Text(marks[i].kind == .trafo ? "ขนาดหม้อแปลง" : "ขนาดเบรกเกอร์ MDB").font(.sarabun(12, relativeTo: .caption))
                         TextField("0", text: Binding(get: { marks.indices.contains(i) ? marks[i].value : "" },
                                                      set: { v in if marks.indices.contains(i) { marks[i].value = v } }))
-                            .keyboardType(.numberPad).textFieldStyle(.roundedBorder).frame(width: 90)
-                        Text(unit).font(.caption).foregroundStyle(Theme.inkMuted)
+                            .keyboardType(.numberPad).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 90)
+                        Text(unit).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     }
                     if let sel = selected, let m = marks.first(where: { $0.id == sel }) {
                         Button(role: .destructive) { marks.removeAll { $0.id == sel }; selected = nil } label: {
@@ -55,7 +55,7 @@ struct SiteMarksEditor: View {
                     }
                 }
             } else {
-                Text("ถ่ายหรือเลือก ภาพสถานที่ติดตั้ง ด้านบนก่อน แล้วจึงวางสัญลักษณ์").font(.callout).foregroundStyle(Theme.inkMuted)
+                Text("ถ่ายหรือเลือก ภาพสถานที่ติดตั้ง ด้านบนก่อน แล้วจึงวางสัญลักษณ์").font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 60)
             }
         }
@@ -70,10 +70,10 @@ struct SiteMarksEditor: View {
         let on = armed == k
         return HStack(spacing: 6) {
             ToolIcon(tool: .mark(k)).frame(width: 24, height: 24)
-            Text(k.paletteTitle).font(.caption.weight(.semibold)).foregroundStyle(on ? Color.white : Color.primary)
+            Text(k.paletteTitle).font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(on ? Theme.onPrimary : Theme.navy)
         }
         .padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
-        .background(on ? Theme.primary : Color(uiColor: .systemBackground), in: Capsule())
+        .background(on ? Theme.primary : Theme.surface, in: Capsule())
         .overlay(Capsule().stroke(on ? Theme.primary : Theme.borderControl, lineWidth: 1.2))
     }
 

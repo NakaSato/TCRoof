@@ -19,7 +19,7 @@ struct RoofSensorButton: View {
         if caps.roofSensors && (reading == .pitch || caps.compass) {
             Button { open = true } label: {
                 Label("วัดด้วยเครื่อง", systemImage: reading == .pitch ? "level" : "location.north.line")
-                    .font(.system(size: 14, weight: .semibold)).frame(minHeight: 44)
+                    .font(.sarabunFixed(14, .semibold)).frame(minHeight: 44)
             }
             .buttonStyle(.plain).foregroundStyle(Theme.primary)
             .sheet(isPresented: $open) {
@@ -42,16 +42,16 @@ struct RoofSensorSheet: View {
         NavigationStack {
             VStack(spacing: 18) {
                 Text("วาง iPad ราบบนแผ่นหลังคา ให้ขอบด้านบนของจอชี้ขึ้นตามแนวลาด · บนหลังคาลอนให้วางขวางลอน")
-                    .font(.callout).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
+                    .font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
                 VStack(spacing: 4) {
-                    Text(String(format: "%.1f°", sensor.tilt)).font(.system(size: 56, weight: .bold).monospacedDigit())
+                    Text(String(format: "%.1f°", sensor.tilt)).font(.sarabunFixed(56, .bold).monospacedDigit())
                         .foregroundStyle(reading == .pitch ? Theme.navy : Theme.inkMuted)
-                    Text("มุมเอียง").font(.footnote).foregroundStyle(Theme.inkMuted)
+                    Text("มุมเอียง").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                 }
                 VStack(spacing: 4) {
-                    Text(sensor.facing.map(Orientation.describe) ?? "–").font(.system(size: reading == .facing ? 34 : 22, weight: .bold))
+                    Text(sensor.facing.map(Orientation.describe) ?? "–").font(.sarabunFixed(reading == .facing ? 34 : 22, .bold))
                         .foregroundStyle(reading == .facing ? Theme.navy : Theme.inkMuted)
-                    Text(sensor.trueNorth ? "หลังคาหันไปทางทิศ (ทิศจริง)" : "หลังคาหันไปทางทิศ (ทิศแม่เหล็ก)").font(.footnote).foregroundStyle(Theme.inkMuted)
+                    Text(sensor.trueNorth ? "หลังคาหันไปทางทิศ (ทิศจริง)" : "หลังคาหันไปทางทิศ (ทิศแม่เหล็ก)").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                 }
                 status
                 Button { confirm() } label: {

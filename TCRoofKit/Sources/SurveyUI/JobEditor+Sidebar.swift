@@ -53,6 +53,8 @@ extension JobEditorView {
 
     var sidebar: some View {
         let groups = sidebarGroups
+        // one diff against the previous REV for the whole sidebar, not one per row
+        let changed = changedPages
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
@@ -65,12 +67,12 @@ extension JobEditorView {
                             if !collapsed.contains(g.category) {
                                 ForEach(g.items) { item in
                                     if let m = item.module, !readOnly {
-                                        row(item).contextMenu {
+                                        row(item, changed: changed).contextMenu {
                                             Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
                                             Button(role: .destructive) { confirmDelete = m } label: { Label("ลบหัวข้อ", systemImage: "trash") }
                                         }
                                     } else {
-                                        row(item)
+                                        row(item, changed: changed)
                                     }
                                 }
                             }
@@ -250,7 +252,7 @@ extension JobEditorView {
     }
 
     /// Code badge tinted by status, one-line title, status mark; the open section gets a blue bar and tint.
-    func row(_ item: SidebarItem, symbol: String? = nil) -> some View {
+    func row(_ item: SidebarItem, symbol: String? = nil, changed: [Page: Int] = [:]) -> some View {
         let c = item.completion
         let selected = !compact && page == item.page
         let (badgeFill, badgeText): (Color, Color) = selected ? (Theme.primary, .white)
@@ -269,7 +271,7 @@ extension JobEditorView {
                 Text(item.title).font(.sarabunFixed(16, selected ? .bold : .medium)).lineLimit(1)
                     .foregroundStyle(selected ? Theme.primary : c.total > 0 && c.isComplete ? Theme.inkMuted : Theme.navy)
                 Spacer(minLength: 4)
-                if let n = changedPages[item.page] {
+                if let n = changed[item.page] {
                     Text("แก้ \(n)").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.pending)
                         .padding(.horizontal, 6).padding(.vertical, 2).background(Theme.pendingSoft, in: Capsule())
                         .accessibilityLabel("แก้จาก REV ก่อน \(n) รายการ")

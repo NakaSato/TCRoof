@@ -1,4 +1,6 @@
 import SwiftUI
+import CryptoKit
+import ImageIO
 import TCRoofUI
 import SurveyUI
 import PhotosUI
@@ -108,18 +110,41 @@ struct PhotoGrid: View {
 
 private struct IndexBox: Identifiable { let id: Int }
 
+/// A photo tile: a 600 px thumbnail decoded off the main thread and cached, so a list of logs does not decode
+/// every full-size photo each time its body runs.
 struct Thumbnail: View {
     let data: Data
+    @State private var image: UIImage?
+    private static let cache = NSCache<NSString, UIImage>()
 
     var body: some View {
         Theme.track
             .overlay {
-                if let image = UIImage(data: data) {
-                    Image(uiImage: image).resizable().scaledToFill()
-                }
+                if let image { Image(uiImage: image).resizable().scaledToFill() }
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
+            .task(id: Self.key(data)) {
+                let key = Self.key(data) as NSString
+                if let hit = Self.cache.object(forKey: key) { image = hit; return }
+                let made = await Task.detached(priority: .userInitiated) { [data] in Self.thumbnail(data) }.value
+                if let made { Self.cache.setObject(made, forKey: key) }
+                image = made
+            }
+    }
+
+    /// The size and a hash of both ends: cheap, and two photos do not share it.
+    private static func key(_ data: Data) -> String {
+        var hash = SHA256()
+        hash.update(data: data.prefix(4096)); hash.update(data: data.suffix(4096))
+        return "\(data.count)-" + hash.finalize().prefix(8).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private nonisolated static func thumbnail(_ data: Data) -> UIImage? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 600,
+                                     kCGImageSourceCreateThumbnailWithTransform: true]
+        return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
     }
 }
 

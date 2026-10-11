@@ -32,6 +32,7 @@ final class CloudSync {
     @ObservationIgnored private var listeners: [ListenerRegistration] = []
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, record: SurveyRecord, fingerprint: String)] = [:]
     @ObservationIgnored private var pushTask: Task<Void, Never>?
     @ObservationIgnored private var known: [String: String] = [:]
     /// Writes per document not yet confirmed by the server (offline, or still uploading).
@@ -195,10 +196,11 @@ final class CloudSync {
         for job in survey.jobs {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
             present.insert(key)
-            guard let record = SurveyRecord(job), known[key] != record.fingerprint else { continue }
+            guard let (record, fingerprint) = surveyRecord(job), known[key] != fingerprint else { continue }
             let ref = db.document(key)
-            changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: record.fingerprint))
+            changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: fingerprint))
         }
+        surveyRecords = surveyRecords.filter { present.contains("\(Self.surveyCollection)/\($0.key.uuidString)") }
         let revisions = revisionChanges(survey, &present)
         for key in known.keys where !present.contains(key) {
             let ref = db.document(key)
@@ -413,12 +415,22 @@ final class CloudSync {
         listeners.append(registration)
     }
 
+    /// A job's document and fingerprint, kept until the job changes: the push runs after every edit and every 20 s,
+    /// and encoding and hashing every job each time held the main thread.
+    private func surveyRecord(_ job: TCRoofCore.Job) -> (record: SurveyRecord, fingerprint: String)? {
+        if let hit = surveyRecords[job.id], hit.job == job { return (hit.record, hit.fingerprint) }
+        guard let record = SurveyRecord(job) else { return nil }
+        let fingerprint = record.fingerprint
+        surveyRecords[job.id] = (job, record, fingerprint)
+        return (record, fingerprint)
+    }
+
     /// Survey reports whose latest version Firestore doesn't have yet — never sent, edited since, or not confirmed.
     private func refreshSurveyPending() {
         guard let survey else { return }
         let now = Set(survey.jobs.filter { job in
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
-            return unconfirmed[key] != nil || known[key] != SurveyRecord(job)?.fingerprint
+            return unconfirmed[key] != nil || known[key] != surveyRecord(job)?.fingerprint
         }.map(\.id))
         // the 20 s push timer calls this too — only touch the observed value when it changes
         if survey.cloudPending != now { survey.cloudPending = now }

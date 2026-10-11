@@ -495,17 +495,19 @@ struct ScanHistoryView: View {
     @State private var search = ""
 
     var body: some View {
-        List {
-            ForEach(devices.filter { search.isEmpty || $0.serial.localizedCaseInsensitiveContains(search) || ($0.job?.matches(search) ?? false) }) { device in
-                HStack(spacing: 12) {
-                    Image(systemName: device.kind.symbol).foregroundStyle(Theme.primary).frame(width: 28)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(device.serial).font(.body.monospaced())
-                        Text("\(device.kind.title) · \(device.job?.code ?? "-") · \(device.job?.projectName ?? "")")
-                            .font(.caption).foregroundStyle(Theme.muted)
+        PadForm {
+            PadSection {
+                ForEach(devices.filter { search.isEmpty || $0.serial.localizedCaseInsensitiveContains(search) || ($0.job?.matches(search) ?? false) }) { device in
+                    HStack(spacing: 12) {
+                        Image(systemName: device.kind.symbol).foregroundStyle(Theme.primary).frame(width: 28)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(device.serial).font(.body.monospaced())
+                            Text("\(device.kind.title) · \(device.job?.code ?? "-") · \(device.job?.projectName ?? "")")
+                                .font(.caption).foregroundStyle(Theme.muted)
+                        }
+                        Spacer()
+                        Text(device.scannedAt.thaiShort).font(.caption).foregroundStyle(Theme.muted)
                     }
-                    Spacer()
-                    Text(device.scannedAt.thaiShort).font(.caption).foregroundStyle(Theme.muted)
                 }
             }
         }

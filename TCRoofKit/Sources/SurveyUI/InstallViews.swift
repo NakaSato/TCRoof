@@ -102,10 +102,11 @@ struct InstallTrackingView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Paper.page)
+        .background(Theme.pageGradient.ignoresSafeArea())
         .navigationTitle("ติดตามงานติดตั้ง")
         .toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
+        .tcPadNavBar("ติดตามงานติดตั้ง", trail: ["หน้าหลัก", "PWA Solar Survey"])
     }
 }
 #endif

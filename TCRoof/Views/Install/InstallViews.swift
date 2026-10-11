@@ -375,19 +375,21 @@ struct InstallLogHistoryView: View {
     @Query(sort: \InstallLog.date, order: .reverse) private var logs: [InstallLog]
 
     var body: some View {
-        List {
+        PadForm {
             if logs.isEmpty {
                 ContentUnavailableView("ยังไม่มีบันทึก", systemImage: "hammer")
             }
-            ForEach(logs) { log in
-                NavigationLink { InstallLogDetailView(log: log) } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
-                        Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
-                            .font(.caption).foregroundStyle(Theme.muted)
-                        Text(log.detailLines.joined(separator: " · ")).font(.subheadline).lineLimit(1)
+            PadSection {
+                ForEach(logs) { log in
+                    PadLink { InstallLogDetailView(log: log) } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
+                            Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
+                                .font(.caption).foregroundStyle(Theme.muted)
+                            Text(log.detailLines.joined(separator: " · ")).font(.subheadline).lineLimit(1)
+                        }
+                        .foregroundStyle(Theme.navy)
                     }
-                    .foregroundStyle(Theme.navy)
                 }
             }
         }

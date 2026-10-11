@@ -137,7 +137,7 @@ public struct TCSaveButton: View {
     var fill: Color {
         switch phase {
         case .justSaved: Theme.okFlash
-        default: .white
+        default: Theme.surface
         }
     }
 

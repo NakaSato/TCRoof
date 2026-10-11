@@ -1,6 +1,17 @@
 # Before submitting: photo check, REV comparison, lock after signing (iPad, Swift dev spec)
 
-**Status:** Ready for development, 2026-09-29
+**Status:** Built 2026-10-10 (PR #6): photo check (§2, without the leaving-site reminder of §2.4), REV comparison
+(§3) and lock after signing (§4), with the core tests and iPad UI tests of §6. Changes from this spec:
+- The slot types are `ReviewSlot` / `ReviewSlotGroup` (`TCRoofCore/Review/ReviewSlots.swift`), because SurveyUI already
+  has a `PhotoSlot` view.
+- Issued REVs reach other iPads as one immutable Firestore document each (`pwaSurveyRevisions`, rule deployed
+  2026-10-10) instead of only through Drive. A device without the signed PDF rebuilds it from the REV's snapshot.
+- Per-field "แก้จาก REV" captions (§3.3) are replaced by "แก้ n" markers on the sidebar rows, because the designed
+  pages have no per-field anchors; "ไปที่ช่องในฟอร์ม" opens the page without scrolling to the field.
+- `FormHash.of` returns nil while a photo isn't on the device: locking waits for it, and the integrity check skips.
+
+Not built: the Drive `REV/` upload (`DriveSync.Kind.revisions`), the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
+and the leaving-site reminder (§2.4, open question 5).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same code runs on iPhone in compact layout.
 **Modules:** `TCRoofCore` (model, diff, hash; testable with `swift test`), `SurveyUI` (pages), `PDFReport` (page and
 footer), `DriveSync` (upload).

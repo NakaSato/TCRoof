@@ -30,13 +30,9 @@ struct InstallRecordsView: View {
     private var padList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                PageHeader(title: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน", symbol: AppModule.install.symbol) {
-                    HeaderLink(title: "ประวัติบันทึกทั้งหมด") { InstallLogHistoryView() }
-                }
-                Picker("ประเภท", selection: $tab) {
-                    ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
+                TCSegmented(Tab.allCases.map(\.rawValue),
+                            selection: Binding(get: { tab.rawValue }, set: { tab = Tab(rawValue: $0) ?? .logs }))
+                    .frame(maxWidth: 560)
                 QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
                 if filtered.isEmpty {
                     ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
@@ -48,7 +44,7 @@ struct InstallRecordsView: View {
                                 JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
                                     JobInstallLogsView(job: job)
                                 } footer: {
-                                    footer("บันทึกแล้ว \(job.logs.count) รายการ", color: job.logs.isEmpty ? Theme.muted : Theme.teal)
+                                    footer("\(job.logs.count) รายการ", color: job.logs.isEmpty ? Theme.muted : Theme.teal)
                                 }
                             case .inspection:
                                 JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
@@ -65,12 +61,17 @@ struct InstallRecordsView: View {
             .frame(maxWidth: 1100)
             .frame(maxWidth: .infinity)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TCNavBar(title: "บันทึกงานติดตั้งและใบตรวจรับงาน", trail: ["หน้าหลัก"], current: "บันทึกงานติดตั้งและใบตรวจรับงาน") {
+                TopBarLink(title: "ประวัติบันทึกทั้งหมด", systemImage: "clock.arrow.circlepath") { InstallLogHistoryView() }
+            }
+        }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
             TCFab("plus", accessibilityLabel: "เพิ่มบันทึกงานติดตั้ง", gradient: Theme.tealGradient) { showPicker = true }
                 .tcFabPlacement(compact: isPhone)
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showPicker, onDismiss: {
             if let job = pendingJob {
                 pendingJob = nil
@@ -83,24 +84,20 @@ struct InstallRecordsView: View {
     }
 
     private func footer(_ text: String, color: Color) -> some View {
-        Label(text, systemImage: "doc.text.image")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(color)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
-            .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
+        JobCardStrip(key: "บันทึกแล้ว", value: text, valueColor: color)
     }
 
     private func inspectionFooter(_ job: Job) -> some View {
         let status = Self.inspectionStatus(job)
-        return footer(status.text, color: status.color)
+        return JobCardStrip(key: "ใบตรวจรับ", value: status.text, valueColor: status.color,
+                            progress: job.inspection.map { Double($0.completedCount) / Double(InspectionStep.all.count) })
     }
 
     /// The ICL state of a job, for the iPad footer and the iPhone status box.
     static func inspectionStatus(_ job: Job) -> (text: String, color: Color) {
         guard let inspection = job.inspection else { return ("ยังไม่เริ่มตรวจรับ", Theme.muted) }
         if inspection.submittedAt != nil {
-            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Color(hex: 0x2E9E5B)) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
+            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Theme.success) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
         }
         return ("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", .orange)
     }
@@ -128,7 +125,7 @@ struct JobInstallLogsView: View {
                     NavigationLink { InspectionView(job: job) } label: {
                         Label("ใบตรวจรับงาน (ICL)", systemImage: "checkmark.seal")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 }
                 if logs.isEmpty {
                     ContentUnavailableView("ยังไม่มีบันทึกงานติดตั้ง", systemImage: "hammer",
@@ -151,6 +148,9 @@ struct JobInstallLogsView: View {
                 Button { showForm = true } label: { Label("เพิ่มบันทึก", systemImage: "plus") }
             }
         }
+        .tcPadNavBar("บันทึกงานติดตั้ง", trail: ["หน้าหลัก", job.code]) {
+            TCButton("เพิ่มบันทึก", systemImage: "plus") { showForm = true }
+        }
         .sheet(isPresented: $showForm) { InstallLogFormView(job: job, log: nil) }
     }
 }
@@ -169,7 +169,7 @@ private struct LogCard: View {
                 Spacer()
                 Text(log.recorder)
                     .font(.caption.bold())
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.pending)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.orange.opacity(0.12), in: Capsule())
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
@@ -230,6 +230,7 @@ struct InstallLogFormView: View {
                     PhotoPickerSection(images: $photos)
                 }
             }
+            .tcFormStyle()
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(log == nil ? "เพิ่มบันทึกงานติดตั้ง" : "แก้ไขบันทึก")
             .navigationBarTitleDisplayMode(.inline)
@@ -305,7 +306,7 @@ struct InstallLogDetailView: View {
                             Text("ผู้บันทึก :")
                             Text(log.recorder)
                                 .bold()
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Theme.pending)
                                 .padding(.horizontal, 8).padding(.vertical, 2)
                                 .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
                             Spacer()
@@ -355,6 +356,10 @@ struct InstallLogDetailView: View {
                 Button { showEdit = true } label: { Label("แก้ไข", systemImage: "pencil") }
             }
         }
+        .tcPadNavBar("บันทึกงานติดตั้งและรูป", trail: ["หน้าหลัก", log.job?.code ?? "บันทึกงานติดตั้ง"],
+                     current: log.date.thaiLong) {
+            TCButton("แก้ไข", systemImage: "pencil", kind: .secondary) { showEdit = true }
+        }
         .sheet(isPresented: $showEdit, onDismiss: export) {
             if let job = log.job { InstallLogFormView(job: job, log: log) }
         }
@@ -371,22 +376,25 @@ struct InstallLogHistoryView: View {
     @Query(sort: \InstallLog.date, order: .reverse) private var logs: [InstallLog]
 
     var body: some View {
-        List {
+        PadForm {
             if logs.isEmpty {
                 ContentUnavailableView("ยังไม่มีบันทึก", systemImage: "hammer")
             }
-            ForEach(logs) { log in
-                NavigationLink { InstallLogDetailView(log: log) } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
-                        Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
-                            .font(.caption).foregroundStyle(Theme.muted)
-                        Text(log.detailLines.joined(separator: " · ")).font(.subheadline).lineLimit(1)
+            PadSection {
+                ForEach(logs) { log in
+                    PadLink { InstallLogDetailView(log: log) } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
+                            Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
+                                .font(.caption).foregroundStyle(Theme.muted)
+                            Text(log.detailLines.joined(separator: " · ")).font(.subheadline).lineLimit(1)
+                        }
+                        .foregroundStyle(Theme.navy)
                     }
-                    .foregroundStyle(Theme.navy)
                 }
             }
         }
         .navigationTitle("ประวัติบันทึกทั้งหมด")
+        .tcPadNavBar("ประวัติบันทึกทั้งหมด", trail: ["หน้าหลัก", "บันทึกงานติดตั้งและใบตรวจรับงาน"])
     }
 }

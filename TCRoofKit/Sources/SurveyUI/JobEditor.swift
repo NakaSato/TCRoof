@@ -5,10 +5,11 @@ import PDFKit
 import TCRoofCore
 import PDFReport
 import DriveSync
+import TCRoofUI
 
 /// Editor for one survey: sidebar of sections grouped like the workbook sheets, paper-style form on the right.
 struct JobEditorView: View {
-    enum Page: Hashable { case summary, info, site, electrical, flood, module(UUID), final }
+    enum Page: Hashable { case summary, info, site, electrical, flood, module(UUID), final, photos, revisions }
 
     @Environment(SurveyModel.self) var model
     @State var job: Job
@@ -22,7 +23,18 @@ struct JobEditorView: View {
     @State var sidebarVisible = true
     @State var collapsed: Set<SectionCategory> = []
     @State var pendingExport: PendingExport?
-    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; let go: () -> Void }
+    struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; var photos = false; let go: () -> Void }
+    // review lock (docs/specs/review-lock-revisions-swift.md)
+    @State var showLockSheet = false
+    @State var showNextRevision = false
+    /// An edit to a signed, unlocked form, held until the signatures may be cleared.
+    @State var pendingSignedEdit: Job?
+    @State var photoFilter = PhotoReviewPage.Filter.all
+    /// The REV the comparison page starts from (the integrity banner's เทียบกับ REV nn).
+    @State var revisionCompare: String?
+    /// The previous issued REV's answers, for the sidebar's change dots.
+    @State var revisionBase: FormSnapshot?
+    @State var integrityBroken = false
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dismiss) var dismiss
 
@@ -41,10 +53,12 @@ struct JobEditorView: View {
     /// iPhone (and narrow iPad split view): the section list and the form take turns filling the screen.
     var compact: Bool { sizeClass == .compact }
 
-    /// A survey moved to installation is kept as it was: view and export only.
-    var readOnly: Bool { job.stage != .survey }
+    /// A survey moved to installation, or a REV locked after both signatures, is kept as it was: view and export only.
+    var readOnly: Bool { job.stage != .survey || job.isLocked }
 
     @State var detailSize: CGSize = .zero
+    /// Visible height of the scrolling detail (inside the header and the bottom bar); A1 fills it in landscape.
+    @State var scrollHeight: CGFloat = 0
     /// A1 in the card layout (docs/ui/survey-a1); one column on iPad portrait and iPhone.
     var cardInfo: Bool { page == .info }
     /// A2's picture page (docs/ui/survey-a2): side by side in landscape, one column on iPad portrait and iPhone.
@@ -158,7 +172,7 @@ struct JobEditorView: View {
         // the card pages' blue header carries back, sidebar and export itself
         .toolbar(cardPage ? .hidden : .visible, for: .navigationBar)
         // the model owns the Drive link (uploads and other devices change it); this copy only mirrors it
-        .onChange(of: job) { _, new in var j = new; j.drive = model.job(new.id)?.drive ?? new.drive; model.update(j) }
+        .onChange(of: job) { old, new in jobChanged(old, new) }
         // the Drive link changes elsewhere (export sheet, another device) — take it so the next edit doesn't drop it
         .onChange(of: model.job(job.id)?.drive) { _, d in if let d, d != job.drive { job.drive = d } }
         // photos taken on another iPad: fetch them from Drive now, and again when that iPad uploads more
@@ -190,9 +204,11 @@ struct JobEditorView: View {
         .sheet(isPresented: $showExport, onDismiss: { if let d = model.job(job.id)?.drive { job.drive = d } }) {
             ExportSheet(jobID: job.id) { select(page(for: $0)) }.environment(model)
         }
+        .modifier(ReviewLockModifiers(editor: self))
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .alert("ข้อมูลยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in
+            if p.photos { Button("ไปตรวจรูป") { pendingExport = nil; photoFilter = .missing; select(.photos) } }
             if let t = p.target { Button("ไปกรอกให้ครบ") { pendingExport = nil; select(page(for: t)) } }
             Button("ส่งออกต่อ") { let go = p.go; pendingExport = nil; go() }
             Button("ยกเลิก", role: .cancel) { pendingExport = nil }
@@ -212,7 +228,8 @@ struct JobEditorView: View {
                                    narrow: compact)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
+            // iPhone: the page pads and scrolls itself
+            .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardPanels {
@@ -296,6 +313,7 @@ struct JobEditorView: View {
         } else if cardFinal {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
+                finalBanners
                 FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
                               stacked: compact || infoColumns != 2 || detailSize.width < 1100,
                               open: { select(page(for: $0)) })
@@ -316,21 +334,27 @@ struct JobEditorView: View {
         } else if cardSite {
             VStack(spacing: 12) {
                 if readOnly { readOnlyBanner }
-                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), request: $siteRequest,
+                SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 0 : 48), request: $siteRequest,
                              stacked: compact || infoColumns != 2)
                     .disabled(readOnly)
             }
-            .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
+            // iPhone: the bands run edge to edge
+            .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
+        } else if page == .photos || page == .revisions {
+            reviewDetail.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
                     if readOnly { readOnlyBanner.padding(.horizontal, 24).padding(.top, 16).frame(maxWidth: 1240 + 48) }
                     Group {
                         if cardInfo {
-                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48), twoColumns: infoColumns == 2)
-                                .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16).frame(maxWidth: 1240 + 48)
+                            // iPhone: the bands run edge to edge
+                            // landscape: the cards fill the visible height (less the 16-pt padding above and below)
+                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2,
+                                         fillHeight: compact || readOnly ? 0 : max(0, scrollHeight - 32))
+                                .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16).frame(maxWidth: 1240 + 48)
                         } else {
                             detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
                         }
@@ -340,6 +364,11 @@ struct JobEditorView: View {
                     .frame(maxWidth: .infinity).id("top")
                 }
                 .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height - $0.safeAreaInsets.top - $0.safeAreaInsets.bottom } action: { scrollHeight = $0 }
+                #if DEBUG
+                // `-surveyScrollEnd YES`: open scrolled to the end (the simulator can't be swiped here)
+                .defaultScrollAnchor(UserDefaults.standard.bool(forKey: "surveyScrollEnd") ? .bottom : .top)
+                #endif
             }
         }
     }
@@ -381,7 +410,7 @@ struct JobEditorView: View {
         let done = FinalSummary.isComplete(job)
         return InfoPageBar(job: job, here: .final, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: before.map { p in { withAnimation { page = p } } }, next: nil,
-                           statusText: FinalSummary.statusLine(job), statusAlert: !done, badgeComplete: done, statusOK: done,
+                           statusText: FinalSummary.statusLine(job), statusAlert: !done, statusOK: done,
                            finish: (sub: "ขั้นสุดท้าย", title: "สรุปผล · ส่งออก", action: { model.flush(job.id); checked { showExport = true } }))
     }
 
@@ -410,21 +439,57 @@ struct JobEditorView: View {
         let last = cardPanels != nil ? steps.lastIndex(where: isPanel) : nil
         let before: Page? = module == nil ? nil : first.flatMap { steps[safe: $0 - 1] }.map { page(for: $0.page) }
         let after: Page? = last.map { steps[safe: $0 + 1].map { page(for: $0.page) } } ?? nextPage
-        let panelsMissing = cardPanels != nil && !BuildingPanels.missing(job).isEmpty
-        let gaps: [InfoPageBar.Gap] = cardElectrical ? ElectricalPageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { electricalRequest = g.index } }
-            : cardSite ? SitePageWide.gaps(job).map { g in InfoPageBar.Gap(title: g.title) { siteRequest = g.item } } : []
+        let status = cardElectrical ? electricalStatus : cardSite ? siteStatus : cardPanels.map(panelsStatus)
         let sub = tankSubSteps
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: sub?.previous ?? (module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil),
-                           next: sub?.next ?? go(after), gaps: gaps,
-                           statusText: station?.status ?? water ?? (cardPanels != nil ? BuildingPanels.statusLine(job) : cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
-                           statusAlert: station.map { !$0.isOK } ?? (panelsMissing || (cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
+                           next: sub?.next ?? go(after), status: status,
+                           statusText: station?.status ?? water ?? (cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
+                           statusAlert: station.map { !$0.isOK } ?? ((cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
                                                                      backfeedMissing || ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,
                            previousIndex: cardPanels != nil ? first.map { $0 - 1 } : nil, nextIndex: cardPanels != nil ? last.map { $0 + 1 } : nil,
                            statusOK: cardRoof != nil && roofGaps.isEmpty,
                            statusAction: roofGaps.first.map { g in { roofRequest = g.key } },
                            previousLabel: sub?.previousLabel, nextLabel: sub?.nextLabel)
+    }
+
+    /// A3: the photos still missing per transformer / board; tapping opens the first. nil: the page's field count.
+    var electricalStatus: TCBarStatus? {
+        let gaps = ElectricalPageWide.gaps(job)
+        guard let first = gaps.first else { return nil }
+        return .missing("ยังขาดภาพ: " + gaps.map(\.title).joined(separator: " · ") + " · ไปต่อได้ แล้วค่อยกลับมาเติม",
+                        action: { electricalRequest = first.index })
+    }
+
+    /// A2: the LIST items not ticked yet, in a green chip once the required fields are done; tapping opens the first.
+    var siteStatus: TCBarStatus? {
+        let gaps = SitePageWide.gaps(job)
+        guard let first = gaps.first else { return nil }
+        let c = job.steps.first { $0.page == .site }?.completion ?? Completion()
+        let list = gaps.map(\.title).joined(separator: ", ")
+        let go = { siteRequest = first.item }
+        let label = "ยังไม่มี (ไม่บังคับ) \(gaps.count) รายการ: \(list) · แตะเพื่อไปที่รายการ"
+        return c.isComplete
+            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list, label: "ครบช่องบังคับแล้ว · " + label, action: go)
+            : .gapChip(title: "ครบ \(c.filled)/\(c.total) ช่องในหน้านี้", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list,
+                       label: "ครบ \(c.filled)/\(c.total) ช่อง · " + label, action: go)
+    }
+
+    /// B1: the gaps of every building; tapping opens the first building with gaps, starting from this one.
+    func panelsStatus(_ m: SurveyModule) -> TCBarStatus {
+        let panels = job.modules.filter { $0.type == .panel }
+        let missing = panels.map { BuildingPanels.missingItems($0.values) }
+        let total = missing.reduce(0) { $0 + $1.count }
+        let at = panels.firstIndex { $0.id == m.id } ?? 0
+        guard total > 0, let nx = panels.indices.map({ (at + $0) % panels.count }).first(where: { !missing[$0].isEmpty }) else {
+            return .allDone("ครบทุกอาคารแล้ว")
+        }
+        let name = BuildingPanels.name(panels[nx], in: job), id = panels[nx].id
+        return .gapChip(title: "ยังขาด \(total) รายการ ใน \(missing.filter { !$0.isEmpty }.count) อาคาร",
+                        sub: (nx == at ? "อาคารนี้: " : "ถัดไป \(name): ") + missing[nx].joined(separator: ", "),
+                        label: "ไปยังรายการที่ขาด " + (nx == at ? "ในอาคารนี้" : "ที่ " + name),
+                        action: { withAnimation { page = .module(id) } })
     }
 
     /// iPhone D1: ‹ › move between the four sub-steps first ("ถัดไป D1 2/4 สิ่งกีดขวาง"), then to the pages either side.
@@ -437,12 +502,12 @@ struct JobEditorView: View {
                 t < names.count ? { withAnimation { tankTab = t + 1 } } : nil, t < names.count ? "ถัดไป " + label(t + 1) : nil)
     }
 
-    var readOnlyBanner: some View {
+    var stageBanner: some View {
         Label("งานนี้ย้ายไปงานติดตั้งแล้ว · งดแก้ไข ดูและส่งออกได้อย่างเดียว", systemImage: "lock")
-            .font(.subheadline.weight(.semibold)).foregroundStyle(Home.navy)
+            .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.navy)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(Home.lockBadge, in: RoundedRectangle(cornerRadius: 10))
+            .background(Theme.borderSubtle, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 

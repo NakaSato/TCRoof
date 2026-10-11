@@ -2,6 +2,7 @@
 import SwiftUI
 import TCRoofCore
 import DriveSync
+import TCRoofUI
 
 
 /// Sections of the sheet: readiness checks, file choice, Drive account and the action bar.
@@ -9,7 +10,7 @@ extension ExportSheet {
     func statusSection(_ job: Job) -> some View {
         Section {
             HStack(spacing: 14) {
-                ProgressRing(value: job.completion.fraction, size: 48)
+                TCProgressRing(.percent(job.completion.fraction), size: 48)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(job.projectName.isEmpty ? "แบบสำรวจใหม่" : job.projectName).font(.headline).lineLimit(2)
                     Text("NO.\(job.docNo.isEmpty ? "—" : job.docNo) · กรอกแล้ว \(job.completion.filled)/\(job.completion.total) · รูป \(job.photoCount)")
@@ -149,11 +150,11 @@ extension ExportSheet {
                 Button { share() } label: {
                     Label("แชร์ไฟล์", systemImage: "square.and.arrow.up").lineLimit(1).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent).disabled(!canShare)
+                .buttonStyle(TCButtonStyle(.primary, size: .card)).disabled(!canShare)
                 Button { saveToDrive() } label: {
                     Label("Google Drive", systemImage: "icloud.and.arrow.up").lineLimit(1).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered).disabled(!canDrive)
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).disabled(!canDrive)
             }
             .controlSize(.large)
             .disabled(busy != nil)

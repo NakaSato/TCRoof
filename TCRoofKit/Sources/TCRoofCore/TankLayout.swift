@@ -399,8 +399,23 @@ public struct TankLayout: Sendable {
     public static func off(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
     /// The stored layout, nil before the first layout or without a size.
     public static func current(_ v: Values) -> TankLayout? {
+        if let hit = currentCache.get(v) { return hit.layout }
         guard let p = params(v) else { return nil }
-        return TankLayout(v, params: p, off: off(v))
+        let layout = TankLayout(v, params: p, off: off(v))
+        currentCache.set(v, layout)
+        return layout
+    }
+    /// The last answer of `current`: one render asks for it from several cards with the same `Values`.
+    private static let currentCache = LastLayout()
+    private final class LastLayout: @unchecked Sendable {
+        private let lock = NSLock()
+        struct Entry { var values: Values; var layout: TankLayout? }
+        private var entry: Entry?
+        func get(_ v: Values) -> Entry? {
+            lock.lock(); defer { lock.unlock() }
+            return entry?.values == v ? entry : nil
+        }
+        func set(_ v: Values, _ l: TankLayout?) { lock.lock(); entry = Entry(values: v, layout: l); lock.unlock() }
     }
     /// Stores the offsets and the panels switched off, and writes `panelsBefore` = the panel count.
     public static func save(_ v: inout Values, _ p: Params, off: Set<String>) {

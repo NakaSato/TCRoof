@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// B1's two photos: the wide one with the PV connection point dragged out on it, and the main breaker.
 extension PanelsPageWide {
@@ -25,7 +26,7 @@ extension PanelsPageWide {
                 GeometryReader { geo in wideStage(geo.size) }
                     .frame(height: narrow ? 240 : 330)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.15)))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             }
         }
     }
@@ -72,9 +73,9 @@ extension PanelsPageWide {
         .overlay(alignment: .bottomLeading) {
             if photo != nil {
                 Text(pvPoint == nil ? "แตะภาพเพื่อวงจุดเชื่อมต่อ" : "ลากใหม่เพื่อย้ายจุดเชื่อมต่อ")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Home.navy)
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(Color.white.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
+                    .background(Theme.surface.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
             }
         }
     }

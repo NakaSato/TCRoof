@@ -32,6 +32,7 @@ struct JobPickerSheet: View {
                     .foregroundStyle(Theme.navy)
                 }
             }
+            .tcFormStyle()
             .searchable(text: $search, prompt: "ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ")
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)

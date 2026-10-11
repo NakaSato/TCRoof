@@ -4,6 +4,7 @@ import UIKit
 import PhotosUI
 import PencilKit
 import TCRoofCore
+import TCRoofUI
 
 /// One photo frame: take with the camera or pick from the library; tap to view, menu to replace or remove.
 struct PhotoField: View {
@@ -70,7 +71,7 @@ struct PhotoField: View {
 
     @ViewBuilder var mapButton: some View {
         if mapGPS != nil {
-            Button { fetchMap() } label: { Label("แผนที่ดาวเทียม", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(.bordered)
+            Button { fetchMap() } label: { Label("แผนที่ดาวเทียม", systemImage: "map.fill").frame(minHeight: 44) }.buttonStyle(TCButtonStyle(.secondary, size: .card))
         }
     }
 
@@ -165,7 +166,7 @@ struct SignatureField: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             ZStack {
-                Rectangle().fill(Color.white)
+                Rectangle().fill(Theme.paper)
                 if let p = photo, let img = model.image(p, in: jobID) { Image(uiImage: img).resizable().scaledToFit().padding(6) }
                 else { Text(photo == nil ? "แตะเพื่อเซ็นชื่อ" : "ลายเซ็นอยู่บนเครื่องอื่น").foregroundStyle(.secondary) }
             }
@@ -222,10 +223,10 @@ struct SignaturePad: View {
             VStack(spacing: 12) {
                 topBar(phone: phone)
                 pad(phone: phone)
-                Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 14)).foregroundStyle(Home.muted)
+                Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, phone ? 16 : 20).padding(.top, 14).padding(.bottom, 18)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
             .shadow(color: .black.opacity(phone ? 0 : 0.3), radius: 24, y: 16)
             .padding(phone ? 0 : 32)
         }
@@ -236,8 +237,8 @@ struct SignaturePad: View {
         HStack(spacing: 10) {
             outline("ยกเลิก", width: phone ? 80 : 110) { dismiss() }
             VStack(spacing: 0) {
-                Text("ลายเซ็น").font(.system(size: 20, weight: .bold)).foregroundStyle(Home.navy)
-                if let who { Text(who).font(.system(size: 14)).foregroundStyle(Home.muted).lineLimit(1).minimumScaleFactor(0.7) }
+                Text("ลายเซ็น").font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.navy)
+                if let who { Text(who).font(.system(size: 14)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7) }
             }
             .frame(maxWidth: .infinity)
             outline("ล้าง", width: phone ? 64 : 96) { canvas.drawing = PKDrawing() }
@@ -261,10 +262,10 @@ struct SignaturePad: View {
 
     func outline(_ title: String, width: CGFloat, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Home.navy)
+            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.navy)
                 .frame(minWidth: width, minHeight: 48)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.35)))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.35)))
         }
         .buttonStyle(.plain)
     }

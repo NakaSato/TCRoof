@@ -40,6 +40,8 @@ extension Job: CloudSynced {
         var mpNumber: Int?
         var inverterKW: Double?
         var scheduleInput, scheduleActual: String?
+        var routineSettings, weeklyRequests: String?
+        var stationDocs: String?
     }
 
     static let collection = "jobs"
@@ -49,7 +51,8 @@ extension Job: CloudSynced {
                province: province, capacityKW: capacityKW, team: teamRaw, status: statusRaw,
                surveyDate: surveyDate.millis, installStart: installStart.millis, createdAt: createdAt.millis,
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
-               scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON)
+               scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
+               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -63,6 +66,9 @@ extension Job: CloudSynced {
         if let v = r.inverterKW { inverterKW = v }
         if let v = r.scheduleInput { scheduleInputJSON = v }
         if let v = r.scheduleActual { scheduleActualJSON = v }
+        if let v = r.routineSettings { routineSettingsJSON = v }
+        if let v = r.weeklyRequests { weeklyRequestsJSON = v }
+        if let v = r.stationDocs { stationDocsJSON = v }
         return true
     }
 
@@ -161,17 +167,26 @@ extension InstallLog: CloudSynced {
         var date, createdAt: Int64
         var recorder, details: String
         var jobID: String?
+        // daily report R2; optional so documents from older app versions still decode
+        var report: String?
+        var engineerSignedAt, inspectorAckAt: Int64?
     }
 
     static let collection = "installLogs"
 
     var record: Record {
-        Record(date: date.millis, createdAt: createdAt.millis, recorder: recorder, details: details, jobID: job?.syncID)
+        Record(date: date.millis, createdAt: createdAt.millis, recorder: recorder, details: details, jobID: job?.syncID,
+               report: reportJSON, engineerSignedAt: engineerSignedAt?.millis, inspectorAckAt: inspectorAckAt?.millis)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
         guard let owner = parent(r.jobID, in: jobs) else { return false }
         date = Date(millis: r.date); createdAt = Date(millis: r.createdAt); recorder = r.recorder; details = r.details
+        // a record written by an app version without daily reports keeps this device's report
+        if let v = r.report {
+            reportJSON = v
+            engineerSignedAt = r.engineerSignedAt.map(Date.init(millis:)); inspectorAckAt = r.inspectorAckAt.map(Date.init(millis:))
+        }
         if job !== owner { job = owner }
         return true
     }

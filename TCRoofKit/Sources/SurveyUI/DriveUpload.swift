@@ -23,6 +23,14 @@ public extension SurveyModel {
         return (folder.id, URL(string: link) ?? URL(string: "https://drive.google.com")!)
     }
 
+    /// Finds or creates the folders of `path` under a folder from `driveFolder`, one inside the next, and returns the last id.
+    func driveSubfolder(_ path: [String], under parentID: String) async throws -> String {
+        let client = DriveClient(tokens: google)
+        var id = parentID
+        for name in path where !name.isEmpty { id = try await client.ensureFolder(name, parent: id).id }
+        return id
+    }
+
     /// Uploads one file into a folder from `driveFolder` and returns the new file's id.
     func driveUpload(_ file: DriveUpload, to folderID: String) async throws -> String {
         try await DriveClient(tokens: google).upload(file.data, name: file.name, mimeType: file.mimeType, parent: folderID).id

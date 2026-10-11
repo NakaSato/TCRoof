@@ -17,7 +17,6 @@ struct PhoneHome: View {
     let unread: Int
     let surveyToday: Int
     let installChip: String?
-    let greetingFacts: HomeGreeting.Facts
     @Binding var notificationsShown: Bool
     let openSettings: () -> Void
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
@@ -41,8 +40,8 @@ struct PhoneHome: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread, facts: greetingFacts,
-                            notificationsShown: $notificationsShown, openSettings: openSettings) { EmptyView() }
+            HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread,
+                            notificationsShown: $notificationsShown, openSettings: openSettings)
         }
         .background(Theme.phonePage.ignoresSafeArea())
     }
@@ -81,5 +80,6 @@ struct ToolsPlaceholderView: View {
         .navigationTitle("เครื่องมือและอุปกรณ์วัด")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+        .tcPadNavBar("เครื่องมือและอุปกรณ์วัด", trail: ["หน้าหลัก"])
     }
 }

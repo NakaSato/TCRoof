@@ -46,6 +46,8 @@ public enum Theme {
     public static let primary = Color(light: 0x1F6FB5, dark: 0x5BB0F0)
     /// Text and icons on `primary` and the blue gradients.
     public static let onPrimary = Color(light: 0xFFFFFF, dark: 0x0B1A2E)
+    /// Selected filter pill and confirmed plan points: navy in both modes, under white text.
+    public static let navySolid = Color(hex: 0x16325C)
     public static let primaryLight = Color(hex: 0x2E8FDB)
     public static let primarySoft = Color(light: 0xE3EEF8, dark: 0x16273A)
     public static let teal = Color(hex: 0x27A99A)
@@ -58,6 +60,8 @@ public enum Theme {
     public static let sun = Color(hex: 0xFFC53D)
     public static let background = Color(light: 0xF3F6FA, dark: 0x0E141C)
     public static let surface = Color(light: 0xFFFFFF, dark: 0x121A24)
+    /// Behind plans, diagrams and the signature pad: white in both modes, since their ink is dark.
+    public static let paper = Color.white
     public static let muted = Color(hex: 0x7A8BA3)
     public static let inkMuted = Color(light: 0x5B6B82, dark: 0x9DB0C7)
     public static let borderControl = Color(light: 0x77889E, dark: 0x6B7D93)
@@ -80,30 +84,34 @@ public enum Theme {
     public static let okSoft = Color(light: 0xE2EFDA, dark: 0x1E2A22)
     /// Text of the ok chip "พร้อมใช้".
     public static let okText = Color(light: 0x2E7D32, dark: 0x8FD16A)
+    /// Fill of the save button for 1.35 s after a save (`TCSaveButton`).
+    public static let okFlash = Color(light: 0xF1F8EC, dark: 0x1E2A22)
     public static let pending = Color(light: 0xB45309, dark: 0xF5B35C)
     public static let pendingSoft = Color(light: 0xFFF4E5, dark: 0x2E2213)
     public static let danger = Color(light: 0xD9453B, dark: 0xFF8A7F)
     public static let dangerText = Color(light: 0xB42318, dark: 0xFF8A7F)
+    /// Light red of a missing section in the editor sidebar.
+    public static let dangerLine = Color(light: 0xF2A09A, dark: 0x7A3A35)
     public static let dangerSoft = Color(light: 0xFDECEA, dark: 0x3A1C1A)
 
-    public static let unreadRow = Color(hex: 0xF3F8FD)
+    public static let unreadRow = Color(light: 0xF3F8FD, dark: 0x15212D)
     /// Survey job card progress box: fill while a draft is open, fill otherwise, finished-group bar,
     /// percent at 100 % and at 0 %.
-    public static let progressBox = Color(hex: 0xEEF4FB)
-    public static let progressBoxIdle = Color(hex: 0xF3F6FA)
+    public static let progressBox = Color(light: 0xEEF4FB, dark: 0x16273A)
+    public static let progressBoxIdle = Color(light: 0xF3F6FA, dark: 0x161E29)
     public static let stepDone = Color(hex: 0x70AD47)
-    public static let progressFull = Color(hex: 0x2E7D32)
+    public static let progressFull = Color(light: 0x2E7D32, dark: 0x8FD16A)
     public static let progressZero = Color(hex: 0x9AA6B6)
 
     // iPhone home board (docs/ui/tcroof-home-iphone)
-    public static let phonePage = Color(hex: 0xF5F8FB)
+    public static let phonePage = Color(light: 0xF5F8FB, dark: 0x0E141C)
     /// Quiet fill of round icon buttons, and row separators.
-    public static let hairline = Color(hex: 0xEEF2F7)
-    public static let chevron = Color(hex: 0xAAB6C5)
+    public static let hairline = Color(light: 0xEEF2F7, dark: 0x1C2734)
+    public static let chevron = Color(light: 0xAAB6C5, dark: 0x5E6E83)
     public static let success = Color(hex: 0x2E9E5B)
-    public static let successInk = Color(hex: 0x3B7420)
+    public static let successInk = Color(light: 0x3B7420, dark: 0x8FD16A)
     public static let warning = Color(hex: 0xF08C00)
-    public static let warningSoft = Color(hex: 0xFFF1DE)
+    public static let warningSoft = Color(light: 0xFFF1DE, dark: 0x2E2213)
     public static let ringDone = Color(hex: 0x8FD16A)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
@@ -121,7 +129,7 @@ public enum Theme {
     public static let borderOutdoor = Color(light: 0xC9D3E0, dark: 0x34465C)
     // iPad home board (docs/ui/tcroof-home-ipad)
     /// Hairline under the white header #E6EBF2.
-    public static let headerLine = Color(hex: 0xE6EBF2)
+    public static let headerLine = Color(light: 0xE6EBF2, dark: 0x243142)
     /// Light dim of the page behind the bell popover.
     public static let popoverDim = navy.opacity(0.12)
     // iPhone plan calendar (docs/ui/tcroof-plan-calendar-iphone)
@@ -131,6 +139,10 @@ public enum Theme {
     public static let dayOutside = Color(light: 0xC3CBD6, dark: 0x3A4757)
     /// Selected row of a dropdown menu (the team filter).
     public static let rowSelected = Color(light: 0xEEF3F9, dark: 0x1C2734)
+
+    // D1 จัดแผง (docs/ui/survey-d1-layout-iphone)
+    /// A panel on the tank plan.
+    public static let panelBlue = Color(light: 0x2B4FD8, dark: 0x6C8CFF)
 
     // component board (docs/ui/components)
     /// Progress ring track, empty segments of a segmented bar.
@@ -167,6 +179,8 @@ public enum Theme {
     public static let bannerFill = Color(hex: 0x16325C)
     /// Sheet grabber.
     public static let grabber = Color(light: 0xC7C7CC, dark: 0x48484A)
+    /// The iPad bar's off `‹ หัวข้อแรก`: grey text, its outline at 50 %.
+    public static let navOff = Color(light: 0x8E8E93, dark: 0x6E6E73)
     /// Text on `sun` (the example-data chip): navy in both modes, since `sun` stays yellow.
     public static let onSun = Color(hex: 0x16325C)
     /// Empty required photo slot: dashed border #E7B3AE on #FFF8F7.

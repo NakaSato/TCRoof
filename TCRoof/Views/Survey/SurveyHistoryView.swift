@@ -11,24 +11,27 @@ struct SurveyHistoryView: View {
     private var surveys: [SurveyForm]
 
     var body: some View {
-        List {
+        PadForm {
             if surveys.isEmpty {
                 ContentUnavailableView("ยังไม่มีประวัติการสำรวจ", systemImage: "list.clipboard")
             }
-            ForEach(surveys) { survey in
-                NavigationLink { SurveyDetailView(survey: survey) } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(survey.job?.code ?? "-") · \(survey.job?.projectName ?? "")").bold()
-                        Text("\(survey.createdAt.thaiLongTime) · โดย \(survey.surveyor)")
-                            .font(.caption).foregroundStyle(Theme.muted)
-                        Text("\(survey.roofType) · \(survey.roofAreaSqm.plain) ตร.ม. · เสนอ \(survey.recommendedKW.kw)")
-                            .font(.subheadline)
+            PadSection {
+                ForEach(surveys) { survey in
+                    PadLink { SurveyDetailView(survey: survey) } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(survey.job?.code ?? "-") · \(survey.job?.projectName ?? "")").bold()
+                            Text("\(survey.createdAt.thaiLongTime) · โดย \(survey.surveyor)")
+                                .font(.caption).foregroundStyle(Theme.muted)
+                            Text("\(survey.roofType) · \(survey.roofAreaSqm.plain) ตร.ม. · เสนอ \(survey.recommendedKW.kw)")
+                                .font(.subheadline)
+                        }
+                        .foregroundStyle(Theme.navy)
                     }
-                    .foregroundStyle(Theme.navy)
                 }
             }
         }
         .navigationTitle("ประวัติการสำรวจ")
+        .tcPadNavBar("ประวัติการสำรวจ", trail: ["หน้าหลัก", "สำรวจหน้างาน"])
     }
 }
 
@@ -38,8 +41,8 @@ struct SurveyDetailView: View {
     private func orDash(_ s: String) -> String { s.isEmpty ? "-" : s }
 
     var body: some View {
-        Form {
-            Section {
+        PadForm {
+            PadSection {
                 InfoRow(title: "โครงการ", value: survey.job?.projectName ?? "-")
                 InfoRow(title: "วันที่สำรวจ", value: survey.createdAt.thaiLongTime)
                 InfoRow(title: "ผู้สำรวจ", value: survey.surveyor)
@@ -47,14 +50,14 @@ struct SurveyDetailView: View {
                     InfoRow(title: "พิกัด", value: String(format: "%.6f, %.6f", lat, lon))
                 }
             }
-            Section("หลังคา") {
+            PadSection("หลังคา") {
                 InfoRow(title: "ประเภท", value: orDash(survey.roofType))
                 InfoRow(title: "พื้นที่", value: "\(survey.roofAreaSqm.plain) ตร.ม.")
                 InfoRow(title: "ทิศทาง / ลาดชัน", value: "\(orDash(survey.orientation)) / \(survey.tiltDegree)°")
                 InfoRow(title: "เงาบัง", value: orDash(survey.shading))
                 InfoRow(title: "โครงสร้าง", value: survey.structureOK ? "รับน้ำหนักได้" : "ต้องเสริมโครงสร้าง")
             }
-            Section("ระบบไฟฟ้า") {
+            PadSection("ระบบไฟฟ้า") {
                 InfoRow(title: "การไฟฟ้า / CA", value: "\(orDash(survey.utility)) / \(orDash(survey.caNumber))")
                 InfoRow(title: "มิเตอร์", value: [survey.meterPhase, survey.meterSize].filter { !$0.isEmpty }.joined(separator: " · "))
                 InfoRow(title: "เมนเบรกเกอร์", value: survey.mainBreakerAmp > 0 ? "\(survey.mainBreakerAmp) A" : "-")
@@ -67,13 +70,13 @@ struct SurveyDetailView: View {
             ForEach(SurveyOptions.photoTags) { tag in
                 let photos = SurveyOptions.photos(survey, tag.id)
                 if !photos.isEmpty {
-                    Section("รูป\(tag.title)") {
+                    PadSection("รูป\(tag.title)") {
                         PhotoGrid(images: photos.map(\.data)).padding(.vertical, 8)
                     }
                 }
             }
             if !survey.notes.isEmpty {
-                Section("หมายเหตุ") { Text(survey.notes) }
+                PadSection("หมายเหตุ") { Text(survey.notes) }
             }
         }
         .navigationTitle("แบบสำรวจ")
@@ -82,6 +85,9 @@ struct SurveyDetailView: View {
             ToolbarItem(placement: .primaryAction) {
                 NavigationLink { SurveyFormView(survey: survey) } label: { Text("แก้ไข") }
             }
+        }
+        .tcPadNavBar("แบบสำรวจ", trail: ["หน้าหลัก", "ประวัติการสำรวจ"], current: survey.job?.code ?? "แบบสำรวจ") {
+            TopBarLink(title: "แก้ไข", systemImage: "pencil") { SurveyFormView(survey: survey) }
         }
     }
 }

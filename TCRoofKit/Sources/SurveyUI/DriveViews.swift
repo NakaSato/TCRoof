@@ -2,6 +2,7 @@
 import SwiftUI
 import TCRoofCore
 import DriveSync
+import TCRoofUI
 
 /// Lists survey-data files on Drive and downloads one into this iPad.
 struct DriveOpenView: View {
@@ -33,6 +34,7 @@ struct DriveOpenView: View {
                     .disabled(opening != nil)
                 }
             }
+            .tcFormStyle()
             .overlay { if loading { ProgressView("กำลังค้นหาใน Google Drive…") } }
             .navigationTitle("เปิดงานจาก Google Drive").navigationBarTitleDisplayMode(.inline)
             .toolbar {

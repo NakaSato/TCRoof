@@ -17,8 +17,10 @@ public struct ReportHeader: Sendable {
     public var logo: Photo?
     /// Print each camera photo's position, direction and time under it (`Photo.stampLine`).
     public var photoStamps: Bool
-    public init(company: String = "", logo: Photo? = nil, photoStamps: Bool = false) {
-        self.company = company; self.logo = logo; self.photoStamps = photoStamps
+    /// Changes from the previous issued REV (`FormDiff`), for the รายการแก้ไข page; the caller reads the snapshots.
+    public var changes: [FieldChange]
+    public init(company: String = "", logo: Photo? = nil, photoStamps: Bool = false, changes: [FieldChange] = []) {
+        self.company = company; self.logo = logo; self.photoStamps = photoStamps; self.changes = changes
     }
 }
 
@@ -51,6 +53,7 @@ public struct ReportLayout {
         var units = [summary()]
         var cov = cover(); cov[0].newPage = true
         units += cov
+        units += revisionUnits()
         if let t = tree() { var u = t; u.newPage = true; units.append(u) }
         units += transformerPhotos()
         let a3End = units.count
@@ -84,7 +87,7 @@ public struct ReportLayout {
                 .line(Pt(Self.margin, fy - 10), Pt(Self.pageW - Self.margin, fy - 10), width: 0.5, color: .faint),
                 .text(title, at: Pt(Self.margin, fy), size: 7.5, color: .ink2),
                 .text("หน้า \(i + 1) / \(n)", at: Pt(Self.pageW - Self.margin, fy), size: 7.5, color: .ink2, align: .right),
-            ])
+            ] + revisionFooter(y: fy))
         }
         // "แนบในรายงาน": the A3 diagram goes in after the A3 electrical pages; the A4 pages keep their own numbering
         if Self.attachesSingleLine(job) { result.insert(singleLinePage(), at: min(sldAfter + 1, result.count)) }

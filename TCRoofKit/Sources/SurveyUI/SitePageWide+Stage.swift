@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import TCRoofUI
 
 /// A2's picture card: the site picture with symbols, drawings and building models, the v2 toolbar, north arrow, layers and scale.
 extension SitePageWide {
@@ -13,12 +14,12 @@ extension SitePageWide {
         VStack(spacing: 10) {
             GeometryReader { geo in picture(geo.size, full: false) }
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(tool == nil ? Home.navy.opacity(0.15) : Home.primary, lineWidth: tool == nil ? 1 : 2))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(tool == nil ? Theme.navy.opacity(0.15) : Theme.primary, lineWidth: tool == nil ? 1 : 2))
             captionRow
         }
         .padding(10)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Home.navy.opacity(0.2)))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     // MARK: picture
@@ -38,7 +39,8 @@ extension SitePageWide {
             .overlay(alignment: .top) { if photo != nil { toolbar(full: full, narrow: size.width < 600).padding(8) } }
             .overlay(alignment: .topTrailing) { if photo != nil && showLayers { layersMenu.padding(.top, 54).padding(.trailing, 8) } }
             .overlay(alignment: .topLeading) { if photo != nil { northButton.padding(.leading, 10).padding(.top, 58) } }
-            .overlay(alignment: .bottomLeading) { if photo != nil { hintStack.padding(10) } }
+            // narrow pictures: the hint sits above the scale button instead of under it
+            .overlay(alignment: .bottomLeading) { if photo != nil { hintStack.padding(10).padding(.bottom, size.width < 600 ? 54 : 0) } }
             .overlay(alignment: .bottomTrailing) { if photo != nil { scaleBar(size, zoom: z).padding(10) } }
     }
 
@@ -79,7 +81,7 @@ extension SitePageWide {
     /// The picture, drawings and handles in unzoomed coordinates (`stageSpace`).
     @ViewBuilder func stage(_ size: CGSize, full: Bool) -> some View {
         ZStack(alignment: .topLeading) {
-            Color(red: 0.91, green: 0.933, blue: 0.961)
+            Theme.mapLand
             if let p = photo, let img = model.image(p, in: job.id) {
                 let r = imageRect(img, in: size)
                 Image(uiImage: img).resizable().frame(width: r.width, height: r.height).position(x: r.midX, y: r.midY)
@@ -93,7 +95,7 @@ extension SitePageWide {
                 }
             } else if photo != nil {
                 Label("ภาพนี้อยู่ในอีกเครื่อง ยังไม่ได้ดาวน์โหลด", systemImage: "icloud.and.arrow.down")
-                    .font(.callout).foregroundStyle(Home.muted).frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .font(.callout).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 emptyPicture.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -109,7 +111,7 @@ extension SitePageWide {
 
     var emptyPicture: some View {
         VStack(spacing: 14) {
-            Image(systemName: "photo.badge.plus").font(.system(size: 34)).foregroundStyle(Home.muted)
+            Image(systemName: "photo.badge.plus").font(.system(size: 34)).foregroundStyle(Theme.inkMuted)
             Text("เลือกภาพมุมสูงของสถานที่ติดตั้ง").font(.headline)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 10) { emptyButtons }
@@ -119,8 +121,8 @@ extension SitePageWide {
     }
 
     @ViewBuilder var emptyButtons: some View {
-        Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียม", systemImage: "map").frame(minHeight: 36) }.buttonStyle(.borderedProminent)
-        Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(.bordered)
+        Button { fetchGoogle() } label: { Label("แผนที่ดาวเทียม", systemImage: "map").frame(minHeight: 36) }.buttonStyle(TCButtonStyle(.primary, size: .card))
+        Button { pickDrone = true } label: { Label("อัปโหลดภาพจากโดรน", systemImage: "photo").frame(minHeight: 36) }.buttonStyle(TCButtonStyle(.secondary, size: .card))
     }
 
     /// Grid, building models, shapes, the shape being drawn and symbols, drawn like the report does.
@@ -193,7 +195,7 @@ extension SitePageWide {
     func markHandles(_ r: CGRect) -> some View {
         ForEach(marks) { m in
             Circle().fill(Color.white.opacity(0.001))
-                .overlay { if editing == .mark(m.id) { Circle().stroke(m.kind == .zeroExport ? Home.warn : Color.yellow, lineWidth: 3).padding(4) } }
+                .overlay { if editing == .mark(m.id) { Circle().stroke(m.kind == .zeroExport ? Theme.warning : Color.yellow, lineWidth: 3).padding(4) } }
                 .frame(width: 44, height: 44)
                 .position(point(ShapePoint(m.x, m.y), in: r))
                 .onTapGesture { open(.mark(m.id), at: point(ShapePoint(m.x, m.y), in: r)) }

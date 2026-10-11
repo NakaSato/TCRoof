@@ -40,6 +40,8 @@ final class CloudSync {
     @ObservationIgnored private var pending: [String: () -> Bool] = [:]
 
     private static let surveyCollection = "pwaSurveys"
+    /// One document per issued REV of a survey report (docs/specs/review-lock-revisions-swift.md), written once.
+    private static let revisionCollection = "pwaSurveyRevisions"
     private var db: Firestore { Firestore.firestore() }
 
     /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
@@ -107,6 +109,7 @@ final class CloudSync {
             listen(InstallLog.self)
             listen(Inspection.self)
             listenSurveys()
+            listenRevisions()
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.schedulePush() }
             })
@@ -196,12 +199,14 @@ final class CloudSync {
             let ref = db.document(key)
             changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: record.fingerprint))
         }
+        let revisions = revisionChanges(survey, &present)
         for key in known.keys where !present.contains(key) {
             let ref = db.document(key)
             changes.append(Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil))
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
         defer { refreshSurveyPending() }
+        commitRevisions(revisions)
         guard !changes.isEmpty else { return }
 
         // Firestore takes at most 500 writes per batch.
@@ -236,6 +241,47 @@ final class CloudSync {
             }
         }
         saveKnown()
+    }
+
+    /// Issued REVs this device holds and Firestore doesn't yet. Every REV a job lists counts as present, so a REV
+    /// still on its way here is never deleted; it goes only with its job.
+    private func revisionChanges(_ survey: SurveyModel, _ present: inout Set<String>) -> [Change] {
+        var out: [Change] = []
+        for job in survey.jobs {
+            for r in job.revisions ?? [] { present.insert(Self.revisionKey(job.id, r.rev)) }
+            for doc in survey.revisionDocs(job) {
+                let key = Self.revisionKey(job.id, doc.rev)
+                let record = RevisionRecord(doc)
+                guard known[key] != record.fingerprint else { continue }
+                let ref = db.document(key)
+                out.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: record.fingerprint))
+            }
+        }
+        return out
+    }
+
+    static func revisionKey(_ job: UUID, _ rev: String) -> String {
+        "\(revisionCollection)/\(job.uuidString)_\(rev.replacingOccurrences(of: "/", with: "-"))"
+    }
+
+    /// Its own batch: a refusal here (rules not deployed yet) must not hold back the jobs. Tried again on the next push.
+    private func commitRevisions(_ changes: [Change]) {
+        guard !changes.isEmpty else { return }
+        let batch = db.batch()
+        var previous: [String: String?] = [:]
+        for change in changes {
+            guard (try? change.write(batch)) != nil else { continue }
+            previous[change.key] = known[change.key]
+            known[change.key] = change.fingerprint
+        }
+        batch.commit { [weak self] error in
+            MainActor.assumeIsolated {
+                guard let self, let error else { return }
+                for (key, old) in previous { self.known[key] = old }
+                self.saveKnown()
+                print("CloudSync: REV upload refused: \(error.localizedDescription)")
+            }
+        }
     }
 
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>) {
@@ -346,6 +392,27 @@ final class CloudSync {
         listeners.append(registration)
     }
 
+    /// REVs issued on other devices: their snapshots are stored next to the job, as if issued here.
+    private func listenRevisions() {
+        let registration = db.collection(Self.revisionCollection).addSnapshotListener { [weak self] snapshot, error in
+            MainActor.assumeIsolated {
+                guard let self, let survey = self.survey else { return }
+                // never fail the whole sync over REVs (rules not deployed yet): the jobs still sync
+                if let error { return print("CloudSync: REV listener: \(error.localizedDescription)") }
+                for change in snapshot?.documentChanges ?? [] {
+                    let key = "\(Self.revisionCollection)/\(change.document.documentID)"
+                    if change.type == .removed { self.known[key] = nil; continue }
+                    guard let record = try? change.document.data(as: RevisionRecord.self), self.known[key] != record.fingerprint,
+                          let job = UUID(uuidString: record.job) else { continue }
+                    survey.receiveRevision(SurveyModel.RevisionDoc(job: job, rev: record.rev, json: record.json))
+                    self.known[key] = record.fingerprint
+                }
+                self.saveKnown()
+            }
+        }
+        listeners.append(registration)
+    }
+
     /// Survey reports whose latest version Firestore doesn't have yet — never sent, edited since, or not confirmed.
     private func refreshSurveyPending() {
         guard let survey else { return }
@@ -370,6 +437,17 @@ private struct SurveyRecord: Codable {
         self.updated = job.updated.millis
         self.json = json
     }
+
+    var fingerprint: String { SHA256.hash(data: Data(json.utf8)).map { String(format: "%02x", $0) }.joined() }
+}
+
+/// One issued REV: the snapshot's JSON exactly as stored on the device that issued it.
+private struct RevisionRecord: Codable {
+    var job: String
+    var rev: String
+    var json: String
+
+    init(_ doc: SurveyModel.RevisionDoc) { job = doc.job.uuidString; rev = doc.rev; json = doc.json }
 
     var fingerprint: String { SHA256.hash(data: Data(json.utf8)).map { String(format: "%02x", $0) }.joined() }
 }

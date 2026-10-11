@@ -62,12 +62,25 @@ struct RootView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            // `-screen <name>` opens that screen as the stack's root. Pushed over the home at launch
+            // (`.navigationDestination(isPresented: .constant(true))`), iOS 27 never draws a frame: a blank
+            // screen and "Observation tracking feedback loop detected".
+            if DebugScreen.isKnown {
+                NavigationStack { DebugScreen() }
+            } else if sizeClass == .compact {
+                PhoneTabs { home }
+            } else {
+                NavigationStack { home }
+            }
+            #else
             // iPhone: tabs under the floating bar; iPad: one stack from the home
             if sizeClass == .compact {
                 PhoneTabs { home }
             } else {
                 NavigationStack { home }
             }
+            #endif
         }
         .systemNotifications(survey: session.survey)
         .task {
@@ -94,11 +107,6 @@ struct RootView: View {
 
     private var home: some View {
         HomeView()
-        #if DEBUG
-            .navigationDestination(isPresented: .constant(DebugScreen.isKnown)) {
-                DebugScreen()
-            }
-        #endif
     }
 }
 

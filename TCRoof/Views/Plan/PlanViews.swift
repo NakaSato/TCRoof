@@ -37,6 +37,7 @@ struct PlanJobRow: View {
 struct PlanListView: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State private var search = ""
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var grouped: [(month: Date, jobs: [Job])] {
         let filtered = jobs.filter { $0.matches(search) }
@@ -45,6 +46,41 @@ struct PlanListView: View {
     }
 
     var body: some View {
+        if sizeClass == .compact { phoneList } else { padList }
+    }
+
+    /// iPad: the months as headings over `JobCard`s, like the scan and install queues.
+    private var padList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 20) {
+                if grouped.isEmpty {
+                    ContentUnavailableView("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนคำค้นหา"))
+                }
+                ForEach(grouped, id: \.month) { group in
+                    Text(group.month.thaiMonthYear).font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.navy)
+                    LazyVGrid(columns: cardColumns, spacing: 16) {
+                        ForEach(group.jobs) { job in
+                            JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
+                                JobDetailView(job: job)
+                            } footer: {
+                                JobCardStrip(key: "ช่วงติดตั้ง",
+                                             value: "\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) · \(job.installDays) วัน")
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: 1100)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Theme.pageGradient.ignoresSafeArea())
+        .tcPadNavBar("รายการแผนก่อสร้าง", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"]) {
+            TCBarSearchField(text: $search, prompt: "ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ")
+        }
+    }
+
+    private var phoneList: some View {
         List {
             ForEach(grouped, id: \.month) { group in
                 Section(group.month.thaiMonthYear) {
@@ -72,8 +108,5 @@ struct PlanListView: View {
         }
         .searchable(text: $search, prompt: "ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ")
         .navigationTitle("รายการแผนก่อสร้าง")
-        .tcPadNavBar("รายการแผนก่อสร้าง", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"]) {
-            TCBarSearchField(text: $search, prompt: "ค้นหาด้วยชื่อลูกค้าหรือรหัสโครงการ")
-        }
     }
 }

@@ -33,6 +33,7 @@ struct PhoneTabs<HomeRoot: View>: View {
     @State private var opened: Set<PhoneTab> = [Self.initialTab]
     @State private var showSettings = false
     @State private var notificationService = NotificationService.shared
+    @State private var instruments = InstrumentStore.shared
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
     var body: some View {
@@ -66,7 +67,11 @@ struct PhoneTabs<HomeRoot: View>: View {
     private func stack(_ t: PhoneTab) -> some View {
         NavigationStack {
             Group {
-                if let module = t.module { module.destination } else { home() }
+                switch t {
+                // scan, install records and PWA have no tab: they are rows above the tools register
+                case .tools: ToolsView(modules: [.scan, .install, .pwa])
+                default: if let module = t.module { module.destination } else { home() }
+                }
             }
             // 4 pt over the bar: a root's FAB (12 pt padding) sits the board's 16 pt above it
             .safeAreaInset(edge: .bottom, spacing: PhoneTab.barGap) {
@@ -81,11 +86,14 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private var items: [TCTabItem<PhoneTab>] {
         let n = surveyToday
+        // tools due for calibration within 30 days or past it
+        let due = instruments.dueCount()
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.survey, title: "สำรวจ", symbol: "list.clipboard", badge: n, accessibilityLabel: n > 0 ? "สำรวจ · นัดวันนี้ \(n)" : nil),
             TCTabItem(.plan, title: "แผนงาน", symbol: "calendar"),
-            TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
+            TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", badge: due,
+                      accessibilityLabel: due > 0 ? "เครื่องมือวัด · ต้องสอบเทียบ \(due)" : "เครื่องมือวัด"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { showSettings = true },
         ]

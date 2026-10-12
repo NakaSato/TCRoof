@@ -121,6 +121,10 @@ public enum Theme {
     public static let successInk = Color(light: 0x3B7420, dark: 0x8FD16A)
     public static let warning = Color(hex: 0xF08C00)
     public static let warningSoft = Color(light: 0xFFF1DE, dark: 0x2E2213)
+    // iPhone home v3 project feed (docs/ui/tcroof-home-iphone-v3): the green and orange badge pairs
+    public static let successSoft = Color(light: 0xE8F5EE, dark: 0x16271D)
+    public static let successText = Color(light: 0x1F6B43, dark: 0x8FD16A)
+    public static let warningText = Color(light: 0x9A4A06, dark: 0xF5B35C)
     public static let ringDone = Color(hex: 0x8FD16A)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.

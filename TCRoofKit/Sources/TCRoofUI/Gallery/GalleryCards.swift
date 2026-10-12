@@ -49,6 +49,7 @@ struct GalleryCards: View {
                     ], selection: $filter)
                 }
             }
+            GalleryFeed()
         }
     }
 }

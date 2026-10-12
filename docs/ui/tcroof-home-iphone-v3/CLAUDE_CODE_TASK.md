@@ -1,4 +1,4 @@
-# Claude Code task: iPhone home v3: module rows become a project feed
+# Claude Code task: iPhone home v3: floating tab dock and a project feed in place of the module rows
 
 > How to use: open Claude Code in the `TCRoof` repo and paste the prompt in `PROMPT.md`, or type
 > `Follow docs/ui/tcroof-home-iphone-v3/CLAUDE_CODE_TASK.md`
@@ -13,8 +13,8 @@ v2 (`docs/ui/tcroof-home-iphone-v2`) is built in `TCRoof/Views/Home/PhoneHome.sw
 `HomeBrandHeader`, `AppointmentHero` (the `นัดวันนี้` pager), the `moduleRows` list of `AppModule` rows, and the
 `PhoneTabs` tab bar. **This task covers only the differences below, on iPhone (compact) only.** `PadHome` stays as it is.
 
-The 4th tab change (`ติดตั้ง` → `เครื่องมือ`) is a separate hand-off, `docs/ui/tcroof-tools-tab-iphone`. If it is not built yet,
-do it first or alongside this task. The board already shows it.
+The tab bar in this hand-off **replaces** both the v2 tab bar and the earlier `docs/ui/tcroof-tools-tab-iphone` hand-off.
+If that one is not built yet, skip it. Its `tab-tools` asset and the `-homeTab tools` rename are part of section 0 below.
 
 Start with code-review-graph (callers of `PhoneHome`, `AppointmentHero`, `ModuleRow`, `AppModule`, `TodayAppointment`).
 If the server is not available, use grep. Read the source before changing it.
@@ -31,15 +31,44 @@ If the server is not available, use grep. Read the source before changing it.
 | `states/05-issue-fixed-acked.png` | Issue marked `แก้แล้ว`; summary post acknowledged (`คุณและอีก 5 คนรับทราบ`) |
 | `states/06-notifications.png` | Bell panel (unchanged from v2, for reference) |
 | `states/07-feed-all-posts-tall.png` | The whole feed on a tall canvas, so every post type is visible |
+| `states/08-dock-crop.png` | The floating tab dock close-up (@2x) |
 | `PhoneMenu.dc.html` + `grf.css` | Design source. Read it as text: markup plus `renderVals()` hold every size, colour and rule |
-| `icons/` | Vectors for the new parts, with the SF Symbol to use (`icons/README.md`) |
+| `icons/` | Vectors for the new parts: the five tab glyphs `tab-*.svg`, the acknowledge thumb, and example photos (`icons/README.md`) |
 
 ## Changes (compact only)
 
+### 0. Tab bar: floating dock, new tabs
+`TCTabBar` (`TCRoofKit/Sources/TCRoofUI/Layout.swift`) and `PhoneTabs` (`TCRoof/Views/Home/PhoneTabs.swift`) change on iPhone:
+- **Order and targets:**
+
+  | Tab | Label | VoiceOver | Glyph | Opens |
+  |---|---|---|---|---|
+  | 1 | `หน้าหลัก` | `หน้าหลัก` | SF `house` | home (this page) |
+  | 2 | `งานบ้าน` | `งานบ้าน` | asset `tab-homework` (`icons/tab-homework.svg`) | the residential (HomeWork) survey list, today's `.survey` tab |
+  | 3 | `กปภ.` | `กปภ. · นัดวันนี้ n` | asset `tab-pwa` (`icons/tab-pwa.svg`, water drop) | the PWA module (`AppModule.pwa`, PWA survey home) |
+  | 4 | `เครื่องมือ` | `เครื่องมือวัด` | asset `tab-tools` (`icons/tab-tools.svg`) | `AppModule.tools` |
+  | 5 | `ตั้งค่า` | `ตั้งค่า` | SF `gearshape` | settings sheet (action tab, as today) |
+
+  `แผนงาน` is no longer a tab. Keep the plan calendar reachable (it was a v2 tab; ask the owner where it goes, see open question 1).
+- **Badge:** the red count moves to `กปภ.`, because today's appointments in the example are PWA jobs. In code, count today's appointments per tab:
+  residential ones on `งานบ้าน`, PWA ones on `กปภ.`.
+- **Look (state `08`):** a floating capsule, not a full-width bar.
+  - 12 pt from the left and right edges, 22 pt above the bottom edge (keep it clear of the home indicator).
+  - Radius 28, opaque `Theme.surface`, 1 pt `Theme.borderOutdoor`, padding 5.
+  - Equal-width items 56 pt high: glyph 23 pt over a 10.5 pt label.
+  - Selected: the item is a `Theme.navySolid` capsule (radius 22) with a white glyph and an 800-weight label. Others: `Theme.inkTab`.
+  - A 1 pt `borderSubtle` divider before `ตั้งค่า`. The badge is 17 pt, `Theme.danger`, with a 2 pt white ring, top right of the glyph.
+- **Content under the dock:** the page scrolls behind the dock, ending 104 pt above the bottom.
+  - Above the dock, a 128 pt gradient fades from clear to `Theme.phonePage` (clear → 85 % at 38 % → solid at 62 %), so posts fade out instead of showing through or being cut off.
+  - The gradient takes no touches (`allowsHitTesting(false)`).
+- Replace `PhoneTab.survey` / `.plan` / `.install` with `.homeWork` / `.pwa` / `.tools`, and update the `-homeTab` DEBUG values
+  (`home|homework|pwa|tools`) in CLAUDE.md. Update `HomeNavbarUITests` / `PhoneSurveyUITests` where they tap the old tabs.
+- Add the three template image assets (`tab-homework`, `tab-pwa`, `tab-tools`) from `icons/` the same way `tab-install` is set up (vector, template rendering).
+
 ### 1. Remove the module rows
 - `PhoneHome` no longer shows `moduleRows`; the six `ModuleRow`s are gone from the iPhone home.
-- **Ask the owner before deleting any route.** `AppModule.scan`, `.install` and `.pwa` have no tab. Keep them reachable somewhere
-  (feed post links already open install and PWA records). Report where you put them. Don't remove `AppModule` or `ModuleRow`,
+- **Ask the owner before deleting any route.** `AppModule.plan`, `.scan` and `.install` have no tab. Keep them reachable somewhere
+  (feed post links already open install records). Report where you put them. Don't remove `AppModule` or `ModuleRow`,
   because `PadHome` still uses them.
 
 ### 2. `นัดวันนี้` card only when there is an appointment
@@ -109,6 +138,7 @@ report it.
 
 ## Check list
 - [ ] `swift build` + `swift test` in `TCRoofKit/` (FeedBuilder tests); xcodebuild with your own `-derivedDataPath`
+- [ ] Tab dock matches `states/08-dock-crop.png`; every tab ≥ 44 pt; the badge sits on `กปภ.`; the feed fades under the dock
 - [ ] iPhone simulator screenshots of states `01`–`05` with the new launch arguments, compared with `states/`
 - [ ] With no appointments, the card is gone and nothing is left blank
 - [ ] `รับทราบ` toggles and the count updates; `แก้แล้ว` / `เปิดอีกครั้ง` round-trips to the source record
@@ -116,7 +146,7 @@ report it.
 - [ ] Every module that lost its home row is still reachable (report where)
 
 ## Open questions (report back)
-1. Where should scan / install / PWA modules live on iPhone now that the rows are gone?
+1. Where should the plan calendar, scan and install modules live on iPhone now that the module rows and the `แผนงาน` tab are gone? (`กปภ.` and `เครื่องมือ` are now tabs.)
 2. Who can acknowledge a post (any signed-in member, or only supervisors and inspectors)?
 3. Should the issue post notify the owner (push) and appear in the bell panel?
 4. Is the 18:00 summary time fixed, or a setting (it matches the daily report deadline)?

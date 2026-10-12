@@ -1,5 +1,8 @@
 # Claude Code task: iPhone tab bar, `ติดตั้ง` tab becomes `เครื่องมือ` (measuring tools)
 
+> **Superseded (13 ต.ค. 2569):** the tab bar changed again. Follow `docs/ui/tcroof-home-iphone-v3` instead (section 0); skip this task.
+
+
 > How to use: open Claude Code in the `TCRoof` repo and type
 > `Follow docs/ui/tcroof-tools-tab-iphone/CLAUDE_CODE_TASK.md`
 

@@ -5,9 +5,9 @@ import SwiftData
 /// Root tabs of the iPhone (compact width) under the docked tab bar (docs/ui/tcroof-home-iphone-v2).
 enum PhoneTab: String {
     /// `settings` is only the bar's button for the settings sheet, never a selected tab.
-    case home, survey, plan, install, settings
+    case home, survey, plan, tools, settings
 
-    static let stacks: [PhoneTab] = [.home, .survey, .plan, .install]
+    static let stacks: [PhoneTab] = [.home, .survey, .plan, .tools]
     /// Space the root screens keep above the tab bar.
     static let barGap: CGFloat = 4
 
@@ -16,7 +16,7 @@ enum PhoneTab: String {
         case .home, .settings: nil
         case .survey: .survey
         case .plan: .plan
-        case .install: .install
+        case .tools: .tools
         }
     }
 }
@@ -33,6 +33,7 @@ struct PhoneTabs<HomeRoot: View>: View {
     @State private var opened: Set<PhoneTab> = [Self.initialTab]
     @State private var showSettings = false
     @State private var notificationService = NotificationService.shared
+    @State private var instruments = InstrumentStore.shared
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
     var body: some View {
@@ -66,7 +67,11 @@ struct PhoneTabs<HomeRoot: View>: View {
     private func stack(_ t: PhoneTab) -> some View {
         NavigationStack {
             Group {
-                if let module = t.module { module.destination } else { home() }
+                switch t {
+                // scan, install records and PWA have no tab: they are rows above the tools register
+                case .tools: ToolsView(modules: [.scan, .install, .pwa])
+                default: if let module = t.module { module.destination } else { home() }
+                }
             }
             // 4 pt over the bar: a root's FAB (12 pt padding) sits the board's 16 pt above it
             .safeAreaInset(edge: .bottom, spacing: PhoneTab.barGap) {
@@ -81,11 +86,14 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private var items: [TCTabItem<PhoneTab>] {
         let n = surveyToday
+        // tools due for calibration within 30 days or past it
+        let due = instruments.dueCount()
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.survey, title: "สำรวจ", symbol: "list.clipboard", badge: n, accessibilityLabel: n > 0 ? "สำรวจ · นัดวันนี้ \(n)" : nil),
             TCTabItem(.plan, title: "แผนงาน", symbol: "calendar"),
-            TCTabItem(.install, title: "ติดตั้ง", asset: "tab-install"),
+            TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", badge: due,
+                      accessibilityLabel: due > 0 ? "เครื่องมือวัด · ต้องสอบเทียบ \(due)" : "เครื่องมือวัด"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { showSettings = true },
         ]
@@ -93,7 +101,7 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private static var initialTab: PhoneTab {
         #if DEBUG
-        // `-homeTab survey|plan|install` opens with that tab selected, for simulator checks
+        // `-homeTab survey|plan|tools` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif
         return .home

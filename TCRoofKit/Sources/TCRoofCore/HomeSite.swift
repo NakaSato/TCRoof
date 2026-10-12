@@ -235,8 +235,10 @@ public struct HomePunch: Codable, Equatable, Sendable, Identifiable {
     public var after: [String] = []
     public var due: Date?
     public var closed: Date?
+    /// When it was found; nil on a punch made before this was kept. Dates its post in the project feed.
+    public var raised: Date?
 
-    public init(id: String = UUID().uuidString, title: String) { self.id = id; self.title = title }
+    public init(id: String = UUID().uuidString, title: String, raised: Date? = nil) { self.id = id; self.title = title; self.raised = raised }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -247,8 +249,9 @@ public struct HomePunch: Codable, Equatable, Sendable, Identifiable {
         after = try c.decodeIfPresent([String].self, forKey: .after) ?? []
         due = try c.decodeIfPresent(Date.self, forKey: .due)
         closed = try c.decodeIfPresent(Date.self, forKey: .closed)
+        raised = try c.decodeIfPresent(Date.self, forKey: .raised)
     }
-    private enum CodingKeys: String, CodingKey { case id, title, location, before, after, due, closed }
+    private enum CodingKeys: String, CodingKey { case id, title, location, before, after, due, closed, raised }
 
     public var isOpen: Bool { closed == nil }
     /// Closing needs a photo of the fix.

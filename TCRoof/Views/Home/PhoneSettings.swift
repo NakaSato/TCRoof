@@ -8,6 +8,7 @@ struct PhoneSettingsList: View {
     @Binding var confirmLogout: Bool
     @Environment(GoogleSession.self) private var session
     @AppStorage("userName") private var userName = ""
+    @AppStorage("userTeam") private var userTeam = ""
     @AppStorage(CameraRoll.defaultsKey) private var saveToLibrary = true
     @State private var sync = CloudSync.shared
     @State private var notifications = NotificationService.shared
@@ -28,6 +29,18 @@ struct PhoneSettingsList: View {
                             .multilineTextAlignment(.trailing).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                             // typed by hand — stop replacing it with the account name
                             .onChange(of: userName) { GoogleSession.userNameEdited() }
+                    }
+                    .rowFrame()
+                    divider
+                    // `ทีมของฉัน` of the home's project feed; with none, the teams on today's appointments
+                    HStack(spacing: 12) {
+                        Text("ทีมของฉัน").foregroundStyle(ink.muted)
+                        Spacer(minLength: 8)
+                        Picker("ทีมของฉัน", selection: $userTeam) {
+                            Text("ตามนัดวันนี้").tag("")
+                            ForEach(Team.allCases) { Text($0.rawValue).tag($0.rawValue) }
+                        }
+                        .labelsHidden().tint(Theme.navy)
                     }
                     .rowFrame()
                 }

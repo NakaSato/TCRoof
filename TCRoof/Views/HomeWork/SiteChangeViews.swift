@@ -230,7 +230,7 @@ struct SitePunchPage: View {
         VStack(alignment: .leading, spacing: Space.l) {
             PermitSection(title: "Punch list", subtitle: "เปิด \(home.site.openPunches.count) · ปิดแล้ว \(home.site.punches.count - home.site.openPunches.count)") {
                 TCButton("เพิ่มจุดที่ต้องแก้", systemImage: "plus", kind: .primary, size: .card) {
-                    var p = HomePunch(title: "")
+                    var p = HomePunch(title: "", raised: .now)
                     p.due = Calendar(identifier: .gregorian).date(byAdding: .day, value: 3, to: .now)
                     home.site.punches.insert(p, at: 0)
                 }

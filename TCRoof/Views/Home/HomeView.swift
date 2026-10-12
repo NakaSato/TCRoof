@@ -16,7 +16,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: "สแกนอุปกรณ์"
         case .install: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน"
         case .pwa: "การประปา\nส่วนภูมิภาค"
-        case .tools: "เครื่องมือและอุปกรณ์วัด"
+        case .tools: "เครื่องมือวัด"
         }
     }
 
@@ -67,7 +67,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: ScanJobListView()
         case .install: InstallRecordsView()
         case .pwa: SolarSurveyEntryView()
-        case .tools: ToolsPlaceholderView()
+        case .tools: ToolsView()
         }
     }
 }
@@ -93,6 +93,8 @@ struct HomeView: View {
     /// A screen opened from a system notification.
     @State private var linked: LinkedScreen?
     @State private var shareURL: SharedLink?
+    /// A record opened from a post of the iPhone project feed.
+    @State private var feedLink: FeedLink?
     @Environment(\.openURL) private var openURL
 
     private var todaysJobs: [Job] {
@@ -101,8 +103,8 @@ struct HomeView: View {
 
     var body: some View {
         // each minute, so appointments drop off and "อีก n นาที" counts down
-        TimelineView(.everyMinute) { _ in
-            if sizeClass == .compact { phoneHome } else { padHome.debugBoard() }
+        TimelineView(.everyMinute) { timeline in
+            if sizeClass == .compact { phoneHome(now: timeline.date) } else { padHome.debugBoard() }
         }
         .font(.sarabun(17))
         .toolbar(.hidden, for: .navigationBar)
@@ -117,12 +119,13 @@ struct HomeView: View {
         }
         .navigationDestination(item: $openReport) { SurveyReportEditor(jobID: $0.id, start: $0.start) }
         .navigationDestination(item: $installLogs) { JobInstallLogsView(job: $0) }
+        .navigationDestination(item: $feedLink) { feedScreen($0) }
         .navigationDestination(isPresented: $showSurveyList) { SurveyListView() }
         .navigationDestination(isPresented: $showSearch) { SurveyListView(startSearching: true) }
         .navigationDestination(item: $linked) { screen in
             switch screen {
             case .pending: SolarSurveyReportView(unsyncedOnly: true)
-            case .tools(let action): ToolsPlaceholderView(request: action)
+            case .tools(let action): ToolsView(request: action)
             case .dailyReport(let key):
                 if let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) { DailyReportScreen(job: job, date: .now) }
             case .weeklyRequest(let key):
@@ -167,19 +170,31 @@ struct HomeView: View {
 
     // MARK: iPhone
 
-    private var phoneHome: some View {
+    private func phoneHome(now: Date) -> some View {
         let survey = session.survey
         let items = notifications, read = readIDs
         let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
         return PhoneHome(appointments: appointments,
                          unread: items.filter { !read.contains($0.id) }.count,
-                         surveyToday: jobs.filter { $0.surveyDate.isToday }.count,
-                         installChip: installChip,
+                         now: now,
                          notificationsShown: $showNotifications,
                          openSettings: { showSettings = true },
                          open: openAppointment,
-                         newSurvey: { showNewJob = true })
+                         openFeed: { feedLink = $0 })
     }
+
+    /// The record a feed post opens.
+    @ViewBuilder private func feedScreen(_ link: FeedLink) -> some View {
+        switch link {
+        case .daily(let key, let day): if let job = job(key) { DailyReportScreen(job: job, date: day) }
+        case .inspection(let key): if let job = job(key) { InspectionView(job: job) }
+        case .job(let key): if let job = job(key) { JobDetailView(job: job) }
+        case .homework(let key): if let job = job(key) { HomeWorkView(job: job) }
+        case .records: InstallRecordsView()
+        }
+    }
+
+    private func job(_ key: String) -> Job? { jobs.first { $0.feedKey == key } }
 
     // MARK: iPad
 

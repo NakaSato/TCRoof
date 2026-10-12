@@ -10,7 +10,7 @@ struct GalleryCards: View {
         VStack(alignment: .leading, spacing: 18) {
             GalleryGrid(columns: 3, phone: 1, minItem: 400) {
                 GalleryItem("การ์ดเมนูหลัก") {
-                    TCMenuCard(title: "เครื่องมือ\nและอุปกรณ์วัด", subtitle: "โดรน กล้องความร้อน", symbol: "briefcase.fill") {}
+                    TCMenuCard(title: "เครื่องมือวัด", subtitle: "โดรน กล้องความร้อน", symbol: "briefcase.fill") {}
                 }
                 GalleryItem("การ์ดงาน · PWA") {
                     TCPWAJobCard(number: "NO.224", missing: 3, name: "กปภ. สาขาตัวอย่าง", place: "ต.หนองบัว · 120 kWp",
@@ -49,6 +49,7 @@ struct GalleryCards: View {
                     ], selection: $filter)
                 }
             }
+            GalleryFeed()
         }
     }
 }

@@ -24,11 +24,13 @@ struct JobDetailView: View {
                     customerCard
                     scheduleCard
                 }
-                MPScheduleCard(job: job)
-                RoutineReportCard(job: job)
-                StationDocsCard(job: job)
+                if job.kind == .pwa {
+                    MPScheduleCard(job: job)
+                    RoutineReportCard(job: job)
+                    StationDocsCard(job: job)
+                }
                 actionsGrid
-                PWASurveyCard(job: job)
+                if job.kind == .pwa { PWASurveyCard(job: job) }
                 surveysCard
                 documentsCard
             }
@@ -64,6 +66,7 @@ struct JobDetailView: View {
                 HStack {
                     Text(job.code).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.muted)
                     TeamTag(team: job.team)
+                    kindMenu
                 }
                 Text(job.projectName).font(isPhone ? .sarabun(22, .bold, relativeTo: .title2) : .sarabun(34, .bold, relativeTo: .largeTitle)).foregroundStyle(Theme.navy)
                 let facts = isPhone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 20))
@@ -88,6 +91,29 @@ struct JobDetailView: View {
             }
         }
         .cardStyle(padding: 20)
+    }
+
+    /// งานบ้าน or งาน PWA: picks which plan and papers the page shows. Nothing of the other kind is deleted.
+    private var kindMenu: some View {
+        Menu {
+            Picker("ประเภทงาน", selection: $job.kind) {
+                ForEach(JobKind.allCases) { kind in
+                    Label(kind.title, systemImage: kind.symbol).tag(kind)
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: job.kind.symbol)
+                Text(job.kind.title)
+                Image(systemName: "chevron.down").font(.sarabun(11, relativeTo: .caption2))
+            }
+            .font(.sarabun(13, .semibold, relativeTo: .footnote))
+            .foregroundStyle(Theme.primary)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("ประเภทงาน \(job.kind.title)")
     }
 
     private var customerCard: some View {
@@ -137,7 +163,9 @@ struct JobDetailView: View {
             action("สแกนอุปกรณ์", "barcode.viewfinder", "\(job.devices.count) รายการ") { JobDevicesView(job: job) }
             action("บันทึกงานติดตั้ง", "hammer", "\(job.logs.count) บันทึก") { JobInstallLogsView(job: job) }
             action("ใบตรวจรับงาน (ICL)", "checkmark.seal", inspectionStatus) { InspectionView(job: job) }
-            action("งานบ้าน ครบวงจร", "house", "สำรวจ · ขออนุญาต PEA · ติดตั้ง · ขนานไฟ") { HomeWorkView(job: job) }
+            if job.kind == .home {
+                action("งานบ้าน ครบวงจร", "house", "สำรวจ · ขออนุญาต PEA · ติดตั้ง · ขนานไฟ") { HomeWorkView(job: job) }
+            }
         }
     }
 
@@ -357,6 +385,7 @@ private struct NewJobFormView: View {
     @State private var province = "กรุงเทพมหานคร"
     @State private var capacity: Double = 0
     @State private var team: Team = .t1
+    @State private var kind: JobKind = .home
     @State private var surveyDate = Date().adding(days: 1).startOfDay.addingTimeInterval(9 * 3600)
     @State private var installStart = Date().adding(days: 14).startOfDay
     @State private var installDays = 2
@@ -368,6 +397,10 @@ private struct NewJobFormView: View {
     var body: some View {
         NavigationStack {
             PadForm(maxWidth: 640) {
+                PadSection("ประเภทงาน") {
+                    PadPicker("ประเภทงาน", selection: $kind) { ForEach(JobKind.allCases) { Text($0.title).tag($0) } }
+                    Text(kind.detail).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                }
                 PadSection("ลูกค้า") {
                     TextField("ชื่อลูกค้า / บริษัท *", text: $customerName)
                     TextField("ชื่อโครงการ (ว่างไว้ = ใช้ชื่อลูกค้า)", text: $projectName)
@@ -402,6 +435,7 @@ private struct NewJobFormView: View {
         let job = Job(code: SampleData.newJobCode(), projectName: project.isEmpty ? name : project, customerName: name,
                       phone: phone, address: address, province: province, capacityKW: capacity, team: team,
                       status: .interested, surveyDate: surveyDate, installStart: installStart, installDays: installDays)
+        job.kind = kind
         context.insert(job)
         try? context.save()
         dismiss()

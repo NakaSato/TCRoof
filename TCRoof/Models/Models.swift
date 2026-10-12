@@ -21,6 +21,35 @@ enum Team: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+/// Which project a job belongs to. The two run differently, so the job detail shows each one's own plan and papers.
+enum JobKind: String, CaseIterable, Identifiable, Codable {
+    case home, pwa
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home: "งานบ้าน"
+        case .pwa: "งาน PWA"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .home: "house"
+        case .pwa: "drop"
+        }
+    }
+
+    /// What the job detail follows for this kind.
+    var detail: String {
+        switch self {
+        case .home: "ขออนุญาต PEA · ติดตั้ง · ขนานไฟ"
+        case .pwa: "แผน MP · รายงานประจำ · เอกสารสถานี กปภ."
+        }
+    }
+}
+
 enum JobStatus: String, CaseIterable, Identifiable, Codable {
     case interested, confirmed, installing, completed
 
@@ -32,6 +61,16 @@ enum JobStatus: String, CaseIterable, Identifiable, Codable {
         case .confirmed: "ลูกค้ายืนยันติดตั้ง"
         case .installing: "กำลังติดตั้ง"
         case .completed: "ติดตั้งเสร็จสิ้น"
+        }
+    }
+
+    /// The iPhone survey home's chips and pills.
+    var shortTitle: String {
+        switch self {
+        case .interested: "สนใจ"
+        case .confirmed: "ยืนยันแล้ว"
+        case .installing: "กำลังติดตั้ง"
+        case .completed: "เสร็จสิ้น"
         }
     }
 
@@ -113,6 +152,8 @@ final class Job {
     var weeklyRequestsJSON: String?
     /// Encoded `StationDocs.Station`: the station's papers for a PWA job (เอกสารสถานี กปภ.); optional for the same reason.
     var stationDocsJSON: String?
+    /// `JobKind`; nil on jobs made before the kind was kept, which `kind` reads from their data.
+    var kindRaw: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -141,6 +182,15 @@ final class Job {
     var status: JobStatus {
         get { JobStatus(rawValue: statusRaw) ?? .interested }
         set { statusRaw = newValue.rawValue }
+    }
+
+    /// A job with no kind kept is a PWA job once it has an MP plan, routine reports or station papers, a home job otherwise.
+    var kind: JobKind {
+        get { kindRaw.flatMap(JobKind.init) ?? (hasPWAData ? .pwa : .home) }
+        set { kindRaw = newValue.rawValue }
+    }
+    private var hasPWAData: Bool {
+        mpNumber != nil || scheduleInputJSON != nil || routineSettingsJSON != nil || weeklyRequestsJSON != nil || stationDocsJSON != nil
     }
 
     var installEnd: Date { installStart.startOfDay.adding(days: max(installDays, 1) - 1) }
@@ -191,6 +241,13 @@ final class Job {
 
     var estimatedPanels: Int { Int((capacityKW * 1000 / 550).rounded(.up)) }
     var inspection: Inspection? { inspections.first }
+
+    /// Apple Maps at the job's address.
+    var mapsURL: URL? {
+        var components = URLComponents(string: "https://maps.apple.com/")
+        components?.queryItems = [URLQueryItem(name: "q", value: "\(address) \(province)")]
+        return components?.url
+    }
 
     func matches(_ query: String) -> Bool {
         let q = query.trimmingCharacters(in: .whitespaces)

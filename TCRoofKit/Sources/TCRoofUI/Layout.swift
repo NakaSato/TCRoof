@@ -342,19 +342,22 @@ public struct TCCardGrid<Content: View>: View {
 /// iPhone screen header (docs/ui/tcroof-survey-list-iphone): `headerGradient` under the status bar, bottom radius 15,
 /// a 19 pt title over a 13 pt subtitle, and trailing 44 pt buttons (`TCHeaderIcon`). The back chevron shows only when
 /// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead. A sheet passes `onClose` for a leading ✕
-/// (`ยกเลิก`) in place of the chevron.
+/// (`ยกเลิก`) in place of the chevron. `large` is the survey home's header (docs/ui/tcroof-survey-home-iphone):
+/// a 22 pt title, padded 10 top / 10 trailing / 18 leading.
 public struct TCGradientHeader<Trailing: View>: View {
     let title: String
     let subtitle: String
     var backLabel: String
+    var large: Bool
     var onClose: (() -> Void)?
     @ViewBuilder var trailing: Trailing
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
 
-    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", onClose: (() -> Void)? = nil,
+    public init(title: String, subtitle: String, backLabel: String = "กลับหน้าหลัก", large: Bool = false, onClose: (() -> Void)? = nil,
                 @ViewBuilder trailing: () -> Trailing) {
-        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.onClose = onClose; self.trailing = trailing()
+        self.title = title; self.subtitle = subtitle; self.backLabel = backLabel; self.large = large; self.onClose = onClose
+        self.trailing = trailing()
     }
 
     private var hasLeading: Bool { onClose != nil || isPresented }
@@ -377,16 +380,16 @@ public struct TCGradientHeader<Trailing: View>: View {
                 .accessibilityLabel(backLabel)
             }
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.sarabun(19, .bold, relativeTo: .title3)).lineLimit(1)
+                Text(title).font(.sarabun(large ? 22 : 19, .bold, relativeTo: .title3)).lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
-                Text(subtitle).font(.sarabun(13, relativeTo: .caption)).opacity(0.92).lineLimit(1)
+                Text(subtitle).font(.sarabun(13, relativeTo: .caption)).opacity(0.92).lineLimit(1).truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 6) { trailing }
         }
         .foregroundStyle(.white)
-        .padding(.leading, hasLeading ? 6 : 16).padding(.trailing, 8)
-        .padding(.top, 6).padding(.bottom, 14)
+        .padding(.leading, hasLeading ? 6 : large ? 18 : 16).padding(.trailing, large ? 10 : 8)
+        .padding(.top, large ? 10 : 6).padding(.bottom, 14)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous)
                 .fill(Theme.headerGradient)

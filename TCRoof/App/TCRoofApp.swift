@@ -120,6 +120,13 @@ struct DebugScreen: View {
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
+    /// `-jobKind home|pwa` shows the job detail as that kind. `-mpDemo` needs the PWA cards, also on the job whose plan it clears.
+    private static func applyJobKind(_ job: Job) {
+        let defaults = UserDefaults.standard
+        if let kind = defaults.string(forKey: "jobKind").flatMap(JobKind.init) { job.kind = kind }
+        else if defaults.string(forKey: "mpDemo") != nil { job.kind = .pwa }
+    }
+
     var body: some View {
         let job = jobs.first { $0.status == .installing } ?? jobs.first
         switch Self.requested {
@@ -131,7 +138,7 @@ struct DebugScreen: View {
         case "loghistory": InstallLogHistoryView()
         case "scan": ScanJobListView()
         case "install": InstallRecordsView()
-        case "job": if let job { JobDetailView(job: job) }
+        case "job": if let job { JobDetailView(job: job).onAppear { Self.applyJobKind(job) } }
         case "surveyForm": if let job { SurveyFormView(job: job) }
         case "devices": if let job { JobDevicesView(job: job) }
         case "logs": if let job { JobInstallLogsView(job: job) }

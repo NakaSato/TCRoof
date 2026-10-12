@@ -3,18 +3,24 @@ import TCRoofUI
 
 /// The iPhone lists' search field (docs/ui/tcroof-survey-list-iphone): 44 high, r12, a 1 pt border that turns
 /// into a 2 pt primary one while focused, bold typed text, and a 32 pt ✕ with a 44 pt target.
+/// The survey home (docs/ui/tcroof-survey-home-iphone) passes its own height, radius, text size and border.
 struct PhoneSearchField: View {
     @Binding var text: String
     var focused: FocusState<Bool>.Binding
     var prompt = "ค้นหาชื่อลูกค้า หรือรหัสโครงการ"
+    var height: CGFloat = 44
+    var radius: CGFloat = 12
+    var fontSize: CGFloat = 14
+    var iconSize: CGFloat = 16
+    var border = Theme.borderSubtle
     var onSubmit: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.inkMuted)
+            Image(systemName: "magnifyingglass").font(.system(size: iconSize, weight: .medium)).foregroundStyle(Theme.inkMuted)
                 .accessibilityHidden(true)
             TextField(text: $text) { Text(prompt).foregroundStyle(Theme.inkMuted) }
-                .font(.sarabun(14, text.isEmpty ? .regular : .bold, relativeTo: .body)).foregroundStyle(Theme.navy)
+                .font(.sarabun(fontSize, text.isEmpty ? .regular : .bold, relativeTo: .body)).foregroundStyle(Theme.navy)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -31,12 +37,12 @@ struct PhoneSearchField: View {
             }
         }
         .padding(.leading, 12).padding(.trailing, text.isEmpty ? 12 : 0)
-        .frame(height: 44)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .frame(height: height)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
         // the 2 pt border is drawn inside, so the text does not move when focused
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(focused.wrappedValue ? Theme.primary : Theme.borderSubtle, lineWidth: focused.wrappedValue ? 2 : 1)
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .strokeBorder(focused.wrappedValue ? Theme.primary : border, lineWidth: focused.wrappedValue ? 2 : 1)
         }
         .contentShape(Rectangle())
         .onTapGesture { focused.wrappedValue = true }

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>สำรวจหน้างาน — หน้าแรก (iPhone)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+<link rel="stylesheet" href="ds/tcroofsurvey/tokens.css">
+<link rel="stylesheet" href="ds/tcroofsurvey/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+a{color:#1F6FB5}
+@keyframes svSpin{to{transform:rotate(360deg)}}@keyframes svDraw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}@keyframes svPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+
+@keyframes hmPulse{0%{box-shadow:0 0 0 0 rgba(52,199,89,.55)}70%{box-shadow:0 0 0 8px rgba(52,199,89,0)}100%{box-shadow:0 0 0 0 rgba(52,199,89,0)}}
+@keyframes hmFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes hmSpark{0%,100%{transform:rotate(0) scale(1)}50%{transform:rotate(12deg) scale(1.12)}}
+.hm a,.hm button{transition:transform .12s ease,filter .12s ease}
+.hm a:active,.hm button:active{transform:scale(.97);filter:brightness(.96)}
+.hm .seg{transform-origin:0 50%;animation:hmFill .7s cubic-bezier(.2,.8,.2,1) both}
+.hm .live{animation:hmPulse 1.8s ease-out infinite}
+.hm .spark{animation:hmSpark 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.hm *{animation:none!important;transition:none!important}}
+/* sun mode: outdoor contrast, larger secondary text, solid surfaces */
+.sun main{background:#fff!important}
+.sun .g-head{background:#0B2A55!important}
+.sun .hc{box-shadow:none!important;outline:2px solid #16325C;outline-offset:-2px}
+.sun .gh{color:#000!important;font-weight:700}
+.sun [style*="color:#5B6B82"],.sun [style*="color:#5B6B82"],.sun [style*="color:#3E4C60"]{color:#111!important}
+.sun [style*="font-size:12.5px"],.sun [style*="font-size:12px"]{font-size:14px!important}
+.sun [style*="font-size:13px"],.sun [style*="font-size:13.5px"]{font-size:15px!important}
+.sun .dock{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;outline:2px solid #16325C}
+.sun .chip{background:#fff!important;outline:2px solid #16325C;color:#000!important}
+</style>
+</helmet>
+<div class="g hm {{mode}}" style="position: relative; width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden; background: #F3F6FA">
+<header class="g-head" style="padding:10px 10px 14px 18px;border-bottom-left-radius:15px;border-bottom-right-radius:15px;gap:8px"><div style="min-width:0;flex:1"><div style="font-size:22px;line-height:28px;font-weight:700">สำรวจหน้างาน</div><div style="font-size:13px;line-height:18px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{greet}} · {{todayShort}}</div></div></header><main style="flex-grow:1;overflow-y:auto;padding:12px 16px 190px;display:flex;flex-direction:column;gap:18px;background:#F3F6FA"><div style="display:flex;flex-direction:column;gap:6px"><div class="gh" style="display:flex;align-items:baseline;padding:0 4px;font-size:13px;color:#5B6B82"><span>สัปดาห์นี้</span><span style="margin-left:auto">{{weekRange}}</span></div><div class="hc" style="background:#fff;border-radius:16px;overflow:hidden;padding:8px 6px 4px"><div role="tablist" aria-label="เลือกวัน" style="display:grid;grid-template-columns:repeat(7,1fr)"><sc-for list="{{days}}" as="d" hint-placeholder-count="7"><button role="tab" onClick="{{d.go}}" aria-label="{{d.aria}}" aria-selected="{{d.on}}" style="min-height:64px;border:0;background:none;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0"><span style="font-size:11.5px;color:#5B6B82">{{d.wd}}</span><span style="width:34px;height:34px;border-radius:17px;display:grid;place-items:center;font-size:16px;font-variant-numeric:tabular-nums;{{d.nSt}}">{{d.n}}</span><i style="width:6px;height:6px;border-radius:3px;{{d.dot}}"></i></button></sc-for></div><div style="border-top:1px solid #DDE4ED;margin:4px 10px 0"></div><sc-if value="{{showNext}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column"><div style="padding:10px 10px 2px;font-size:12.5px;font-weight:600;color:#1F6FB5">นัดถัดไป</div><div style="display:flex;align-items:center;gap:8px;padding:2px 6px 8px 10px"><a href="PhoneSurveyJob.dc.html" aria-label="รายละเอียดงาน {{nextName}}" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:inherit"><b style="font-size:18px;line-height:24px;color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{nextName}}</b><span style="font-size:14px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="color:#1F6FB5;font-weight:700">{{nextWhen}}</b><span style="color:#5B6B82"> · {{nextArea}}</span></span></a><a href="PhoneSurveyJob.dc.html" aria-label="โทรหาลูกค้า" style="width:44px;height:44px;flex:none;border-radius:22px;background:#F3F6FA;display:grid;place-items:center;text-decoration:none"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;flex:none;stroke:#1F6FB5;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"></path></svg></a><a href="PhoneSurveyJob.dc.html" aria-label="นำทางไปหน้างาน" style="width:44px;height:44px;flex:none;border-radius:22px;background:#F3F6FA;display:grid;place-items:center;text-decoration:none"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;flex:none;stroke:#1F6FB5;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M3 11l18-8-8 18-2-8z"></path></svg></a></div><div style="display:flex;align-items:center;gap:14px;margin:0 10px;padding:0 0 12px;font-size:13.5px;color:#3E4C60;white-space:nowrap"><span style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;flex:none;fill:none;stroke:#5B6B82;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><b style="color:#16325C;font-weight:700">{{nextEta}}</b></span><span style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;text-overflow:ellipsis"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;flex:none;fill:none;stroke:#5B6B82;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 16V11l2-5h10l2 5v5"></path><path d="M3 16h18v3H3z"></path><circle cx="7.5" cy="13.5" r=".8"></circle><circle cx="16.5" cy="13.5" r=".8"></circle></svg><span>{{nextDist}}</span></span></div></div><sc-if value="{{hasAgenda}}" hint-placeholder-val="{{false}}"><div style="border-top:1px solid #DDE4ED;margin:0 10px"></div></sc-if></sc-if><sc-for list="{{agenda}}" as="a" hint-placeholder-count="1"><a href="PhoneSurveyJob.dc.html" aria-label="{{a.aria}}" style="position:relative;display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 10px;text-decoration:none;color:inherit"><b style="width:48px;flex:none;font-size:15px;color:#16325C;font-variant-numeric:tabular-nums">{{a.time}}</b><i style="width:4px;align-self:stretch;border-radius:2px;{{a.bar}}"></i><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:15.5px;font-weight:700;color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{a.name}}</span><span style="font-size:12.5px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{a.sub}}</span></span><svg viewBox="0 0 12 20" aria-hidden="true" style="width:8px;height:13px;flex:none;fill:none;stroke:#7A8BA3;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M2 2l8 8-8 8"></path></svg></a></sc-for><sc-if value="{{noAgenda}}" hint-placeholder-val="{{false}}"><div style="min-height:56px;display:grid;place-items:center;font-size:14px;color:#5B6B82">ไม่มีนัดสำรวจในวันนี้</div></sc-if></div></div><div style="display:flex;flex-direction:column;gap:6px"><div class="gh" style="display:flex;align-items:baseline;padding:0 4px;font-size:13px;color:#5B6B82"><span>งานสำรวจทั้งหมด</span><span style="margin-left:auto;font-size:13px;color:#5B6B82">{{listN}} งาน</span></div><button onClick="{{qTog}}" aria-label="ค้นหา" style="display:flex;align-items:center;gap:8px;min-height:50px;width:100%;padding:0 6px 0 12px;border:0;border-radius:10px;background:#fff;font-family:inherit;cursor:pointer;text-align:left;font-size:16px;{{qBoxS}}"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;stroke:#5B6B82;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="flex:1;{{qTxtS}}">{{qTxt}}</span><sc-if value="{{hasQ}}" hint-placeholder-val="{{false}}"><span onClick="{{qClr}}" aria-label="ล้างคำค้นหา" style="width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:#EEF2F7;color:#5B6B82;font-size:14px">✕</span></sc-if></button><sc-if value="{{qOpen}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:-2px"><span style="width:100%;font-size:12px;color:#5B6B82">ค้นหาล่าสุด</span><sc-for list="{{qSug}}" as="q" hint-placeholder-count="3"><button onClick="{{q.go}}" style="min-height:36px;padding:0 12px;border-radius:999px;border:1px solid #C9D3DF;background:#fff;color:#16325C;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">{{q.t}}</button></sc-for></div></sc-if><div role="tablist" aria-label="กรองสถานะ" style="flex:none;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 2px"><sc-for list="{{chips}}" as="c" hint-placeholder-count="5"><button role="tab" onClick="{{c.go}}" aria-selected="{{c.on}}" style="flex:none;min-height:36px;padding:0 12px;border-radius:999px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;{{c.st}}"><i style="width:8px;height:8px;border-radius:4px;{{c.dot}}"></i>{{c.t}}<span style="font-variant-numeric:tabular-nums;opacity:.7">{{c.n}}</span></button></sc-for></div><div class="hc" style="background:#fff;border-radius:16px;overflow:hidden"><sc-for list="{{proj}}" as="r" hint-placeholder-count="4"><a href="PhoneSurveyJob.dc.html" aria-label="{{r.aria}}" style="position:relative;display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px 8px 16px;text-decoration:none;color:inherit"><span style="width:40px;height:40px;flex:none;border-radius:20px;display:grid;place-items:center;font-size:16px;font-weight:700;{{r.avSt}}">{{r.init}}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:15.5px;font-weight:700;color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.name}}</span><span style="font-size:12.5px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums">{{r.sub}}</span><sc-if value="{{r.hasProg}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:center;gap:8px;margin-top:5px"><span style="flex:1;height:4px;border-radius:2px;background:#DDE4ED;overflow:hidden"><i style="display:block;height:100%;border-radius:2px;background:#1F6FB5;width:{{r.pct}}%"></i></span><span style="font-size:12px;font-weight:700;color:#1F6FB5;white-space:nowrap">{{r.progT}}</span></span></sc-if></span><span style="flex:none;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;{{r.stSt}}">{{r.st}}</span><svg viewBox="0 0 12 20" aria-hidden="true" style="width:8px;height:13px;flex:none;fill:none;stroke:#7A8BA3;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M2 2l8 8-8 8"></path></svg><i style="{{r.sep}}"></i></a></sc-for><sc-if value="{{noProj}}" hint-placeholder-val="{{false}}"><div style="min-height:64px;display:grid;place-items:center;font-size:14px;color:#5B6B82">{{noProjT}}</div></sc-if></div></div></main><div class="dock" style="position:absolute;left:12px;right:12px;bottom:84px;z-index:11;padding:8px;border-radius:24px;display:flex;gap:8px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(20px) saturate(1.7);backdrop-filter:blur(20px) saturate(1.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 10px 30px rgba(22,50,92,.18)"><a href="PhoneSurveyForm.dc.html" aria-label="{{dockAria}}" style="flex:1;min-width:0;min-height:52px;border-radius:17px;background:linear-gradient(90deg,#1F6FB5,#2E8FDB);color:#fff;text-decoration:none;display:flex;flex-direction:column;justify-content:center;padding:0 16px;box-shadow:0 6px 14px rgba(31,111,181,.3)"><b style="font-size:15.5px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{dockT}}</b><span style="font-size:12px;line-height:16px;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{dockS}}</span></a><a href="PhoneSurveyNewJob.dc.html" aria-label="เพิ่มลูกค้าใหม่" style="flex:none;width:52px;min-height:52px;border-radius:17px;background:rgba(255,255,255,.85);display:grid;place-items:center;text-decoration:none"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;flex:none;stroke:#1F8F83;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"><circle cx="10" cy="8" r="4"></circle><path d="M3 20c.8-3.6 3.6-5.5 7-5.5 1.4 0 2.6.3 3.7.9M18 14v6M15 17h6"></path></svg></a></div><nav aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;padding:4px 6px 22px;background:#fff;border-top:1px solid #C9D3E0"><a href="PhoneMenu.dc.html" aria-label="หน้าหลัก" style="flex:1;min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#3E4C60"><span style="position:relative;width:52px;height:28px;border-radius:14px;display:grid;place-items:center;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke:#3E4C60;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg></span><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">หน้าหลัก</span></a><a href="PhoneSurveyHome.dc.html" aria-current="page" aria-label="สำรวจ · นัดวันนี้ {{todayN}}" style="flex:1;min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#1F6FB5"><span style="position:relative;width:52px;height:28px;border-radius:14px;display:grid;place-items:center;background:#E3EEF8"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke:#1F6FB5;fill:none;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"></path></svg><b aria-hidden="true" style="position:absolute;top:-4px;right:4px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#D9453B;color:#fff;font-size:10px;font-weight:800;line-height:16px;text-align:center;box-shadow:0 0 0 2px #fff">{{todayN}}</b></span><span style="font-size:10.5px;line-height:13px;font-weight:800;white-space:nowrap">สำรวจ</span></a><a href="PhonePlanCal.dc.html" aria-label="แผนงาน" style="flex:1;min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#3E4C60"><span style="position:relative;width:52px;height:28px;border-radius:14px;display:grid;place-items:center;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke:#3E4C60;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></span><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">แผนงาน</span></a><a href="PhoneInstall.dc.html" aria-label="ติดตั้ง" style="flex:1;min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#3E4C60"><span style="position:relative;width:52px;height:28px;border-radius:14px;display:grid;place-items:center;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke:#3E4C60;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 5l5 5-2 2-5-5zM12 7L4 15l3 3 8-8"></path></svg></span><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">ติดตั้ง</span></a><a href="iPadSettings.dc.html" aria-label="ตั้งค่า" style="flex:1;min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#3E4C60"><span style="position:relative;width:52px;height:28px;border-radius:14px;display:grid;place-items:center;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke:#3E4C60;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></span><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">ตั้งค่า</span></a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TEAM = { TCR01: '#2E9E5B', TCR02: '#8B3FD9', TCR03: '#2F6FDB', TCR04: '#F08A24' };
+    const STATUS = { interested: ['ลูกค้าสนใจติดตั้ง', '#4DA3E0', 'สนใจ'], confirmed: ['ลูกค้ายืนยันติดตั้ง', '#27A99A', 'ยืนยันแล้ว'], installing: ['กำลังติดตั้ง', '#F08A24', 'กำลังติดตั้ง'], completed: ['ติดตั้งเสร็จสิ้น', '#2E9E5B', 'เสร็จสิ้น'] };
+    // example data: SampleData.swift seeds [project, customer, phone, address, province, kW, team, status, surveyOffset, installOffset, days]
+    const SEEDS = [
+      ['คุณดารา ภัทรปรีดา', 'คุณดารา ภัทรปรีดา', '0812345678', '99/12 ซ.ลาดพร้าว 71 แขวงลาดพร้าว เขตลาดพร้าว', 'กรุงเทพมหานคร', 14.08, 'TCR01', 'installing', -14, -1, 4],
+      ['บริษัท คิดดี จำกัด', 'บริษัท คิดดี จำกัด', '038123456', '88 ม.3 ต.บ้านสวน อ.เมือง', 'ชลบุรี', 49.5, 'TCR02', 'confirmed', -10, 1, 5],
+      ['คุณนพพร วีระโชติ', 'คุณนพพร วีระโชติ', '0891112222', '12 ถ.งามวงศ์วาน ต.บางกระสอ อ.เมือง', 'นนทบุรี', 5.5, 'TCR03', 'interested', 0, 16, 2],
+      ['คุณรยา จุลพัฒน์', 'คุณรยา จุลพัฒน์', '0865554444', '45/8 ซ.สุขุมวิท 101 แขวงบางจาก เขตพระโขนง', 'กรุงเทพมหานคร', 10.23, 'TCR01', 'interested', 1, 20, 3],
+      ['โรงงานสยามแพ็คกิ้ง', 'บริษัท สยามแพ็คกิ้ง จำกัด', '025551234', '234 นิคมอุตสาหกรรมบางปู', 'สมุทรปราการ', 199.8, 'TCR04', 'confirmed', -21, 3, 12],
+      ['คุณสมศักดิ์ ใจดี', 'คุณสมศักดิ์ ใจดี', '0823334444', '7 ม.5 ต.คลองหนึ่ง อ.คลองหลวง', 'ปทุมธานี', 8.25, 'TCR03', 'confirmed', -5, 5, 2],
+      ['ร้านกาแฟบ้านสวน', 'คุณวิภาวรรณ ศรีสุข', '0847778888', '19 ถ.สุขุมวิท ต.เนินพระ อ.เมือง', 'ระยอง', 15.4, 'TCR02', 'interested', 3, 25, 3],
+      ['คุณปกรณ์ ศักดิ์สิทธิ์', 'คุณปกรณ์ ศักดิ์สิทธิ์', '0810009999', '301 ซ.รามอินทรา 40 แขวงนวลจันทร์ เขตบึงกุ่ม', 'กรุงเทพมหานคร', 6.6, 'TCR01', 'completed', -30, -12, 2],
+      ['หอพักกรีนเพลส', 'คุณอารีย์ มั่นคง', '0852221111', '55 ถ.พหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง', 'ปทุมธานี', 30.25, 'TCR04', 'interested', 5, 40, 4],
+      ['คุณธนา วงศ์ใหญ่', 'คุณธนา วงศ์ใหญ่', '0879990000', '8/3 ม.2 ต.บางพูด อ.ปากเกร็ด', 'นนทบุรี', 11.0, 'TCR02', 'confirmed', -8, 8, 3]
+    ];
+    // example data: appointment times and the one draft in progress (same as the survey list board)
+    const TIMES = ['09:00', '10:30', '09:30', '13:30', '14:00', '11:00', '10:00', '09:00', '13:00', '15:00'];
+    const DRAFT = { i: 2, pct: 64, step: 'ค่าไฟ', segs: [1, 1, 2, 0] };
+    const TODAY = new Date(2026, 8, 30);
+    const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    const TH_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const TH_D = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'], TH_DL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    // residential / small jobs only (this section excludes large commercial work, e.g. the 199.8 kW factory seed)
+    const JOBS = SEEDS.map((s, i) => ({ i, code: 'TCR2569-' + (23401 + i), project: s[0], customer: s[1], phone: s[2], address: s[3], province: s[4], kw: s[5], team: s[6], status: s[7], off: s[8], time: TIMES[i] })).filter(j => j.kw <= 50);
+    const st = this.state || {}, v = {};
+    const rel = n => n === 0 ? 'วันนี้' : n === 1 ? 'พรุ่งนี้' : n < 0 ? (-n) + ' วันก่อน' : 'อีก ' + n + ' วัน';
+    const kw = x => (Math.round(x * 100) / 100).toLocaleString('en-US') + ' kW';
+    const init = s => s.replace(/^(คุณ|บริษัท|ร้าน|โรงงาน|หอพัก)\s*/, '').trim()[0] || '?';
+    const shortAddr = j => j.address.replace(/^[^ ]+\s+/, '').replace(/ซ\.[^ ]+\s*/, '') + ' ' + j.province;
+    v.todayLong = 'วัน' + TH_DL[TODAY.getDay()] + 'ที่ ' + TODAY.getDate() + ' ' + TH_S[TODAY.getMonth()] + ' ' + (TODAY.getFullYear() + 543);
+    // next appointment = earliest survey today or later
+    const up = JOBS.filter(j => j.off >= 0).sort((a, b) => a.off - b.off || a.time.localeCompare(b.time));
+    const n = up[0];
+    v.nextName = n.project; v.nextInit = init(n.project); v.nextCode = n.code; v.nextKw = kw(n.kw); v.nextAddr = shortAddr(n); v.nextArea = n.province;
+    v.nextTeam = n.team; v.nextTeamSt = 'color:' + TEAM[n.team] + ';background:' + TEAM[n.team] + '1F';
+    v.nextWhen = rel(n.off) + ' ' + n.time + ' น.'; v.nextEta = n.off === 0 ? 'อีก 1 ชม. 20 นาที' : 'อีก ' + n.off + ' วัน'; v.nextDist = '12 กม. - ขับ 25 นาที';
+    const isDraft = n.i === DRAFT.i;
+    v.nextPct = isDraft ? DRAFT.pct : 0; v.nextStepLbl = isDraft ? 'ทำต่อ' : 'ยังไม่เริ่ม'; v.nextStep = isDraft ? DRAFT.step : 'เริ่มสำรวจ';
+    v.nextSegs = (isDraft ? DRAFT.segs : [0, 0, 0, 0]).map(s => ({ st: s === 1 ? 'background:#70AD47' : s === 2 ? 'background:#1F6FB5' : 'background:#DDE4ED' }));
+    v.nextCta = isDraft ? 'ทำแบบสำรวจต่อ' : 'เริ่มสำรวจ';
+    // counts
+    const todayN = JOBS.filter(j => j.off === 0).length, weekN = JOBS.filter(j => j.off >= 0 && j.off < 7).length, doneN = JOBS.filter(j => j.off < 0).length;
+    v.todayN = todayN;
+    v.tiles = [[todayN, 'นัดวันนี้', 'color:#1F6FB5'], [weekN, '7 วันข้างหน้า', 'color:#16325C'], [doneN, 'สำรวจแล้ว', 'color:#2E9E5B']]
+      .map(([n2, t, c]) => ({ n: n2, t, nSt: c, aria: t + ' ' + n2 + ' งาน' }));
+    // this week: today + 6 days
+    const sel = st.sel == null ? 0 : st.sel;
+    v.weekRange = TODAY.getDate() + ' ' + TH_S[TODAY.getMonth()] + ' – ' + addD(TODAY, 6).getDate() + ' ' + TH_S[addD(TODAY, 6).getMonth()];
+    v.days = Array.from({ length: 7 }, (_, k) => { const d = addD(TODAY, k), has = JOBS.filter(j => j.off === k), on = k === sel;
+      return { wd: k === 0 ? 'วันนี้' : TH_D[d.getDay()], n: d.getDate(), on: on ? 'true' : 'false', go: () => this.setState({ sel: k }),
+        aria: (k === 0 ? 'วันนี้ ' : '') + d.getDate() + ' ' + TH_S[d.getMonth()] + (has.length ? ' นัด ' + has.length : ' ไม่มีนัด'),
+        nSt: on ? 'background:#16325C;color:#fff;font-weight:700' : k === 0 ? 'color:#1F6FB5;font-weight:700' : 'color:#16325C',
+        dot: has.length ? 'background:' + (on ? '#1F6FB5' : '#D6336C') : 'background:transparent' }; });
+    const ag = JOBS.filter(j => j.off === sel && j !== n).sort((a, b) => a.time.localeCompare(b.time));
+    v.agenda = ag.map(j => ({ time: j.time, name: j.project, sub: 'ทีม ' + j.team + ' · ' + j.province + ' · ' + kw(j.kw), bar: 'background:' + TEAM[j.team], aria: 'นัดสำรวจ ' + j.project + ' ' + j.time + ' น.' }));
+    const showNext = n && n.off === sel; v.showNext = !!showNext; v.hasAgenda = ag.length > 0; v.noAgenda = ag.length === 0 && !showNext; v.noAgT = JOBS.some(j => j.off === sel && j === n) ? 'ไม่มีนัดอื่นนอกจากนัดถัดไป' : 'ไม่มีนัดสำรวจในวันนี้';
+    // projects by status
+    const f = st.f || 'all', ORDER = ['interested', 'confirmed', 'installing', 'completed'];
+    v.allN = JOBS.length;
+    v.chips = [['all', 'ทั้งหมด', JOBS.length, '#5B6B82']].concat(ORDER.map(k => [k, STATUS[k][2], JOBS.filter(j => j.status === k).length, STATUS[k][1]]))
+      .map(([k, t, c, col]) => ({ t, n: c, on: k === f ? 'true' : 'false', go: () => this.setState({ f: k }),
+        dot: k === 'all' ? 'display:none' : 'background:' + col, st: k === f ? 'border:0;background:#16325C;color:#fff' : 'border:1px solid #DDE4ED;background:#fff;color:#3E4C60' }));
+    const q = st.q || '';
+    const list = JOBS.filter(j => (f === 'all' || j.status === f) && (!q || (j.project + ' ' + j.code).indexOf(q) >= 0)).sort((a, b) => Math.abs(a.off) - Math.abs(b.off));
+    Object.assign(v, { listN: list.length, noProjT: q ? 'ไม่พบงานที่ตรงกับ "' + q + '"' : 'ไม่มีงานในสถานะนี้',
+      hasQ: !!q, qTxt: q || 'ค้นหาชื่อลูกค้า หรือรหัสโครงการ', qTxtS: q ? 'color:#16325C;font-weight:700' : 'color:#5B6B82',
+      qBoxS: st.qOpen ? 'box-shadow:inset 0 0 0 2px #1F6FB5' : 'box-shadow:inset 0 0 0 1px rgba(22,50,92,0.5)', qOpen: !!st.qOpen,
+      qTog: () => this.setState({ qOpen: !st.qOpen }), qClr: e => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ q: '', qOpen: false }); },
+      qSug: ['นพพร', 'กรีนเพลส', 'TCR2569-23404'].map(t => ({ t, go: () => this.setState({ q: t, qOpen: false }) })) });
+    v.proj = list.map((j, k) => ({ name: j.project, init: init(j.project), sub: j.code + ' · ' + kw(j.kw) + ' · ' + j.province,
+      st: STATUS[j.status][2], stSt: 'color:' + STATUS[j.status][1] + ';background:' + STATUS[j.status][1] + '1F',
+      avSt: 'color:' + TEAM[j.team] + ';background:' + TEAM[j.team] + '1A', aria: j.project + ' ' + STATUS[j.status][0], hasProg: j.i === DRAFT.i, pct: DRAFT.pct, progT: 'ทำต่อ ' + DRAFT.step + ' · ' + DRAFT.pct + '%',
+      sep: k < list.length - 1 ? 'position:absolute;left:68px;right:0;bottom:0;height:1px;background:#DDE4ED' : 'display:none' }));
+    v.noProj = list.length === 0;
+
+    // ---- v2: context, sun mode, assistant, dock (example data) ----
+    const sun = !!st.sun;
+    v.mode = sun ? 'sun' : ''; v.sunOn = sun ? 'true' : 'false'; v.sunTog = () => this.setState({ sun: !sun });
+    v.sunLbl = sun ? 'กลางแดด' : 'ปกติ'; v.sunBtn = sun ? 'background:#FFD60A;color:#1F2E24;box-shadow:none' : '';
+    v.greet = 'สวัสดีตอนเช้า'; v.todayShort = 'พุธ 30 ก.ย. 2569';
+    // example data: device context at 09:18 (12 min before the 09:30 appointment)
+    v.nearT = 'ห่างหน้างาน 120 ม. · นัดอีก 12 นาที';
+    v.wxT = '33° แดดจัด'; v.sunHint = !sun;
+    const synced = !!st.synced;
+    v.syncT = synced ? 'ซิงก์แล้ว' : 'ออฟไลน์ · 2 รายการรอซิงก์';
+    v.syncSt = synced ? 'background:#EEF5FD;color:#1F6FB5' : 'background:#F3F6FA;color:#3E4C60';
+    v.syncIc = synced ? '✓' : '⌁'; v.syncGo = () => this.setState({ synced: !synced });
+    // dock: the main action follows the next thing to do
+    v.dockT = isDraft ? 'ทำแบบสำรวจต่อ · ' + DRAFT.step : 'เริ่มสำรวจ';
+    v.dockS = n.project + ' · ' + v.nextWhen + ' · ' + v.nextPct + '%';
+    v.dockAria = v.dockT + ' ' + n.project;
+    return v;
+  }
+}
+</script>
+</body>
+</html>

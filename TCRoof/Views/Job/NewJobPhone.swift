@@ -256,6 +256,7 @@ struct NewJobPhoneView: View {
                       phone: phone, address: address.trimmingCharacters(in: .whitespacesAndNewlines), province: province,
                       capacityKW: kWp ?? 0, team: team, status: .interested,
                       surveyDate: surveyDate, installStart: r.start, installDays: installDays)
+        job.kind = .home
         context.insert(job)
         try? context.save()
         focus = nil

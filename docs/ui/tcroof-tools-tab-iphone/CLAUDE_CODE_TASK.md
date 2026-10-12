@@ -13,18 +13,23 @@ The iPhone home (`docs/ui/tcroof-home-iphone-v2`) is built. Its docked tab bar i
 ## Files in this folder
 | File | Shows |
 |---|---|
+| `PROMPT.md` | The prompt to paste into Claude Code |
+| `COMPONENT.md` | Tab bar spec: items, metrics, `Theme` tokens, states (check `TCTabBar` against it) |
 | `preview.png` | Home with the new tab bar, 390 × 844 |
 | `states/01-tabbar-crop.png` | Tab bar close-up (@2x) |
 | `states/02-tools-row-crop.png` | The renamed module row (@2x) |
+| `states/01-selected-home.png` … `05-selected-settings.png` | Each tab selected, 390 wide (@2x) |
 | `PhoneMenu.dc.html` + `grf.css` | Design source (read as text; styles are inline) |
-| `icons/tab-tools.svg` | New tab glyph (multimeter), 24 × 24, stroke 2, round caps |
+| `icons/tab-*.svg` | All five board glyphs, 24 × 24; only `tab-tools.svg` is new (the others stay SF Symbols) |
+| `assets/tab-tools.imageset/` | Ready-to-copy asset (template, vector, same format as `tab-install`) |
 
 ## Changes
 
 ### 1. Tab bar: 4th tab
 - **Before:** `ติดตั้ง`, asset `tab-install`, opens the install module.
 - **After:** label `เครื่องมือ`, accessibility label `เครื่องมือวัด`, glyph `icons/tab-tools.svg`
-  (add an asset `tab-tools`, template rendering, same size as the other tab glyphs).
+  (copy `assets/tab-tools.imageset` into `TCRoof/Assets.xcassets`; template rendering, 22 × 22 like `tab-install`).
+- Keep `tab-install.imageset` only if something else still uses it (grep); otherwise delete it.
 - It opens the **tools** module (`AppModule.tools`, today the "coming soon" screen in `PhoneHome.swift`).
   Replace `PhoneTab.install` with `PhoneTab.tools` (keep `stacks` order: home, survey, plan, tools).
 - `-homeTab install` (DEBUG) becomes `-homeTab tools`; update `CLAUDE.md` where it lists `-homeTab survey|plan|install`.
@@ -43,7 +48,7 @@ The iPhone home (`docs/ui/tcroof-home-iphone-v2`) is built. Its docked tab bar i
 ## Check list
 - [ ] Tab bar order and labels: `หน้าหลัก` · `สำรวจ` · `แผนงาน` · `เครื่องมือ` · `ตั้งค่า`
 - [ ] Hit area of every tab ≥ 44 pt; badge on `สำรวจ` unchanged
-- [ ] `-screen home -homeTab tools` opens with the tools tab selected
+- [ ] `-screen home -homeTab tools` opens with the tools tab selected; matches `states/04-selected-tools.png`
 - [ ] Old job JSON / SwiftData stores open (no model change expected)
 - [ ] xcodebuild with your own `-derivedDataPath`; screenshot on an iPhone simulator vs `preview.png`
 

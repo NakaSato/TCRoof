@@ -35,6 +35,16 @@ enum JobStatus: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    /// The iPhone survey home's chips and pills.
+    var shortTitle: String {
+        switch self {
+        case .interested: "สนใจ"
+        case .confirmed: "ยืนยันแล้ว"
+        case .installing: "กำลังติดตั้ง"
+        case .completed: "เสร็จสิ้น"
+        }
+    }
+
     var color: Color {
         switch self {
         case .interested: Color(hex: 0x4DA3E0)
@@ -191,6 +201,13 @@ final class Job {
 
     var estimatedPanels: Int { Int((capacityKW * 1000 / 550).rounded(.up)) }
     var inspection: Inspection? { inspections.first }
+
+    /// Apple Maps at the job's address.
+    var mapsURL: URL? {
+        var components = URLComponents(string: "https://maps.apple.com/")
+        components?.queryItems = [URLQueryItem(name: "q", value: "\(address) \(province)")]
+        return components?.url
+    }
 
     func matches(_ query: String) -> Bool {
         let q = query.trimmingCharacters(in: .whitespaces)

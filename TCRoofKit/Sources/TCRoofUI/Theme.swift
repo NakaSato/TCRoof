@@ -125,6 +125,11 @@ public enum Theme {
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
     public static let segmentTrack = Color(light: 0xEEF2F7, dark: 0x1C2734)
+    // iPhone survey home (docs/ui/tcroof-survey-home-iphone)
+    /// The search field's resting border: navy at 50 %.
+    public static let searchBorder = Color(light: 0x16325C, dark: 0xC9D8EE, opacity: 0.5)
+    /// The dock's add-customer glyph, a darker `teal` for contrast on the glass.
+    public static let dockTeal = Color(light: 0x1F8F83, dark: 0x4FC3B5)
     // iPhone home v2, outdoor contrast (docs/ui/tcroof-home-iphone-v2); the iPad keeps the tokens above
     /// `นัดวันนี้` card fill and the text of its white button.
     public static let heroSolid = Color(light: 0x0E2747, dark: 0x123A66)

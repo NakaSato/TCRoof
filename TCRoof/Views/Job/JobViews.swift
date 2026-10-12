@@ -105,7 +105,7 @@ struct JobDetailView: View {
                 .font(.sarabun(15, relativeTo: .subheadline))
             }
             InfoRow(title: "ที่อยู่", value: "\(job.address) \(job.province)")
-            if let url = mapsURL {
+            if let url = job.mapsURL {
                 Link(destination: url) {
                     Label("เปิดแผนที่", systemImage: "map").font(.sarabun(15, .semibold, relativeTo: .subheadline))
                 }
@@ -113,12 +113,6 @@ struct JobDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
-    }
-
-    private var mapsURL: URL? {
-        var components = URLComponents(string: "https://maps.apple.com/")
-        components?.queryItems = [URLQueryItem(name: "q", value: "\(job.address) \(job.province)")]
-        return components?.url
     }
 
     private var scheduleCard: some View {

@@ -4,56 +4,39 @@ import SwiftData
 import TCRoofCore
 import SurveyUI
 
-/// iPhone survey list (compact width, docs/ui/tcroof-survey-list-iphone): gradient header with the count,
-/// a segmented date filter, the search field with recent searches, and one compact card per job.
+/// iPhone survey home (compact width, docs/ui/tcroof-survey-home-iphone): a greeting header, the week strip with
+/// the next appointment and the selected day's agenda, every job behind the search field and status chips,
+/// and a dock whose main button opens the next survey.
 /// The root of the `สำรวจ` tab; when it is pushed (from the home module row) `TCGradientHeader` shows a back chevron.
 struct PhoneSurveyList: View {
     @Query(sort: \Job.surveyDate) private var jobs: [Job]
-    @State private var window: DateWindow = Self.debugWindow ?? .week
+    @State private var selectedDay = Self.debugDay
+    @State private var status: JobStatus? = Self.debugStatus
     @State private var search = Self.debugQuery ?? ""
     @State private var showNewJob = false
     @State private var openedJob: Job?
+    @State private var surveyJob: Job?
+    @StateObject private var drive = DriveEstimate()
     @FocusState private var searching: Bool
     @AppStorage("surveyList.recentSearches") private var recentRaw = ""
     @Environment(\.modelContext) private var context
+    @Environment(\.openURL) private var openURL
 
     private var query: String { search.trimmingCharacters(in: .whitespaces) }
-
-    /// As on the board, an active query searches every job and ignores the date window.
-    private var filtered: [Job] {
-        jobs.filter { query.isEmpty ? window.overlaps($0.surveyInterval) : $0.matches(query) }
-    }
-
     private var recent: [String] { RecentSearches.decode(recentRaw) }
 
+    /// The jobs matching the query; the status chips count over these.
+    private var searched: [Job] { jobs.filter { $0.matches(query) } }
+
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 10) {
-                if filtered.isEmpty {
-                    Text("ไม่พบงานสำรวจ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
-                        .frame(maxWidth: .infinity).padding(.vertical, 40).padding(.horizontal, 16)
-                }
-                ForEach(filtered) { SurveyJobCompactCard(job: $0) }
-            }
-            // the last card clears the FAB (60 + 16); the tab bar is already a safe-area inset
-            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 76)
-        }
-        .scrollDismissesKeyboard(.immediately)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            VStack(spacing: 0) {
-                header
-                controls
-            }
-            .background(Theme.background)
-        }
-        .background(Theme.background.ignoresSafeArea())
-        .overlay(alignment: .bottomTrailing) {
-            TCFab("person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่", gradient: Theme.tealGradient) { showNewJob = true }
-                .tcFabPlacement(compact: true)
+        // the next appointment and its countdown follow the clock
+        TimelineView(.everyMinute) { timeline in
+            page(now: timeline.date)
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showNewJob) { NewJobView { openedJob = $0 } }
         .navigationDestination(item: $openedJob) { JobDetailView(job: $0) }
+        .navigationDestination(item: $surveyJob) { SurveyFormView(job: $0) }
         .onChange(of: searching) { _, focused in
             if !focused { remember(search) }
         }
@@ -66,20 +49,46 @@ struct PhoneSurveyList: View {
         #endif
     }
 
-    #if DEBUG
-    /// `-surveyWindow month|all`, `-surveySearch <text>` and `-surveySearchFocus YES` open those states
-    /// (docs/ui/tcroof-survey-list-iphone states 02–06); seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`.
-    private static var debugWindow: DateWindow? {
-        switch UserDefaults.standard.string(forKey: "surveyWindow") {
-        case "month": .month
-        case "all": .all
-        default: nil
+    private func page(now: Date) -> some View {
+        let next = SurveyDayHome.next(dates: jobs.map(\.surveyDate), now: now).map { jobs[$0] }
+        return ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 18) {
+                    weekSection(now: now, next: next)
+                    listSection(now: now)
+                }
+                // the last row clears the dock (68 + 10 + 16); the tab bar is already a safe-area inset
+                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 94)
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .onChange(of: searching) { _, focused in
+                if focused { withAnimation { proxy.scrollTo(Self.searchID, anchor: .top) } }
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) { header(now: now) }
+        .background(Theme.background.ignoresSafeArea())
+        .overlay(alignment: .bottom) {
+            SurveyHomeDock(next: next, now: now, open: { surveyJob = $0 }, add: { showNewJob = true })
+                // 10 over the tab bar, which already stands `PhoneTab.barGap` off the content
+                .padding(.horizontal, 12).padding(.bottom, 10 - PhoneTab.barGap)
+        }
+        .task(id: next?.persistentModelID) {
+            await drive.load(address: next.map { "\($0.address) \($0.province)" } ?? "")
         }
     }
+
+    private static let searchID = "search"
+
+    #if DEBUG
+    /// `-surveyDay <0-6>`, `-surveyStatus interested|confirmed|installing|completed`, `-surveySearch <text>` and
+    /// `-surveySearchFocus YES` open the states of docs/ui/tcroof-survey-home-iphone/states;
+    /// seed `ค้นหาล่าสุด` with `-surveyList.recentSearches "a\nb"`.
+    private static var debugDay: Int { min(max(UserDefaults.standard.integer(forKey: "surveyDay"), 0), 6) }
+    private static var debugStatus: JobStatus? { UserDefaults.standard.string(forKey: "surveyStatus").flatMap(JobStatus.init) }
     private static var debugQuery: String? { UserDefaults.standard.string(forKey: "surveySearch") }
 
     /// `-surveyListDraft YES`: today's first job gets a draft with the roof and electrical groups filled
-    /// (`ทำต่อ · ค่าไฟ`, as states/01b-card-today-crop), for simulator checks.
+    /// (`ทำต่อ ค่าไฟ`), for simulator checks.
     private func seedDraft() {
         guard UserDefaults.standard.bool(forKey: "surveyListDraft"),
               let job = jobs.first(where: { $0.surveyDate.isToday }), job.surveyDraft == nil else { return }
@@ -92,37 +101,74 @@ struct PhoneSurveyList: View {
         try? context.save()
     }
     #else
-    private static var debugWindow: DateWindow? { nil }
+    private static var debugDay: Int { 0 }
+    private static var debugStatus: JobStatus? { nil }
     private static var debugQuery: String? { nil }
     #endif
 
     // MARK: header
 
-    private var header: some View {
-        TCGradientHeader(title: "สำรวจหน้างาน",
-                         subtitle: query.isEmpty ? "นัดสำรวจ \(filtered.count) งาน" : "ผลการค้นหา \(filtered.count) งาน") {
-            NavigationLink { SurveyHistoryView() } label: { TCHeaderIcon("clock") }
-                .buttonStyle(.plain)
-                .accessibilityLabel("ประวัติการสำรวจ")
+    private func header(now: Date) -> some View {
+        let greeting = SurveyGreeting.text(hour: Calendar.current.component(.hour, from: now))
+        return TCGradientHeader(title: "สำรวจหน้างาน",
+                                subtitle: "\(greeting) · \(ThaiFormat.weekdayShortYear.string(from: now))",
+                                large: true) { EmptyView() }
+    }
+
+    // MARK: week
+
+    private func weekSection(now: Date, next: Job?) -> some View {
+        let week = SurveyDayHome.week(now: now, dates: jobs.map(\.surveyDate))
+        let range = "\(ThaiFormat.dayMonthShort.string(from: now)) – \(ThaiFormat.dayMonthShort.string(from: now.adding(days: 6)))"
+        return VStack(spacing: 6) {
+            SurveyHomeSectionLabel(title: "สัปดาห์นี้", trailing: range)
+            SurveyWeekCard(week: week, selectedDay: $selectedDay, next: next,
+                           agenda: agenda(now: now, next: next), now: now, driveText: drive.text,
+                           open: { openedJob = $0 }, call: call, navigate: navigate)
         }
     }
 
-    // MARK: filter and search
+    /// The selected day's other appointments, by time.
+    private func agenda(now: Date, next: Job?) -> [Job] {
+        SurveyDayHome.agenda(dates: jobs.map(\.surveyDate), offset: selectedDay, now: now,
+                             excluding: next.flatMap { n in jobs.firstIndex { $0 === n } })
+            .map { jobs[$0] }
+    }
 
-    private var controls: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TCSegmented(DateWindow.allCases.map(\.shortLabel),
-                        selection: Binding(get: { window.shortLabel },
-                                           set: { t in window = DateWindow.allCases.first { $0.shortLabel == t } ?? .week }),
-                        fontSize: 14, style: .filter)
-            searchField
+    private func call(_ job: Job) {
+        let digits = job.phone.filter { $0.isNumber || $0 == "+" }
+        if let url = URL(string: "tel:\(digits)") { openURL(url) }
+    }
+
+    private func navigate(_ job: Job) {
+        if let url = job.mapsURL { openURL(url) }
+    }
+
+    // MARK: all jobs
+
+    private func listSection(now: Date) -> some View {
+        let found = searched
+        let shown = found.filter { status == nil || $0.status == status }
+        let ordered = SurveyDayHome.listOrder(dates: shown.map(\.surveyDate), now: now).map { shown[$0] }
+        return VStack(spacing: 10) {
+            VStack(spacing: 6) {
+                SurveyHomeSectionLabel(title: "งานสำรวจทั้งหมด", trailing: "\(ordered.count) งาน")
+                searchField
+            }
+            .id(Self.searchID)
             if searching && search.isEmpty && !recent.isEmpty { recentChips }
+            SurveyStatusChips(selection: $status, total: found.count, counts: SurveyDayHome.counts(found.map(\.status)))
+                // the row bleeds to the screen edges
+                .padding(.horizontal, -16)
+            SurveyHomeList(jobs: ordered, empty: query.isEmpty ? "ไม่มีงานในสถานะนี้" : "ไม่พบงานที่ตรงกับ \"\(query)\"",
+                           open: { openedJob = $0 })
+            historyRow
         }
-        .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 4)
     }
 
     private var searchField: some View {
-        PhoneSearchField(text: $search, focused: $searching) { remember(search) }
+        PhoneSearchField(text: $search, focused: $searching, height: 50, radius: 10, fontSize: 16, iconSize: 18,
+                         border: Theme.searchBorder) { remember(search) }
     }
 
     private var recentChips: some View {
@@ -144,126 +190,31 @@ struct PhoneSurveyList: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, -2)
+    }
+
+    /// The board has no history button in the header, so the history opens from under the list.
+    private var historyRow: some View {
+        NavigationLink { SurveyHistoryView() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "clock.arrow.circlepath").font(.system(size: 18, weight: .medium)).foregroundStyle(Theme.primary)
+                    .frame(width: 40)
+                Text("ประวัติการสำรวจ").font(.sarabun(15.5, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                SurveyHomeChevron()
+            }
+            .padding(.leading, 16).padding(.trailing, 14)
+            .frame(minHeight: 52)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(SurveyHomePressStyle())
     }
 
     private func remember(_ q: String) {
         let list = RecentSearches.adding(q, to: recent)
         if list != recent { recentRaw = RecentSearches.encode(list) }
-    }
-}
-
-// MARK: - Compact card
-
-/// The iPhone survey card: the body (project, team, code, kW, appointment, province) opens `JobDetailView`;
-/// the progress box opens the draft, the saved survey, or a new one. Today's job has a primary border.
-struct SurveyJobCompactCard: View {
-    let job: Job
-
-    private var days: Int { RelativeDay.days(from: .now, to: job.surveyDate) }
-    private var when: String { RelativeDay.label(days: days, time: ThaiFormat.time.string(from: job.surveyDate)) }
-    private var progress: SurveyCardProgress {
-        SurveyCardProgress(draft: job.surveyDraft.map(SurveyOptions.progress), hasSaved: !job.savedSurveys.isEmpty)
-    }
-
-    var body: some View {
-        let p = progress
-        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
-        VStack(alignment: .leading, spacing: 8) {
-            NavigationLink { JobDetailView(job: job) } label: { content }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("รายละเอียดงาน \(job.projectName) \(when)")
-            NavigationLink { form } label: { progressBox(p) }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(p.shortValue) แบบสำรวจ")
-                .accessibilityValue("\(p.shortKey) \(p.percent)%")
-                .accessibilityAddTraits(.isButton)
-        }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Theme.surface, in: shape)
-        .overlay(shape.strokeBorder(days == 0 ? Theme.primary : Theme.borderSubtle))
-        .shadow(color: Theme.navy.opacity(0.08), radius: 4, y: 3)
-    }
-
-    /// `SurveyFormView(job:)` opens the draft or starts one; with only a saved survey, `ดูแบบสำรวจ` opens that.
-    @ViewBuilder private var form: some View {
-        if job.surveyDraft == nil, let saved = job.savedSurveys.first {
-            SurveyFormView(survey: saved)
-        } else {
-            SurveyFormView(job: job)
-        }
-    }
-
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            titleRow
-            codeRow.padding(.top, -4)
-            whenRow
-        }
-        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-
-    private var titleRow: some View {
-        HStack(spacing: 8) {
-            Text(job.projectName).font(.sarabun(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-                .lineLimit(1).truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(job.team.rawValue).font(.sarabun(11.5, .bold, relativeTo: .caption)).foregroundStyle(job.team.color)
-                .padding(.horizontal, 8).padding(.vertical, 1)
-                .background(job.team.color.opacity(0.1), in: Capsule())
-                .fixedSize()
-        }
-    }
-
-    private var codeRow: some View {
-        HStack(spacing: 6) {
-            Text(job.code)
-            Text(verbatim: "·")
-            Image(systemName: "bolt").font(.system(size: 11, weight: .medium))
-            Text(job.capacityKW.kw)
-        }
-        .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
-        .lineLimit(1)
-    }
-
-    private var whenRow: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "calendar").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.primary)
-            Text(when).font(.sarabun(14, .bold, relativeTo: .subheadline))
-                .foregroundStyle(days == 0 ? Theme.primary : Theme.navy).lineLimit(1)
-            Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                Image(systemName: "mappin").font(.system(size: 12, weight: .medium))
-                Text(job.province).lineLimit(1)
-            }
-            .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
-        }
-    }
-
-    private func progressBox(_ p: SurveyCardProgress) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text(p.shortKey).font(.sarabun(12.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
-                Text(p.shortValue).font(.sarabun(13.5, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
-                Spacer(minLength: 6)
-                Text("\(p.percent)%").font(.sarabun(12.5, .bold, relativeTo: .caption)).monospacedDigit()
-                    .foregroundStyle(p.percent == 0 ? Theme.progressZero : p.tone == .complete ? Theme.progressFull : Theme.primary)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.primary)
-            }
-            HStack(spacing: 3) {
-                ForEach(p.segments.indices, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 3).fill(p.segments[i].color).frame(height: 5)
-                }
-            }
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        .background(p.tone == .draft ? Theme.progressBox : Theme.progressBoxIdle, in: shape)
-        .contentShape(shape)
     }
 }
 

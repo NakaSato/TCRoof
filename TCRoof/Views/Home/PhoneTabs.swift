@@ -5,9 +5,9 @@ import SwiftData
 /// Root tabs of the iPhone (compact width) under the docked tab bar (docs/ui/tcroof-home-iphone-v2).
 enum PhoneTab: String {
     /// `settings` is only the bar's button for the settings sheet, never a selected tab.
-    case home, survey, plan, install, settings
+    case home, survey, plan, tools, settings
 
-    static let stacks: [PhoneTab] = [.home, .survey, .plan, .install]
+    static let stacks: [PhoneTab] = [.home, .survey, .plan, .tools]
     /// Space the root screens keep above the tab bar.
     static let barGap: CGFloat = 4
 
@@ -16,7 +16,7 @@ enum PhoneTab: String {
         case .home, .settings: nil
         case .survey: .survey
         case .plan: .plan
-        case .install: .install
+        case .tools: .tools
         }
     }
 }
@@ -85,7 +85,7 @@ struct PhoneTabs<HomeRoot: View>: View {
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.survey, title: "สำรวจ", symbol: "list.clipboard", badge: n, accessibilityLabel: n > 0 ? "สำรวจ · นัดวันนี้ \(n)" : nil),
             TCTabItem(.plan, title: "แผนงาน", symbol: "calendar"),
-            TCTabItem(.install, title: "ติดตั้ง", asset: "tab-install"),
+            TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { showSettings = true },
         ]
@@ -93,7 +93,7 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private static var initialTab: PhoneTab {
         #if DEBUG
-        // `-homeTab survey|plan|install` opens with that tab selected, for simulator checks
+        // `-homeTab survey|plan|tools` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif
         return .home

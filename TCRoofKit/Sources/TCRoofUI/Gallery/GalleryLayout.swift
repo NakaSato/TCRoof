@@ -120,7 +120,7 @@ private struct GalleryTabBar: View {
             TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
             TCTabItem("survey", title: "สำรวจ", symbol: "list.clipboard", badge: 2, accessibilityLabel: "สำรวจ · นัดวันนี้ 2"),
             TCTabItem("plan", title: "แผนงาน", symbol: "calendar"),
-            TCTabItem("install", title: "ติดตั้ง", asset: "tab-install"),
+            TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
         ], selection: $selection)
     }

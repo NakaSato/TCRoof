@@ -66,7 +66,7 @@ struct ToolsPlaceholderView: View {
     var request: String? = nil
 
     var body: some View {
-        TCEmptyState("เครื่องมือและอุปกรณ์วัด", systemImage: "briefcase",
+        TCEmptyState("เครื่องมือวัด", systemImage: "briefcase",
                      description: Text("รายการโดรน กล้องถ่ายภาพความร้อน แคลมป์มิเตอร์ และกำหนดสอบเทียบ จะเปิดใช้เร็ว ๆ นี้")) {
             if let request, !request.isEmpty {
                 Text("จากการแจ้งเตือน: \(request)").font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
@@ -74,9 +74,9 @@ struct ToolsPlaceholderView: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .navigationTitle("เครื่องมือและอุปกรณ์วัด")
+        .navigationTitle("เครื่องมือวัด")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .tcPadNavBar("เครื่องมือและอุปกรณ์วัด", trail: ["หน้าหลัก"])
+        .tcPadNavBar("เครื่องมือวัด", trail: ["หน้าหลัก"])
     }
 }

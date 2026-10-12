@@ -16,7 +16,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .scan: "สแกนอุปกรณ์"
         case .install: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน"
         case .pwa: "การประปา\nส่วนภูมิภาค"
-        case .tools: "เครื่องมือและอุปกรณ์วัด"
+        case .tools: "เครื่องมือวัด"
         }
     }
 

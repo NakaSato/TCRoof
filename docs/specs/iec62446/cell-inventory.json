@@ -1,0 +1,5686 @@
+{
+ "source": "1FORMI1.XLS (Excel 2007+ package, .XLS extension) · สถานีจ่ายน้ำแพรกหนามแดง",
+ "note": "Generated from the original file. kind: input = the exporter writes it; formula = never written, only its cached <v> is refreshed; constant = left as is. value = the sample value in the original (null = empty).",
+ "sheets": [
+  {
+   "name": "INV 01-ก่อน",
+   "part": "xl/worksheets/sheet1.xml",
+   "sheetId": 82,
+   "phase": "before",
+   "inverter": 1,
+   "cells": [
+    {
+     "ref": "C3",
+     "s": "89",
+     "t": "s",
+     "kind": "input",
+     "value": "สถานีจ่ายน้ำแพรกหนามแดง การประปาส่วนภูมิภาคสาขาสมุทรสงคราม ขนาดกำลังผลิต 209.76 kWp"
+    },
+    {
+     "ref": "E5",
+     "s": "97",
+     "t": "s",
+     "kind": "input",
+     "value": "Inverter 1 (125 kW) "
+    },
+    {
+     "ref": "O5",
+     "s": "99",
+     "t": "s",
+     "kind": "input",
+     "value": "S/N : GKLRF5N02R"
+    },
+    {
+     "ref": "AA4",
+     "s": "43",
+     "t": null,
+     "kind": "input",
+     "value": 570
+    },
+    {
+     "ref": "E8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "F8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "G8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "H8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "I8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "J8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "K8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "L8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "N8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "O8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "P8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "Q8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "R8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "S8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "T8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "V8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "X8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "F9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "G9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "H9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "I9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "J9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "K9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "L9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "N9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "O9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "P9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "Q9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "R9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "S9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "T9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "V9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "X9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "F12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "G12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "H12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "I12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "J12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "K12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "L12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "N12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "O12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "P12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "Q12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "R12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "S12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "T12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "V12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "X12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "F13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "G13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "H13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "I13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "J13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "K13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "L13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "N13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "O13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "P13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "Q13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "R13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "S13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "T13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "V13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "X13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 755
+    },
+    {
+     "ref": "F16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 752
+    },
+    {
+     "ref": "G16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 752
+    },
+    {
+     "ref": "H16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "I16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 750
+    },
+    {
+     "ref": "J16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 750
+    },
+    {
+     "ref": "K16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 749
+    },
+    {
+     "ref": "L16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "N16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 756
+    },
+    {
+     "ref": "O16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 752
+    },
+    {
+     "ref": "P16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "Q16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 754
+    },
+    {
+     "ref": "R16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 750
+    },
+    {
+     "ref": "S16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "T16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "V16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 756
+    },
+    {
+     "ref": "X16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "F18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "G18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "H18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "I18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "J18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "K18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "L18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "N18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "O18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "P18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "Q18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "R18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "S18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "T18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "V18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "X18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E11",
+     "s": "78",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E14",
+     "s": "80",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E20",
+     "s": "46",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E21",
+     "s": "76",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E22",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E23",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E24",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E25",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E26",
+     "s": "74",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E27",
+     "s": "56",
+     "t": "s",
+     "kind": "constant",
+     "value": "เอกสารแนบ"
+    },
+    {
+     "ref": "E29",
+     "s": "62",
+     "t": "s",
+     "kind": "input",
+     "value": "34.3 (ºC)"
+    },
+    {
+     "ref": "E30",
+     "s": "46",
+     "t": "s",
+     "kind": "input",
+     "value": "1022 (W/m²)"
+    },
+    {
+     "ref": "AA30",
+     "s": "38",
+     "t": "s",
+     "kind": "input",
+     "value": "13.00 น."
+    },
+    {
+     "ref": "AA25",
+     "s": "27",
+     "t": "s",
+     "kind": "input",
+     "value": "Solar irradiance (เฉลี่ย) =   kWh/m2"
+    },
+    {
+     "ref": "AA26",
+     "s": "28",
+     "t": "s",
+     "kind": "input",
+     "value": "Array Temperature =   (ºC)"
+    },
+    {
+     "ref": "AA9",
+     "s": "33",
+     "t": null,
+     "kind": "formula",
+     "value": 145920,
+     "formula": "SUM(E9:X9)*$AA$4"
+    },
+    {
+     "ref": "D31",
+     "s": "22",
+     "t": null,
+     "kind": "input",
+     "value": null
+    }
+   ]
+  },
+  {
+   "name": "INV 02-ก่อน",
+   "part": "xl/worksheets/sheet2.xml",
+   "sheetId": 86,
+   "phase": "before",
+   "inverter": 2,
+   "cells": [
+    {
+     "ref": "C3",
+     "s": "89",
+     "t": "str",
+     "kind": "formula",
+     "value": "สถานีจ่ายน้ำแพรกหนามแดง การประปาส่วนภูมิภาคสาขาสมุทรสงคราม ขนาดกำลังผลิต 209.76 kWp",
+     "formula": "'INV 01-ก่อน'!$C$3"
+    },
+    {
+     "ref": "E5",
+     "s": "97",
+     "t": "s",
+     "kind": "input",
+     "value": "Inverter 2 (60 kW) "
+    },
+    {
+     "ref": "O5",
+     "s": "99",
+     "t": "s",
+     "kind": "input",
+     "value": "S/N : BUFUEXB009"
+    },
+    {
+     "ref": "AA4",
+     "s": "43",
+     "t": null,
+     "kind": "input",
+     "value": 570
+    },
+    {
+     "ref": "E8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "F8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "H8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "J8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "L8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "N8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "O8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "P8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "Q8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "F9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "H9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "J9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "L9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "N9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "O9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "P9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "Q9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "F12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "H12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "J12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "L12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "N12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "O12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "P12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "Q12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "F13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "H13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "J13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "L13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "N13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "O13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "P13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "Q13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "F16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 754
+    },
+    {
+     "ref": "H16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "J16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 755
+    },
+    {
+     "ref": "L16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 561.2
+    },
+    {
+     "ref": "N16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 563.5
+    },
+    {
+     "ref": "O16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 560.6
+    },
+    {
+     "ref": "P16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 560.5
+    },
+    {
+     "ref": "Q16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "F18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "H18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "J18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "L18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "N18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "O18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "P18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "Q18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E11",
+     "s": "78",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E14",
+     "s": "80",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E20",
+     "s": "46",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E21",
+     "s": "76",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E22",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E23",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E24",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E25",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E26",
+     "s": "74",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E27",
+     "s": "56",
+     "t": "s",
+     "kind": "constant",
+     "value": "เอกสารแนบ"
+    },
+    {
+     "ref": "E29",
+     "s": "62",
+     "t": "str",
+     "kind": "formula",
+     "value": "34.3 (ºC)",
+     "formula": "'INV 01-ก่อน'!E29"
+    },
+    {
+     "ref": "E30",
+     "s": "46",
+     "t": "str",
+     "kind": "formula",
+     "value": "1022 (W/m²)",
+     "formula": "'INV 01-ก่อน'!E30"
+    },
+    {
+     "ref": "AA30",
+     "s": "38",
+     "t": "str",
+     "kind": "formula",
+     "value": "13.00 น.",
+     "formula": "'INV 01-ก่อน'!$AA$30"
+    },
+    {
+     "ref": "AA25",
+     "s": "27",
+     "t": "str",
+     "kind": "formula",
+     "value": "Solar irradiance (เฉลี่ย) =   kWh/m2",
+     "formula": "'INV 01-ก่อน'!AA25"
+    },
+    {
+     "ref": "AA26",
+     "s": "28",
+     "t": "str",
+     "kind": "formula",
+     "value": "Array Temperature =   (ºC)",
+     "formula": "'INV 01-ก่อน'!AA26"
+    },
+    {
+     "ref": "AA9",
+     "s": "33",
+     "t": null,
+     "kind": "formula",
+     "value": 63840,
+     "formula": "SUM(E9:X9)*$AA$4"
+    },
+    {
+     "ref": "D31",
+     "s": "22",
+     "t": null,
+     "kind": "input",
+     "value": null
+    }
+   ]
+  },
+  {
+   "name": "INV 01-หลัง",
+   "part": "xl/worksheets/sheet3.xml",
+   "sheetId": 89,
+   "phase": "after",
+   "inverter": 1,
+   "cells": [
+    {
+     "ref": "C3",
+     "s": "89",
+     "t": "s",
+     "kind": "input",
+     "value": "สถานีจ่ายน้ำแพรกหนามแดง การประปาส่วนภูมิภาคสาขาสมุทรสงคราม ขนาดกำลังผลิต 209.76 kWp"
+    },
+    {
+     "ref": "E5",
+     "s": "97",
+     "t": "s",
+     "kind": "input",
+     "value": "Inverter 1 (125 kW) "
+    },
+    {
+     "ref": "O5",
+     "s": "99",
+     "t": "s",
+     "kind": "input",
+     "value": "S/N : GKLRF5N02R"
+    },
+    {
+     "ref": "AA4",
+     "s": "43",
+     "t": null,
+     "kind": "input",
+     "value": 570
+    },
+    {
+     "ref": "E8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "F8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "G8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "H8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "I8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "J8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "K8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "L8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "N8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "O8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "P8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "Q8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "R8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "S8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "T8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "V8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "X8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "F9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "G9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "H9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "I9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "J9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "K9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "L9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "N9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "O9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "P9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "Q9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "R9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "S9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "T9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "V9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "X9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "F12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "G12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "H12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "I12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "J12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "K12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "L12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "N12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "O12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "P12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "Q12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "R12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "S12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "T12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "V12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "X12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "F13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "G13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "H13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "I13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "J13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "K13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "L13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "N13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "O13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "P13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "Q13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "R13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "S13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "T13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "V13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "X13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 755
+    },
+    {
+     "ref": "F16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 752
+    },
+    {
+     "ref": "G16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 752
+    },
+    {
+     "ref": "H16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "I16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 750
+    },
+    {
+     "ref": "J16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 750
+    },
+    {
+     "ref": "K16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 749
+    },
+    {
+     "ref": "L16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "N16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 756
+    },
+    {
+     "ref": "O16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 752
+    },
+    {
+     "ref": "P16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "Q16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 754
+    },
+    {
+     "ref": "R16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 750
+    },
+    {
+     "ref": "S16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "T16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "V16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 756
+    },
+    {
+     "ref": "X16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "F18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "G18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "H18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "I18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "J18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "K18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "L18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "N18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "O18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "P18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "Q18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "R18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "S18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "T18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "V18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "X18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E11",
+     "s": "78",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E14",
+     "s": "80",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E20",
+     "s": "46",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E21",
+     "s": "76",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E22",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 0.69
+    },
+    {
+     "ref": "E23",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 2.93
+    },
+    {
+     "ref": "E24",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 457.18
+    },
+    {
+     "ref": "E25",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 3200.03
+    },
+    {
+     "ref": "E26",
+     "s": "74",
+     "t": null,
+     "kind": "input",
+     "value": 0.15
+    },
+    {
+     "ref": "E27",
+     "s": "56",
+     "t": "s",
+     "kind": "constant",
+     "value": "เอกสารแนบ"
+    },
+    {
+     "ref": "E29",
+     "s": "62",
+     "t": "s",
+     "kind": "input",
+     "value": "34.3 (ºC)"
+    },
+    {
+     "ref": "E30",
+     "s": "46",
+     "t": "s",
+     "kind": "input",
+     "value": "1022 (W/m²)"
+    },
+    {
+     "ref": "AA30",
+     "s": "103",
+     "t": "s",
+     "kind": "input",
+     "value": "13.00 น."
+    },
+    {
+     "ref": "AA25",
+     "s": "27",
+     "t": "s",
+     "kind": "input",
+     "value": "Solar irradiance (เฉลี่ย) =   4.24 kWh/m2"
+    },
+    {
+     "ref": "AA26",
+     "s": "28",
+     "t": "s",
+     "kind": "input",
+     "value": "Array Temperature = 59.4 (ºC)"
+    },
+    {
+     "ref": "AA9",
+     "s": "33",
+     "t": null,
+     "kind": "formula",
+     "value": 145920,
+     "formula": "SUM(E9:X9)*$AA$4"
+    },
+    {
+     "ref": "D31",
+     "s": "22",
+     "t": "s",
+     "kind": "input",
+     "value": "กำลังผลิตถูกหรี่โดยโหลด"
+    }
+   ]
+  },
+  {
+   "name": "INV 02-หลัง",
+   "part": "xl/worksheets/sheet4.xml",
+   "sheetId": 90,
+   "phase": "after",
+   "inverter": 2,
+   "cells": [
+    {
+     "ref": "C3",
+     "s": "89",
+     "t": "str",
+     "kind": "formula",
+     "value": "สถานีจ่ายน้ำแพรกหนามแดง การประปาส่วนภูมิภาคสาขาสมุทรสงคราม ขนาดกำลังผลิต 209.76 kWp",
+     "formula": "'INV 01-หลัง'!$C$3"
+    },
+    {
+     "ref": "E5",
+     "s": "97",
+     "t": "s",
+     "kind": "input",
+     "value": "Inverter 2 (60 kW) "
+    },
+    {
+     "ref": "O5",
+     "s": "99",
+     "t": "s",
+     "kind": "input",
+     "value": "S/N : BUFUEXB009"
+    },
+    {
+     "ref": "AA4",
+     "s": "43",
+     "t": null,
+     "kind": "input",
+     "value": 570
+    },
+    {
+     "ref": "E8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "F8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "H8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "J8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "L8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "N8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "O8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "P8",
+     "s": "25",
+     "t": "s",
+     "kind": "input",
+     "value": "Znshine"
+    },
+    {
+     "ref": "Q8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X8",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "F9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "H9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "J9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 16
+    },
+    {
+     "ref": "L9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "N9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "O9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "P9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 12
+    },
+    {
+     "ref": "Q9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X9",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X10",
+     "s": "29",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "F12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "H12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "J12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "L12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "N12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "O12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "P12",
+     "s": "23",
+     "t": "s",
+     "kind": "input",
+     "value": "P"
+    },
+    {
+     "ref": "Q12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X12",
+     "s": "23",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "F13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "H13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "J13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "L13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "N13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "O13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "P13",
+     "s": "5",
+     "t": "s",
+     "kind": "input",
+     "value": "1000V"
+    },
+    {
+     "ref": "Q13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X13",
+     "s": "5",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "F16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 754
+    },
+    {
+     "ref": "H16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 753
+    },
+    {
+     "ref": "J16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 755
+    },
+    {
+     "ref": "L16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 561.2
+    },
+    {
+     "ref": "N16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 563.5
+    },
+    {
+     "ref": "O16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 560.6
+    },
+    {
+     "ref": "P16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 560.5
+    },
+    {
+     "ref": "Q16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X16",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X17",
+     "s": "30",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "F18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "H18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "J18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "L18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "N18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "O18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "P18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": 0
+    },
+    {
+     "ref": "Q18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X18",
+     "s": "25",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "F19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "G19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "H19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "I19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "J19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "K19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "L19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "M19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "N19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "O19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "P19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "Q19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "R19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "S19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "T19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "U19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "V19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "W19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "X19",
+     "s": "31",
+     "t": null,
+     "kind": "input",
+     "value": null
+    },
+    {
+     "ref": "E11",
+     "s": "78",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E14",
+     "s": "80",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E20",
+     "s": "46",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E21",
+     "s": "76",
+     "t": "s",
+     "kind": "input",
+     "value": "Normal"
+    },
+    {
+     "ref": "E22",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 0.79
+    },
+    {
+     "ref": "E23",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 3.33
+    },
+    {
+     "ref": "E24",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 214.94
+    },
+    {
+     "ref": "E25",
+     "s": "66",
+     "t": null,
+     "kind": "input",
+     "value": 1504.6
+    },
+    {
+     "ref": "E26",
+     "s": "74",
+     "t": null,
+     "kind": "input",
+     "value": 0.17
+    },
+    {
+     "ref": "E27",
+     "s": "56",
+     "t": "s",
+     "kind": "constant",
+     "value": "เอกสารแนบ"
+    },
+    {
+     "ref": "E29",
+     "s": "62",
+     "t": "str",
+     "kind": "formula",
+     "value": "34.3 (ºC)",
+     "formula": "'INV 01-หลัง'!E29"
+    },
+    {
+     "ref": "E30",
+     "s": "46",
+     "t": "str",
+     "kind": "formula",
+     "value": "1022 (W/m²)",
+     "formula": "'INV 01-หลัง'!E30"
+    },
+    {
+     "ref": "AA30",
+     "s": "38",
+     "t": "str",
+     "kind": "formula",
+     "value": "13.00 น.",
+     "formula": "'INV 01-หลัง'!$AA$30"
+    },
+    {
+     "ref": "AA25",
+     "s": "27",
+     "t": "str",
+     "kind": "formula",
+     "value": "Solar irradiance (เฉลี่ย) =   4.24 kWh/m2",
+     "formula": "'INV 01-หลัง'!AA25"
+    },
+    {
+     "ref": "AA26",
+     "s": "28",
+     "t": "str",
+     "kind": "formula",
+     "value": "Array Temperature = 59.4 (ºC)",
+     "formula": "'INV 01-หลัง'!AA26"
+    },
+    {
+     "ref": "AA9",
+     "s": "33",
+     "t": null,
+     "kind": "formula",
+     "value": 63840,
+     "formula": "SUM(E9:X9)*$AA$4"
+    },
+    {
+     "ref": "D31",
+     "s": "22",
+     "t": null,
+     "kind": "input",
+     "value": null
+    }
+   ]
+  }
+ ]
+}

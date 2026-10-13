@@ -174,7 +174,11 @@ public extension FieldSpec {
         case .photo: if case .signature = kind { return "ลงนามแล้ว" }; return "แนบภาพแล้ว"
         case .photos(let a): return a.isEmpty ? "" : "\(a.count) ภาพ"
         case .obstacles(let a):
-            return a.map { $0.isAbsent ? "\($0.label.isEmpty ? "สิ่งกีดขวาง" : $0.label) (ไม่มีจริง)" : "\($0.label.isEmpty ? "สิ่งกีดขวาง" : $0.label) (\($0.w.isEmpty ? "?" : $0.w)x\($0.h.isEmpty ? "?" : $0.h) ม. @\($0.x.isEmpty ? "0" : $0.x),\($0.y.isEmpty ? "0" : $0.y))" }.joined(separator: "; ")
+            return a.map { ob in
+                let name = ob.label.isEmpty ? "สิ่งกีดขวาง" : ob.label
+                if ob.isAbsent { return "\(name) (ไม่มีจริง)" }
+                return "\(name) (\(ob.w.isEmpty ? "?" : ob.w)x\(ob.h.isEmpty ? "?" : ob.h) ม. @\(ob.x.isEmpty ? "0" : ob.x),\(ob.y.isEmpty ? "0" : ob.y))"
+            }.joined(separator: "; ")
         case .transformers(let a):
             return a.enumerated().map { i, t in
                 "TR\(i + 1) \(t.kva.isEmpty ? "-" : t.kva)kVA: " + t.mdb.enumerated().compactMap { $1.isEmpty ? nil : "MDB\($0 + 1)=\($1)A" }.joined(separator: " ")

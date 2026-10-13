@@ -9,7 +9,7 @@ import TCRoofCore
 struct StationDocsScreen: View {
     @Bindable var job: Job
 
-    enum Pane: Hashable { case package(StationDocs.Package), checklist }
+    enum Pane: Hashable { case package(StationDocs.Package), checklist, erc }
 
     @State private var tab: Pane = .package(.gridConnection)
     @State private var library = StationDocsStore.loadLibrary()
@@ -26,6 +26,7 @@ struct StationDocsScreen: View {
             switch tab {
             case .package(let p): packageRows(p)
             case .checklist: checklistRows
+            case .erc: ERCFlowRows(job: job, library: library)
             }
         }
         .navigationTitle("เอกสารสถานี กปภ.")
@@ -58,6 +59,36 @@ struct StationDocsScreen: View {
             try? StationPaperRenderer.pdf(letter.letter(job.stationFacts), company: job.stationLetterhead).write(to: url)
         default: break
         }
+        debugERC()
+    }
+
+    /// `-stationDocsERC wait|failed|parallel|done` sets the station to 200 kVA and over, writes that state of the
+    /// ERC flow dated back from today, and opens ลำดับ กกพ. It changes the job for good.
+    private func debugERC() {
+        guard let name = UserDefaults.standard.string(forKey: "stationDocsERC") else { return }
+        func ago(_ days: Int) -> String { ERCFlow.day(Calendar.current.date(byAdding: .day, value: -days, to: .now) ?? .now) }
+        var r = ERCFlow.Record()
+        switch name {
+        case "wait":
+            r.add(.designRequest, day: ago(30))
+        case "failed":
+            r.add(.designRequest, day: ago(40)); r.add(.designResult, day: ago(28), result: .failed, note: "ให้แก้ขนาดสายประธาน")
+        case "parallel":
+            r.add(.designRequest, day: ago(90)); r.add(.designResult, day: ago(78)); r.add(.install, day: ago(20))
+            r.add(.pk2Request, day: ago(15)); r.add(.ercToDede, day: ago(10)); r.add(.inspectionRequest, day: ago(12))
+            r.utilityWantsPK2 = true
+        case "done":
+            r.add(.designRequest, day: ago(120)); r.add(.designResult, day: ago(108)); r.add(.install, day: ago(60))
+            r.add(.pk2Request, day: ago(55)); r.add(.pk2Signed, day: ago(25)); r.add(.inspectionRequest, day: ago(50))
+            r.add(.inspectionResult, day: ago(30)); r.add(.cod, day: ago(15)); r.add(.exemptionResult, day: ago(5))
+            r.utilityWantsPK2 = false
+        default: return
+        }
+        var station = job.stationDocs
+        station.over200kVA = true
+        station.erc = r
+        job.stationDocs = station
+        tab = .erc
     }
     #endif
 
@@ -85,10 +116,15 @@ struct StationDocsScreen: View {
                     let pr = StationDocs.progress(p, station: job.stationDocs, library: library, ctx)
                     chip("\(p.title) \(pr.ready)/\(pr.total)", selected: tab == .package(p)) { tab = .package(p) }
                 }
-                if ctx.over200kVA { chip("Check list พค.2", selected: tab == .checklist) { tab = .checklist } }
+                if ctx.over200kVA {
+                    chip("Check list พค.2", selected: tab == .checklist) { tab = .checklist }
+                    chip("ลำดับ กกพ.", selected: tab == .erc) { tab = .erc }
+                }
             }
         }
-        .onChange(of: ctx.over200kVA) { _, over in if !over, tab == .checklist || tab == .package(.pk2) { tab = .package(.gridConnection) } }
+        .onChange(of: ctx.over200kVA) { _, over in
+            if !over, tab == .checklist || tab == .erc || tab == .package(.pk2) { tab = .package(.gridConnection) }
+        }
     }
 
     private func chip(_ title: String, selected: Bool, _ action: @escaping () -> Void) -> some View {

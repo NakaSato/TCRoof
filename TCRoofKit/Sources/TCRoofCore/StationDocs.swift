@@ -266,6 +266,8 @@ public enum StationDocs {
         public var dueDates: [String: String]
         /// The answers of หนังสือแจ้งดับไฟ, once the team has drafted it in the app.
         public var outageLetter: OutageLetter?
+        /// Where the station stands in the ERC's exemption flow (200 kVA and over), once the team records it.
+        public var erc: ERCFlow.Record?
 
         public init(over200kVA: Bool? = nil, buildingRoute: BuildingRoute = .unknown, requestType: RequestType = .new,
                     sellsPower: Bool = false, srtProject: Bool = true, docs: [String: DocState] = [:], dueDates: [String: String] = [:]) {
@@ -297,6 +299,7 @@ public enum StationDocs {
             docs = try c.decodeIfPresent([String: DocState].self, forKey: .docs) ?? [:]
             dueDates = try c.decodeIfPresent([String: String].self, forKey: .dueDates) ?? [:]
             outageLetter = try? c.decodeIfPresent(OutageLetter.self, forKey: .outageLetter)
+            erc = try? c.decodeIfPresent(ERCFlow.Record.self, forKey: .erc)
         }
 
         public static func decode(_ json: String?) -> Station {

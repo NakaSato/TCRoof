@@ -1,7 +1,12 @@
 # ERC exemption flow per station, 200 to under 1,000 kVA (Swift dev spec)
 
-**Status:** not built. Written 2026-10-13 from the two diagrams in `docs/permit/`; nothing here has been confirmed
-with the team yet (§7).
+**Status:** §3 (`TCRoofCore/ERCFlow.swift`, 10 tests) and §4's tab, step sheet and history built 2026-10-13
+(`TCRoof/Views/Job/StationDocs/ERCFlowViews.swift`). Not built: the line on the job's `StationDocsCard`, linking
+steps 3 and 7 to their packages (the row only shows how many papers are ready), and all of §5 (deadlines on the PWA
+plan page, notifications). Written from the two diagrams in `docs/permit/`; the open questions (§7) were not
+answered, so the build took these defaults: stations under 200 kVA don't get the tab, working days are Monday–Friday
+less the site's own holidays (`RoutineReport.Settings.holidays`), step 10 is asked per station, and steps 4, 5 and 9
+can be recorded or passed over.
 **Source:** `docs/permit/กกพ. การไฟฟ้า 200–1,000 kVA.pdf` (swim lanes) and `docs/permit/ลำดับ กกพ. การไฟฟ้า 200–1,000 kVA.pdf`
 (the same flow as 12 numbered messages). Both redraw the ERC office's infographic for a system on a utility's
 network. The diagrams name three more sheets (utility / private network × under 200 kVA / 200–1,000 kVA) and a

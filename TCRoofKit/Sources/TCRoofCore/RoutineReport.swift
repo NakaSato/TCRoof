@@ -176,6 +176,9 @@ public enum RoutineReport {
         public var workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7]
         /// `yyyy-MM-dd` (Bangkok).
         public var holidays: [String] = []
+        /// The site's working hours, as minutes after midnight: 08:00–17:00 by default.
+        public var workStart = 8 * 60
+        public var workEnd = 17 * 60
         public var siteEngineer = ""
         public var inspector = ""
         public var roles = RoutineReport.defaultRoles
@@ -190,7 +193,7 @@ public enum RoutineReport {
 
         enum CodingKeys: String, CodingKey {
             case contractName, employer, contractor, locations, workingWeekdays, holidays, siteEngineer, inspector, roles, tools, taskLocations
-            case keyPoints, subcontractor, inspections
+            case keyPoints, subcontractor, inspections, workStart, workEnd
         }
 
         public init(from decoder: Decoder) throws {
@@ -210,6 +213,8 @@ public enum RoutineReport {
             keyPoints = try c.decodeIfPresent([String: [Double]].self, forKey: .keyPoints) ?? d.keyPoints
             subcontractor = try c.decodeIfPresent(String.self, forKey: .subcontractor) ?? d.subcontractor
             inspections = try c.decodeIfPresent([Inspection].self, forKey: .inspections) ?? d.inspections
+            workStart = try c.decodeIfPresent(Int.self, forKey: .workStart) ?? d.workStart
+            workEnd = try c.decodeIfPresent(Int.self, forKey: .workEnd) ?? d.workEnd
         }
 
         /// The location's key-plan point as fractions, when placed.

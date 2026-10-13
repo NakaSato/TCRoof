@@ -193,6 +193,17 @@ struct RoutineSettingsSheet: View {
         _s = State(initialValue: job.routineSettings)
     }
 
+    /// A time of day kept as minutes after midnight.
+    private func clock(_ minutes: Binding<Int>) -> Binding<Date> {
+        let cal = RoutineReport.calendar
+        return Binding {
+            cal.date(bySettingHour: minutes.wrappedValue / 60, minute: minutes.wrappedValue % 60, second: 0, of: .now) ?? .now
+        } set: {
+            let c = cal.dateComponents([.hour, .minute], from: $0)
+            minutes.wrappedValue = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+        }
+    }
+
     /// The PWA representative's inspection appointments: the `ตรวจรับ` rows of the PWA plan page's agenda.
     private var inspections: some View {
         PadSection("นัดตรวจรับ (ผู้แทน กปภ.)") {
@@ -259,6 +270,8 @@ struct RoutineSettingsSheet: View {
                                 .buttonStyle(.plain)
                         }
                     }
+                    DatePicker("เริ่มงาน", selection: clock($s.workStart), displayedComponents: .hourAndMinute)
+                    DatePicker("เลิกงาน", selection: clock($s.workEnd), displayedComponents: .hourAndMinute)
                     ForEach(s.holidays, id: \.self) { h in
                         HStack {
                             Text(ISODate.date(h).map(RoutineReport.thaiDate) ?? h)

@@ -112,4 +112,24 @@ final class PhonePWAPlanUITests: XCTestCase {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: row)
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 8), .completed, "`ยื่นเอกสาร` should hide the handovers")
     }
+
+    /// An overdue submission opens the station's papers.
+    func testDocumentDeadline() {
+        let app = launch("due")
+        let row = button(app, "CONTAINS", " · ยื่น")
+        XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station has a submission past its planned day")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["เอกสารสถานี กปภ."].waitForExistence(timeout: 8), "a submission should open the station's papers")
+        back(app, to: row)
+    }
+
+    /// Today's 16:00 reminder opens the daily reports of a station that hasn't sent one.
+    func testReportReminder() {
+        let app = launch("schedule")
+        let row = button(app, "CONTAINS", " · ส่งรายงานประจำวันก่อน 18:00 · ")
+        XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station is being installed and has no report today")
+        for _ in 0..<4 where !row.isHittable { app.swipeUp() }
+        row.tap()
+        XCTAssertTrue(app.navigationBars["รายงานประจำวัน"].waitForExistence(timeout: 8), "the reminder should open the daily reports")
+    }
 }

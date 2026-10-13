@@ -37,6 +37,9 @@ public enum PWAPlan {
         public var inspections: [RoutineReport.Inspection]
         /// `Calendar` weekdays the site works (1 = Sunday).
         public var workingWeekdays: Set<Int>
+        /// The site's working hours as minutes after midnight, the time of an install row; nil shows `ทั้งวัน`.
+        public var workStart: Int?
+        public var workEnd: Int?
         public var docs: StationDocs.Station
         public var docsContext: StationDocs.Context
 
@@ -44,12 +47,14 @@ public enum PWAPlan {
                     team: String = "", input: MasterSchedule.Input? = nil, actual: MasterSchedule.Actual = .init(),
                     handedOver: Bool = false, reportSentToday: Bool = true, surveyAt: Date? = nil,
                     inspections: [RoutineReport.Inspection] = [],
-                    workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], docs: StationDocs.Station = .init(),
+                    workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], workStart: Int? = nil, workEnd: Int? = nil,
+                    docs: StationDocs.Station = .init(),
                     docsContext: StationDocs.Context? = nil) {
             self.id = id; self.mpNumber = mpNumber; self.code = code; self.name = name; self.kWp = kWp
             self.contractor = contractor; self.team = team; self.input = input; self.actual = actual
             self.handedOver = handedOver; self.reportSentToday = reportSentToday; self.surveyAt = surveyAt
             self.inspections = inspections; self.workingWeekdays = workingWeekdays; self.docs = docs
+            self.workStart = workStart; self.workEnd = workEnd
             self.docsContext = docsContext ?? StationDocs.Context(docs, inverterKW: input?.over200kVA == true ? 200 : nil)
         }
 
@@ -200,7 +205,7 @@ public enum PWAPlan {
                 let building = on.filter { $0.task.part == .construction }
                 if let task = building.first(where: { (status.actualByTask[$0.task] ?? 0) < 99.95 }) ?? building.first {
                     let late = -status.variance >= threshold ? "ช้ากว่าแผน \(Int((-status.variance).rounded()))%" : ""
-                    out.append(AgendaItem(id: "ins-\(s.id)-\(key)", day: d, type: .install, ref: s.ref,
+                    out.append(AgendaItem(id: "ins-\(s.id)-\(key)", day: d, start: s.workStart, end: s.workEnd, type: .install, ref: s.ref,
                                           title: "\(task.task.code) \(task.task.title)", subtitle: [who(s), late].filter { !$0.isEmpty }.joined(separator: " · "),
                                           status: isToday ? .doing : .onPlan, contractor: s.contractor, team: s.team, station: s.id, opens: .station))
                 }

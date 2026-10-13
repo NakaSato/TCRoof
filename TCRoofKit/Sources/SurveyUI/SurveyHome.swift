@@ -71,7 +71,6 @@ struct SurveyHomeView: View {
     // iPhone (docs/ui/pwa-solar-survey-iphone-v2)
     /// The header's search button grown into its field.
     @State var searchOpen = false
-    @FocusState var searchFocused: Bool
     @State var showFilter = false
     /// Row filter of the install overview; nil until picked, then `ช้ากว่าแผน` when any station has a plan.
     @State var installFilter: InstallOverview.RowFilter?

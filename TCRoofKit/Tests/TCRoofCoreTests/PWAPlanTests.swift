@@ -193,6 +193,16 @@ final class PWAPlanTests: XCTestCase {
 
     // MARK: agenda
 
+    /// An install row takes the site's working hours; without them it has no time.
+    func testInstallRowTakesTheWorkingHours() {
+        var a = station("a", start: day(2026, 9, 1), end: day(2026, 11, 15))
+        func row() -> PWAPlan.AgendaItem? { PWAPlan.agenda([a], deadlines: [], days: [today], today: today).first { $0.type == .install } }
+        XCTAssertNil(row()?.start)
+        a.workStart = 8 * 60; a.workEnd = 17 * 60
+        XCTAssertEqual(row()?.start, 480)
+        XCTAssertEqual(row()?.end, 1020)
+    }
+
     func testAgendaHasOneInstallRowPerStationOnWorkingDays() {
         let a = station("a", mp: 189, start: day(2026, 9, 1), end: day(2026, 11, 15), contractor: "A")
         let week = (0..<7).map { cal.date(byAdding: .day, value: $0, to: today)! }

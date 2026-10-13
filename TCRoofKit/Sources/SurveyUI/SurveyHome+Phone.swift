@@ -32,124 +32,15 @@ extension SurveyHomeView {
         .overlay(alignment: .bottomTrailing) {
             if page == .project && tab == .survey { addButton.padding(.trailing, 20).padding(.bottom, 4) }
         }
-        // the keyboard put away over an empty field closes the search; with text it stays open
-        .onChange(of: searchFocused) { _, focused in
-            if !focused && searchOpen && search.isEmpty { closeSearch() }
-        }
     }
 
     // MARK: header
 
-    private static let searchCurve = (0.2, 0.8, 0.2, 1.0)
-
-    private func curve(_ duration: Double, delay: Double) -> Animation {
-        let c = Self.searchCurve
-        return reduceMotion ? .easeInOut(duration: 0.2) : .timingCurve(c.0, c.1, c.2, c.3, duration: duration).delay(delay)
-    }
-
+    /// The project page has the growing search; the settings page only its title. Pushed, it has a back button.
     var phoneHeader: some View {
-        HStack(spacing: 10) {
-            if isPushed && !searchOpen {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
-                        .background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .accessibilityLabel("ย้อนกลับ")
-            }
-            if !searchOpen || page == .settings {
-                phoneTitle.transition(titleTransition)
-            }
-            Spacer(minLength: 0)
-            if page == .project { searchBox }
-        }
-        .frame(height: 44)
-        .foregroundStyle(Theme.onPrimary)
-        .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 10)
-        .background {
-            Theme.headerGradient
-                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous))
-                .ignoresSafeArea(edges: .top)
-        }
-    }
-
-    private var phoneTitle: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(page == .settings ? "PWA Setting" : title).font(.sarabunFixed(18, .bold)).frame(height: 23)
-            if page == .project { Text(subtitle).font(.sarabunFixed(12)).opacity(0.9).frame(height: 16) }
-        }
-        .lineLimit(1)
-        .fixedSize()
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
-    }
-
-    /// The title fades out, slides 16 pt left and gives up its width; it comes back the same way.
-    private var titleTransition: AnyTransition {
-        guard !reduceMotion else { return .opacity }
-        let move = AnyTransition.opacity.combined(with: .offset(x: -16))
-        return .asymmetric(insertion: move.animation(curve(0.34, delay: 0.14)), removal: move.animation(curve(0.30, delay: 0.10)))
-    }
-
-    /// With Reduce Motion the button and the field are two views that cross-fade; otherwise one shape changes width.
-    @ViewBuilder private var searchBox: some View {
-        if reduceMotion {
-            if searchOpen { searchShape(open: true).transition(.opacity) } else { searchShape(open: false).transition(.opacity) }
-        } else {
-            searchShape(open: searchOpen)
-        }
-    }
-
-    private func searchShape(open: Bool) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-        // the field and ✕ come in once the box has grown
-        let late = AnyTransition.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.24).delay(reduceMotion ? 0 : 0.42)),
-                                            removal: .opacity.animation(.easeOut(duration: 0.1)))
-        return HStack(spacing: 0) {
-            Button { openSearch() } label: {
-                Image(systemName: "magnifyingglass").font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(open ? Theme.inkMuted : Theme.onPrimary)
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(open)
-            .accessibilityLabel("ค้นหาเลขที่ ชื่อโครงการ")
-            .accessibilityHidden(open)
-            if open {
-                TextField("ค้นหาเลขที่ ชื่อโครงการ…", text: $search)
-                    .font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
-                    .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
-                    .focused($searchFocused)
-                    .accessibilityLabel("ค้นหาเลขที่ ชื่อโครงการ")
-                    .transition(late)
-                Button { closeSearch() } label: {
-                    Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.inkMuted)
-                        .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("ปิดการค้นหา")
-                .transition(late)
-            }
-        }
-        .frame(maxWidth: open ? .infinity : 44, alignment: .leading)
-        .frame(height: 44)
-        .background(open ? Theme.surface.opacity(0.97) : Theme.onPrimary.opacity(0.18), in: shape)
-        .overlay(shape.strokeBorder(Theme.onPrimary.opacity(open ? 0 : 0.4)))
-        .clipShape(shape)
-    }
-
-    func openSearch() {
-        withAnimation(curve(0.36, delay: 0.10)) { searchOpen = true }
-        // the field exists once the box has grown
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(reduceMotion ? 250 : 480))
-            if searchOpen { searchFocused = true }
-        }
-    }
-
-    func closeSearch() {
-        searchFocused = false
-        search = ""
-        withAnimation(curve(0.30, delay: 0.06)) { searchOpen = false }
+        TCPhoneSearchHeader(title: page == .settings ? "PWA Setting" : title, subtitle: page == .project ? subtitle : nil,
+                            search: $search, isOpen: $searchOpen, showsSearch: page == .project,
+                            onBack: isPushed ? { dismiss() } : nil)
     }
 
     // MARK: stage pills and the filter

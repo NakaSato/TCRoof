@@ -59,26 +59,37 @@ public struct TCCountPill: View {
 }
 
 /// The blue header of a PWA module page on iPhone: title 18 over a subtitle 12, and a 44 pt search button that
-/// grows into the field while the title slides away (as the PWA project home's header does). Use it as the
-/// page's top safe-area inset.
+/// grows into the field while the title slides away. A page without a search shows only its title; a pushed page
+/// gets a back button. Use it as the page's top safe-area inset.
 public struct TCPhoneSearchHeader: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
+    let showsSearch: Bool
+    let onBack: (() -> Void)?
     @Binding var search: String
     @Binding var isOpen: Bool
     var prompt: String
     @FocusState private var focused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(title: String, subtitle: String, search: Binding<String>, isOpen: Binding<Bool>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ") {
+    public init(title: String, subtitle: String?, search: Binding<String>, isOpen: Binding<Bool>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ",
+                showsSearch: Bool = true, onBack: (() -> Void)? = nil) {
         self.title = title; self.subtitle = subtitle; self._search = search; self._isOpen = isOpen; self.prompt = prompt
+        self.showsSearch = showsSearch; self.onBack = onBack
     }
 
     public var body: some View {
         HStack(spacing: 10) {
-            if !isOpen { titles.transition(titleTransition) }
+            if let onBack, !isOpen {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
+                        .background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .accessibilityLabel("ย้อนกลับ")
+            }
+            if !isOpen || !showsSearch { titles.transition(titleTransition) }
             Spacer(minLength: 0)
-            searchBox
+            if showsSearch { searchBox }
         }
         .frame(height: 44)
         .foregroundStyle(Theme.onPrimary)
@@ -101,7 +112,7 @@ public struct TCPhoneSearchHeader: View {
     private var titles: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title).font(.sarabunFixed(18, .bold)).frame(height: 23)
-            Text(subtitle).font(.sarabunFixed(12)).opacity(0.9).frame(height: 16)
+            if let subtitle { Text(subtitle).font(.sarabunFixed(12)).opacity(0.9).frame(height: 16) }
         }
         .lineLimit(1)
         .fixedSize()

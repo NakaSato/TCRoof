@@ -39,7 +39,8 @@ extension Job {
                         contractor: contractor, team: contractor.isEmpty ? team.rawValue : "",
                         input: scheduleInput, actual: scheduleActual, handedOver: status == .completed,
                         reportSentToday: sentDailyReportToday, surveyAt: surveyDate, inspections: routineSettings.inspections,
-                        workingWeekdays: routineSettings.workingWeekdays, docs: stationDocs, docsContext: stationContext)
+                        workingWeekdays: routineSettings.workingWeekdays,
+                        workStart: routineSettings.workStart, workEnd: routineSettings.workEnd, docs: stationDocs, docsContext: stationContext)
     }
 }
 

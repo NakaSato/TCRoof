@@ -212,14 +212,14 @@ struct SignaturePad: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var canvas = PKCanvasView()
 
-    static let fill = Color(red: 0.988, green: 0.992, blue: 0.996)
-    static let line = Color(red: 0.357, green: 0.420, blue: 0.510)
+    static let fill = Theme.padFill
+    static let line = Theme.padLine
     static let save = Theme.primary
 
     var body: some View {
         let phone = sizeClass == .compact
         ZStack {
-            if !phone { Color(red: 0.055, green: 0.102, blue: 0.169).opacity(0.55).ignoresSafeArea() }
+            if !phone { Theme.mediaBackdrop.opacity(0.55).ignoresSafeArea() }
             VStack(spacing: 12) {
                 topBar(phone: phone)
                 pad(phone: phone)

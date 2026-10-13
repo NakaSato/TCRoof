@@ -499,7 +499,7 @@ struct ToolIcon: View {
             }
         case .shape(let k):
             A2Icon(name: "shape-" + k.rawValue, fallback: k == .craneEntry ? "arrow.left" : "square.dashed", size: nil)
-                .foregroundStyle(Color(red: k.color.r, green: k.color.g, blue: k.color.b))
+                .foregroundStyle(Color(k.color))
         }
     }
 }

@@ -36,7 +36,7 @@ extension SingleLinePage {
                     Text(r.label).font(.sarabunFixed(14)).opacity(0.85)
                     Spacer(minLength: 6)
                     Text(r.value.text).font(.sarabunFixed(i == 0 ? 18 : 15, .bold)).monospacedDigit().minimumScaleFactor(0.8)
-                        .foregroundStyle(r.value.isMissing ? Color(red: 1, green: 0.55, blue: 0.5) : .white)
+                        .foregroundStyle(r.value.isMissing ? Theme.dangerOnDark : .white)
                         .multilineTextAlignment(.trailing)
                 }
                 .padding(.vertical, 8)

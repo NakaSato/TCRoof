@@ -125,6 +125,6 @@ struct SiteMarksEditor: View {
         selected = id
     }
 
-    func color(_ c: RGBA) -> Color { Color(red: c.r, green: c.g, blue: c.b) }
+    func color(_ c: RGBA) -> Color { Color(c) }
 }
 #endif

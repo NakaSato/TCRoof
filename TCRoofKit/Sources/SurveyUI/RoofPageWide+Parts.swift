@@ -146,7 +146,7 @@ struct NorthArrow: View {
 struct LegendGlyph: View {
     enum Kind { case post, double, heavy, thin, dashedHeavy, purlin, skyOK, skyNo, ridge, section, pv, table, gap, blocked, keepOut }
     let kind: Kind
-    static let ink = Color(red: 0.067, green: 0.067, blue: 0.067)
+    static let ink = Color(RoofPlan.ink)
     var body: some View {
         Canvas { ctx, size in
             let sx = size.width / 24, sy = size.height / 14
@@ -154,28 +154,28 @@ struct LegendGlyph: View {
             func h(_ y: Double, _ x0: Double = 1, _ x1: Double = 23) -> Path { var p = Path(); p.move(to: CGPoint(x: x0 * sx, y: y * sy)); p.addLine(to: CGPoint(x: x1 * sx, y: y * sy)); return p }
             let chain = StrokeStyle(lineWidth: 1.4, dash: [6, 2, 1.5, 2])
             switch kind {
-            case .post: ctx.fill(Path(r(7, 2, 10, 10)), with: .color(Color(red: 0.067, green: 0.094, blue: 0.153)))
+            case .post: ctx.fill(Path(r(7, 2, 10, 10)), with: .color(Color(RoofPlan.postInk)))
             case .double: ctx.stroke(h(5), with: .color(Self.ink), lineWidth: 1.3); ctx.stroke(h(9), with: .color(Self.ink), lineWidth: 1.3)
             case .heavy: ctx.stroke(h(7), with: .color(Self.ink), lineWidth: 2.2)
             case .thin: ctx.stroke(h(7), with: .color(Self.ink), lineWidth: 0.9)
             case .dashedHeavy: ctx.stroke(h(7), with: .color(Self.ink), style: StrokeStyle(lineWidth: 1.8, dash: [6, 2]))
-            case .purlin: ctx.stroke(h(7), with: .color(Color(red: 0.42, green: 0.447, blue: 0.502)), lineWidth: 0.8)
+            case .purlin: ctx.stroke(h(7), with: .color(Color(RoofPlan.purlC)), lineWidth: 0.8)
             case .skyOK, .skyNo:
-                ctx.fill(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.812, green: 0.91, blue: 0.969)))
-                if kind == .skyOK { ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.18, green: 0.561, blue: 0.859)), lineWidth: 1) }
+                ctx.fill(Path(r(3, 2, 18, 10)), with: .color(Color(RoofPlan.skyFill)))
+                if kind == .skyOK { ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(RoofPlan.skyLine)), lineWidth: 1) }
                 else { ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(RoofPageWide.red), style: StrokeStyle(lineWidth: 1, dash: [3, 2])) }
             case .ridge: ctx.stroke(h(7), with: .color(Self.ink), style: chain)
-            case .section: ctx.stroke(h(7), with: .color(Color(red: 0.067, green: 0.094, blue: 0.153)), style: StrokeStyle(lineWidth: 1.8, dash: [6, 2, 1.5, 2]))
+            case .section: ctx.stroke(h(7), with: .color(Color(RoofPlan.postInk)), style: StrokeStyle(lineWidth: 1.8, dash: [6, 2, 1.5, 2]))
             case .pv:
-                ctx.fill(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.122, green: 0.31, blue: 0.561).opacity(0.85)))
-                ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.863, green: 0.902, blue: 0.949)), lineWidth: 1)
+                ctx.fill(Path(r(3, 2, 18, 10)), with: .color(Color(RoofPlan.pvFill).opacity(0.85)))
+                ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(RoofPlan.pvLine)), lineWidth: 1)
             case .table: ctx.stroke(Path(r(2, 2, 20, 10)), with: .color(Theme.navy), lineWidth: 1.6)
             case .gap:
                 ctx.stroke(h(7, 2, 22), with: .color(RoofPageWide.amber), lineWidth: 1.2)
                 var t = Path(); t.move(to: CGPoint(x: 2 * sx, y: 4 * sy)); t.addLine(to: CGPoint(x: 2 * sx, y: 10 * sy))
                 t.move(to: CGPoint(x: 22 * sx, y: 4 * sy)); t.addLine(to: CGPoint(x: 22 * sx, y: 10 * sy))
                 ctx.stroke(t, with: .color(RoofPageWide.amber), lineWidth: 1.2)
-            case .blocked: ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(red: 0.122, green: 0.31, blue: 0.561)), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+            case .blocked: ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(Color(RoofPlan.pvFill)), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
             case .keepOut:
                 ctx.fill(Path(r(3, 2, 18, 10)), with: .color(RoofPageWide.red.opacity(0.12)))
                 ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(RoofPageWide.red), lineWidth: 1)

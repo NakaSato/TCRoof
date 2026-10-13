@@ -408,7 +408,7 @@ struct FloodPageWide: View {
             else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " · ตั้งค่าได้ในหน้าตั้งค่า").font(.sarabunFixed(13)).foregroundStyle(Theme.pending) }
         }
     }
-    func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Theme.okTick : t == .warn ? Theme.pending : t == .bad ? Color(red: 0.706, green: 0.137, blue: 0.094) : Theme.navy }
+    func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Theme.okTick : t == .warn ? Theme.pending : t == .bad ? Theme.dangerText : Theme.navy }
 
     var gistdaKey: String {
         let k = model.settings.gistdaKey.trimmingCharacters(in: .whitespacesAndNewlines)

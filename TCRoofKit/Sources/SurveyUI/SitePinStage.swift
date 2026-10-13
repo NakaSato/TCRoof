@@ -133,7 +133,7 @@ struct SitePin: View {
         ZStack {
             Circle().fill(halo.opacity(0.18)).frame(width: 44, height: 44)
             if let haloStroke { Circle().stroke(haloStroke, lineWidth: 3).frame(width: 41, height: 41) }
-            Circle().fill(Color.white).frame(width: 26, height: 26).overlay(Circle().stroke(ring, lineWidth: 4))
+            Circle().fill(Theme.onMedia).frame(width: 26, height: 26).overlay(Circle().stroke(ring, lineWidth: 4))
             Circle().fill(ring).frame(width: 10, height: 10)
         }
         .frame(width: 44, height: 44)
@@ -141,7 +141,7 @@ struct SitePin: View {
             Text(label).font(.sarabunFixed(12.5, .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(ring, in: Capsule())
-                .overlay(Capsule().stroke(Color.white, lineWidth: 1.5))
+                .overlay(Capsule().stroke(Theme.onMedia, lineWidth: 1.5))
                 .offset(y: 22)
         }
     }

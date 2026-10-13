@@ -92,7 +92,7 @@ struct WaterPageWide: View {
     static let chipFill = Theme.primarySoft
     static let tileFill = Theme.phonePage
     static let teal = Theme.teal
-    static let tealSoft = Color(light: 0xE8F7F3, dark: 0x163530)
+    static let tealSoft = Theme.tealSoft
     static let line = Theme.borderOutdoor
 
     func header<Trailing: View>(_ n: Int, _ title: String, required: Bool = false, @ViewBuilder trailing: () -> Trailing) -> some View {

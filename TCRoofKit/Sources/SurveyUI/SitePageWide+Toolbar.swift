@@ -143,7 +143,7 @@ extension SitePageWide {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 0) {
                     Rectangle().fill(Theme.navy).frame(width: w / 2, height: 5)
-                    Rectangle().fill(Color.white).frame(width: w / 2, height: 5).overlay(Rectangle().stroke(Theme.navy, lineWidth: 1))
+                    Rectangle().fill(Theme.onMedia).frame(width: w / 2, height: 5).overlay(Rectangle().stroke(Theme.navy, lineWidth: 1))
                 }
                 HStack(spacing: 0) {
                     Text("0").frame(width: w / 2, alignment: .leading)

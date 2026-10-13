@@ -218,6 +218,33 @@ public enum Theme {
     public static let photoEmptyFill = Color(light: 0xFFF8F7, dark: 0x22161A)
     /// Map placeholder land #E8EEF5.
     public static let mapLand = Color(light: 0xE8EEF5, dark: 0x1A2430)
+    // Teams and job statuses (plan calendar, job chips): the same in both modes
+    public static let teamPurple = Color(hex: 0x8B3FD9)
+    public static let teamBlue = Color(hex: 0x2F6FDB)
+    /// Team TCR04 and a job being installed.
+    public static let jobOrange = Color(hex: 0xF08A24)
+    /// A job at `สนใจ`.
+    public static let statusInterested = Color(hex: 0x4DA3E0)
+    /// Behind a full-screen picture, and the dim behind the signature pad at 55 %.
+    public static let mediaBackdrop = Color(hex: 0x0E1A2B)
+    /// Signature pad: near white in both modes, with its baseline and border.
+    public static let padFill = Color(hex: 0xFCFDFE)
+    public static let padLine = Color(hex: 0x5B6B82)
+    // Over the camera (D1 compass): the aim mark, a locked heading and the read-out panel
+    public static let hudYellow = Color(hex: 0xFFD43B)
+    public static let hudGreen = Color(hex: 0x2EC27E)
+    public static let hudPanel = Color(hex: 0x1F2937, opacity: 0.92)
+    // E1 automatic suggestions (docs/ui/survey-e1)
+    public static let aiPurple = Color(hex: 0x5B4BC4)
+    public static let aiPurpleText = Color(light: 0x6A5AE0, dark: 0xB3A8FF)
+    public static let aiPurpleSoft = Color(light: 0xF1EEFF, dark: 0x241F3D)
+    public static let aiPurpleFill = Color(light: 0xFBFAFF, dark: 0x1A1730)
+    /// B3 selected card fill.
+    public static let tealSoft = Color(light: 0xE8F7F3, dark: 0x163530)
+    /// Amber text on a white or `warning`-tinted fill.
+    public static let warningInk = Color(hex: 0xB26A00)
+    /// A missing value on a dark card, among white text.
+    public static let dangerOnDark = Color(hex: 0xFF8C80)
     /// Grey stand-in for a photo, 160°.
     public static let photoPlaceholder = LinearGradient(colors: [Color(hex: 0x8E959B), Color(hex: 0x5C6773)],
                                                         startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -232,6 +259,8 @@ public enum Theme {
     public static let headerGradient = LinearGradient(colors: [Color(hex: 0x1F6FB5), primaryLight], startPoint: .leading, endPoint: .trailing)
     /// #27A99A → #4DB6E0: the survey module's call to action.
     public static let tealGradient = LinearGradient(colors: [teal, tealLight], startPoint: .leading, endPoint: .trailing)
+    /// Sign-in page, top to bottom.
+    public static let loginGradient = LinearGradient(colors: [Color(hex: 0x0E2344), navy, primary], startPoint: .top, endPoint: .bottom)
     public static let pageGradient = LinearGradient(colors: [Color(light: 0xDCE8F2, dark: 0x0E141C), background], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
 }
 

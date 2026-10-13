@@ -13,10 +13,10 @@ enum Team: String, CaseIterable, Identifiable, Codable {
 
     var color: Color {
         switch self {
-        case .t1: Color(hex: 0x2E9E5B)
-        case .t2: Color(hex: 0x8B3FD9)
-        case .t3: Color(hex: 0x2F6FDB)
-        case .t4: Color(hex: 0xF08A24)
+        case .t1: Theme.success
+        case .t2: Theme.teamPurple
+        case .t3: Theme.teamBlue
+        case .t4: Theme.jobOrange
         }
     }
 }
@@ -76,10 +76,10 @@ enum JobStatus: String, CaseIterable, Identifiable, Codable {
 
     var color: Color {
         switch self {
-        case .interested: Color(hex: 0x4DA3E0)
+        case .interested: Theme.statusInterested
         case .confirmed: Theme.teal
-        case .installing: Color(hex: 0xF08A24)
-        case .completed: Color(hex: 0x2E9E5B)
+        case .installing: Theme.jobOrange
+        case .completed: Theme.success
         }
     }
 }

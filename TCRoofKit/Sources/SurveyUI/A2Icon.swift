@@ -23,11 +23,16 @@ struct A2Icon: View {
     }
 }
 
+extension Color {
+    /// A drawing colour of the core (`Sketch` ink, symbol colours), opaque.
+    init(_ c: RGBA) { self.init(red: c.r, green: c.g, blue: c.b) }
+}
+
 extension MarkKind {
     /// The design's icon for this symbol, or its SF Symbol where the design has none (`water`).
     func icon(size: CGFloat? = 34) -> some View {
         A2Icon(name: assetName, fallback: symbol, size: size)
-            .foregroundStyle(Color(red: color.r, green: color.g, blue: color.b))
+            .foregroundStyle(Color(color))
     }
 }
 #endif

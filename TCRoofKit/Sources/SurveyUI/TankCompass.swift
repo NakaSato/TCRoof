@@ -18,9 +18,9 @@ struct TankCompassView: View {
     @State var reader = HeadingReader()
     @State var typed = ""
 
-    static let yellow = Color(red: 1, green: 0.831, blue: 0.231)
-    static let green = Color(red: 0.180, green: 0.761, blue: 0.494)
-    static let panel = Color(red: 0.122, green: 0.161, blue: 0.216).opacity(0.92)
+    static let yellow = Theme.hudYellow
+    static let green = Theme.hudGreen
+    static let panel = Theme.hudPanel
 
     var body: some View {
         ZStack {
@@ -119,7 +119,7 @@ struct TankCompassView: View {
             if reader.locked != nil {
                 Button { reader.unlock() } label: {
                     Text("วัดใหม่").font(.sarabunFixed(15, .bold)).padding(.horizontal, 14).frame(minHeight: 48)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.6)))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.onMedia.opacity(0.6)))
                 }
                 .buttonStyle(.plain)
             }

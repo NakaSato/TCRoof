@@ -114,7 +114,7 @@ struct PermitPagesPreview: View {
                 if let image = images[i] {
                     Image(uiImage: image).resizable().interpolation(.high)
                 } else {
-                    Color.white.overlay(ProgressView())
+                    Theme.paper.overlay(ProgressView())
                 }
             }
             .frame(width: width, height: width * size.height / size.width)

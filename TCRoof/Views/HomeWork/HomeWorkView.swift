@@ -44,6 +44,7 @@ struct HomeWorkView: View {
         .tcPageBackground()
         .toolbar(.hidden, for: .navigationBar)
         .task { load() }
+        #if DEBUG
         // `-homeworkSheet weight|pack|entry|archive` opens that sheet for simulator checks
         .task {
             guard let sheet = UserDefaults.standard.string(forKey: "homeworkSheet") else { return }
@@ -56,6 +57,7 @@ struct HomeWorkView: View {
             default: break
             }
         }
+        #endif
         .onAppear {
             library = PermitStore.library.load(HomeLibrary.self, PermitStore.libraryFile) ?? HomeLibrary()
             refreshAuto()

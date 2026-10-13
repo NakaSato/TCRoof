@@ -9,7 +9,7 @@ import TCRoofUI
 /// and the building-model panel whose cards drop footprints on the picture at real scale.
 extension SitePageWide {
     static let fullSpace = "a2full"
-    static let fullBackground = Color(red: 14 / 255, green: 26 / 255, blue: 43 / 255)
+    static let fullBackground = Theme.mediaBackdrop
 
     var fullScreenView: some View {
         ZStack(alignment: .topLeading) {
@@ -144,7 +144,7 @@ extension SitePageWide {
         .background(Theme.pending.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    func color(_ s: SiteModels.Source) -> Color { Color(red: s.color.r, green: s.color.g, blue: s.color.b) }
+    func color(_ s: SiteModels.Source) -> Color { Color(s.color) }
 
     func modelCard(_ s: SiteModels.Source, placed: Bool) -> some View {
         let on = selectedModel == s.id
@@ -231,7 +231,7 @@ extension SitePageWide {
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 Button { changeModels { a in if let i = a.firstIndex(where: { $0.id == s.id }) { a[i].locked.toggle() } } } label: {
                     Text(m.locked ? "ปลดล็อกตำแหน่ง" : "ล็อกตำแหน่งตามที่วาง").font(.sarabunFixed(14, .bold))
-                        .foregroundStyle(m.locked ? Color.white : Color(red: 0.698, green: 0.416, blue: 0))
+                        .foregroundStyle(m.locked ? Theme.onPrimary : Theme.warningInk)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(m.locked ? Theme.warning : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.warning, lineWidth: m.locked ? 0 : 1))

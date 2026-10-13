@@ -40,7 +40,7 @@ struct SiteMapPreview: View {
     /// The frame while a finger moves it; written to the job when the finger lifts.
     @State private var liveCrop: MapCrop?
 
-    static let cropBlue = Color(red: 0x1F / 255, green: 0x6F / 255, blue: 0xB5 / 255)
+    static let cropBlue = Theme.primary
     static let aspect = MapImage.size.height / MapImage.size.width
 
     /// Named levels; each is the zoom whose picture is closest to that width at the site's latitude.

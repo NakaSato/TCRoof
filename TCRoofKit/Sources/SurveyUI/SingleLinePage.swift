@@ -58,8 +58,10 @@ struct SingleLinePage: View {
         .sheet(item: $shared) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
         .errorAlert($error)
         .onAppear { stamp = Date() }
+        #if DEBUG
         // `-surveySLDPanel YES` opens the iPhone's ข้อมูลฝั่ง PV sheet for simulator checks
         .task { if UserDefaults.standard.bool(forKey: "surveySLDPanel") { try? await Task.sleep(nanoseconds: 600_000_000); showPanel = true } }
+        #endif
     }
 
     // MARK: header

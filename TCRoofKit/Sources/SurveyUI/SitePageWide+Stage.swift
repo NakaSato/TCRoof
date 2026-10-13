@@ -160,7 +160,7 @@ extension SitePageWide {
                     let c = point(p, in: r), rad: CGFloat = i == 0 && k.isClosed ? 9 : 5
                     ctx.fill(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad)), with: .color(.white))
                     ctx.stroke(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad)),
-                               with: .color(Color(red: k.color.r, green: k.color.g, blue: k.color.b)), lineWidth: 2)
+                               with: .color(Color(k.color)), lineWidth: 2)
                 }
             }
         }

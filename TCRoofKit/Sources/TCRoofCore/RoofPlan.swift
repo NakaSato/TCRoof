@@ -50,9 +50,11 @@ public struct RoofPlan: Sendable {
     public var layout: Layout
     public var pv: PV
 
-    static let navy = RGBA(hex: 0x16325C), gridC = RGBA(hex: 0x8A97AA), ink = RGBA(hex: 0x111111), purlC = RGBA(hex: 0x6B7280)
-    static let red = RGBA(hex: 0xD9453B), skyFill = RGBA(hex: 0xCFE8F7), skyLine = RGBA(hex: 0x2E8FDB), pvFill = RGBA(hex: 0x1F4F8F)
-    static let pvLine = RGBA(hex: 0xDCE6F2), redText = RGBA(hex: 0xB42318), amber = RGBA(hex: 0xB45309)
+    static let navy = RGBA(hex: 0x16325C), gridC = RGBA(hex: 0x8A97AA), red = RGBA(hex: 0xD9453B)
+    /// Ink the page's legend draws with too.
+    public static let ink = RGBA(hex: 0x111111), purlC = RGBA(hex: 0x6B7280), postInk = RGBA(hex: 0x111827)
+    public static let skyFill = RGBA(hex: 0xCFE8F7), skyLine = RGBA(hex: 0x2E8FDB), pvFill = RGBA(hex: 0x1F4F8F), pvLine = RGBA(hex: 0xDCE6F2)
+    static let redText = RGBA(hex: 0xB42318), amber = RGBA(hex: 0xB45309)
 
     /// The plan's path keys drawn for member row n (1…7) of this frame (the design's `HLK`).
     public static func highlightKeys(_ f: RoofFrame, member n: Int) -> [String] {
@@ -221,7 +223,7 @@ private struct Drawer {
             for (j, y) in gy.enumerated() {
                 let on = posts.contains("\(i),\(j)")
                 L.nodes.append((i, j, P(x, y), on))
-                if on && !pvMode { add(.rect(rect(x - 4, y - 4, 8, 8), stroke: nil, fill: RGBA(hex: 0x111827)), "post") }
+                if on && !pvMode { add(.rect(rect(x - 4, y - 4, 8, 8), stroke: nil, fill: RoofPlan.postInk), "post") }
             }
         }
     }
@@ -384,7 +386,7 @@ private struct Drawer {
 
     /// Section mark A-A across the roof.
     mutating func sectionMark() {
-        let sdash: [Double] = [16, 4, 3, 4], sc = RGBA(hex: 0x111827)
+        let sdash: [Double] = [16, 4, 3, 4], sc = RoofPlan.postInk
         func bubble(_ c: Pt) -> [DrawOp] {
             [.circle(c, r: 10.5, stroke: sc, fill: .white, width: 1.4), .text("A", at: c, size: 14, bold: true, color: sc, align: .center)]
         }

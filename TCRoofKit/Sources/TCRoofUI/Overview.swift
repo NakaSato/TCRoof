@@ -12,10 +12,12 @@ public struct TCCountPill: View {
     let count: Int
     let selected: Bool
     let style: Style
+    /// Tints the count red while the pill is not selected (`กำหนดส่ง` with something late).
+    let alert: Bool
     let action: () -> Void
 
-    public init(_ title: String, count: Int, selected: Bool, style: Style = .counted, action: @escaping () -> Void) {
-        self.title = title; self.count = count; self.selected = selected; self.style = style; self.action = action
+    public init(_ title: String, count: Int, selected: Bool, style: Style = .counted, alert: Bool = false, action: @escaping () -> Void) {
+        self.title = title; self.count = count; self.selected = selected; self.style = style; self.alert = alert; self.action = action
     }
 
     public var body: some View {
@@ -32,9 +34,9 @@ public struct TCCountPill: View {
             HStack(spacing: 5) {
                 Text(title).font(.sarabunFixed(13, selected ? .bold : .semibold))
                 Text("\(count)").font(.sarabunFixed(12, .bold)).monospacedDigit()
-                    .foregroundStyle(selected ? Theme.onPrimary : Theme.navySolid)
+                    .foregroundStyle(selected ? Theme.onPrimary : alert ? Theme.dangerText : Theme.navySolid)
                     .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
-                    .background(selected ? Theme.onPrimary.opacity(0.22) : Theme.hairline, in: Capsule())
+                    .background(selected ? Theme.onPrimary.opacity(0.22) : alert ? Theme.dangerSoft : Theme.hairline, in: Capsule())
             }
             .lineLimit(1).fixedSize()
             .foregroundStyle(selected ? Theme.onPrimary : Theme.navySolid)
@@ -53,6 +55,154 @@ public struct TCCountPill: View {
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
         }
+    }
+}
+
+/// The blue header of a PWA module page on iPhone: title 18 over a subtitle 12, and a 44 pt search button that
+/// grows into the field while the title slides away (as the PWA project home's header does). Use it as the
+/// page's top safe-area inset.
+public struct TCPhoneSearchHeader: View {
+    let title: String
+    let subtitle: String
+    @Binding var search: String
+    @Binding var isOpen: Bool
+    var prompt: String
+    @FocusState private var focused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    public init(title: String, subtitle: String, search: Binding<String>, isOpen: Binding<Bool>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ") {
+        self.title = title; self.subtitle = subtitle; self._search = search; self._isOpen = isOpen; self.prompt = prompt
+    }
+
+    public var body: some View {
+        HStack(spacing: 10) {
+            if !isOpen { titles.transition(titleTransition) }
+            Spacer(minLength: 0)
+            searchBox
+        }
+        .frame(height: 44)
+        .foregroundStyle(Theme.onPrimary)
+        .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 10)
+        .background {
+            Theme.headerGradient
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous))
+                .ignoresSafeArea(edges: .top)
+        }
+        // the keyboard put away over an empty field closes the search; with text it stays open
+        .onChange(of: focused) { _, on in
+            if !on && isOpen && search.isEmpty { close() }
+        }
+    }
+
+    private func curve(_ duration: Double, delay: Double) -> Animation {
+        reduceMotion ? .easeInOut(duration: 0.2) : .timingCurve(0.2, 0.8, 0.2, 1, duration: duration).delay(delay)
+    }
+
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(.sarabunFixed(18, .bold)).frame(height: 23)
+            Text(subtitle).font(.sarabunFixed(12)).opacity(0.9).frame(height: 16)
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private var titleTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        let move = AnyTransition.opacity.combined(with: .offset(x: -16))
+        return .asymmetric(insertion: move.animation(curve(0.34, delay: 0.14)), removal: move.animation(curve(0.30, delay: 0.10)))
+    }
+
+    /// With Reduce Motion the button and the field are two views that cross-fade; otherwise one shape changes width.
+    @ViewBuilder private var searchBox: some View {
+        if reduceMotion {
+            if isOpen { shape(open: true).transition(.opacity) } else { shape(open: false).transition(.opacity) }
+        } else {
+            shape(open: isOpen)
+        }
+    }
+
+    private func shape(open: Bool) -> some View {
+        let box = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        // the field and ✕ come in once the box has grown
+        let late = AnyTransition.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.24).delay(reduceMotion ? 0 : 0.42)),
+                                            removal: .opacity.animation(.easeOut(duration: 0.1)))
+        return HStack(spacing: 0) {
+            Button(action: self.open) {
+                Image(systemName: "magnifyingglass").font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(open ? Theme.inkMuted : Theme.onPrimary)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(open)
+            .accessibilityLabel(prompt)
+            .accessibilityHidden(open)
+            if open {
+                TextField(prompt + "…", text: $search)
+                    .font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
+                    .focused($focused)
+                    .accessibilityLabel(prompt)
+                    .transition(late)
+                Button(action: close) {
+                    Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ปิดการค้นหา")
+                .transition(late)
+            }
+        }
+        .frame(maxWidth: open ? .infinity : 44, alignment: .leading)
+        .frame(height: 44)
+        .background(open ? Theme.surface.opacity(0.97) : Theme.onPrimary.opacity(0.18), in: box)
+        .overlay(box.strokeBorder(Theme.onPrimary.opacity(open ? 0 : 0.4)))
+        .clipShape(box)
+    }
+
+    private func open() {
+        withAnimation(curve(0.36, delay: 0.10)) { isOpen = true }
+        // the field exists once the box has grown
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(reduceMotion ? 250 : 480))
+            if isOpen { focused = true }
+        }
+    }
+
+    private func close() {
+        focused = false
+        search = ""
+        withAnimation(curve(0.30, delay: 0.06)) { isOpen = false }
+    }
+}
+
+/// The face of a round 44 pt filter button: white with a border, light blue with a blue border while its popover
+/// is open, navy with an orange dot once a filter is set.
+public struct TCFilterCircle: View {
+    let open: Bool
+    let filtered: Bool
+
+    public init(open: Bool, filtered: Bool) { self.open = open; self.filtered = filtered }
+
+    public var body: some View {
+        let fill = open ? Theme.primarySoft : filtered ? Theme.navySolid : Theme.surface
+        Image(systemName: "line.3.horizontal.decrease").font(.system(size: 17, weight: .bold))
+            .foregroundStyle(filtered && !open ? Theme.onPrimary : Theme.navySolid)
+            .frame(width: 44, height: 44)
+            .background(fill, in: Circle())
+            .overlay {
+                if open { Circle().strokeBorder(Theme.primary) } else if !filtered { Circle().strokeBorder(Theme.borderSubtle) }
+            }
+            .overlay(alignment: .topTrailing) {
+                if filtered {
+                    Circle().fill(Theme.warning).frame(width: 8, height: 8)
+                        .background(Circle().fill(fill).padding(-2))
+                        .padding(.top, 6).padding(.trailing, 7)
+                }
+            }
+            .contentShape(Circle())
     }
 }
 

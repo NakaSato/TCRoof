@@ -25,6 +25,7 @@ struct PWAPhoneTabs: View {
     /// The station whose daily report list the overview's strip opened.
     @State private var dailies: Job?
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var stations: [Job] { jobs.filter { $0.kind == .pwa } }
     /// The stations being installed: the PWA jobs with an MP plan that aren't handed over.
@@ -69,7 +70,9 @@ struct PWAPhoneTabs: View {
                 .environment(\.pwaOverview, overview)
                 .navigationDestination(item: $station) { JobDetailView(job: $0) }
                 .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
-        case .plan: MPOverviewView().toolbar(.visible, for: .navigationBar)
+        case .plan:
+            // iPad (and a wide split view) keeps the station list
+            if sizeClass == .compact { PWAPlanPhoneView() } else { MPOverviewView().toolbar(.visible, for: .navigationBar) }
         case .docs: docs
         case .settings: SolarSurveyEntryView(page: .settings).environment(\.pwaOverview, overview)
         }

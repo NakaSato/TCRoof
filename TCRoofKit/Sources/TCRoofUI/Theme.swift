@@ -158,6 +158,18 @@ public enum Theme {
     /// Selected row of a dropdown menu (the team filter).
     public static let rowSelected = Color(light: 0xEEF3F9, dark: 0x1C2734)
 
+    // iPhone PWA plan page (docs/ui/pwa-plan-iphone): ink and fill of the job types that have no status pair
+    public static let planSurvey = Color(light: 0x0E7C86, dark: 0x5CC8D1)
+    public static let planSurveySoft = Color(light: 0xE0F4F5, dark: 0x12292B)
+    public static let planInspect = Color(light: 0x6B4FBB, dark: 0xB09CF0)
+    public static let planInspectSoft = Color(light: 0xEFEBFA, dark: 0x221C38)
+    /// Fill of a document chip and of an at-risk deadline, under `warningText`.
+    public static let warningTint = Color(light: 0xFFF3E6, dark: 0x2E2213)
+    /// Weekend days, the S-curve's plan line and axis labels, a filter chip with nothing to show.
+    public static let inkFaint = Color(light: 0x9FB3CC, dark: 0x5E6E83)
+    /// Track of a Gantt row.
+    public static let ganttTrack = Color(light: 0xE3E9F1, dark: 0x243142)
+
     // D1 จัดแผง (docs/ui/survey-d1-layout-iphone)
     /// A panel on the tank plan.
     public static let panelBlue = Color(light: 0x2B4FD8, dark: 0x6C8CFF)

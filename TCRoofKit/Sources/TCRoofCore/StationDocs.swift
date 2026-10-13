@@ -2,7 +2,7 @@ import Foundation
 
 /// The document library of a กปภ. (PWA) station job: which papers exist, who makes and signs them, which
 /// submission each belongs to, and where each one stands. Catalog from the Project's `forms/pwa/catalog/`
-/// (38 kinds) and the ERC พค.2 check list (23 items, `erc-pk2-checklist.json`).
+/// (38 kinds, plus 6 from the PPA phase 3–4 tracking file) and the ERC พค.2 check list (23 items, `erc-pk2-checklist.json`).
 ///
 /// Papers that are the same for every station (the PWA act, the engineer's license…) are kept once in the
 /// device library and shown on every job; site papers belong to the job. Files themselves stay in the job's
@@ -121,6 +121,10 @@ public enum StationDocs {
         Kind("vat_pp20", "ภพ.20", .internalDoc, .contractor, [.pk2]),
         Kind("erc_checklist", "Check list เอกสารประกอบคำขอ พค.2", .internalDoc, .site, [.pk2],
              condition: .over200kVA, note: "แอปติ๊กให้จากสถานะเอกสาร"),
+        Kind("install_inspection_report", "รายงานตรวจสอบการติดตั้ง (ประกอบขนานไฟ)", .internalDoc, .site,
+             [.gridConnection, .handover]),
+        Kind("outage_letter", "หนังสือแจ้งดับไฟ (เลขที่ TC-PML-…)", .internalDoc, .site, [.gridConnection],
+             note: "ใช้เมื่อต้องดับไฟเพื่อเชื่อมต่อ ถ้าไม่ต้องดับไฟ ตั้งเป็น “ไม่ใช้กับสถานีนี้”"),
         // ภายใน → ภายนอก — เราร่าง กปภ. ลงนาม
         Kind("poa_letter", "หนังสือมอบอำนาจ (ติดอากร)", .signoff, .site, [.building, .pk2], signBy: "ผจก. กปภ.สาขา"),
         Kind("building_permit_request", "คำขออนุญาตดัดแปลงอาคาร (ข.1) + หนังสือนำส่งเทศบาล", .signoff, .site,
@@ -133,6 +137,11 @@ public enum StationDocs {
         Kind("pk1_form", "คำขออนุญาต แบบ พค.1", .signoff, .site, [.pk2], signBy: "ผจก. กปภ.สาขา", condition: .over200kVA),
         Kind("anti_bribery", "หนังสือแสดงความมุ่งมั่นป้องกันสินบน", .signoff, .site, [.pk2],
              signBy: "ผจก. กปภ.สาขา", condition: .over200kVA),
+        Kind("owner_signoff", "เอกสารเจ้าของพื้นที่ (ส่งผู้มีอำนาจ กปภ. ลงนาม)", .signoff, .site, [.gridConnection, .pk2],
+             signBy: "ผู้มีอำนาจ กปภ."),
+        Kind("self_cert_vspp", "หนังสือรับรองตนเอง (แบบ VSPP ของ กฟภ.)", .signoff, .site, [.gridConnection, .handover],
+             signBy: "ผู้มีอำนาจ กปภ. · วิศวกรเซ็นรับรอง"),
+        Kind("self_cert_k1", "หนังสือรับรองตนเอง ก.1", .signoff, .site, [.gridConnection], signBy: "ผู้มีอำนาจ กปภ."),
         // ภายนอก — ขอจาก กปภ. หน่วยงานรัฐ ผู้ผลิต
         Kind("pwa_act", "พ.ร.บ. การประปาส่วนภูมิภาค", .external, .org, [.gridConnection, .pk2], obtainFrom: "กปภ. ส่วนกลาง"),
         Kind("pwa_poa_order", "คำสั่ง กปภ. (มอบอำนาจ)", .external, .org, [.gridConnection, .pk2], obtainFrom: "กปภ. ส่วนกลาง",
@@ -154,6 +163,8 @@ public enum StationDocs {
         Kind("contract_mou", "MOU และใบสั่งจ้าง", .external, .project, [.pk2], obtainFrom: "กปภ. ส่วนกลาง"),
         Kind("erc_qr", "QR Code คำขอ (ระบบ กกพ.)", .external, .site, [.pk2], obtainFrom: "สำนักงาน กกพ.",
              condition: .over200kVA),
+        Kind("outage_attachment", "เอกสารแนบหนังสือแจ้งดับไฟ", .external, .site, [.gridConnection],
+             note: "ขอตามที่การไฟฟ้ากำหนด · ใช้คู่กับหนังสือแจ้งดับไฟ"),
     ]
 
     public static func kind(_ id: String) -> Kind? { kinds.first { $0.id == id } }

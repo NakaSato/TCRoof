@@ -7,9 +7,17 @@ final class StationDocsTests: XCTestCase {
     func testCatalogIdsAreUniqueAndChecklistPointsAtKnownKinds() {
         let ids = S.kinds.map(\.id)
         XCTAssertEqual(ids.count, Set(ids).count)
-        XCTAssertEqual(S.kinds.count, 38)
+        XCTAssertEqual(S.kinds.count, 44)
         for item in S.pk2Checklist { for id in item.docs { XCTAssertNotNil(S.kind(id), "\(item.number) → \(id)") } }
         XCTAssertEqual(S.pk2Checklist.map(\.number), Array(1...23))
+    }
+
+    func testTrackingFilePapersJoinGridConnection() {
+        let ids = S.papers(in: .gridConnection, S.Context(S.Station(), inverterKW: 100)).map(\.id)
+        for id in ["owner_signoff", "self_cert_vspp", "self_cert_k1", "install_inspection_report", "outage_letter", "outage_attachment"] {
+            XCTAssertTrue(ids.contains(id), id)
+        }
+        XCTAssertTrue(S.papers(in: .pk2, S.Context(S.Station(), inverterKW: 300)).map(\.id).contains("owner_signoff"))
     }
 
     func testOver200ComesFromInverterUnlessSetByHand() {

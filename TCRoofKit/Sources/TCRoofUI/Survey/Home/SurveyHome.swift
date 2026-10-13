@@ -14,8 +14,7 @@ public struct SolarSurveyReportView: View {
     let unsyncedOnly: Bool
     let page: Page
 
-    /// What the iPhone shows: the project home, or the `ตั้งค่า` tab's settings page (docs/ui/pwa-solar-survey-iphone-v2 §7).
-    /// The iPad always shows the project home.
+    /// The project home, or the project settings page (docs/ui/pwa-solar-survey-iphone-v2 §7).
     public enum Page: Sendable { case project, settings }
 
     /// - Parameters:
@@ -67,7 +66,7 @@ struct SurveyHomeView: View {
     @State var showInstallPicker = false
     /// Installation job whose tracking page is open.
     @State var tracking: UUID?
-    // iPhone (docs/ui/pwa-solar-survey-iphone-v2)
+    // the home page (docs/ui/pwa-solar-survey-iphone-v3, docs/ui/pwa-solar-survey-ipad-v3)
     /// The header's search button grown into its field.
     @State var searchOpen = false
     @State var showFilter = false
@@ -84,10 +83,7 @@ struct SurveyHomeView: View {
     enum Filter: CaseIterable {
         case all, active, draft, unsynced
         var title: String { [.all: "ทั้งหมด", .active: "กำลังสำรวจ", .draft: "ร่าง", .unsynced: "รอซิงก์"][self]! }
-        var detail: String { [.all: "งานในเครื่องนี้", .active: "ยังไม่ครบทุกขั้น", .draft: "ยังไม่ตั้งชื่อ / เลขที่", .unsynced: "ยังไม่ขึ้นคลาวด์"][self]! }
         var heading: String { self == .all ? "งานทั้งหมด" : title }
-        /// The iPhone filter pill's label.
-        var shortTitle: String { self == .active ? "กำลังทำ" : title }
     }
     enum Sort: CaseIterable {
         case updated, docNo, progress
@@ -114,7 +110,6 @@ struct SurveyHomeView: View {
     }
 
     var shown: [Job] {
-        // the four filter boxes only show on the survey tab
         let list = tab == .survey ? searched.filter { matches($0, filter) } : searched
         switch sort {
         case .updated: return list.sorted { $0.updated > $1.updated }
@@ -131,40 +126,8 @@ struct SurveyHomeView: View {
 
     var compact: Bool { sizeClass == .compact }
 
-    /// The iPad survey home (docs/ui/pwa-solar-survey); the iPhone's is `phonePage`.
-    var padPage: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                VStack(alignment: .leading, spacing: 18) {
-                    if let message { Label(message, systemImage: "checkmark.circle").foregroundStyle(Paper.tick) }
-                    tabBar
-                    if tab == .survey { stats }
-                    if tab != .survey && model.jobs(in: tab).isEmpty {
-                        stageEmpty
-                    } else {
-                        VStack(alignment: .leading, spacing: 18) {
-                            listHeading
-                            if shown.isEmpty { empty } else { grid }
-                        }
-                    }
-                }
-                .padding(.horizontal, 24).padding(.top, 20)
-                // room for the floating button under the last row
-                .padding(.bottom, 110)
-                .frame(maxWidth: 1240).frame(maxWidth: .infinity)
-            }
-        }
-        .background(Paper.page)
-        .overlay(alignment: .bottom) {
-            HStack { Spacer(); floatingButton }
-                .padding(.horizontal, 24).padding(.bottom, 24)
-                .frame(maxWidth: 1240)
-        }
-    }
-
     var body: some View {
-        Group { if compact { phonePage } else { padPage } }
+        homePage
         // the blue header replaces the navigation bar; navigationTitle stays for the editor's back menu
         .navigationTitle(title)
         .toolbar(.hidden, for: .navigationBar)
@@ -272,7 +235,7 @@ struct SurveyHomeView: View {
                         exportButton(j)
                         Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
                     case .locked:
-                        // iPhone: the card opens the install record, so the report is here
+                        // the card opens the install record, so the report is here
                         if station != nil { Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") } }
                         exportButton(j)
                     case .install:
@@ -285,10 +248,10 @@ struct SurveyHomeView: View {
         }
     }
 
-    /// iPhone: the station in the install overview of each job moved to installation, which makes its card an
-    /// install-phase card (docs/ui/pwa-solar-survey-iphone-v3 §4).
+    /// The station in the install overview of each job moved to installation, which makes its card an install-phase
+    /// card (docs/ui/pwa-solar-survey-iphone-v3 §4).
     var phaseStations: [UUID: InstallStationSummary] {
-        guard compact, tab == .survey else { return [:] }
+        guard tab == .survey else { return [:] }
         #if DEBUG
         // `-surveyHomeDemo cards`: the second and third cards as the board's late and on-plan stations; nothing is saved
         if UserDefaults.standard.string(forKey: "surveyHomeDemo") == "cards" {

@@ -66,9 +66,9 @@ struct RootView: View {
             // `-screen <name>` opens that screen as the stack's root. Pushed over the home at launch
             // (`.navigationDestination(isPresented: .constant(true))`), iOS 27 never draws a frame: a blank
             // screen and "Observation tracking feedback loop detected".
-            if DebugScreen.requested == "pwa" && sizeClass == .compact {
-                // the iPhone PWA module is the main dock's `กปภ.` tab
-                PhoneTabs { home }
+            if DebugScreen.requested == "pwa" {
+                // the PWA module is a tab of the main dock: `กปภ.` on iPhone, `โครงการ` on iPad
+                if sizeClass == .compact { PhoneTabs { home } } else { PadTabs { home } }
             } else if DebugScreen.isKnown {
                 NavigationStack { DebugScreen() }
             } else if sizeClass == .compact {

@@ -5,7 +5,7 @@ import SwiftData
 /// Root tabs of the iPad (regular width) behind the floating dock (docs/ui/tcroof-home-ipad-v2).
 enum PadTab: String, CaseIterable {
     /// `settings` is only the dock's button for the settings sheet, never a selected tab.
-    case home, survey, plan, install, scan, pwa, tools, settings
+    case home, pwa, survey, docs, tools, scan, settings
 
     static let stacks = allCases.filter { $0 != .settings }
     /// Space the root screens keep above the dock: with the dock's 72 pt and its 18 pt below, content ends 100 pt up.
@@ -14,11 +14,11 @@ enum PadTab: String, CaseIterable {
     var module: AppModule? { AppModule(rawValue: rawValue) }
 
     /// The page colour its content fades into behind the dock.
-    var fade: Color { self == .home || self == .tools ? Theme.phonePage : Theme.background }
+    var fade: Color { self == .home || self == .pwa || self == .tools ? Theme.phonePage : Theme.background }
 }
 
-/// The dock's state, for the screens under it: the home sends `ดูทั้งหมด` to the `สำรวจ` tab and closes its
-/// notifications when the dock is used.
+/// The dock's state, for the screens under it: the home sends `ดูทั้งหมด` to the `งานบ้าน` tab, and it and the PWA home
+/// close their notifications when the dock is used.
 @Observable final class PadDock {
     var tab: PadTab
     private(set) var opened: Set<PadTab>
@@ -73,7 +73,16 @@ struct PadTabs<HomeRoot: View>: View {
     private func stack(_ t: PadTab) -> some View {
         NavigationStack {
             Group {
-                if let module = t.module { module.destination } else { home() }
+                switch t {
+                // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-ipad-v3 §2)
+                case .pwa: PWARoot()
+                // the residential document library, as on the iPhone dock
+                case .docs: HomeLibraryView()
+                // the plan calendar and the install records left the dock: they are rows over the register for now
+                // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
+                case .tools: ToolsView(modules: [.plan, .install])
+                default: if let module = t.module { module.destination } else { home() }
+                }
             }
             .safeAreaInset(edge: .bottom, spacing: PadTab.barGap) {
                 TCTabBar(items: items, selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
@@ -87,15 +96,14 @@ struct PadTabs<HomeRoot: View>: View {
     }
 
     private var items: [TCTabItem<PadTab>] {
-        let today = jobs.filter { $0.surveyDate.isToday }.count
+        let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
-            TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
-            TCTabItem(.survey, title: "สำรวจ", asset: "tab-survey", badge: today, accessibilityLabel: today > 0 ? "สำรวจ · นัดวันนี้ \(today)" : nil),
-            TCTabItem(.plan, title: "แผนงาน", symbol: "calendar"),
-            TCTabItem(.install, title: "ติดตั้ง", asset: "tab-install"),
-            TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),
-            TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa"),
+            TCTabItem(.home, title: "หน้าแรก", symbol: "house"),
+            TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ · นัดวันนี้ \(pwa)" : nil),
+            TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),
+            TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
             TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
+            TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),
             // not a tab: settings stays a sheet, as on the iPhone
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape", accessibilityLabel: "ตั้งค่าและบัญชี") { dock.showSettings = true },
         ]
@@ -103,9 +111,16 @@ struct PadTabs<HomeRoot: View>: View {
 
     private static var initialTab: PadTab {
         #if DEBUG
-        // `-homeTab survey|plan|install|scan|pwa|tools` opens with that tab selected, for simulator checks
+        // `-screen pwa` is the PWA module: the `โครงการ` tab
+        if DebugScreen.requested == "pwa" { return .pwa }
+        // `-homeTab survey|pwa|docs|tools|scan` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PadTab(rawValue: raw), PadTab.stacks.contains(t) { return t }
         #endif
         return .home
     }
+}
+
+extension Array where Element == Job {
+    /// Today's survey appointments of one kind of job, for the badge of the dock tab that owns them.
+    func surveyToday(_ kind: JobKind) -> Int { filter { $0.surveyDate.isToday && $0.kind == kind }.count }
 }

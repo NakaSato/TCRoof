@@ -1,6 +1,6 @@
 import XCTest
 
-/// docs/ui/home-navbar-ipad and docs/ui/tcroof-home-ipad-v2, on an iPad simulator:
+/// docs/ui/home-navbar-ipad, docs/ui/tcroof-home-ipad-v2 and the dock of docs/ui/pwa-solar-survey-ipad-v3, on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/HomeNavbarUITests -derivedDataPath <scratch>`.
 /// The bell and the dock's `ตั้งค่า` each open their panel and close the other; the search field opens the job search.
 /// The bar has no account button: settings are in the dock.
@@ -43,31 +43,66 @@ final class HomeNavbarUITests: XCTestCase {
         XCTAssertTrue(app.buttons["เสร็จ"].waitForExistence(timeout: 8), "the dock's settings button should open settings")
     }
 
-    /// A dock button opens its tab under the same dock; a screen pushed there covers the dock; `หน้าหลัก` returns.
+    /// A dock button opens its tab under the same dock; a screen pushed there covers the dock; `หน้าแรก` returns.
     /// Every opened tab keeps its own dock (the others are not on screen), so the dock's buttons are matched by
-    /// name with `firstMatch` and "the dock is gone" means none of them can be tapped.
+    /// name with `firstMatch` and "the dock is gone" means none of them can be tapped. The plan calendar left the
+    /// dock (docs/ui/pwa-solar-survey-ipad-v3): it is a row of the `เครื่องมือ` tab.
     func testDockSwitchesTabs() {
         let app = launch()
-        let plan = app.buttons.matching(NSPredicate(format: "label == %@", "แผนงาน"))
-        XCTAssertTrue(plan.firstMatch.waitForExistence(timeout: slow))
+        let tools = app.buttons.matching(NSPredicate(format: "label == %@", "เครื่องมือวัด"))
+        XCTAssertTrue(tools.firstMatch.waitForExistence(timeout: slow))
         XCTAssertTrue(app.staticTexts["ฟีดโครงการ"].exists, "the right column should be the project feed")
-        plan.firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["แผนก่อสร้าง"].waitForExistence(timeout: 10), "the plan calendar should open")
-        let selected = app.buttons.matching(NSPredicate(format: "label == %@ AND selected == true", "แผนงาน"))
-        XCTAssertTrue(selected.firstMatch.waitForExistence(timeout: 8), "the dock should stay, with the plan tab selected")
+        for gone in ["แผนงาน", "ติดตั้ง", "สำรวจ", "กปภ."] {
+            XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", gone)).count, 0, "\(gone) should not be in the dock")
+        }
+        tools.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["ทะเบียนเครื่องมือวัด"].waitForExistence(timeout: 10), "the tools register should open")
+        let selected = app.buttons.matching(NSPredicate(format: "label == %@ AND selected == true", "เครื่องมือวัด"))
+        XCTAssertTrue(selected.firstMatch.waitForExistence(timeout: 8), "the dock should stay, with the tools tab selected")
         func dockShown() -> Bool { selected.allElementsBoundByIndex.contains { $0.isHittable } }
         XCTAssertTrue(dockShown())
 
-        app.buttons["ดูรายการแผนก่อสร้าง"].tap()
-        XCTAssertTrue(app.staticTexts["รายการแผนก่อสร้าง"].firstMatch.waitForExistence(timeout: 8) || app.buttons["กลับหน้าหลัก"].firstMatch.waitForExistence(timeout: 8))
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "แผนก่อสร้าง")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["ดูรายการแผนก่อสร้าง"].waitForExistence(timeout: 10), "the plan calendar should open from its row")
         sleep(1)
         XCTAssertFalse(dockShown(), "the dock should be hidden on a pushed screen")
         app.buttons.matching(NSPredicate(format: "label == %@", "กลับหน้าหลัก")).firstMatch.tap()
         sleep(1)
         XCTAssertTrue(dockShown(), "the dock should return on the tab's root")
 
-        app.buttons.matching(NSPredicate(format: "label == %@", "หน้าหลัก")).firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label == %@", "หน้าแรก")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["ฟีดโครงการ"].waitForExistence(timeout: 8), "the home tab should return")
+    }
+
+    /// The `โครงการ` tab is the PWA project home: its nav and filter, and its bell opens the home's panel.
+    func testProjectsTab() {
+        let app = launch()
+        let projects = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND NOT (label CONTAINS %@)", "โครงการ", "PWA"))
+        XCTAssertTrue(projects.firstMatch.waitForExistence(timeout: slow))
+        projects.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["โครงการ PWA"].waitForExistence(timeout: 10), "the PWA project home should open")
+        XCTAssertTrue(app.buttons["บำรุงรักษา"].firstMatch.exists, "the nav should have บำรุงรักษา")
+        XCTAssertTrue(app.buttons["แผนงาน"].firstMatch.exists, "the nav should have แผนงาน")
+
+        let filter = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "กรอง")).firstMatch
+        filter.tap()
+        XCTAssertTrue(app.buttons["แก้ไขล่าสุด"].waitForExistence(timeout: 8), "the filter should list the sorts")
+        // the home tab's stack is still in the tree, so take the row that is on screen
+        func row(_ title: String) -> XCUIElement? {
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label ENDSWITH %@", title + " ", "สถานี")).allElementsBoundByIndex.first { $0.isHittable }
+        }
+        row("ติดตั้ง")?.tap()
+        XCTAssertTrue(waitGone(app.buttons["แก้ไขล่าสุด"]), "a type row should close the filter")
+        XCTAssertTrue(app.buttons["เพิ่มโครงการติดตั้ง"].waitForExistence(timeout: 8), "ติดตั้ง should show the install overview")
+        filter.tap()
+        XCTAssertFalse(app.buttons["แก้ไขล่าสุด"].waitForExistence(timeout: 3), "the install overview has only ประเภทงาน")
+        XCTAssertNotNil(row("บำรุงรักษา"), "the type rows should still be listed")
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label ENDSWITH %@", "ทั้งหมด ", " งาน")).allElementsBoundByIndex.first { $0.isHittable }?.tap()
+        XCTAssertTrue(waitGone(app.buttons["เพิ่มโครงการติดตั้ง"]), "ทั้งหมด should return to the project list")
+
+        let bell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "การแจ้งเตือน")).allElementsBoundByIndex.first { $0.isHittable }
+        bell?.tap()
+        XCTAssertTrue(notificationsPanel(app).waitForExistence(timeout: 8), "the bell should open the notifications panel")
     }
 
     /// Bell toggles: a second tap closes the popover.

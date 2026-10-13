@@ -3,10 +3,11 @@ import SwiftData
 import TCRoofUI
 import TCRoofCore
 
-/// Root of the main dock's `กปภ.` stack on iPhone (docs/ui/pwa-solar-survey-iphone-v3 §1): the PWA project home, with
-/// what its header and nav open. The MP plans, the daily reports and the notifications are the app's, so they go to
-/// the survey home as a `PWAOverviewHost`. `PhoneTabs` puts the dock under it.
-struct PWAPhoneRoot: View {
+/// Root of the main dock's PWA stack, `กปภ.` on iPhone and `โครงการ` on iPad (docs/ui/pwa-solar-survey-iphone-v3 §1,
+/// docs/ui/pwa-solar-survey-ipad-v3 §2): the PWA project home, with what its header and nav open. The MP plans, the
+/// daily reports and the notifications are the app's, so they go to the survey home as a `PWAOverviewHost`.
+/// `PhoneTabs` or `PadTabs` puts the dock under it.
+struct PWARoot: View {
     /// A station opened from an overview that has no survey job in that stage.
     @State private var station: Job?
     /// The station whose daily report list the install overview's strip opened.
@@ -18,6 +19,9 @@ struct PWAPhoneRoot: View {
     @State private var instruments = InstrumentStore.shared
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @Environment(GoogleSession.self) private var session
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// iPad: the dock over this stack (`PadTabs`).
+    @Environment(PadDock.self) private var dock: PadDock?
 
     var body: some View {
         SolarSurveyEntryView()
@@ -25,7 +29,14 @@ struct PWAPhoneRoot: View {
             .navigationDestination(item: $station) { JobDetailView(job: $0) }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
-            .fullScreenCover(isPresented: $showNotifications) { notificationsView.environment(\.homeInk, .outdoor) }
+            .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
+                notificationsView().environment(\.homeInk, .outdoor)
+            }
+            // iPad: the panel of the home's bell (`PadHome`), under this header's bell
+            .overlay(alignment: .topTrailing) { if sizeClass != .compact && showNotifications { bellPanel } }
+            // the dock closes the bell's panel
+            .onChange(of: dock?.tab) { showNotifications = false }
+            .onChange(of: dock?.showSettings) { showNotifications = false }
             #if DEBUG
             // `-surveyHomeTab plan` opens แผนงาน. Not at launch: iOS 27 leaves a screen pushed then blank.
             .task {
@@ -47,7 +58,7 @@ struct PWAPhoneRoot: View {
             openMaintenanceStation: { s in station = stations.first { $0.overviewID == s.id } ?? demoStation(stations) },
             openPlan: { showPlan = true },
             unread: notifications.filter { !read.contains($0.id) }.count,
-            openNotifications: { showNotifications = true })
+            openNotifications: { showNotifications.toggle() })
     }
 
     /// `-surveyHomeDemo maintenance`: the example stations are no jobs, so a row opens the first PWA station.
@@ -70,11 +81,27 @@ struct PWAPhoneRoot: View {
 
     private var readIDs: Set<String> { Set(readRaw.split(separator: "\n").map(String.init)) }
 
-    private var notificationsView: PhoneNotificationsView {
+    private func notificationsView(large: Bool = false, close: (() -> Void)? = nil) -> PhoneNotificationsView {
         PhoneNotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: { session.survey.cloudPush?() },
                                surveyHint: surveyHint,
                                openSurvey: { n in if let job = n.job { openLater(.survey(job: job.syncID ?? job.code)) } },
-                               openLink: openLater)
+                               openLink: openLater, large: large, close: close)
+    }
+
+    /// The home bell's panel (`PadHome`: 440 wide, r18) under this header's bell, without its arrow. The page is
+    /// dimmed lightly; a tap on it closes the panel, while the header's and the dock's buttons stay live.
+    private var bellPanel: some View {
+        // the header is 88 pt high; the panel starts 11 pt under its bell and ends 27 pt right of the bell's centre
+        ZStack(alignment: .topTrailing) {
+            Theme.popoverDim.ignoresSafeArea().allowsHitTesting(false)
+            Color.clear.contentShape(Rectangle()).onTapGesture { showNotifications = false }.padding(.top, 88)
+            notificationsView(large: true) { showNotifications = false }
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: Theme.navy.opacity(0.28), radius: 20, y: 16)
+                .padding(.top, 88 - 22 + 11).padding(.trailing, 58)
+        }
+        .transition(.opacity)
     }
 
     /// Marks these read; ids no longer shown are dropped so the stored list stays small.

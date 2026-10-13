@@ -2,13 +2,17 @@
 import SwiftUI
 import TCRoofCore
 
-/// iPhone survey home (docs/ui/pwa-solar-survey-iphone-v3): a header whose search button grows into the field, with a
-/// bell; the nav `โครงการ | แผนงาน | บำรุงรักษา` with a filter button; the project cards, and the install and maintenance
-/// overviews. The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
+/// The PWA project home (docs/ui/pwa-solar-survey-iphone-v3, and on iPad docs/ui/pwa-solar-survey-ipad-v3): a header
+/// whose search button grows into the field, with a bell; the nav `โครงการ | แผนงาน | บำรุงรักษา` with a filter button; the
+/// project cards, and the install and maintenance overviews. The iPad has the same parts at 63 pt margins, in three
+/// columns. The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
 extension SurveyHomeView {
-    var phonePage: some View {
+    /// The page's side margin.
+    var margin: CGFloat { compact ? 16 : 63 }
+
+    var homePage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: compact ? 10 : 16) {
                 if let message { Label(message, systemImage: "checkmark.circle").font(.sarabunFixed(13)).foregroundStyle(Paper.tick) }
                 if page == .settings {
                     settingsGroups
@@ -21,15 +25,16 @@ extension SurveyHomeView {
                     }
                 }
             }
-            .padding(.horizontal, 16).padding(.top, 12)
+            .padding(.horizontal, margin).padding(.top, compact ? 12 : 20)
             // 20 pt clear of the dock; the survey cards also clear the add button over it
-            .padding(.bottom, page == .project && tab == .survey ? 82 : 20)
+            .padding(.bottom, page == .project && tab == .survey ? (compact ? 82 : 98) : 20)
         }
         .scrollDismissesKeyboard(.immediately)
         .safeAreaInset(edge: .top, spacing: 0) { phoneHeader }
         .background(Theme.phonePage.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
-            if page == .project && tab == .survey { addButton.padding(.trailing, 20).padding(.bottom, 4) }
+            // iPad: 116 pt above the screen's edge, over the dock's 98
+            if page == .project && tab == .survey { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
         }
     }
 
@@ -42,7 +47,7 @@ extension SurveyHomeView {
             TCPhoneSearchHeader(title: "PWA Setting", subtitle: nil, search: $search, isOpen: $searchOpen, showsSearch: false,
                                 onBack: isPushed ? { dismiss() } : nil)
         } else {
-            TCPhoneSearchHeader(title: title, subtitle: nil, search: $search, isOpen: $searchOpen, large: true,
+            TCPhoneSearchHeader(title: title, subtitle: nil, search: $search, isOpen: $searchOpen, large: true, wide: !compact,
                                 bell: host.openNotifications.map { .init(unread: host.unread, action: $0) },
                                 onBack: isPushed ? { dismiss() } : nil)
         }
@@ -111,17 +116,26 @@ extension SurveyHomeView {
         }
     }
 
-    private var filterPopover: some View {
+    @ViewBuilder private var filterPopover: some View {
+        if compact { filterPanel } else { filterList }
+    }
+
+    private var clearButton: some View {
+        Button("ล้าง") { filter = .all; sort = .updated; select(.survey) }
+            .font(.sarabunFixed(13, .bold)).foregroundStyle(isFiltered ? Theme.primary : Theme.chevron)
+            .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .disabled(!isFiltered)
+            .accessibilityLabel("ล้างตัวกรองและการเรียง")
+    }
+
+    /// iPhone: tiles and segments, closed by `แสดง n งาน`.
+    private var filterPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("กรองและเรียง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Button("ล้าง") { filter = .all; sort = .updated; select(.survey) }
-                    .font(.sarabunFixed(13, .bold)).foregroundStyle(isFiltered ? Theme.primary : Theme.chevron)
-                    .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
-                    .buttonStyle(.plain)
-                    .disabled(!isFiltered)
-                    .accessibilityLabel("ล้างตัวกรองและการเรียง")
+                clearButton
             }
             .frame(height: 32)
             popoverSection("ประเภทงาน") { typeRows }
@@ -141,6 +155,61 @@ extension SurveyHomeView {
         .frame(width: 300)
     }
 
+    /// iPad (docs/ui/pwa-solar-survey-ipad-v3 §5): a 248 pt list of 44 pt rows; a row applies at once.
+    private var filterList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            listTitle("ประเภทงาน").padding(.top, 10).padding(.bottom, 2)
+            typeRows
+            // the overviews have their own row filters
+            if tab == .survey {
+                listDivider
+                HStack(spacing: 0) {
+                    listTitle("สถานะงาน")
+                    Spacer(minLength: 0)
+                    clearButton.padding(.trailing, 4)
+                }
+                statusRows
+                listDivider
+                listTitle("เรียงตาม").padding(.top, 6).padding(.bottom, 2)
+                sortRows
+            }
+        }
+        .padding(.top, 4).padding(.bottom, 6)
+        .frame(width: 248)
+    }
+
+    private func listTitle(_ title: String) -> some View {
+        Text(title).font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 14)
+    }
+
+    private var listDivider: some View {
+        Rectangle().fill(Theme.hairline).frame(height: 1).padding(.horizontal, 14).padding(.vertical, 4)
+    }
+
+    /// A radio row of the filter: a status dot, the title, a count and a tick on the selected one. Rounded inside the
+    /// iPhone panel, edge to edge in the iPad list.
+    private func filterRow(_ title: String, count: Int? = nil, countInk: Color = Theme.inkMuted, dot: Color? = nil, on: Bool,
+                           label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                if let dot { Circle().fill(dot).frame(width: 8, height: 8) }
+                Text(title).font(.sarabunFixed(14, on ? .bold : .medium)).foregroundStyle(Theme.navy)
+                Spacer(minLength: 6)
+                if let count { Text("\(count)").font(.sarabunFixed(13, .bold)).foregroundStyle(countInk).monospacedDigit() }
+                Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                    .frame(width: 18).opacity(on ? 1 : 0)
+            }
+            .padding(.horizontal, compact ? 10 : 14)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background { if on { RoundedRectangle(cornerRadius: compact ? 10 : 0, style: .continuous).fill(Theme.rowSelected) } }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+    }
+
     /// Radio rows with a count and a tick on the selected one; picking a row closes the popover.
     private var typeRows: some View {
         let rows: [(JobStage, String, Int, String)] = [
@@ -148,26 +217,30 @@ extension SurveyHomeView {
             (.maintenance, "บำรุงรักษา", maintenanceStations.count, "สถานี")]
         return VStack(spacing: 0) {
             ForEach(rows, id: \.0) { stage, title, count, unit in
-                let on = tab == stage
-                Button { select(stage); showFilter = false } label: {
-                    HStack(spacing: 10) {
-                        Text(title).font(.sarabunFixed(14, on ? .bold : .medium)).foregroundStyle(Theme.navy)
-                        Spacer(minLength: 6)
-                        Text("\(count)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted).monospacedDigit()
-                        Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
-                            .frame(width: 18).opacity(on ? 1 : 0)
-                    }
-                    .padding(.horizontal, 10)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background { if on { RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.rowSelected) } }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(title) \(count) \(unit)")
-                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+                filterRow(title, count: count, on: tab == stage, label: "\(title) \(count) \(unit)") { select(stage); showFilter = false }
             }
         }
+    }
+
+    /// iPad: the statuses as rows.
+    private var statusRows: some View {
+        let jobs = searched
+        return VStack(spacing: 0) {
+            ForEach(Filter.allCases, id: \.self) { f in
+                let n = jobs.filter { matches($0, f) }.count
+                filterRow(f.heading, count: n, countInk: f == .unsynced && n > 0 ? Theme.pending : Theme.inkMuted, dot: statusDot(f),
+                          on: filter == f, label: "\(f.heading) \(n) งาน") { filter = f }
+            }
+        }
+    }
+
+    /// iPad: the sorts as rows.
+    private var sortRows: some View {
+        VStack(spacing: 0) {
+            ForEach(Sort.allCases, id: \.self) { s in filterRow(s.title, on: sort == s, label: s.title) { sort = s } }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("เรียงตาม")
     }
 
     private func popoverSection(_ title: String, @ViewBuilder content: () -> some View) -> some View {
@@ -252,11 +325,11 @@ extension SurveyHomeView {
         if shown.isEmpty { empty } else { grid }
     }
 
-    /// 60 pt, the board's gradient, no shadow.
+    /// 60 pt (iPad 64), the board's gradient, no shadow.
     private var addButton: some View {
         Button { showNew = true } label: {
             Image(systemName: "plus").font(.system(size: 28, weight: .bold)).foregroundStyle(Theme.onPrimary)
-                .frame(width: 60, height: 60)
+                .frame(width: compact ? 60 : 64, height: compact ? 60 : 64)
                 .background(Theme.actionGradient, in: Circle())
         }
         .accessibilityLabel("งานสำรวจใหม่")
@@ -269,7 +342,7 @@ extension SurveyHomeView {
     func applyDebugHome() {
         #if DEBUG
         let d = UserDefaults.standard
-        guard compact, page == .project else { return }
+        guard page == .project else { return }
         switch d.string(forKey: "surveyHomeTab") {
         case "projects": tab = .survey
         case "maintenance": tab = .maintenance

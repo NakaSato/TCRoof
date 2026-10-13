@@ -4,7 +4,7 @@ import TCRoofUI
 import TCRoofCore
 
 /// The PWA module's `แผนงาน` tab on iPhone (docs/ui/pwa-plan-iphone): the header with its growing search, the view
-/// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The PWA home's nav pushes it (`PWAPhoneRoot`),
+/// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The PWA home's nav pushes it (`PWARoot`),
 /// so the header has a back button; iPad keeps `MPOverviewView`.
 struct PWAPlanPhoneView: View {
     enum Pane: String, CaseIterable { case schedule, mp, due }

@@ -76,7 +76,7 @@ struct PhoneTabs<HomeRoot: View>: View {
                 // the residential document library; the tools register is under the settings sheet for now
                 case .docs: HomeLibraryView()
                 // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-iphone-v3 §1)
-                case .pwa: PWAPhoneRoot()
+                case .pwa: PWARoot()
                 default: if let module = t.module { module.destination } else { home() }
                 }
             }
@@ -92,11 +92,8 @@ struct PhoneTabs<HomeRoot: View>: View {
         }
     }
 
-    /// Today's appointments of one kind of job, for the badge of the tab that owns them.
-    private func surveyToday(_ kind: JobKind) -> Int { jobs.filter { $0.surveyDate.isToday && $0.kind == kind }.count }
-
     private var items: [TCTabItem<PhoneTab>] {
-        let home = surveyToday(.home), pwa = surveyToday(.pwa)
+        let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),

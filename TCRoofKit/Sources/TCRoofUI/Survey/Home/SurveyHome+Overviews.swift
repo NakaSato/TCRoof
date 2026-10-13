@@ -2,8 +2,9 @@
 import SwiftUI
 import TCRoofCore
 
-/// The iPhone survey home's `งานติดตั้ง` and `บำรุงรักษา` tabs (docs/ui/pwa-solar-survey-iphone-v2 §4–5): a summary
-/// card, row filters and one row per station. No shadows.
+/// The survey home's `งานติดตั้ง` and `บำรุงรักษา` overviews (docs/ui/pwa-solar-survey-iphone-v2 §4–5): a summary card, row
+/// filters and one row per station. On iPad (docs/ui/pwa-solar-survey-ipad-v3 §7) the summary's parts stand side by
+/// side and the rows are in three columns. No shadows.
 extension SurveyHomeView {
     // MARK: data
 
@@ -56,11 +57,66 @@ extension SurveyHomeView {
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    private static let summaryPadding = EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14)
-    private static let rowPadding = EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12)
+    private var summaryPadding: EdgeInsets {
+        compact ? EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14) : EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
+    }
+    private var rowPadding: EdgeInsets {
+        compact ? EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12) : EdgeInsets(top: 12, leading: 14, bottom: 10, trailing: 14)
+    }
+
+    /// The summary's three parts: one under another on iPhone; on iPad the board's columns 330 | 300 | the rest.
+    @ViewBuilder private func summaryParts(_ head: some View, tiles: some View, hasTiles: Bool = true, rest: some View) -> some View {
+        if compact {
+            head
+            tiles
+            rest
+        } else {
+            HStack(alignment: .top, spacing: 20) {
+                head.frame(width: 330, alignment: .leading)
+                if hasTiles { tiles.frame(width: 300) }
+                rest.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    /// iPad: the number of rows shown stands right of the row filters.
+    @ViewBuilder private func rowFilters(_ pills: some View, count: Int, note: String? = nil) -> some View {
+        if compact {
+            pills
+        } else {
+            HStack(spacing: 12) {
+                pills
+                Text(["\(count) สถานี", note ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().fixedSize()
+            }
+        }
+    }
+
+    /// The station rows: one under another on iPhone, three columns on iPad.
+    @ViewBuilder private func stationRows(@ViewBuilder _ rows: () -> some View) -> some View {
+        if compact {
+            rows()
+        } else {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: 3), spacing: 16) { rows() }
+        }
+    }
 
     private func noRows(_ text: String) -> some View {
         Text(text).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity).padding(.vertical, 12)
+    }
+
+    /// Installation or maintenance overview with nothing in it yet.
+    var stageEmpty: some View {
+        VStack(spacing: 8) {
+            Text(tab == .install ? "ยังไม่มีงานติดตั้งในเครื่องนี้" : "ยังไม่มีงานบำรุงรักษา").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            if tab == .install {
+                Text("กด \"เพิ่มโครงการ\" เพื่อดึงงานสำรวจที่ครบ 100% มาเป็นงานติดตั้ง").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: compact ? 280 : 520)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderControl.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
     // MARK: งานติดตั้ง
@@ -74,10 +130,12 @@ extension SurveyHomeView {
             // with no MP plan anywhere nothing is behind, so start on every station
             let rowFilter = installFilter ?? (totals.plan == nil ? .all : .behind)
             let rows = InstallOverview.rows(stations, filter: rowFilter, contractor: contractor, threshold: threshold)
-            card(installSummary(stations, totals), padding: Self.summaryPadding)
-            installFilters(stations, selected: rowFilter)
-            ForEach(rows) { s in
-                Button { openStation(s) } label: { card(installRow(s), padding: Self.rowPadding) }.buttonStyle(.plain)
+            card(installSummary(stations, totals), padding: summaryPadding)
+            rowFilters(installFilters(stations, selected: rowFilter), count: rows.count, note: contractor)
+            stationRows {
+                ForEach(rows) { s in
+                    Button { openStation(s) } label: { card(installRow(s), padding: rowPadding) }.buttonStyle(.plain)
+                }
             }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
         }
@@ -103,30 +161,37 @@ extension SurveyHomeView {
     }
 
     private func installSummary(_ stations: [InstallStationSummary], _ t: InstallOverview.Totals) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                TCPlanRing(actual: Double(t.actual) / 100, plan: t.plan.map { Double($0) / 100 })
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("กำลังติดตั้ง \(t.count) สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                    Text("\(number(t.kWp, digits: 1)) kWp · เฉลี่ย \(t.actual)%" + (t.plan.map { " / แผน \($0)%" } ?? ""))
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-                    if let plan = t.plan {
-                        Text(t.actual >= plan ? "ภาพรวมตามแผน" : "ภาพรวมช้ากว่าแผน \(plan - t.actual)%")
-                            .font(.sarabunFixed(13, .bold)).foregroundStyle(t.actual >= plan ? Theme.successText : Theme.dangerText)
-                    }
-                }
-                .lineLimit(1).minimumScaleFactor(0.85)
-            }
-            .accessibilityElement(children: .combine)
-            if t.plan != nil {
-                HStack(spacing: 6) {
-                    TCStatTile("\(t.behind)", "ช้ากว่าแผน", tone: .red)
-                    TCStatTile("\(t.onPlan)", "ตามแผน", tone: .blue)
-                    TCStatTile("\(t.ahead)", "เร็วกว่าแผน", tone: .green)
-                }
-            }
-            contractorGrid(InstallOverview.contractors(stations, threshold: threshold))
+        VStack(alignment: .leading, spacing: compact ? 10 : 12) {
+            summaryParts(installHead(t), tiles: installTiles(t), hasTiles: t.plan != nil,
+                         rest: contractorGrid(InstallOverview.contractors(stations, threshold: threshold)))
             if t.reporting > 0 { dailyStrip(t) }
+        }
+    }
+
+    private func installHead(_ t: InstallOverview.Totals) -> some View {
+        HStack(spacing: 12) {
+            TCPlanRing(actual: Double(t.actual) / 100, plan: t.plan.map { Double($0) / 100 })
+            VStack(alignment: .leading, spacing: 0) {
+                Text("กำลังติดตั้ง \(t.count) สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("\(number(t.kWp, digits: 1)) kWp · เฉลี่ย \(t.actual)%" + (t.plan.map { " / แผน \($0)%" } ?? ""))
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                if let plan = t.plan {
+                    Text(t.actual >= plan ? "ภาพรวมตามแผน" : "ภาพรวมช้ากว่าแผน \(plan - t.actual)%")
+                        .font(.sarabunFixed(13, .bold)).foregroundStyle(t.actual >= plan ? Theme.successText : Theme.dangerText)
+                }
+            }
+            .lineLimit(1).minimumScaleFactor(0.85)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private func installTiles(_ t: InstallOverview.Totals) -> some View {
+        if t.plan != nil {
+            HStack(spacing: 6) {
+                TCStatTile("\(t.behind)", "ช้ากว่าแผน", tone: .red, large: !compact)
+                TCStatTile("\(t.onPlan)", "ตามแผน", tone: .blue, large: !compact)
+                TCStatTile("\(t.ahead)", "เร็วกว่าแผน", tone: .green, large: !compact)
+            }
         }
     }
 
@@ -137,7 +202,8 @@ extension SurveyHomeView {
                     Text("ผู้รับเหมา \(teams.count) ทีม").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
                     Text("แตะเพื่อดูเฉพาะทีม").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                 }
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: min(max(teams.count, 2), 4)), spacing: 5) {
+                // iPad: every team in one row
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: compact ? min(max(teams.count, 2), 4) : max(teams.count, 4)), spacing: 5) {
                     ForEach(teams) { team in contractorButton(team) }
                 }
             }
@@ -243,12 +309,14 @@ extension SurveyHomeView {
             stageEmpty
         } else {
             let rows = stations.filter { MaintenanceOverview.matches($0, maintenanceFilter) }
-            card(maintenanceSummary(MaintenanceOverview.totals(stations)), padding: Self.summaryPadding)
-            maintenanceFilters(stations)
-            ForEach(rows) { s in
-                Button { openMaintenanceStation(s) } label: { maintenanceRow(s).padding(Self.rowPadding) }
-                    .buttonStyle(TCStationRowStyle())
-                    .accessibilityLabel(maintenanceLabel(s))
+            card(maintenanceSummary(MaintenanceOverview.totals(stations)), padding: summaryPadding)
+            rowFilters(maintenanceFilters(stations), count: rows.count)
+            stationRows {
+                ForEach(rows) { s in
+                    Button { openMaintenanceStation(s) } label: { maintenanceRow(s).padding(rowPadding) }
+                        .buttonStyle(TCStationRowStyle())
+                        .accessibilityLabel(maintenanceLabel(s))
+                }
             }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
         }
@@ -270,32 +338,41 @@ extension SurveyHomeView {
     }
 
     private func maintenanceSummary(_ t: MaintenanceOverview.Totals) -> some View {
-        let due = Array(MaintenanceOverview.due(maintenanceTasks).prefix(3))
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                TCPlanRing(actual: Double(t.yield) / 100, tint: Theme.success)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("ส่งมอบแล้ว \(t.count) สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                    Text("\(number(t.kWp, digits: 1)) kWp · PR เฉลี่ย \(t.pr.map { "\($0)" } ?? "—")%")
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-                    (Text("วันนี้ผลิต ") + Text(number(t.energy, digits: 0)).bold() + Text(" / คาด \(number(t.expected, digits: 0)) kWh"))
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.navy)
-                }
-                .lineLimit(1).minimumScaleFactor(0.85)
+        VStack(alignment: .leading, spacing: compact ? 10 : 12) {
+            summaryParts(maintenanceHead(t), tiles: maintenanceTiles(t), rest: dueList(Array(MaintenanceOverview.due(maintenanceTasks).prefix(3))))
+        }
+    }
+
+    private func maintenanceHead(_ t: MaintenanceOverview.Totals) -> some View {
+        HStack(spacing: 12) {
+            TCPlanRing(actual: Double(t.yield) / 100, tint: Theme.success)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("ส่งมอบแล้ว \(t.count) สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("\(number(t.kWp, digits: 1)) kWp · PR เฉลี่ย \(t.pr.map { "\($0)" } ?? "—")%")
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                (Text("วันนี้ผลิต ") + Text(number(t.energy, digits: 0)).bold() + Text(" / คาด \(number(t.expected, digits: 0)) kWh"))
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.navy)
             }
-            .accessibilityElement(children: .combine)
-            // the ring
-            .accessibilityValue("ผลิตวันนี้ \(t.yield)% ของที่คาด")
-            HStack(spacing: 6) {
-                TCStatTile("\(t.normal)", "ปกติ", tone: .green)
-                TCStatTile("\(t.alarm)", "แจ้งเตือน", tone: .red)
-                TCStatTile("\(t.offline)", "ออฟไลน์", tone: nil)
-            }
-            if !due.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("งานที่ถึงกำหนดใน \(MaintenanceOverview.soonDays) วัน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
-                    ForEach(due) { task in dueRow(task) }
-                }
+            .lineLimit(1).minimumScaleFactor(0.85)
+        }
+        .accessibilityElement(children: .combine)
+        // the ring
+        .accessibilityValue("ผลิตวันนี้ \(t.yield)% ของที่คาด")
+    }
+
+    private func maintenanceTiles(_ t: MaintenanceOverview.Totals) -> some View {
+        HStack(spacing: 6) {
+            TCStatTile("\(t.normal)", "ปกติ", tone: .green, large: !compact)
+            TCStatTile("\(t.alarm)", "แจ้งเตือน", tone: .red, large: !compact)
+            TCStatTile("\(t.offline)", "ออฟไลน์", tone: nil, large: !compact)
+        }
+    }
+
+    @ViewBuilder private func dueList(_ due: [MaintenanceTask]) -> some View {
+        if !due.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("งานที่ถึงกำหนดใน \(MaintenanceOverview.soonDays) วัน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                ForEach(due) { task in dueRow(task) }
             }
         }
     }

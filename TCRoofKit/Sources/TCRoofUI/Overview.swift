@@ -106,6 +106,8 @@ public struct TCCountPill: View {
 /// grows into the field while the title slides away. A page without a search shows only its title; a pushed page
 /// gets a back button. Use it as the page's top safe-area inset. `large` is the PWA project home's header
 /// (docs/ui/pwa-solar-survey-iphone-v3 §2): title 22 on one line and round buttons, with a bell after the search.
+/// `wide` is that header on iPad (docs/ui/pwa-solar-survey-ipad-v3 §3): title 30, 63 pt margins, 88 pt high, and the
+/// search grows to 420 pt beside the title, which stays.
 public struct TCPhoneSearchHeader: View {
     /// The header's bell: its unread count and what a tap opens.
     public struct Bell {
@@ -120,6 +122,7 @@ public struct TCPhoneSearchHeader: View {
     let showsSearch: Bool
     let onBack: (() -> Void)?
     let large: Bool
+    let wide: Bool
     let bell: Bell?
     @Binding var search: String
     @Binding var isOpen: Bool
@@ -128,33 +131,33 @@ public struct TCPhoneSearchHeader: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(title: String, subtitle: String?, search: Binding<String>, isOpen: Binding<Bool>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ",
-                showsSearch: Bool = true, large: Bool = false, bell: Bell? = nil, onBack: (() -> Void)? = nil) {
+                showsSearch: Bool = true, large: Bool = false, wide: Bool = false, bell: Bell? = nil, onBack: (() -> Void)? = nil) {
         self.title = title; self.subtitle = subtitle; self._search = search; self._isOpen = isOpen; self.prompt = prompt
-        self.showsSearch = showsSearch; self.large = large; self.bell = bell; self.onBack = onBack
+        self.showsSearch = showsSearch; self.large = large; self.wide = wide; self.bell = bell; self.onBack = onBack
     }
 
     private var corner: CGFloat { large ? 22 : 12 }
 
     public var body: some View {
         HStack(spacing: 10) {
-            if let onBack, !isOpen {
+            if let onBack, !isOpen || wide {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
                         .background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: corner, style: .continuous))
                 }
                 .accessibilityLabel("ย้อนกลับ")
             }
-            if !isOpen || !showsSearch { titles.transition(titleTransition) }
+            if !isOpen || !showsSearch || wide { titles.transition(titleTransition) }
             Spacer(minLength: 0)
             if showsSearch { searchBox }
             if let bell { bellButton(bell) }
         }
         .frame(height: 44)
         .foregroundStyle(Theme.onPrimary)
-        .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 10)
+        .padding(.horizontal, wide ? 63 : 16).padding(.top, wide ? 22 : 2).padding(.bottom, wide ? 22 : 10)
         .background {
             Theme.headerGradient
-                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous))
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: wide ? 20 : 15, bottomTrailingRadius: wide ? 20 : 15, style: .continuous))
                 .ignoresSafeArea(edges: .top)
         }
         // the keyboard put away over an empty field closes the search; with text it stays open
@@ -169,7 +172,7 @@ public struct TCPhoneSearchHeader: View {
 
     private var titles: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(large ? 22 : 18, .bold)).frame(height: large ? 28 : 23)
+            Text(title).font(.sarabunFixed(wide ? 30 : large ? 22 : 18, .bold)).frame(height: wide ? 36 : large ? 28 : 23)
             if let subtitle { Text(subtitle).font(.sarabunFixed(12)).opacity(0.9).frame(height: 16) }
         }
         .lineLimit(1)
@@ -245,7 +248,7 @@ public struct TCPhoneSearchHeader: View {
                 .transition(late)
             }
         }
-        .frame(maxWidth: open ? .infinity : 44, alignment: .leading)
+        .frame(maxWidth: open ? (wide ? 420 : .infinity) : 44, alignment: .leading)
         .frame(height: 44)
         .background(open ? Theme.surface.opacity(0.97) : Theme.onPrimary.opacity(0.18), in: box)
         .overlay(box.strokeBorder(Theme.onPrimary.opacity(open ? 0 : 0.4)))
@@ -350,26 +353,28 @@ public struct TCPlanBar: View {
     }
 }
 
-/// A count over its label on a tint; nil tone is grey (`ออฟไลน์`).
+/// A count over its label on a tint; nil tone is grey (`ออฟไลน์`). `large` is the iPad summary's 60 pt tile.
 public struct TCStatTile: View {
     let value: String
     let label: String
     let tone: TCFeedTone?
+    let large: Bool
 
-    public init(_ value: String, _ label: String, tone: TCFeedTone?) {
-        self.value = value; self.label = label; self.tone = tone
+    public init(_ value: String, _ label: String, tone: TCFeedTone?, large: Bool = false) {
+        self.value = value; self.label = label; self.tone = tone; self.large = large
     }
 
     public var body: some View {
         let c = tone?.tile ?? (Theme.hairline, Theme.inkMuted)
         VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(.sarabunFixed(18, .bold)).monospacedDigit()
-            Text(label).font(.sarabunFixed(11)).lineLimit(1).minimumScaleFactor(0.8)
+            Text(value).font(.sarabunFixed(large ? 22 : 18, .bold)).monospacedDigit()
+            Text(label).font(.sarabunFixed(large ? 12 : 11)).lineLimit(1).minimumScaleFactor(0.8)
         }
         .foregroundStyle(c.1)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8).padding(.vertical, 6)
-        .background(c.0, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, large ? 10 : 8).padding(.vertical, large ? 8 : 6)
+        .frame(minHeight: large ? 60 : nil)
+        .background(c.0, in: RoundedRectangle(cornerRadius: large ? 12 : 10, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(label) \(value)")
     }

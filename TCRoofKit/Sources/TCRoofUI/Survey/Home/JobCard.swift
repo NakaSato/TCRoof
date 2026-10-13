@@ -10,6 +10,7 @@ struct TightLabel: LabelStyle {
     }
 }
 
+/// The project card of docs/ui/pwa-solar-survey-iphone: one size, in one column on iPhone and three on iPad.
 struct JobCard: View {
     /// A survey in progress, a survey moved to installation (read-only), or the installation job itself.
     enum Mode { case survey, locked, install }
@@ -18,14 +19,11 @@ struct JobCard: View {
     var pendingSync = false
     var synced = false
     var recent = false
-    /// The job's station in the install overview, once it has moved to installation. iPhone only: the card then
-    /// shows the install phase (docs/ui/pwa-solar-survey-iphone-v3 §4).
+    /// The job's station in the install overview, once it has moved to installation: the card then shows the
+    /// install phase (docs/ui/pwa-solar-survey-iphone-v3 §4).
     var station: InstallStationSummary?
     @Environment(SurveyModel.self) private var model
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    /// iPhone: the denser card of docs/ui/pwa-solar-survey-iphone.
-    var compact: Bool { sizeClass == .compact }
-    var phase: InstallStationSummary? { compact && mode != .survey ? station : nil }
+    var phase: InstallStationSummary? { mode != .survey ? station : nil }
 
     @ViewBuilder var body: some View {
         if let phase {
@@ -36,25 +34,25 @@ struct JobCard: View {
     }
 
     private var card: some View {
-        VStack(alignment: .leading, spacing: compact ? 8 : 12) {
-            HStack(alignment: .top, spacing: compact ? 10 : 12) {
-                VStack(alignment: .leading, spacing: compact ? 1 : 3) {
-                    HStack(spacing: compact ? 6 : 8) {
-                        Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(compact ? .system(size: 12, weight: .bold) : .subheadline.weight(.heavy)).foregroundStyle(Theme.inkMuted)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 6) {
+                        Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
                         if phase != nil { phaseBadge }
                         else if mode == .install { installBadge }
                         else if mode == .locked {
                             // the lock matters more than the answer count once the survey is closed
                             ViewThatFits(in: .horizontal) { HStack(spacing: 8) { badge; lockBadge }; lockBadge }
                         } else {
-                            if compact { surveyBadge }
+                            surveyBadge
                             badge
                         }
                     }
                     if job.projectName.isEmpty {
-                        Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.sarabunFixed(compact ? 16 : 17, .bold)).italic().foregroundStyle(Theme.inkMuted)
+                        Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.sarabunFixed(16, .bold)).italic().foregroundStyle(Theme.inkMuted)
                     } else {
-                        Text(job.projectName).font(.sarabunFixed(compact ? 16 : 17, .bold)).foregroundStyle(Theme.navy)
+                        Text(job.projectName).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                     }
                     Text(detailLine).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
@@ -63,7 +61,7 @@ struct JobCard: View {
                 if let phase {
                     PercentRing(percent: Int(phase.actual.rounded()), style: .cardSmall, tint: late(phase) ? Theme.danger : Theme.primary)
                 } else {
-                    PercentRing(percent: mode == .install ? install.percent : job.completion.percent, style: compact ? .cardSmall : .card)
+                    PercentRing(percent: mode == .install ? install.percent : job.completion.percent, style: .cardSmall)
                 }
             }
             if let phase { phaseProgress(phase) } else if mode == .install { installProgress } else { surveyProgress }
@@ -78,7 +76,7 @@ struct JobCard: View {
                     chip("ส่งมอบ " + (install.dueDate.map { ISODate.thai(ISODate.string($0)) } ?? "ยังไม่กำหนด"))
                 }
             } else if !job.sectionsByCategory.isEmpty {
-                FlowLayout(spacing: compact ? 4 : 6, lineSpacing: compact ? 4 : 6) {
+                FlowLayout(spacing: 4, lineSpacing: 4) {
                     ForEach(job.sectionsByCategory) { g in
                         Text("\(g.category.rawValue) \(g.category.title) ×\(g.sections.count)").font(.sarabunFixed(11, .semibold)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 8).padding(.vertical, 1).background(Theme.primarySoft, in: Capsule())
@@ -94,10 +92,10 @@ struct JobCard: View {
             }
             .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
         }
-        .padding(.horizontal, compact ? 14 : 16).padding(.top, compact ? 12 : 14).padding(.bottom, compact ? 10 : 14)
+        .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(mode == .locked && phase == nil ? Theme.background : Theme.surface, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(recent ? Theme.primary.opacity(compact ? 1 : 0.55) : Theme.borderSubtle, lineWidth: recent && !compact ? 1.5 : 1))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(recent ? Theme.primary : Theme.borderSubtle, lineWidth: 1))
         .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -105,7 +103,7 @@ struct JobCard: View {
         let steps = job.stepStatuses
         let next = job.nextStep
         let nextIndex = next.flatMap { n in steps.firstIndex { $0.step.page == n.page } }
-        HStack(spacing: compact ? 2 : 3) {
+        HStack(spacing: 2) {
             ForEach(steps, id: \.step.id) { s in Capsule().fill(color(s.status)).frame(height: 6) }
         }
         if mode == .locked {
@@ -139,7 +137,7 @@ struct JobCard: View {
             .padding(.horizontal, 8).frame(height: 18).background(Theme.primarySoft, in: Capsule())
     }
 
-    // MARK: install phase (iPhone)
+    // MARK: install phase
 
     private func late(_ s: InstallStationSummary) -> Bool {
         InstallOverview.pace(s, threshold: model.settings.behindThreshold) == .behind
@@ -181,7 +179,7 @@ struct JobCard: View {
             Text("›").font(.sarabunFixed(17))
         }
         .foregroundStyle(isLate ? Theme.dangerText : Theme.primary)
-        .stripFrame(compact: true)
+        .stripFrame()
         .background(isLate ? Theme.dangerSoft : Theme.primarySoft, in: RoundedRectangle(cornerRadius: 9))
     }
 
@@ -225,14 +223,14 @@ struct JobCard: View {
     }
 
     func actionRow(_ lead: Text, _ title: Text, background: Color) -> some View {
-        HStack(spacing: compact ? 6 : 8) {
-            lead.font(compact ? .system(size: 11) : .caption).foregroundStyle(Theme.inkMuted)
-            title.font(compact ? .system(size: 13, weight: .bold) : .subheadline.weight(.bold)).foregroundStyle(Theme.navy).lineLimit(1)
+        HStack(spacing: 6) {
+            lead.font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
+            title.font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy).lineLimit(1)
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
         }
-        .stripFrame(compact: compact)
-        .background(background, in: RoundedRectangle(cornerRadius: compact ? 9 : 10))
+        .stripFrame()
+        .background(background, in: RoundedRectangle(cornerRadius: 9))
     }
 
     var badge: some View {
@@ -267,27 +265,20 @@ struct JobCard: View {
     }
 
     func continueRow(next: SurveyStep?, index: Int?, total: Int) -> some View {
-        let last = index == total
-        let font: Font = compact ? .system(size: 13, weight: .bold) : .subheadline.weight(.bold)
-        return HStack(spacing: compact ? 6 : 8) {
+        let font = Font.system(size: 13, weight: .bold)
+        return HStack(spacing: 6) {
             if let next, let index {
-                Text("ทำต่อ \(index)/\(total)").font(compact ? .system(size: 11) : .caption).foregroundStyle(Theme.inkMuted).monospacedDigit()
-                if compact {
-                    // code and title on one line, cut at the end
-                    Text(next.code + " " + next.title).font(font).foregroundStyle(Theme.navy).lineLimit(1)
-                } else {
-                    Text(next.code).font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
-                    Text(next.title).font(font).foregroundStyle(Theme.navy).lineLimit(1)
-                }
+                Text("ทำต่อ \(index)/\(total)").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                // code and title on one line, cut at the end
+                Text(next.code + " " + next.title).font(font).foregroundStyle(Theme.navy).lineLimit(1)
             } else {
                 Label("กรอกครบทุกขั้นแล้ว", systemImage: "checkmark.circle.fill").font(font).foregroundStyle(Theme.teal)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
         }
-        .stripFrame(compact: compact)
-        .background(compact ? Theme.primarySoft : next == nil || last ? Theme.mint.opacity(0.25) : Theme.primary.opacity(0.08),
-                    in: RoundedRectangle(cornerRadius: compact ? 9 : 10))
+        .stripFrame()
+        .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 9))
     }
 
     /// Sync state as a 20 pt icon only (owner, 3 ต.ค.): waiting / synced; VoiceOver keeps the words.
@@ -303,10 +294,8 @@ struct JobCard: View {
 }
 
 private extension View {
-    /// The continue / action strip: 34 pt high on iPhone, 10 pt padding on iPad.
-    @ViewBuilder func stripFrame(compact: Bool) -> some View {
-        if compact { padding(.horizontal, 10).frame(minHeight: 34) } else { padding(.horizontal, 10).padding(.vertical, 10) }
-    }
+    /// The continue / action strip: 34 pt high.
+    func stripFrame() -> some View { padding(.horizontal, 10).frame(minHeight: 34) }
 }
 
 /// The hard hat of the `ติดตั้ง` badge (docs/ui/pwa-solar-survey-iphone-v3/icons/badge-install-hardhat.svg), drawn on
@@ -329,11 +318,11 @@ struct HardHat: Shape {
     }
 }
 
-/// The percent ring. `.card` is the home card's 58 pt ring (icons/progress-ring-*.svg): light track, blue arc,
-/// green at 100 %, value over a small "%". `.cardSmall` is the iPhone card's 44 pt ring
-/// (docs/ui/pwa-solar-survey-iphone/icons/progress-ring-44-*.svg). `.compact` is the editor sidebar's: blue, teal from 80 %.
+/// The percent ring. `.cardSmall` is the project card's 44 pt ring
+/// (docs/ui/pwa-solar-survey-iphone/icons/progress-ring-44-*.svg): light track, blue arc, green at 100 %.
+/// `.compact` is the editor sidebar's: blue, teal from 80 %.
 struct PercentRing: View {
-    enum Style { case compact, card, cardSmall }
+    enum Style { case compact, cardSmall }
     let percent: Int
     var size: CGFloat = 52
     var style = Style.compact
@@ -350,18 +339,6 @@ struct PercentRing: View {
                 Text("\(percent)%").font(.sarabunFixed(13, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
             }
             .frame(width: size, height: size)
-        case .card:
-            ZStack {
-                Circle().stroke(Theme.track, lineWidth: 4)
-                Circle().trim(from: 0, to: Double(percent) / 100)
-                    .stroke(percent >= 100 ? Theme.stepDone : Theme.primary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                (Text("\(percent)").font(.sarabunFixed(16, .bold)).foregroundColor(Theme.navy)
-                    + Text("%").font(.sarabunFixed(10)).foregroundColor(Theme.inkMuted))
-                    .monospacedDigit()
-            }
-            .frame(width: 58, height: 58)
-            .accessibilityElement().accessibilityLabel("\(percent)%")
         case .cardSmall:
             ZStack {
                 Circle().stroke(Theme.borderSubtle, lineWidth: 5)

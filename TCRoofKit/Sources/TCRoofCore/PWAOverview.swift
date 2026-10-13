@@ -42,6 +42,19 @@ public enum InstallOverview {
         return .onPlan
     }
 
+    /// One segment of a project card's install bar.
+    public enum BarSegment: Sendable { case done, current, overdue, ahead }
+
+    /// The install-phase card's bar (docs/ui/pwa-solar-survey-iphone-v3 §4): `count` equal segments over 0…100 %.
+    /// Those the actual percent has passed are done and the one it is in is current; behind the plan, the ones the
+    /// plan has reached by now are overdue.
+    public static func bar(_ s: InstallStationSummary, threshold: Double = defaultThreshold, count: Int = 10) -> [BarSegment] {
+        let step = 100 / Double(max(count, 1))
+        let done = Int((min(max(s.actual.rounded(), 0), 100) / step).rounded(.down))
+        let planned = pace(s, threshold: threshold) == .behind ? Int(((s.plan ?? 0).rounded() / step).rounded(.up)) : 0
+        return (0..<max(count, 1)).map { i in i < done ? .done : i == done ? .current : i < planned ? .overdue : .ahead }
+    }
+
     /// The values averaged by their stations' kWp, or equally when no station has one. nil for no values.
     public static func weighted(_ values: [(value: Double, kWp: Double)]) -> Double? {
         guard !values.isEmpty else { return nil }

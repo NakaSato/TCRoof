@@ -102,6 +102,8 @@ public enum Theme {
     /// Light red of a missing section in the editor sidebar.
     public static let dangerLine = Color(light: 0xF2A09A, dark: 0x7A3A35)
     public static let dangerSoft = Color(light: 0xFDECEA, dark: 0x3A1C1A)
+    /// Work the plan has reached and the site hasn't: the overdue segments of an install bar.
+    public static let dangerPale = Color(light: 0xF4B4AE, dark: 0x5A2A26)
 
     public static let unreadRow = Color(light: 0xF3F8FD, dark: 0x15212D)
     /// Survey job card progress box: fill while a draft is open, fill otherwise, finished-group bar,
@@ -256,6 +258,8 @@ public enum Theme {
     public static let actionGradient = LinearGradient(colors: [primary, primaryLight], startPoint: .topLeading, endPoint: .bottomTrailing)
     public static let heroGradient = LinearGradient(colors: [primary, navy], startPoint: UnitPoint(x: 0.25, y: 0), endPoint: UnitPoint(x: 0.75, y: 1))
     /// #1F6FB5 → #2E8FDB: headers, primary gradient buttons, "ถัดไป".
+    /// The ring that lifts a badge off `headerGradient`.
+    public static let headerBadgeRing = Color(hex: 0x2A84CF)
     public static let headerGradient = LinearGradient(colors: [Color(hex: 0x1F6FB5), primaryLight], startPoint: .leading, endPoint: .trailing)
     /// #27A99A → #4DB6E0: the survey module's call to action.
     public static let tealGradient = LinearGradient(colors: [teal, tealLight], startPoint: .leading, endPoint: .trailing)

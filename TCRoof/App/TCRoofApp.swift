@@ -67,8 +67,8 @@ struct RootView: View {
             // (`.navigationDestination(isPresented: .constant(true))`), iOS 27 never draws a frame: a blank
             // screen and "Observation tracking feedback loop detected".
             if DebugScreen.requested == "pwa" && sizeClass == .compact {
-                // the iPhone PWA module is its own tabs under its own dock
-                PWAPhoneTabs {}
+                // the iPhone PWA module is the main dock's `กปภ.` tab
+                PhoneTabs { home }
             } else if DebugScreen.isKnown {
                 NavigationStack { DebugScreen() }
             } else if sizeClass == .compact {

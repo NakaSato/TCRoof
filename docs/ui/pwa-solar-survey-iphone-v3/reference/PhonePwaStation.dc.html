@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>PWA สถานี — บำรุงรักษา (iPhone)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/cce3275ea50e42de3cbe91576b63f24b) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/6981a627824e19ea636fd6eabaa19e55) format("truetype");font-weight:700}
+body{margin:0}
+.st-tap:active{filter:brightness(.96)}
+.st-tap:focus-visible{outline:3px solid #1F6FB5;outline-offset:2px}
+</style>
+</helmet>
+<div class="g" style="position:relative;width:390px;height:844px;display:flex;flex-direction:column;overflow:hidden;background:#F5F8FB;font-family:Sarabun,sans-serif;color:#16325C">
+<header class="g-head" style="flex-direction:column;align-items:stretch;gap:0;padding:0 16px 14px;border-bottom-left-radius:15px;border-bottom-right-radius:15px">
+<div aria-hidden="true" style="height:44px;margin:0 -16px -4px;padding:0 26px 0 32px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700"><span>9:41</span><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 18 12" style="width:18px;height:12px;fill:#fff"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><svg viewBox="0 0 16 12" style="width:16px;height:12px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round"><path d="M1.5 4.5a9.5 9.5 0 0 1 13 0M4 7.3a6 6 0 0 1 8 0M6.5 10a2.4 2.4 0 0 1 3 0"></path></svg><svg viewBox="0 0 27 13" style="width:27px;height:13px"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".5"></rect><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"></rect><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"></rect></svg></span></div>
+<div style="display:flex;align-items:center;gap:8px;height:44px"><a href="PhoneHome.dc.html" aria-label="กลับไปบำรุงรักษา" class="st-tap" style="display:flex;align-items:center;gap:2px;min-height:44px;padding:0 10px 0 4px;margin-left:-6px;border-radius:12px;color:#fff;text-decoration:none;font-size:15px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M15 5l-7 7 7 7"></path></svg>บำรุงรักษา</a><button type="button" aria-label="เพิ่มเติม" class="st-tap" style="margin-left:auto;width:44px;height:44px;border:0;border-radius:12px;background:rgba(255,255,255,0.18);color:#fff;font-size:20px;line-height:1;cursor:pointer">···</button></div>
+
+<h1 style="margin:2px 0 0;font-size:22px;line-height:28px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{s.name}}</h1>
+<div style="font-size:13px;opacity:.92">{{s.kwp}} kWp · ส่งมอบ {{s.handover}} · {{s.ct}}</div>
+</header>
+<div style="flex:none;padding:12px 16px 0"><div role="tablist" aria-label="ส่วนของสถานี" style="display:flex;background:#E6ECF3;padding:3px;border-radius:22px"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button role="tab" aria-selected="{{t.on}}" onClick="{{t.go}}" style="flex:1 1 0;min-width:0;height:38px;border:0;border-radius:19px;font-family:inherit;font-size:14px;cursor:pointer;white-space:nowrap;{{t.st}}">{{t.t}}<span style="{{t.cSt}}">{{t.c}}</span></button></sc-for></div></div>
+<main style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:10px 16px 104px">
+<sc-if value="{{isOv}}" hint-placeholder-val="{{true}}">
+<sc-if value="{{s.hasIssue}}" hint-placeholder-val="{{true}}"><div role="alert" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;{{s.issueSt}}"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 4l9 16H3z"></path><path d="M12 10v4M12 17v.5"></path></svg><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:14px">{{s.issue}}</b><span style="font-size:12px">{{s.issueSub}}</span></div><button type="button" onClick="{{goTk}}" class="st-tap" style="min-height:36px;padding:0 12px;border:0;border-radius:18px;background:rgba(255,255,255,0.75);color:inherit;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">ดูงานซ่อม</button></div></sc-if>
+<section aria-label="การผลิตวันนี้" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:13px;color:#5B6B82">วันนี้ผลิต</span><b style="font-size:26px;line-height:30px">{{s.e}}</b><span style="font-size:13px;color:#5B6B82">/ คาด {{s.x}} kWh</span><b style="margin-left:auto;font-size:16px;color:{{s.c}}">{{s.pct}}%</b></div>
+<div role="img" aria-label="กราฟพลังงานรายชั่วโมง 6 ถึง 18 นาฬิกา" style="display:flex;align-items:flex-end;gap:4px;height:84px;padding-top:4px"><sc-for list="{{hours}}" as="h" hint-placeholder-count="13"><div style="flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative"><i style="position:absolute;left:0;right:0;bottom:0;height:{{h.xh}};border-radius:4px 4px 0 0;background:#E6ECF3"></i><i style="position:relative;display:block;height:{{h.eh}};border-radius:4px 4px 0 0;background:{{h.c}}"></i></div></sc-for></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;color:#9FB3CC;margin-top:-2px"><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span></div>
+<div style="display:flex;gap:14px;font-size:11px;color:#5B6B82"><span style="display:flex;align-items:center;gap:5px"><i style="width:10px;height:10px;border-radius:3px;background:{{s.c}}"></i>ผลิตจริง</span><span style="display:flex;align-items:center;gap:5px"><i style="width:10px;height:10px;border-radius:3px;background:#E6ECF3"></i>คาดการณ์</span><span style="margin-left:auto">อัปเดต 14:55</span></div>
+</section>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="3"><div style="background:#fff;border:1px solid #DDE4ED;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;line-height:19px"><span style="font-size:11px;color:#5B6B82">{{k.k}}</span><b style="font-size:16px;{{k.st}}">{{k.v}}</b><span style="font-size:11px;color:#9FB3CC">{{k.s}}</span></div></sc-for></div>
+<section aria-label="อินเวอร์เตอร์" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:10px 14px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;min-height:28px"><b style="font-size:14px">อินเวอร์เตอร์</b><button type="button" onClick="{{goEq}}" style="margin-left:auto;border:0;background:none;color:#1F6FB5;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;min-height:32px">ทั้งหมด ›</button></div>
+<sc-for list="{{invs}}" as="v" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;min-height:46px;border-top:1px solid #EEF1F5"><i style="width:10px;height:10px;border-radius:50%;flex:none;background:{{v.c}}"></i><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px">{{v.n}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{v.m}}</span></div><div style="text-align:right;display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px;{{v.st}}">{{v.p}}</b><span style="font-size:11px;color:#5B6B82">{{v.s}}</span></div></div></sc-for>
+</section>
+</sc-if>
+<sc-if value="{{isTk}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{tks}}" as="t" hint-placeholder-count="2"><a href="PhonePwaRepair.dc.html" class="st-tap" style="text-decoration:none;color:#16325C;background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;font-weight:700;color:#5B6B82">{{t.id}}</span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;{{t.chipSt}}">{{t.chip}}</span><span style="margin-left:auto;font-size:12px;color:#5B6B82">{{t.d}}</span></div><b style="font-size:15px">{{t.t}}</b><span style="font-size:13px;color:#5B6B82">{{t.sub}}</span><div style="display:flex;gap:4px;margin-top:2px"><sc-for list="{{t.steps}}" as="p" hint-placeholder-count="4"><div style="flex:1;display:flex;flex-direction:column;gap:4px"><i style="height:4px;border-radius:2px;background:{{p.c}}"></i><span style="font-size:11px;{{p.st}}">{{p.t}}</span></div></sc-for></div></a></sc-for>
+</sc-if>
+<sc-if value="{{isPm}}" hint-placeholder-val="{{false}}">
+<section style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px"><div style="width:56px;height:56px;border-radius:14px;background:#E8F1FB;color:#1F6FB5;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:20px;flex:none"><b style="font-size:20px">3</b><span style="font-size:11px">พ.ย.</span></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:20px"><span style="font-size:12px;color:#5B6B82">PM ครั้งถัดไป · อีก 21 วัน</span><b style="font-size:15px">PM รอบ 6 เดือน</b><span style="font-size:13px;color:#5B6B82">ทีม TC · ล้างแผง ตรวจขั้วต่อ IR scan</span></div></section>
+<b style="font-size:13px;margin-top:4px">ประวัติ</b>
+<sc-for list="{{pmHist}}" as="h" hint-placeholder-count="4"><div style="background:#fff;border:1px solid #DDE4ED;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;flex:none;fill:none;stroke:#2E9E5B;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5 9-10"></path></svg><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:14px">{{h.t}}</b><span style="font-size:12px;color:#5B6B82">{{h.w}}</span></div><span style="font-size:12px;color:#5B6B82;white-space:nowrap">{{h.d}}</span></div></sc-for>
+</sc-if>
+<sc-if value="{{isEq}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{eq}}" as="g" hint-placeholder-count="3"><section style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:6px 14px"><b style="display:block;font-size:13px;color:#5B6B82;padding:6px 0 2px">{{g.g}}</b><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;min-height:44px;border-top:1px solid #EEF1F5"><span style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.k}}</span><b style="font-size:14px;white-space:nowrap">{{r.v}}</b></div></sc-for></section></sc-for>
+</sc-if>
+</main>
+<div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:120px;z-index:4;pointer-events:none;background:linear-gradient(to bottom,rgba(245,248,251,0) 0%,rgba(245,248,251,0.9) 40%,#F5F8FB 65%)"></div>
+<div style="position:absolute;left:16px;right:16px;bottom:24px;z-index:5;display:flex;gap:8px"><a href="tel:" class="st-tap" style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;padding:0 18px;border:1px solid #C9D3E0;border-radius:16px;background:#fff;color:#16325C;text-decoration:none;font-size:15px;font-weight:700"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"></path></svg>{{s.ctShort}}</a><a href="PhonePwaRepair.dc.html" class="st-tap" style="flex:1;min-height:52px;border-radius:16px;background:#1F6FB5;color:#fff;text-decoration:none;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px">{{s.cta}}</a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const tab = st.tab || 'ov';
+    // Example data: one handed-over station (MP 25) — same numbers as the PWA home's บำรุงรักษา list
+    const S = { mp: 25, name: 'สถานีผลิตน้ำนครชัยศรี', kwp: 220, e: 410, x: 790, pr: 63, st: 'alarm', handover: '12/3/2569', ct: 'ผู้รับเหมา C', ctShort: 'ผู้รับเหมา C', tk: 1,
+      issue: 'INV 2 fault · 2 วัน', issueSub: 'Error 31 · ผลิตได้ราวครึ่งเดียว' };
+    const SM = { ok: ['ปกติ', 'background:#E8F5EE;color:#1F6B43', '#2E9E5B'], alarm: ['แจ้งเตือน', 'background:#FDECEA;color:#B42318', '#D9453B'], off: ['ออฟไลน์', 'background:#EEF1F5;color:#5B6B82', '#9FB3CC'] };
+    const v = {};
+    v.s = { ...S, e: S.e.toLocaleString('en-US'), x: S.x.toLocaleString('en-US'), pct: Math.round(S.e / S.x * 100), chip: SM[S.st][0], chipSt: 'background:rgba(255,255,255,0.92);color:' + (S.st === 'alarm' ? '#B42318' : S.st === 'off' ? '#5B6B82' : '#1F6B43'), c: SM[S.st][2],
+      hasIssue: S.st !== 'ok', issueSt: S.st === 'alarm' ? 'background:#FDECEA;color:#B42318' : 'background:#EEF1F5;color:#3E4C60', cta: 'ใบงานซ่อม TK-0412' };
+    const TB = [['ov', 'ภาพรวม', ''], ['tk', 'งานซ่อม', ' 1'], ['pm', 'PM', ''], ['eq', 'อุปกรณ์', '']];
+    v.tabs = TB.map(([k, t, c]) => ({ t, c, on: tab === k ? 'true' : 'false', go: () => this.setState({ tab: k }),
+      st: tab === k ? 'background:#fff;color:#16325C;font-weight:700;box-shadow:0 1px 3px rgba(22,50,92,0.16)' : 'background:transparent;color:#5B6B82;font-weight:600',
+      cSt: 'font-weight:700;color:' + (k === 'tk' ? '#B45309' : '#5B6B82') }));
+    v.isOv = tab === 'ov'; v.isTk = tab === 'tk'; v.isPm = tab === 'pm'; v.isEq = tab === 'eq';
+    v.goTk = () => this.setState({ tab: 'tk' }); v.goEq = () => this.setState({ tab: 'eq' });
+    // hourly kWh 06–18 (expected vs actual; actual stops at 15:00 = now)
+    const X = [4, 18, 42, 70, 92, 108, 114, 108, 92, 70, 42, 18, 4], E = [2, 9, 22, 37, 48, 56, 60, 58, 52, 0, 0, 0, 0], mx = 120;
+    v.hours = X.map((x, i) => ({ xh: Math.round(x / mx * 100) + '%', eh: Math.round(E[i] / mx * 100) + '%', c: SM[S.st][2] }));
+    v.kpis = [{ k: 'PR วันนี้', v: S.pr + '%', s: 'เป้า 80%', st: 'color:#B42318' }, { k: 'ผลิตเดือนนี้', v: '17.6 MWh', s: 'คาด 21.4', st: '' }, { k: 'ลด CO₂', v: '8.8 t', s: 'เดือนนี้', st: '' }];
+    v.invs = [{ n: 'INV 1', m: 'Huawei SUN2000-110KTL · SN …4417', p: '58.2 kW', s: 'ปกติ', c: '#2E9E5B', st: '' },
+      { n: 'INV 2', m: 'Huawei SUN2000-110KTL · SN …4452', p: '0 kW', s: 'Error 31', c: '#D9453B', st: 'color:#B42318' }];
+    const STEP = (n) => ['แจ้ง', 'รับงาน', 'เข้าหน้างาน', 'ปิดงาน'].map((t, i) => ({ t, c: i < n ? '#1F6FB5' : '#E3E9F1', st: i < n ? 'color:#16325C;font-weight:700' : 'color:#9FB3CC' }));
+    v.tks = [{ id: 'TK-0412', chip: 'กำลังดำเนินการ', chipSt: 'background:#FFF3E6;color:#9A4A06', d: 'แจ้ง 11/10 09:20', t: 'INV 2 หยุดผลิต (Error 31)', sub: 'ผู้รับเหมา C · นัดเข้าหน้างาน 14/10 10:00', steps: STEP(2) },
+      { id: 'TK-0388', chip: 'ปิดแล้ว', chipSt: 'background:#E8F5EE;color:#1F6B43', d: '2/9 → 4/9', t: 'สาย DC string 7 หลวม', sub: 'ผู้รับเหมา C · เปลี่ยนขั้วต่อ MC4 2 ชุด', steps: STEP(4) }];
+    v.pmHist = [{ t: 'PM รอบ 6 เดือน', w: 'ทีม TC · ผ่าน 24/24 ข้อ', d: '3/5/2569' }, { t: 'ล้างแผง', w: 'ผู้รับเหมา C · ผลิตเพิ่ม 6%', d: '15/7/2569' }, { t: 'ตรวจรับหลังส่งมอบ', w: 'ทีม TC · IR scan ไม่พบจุดร้อน', d: '20/3/2569' }];
+    v.eq = [{ g: 'แผง', rows: [{ k: 'Longi Hi-MO 6 · 550 W', v: '400 แผง' }, { k: 'String', v: '20 × 20' }] },
+      { g: 'อินเวอร์เตอร์', rows: [{ k: 'INV 1 · SUN2000-110KTL', v: 'ปกติ' }, { k: 'INV 2 · SUN2000-110KTL', v: 'Error 31' }] },
+      { g: 'มิเตอร์และสื่อสาร', rows: [{ k: 'Smart meter DTSU666', v: 'ออนไลน์' }, { k: 'SmartLogger 3000', v: 'ออนไลน์' }, { k: 'ประกันระบบ', v: 'ถึง 12/3/2571' }] }];
+    return v;
+  }
+}
+</script>
+</body>
+</html>

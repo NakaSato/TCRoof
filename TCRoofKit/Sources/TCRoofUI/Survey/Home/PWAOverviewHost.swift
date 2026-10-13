@@ -15,12 +15,22 @@ public struct PWAOverviewHost {
     /// Handed-over stations. There is no monitoring feed yet, so a host leaves it empty.
     public var maintenanceStations: [MaintenanceStationSummary]
     public var maintenanceTasks: [MaintenanceTask]
+    /// Opens a handed-over station from its row of the maintenance overview.
+    public var openMaintenanceStation: ((MaintenanceStationSummary) -> Void)?
+    /// Opens the `แผนงาน` page from the home's nav; nil leaves the segment out.
+    public var openPlan: (() -> Void)?
+    /// The header's bell: the unread count and the notifications screen. nil leaves the bell out.
+    public var unread = 0
+    public var openNotifications: (() -> Void)?
 
     public init(installStations: [InstallStationSummary]? = nil, openStation: ((InstallStationSummary) -> Void)? = nil,
                 openDailyReports: (() -> Void)? = nil, maintenanceStations: [MaintenanceStationSummary] = [],
-                maintenanceTasks: [MaintenanceTask] = []) {
+                maintenanceTasks: [MaintenanceTask] = [], openMaintenanceStation: ((MaintenanceStationSummary) -> Void)? = nil,
+                openPlan: (() -> Void)? = nil, unread: Int = 0, openNotifications: (() -> Void)? = nil) {
         self.installStations = installStations; self.openStation = openStation; self.openDailyReports = openDailyReports
         self.maintenanceStations = maintenanceStations; self.maintenanceTasks = maintenanceTasks
+        self.openMaintenanceStation = openMaintenanceStation; self.openPlan = openPlan
+        self.unread = unread; self.openNotifications = openNotifications
     }
 }
 

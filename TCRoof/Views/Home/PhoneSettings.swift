@@ -5,6 +5,8 @@ import TCRoofCore
 /// iPhone settings (docs/ui/tcroof-home-iphone states/06, v2 colours via `homeInk`): grouped white cards on the page colour.
 struct PhoneSettingsList: View {
     @Binding var confirmLogout: Bool
+    /// Opened from the `กปภ.` tab: show `ตั้งค่าโครงการ PWA`.
+    var pwa = false
     @Environment(GoogleSession.self) private var session
     @AppStorage("userName") private var userName = ""
     @AppStorage("userTeam") private var userTeam = ""
@@ -43,6 +45,14 @@ struct PhoneSettingsList: View {
                         .labelsHidden().tint(Theme.navy)
                     }
                     .rowFrame()
+                }
+                if pwa {
+                    // the PWA module's own dock had this as a tab; here until the owner decides where it lives
+                    // (docs/ui/pwa-solar-survey-iphone-v3, open question 1)
+                    section("โครงการ PWA") {
+                        NavigationLink { PWASettingsPage() } label: { row("ตั้งค่าโครงการ PWA", "›") }
+                            .buttonStyle(.plain)
+                    }
                 }
                 notificationsSection
                 section("เครื่องมือ") {

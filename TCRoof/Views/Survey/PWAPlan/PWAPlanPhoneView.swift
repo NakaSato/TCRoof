@@ -4,8 +4,8 @@ import TCRoofUI
 import TCRoofCore
 
 /// The PWA module's `แผนงาน` tab on iPhone (docs/ui/pwa-plan-iphone): the header with its growing search, the view
-/// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The dock comes from `PWAPhoneTabs`; iPad keeps
-/// `MPOverviewView`.
+/// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The PWA home's nav pushes it (`PWAPhoneRoot`),
+/// so the header has a back button; iPad keeps `MPOverviewView`.
 struct PWAPlanPhoneView: View {
     enum Pane: String, CaseIterable { case schedule, mp, due }
     enum CalendarMode: String, CaseIterable { case week, month }
@@ -41,6 +41,8 @@ struct PWAPlanPhoneView: View {
     @State private var library = StationDocsStore.loadLibrary()
     @State private var survey = SurveyModel.shared
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.isPresented) private var isPushed
+    @Environment(\.dismiss) private var dismiss
 
     private var stations: [Job] { jobs.pwaStations }
 
@@ -65,7 +67,8 @@ struct PWAPlanPhoneView: View {
         }
         .overlay(alignment: .topTrailing) { if pane == .due && showDueMenu { dueMenu(due) } }
         .safeAreaInset(edge: .top, spacing: 0) {
-            TCPhoneSearchHeader(title: "แผนงาน PWA", subtitle: "การประปาส่วนภูมิภาค", search: $search, isOpen: $searchOpen)
+            TCPhoneSearchHeader(title: "แผนงาน PWA", subtitle: "การประปาส่วนภูมิภาค", search: $search, isOpen: $searchOpen,
+                                onBack: isPushed ? { dismiss() } : nil)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)

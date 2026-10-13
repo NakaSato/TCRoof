@@ -24,6 +24,21 @@ final class PWAOverviewTests: XCTestCase {
         XCTAssertEqual([t.behind, t.onPlan, t.ahead], [0, 0, 0])
     }
 
+    func testBarMarksDoneCurrentAndOverdueSegments() {
+        typealias B = InstallOverview.BarSegment
+        // the board's late card: 22 % of a 28 % plan
+        XCTAssertEqual(InstallOverview.bar(station("a", actual: 22, plan: 28)),
+                       [B.done, .done, .current] + Array(repeating: B.ahead, count: 7))
+        // behind by more than a segment: the plan's segments past the current one are overdue
+        XCTAssertEqual(InstallOverview.bar(station("b", actual: 22, plan: 51)),
+                       [B.done, .done, .current, .overdue, .overdue, .overdue] + Array(repeating: B.ahead, count: 4))
+        // on plan or with no plan nothing is overdue
+        XCTAssertEqual(InstallOverview.bar(station("c", actual: 71, plan: 68)),
+                       Array(repeating: B.done, count: 7) + [B.current, .ahead, .ahead])
+        XCTAssertFalse(InstallOverview.bar(station("d", actual: 5, plan: nil)).contains(.overdue))
+        XCTAssertEqual(InstallOverview.bar(station("e", actual: 100, plan: 100)), Array(repeating: B.done, count: 10))
+    }
+
     func testAveragesAreWeightedByKWp() {
         let t = InstallOverview.totals([station("a", kWp: 300, actual: 20, plan: 40), station("b", kWp: 100, actual: 60, plan: 80)])
         XCTAssertEqual(t.actual, 30)

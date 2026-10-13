@@ -27,11 +27,12 @@ public struct TCCountSegments: View {
     let segments: [Segment]
     @Binding var selection: Int
     let equalWidths: Bool
+    let fontSize: CGFloat
     @Namespace private var slide
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(_ segments: [Segment], selection: Binding<Int>, equalWidths: Bool = true) {
-        self.segments = segments; self._selection = selection; self.equalWidths = equalWidths
+    public init(_ segments: [Segment], selection: Binding<Int>, equalWidths: Bool = true, fontSize: CGFloat = 13) {
+        self.segments = segments; self._selection = selection; self.equalWidths = equalWidths; self.fontSize = fontSize
     }
 
     public var body: some View {
@@ -46,7 +47,7 @@ public struct TCCountSegments: View {
     private func segment(_ s: Segment, on: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                Text(s.title).font(.sarabunFixed(13, on ? .bold : .semibold))
+                Text(s.title).font(.sarabunFixed(fontSize, on ? .bold : .semibold))
                 if let count = s.count {
                     Text(count).font(.sarabunFixed(12, .bold)).monospacedDigit()
                         .foregroundStyle(s.alert ? Theme.dangerText : on ? Theme.primary : Theme.inkMuted)
@@ -103,12 +104,23 @@ public struct TCCountPill: View {
 
 /// The blue header of a PWA module page on iPhone: title 18 over a subtitle 12, and a 44 pt search button that
 /// grows into the field while the title slides away. A page without a search shows only its title; a pushed page
-/// gets a back button. Use it as the page's top safe-area inset.
+/// gets a back button. Use it as the page's top safe-area inset. `large` is the PWA project home's header
+/// (docs/ui/pwa-solar-survey-iphone-v3 §2): title 22 on one line and round buttons, with a bell after the search.
 public struct TCPhoneSearchHeader: View {
+    /// The header's bell: its unread count and what a tap opens.
+    public struct Bell {
+        let unread: Int
+        let action: () -> Void
+
+        public init(unread: Int, action: @escaping () -> Void) { self.unread = unread; self.action = action }
+    }
+
     let title: String
     let subtitle: String?
     let showsSearch: Bool
     let onBack: (() -> Void)?
+    let large: Bool
+    let bell: Bell?
     @Binding var search: String
     @Binding var isOpen: Bool
     var prompt: String
@@ -116,23 +128,26 @@ public struct TCPhoneSearchHeader: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(title: String, subtitle: String?, search: Binding<String>, isOpen: Binding<Bool>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ",
-                showsSearch: Bool = true, onBack: (() -> Void)? = nil) {
+                showsSearch: Bool = true, large: Bool = false, bell: Bell? = nil, onBack: (() -> Void)? = nil) {
         self.title = title; self.subtitle = subtitle; self._search = search; self._isOpen = isOpen; self.prompt = prompt
-        self.showsSearch = showsSearch; self.onBack = onBack
+        self.showsSearch = showsSearch; self.large = large; self.bell = bell; self.onBack = onBack
     }
+
+    private var corner: CGFloat { large ? 22 : 12 }
 
     public var body: some View {
         HStack(spacing: 10) {
             if let onBack, !isOpen {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
-                        .background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: corner, style: .continuous))
                 }
                 .accessibilityLabel("ย้อนกลับ")
             }
             if !isOpen || !showsSearch { titles.transition(titleTransition) }
             Spacer(minLength: 0)
             if showsSearch { searchBox }
+            if let bell { bellButton(bell) }
         }
         .frame(height: 44)
         .foregroundStyle(Theme.onPrimary)
@@ -154,7 +169,7 @@ public struct TCPhoneSearchHeader: View {
 
     private var titles: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(18, .bold)).frame(height: 23)
+            Text(title).font(.sarabunFixed(large ? 22 : 18, .bold)).frame(height: large ? 28 : 23)
             if let subtitle { Text(subtitle).font(.sarabunFixed(12)).opacity(0.9).frame(height: 16) }
         }
         .lineLimit(1)
@@ -178,8 +193,29 @@ public struct TCPhoneSearchHeader: View {
         }
     }
 
+    private func bellButton(_ bell: Bell) -> some View {
+        Button(action: bell.action) {
+            Image(systemName: "bell").font(.system(size: 18, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .background(Theme.onPrimary.opacity(0.18), in: Circle())
+                .overlay(Circle().strokeBorder(Theme.onPrimary.opacity(0.4)))
+                .overlay(alignment: .topTrailing) {
+                    if bell.unread > 0 {
+                        Text("\(bell.unread)").font(.system(size: 10, weight: .heavy)).monospacedDigit()
+                            .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
+                            .background(Theme.danger, in: Capsule())
+                            .background(Capsule().fill(Theme.headerBadgeRing).padding(-2))
+                            .padding(5)
+                    }
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(bell.unread > 0 ? "การแจ้งเตือน · ยังไม่อ่าน \(bell.unread)" : "การแจ้งเตือน")
+    }
+
     private func shape(open: Bool) -> some View {
-        let box = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let box = RoundedRectangle(cornerRadius: corner, style: .continuous)
         // the field and ✕ come in once the box has grown
         let late = AnyTransition.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.24).delay(reduceMotion ? 0 : 0.42)),
                                             removal: .opacity.animation(.easeOut(duration: 0.1)))

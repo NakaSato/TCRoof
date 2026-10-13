@@ -2,9 +2,9 @@
 import SwiftUI
 import TCRoofCore
 
-/// iPhone survey home (docs/ui/pwa-solar-survey-iphone-v2): a header whose search button grows into the field,
-/// stage pills with a filter button, the survey cards, and the install and maintenance overviews. The host's
-/// floating dock is the bottom safe-area inset, so the page scrolls behind it.
+/// iPhone survey home (docs/ui/pwa-solar-survey-iphone-v3): a header whose search button grows into the field, with a
+/// bell; the nav `โครงการ | แผนงาน | บำรุงรักษา` with a filter button; the project cards, and the install and maintenance
+/// overviews. The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
 extension SurveyHomeView {
     var phonePage: some View {
         ScrollView {
@@ -13,7 +13,7 @@ extension SurveyHomeView {
                 if page == .settings {
                     settingsGroups
                 } else {
-                    stagePills
+                    navRow
                     switch tab {
                     case .survey: surveyList
                     case .install: installOverview
@@ -35,29 +35,55 @@ extension SurveyHomeView {
 
     // MARK: header
 
-    /// The project page has the growing search; the settings page only its title. Pushed, it has a back button.
-    var phoneHeader: some View {
-        TCPhoneSearchHeader(title: page == .settings ? "PWA Setting" : title, subtitle: page == .project ? subtitle : nil,
-                            search: $search, isOpen: $searchOpen, showsSearch: page == .project,
-                            onBack: isPushed ? { dismiss() } : nil)
-    }
-
-    // MARK: stage pills and the filter
-
-    var stagePills: some View {
-        let stages: [JobStage] = [.survey, .install, .maintenance]
-        return HStack(spacing: 6) {
-            TCCountSegments([.init("ทั้งหมด", count: model.jobs(in: .survey).count), .init("ติดตั้ง", count: installStations.count, unit: "สถานี"),
-                             .init("บำรุงรักษา", count: maintenanceStations.count, unit: "สถานี")],
-                            selection: Binding(get: { stages.firstIndex(of: tab) ?? 0 },
-                                               set: { i in withAnimation(reduceMotion ? nil : .snappy) { tab = stages[i] } }))
-            // the overviews have their own filters
-            if tab == .survey { filterButton }
+    /// The project page has the growing search and the host's bell; the settings page only its title. Pushed, it has
+    /// a back button.
+    @ViewBuilder var phoneHeader: some View {
+        if page == .settings {
+            TCPhoneSearchHeader(title: "PWA Setting", subtitle: nil, search: $search, isOpen: $searchOpen, showsSearch: false,
+                                onBack: isPushed ? { dismiss() } : nil)
+        } else {
+            TCPhoneSearchHeader(title: title, subtitle: nil, search: $search, isOpen: $searchOpen, large: true,
+                                bell: host.openNotifications.map { .init(unread: host.unread, action: $0) },
+                                onBack: isPushed ? { dismiss() } : nil)
         }
     }
 
-    /// Status other than all, or a sort other than `แก้ไขล่าสุด`.
-    var isFiltered: Bool { filter != .all || sort != .updated }
+    // MARK: nav and the filter
+
+    private enum NavItem { case project, plan, maintenance }
+
+    /// `โครงการ` is the project list or, picked in the filter, the install overview; `แผนงาน` is a link to the host's
+    /// plan page and never the selected segment.
+    var navRow: some View {
+        let items: [(NavItem, String)] = [(.project, "โครงการ")] + (host.openPlan == nil ? [] : [(.plan, "แผนงาน")]) + [(.maintenance, "บำรุงรักษา")]
+        let selected = items.firstIndex { $0.0 == (tab == .maintenance ? .maintenance : .project) } ?? 0
+        return HStack(spacing: 8) {
+            TCCountSegments(items.map { .init($0.1) }, selection: Binding(get: { selected }, set: { i in
+                switch items[i].0 {
+                case .project: if tab == .maintenance { select(.survey) }
+                case .plan: host.openPlan?()
+                case .maintenance: select(.maintenance)
+                }
+            }), fontSize: 14)
+            filterButton
+        }
+    }
+
+    /// `ประเภทงาน`: the project list, the install overview or the maintenance overview.
+    private func select(_ stage: JobStage) {
+        withAnimation(reduceMotion ? nil : .snappy) { tab = stage }
+    }
+
+    /// A type other than `ทั้งหมด`, a status other than all, or a sort other than `แก้ไขล่าสุด`.
+    var isFiltered: Bool { tab != .survey || filter != .all || sort != .updated }
+
+    private var filterLabel: String {
+        switch tab {
+        case .survey: "กรองและเรียงงาน: \(filter.heading) \(shown.count) งาน · เรียง \(sort.title)"
+        case .install: "กรองงาน: ติดตั้ง \(installStations.count) สถานี"
+        case .maintenance: "กรองงาน: บำรุงรักษา \(maintenanceStations.count) สถานี"
+        }
+    }
 
     private var filterButton: some View {
         let fill = showFilter ? Theme.primarySoft : isFiltered ? Theme.navySolid : Theme.surface
@@ -79,7 +105,7 @@ extension SurveyHomeView {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("กรองและเรียงงาน: \(filter.heading) \(shown.count) งาน · เรียง \(sort.title)")
+        .accessibilityLabel(filterLabel)
         .popover(isPresented: $showFilter, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
             filterPopover.presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
         }
@@ -90,7 +116,7 @@ extension SurveyHomeView {
             HStack {
                 Text("กรองและเรียง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Button("ล้าง") { filter = .all; sort = .updated }
+                Button("ล้าง") { filter = .all; sort = .updated; select(.survey) }
                     .font(.sarabunFixed(13, .bold)).foregroundStyle(isFiltered ? Theme.primary : Theme.chevron)
                     .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                     .buttonStyle(.plain)
@@ -98,17 +124,50 @@ extension SurveyHomeView {
                     .accessibilityLabel("ล้างตัวกรองและการเรียง")
             }
             .frame(height: 32)
-            popoverSection("สถานะงาน") { statusTiles }
-            popoverSection("เรียงตาม") { sortSegments }
-            Button { showFilter = false } label: {
-                Text("แสดง \(shown.count) งาน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onPrimary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            popoverSection("ประเภทงาน") { typeRows }
+            // the overviews have their own row filters
+            if tab == .survey {
+                popoverSection("สถานะงาน") { statusTiles }
+                popoverSection("เรียงตาม") { sortSegments }
+                Button { showFilter = false } label: {
+                    Text("แสดง \(shown.count) งาน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onPrimary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(12)
         .frame(width: 300)
+    }
+
+    /// Radio rows with a count and a tick on the selected one; picking a row closes the popover.
+    private var typeRows: some View {
+        let rows: [(JobStage, String, Int, String)] = [
+            (.survey, "ทั้งหมด", model.jobs(in: .survey).count, "งาน"), (.install, "ติดตั้ง", installStations.count, "สถานี"),
+            (.maintenance, "บำรุงรักษา", maintenanceStations.count, "สถานี")]
+        return VStack(spacing: 0) {
+            ForEach(rows, id: \.0) { stage, title, count, unit in
+                let on = tab == stage
+                Button { select(stage); showFilter = false } label: {
+                    HStack(spacing: 10) {
+                        Text(title).font(.sarabunFixed(14, on ? .bold : .medium)).foregroundStyle(Theme.navy)
+                        Spacer(minLength: 6)
+                        Text("\(count)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                        Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                            .frame(width: 18).opacity(on ? 1 : 0)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background { if on { RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.rowSelected) } }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(title) \(count) \(unit)")
+                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+            }
+        }
     }
 
     private func popoverSection(_ title: String, @ViewBuilder content: () -> some View) -> some View {
@@ -205,13 +264,18 @@ extension SurveyHomeView {
 
     // MARK: DEBUG
 
-    /// `-surveyHomeTab all|install|maintenance`, `-surveyHomeSearch YES`, `-surveyHomeFilter YES|draft`,
-    /// `-pwaMaintenanceFilter issue|pmSoon|all`.
+    /// `-surveyHomeTab projects|maintenance` (`plan` is the host's), `-surveyHomeType all|install|maintenance`,
+    /// `-surveyHomeSearch YES`, `-surveyHomeFilter YES|draft`, `-pwaMaintenanceFilter issue|pmSoon|all`.
     func applyDebugHome() {
         #if DEBUG
         let d = UserDefaults.standard
         guard compact, page == .project else { return }
         switch d.string(forKey: "surveyHomeTab") {
+        case "projects": tab = .survey
+        case "maintenance": tab = .maintenance
+        default: break
+        }
+        switch d.string(forKey: "surveyHomeType") {
         case "all": tab = .survey
         case "install": tab = .install
         case "maintenance": tab = .maintenance
@@ -221,7 +285,8 @@ extension SurveyHomeView {
         if d.bool(forKey: "surveyHomeSearch") { searchOpen = true }
         switch d.string(forKey: "surveyHomeFilter") {
         case "draft": tab = .survey; filter = .draft; sort = .progress
-        case .some(let v) where (v as NSString).boolValue: tab = .survey; showFilter = true
+        // the popover opens on the type the other flags picked
+        case .some(let v) where (v as NSString).boolValue: showFilter = true
         default: break
         }
         #endif

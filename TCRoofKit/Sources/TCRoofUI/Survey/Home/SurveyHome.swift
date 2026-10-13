@@ -97,7 +97,7 @@ struct SurveyHomeView: View {
     func matches(_ j: Job, _ f: Filter) -> Bool {
         switch f {
         case .all: return true
-        case .active: return !j.projectName.isEmpty && !j.completion.isComplete
+        case .active: return j.stage == .survey && !j.projectName.isEmpty && !j.completion.isComplete
         case .draft: return j.projectName.isEmpty
         case .unsynced: return model.waitsForSync(j)
         }
@@ -254,11 +254,14 @@ struct SurveyHomeView: View {
     // MARK: cards
 
     var grid: some View {
-        LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: compact ? 10 : 16) {
+        let stations = phaseStations
+        return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: compact ? 10 : 16) {
             ForEach(shown) { j in
-                let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey ? .survey : .locked
-                Button { open(j, mode) } label: {
-                    JobCard(job: j, mode: mode, pendingSync: model.waitsForSync(j), synced: model.isSynced(j), recent: j.id.uuidString == lastOpened)
+                let station = stations[j.id]
+                let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey && station == nil ? .survey : .locked
+                Button { if let station { openStation(station) } else { open(j, mode) } } label: {
+                    JobCard(job: j, mode: mode, pendingSync: model.waitsForSync(j), synced: model.isSynced(j),
+                            recent: j.id.uuidString == lastOpened, station: station)
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
@@ -269,6 +272,8 @@ struct SurveyHomeView: View {
                         exportButton(j)
                         Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
                     case .locked:
+                        // iPhone: the card opens the install record, so the report is here
+                        if station != nil { Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") } }
                         exportButton(j)
                     case .install:
                         Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") }
@@ -278,6 +283,24 @@ struct SurveyHomeView: View {
                 }
             }
         }
+    }
+
+    /// iPhone: the station in the install overview of each job moved to installation, which makes its card an
+    /// install-phase card (docs/ui/pwa-solar-survey-iphone-v3 §4).
+    var phaseStations: [UUID: InstallStationSummary] {
+        guard compact, tab == .survey else { return [:] }
+        #if DEBUG
+        // `-surveyHomeDemo cards`: the second and third cards as the board's late and on-plan stations; nothing is saved
+        if UserDefaults.standard.string(forKey: "surveyHomeDemo") == "cards" {
+            return Dictionary(uniqueKeysWithValues: zip(shown.dropFirst().prefix(2).map(\.id), [PWAOverviewDemo.install[1], PWAOverviewDemo.install[3]]))
+        }
+        #endif
+        let stations = installStations
+        var found: [UUID: InstallStationSummary] = [:]
+        for j in shown where j.stage != .survey {
+            found[j.id] = stations.first { $0.id == j.id.uuidString || $0.id == j.jobSyncID }
+        }
+        return found
     }
 
     func open(_ j: Job, _ mode: JobCard.Mode) {

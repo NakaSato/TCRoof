@@ -402,6 +402,8 @@ extension View {
 // MARK: - Settings
 
 struct SettingsView: View {
+    /// iPhone, opened from the `กปภ.` tab: the list has the PWA project's settings row.
+    var pwa = false
     @Environment(\.dismiss) private var dismiss
     @Environment(GoogleSession.self) private var session
     @State private var confirmLogout = false
@@ -409,7 +411,7 @@ struct SettingsView: View {
     /// The same grouped cards on iPhone (large sheet) and iPad (form sheet).
     var body: some View {
         NavigationStack {
-            PhoneSettingsList(confirmLogout: $confirmLogout)
+            PhoneSettingsList(confirmLogout: $confirmLogout, pwa: pwa)
                 .navigationTitle("ตั้งค่า")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }

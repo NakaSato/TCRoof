@@ -18,22 +18,38 @@ struct JobCard: View {
     var pendingSync = false
     var synced = false
     var recent = false
+    /// The job's station in the install overview, once it has moved to installation. iPhone only: the card then
+    /// shows the install phase (docs/ui/pwa-solar-survey-iphone-v3 §4).
+    var station: InstallStationSummary?
     @Environment(SurveyModel.self) private var model
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPhone: the denser card of docs/ui/pwa-solar-survey-iphone.
     var compact: Bool { sizeClass == .compact }
+    var phase: InstallStationSummary? { compact && mode != .survey ? station : nil }
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if let phase {
+            card.accessibilityElement(children: .ignore).accessibilityLabel(phaseLabel(phase)).accessibilityAddTraits(.isButton)
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: compact ? 8 : 12) {
             HStack(alignment: .top, spacing: compact ? 10 : 12) {
                 VStack(alignment: .leading, spacing: compact ? 1 : 3) {
                     HStack(spacing: compact ? 6 : 8) {
                         Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(compact ? .system(size: 12, weight: .bold) : .subheadline.weight(.heavy)).foregroundStyle(Theme.inkMuted)
-                        if mode == .install { installBadge }
+                        if phase != nil { phaseBadge }
+                        else if mode == .install { installBadge }
                         else if mode == .locked {
                             // the lock matters more than the answer count once the survey is closed
                             ViewThatFits(in: .horizontal) { HStack(spacing: 8) { badge; lockBadge }; lockBadge }
-                        } else { badge }
+                        } else {
+                            if compact { surveyBadge }
+                            badge
+                        }
                     }
                     if job.projectName.isEmpty {
                         Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.sarabunFixed(compact ? 16 : 17, .bold)).italic().foregroundStyle(Theme.inkMuted)
@@ -44,13 +60,19 @@ struct JobCard: View {
                 }
                 .lineLimit(1)
                 Spacer(minLength: 0)
-                PercentRing(percent: mode == .install ? install.percent : job.completion.percent, style: compact ? .cardSmall : .card)
+                if let phase {
+                    PercentRing(percent: Int(phase.actual.rounded()), style: .cardSmall, tint: late(phase) ? Theme.danger : Theme.primary)
+                } else {
+                    PercentRing(percent: mode == .install ? install.percent : job.completion.percent, style: compact ? .cardSmall : .card)
+                }
             }
-            if mode == .install { installProgress } else { surveyProgress }
-            if mode != .install, let id = job.jobSyncID, let label = model.linkedJobLabel?(id) {
+            if let phase { phaseProgress(phase) } else if mode == .install { installProgress } else { surveyProgress }
+            if phase == nil, mode != .install, let id = job.jobSyncID, let label = model.linkedJobLabel?(id) {
                 Label(label, systemImage: "link").font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.primary).lineLimit(1)
             }
-            if mode == .install {
+            if let phase {
+                phaseChips(phase)
+            } else if mode == .install {
                 HStack(spacing: 6) {
                     chip(install.team.isEmpty ? "ยังไม่กำหนดทีม" : "ทีม " + install.team)
                     chip("ส่งมอบ " + (install.dueDate.map { ISODate.thai(ISODate.string($0)) } ?? "ยังไม่กำหนด"))
@@ -74,7 +96,7 @@ struct JobCard: View {
         }
         .padding(.horizontal, compact ? 14 : 16).padding(.top, compact ? 12 : 14).padding(.bottom, compact ? 10 : 14)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(mode == .locked ? Theme.background : Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .background(mode == .locked && phase == nil ? Theme.background : Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(recent ? Theme.primary.opacity(compact ? 1 : 0.55) : Theme.borderSubtle, lineWidth: recent && !compact ? 1.5 : 1))
         .contentShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -110,6 +132,85 @@ struct JobCard: View {
     var installBadge: some View {
         Text(install.doneSteps > 0 ? "กำลังติดตั้ง" : "รอเริ่มงาน").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.primary)
             .padding(.horizontal, 7).padding(.vertical, 2).background(Theme.primarySoft, in: Capsule())
+    }
+
+    var surveyBadge: some View {
+        Text("สำรวจ").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.primary)
+            .padding(.horizontal, 8).frame(height: 18).background(Theme.primarySoft, in: Capsule())
+    }
+
+    // MARK: install phase (iPhone)
+
+    private func late(_ s: InstallStationSummary) -> Bool {
+        InstallOverview.pace(s, threshold: model.settings.behindThreshold) == .behind
+    }
+
+    /// `ช้ากว่าแผน n%` or `ตามแผน`; nothing for a station with no MP plan.
+    private func paceText(_ s: InstallStationSummary) -> String? {
+        guard let v = s.variance else { return nil }
+        return late(s) ? "ช้ากว่าแผน \(-v)%" : "ตามแผน"
+    }
+
+    /// What VoiceOver reads for the install-phase card.
+    private func phaseLabel(_ s: InstallStationSummary) -> String {
+        [job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName, "ติดตั้ง",
+         s.currentTask.isEmpty ? "" : "กำลังทำ " + s.currentTask, paceText(s) ?? ""].filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
+    var phaseBadge: some View {
+        HStack(spacing: 3) {
+            HardHat().stroke(Theme.okTick, style: StrokeStyle(lineWidth: 1.3, lineCap: .round, lineJoin: .round)).frame(width: 13, height: 13)
+            Text("ติดตั้ง").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.okTick)
+        }
+        .padding(.horizontal, 8).frame(height: 18).background(Theme.okSoft, in: Capsule())
+    }
+
+    /// Ten segments over the MP plan's 0–100 %, then `กำลังทำ <task>` with the pace.
+    @ViewBuilder private func phaseProgress(_ s: InstallStationSummary) -> some View {
+        let isLate = late(s)
+        HStack(spacing: 2) {
+            ForEach(Array(InstallOverview.bar(s, threshold: model.settings.behindThreshold).enumerated()), id: \.offset) { _, segment in
+                Capsule().fill(color(segment, late: isLate)).frame(height: 6)
+            }
+        }
+        HStack(spacing: 6) {
+            Text("กำลังทำ").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).fixedSize()
+            Text(s.currentTask.isEmpty ? "—" : s.currentTask).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            Spacer(minLength: 0)
+            if let pace = paceText(s) { Text(pace).font(.sarabunFixed(11.5, .bold)).fixedSize() }
+            Text("›").font(.sarabunFixed(17))
+        }
+        .foregroundStyle(isLate ? Theme.dangerText : Theme.primary)
+        .stripFrame(compact: true)
+        .background(isLate ? Theme.dangerSoft : Theme.primarySoft, in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private func color(_ segment: InstallOverview.BarSegment, late: Bool) -> Color {
+        switch segment {
+        case .done: Theme.stepDone
+        case .current: late ? Theme.danger : Theme.primary
+        case .overdue: Theme.dangerPale
+        case .ahead: Theme.borderSubtle
+        }
+    }
+
+    /// `แผน p% · จริง a%`, `ส่งมอบ d/m` and the contractor.
+    private func phaseChips(_ s: InstallStationSummary) -> some View {
+        let actual = "จริง \(Int(s.actual.rounded()))%"
+        let due = s.dueDate.map { d -> String in
+            let c = Calendar.current.dateComponents([.day, .month], from: d)
+            return "ส่งมอบ \(c.day ?? 0)/\(c.month ?? 0)"
+        }
+        return FlowLayout(spacing: 4, lineSpacing: 4) {
+            phaseChip(s.plan.map { "แผน \(Int($0.rounded()))% · " + actual } ?? actual, ink: Theme.navy)
+            if let due { phaseChip(due, ink: Theme.inkMuted) }
+            if !s.contractor.isEmpty { phaseChip(s.contractor, ink: Theme.inkMuted) }
+        }
+    }
+
+    private func phaseChip(_ text: String, ink: Color) -> some View {
+        Text(text).font(.sarabunFixed(11, .semibold)).foregroundStyle(ink).lineLimit(1)
+            .padding(.horizontal, 8).padding(.vertical, 1).background(Theme.background, in: Capsule())
     }
 
     var lockBadge: some View {
@@ -208,6 +309,26 @@ private extension View {
     }
 }
 
+/// The hard hat of the `ติดตั้ง` badge (docs/ui/pwa-solar-survey-iphone-v3/icons/badge-install-hardhat.svg), drawn on
+/// the svg's 24 pt grid.
+struct HardHat: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        // brim, then the shell over it
+        p.move(to: CGPoint(x: 3, y: 18)); p.addLine(to: CGPoint(x: 21, y: 18))
+        p.move(to: CGPoint(x: 4.5, y: 18)); p.addLine(to: CGPoint(x: 4.5, y: 16))
+        p.addArc(center: CGPoint(x: 12, y: 16), radius: 7.5, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        p.addLine(to: CGPoint(x: 19.5, y: 18))
+        // the ridge and the two ribs
+        p.move(to: CGPoint(x: 10, y: 8.7)); p.addLine(to: CGPoint(x: 10, y: 6.5))
+        p.addLine(to: CGPoint(x: 14, y: 6.5)); p.addLine(to: CGPoint(x: 14, y: 8.7))
+        p.move(to: CGPoint(x: 9.5, y: 11.5)); p.addLine(to: CGPoint(x: 9.5, y: 14.5))
+        p.move(to: CGPoint(x: 14.5, y: 11.5)); p.addLine(to: CGPoint(x: 14.5, y: 14.5))
+        let scale = min(rect.width, rect.height) / 24
+        return p.applying(CGAffineTransform(scaleX: scale, y: scale).concatenating(CGAffineTransform(translationX: rect.minX, y: rect.minY)))
+    }
+}
+
 /// The percent ring. `.card` is the home card's 58 pt ring (icons/progress-ring-*.svg): light track, blue arc,
 /// green at 100 %, value over a small "%". `.cardSmall` is the iPhone card's 44 pt ring
 /// (docs/ui/pwa-solar-survey-iphone/icons/progress-ring-44-*.svg). `.compact` is the editor sidebar's: blue, teal from 80 %.
@@ -216,6 +337,8 @@ struct PercentRing: View {
     let percent: Int
     var size: CGFloat = 52
     var style = Style.compact
+    /// `.cardSmall` only: the arc's colour in place of blue, then green at 100 %.
+    var tint: Color?
 
     var body: some View {
         switch style {
@@ -243,7 +366,7 @@ struct PercentRing: View {
             ZStack {
                 Circle().stroke(Theme.borderSubtle, lineWidth: 5)
                 Circle().trim(from: 0, to: Double(percent) / 100)
-                    .stroke(percent >= 100 ? Theme.stepDone : Theme.primary, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .stroke(tint ?? (percent >= 100 ? Theme.stepDone : Theme.primary), style: StrokeStyle(lineWidth: 5, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text("\(percent)%").font(.sarabunFixed(13, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
             }

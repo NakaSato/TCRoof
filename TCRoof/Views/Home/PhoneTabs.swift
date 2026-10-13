@@ -46,10 +46,7 @@ struct PhoneTabs<HomeRoot: View>: View {
             ForEach(PhoneTab.stacks, id: \.self) { t in
                 if opened.contains(t) {
                     let shown = t == tab
-                    Group {
-                        // the PWA module brings its own dock and stacks, in place of this one
-                        if t == .pwa { PWAPhoneTabs { select(.home) } } else { stack(t) }
-                    }
+                    stack(t)
                         .opacity(shown ? 1 : 0)
                         .allowsHitTesting(shown)
                         .accessibilityHidden(!shown)
@@ -57,7 +54,7 @@ struct PhoneTabs<HomeRoot: View>: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView().presentationDetents([.large]).environment(\.homeInk, .outdoor)
+            SettingsView(pwa: tab == .pwa).presentationDetents([.large]).environment(\.homeInk, .outdoor)
         }
         // a notification tap opens its screen on the home stack
         .onChange(of: notificationService.link) { _, link in
@@ -78,10 +75,13 @@ struct PhoneTabs<HomeRoot: View>: View {
                 switch t {
                 // the residential document library; the tools register is under the settings sheet for now
                 case .docs: HomeLibraryView()
+                // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-iphone-v3 §1)
+                case .pwa: PWAPhoneRoot()
                 default: if let module = t.module { module.destination } else { home() }
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: PhoneTab.barGap) {
+            // the PWA home keeps its own space over the dock, for its add button
+            .safeAreaInset(edge: .bottom, spacing: t == .pwa ? 0 : PhoneTab.barGap) {
                 TCTabBar(items: items, selection: Binding(get: { tab }, set: select), dividerBefore: .settings)
                     .padding(.horizontal, 12).padding(.bottom, 22)
                     .background(alignment: .bottom) { TCDockFade(t.fade, height: t.fadeHeight) }
@@ -109,6 +109,8 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private static var initialTab: PhoneTab {
         #if DEBUG
+        // `-screen pwa` is the PWA module: the `กปภ.` tab
+        if DebugScreen.requested == "pwa" { return .pwa }
         // `-homeTab homework|pwa|docs` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif

@@ -93,7 +93,7 @@ extension SurveyHomeView {
         .buttonStyle(.plain)
     }
 
-    private func openStation(_ s: InstallStationSummary) {
+    func openStation(_ s: InstallStationSummary) {
         if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
             lastOpened = j.id.uuidString
             tracking = j.id
@@ -245,9 +245,28 @@ extension SurveyHomeView {
             let rows = stations.filter { MaintenanceOverview.matches($0, maintenanceFilter) }
             card(maintenanceSummary(MaintenanceOverview.totals(stations)), padding: Self.summaryPadding)
             maintenanceFilters(stations)
-            ForEach(rows) { s in card(maintenanceRow(s), padding: Self.rowPadding) }
+            ForEach(rows) { s in
+                Button { openMaintenanceStation(s) } label: { maintenanceRow(s).padding(Self.rowPadding) }
+                    .buttonStyle(TCStationRowStyle())
+                    .accessibilityLabel(maintenanceLabel(s))
+            }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
         }
+    }
+
+    /// The station's job here when it has one, else the host's screen for it.
+    private func openMaintenanceStation(_ s: MaintenanceStationSummary) {
+        if let j = model.jobs(in: .maintenance).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
+            lastOpened = j.id.uuidString
+            tracking = j.id
+        } else {
+            host.openMaintenanceStation?(s)
+        }
+    }
+
+    private func maintenanceLabel(_ s: MaintenanceStationSummary) -> String {
+        let status = [.normal: "ปกติ", .alarm: "แจ้งเตือน", .offline: "ออฟไลน์"][s.status] ?? ""
+        return [s.mpNumber.map { "MP \($0)" } ?? "", s.name, status, "เปิดหน้าสถานี"].filter { !$0.isEmpty }.joined(separator: " ")
     }
 
     private func maintenanceSummary(_ t: MaintenanceOverview.Totals) -> some View {
@@ -340,10 +359,21 @@ extension SurveyHomeView {
                 Text("· PR \(s.status == .offline ? "—" : number(s.pr, digits: 0))%").foregroundStyle(Theme.navy).fixedSize()
                 Spacer(minLength: 6)
                 Text(s.note).lineLimit(1)
+                Text("›").font(.sarabunFixed(17)).foregroundStyle(Theme.inkFaint).frame(height: 12).accessibilityHidden(true)
             }
             .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
         }
-        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A station row that is a button: the overview's white card, `Theme.background` while pressed.
+private struct TCStationRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(configuration.isPressed ? Theme.background : Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

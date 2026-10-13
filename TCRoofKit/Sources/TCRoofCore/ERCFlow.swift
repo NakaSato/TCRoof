@@ -290,6 +290,43 @@ public enum ERCFlow {
         return nil
     }
 
+    // MARK: Waits
+
+    /// A step that another party has, with a time limit running.
+    public struct Wait: Equatable, Sendable {
+        public var step: Step
+        public var since: String
+        public var due: String
+        /// Days left as the step counts them; negative once the limit has passed.
+        public var left: Int
+
+        public var unit: String { step.limit?.working == true ? "วันทำการ" : "วัน" }
+        /// `เหลือ 3 วันทำการ`, `ครบกำหนดวันนี้`, `เกินกำหนด 2 วัน`.
+        public var text: String {
+            left > 0 ? "เหลือ \(left) \(unit)" : left == 0 ? "ครบกำหนดวันนี้" : "เกินกำหนด \(-left) \(unit)"
+        }
+        /// `รอผลพิจารณาแบบและระบบไฟฟ้า`.
+        public var title: String { step.party == .dede ? "รอความเห็น พพ. (พค.2)" : "รอ" + step.title }
+    }
+
+    /// The waiting steps that have a time limit, in the flow's order.
+    public static func waits(_ r: Record, _ ctx: Context = Context(), today: Date = .now) -> [Wait] {
+        let s = states(r, ctx)
+        return Step.allCases.compactMap { step in
+            guard case .waiting(let since, let due?) = s[step], let left = daysLeft(step, due: due, on: today, ctx) else { return nil }
+            return Wait(step: step, since: since, due: due, left: left)
+        }
+    }
+
+    /// One line for the job's card: what is ours to do, else who has it.
+    public static func headline(_ r: Record, _ ctx: Context = Context()) -> String {
+        let s = states(r, ctx), now = current(r, ctx)
+        func name(_ step: Step) -> String { step.number.map { "ข้อ \($0) \(step.title)" } ?? step.title }
+        if now.isEmpty { return "ครบทุกขั้นแล้ว" }
+        if let ours = now.first(where: { s[$0] == .open }) { return "ถึงคิวทีมเรา: " + name(ours) }
+        return now.first.map { "รอ\($0.party.title): " + name($0) } ?? ""
+    }
+
     // MARK: Days
 
     public static func day(_ date: Date) -> String {
@@ -322,6 +359,19 @@ public enum ERCFlow {
             if !limit.working || isWorking(d, ctx) { left -= 1 }
         }
         return day(d)
+    }
+
+    /// The day `n` days before `day`, counted in working days where the step's limit is.
+    public static func day(_ day: String, before n: Int, working: Bool, _ ctx: Context = Context()) -> String? {
+        guard var d = date(day) else { return nil }
+        var left = n, guardDays = 0
+        while left > 0, guardDays < 2000 {
+            guard let prev = MasterSchedule.calendar.date(byAdding: .day, value: -1, to: d) else { return nil }
+            d = prev
+            guardDays += 1
+            if !working || isWorking(d, ctx) { left -= 1 }
+        }
+        return self.day(d)
     }
 
     /// Days left until `due` as the step counts them (working or calendar); negative once it has passed.

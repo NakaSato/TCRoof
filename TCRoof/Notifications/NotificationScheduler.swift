@@ -142,14 +142,19 @@ private struct NotificationScheduler: ViewModifier {
         .sorted { $0.id < $1.id }
     }
 
-    /// Tasks of a PWA station's MP plan that start tomorrow, and a station behind its plan.
+    /// Tasks of a PWA station's MP plan that start tomorrow, a station behind its plan, and a step of the ERC flow
+    /// whose time limit is about to end or has passed.
     private func mpPlans(_: Int) -> [NotificationPlan] {
         guard planOn else { return [] }
         let now = Date.now
         return jobs.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
-            guard let input = job.scheduleInput else { return [] }
-            return MPNotification.plans(jobKey: job.syncID ?? job.code, station: job.stationName, plan: MasterSchedule.plan(input),
-                                        actual: job.scheduleActual, now: now)
+            let key = job.syncID ?? job.code
+            let erc = job.stationContext.over200kVA ? job.stationDocs.erc.map {
+                ERCNotification.plans(jobKey: key, station: job.stationName, record: $0, context: job.ercContext, now: now)
+            } ?? [] : []
+            guard let input = job.scheduleInput else { return erc }
+            return erc + MPNotification.plans(jobKey: key, station: job.stationName, plan: MasterSchedule.plan(input),
+                                              actual: job.scheduleActual, now: now)
         }
         .sorted { $0.id < $1.id }
     }

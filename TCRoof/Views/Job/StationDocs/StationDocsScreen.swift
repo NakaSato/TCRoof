@@ -26,7 +26,7 @@ struct StationDocsScreen: View {
             switch tab {
             case .package(let p): packageRows(p)
             case .checklist: checklistRows
-            case .erc: ERCFlowRows(job: job, library: library)
+            case .erc: ERCFlowRows(job: job, library: library) { tab = .package($0) }
             }
         }
         .navigationTitle("เอกสารสถานี กปภ.")
@@ -62,7 +62,7 @@ struct StationDocsScreen: View {
         debugERC()
     }
 
-    /// `-stationDocsERC wait|failed|parallel|done` sets the station to 200 kVA and over, writes that state of the
+    /// `-stationDocsERC wait|failed|ready|parallel|done` sets the station to 200 kVA and over, writes that state of the
     /// ERC flow dated back from today, and opens ลำดับ กกพ. It changes the job for good.
     private func debugERC() {
         guard let name = UserDefaults.standard.string(forKey: "stationDocsERC") else { return }
@@ -73,6 +73,8 @@ struct StationDocsScreen: View {
             r.add(.designRequest, day: ago(30))
         case "failed":
             r.add(.designRequest, day: ago(40)); r.add(.designResult, day: ago(28), result: .failed, note: "ให้แก้ขนาดสายประธาน")
+        case "ready":
+            r.add(.designRequest, day: ago(60)); r.add(.designResult, day: ago(48)); r.add(.install, day: ago(2))
         case "parallel":
             r.add(.designRequest, day: ago(90)); r.add(.designResult, day: ago(78)); r.add(.install, day: ago(20))
             r.add(.pk2Request, day: ago(15)); r.add(.ercToDede, day: ago(10)); r.add(.inspectionRequest, day: ago(12))

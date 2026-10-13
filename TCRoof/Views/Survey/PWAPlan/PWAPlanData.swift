@@ -40,7 +40,8 @@ extension Job {
                         input: scheduleInput, actual: scheduleActual, handedOver: status == .completed,
                         reportSentToday: sentDailyReportToday, surveyAt: surveyDate, inspections: routineSettings.inspections,
                         workingWeekdays: routineSettings.workingWeekdays,
-                        workStart: routineSettings.workStart, workEnd: routineSettings.workEnd, docs: stationDocs, docsContext: stationContext)
+                        workStart: routineSettings.workStart, workEnd: routineSettings.workEnd, docs: stationDocs, docsContext: stationContext,
+                        holidays: Set(routineSettings.holidays))
     }
 }
 

@@ -42,6 +42,8 @@ public enum PWAPlan {
         public var workEnd: Int?
         public var docs: StationDocs.Station
         public var docsContext: StationDocs.Context
+        /// `yyyy-MM-dd` days the site doesn't work, left out of the ERC flow's working-day limits.
+        public var holidays: Set<String>
 
         public init(id: String, mpNumber: Int? = nil, code: String = "", name: String, kWp: Double = 0, contractor: String = "",
                     team: String = "", input: MasterSchedule.Input? = nil, actual: MasterSchedule.Actual = .init(),
@@ -49,12 +51,12 @@ public enum PWAPlan {
                     inspections: [RoutineReport.Inspection] = [],
                     workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], workStart: Int? = nil, workEnd: Int? = nil,
                     docs: StationDocs.Station = .init(),
-                    docsContext: StationDocs.Context? = nil) {
+                    docsContext: StationDocs.Context? = nil, holidays: Set<String> = []) {
             self.id = id; self.mpNumber = mpNumber; self.code = code; self.name = name; self.kWp = kWp
             self.contractor = contractor; self.team = team; self.input = input; self.actual = actual
             self.handedOver = handedOver; self.reportSentToday = reportSentToday; self.surveyAt = surveyAt
             self.inspections = inspections; self.workingWeekdays = workingWeekdays; self.docs = docs
-            self.workStart = workStart; self.workEnd = workEnd
+            self.workStart = workStart; self.workEnd = workEnd; self.holidays = holidays
             self.docsContext = docsContext ?? StationDocs.Context(docs, inverterKW: input?.over200kVA == true ? 200 : nil)
         }
 
@@ -404,7 +406,9 @@ public enum PWAPlan {
     /// - the building, พค.2 and grid-connection submissions on the day the team set for the package, else on the
     ///   planned start of MP 1.4, 1.5 and 1.7, until the task is booked as done or every paper of the package is
     ///   submitted;
-    /// - the O&M training on the planned start of MP 3.2, until it is booked as done.
+    /// - the O&M training on the planned start of MP 3.2, until it is booked as done;
+    /// - for a station of 200 kVA and over, each step of the ERC flow that the utility or DEDE has, on the last day
+    ///   of its time limit (`ERCFlow.waits`).
     public static func deadlines(_ stations: [Station], library: StationDocs.Library = .init(), today: Date,
                                  threshold: Double = InstallOverview.defaultThreshold) -> [Deadline] {
         let cal = MasterSchedule.calendar
@@ -443,6 +447,16 @@ public enum PWAPlan {
                                     title: submissionTitle(sub.package, s.docsContext),
                                     subtitle: "\(label) · ชุด\(sub.package.title) \(ready)/\(states.count)",
                                     chip: chip, tone: tone, station: s.id, opens: .docs))
+            }
+
+            if s.docsContext.over200kVA, let record = s.docs.erc {
+                for wait in ERCFlow.waits(record, ERCFlow.Context(holidays: s.holidays), today: today) {
+                    guard let date = ERCFlow.date(wait.due) else { continue }
+                    out.append(Deadline(id: "erc-\(wait.step.rawValue)-\(s.id)", date: date, kind: .document, title: wait.title,
+                                        subtitle: "\(label) · \(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.step.number ?? 0)",
+                                        chip: wait.text, tone: wait.left < 0 ? .late : wait.left <= 3 ? .risk : .ok,
+                                        station: s.id, opens: .docs))
+                }
             }
 
             if let start = plan.first(where: { $0.task == .training })?.start, (st.actualByTask[.training] ?? 0) < 99.95 {

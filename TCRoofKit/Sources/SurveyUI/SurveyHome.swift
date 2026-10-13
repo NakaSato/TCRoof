@@ -13,15 +13,21 @@ public struct SolarSurveyReportView: View {
     let title: String
     let subtitle: String
     let unsyncedOnly: Bool
+    let page: Page
+
+    /// What the iPhone shows: the project home, or the `ตั้งค่า` tab's settings page (docs/ui/pwa-solar-survey-iphone-v2 §7).
+    /// The iPad always shows the project home.
+    public enum Page: Sendable { case project, settings }
+
     /// - Parameters:
     ///   - title: heading of the job list, e.g. the client group "การประปาส่วนภูมิภาค".
     ///   - unsyncedOnly: open on the รอซิงก์ filter (the sync notification's `ดูรายการ`).
     public init(title: String = "PWA Solar Survey",
-                subtitle: String = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)", unsyncedOnly: Bool = false) {
-        self.title = title; self.subtitle = subtitle; self.unsyncedOnly = unsyncedOnly
+                subtitle: String = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)", unsyncedOnly: Bool = false, page: Page = .project) {
+        self.title = title; self.subtitle = subtitle; self.unsyncedOnly = unsyncedOnly; self.page = page
     }
     public var body: some View {
-        SurveyHomeView(title: title, subtitle: subtitle, filter: unsyncedOnly ? .unsynced : .all).environment(model)
+        SurveyHomeView(title: title, subtitle: subtitle, page: page, filter: unsyncedOnly ? .unsynced : .all).environment(model)
     }
 }
 
@@ -32,7 +38,10 @@ public extension SurveyModel {
 struct SurveyHomeView: View {
     var title = "PWA Solar Survey"
     var subtitle = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)"
+    var page = SolarSurveyReportView.Page.project
     @Environment(SurveyModel.self) var model
+    @Environment(\.pwaOverview) var host
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dismiss) var dismiss
     /// Pushed by the host app (TCRoof) rather than the root of its own scene — show a back button.
@@ -59,6 +68,16 @@ struct SurveyHomeView: View {
     @State var showInstallPicker = false
     /// Installation job whose tracking page is open.
     @State var tracking: UUID?
+    // iPhone (docs/ui/pwa-solar-survey-iphone-v2)
+    /// The header's search button grown into its field.
+    @State var searchOpen = false
+    @FocusState var searchFocused: Bool
+    @State var showFilter = false
+    /// Row filter of the install overview; nil until picked, then `ช้ากว่าแผน` when any station has a plan.
+    @State var installFilter: InstallOverview.RowFilter?
+    /// The contractor whose stations the install overview is narrowed to.
+    @State var contractor: String?
+    @State var maintenanceFilter = MaintenanceOverview.RowFilter.issue
 
     /// A job to open, optionally at the step "continue" points to.
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
@@ -114,25 +133,25 @@ struct SurveyHomeView: View {
 
     var compact: Bool { sizeClass == .compact }
 
-    var body: some View {
+    /// The iPad survey home (docs/ui/pwa-solar-survey); the iPhone's is `phonePage`.
+    var padPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                VStack(alignment: .leading, spacing: compact ? 12 : 18) {
+                VStack(alignment: .leading, spacing: 18) {
                     if let message { Label(message, systemImage: "checkmark.circle").foregroundStyle(Paper.tick) }
                     tabBar
-                    // iPhone: pills → heading 4, heading → first card 0 (docs/ui/pwa-solar-survey-iphone)
-                    if tab == .survey { if compact { filterPills.padding(.bottom, -8) } else { stats } }
+                    if tab == .survey { stats }
                     if tab != .survey && model.jobs(in: tab).isEmpty {
                         stageEmpty
                     } else {
-                        VStack(alignment: .leading, spacing: compact ? 0 : 18) {
-                            if compact { compactListHeading } else { listHeading }
+                        VStack(alignment: .leading, spacing: 18) {
+                            listHeading
                             if shown.isEmpty { empty } else { grid }
                         }
                     }
                 }
-                .padding(.horizontal, compact ? 16 : 24).padding(.top, compact ? 12 : 20)
+                .padding(.horizontal, 24).padding(.top, 20)
                 // room for the floating button under the last row
                 .padding(.bottom, 110)
                 .frame(maxWidth: 1240).frame(maxWidth: .infinity)
@@ -141,9 +160,13 @@ struct SurveyHomeView: View {
         .background(Paper.page)
         .overlay(alignment: .bottom) {
             HStack { Spacer(); floatingButton }
-                .padding(.horizontal, compact ? 20 : 24).padding(.bottom, compact ? 12 : 24)
+                .padding(.horizontal, 24).padding(.bottom, 24)
                 .frame(maxWidth: 1240)
         }
+    }
+
+    var body: some View {
+        Group { if compact { phonePage } else { padPage } }
         // the blue header replaces the navigation bar; navigationTitle stays for the editor's back menu
         .navigationTitle(title)
         .toolbar(.hidden, for: .navigationBar)
@@ -159,6 +182,7 @@ struct SurveyHomeView: View {
         .task { if UserDefaults.standard.bool(forKey: "surveyNew") { showNew = true } }
         // `-surveySettings YES` opens the survey settings (เครื่องนี้ lists the detected hardware).
         .task { if UserDefaults.standard.bool(forKey: "surveySettings") { showSettings = true } }
+        .task { applyDebugHome() }
         .task {
             guard UserDefaults.standard.bool(forKey: "surveyDemo"), open == nil else { return }
             // `-surveyFreshJob YES` (UI tests): a new job each run, replacing the last test job, so earlier runs leave no state

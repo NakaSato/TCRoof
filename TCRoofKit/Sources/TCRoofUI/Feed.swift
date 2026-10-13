@@ -118,6 +118,7 @@ public struct TCIssueBox: View {
 
 /// One feed post: avatar, who, badge, `where · when`, text, then the record's photos or stat tiles, an issue box,
 /// the acknowledgement line and the action row (`รับทราบ` · the link to the source record). No comments.
+/// A tap on the header, text, photo or tiles opens the record too, as the link does.
 public struct TCFeedPost<Photo: View>: View {
     public struct Stat: Identifiable {
         public let id = UUID()
@@ -183,9 +184,11 @@ public struct TCFeedPost<Photo: View>: View {
             header
             Text(text).font(.sarabun(13.5, relativeTo: .footnote)).foregroundStyle(Theme.navy).lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12).padding(.bottom, 8)
-            if photoCount > 0 { photos.padding(.horizontal, 12) }
-            if !stats.isEmpty { tiles.padding(.horizontal, 12) }
+                .contentShape(Rectangle()).onTapGesture(perform: onOpen)
+            if photoCount > 0 { photos.padding(.horizontal, 12).onTapGesture(perform: onOpen) }
+            if !stats.isEmpty { tiles.padding(.horizontal, 12).contentShape(Rectangle()).onTapGesture(perform: onOpen) }
             if let issue {
                 TCIssueBox(owner: issue.owner, due: issue.due, fixed: issue.fixed, action: issue.toggle)
                     .padding(.horizontal, 12).padding(.top, 8)
@@ -214,7 +217,8 @@ public struct TCFeedPost<Photo: View>: View {
                 }
                 Text(detail).font(.sarabun(11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle()).onTapGesture(perform: onOpen)
             menuButton
         }
         .padding(.leading, 12).padding(.trailing, 4).padding(.top, 10).padding(.bottom, 6)

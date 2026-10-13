@@ -227,6 +227,12 @@ struct HomeFeed: View {
 
     /// The post's link (`ดูรายงาน`, `ดูงาน` …), or with `source` the record it was made from.
     private func link(_ p: FeedPost, source: Bool) {
+        // nothing to open when the post's job is not on this device (the demo's posts have none)
+        switch p.source {
+        case .dailyReport(let key, _), .test(let key, _), .problem(let key, _), .punch(let key, _):
+            guard job(key) != nil else { return }
+        case .summary: break
+        }
         switch p.source {
         case .dailyReport(let key, let day): open(p.kind == .waitingInspector && !source ? .job(key) : .daily(job: key, day: day))
         case .test(let key, _): open(.inspection(job: key))

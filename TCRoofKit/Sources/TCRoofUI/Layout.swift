@@ -420,6 +420,8 @@ public struct TCTabItem<ID: Hashable>: Identifiable {
     public var asset = false
     /// Red count badge; hidden at 0.
     public var badge: Int
+    /// The badge's fill, when it isn't the red of appointments (orange for papers waiting to be sent).
+    public var badgeColor = Theme.danger
     /// VoiceOver label when it should say more than the title (`สำรวจ · นัดวันนี้ 2`).
     public var accessibilityLabel: String?
     public var action: (() -> Void)?
@@ -435,25 +437,32 @@ public struct TCTabItem<ID: Hashable>: Identifiable {
     }
 }
 
-/// iPhone docked bottom tab bar (docs/ui/tcroof-home-iphone-v2): white, a 1 pt top line, padding 4 / 6,
-/// equal tabs at least 48 high with a 22 pt glyph in a 52 × 28 slot over a 10.5 pt label.
-/// The selected tab's glyph sits on a soft blue capsule. Attach it with `.safeAreaInset(edge: .bottom)`
-/// on the tab root screens only; the white runs on under the home indicator.
+/// iPhone floating tab dock (docs/ui/tcroof-home-iphone-v3, state 08): an opaque capsule, radius 28, 1 pt border,
+/// padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label. The selected tab is a navy capsule.
+/// A hairline stands before the `dividerBefore` tab (`ตั้งค่า`). The caller insets it (12 pt sides, 22 pt above
+/// the bottom edge) and puts `TCDockFade` behind it.
 public struct TCTabBar<ID: Hashable>: View {
     let items: [TCTabItem<ID>]
     @Binding var selection: ID
+    let dividerBefore: ID?
 
-    public init(items: [TCTabItem<ID>], selection: Binding<ID>) {
-        self.items = items; self._selection = selection
+    public init(items: [TCTabItem<ID>], selection: Binding<ID>, dividerBefore: ID? = nil) {
+        self.items = items; self._selection = selection; self.dividerBefore = dividerBefore
     }
 
     public var body: some View {
-        HStack(spacing: 0) {
-            ForEach(items) { item in tab(item) }
+        HStack(spacing: 2) {
+            ForEach(items) { item in
+                if item.id == dividerBefore {
+                    Rectangle().fill(Theme.borderSubtle).frame(width: 1).padding(.vertical, 12).padding(.horizontal, 2)
+                }
+                tab(item)
+            }
         }
-        .padding(.top, 4).padding(.horizontal, 6)
-        .background(Theme.surface.ignoresSafeArea(edges: .bottom))
-        .overlay(alignment: .top) { Rectangle().fill(Theme.borderOutdoor).frame(height: 1) }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(5)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.borderOutdoor))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("เมนูหลัก")
     }
@@ -464,17 +473,23 @@ public struct TCTabBar<ID: Hashable>: View {
             if let action = item.action { action() } else { selection = item.id }
         } label: {
             VStack(spacing: 2) {
-                glyph(item, selected: selected)
-                    .frame(width: 52, height: 28)
-                    .background { if selected { Capsule().fill(Theme.primarySoft) } }
-                    .overlay(alignment: .topTrailing) {
-                        if item.badge > 0 { badge(item.badge).padding(.trailing, 4).offset(y: -4) }
-                    }
+                glyph(item, selected: selected).frame(width: 23, height: 23)
                 Text(item.title).font(.sarabun(10.5, selected ? .heavy : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
                     .frame(height: 13)
             }
-            .foregroundStyle(selected ? Theme.primary : Theme.inkTab)
-            .frame(maxWidth: .infinity, minHeight: 48)
+            .foregroundStyle(selected ? Theme.onPrimary : Theme.inkTab)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background { if selected { RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Theme.navySolid) } }
+            // 4 pt down, starting 5 pt right of the centre: the glyph's top right
+            .overlay(alignment: .top) {
+                if item.badge > 0 {
+                    HStack(spacing: 0) {
+                        Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
+                        badge(item.badge, item.badgeColor).padding(.leading, 5).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.top, 4)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -484,18 +499,37 @@ public struct TCTabBar<ID: Hashable>: View {
 
     @ViewBuilder func glyph(_ item: TCTabItem<ID>, selected: Bool) -> some View {
         if item.asset {
-            Image(item.symbol).renderingMode(.template).resizable().frame(width: 22, height: 22)
+            Image(item.symbol).renderingMode(.template).resizable().frame(width: 23, height: 23)
         } else {
-            Image(systemName: item.symbol).font(.system(size: 18, weight: selected ? .medium : .regular))
+            Image(systemName: item.symbol).font(.system(size: 19, weight: selected ? .semibold : .medium))
         }
     }
 
-    func badge(_ n: Int) -> some View {
-        Text("\(n)").font(.system(size: 10, weight: .heavy)).monospacedDigit().foregroundStyle(.white)
-            .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
-            .background(Theme.danger, in: Capsule())
+    func badge(_ n: Int, _ color: Color) -> some View {
+        Text("\(n)").font(.system(size: 10.5, weight: .heavy)).monospacedDigit().foregroundStyle(.white)
+            .padding(.horizontal, 4).frame(minWidth: 17, minHeight: 17)
+            .background(color, in: Capsule())
             .background(Capsule().fill(Theme.surface).padding(-2))
             .fixedSize()
+            .accessibilityHidden(true)
+    }
+}
+
+/// The fade a page scrolls out under, behind `TCTabBar`: 128 pt from the bottom edge, clear, 85 % of the page
+/// colour at 38 %, solid from 62 %. It takes no touches.
+public struct TCDockFade: View {
+    let color: Color
+    let height: CGFloat
+
+    public init(_ color: Color = Theme.phonePage, height: CGFloat = 128) { self.color = color; self.height = height }
+
+    public var body: some View {
+        LinearGradient(stops: [.init(color: color.opacity(0), location: 0),
+                               .init(color: color.opacity(0.85), location: 0.38),
+                               .init(color: color, location: 0.62)],
+                       startPoint: .top, endPoint: .bottom)
+            .frame(height: height)
+            .allowsHitTesting(false)
             .accessibilityHidden(true)
     }
 }

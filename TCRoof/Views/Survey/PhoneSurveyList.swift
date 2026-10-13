@@ -69,8 +69,8 @@ struct PhoneSurveyList: View {
         .background(Theme.background.ignoresSafeArea())
         .overlay(alignment: .bottom) {
             SurveyHomeDock(next: next, now: now, open: { surveyJob = $0 }, add: { showNewJob = true })
-                // 10 over the tab bar, which already stands `PhoneTab.barGap` off the content
-                .padding(.horizontal, 12).padding(.bottom, 10 - PhoneTab.barGap)
+                // as a tab root the floating tab dock is the safe-area inset under it, `PhoneTab.barGap` further down
+                .padding(.horizontal, 12).padding(.bottom, 6)
         }
         .task(id: next?.persistentModelID) {
             await drive.load(address: next.map { "\($0.address) \($0.province)" } ?? "")

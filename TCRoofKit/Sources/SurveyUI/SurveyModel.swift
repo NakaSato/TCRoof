@@ -223,6 +223,11 @@ public struct SurveySettings: Codable, Equatable {
     public var pvModule = PVModuleCatalog.defaultVariantID
     /// Print each camera photo's position, direction and time under it in the PDF report (hardware assist §H4).
     public var printPhotoStamps = false
+    /// Percent under its MP plan at which a station counts as `ช้ากว่าแผน` (PWA settings page, the install overview).
+    public var behindThreshold = InstallOverview.defaultThreshold
+    /// PWA settings page, `รายงานประจำวัน`: remind before the daily report deadline, and when the inspector hasn't acknowledged.
+    public var remindDailyDeadline = true
+    public var remindInspectorPending = true
 
     public init() {}
     public init(from decoder: Decoder) throws {
@@ -239,6 +244,9 @@ public struct SurveySettings: Codable, Equatable {
         autoUploadPhotos = try c.decodeIfPresent(Bool.self, forKey: .autoUploadPhotos) ?? autoUploadPhotos
         pvModule = try c.decodeIfPresent(String.self, forKey: .pvModule) ?? pvModule
         printPhotoStamps = try c.decodeIfPresent(Bool.self, forKey: .printPhotoStamps) ?? printPhotoStamps
+        behindThreshold = try c.decodeIfPresent(Double.self, forKey: .behindThreshold) ?? behindThreshold
+        remindDailyDeadline = try c.decodeIfPresent(Bool.self, forKey: .remindDailyDeadline) ?? remindDailyDeadline
+        remindInspectorPending = try c.decodeIfPresent(Bool.self, forKey: .remindInspectorPending) ?? remindInspectorPending
     }
     static let key = "solarSurvey.settings"
 

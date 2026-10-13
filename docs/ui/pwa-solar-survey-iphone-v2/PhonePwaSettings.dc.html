@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ตั้งค่า PWA (iPhone)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+@keyframes srGrow{from{max-width:44px;background-color:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.4)}to{max-width:400px;background-color:rgba(255,255,255,0.97);border-color:rgba(255,255,255,0.97)}}
+@keyframes srShrink{from{flex:1 1 auto;max-width:400px;background-color:rgba(255,255,255,0.97)}to{flex:1 1 auto;max-width:44px;background-color:rgba(255,255,255,0.18)}}
+@keyframes srTitleOut{from{flex:1 1 0px;max-width:280px;opacity:1;transform:none}to{flex:0 1 0px;max-width:0;opacity:0;transform:translateX(-16px)}}
+@keyframes srTitleIn{from{max-width:0;opacity:0;transform:translateX(-16px)}to{max-width:280px;opacity:1;transform:none}}
+@keyframes srIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head" style="flex-direction:column;align-items:stretch;gap:10px;padding:0 16px 14px;border-bottom-left-radius:15px;border-bottom-right-radius:15px">
+<div aria-hidden="true" style="height:44px;margin:0 -16px -4px;padding:0 26px 0 32px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700"><span>9:41</span><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 18 12" style="width:18px;height:12px;fill:#fff"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><svg viewBox="0 0 16 12" style="width:16px;height:12px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round"><path d="M1.5 4.5a9.5 9.5 0 0 1 13 0M4 7.3a6 6 0 0 1 8 0M6.5 10a2.4 2.4 0 0 1 3 0"></path></svg><svg viewBox="0 0 27 13" style="width:27px;height:13px"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".5"></rect><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"></rect><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"></rect></svg></span></div>
+<div style="display:flex;align-items:center;gap:10px"><div aria-hidden="{{srOnS}}" style="{{tStyle}}"><div style="font-size:18px;line-height:23px;font-weight:700;white-space:nowrap">PWA Setting</div></div></div>
+</header>
+<main style="flex-grow:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;display:flex;flex-direction:column;gap:10px;padding:12px 16px 108px">
+
+<sc-for list="{{setGroups}}" as="g" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:4px;flex:none"><span style="font-size:12px;font-weight:700;color:#5B6B82;padding-left:4px">{{g.t}}</span><div style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;overflow:hidden"><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2"><button onClick="{{r.go}}" style="width:100%;min-height:50px;padding:6px 12px;border:0;border-bottom:1px solid #EEF2F7;background:#fff;font-family:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px"><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><span style="font-size:14px;color:{{r.kc}}">{{r.k}}</span><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.v}}</span></span><sc-if value="{{r.isTog}}" hint-placeholder-val="{{false}}"><span role="switch" aria-checked="{{r.on}}" style="width:46px;height:28px;border-radius:14px;flex:none;position:relative;{{r.togSt}}"><i style="position:absolute;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;{{r.knob}}"></i></span></sc-if><sc-if value="{{r.isNav}}" hint-placeholder-val="{{true}}"><span style="font-size:18px;color:#9FB3CC">›</span></sc-if><sc-if value="{{r.isAct}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap;{{r.aSt}}">{{r.a}}</span></sc-if></button></sc-for></div></div></sc-for>
+<div style="text-align:center;font-size:11px;color:#9FB3CC;flex:none">TCRoof 2.4 (ตัวอย่าง) · ใช้กับงานของ กปภ. เท่านั้น งานอื่นไม่เปลี่ยน</div>
+</main>
+<div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:128px;z-index:11;pointer-events:none;background:linear-gradient(to bottom,rgba(245,248,251,0) 0%,rgba(245,248,251,0.85) 38%,#F5F8FB 62%)"></div><nav aria-label="เมนูหลัก" style="position:absolute;left:12px;right:12px;bottom:22px;z-index:12;display:flex;align-items:center;gap:2px;padding:5px;border-radius:28px;background:#fff;border:1px solid #C9D3E0"><a href="PhoneMenu.dc.html" aria-label="หน้าหลัก" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">หน้าหลัก</span></a><a href="PhoneHome.dc.html" aria-label="โครงการ · นัดวันนี้ 2" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">โครงการ</span><b aria-hidden="true" style="position:absolute;top:4px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;outline:2px solid #fff">2</b></a><a href="PhonePwaPlan.dc.html" aria-label="แผนงาน" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">แผนงาน</span></a><a href="PhonePwaDocs.dc.html" aria-label="เอกสารสถานี กปภ. · รอส่ง 3" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14.5l2 2 4-4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">เอกสาร</span><b aria-hidden="true" style="position:absolute;top:4px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#F08C00;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;outline:2px solid #fff">3</b></a><i aria-hidden="true" style="width:1px;align-self:stretch;margin:12px 2px;background:#DDE4ED;flex:none"></i><a href="PhonePwaSettings.dc.html" aria-current="page" aria-label="ตั้งค่าโครงการ PWA" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#fff;background:#16325C"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:800;white-space:nowrap">ตั้งค่า</span></a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const v = {};
+    // ── ค้นหา: กดแว่นขยาย ช่องค้นหาเลื่อนขยายไปทางซ้าย ชื่อโครงการจางหาย
+    v.srOn = !!st.srOn; v.srNo = !v.srOn; v.srOnS = v.srOn ? 'true' : 'false';
+        // จังหวะ: หน่วง 0.1 วิหลังกด แล้วช่องค้นหาขยาย 0.36 วิ ข้อความในช่องหน่วงตามอีก 0.3 วิ (keyframes เล่นทุกครั้งที่สลับสถานะ)
+    v.srWas = !!st.srWas;
+    v.srOpen = () => this.setState({ srOn: true, srWas: true }); v.srClose = () => this.setState({ srOn: false, srWas: true });
+    const srE = 'cubic-bezier(.2,.8,.2,1)';
+    const srBg = v.srOn ? 'background-color:rgba(255,255,255,0.97);border:1px solid rgba(255,255,255,0.97)' : 'background-color:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4)';
+    v.tStyle = 'min-width:0;overflow:hidden;white-space:nowrap;' + (v.srOn ? 'flex:0 1 0px;max-width:0;opacity:0;animation:srTitleOut .3s .1s ' + srE + ' both' : 'flex:1 1 0px;max-width:280px;' + (v.srWas ? 'animation:srTitleIn .34s .14s ' + srE + ' both' : ''));
+    v.sStyle = 'position:relative;height:44px;min-width:44px;margin-left:auto;box-sizing:border-box;border-radius:12px;display:flex;align-items:center;overflow:hidden;' + srBg + ';' + (v.srOn ? 'flex:1 1 auto;max-width:400px;animation:srGrow .36s .1s ' + srE + ' both' : 'flex:0 0 44px;max-width:44px;' + (v.srWas ? 'animation:srShrink .3s .06s ' + srE + ' both' : ''));
+    v.sIcon = 'width:21px;height:21px;flex:none;fill:none;stroke:' + (v.srOn ? '#5B6B82' : '#fff') + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .25s ease';
+    const pOn = 'flex:1 1 0;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:0;background:#16325C;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+    const pOff = 'flex:1 1 0;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:1px solid #DDE4ED;background:#fff;color:#16325C;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap';
+    const pCnt = (o, w) => 'min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:700;' + (o ? 'background:rgba(255,255,255,0.22);color:#fff' : w ? 'background:#FDECEA;color:#B42318' : 'background:#EEF2F7;color:#16325C');
+    const mkPills = (key, cur, list) => list.map(([k, t, n, w]) => ({ t, n, on: cur === k ? 'true' : 'false', st: cur === k ? pOn : pOff, cs: pCnt(cur === k, w), go: () => this.setState({ [key]: k }) }));
+    const fl = (on) => 'min-height:40px;padding:0 12px;border-radius:20px;font-family:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;' + (on ? 'border:0;background:#16325C;color:#fff' : 'border:1px solid #DDE4ED;background:#fff;color:#16325C');
+    // ── ตั้งค่า PWA (example values)
+    v.uName = 'สมชาย ใจดี (ตัวอย่าง)'; v.uRole = 'วิศวกรสำรวจ · ทีม TCR02 · Google บริษัท';
+    const synced = !!st.synced, pend = synced ? 0 : 2;
+    v.syncT = pend ? 'รอซิงก์ ' + pend : 'ซิงก์แล้ว'; v.syncSt = pend ? 'background:#FFF3E6;color:#9A4A06' : 'background:#E8F5EE;color:#1F6B43';
+    v.syncDot = 'width:7px;height:7px;border-radius:50%;background:' + (pend ? '#F08C00' : '#2E9E5B');
+    const tg = (k, d0) => (st[k] === undefined ? d0 : st[k]);
+    const nav = (k, val) => ({ k, v: val, kc: '#16325C', isNav: true, isTog: false, isAct: false, go: () => {} });
+    const tog = (k, val, key, d0) => { const on = tg(key, d0); return { k, v: val, kc: '#16325C', isNav: false, isTog: true, isAct: false, on: on ? 'true' : 'false',
+      togSt: on ? 'background:#2E9E5B' : 'background:#C9D3DF', knob: on ? 'left:21px' : 'left:3px', go: () => this.setState({ [key]: !on }) }; };
+    const act = (k, val, a, aSt, go) => ({ k, v: val, kc: '#16325C', isNav: false, isTog: false, isAct: true, a, aSt, go: go || (() => {}) });
+    v.setGroups = [
+      { t: 'โครงการ', rows: [nav('โครงการ Solar Rooftop กปภ. ระยะที่ 3–4', '102 สถานี · ผู้ว่าจ้าง การประปาส่วนภูมิภาค'), nav('สัญญาและระยะเวลา', 'เลขที่สัญญา · วันเริ่ม–วันสิ้นสุด (ตัวอย่าง)')] },
+      { t: 'ทีมงาน', rows: [nav('ผู้รับเหมา', '4 ทีม · A, B, C, D'), nav('ทีมควบคุมงาน TC', 'TCR01–TCR10 · ผู้ควบคุมงาน และวิศวกร')] },
+      { t: 'แผน MP', rows: [nav('น้ำหนักงานมาตรฐาน', 'Permit 5 · ติดตั้ง 90 · ทดสอบ 5'), nav('เกณฑ์ "ช้ากว่าแผน"', 'ต่ำกว่าแผน ≥ 2%')] },
+      { t: 'รายงานประจำวัน', rows: [tog('แจ้งเตือนก่อนหมดเวลาส่ง', 'ส่งภายใน 18:00 · เตือน 16:00', 'ntfDaily', true), tog('เตือนเมื่อผู้ตรวจยังไม่รับทราบ', 'เกิน 2 วัน', 'ntfAck', true), nav('ผู้ตรวจงานเริ่มต้น', 'ผู้แทน กฟภ. / กปภ. ของแต่ละสถานี')] },
+      { t: 'เอกสารและซิงก์', rows: [nav('แม่แบบรายงาน', 'DAILY REPORT · คำขอรายสัปดาห์ · IEC 62446 (กปภ.)'), tog('ซิงก์รูปขึ้น Google Drive อัตโนมัติ', 'โฟลเดอร์ PWA ระยะ 3–4 / เลข MP', 'syncDrive', true),
+        act('ซิงก์ทั้งหมดตอนนี้', pend ? pend + ' งานยังไม่ขึ้น Google Drive' : 'ซิงก์ครบทุกงานแล้ว', pend ? 'ซิงก์ ' + pend : 'ครบแล้ว', pend ? 'background:#1F6FB5;color:#fff' : 'background:#E8F5EE;color:#1F6B43', () => this.setState({ synced: true }))] },
+      { t: 'ข้อมูล', rows: [nav('เปิดจาก Google Drive', 'ดึงงานที่ทีมอื่นบันทึกไว้'), nav('นำเข้าไฟล์ข้อมูล (.json)', 'จากไฟล์สำรองหรือเครื่องอื่น'), nav('สำรองข้อมูลทุกงาน', 'ไฟล์เดียว · ส่งต่อหรือเก็บไว้ในเครื่อง')] }];
+    return v;
+  }
+}
+</script>
+</body>
+</html>

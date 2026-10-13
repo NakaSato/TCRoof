@@ -2,28 +2,34 @@ import SwiftUI
 import TCRoofUI
 import SwiftData
 
-/// Root tabs of the iPhone (compact width) under the docked tab bar (docs/ui/tcroof-home-iphone-v2).
+/// Root tabs of the iPhone (compact width) behind the floating tab dock (docs/ui/tcroof-home-iphone-v3).
 enum PhoneTab: String {
-    /// `settings` is only the bar's button for the settings sheet, never a selected tab.
-    case home, survey, plan, tools, settings
+    /// `settings` is only the dock's button for the settings sheet, never a selected tab.
+    case home, homeWork = "homework", pwa, tools, settings
 
-    static let stacks: [PhoneTab] = [.home, .survey, .plan, .tools]
-    /// Space the root screens keep above the tab bar.
-    static let barGap: CGFloat = 4
+    static let stacks: [PhoneTab] = [.home, .homeWork, .pwa, .tools]
+    /// Space the root screens keep above the dock: with the dock's 66 pt and its 22 pt below, content ends 104 pt up.
+    static let barGap: CGFloat = 16
 
     var module: AppModule? {
         switch self {
         case .home, .settings: nil
-        case .survey: .survey
-        case .plan: .plan
+        case .homeWork: .survey
+        case .pwa: .pwa
         case .tools: .tools
         }
     }
+
+    /// The page colour its content fades into behind the dock.
+    var fade: Color { self == .homeWork ? Theme.background : Theme.phonePage }
+
+    /// The fade's height: the board's 128 pt, or lower under the survey list so it stays clear of that list's own dock.
+    var fadeHeight: CGFloat { self == .homeWork ? 108 : 128 }
 }
 
 /// iPhone root: one `NavigationStack` per tab, the selected one shown. Each tab's root screen carries
-/// `TCTabBar` as its bottom safe-area inset, so a pushed screen slides in over the bar and covers it,
-/// like a system tab bar that hides on push. A tab's stack is built the first time it is opened and then kept,
+/// `TCTabBar` as its bottom safe-area inset, so the page scrolls behind the dock and a pushed screen slides in
+/// over it and covers it, like a system tab bar that hides on push. A tab's stack is built the first time it is opened and then kept,
 /// so each tab keeps its place. Not a `TabView`: its system bar would come back on every pushed screen that
 /// doesn't hide it. `ตั้งค่า` opens the settings sheet, as the avatar does.
 struct PhoneTabs<HomeRoot: View>: View {
@@ -41,7 +47,10 @@ struct PhoneTabs<HomeRoot: View>: View {
             ForEach(PhoneTab.stacks, id: \.self) { t in
                 if opened.contains(t) {
                     let shown = t == tab
-                    stack(t)
+                    Group {
+                        // the PWA module brings its own dock and stacks, in place of this one
+                        if t == .pwa { PWAPhoneTabs { select(.home) } } else { stack(t) }
+                    }
                         .opacity(shown ? 1 : 0)
                         .allowsHitTesting(shown)
                         .accessibilityHidden(!shown)
@@ -68,30 +77,33 @@ struct PhoneTabs<HomeRoot: View>: View {
         NavigationStack {
             Group {
                 switch t {
-                // scan, install records and PWA have no tab: they are rows above the tools register
-                case .tools: ToolsView(modules: [.scan, .install, .pwa])
+                // the plan calendar, scan and install records have no tab: they are rows above the tools register
+                case .tools: ToolsView(modules: [.plan, .scan, .install])
                 default: if let module = t.module { module.destination } else { home() }
                 }
             }
-            // 4 pt over the bar: a root's FAB (12 pt padding) sits the board's 16 pt above it
             .safeAreaInset(edge: .bottom, spacing: PhoneTab.barGap) {
-                TCTabBar(items: items, selection: Binding(get: { tab }, set: select))
+                TCTabBar(items: items, selection: Binding(get: { tab }, set: select), dividerBefore: .settings)
+                    .padding(.horizontal, 12).padding(.bottom, 22)
+                    .background(alignment: .bottom) { TCDockFade(t.fade, height: t.fadeHeight) }
             }
-            // the bar stays docked behind the keyboard instead of riding up on it (survey list search)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+            // the dock measures from the screen's bottom edge, not the home indicator's safe area, and stays
+            // there behind the keyboard instead of riding up on it (survey list search)
+            .ignoresSafeArea(.all, edges: .bottom)
         }
     }
 
-    private var surveyToday: Int { jobs.filter { $0.surveyDate.isToday }.count }
+    /// Today's appointments of one kind of job, for the badge of the tab that owns them.
+    private func surveyToday(_ kind: JobKind) -> Int { jobs.filter { $0.surveyDate.isToday && $0.kind == kind }.count }
 
     private var items: [TCTabItem<PhoneTab>] {
-        let n = surveyToday
+        let home = surveyToday(.home), pwa = surveyToday(.pwa)
         // tools due for calibration within 30 days or past it
         let due = instruments.dueCount()
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
-            TCTabItem(.survey, title: "สำรวจ", symbol: "list.clipboard", badge: n, accessibilityLabel: n > 0 ? "สำรวจ · นัดวันนี้ \(n)" : nil),
-            TCTabItem(.plan, title: "แผนงาน", symbol: "calendar"),
+            TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),
+            TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. · นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", badge: due,
                       accessibilityLabel: due > 0 ? "เครื่องมือวัด · ต้องสอบเทียบ \(due)" : "เครื่องมือวัด"),
             // not a tab: settings stays a sheet, like the avatar
@@ -101,7 +113,7 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private static var initialTab: PhoneTab {
         #if DEBUG
-        // `-homeTab survey|plan|tools` opens with that tab selected, for simulator checks
+        // `-homeTab homework|pwa|tools` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif
         return .home

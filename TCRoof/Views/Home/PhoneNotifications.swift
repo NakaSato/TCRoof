@@ -1,5 +1,6 @@
 import SwiftUI
 import TCRoofUI
+import TCRoofCore
 
 /// Notifications: full screen on iPhone, the bell's popover on iPad (`large`). Filter chips, today / yesterday / earlier
 /// groups, compact rows. Rows have no buttons; tapping one does its action and marks it read.
@@ -12,6 +13,8 @@ struct PhoneNotificationsView: View {
     let surveyHint: (AppNotification) -> String
     /// Opens the appointment's report (after the cover closes).
     let openSurvey: (AppNotification) -> Void
+    /// Opens a row's `link` (after the cover closes).
+    var openLink: (DeepLink) -> Void = { _ in }
     /// iPad popover: 440 wide, at most 640 high, 21 pt title.
     var large = false
 
@@ -30,6 +33,7 @@ struct PhoneNotificationsView: View {
         case .survey: n.date > .now && n.job != nil
         case .syncPending: true
         case .install, .saved: false
+        case .calibration, .report, .feed: n.todo
         }
     }
 
@@ -157,7 +161,7 @@ struct PhoneNotificationsView: View {
             switch n.kind {
             case .syncPending: syncedAt = .now; sync()
             case .survey where n.job != nil: closePanel(); openSurvey(n)
-            default: break
+            default: if let link = n.link { closePanel(); openLink(link) }
             }
         } label: {
             NotificationRowLabel(title: n.title, detail: phoneDetail(n), time: n.timeText, symbol: symbol(n), tile: tile(n),
@@ -175,6 +179,9 @@ struct PhoneNotificationsView: View {
         switch n.kind {
         case .survey where n.job != nil: (surveyHint(n), Theme.primary)
         case .syncPending: ("แตะเพื่อซิงก์ตอนนี้", Theme.pending)
+        case .calibration: ("แตะเพื่อเปิดทะเบียนเครื่อง", Theme.pending)
+        case .report: ("แตะเพื่อทำรายงานวันนี้", Theme.pending)
+        case .feed(let kind) where n.link != nil && n.link != .home: (kind.link, n.todo ? Theme.dangerText : Theme.primary)
         default: nil
         }
     }
@@ -190,6 +197,13 @@ struct PhoneNotificationsView: View {
         case .install: "folder"
         case .syncPending: "icloud.and.arrow.up"
         case .saved: "checkmark"
+        case .calibration: "gauge.with.needle"
+        case .report: "doc.text"
+        case .feed(.progress): "chart.bar"
+        case .feed(.waitingInspector): "person.badge.clock"
+        case .feed(.testResult): "checkmark.seal"
+        case .feed(.issue): "exclamationmark.triangle"
+        case .feed(.summary): "sum"
         }
     }
 
@@ -199,6 +213,10 @@ struct PhoneNotificationsView: View {
         case .install: n.isToday ? Theme.success : Theme.muted
         case .syncPending: Theme.warning
         case .saved: Theme.muted
+        case .calibration, .report, .feed(.waitingInspector): Theme.warning
+        case .feed(.progress), .feed(.summary): Theme.primary
+        case .feed(.testResult): Theme.success
+        case .feed(.issue): n.todo ? Theme.danger : Theme.muted
         }
     }
 }

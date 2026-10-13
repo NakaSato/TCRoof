@@ -6,6 +6,8 @@ import Foundation
 /// One notification type, also its `UNNotificationCategory` id and thread id.
 public enum NotificationType: String, CaseIterable, Sendable {
     case survey, queue, late, cal, sync, done, report
+    /// Live cases (`LiveNotifications.swift`): install days, the MP plan, and the project feed's events.
+    case install, mp, feed, issue, inspect
 
     /// The coloured word after `TCROOF ·` on the board.
     public var category: String {
@@ -17,6 +19,11 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .sync: "ซิงก์"
         case .done: "ส่งออก"
         case .report: "รายงาน"
+        case .install: "ติดตั้ง"
+        case .mp: "แผน MP"
+        case .feed: "ความคืบหน้า"
+        case .issue: "ปัญหา"
+        case .inspect: "รอผู้ตรวจ"
         }
     }
 
@@ -24,10 +31,13 @@ public enum NotificationType: String, CaseIterable, Sendable {
     public var level: Level {
         switch self {
         case .late: .timeSensitive
-        case .survey, .queue, .report: .active
+        case .survey, .queue, .report, .install, .mp, .feed, .issue, .inspect: .active
         case .cal, .sync, .done: .passive
         }
     }
+
+    /// No sound: iOS shows no banner for a passive notification, so the feed's posts are active but quiet.
+    public var silent: Bool { self == .feed }
 
     public var actions: [NotificationAction] {
         switch self {
@@ -37,7 +47,8 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .cal: [.toolRecord, .remind7Days]
         case .sync: [.syncNow, .viewPending]
         case .done: [.openDrive, .shareLink]
-        case .report: []
+        case .install: [.navigate]
+        case .report, .mp, .feed, .issue, .inspect: []
         }
     }
 
@@ -48,13 +59,15 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .cal: .calibration
         case .sync, .done: .syncExport
         case .report: .report
+        case .install, .mp: .plan
+        case .feed, .issue, .inspect: .feed
         }
     }
 }
 
 /// A switch in Settings › การแจ้งเตือน.
 public enum NotificationGroup: String, CaseIterable, Sendable {
-    case survey, tools, calibration, syncExport, report
+    case survey, tools, calibration, syncExport, report, plan, feed
 
     public var title: String {
         switch self {
@@ -63,6 +76,8 @@ public enum NotificationGroup: String, CaseIterable, Sendable {
         case .calibration: "สอบเทียบ"
         case .syncExport: "ซิงก์และส่งออก"
         case .report: "รายงานประจำ"
+        case .plan: "วันติดตั้งและแผน MP"
+        case .feed: "ความคืบหน้าโครงการ"
         }
     }
 
@@ -142,6 +157,10 @@ public enum NotificationInfo {
     public static let url = "url"
     /// Which routine report a `report` notification is about: "daily" or "request".
     public static let kind = "kind"
+    /// The record a feed notification opens: "daily", "inspect", "test", "problem", "punch" or "summary".
+    public static let record = "record"
+    /// The day of that daily report (`ISO`).
+    public static let day = "day"
 }
 
 /// One local notification to post.
@@ -311,8 +330,12 @@ public enum ToolNotification {
                                 body: [tool, kind].filter { !$0.isEmpty }.joined(separator: " ") + " · ครบ \(ThaiDate.full(due))",
                                 sub: "เหลือ \(left) วัน · จองส่งสอบเทียบล่วงหน้า", fire: .at(at),
                                 info: [NotificationInfo.tool: toolID, NotificationInfo.toolName: tool,
-                                       NotificationInfo.toolKind: kind, NotificationInfo.due: ISO.string(due)])
+                                       NotificationInfo.toolKind: kind, NotificationInfo.due: ISO.string(due),
+                                       NotificationInfo.bell: calibrationBellID(toolID: toolID, due: due)])
     }
+
+    /// The bell's one row for a tool's calibration date, whichever reminder is on screen.
+    public static func calibrationBellID(toolID: String, due: Date) -> String { "cal-\(toolID)-\(ISODate.string(due))" }
 }
 
 // MARK: - Deep links
@@ -343,6 +366,16 @@ public enum DeepLink: Equatable, Sendable {
     case dailyReport(job: String)
     /// Next week's request of a station.
     case weeklyRequest(job: String)
+    /// The job's detail (an install day, the MP plan, an issue, work waiting for the inspector).
+    case job(job: String)
+    /// A station's daily report of one day.
+    case daily(job: String, day: Date)
+    /// The job's ICL check list.
+    case inspection(job: String)
+    /// A home job's punch list.
+    case homework(job: String)
+    /// The install records, where the daily summary leads.
+    case records
     case home
 
     /// The link for a tap (`action` nil or the system default / dismiss id) or a quick action.
@@ -359,6 +392,8 @@ public enum DeepLink: Equatable, Sendable {
             case .sync: return .pendingList
             case .done: return url.map(DeepLink.driveFolder) ?? .home
             case .report: return job.isEmpty ? .home : info[NotificationInfo.kind] == "request" ? .weeklyRequest(job: job) : .dailyReport(job: job)
+            case .install, .mp: return job.isEmpty ? .home : .job(job: job)
+            case .feed, .issue, .inspect: return FeedNotification.link(info)
             }
         }
         switch action {

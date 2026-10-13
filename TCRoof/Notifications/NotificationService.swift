@@ -26,6 +26,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     private static let syncNowKey = "notifications.syncNowPending"
     private static let syncCountKey = "notifications.sync.count"
     private static let syncFireKey = "notifications.sync.fire"
+    /// `userInfo` mark of a reminder the user put off.
+    private static let snoozedKey = "snoozed"
 
     /// Called at launch, before any notification response can arrive.
     func configure() {
@@ -90,7 +92,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         c.userInfo = plan.info
         switch plan.type.level {
         case .passive: c.interruptionLevel = .passive
-        case .active: c.interruptionLevel = .active; c.sound = .default
+        case .active: c.interruptionLevel = .active; c.sound = plan.type.silent ? nil : .default
         case .timeSensitive: c.interruptionLevel = .timeSensitive; c.sound = .default
         }
         return c
@@ -113,12 +115,13 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         plans.forEach(post)
     }
 
-    /// Replaces every waiting notification of `type` with `plans` (the routine-report reminders).
+    /// Replaces every waiting notification of `type` with `plans` (the routine-report reminders, calibration, install
+    /// days, the MP plan, the feed's summary and due issues). A reminder put off with `เตือนอีก 7 วัน` stays.
     func schedule(_ plans: [NotificationPlan], type: NotificationType) async {
         let plans = Self.isOn(type.group) ? plans : []
         let keep = Set(plans.map(\.id))
         let stale = await center.pendingNotificationRequests()
-            .filter { $0.content.categoryIdentifier == type.rawValue && !keep.contains($0.identifier) }
+            .filter { $0.content.categoryIdentifier == type.rawValue && !keep.contains($0.identifier) && $0.content.userInfo[Self.snoozedKey] == nil }
         center.removePendingNotificationRequests(withIdentifiers: stale.map(\.identifier))
         plans.forEach(post)
     }
@@ -217,8 +220,10 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     private func snooze(id: String, type: NotificationType, info: [String: String], content: UNNotificationContent, after wait: TimeInterval) {
         let at = Date.now.addingTimeInterval(wait)
         if type == .cal, let due = ISO.date(info[NotificationInfo.due]) {
-            return post(ToolNotification.calibration(toolID: info[NotificationInfo.tool] ?? "", tool: info[NotificationInfo.toolName] ?? "",
-                                                     kind: info[NotificationInfo.toolKind] ?? "", due: due, at: at))
+            var plan = ToolNotification.calibration(toolID: info[NotificationInfo.tool] ?? "", tool: info[NotificationInfo.toolName] ?? "",
+                                                    kind: info[NotificationInfo.toolKind] ?? "", due: due, at: at)
+            plan.info[Self.snoozedKey] = "1"
+            return post(plan)
         }
         guard let copy = content.mutableCopy() as? UNMutableNotificationContent else { return }
         if type == .survey, let appointment = ISO.date(info[NotificationInfo.appointment]) {
@@ -239,6 +244,9 @@ struct ActivitySheet: UIViewControllerRepresentable {
 /// Simulator checks without touch input:
 /// - `-notifDemo survey` moves the first sample job's appointment 31 min ahead (its reminder fires in 1 min);
 /// - `-notifDemo all` posts the board's six examples a few seconds apart (lock screen / banners);
+/// - `-notifDemo live` posts one example of each live case 8 s apart (install eve and day, MP start, report sent,
+///   waiting for the inspector, new issue, daily summary) about the first job, so a tap opens its screens; with
+///   `-notifOnly <0-6>` just that one;
 /// - `-notifAction <type>.<action>` replays a tap (`survey.default`) or quick action (`survey.navigate`).
 extension NotificationService {
     static var demo: String? { UserDefaults.standard.string(forKey: "notifDemo") }
@@ -266,6 +274,30 @@ extension NotificationService {
             plans.append(late)
         }
         plans.forEach(post)
+    }
+
+    func postLiveExamples(job: String = "demo", only: Int? = nil) {
+        let now = Date.now, cal = Calendar.current
+        let start = cal.date(bySettingHour: 8, minute: 0, second: 0, of: now.adding(days: 1)) ?? now
+        func post(_ id: String, _ kind: FeedPost.Kind, _ place: String, _ text: String, _ source: FeedPost.Source) -> NotificationPlan {
+            FeedNotification.plan(FeedPost(id: id, kind: kind, project: .pwa, initials: "TC", who: "", place: place, date: now, text: text, source: source))
+        }
+        var plans = [
+            InstallNotification.eve(jobKey: job, name: "TC-0012 บ้านตัวอย่าง", team: "TCR01", days: 5, start: start),
+            InstallNotification.day(jobKey: job, name: "TC-0012 บ้านตัวอย่าง", team: "TCR01", day: 1, of: 5, start: start),
+            NotificationPlan(id: "demo-mp", type: .mp, title: "เริ่มงานพรุ่งนี้ตามแผน MP", body: "ทุ่งน้อย", sub: "2.3 ติดตั้งแผง", fire: .after(1),
+                             info: [NotificationInfo.job: job]),
+            post("demo-progress", .progress, "MP 189 ทุ่งน้อย · 2.3 ติดตั้งแผง", "ติดตั้งแผง 38%", .dailyReport(project: job, day: now)),
+            post("demo-inspect", .waitingInspector, "MP 154 แพรกหนามแดง · 2.5 Inverter", "Inverter 100%", .dailyReport(project: job, day: now)),
+            post("demo-issue", .issue, "TC-0012 · ติดตั้ง Day 2/5", "พบรอยรั่วที่ครอบหลังคาจุด B3", .punch(project: job, id: "demo")),
+            post("demo-summary", .summary, "", "สรุปวันที่ 13 ต.ค. — ส่งรายงานแล้ว 8/12 สถานี กปภ. ความคืบหน้ารวม +2%", .summary(day: now)),
+        ].compactMap { $0 }
+        for i in plans.indices { plans[i].fire = .after(Double(4 + 8 * i)) }
+        if let only, plans.indices.contains(only) {
+            plans = [plans[only]]
+            plans[0].fire = .after(4)
+        }
+        plans.forEach { self.post($0) }
     }
 
     /// `survey.navigate` → the same path a real response takes.

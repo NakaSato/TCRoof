@@ -437,32 +437,51 @@ public struct TCTabItem<ID: Hashable>: Identifiable {
     }
 }
 
-/// iPhone floating tab dock (docs/ui/tcroof-home-iphone-v3, state 08): an opaque capsule, radius 28, 1 pt border,
-/// padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label. The selected tab is a navy capsule.
-/// A hairline stands before the `dividerBefore` tab (`ตั้งค่า`). The caller insets it (12 pt sides, 22 pt above
-/// the bottom edge) and puts `TCDockFade` behind it.
+/// Sizes of `TCTabBar`: the iPhone's equal tabs across the screen, or the iPad's 84 pt buttons in a dock as wide as
+/// its tabs (docs/ui/tcroof-home-ipad-v2, state 07).
+public enum TCTabBarSize: Sendable {
+    case phone, pad
+
+    var isPad: Bool { self == .pad }
+    var glyph: CGFloat { isPad ? 24 : 23 }
+    var label: CGFloat { isPad ? 11.5 : 10.5 }
+    var height: CGFloat { isPad ? 58 : 56 }
+    var radius: CGFloat { isPad ? 20 : 22 }
+    var badge: CGFloat { isPad ? 18 : 17 }
+}
+
+/// Floating tab dock. iPhone (docs/ui/tcroof-home-iphone-v3, state 08): an opaque capsule, radius 28, 1 pt border,
+/// padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label. iPad (`size: .pad`): tabs 84 × 58, padding 6,
+/// white 96 % over a blur. The selected tab is a navy capsule. A hairline stands before the `dividerBefore` tab
+/// (`ตั้งค่า`). The caller insets it (iPhone: 12 pt sides, 22 pt above the bottom edge; iPad: centred, 18 pt above)
+/// and puts `TCDockFade` behind it.
 public struct TCTabBar<ID: Hashable>: View {
     let items: [TCTabItem<ID>]
     @Binding var selection: ID
     let dividerBefore: ID?
+    let size: TCTabBarSize
 
-    public init(items: [TCTabItem<ID>], selection: Binding<ID>, dividerBefore: ID? = nil) {
-        self.items = items; self._selection = selection; self.dividerBefore = dividerBefore
+    public init(items: [TCTabItem<ID>], selection: Binding<ID>, dividerBefore: ID? = nil, size: TCTabBarSize = .phone) {
+        self.items = items; self._selection = selection; self.dividerBefore = dividerBefore; self.size = size
     }
 
     public var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
         HStack(spacing: 2) {
             ForEach(items) { item in
                 if item.id == dividerBefore {
-                    Rectangle().fill(Theme.borderSubtle).frame(width: 1).padding(.vertical, 12).padding(.horizontal, 2)
+                    Rectangle().fill(Theme.borderSubtle).frame(width: 1)
+                        .padding(.vertical, size.isPad ? 10 : 12).padding(.horizontal, size.isPad ? 4 : 2)
                 }
                 tab(item)
             }
         }
-        .fixedSize(horizontal: false, vertical: true)
-        .padding(5)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.borderOutdoor))
+        .fixedSize(horizontal: size.isPad, vertical: true)
+        .padding(size.isPad ? 6 : 5)
+        .background {
+            if size.isPad { shape.fill(.ultraThinMaterial).overlay(shape.fill(Theme.surface.opacity(0.96))) } else { shape.fill(Theme.surface) }
+        }
+        .overlay(shape.strokeBorder(Theme.borderOutdoor))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("เมนูหลัก")
     }
@@ -472,22 +491,23 @@ public struct TCTabBar<ID: Hashable>: View {
         return Button {
             if let action = item.action { action() } else { selection = item.id }
         } label: {
-            VStack(spacing: 2) {
-                glyph(item, selected: selected).frame(width: 23, height: 23)
-                Text(item.title).font(.sarabun(10.5, selected ? .heavy : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
-                    .frame(height: 13)
+            VStack(spacing: size.isPad ? 3 : 2) {
+                glyph(item, selected: selected).frame(width: size.glyph, height: size.glyph)
+                Text(item.title).font(.sarabun(size.label, selected ? .heavy : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                    .frame(height: size.isPad ? 14 : 13)
             }
             .foregroundStyle(selected ? Theme.onPrimary : Theme.inkTab)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .background { if selected { RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Theme.navySolid) } }
-            // 4 pt down, starting 5 pt right of the centre: the glyph's top right
+            .frame(maxWidth: size.isPad ? nil : .infinity, minHeight: size.height)
+            .frame(width: size.isPad ? 84 : nil)
+            .background { if selected { RoundedRectangle(cornerRadius: size.radius, style: .continuous).fill(Theme.navySolid) } }
+            // 4 pt down (iPad 5), starting 5 pt (iPad 6) right of the centre: the glyph's top right
             .overlay(alignment: .top) {
                 if item.badge > 0 {
                     HStack(spacing: 0) {
                         Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
-                        badge(item.badge, item.badgeColor).padding(.leading, 5).frame(maxWidth: .infinity, alignment: .leading)
+                        badge(item.badge, item.badgeColor).padding(.leading, size.isPad ? 6 : 5).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.top, 4)
+                    .padding(.top, size.isPad ? 5 : 4)
                 }
             }
             .contentShape(Rectangle())
@@ -499,15 +519,15 @@ public struct TCTabBar<ID: Hashable>: View {
 
     @ViewBuilder func glyph(_ item: TCTabItem<ID>, selected: Bool) -> some View {
         if item.asset {
-            Image(item.symbol).renderingMode(.template).resizable().frame(width: 23, height: 23)
+            Image(item.symbol).renderingMode(.template).resizable().frame(width: size.glyph, height: size.glyph)
         } else {
-            Image(systemName: item.symbol).font(.system(size: 19, weight: selected ? .semibold : .medium))
+            Image(systemName: item.symbol).font(.system(size: size.isPad ? 20 : 19, weight: selected ? .semibold : .medium))
         }
     }
 
     func badge(_ n: Int, _ color: Color) -> some View {
-        Text("\(n)").font(.system(size: 10.5, weight: .heavy)).monospacedDigit().foregroundStyle(.white)
-            .padding(.horizontal, 4).frame(minWidth: 17, minHeight: 17)
+        Text("\(n)").font(.system(size: size.isPad ? 11 : 10.5, weight: .heavy)).monospacedDigit().foregroundStyle(.white)
+            .padding(.horizontal, size.isPad ? 5 : 4).frame(minWidth: size.badge, minHeight: size.badge)
             .background(color, in: Capsule())
             .background(Capsule().fill(Theme.surface).padding(-2))
             .fixedSize()

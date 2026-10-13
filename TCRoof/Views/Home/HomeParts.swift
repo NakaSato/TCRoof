@@ -79,15 +79,13 @@ func userInitials(_ name: String, email: String?) -> String {
 
 // MARK: - Header
 
-/// iPad (docs/ui/home-navbar-ipad): brand, search field, and the bell + account capsule.
-/// iPhone (docs/ui/tcroof-home-iphone-v2): the logo and the bell; settings are the tab bar's `ตั้งค่า`.
+/// iPad (docs/ui/home-navbar-ipad, docs/ui/tcroof-home-ipad-v2): brand, search field, and the bell in its capsule.
+/// iPhone (docs/ui/tcroof-home-iphone-v2): the logo and the bell. Settings are the dock's `ตั้งค่า` on both.
 /// The caller shows the notifications: under the bell on iPad (`BellAnchorKey`), full screen on iPhone.
 struct HomeBrandHeader: View {
     let size: HomeSize
-    let initials: String
     let unread: Int
     @Binding var notificationsShown: Bool
-    let openSettings: () -> Void
     /// iPad: the search field opens the job search.
     var openSearch: () -> Void = {}
 
@@ -107,22 +105,10 @@ struct HomeBrandHeader: View {
             // the spacer and the search share the free width evenly, the search capped at 600 (the board's flex: 1 pair)
             Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
             searchField.frame(maxWidth: .infinity, alignment: .trailing)
-            HStack(spacing: 0) {
-                bell
-                Button {
-                    notificationsShown = false
-                    openSettings()
-                } label: {
-                    Text(initials).font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.onPrimary)
-                        .frame(width: 42, height: 42).background(Theme.navy, in: Circle())
-                        .frame(width: size.roundButton, height: size.roundButton).contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("ตั้งค่าและบัญชี")
-            }
-            .padding(.horizontal, 2)
-            .frame(height: 56)
-            .background(Theme.phonePage, in: Capsule())
+            bell
+                .padding(.horizontal, 2)
+                .frame(height: 56)
+                .background(Theme.phonePage, in: Capsule())
         }
         .padding(.horizontal, 32)
         .padding(.top, 18).padding(.bottom, 16)
@@ -470,7 +456,7 @@ private struct AppointmentBody: View {
                     Text(appointment.time).font(.sarabun(size.time, .bold, relativeTo: .title2)).monospacedDigit()
                     Text("นัดสำรวจ · \(appointment.countdown)").font(.sarabun(size.kind, relativeTo: .caption)).opacity(size.isPad ? 0.9 : 0.95).lineLimit(1)
                 }
-                Text(appointment.name).font(.sarabun(size.name, .bold, relativeTo: .subheadline)).lineLimit(2)
+                Text(appointment.name).font(.sarabun(size.name, .bold, relativeTo: .subheadline)).lineLimit(size.isPad ? 1 : 2)
                     .fixedSize(horizontal: false, vertical: true)
                 if !appointment.place.isEmpty {
                     Text(appointment.place).font(.sarabun(size.place, relativeTo: .caption)).opacity(size.isPad ? 0.8 : 0.92).lineLimit(1)

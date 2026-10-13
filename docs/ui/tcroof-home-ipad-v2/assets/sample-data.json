@@ -1,0 +1,23 @@
+{
+  "_note": "Example data from the board iPad · หน้าหลัก TCRoof. Not real people or stations. The app builds the feed with TCRoofCore.ProjectFeed / FeedBuilder.",
+  "feedChips": [ { "key": "all", "label": "ทั้งหมด", "count": 5 }, { "key": "pwa", "label": "กปภ.", "count": 4 }, { "key": "home", "label": "งานบ้าน", "count": 2 }, { "key": "mine", "label": "ทีมของฉัน", "count": 3 } ],
+  "feedUpdated": "อัปเดตล่าสุด 18:00",
+  "posts": [
+    { "id": "p0", "who": "TCRoof", "badge": "สรุปวันนี้", "tone": "blue", "where": "ทุกโครงการ", "when": "18:00", "cat": "all", "mine": true,
+      "text": "สรุปวันที่ 12 ต.ค. — ส่งรายงานแล้ว 8/12 สถานี กปภ. ความคืบหน้ารวม +2% ปัญหาค้าง 1 เรื่อง (งานบ้าน TC-0012)",
+      "stats": [["8/12","ส่งรายงาน","blue"],["+2%","ความคืบหน้ารวม","green"],["1","ปัญหาค้าง","red"]], "acks": 5, "action": "ดูสรุป" },
+    { "id": "p4", "who": "ทีม B · งานบ้าน", "badge": "ปัญหา", "tone": "red", "where": "TC-0012 · ติดตั้ง Day 2/5", "when": "3 ชม.", "cat": "home", "mine": true,
+      "text": "พบรอยรั่วที่ครอบหลังคาจุด B3 หลังเจาะยึดราง ต้องอุดซิลิโคนและทดสอบน้ำก่อนวางแผงแถว B",
+      "issue": { "owner": "ทีม B (สมศักดิ์ · ตัวอย่าง)", "due": "13 ต.ค.", "status": "ยังค้าง", "button": "แก้แล้ว" }, "acks": 1, "action": "ดูงาน" },
+    { "id": "p1", "who": "ทีม A · ผู้รับเหมา A", "badge": "รายงานวันนี้", "tone": "blue", "where": "MP 189 ทุ่งน้อย · 2.3 ติดตั้งแผง", "when": "25 นาที", "cat": "pwa", "mine": true,
+      "text": "วางแผงแถว C เสร็จ 48/120 แผง ขันทอร์กครบ เหลือแถว D พรุ่งนี้เช้า (ฝนบ่ายนี้ หยุดงานบนหลังคา 13:00)",
+      "photo": "roof", "photoCount": "1/4", "chips": [["+6% วันนี้","green"],["38% / แผน 50%","red"]], "acks": 4, "action": "ดูรายงาน" },
+    { "id": "p2", "who": "TCRoof", "badge": "อัตโนมัติ", "tone": "green", "where": "MP 77 โชคชัย · 3.1 Pre-Commissioning", "when": "1 ชม.", "cat": "pwa", "mine": false,
+      "text": "ผลทดสอบ IEC 62446 ผ่านครบ 12 สตริง พร้อมอบรม O&M 24 ต.ค.",
+      "stats": [["12/12","สตริงผ่าน","green"],["> 40 MΩ","ฉนวน","blue"],["171 kWp","กำลังติดตั้ง","blue"]], "acks": 7, "action": "ดูผลทดสอบ" },
+    { "id": "p3", "who": "ทีม C · ผู้รับเหมา C", "badge": "รอผู้ตรวจ", "tone": "orange", "where": "MP 154 แพรกหนามแดง · 2.5 Inverter", "when": "2 ชม.", "cat": "pwa", "mine": false,
+      "text": "ติดตั้งอินเวอร์เตอร์ 3 ตัวครบ เดินสาย AC เข้าตู้แล้ว ขอผู้แทน กปภ. ตรวจ 10:30 พรุ่งนี้",
+      "photo": "inv", "photoCount": "1/6", "chips": [["71% / แผน 68%","green"]], "acks": 2, "action": "ดูงาน" }
+  ],
+  "dock": [ ["หน้าหลัก","home"], ["สำรวจ","survey","badge: today's appointments (2)"], ["แผนงาน","plan"], ["ติดตั้ง","install"], ["สแกน","scan"], ["กปภ.","pwa"], ["เครื่องมือ","tools"], ["ตั้งค่า","settings sheet"] ]
+}

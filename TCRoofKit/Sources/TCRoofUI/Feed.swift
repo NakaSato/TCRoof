@@ -2,7 +2,20 @@
 import SwiftUI
 import UIKit
 
-/// Project feed of the iPhone home (docs/ui/tcroof-home-iphone-v3). The parts take plain values, never app models.
+/// Project feed of the iPhone home (docs/ui/tcroof-home-iphone-v3) and, at `.pad` size, of the iPad home's right
+/// column (docs/ui/tcroof-home-ipad-v2). The parts take plain values, never app models.
+
+/// Sizes of a feed post and its issue box, set with `.tcFeedSize(_:)`.
+public enum TCFeedSize: Sendable { case phone, pad }
+
+public extension EnvironmentValues {
+    @Entry var tcFeedSize: TCFeedSize = .phone
+}
+
+public extension View {
+    /// The size of the feed posts inside: `.pad` in the iPad home's column.
+    func tcFeedSize(_ size: TCFeedSize) -> some View { environment(\.tcFeedSize, size) }
+}
 
 /// The four badge colours of a post: `รายงานวันนี้` blue, `อัตโนมัติ` green, `รอผู้ตรวจ` orange, `ปัญหา` red.
 public enum TCFeedTone: CaseIterable, Sendable {
@@ -22,6 +35,9 @@ public enum TCFeedTone: CaseIterable, Sendable {
     var tile: (fill: Color, text: Color) {
         self == .blue ? (Theme.progressBox, Theme.navy) : badge
     }
+
+    /// The left edge of an iPad post.
+    var accent: Color { self == .blue ? Theme.primary : solid }
 
     /// Fill of a chip over a photo.
     var solid: Color {
@@ -73,6 +89,9 @@ public struct TCIssueBox: View {
     let due: String?
     let fixed: Bool
     let action: () -> Void
+    @Environment(\.tcFeedSize) private var size
+
+    private var pad: Bool { size == .pad }
 
     public init(owner: String, due: String?, fixed: Bool, action: @escaping () -> Void) {
         self.owner = owner; self.due = due; self.fixed = fixed; self.action = action
@@ -84,12 +103,12 @@ public struct TCIssueBox: View {
                 if !owner.isEmpty { line("ผู้รับผิดชอบ", owner) }
                 statusLine
             }
-            .font(.sarabun(12, relativeTo: .caption))
+            .font(.sarabun(pad ? 13.5 : 12, relativeTo: .caption))
             .frame(maxWidth: .infinity, alignment: .leading)
             button
         }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(fixed ? Theme.successSoft : Theme.dangerSoft, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .padding(.horizontal, pad ? 14 : 10).padding(.vertical, pad ? 12 : 8)
+        .background(fixed ? Theme.successSoft : Theme.dangerSoft, in: RoundedRectangle(cornerRadius: pad ? 14 : Radius.lg, style: .continuous))
     }
 
     private func line(_ label: String, _ value: String) -> some View {
@@ -159,6 +178,8 @@ public struct TCFeedPost<Photo: View>: View {
     var photoChips: [PhotoChip]
     var issue: Issue?
     let ackLine: String
+    /// iPad: how many acknowledgement faces stand before `ackLine` (up to three).
+    var ackFaces: Int
     let acknowledged: Bool
     let link: String
     var menu: [MenuItem]
@@ -167,61 +188,99 @@ public struct TCFeedPost<Photo: View>: View {
     @ViewBuilder var photo: (Int) -> Photo
 
     @State private var page: Int? = 0
+    @Environment(\.tcFeedSize) private var size
 
-    /// `detail` is the `where · when` line. `photo` draws photo `n` of `photoCount`; it is cropped to 330 × 170.
+    private var pad: Bool { size == .pad }
+    /// Side margin of the card's content.
+    private var inset: CGFloat { pad ? 16 : 12 }
+    private var cardRadius: CGFloat { pad ? 20 : 18 }
+
+    /// `detail` is the `where · when` line. `photo` draws photo `n` of `photoCount`; it is cropped to 330 × 170
+    /// (iPad: the card's width × 250).
     public init(initials: String, avatar: Color, who: String, badge: String, tone: TCFeedTone, detail: String, text: String,
                 stats: [Stat] = [], photoCount: Int = 0, photoChips: [PhotoChip] = [], issue: Issue? = nil,
-                ackLine: String, acknowledged: Bool, link: String, menu: [MenuItem] = [],
+                ackLine: String, ackFaces: Int = 0, acknowledged: Bool, link: String, menu: [MenuItem] = [],
                 onAck: @escaping () -> Void, onOpen: @escaping () -> Void, @ViewBuilder photo: @escaping (Int) -> Photo) {
         self.initials = initials; self.avatar = avatar; self.who = who; self.badge = badge; self.tone = tone
         self.detail = detail; self.text = text; self.stats = stats; self.photoCount = photoCount; self.photoChips = photoChips
-        self.issue = issue; self.ackLine = ackLine; self.acknowledged = acknowledged; self.link = link; self.menu = menu
+        self.issue = issue; self.ackLine = ackLine; self.ackFaces = ackFaces; self.acknowledged = acknowledged; self.link = link; self.menu = menu
         self.onAck = onAck; self.onOpen = onOpen; self.photo = photo
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            Text(text).font(.sarabun(13.5, relativeTo: .footnote)).foregroundStyle(Theme.navy).lineSpacing(2)
+            Text(text).font(.sarabun(pad ? 15.5 : 13.5, relativeTo: .footnote)).foregroundStyle(Theme.navy).lineSpacing(pad ? 4 : 2)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12).padding(.bottom, 8)
+                .padding(.horizontal, inset).padding(.bottom, pad ? 12 : 8)
                 .contentShape(Rectangle()).onTapGesture(perform: onOpen)
-            if photoCount > 0 { photos.padding(.horizontal, 12).onTapGesture(perform: onOpen) }
-            if !stats.isEmpty { tiles.padding(.horizontal, 12).contentShape(Rectangle()).onTapGesture(perform: onOpen) }
+            if photoCount > 0 { photos.padding(.horizontal, inset).onTapGesture(perform: onOpen) }
+            if !stats.isEmpty { tiles.padding(.horizontal, inset).contentShape(Rectangle()).onTapGesture(perform: onOpen) }
             if let issue {
                 TCIssueBox(owner: issue.owner, due: issue.due, fixed: issue.fixed, action: issue.toggle)
-                    .padding(.horizontal, 12).padding(.top, 8)
+                    .padding(.horizontal, inset).padding(.top, pad ? 4 : 8)
             }
-            Text(ackLine).font(.sarabun(11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
-                .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 2)
-            actions
+            ackRow
+            if pad { padActions } else { actions }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.borderSubtle))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: cardRadius, style: .continuous).strokeBorder(Theme.borderSubtle))
+        // iPad: a 4 pt edge in the badge's tone
+        .overlay(alignment: .leading) { if pad { tone.accent.frame(width: 4) } }
+        .clipShape(RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
+    }
+
+    /// `5 คนรับทราบ`; on iPad after up to three faces, the first `ฉ` once this user has acknowledged.
+    private var ackRow: some View {
+        HStack(spacing: 8) {
+            if pad, ackFaces > 0 {
+                HStack(spacing: -6) {
+                    ForEach(0..<min(ackFaces, 3), id: \.self) { i in
+                        face(i).zIndex(Double(-i))
+                    }
+                }
+                .accessibilityHidden(true)
+            }
+            Text(ackLine).font(.sarabun(pad ? 12.5 : 11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+        }
+        .padding(.horizontal, inset).padding(.top, pad ? 12 : 8).padding(.bottom, 2)
+    }
+
+    private func face(_ i: Int) -> some View {
+        Group {
+            if i == 0, acknowledged {
+                Text("ฉ").font(.sarabun(10, .heavy))
+            } else {
+                Image(systemName: "person.fill").font(.system(size: 10, weight: .bold))
+            }
+        }
+        .foregroundStyle(Theme.onPrimary)
+        .frame(width: 22, height: 22)
+        .background([Theme.primary, Theme.success, Theme.planInspect][i % 3], in: Circle())
+        .overlay(Circle().stroke(Theme.surface, lineWidth: 2))
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: pad ? 12 : 10) {
             Text(initials).font(.sarabun(initials.count > 1 ? 13 : 16, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 40, height: 40).background(avatar, in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 5) {
-                    Text(who).font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(who).font(.sarabun(pad ? 15.5 : 14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
                     Text(badge).font(.sarabun(10.5, .bold, relativeTo: .caption2)).foregroundStyle(tone.badge.text)
                         .lineLimit(1).fixedSize()
                         .padding(.horizontal, 7).background(tone.badge.fill, in: Capsule())
                 }
-                Text(detail).font(.sarabun(11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(detail).font(.sarabun(pad ? 12.5 : 11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .contentShape(Rectangle()).onTapGesture(perform: onOpen)
             menuButton
         }
-        .padding(.leading, 12).padding(.trailing, 4).padding(.top, 10).padding(.bottom, 6)
+        .padding(.leading, inset).padding(.trailing, pad ? 12 : 4).padding(.top, pad ? 14 : 10).padding(.bottom, pad ? 8 : 6)
     }
 
     private var menuButton: some View {
@@ -249,7 +308,7 @@ public struct TCFeedPost<Photo: View>: View {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $page)
         .scrollDisabled(photoCount < 2)
-        .aspectRatio(330.0 / 170.0, contentMode: .fit)
+        .photoFrame(pad: pad)
         .background(Theme.primarySoft)
         .overlay(alignment: .topTrailing) {
             Text("\((page ?? 0) + 1)/\(photoCount)").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.onMedia)
@@ -267,15 +326,15 @@ public struct TCFeedPost<Photo: View>: View {
             }
             .padding(8)
         }
-        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: pad ? 14 : Radius.lg, style: .continuous))
     }
 
     private var tiles: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: pad ? 8 : 6) {
             ForEach(stats.prefix(3)) { s in
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(s.value).font(.sarabun(16, .bold, relativeTo: .callout)).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(s.label).font(.sarabun(10.5, relativeTo: .caption2)).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(s.value).font(.sarabun(pad ? 22 : 16, .bold, relativeTo: .callout)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(s.label).font(.sarabun(pad ? 12 : 10.5, relativeTo: .caption2)).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 .foregroundStyle(s.tone.tile.text)
                 .padding(.horizontal, 8).padding(.vertical, 6)
@@ -304,6 +363,40 @@ public struct TCFeedPost<Photo: View>: View {
         .buttonStyle(.plain)
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
         .padding(.top, 6)
+    }
+
+    /// iPad: two 46 pt buttons side by side, `รับทราบ` outlined until it is on.
+    private var padActions: some View {
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        return HStack(spacing: 8) {
+            Button(action: onAck) {
+                HStack(spacing: 6) {
+                    Image(systemName: acknowledged ? "hand.thumbsup.fill" : "hand.thumbsup").font(.system(size: 16, weight: .semibold))
+                    Text("รับทราบ").font(.sarabun(14, .bold, relativeTo: .footnote))
+                }
+                .foregroundStyle(acknowledged ? Theme.primary : Theme.navy)
+                .frame(maxWidth: .infinity, minHeight: 46)
+                .background(acknowledged ? Theme.primarySoft : Theme.surface, in: shape)
+                .overlay { if !acknowledged { shape.strokeBorder(Theme.borderOutdoor) } }
+                .contentShape(shape)
+            }
+            .accessibilityAddTraits(acknowledged ? .isSelected : [])
+            Button(action: onOpen) {
+                Text(link + " ›").font(.sarabun(14, .bold, relativeTo: .footnote)).foregroundStyle(Theme.primary)
+                    .frame(maxWidth: .infinity, minHeight: 46)
+                    .background(Theme.progressBox, in: shape)
+                    .contentShape(shape)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, inset).padding(.top, 10).padding(.bottom, 16)
+    }
+}
+
+private extension View {
+    /// The photo strip's frame: 330 × 170 scaled to the card on iPhone, the card's width × 250 on iPad.
+    @ViewBuilder func photoFrame(pad: Bool) -> some View {
+        if pad { frame(height: 250) } else { aspectRatio(330.0 / 170.0, contentMode: .fit) }
     }
 }
 

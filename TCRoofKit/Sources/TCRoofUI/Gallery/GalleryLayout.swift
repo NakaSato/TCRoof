@@ -89,6 +89,13 @@ struct GalleryLayout: View {
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
+        GalleryItem("แถบแท็บลอย (iPad)", note: "กลางจอ ห่างล่าง 18 · r28 ขอบ 1 · ขาว 96 % บนเบลอ · ปุ่ม 84 × 58 r20 · ไอคอน 24 ป้าย 11.5 · เส้นคั่นก่อนตั้งค่า") {
+            GalleryPadTabBar()
+                .padding(.bottom, 18)
+                .frame(maxWidth: .infinity).frame(height: 110, alignment: .bottom)
+                .background(Theme.phonePage)
+                .framed()
+        }
         GalleryItem("โครงจอ 1 คอลัมน์", note: "ขอบ 16 · การ์ด r16 ห่าง 12 · เลื่อนในแนวตั้ง") {
             VStack(spacing: Space.m) {
                 slot("การ์ด 1", soft: true, height: 100)
@@ -123,6 +130,24 @@ private struct GalleryTabBar: View {
             TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
         ], selection: $selection, dividerBefore: "settings")
+    }
+}
+
+/// The iPad home's dock: the home, the six modules and `ตั้งค่า` (an action).
+private struct GalleryPadTabBar: View {
+    @State var selection = "home"
+
+    var body: some View {
+        TCTabBar(items: [
+            TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
+            TCTabItem("survey", title: "สำรวจ", asset: "tab-survey", badge: 2, accessibilityLabel: "สำรวจ · นัดวันนี้ 2"),
+            TCTabItem("plan", title: "แผนงาน", symbol: "calendar"),
+            TCTabItem("install", title: "ติดตั้ง", asset: "tab-install"),
+            TCTabItem("scan", title: "สแกน", asset: "tab-scan"),
+            TCTabItem("pwa", title: "กปภ.", asset: "tab-pwa"),
+            TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools"),
+            TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
+        ], selection: $selection, dividerBefore: "settings", size: .pad)
     }
 }
 

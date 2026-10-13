@@ -78,12 +78,13 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var showNotifications = false
     @Environment(\.horizontalSizeClass) private var sizeClass
+    /// iPad: the dock over this home (`PadTabs`).
+    @Environment(PadDock.self) private var dock: PadDock?
     @State private var openReport: OpenReportPage?
     /// Appointment whose job has no report yet: pick a template, then open the new report at A1.
     @State private var startReport: Job?
     @State private var showNewJob = false
     @State private var openedJob: Job?
-    @State private var showSurveyList = false
     /// The iPad bar's search field: the survey list over every date, its search field focused.
     @State private var showSearch = false
     @State private var installLogs: Job?
@@ -94,7 +95,7 @@ struct HomeView: View {
     /// A screen opened from a system notification.
     @State private var linked: LinkedScreen?
     @State private var shareURL: SharedLink?
-    /// A record opened from a post of the iPhone project feed.
+    /// A record opened from a post of the project feed.
     @State private var feedLink: FeedLink?
     @Environment(\.openURL) private var openURL
 
@@ -105,7 +106,7 @@ struct HomeView: View {
     var body: some View {
         // each minute, so appointments drop off and "อีก n นาที" counts down
         TimelineView(.everyMinute) { timeline in
-            if sizeClass == .compact { phoneHome(now: timeline.date) } else { padHome.debugBoard() }
+            if sizeClass == .compact { phoneHome(now: timeline.date) } else { padHome(now: timeline.date) }
         }
         .font(.sarabun(17))
         .toolbar(.hidden, for: .navigationBar)
@@ -121,7 +122,6 @@ struct HomeView: View {
         .navigationDestination(item: $openReport) { SurveyReportEditor(jobID: $0.id, start: $0.start) }
         .navigationDestination(item: $installLogs) { JobInstallLogsView(job: $0) }
         .navigationDestination(item: $feedLink) { feedScreen($0) }
-        .navigationDestination(isPresented: $showSurveyList) { SurveyListView() }
         .navigationDestination(isPresented: $showSearch) { SurveyListView(startSearching: true) }
         .navigationDestination(item: $linked) { screen in
             switch screen {
@@ -140,6 +140,9 @@ struct HomeView: View {
             open(link)
         }
         .onChange(of: unreadCount, initial: true) { _, n in notificationService.setBadge(n) }
+        // the dock closes the bell's panel
+        .onChange(of: dock?.tab) { showNotifications = false }
+        .onChange(of: dock?.showSettings) { showNotifications = false }
         .sheet(item: $startReport) { job in
             SurveyTemplatePicker { t in
                 let survey = session.survey
@@ -165,10 +168,6 @@ struct HomeView: View {
                                surveyHint: surveyHint, openSurvey: openSurvey, openLink: openLater, large: large, close: close)
     }
 
-    private var installChip: String? {
-        jobs.lazy.compactMap { j in j.installDay(on: .now).map { "Day \($0)/\(j.installDays)" } }.first
-    }
-
     // MARK: iPhone
 
     private func phoneHome(now: Date) -> some View {
@@ -179,7 +178,6 @@ struct HomeView: View {
                          unread: items.filter { !read.contains($0.id) }.count,
                          now: now,
                          notificationsShown: $showNotifications,
-                         openSettings: { showSettings = true },
                          open: openAppointment,
                          openFeed: { feedLink = $0 })
     }
@@ -199,7 +197,7 @@ struct HomeView: View {
 
     // MARK: iPad
 
-    private var padHome: some View {
+    private func padHome(now: Date) -> some View {
         let survey = session.survey
         let items = notifications, read = readIDs
         let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
@@ -208,13 +206,13 @@ struct HomeView: View {
                        pending: PendingSurvey.list(survey: survey, todayJobs: todaysJobs),
                        unread: items.filter { !read.contains($0.id) }.count,
                        surveyToday: jobs.filter { $0.surveyDate.isToday }.count,
-                       installChip: installChip,
+                       now: now,
                        notificationsShown: $showNotifications,
-                       openSettings: { showSettings = true },
                        open: openAppointment,
                        openInstall: { installLogs = $0 },
                        openReport: { openReport = OpenReportPage(id: $0.report.id, start: $0.target) },
-                       showSurveyList: { showSurveyList = true },
+                       openFeed: { feedLink = $0 },
+                       showSurveys: { dock?.select(.survey) },
                        openSearch: { showNotifications = false; showSearch = true },
                        newSurvey: { showNewJob = true }) {
             notificationsView(large: true) { showNotifications = false }
@@ -364,8 +362,8 @@ struct SharedLink: Identifiable {
     var id: String { url.absoluteString }
 }
 
-private extension View {
-    /// `-homeBoard YES`: lays the iPad home out at the board's 1366 × 1024 (landscape) and scales it to fit,
+extension View {
+    /// `-homeBoard YES`: lays the iPad tabs out at the board's 1366 × 1024 (landscape) and scales them to fit,
     /// since the simulator here can't be rotated by hand.
     @ViewBuilder func debugBoard() -> some View {
         #if DEBUG

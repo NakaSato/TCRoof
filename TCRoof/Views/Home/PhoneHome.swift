@@ -18,12 +18,9 @@ struct PhoneHome: View {
     /// The minute this was drawn at, for the feed's ages.
     let now: Date
     @Binding var notificationsShown: Bool
-    let openSettings: () -> Void
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
     let openFeed: (FeedLink) -> Void
 
-    @AppStorage("userName") private var userName = ""
-    @Environment(GoogleSession.self) private var session
     @State private var page = 0
 
     var body: some View {
@@ -39,8 +36,7 @@ struct PhoneHome: View {
             .padding(.horizontal, 16).padding(.top, 12)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread,
-                            notificationsShown: $notificationsShown, openSettings: openSettings)
+            HomeBrandHeader(size: .phone, unread: unread, notificationsShown: $notificationsShown)
         }
         .background(Theme.phonePage.ignoresSafeArea())
     }

@@ -2,28 +2,29 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// iPad home (regular width, docs/ui/tcroof-home-ipad): brand header; `นัดวันนี้`, `วันนี้` and `งานสำรวจค้างอยู่`
-/// on the left; six module rows on the right, on one screen. Under ~1000 pt wide the columns stack in one scroll view.
+/// iPad home (regular width, docs/ui/tcroof-home-ipad and its v2): brand header; `นัดวันนี้`, `วันนี้` and
+/// `งานสำรวจค้างอยู่` on the left; the project feed on the right, on one screen, above the floating dock of `PadTabs`.
+/// Under ~1000 pt wide the columns stack in one scroll view.
 struct PadHome<Popover: View>: View {
     let appointments: [TodayAppointment]
     let timeline: [TimelineItem]
     let pending: [PendingSurvey]
     let unread: Int
     let surveyToday: Int
-    let installChip: String?
+    /// The minute this was drawn at, for the feed's ages.
+    let now: Date
     @Binding var notificationsShown: Bool
-    let openSettings: () -> Void
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
     let openInstall: (Job) -> Void
     let openReport: (PendingSurvey) -> Void
-    let showSurveyList: () -> Void
+    let openFeed: (FeedLink) -> Void
+    /// `ดูทั้งหมด ›` of `งานสำรวจค้างอยู่`: the survey home, the dock's `สำรวจ` tab.
+    let showSurveys: () -> Void
     /// The bar's search field.
     let openSearch: () -> Void
     let newSurvey: () -> Void
     @ViewBuilder let notifications: () -> Popover
 
-    @AppStorage("userName") private var userName = ""
-    @Environment(GoogleSession.self) private var session
     @State private var page = 0
 
     var body: some View {
@@ -33,30 +34,29 @@ struct PadHome<Popover: View>: View {
                     VStack(spacing: 16) {
                         hero
                         TodayTimelineCard(items: timeline, fill: true, select: select, open: open, openInstall: openInstall)
-                        if !pending.isEmpty { PendingSurveysCard(items: pending, open: openReport, showAll: showSurveyList) }
+                        if !pending.isEmpty { PendingSurveysCard(items: pending, open: openReport, showAll: showSurveys) }
                     }
                     .frame(width: 520)
-                    moduleRows(spacing: 12)
+                    feed(scrolls: true)
                 }
-                .padding(.horizontal, 32).padding(.top, 20).padding(.bottom, 28)
+                .padding(.horizontal, 32).padding(.top, 20)
             } else {
                 ScrollView {
                     VStack(spacing: 16) {
                         hero
                         TodayTimelineCard(items: timeline, fill: false, select: select, open: open, openInstall: openInstall)
-                        if !pending.isEmpty { PendingSurveysCard(items: pending, open: openReport, showAll: showSurveyList) }
-                        moduleRows(spacing: 12).frame(height: 6 * 96 + 5 * 12)
+                        if !pending.isEmpty { PendingSurveysCard(items: pending, open: openReport, showAll: showSurveys) }
+                        feed(scrolls: false).padding(.top, 4)
                     }
-                    .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 28)
+                    .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
                 }
             }
         }
-        // a tap on the page outside the panel closes it; the bar's buttons stay live, so the account button
+        // a tap on the page outside the panel closes it; the bar's and the dock's buttons stay live, so `ตั้งค่า`
         // closes it and opens settings in one tap (a system popover would swallow that tap)
         .overlay { if notificationsShown { Color.clear.contentShape(Rectangle()).onTapGesture { notificationsShown = false } } }
         .safeAreaInset(edge: .top, spacing: 0) {
-            HomeBrandHeader(size: .pad, initials: userInitials(userName, email: session.email), unread: unread,
-                            notificationsShown: $notificationsShown, openSettings: openSettings, openSearch: openSearch)
+            HomeBrandHeader(size: .pad, unread: unread, notificationsShown: $notificationsShown, openSearch: openSearch)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .overlay {
@@ -98,15 +98,9 @@ struct PadHome<Popover: View>: View {
         withAnimation(.easeInOut(duration: 0.2)) { page = i }
     }
 
-    private func moduleRows(spacing: CGFloat) -> some View {
-        VStack(spacing: spacing) {
-            ForEach(AppModule.allCases) { module in
-                NavigationLink { module.destination } label: {
-                    ModuleRow(size: .pad, module: module, chip: module.chip(surveyToday: surveyToday, installDay: installChip))
-                }
-                .buttonStyle(.plain)
-            }
-        }
+    /// `ฟีดโครงการ`, the iPhone home's feed at the column's sizes.
+    private func feed(scrolls: Bool) -> some View {
+        HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), layout: .column(scrolls: scrolls), open: openFeed)
     }
 }
 

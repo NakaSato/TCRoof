@@ -74,14 +74,14 @@ struct RootView: View {
             } else if sizeClass == .compact {
                 PhoneTabs { home }
             } else {
-                NavigationStack { home }
+                PadTabs { home }
             }
             #else
-            // iPhone: tabs under the floating bar; iPad: one stack from the home
+            // tabs under the floating dock, each with its own stack
             if sizeClass == .compact {
                 PhoneTabs { home }
             } else {
-                NavigationStack { home }
+                PadTabs { home }
             }
             #endif
         }

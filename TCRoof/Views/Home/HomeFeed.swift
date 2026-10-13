@@ -68,12 +68,21 @@ extension Job {
 }
 
 /// The project feed under the iPhone home's appointment card (docs/ui/tcroof-home-iphone-v3): filter chips, then one
-/// card per post, newest first.
+/// card per post, newest first. The iPad home's right column (`layout: .column`, docs/ui/tcroof-home-ipad-v2) is the
+/// same feed under a `ฟีดโครงการ` header row that holds the chips, with larger posts.
 struct HomeFeed: View {
+    enum Layout {
+        /// iPhone: chips and posts in the home's own scroll view.
+        case phone
+        /// iPad: the header row stays and the posts scroll under it, or with `scrolls` off they lie in the page's scroll view.
+        case column(scrolls: Bool)
+    }
+
     /// The minute the home was drawn at; a new one rebuilds the feed.
     let now: Date
     /// Teams on today's appointments, `ทีมของฉัน` when Settings names none.
     let todayTeams: Set<String>
+    var layout = Layout.phone
     let open: (FeedLink) -> Void
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -101,14 +110,24 @@ struct HomeFeed: View {
 
     var body: some View {
         let shown = FeedBuilder.filter(posts, by: filter, myTeams: myTeams, hidden: hidden)
-        VStack(spacing: 10) {
-            chips
-            ForEach(shown) { card($0) }
-            if shown.isEmpty {
-                Text("ยังไม่มีความคืบหน้าวันนี้").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+        Group {
+            switch layout {
+            case .phone:
+                VStack(spacing: 10) {
+                    chips
+                    list(shown)
+                }
+            case .column(let scrolls):
+                VStack(spacing: 12) {
+                    columnHeader
+                    if scrolls {
+                        ScrollView { VStack(spacing: 14) { list(shown) } }.scrollIndicators(.hidden)
+                    } else {
+                        VStack(spacing: 14) { list(shown) }
+                    }
+                }
+                .tcFeedSize(.pad)
             }
-            earlier
         }
         .task(id: Refresh(now: now, jobs: jobs.count, days: days)) { rebuild() }
         // back from a record a post opened
@@ -123,18 +142,65 @@ struct HomeFeed: View {
 
     private struct Refresh: Equatable { let now: Date; let jobs: Int; let days: Int }
 
-    private var chips: some View {
+    /// The posts, the empty state and `ดูโพสต์ก่อนหน้า`, for the layout's stack.
+    @ViewBuilder private func list(_ shown: [FeedPost]) -> some View {
+        ForEach(shown) { card($0) }
+        if shown.isEmpty {
+            Text("ยังไม่มีความคืบหน้าวันนี้").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        earlier
+    }
+
+    private var chipRow: some View {
         let counts = FeedBuilder.counts(posts, myTeams: myTeams, hidden: hidden)
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(FeedFilter.allCases) { f in
-                    TCFeedChip(f.title, count: counts[f] ?? 0, selected: filter == f) { filter = f }
-                }
+        return HStack(spacing: 6) {
+            ForEach(FeedFilter.allCases) { f in
+                TCFeedChip(f.title, count: counts[f] ?? 0, selected: filter == f) { filter = f }
             }
         }
-        .scrollClipDisabled()
-        .padding(.vertical, -2)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("กรองฟีด")
+    }
+
+    private var chips: some View {
+        ScrollView(.horizontal, showsIndicators: false) { chipRow }
+            .scrollClipDisabled()
+            .padding(.vertical, -2)
+    }
+
+    /// iPad: `ฟีดโครงการ`, the time of the newest post, and the chips at the right; in a narrow column the chips
+    /// go under the title.
+    private var columnHeader: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                columnTitle
+                Spacer(minLength: 0)
+                chipRow
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                columnTitle
+                chips
+            }
+        }
+        .padding(.vertical, -2)
+    }
+
+    private var columnTitle: some View {
+        HStack(spacing: 10) {
+            Text("ฟีดโครงการ").font(.sarabun(20, .bold, relativeTo: .title3)).foregroundStyle(Theme.navy)
+                .accessibilityAddTraits(.isHeader)
+            if let latest = posts.map(\.date).max() {
+                HStack(spacing: 6) {
+                    Circle().fill(Theme.success).frame(width: 7, height: 7)
+                    Text("อัปเดตล่าสุด " + ThaiFormat.time.string(from: latest)).font(.sarabun(12.5, relativeTo: .caption))
+                }
+                .foregroundStyle(Theme.successText)
+                .padding(.horizontal, 10).padding(.vertical, 2)
+                .background(Theme.successSoft, in: Capsule())
+            }
+        }
+        .lineLimit(1).fixedSize()
     }
 
     private var earlier: some View {
@@ -152,7 +218,8 @@ struct HomeFeed: View {
                           stats: p.stats.map { .init($0.value, $0.label, $0.tone.ui) },
                           photoCount: p.photos.count, photoChips: p.chips.map { .init($0.text, $0.tone.ui) },
                           issue: issueBox(p),
-                          ackLine: FeedBuilder.ackLine(count: ackCount(p), mine: mine), acknowledged: mine, link: p.kind.link,
+                          ackLine: FeedBuilder.ackLine(count: ackCount(p), mine: mine), ackFaces: ackCount(p), acknowledged: mine,
+                          link: p.kind.link,
                           menu: [.init("ซ่อนโพสต์นี้", symbol: "eye.slash") { hiddenRaw = (hidden.union([p.id])).sorted().joined(separator: "\n") },
                                  .init("เปิดบันทึกต้นทาง", symbol: "doc.text") { link(p, source: true) }],
                           onAck: { acknowledge(p) }, onOpen: { link(p, source: false) }) { i in

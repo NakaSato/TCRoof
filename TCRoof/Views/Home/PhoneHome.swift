@@ -28,7 +28,7 @@ struct PhoneHome: View {
             VStack(spacing: 10) {
                 // no appointment today: no card and no empty state, the feed starts under the header
                 if !shown.isEmpty {
-                    AppointmentHero(size: .phone, appointments: shown, page: $page, open: open, newSurvey: {})
+                    AppointmentHero(size: .phone, appointments: shown.map { $0.heroItem(open: open) }, page: $page, open: open, newSurvey: {})
                 }
                 HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), open: openFeed)
             }

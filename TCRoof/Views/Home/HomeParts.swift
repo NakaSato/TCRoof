@@ -279,10 +279,38 @@ struct ModuleRow: View {
 
 // MARK: - Hero
 
-/// `นัดวันนี้`: today's survey appointments as a pager, with ring, primary action, navigate and call.
+/// One page of the hero card: a survey appointment, or on iPad any of today's planned work still ahead or under way.
+struct HeroItem: Identifiable {
+    let id: String
+    let time: String
+    /// `นัดสำรวจ · อีก 49 นาที`, `ติดตั้ง · Day 2/5 · กำลังทำ`
+    let kind: String
+    let name: String
+    let place: String
+    let fraction: Double
+    let percent: Int
+    let actionTitle: String
+    /// The job with its linked report, for navigate and call.
+    let appointment: TodayAppointment
+    /// The primary button.
+    let run: () -> Void
+}
+
+extension TodayAppointment {
+    /// The appointment's page of the hero card; its button opens the report at the next step.
+    func heroItem(open: @escaping (TodayAppointment, MissingGroup.Target?) -> Void) -> HeroItem {
+        HeroItem(id: id, time: time, kind: "นัดสำรวจ · \(countdown)", name: name, place: place, fraction: fraction, percent: percent,
+                 actionTitle: actionTitle, appointment: self) { open(self, nextStep?.page) }
+    }
+}
+
+/// `นัดวันนี้` (iPhone: today's survey appointments) or `แผนงานวันนี้` (iPad: today's work) as a pager, with ring,
+/// primary action, navigate and call.
 struct AppointmentHero: View {
     let size: HomeSize
-    let appointments: [TodayAppointment]
+    var title = "นัดวันนี้"
+    var emptyTitle = "ไม่มีนัดวันนี้"
+    let appointments: [HeroItem]
     @Binding var page: Int
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
     let newSurvey: () -> Void
@@ -290,18 +318,18 @@ struct AppointmentHero: View {
     @State private var calling: TodayAppointment?
     @Environment(\.openURL) private var openURL
 
-    private var current: TodayAppointment? { appointments.indices.contains(page) ? appointments[page] : appointments.first }
+    private var current: HeroItem? { appointments.indices.contains(page) ? appointments[page] : appointments.first }
 
     var body: some View {
         VStack(alignment: .leading, spacing: size.heroGap) {
             topRow
             if let a = current {
-                AppointmentBody(size: size, appointment: a)
+                AppointmentBody(size: size, item: a)
                     .id(a.id)
                     .transition(.opacity)
                 actions(a)
             } else {
-                Text("ไม่มีนัดวันนี้").font(.sarabun(size.isPad ? 21 : 17, .bold, relativeTo: .headline))
+                Text(emptyTitle).font(.sarabun(size.isPad ? 21 : 17, .bold, relativeTo: .headline))
                 Button(action: newSurvey) { primaryLabel("งานสำรวจใหม่ ›") }.buttonStyle(.plain)
             }
         }
@@ -329,7 +357,7 @@ struct AppointmentHero: View {
 
     private var topRow: some View {
         HStack(spacing: size.isPad ? 8 : 6) {
-            Text("นัดวันนี้").font(.sarabun(size.heroLabel, .bold, relativeTo: .caption)).opacity(labelOpacity)
+            Text(title).font(.sarabun(size.heroLabel, .bold, relativeTo: .caption)).opacity(labelOpacity)
             if appointments.count > 1 {
                 HStack(spacing: 4) {
                     ForEach(appointments.indices, id: \.self) { i in
@@ -367,9 +395,10 @@ struct AppointmentHero: View {
         withAnimation(.easeInOut(duration: 0.2)) { page = next }
     }
 
-    private func actions(_ a: TodayAppointment) -> some View {
-        HStack(spacing: size.isPad ? 10 : 8) {
-            Button { open(a, a.nextStep?.page) } label: { primaryLabel(a.actionTitle) }
+    private func actions(_ item: HeroItem) -> some View {
+        let a = item.appointment
+        return HStack(spacing: size.isPad ? 10 : 8) {
+            Button(action: item.run) { primaryLabel(item.actionTitle) }
                 .buttonStyle(.plain)
             if let c = a.coordinate {
                 iconButton("location", label: "นำทาง") { openURL(mapsURL(c)) }
@@ -443,23 +472,23 @@ private struct CallDialog: ViewModifier {
     }
 }
 
-/// Ring, time, countdown, job name and place of one appointment.
+/// Ring, time, countdown, job name and place of one item.
 private struct AppointmentBody: View {
     let size: HomeSize
-    let appointment: TodayAppointment
+    let item: HeroItem
 
     var body: some View {
         HStack(spacing: size.isPad ? 18 : 12) {
-            ProgressRing(size: size, fraction: appointment.fraction, percent: appointment.percent)
+            ProgressRing(size: size, fraction: item.fraction, percent: item.percent)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: size.isPad ? 10 : 8) {
-                    Text(appointment.time).font(.sarabun(size.time, .bold, relativeTo: .title2)).monospacedDigit()
-                    Text("นัดสำรวจ · \(appointment.countdown)").font(.sarabun(size.kind, relativeTo: .caption)).opacity(size.isPad ? 0.9 : 0.95).lineLimit(1)
+                    Text(item.time).font(.sarabun(size.time, .bold, relativeTo: .title2)).monospacedDigit()
+                    Text(item.kind).font(.sarabun(size.kind, relativeTo: .caption)).opacity(size.isPad ? 0.9 : 0.95).lineLimit(1)
                 }
-                Text(appointment.name).font(.sarabun(size.name, .bold, relativeTo: .subheadline)).lineLimit(size.isPad ? 1 : 2)
+                Text(item.name).font(.sarabun(size.name, .bold, relativeTo: .subheadline)).lineLimit(size.isPad ? 1 : 2)
                     .fixedSize(horizontal: false, vertical: true)
-                if !appointment.place.isEmpty {
-                    Text(appointment.place).font(.sarabun(size.place, relativeTo: .caption)).opacity(size.isPad ? 0.8 : 0.92).lineLimit(1)
+                if !item.place.isEmpty {
+                    Text(item.place).font(.sarabun(size.place, relativeTo: .caption)).opacity(size.isPad ? 0.8 : 0.92).lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

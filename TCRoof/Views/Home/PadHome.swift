@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// iPad home (regular width, docs/ui/tcroof-home-ipad and its v2): brand header; `นัดวันนี้`, `วันนี้` and
+/// iPad home (regular width, docs/ui/tcroof-home-ipad and its v2): brand header; `แผนงานวันนี้`, `วันนี้` and
 /// `งานสำรวจค้างอยู่` on the left; the project feed on the right, on one screen, above the floating dock of `PadTabs`.
 /// Under ~1000 pt wide the columns stack in one scroll view.
 struct PadHome<Popover: View>: View {
@@ -88,13 +88,29 @@ struct PadHome<Popover: View>: View {
         .transition(.opacity)
     }
 
-    private var hero: some View {
-        AppointmentHero(size: .pad, appointments: appointments, page: $page, open: open, newSurvey: newSurvey)
+    /// `แผนงานวันนี้`: today's work still to come, the nearest first, then the install days already under way.
+    private var plan: [TimelineItem] {
+        let ahead = timeline.filter { $0.date > .now }
+        return ahead + timeline.filter { $0.isInstall && $0.date <= .now }
     }
 
-    /// A survey row of the timeline moves the hero to its appointment.
+    private var hero: some View {
+        AppointmentHero(size: .pad, title: "แผนงานวันนี้", emptyTitle: "ไม่มีแผนงานวันนี้", appointments: plan.map(heroItem), page: $page,
+                        open: open, newSurvey: newSurvey)
+    }
+
+    private func heroItem(_ item: TimelineItem) -> HeroItem {
+        let a = item.appointment
+        return HeroItem(id: item.id, time: item.time, kind: item.isInstall ? "\(item.tag) · \(item.right)" : "นัดสำรวจ · \(item.right)",
+                        name: item.name, place: item.place, fraction: item.progress, percent: Int((item.progress * 100).rounded()),
+                        actionTitle: item.action, appointment: a) {
+            if item.isInstall { openInstall(a.job) } else { open(a, a.nextStep?.page) }
+        }
+    }
+
+    /// A row of the timeline moves the hero to its page.
     private func select(_ item: TimelineItem) {
-        guard let i = appointments.firstIndex(where: { $0.id == item.appointment.id }) else { return }
+        guard let i = plan.firstIndex(where: { $0.id == item.id }) else { return }
         withAnimation(.easeInOut(duration: 0.2)) { page = i }
     }
 
@@ -229,7 +245,7 @@ private struct TodayTimelineCard: View {
             VStack(spacing: 8) {
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { expanded = .some(isOpen ? nil : item.id) }
-                    if !item.isInstall { select(item) }
+                    select(item)
                 } label: { card(item, open: isOpen) }
                 .buttonStyle(.plain)
                 .accessibilityHint(isOpen ? "แตะเพื่อย่อ" : "แตะเพื่อดูการทำงาน")

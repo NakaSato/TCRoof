@@ -72,7 +72,8 @@ extension Job {
 
 /// The project feed under the iPhone home's appointment card (docs/ui/tcroof-home-iphone-v3; the filter is v4's
 /// segmented control): the filter, then one card per post, newest first. The iPad home's right column (`layout: .column`, docs/ui/tcroof-home-ipad-v2) is the
-/// same feed under a `ฟีดโครงการ` header row that holds the chips, with larger posts.
+/// same feed under a `ฟีดโครงการ` header row that holds the same segmented filter, with larger posts that have no
+/// badge and show their stats as one strip (docs/ui/tcroof-home-ipad-v3).
 struct HomeFeed: View {
     enum Layout {
         /// iPhone: chips and posts in the home's own scroll view.
@@ -155,47 +156,32 @@ struct HomeFeed: View {
         earlier
     }
 
-    private var chipRow: some View {
-        let counts = FeedBuilder.counts(posts, myTeams: myTeams, hidden: hidden)
-        return HStack(spacing: 6) {
-            ForEach(FeedFilter.allCases) { f in
-                TCFeedChip(f.title, count: counts[f] ?? 0, selected: filter == f) { filter = f }
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("กรองฟีด")
-    }
+    private var isColumn: Bool { if case .column = layout { true } else { false } }
 
-    private var chips: some View {
-        ScrollView(.horizontal, showsIndicators: false) { chipRow }
-            .scrollClipDisabled()
-            .padding(.vertical, -2)
-    }
-
-    /// iPhone: the four filters as equal segments across the content width.
+    /// The four filters as equal segments: across the content width on iPhone, 14 pt titles on iPad.
     private var segments: some View {
         let counts = FeedBuilder.counts(posts, myTeams: myTeams, hidden: hidden)
         return TCCountSegments(FeedFilter.allCases.map { .init($0.title, count: counts[$0] ?? 0) },
-                               selection: Binding(get: { FeedFilter.allCases.firstIndex(of: filter) ?? 0 }, set: { filter = FeedFilter.allCases[$0] }))
+                               selection: Binding(get: { FeedFilter.allCases.firstIndex(of: filter) ?? 0 }, set: { filter = FeedFilter.allCases[$0] }),
+                               fontSize: isColumn ? 14 : 13, countSize: isColumn ? 12.5 : 12)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("กรองฟีด")
     }
 
-    /// iPad: `ฟีดโครงการ`, the time of the newest post, and the chips at the right; in a narrow column the chips
-    /// go under the title.
+    /// iPad: `ฟีดโครงการ`, the time of the newest post, and the 440 pt filter at the right; in a narrow column the
+    /// filter goes under the title, across the width.
     private var columnHeader: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) {
                 columnTitle
                 Spacer(minLength: 0)
-                chipRow
+                segments.frame(width: 440)
             }
             VStack(alignment: .leading, spacing: 8) {
                 columnTitle
-                chips
+                segments
             }
         }
-        .padding(.vertical, -2)
     }
 
     private var columnTitle: some View {
@@ -234,6 +220,7 @@ struct HomeFeed: View {
                           link: p.kind.link,
                           menu: [.init("ซ่อนโพสต์นี้", symbol: "eye.slash") { hiddenRaw = (hidden.union([p.id])).sorted().joined(separator: "\n") },
                                  .init("เปิดบันทึกต้นทาง", symbol: "doc.text") { link(p, source: true) }],
+                          showsBadge: !isColumn,
                           onAck: { acknowledge(p) }, onOpen: { link(p, source: false) }) { i in
             photo(p, i)
         }

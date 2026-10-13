@@ -172,6 +172,16 @@ public enum Theme {
     /// Track of a Gantt row.
     public static let ganttTrack = Color(light: 0xE3E9F1, dark: 0x243142)
 
+    // iPad home v3 (docs/ui/tcroof-home-ipad-v3)
+    // iPad PWA home v3, station rows (docs/ui/pwa-solar-survey-ipad-v3 FIX-01)
+    /// Fill of a station row's `งานขออนุญาต` block.
+    public static let permitFill = Color(light: 0xFAFBFD, dark: 0x161E29)
+    /// Border of that block when a permit is overdue, on `photoEmptyFill`.
+    public static let permitOverdueLine = Color(light: 0xF3C4BF, dark: 0x5A2B28)
+
+    /// Fill of a feed post's summary strip.
+    public static let stripFill = Color(light: 0xF8FAFC, dark: 0x161E29)
+
     // D1 จัดแผง (docs/ui/survey-d1-layout-iphone)
     /// A panel on the tank plan.
     public static let panelBlue = Color(light: 0x2B4FD8, dark: 0x6C8CFF)

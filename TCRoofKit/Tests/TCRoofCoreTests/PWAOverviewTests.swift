@@ -112,4 +112,38 @@ final class PWAOverviewTests: XCTestCase {
                      .init(id: "3", date: day(-1), title: "z", assignee: ""), .init(id: "4", date: day(0), title: "w", assignee: "")]
         XCTAssertEqual(MaintenanceOverview.due(tasks, now: now, calendar: cal).map(\.id), ["4", "2"])
     }
+
+    // MARK: permits (docs/ui/pwa-solar-survey-ipad-v3 FIX-01)
+
+    private func permitRow(_ task: MasterSchedule.Task, _ state: RoutineReport.PermitState) -> RoutineReport.PermitRow {
+        RoutineReport.PermitRow(task: task, start: nil, end: nil, percent: 0, state: state)
+    }
+
+    func testPermitsMapThePlanTasksInTheRowOrder() {
+        let rows = [permitRow(.kickoff, .done), permitRow(.engineering, .done), permitRow(.buildingPermit, .late),
+                    permitRow(.cop, .notDue), permitRow(.gridConnection, .inProgress)]
+        // no พค.2 in the plan (under 200 kVA): three chips, and Kick Off and COP have none
+        XCTAssertEqual(InstallOverview.permits(rows), [InstallPermit(.local, .overdue), InstallPermit(.pea, .submitted), InstallPermit(.engineer, .done)])
+        XCTAssertEqual(InstallOverview.permits([permitRow(.pk2, .notStarted), permitRow(.gridConnection, .unplanned)]),
+                       [InstallPermit(.erc, .pending), InstallPermit(.pea, .pending)])
+        XCTAssertNil(InstallOverview.permits([permitRow(.kickoff, .done), permitRow(.siteHandover, .done)]))
+        XCTAssertNil(InstallOverview.permits([]))
+    }
+
+    func testPermitFilterTakesAnyPermitNotDone() {
+        var open = station("a", actual: 10, plan: 10), done = station("b", actual: 10, plan: 10)
+        open.permits = [InstallPermit(.local, .done), InstallPermit(.pea, .submitted)]
+        done.permits = [InstallPermit(.local, .done)]
+        let none = station("c", actual: 10, plan: 10)
+        XCTAssertEqual(InstallOverview.rows([open, done, none], filter: .permit).map(\.id), ["a"])
+        XCTAssertEqual(InstallOverview.rows([open, done, none], filter: .all).count, 3)
+    }
+
+    func testPermitNoteNamesTheWorstState() {
+        XCTAssertEqual(InstallOverview.permitNote([InstallPermit(.local, .overdue), InstallPermit(.erc, .pending)]), "อปท. เกินกำหนด")
+        XCTAssertEqual(InstallOverview.permitNote([InstallPermit(.local, .pending), InstallPermit(.erc, .submitted)]), "ยังไม่ยื่น อปท.")
+        XCTAssertEqual(InstallOverview.permitNote([InstallPermit(.local, .pending), InstallPermit(.pea, .pending)]), "ยังไม่ยื่น 2 รายการ")
+        XCTAssertEqual(InstallOverview.permitNote([InstallPermit(.erc, .submitted), InstallPermit(.pea, .done)]), "กกพ. ยื่นแล้ว รอผล")
+        XCTAssertEqual(InstallOverview.permitNote([InstallPermit(.pea, .done)]), "ได้ครบทุกใบแล้ว")
+    }
 }

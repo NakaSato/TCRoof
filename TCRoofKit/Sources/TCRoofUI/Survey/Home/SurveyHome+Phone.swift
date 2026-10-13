@@ -32,6 +32,12 @@ extension SurveyHomeView {
         .scrollDismissesKeyboard(.immediately)
         .safeAreaInset(edge: .top, spacing: 0) { phoneHeader }
         .background(Theme.phonePage.ignoresSafeArea())
+        // iPad: the filter list hangs under its button, in the page
+        .overlayPreferenceValue(FilterAnchorKey.self) { anchor in
+            GeometryReader { g in
+                if !compact, showFilter, let anchor { padFilterPanel(under: g[anchor], in: g.size) }
+            }
+        }
         .overlay(alignment: .bottomTrailing) {
             // iPad: 116 pt above the screen's edge, over the dock's 98
             if page == .project && tab == .survey { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
@@ -111,13 +117,38 @@ extension SurveyHomeView {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(filterLabel)
-        .popover(isPresented: $showFilter, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
-            filterPopover.presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
+        .anchorPreference(key: FilterAnchorKey.self, value: .bounds) { $0 }
+        // iPhone: a system popover. iPad: `padFilterPanel`, drawn in the page at the board's size
+        .popover(isPresented: Binding(get: { compact && showFilter }, set: { showFilter = $0 }), attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+            filterPanel.presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
         }
     }
 
-    @ViewBuilder private var filterPopover: some View {
-        if compact { filterPanel } else { filterList }
+    /// iPad (docs/ui/pwa-solar-survey-ipad-v3 FIX-01 §3): the 248 pt list under the filter button, radius 16 with a
+    /// 1 pt border and an arrow on the button, its right edge on the button's. A tap outside closes it.
+    private func padFilterPanel(under button: CGRect, in area: CGSize) -> some View {
+        let width: CGFloat = 248
+        let left = min(max(button.maxX - width, 8), area.width - width - 8)
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return ZStack(alignment: .topLeading) {
+            Color.clear.contentShape(Rectangle()).onTapGesture { showFilter = false }
+                .accessibilityLabel("ปิดตัวกรอง").accessibilityAddTraits(.isButton)
+            VStack(alignment: .leading, spacing: -1) {
+                FilterArrow(closed: true).fill(Theme.surface)
+                    .overlay(FilterArrow(closed: false).stroke(Theme.borderOutdoor, lineWidth: 1))
+                    .frame(width: 18, height: 9)
+                    .offset(x: button.midX - left - 9)
+                    .zIndex(1)
+                filterList
+                    .background(Theme.surface, in: shape)
+                    .clipShape(shape)
+                    .overlay(shape.strokeBorder(Theme.borderOutdoor))
+            }
+            .compositingGroup()
+            .shadow(color: Theme.navy.opacity(0.16), radius: 14, y: 8)
+            .offset(x: left, y: button.maxY + 2)
+        }
+        .transition(.opacity)
     }
 
     private var clearButton: some View {
@@ -363,6 +394,25 @@ extension SurveyHomeView {
         default: break
         }
         #endif
+    }
+}
+/// Where the filter button is, for the iPad's filter list under it.
+private struct FilterAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = nextValue() ?? value }
+}
+
+/// The filter list's arrow, pointing up at the button: the triangle, or with `closed` off only its two sides.
+private struct FilterArrow: Shape {
+    let closed: Bool
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        if closed { p.closeSubpath() }
+        return p
     }
 }
 #endif

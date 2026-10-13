@@ -39,13 +39,13 @@ extension SurveyHomeView {
         return host.maintenanceTasks
     }
 
-    private var threshold: Double { model.settings.behindThreshold }
+    var threshold: Double { model.settings.behindThreshold }
 
-    private func number(_ v: Double, digits: Int = 2) -> String {
+    func number(_ v: Double, digits: Int = 2) -> String {
         v.formatted(.number.precision(.fractionLength(0...digits)).locale(Locale(identifier: "en_US")))
     }
 
-    private func dayMonth(_ d: Date) -> String {
+    func dayMonth(_ d: Date) -> String {
         let c = Calendar.current.dateComponents([.day, .month], from: d)
         return "\(c.day ?? 0)/\(c.month ?? 0)"
     }
@@ -134,7 +134,10 @@ extension SurveyHomeView {
             rowFilters(installFilters(stations, selected: rowFilter), count: rows.count, note: contractor)
             stationRows {
                 ForEach(rows) { s in
-                    Button { openStation(s) } label: { card(installRow(s), padding: rowPadding) }.buttonStyle(.plain)
+                    Button { openStation(s) } label: {
+                        if compact { card(installRow(s), padding: rowPadding) } else { card(padInstallRow(s), padding: rowPadding) }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
@@ -255,8 +258,9 @@ extension SurveyHomeView {
     private func installFilters(_ stations: [InstallStationSummary], selected: InstallOverview.RowFilter) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                ForEach(InstallOverview.RowFilter.allCases, id: \.self) { f in
-                    let title = [.behind: "ช้ากว่าแผน", .noReport: "ยังไม่ส่งรายงาน", .all: "ทั้งหมด"][f] ?? ""
+                // the permit block is on the iPad rows only, and so is its filter
+                ForEach(InstallOverview.RowFilter.allCases.filter { !compact || $0 != .permit }, id: \.self) { f in
+                    let title = [.behind: "ช้ากว่าแผน", .noReport: "ยังไม่ส่งรายงาน", .permit: "ขออนุญาตค้าง", .all: "ทั้งหมด"][f] ?? ""
                     TCCountPill(title, count: stations.filter { InstallOverview.matches($0, f, threshold: threshold) }.count,
                                 selected: selected == f) { installFilter = f }
                 }
@@ -264,7 +268,7 @@ extension SurveyHomeView {
         }
     }
 
-    private func paceChip(_ s: InstallStationSummary) -> (String, TCFeedTone)? {
+    func paceChip(_ s: InstallStationSummary) -> (String, TCFeedTone)? {
         guard let pace = InstallOverview.pace(s, threshold: threshold), let v = s.variance else { return nil }
         switch pace {
         case .behind: return ("ช้ากว่า \(-v)%", .red)
@@ -313,7 +317,9 @@ extension SurveyHomeView {
             rowFilters(maintenanceFilters(stations), count: rows.count)
             stationRows {
                 ForEach(rows) { s in
-                    Button { openMaintenanceStation(s) } label: { maintenanceRow(s).padding(rowPadding) }
+                    Button { openMaintenanceStation(s) } label: {
+                        if compact { maintenanceRow(s).padding(rowPadding) } else { padMaintenanceRow(s).padding(rowPadding) }
+                    }
                         .buttonStyle(TCStationRowStyle())
                         .accessibilityLabel(maintenanceLabel(s))
                 }
@@ -463,23 +469,26 @@ enum PWAOverviewDemo {
     }
 
     static let install: [InstallStationSummary] = {
-        let rows: [(Int, String, Double, Double, Double, String, String, Int, Bool)] = [
-            (189, "สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล", 92.34, 38, 50, "2.3 ติดตั้งแผง", "A", 2, true),
-            (120, "การประปาวัดชัย", 250, 22, 28, "2.1 โครงสร้าง", "B", 17, false),
-            (98, "การประปาบ้านโป่ง", 90, 50, 52, "2.2 สาย DC", "A", -7, false),
-            (154, "สถานีจ่ายน้ำแพรกหนามแดง", 209.76, 71, 68, "2.5 อินเวอร์เตอร์", "C", -1, true),
-            (77, "สถานีผลิตน้ำโชคชัย", 171, 94, 92, "3.1 ทดสอบระบบ", "B", -5, true),
-            (61, "สถานีผลิตน้ำแม่ข่ายชนบท", 145.2, 12, 10, "2.1 โครงสร้าง", "D", 27, true),
-            (133, "สถานีผลิตน้ำบางปะกง", 120.5, 55, 54, "2.3 ติดตั้งแผง", "A", 7, true),
-            (142, "สถานีผลิตน้ำหนองแค", 180, 30, 36, "2.2 สาย DC", "C", 15, false),
-            (88, "สถานีผลิตน้ำพนัสนิคม", 160.4, 64, 62, "2.5 อินเวอร์เตอร์", "B", 1, true),
-            (171, "สถานีผลิตน้ำสามโคก", 98.2, 8, 8, "1.3 ส่งมอบพื้นที่", "D", 43, true),
-            (66, "สถานีผลิตน้ำบ้านบึง", 210, 42, 40, "2.3 ติดตั้งแผง", "C", 20, false),
-            (109, "สถานีผลิตน้ำศรีราชา", 115, 80, 78, "2.6 ระบบ AC", "A", -3, true),
+        // the last column is the iPad board's permits, อปท. กกพ. กฟภ. กว.: o got, w handed in, t not handed in, l overdue
+        let rows: [(Int, String, Double, Double, Double, String, String, Int, Bool, String)] = [
+            (189, "สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล", 92.34, 38, 50, "2.3 ติดตั้งแผง", "A", 2, true, "twoo"),
+            (120, "การประปาวัดชัย", 250, 22, 28, "2.1 โครงสร้าง", "B", 17, false, "owwo"),
+            (98, "การประปาบ้านโป่ง", 90, 50, 52, "2.2 สาย DC", "A", -7, false, "oooo"),
+            (154, "สถานีจ่ายน้ำแพรกหนามแดง", 209.76, 71, 68, "2.5 อินเวอร์เตอร์", "C", -1, true, "oowo"),
+            (77, "สถานีผลิตน้ำโชคชัย", 171, 94, 92, "3.1 ทดสอบระบบ", "B", -5, true, "oooo"),
+            (61, "สถานีผลิตน้ำแม่ข่ายชนบท", 145.2, 12, 10, "2.1 โครงสร้าง", "D", 27, true, "owto"),
+            (133, "สถานีผลิตน้ำบางปะกง", 120.5, 55, 54, "2.3 ติดตั้งแผง", "A", 7, true, "oowo"),
+            (142, "สถานีผลิตน้ำหนองแค", 180, 30, 36, "2.2 สาย DC", "C", 15, false, "lwoo"),
+            (88, "สถานีผลิตน้ำพนัสนิคม", 160.4, 64, 62, "2.5 อินเวอร์เตอร์", "B", 1, true, "oooo"),
+            (171, "สถานีผลิตน้ำสามโคก", 98.2, 8, 8, "1.3 ส่งมอบพื้นที่", "D", 43, true, "ttwt"),
+            (66, "สถานีผลิตน้ำบ้านบึง", 210, 42, 40, "2.3 ติดตั้งแผง", "C", 20, false, "owoo"),
+            (109, "สถานีผลิตน้ำศรีราชา", 115, 80, 78, "2.6 ระบบ AC", "A", -3, true, "oooo"),
         ]
+        let states: [Character: InstallPermit.State] = ["o": .done, "w": .submitted, "t": .pending, "l": .overdue]
         return rows.map { r in
             InstallStationSummary(id: "demo-\(r.0)", mpNumber: r.0, name: r.1, kWp: r.2, actual: r.3, plan: r.4, currentTask: r.5,
-                                  contractor: "ผู้รับเหมา " + r.6, dueDate: day(r.7), reportSentToday: r.8)
+                                  contractor: "ผู้รับเหมา " + r.6, dueDate: day(r.7), reportSentToday: r.8,
+                                  permits: zip(InstallPermit.Authority.allCases, r.9).map { InstallPermit($0, states[$1] ?? .pending) })
         }
     }()
 

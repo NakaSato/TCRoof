@@ -213,7 +213,7 @@ struct HomeView: View {
         let items = notifications, read = readIDs
         let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
         return PadHome(appointments: appointments,
-                       timeline: TimelineItem.list(jobs: todaysJobs, survey: survey),
+                       timeline: TimelineItem.list(jobs: jobs, survey: survey),
                        pending: PendingSurvey.list(survey: survey, todayJobs: todaysJobs),
                        unread: items.filter { !read.contains($0.id) }.count,
                        surveyToday: jobs.filter { $0.surveyDate.isToday }.count,

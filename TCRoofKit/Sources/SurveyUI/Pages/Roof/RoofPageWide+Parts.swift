@@ -130,13 +130,13 @@ struct NorthArrow: View {
         Canvas { ctx, size in
             let s = min(size.width, size.height) / 48, c = CGPoint(x: size.width / 2, y: size.height / 2)
             ctx.translateBy(x: c.x, y: c.y); ctx.scaleBy(x: s, y: s)
-            ctx.fill(Path(ellipseIn: CGRect(x: -21, y: -21, width: 42, height: 42)), with: .color(.white))
+            ctx.fill(Path(ellipseIn: CGRect(x: -21, y: -21, width: 42, height: 42)), with: .color(Theme.paper))
             ctx.stroke(Path(ellipseIn: CGRect(x: -21, y: -21, width: 42, height: 42)), with: .color(Theme.navy), lineWidth: 1.2)
             ctx.rotate(by: .degrees(degrees))
             var n = Path(); n.move(to: CGPoint(x: 0, y: -18)); n.addLine(to: CGPoint(x: 6, y: 4)); n.addLine(to: .zero); n.addLine(to: CGPoint(x: -6, y: 4)); n.closeSubpath()
             ctx.fill(n, with: .color(Theme.navy))
             var so = Path(); so.move(to: CGPoint(x: 0, y: 18)); so.addLine(to: CGPoint(x: 6, y: 4)); so.addLine(to: .zero); so.addLine(to: CGPoint(x: -6, y: 4)); so.closeSubpath()
-            ctx.fill(so, with: .color(.white)); ctx.stroke(so, with: .color(Theme.navy), lineWidth: 1)
+            ctx.fill(so, with: .color(Theme.paper)); ctx.stroke(so, with: .color(Theme.navy), lineWidth: 1)
         }
         .accessibilityHidden(true)
     }

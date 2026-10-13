@@ -65,7 +65,7 @@ struct TankLayoutPlan: View {
                 let b = rect(p.x, p.y, p.w, p.h, f)
                 if p.on {
                     ctx.fill(Path(b), with: .color(Theme.panelBlue.opacity(0.85)))
-                    ctx.stroke(Path(b), with: .color(.white), lineWidth: 0.5)
+                    ctx.stroke(Path(b), with: .color(Theme.paper), lineWidth: 0.5)
                 } else {
                     ctx.stroke(Path(b.insetBy(dx: 0.4, dy: 0.4)), with: .color(Theme.panelBlue.opacity(0.5)), style: StrokeStyle(lineWidth: 0.6, dash: [2, 1.5]))
                 }
@@ -88,7 +88,7 @@ struct TankLayoutPlan: View {
         // slope tag at the bottom left inside the tank; the arrow points to the wall the panels face
         let pill = CGRect(x: f.ox + 1.5 * f.k, y: f.oy + (l.size.h - 0.6) * f.k - 13, width: 50, height: 12)
         ctx.fill(Path(roundedRect: pill, cornerRadius: 6), with: .color(Theme.primary))
-        ctx.draw(Text(["↓", "→", "↑", "←"][l.turn] + " ลาดลงใต้").font(.system(size: 7.5, weight: .bold)).foregroundColor(.white), at: CGPoint(x: pill.midX, y: pill.midY))
+        ctx.draw(Text(["↓", "→", "↑", "←"][l.turn] + " ลาดลงใต้").font(.system(size: 7.5, weight: .bold)).foregroundColor(Theme.onMedia), at: CGPoint(x: pill.midX, y: pill.midY))
     }
 
     // MARK: touch

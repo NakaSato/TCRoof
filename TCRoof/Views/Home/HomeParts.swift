@@ -224,7 +224,7 @@ struct HomeBrandHeader: View {
                     Text("\(unread)").font(.sarabun(12, .bold)).monospacedDigit().foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
                         .background(Theme.danger, in: Capsule())
-                        .overlay(Capsule().stroke(.white, lineWidth: 2))
+                        .overlay(Capsule().stroke(Theme.surface, lineWidth: 2))
                         .padding(.top, size.isPad ? 4 : 0).padding(.trailing, size.isPad ? 2 : 0)
                         .offset(y: size.isPad ? 0 : 2)
                 }
@@ -348,7 +348,7 @@ struct AppointmentHero: View {
             if appointments.count > 1 {
                 HStack(spacing: 4) {
                     ForEach(appointments.indices, id: \.self) { i in
-                        Capsule().fill(.white.opacity(i == page ? 1 : 0.4)).frame(width: i == page ? 16 : 6, height: 6)
+                        Capsule().fill(Theme.onMedia.opacity(i == page ? 1 : 0.4)).frame(width: i == page ? 16 : 6, height: 6)
                     }
                 }
                 .padding(.leading, size.isPad ? 4 : 2)
@@ -411,13 +411,13 @@ struct AppointmentHero: View {
             if size.isPad {
                 Image(systemName: symbol).font(.system(size: 21, weight: .semibold))
                     .frame(width: 56, height: size.action)
-                    .background(.white.opacity(0.16), in: shape)
+                    .background(Theme.onMedia.opacity(0.16), in: shape)
             } else {
                 // v2: 44 × 44, white 20 % with a white 35 % border
                 Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
                     .frame(width: 44, height: 44)
-                    .background(.white.opacity(0.2), in: shape)
-                    .overlay(shape.strokeBorder(.white.opacity(0.35)))
+                    .background(Theme.onMedia.opacity(0.2), in: shape)
+                    .overlay(shape.strokeBorder(Theme.onMedia.opacity(0.35)))
             }
         }
         .buttonStyle(.plain)
@@ -490,7 +490,7 @@ private struct ProgressRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(.white.opacity(size.isPad ? 0.22 : 0.28), lineWidth: size.ringStroke)
+            Circle().stroke(Theme.onMedia.opacity(size.isPad ? 0.22 : 0.28), lineWidth: size.ringStroke)
             Circle().trim(from: 0, to: fraction)
                 .stroke(size.isPad ? Theme.ringDone : Theme.ringOutdoor, style: StrokeStyle(lineWidth: size.ringStroke, lineCap: .round))
                 .rotationEffect(.degrees(-90))

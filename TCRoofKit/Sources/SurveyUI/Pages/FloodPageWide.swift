@@ -419,7 +419,7 @@ struct FloodPageWide: View {
         let ready = GPS.parse(values.text("gps")) != nil
         return Button(action: { fetchGistda(force: again) }) {
             HStack(spacing: 8) {
-                if fetching { ProgressView().tint(.white) } else { Image(systemName: "arrow.down.circle") }
+                if fetching { ProgressView().tint(Theme.onPrimary) } else { Image(systemName: "arrow.down.circle") }
                 Text(fetching ? ("กำลังดึงข้อมูล \(attempt)/\(FloodLookup.gregorianYears.count) ปี…") : again ? "ดึงข้อมูลใหม่" : failure != nil ? "ลองใหม่" : "ดึงข้อมูลจาก GISTDA")
             }
             .font(.sarabunFixed(16, .semibold)).foregroundStyle(Theme.onPrimary)

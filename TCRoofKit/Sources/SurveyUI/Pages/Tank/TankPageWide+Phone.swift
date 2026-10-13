@@ -111,7 +111,7 @@ extension TankPageWide {
                 .background(Circle().fill(Theme.primary))
                 .background(Circle().fill(Theme.primary.opacity(0.18)).frame(width: 34, height: 34))
         } else if done {
-            Image(systemName: "checkmark").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
+            Image(systemName: "checkmark").font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 22, height: 22)
                 .background(Circle().fill(Theme.stepDone))
         } else {

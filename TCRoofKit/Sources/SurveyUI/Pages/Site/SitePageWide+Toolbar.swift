@@ -188,7 +188,7 @@ extension SitePageWide {
         VStack(alignment: .leading, spacing: 8) {
             drawControl
             (Text(toolHint.name).bold() + Text("  " + toolHint.hint))
-                .font(.sarabunFixed(13)).foregroundStyle(.white)
+                .font(.sarabunFixed(13)).foregroundStyle(Theme.onMedia)
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .background(Theme.navySolid.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 420, alignment: .leading)
@@ -203,7 +203,7 @@ extension SitePageWide {
         if palette || (polyline != nil && !draft.isEmpty) {
             HStack(spacing: 10) {
                 if let k = polyline {
-                    Text("\(draft.count) จุด").font(.sarabunFixed(14, .semibold)).foregroundStyle(.white).monospacedDigit()
+                    Text("\(draft.count) จุด").font(.sarabunFixed(14, .semibold)).foregroundStyle(Theme.onMedia).monospacedDigit()
                     Button("เสร็จ") { finishDraft() }.font(.sarabunFixed(14, .bold))
                         .disabled(draft.count < k.minPoints)
                         .padding(.horizontal, 14).frame(minHeight: 36)
@@ -213,8 +213,8 @@ extension SitePageWide {
                 }
                 Button("ยกเลิก") { arm(nil) }.font(.sarabunFixed(14, .bold))
                     .padding(.horizontal, 14).frame(minHeight: 36)
-                    .overlay(Capsule().stroke(.white.opacity(0.7)))
-                    .foregroundStyle(.white)
+                    .overlay(Capsule().stroke(Theme.onMedia.opacity(0.7)))
+                    .foregroundStyle(Theme.onMedia)
                     .contentShape(Capsule().inset(by: -4))
             }
             .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 4)

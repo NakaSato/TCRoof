@@ -48,7 +48,7 @@ extension SitePageWide {
     var phoneFull: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(.white).lineLimit(1)
+                Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onMedia).lineLimit(1)
                 Spacer(minLength: 8)
                 Button { fullScreen = false } label: {
                     HStack(spacing: 6) {
@@ -68,7 +68,7 @@ extension SitePageWide {
                     Image(systemName: panelOpen ? "chevron.down" : "chevron.up").font(.system(size: 12, weight: .bold))
                     Spacer(minLength: 0)
                 }
-                .foregroundStyle(.white).frame(minHeight: 44).contentShape(Rectangle())
+                .foregroundStyle(Theme.onMedia).frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             if panelOpen { modelPanel.frame(height: 250) }
@@ -78,9 +78,9 @@ extension SitePageWide {
 
     var fullHeader: some View {
         HStack(spacing: 14) {
-            Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(.white)
+            Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onMedia)
             Text("เต็มจอ · ใช้เครื่องมือวาด / วางสัญลักษณ์ได้เหมือนเดิม · หนีบ 2 นิ้วเพื่อซูม")
-                .font(.sarabunFixed(13)).foregroundStyle(.white.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
+                .font(.sarabunFixed(13)).foregroundStyle(Theme.onMedia.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 8)
             Button { fullScreen = false } label: {
                 HStack(spacing: 8) {

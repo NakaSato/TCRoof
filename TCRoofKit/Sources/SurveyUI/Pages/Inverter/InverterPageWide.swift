@@ -243,7 +243,7 @@ struct InverterPageWide: View {
                 for (i, p) in draft.enumerated() {
                     let c = point(p, in: r), rad: CGFloat = i == 0 ? 9 : 5
                     let e = Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad))
-                    ctx.fill(e, with: .color(.white)); ctx.stroke(e, with: .color(Theme.teal), lineWidth: 2)
+                    ctx.fill(e, with: .color(Theme.paper)); ctx.stroke(e, with: .color(Theme.teal), lineWidth: 2)
                 }
             }
         }
@@ -256,7 +256,7 @@ struct InverterPageWide: View {
                 let e = b.edges[safe: i] ?? ""
                 Button { edgeText = e; editingEdge = i } label: {
                     Text(e.isEmpty ? "ใส่ระยะ" : e + " ม.").font(.sarabunFixed(13, .bold))
-                        .foregroundStyle(e.isEmpty ? Theme.teal : .white)
+                        .foregroundStyle(e.isEmpty ? Theme.teal : Theme.onPrimary)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(e.isEmpty ? Theme.surface : Theme.teal, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.teal))

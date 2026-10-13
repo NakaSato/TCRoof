@@ -176,9 +176,9 @@ struct RevisionsPage: View {
             HStack(spacing: 12) {
                 ForEach([(c.oldPhoto, "เดิม"), (c.newPhoto, "ใหม่")], id: \.1) { p, title in
                     VStack(spacing: 8) {
-                        Text(title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(.white)
+                        Text(title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.onMedia)
                         if let p, let img = model.image(p, in: job.id) { Image(uiImage: img).resizable().scaledToFit() }
-                        else { Text("—").foregroundStyle(.white).frame(maxWidth: .infinity, maxHeight: .infinity) }
+                        else { Text("—").foregroundStyle(Theme.onMedia).frame(maxWidth: .infinity, maxHeight: .infinity) }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }

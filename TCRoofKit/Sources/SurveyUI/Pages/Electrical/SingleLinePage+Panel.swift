@@ -36,11 +36,11 @@ extension SingleLinePage {
                     Text(r.label).font(.sarabunFixed(14)).opacity(0.85)
                     Spacer(minLength: 6)
                     Text(r.value.text).font(.sarabunFixed(i == 0 ? 18 : 15, .bold)).monospacedDigit().minimumScaleFactor(0.8)
-                        .foregroundStyle(r.value.isMissing ? Theme.dangerOnDark : .white)
+                        .foregroundStyle(r.value.isMissing ? Theme.dangerOnDark : Theme.onMedia)
                         .multilineTextAlignment(.trailing)
                 }
                 .padding(.vertical, 8)
-                .overlay(alignment: .top) { if i > 0 { Rectangle().fill(.white.opacity(0.14)).frame(height: 1) } }
+                .overlay(alignment: .top) { if i > 0 { Rectangle().fill(Theme.onMedia.opacity(0.14)).frame(height: 1) } }
             }
         }
         .foregroundStyle(Theme.onMedia)

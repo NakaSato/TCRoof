@@ -99,7 +99,7 @@ extension SitePageWide {
             } else {
                 emptyPicture.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            if fetchingMap { Color.black.opacity(0.3); ProgressView("กำลังดึงภาพดาวเทียม…").tint(.white).foregroundStyle(.white).frame(maxWidth: .infinity, maxHeight: .infinity) }
+            if fetchingMap { Color.black.opacity(0.3); ProgressView("กำลังดึงภาพดาวเทียม…").tint(Theme.onMedia).foregroundStyle(Theme.onMedia).frame(maxWidth: .infinity, maxHeight: .infinity) }
         }
         .frame(width: size.width, height: size.height)
         .contentShape(Rectangle())
@@ -139,7 +139,7 @@ extension SitePageWide {
         }
         let placed = layers.contains(.symbols) ? placedModels : []
         return Canvas { ctx, _ in
-            if layers.contains(.grid) { ctx.stroke(grid(r), with: .color(.white.opacity(0.45)), lineWidth: 0.7) }
+            if layers.contains(.grid) { ctx.stroke(grid(r), with: .color(Theme.onMedia.opacity(0.45)), lineWidth: 0.7) }
             var ops: [DrawOp] = []
             if let m = metersAcross {
                 for p in placed {
@@ -158,7 +158,7 @@ extension SitePageWide {
             if case .shape(let k)? = tool {
                 for (i, p) in draft.enumerated() {
                     let c = point(p, in: r), rad: CGFloat = i == 0 && k.isClosed ? 9 : 5
-                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad)), with: .color(.white))
+                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad)), with: .color(Theme.onMedia))
                     ctx.stroke(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: 2 * rad, height: 2 * rad)),
                                with: .color(Color(k.color)), lineWidth: 2)
                 }

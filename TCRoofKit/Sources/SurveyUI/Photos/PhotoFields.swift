@@ -43,7 +43,7 @@ struct PhotoField: View {
                 }
                 .padding(8)
             }
-            if fetchingMap { Color.black.opacity(0.35); ProgressView("กำลังดึงภาพแผนที่…").tint(.white).foregroundStyle(.white) }
+            if fetchingMap { Color.black.opacity(0.35); ProgressView("กำลังดึงภาพแผนที่…").tint(Theme.onMedia).foregroundStyle(Theme.onMedia) }
         }
         .frame(height: height)
         .frame(maxWidth: .infinity)
@@ -58,7 +58,7 @@ struct PhotoField: View {
                     Button(role: .destructive) { photo = nil } label: { Label("ลบภาพ", systemImage: "trash") }
                 } label: {
                     Image(systemName: "ellipsis.circle.fill").font(.sarabun(22, relativeTo: .title2)).symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, .black.opacity(0.55)).padding(8)
+                        .foregroundStyle(Theme.onMedia, .black.opacity(0.55)).padding(8)
                 }
             }
         }

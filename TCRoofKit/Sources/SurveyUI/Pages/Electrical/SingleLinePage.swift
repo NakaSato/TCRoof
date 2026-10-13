@@ -91,7 +91,7 @@ struct SingleLinePage: View {
                         if phone { Image(systemName: "list.bullet.rectangle") } else { Label("ข้อมูล PV", systemImage: "list.bullet.rectangle") }
                     }
                     .font(.sarabunFixed(16, .semibold))
-                    .padding(.horizontal, phone ? 0 : 14).frame(minWidth: 44, minHeight: 44).background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal, phone ? 0 : 14).frame(minWidth: 44, minHeight: 44).background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain).accessibilityLabel("ข้อมูลฝั่ง PV")
             }

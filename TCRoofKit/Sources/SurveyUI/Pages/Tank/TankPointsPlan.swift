@@ -92,7 +92,7 @@ struct TankPointsPlan: View {
             symbol(&ctx, s, f)
             // distance from the left wall, under the symbol
             let c = centre(s.rect, f), box = CGRect(x: c.x - 30, y: c.y + 12, width: 42, height: 13)
-            ctx.fill(Path(roundedRect: box, cornerRadius: 6), with: .color(.white))
+            ctx.fill(Path(roundedRect: box, cornerRadius: 6), with: .color(Theme.paper))
             ctx.stroke(Path(roundedRect: box, cornerRadius: 6), with: .color(Theme.warning), lineWidth: 1)
             ctx.draw(Text(String(format: "%.2f", s.rect.x)).font(.system(size: 8, weight: .bold)).foregroundColor(Theme.pending),
                      at: CGPoint(x: box.midX, y: box.midY))
@@ -118,11 +118,11 @@ struct TankPointsPlan: View {
             ctx.stroke(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning), lineWidth: 1)
         }
         if m.point.kind == TankPoints.vent {
-            ctx.fill(Path(sq), with: .color(.white))
+            ctx.fill(Path(sq), with: .color(Theme.paper))
             ctx.stroke(Path(sq), with: .color(col), style: StrokeStyle(lineWidth: 1.5, dash: dash))
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - 3, y: c.y - 3, width: 6, height: 6)), with: .color(col), lineWidth: 1)
         } else {
-            ctx.fill(Path(sq), with: .color(.white))
+            ctx.fill(Path(sq), with: .color(Theme.paper))
             var h = Path()
             for d in stride(from: -12.0, through: 12, by: 4) {
                 h.move(to: CGPoint(x: sq.minX + d, y: sq.maxY)); h.addLine(to: CGPoint(x: sq.minX + d + 12, y: sq.minY))
@@ -136,7 +136,7 @@ struct TankPointsPlan: View {
         let w: CGFloat = m.point.label.count > 2 ? 26 : 20
         let pill = CGRect(x: c.x + 8, y: c.y - 14, width: w, height: 12)
         ctx.fill(Path(roundedRect: pill, cornerRadius: 6), with: .color(col))
-        ctx.draw(Text(m.point.label).font(.system(size: 8, weight: .bold)).foregroundColor(.white), at: CGPoint(x: pill.minX + 4, y: pill.midY), anchor: .leading)
+        ctx.draw(Text(m.point.label).font(.system(size: 8, weight: .bold)).foregroundColor(Theme.onMedia), at: CGPoint(x: pill.minX + 4, y: pill.midY), anchor: .leading)
     }
 
     // MARK: touch

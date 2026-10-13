@@ -37,7 +37,7 @@ struct NewJobSheet: View {
             Spacer()
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.sarabun(17, .bold, relativeTo: .body)).frame(width: 36, height: 36)
-                    .background(.white.opacity(0.18), in: Circle())
+                    .background(Theme.onPrimary.opacity(0.18), in: Circle())
             }
             .accessibilityLabel("ยกเลิก")
         }

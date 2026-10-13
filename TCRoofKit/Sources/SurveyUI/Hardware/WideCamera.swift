@@ -58,7 +58,7 @@ struct WideCamera: View {
 
     private var topBar: some View {
         Text(multi ? guide?.cue ?? "" : cam.ultraWide ? "เลนส์มุมกว้าง 0.5×" : "ถ่ายภาพเดียว")
-            .font(.sarabunFixed(16, .bold)).foregroundStyle(.white).multilineTextAlignment(.center)
+            .font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onMedia).multilineTextAlignment(.center)
             .padding(.horizontal, 16).padding(.vertical, 10)
             .background(.black.opacity(0.55), in: Capsule())
             .padding(.top, 12).padding(.horizontal, 16)
@@ -73,7 +73,7 @@ struct WideCamera: View {
                     .frame(width: w, height: h).offset(x: -(1 - k) * w)
                     .frame(width: k * w, height: h, alignment: .leading).clipped()
                     .opacity(0.4)
-                    .overlay(alignment: .trailing) { Rectangle().fill(.white.opacity(0.8)).frame(width: 2) }
+                    .overlay(alignment: .trailing) { Rectangle().fill(Theme.onMedia.opacity(0.8)).frame(width: 2) }
             }
             .ignoresSafeArea().allowsHitTesting(false)
         }
@@ -84,8 +84,8 @@ struct WideCamera: View {
         let span = 30.0
         let x = g.taken == 0 || g.done ? 0 : min(max(g.offset / span, -1), 1)
         return ZStack {
-            Capsule().fill(.white.opacity(0.3)).frame(width: 240, height: 6)
-            Rectangle().fill(.white).frame(width: 2, height: 22)
+            Capsule().fill(Theme.onMedia.opacity(0.3)).frame(width: 240, height: 6)
+            Rectangle().fill(Theme.onMedia).frame(width: 2, height: 22)
             Circle().fill(g.ready ? Theme.success : Theme.pending).frame(width: 22, height: 22)
                 .offset(x: x * 120)
         }
@@ -97,7 +97,7 @@ struct WideCamera: View {
     private var bottomBar: some View {
         HStack(alignment: .center) {
             Button("ยกเลิก") { done(nil); dismiss() }
-                .font(.sarabunFixed(17, .semibold)).foregroundStyle(.white)
+                .font(.sarabunFixed(17, .semibold)).foregroundStyle(Theme.onMedia)
                 .frame(minWidth: 90, minHeight: 44, alignment: .leading)
             Spacer()
             shutter
@@ -109,9 +109,9 @@ struct WideCamera: View {
                 }
                 if !cam.ultraWide && shots.isEmpty {
                     Button(multi ? "ภาพเดียว" : "3 ภาพ") { toggleMode() }
-                        .font(.sarabunFixed(15, .bold)).foregroundStyle(.white)
+                        .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onMedia)
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(.white.opacity(0.2), in: Capsule())
+                        .background(Theme.onMedia.opacity(0.2), in: Capsule())
                 }
             }
             .frame(minWidth: 90, alignment: .trailing)
@@ -124,8 +124,8 @@ struct WideCamera: View {
         let ready = !busy && (guide?.ready ?? true)
         return Button(action: shoot) {
             ZStack {
-                Circle().stroke(.white, lineWidth: 4).frame(width: 72, height: 72)
-                Circle().fill(ready ? .white : .white.opacity(0.35)).frame(width: 58, height: 58)
+                Circle().stroke(Theme.onMedia, lineWidth: 4).frame(width: 72, height: 72)
+                Circle().fill(ready ? Theme.onMedia : Theme.onMedia.opacity(0.35)).frame(width: 58, height: 58)
             }
             .frame(width: 80, height: 80)
         }

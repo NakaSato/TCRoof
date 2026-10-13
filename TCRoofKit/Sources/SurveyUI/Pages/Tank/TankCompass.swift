@@ -38,7 +38,7 @@ struct TankCompassView: View {
             }
             .padding(16)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onMedia)
         .onAppear { reader.start() }
         .onDisappear { reader.stop() }
     }
@@ -97,11 +97,11 @@ struct TankCompassView: View {
             if reader.locked != nil {
                 A2Icon(name: "d1-heading-locked", fallback: "checkmark.circle", size: 60).foregroundStyle(Self.green)
             } else {
-                ProgressView().tint(.white).frame(width: 60, height: 60)
+                ProgressView().tint(Theme.onMedia).frame(width: 60, height: 60)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(reader.locked != nil ? "ถือนิ่งครบ 2 วินาที · จับค่าแล้ว" : "ถือเครื่องนิ่ง 2 วินาที")
-                    .font(.sarabunFixed(16, .bold)).foregroundStyle(reader.locked != nil ? Self.green : .white)
+                    .font(.sarabunFixed(16, .bold)).foregroundStyle(reader.locked != nil ? Self.green : Theme.onMedia)
                 if let wall {
                     Text("แนวผนัง A \(Int(wall.rounded()) % 360)° − 90° = ผนังบนหันไปทิศ").font(.sarabunFixed(14))
                 }
@@ -138,7 +138,7 @@ struct TankCompassView: View {
         VStack(spacing: 16) {
             Image(systemName: "location.north.circle").font(.system(size: 54)).foregroundStyle(Theme.disabledText)
             Text("อุปกรณ์นี้ไม่มีเข็มทิศ · ป้อนมุมเอง").font(.sarabunFixed(20, .bold))
-            Text("ผนังบน (แนว A) หันไปทิศ (องศา 0–359)").font(.sarabunFixed(15)).foregroundStyle(.white.opacity(0.8))
+            Text("ผนังบน (แนว A) หันไปทิศ (องศา 0–359)").font(.sarabunFixed(15)).foregroundStyle(Theme.onMedia.opacity(0.8))
             HStack(spacing: 10) {
                 TextField("เช่น 90", text: $typed).keyboardType(.numberPad)
                     .font(.sarabunFixed(24, .bold)).monospacedDigit().multilineTextAlignment(.center)

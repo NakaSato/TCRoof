@@ -138,7 +138,7 @@ struct SitePin: View {
         }
         .frame(width: 44, height: 44)
         .overlay(alignment: .bottom) {
-            Text(label).font(.sarabunFixed(12.5, .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
+            Text(label).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.onMedia).lineLimit(1).fixedSize()
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(ring, in: Capsule())
                 .overlay(Capsule().stroke(Theme.onMedia, lineWidth: 1.5))

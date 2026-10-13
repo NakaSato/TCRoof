@@ -133,7 +133,7 @@ struct SiteMapPreview: View {
                 .gesture(cropDrag(picture.size) { $0.moved(dx: $1.width, dy: $1.height, within: shown) })
                 .offset(x: r.minX, y: r.minY)
             Text(c.label(across: across, aspect: Self.aspect))
-                .font(.sarabunFixed(12, .bold)).foregroundStyle(.white).lineLimit(1)
+                .font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.onMedia).lineLimit(1)
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(Self.cropBlue, in: RoundedRectangle(cornerRadius: 4))
                 .fixedSize()
@@ -151,7 +151,7 @@ struct SiteMapPreview: View {
 
     /// 16-pt white square, blue border, in a 44-pt hit area centred on the corner.
     var handle: some View {
-        RoundedRectangle(cornerRadius: 3).fill(.white)
+        RoundedRectangle(cornerRadius: 3).fill(Theme.onMedia)
             .overlay(RoundedRectangle(cornerRadius: 3).stroke(Self.cropBlue, lineWidth: 2.5))
             .frame(width: 16, height: 16)
             .frame(width: 44, height: 44).contentShape(Rectangle())

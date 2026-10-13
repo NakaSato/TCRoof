@@ -365,7 +365,7 @@ struct DailyPhotosCard: View {
                 .overlay(alignment: .topTrailing) {
                     Button { photos.removeAll { $0.id == p.wrappedValue.id } } label: {
                         Image(systemName: "xmark.circle.fill").font(.sarabun(20, relativeTo: .title3)).symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, .black.opacity(0.6)).frame(width: touchMin, height: touchMin)
+                            .foregroundStyle(Theme.onMedia, .black.opacity(0.6)).frame(width: touchMin, height: touchMin)
                     }
                     .accessibilityLabel("ลบรูป")
                 }

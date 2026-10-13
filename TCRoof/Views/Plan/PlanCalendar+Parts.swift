@@ -84,7 +84,7 @@ private struct PlanDayCell: View {
 
     private var background: Color {
         if day.isSelected { return Theme.primarySoft }
-        return day.date.isWeekend || !day.inMonth ? Theme.paperPage : .white
+        return day.date.isWeekend || !day.inMonth ? Theme.paperPage : Theme.surface
     }
 
     @ViewBuilder private var dateLabel: some View {
@@ -207,7 +207,7 @@ struct PlanTeamChip: View {
             .lineLimit(1).fixedSize()
             .foregroundStyle(isOn ? Theme.navy : Theme.inkMuted)
             .padding(.horizontal, 12).frame(height: 36)
-            .background(isOn ? Theme.primarySoft : .white, in: Capsule())
+            .background(isOn ? Theme.primarySoft : Theme.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(isOn ? Theme.navy : Theme.borderSubtle))
             .frame(minHeight: 44)
             .contentShape(Rectangle())

@@ -48,8 +48,8 @@ extension SurveyHomeView {
     var stagePills: some View {
         let stages: [JobStage] = [.survey, .install, .maintenance]
         return HStack(spacing: 6) {
-            TCCountSegments([.init("ทั้งหมด", count: model.jobs(in: .survey).count), .init("ติดตั้ง", count: installStations.count),
-                             .init("บำรุงรักษา", count: maintenanceStations.count)],
+            TCCountSegments([.init("ทั้งหมด", count: model.jobs(in: .survey).count), .init("ติดตั้ง", count: installStations.count, unit: "สถานี"),
+                             .init("บำรุงรักษา", count: maintenanceStations.count, unit: "สถานี")],
                             selection: Binding(get: { stages.firstIndex(of: tab) ?? 0 },
                                                set: { i in withAnimation(reduceMotion ? nil : .snappy) { tab = stages[i] } }))
             // the overviews have their own filters
@@ -206,7 +206,8 @@ extension SurveyHomeView {
 
     // MARK: DEBUG
 
-    /// `-surveyHomeTab all|install|maintenance`, `-surveyHomeSearch YES`, `-surveyHomeFilter YES|draft`.
+    /// `-surveyHomeTab all|install|maintenance`, `-surveyHomeSearch YES`, `-surveyHomeFilter YES|draft`,
+    /// `-pwaMaintenanceFilter issue|pmSoon|all`.
     func applyDebugHome() {
         #if DEBUG
         let d = UserDefaults.standard
@@ -217,6 +218,7 @@ extension SurveyHomeView {
         case "maintenance": tab = .maintenance
         default: break
         }
+        if let f = d.string(forKey: "pwaMaintenanceFilter").flatMap(MaintenanceOverview.RowFilter.init) { maintenanceFilter = f }
         if d.bool(forKey: "surveyHomeSearch") { searchOpen = true }
         switch d.string(forKey: "surveyHomeFilter") {
         case "draft": tab = .survey; filter = .draft; sort = .progress

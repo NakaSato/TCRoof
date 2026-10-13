@@ -1,0 +1,19 @@
+{
+  "_note": "Example data from the board iPhone · หน้าแรก PWA (บำรุงรักษา). Not real stations. Use it only behind -pwaPlanDemo / the DEBUG seed.",
+  "stageCounts": { "all": 6, "install": 12, "maintenance": 6 },
+  "stations": [
+    { "mp": 12, "name": "สถานีผลิตน้ำบางเลน",   "kWp": 180, "energyKWh": 612, "expectedKWh": 650, "pr": 81, "status": "normal",  "nextPM": "20/10", "openRepairs": 0, "note": "PM 20/10" },
+    { "mp": 25, "name": "สถานีผลิตน้ำนครชัยศรี", "kWp": 220, "energyKWh": 410, "expectedKWh": 790, "pr": 63, "status": "alarm",   "nextPM": "3/11",  "openRepairs": 1, "note": "INV 2 fault · 2 วัน" },
+    { "mp": 31, "name": "สถานีผลิตน้ำพุทธมณฑล", "kWp": 150, "energyKWh": 530, "expectedKWh": 540, "pr": 84, "status": "normal",  "nextPM": "9/11",  "openRepairs": 0, "note": "PM 9/11" },
+    { "mp": 44, "name": "สถานีผลิตน้ำสามพราน",  "kWp": 120, "energyKWh": 0,   "expectedKWh": 430, "pr": null, "status": "offline", "nextPM": "28/10", "openRepairs": 1, "note": "ไม่มีข้อมูล 6 ชม." },
+    { "mp": 52, "name": "สถานีผลิตน้ำกำแพงแสน", "kWp": 200, "energyKWh": 690, "expectedKWh": 720, "pr": 82, "status": "normal",  "nextPM": "15/10", "openRepairs": 0, "note": "ล้างแผง 15/10" },
+    { "mp": 7,  "name": "สถานีผลิตน้ำดอนตูม",    "kWp": 95,  "energyKWh": 330, "expectedKWh": 345, "pr": 83, "status": "normal",  "nextPM": "24/10", "openRepairs": 0, "note": "PM 24/10" }
+  ],
+  "dueTasks": [
+    { "date": "15/10", "title": "ล้างแผง · กำแพงแสน (MP 52)",       "assignee": "ผู้รับเหมา B" },
+    { "date": "20/10", "title": "PM รอบ 6 เดือน · บางเลน (MP 12)",  "assignee": "ทีม TC" },
+    { "date": "24/10", "title": "PM รอบ 6 เดือน · ดอนตูม (MP 7)",   "assignee": "ทีม TC" }
+  ],
+  "derivedTotals": { "count": 6, "kWp": 965, "energyKWh": 2572, "expectedKWh": 3475, "yieldPct": 74, "prWeightedExclOffline": 77, "normal": 4, "alarm": 1, "offline": 1 },
+  "filters": { "issue": "status != normal → 2", "pmSoon": "nextPM within 14 days → 3", "all": 6 }
+}

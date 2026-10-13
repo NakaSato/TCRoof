@@ -6,23 +6,29 @@ import SwiftUI
 /// The view switch of the PWA module's iPhone pages (docs/ui/pwa-plan-iphone §2): one 44 pt track holding 38 pt
 /// segments, the selected one white with a soft shadow. A count stands after its label as plain bold text, red
 /// when `alert` (`กำหนดส่ง` with something late). Segments share the width, or with `equalWidths` off take their own
-/// (`สัปดาห์ | เดือน`).
+/// (`สัปดาห์ | เดือน`). The white segment slides to the selection, unless Reduce Motion is on.
 public struct TCCountSegments: View {
     public struct Segment: Sendable {
         let title: String
         let count: String?
         let alert: Bool
+        /// What VoiceOver reads after the title and the count (`สถานี` in `บำรุงรักษา 6 สถานี`).
+        let unit: String?
 
-        public init(_ title: String, count: String? = nil, alert: Bool = false) {
-            self.title = title; self.count = count; self.alert = alert
+        public init(_ title: String, count: String? = nil, alert: Bool = false, unit: String? = nil) {
+            self.title = title; self.count = count; self.alert = alert; self.unit = unit
         }
 
-        public init(_ title: String, count: Int, alert: Bool = false) { self.init(title, count: "\(count)", alert: alert) }
+        public init(_ title: String, count: Int, alert: Bool = false, unit: String? = nil) {
+            self.init(title, count: "\(count)", alert: alert, unit: unit)
+        }
     }
 
     let segments: [Segment]
     @Binding var selection: Int
     let equalWidths: Bool
+    @Namespace private var slide
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(_ segments: [Segment], selection: Binding<Int>, equalWidths: Bool = true) {
         self.segments = segments; self._selection = selection; self.equalWidths = equalWidths
@@ -34,6 +40,7 @@ public struct TCCountSegments: View {
         }
         .padding(3)
         .background(Theme.track, in: Capsule())
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: selection)
     }
 
     private func segment(_ s: Segment, on: Bool, action: @escaping () -> Void) -> some View {
@@ -50,14 +57,17 @@ public struct TCCountSegments: View {
             .padding(.horizontal, equalWidths ? 6 : 12)
             .frame(maxWidth: equalWidths ? .infinity : nil, minHeight: 38)
             .background {
-                if on { Capsule().fill(Theme.surface).shadow(color: Theme.navySolid.opacity(0.16), radius: 1.5, y: 1) }
+                if on {
+                    Capsule().fill(Theme.surface).shadow(color: Theme.navySolid.opacity(0.16), radius: 1.5, y: 1)
+                        .matchedGeometryEffect(id: "selected", in: slide)
+                }
             }
             // the track's padding is part of the hit area
             .padding(.vertical, 3).contentShape(Rectangle()).padding(.vertical, -3)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel([s.title, s.count].compactMap { $0 }.joined(separator: " "))
+        .accessibilityLabel([s.title, s.count, s.unit].compactMap { $0 }.joined(separator: " "))
         .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }
 }

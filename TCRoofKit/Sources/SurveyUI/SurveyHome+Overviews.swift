@@ -266,6 +266,8 @@ extension SurveyHomeView {
                 .lineLimit(1).minimumScaleFactor(0.85)
             }
             .accessibilityElement(children: .combine)
+            // the ring
+            .accessibilityValue("ผลิตวันนี้ \(t.yield)% ของที่คาด")
             HStack(spacing: 6) {
                 TCStatTile("\(t.normal)", "ปกติ", tone: .green)
                 TCStatTile("\(t.alarm)", "แจ้งเตือน", tone: .red)
@@ -316,14 +318,23 @@ extension SurveyHomeView {
                 if let mp = s.mpNumber { Text("MP \(mp)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted) }
                 TCToneChip(status.0, tone: status.1)
                 Spacer(minLength: 6)
-                TCToneChip(s.openRepairs > 0 ? "แจ้งซ่อม \(s.openRepairs) งาน" : "ไม่มีงานซ่อม", tone: s.openRepairs > 0 ? .orange : nil)
+                if s.openRepairs > 0 {
+                    TCToneChip("แจ้งซ่อม \(s.openRepairs) งาน", tone: .orange)
+                } else {
+                    // fainter than the grey `ออฟไลน์` chip
+                    Text("ไม่มีงานซ่อม").font(.sarabunFixed(11, .bold)).lineLimit(1).fixedSize()
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.horizontal, 8).frame(height: 18)
+                        .background(Theme.hairline, in: Capsule())
+                }
             }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(s.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 6)
                 if s.kWp > 0 { Text("\(number(s.kWp)) kWp").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize() }
             }
-            TCPlanBar(actual: s.yield, tint: status.2)
+            // no plan tick here: the bar gives back the 3 pt it keeps for one on each side
+            TCPlanBar(actual: s.yield, tint: status.2).padding(.vertical, -3)
             HStack(spacing: 6) {
                 Text(number(s.energy, digits: 0)).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).fixedSize()
                 Text("/ คาด \(number(s.expected, digits: 0)) kWh").fixedSize()

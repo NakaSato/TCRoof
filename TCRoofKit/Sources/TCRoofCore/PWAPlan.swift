@@ -33,6 +33,8 @@ public enum PWAPlan {
         public var handedOver: Bool
         public var reportSentToday: Bool
         public var surveyAt: Date?
+        /// The PWA representative's inspection appointments.
+        public var inspections: [RoutineReport.Inspection]
         /// `Calendar` weekdays the site works (1 = Sunday).
         public var workingWeekdays: Set<Int>
         public var docs: StationDocs.Station
@@ -41,12 +43,13 @@ public enum PWAPlan {
         public init(id: String, mpNumber: Int? = nil, code: String = "", name: String, kWp: Double = 0, contractor: String = "",
                     team: String = "", input: MasterSchedule.Input? = nil, actual: MasterSchedule.Actual = .init(),
                     handedOver: Bool = false, reportSentToday: Bool = true, surveyAt: Date? = nil,
+                    inspections: [RoutineReport.Inspection] = [],
                     workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], docs: StationDocs.Station = .init(),
                     docsContext: StationDocs.Context? = nil) {
             self.id = id; self.mpNumber = mpNumber; self.code = code; self.name = name; self.kWp = kWp
             self.contractor = contractor; self.team = team; self.input = input; self.actual = actual
             self.handedOver = handedOver; self.reportSentToday = reportSentToday; self.surveyAt = surveyAt
-            self.workingWeekdays = workingWeekdays; self.docs = docs
+            self.inspections = inspections; self.workingWeekdays = workingWeekdays; self.docs = docs
             self.docsContext = docsContext ?? StationDocs.Context(docs, inverterKW: input?.over200kVA == true ? 200 : nil)
         }
 
@@ -162,7 +165,8 @@ public enum PWAPlan {
     public static let reportReminder = 16 * 60
 
     /// The agenda of `days`: per station one install row on each working day a construction task (2.x) is planned, a
-    /// test row on the days of 3.1, the survey appointment, the document deadlines falling on the day, and today one
+    /// test row on the days of 3.1, the survey appointment, the PWA representative's inspection appointments, the
+    /// document deadlines falling on the day, and today one
     /// reminder naming the stations whose daily report isn't sent. Rows with a time come after the day's untimed ones.
     public static func agenda(_ stations: [Station], deadlines: [Deadline], days: [Date], today: Date,
                               threshold: Double = InstallOverview.defaultThreshold, calendar cal: Calendar = calendar) -> [AgendaItem] {
@@ -178,6 +182,13 @@ public enum PWAPlan {
                     out.append(AgendaItem(id: "srv-\(s.id)-\(key)", day: d, start: (c.hour ?? 0) * 60 + (c.minute ?? 0), type: .survey,
                                           ref: s.ref, title: "นัดสำรวจ " + s.name, subtitle: [s.shortName, s.team].filter { !$0.isEmpty }.joined(separator: " · "),
                                           status: .booked, contractor: s.contractor, team: s.team, station: s.id, opens: .survey))
+                }
+                for i in s.inspections where cal.isDate(i.at, inSameDayAs: d) {
+                    let c = cal.dateComponents([.hour, .minute], from: i.at)
+                    let subject = i.subject.trimmingCharacters(in: .whitespaces)
+                    out.append(AgendaItem(id: "chk-\(s.id)-\(i.id)", day: d, start: (c.hour ?? 0) * 60 + (c.minute ?? 0), type: .inspection,
+                                          ref: s.ref, title: subject.isEmpty ? "ผู้แทน กปภ. ตรวจรับ" : "ผู้แทน กปภ. ตรวจ " + subject, subtitle: who(s),
+                                          status: .waiting, contractor: s.contractor, team: s.team, station: s.id, opens: .station))
                 }
                 guard let input = s.input, !s.handedOver, works(s) else { continue }
                 let plan = MasterSchedule.plan(input, calendar: mp)
@@ -364,6 +375,11 @@ public enum PWAPlan {
     static let submissions: [(task: MasterSchedule.Task, package: StationDocs.Package)] =
         [(.buildingPermit, .building), (.pk2, .pk2), (.gridConnection, .gridConnection)]
 
+    /// The MP task that dates a package's submission; nil for a package the plan page has no deadline for.
+    public static func submissionTask(_ package: StationDocs.Package) -> MasterSchedule.Task? {
+        submissions.first { $0.package == package }?.task
+    }
+
     static func submissionTitle(_ package: StationDocs.Package, _ ctx: StationDocs.Context) -> String {
         switch package {
         case .pk2: "ยื่น พค.2 (กกพ.)"
@@ -380,8 +396,9 @@ public enum PWAPlan {
     /// Every open deadline of the stations that have a plan and aren't handed over, by date:
     /// - handover on the plan's install end: late once past or when behind the plan by `threshold`, at risk when
     ///   under the plan at all;
-    /// - the building, พค.2 and grid-connection submissions on the planned start of MP 1.4, 1.5 and 1.7, until the
-    ///   task is booked as done or every paper of the package is submitted;
+    /// - the building, พค.2 and grid-connection submissions on the day the team set for the package, else on the
+    ///   planned start of MP 1.4, 1.5 and 1.7, until the task is booked as done or every paper of the package is
+    ///   submitted;
     /// - the O&M training on the planned start of MP 3.2, until it is booked as done.
     public static func deadlines(_ stations: [Station], library: StationDocs.Library = .init(), today: Date,
                                  threshold: Double = InstallOverview.defaultThreshold) -> [Deadline] {
@@ -407,7 +424,7 @@ public enum PWAPlan {
                                 chip: chip, tone: tone, station: s.id, opens: .station))
 
             for sub in submissions where sub.package != .pk2 || s.docsContext.over200kVA {
-                guard let start = plan.first(where: { $0.task == sub.task })?.start,
+                guard let start = s.docs.due(sub.package) ?? plan.first(where: { $0.task == sub.task })?.start,
                       (st.actualByTask[sub.task] ?? 0) < 99.95 else { continue }
                 let states = StationDocs.papers(in: sub.package, s.docsContext)
                     .map { StationDocs.state($0, station: s.docs, library: library).status }.filter { $0 != .notNeeded }

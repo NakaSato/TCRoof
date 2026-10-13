@@ -250,11 +250,28 @@ public enum StationDocs {
         /// SRT project (check list item 15 asks for the contract / purchase order).
         public var srtProject: Bool
         public var docs: [String: DocState]
+        /// Package raw value → the day its papers are due, `yyyy-MM-dd` (Bangkok), where the team set one. A package
+        /// without an entry is due on its task's planned start in the MP plan.
+        public var dueDates: [String: String]
 
         public init(over200kVA: Bool? = nil, buildingRoute: BuildingRoute = .unknown, requestType: RequestType = .new,
-                    sellsPower: Bool = false, srtProject: Bool = true, docs: [String: DocState] = [:]) {
+                    sellsPower: Bool = false, srtProject: Bool = true, docs: [String: DocState] = [:], dueDates: [String: String] = [:]) {
             self.over200kVA = over200kVA; self.buildingRoute = buildingRoute; self.requestType = requestType
-            self.sellsPower = sellsPower; self.srtProject = srtProject; self.docs = docs
+            self.sellsPower = sellsPower; self.srtProject = srtProject; self.docs = docs; self.dueDates = dueDates
+        }
+
+        /// The day the team set for a package's submission.
+        public func due(_ package: Package) -> Date? {
+            guard let n = dueDates[package.rawValue]?.split(separator: "-").compactMap({ Int($0) }), n.count == 3 else { return nil }
+            return MasterSchedule.calendar.date(from: DateComponents(year: n[0], month: n[1], day: n[2]))
+        }
+
+        /// Sets a package's due day, or clears it with nil.
+        public mutating func setDue(_ date: Date?, for package: Package) {
+            dueDates[package.rawValue] = date.map {
+                let c = MasterSchedule.calendar.dateComponents([.year, .month, .day], from: $0)
+                return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+            }
         }
 
         public init(from decoder: Decoder) throws {
@@ -265,6 +282,7 @@ public enum StationDocs {
             sellsPower = try c.decodeIfPresent(Bool.self, forKey: .sellsPower) ?? false
             srtProject = try c.decodeIfPresent(Bool.self, forKey: .srtProject) ?? true
             docs = try c.decodeIfPresent([String: DocState].self, forKey: .docs) ?? [:]
+            dueDates = try c.decodeIfPresent([String: String].self, forKey: .dueDates) ?? [:]
         }
 
         public static func decode(_ json: String?) -> Station {

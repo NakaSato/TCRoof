@@ -165,6 +165,21 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertFalse(docs(s, library).contains { $0.title.contains("พค.2") })
     }
 
+    /// A day the team set for a package replaces the plan's day, and clearing it brings the plan's day back.
+    func testSetDueDayReplacesThePlanDay() throws {
+        var s = station("s", start: day(2026, 8, 1), end: day(2026, 12, 20))
+        func grid() -> PWAPlan.Deadline? { PWAPlan.deadlines([s], today: today).first { $0.title == "ยื่นขอขนานไฟ" } }
+        let planned = grid()?.date
+        s.docs.setDue(day(2026, 10, 20), for: .gridConnection)
+        XCTAssertEqual(grid()?.date, day(2026, 10, 20))
+        XCTAssertEqual(grid()?.tone, .risk)
+        let back = StationDocs.Station.decode(s.docs.json)
+        XCTAssertEqual(back.due(.gridConnection), day(2026, 10, 20))
+        XCTAssertNil(StationDocs.Station.decode(#"{"docs": {}}"#).due(.gridConnection), "stations saved before have no set day")
+        s.docs.setDue(nil, for: .gridConnection)
+        XCTAssertEqual(grid()?.date, planned)
+    }
+
     func testReadyPackageSaysSo() {
         var s = station("s", start: day(2026, 8, 1), end: day(2026, 10, 30))
         var library = StationDocs.Library()
@@ -250,5 +265,21 @@ final class PWAPlanTests: XCTestCase {
         let a = station("a", start: day(2026, 9, 1), end: day(2026, 11, 15))
         let b = station("b", start: day(2026, 8, 1), end: day(2026, 10, 15))
         XCTAssertEqual(PWAPlan.bars([a, b, PWAPlan.Station(id: "x", name: "x")], today: today).map(\.id), ["b", "a"])
+    }
+
+    /// An inspection appointment is a timed `ตรวจรับ` row on its day, also for a station with no plan.
+    func testInspectionAppointmentIsARow() {
+        let cal = PWAPlan.calendar
+        let today = cal.date(from: DateComponents(year: 2026, month: 10, day: 12))!
+        let at = cal.date(from: DateComponents(year: 2026, month: 10, day: 13, hour: 10, minute: 30))!
+        let s = PWAPlan.Station(id: "a", mpNumber: 154, name: "สถานีจ่ายน้ำแพรกหนามแดง", contractor: "C",
+                                inspections: [.init(id: "i1", at: at, subject: "2.5 Inverter")])
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
+        XCTAssertTrue(PWAPlan.agenda([s], deadlines: [], days: [today], today: today).isEmpty)
+        let rows = PWAPlan.agenda([s], deadlines: [], days: [tomorrow], today: today)
+        XCTAssertEqual(rows.map(\.type), [.inspection])
+        XCTAssertEqual(rows.first?.start, 10 * 60 + 30)
+        XCTAssertEqual(rows.first?.title, "ผู้แทน กปภ. ตรวจ 2.5 Inverter")
+        XCTAssertEqual(rows.first?.contractor, "C")
     }
 }

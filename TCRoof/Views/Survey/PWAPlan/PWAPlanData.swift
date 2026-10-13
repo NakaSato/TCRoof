@@ -31,12 +31,14 @@ struct PWAPlanBoard {
 }
 
 extension Job {
-    /// This job for the plan page. No record keeps a station's contractor, so it has only our own team; a job is
-    /// handed over once its status is `ติดตั้งเสร็จสิ้น`.
+    /// This job for the plan page. A station with a subcontractor in its settings (`ผู้รับเหมาช่วงที่ติดตั้ง`) is that
+    /// contractor's and not one of our teams'; a job is handed over once its status is `ติดตั้งเสร็จสิ้น`.
     var planStation: PWAPlan.Station {
-        PWAPlan.Station(id: overviewID, mpNumber: mpNumber, code: code, name: stationName, kWp: capacityKW, team: team.rawValue,
+        let contractor = routineSettings.subcontractor.trimmingCharacters(in: .whitespaces)
+        return PWAPlan.Station(id: overviewID, mpNumber: mpNumber, code: code, name: stationName, kWp: capacityKW,
+                        contractor: contractor, team: contractor.isEmpty ? team.rawValue : "",
                         input: scheduleInput, actual: scheduleActual, handedOver: status == .completed,
-                        reportSentToday: sentDailyReportToday, surveyAt: surveyDate,
+                        reportSentToday: sentDailyReportToday, surveyAt: surveyDate, inspections: routineSettings.inspections,
                         workingWeekdays: routineSettings.workingWeekdays, docs: stationDocs, docsContext: stationContext)
     }
 }

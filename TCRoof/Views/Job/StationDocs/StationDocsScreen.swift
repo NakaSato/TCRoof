@@ -82,7 +82,32 @@ struct StationDocsScreen: View {
 
     // MARK: Papers
 
+    /// The day a package's papers are due, for `กำหนดส่ง` of the PWA plan page: the MP plan's day, or one set here.
+    @ViewBuilder private func dueSection(_ p: StationDocs.Package) -> some View {
+        if let task = PWAPlan.submissionTask(p) {
+            let planned = job.scheduleInput.flatMap { input in MasterSchedule.plan(input).first { $0.task == task }?.start }
+            PadSection("กำหนดยื่น") {
+                if let due = job.stationDocs.due(p) {
+                    DatePicker("วันครบกำหนด", selection: Binding(get: { due }, set: { setDue($0, p) }), displayedComponents: .date)
+                    Button("ใช้วันตามแผน MP") { setDue(nil, p) }
+                } else {
+                    LabeledContent("วันครบกำหนด", value: planned.map { "ตามแผน MP · " + RoutineReport.thaiDate($0) } ?? "ยังไม่มีแผน MP")
+                    Button("กำหนดวันเอง") { setDue(planned ?? .now, p) }
+                }
+            } footer: {
+                Text("แสดงในกำหนดส่งของหน้าแผนงาน PWA")
+            }
+        }
+    }
+
+    private func setDue(_ date: Date?, _ p: StationDocs.Package) {
+        var s = job.stationDocs
+        s.setDue(date, for: p)
+        job.stationDocs = s
+    }
+
     @ViewBuilder private func packageRows(_ p: StationDocs.Package) -> some View {
+        dueSection(p)
         ForEach(StationDocs.Origin.allCases, id: \.self) { origin in
             let kinds = StationDocs.papers(in: p, ctx).filter { $0.origin == origin }
             if !kinds.isEmpty {

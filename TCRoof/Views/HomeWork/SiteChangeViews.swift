@@ -2,7 +2,6 @@ import SwiftUI
 import PhotosUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// Photos for a change or a punch item: camera (when there is one) or the photo library, thumbnails with delete.
 struct SitePhotoStrip: View {

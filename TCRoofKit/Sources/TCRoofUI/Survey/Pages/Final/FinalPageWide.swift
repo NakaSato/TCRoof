@@ -1,0 +1,283 @@
+#if canImport(UIKit)
+import SwiftUI
+import UIKit
+import TCRoofCore
+
+/// E1 (docs/ui/survey-e1): the verdict, remarks with on-device suggestions and the gaps on other pages
+/// on the left; both signatures and the reviewer on the right. Binds to the existing `Schema.final` fields only, so
+/// completion, the PDF and Excel are unchanged. iPad portrait and iPhone stack the two columns.
+struct FinalPageWide: View {
+    @Binding var job: Job
+    /// Width of the page's content.
+    let width: CGFloat
+    /// One scrolling column (portrait, iPhone, or a free width under 1100 pt).
+    var stacked = false
+    /// iPhone: signature card headers on two lines, shorter asides, a smaller signing column.
+    var narrow: Bool { width < 600 }
+    /// "ไปที่หน้า ›" on a row of the gaps card.
+    var open: (MissingGroup.Target) -> Void = { _ in }
+    /// false for offscreen renders (`-surveyFinalRender`): ImageRenderer leaves scroll views blank.
+    var scrolls = true
+    @Environment(SurveyModel.self) var model
+    @State var signingSurveyor = false
+    @State var signingCustomer = false
+
+    var v: Values { job.values }
+    func set(_ id: String, _ value: FieldValue?) { job.values[id] = value }
+
+    static let purple = Theme.aiPurple
+    static let purpleText = Theme.aiPurpleText
+    static let purpleSoft = Theme.aiPurpleSoft
+    static let purpleFill = Theme.aiPurpleFill
+    static let okText = Theme.okText
+    static let hairline = Theme.hairline
+    static let bodyText = Theme.inkStrong
+    /// Selected colour and tint of each `Options.verdict` choice.
+    static let verdictColors: [(Color, Color)] = [
+        (Theme.okText, Theme.okText.opacity(0.12)),
+        (Theme.warningInk, Theme.warning.opacity(0.13)),
+        (Theme.danger, Theme.danger.opacity(0.12)),
+    ]
+
+    var leftWidth: CGFloat { max(320, (width - 28) / 3) }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            PageStepBar(job: job, here: .final, title: Schema.final.title)
+            if stacked {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        left
+                        right.frame(height: narrow ? 640 : 760)
+                    }
+                    .padding(.bottom, 16)
+                }
+            } else {
+                HStack(alignment: .top, spacing: 28) {
+                    // fits on one screen at 1366 × 1024; scrolls only if a shorter screen can't hold every row
+                    Group {
+                        if scrolls {
+                            ScrollView { left.padding(.bottom, 8) }.scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
+                        } else {
+                            Color.clear.overlay(alignment: .top) { left }.clipped()
+                        }
+                    }
+                    .frame(width: leftWidth)
+                    right.frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(maxHeight: .infinity)
+            }
+        }
+        .foregroundStyle(Theme.navy)
+        #if DEBUG
+        .task { await debugState() }
+        #endif
+    }
+
+    #if DEBUG
+    /// `-surveyE1 two|installable|notrec|alladded|empty|pad|pad2|cleared|complete` writes that state of
+    /// docs/ui/survey-e1/states into the opened job (no taps in the simulator here).
+    func debugState() async {
+        guard let state = UserDefaults.standard.string(forKey: "surveyE1") else { return }
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        let all = RemarkSuggestions.make(job: job)
+        func verdict(_ i: Int) { set("verdict", .choice(Options.verdict[i], other: "")) }
+        func remarks(_ n: Int) {
+            let t = RemarkSuggestions.appending(Array(all.prefix(n)), to: "")
+            set("remarks", t.isEmpty ? nil : .text(t))
+        }
+        switch state {
+        case "two": verdict(1); remarks(2)
+        case "installable": verdict(0); remarks(2)
+        case "notrec": verdict(2); remarks(2)
+        case "alladded": verdict(1); remarks(all.count)
+        case "empty": verdict(1); remarks(0)
+        case "pad": signingSurveyor = true
+        case "pad2": signingCustomer = true
+        case "cleared": verdict(1); remarks(2); set("surveyorSign", nil)
+        case "complete":
+            verdict(0); remarks(2)
+            if v.text("customerName").isEmpty { set("customerName", .text("ผู้ประสานงาน")) }
+        default: break
+        }
+    }
+    #endif
+
+    var left: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            verdictField
+            remarksField
+            suggestions
+            otherPages
+        }
+    }
+
+    // MARK: verdict
+
+    var verdictField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            (Text("ผลการประเมินความเหมาะสมในการติดตั้ง ") + Text("*").foregroundColor(Theme.danger)).font(.sarabunFixed(16, .bold))
+            ForEach(Array(Options.verdict.enumerated()), id: \.offset) { i, option in verdictButton(i, option) }
+        }
+    }
+
+    func verdictButton(_ i: Int, _ option: String) -> some View {
+        let on = v.choice("verdict") == option, c = Self.verdictColors[i]
+        return Button { set("verdict", .choice(option, other: "")) } label: {
+            HStack(spacing: 8) {
+                Circle().fill(on ? c.0 : Color.clear).frame(width: 12, height: 12)
+                    .overlay(Circle().stroke(on ? Color.clear : Theme.navy.opacity(0.45), lineWidth: 1.5))
+                Text(option).font(.sarabunFixed(15, .bold)).foregroundStyle(on ? c.0 : Theme.navy)
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, 14).padding(.trailing, 8)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(on ? c.1 : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? c.0 : Theme.navy.opacity(0.45), lineWidth: on ? 2 : 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    // MARK: remarks
+
+    var remarks: String { v.text("remarks") }
+
+    var remarksAside: (String, Color, Bool) {
+        switch Options.verdict.firstIndex(of: v.choice("verdict") ?? "") {
+        case 1?: return ("ระบุเงื่อนไขให้ครบ", Self.verdictColors[1].0, true)
+        case 2?: return ("ระบุเหตุผล", Self.verdictColors[2].0, true)
+        default: return ("ไม่บังคับ", Theme.inkMuted, false)
+        }
+    }
+
+    var remarksField: some View {
+        let aside = remarksAside
+        let lines = remarks.split(whereSeparator: \.isNewline).count
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง").font(.sarabunFixed(16, .bold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Text(aside.0).font(.sarabunFixed(13, aside.2 ? .bold : .regular)).foregroundStyle(aside.1).fixedSize()
+            }
+            TextEditor(text: Binding(get: { remarks }, set: { set("remarks", $0.isEmpty ? nil : .text($0)) }))
+                .font(.sarabunFixed(14.5)).lineSpacing(4).foregroundStyle(Theme.navy)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .overlay(alignment: .topLeading) {
+                    if remarks.isEmpty {
+                        Text("พิมพ์ความเห็น หรือแตะข้อเสนอแนะด้านล่าง").font(.sarabunFixed(14.5)).foregroundStyle(Theme.inkMuted)
+                            .padding(.horizontal, 14).padding(.vertical, 12).allowsHitTesting(false)
+                    }
+                }
+                .frame(height: lines > 2 ? 236 : 150)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
+                .accessibilityLabel("ความเห็น / เงื่อนไข / สิ่งที่ต้องแก้ไขก่อนติดตั้ง")
+        }
+    }
+
+    // MARK: suggestions
+
+    @ViewBuilder var suggestions: some View {
+        let all = RemarkSuggestions.make(job: job)
+        if !all.isEmpty {
+            let rest = RemarkSuggestions.pending(all, remarks: remarks)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    A2Icon(name: "e1-ai-sparkle", fallback: "sparkle", size: 15).foregroundStyle(Self.purple)
+                    Text("ข้อเสนอแนะอัตโนมัติจาก AI").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple)
+                    if !narrow { Text("· บนเครื่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+                    Spacer(minLength: 4)
+                    if rest.count >= 2 {
+                        Button { add(rest) } label: {
+                            Text("เพิ่มทั้งหมด").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple)
+                                .padding(.horizontal, 10).frame(minHeight: 36)
+                                .background(Self.purpleSoft, in: RoundedRectangle(cornerRadius: 8))
+                                .frame(minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(minHeight: 44)
+                ForEach(rest) { s in suggestionRow(s) }
+                if rest.isEmpty {
+                    Text("✓ ใส่ข้อเสนอแนะครบแล้ว · แก้ข้อความในช่องได้").font(.sarabunFixed(13)).foregroundStyle(Self.okText)
+                }
+            }
+            .padding(.top, -10)
+        }
+    }
+
+    func add(_ list: [RemarkSuggestion]) {
+        let text = RemarkSuggestions.appending(list, to: remarks)
+        set("remarks", text.isEmpty ? nil : .text(text))
+    }
+
+    func suggestionRow(_ s: RemarkSuggestion) -> some View {
+        Button { add([s]) } label: {
+            HStack(spacing: 10) {
+                (Text(s.text + " ") + Text(s.source).bold().foregroundColor(Self.purpleText))
+                    .font(.sarabunFixed(13.5)).foregroundStyle(Theme.navy).lineSpacing(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+                Text("+ เพิ่ม").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple).fixedSize()
+            }
+            .padding(.leading, 12).padding(.trailing, 10).padding(.vertical, 4)
+            .frame(minHeight: 48)
+            .background(Self.purpleFill, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Self.purpleText.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(s.text + " จากหน้า " + s.source)
+        .accessibilityHint("แตะเพื่อเพิ่มในความเห็น")
+    }
+
+    // MARK: gaps on other pages
+
+    @ViewBuilder var otherPages: some View {
+        let groups = FinalSummary.otherPages(job)
+        if !groups.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("ยังขาดในหน้าอื่น").font(.sarabunFixed(16, .bold))
+                    Spacer(minLength: 8)
+                    Text("ส่งออกได้ แต่จะยังไม่ครบ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
+                }
+                .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
+                ForEach(groups.prefix(4)) { g in gapRow(g) }
+                if groups.count > 4 {
+                    Text("และอีก \(groups.count - 4) หน้า").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        .padding(.horizontal, 14).frame(minHeight: 36)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .overlay(alignment: .top) { Rectangle().fill(Self.hairline).frame(height: 1) }
+                }
+            }
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
+        }
+    }
+
+    func gapRow(_ g: MissingGroup) -> some View {
+        HStack(spacing: 10) {
+            Text(FinalSummary.code(g)).font(.sarabunFixed(14, .bold)).frame(minWidth: 30, alignment: .leading).fixedSize()
+            Text(g.items.joined(separator: " · ")).font(.sarabunFixed(14)).foregroundStyle(Self.bodyText).lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button { open(g.target) } label: {
+                Text("ไปที่หน้า ›").font(.sarabunFixed(14, .semibold)).fixedSize()
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.6)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ไปที่หน้า " + g.title)
+        }
+        .padding(.leading, 14).padding(.trailing, 8).padding(.vertical, 2)
+        .frame(minHeight: 48)
+        .overlay(alignment: .top) { Rectangle().fill(Self.hairline).frame(height: 1) }
+    }
+}
+#endif

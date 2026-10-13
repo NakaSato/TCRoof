@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// Where the day list stands: how far its content has moved, and the top of each listed day in the list's space.
 private struct DayListPosition: Equatable {

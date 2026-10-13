@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// iPad home (regular width, docs/ui/tcroof-home-ipad): brand header; `นัดวันนี้`, `วันนี้` and `งานสำรวจค้างอยู่`
 /// on the left; six module rows on the right, on one screen. Under ~1000 pt wide the columns stack in one scroll view.

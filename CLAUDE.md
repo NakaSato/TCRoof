@@ -12,11 +12,12 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
   - `swift build`
   - `swift test`
   - `swift test --filter InverterStationTests` (one class) or `swift test --filter InverterStationTests/testOutdoorRoom` (one test)
-- **SurveyUI and the app:** these are wrapped in `#if canImport(UIKit)`, so `swift build` on macOS does **not** compile them. Verify UI changes with xcodebuild:
+- **`TCRoofUI` and the app:** these are wrapped in `#if canImport(UIKit)`, so `swift build` on macOS does **not** compile them. Verify UI changes with xcodebuild:
   ```
   xcodebuild -project TCRoof.xcodeproj -scheme TCRoof -destination 'generic/platform=iOS Simulator' -derivedDataPath <scratch>/DerivedData build
   ```
   Always pass your own `-derivedDataPath`. The user keeps Xcode open, and a CLI build in the shared DerivedData locks Xcode's `build.db`. Reuse the same path between builds: a clean build takes over 10 minutes, so run it in the background.
+- **Lint:** there is no SwiftLint or swift-format config and no CI; the checks are `swift test` and the xcodebuild build.
 - **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it.
 
@@ -32,6 +33,8 @@ xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id
 `TCRoofUITests/LiveNotificationBannerUITests.swift` (iPhone, `-only-testing:TCRoofUITests/LiveNotificationBannerUITests`) launches with `-notifDemo live`, which posts one example of each live notification case 8 s apart, allows notifications when iOS asks, and waits for each banner by its title. With `-noNotificationPrompt YES` on a fresh install nothing is posted, since permission was never asked.
 `TCRoofUITests/StationDocsDraftUITests.swift` (iPad, `-only-testing:TCRoofUITests/StationDocsDraftUITests`) fills ร่างหนังสือแจ้งดับไฟ and keeps it: the paper gets a file and reads `ร่างแล้ว`. The answers and the file stay on the first installing job.
 `TCRoofUITests/ERCFlowUITests.swift` (iPad, `-only-testing:TCRoofUITests/ERCFlowUITests`) opens ลำดับ กกพ. after a failed design round and records the request again: the turn passes to the utility. Its second test opens the พค.2 papers from an open request and finds the flow's line on the job's card.
+`TCRoofUITests/PadA1UITests.swift` (iPad, `-only-testing:TCRoofUITests/PadA1UITests`) resizes A1's report frame by a corner and resets it, in the landscape layout of `-surveyWideA1 YES`.
+`TCRoofUITests/PhoneHomeFeedUITests.swift` (iPhone, `-only-testing:TCRoofUITests/PhoneHomeFeedUITests`) taps the demo feed of `-homeFeed demo`: a filter chip narrows the posts, `รับทราบ` and `แก้แล้ว` toggle, a post's text opens its record, and the modules that left the home are on the `เครื่องมือ` tab.
 UI tests that change answers start from `-surveyFreshJob YES`, since the demo job keeps its answers between runs.
 The first launch in a simulator is slow, so the waits are long (about 90 s). Use `.matching(...).firstMatch` for buttons that share a name, and wait for non-existence with `XCTNSPredicateExpectation` (`waitForExistence` returns at once while the old element is still there).
 
@@ -96,7 +99,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 **App target (`TCRoof/`)** handles Google sign-in (`Auth/`), SwiftData models, Firestore sync (`Sync/CloudSync.swift`) and the non-survey screens. Firestore access is limited by `firestore.rules` (Firebase project `tcroof-1564c`): only accounts with a `members/<email>` document, and only the collections the app syncs, so a newly synced collection needs a rule. It hosts the survey module via `Views/Survey/` (`SolarSurveyEntry`, `PWASurveyLink`).
 
 **`TCRoofKit` Swift package** holds all survey work, layered as follows:
-- `TCRoofUI`: the design system shared by the app and the survey module (`docs/ui/components`). `Theme` tokens (light and dark), `Space` / `Radius` / `TypeScale`, `Font.sarabun`, and `TC*` components by board section, plus the DEBUG `ComponentGallery`. It has no dependencies, so it type-checks in seconds: `xcrun swiftc -typecheck -D DEBUG -sdk $(xcrun --sdk iphonesimulator --show-sdk-path) -target arm64-apple-ios17.0-simulator -module-name TCRoofUI $(find Sources/TCRoofUI -name '*.swift')` from `TCRoofKit/`. New screens build from these components; colours come from `Theme`, never hex literals in views. No `Color.white` either: cards and fields use `Theme.surface`, text on `Theme.primary` uses `Theme.onPrimary`, and plans and diagrams sit on `Theme.paper` (white in both modes, since their ink is dark). Buttons use `TCButtonStyle`, not `.bordered` / `.borderedProminent`: a page's `.foregroundStyle` overrides the system style's white label. The app is light only: it forces light mode for signed-in users (`TCRoofApp.swift`). `Theme` keeps its dark values, but dark mode is not shown.
+- `TCRoofUI`: all the package's UI. Its root files and `Gallery/` are the design system shared by the app and the survey module (`docs/ui/components`), and `Survey/` is the survey editor (below). `Theme` tokens (light and dark), `Space` / `Radius` / `TypeScale`, `Font.sarabun`, and `TC*` components by board section, plus the DEBUG `ComponentGallery`. The design system files import nothing from the other modules; keep it so. New screens build from these components; colours come from `Theme`, never hex literals in views. No `Color.white` either: cards and fields use `Theme.surface`, text on `Theme.primary` uses `Theme.onPrimary`, and plans and diagrams sit on `Theme.paper` (white in both modes, since their ink is dark). Buttons use `TCButtonStyle`, not `.bordered` / `.borderedProminent`: a page's `.foregroundStyle` overrides the system style's white label. The app is light only: it forces light mode for signed-in users (`TCRoofApp.swift`). `Theme` keeps its dark values, but dark mode is not shown.
 - `TCRoofCore`: pure values and rules, no UI.
   - `PWAOverview.swift`: `InstallStationSummary` / `InstallOverview` and `MaintenanceStationSummary` / `MaintenanceOverview`, the iPhone survey home's `งานติดตั้ง` and `บำรุงรักษา` overviews (behind / ahead of the MP plan, kWp-weighted averages). The app fills them through `PWAOverviewHost` (`\.pwaOverview`), since MP plans and daily reports are app models.
   - `PWAPlan.swift`: the iPhone PWA `แผนงาน` page (`docs/ui/pwa-plan-iphone`): the day agenda, the kWp-weighted S-curve, the Gantt bars and the deadlines of two weeks, from `PWAPlan.Station`s the app makes from its jobs (`Job.planStation`).
@@ -111,7 +114,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `PDFReport`: `ReportLayout` turns a `Job` into pages of `DrawOp`s (`ReportLayout+*.swift` per area); `PDFRenderer` draws them. The SLD page is A3.
 - `ExcelExport`: fills `Resources/template.xlsx` by cell address (`ExcelExporter`, `template_meta.json`). Section slots are fixed (`ExcelExporter.slots`); extra sections get a copied sheet.
 - `DriveSync`: Google Drive upload of report files and photos.
-- `SurveyUI`: the editor.
+- `TCRoofUI/Survey`: the editor, in folders by area (`Editor`, `Home`, `Model`, `Export`, `Photos`, `Hardware`, `Review`, `Pages/<page>`). It was the `SurveyUI` module until it was merged into `TCRoofUI`; older task briefs in `docs/ui` still name `Sources/SurveyUI/<file>.swift`.
   - `SurveyModel` (job storage, photos) and `JobEditorView` (sidebar, page routing, `cardBar` bottom bar).
   - The generic schema form `groupPage` is used on iPhone and wherever a wide page doesn't apply.
   - Designed "wide" pages: `InfoPageWide` (A1), `SitePageWide` (A2), `ElectricalPageWide` (A3), `FloodPageWide` (A4), `PanelsPageWide` (B1), `InverterPageWide` (B2), `WaterPageWide` (B3), `FtsPageWide` (B5), `RoofPageWide` (C1), `TankPageWide` (D1), `FinalPageWide` (E1), `SingleLinePage`.
@@ -129,12 +132,12 @@ Each wide page has a `CLAUDE_CODE_TASK.md` (what to build, constraints, check li
 - Report the spec's open questions at the end.
 - Values in previews are examples; never hardcode them.
 
-`docs/specs/` holds feature specs that are not built yet (auto drawing, cable route, roof PV layout, tank mounting, site logistics, calendar and travel, hardware assist, presentation mode, review lock, standard designs), with images in `img/` and HTML prototypes in `prototype/`.
+`docs/specs/` holds feature specs (auto drawing, cable route, roof PV layout, tank mounting, site logistics, calendar and travel, hardware assist, presentation mode, review lock, standard designs and more), with images in `img/` and HTML prototypes in `prototype/`. Some are built by now (review lock, routine reports, the ERC exemption flow, the master schedule, hardware assist), so check the code before treating a spec as pending.
 
 UI conventions from the specs:
 - Hit areas are at least 44 pt.
 - Plans and PDF drawings are vector (`Sketch`), never bitmaps of icons.
-- Icon catalogs go in `TCRoofKit/Sources/SurveyUI/Resources/<X>Icons.xcassets` and load through `A2Icon(name:fallback:)`. Asset names are global across catalogs, so avoid duplicates (B1's clashing `ui-*` icons are prefixed `b1-`).
+- Icon catalogs go in `TCRoofKit/Sources/TCRoofUI/Resources/<X>Icons.xcassets` and load through `A2Icon(name:fallback:)`. Asset names are global across catalogs, so avoid duplicates (B1's clashing `ui-*` icons are prefixed `b1-`).
 - Very long SwiftUI expressions fail to type-check or crash at runtime in Debug (`View.modifier` SIGSEGV). Split cards into separate computed properties.
 
 <!-- code-review-graph MCP tools -->

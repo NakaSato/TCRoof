@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// Ties the NO.224 survey reports (SurveyKit files, synced as `pwaSurveys`) to TCRoof jobs through `Job.syncID`.
 extension Job {

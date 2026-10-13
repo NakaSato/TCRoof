@@ -2,7 +2,6 @@ import SwiftUI
 import TCRoofUI
 import SwiftData
 import TCRoofCore
-import SurveyUI
 
 /// A report to open at a page, for `navigationDestination(item:)`.
 struct OpenReportPage: Identifiable, Hashable {

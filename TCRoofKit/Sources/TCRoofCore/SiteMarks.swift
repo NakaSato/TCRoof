@@ -107,7 +107,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .emergency: return RGBA(hex: 0xD9453B)
         }
     }
-    /// Image in SurveyUI's `A2Icons` asset catalog (docs/ui/survey-a2/icons); nil = no icon in the design, use `symbol`.
+    /// Image in TCRoofUI's `A2Icons` asset catalog (docs/ui/survey-a2/icons); nil = no icon in the design, use `symbol`.
     public var assetName: String? { self == .water || self == .emergency ? nil : "mark-" + rawValue }
     /// SF Symbol for the editor toolbar; the fallback where `assetName` is nil or missing.
     public var symbol: String {

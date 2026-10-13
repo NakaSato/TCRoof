@@ -2,7 +2,6 @@ import SwiftUI
 import TCRoofUI
 import SwiftData
 import TCRoofCore
-import SurveyUI
 
 /// iPhone survey home (compact width, docs/ui/tcroof-survey-home-iphone): a greeting header, the week strip with
 /// the next appointment and the selected day's agenda, every job behind the search field and status chips,

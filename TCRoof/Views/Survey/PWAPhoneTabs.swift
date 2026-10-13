@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// Tabs of the PWA module on iPhone (docs/ui/pwa-solar-survey-iphone-v2 §6).
 enum PWATab: String {

@@ -2,7 +2,6 @@ import SwiftUI
 import PhotosUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 // MARK: - 1 Weather
 

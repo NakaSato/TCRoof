@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// ภาพรวมทุกสถานี (docs/specs/master-schedule-swift.md §3.5): one row per PWA job with an MP plan, most behind first,
 /// with how many stations are behind and the progress averaged over the stations' kWp. Under them, the PWA

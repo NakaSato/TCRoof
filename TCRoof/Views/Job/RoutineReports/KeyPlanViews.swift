@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 import PDFReport
 
 /// The key plan (docs/specs/routine-reports-swift.md §2.1): the A2 site picture of the station's survey report, with a

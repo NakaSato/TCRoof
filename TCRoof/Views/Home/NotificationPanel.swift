@@ -1,6 +1,6 @@
 import SwiftUI
 import TCRoofCore
-import SurveyUI
+import TCRoofUI
 
 /// One notification of the bell. `id` stays the same while the event does, so "read" survives relaunches.
 struct AppNotification: Identifiable {

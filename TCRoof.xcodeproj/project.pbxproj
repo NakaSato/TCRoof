@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1000000000000000000F001 /* SurveyUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F003 /* SurveyUI */; };
 		A1000000000000000000F004 /* TCRoofUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F005 /* TCRoofUI */; };
 		A1000000000000000000F101 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F103 /* FirebaseAuth */; };
 		A1000000000000000000F102 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F104 /* FirebaseFirestore */; };
@@ -48,7 +47,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000000000000000000F001 /* SurveyUI in Frameworks */,
 				A1000000000000000000F004 /* TCRoofUI in Frameworks */,
 				A1000000000000000000F101 /* FirebaseAuth in Frameworks */,
 				A1000000000000000000F102 /* FirebaseFirestore in Frameworks */,
@@ -105,7 +103,6 @@
 			);
 			name = TCRoof;
 			packageProductDependencies = (
-				A1000000000000000000F003 /* SurveyUI */,
 				A1000000000000000000F005 /* TCRoofUI */,
 				A1000000000000000000F103 /* FirebaseAuth */,
 				A1000000000000000000F104 /* FirebaseFirestore */,
@@ -439,10 +436,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A1000000000000000000F003 /* SurveyUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SurveyUI;
-		};
 		A1000000000000000000F005 /* TCRoofUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TCRoofUI;

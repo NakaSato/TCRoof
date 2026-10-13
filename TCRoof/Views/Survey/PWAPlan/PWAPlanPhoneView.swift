@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// The PWA module's `แผนงาน` tab on iPhone (docs/ui/pwa-plan-iphone): the header with its growing search, the view
 /// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The dock comes from `PWAPhoneTabs`; iPad keeps

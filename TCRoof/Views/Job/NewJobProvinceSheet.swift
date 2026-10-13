@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// The full-height province sheet of the new-customer sheet (docs/ui/tcroof-new-job-iphone §7): search, `ใช้บ่อย` chips,
 /// and all 77 provinces grouped by first consonant.

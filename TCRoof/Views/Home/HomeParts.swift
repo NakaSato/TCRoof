@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// Sizes of the pieces the iPhone and iPad homes share (docs/ui/tcroof-home-iphone-v2, docs/ui/tcroof-home-ipad).
 /// The iPhone follows the v2 outdoor-contrast board; every v2 change is phone only, so the iPad looks as before.

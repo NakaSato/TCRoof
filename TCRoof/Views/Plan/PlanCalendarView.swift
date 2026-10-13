@@ -2,7 +2,6 @@ import SwiftUI
 import TCRoofUI
 import SwiftData
 import TCRoofCore
-import SurveyUI
 
 /// Construction plan month view: install jobs as bars across the days they run, survey appointments as
 /// dashed pills, and the selected day's work in a panel on the right.

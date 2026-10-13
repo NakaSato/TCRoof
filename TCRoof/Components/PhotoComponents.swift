@@ -2,7 +2,6 @@ import SwiftUI
 import CryptoKit
 import ImageIO
 import TCRoofUI
-import SurveyUI
 import PhotosUI
 import PencilKit
 

@@ -8,12 +8,12 @@ Swift package สำหรับ iPad (iOS 17+) ที่ใช้ใน TCRoof
 | `ExcelExport` | เติมข้อมูลลงสำเนา workbook ของบริษัท (`Resources/template.xlsx`) — ช่องเดิม, ติ๊ก checkbox, วางรูปในกรอบ, สร้างแผ่นเพิ่มเมื่อหลังคา/ถัง/ตู้ไฟเกินช่อง, เติมค่าใน SmartArt มิเตอร์–หม้อแปลง–MDB |
 | `PDFReport` | รายงาน A4 แบบ NO.215 (UIGraphicsPDFRenderer + ฟอนต์ Sarabun ที่แนบมา) |
 | `DriveSync` | Google Drive REST v3: โฟลเดอร์ `Solar Survey Projects/NO.xxx ชื่อโครงการ`, อัปโหลด PDF/Excel/survey-data.json, เปิดงานจาก Drive |
-| `SurveyUI` | หน้าจอ SwiftUI: รายการงาน, ตัวแก้ไข (แถบซ้ายแบ่งตามแผ่นงาน), ถ่ายรูป/คลังภาพ, ลายเซ็น Apple Pencil, ส่งออก, Drive, ตั้งค่า |
+| `TCRoofUI` | ระบบออกแบบ (`Theme`, คอมโพเนนต์ `TC*`) และหน้าจอ SwiftUI ใน `Survey/`: รายการงาน, ตัวแก้ไข (แถบซ้ายแบ่งตามแผ่นงาน), ถ่ายรูป/คลังภาพ, ลายเซ็น Apple Pencil, ส่งออก, Drive, ตั้งค่า |
 
 ใช้งานใน SwiftUI:
 
 ```swift
-import SurveyUI
+import TCRoofUI
 NavigationStack { SolarSurveyReportView() }
 ```
 

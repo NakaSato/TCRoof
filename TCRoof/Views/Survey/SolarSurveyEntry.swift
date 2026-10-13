@@ -1,5 +1,5 @@
 import SwiftUI
-import SurveyUI
+import TCRoofUI
 
 /// Bridges the TCRoof home screen to the SurveyKit module.
 struct SolarSurveyEntryView: View {

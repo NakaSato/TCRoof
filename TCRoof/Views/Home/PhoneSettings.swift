@@ -1,7 +1,6 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
-import SurveyUI
 
 /// iPhone settings (docs/ui/tcroof-home-iphone states/06, v2 colours via `homeInk`): grouped white cards on the page colour.
 struct PhoneSettingsList: View {

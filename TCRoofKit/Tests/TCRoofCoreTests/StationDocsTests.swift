@@ -107,4 +107,45 @@ final class StationDocsTests: XCTestCase {
         XCTAssertEqual(partial.buildingRoute, .unknown)
         XCTAssertTrue(partial.srtProject)
     }
+
+    // MARK: Drafts
+
+    func testOnlyTheOutageLetterIsDrafted() {
+        XCTAssertEqual(S.kinds.filter { S.draft(for: $0) != nil }.map(\.id), ["outage_letter"])
+    }
+
+    func testOutageLetterStandardTextAndRewrittenText() {
+        let facts = S.Facts(station: "สถานีจ่ายน้ำ ก", address: "อ.เมือง จ.สมุทรสงคราม", capacityKW: 209.76, company: "บริษัท ข จำกัด")
+        var o = S.OutageLetter()
+        o.outageDay = Date(timeIntervalSince1970: 1_791_000_000) // 3 ต.ค. 2569 (Bangkok)
+        o.end = 11 * 60 + 30
+        let letter = o.letter(facts, today: Date(timeIntervalSince1970: 1_790_000_000))
+        XCTAssertEqual(letter.paragraphs.count, 3)
+        XCTAssertTrue(letter.paragraphs[0].contains("บริษัท ข จำกัด"))
+        XCTAssertTrue(letter.paragraphs[0].contains("209.76 kWp ณ สถานีจ่ายน้ำ ก อ.เมือง จ.สมุทรสงคราม"))
+        XCTAssertTrue(letter.paragraphs[1].contains("\(PermitDate.long(o.outageDay!)) เวลา 09:00–11:30 น. (ประมาณ 2 ชั่วโมง 30 นาที)"))
+        XCTAssertEqual(letter.date, PermitDate.long(Date(timeIntervalSince1970: 1_790_000_000)))
+
+        o.body = "บรรทัดแรก\n\n  บรรทัดสอง "
+        XCTAssertEqual(o.letter(facts).paragraphs, ["บรรทัดแรก", "บรรทัดสอง"])
+    }
+
+    func testOutageLetterIssues() {
+        var o = S.OutageLetter()
+        XCTAssertEqual(o.issues.count, 4)
+        o.number = "TC-PML-012/2569"; o.to = "ผู้จัดการ"; o.outageDay = .now; o.signer = "ก"
+        XCTAssertTrue(o.issues.isEmpty)
+        o.end = o.start
+        XCTAssertEqual(o.issues, ["เวลาดับไฟ"])
+        XCTAssertEqual(o.duration, "")
+    }
+
+    func testStationKeepsTheOutageLetterAndOldJSONHasNone() throws {
+        XCTAssertNil(S.Station.decode(#"{"docs":{}}"#).outageLetter)
+        var s = S.Station()
+        s.outageLetter = S.OutageLetter(number: "TC-PML-001/2569", to: "ผู้จัดการ", start: 600, end: 720)
+        XCTAssertEqual(S.Station.decode(s.json), s)
+        let partial = S.Station.decode(#"{"outageLetter":{"to":"ผู้จัดการ"}}"#).outageLetter
+        XCTAssertEqual(partial, S.OutageLetter(to: "ผู้จัดการ"))
+    }
 }

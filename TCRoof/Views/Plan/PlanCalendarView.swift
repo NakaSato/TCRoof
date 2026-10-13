@@ -19,6 +19,13 @@ struct PlanCalendarView: View {
 
     private static let weekdays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
 
+    /// `day`: the day selected when it opens (the home's `ดูแผนงาน ›`).
+    init(day: Date? = nil) {
+        let d = day ?? Self.today
+        _month = State(initialValue: d.startOfMonth)
+        _selected = State(initialValue: d.startOfDay)
+    }
+
     var body: some View {
         if sizeClass == .compact { phoneBody } else { padBody }
     }

@@ -10,6 +10,9 @@ enum FeedLink: Hashable, Identifiable {
     case inspection(job: String)
     case job(String)
     case homework(job: String)
+    /// `แผนงานถัดไป`: the plan calendar on a day, and a PWA station's papers (docs/ui/tcroof-home-iphone-v4).
+    case calendar(Date)
+    case stationDocs(job: String)
     case records
 
     var id: Self { self }
@@ -67,8 +70,8 @@ extension Job {
     }
 }
 
-/// The project feed under the iPhone home's appointment card (docs/ui/tcroof-home-iphone-v3): filter chips, then one
-/// card per post, newest first. The iPad home's right column (`layout: .column`, docs/ui/tcroof-home-ipad-v2) is the
+/// The project feed under the iPhone home's appointment card (docs/ui/tcroof-home-iphone-v3; the filter is v4's
+/// segmented control): the filter, then one card per post, newest first. The iPad home's right column (`layout: .column`, docs/ui/tcroof-home-ipad-v2) is the
 /// same feed under a `ฟีดโครงการ` header row that holds the chips, with larger posts.
 struct HomeFeed: View {
     enum Layout {
@@ -114,7 +117,7 @@ struct HomeFeed: View {
             switch layout {
             case .phone:
                 VStack(spacing: 10) {
-                    chips
+                    segments
                     list(shown)
                 }
             case .column(let scrolls):
@@ -167,6 +170,15 @@ struct HomeFeed: View {
         ScrollView(.horizontal, showsIndicators: false) { chipRow }
             .scrollClipDisabled()
             .padding(.vertical, -2)
+    }
+
+    /// iPhone: the four filters as equal segments across the content width.
+    private var segments: some View {
+        let counts = FeedBuilder.counts(posts, myTeams: myTeams, hidden: hidden)
+        return TCCountSegments(FeedFilter.allCases.map { .init($0.title, count: counts[$0] ?? 0) },
+                               selection: Binding(get: { FeedFilter.allCases.firstIndex(of: filter) ?? 0 }, set: { filter = FeedFilter.allCases[$0] }))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("กรองฟีด")
     }
 
     /// iPad: `ฟีดโครงการ`, the time of the newest post, and the chips at the right; in a narrow column the chips

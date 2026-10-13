@@ -5,9 +5,9 @@ import SwiftData
 /// Root tabs of the iPhone (compact width) behind the floating tab dock (docs/ui/tcroof-home-iphone-v3).
 enum PhoneTab: String {
     /// `settings` is only the dock's button for the settings sheet, never a selected tab.
-    case home, homeWork = "homework", pwa, tools, settings
+    case home, homeWork = "homework", pwa, docs, settings
 
-    static let stacks: [PhoneTab] = [.home, .homeWork, .pwa, .tools]
+    static let stacks: [PhoneTab] = [.home, .homeWork, .pwa, .docs]
     /// Space the root screens keep above the dock: with the dock's 66 pt and its 22 pt below, content ends 104 pt up.
     static let barGap: CGFloat = 16
 
@@ -16,12 +16,12 @@ enum PhoneTab: String {
         case .home, .settings: nil
         case .homeWork: .survey
         case .pwa: .pwa
-        case .tools: .tools
+        case .docs: nil
         }
     }
 
     /// The page colour its content fades into behind the dock.
-    var fade: Color { self == .homeWork ? Theme.background : Theme.phonePage }
+    var fade: Color { self == .homeWork || self == .docs ? Theme.background : Theme.phonePage }
 
     /// The fade's height: the board's 128 pt, or lower under the survey list so it stays clear of that list's own dock.
     var fadeHeight: CGFloat { self == .homeWork ? 108 : 128 }
@@ -39,7 +39,6 @@ struct PhoneTabs<HomeRoot: View>: View {
     @State private var opened: Set<PhoneTab> = [Self.initialTab]
     @State private var showSettings = false
     @State private var notificationService = NotificationService.shared
-    @State private var instruments = InstrumentStore.shared
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
     var body: some View {
@@ -77,8 +76,8 @@ struct PhoneTabs<HomeRoot: View>: View {
         NavigationStack {
             Group {
                 switch t {
-                // the plan calendar, scan and install records have no tab: they are rows above the tools register
-                case .tools: ToolsView(modules: [.plan, .scan, .install])
+                // the residential document library; the tools register is under the settings sheet for now
+                case .docs: HomeLibraryView()
                 default: if let module = t.module { module.destination } else { home() }
                 }
             }
@@ -98,14 +97,11 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private var items: [TCTabItem<PhoneTab>] {
         let home = surveyToday(.home), pwa = surveyToday(.pwa)
-        // tools due for calibration within 30 days or past it
-        let due = instruments.dueCount()
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),
             TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. · นัดวันนี้ \(pwa)" : nil),
-            TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", badge: due,
-                      accessibilityLabel: due > 0 ? "เครื่องมือวัด · ต้องสอบเทียบ \(due)" : "เครื่องมือวัด"),
+            TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { showSettings = true },
         ]
@@ -113,7 +109,7 @@ struct PhoneTabs<HomeRoot: View>: View {
 
     private static var initialTab: PhoneTab {
         #if DEBUG
-        // `-homeTab homework|pwa|tools` opens with that tab selected, for simulator checks
+        // `-homeTab homework|pwa|docs` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif
         return .home

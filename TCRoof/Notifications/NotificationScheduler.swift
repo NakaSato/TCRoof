@@ -121,7 +121,7 @@ private struct NotificationScheduler: ViewModifier {
         .sorted { $0.id < $1.id }
     }
 
-    /// 30 and 7 days before each tool's calibration runs out (the register of the `เครื่องมือ` tab).
+    /// 30 and 7 days before each tool's calibration runs out (the tools register: the iPad `เครื่องมือ` tab, on iPhone the settings sheet's `เครื่องมือวัด` row).
     private func calibrationPlans(_: Int) -> [NotificationPlan] {
         guard calibrationOn else { return [] }
         return instruments.all.flatMap { tool -> [NotificationPlan] in

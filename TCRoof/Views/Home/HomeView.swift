@@ -179,7 +179,16 @@ struct HomeView: View {
                          now: now,
                          notificationsShown: $showNotifications,
                          open: openAppointment,
-                         openFeed: { feedLink = $0 })
+                         openFeed: { feedLink = $0 },
+                         plan: { planAhead(now: now) })
+    }
+
+    /// `แผนงานถัดไป`: the next plan items ahead as hero pages; worked out only when today has no survey appointment left.
+    private func planAhead(now: Date) -> [HeroItem] {
+        let survey = session.survey
+        return HomePlanItem.list(jobs: jobs, survey: survey, now: now).map { item in
+            item.heroItem(now: now, report: report(item.job)) { feedLink = $0 }
+        }
     }
 
     /// The record a feed post opens.
@@ -189,6 +198,8 @@ struct HomeView: View {
         case .inspection(let key): if let job = job(key) { InspectionView(job: job) }
         case .job(let key): if let job = job(key) { JobDetailView(job: job) }
         case .homework(let key): if let job = job(key) { HomeWorkView(job: job) }
+        case .calendar(let day): PlanCalendarView(day: day)
+        case .stationDocs(let key): if let job = job(key) { StationDocsScreen(job: job) }
         case .records: InstallRecordsView()
         }
     }
@@ -342,8 +353,12 @@ struct HomeView: View {
     /// The appointment of a job by the key its notification carries (`syncID`, else the job code).
     private func appointment(key: String) -> TodayAppointment? {
         guard let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) else { return nil }
-        let report = job.syncID.flatMap { session.survey.jobs(linkedTo: $0).max { $0.updated < $1.updated } }
-        return TodayAppointment(job: job, report: report)
+        return TodayAppointment(job: job, report: report(job))
+    }
+
+    /// The job's most recently edited linked report; nil until one is started.
+    private func report(_ job: Job) -> TCRoofCore.Job? {
+        job.syncID.flatMap { session.survey.jobs(linkedTo: $0).max { $0.updated < $1.updated } }
     }
 }
 

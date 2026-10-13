@@ -243,6 +243,30 @@ public enum PWAPlan {
         return sorted(out)
     }
 
+    // MARK: Next items (the main home's `แผนงานถัดไป`)
+
+    /// The job types the iPhone home's `แผนงานถัดไป` card shows.
+    public static let nextTypes: Set<JobType> = [.install, .test, .document]
+
+    /// The nearest rows of `types` still ahead of `now`, one per station and type, nearest first, at most `limit`.
+    /// A row's moment is its day at its start time; one with no time counts from the next day on.
+    public static func next(_ items: [AgendaItem], after now: Date, types: Set<JobType> = nextTypes, limit: Int = 3,
+                            calendar cal: Calendar = calendar) -> [AgendaItem] {
+        var seen: Set<String> = []
+        let ahead = items.filter { types.contains($0.type) && moment($0, calendar: cal) > now }
+        return Array(sorted(ahead).filter { seen.insert($0.station + "/" + $0.type.rawValue).inserted }.prefix(limit))
+    }
+
+    static func moment(_ item: AgendaItem, calendar cal: Calendar = calendar) -> Date {
+        cal.date(byAdding: .minute, value: item.start ?? 0, to: item.day) ?? item.day
+    }
+
+    /// `วันนี้`, `พรุ่งนี้` or `อีก 2 วัน`: how far `day` is from `today`.
+    public static func ahead(_ day: Date, from today: Date, calendar cal: Calendar = calendar) -> String {
+        let n = cal.dateComponents([.day], from: cal.startOfDay(for: today), to: cal.startOfDay(for: day)).day ?? 0
+        return n <= 0 ? "วันนี้" : n == 1 ? "พรุ่งนี้" : "อีก \(n) วัน"
+    }
+
     /// By day, then the untimed rows in type order, then by start time.
     public static func sorted(_ items: [AgendaItem]) -> [AgendaItem] {
         let order = Dictionary(uniqueKeysWithValues: JobType.allCases.enumerated().map { ($1, $0) })

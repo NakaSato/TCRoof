@@ -290,6 +290,8 @@ struct HeroItem: Identifiable {
     let fraction: Double
     let percent: Int
     let actionTitle: String
+    /// The item's own day, for the top-right text; nil is today (`แผนงานถัดไป`, docs/ui/tcroof-home-iphone-v4).
+    var date: Date? = nil
     /// The job with its linked report, for navigate and call.
     let appointment: TodayAppointment
     /// The primary button.
@@ -304,11 +306,14 @@ extension TodayAppointment {
     }
 }
 
-/// `นัดวันนี้` (iPhone: today's survey appointments) or `แผนงานวันนี้` (iPad: today's work) as a pager, with ring,
-/// primary action, navigate and call.
+/// `นัดวันนี้` (iPhone: today's survey appointments), `แผนงานถัดไป` (iPhone, none left today: the plan items ahead) or
+/// `แผนงานวันนี้` (iPad: today's work) as a pager, with ring, primary action, navigate and call.
 struct AppointmentHero: View {
     let size: HomeSize
     var title = "นัดวันนี้"
+    /// What VoiceOver reads for the title, when it says more than the title does.
+    var titleLabel: String? = nil
+    var pagerLabels = (previous: "นัดก่อนหน้า", next: "นัดถัดไป")
     var emptyTitle = "ไม่มีนัดวันนี้"
     let appointments: [HeroItem]
     @Binding var page: Int
@@ -358,6 +363,7 @@ struct AppointmentHero: View {
     private var topRow: some View {
         HStack(spacing: size.isPad ? 8 : 6) {
             Text(title).font(.sarabun(size.heroLabel, .bold, relativeTo: .caption)).opacity(labelOpacity)
+                .accessibilityLabel(titleLabel ?? title)
             if appointments.count > 1 {
                 HStack(spacing: 4) {
                     ForEach(appointments.indices, id: \.self) { i in
@@ -368,11 +374,11 @@ struct AppointmentHero: View {
                 .accessibilityHidden(true)
             }
             Spacer(minLength: 4)
-            Text(ThaiFormat.weekdayShort.string(from: .now) + (appointments.isEmpty ? "" : " · \(page + 1)/\(appointments.count)"))
+            Text(ThaiFormat.weekdayShort.string(from: current?.date ?? .now) + (appointments.isEmpty ? "" : " · \(page + 1)/\(appointments.count)"))
                 .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(labelOpacity).lineLimit(1)
             if appointments.count > 1 {
-                pagerButton("chevron.left", label: "นัดก่อนหน้า", enabled: page > 0) { go(-1) }
-                pagerButton("chevron.right", label: "นัดถัดไป", enabled: page < appointments.count - 1) { go(1) }
+                pagerButton("chevron.left", label: pagerLabels.previous, enabled: page > 0) { go(-1) }
+                pagerButton("chevron.right", label: pagerLabels.next, enabled: page < appointments.count - 1) { go(1) }
             }
         }
         .frame(minHeight: 32)

@@ -27,7 +27,7 @@ import TCRoofCore
         if let data = try? Data(contentsOf: Self.file), let saved = try? JSONDecoder().decode([Instrument].self, from: data) { all = saved }
     }
 
-    /// Tools due for calibration within 30 days or past it: the `เครื่องมือ` tab's badge.
+    /// Tools due for calibration within 30 days or past it: the count on the iPhone settings row `เครื่องมือวัด`.
     func dueCount(on now: Date = .now) -> Int { Instrument.dueCount(all, on: now) }
 
     func save(_ tool: Instrument) {
@@ -49,8 +49,9 @@ import TCRoofCore
     }
 }
 
-/// `เครื่องมือวัด`: the register of measuring tools with each one's calibration date, overdue first. On the iPhone
-/// `เครื่องมือ` tab it also carries the modules that have no tab of their own (the plan calendar, scan, install records).
+/// `เครื่องมือวัด`: the register of measuring tools with each one's calibration date, overdue first. On iPhone,
+/// under the settings sheet's `เครื่องมือวัด` row, it also carries the modules that have no tab of their own (the
+/// plan calendar, scan, install records).
 struct ToolsView: View {
     /// The quick action of a tools notification that opened this screen (`คืนอุปกรณ์`, `ดูคิว`…).
     var request: String? = nil

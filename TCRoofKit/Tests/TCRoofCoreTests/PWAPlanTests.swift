@@ -323,6 +323,48 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(rows.first?.contractor, "C")
     }
 
+    // MARK: Next items
+
+    func item(_ id: String, _ type: PWAPlan.JobType, day: Date, start: Int? = nil, station: String) -> PWAPlan.AgendaItem {
+        PWAPlan.AgendaItem(id: id, day: cal.startOfDay(for: day), start: start, type: type, ref: "MP 1", title: id, subtitle: "",
+                           status: .onPlan, station: station)
+    }
+
+    func testNextKeepsTheNearestRowOfEachStationAndType() {
+        let now = day(2026, 10, 12, hour: 9)
+        let items = PWAPlan.sorted([
+            item("ins-a-13", .install, day: day(2026, 10, 13), start: 480, station: "a"),
+            item("ins-a-14", .install, day: day(2026, 10, 14), start: 480, station: "a"),
+            item("tst-b-13", .test, day: day(2026, 10, 13), start: 810, station: "b"),
+            item("doc-c-14", .document, day: day(2026, 10, 14), station: "c"),
+            item("ins-d-15", .install, day: day(2026, 10, 15), start: 480, station: "d"),
+        ])
+        XCTAssertEqual(PWAPlan.next(items, after: now).map(\.id), ["ins-a-13", "tst-b-13", "doc-c-14"])
+        XCTAssertEqual(PWAPlan.next(items, after: now, limit: 5).map(\.id), ["ins-a-13", "tst-b-13", "doc-c-14", "ins-d-15"])
+    }
+
+    func testNextLeavesOutPastRowsAndOtherTypes() {
+        let now = day(2026, 10, 12, hour: 9)
+        let items = [
+            item("ins-a-early", .install, day: day(2026, 10, 12), start: 480, station: "a"),
+            item("ins-a-late", .install, day: day(2026, 10, 12), start: 600, station: "a"),
+            item("srv-b", .survey, day: day(2026, 10, 13), start: 540, station: "b"),
+            item("chk-b", .inspection, day: day(2026, 10, 13), start: 600, station: "b"),
+            item("ntf", .notice, day: day(2026, 10, 13), start: 960, station: "b"),
+            // no time: today's is over, tomorrow's is ahead
+            item("doc-c-today", .document, day: day(2026, 10, 12), station: "c"),
+            item("tst-c-13", .test, day: day(2026, 10, 13), station: "c"),
+        ]
+        XCTAssertEqual(PWAPlan.next(items, after: now).map(\.id), ["ins-a-late", "tst-c-13"])
+    }
+
+    func testAheadNamesTheDay() {
+        let today = day(2026, 10, 12, hour: 9)
+        XCTAssertEqual(PWAPlan.ahead(day(2026, 10, 12), from: today), "วันนี้")
+        XCTAssertEqual(PWAPlan.ahead(day(2026, 10, 13), from: today), "พรุ่งนี้")
+        XCTAssertEqual(PWAPlan.ahead(day(2026, 10, 14, hour: 1), from: today), "อีก 2 วัน")
+    }
+
     // MARK: Calendar
 
     /// October 2026 starts on a Thursday: three blank cells, then five Monday-first rows.

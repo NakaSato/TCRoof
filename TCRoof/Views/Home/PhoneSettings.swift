@@ -10,6 +10,7 @@ struct PhoneSettingsList: View {
     @AppStorage("userTeam") private var userTeam = ""
     @AppStorage(CameraRoll.defaultsKey) private var saveToLibrary = true
     @State private var sync = CloudSync.shared
+    @State private var instruments = InstrumentStore.shared
     @State private var notifications = NotificationService.shared
     @Environment(\.openURL) private var openURL
     @Environment(\.homeInk) private var ink
@@ -44,6 +45,14 @@ struct PhoneSettingsList: View {
                     .rowFrame()
                 }
                 notificationsSection
+                section("เครื่องมือ") {
+                    // the tools tab's screens, kept reachable until the owner decides where they live
+                    // (docs/ui/tcroof-home-iphone-v4, open question 1)
+                    NavigationLink { ToolsView(modules: [.plan, .scan, .install]) } label: {
+                        row("เครื่องมือวัด", toolsValue)
+                    }
+                    .buttonStyle(.plain)
+                }
                 section("รูปถ่าย") {
                     Toggle(isOn: $saveToLibrary) {
                         VStack(alignment: .leading, spacing: 0) {
@@ -183,6 +192,12 @@ struct PhoneSettingsList: View {
     }
 
     private var divider: some View { Rectangle().fill(Theme.hairline).frame(height: 1) }
+
+    /// `ต้องสอบเทียบ 2 ›`: the tools due for calibration within 30 days or past it, else a bare chevron.
+    private var toolsValue: String {
+        let due = instruments.dueCount()
+        return due > 0 ? "ต้องสอบเทียบ \(due) ›" : "›"
+    }
 }
 
 private struct NotificationGroupToggle: View {

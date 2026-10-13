@@ -9,9 +9,8 @@ struct OpenReportPage: Identifiable, Hashable {
     var start: MissingGroup.Target?
 }
 
-/// iPhone home (compact width, docs/ui/tcroof-home-iphone-v3): logo and bell header, today's appointments as a pager
-/// when there are any, and the project feed, behind `PhoneTabs`' floating dock. The modules without a tab are on the
-/// `เครื่องมือ` tab (`ToolsView`).
+/// iPhone home (compact width, docs/ui/tcroof-home-iphone-v3 and v4): logo and bell header, today's appointments as a
+/// pager, or with none left `แผนงานถัดไป`, and the project feed, behind `PhoneTabs`' floating dock.
 struct PhoneHome: View {
     let appointments: [TodayAppointment]
     let unread: Int
@@ -20,15 +19,22 @@ struct PhoneHome: View {
     @Binding var notificationsShown: Bool
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
     let openFeed: (FeedLink) -> Void
+    /// `แผนงานถัดไป`: the next plan items ahead, asked for only when today has no survey appointment left.
+    let plan: () -> [HeroItem]
 
     @State private var page = 0
 
     var body: some View {
+        let appointments = shown
+        // nothing left today and nothing ahead: no card and no empty state, the feed starts under the header
+        let ahead = appointments.isEmpty ? plan() : []
         ScrollView {
             VStack(spacing: 10) {
-                // no appointment today: no card and no empty state, the feed starts under the header
-                if !shown.isEmpty {
-                    AppointmentHero(size: .phone, appointments: shown.map { $0.heroItem(open: open) }, page: $page, open: open, newSurvey: {})
+                if !appointments.isEmpty {
+                    AppointmentHero(size: .phone, appointments: appointments.map { $0.heroItem(open: open) }, page: $page, open: open, newSurvey: {})
+                } else if !ahead.isEmpty {
+                    AppointmentHero(size: .phone, title: "แผนงานถัดไป", titleLabel: "แผนงานถัดไป · ไม่มีนัดสำรวจวันนี้",
+                                    pagerLabels: ("แผนงานก่อนหน้า", "แผนงานถัดไป"), appointments: ahead, page: $page, open: open, newSurvey: {})
                 }
                 HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), open: openFeed)
             }

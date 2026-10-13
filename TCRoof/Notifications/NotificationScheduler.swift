@@ -142,11 +142,11 @@ private struct NotificationScheduler: ViewModifier {
         .sorted { $0.id < $1.id }
     }
 
-    /// Tasks of a station's MP plan that start tomorrow, and a station behind its plan.
+    /// Tasks of a PWA station's MP plan that start tomorrow, and a station behind its plan.
     private func mpPlans(_: Int) -> [NotificationPlan] {
         guard planOn else { return [] }
         let now = Date.now
-        return jobs.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
+        return jobs.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
             guard let input = job.scheduleInput else { return [] }
             return MPNotification.plans(jobKey: job.syncID ?? job.code, station: job.stationName, plan: MasterSchedule.plan(input),
                                         actual: job.scheduleActual, now: now)

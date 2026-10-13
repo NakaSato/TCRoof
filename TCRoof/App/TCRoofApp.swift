@@ -96,11 +96,13 @@ struct RootView: View {
             // Simulator checks run on sample data, offline.
             if DebugScreen.requested != nil {
                 SampleData.seedIfNeeded(context)
+                Job.keepKinds(context)
                 if UserDefaults.standard.bool(forKey: "planDemo") { SampleData.redate(context, today: PlanCalendarView.today) }
                 return
             }
             #endif
             SampleData.removeSamples(context)
+            Job.keepKinds(context)
             CloudSync.shared.start(context: context, survey: session.survey)
             let survey = session.survey
             NotificationService.shared.syncNow = { survey.cloudPush?() }

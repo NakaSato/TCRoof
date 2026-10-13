@@ -34,7 +34,7 @@ struct PWAPlanPhoneView: View {
     @State private var survey = SurveyModel.shared
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
-    private var stations: [Job] { jobs.filter { $0.kind == .pwa } }
+    private var stations: [Job] { jobs.pwaStations }
 
     var body: some View {
         let board = self.board

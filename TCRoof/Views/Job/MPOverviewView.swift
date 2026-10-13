@@ -3,7 +3,7 @@ import SwiftData
 import TCRoofUI
 import TCRoofCore
 
-/// ภาพรวมทุกสถานี (docs/specs/master-schedule-swift.md §3.5): one row per job with an MP plan, most behind first,
+/// ภาพรวมทุกสถานี (docs/specs/master-schedule-swift.md §3.5): one row per PWA job with an MP plan, most behind first,
 /// with how many stations are behind and the progress averaged over the stations' kWp.
 struct MPOverviewView: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -20,7 +20,7 @@ struct MPOverviewView: View {
     private var rows: [Row] {
         let cal = MasterSchedule.calendar, week = MasterSchedule.weekStart(.now)
         let weekEnd = cal.date(byAdding: .day, value: 6, to: week)!
-        return jobs.compactMap { job -> Row? in
+        return jobs.pwaStations.compactMap { job -> Row? in
             guard let input = job.scheduleInput else { return nil }
             let plan = MasterSchedule.plan(input), st = MasterSchedule.status(plan: plan, actual: job.scheduleActual, through: .now)
             let current = plan.first { p in

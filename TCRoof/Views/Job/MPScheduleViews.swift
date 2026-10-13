@@ -12,7 +12,7 @@ extension Job {
         guard scheduleInput == nil else { return }
         let cal = MasterSchedule.calendar, today = cal.startOfDay(for: .now)
         func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n + shift, to: today)! }
-        mpNumber = mp; inverterKW = 80
+        mpNumber = mp; inverterKW = 80; kind = .pwa
         scheduleInput = MasterSchedule.Input(installStart: day(-20), installEnd: day(26), kickoff: day(-70),
                                              engineeringStart: day(-70), siteHandover: day(-60), over200kVA: false)
         var a = MasterSchedule.Actual()

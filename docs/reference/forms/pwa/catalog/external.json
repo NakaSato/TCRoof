@@ -1,0 +1,182 @@
+{
+ "title": "เอกสารภายนอก — รับจาก กปภ. / หน่วยงานรัฐ / ผู้ผลิต",
+ "origin": "external",
+ "definition": "ภายนอก — ต้องขอจาก กปภ. หน่วยงานรัฐ หรือผู้ผลิต (แอปทำได้แค่ติดตามและเก็บไฟล์)",
+ "version": "2026-10-05",
+ "count": 13,
+ "documents": [
+  {
+   "id": "pwa_act",
+   "name": "พ.ร.บ.การประปาส่วนภูมิภาค (พ.ร.บ.จัดตั้ง)",
+   "scope": "org",
+   "producer": "pwa",
+   "format": "pdf",
+   "pages": 17,
+   "used_in": [
+    "grid_connection",
+    "pk2"
+   ],
+   "note": "ทั้งสองสถานีเป็นฉบับเดียวกันแต่สแกนคนละครั้ง → เก็บไฟล์เดียวที่ระดับ org",
+   "obtain_from": "กปภ. (ส่วนกลาง)"
+  },
+  {
+   "id": "pwa_poa_order",
+   "name": "คำสั่งการประปาส่วนภูมิภาค (หนังสือมอบอำนาจ)",
+   "scope": "org",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection",
+    "pk2"
+   ],
+   "note": "ไฟล์ของสองสถานีไม่ตรงกัน — ยืนยันว่าเป็นคำสั่งฉบับเดียวกันหรือออกต่อปี/ต่อเขต",
+   "expires": "ตามคำสั่งฉบับใหม่",
+   "obtain_from": "กปภ. (ส่วนกลาง)"
+  },
+  {
+   "id": "grantor_docs",
+   "name": "เอกสารผู้มอบอำนาจ (บัตร/ทะเบียนบ้าน ผู้ว่าการหรือผู้มีอำนาจ)",
+   "scope": "org",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection",
+    "pk2",
+    "building"
+   ],
+   "privacy": "ปิดทับศาสนา/กรุ๊ปเลือด/วันเกิดตาม พ.ร.บ.คุ้มครองข้อมูลฯ (Check list กกพ. ข้อ 7.3)",
+   "obtain_from": "กปภ. (ส่วนกลาง)"
+  },
+  {
+   "id": "grantee_docs",
+   "name": "เอกสารผู้รับมอบอำนาจ (บัตร ผจก.สาขา หรือผู้ได้รับมอบ)",
+   "scope": "branch",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection",
+    "pk2",
+    "building"
+   ],
+   "privacy": "เหมือน grantor_docs",
+   "obtain_from": "กปภ.สาขา"
+  },
+  {
+   "id": "electric_bill",
+   "name": "ใบแจ้งค่าไฟฟ้า (สำเนา)",
+   "scope": "site",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection",
+    "pk2"
+   ],
+   "fields": [
+    "CA",
+    "ชื่อผู้ใช้ไฟ",
+    "ที่อยู่",
+    "ประเภทอัตรา",
+    "เดือน"
+   ],
+   "rule": "ใช้ไฟล์เดียวกันได้ทั้งขนานไฟ (ข้อ 1) และ พค.2 (ข้อ 17)",
+   "obtain_from": "กปภ.สาขา"
+  },
+  {
+   "id": "land_deed",
+   "name": "สำเนาโฉนด/เอกสารสิทธิ์ที่ดิน",
+   "scope": "site",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "pk2",
+    "building"
+   ],
+   "note": "พค.2 ข้อ 18; โชคชัยแนบในชุดแจ้งเทศบาล",
+   "obtain_from": "กปภ.สาขา"
+  },
+  {
+   "id": "house_reg",
+   "name": "สำเนาทะเบียนบ้านของสถานที่ติดตั้ง",
+   "scope": "site",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "building",
+    "pk2"
+   ],
+   "note": "พค.2 ข้อ 16",
+   "obtain_from": "กปภ.สาขา"
+  },
+  {
+   "id": "building_permit_o1",
+   "name": "ใบอนุญาตก่อสร้าง/ดัดแปลง (อ.1) ที่ได้รับ",
+   "scope": "site",
+   "producer": "authority",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "when": "building_route = permit",
+   "note": "พค.2 ข้อ 23.1 (รัตนาภา)",
+   "obtain_from": "เทศบาล/อบต."
+  },
+  {
+   "id": "pv_datasheet",
+   "name": "Datasheet แผงเซลล์แสงอาทิตย์",
+   "scope": "project",
+   "producer": "vendor",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection"
+   ],
+   "note": "ตัวอย่าง Znshine ZXM7-UHLD144 555–585 W ไฟล์เดียวกันทั้งสองสถานี → ผูกกับรุ่นแผง",
+   "obtain_from": "ผู้ผลิตแผง"
+  },
+  {
+   "id": "inverter_datasheet",
+   "name": "Datasheet เครื่องแปลงไฟฟ้า (Inverter)",
+   "scope": "project",
+   "producer": "vendor",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection"
+   ],
+   "note": "ผูกกับรุ่น inverter; สองสถานีใช้คนละชุด",
+   "obtain_from": "ผู้ผลิต inverter"
+  },
+  {
+   "id": "other_equipment",
+   "name": "Datasheet อุปกรณ์อื่นๆ (ตู้ AC/DC, Zero Export, PQM, SPD, CB, สาย)",
+   "scope": "project",
+   "producer": "vendor",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection"
+   ],
+   "obtain_from": "ผู้ผลิตอุปกรณ์"
+  },
+  {
+   "id": "contract_mou",
+   "name": "MOU และใบสั่งจ้าง",
+   "scope": "project",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "note": "พค.2 ข้อ 15 กรณีโครงการ SRT",
+   "obtain_from": "กปภ. (ส่วนกลาง)"
+  },
+  {
+   "id": "erc_qr",
+   "name": "QR Code คำขอ (ระบบ กกพ.)",
+   "scope": "site",
+   "producer": "authority",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "obtain_from": "สำนักงาน กกพ."
+  }
+ ]
+}

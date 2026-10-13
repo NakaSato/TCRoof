@@ -1,0 +1,535 @@
+{
+  "workflow_id": "pea-residential-non-sell",
+  "name": "งานติดตั้ง Solar Rooftop บ้านอยู่อาศัย สายไม่ขายไฟ (ผลิตใช้เอง) พื้นที่ PEA",
+  "version": "2026-10-07",
+  "forms": "../non-sell-forms.json",
+  "flow_ref": "../permit-flow.json > non_sell_flow",
+  "confidence": "ต่ำกว่าสายขายไฟ: ไม่มี flow ทางการของ PEA สำหรับสายนี้ ทุก task ที่ unverified=true ต้องยืนยันกับ PPIM / PEA 1129 ก่อนเปิดใช้จริง",
+  "roles": {
+    "sales": "ฝ่ายขาย/ผู้ประสานงานลูกค้า",
+    "doc": "ฝ่ายเอกสาร (ยื่น PPIM, ติดตามสถานะ)",
+    "engineer": "วิศวกรออกแบบ/รับรอง (มี กว.)",
+    "installer": "ทีมติดตั้งหน้างาน",
+    "customer": "เจ้าของมิเตอร์",
+    "pea": "การไฟฟ้าส่วนภูมิภาค (ภายนอก)",
+    "erc": "สำนักงาน กกพ. (ภายนอก)",
+    "local_authority": "เทศบาล / อบต. (ภายนอก)"
+  },
+  "channels": {
+    "line": "ส่งรูป/สำเนาเร็ว ระหว่างทีมกับลูกค้า",
+    "email": "เอกสารทางการ เก็บหลักฐาน (e-Tax Invoice, ผลอนุมัติ)",
+    "in_person": "เอกสารที่ต้องเซ็นสด/ติดอากร",
+    "ppim": "ยื่นและติดตามกับ PEA",
+    "app": "ถ่ายรูป/กรอกข้อมูลใน TCRoof"
+  },
+  "job_params": {
+    "customer_name": {
+      "type": "string",
+      "validate": "ตรงชื่อในบิลค่าไฟ"
+    },
+    "ca_no": {
+      "type": "string"
+    },
+    "rate_code": {
+      "type": "string(4)",
+      "validate": "หลักแรก = 1"
+    },
+    "meter_phase": {
+      "type": "enum[1,3]"
+    },
+    "pv_kwp": {
+      "type": "number"
+    },
+    "inverter_kw_total": {
+      "type": "number"
+    },
+    "has_battery": {
+      "type": "boolean"
+    },
+    "submit_mode": {
+      "type": "enum[owner, poa]",
+      "default": "poa",
+      "note": "ส่วนใหญ่ทีมยื่นแทน"
+    },
+    "local_authority": {
+      "type": "string",
+      "label": "เทศบาล/อบต."
+    },
+    "wants_tax_deduction": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "rules": [
+    {
+      "id": "in_pea_area",
+      "if": "จังหวัด ∈ {กรุงเทพฯ, นนทบุรี, สมุทรปราการ}",
+      "then": "หยุด: พื้นที่ MEA ใช้คนละ flow (ยังไม่รองรับ)"
+    },
+    {
+      "id": "residential_only",
+      "if": "rate_code[0] != '1'",
+      "then": "หยุด: ไม่ใช่บ้านอยู่อาศัย ใช้ workflow อื่น"
+    },
+    {
+      "id": "name_match",
+      "if": "ชื่อบิล ≠ ชื่อลูกค้า หรือ ที่อยู่บิล ≠ ทะเบียนบ้าน",
+      "then": "ลูกค้าต้องแก้/โอนชื่อที่ PEA ก่อน — block ขั้น S2"
+    },
+    {
+      "id": "poa_needed",
+      "if": "submit_mode = poa",
+      "then": "เพิ่ม task ns_poa (เซ็นสด + อากร 30 บาท)"
+    },
+    {
+      "id": "zero_export_always",
+      "then": "ต้องมีอุปกรณ์ zero export ทุกงาน — ใส่ใน SLD และแบบรับรอง"
+    },
+    {
+      "id": "license_exempt",
+      "if": "inverter_kw_total < 1000",
+      "then": "ไม่ต้องขอใบอนุญาตผลิตไฟ กกพ. / ร.ง.4"
+    },
+    {
+      "id": "erc_notice",
+      "then": "ns_erc_notice",
+      "unverified": "ไม่ทราบว่าสายไม่ขายไฟขนาดบ้านต้องแจ้งหรือไม่ — เปิดเป็น task optional จนกว่าจะยืนยัน"
+    },
+    {
+      "id": "tax_eligible",
+      "if": "wants_tax_deduction and pv_kwp <= 10",
+      "then": "เปิด ns_tax_pack; ออก e-Tax Invoice ในชื่อลูกค้า",
+      "else_if_pv_gt_10": "แจ้งลูกค้าว่าไม่เข้าเงื่อนไขลดหย่อน"
+    },
+    {
+      "id": "inverter_list",
+      "then": "inverter ต้องอยู่ใน smartlist.pea.co.th ก่อนออกแบบ"
+    },
+    {
+      "id": "building_permit",
+      "law": "กฎกระทรวง ฉบับที่ 72 (พ.ศ. 2568)",
+      "if": "ns_roof_weight.route = permit (> 20 กก./ตร.ม.)",
+      "then": "เปิด S1B ยื่น ข.1 — ต้องได้ อ.1 ก่อนเข้า S4",
+      "else": "เก็บใบคำนวณน้ำหนักในแฟ้มงาน ไม่ต้องยื่น"
+    }
+  ],
+  "states": [
+    {
+      "id": "S0",
+      "name": "รับงาน / เช็กสิทธิ์",
+      "owner": "sales",
+      "tasks": [
+        {
+          "id": "t0.1",
+          "do": "เก็บบิลค่าไฟล่าสุด (≤ 3 เดือน) + ทะเบียนบ้าน + บัตร ปชช.",
+          "from": "customer",
+          "channel": "line",
+          "docs": [
+            "bill",
+            "house_registration",
+            "id_card"
+          ]
+        },
+        {
+          "id": "t0.2",
+          "do": "ตรวจ rules: in_pea_area, residential_only, name_match",
+          "auto": true
+        },
+        {
+          "id": "t0.3",
+          "do": "สำรวจหน้างาน: รูปหน้าบ้าน, หลังคา, ตู้ MDB, มิเตอร์",
+          "by": "installer",
+          "channel": "app"
+        }
+      ],
+      "exit": "ผ่าน rules ทั้งหมด",
+      "on_fail": "S0_BLOCK"
+    },
+    {
+      "id": "S0_BLOCK",
+      "name": "รอลูกค้าแก้ชื่อ/ที่อยู่ที่ PEA",
+      "owner": "customer",
+      "external": true,
+      "next": "S0"
+    },
+    {
+      "id": "S1",
+      "name": "ออกแบบ + เตรียมเอกสาร",
+      "owner": "engineer",
+      "tasks": [
+        {
+          "id": "t1.1",
+          "do": "เลือกแผง/inverter (เช็ก smartlist) + zero export",
+          "by": "engineer"
+        },
+        {
+          "id": "t1.2",
+          "do": "เขียน SLD + ระบบป้องกัน + zero export, เซ็นรับรอง",
+          "by": "engineer",
+          "docs": [
+            "sld"
+          ]
+        },
+        {
+          "id": "t1.3",
+          "do": "แนบสำเนา กว. ที่ไม่หมดอายุ",
+          "by": "engineer",
+          "docs": [
+            "engineer_license"
+          ],
+          "check": "วันหมดอายุ > วันยื่น + 60 วัน"
+        },
+        {
+          "id": "t1.4",
+          "do": "รวม datasheet แผง/inverter/zero export",
+          "by": "doc",
+          "docs": [
+            "pv_spec",
+            "inverter_spec",
+            "zero_export_spec"
+          ]
+        },
+        {
+          "id": "t1.5",
+          "do": "ทำหนังสือมอบอำนาจ ให้ลูกค้าเซ็นสด + ติดอากร 30 บาท",
+          "by": "sales",
+          "from": "customer",
+          "channel": "in_person",
+          "form": "ns_poa",
+          "when": "poa_needed"
+        },
+        {
+          "id": "t1.6",
+          "do": "คำนวณน้ำหนัก กก./ตร.ม. ทุกกลุ่มแผง → แอปตัดสิน route",
+          "by": "engineer",
+          "form": "ns_roof_weight",
+          "auto_decide": "route"
+        }
+      ],
+      "exit": "เอกสาร part 5 ของ ns_connection_request ครบ",
+      "next": "S2",
+      "branches": [
+        {
+          "if": "route = permit",
+          "also_open": "S1B",
+          "note": "ทำขนานกับ S2-S3"
+        }
+      ]
+    },
+    {
+      "id": "S1B",
+      "name": "ขออนุญาตดัดแปลงอาคาร (เฉพาะ > 20 กก./ตร.ม.)",
+      "owner": "doc",
+      "parallel": true,
+      "when": "ns_roof_weight.route = permit",
+      "tasks": [
+        {
+          "id": "t1b.1",
+          "do": "วิศวกรโยธาทำแบบแปลน + รายการคำนวณ",
+          "by": "engineer",
+          "docs": [
+            "structural_plan",
+            "structural_calc",
+            "civil_license"
+          ]
+        },
+        {
+          "id": "t1b.2",
+          "do": "เก็บโฉนด/หนังสือยินยอม + ลูกค้าเซ็น ข.1 และมอบอำนาจ",
+          "from": "customer",
+          "channel": "in_person"
+        },
+        {
+          "id": "t1b.3",
+          "do": "ยื่น ข.1 ที่เทศบาล/อบต.",
+          "channel": "in_person",
+          "form": "ns_building_permit"
+        },
+        {
+          "id": "t1b.4",
+          "do": "บันทึกเลข อ.1 + วันที่ออก",
+          "field": "permit_o1"
+        }
+      ],
+      "branches": [
+        {
+          "if": "เทศบาลขอแก้",
+          "next": "S1B"
+        },
+        {
+          "if": "ได้ อ.1",
+          "next": "JOIN_S4"
+        }
+      ],
+      "external_party": "local_authority"
+    },
+    {
+      "id": "S2",
+      "name": "ยื่นขอเชื่อมต่อใน PPIM",
+      "owner": "doc",
+      "tasks": [
+        {
+          "id": "t2.1",
+          "do": "กรอก ns_connection_request + อัปโหลดเอกสาร",
+          "channel": "ppim",
+          "form": "ns_connection_request"
+        },
+        {
+          "id": "t2.2",
+          "do": "บันทึกเลขคำขอ PPIM ลงงาน",
+          "field": "ppim_request_no"
+        },
+        {
+          "id": "t2.3",
+          "do": "แจ้ง กกพ. (ถ้าต้องแจ้ง)",
+          "form": "ns_erc_notice",
+          "rule": "erc_notice",
+          "optional": true
+        }
+      ],
+      "sla": {
+        "party": "pea",
+        "days": 45,
+        "from": "เอกสารครบ",
+        "ref": "ระเบียบการใช้บริการ 5.2.1"
+      },
+      "next": "S3"
+    },
+    {
+      "id": "S3",
+      "name": "รอ PEA พิจารณา / เห็นชอบแบบ",
+      "owner": "pea",
+      "external": true,
+      "tasks": [
+        {
+          "id": "t3.1",
+          "do": "ติดตามสถานะ PPIM ทุก 3 วันทำการ",
+          "by": "doc",
+          "channel": "ppim",
+          "reminder_days": 3
+        }
+      ],
+      "branches": [
+        {
+          "if": "PEA ขอแก้/ขอเพิ่มเอกสาร",
+          "next": "S2",
+          "note": "แก้แล้วยื่นใหม่ — ไม่ต้องย้อนออกแบบถ้าไม่กระทบ SLD"
+        },
+        {
+          "if": "PEA ให้แก้แบบ",
+          "next": "S1"
+        },
+        {
+          "if": "เห็นชอบ",
+          "next": "S4"
+        }
+      ],
+      "unverified": "ลำดับเห็นชอบแบบก่อนติดตั้งใน PPIM ปัจจุบัน (ระเบียบ 5.2.2)"
+    },
+    {
+      "id": "S4",
+      "name": "ติดตั้ง",
+      "owner": "installer",
+      "tasks": [
+        {
+          "id": "t4.1",
+          "do": "ติดตั้งตามแบบที่ยื่น (ห้ามเปลี่ยนรุ่น/จำนวนโดยไม่แจ้ง)",
+          "by": "installer"
+        },
+        {
+          "id": "t4.2",
+          "do": "ถ่ายรูปตาม slot ของ ns_install_cert ข้อ 1–8",
+          "by": "installer",
+          "channel": "app",
+          "photo_slots": [
+            "site + พิกัด",
+            "zero export + CT",
+            "แผง PV",
+            "inverter nameplate",
+            "inverter setting ทุกเครื่อง",
+            "overcurrent device",
+            "AC SPD",
+            "จุดต่อใต้เบรกเกอร์ประธาน"
+          ]
+        },
+        {
+          "id": "t4.3",
+          "do": "ตั้งค่า zero export = 0 kW และทดสอบเบื้องต้น",
+          "by": "installer"
+        },
+        {
+          "id": "t4.4",
+          "do": "ออก e-Tax Invoice ในชื่อลูกค้า ส่งทางอีเมล",
+          "by": "doc",
+          "channel": "email",
+          "rule": "tax_eligible",
+          "form": "ns_tax_pack"
+        }
+      ],
+      "exit": "รูปครบ 8 slot + zero export ผ่านทดสอบภายใน",
+      "next": "S5",
+      "gate": [
+        "S3 เห็นชอบแล้ว",
+        "ถ้า route = permit: S1B ได้ อ.1 แล้ว"
+      ]
+    },
+    {
+      "id": "S5",
+      "name": "รับรองการติดตั้ง + ชำระค่าธรรมเนียม",
+      "owner": "doc",
+      "tasks": [
+        {
+          "id": "t5.1",
+          "do": "สร้าง ns_install_cert จากรูปใน S4 ให้วิศวกรเซ็นทุกแผ่น",
+          "by": "engineer",
+          "form": "ns_install_cert"
+        },
+        {
+          "id": "t5.2",
+          "do": "ลูกค้าเซ็นช่องเจ้าของ",
+          "from": "customer",
+          "channel": "in_person"
+        },
+        {
+          "id": "t5.3",
+          "do": "ชำระค่าธรรมเนียมตามใบแจ้ง PEA + เก็บใบเสร็จ",
+          "from": "customer",
+          "form": "ns_fee_payment",
+          "unverified": "จำนวนเงิน"
+        },
+        {
+          "id": "t5.4",
+          "do": "อัปโหลดใบเสร็จ + แบบรับรองใน PPIM",
+          "channel": "ppim"
+        }
+      ],
+      "unverified": "ฉบับแบบรับรองที่ PEA ใช้",
+      "next": "S6"
+    },
+    {
+      "id": "S6",
+      "name": "PEA ตรวจ + ทดสอบขนาน",
+      "owner": "pea",
+      "external": true,
+      "tasks": [
+        {
+          "id": "t6.1",
+          "do": "แจ้งความพร้อม/นัดวันตรวจ",
+          "by": "doc",
+          "form": "ns_inspection_request"
+        },
+        {
+          "id": "t6.2",
+          "do": "ทีมอยู่หน้างานวันตรวจ: First Sync, anti-islanding, ไม่มี auto-reclose, zero export",
+          "by": "installer"
+        }
+      ],
+      "sla": {
+        "party": "pea",
+        "days": 30,
+        "from": "แจ้งขอตรวจ",
+        "ref": "ระเบียบการใช้บริการ 5.2.3"
+      },
+      "branches": [
+        {
+          "if": "ไม่ผ่าน",
+          "next": "S6_FIX"
+        },
+        {
+          "if": "ผ่าน",
+          "next": "S7"
+        }
+      ]
+    },
+    {
+      "id": "S6_FIX",
+      "name": "แก้ไขตามผลตรวจ",
+      "owner": "installer",
+      "tasks": [
+        {
+          "id": "t6f.1",
+          "do": "แก้ตาม fix_items + ถ่ายรูปหลังแก้",
+          "channel": "app"
+        },
+        {
+          "id": "t6f.2",
+          "do": "แจ้งแผนทดสอบใหม่",
+          "by": "doc",
+          "ref": "ระเบียบปฏิบัติการ 4.4.10"
+        }
+      ],
+      "next": "S6"
+    },
+    {
+      "id": "S7",
+      "name": "ส่งมอบ + ปิดงาน",
+      "owner": "sales",
+      "tasks": [
+        {
+          "id": "t7.1",
+          "do": "บันทึกวันที่ PEA แจ้งเริ่มต้นเชื่อมต่อ",
+          "field": "connection_start_date"
+        },
+        {
+          "id": "t7.2",
+          "do": "ส่งชุด ns_tax_pack ให้ลูกค้า (e-Tax Invoice + หนังสือ PEA + เลข PPIM)",
+          "channel": "email",
+          "rule": "tax_eligible"
+        },
+        {
+          "id": "t7.3",
+          "do": "ส่งมอบคู่มือ + รูปติดตั้ง + SLD ให้ลูกค้า",
+          "channel": "email"
+        },
+        {
+          "id": "t7.4",
+          "do": "แจ้งลูกค้า: ใช้ลดหย่อนในปีภาษีของ connection_start_date",
+          "channel": "line",
+          "rule": "tax_eligible"
+        }
+      ],
+      "next": "DONE"
+    }
+  ],
+  "doc_ownership": {
+    "customer": [
+      "bill",
+      "house_registration",
+      "id_card",
+      "ns_poa (เซ็น)",
+      "ns_install_cert (เซ็นช่องเจ้าของ)",
+      "ค่าธรรมเนียม"
+    ],
+    "engineer": [
+      "sld",
+      "engineer_license",
+      "ns_install_cert (เซ็นทุกแผ่น)"
+    ],
+    "installer": [
+      "รูปหน้างาน 8 slot",
+      "zero export setting"
+    ],
+    "doc": [
+      "ns_connection_request",
+      "datasheets",
+      "ns_erc_notice",
+      "e-Tax Invoice",
+      "ns_tax_pack"
+    ],
+    "pea": [
+      "ผลพิจารณา",
+      "ใบแจ้งค่าธรรมเนียม",
+      "ผลตรวจ",
+      "หนังสือแจ้งวันเริ่มต้นเชื่อมต่อ"
+    ]
+  },
+  "open_questions": [
+    "ค่าธรรมเนียมสายไม่ขายไฟ",
+    "PEA เห็นชอบแบบก่อนติดตั้ง (S3) หรือตรวจหลังติดตั้งอย่างเดียว",
+    "ฉบับแบบรับรองการติดตั้ง",
+    "ต้องแจ้ง กกพ. หรือไม่",
+    "ชนิด zero export ที่ PEA ยอมรับ",
+    "นัดตรวจ (S6) ทำผ่าน PPIM หรือ PEA โทรนัด",
+    "อ.1 สำหรับบ้าน: แต่ละเทศบาล/อบต. กำหนดเอง"
+  ]
+}

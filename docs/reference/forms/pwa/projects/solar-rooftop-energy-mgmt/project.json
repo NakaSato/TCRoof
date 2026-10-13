@@ -1,0 +1,444 @@
+{
+ "project_id": "pwa-solar-rooftop-energy-mgmt",
+ "customer": "pwa",
+ "name": "โครงการจัดการพลังงานไฟฟ้าจากระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ที่ติดตั้งบนหลังคา (Solar Rooftop) การประปาส่วนภูมิภาค",
+ "version": "2026-10-05",
+ "evidence": [
+  "ตัวอย่าง สถานีจ่ายน้ำรัตนาภา กปภ.สาขาขอนแก่น",
+  "ตัวอย่าง สถานีผลิตน้ำโชคชัย กปภ.สาขาโชคชัย",
+  "MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx"
+ ],
+ "catalog": "../../catalog/index.json",
+ "site_params": {
+  "station_name": {
+   "type": "string",
+   "example": "สถานีผลิตน้ำทุ่งน้อย"
+  },
+  "branch": {
+   "type": "string",
+   "example": "กปภ.สาขาเมืองพล"
+  },
+  "mp_no": {
+   "type": "int",
+   "example": 189,
+   "note": "เลข Master Project Schedule"
+  },
+  "pv_kwp": {
+   "type": "number"
+  },
+  "inverter_kva_total": {
+   "type": "number",
+   "note": "ใช้ตัดสินว่าต้องขอ พค.2 หรือไม่"
+  },
+  "region": {
+   "type": "enum",
+   "options": [
+    "ตะวันออกเฉียงเหนือ",
+    "อื่นๆ"
+   ],
+   "note": "เลือกคู่มือ O&M ตามภาค"
+  },
+  "building_route": {
+   "type": "enum",
+   "options": [
+    "permit",
+    "notify"
+   ],
+   "note": "permit = ยื่น ข.1 ขอดัดแปลง (รัตนาภา) / notify = แจ้งเทศบาลตามกฎกระทรวงยกเว้น (โชคชัย) — เทศบาล/อบต. แต่ละแห่งเป็นผู้กำหนด"
+  },
+  "pk2_request_type": {
+   "type": "enum",
+   "options": [
+    "new",
+    "renew",
+    "renew_late",
+    "change"
+   ],
+   "default": "new"
+  }
+ },
+ "rules": [
+  {
+   "id": "pk2_required",
+   "if": "inverter_kva_total >= 200",
+   "then": "ทำโฟลเดอร์ 4.3 พค.2 ทั้งชุด",
+   "else": "ข้ามโฟลเดอร์ 4.3 (แผนงาน MP มีธง 'เกิน 200 kVA')",
+   "confidence": "เกณฑ์ 200 kVA มาจากธงในไฟล์ MP 189 + รัตนาภา 250 kW ที่ยื่น พค.2 — ยืนยันกับประกาศ พพ. ว่าระบบต่ำกว่า 200 kVA ต้องแจ้งอะไรแทนหรือไม่"
+  },
+  {
+   "id": "building_docs",
+   "if": "building_route = permit",
+   "then": [
+    "building_permit_request",
+    "poa_letter",
+    "house_reg",
+    "structural_plan",
+    "structural_calc",
+    "building_permit_o1"
+   ],
+   "else": [
+    "building_exempt_notice",
+    "land_deed",
+    "structural_plan",
+    "structural_calc"
+   ]
+  },
+  {
+   "id": "om_manual_region",
+   "then": "เลือก om_manual ตาม region"
+  },
+  {
+   "id": "same_file_reuse",
+   "pairs": [
+    [
+     "grid_connection.1 electric_bill",
+     "pk2.17"
+    ],
+    [
+     "grid_connection.3 site_map",
+     "pk2.9"
+    ],
+    [
+     "grid_connection.6 sld",
+     "pk2.10"
+    ],
+    [
+     "handover install_photo_report",
+     "grid_connection.4",
+     "pk2.23.3"
+    ]
+   ],
+   "note": "ยืนยันจากไฟล์ตัวอย่างที่ md5 ตรงกัน — แอปอัปโหลดครั้งเดียวแล้วอ้างอิงหลายที่"
+  }
+ ],
+ "phases": [
+  {
+   "id": "permit",
+   "name": "Part PERMIT",
+   "steps": [
+    {
+     "mp": "1.1",
+     "name": "Kick Off",
+     "weight": 0.5
+    },
+    {
+     "mp": "1.2",
+     "name": "Engineering Approve",
+     "weight": 1,
+     "docs": [
+      "sld",
+      "layout_plan",
+      "elec_calc",
+      "structural_plan",
+      "structural_calc"
+     ]
+    },
+    {
+     "mp": "1.3",
+     "name": "ส่งมอบพื้นที่และเข้าดำเนินการติดตั้ง",
+     "weight": 0.5
+    },
+    {
+     "mp": "1.4",
+     "name": "ยื่นขออนุญาตดัดแปลงอาคาร (อ.1)",
+     "folder": "4.1",
+     "docs_rule": "building_docs"
+    },
+    {
+     "mp": "1.5",
+     "name": "ยื่นขอใบอนุญาต พค.2",
+     "folder": "4.3",
+     "when": "pk2_required",
+     "docs": "ดู folder 4.3"
+    },
+    {
+     "mp": "1.6",
+     "name": "COP / ยื่นเอกสารขอใบอนุญาตประกอบกิจการพลังงาน",
+     "weight": 0,
+     "note": "ไม่มีเอกสารในชุดตัวอย่าง — ต้องถาม"
+    },
+    {
+     "mp": "1.7",
+     "name": "ยื่นขอขนานไฟ",
+     "folder": "4.2"
+    }
+   ]
+  },
+  {
+   "id": "install",
+   "name": "Part ติดตั้งอุปกรณ์",
+   "note": "ใช้ติดตามความก้าวหน้า + เก็บรูปเข้า install_photo_report",
+   "steps": [
+    {
+     "mp": "2.1",
+     "name": "โครงสร้างรองรับแผง + Walkway",
+     "weight": 20,
+     "photo_slots": [
+      "หลังคา/โครงสร้างรองรับ"
+     ]
+    },
+    {
+     "mp": "2.2",
+     "name": "อุปกรณ์ไฟฟ้าด้าน DC",
+     "weight": 10,
+     "photo_slots": [
+      "ตู้ DC ใน/นอก",
+      "กราวด์ DC"
+     ]
+    },
+    {
+     "mp": "2.3",
+     "name": "ติดตั้งแผงเซลล์",
+     "weight": 20,
+     "photo_slots": [
+      "มุมสูงแผง"
+     ]
+    },
+    {
+     "mp": "2.4",
+     "name": "Firefighter Safety Switch",
+     "weight": 2.5
+    },
+    {
+     "mp": "2.5",
+     "name": "Inverter",
+     "weight": 15,
+     "photo_slots": [
+      "Inverter + S/N",
+      "Inverter Station"
+     ]
+    },
+    {
+     "mp": "2.6",
+     "name": "อุปกรณ์ไฟฟ้าด้าน AC",
+     "weight": 10,
+     "photo_slots": [
+      "ตู้ AC ใน/นอก",
+      "กราวด์ AC"
+     ]
+    },
+    {
+     "mp": "2.7",
+     "name": "ตู้ควบคุมระบบ Solar Rooftop",
+     "weight": 5
+    },
+    {
+     "mp": "2.8",
+     "name": "ระบบสื่อสาร + Zero Export Controller",
+     "weight": 5,
+     "photo_slots": [
+      "ตู้ Smart energy ใน/นอก"
+     ]
+    },
+    {
+     "mp": "2.9",
+     "name": "Solar Monitoring",
+     "weight": 2.5,
+     "photo_slots": [
+      "PQM"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "test",
+   "name": "Part การทดสอบและส่งมอบ",
+   "steps": [
+    {
+     "mp": "3.1",
+     "name": "Pre-Commissioning Test",
+     "weight": 2.5,
+     "docs": [
+      "iec62446_report",
+      "iv_photo_report",
+      "thermal_report"
+     ]
+    },
+    {
+     "mp": "3.2",
+     "name": "อบรมการใช้งานและบำรุงรักษา",
+     "weight": 2.5,
+     "docs": [
+      "om_manual"
+     ]
+    },
+    {
+     "name": "ส่งมอบงาน",
+     "docs": [
+      "punch_list",
+      "asbuilt",
+      "install_photo_report"
+     ]
+    }
+   ]
+  }
+ ],
+ "folders": [
+  {
+   "path": "1. รายงานติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ฯ และผลการทดสอบระบบต่าง ๆ",
+   "children": [
+    {
+     "path": "1. รายงานการติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ฯ",
+     "files": [
+      {
+       "doc": "install_photo_report",
+       "name": "รายงานติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ฯ {station_name}.pdf"
+      }
+     ]
+    },
+    {
+     "path": "2. ภาพถ่ายความร้อน",
+     "files": [
+      {
+       "doc": "thermal_report",
+       "name": "ภาพถ่ายความร้อน {station_name}.pdf"
+      }
+     ]
+    },
+    {
+     "path": "3. ผลการทดสอบระบบต่าง ๆ",
+     "files": [
+      {
+       "doc": "iec62446_report",
+       "name": "IEC Test {station_name}.pdf"
+      },
+      {
+       "doc": "iv_photo_report",
+       "name": "รายงานตรวจสอบระบบก่อนและหลังการเชื่อมต่อ {station_name}.pdf"
+      }
+     ]
+    },
+    {
+     "path": "4. Punch list",
+     "files": [
+      {
+       "doc": "punch_list",
+       "name": "Punch list {station_name}.pdf"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "2. คู่มือการใช้งานและบำรุงรักษาระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ฯ (Instruction Manual)",
+   "files": [
+    {
+     "doc": "om_manual",
+     "name": "คู่มือการใช้งานและบำรุงรักษาระบบผลิตไฟฟ้าฯ พื้นที่{region}.pdf"
+    }
+   ]
+  },
+  {
+   "path": "3. แบบ As-Built Drawing",
+   "files": [
+    {
+     "doc": "asbuilt",
+     "name": "AS-Built {station_name} {branch}.pdf"
+    },
+    {
+     "doc": "elec_calc",
+     "name": "รายการคำนวณทางไฟฟ้า {station_name}.pdf"
+    }
+   ]
+  },
+  {
+   "path": "4. เอกสารสำหรับการยื่นขออนุญาตที่เกี่ยวข้องให้กับผู้ว่าจ้าง",
+   "children": [
+    {
+     "path": "1. ใบอนุญาตขอดัดแปลงอาคาร (อ.1)",
+     "files": [
+      {
+       "n": 1,
+       "doc": "building_permit_request|building_exempt_notice",
+       "name": "1. เอกสารที่เกี่ยวข้องสำหรับยื่นดัดแปลงอาคาร.pdf",
+       "note": "รวม หนังสือนำส่ง + คำขอ/หนังสือแจ้ง + มอบอำนาจ + ทะเบียนบ้าน/โฉนด + สำเนา กว."
+      },
+      {
+       "n": 2,
+       "doc": "structural_plan",
+       "name": "2. แบบแปลน Forcon.pdf"
+      },
+      {
+       "n": 3,
+       "doc": "structural_calc",
+       "name": "3. รายการคำนวณโยธา.pdf"
+      }
+     ]
+    },
+    {
+     "path": "2. เอกสารยื่นขอเชื่อมต่อระบบผลิตไฟฟ้า (ขนานไฟ)",
+     "files": [
+      {
+       "n": 1,
+       "doc": "electric_bill",
+       "name": "1. ใบแจ้งค่าไฟฟ้า.pdf"
+      },
+      {
+       "n": 2,
+       "doc": "pwa_act",
+       "name": "2. พ.ร.บ.จัดตั้ง.pdf"
+      },
+      {
+       "n": 3,
+       "doc": "site_map",
+       "name": "3. แผนผังแสดงที่ตั้งของสถานที่ติดตั้ง.pdf"
+      },
+      {
+       "n": 4,
+       "doc": "install_photo_report",
+       "name": "4. ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า.pdf"
+      },
+      {
+       "n": 5,
+       "doc": "other_equipment",
+       "name": "5. อุปกรณ์อื่นๆ ที่เกี่ยวข้อง.pdf"
+      },
+      {
+       "n": 6,
+       "doc": "sld",
+       "name": "6. Single Line Diagram + เอกสารวิศวกรไฟฟ้า.pdf"
+      },
+      {
+       "n": 7,
+       "doc": "pv_datasheet",
+       "name": "7. แผงเซลล์แสงอาทิตย์.pdf"
+      },
+      {
+       "n": 8,
+       "doc": "inverter_datasheet",
+       "name": "8. เครื่องแปลงไฟฟ้า.pdf"
+      },
+      {
+       "n": 9,
+       "doc": "pwa_poa_order",
+       "name": "9. คำสั่งการประปาส่วนภูมิภาค (หนังสือมอบอำนาจ).pdf"
+      },
+      {
+       "n": 10,
+       "doc": "grantor_docs",
+       "name": "10. เอกสารผู้มอบอำนาจ.pdf"
+      },
+      {
+       "n": 11,
+       "doc": "grantee_docs",
+       "name": "11. เอกสารผู้รับมอบอำนาจ.pdf"
+      }
+     ]
+    },
+    {
+     "path": "3. ใบอนุญาตผลิตพลังงานควบคุม (พค.2)",
+     "when": "pk2_required",
+     "files_from": "catalog.erc_pk2_checklist_items",
+     "naming": "{n}. {ชื่อตาม Check list}.pdf (ตามชุดรัตนาภา: 1, 5–13, 15, 17–19, 21, 23.x + Check list + QR Code)"
+    }
+   ]
+  }
+ ],
+ "open_questions": [
+  "โครงการ กปภ. อื่น ๆ ที่มี — ชื่อ/สัญญา และเอกสารที่ต่างจากชุดนี้",
+  "ขั้น 1.6 COP/ใบอนุญาตประกอบกิจการพลังงาน ใช้เอกสารอะไร (ไม่มีในตัวอย่าง)",
+  "ระบบ < 200 kVA ต้องแจ้ง พพ./กกพ. แบบใดแทน พค.2",
+  "ยื่นขนานไฟกับ กฟภ. ผ่านช่องทางใด และมีแบบคำขอ/ค่าธรรมเนียมหรือไม่ (ชุดตัวอย่างมีแต่เอกสารแนบ)",
+  "คำสั่ง กปภ. (มอบอำนาจ) ใช้ฉบับเดียวทั้งประเทศหรือแยกเขต — ไฟล์สองสถานีไม่ตรงกัน"
+ ]
+}

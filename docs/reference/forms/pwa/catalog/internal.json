@@ -1,0 +1,253 @@
+{
+ "title": "เอกสารภายใน — ทีมเราจัดทำ",
+ "origin": "internal",
+ "definition": "ภายใน — ทีมเราจัดทำและจบในทีม (แอป/วิศวกร/ผู้รับจ้าง)",
+ "version": "2026-10-05",
+ "count": 18,
+ "documents": [
+  {
+   "id": "site_map",
+   "name": "แผนผังแสดงที่ตั้ง / แผนที่ Google Map",
+   "scope": "site",
+   "producer": "app",
+   "format": "pdf",
+   "used_in": [
+    "grid_connection",
+    "pk2"
+   ],
+   "fields": [
+    "lat",
+    "lng",
+    "ที่อยู่"
+   ],
+   "rule": "ไฟล์เดียวกันใช้ได้ทั้งขนานไฟ ข้อ 3 และ พค.2 ข้อ 9",
+   "app": "สร้างจากพิกัดในแบบสำรวจ"
+  },
+  {
+   "id": "layout_plan",
+   "name": "แผนผังบริเวณ (Layout) วิศวกรรับรอง",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "pdf",
+   "signed_by": [
+    "วิศวกรไฟฟ้า"
+   ],
+   "used_in": [
+    "pk2"
+   ]
+  },
+  {
+   "id": "route_line",
+   "name": "แผนผังรวมแปลงโฉนด (Route Line / Combine Layout)",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "pdf",
+   "signed_by": [
+    "วิศวกรไฟฟ้า"
+   ],
+   "used_in": [
+    "pk2"
+   ],
+   "note": "พค.2 ข้อ 19"
+  },
+  {
+   "id": "sld",
+   "name": "Single Line Diagram + เอกสารวิศวกรไฟฟ้า",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "pdf",
+   "signed_by": [
+    "วิศวกรไฟฟ้า"
+   ],
+   "used_in": [
+    "grid_connection",
+    "pk2"
+   ],
+   "rule": "ไฟล์เดียวกันใช้ทั้งขนานไฟ ข้อ 6 และ พค.2 ข้อ 10"
+  },
+  {
+   "id": "engineer_license",
+   "name": "สำเนาใบอนุญาตประกอบวิชาชีพวิศวกรรมควบคุม (กว.) + หนังสือรับรองผู้ตรวจสอบ ตพค.",
+   "scope": "contractor",
+   "producer": "engineer",
+   "format": "pdf",
+   "used_in": [
+    "pk2",
+    "building",
+    "grid_connection"
+   ],
+   "expires": true,
+   "rule": "แอปเตือนก่อนหมดอายุ; ต้องไม่หมดอายุ ณ วันยื่น"
+  },
+  {
+   "id": "elec_calc",
+   "name": "รายการคำนวณทางไฟฟ้า",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "xlsx→pdf",
+   "used_in": [
+    "asbuilt"
+   ]
+  },
+  {
+   "id": "asbuilt",
+   "name": "แบบ As-Built Drawing",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "pdf",
+   "used_in": [
+    "handover"
+   ]
+  },
+  {
+   "id": "structural_plan",
+   "name": "แบบแปลน Forcon (โครงสร้างรองรับ)",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "pdf",
+   "signed_by": [
+    "วิศวกรโยธา"
+   ],
+   "used_in": [
+    "building"
+   ]
+  },
+  {
+   "id": "structural_calc",
+   "name": "รายการคำนวณโยธา",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "pdf",
+   "signed_by": [
+    "วิศวกรโยธา"
+   ],
+   "used_in": [
+    "building"
+   ]
+  },
+  {
+   "id": "spec_summary",
+   "name": "พิกัดขนาดติดตั้งเครื่องใช้พลังงาน (Specification)",
+   "scope": "site",
+   "producer": "contractor",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "note": "พค.2 ข้อ 12",
+   "app": "สร้างจาก BOM ของสถานี"
+  },
+  {
+   "id": "install_photo_report",
+   "name": "รายงานติดตั้ง / ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า",
+   "scope": "site",
+   "producer": "app",
+   "format": "pdf",
+   "used_in": [
+    "handover",
+    "grid_connection",
+    "pk2"
+   ],
+   "photo_slots": [
+    "หลังคา/โครงสร้างรองรับ (ต่อหลังคา)",
+    "มุมสูงแผง (ต่อหลังคา)",
+    "Inverter + S/N (ต่อเครื่อง)",
+    "ตู้ AC ใน/นอก",
+    "ตู้ DC ใน/นอก",
+    "ตู้ Zero Export / Smart energy ใน/นอก",
+    "กราวด์ DC",
+    "กราวด์ AC",
+    "Inverter Station",
+    "PQM"
+   ],
+   "rule": "ไฟล์เดียวกันใช้ได้ทั้งรายงานติดตั้ง ขนานไฟ ข้อ 4 และ พค.2 ข้อ 23.3",
+   "found_issues": [
+    "รัตนาภา: คำว่า 'ติดตั้งบน' พิมพ์เพี้ยนหลายหน้า, PQM ซ้ำ 2 หน้า",
+    "โชคชัย: ไม่มีหน้า PQM"
+   ]
+  },
+  {
+   "id": "iec62446_report",
+   "name": "ตารางตรวจสอบก่อน/หลังเชื่อมต่อ ตาม IEC 62446 (IEC Test)",
+   "scope": "site",
+   "producer": "app",
+   "format": "xlsx→pdf",
+   "used_in": [
+    "commissioning"
+   ],
+   "ref": "forms/iec62446-pwa/",
+   "rule": "แอปคำนวณ Yf, PR, kWh/วัน = 7 วัน ÷ 7 เอง"
+  },
+  {
+   "id": "iv_photo_report",
+   "name": "รายงานภาพถ่ายตรวจสอบก่อน/หลังเชื่อมต่อ (Form IV Test)",
+   "scope": "site",
+   "producer": "app",
+   "format": "docx→pdf",
+   "used_in": [
+    "commissioning"
+   ],
+   "ref": "forms/iec62446-pwa/README.md หัวข้อ 2"
+  },
+  {
+   "id": "thermal_report",
+   "name": "ภาพถ่ายความร้อน",
+   "scope": "site",
+   "producer": "app",
+   "format": "pdf",
+   "used_in": [
+    "commissioning"
+   ]
+  },
+  {
+   "id": "om_manual",
+   "name": "คู่มือการใช้งานและบำรุงรักษา (Instruction Manual)",
+   "scope": "project",
+   "producer": "contractor",
+   "format": "pdf",
+   "used_in": [
+    "handover"
+   ],
+   "note": "แยกตามภาค (มีฉบับภาคตะวันออกเฉียงเหนือ) → เลือกตามจังหวัดของสถานี"
+  },
+  {
+   "id": "pk_inspection_form",
+   "name": "แบบตรวจสอบระบบผลิตพลังงานควบคุม ส่วนที่ 1–3 (ประกาศ พพ. 31 ส.ค. 2565)",
+   "scope": "site",
+   "producer": "engineer",
+   "format": "docx→pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "signed_by": [
+    "ผู้ตรวจสอบ ตพค."
+   ],
+   "templates": [
+    "ส่วนที่ 1: ผู้ขอ/สถานที่/ลักษณะการขอ/ผู้ตรวจสอบ/การเชื่อมต่อ/หม้อแปลง",
+    "ส่วนที่ 2: รายละเอียดแผง, DC protection, inverter (มีช่องรูป 4×6 cm ต่อหัวข้อ)"
+   ],
+   "app": "รูปจากหน้างานเติมช่องรูปในส่วนที่ 2 ได้"
+  },
+  {
+   "id": "vat_pp20",
+   "name": "ภพ.20 ของผู้รับจ้าง",
+   "scope": "contractor",
+   "producer": "contractor",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ]
+  },
+  {
+   "id": "erc_checklist",
+   "name": "Check list เอกสารประกอบคำขอ พค.2 (แบบของสำนักงาน กกพ.)",
+   "scope": "site",
+   "producer": "app",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "app": "ติ๊กอัตโนมัติจากสถานะเอกสารในแอป"
+  }
+ ]
+}

@@ -1,0 +1,991 @@
+{
+  "title": "แบบฟอร์ม สายไม่ขายไฟ (ผลิตใช้เอง) บ้านอยู่อาศัย พื้นที่ PEA",
+  "version": "2026-10-07b",
+  "flow_ref": "permit-flow.json > non_sell_flow (ขั้น 1-7)",
+  "note": "ส่วนที่ 1–5 ของ ns_connection_request และไฟล์ทุกช่องของส่วนที่ 4 ยืนยันจากคำขอที่ยื่นจริง (ชุดเอกสาร 43 หน้า ผู้ใช้ส่งมา 2026-10-07: ภาพหน้าจอ PPIM + ไฟล์ที่แนบ) ส่วนอื่นยังเป็นโครงจากระเบียบ กฟภ. 2559 ทุกจุดที่ unverified=true ต้องยืนยันกับ PEA",
+  "types": {
+    "address": {
+      "house_no": "string",
+      "moo": "string?",
+      "subdistrict": "string",
+      "district": "string",
+      "province": "string",
+      "postcode": "string?"
+    },
+    "person": {
+      "name": "string",
+      "age": "int",
+      "national_id": "string(13)",
+      "nationality": "string",
+      "address": "address",
+      "phone": "string",
+      "email": "string?"
+    },
+    "provided_by": "enum[customer, installer, engineer, doc, pea, erc, local_authority]"
+  },
+  "forms": [
+    {
+      "id": "ns_poa",
+      "title": "หนังสือมอบอำนาจ (ขอเชื่อมต่อ ไม่ขายไฟ)",
+      "used_at_steps": [
+        2,
+        5,
+        6
+      ],
+      "required_when": "ผู้ยื่นใน PPIM ไม่ใช่เจ้าของมิเตอร์ (เช่น ทีมติดตั้งยื่นแทน)",
+      "provided_by": "customer",
+      "unverified": true,
+      "derived": "ดัดแปลงจากหนังสือมอบอำนาจสายขายไฟ ตัดข้อเรื่องคำขอขายไฟ/สัญญาออก PEA อาจมีแบบเฉพาะ",
+      "fields": [
+        {
+          "key": "written_at",
+          "label": "เขียนที่",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "date",
+          "label": "วันที่",
+          "type": "date(พ.ศ.)",
+          "required": true
+        },
+        {
+          "key": "grantor",
+          "label": "ผู้มอบอำนาจ (เจ้าของมิเตอร์)",
+          "type": "person",
+          "required": true
+        },
+        {
+          "key": "ca_no",
+          "label": "หมายเลขผู้ใช้ไฟฟ้า (CA)",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "grantee",
+          "label": "ผู้รับมอบอำนาจ",
+          "type": "person",
+          "required": true
+        },
+        {
+          "key": "powers",
+          "label": "อำนาจที่มอบ",
+          "type": "checklist",
+          "options": [
+            {
+              "id": 1,
+              "text": "ยื่นคำขอเชื่อมต่อเครื่องกำเนิดไฟฟ้ากับระบบโครงข่าย PEA (ไม่ขายไฟ) และเอกสารประกอบ"
+            },
+            {
+              "id": 2,
+              "text": "ลงนามในคำขอและเอกสารประกอบที่เกี่ยวข้อง"
+            },
+            {
+              "id": 3,
+              "text": "ติดต่อประสานงาน ให้ถ้อยคำ และนัดหมายตรวจระบบกับเจ้าหน้าที่ PEA"
+            },
+            {
+              "id": 4,
+              "text": "ชำระค่าธรรมเนียมและรับใบเสร็จ"
+            },
+            {
+              "id": 5,
+              "text": "แก้ไข ตกเติม และรับรองเอกสาร"
+            },
+            {
+              "id": 6,
+              "text": "อื่นๆ (ระบุ)",
+              "extra": {
+                "key": "other",
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "key": "signatures",
+          "type": "signature[]",
+          "items": [
+            "grantor",
+            "grantee",
+            "witness_1",
+            "witness_2"
+          ]
+        }
+      ],
+      "rules": [
+        "ติดอากรแสตมป์ 30 บาท (มอบให้ทำการมากกว่าครั้งเดียว)",
+        "แนบสำเนาบัตร ปชช. ผู้มอบและผู้รับมอบ ลงนามรับรองสำเนา",
+        "ต้องเซ็นสด (wet signature) เพราะติดอากร",
+        "นิติบุคคล: หนังสือรับรอง ≤ 6 เดือน + บัตรกรรมการ"
+      ]
+    },
+    {
+      "id": "ns_connection_request",
+      "title": "แบบฟอร์มยื่นคำขอเชื่อมต่อเครื่องกำเนิดไฟฟ้ากับระบบโครงข่ายไฟฟ้าของ กฟภ. (กรณีผลิตไฟฟ้าใช้เอง) — PPIM",
+      "used_at_steps": [
+        2
+      ],
+      "provided_by": "installer",
+      "deadline": "PEA แจ้งผลภายใน 45 วันนับจากข้อมูลครบ (ระเบียบการใช้บริการ 5.2.1)",
+      "sections": [
+        {
+          "part": 1,
+          "title": "ระบุข้อมูลเจ้าของเครื่องวัดหน่วยไฟฟ้า",
+          "confirmed": true,
+          "fields": [
+            {
+              "key": "submit_as",
+              "label": "ยื่นคำขอเชื่อมต่อฯ ในฐานะ",
+              "type": "enum[เจ้าของเครื่องวัดหน่วยไฟฟ้า, ผู้รับมอบอำนาจ]",
+              "required": true
+            },
+            {
+              "key": "ca_no",
+              "label": "หมายเลขผู้ใช้ไฟฟ้า (CA) ของเจ้าของเครื่องวัดหน่วยไฟฟ้า",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "owner_source",
+              "type": "enum[ใช้ข้อมูลตามการลงทะเบียนผู้ใช้งาน, ระบุข้อมูลเอง]",
+              "required": true
+            },
+            {
+              "key": "owner_type",
+              "type": "enum[บุคคลธรรมดา, นิติบุคคล]",
+              "required": true
+            },
+            {
+              "key": "national_id",
+              "label": "เลขประจำตัวประชาชน (ต่างชาติใช้เลขหนังสือเดินทาง)",
+              "type": "string(13)",
+              "required": true
+            },
+            {
+              "key": "name",
+              "label": "ชื่อ-นามสกุล (มีคำนำหน้า)",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "id_address",
+              "label": "ที่อยู่ (ตามบัตรประชาชน) — ช่องที่ไม่มีใส่ \"-\"",
+              "type": "address+{village,room,floor,soi,road,trok}",
+              "required": true
+            },
+            {
+              "key": "phone",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "email",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        {
+          "part": 2,
+          "title": "ระบุข้อมูลผู้ประสานงาน",
+          "confirmed": true,
+          "fields": [
+            {
+              "key": "coordinator_source",
+              "type": "enum[ใช้ข้อมูลเจ้าของเครื่องวัดหน่วยไฟฟ้า, ระบุข้อมูลเอง]",
+              "required": true
+            },
+            {
+              "key": "name",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "phone",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "email",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "address",
+              "type": "address",
+              "required": true
+            }
+          ],
+          "tcroof": "ทีมเราเป็นผู้ประสานงาน"
+        },
+        {
+          "part": 3,
+          "title": "ระบุข้อมูลเครื่องกำเนิดไฟฟ้า",
+          "confirmed": true,
+          "fields": [
+            {
+              "key": "request_type",
+              "type": "enum[เชื่อมต่อใหม่, เชื่อมต่อเพิ่มเติม]",
+              "required": true,
+              "home": "เชื่อมต่อใหม่"
+            },
+            {
+              "key": "generator_owner",
+              "type": "enum[ผู้ใช้ไฟฟ้าเป็นเจ้าของเครื่องกำเนิดไฟฟ้า (IPU), ผู้อื่นเป็นเจ้าของเครื่องกำเนิดไฟฟ้า (IPS/Private PPA)]",
+              "required": true,
+              "home": "IPU"
+            },
+            {
+              "key": "pea_meter_no",
+              "label": "หมายเลขเครื่องวัด (PEA No.)",
+              "type": "string",
+              "required": true
+            },
+            {
+              "key": "meter_voltage",
+              "label": "ระดับแรงดันของเครื่องวัด",
+              "type": "dropdown",
+              "seen": [
+                "380 V (3 phase)"
+              ]
+            },
+            {
+              "key": "install_address",
+              "label": "สถานที่ติดตั้งเครื่องกำเนิดไฟฟ้า",
+              "type": "address",
+              "required": true
+            },
+            {
+              "key": "lat",
+              "label": "ละติจูด °N",
+              "type": "number",
+              "required": true
+            },
+            {
+              "key": "lng",
+              "label": "ลองจิจูด °E",
+              "type": "number",
+              "required": true
+            },
+            {
+              "key": "fuel",
+              "type": "checkbox[พลังงานแสงอาทิตย์, อื่น ๆ]",
+              "required": true
+            },
+            {
+              "key": "pv_mounting",
+              "type": "checkbox[Solar PV Rooftop, Solar PV Floating, Solar PV Farm]",
+              "required": true
+            },
+            {
+              "key": "anti_backfeed",
+              "label": "ระบบป้องกันการจ่ายกระแสไฟฟ้าไหลย้อน",
+              "type": "checkbox[Reverse Power Relay (32), Zero Export Controller]",
+              "required": true,
+              "home": "Zero Export Controller"
+            },
+            {
+              "key": "panels",
+              "type": "table",
+              "columns": [
+                "ชนิดแผง",
+                "ยี่ห้อ",
+                "รุ่น",
+                "กำลังการผลิต (Wp)/แผง",
+                "จำนวน",
+                "กำลังการผลิตรวม (kWp)"
+              ]
+            },
+            {
+              "key": "inverters",
+              "type": "table",
+              "columns": [
+                "ยี่ห้อ",
+                "รุ่น",
+                "กำลังการผลิต (kW)",
+                "จำนวน",
+                "กำลังการผลิตรวม (kW)"
+              ]
+            },
+            {
+              "key": "capacity_summary",
+              "type": "computed",
+              "rows": [
+                "กำลังผลิตจากอินเวอร์เตอร์",
+                "กำลังผลิตจากเครื่องกำเนิดไฟฟ้าอื่นๆ"
+              ],
+              "columns": [
+                "เดิม",
+                "ครั้งนี้",
+                "รวม"
+              ],
+              "note": "ขนาดที่ขอ = kW อินเวอร์เตอร์ ไม่ใช่ kWp แผง"
+            }
+          ]
+        },
+        {
+          "part": 4,
+          "title": "แนบเอกสารประกอบ",
+          "source": "หน้าจอ PPIM + ไฟล์ของคำขอที่ยื่นจริง (2026-10-07) — ช่อง 1–6 เอกสารหลัก, 8–9 พลังงานแสงอาทิตย์; ไม่มีช่อง 7 และไม่มีช่องหลัง 9 สำหรับงานแสงอาทิตย์",
+          "file_rule": {
+            "type": "PDF",
+            "max_mb": "ต่อช่อง: 1–4 = 5 MB, 5–6 = 50 MB, 8 = 5 MB, 9 = 25 MB",
+            "naming": "{n}. {ชื่อเอกสาร}.pdf",
+            "note": "1 ช่องแนบ 1 ไฟล์ — รวมหลายหน้า/หลายรูปเป็น PDF เดียว"
+          },
+          "groups": [
+            {
+              "title": "เอกสารหลัก",
+              "confirmed": true,
+              "attachments": [
+                {
+                  "n": 1,
+                  "key": "bill",
+                  "label": "ใบแจ้งค่าไฟฟ้าของเครื่องวัดหน่วยไฟฟ้าเดือนล่าสุดหรือย้อนหลังไม่เกิน 3 เดือนล่าสุด",
+                  "required": true,
+                  "provided_by": "customer",
+                  "file": "1. ใบแจ้งค่าไฟฟ้า.pdf",
+                  "max_mb": 5,
+                  "contents": [
+                    "ใบแจ้งค่าไฟฟ้า 1 หน้า"
+                  ]
+                },
+                {
+                  "n": 2,
+                  "key": "id_or_company_cert",
+                  "label": "สำเนาบัตรประชาชน/สำเนาหนังสือรับรองนิติบุคคลของเจ้าของเครื่องวัด/เจ้าของเครื่องกำเนิดไฟฟ้า",
+                  "required": true,
+                  "provided_by": "customer",
+                  "rule": "หนังสือรับรองนิติบุคคลอายุไม่เกิน 6 เดือน",
+                  "file": "2. เอกสารเจ้าของเครื่องวัด.pdf",
+                  "max_mb": 5,
+                  "contents": [
+                    "สำเนาบัตรประชาชนเจ้าของเครื่องวัด เซ็นรับรองสำเนา",
+                    "สำเนาทะเบียนบ้าน (หน้ารายการเกี่ยวกับบ้าน + หน้าเจ้าบ้าน)"
+                  ]
+                },
+                {
+                  "n": 3,
+                  "key": "site_plan_latlng",
+                  "label": "แผนผังแสดงที่ตั้งเครื่องกำเนิดไฟฟ้าพร้อมระบุพิกัด Latitude และ Longitude",
+                  "required": true,
+                  "provided_by": "installer",
+                  "file": "3. แผนผังแสดงที่ติดตั้ง.pdf",
+                  "max_mb": 5,
+                  "contents": [
+                    "ภาพถ่ายทางอากาศวางผังแผง ตำแหน่ง inverter แนวสาย DC + ตาราง Project Description (Lat/Long, kWp, จำนวนแผง/inverter/string) — แนวนอน"
+                  ]
+                },
+                {
+                  "n": 4,
+                  "key": "system_photos",
+                  "label": "รูปถ่าย/ภาพถ่ายของระบบผลิตไฟฟ้าที่ขอเชื่อมต่อฯ หรือสถานที่ตั้งของโครงการที่จะติดตั้งระบบผลิตไฟฟ้า",
+                  "required": true,
+                  "provided_by": "installer",
+                  "file": "4. ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า.pdf",
+                  "note": "ยื่นก่อนติดตั้งใช้ภาพสถานที่ตั้งได้",
+                  "max_mb": 5,
+                  "contents": [
+                    "หน้าละ 2 หัวข้อ หัวกระดาษ: ชื่อโครงการ / ที่อยู่ / ขนาดกำลังการผลิตติดตั้ง x กิโลวัตต์",
+                    "แผงเซลล์แสงอาทิตย์",
+                    "เครื่องแปลงไฟฟ้า Inverter",
+                    "Inverter (Serial No.)",
+                    "กราวด์กระแสตรง",
+                    "ตู้ AC ด้านใน",
+                    "ตู้ AC ด้านนอก",
+                    "ตู้ DC ด้านใน",
+                    "ตู้ DC ด้านนอก",
+                    "จุดเชื่อมต่อระบบโซลาร์เซลล์"
+                  ]
+                },
+                {
+                  "n": 5,
+                  "key": "connection_equipment",
+                  "label": "เอกสารแสดงรายละเอียดคุณสมบัติของระบบไฟฟ้าและหรืออุปกรณ์ที่ใช้ในการเชื่อมต่อส่วนระบบผลิตไฟฟ้า",
+                  "required": true,
+                  "max_mb": 50,
+                  "provided_by": "installer",
+                  "includes": [
+                    "Load Break Switch (กรณีเกิน 2,000 kW)",
+                    "อุปกรณ์ตัดตอน เช่น Dropout Fuse, Power Fuse, Switchgear, Ring Main Unit",
+                    "หม้อแปลงไฟฟ้า, PQM, Relay, ระบบป้องกันการจ่ายกระแสไฟฟ้าไหลย้อน, CT และ VT ประกอบ",
+                    "Circuit Breaker, Ground Fault Protection Unit, RCBO ฯลฯ",
+                    "อุปกรณ์อื่นๆ ที่เกี่ยวข้อง"
+                  ],
+                  "for_home": "datasheet: มิเตอร์กันไหลย้อน (smart power sensor) · RCBO · AC SPD · DC fuse · DC SPD · DC breaker ตามลำดับใน SLD",
+                  "file": "5. อุปกรณ์อื่นๆที่เกี่ยวข้อง.pdf"
+                },
+                {
+                  "n": 6,
+                  "key": "sld_engineer",
+                  "label": "แผนภูมิระบบไฟฟ้า (Single Line Diagram) พร้อมวิศวกรลงนามรับรองทุกแผ่น และใบอนุญาตและหนังสือรับรอง",
+                  "required": true,
+                  "max_mb": 50,
+                  "provided_by": "engineer",
+                  "includes": [
+                    "สำเนาใบอนุญาตประกอบวิชาชีพวิศวกรรมควบคุม พร้อมลงนามรับรองสำเนาเอกสาร",
+                    "หนังสือรับรองของผู้ประกอบวิชาชีพวิศวกรรมควบคุม ที่ออกจากสภาวิศวกร"
+                  ],
+                  "note": "คำขอที่ยื่นจริงใช้ภาคีวิศวกร สาขาไฟฟ้ากำลัง (สถานะรอตรวจ ยังไม่รู้ผล)",
+                  "file": "6. แบบแปลน + เอกสารวิศวกรไฟฟ้า.pdf",
+                  "contents": [
+                    "ปกโครงการ (ชื่อ ที่อยู่ kWp GPS)",
+                    "ผังติดตั้งแผงบนภาพถ่ายทางอากาศ",
+                    "Single Line Diagram + ตารางสเปก inverter/แผง (Voc×1.06, Isc×1.50)",
+                    "แบบโครงสร้างหลังคา",
+                    "รายละเอียดการยึดแผง (clamp / L-feet)",
+                    "ทุกแผ่นมีกรอบ title block และลายเซ็นวิศวกรไฟฟ้า",
+                    "สำเนาบัตรประชาชนวิศวกร + สำเนาใบอนุญาต กว. เซ็นรับรองและเขียนกำกับชื่อโครงการ",
+                    "หนังสือรับรองสภาวิศวกร (ใช้ได้ 120 วันนับจากวันออก)"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "พลังงานแสงอาทิตย์",
+              "confirmed": true,
+              "attachments": [
+                {
+                  "n": 8,
+                  "key": "pv_spec",
+                  "label": "เอกสารแสดงรายละเอียดคุณสมบัติของแผงพลังงานแสงอาทิตย์",
+                  "required": true,
+                  "max_mb": 5,
+                  "provided_by": "installer",
+                  "file": "8. แผงเซลล์แสงอาทิตย์.pdf"
+                },
+                {
+                  "n": 9,
+                  "key": "inverter_spec",
+                  "label": "เอกสารแสดงรายละเอียดคุณสมบัติของอินเวอร์เตอร์ / ผลการทดสอบและรับรองผลิตภัณฑ์",
+                  "required": true,
+                  "max_mb": 25,
+                  "provided_by": "installer",
+                  "file": "9. เครื่องแปลงไฟฟ้า.pdf"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "part": 5,
+          "title": "การรับรองโดยผู้ประสงค์ยื่นคำขอเชื่อมต่อเครื่องกำเนิดไฟฟ้า",
+          "confirmed": true,
+          "fields": [
+            {
+              "key": "declarations",
+              "type": "checkbox x9",
+              "required": true,
+              "note": "ติ๊กครบ 9 ข้อ รวมยืนยันว่าเพื่อใช้เองภายใน ไม่ขายไฟตาม VSPP/SPP และยินยอมส่งข้อมูลให้ สกพ. เพื่อการออกจดแจ้งยกเว้น"
+            }
+          ]
+        }
+      ],
+      "output": "PEA เห็นชอบแบบก่อนติดตั้ง (5.2.2) — ลำดับใน PPIM ยังไม่ยืนยัน",
+      "derived": "ส่วนที่ 4 กลุ่มเอกสารหลักยืนยันจากหน้าจอ PPIM · ส่วนอื่นโครงจาก สิ่งแนบ 1 ระเบียบการใช้บริการ 2559",
+      "status_after_submit": "รอตรวจสอบแบบคำขอ (เลขคำขอรูปแบบ PPIM + ตัวอักษร/ตัวเลข)"
+    },
+    {
+      "id": "ns_roof_weight",
+      "title": "ใบคำนวณน้ำหนักระบบบนหลังคา (กฎกระทรวง ฉบับที่ 72 พ.ศ. 2568)",
+      "used_at_steps": [
+        1
+      ],
+      "provided_by": "engineer",
+      "law": "กฎกระทรวง ฉบับที่ 72 (พ.ศ. 2568) ตาม พ.ร.บ.ควบคุมอาคาร 2522: แผงโซลาร์บนหลังคาน้ำหนักรวมบริเวณใดบริเวณหนึ่ง ≤ 20 กก./ตร.ม. ไม่ถือเป็นการดัดแปลงอาคาร",
+      "fields": [
+        {
+          "key": "panel_weight_kg",
+          "type": "number",
+          "from": "pv datasheet"
+        },
+        {
+          "key": "panel_area_m2",
+          "type": "number",
+          "computed": "length_m × width_m จาก datasheet"
+        },
+        {
+          "key": "panel_qty",
+          "type": "int"
+        },
+        {
+          "key": "mounting_weight_kg",
+          "type": "number",
+          "label": "ราง + ขายึด + clamp + น็อต รวม"
+        },
+        {
+          "key": "other_on_roof_kg",
+          "type": "number",
+          "default": 0,
+          "label": "อุปกรณ์อื่นบนหลังคา (optimizer, กล่อง DC, ทางเดิน)"
+        },
+        {
+          "key": "covered_area_m2",
+          "type": "number",
+          "computed": "panel_area_m2 × panel_qty (หรือวัดจาก layout ต่อกลุ่มแผง)"
+        },
+        {
+          "key": "kg_per_m2",
+          "type": "number",
+          "computed": "(panel_weight_kg × panel_qty + mounting_weight_kg + other_on_roof_kg) / covered_area_m2"
+        },
+        {
+          "key": "worst_array_kg_per_m2",
+          "type": "number",
+          "note": "ถ้ามีหลายกลุ่มแผง คิดทุกกลุ่ม ใช้ค่าสูงสุด (กฎใช้ 'บริเวณใดบริเวณหนึ่ง')"
+        },
+        {
+          "key": "route",
+          "type": "enum[exempt, permit]",
+          "computed": "worst_array_kg_per_m2 ≤ 20 ? exempt : permit"
+        },
+        {
+          "key": "roof_type",
+          "type": "enum[metal_sheet, cpac_tile, ceramic_tile, concrete_slab, other]"
+        },
+        {
+          "key": "roof_structure",
+          "type": "enum[steel, wood, concrete]"
+        },
+        {
+          "key": "roof_condition_photos",
+          "type": "image[]"
+        },
+        {
+          "key": "structural_check_by",
+          "type": "string?",
+          "label": "ผู้ตรวจสภาพหลังคา (แนะนำ แม้ไม่บังคับ)"
+        }
+      ],
+      "rules": [
+        "route = exempt: แนบใบนี้ + datasheet เก็บในแฟ้มงาน ไม่ต้องยื่นเทศบาล",
+        "route = permit: เปิด ns_building_permit ต้องได้ อ.1 ก่อนเริ่มติดตั้ง",
+        "โครงสร้างไม้/หลังคาเก่า: แอปเตือนให้วิศวกรโยธาตรวจ"
+      ],
+      "unverified": "ต้องแจ้งท้องถิ่นหรือไม่ในกรณี exempt — แหล่งข้อมูลขัดกัน ยืนยันกับตัวบทราชกิจจาฯ / กองช่างเทศบาล"
+    },
+    {
+      "id": "ns_building_permit",
+      "title": "ขออนุญาตดัดแปลงอาคาร (ข.1 → อ.1) กรณีน้ำหนัก > 20 กก./ตร.ม.",
+      "used_at_steps": [
+        1
+      ],
+      "required_when": "ns_roof_weight.route = permit",
+      "provided_by": "doc",
+      "authority": "เทศบาล / อบต. / สำนักงานเขต ที่ตั้งบ้าน",
+      "attachments": [
+        {
+          "key": "form_kh1",
+          "label": "แบบ ข.1 คำขออนุญาตดัดแปลงอาคาร",
+          "provided_by": "doc",
+          "sign": "customer"
+        },
+        {
+          "key": "land_deed",
+          "label": "สำเนาโฉนด / หนังสือยินยอมเจ้าของที่ดิน",
+          "provided_by": "customer"
+        },
+        {
+          "key": "house_registration",
+          "label": "สำเนาทะเบียนบ้าน",
+          "provided_by": "customer",
+          "reuse": "ns_connection_request.house_registration"
+        },
+        {
+          "key": "id_card",
+          "label": "สำเนาบัตร ปชช. เจ้าของอาคาร",
+          "provided_by": "customer",
+          "reuse": "ns_connection_request.id_card"
+        },
+        {
+          "key": "poa",
+          "label": "หนังสือมอบอำนาจยื่นเทศบาล (อากร 30 บาท)",
+          "provided_by": "customer",
+          "when": "ทีมยื่นแทน",
+          "note": "แยกฉบับจาก ns_poa (คนละหน่วยงาน) หรือรวมอำนาจในฉบับเดียว — ยังไม่ยืนยันว่าเทศบาลรับฉบับรวม"
+        },
+        {
+          "key": "structural_plan",
+          "label": "แบบแปลนโครงสร้าง วิศวกรโยธาลงนาม",
+          "provided_by": "engineer"
+        },
+        {
+          "key": "structural_calc",
+          "label": "รายการคำนวณโครงสร้าง",
+          "provided_by": "engineer"
+        },
+        {
+          "key": "civil_license",
+          "label": "สำเนา กว. วิศวกรโยธา",
+          "provided_by": "engineer"
+        }
+      ],
+      "output": {
+        "key": "permit_o1",
+        "label": "ใบอนุญาต อ.1",
+        "provided_by": "local_authority",
+        "fields": {
+          "permit_no": "string",
+          "issued_date": "date"
+        }
+      },
+      "unverified": "ระยะเวลาและค่าธรรมเนียม แต่ละท้องถิ่นกำหนดเอง"
+    },
+    {
+      "id": "ns_install_cert",
+      "title": "แบบรับรองการติดตั้งระบบ (ไม่ขายไฟ)",
+      "used_at_steps": [
+        5
+      ],
+      "provided_by": "engineer",
+      "unverified": true,
+      "derived": "ใช้โครงเอกสารแนบ 1-10 ของแบบรับรองตนเองสายขายไฟ ตัดข้อมูลสัญญาออก และบังคับ zero export ทุกกรณี — ฉบับที่ PEA ใช้จริงสำหรับสายนี้ยังไม่ทราบ",
+      "header_fields": [
+        {
+          "key": "owner_name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "ppim_request_no",
+          "type": "string"
+        },
+        {
+          "key": "ca_no",
+          "type": "string"
+        },
+        {
+          "key": "install_address",
+          "type": "address"
+        },
+        {
+          "key": "pv_kwp",
+          "type": "number"
+        },
+        {
+          "key": "inverter_kw_total",
+          "type": "number"
+        },
+        {
+          "key": "install_date",
+          "type": "date"
+        }
+      ],
+      "attachments": [
+        {
+          "n": 1,
+          "key": "site",
+          "title": "สถานที่ติดตั้ง + พิกัด lat/long",
+          "fields": {
+            "lat": "number",
+            "lng": "number",
+            "photos": "image[]"
+          }
+        },
+        {
+          "n": 2,
+          "key": "zero_export",
+          "title": "อุปกรณ์ป้องกันไฟไหลย้อน + CT/มิเตอร์ตรวจวัดตามจำนวนเฟส",
+          "fields": {
+            "setting_export_kw": "number (= 0)",
+            "photos": "image[]"
+          },
+          "required": true
+        },
+        {
+          "n": 3,
+          "key": "pv",
+          "title": "แผง PV: จำนวน ยี่ห้อ รุ่น",
+          "fields": {
+            "photos": "image[]"
+          }
+        },
+        {
+          "n": 4,
+          "key": "inverter",
+          "title": "Inverter: จำนวน ยี่ห้อ รุ่น (ป้าย nameplate)",
+          "fields": {
+            "photos": "image[]"
+          }
+        },
+        {
+          "n": 5,
+          "key": "inverter_setting",
+          "title": "ค่า Inverter Setting ทุกเครื่อง (รวม anti-islanding)",
+          "fields": {
+            "photos_per_inverter": "image[][]"
+          }
+        },
+        {
+          "n": 6,
+          "key": "ocd",
+          "title": "Overcurrent Device",
+          "fields": {
+            "type": "enum[mccb_gf, rcbo, cb_plus_rcd]",
+            "photos": "image[]"
+          }
+        },
+        {
+          "n": 7,
+          "key": "ac_spd",
+          "title": "AC SPD",
+          "fields": {
+            "photos": "image[]"
+          }
+        },
+        {
+          "n": 8,
+          "key": "poc",
+          "title": "จุดเชื่อมต่อใต้เบรกเกอร์ประธาน",
+          "fields": {
+            "photos": "image[]"
+          }
+        },
+        {
+          "n": 9,
+          "key": "engineer_license",
+          "title": "สำเนา กว. + หนังสือรับรองสภาวิศวกร",
+          "fields": {
+            "files": "file[]"
+          }
+        },
+        {
+          "n": 10,
+          "key": "latest_bill",
+          "title": "ใบแจ้งค่าไฟเดือนล่าสุด",
+          "fields": {
+            "files": "file[]"
+          }
+        }
+      ],
+      "signatures": [
+        {
+          "role": "owner",
+          "date": true
+        },
+        {
+          "role": "engineer",
+          "date": true
+        }
+      ],
+      "rules": [
+        "วิศวกรลงนามทุกแผ่น",
+        "ข้อมูลอุปกรณ์ต้องตรงกับที่ยื่นในคำขอ"
+      ],
+      "maps_to_tcroof": "รูป commissioning ในแอปเติมเอกสารแนบ 1-8 ได้"
+    },
+    {
+      "id": "ns_fee_payment",
+      "title": "ชำระค่าธรรมเนียมตรวจ/เชื่อมต่อ",
+      "used_at_steps": [
+        5
+      ],
+      "provided_by": "customer",
+      "unverified": true,
+      "fields": [
+        {
+          "key": "ref_no",
+          "type": "string"
+        },
+        {
+          "key": "amount_thb",
+          "type": "number",
+          "value": null,
+          "note": "ยังไม่ทราบจำนวน ห้ามใส่ค่าเดาในแอป ให้กรอกตามใบแจ้งของ PEA"
+        },
+        {
+          "key": "paid_date",
+          "type": "date"
+        },
+        {
+          "key": "receipt",
+          "type": "file",
+          "required": true,
+          "note": "อัปโหลดใน PPIM พร้อม ns_install_cert"
+        }
+      ]
+    },
+    {
+      "id": "ns_inspection_request",
+      "title": "แจ้งความพร้อมให้ PEA ตรวจระบบ / ทดสอบขนาน",
+      "used_at_steps": [
+        6
+      ],
+      "provided_by": "installer",
+      "deadline": "PEA ตรวจเสร็จภายใน 30 วันนับจากแจ้งขอตรวจ (5.2.3)",
+      "unverified": "ทำผ่าน PPIM หรือ PEA นัดเอง",
+      "fields": [
+        {
+          "key": "ppim_request_no",
+          "type": "string"
+        },
+        {
+          "key": "ready_date",
+          "type": "date"
+        },
+        {
+          "key": "contact_on_site",
+          "type": "string"
+        },
+        {
+          "key": "test_checklist",
+          "type": "checklist",
+          "options": [
+            {
+              "id": 1,
+              "text": "First Sync เดินเครื่องไม่เกินโหลดบ้าน"
+            },
+            {
+              "id": 2,
+              "text": "Anti-islanding: ปลดทันทีเมื่อไฟ PEA ดับ"
+            },
+            {
+              "id": 3,
+              "text": "ไม่มี auto-reclose"
+            },
+            {
+              "id": 4,
+              "text": "Zero export ทำงาน (ไม่มีไฟไหลย้อน)"
+            }
+          ]
+        },
+        {
+          "key": "result",
+          "type": "enum[pass, fail]"
+        },
+        {
+          "key": "connection_start_date",
+          "type": "date",
+          "when": "result = pass",
+          "note": "วันที่ PEA แจ้ง ใช้กำหนดปีภาษีที่ลดหย่อน"
+        },
+        {
+          "key": "fix_items",
+          "type": "string[]",
+          "when": "result = fail",
+          "note": "แก้แล้วแจ้งแผนทดสอบใหม่ (4.4.10)"
+        }
+      ]
+    },
+    {
+      "id": "ns_erc_notice",
+      "title": "แจ้ง กกพ. การผลิตไฟฟ้าที่ได้รับยกเว้นใบอนุญาต",
+      "used_at_steps": [
+        1,
+        6
+      ],
+      "provided_by": "installer",
+      "source": "erc.or.th/th/all-exception/",
+      "unverified": "ไม่ทราบว่าสายไม่ขายไฟขนาดบ้านต้องแจ้งด้วยหรือไม่ และยังไม่มีตัวฟอร์ม",
+      "fields": [
+        {
+          "key": "owner",
+          "type": "person"
+        },
+        {
+          "key": "install_address",
+          "type": "address"
+        },
+        {
+          "key": "inverter_kw_total",
+          "type": "number",
+          "validate": "< 1,000 kW"
+        },
+        {
+          "key": "notice_ref",
+          "type": "string?"
+        },
+        {
+          "key": "notice_date",
+          "type": "date?"
+        }
+      ]
+    },
+    {
+      "id": "ns_tax_pack",
+      "title": "ชุดเอกสารลดหย่อนภาษี Solar Rooftop (เก็บให้ลูกค้า)",
+      "used_at_steps": [
+        4,
+        7
+      ],
+      "provided_by": "installer",
+      "law": "พ.ร.ฎ. ฉบับที่ 805 พ.ศ. 2569",
+      "eligibility": {
+        "pv_kwp_max": 10,
+        "max_thb": 200000,
+        "once_per_system": true,
+        "until": "2571-12-31"
+      },
+      "checklist": [
+        {
+          "id": 1,
+          "text": "e-Tax Invoice ค่าแผง/อุปกรณ์/ค่าติดตั้ง จากผู้ขายที่จด VAT",
+          "provided_by": "installer",
+          "required": true
+        },
+        {
+          "id": 2,
+          "text": "หนังสือ/ข้อความจาก PEA แจ้งวันเริ่มต้นเชื่อมต่อ",
+          "provided_by": "pea",
+          "required": true
+        },
+        {
+          "id": 3,
+          "text": "สำเนาคำขอเชื่อมต่อที่อนุมัติ (เลข PPIM)",
+          "provided_by": "installer"
+        },
+        {
+          "id": 4,
+          "text": "สเปคแผงยืนยัน ≤ 10 kWp",
+          "provided_by": "installer"
+        }
+      ],
+      "rules": [
+        "ใช้ลดหย่อนในปีภาษีที่ PEA แจ้งวันเริ่มต้นเชื่อมต่อ",
+        "ชื่อผู้ซื้อใน e-Tax Invoice ต้องตรงผู้ใช้สิทธิ์",
+        "ลูกค้าเก็บเอกสารยื่นกรมสรรพากรเอง (ยังไม่ยืนยันว่า PEA ส่งข้อมูลให้สรรพากรเอง)"
+      ]
+    }
+  ],
+  "step_map": {
+    "1": [
+      "ns_roof_weight",
+      "ns_building_permit (ถ้า route = permit)",
+      "ns_erc_notice (เช็กเงื่อนไข)"
+    ],
+    "2": [
+      "ns_connection_request",
+      "ns_poa (ถ้ามี)"
+    ],
+    "3": [
+      "รอ PEA เห็นชอบแบบ"
+    ],
+    "4": [
+      "ติดตั้ง + zero export",
+      "ns_tax_pack ข้อ 1"
+    ],
+    "5": [
+      "ns_fee_payment",
+      "ns_install_cert"
+    ],
+    "6": [
+      "ns_inspection_request",
+      "ns_erc_notice (ถ้าต้องแจ้ง)"
+    ],
+    "7": [
+      "ns_tax_pack ข้อ 2"
+    ]
+  },
+  "open_items": [
+    "ค่าธรรมเนียมจริงของสายไม่ขายไฟ",
+    "ฉบับแบบรับรองการติดตั้งที่ PEA ใช้",
+    "ลำดับเห็นชอบแบบก่อน/หลังติดตั้งใน PPIM ปัจจุบัน",
+    "ต้องแจ้ง กกพ. หรือไม่",
+    "ชนิดมิเตอร์ที่ PEA เปลี่ยนให้",
+    "ชนิด zero export ที่ PEA ยอมรับ",
+    "กรณีน้ำหนัก ≤ 20 กก./ตร.ม. ต้องแจ้งเทศบาลหรือไม่",
+    "PEA รับภาคีวิศวกรไฟฟ้ากำลังเซ็น SLD งานบ้านหรือไม่ (คำขอที่เห็นยังรอตรวจ)",
+    "ตัวเลือกแรงดันเครื่องวัด 1 เฟสใน PPIM (เห็นเฉพาะ 380 V (3 phase))"
+  ]
+}

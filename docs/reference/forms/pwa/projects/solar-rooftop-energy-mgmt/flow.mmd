@@ -1,0 +1,37 @@
+flowchart TD
+  S([สร้างสถานีในโครงการ]) --> P[กรอกข้อมูลสถานี<br/>kWp · inverter kVA · ภาค · เทศบาล/อบต.]
+  P --> R{เอกสารภายนอกพร้อมไหม?<br/>พ.ร.บ.จัดตั้ง · คำสั่งมอบอำนาจ<br/>กว./ตพค. ไม่หมดอายุ · datasheet}
+  R -- ไม่ครบ --> RQ[ขอจาก กปภ. / ต่ออายุ / ขอผู้ขาย]:::ext --> R
+  R -- ครบ --> K[1.1 Kick off]
+  K --> E[1.2 Engineering Approve<br/>SLD · Layout · คำนวณไฟฟ้า<br/>แบบ Forcon · คำนวณโยธา]:::int
+  E --> H[1.3 ส่งมอบพื้นที่]
+  H --> B{1.4 เทศบาลกำหนดแบบไหน?}
+  B -- ขออนุญาต --> B1[ยื่น ข.1 ขอดัดแปลงอาคาร<br/>+ หนังสือมอบอำนาจ + ทะเบียนบ้าน<br/>+ Forcon + คำนวณโยธา]:::sign
+  B1 --> B2[เทศบาลออก อ.1]:::ext
+  B -- แจ้งยกเว้น --> B3[หนังสือแจ้งเทศบาล ตามกฎกระทรวงยกเว้น<br/>+ โฉนด + สำเนา กว. โยธา/ไฟฟ้า]:::sign
+  B2 --> I
+  B3 --> I
+  I[2.1–2.9 ติดตั้ง<br/>ถ่ายรูปตาม slot ทุกขั้น]:::int --> IR[รายงานภาพถ่ายติดตั้ง]:::int
+  IR --> PC[3.1 Pre-commissioning<br/>IEC 62446 ก่อนเชื่อมต่อ<br/>Voc · Polarity · IR 1000 V]:::int
+  PC --> G[1.7 ยื่นขอขนานไฟ กฟภ.<br/>ชุด 11 รายการ]:::sign
+  G --> GA{กฟภ. อนุมัติ?}:::ext
+  GA -- แก้ไข --> G
+  GA -- ผ่าน --> AT[ทดสอบหลังเชื่อมต่อ<br/>IEC 62446 หลัง · Form IV Test<br/>ภาพความร้อน · พลังงาน 7 วัน]:::int
+  AT --> KV{inverter รวม ≥ 200 kVA?}
+  KV -- ใช่ --> K2[1.5 ชุด พค.2 ตาม Check list กกพ.<br/>หนังสือแจ้งความพร้อม · พค.1<br/>แบบตรวจสอบ ส่วนที่ 1–3 · Route Line]:::int
+  K2 --> K3{กกพ. เข้าตรวจ / ออก พค.2}:::ext
+  K3 -- ขอเพิ่ม --> K2
+  K3 -- ผ่าน --> TR
+  KV -- ไม่ใช่ --> KX[ต้องแจ้งอะไรแทน? ยังไม่ยืนยัน]:::open
+  KX --> TR
+  TR[3.2 อบรม + ส่งคู่มือ O&M ตามภาค] --> PL[Punch list]:::sign
+  PL --> PA{ผู้ว่าจ้าง Approve?}:::ext
+  PA -- Not approve / มี note --> FX[แก้ไข + ถ่ายรูปหลังแก้]:::int --> PL
+  PA -- Approve --> AB[As-Built Drawing]:::int
+  AB --> D([ส่งมอบแฟ้ม 4 หมวด<br/>1 รายงานและผลทดสอบ · 2 คู่มือ · 3 As-Built · 4 เอกสารขออนุญาต])
+  COP[1.6 COP / ใบอนุญาตประกอบกิจการพลังงาน<br/>ไม่มีเอกสารในตัวอย่าง]:::open -.-> D
+
+  classDef int fill:#dff3e8,stroke:#1f7a4d,color:#10301f
+  classDef sign fill:#fbefd6,stroke:#8a5a00,color:#3a2700
+  classDef ext fill:#dde9f8,stroke:#1d5fa8,color:#0d2a4d
+  classDef open fill:#ffffff,stroke:#8a5a00,stroke-dasharray:5 4,color:#3a2700

@@ -1,0 +1,208 @@
+{
+  "title": "แบบฟอร์ม โครงการ Solar Rooftop ภาคประชาชน บ้านอยู่อาศัย พ.ศ. 2569 (PEA)",
+  "version": "2026-10-05",
+  "note": "ฟิลด์ดึงจากแบบฟอร์มต้นฉบับที่แนบ ส่วน PPIM (แบบ 3, 4) สรุปจากคู่มือ PPIM เพราะไม่มีตัวฟอร์มจริง ชื่อฟิลด์ในระบบ PPIM อาจต่างจากนี้",
+  "types": {
+    "address": {"house_no": "string", "moo": "string?", "subdistrict": "string", "district": "string", "province": "string", "postcode": "string?"},
+    "person": {"name": "string", "age": "int", "national_id": "string(13)", "ethnicity": "string", "nationality": "string", "address": "address", "phone": "string", "email": "string?"},
+    "photo_set": {"photos": "image[]", "caption": "string?"}
+  },
+  "forms": [
+    {
+      "id": "poa",
+      "title": "หนังสือมอบอำนาจ โครงการ Solar Rooftop บ้านอยู่อาศัย",
+      "source_files": ["หนังสือมอบอำนาจ.docx", "หนังสือมอบอำนาจ.pdf"],
+      "used_at_steps": [2, 6, 7, 9],
+      "required_when": "ผู้ยื่นไม่ใช่เจ้าของมิเตอร์",
+      "fields": [
+        {"key": "written_at", "label": "เขียนที่", "type": "string", "required": true},
+        {"key": "date", "label": "วันที่", "type": "date(พ.ศ.)", "required": true},
+        {"key": "grantor", "label": "ผู้มอบอำนาจ (เจ้าของมิเตอร์)", "type": "person", "required": true},
+        {"key": "grantee", "label": "ผู้รับมอบอำนาจ", "type": "person", "required": true},
+        {"key": "powers", "label": "อำนาจที่มอบ (ติ๊ก ✓ = ให้ทำ, ขีด – = ไม่ให้ทำ)", "type": "checklist", "options": [
+          {"id": 1, "text": "ยื่นแบบคำขอขายไฟฟ้า และเอกสารประกอบที่เกี่ยวข้องทั้งหมด"},
+          {"id": 2, "text": "ลงนามและยื่นแบบคำขอขายไฟฟ้า และเอกสารประกอบที่เกี่ยวข้องทั้งหมด"},
+          {"id": 3, "text": "ติดต่อประสานงาน ให้ถ้อยคำต่างๆ กับเจ้าหน้าที่ของการไฟฟ้าฝ่ายจำหน่าย"},
+          {"id": 4, "text": "ติดต่อ จัดส่งเอกสารและลงนามสัญญาซื้อขายไฟฟ้ากับการไฟฟ้าฝ่ายจำหน่าย หากได้รับการคัดเลือก"},
+          {"id": 5, "text": "ลงนามและยื่นขออนุญาตเชื่อมต่อระบบโครงข่ายไฟฟ้า และเอกสารประกอบที่เกี่ยวข้อง หากได้รับการคัดเลือก"},
+          {"id": 6, "text": "แก้ไข ตกเติม และรับรองเอกสารที่เกี่ยวข้องในข้อ...", "extra": {"key": "item6_ref", "type": "string"}},
+          {"id": 7, "text": "อื่นๆ (ระบุ)", "extra": {"key": "item7_other", "type": "string"}}
+        ]},
+        {"key": "signatures", "type": "signature[]", "items": ["grantor", "grantee", "witness_1", "witness_2"], "note": "ทุกช่องมีชื่อตัวบรรจงในวงเล็บ"}
+      ],
+      "rules": [
+        "ติดอากรแสตมป์ 30 บาท",
+        "แนบสำเนาบัตรประชาชนผู้มอบและผู้รับมอบ ลงนามรับรองสำเนาถูกต้อง",
+        "แก้ไขข้อความ: ขีดเส้นทับข้อความเดิมและลงชื่อกำกับทุกแห่ง",
+        "นิติบุคคล: แนบหนังสือรับรองบริษัทออกไม่เกิน 6 เดือน + บัตรกรรมการ รับรองสำเนา",
+        "ใช้ต้นฉบับตอนส่งเอกสารสัญญา (ขั้น 6)"
+      ]
+    },
+    {
+      "id": "sale_application",
+      "title": "แบบคำขอขายไฟฟ้า (ระบบ PPIM)",
+      "source_files": ["คู่มือการยื่นแบบคำขอขายไฟฟ้า PPIM 2569.pdf"],
+      "used_at_steps": [2],
+      "derived": "สรุปจากคู่มือ PPIM ไม่ใช่ฟอร์มจริง",
+      "sections": [
+        {"part": 1, "title": "รูปแบบการยื่น / รายละเอียดผู้ยื่น", "fields": [
+          {"key": "submit_mode", "type": "enum", "options": ["owner", "poa"], "label": "เจ้าของเครื่องวัดยื่นเอง / รับมอบอำนาจยื่น"},
+          {"key": "ca_no", "type": "string", "label": "หมายเลขผู้ใช้ไฟฟ้า (CA)", "note": "ยื่นเองเลือกจากบัญชี ระบบเติมข้อมูลให้; รับมอบอำนาจต้องกรอกเอง"}
+        ]},
+        {"part": 2, "title": "ผู้ประสานงาน", "fields": [
+          {"key": "coordinator.name", "type": "string"}, {"key": "coordinator.phone", "type": "string"}, {"key": "coordinator.email", "type": "string"}
+        ]},
+        {"part": 3, "title": "ข้อมูลเครื่องกำเนิดไฟฟ้า", "fields": [
+          {"key": "install_address", "type": "address", "note": "ตามบิลค่าไฟ"},
+          {"key": "rate_code", "type": "string(4)", "note": "เช่น 1125: หลัก 1 = ประเภท (ต้องเป็น 1), หลัก 4 = แรงดัน (5 = < 400 V, 4 = 11–33 kV)"},
+          {"key": "panels", "type": "array", "item": {"brand": "string", "model": "string", "watt_per_panel": "number", "qty": "int"}},
+          {"key": "inverters", "type": "array", "item": {"brand": "string", "model": "string", "rated_kw": "number", "qty": "int", "phase": "enum[1,3]"}, "validate": "ต้องอยู่ใน smartlist.pea.co.th"},
+          {"key": "battery", "type": "object?", "note": "ไม่ห้าม ต้องตามมาตรฐานการไฟฟ้า"},
+          {"key": "prior_connection_request_no", "type": "string?", "label": "เลขคำขอเชื่อมต่อเดิมที่อนุมัติแล้ว (ถ้ามี)"},
+          {"key": "sell_kw", "type": "number", "validate": "≤ 5"},
+          {"key": "contract_signer", "type": "string", "label": "ผู้ที่จะลงนามในสัญญา"}
+        ]},
+        {"part": 4, "title": "เอกสารแนบ", "attachments": [
+          {"key": "bill", "label": "ใบแจ้งค่าไฟฟ้า", "validate": "ไม่เกิน 3 เดือน, ชื่อ/ที่อยู่ตรงผู้ยื่น"},
+          {"key": "house_registration", "label": "สำเนาทะเบียนบ้านหน้าแรก", "validate": "ที่อยู่ตรงบิล"},
+          {"key": "front_photo", "label": "ภาพถ่ายด้านหน้าอาคารที่ติดตั้ง"},
+          {"key": "sld", "label": "Single Line Diagram"},
+          {"key": "pv_spec", "label": "รายละเอียดแผง PV (spec)"},
+          {"key": "inverter_spec", "label": "รายละเอียด inverter ยี่ห้อ/รุ่นตาม List PEA"},
+          {"key": "engineer_cert", "label": "หนังสือรับรองวิศวกร", "validate": "ระบุประเภทการติดตั้ง ขนาดกำลังผลิต ชื่อเจ้าของตรงผู้ยื่น"},
+          {"key": "engineer_license", "label": "สำเนา กว. ไม่หมดอายุ ณ วันยื่น ลงนามรับรอง", "validate": "ระบุ 'งานออกแบบ' อย่างน้อย"},
+          {"key": "poa_docs", "label": "หนังสือมอบอำนาจ + สำเนาบัตรผู้รับมอบ", "when": "submit_mode = poa"},
+          {"key": "foreigner_docs", "label": "บัตรคนต่างด้าว/ใบอนุญาตทำงาน + Certificate of Income Tax Payment", "when": "ผู้ใช้ไฟเป็นชาวต่างชาติ"}
+        ]},
+        {"part": 5, "title": "เงื่อนไขและยินยอม", "fields": [
+          {"key": "accept_terms", "type": "boolean", "required": true},
+          {"key": "tax_consent", "type": "boolean", "when": "แผงรวม ≤ 10 kWp", "label": "ยินยอมให้ กฟภ. ส่งข้อมูลให้กรมสรรพากร"}
+        ]}
+      ],
+      "status": {"D…": "รออัปโหลดเอกสาร (ไม่ครบ)", "PPIM1A6…": "รอตรวจสอบแบบคำขอ"}
+    },
+    {
+      "id": "contract_docs",
+      "title": "รายการเอกสารติดต่อทำสัญญาซื้อขายไฟฟ้ากับ PEA",
+      "source_files": ["รายละเอียดเอกสารติดต่อทำสัญญาซื้อขายไฟฟ้ากับ PEA.pdf"],
+      "used_at_steps": [5, 6, 7],
+      "copies": "2 ชุด (ต้นฉบับ 1 + สำเนา 1)",
+      "checklist": [
+        {"id": "1", "text": "สำเนาใบเสร็จค่าใช้จ่ายในการเชื่อมต่อระบบไฟฟ้า"},
+        {"id": "2.1", "text": "สำเนาบัตรประชาชนเจ้าของเครื่องวัด รับรองสำเนา"},
+        {"id": "2.2", "text": "ต้นฉบับหนังสือมอบอำนาจ", "when": "มอบอำนาจ"},
+        {"id": "2.3", "text": "สำเนาบัตรประชาชนผู้รับมอบอำนาจ รับรองสำเนา", "when": "มอบอำนาจ"},
+        {"id": "2.4", "text": "สำเนาทะเบียนบ้านของสถานที่ใช้ไฟตามบิล"},
+        {"id": "2.5", "text": "หนังสือรับรองนิติบุคคล", "when": "นิติบุคคล"},
+        {"id": "2.6", "text": "สำเนาบัตรผู้มีอำนาจลงนามนิติบุคคล รับรองสำเนา", "when": "นิติบุคคล"},
+        {"id": "3.1", "text": "สำเนาบัตรผู้เข้าร่วมโครงการและพยาน รับรองสำเนา", "when": "เจ้าของลงนามเอง (ใช้ชุดเดียวกับข้อ 2 ได้)"},
+        {"id": "3.2", "text": "หนังสือรับรองนิติบุคคล", "when": "นิติบุคคล"},
+        {"id": "3.3", "text": "สำเนาบัตรผู้มีอำนาจนิติบุคคลและพยาน", "when": "นิติบุคคล"},
+        {"id": "3.4", "text": "สำเนาบัตรผู้รับมอบอำนาจและพยาน", "when": "ผู้รับมอบอำนาจลงนาม"},
+        {"id": "3.5", "text": "ต้นฉบับหนังสือมอบอำนาจลงนามสัญญา", "when": "หนังสือข้อ 2.2 ไม่ครอบคลุม"}
+      ]
+    },
+    {
+      "id": "fee_payment",
+      "title": "ใบแจ้งค่าใช้จ่ายการเชื่อมต่อ / วิธีชำระ",
+      "source_files": ["เอกสารหมายเลข 1 ค่าใช้จ่าย.pdf", "วิธีชำระเงิน.pdf"],
+      "used_at_steps": [5],
+      "fields": [
+        {"key": "ref_no", "type": "string", "pattern": "VS64xxxxxxxx (ตัวพิมพ์ใหญ่)", "note": "สแกนบาร์โค้ดหรือกรอกที่เคาน์เตอร์ PEA"},
+        {"key": "amount_thb", "type": "number", "value": 2140, "note": "2,000 + VAT 7%"},
+        {"key": "receipt", "type": "file", "note": "เก็บสำเนาไว้ส่งพร้อมเอกสารสัญญา"}
+      ]
+    },
+    {
+      "id": "ppa_contract",
+      "title": "สัญญาซื้อขายไฟฟ้า (เอกสารหมายเลข 2)",
+      "source_files": ["สัญญาซื้อขายไฟฟ้า.pdf"],
+      "used_at_steps": [7],
+      "filled_by": "PEA (ผู้ใช้ตรวจข้อมูล)",
+      "fields": [
+        {"key": "contract_no", "type": "string", "example": "VSPP-RT3.2-XX-XXX/25XX"},
+        {"key": "made_at", "type": "address"},
+        {"key": "date", "type": "date(พ.ศ.)"},
+        {"key": "pea_representative", "type": "string"},
+        {"key": "producer", "type": "person|juristic", "note": "นิติบุคคล: เลขทะเบียน ผู้มีอำนาจ หนังสือมอบอำนาจลงวันที่"},
+        {"key": "install_address", "type": "address"},
+        {"key": "max_sell_kw", "type": "number", "note": "ข้อ 1.1"},
+        {"key": "scod_date", "type": "date", "note": "ภายในปี 2570"},
+        {"key": "term_years", "type": "int", "value": 10, "note": "นับจาก COD ถ้าก่อน SCOD, จาก SCOD ถ้าวันเดียวกัน (ข้อ 1.2)"},
+        {"key": "signatures", "type": "signature[]", "items": ["producer", "pea", "witness_producer", "witness_pea"]}
+      ],
+      "annexes": ["ผนวก 1 ระเบียบ กกพ. 2562", "ผนวก 2 ประกาศ กกพ. เชิญชวน", "ผนวก 3 แบบคำขอขายไฟฟ้า + เอกสารแนบ", "ผนวก 4 วิธีชำระเงินค่าซื้อขายไฟฟ้า"],
+      "key_clauses": ["5.4 นำไฟจากแหล่งอื่นมาเชื่อม: ปรับ 10,000 บาท/kW", "5.5 ห้ามเพิ่มจุดรับซื้อหรือปริมาณเกินที่ระบุ", "6.2 ส่งออกเกินปริมาณรับซื้อ ไม่คิดค่าส่วนเกิน", "6.3 ชำระล่าช้า ดอกเบี้ย MLR ไม่เกิน 15%/ปี"]
+    },
+    {
+      "id": "connection_request",
+      "title": "ยื่นคำขอเชื่อมต่อ (ระบบ PPIM)",
+      "source_files": ["คู่มือขั้นตอนขอยื่นคำขอเชื่อมต่อ PPIM.pdf"],
+      "used_at_steps": [9],
+      "derived": "สรุปจากคู่มือ PPIM",
+      "fields": [
+        {"key": "mode", "type": "enum", "options": ["confirm_original", "modify"], "label": "ยืนยันข้อมูลเดิม / ต้องการแก้ไข"},
+        {"key": "self_cert", "type": "file", "ref": "self_cert", "required": true},
+        {"key": "modified_docs", "type": "file[]", "when": "mode = modify", "options": ["แผง PV", "inverter", "แบตเตอรี่", "Single Line Diagram"], "validate": "แก้ได้ไม่เกินที่ระบุในคำขอขายไฟ (ระเบียบ กกพ. ข้อ 6)"}
+      ]
+    },
+    {
+      "id": "self_cert",
+      "title": "แบบฟอร์มรับรองตนเองการติดตั้งอุปกรณ์และการเชื่อมต่อระบบผลิตไฟฟ้าจากพลังงานแสงอาทิตย์ (VSPP)",
+      "source_files": ["แบบฟอร์มรับรองตนเอง.docx", "แบบฟอร์มรับรองตนเอง.pdf", "ตัวอย่างแบบฟอร์มรับรองตนเอง.pdf"],
+      "used_at_steps": [9],
+      "header_fields": [
+        {"key": "producer_name", "type": "string", "required": true},
+        {"key": "ppim_request_no", "type": "string", "pattern": "PPIM1A6xxxxx"},
+        {"key": "contract_no", "type": "string", "pattern": "VSPP-RT3.2-XX-XXX/25XX"},
+        {"key": "contract_date", "type": "date"},
+        {"key": "ca_no", "type": "string", "example": "02XXXXXXXXXX"},
+        {"key": "phone", "type": "string"},
+        {"key": "email", "type": "string"},
+        {"key": "install_address", "type": "address"},
+        {"key": "pv_kwp", "type": "number", "unit": "kWp"},
+        {"key": "inverter_kw", "type": "number", "unit": "kW"},
+        {"key": "sell_kw", "type": "number", "unit": "kW", "validate": "≤ 5"}
+      ],
+      "signatures": [{"role": "producer", "date": true}, {"role": "engineer", "date": true}],
+      "attachments": [
+        {"n": 1, "key": "site", "title": "สถานที่ติดตั้งระบบผลิตไฟฟ้า", "fields": {"lat": "number", "lng": "number", "photos": "image[]"}},
+        {"n": 2, "key": "export_limiter", "title": "อุปกรณ์ควบคุมหรือป้องกันการจ่ายกระแสไหลย้อน (Export Limiting Device) + อุปกรณ์ประกอบตรวจวัดตามจำนวนเฟส",
+          "fields": {"condition": "enum[single_phase_gt_7kw, multi_phase_gt_10kw, not_applicable]", "limit_kw": "number (≤ sell_kw)", "photos": "image[]"},
+          "rule": "บังคับเมื่อ inverter_kw > sell_kw และ (1 เฟส > 7 kW หรือ > 1 เฟส > 10 kW); not_applicable ไม่ต้องแนบรูป"},
+        {"n": 3, "key": "pv", "title": "แผง PV: จำนวน ชื่อ รุ่น", "fields": {"photos": "image[]"}},
+        {"n": 4, "key": "inverter", "title": "Inverter: จำนวน ชื่อ รุ่น ตาม Inverter List ของ กฟภ.", "fields": {"photos": "image[]"}},
+        {"n": 5, "key": "inverter_setting", "title": "การตั้งค่า inverter ตามข้อกำหนด กฟภ. ทุกเครื่อง", "fields": {"photos_per_inverter": "image[][]"}},
+        {"n": 6, "key": "ocd", "title": "อุปกรณ์ป้องกันกระแสไฟฟ้า (Overcurrent Device)", "fields": {"type": "enum[cb_oc_gf (เช่น MCCB มี GF), rcd_with_oc (เช่น RCBO), cb_plus_rcd_or_relay_50_51N (เช่น MCCB + RCCB)]", "photos": "image[]"}},
+        {"n": 7, "key": "ac_spd", "title": "AC Surge Protection Device", "fields": {"photos": "image[]"}},
+        {"n": 8, "key": "poc", "title": "จุดเชื่อมต่อภายใต้เบรกเกอร์ประธานบ้าน/อาคาร", "fields": {"photos": "image[]"}},
+        {"n": 9, "key": "engineer_license", "title": "สำเนา กว. + หนังสือรับรองสภาวิศวกร ของวิศวกรที่ลงนาม", "fields": {"files": "file[]"}},
+        {"n": 10, "key": "latest_bill", "title": "ใบแจ้งค่าไฟเดือนล่าสุดของอาคารที่ติดตั้งแผง", "fields": {"files": "file[]"}}
+      ],
+      "rules": ["วิศวกรลงนามรับรองทุกแผ่น", "ผู้ผลิตไฟฟ้า = เจ้าของมิเตอร์", "นิติบุคคล: ผู้มีอำนาจลงนาม + ประทับตรา"],
+      "maps_to_tcroof": "รูปหน้างานจากแอพสำรวจ/commissioning ใช้เติมเอกสารแนบ 1, 3–8 ได้"
+    },
+    {
+      "id": "grid_connection_general",
+      "title": "แบบคำขอเชื่อมต่อกับระบบโครงข่ายไฟฟ้าของ กฟภ. (สิ่งแนบที่ 1 ระเบียบการใช้บริการ 2559)",
+      "source_files": ["ระเบียบ กฟภ. ว่าด้วยข้อกำหนดการใช้บริการระบบโครงข่ายไฟฟ้า 2559.pdf"],
+      "used_for": "สายไม่ขายไฟ (ผู้ใช้ไฟที่มีเครื่องกำเนิดไฟฟ้า) — ไม่ยืนยันว่า PPIM ยังใช้แบบนี้",
+      "sections": [
+        {"part": 1, "title": "รายละเอียดผู้ขอใช้บริการ", "fields": ["name", "address", "phone", "fax", "project_location", "project_phone", "business_type", "connection_purpose"]},
+        {"part": 2, "title": "รายละเอียดทางเทคนิค", "fields": ["connection_voltage_kv", "transformer_size_voltage_vector_group", "generator_type", "generator_count", "total_capacity_kw"]},
+        {"part": 3, "title": "ข้อมูลโหลด", "fields": ["max_import_kw", "min_import_kw", "total_installed_kva"]},
+        {"part": 4, "title": "ผู้ประสานงาน", "fields": ["name", "position", "phone", "fax", "email"]},
+        {"part": 5, "title": "เอกสารประกอบ 3 ชุด", "attachments": ["แผนผังที่ตั้ง/แผนที่ระบบไฟฟ้า", "SLD + Metering and Relaying Diagram วิศวกรรับรอง + สำเนาใบประกอบวิชาชีพไม่หมดอายุ", "ฟังก์ชันระบบป้องกัน", "รายละเอียดเครื่องกำเนิดไฟฟ้า (spec)", "spec อุปกรณ์เชื่อมต่อ: หม้อแปลง CB CT PT รีเลย์ PQ meter"]}
+      ],
+      "signature": ["applicant (ชื่อ ตำแหน่ง วันที่)"],
+      "also_required": ["หลักฐานตัวตนและที่อยู่ (สิ่งแนบ 2) 2 ชุด", "หลักฐานนิติบุคคล (สิ่งแนบ 3)", "หนังสือมอบอำนาจ (สิ่งแนบ 4) ถ้ามี"]
+    },
+    {
+      "id": "erc_exemption_notice",
+      "title": "แจ้งการประกอบกิจการพลังงานที่ได้รับยกเว้นใบอนุญาต (กกพ.)",
+      "source": "erc.or.th/th/all-exception/ (ไม่มีตัวฟอร์มในไฟล์ที่แนบ)",
+      "used_when": "inverter รวม < 1,000 kW ก่อน PEA ตรวจ/First Sync",
+      "fields": "ยังไม่ทราบ ต้องดึงจากเว็บ กกพ."
+    }
+  ]
+}

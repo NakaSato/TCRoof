@@ -1,0 +1,209 @@
+{
+  "title": "กระบวนการจดแจ้งยกเว้นการขอรับใบอนุญาตประกอบกิจการพลังงาน (สำนักงาน กกพ.)",
+  "version": "2026-10-08",
+  "source": "อินโฟกราฟิกสำนักงาน กกพ. 4 ภาพ (www.erc.or.th) ผู้ใช้ส่งมา 2026-10-08",
+  "scope": "กำลังผลิตติดตั้งต่ำกว่า 1,000 kVA · ตั้งแต่ 1,000 kVA ขึ้นไปต้องขอใบอนุญาต ไม่อยู่ในแผนภาพนี้",
+
+  "lanes": {
+    "utility": "การไฟฟ้า (กฟน. / กฟภ.)",
+    "private_grid": "เจ้าของโครงข่ายเอกชน",
+    "operator": "ผู้ประกอบการ (ทีมเรา / เจ้าของระบบ)",
+    "erc": "สำนักงาน กกพ.",
+    "dede": "พพ. (กรมพัฒนาพลังงานทดแทนและอนุรักษ์พลังงาน)"
+  },
+
+  "step_kinds": {
+    "start": "จุดเริ่ม",
+    "task": "งานที่ต้องทำ",
+    "decision": "พิจารณา มีผลผ่าน / ไม่ผ่าน",
+    "gate": "จุดรอเงื่อนไข (⊗ ในแผนภาพ)",
+    "end": "จุดจบ"
+  },
+
+  "routing": {
+    "inputs": ["grid_owner: utility | private_grid", "capacity_kva: กำลังผลิตติดตั้ง (kVA)"],
+    "rules": [
+      { "when": "grid_owner = utility AND capacity_kva < 200", "flow": "utility_lt200" },
+      { "when": "grid_owner = private_grid AND capacity_kva < 200", "flow": "private_lt200" },
+      { "when": "grid_owner = utility AND 200 <= capacity_kva < 1000", "flow": "utility_200_1000" },
+      { "when": "grid_owner = private_grid AND 200 <= capacity_kva < 1000", "flow": "private_200_1000" },
+      { "when": "capacity_kva >= 1000", "flow": null, "note": "ต้องขอใบอนุญาตผลิตไฟฟ้า ไม่ใช่การจดแจ้งยกเว้น" }
+    ],
+    "capacity_note": "แผนภาพใช้ kVA · ใช้กำลังไฟฟ้าปรากฏสูงสุดของอินเวอร์เตอร์รวมจาก datasheet (เช่น SUN2000-10K-MAP0 = 11 kVA) ไม่ใช่ kWp ของแผง"
+  },
+
+  "sla_units": {
+    "working_days": "วันทำการ",
+    "days": "วัน",
+    "by_grid_owner": "ขึ้นกับเจ้าของระบบโครงข่ายนั้นๆ"
+  },
+
+  "flows": [
+    {
+      "id": "utility_lt200",
+      "title": "เชื่อมต่อกับระบบโครงข่ายไฟฟ้าของการไฟฟ้า กำลังผลิตติดตั้งต่ำกว่า 200 kVA",
+      "grid_owner": "utility",
+      "capacity_kva": { "min": 0, "max_exclusive": 200 },
+      "operator_files_with_erc": false,
+      "steps": [
+        { "id": "start", "lane": "operator", "kind": "start", "title": "เริ่ม", "next": ["design"] },
+        { "id": "design", "lane": "operator", "kind": "task", "title": "ออกแบบระบบไฟฟ้า", "footnote": "*", "next": ["submit_design"] },
+        { "id": "submit_design", "lane": "operator", "kind": "task", "title": "ยื่นคำขอตรวจสอบแบบและระบบไฟฟ้าต่อการไฟฟ้า", "next": ["design_review"] },
+        { "id": "design_review", "lane": "utility", "kind": "decision", "title": "รับคำขอพิจารณาแบบและระบบไฟฟ้า + เงื่อนไข",
+          "sla": { "max": 15, "unit": "working_days", "footnote": "**" }, "on_pass": ["install"], "on_fail": ["design"] },
+        { "id": "install", "lane": "operator", "kind": "task", "title": "ติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["inspection"] },
+        { "id": "inspection", "lane": "utility", "kind": "decision", "title": "ตรวจสอบระบบไฟฟ้า / อุปกรณ์การเชื่อมต่อ",
+          "sla": { "max": 30, "unit": "working_days", "footnote": "**" }, "on_pass": ["send_to_erc", "cod"], "on_fail": ["fix"] },
+        { "id": "fix", "lane": "operator", "kind": "task", "title": "แก้ไขการติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["inspection"] },
+        { "id": "send_to_erc", "lane": "utility", "kind": "task", "title": "ส่งข้อมูลให้สำนักงาน กกพ. / หนังสือพิจารณาการเชื่อมต่อ", "next": ["erc_notify"] },
+        { "id": "cod", "lane": "utility", "kind": "end", "title": "ขนานไฟ / COD" },
+        { "id": "erc_notify", "lane": "erc", "kind": "task", "title": "แจ้งผลการแจ้งยกเว้นฯ แก่ผู้ประกอบการผ่านระบบอิเล็กทรอนิกส์", "next": ["erc_publish"] },
+        { "id": "erc_publish", "lane": "erc", "kind": "end", "title": "ประกาศรายชื่อผู้ที่ได้รับการยกเว้นฯ บนเว็บไซต์สำนักงาน" }
+      ],
+      "footnotes": {
+        "*": "ข้อกำหนดของการไฟฟ้า ณ ปัจจุบันและที่จะประกาศใช้ในอนาคต",
+        "**": "ระยะเวลาดำเนินการ ไม่รวมระยะเวลาปรับปรุงแก้ไขข้อมูลและการติดตั้งเครื่องจักรอุปกรณ์",
+        "หมายเหตุ": "กรณีโครงการที่มีการจำหน่ายไฟฟ้า ระยะเวลาดำเนินการของการไฟฟ้าจะพิจารณาตามประกาศของโครงการนั้นๆ"
+      }
+    },
+    {
+      "id": "private_lt200",
+      "title": "เชื่อมต่อกับระบบโครงข่ายไฟฟ้าของเอกชน กำลังผลิตติดตั้งต่ำกว่า 200 kVA",
+      "grid_owner": "private_grid",
+      "capacity_kva": { "min": 0, "max_exclusive": 200 },
+      "operator_files_with_erc": true,
+      "steps": [
+        { "id": "start", "lane": "operator", "kind": "start", "title": "เริ่ม", "next": ["design"] },
+        { "id": "design", "lane": "operator", "kind": "task", "title": "ออกแบบระบบไฟฟ้า", "next": ["submit_design"] },
+        { "id": "submit_design", "lane": "operator", "kind": "task", "title": "ยื่นคำขอตรวจสอบแบบและระบบไฟฟ้า", "next": ["design_review"] },
+        { "id": "design_review", "lane": "private_grid", "kind": "decision", "title": "รับคำขอพิจารณาแบบและระบบไฟฟ้า + เงื่อนไข",
+          "sla": { "unit": "by_grid_owner" }, "on_pass": ["file_exemption", "install"], "on_fail": ["design"] },
+        { "id": "file_exemption", "lane": "operator", "kind": "task", "title": "ยื่นคำขอแจ้งยกเว้น", "next": ["erc_receive"] },
+        { "id": "erc_receive", "lane": "erc", "kind": "task", "title": "รับคำขอแจ้งกิจการที่ได้รับการยกเว้นผ่านระบบ Online", "next": ["erc_notify"] },
+        { "id": "erc_notify", "lane": "erc", "kind": "task", "title": "แจ้งผลการแจ้งยกเว้นฯ แก่ผู้ประกอบการผ่านระบบอิเล็กทรอนิกส์", "next": ["erc_publish"] },
+        { "id": "erc_publish", "lane": "erc", "kind": "end", "title": "ประกาศรายชื่อผู้ที่ได้รับการยกเว้นฯ บนเว็บไซต์สำนักงาน" },
+        { "id": "install", "lane": "operator", "kind": "task", "title": "ติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["inspection"] },
+        { "id": "inspection", "lane": "private_grid", "kind": "decision", "title": "ตรวจสอบระบบไฟฟ้า / อุปกรณ์การเชื่อมต่อ",
+          "sla": { "unit": "by_grid_owner" }, "on_pass": ["cod"], "on_fail": ["fix"] },
+        { "id": "fix", "lane": "operator", "kind": "task", "title": "แก้ไขการติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["inspection"] },
+        { "id": "cod", "lane": "private_grid", "kind": "end", "title": "ขนานไฟ / COD" }
+      ],
+      "footnotes": {
+        "หมายเหตุ": "ระยะเวลาดำเนินการ ในการพิจารณาคำขอและการตรวจสอบระบบไฟฟ้า ขึ้นกับเจ้าของระบบโครงข่ายนั้นๆ"
+      }
+    },
+    {
+      "id": "utility_200_1000",
+      "title": "เชื่อมต่อกับระบบโครงข่ายไฟฟ้าของการไฟฟ้า กำลังผลิตติดตั้งตั้งแต่ 200 kVA ขึ้นไป และต่ำกว่า 1,000 kVA",
+      "grid_owner": "utility",
+      "capacity_kva": { "min": 200, "max_exclusive": 1000 },
+      "operator_files_with_erc": true,
+      "steps": [
+        { "id": "start", "lane": "operator", "kind": "start", "title": "เริ่ม", "next": ["design"] },
+        { "id": "design", "lane": "operator", "kind": "task", "title": "ออกแบบระบบไฟฟ้า", "footnote": "*", "next": ["submit_design"] },
+        { "id": "submit_design", "lane": "operator", "kind": "task", "title": "ยื่นคำขอตรวจสอบแบบและระบบไฟฟ้าต่อการไฟฟ้า", "next": ["design_review"] },
+        { "id": "design_review", "lane": "utility", "kind": "decision", "title": "รับคำขอพิจารณาแบบและระบบไฟฟ้า",
+          "sla": { "max": 15, "unit": "working_days", "footnote": "**" }, "on_pass": ["install"], "on_fail": ["design"] },
+        { "id": "install", "lane": "operator", "kind": "task", "title": "ติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["file_pk2", "inspection"] },
+        { "id": "file_pk2", "lane": "operator", "kind": "task", "title": "ยื่นคำขอ พค.2", "next": ["erc_receive_pk2"] },
+        { "id": "erc_receive_pk2", "lane": "erc", "kind": "task", "title": "รับคำขอ พค.2 ตรวจสอบเอกสารและขอความเห็น พพ.", "next": ["dede_receive"] },
+        { "id": "dede_receive", "lane": "dede", "kind": "task", "title": "รับคำขอ พค.2", "next": ["dede_opinion"] },
+        { "id": "dede_opinion", "lane": "dede", "kind": "task", "title": "พิจารณาและให้ความเห็นต่อสำนักงาน กกพ.",
+          "sla": { "max": 30, "unit": "days", "covers": ["dede_receive", "dede_opinion"] }, "next": ["erc_opinion"] },
+        { "id": "erc_opinion", "lane": "erc", "kind": "task", "title": "จัดทำความเห็น เสนอต่อ กกพ.", "next": ["erc_sign_pk2"] },
+        { "id": "erc_sign_pk2", "lane": "erc", "kind": "task", "title": "ลงนาม พค.2", "next": ["submit_pk2_for_cod", "erc_evidence"] },
+        { "id": "submit_pk2_for_cod", "lane": "operator", "kind": "task", "title": "ยื่น พค.2 เพื่อประกอบการ COD / ขนานไฟฟ้า", "next": ["cod_gate"] },
+        { "id": "inspection", "lane": "utility", "kind": "decision", "title": "ตรวจสอบระบบไฟฟ้า / อุปกรณ์การเชื่อมต่อ",
+          "sla": { "max": 30, "unit": "working_days", "footnote": "**" }, "on_pass": ["send_to_erc", "cod_gate"], "on_fail": ["fix"] },
+        { "id": "fix", "lane": "operator", "kind": "task", "title": "แก้ไขการติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["inspection"] },
+        { "id": "send_to_erc", "lane": "utility", "kind": "task", "title": "ส่งข้อมูลให้สำนักงาน กกพ. / หนังสือพิจารณาการเชื่อมต่อ", "next": ["erc_evidence"] },
+        { "id": "cod_gate", "lane": "utility", "kind": "gate", "title": "รอ พค.2 ก่อนขนานไฟ (ถ้าการไฟฟ้ากำหนด)", "footnote": "***", "next": ["cod"] },
+        { "id": "cod", "lane": "utility", "kind": "end", "title": "ขนานไฟ / COD" },
+        { "id": "erc_evidence", "lane": "erc", "kind": "task", "title": "ใช้ พค.2 หรือ ข้อมูล/หนังสือพิจารณาผ่านการเชื่อมต่อ อย่างใดอย่างหนึ่ง", "join": "any", "next": ["erc_notify"] },
+        { "id": "erc_notify", "lane": "erc", "kind": "task", "title": "แจ้งผลการแจ้งยกเว้นฯ แก่ผู้ประกอบการผ่านระบบอิเล็กทรอนิกส์", "next": ["erc_publish"] },
+        { "id": "erc_publish", "lane": "erc", "kind": "end", "title": "ประกาศรายชื่อผู้ที่ได้รับการยกเว้นฯ บนเว็บไซต์สำนักงาน" }
+      ],
+      "footnotes": {
+        "*": "ข้อกำหนดของการไฟฟ้า ณ ปัจจุบันและที่จะประกาศใช้ในอนาคต",
+        "**": "ระยะเวลาดำเนินการ ไม่รวมระยะเวลาปรับปรุงแก้ไขข้อมูลและการติดตั้งเครื่องจักรอุปกรณ์",
+        "***": "ขึ้นอยู่กับเงื่อนไขของการไฟฟ้าว่าจะขอ พค.2 ก่อนขนานไฟ/COD หรือไม่",
+        "หมายเหตุ": "กรณีโครงการที่มีการจำหน่ายไฟฟ้า ระยะเวลาดำเนินการของการไฟฟ้าจะพิจารณาตามประกาศของโครงการนั้นๆ"
+      }
+    },
+    {
+      "id": "private_200_1000",
+      "title": "เชื่อมต่อกับระบบโครงข่ายไฟฟ้าของเอกชน กำลังผลิตติดตั้งตั้งแต่ 200 kVA ขึ้นไป และต่ำกว่า 1,000 kVA",
+      "grid_owner": "private_grid",
+      "capacity_kva": { "min": 200, "max_exclusive": 1000 },
+      "operator_files_with_erc": true,
+      "steps": [
+        { "id": "start", "lane": "operator", "kind": "start", "title": "เริ่ม", "next": ["design"] },
+        { "id": "design", "lane": "operator", "kind": "task", "title": "ออกแบบระบบไฟฟ้า", "next": ["submit_design"] },
+        { "id": "submit_design", "lane": "operator", "kind": "task", "title": "ยื่นคำขอตรวจสอบแบบและระบบไฟฟ้า", "next": ["design_review"] },
+        { "id": "design_review", "lane": "private_grid", "kind": "decision", "title": "รับคำขอพิจารณาแบบและระบบไฟฟ้า",
+          "sla": { "unit": "by_grid_owner" }, "on_pass": ["file_exemption", "install"], "on_fail": ["design"] },
+        { "id": "file_exemption", "lane": "operator", "kind": "task", "title": "ยื่นคำขอแจ้งยกเว้น", "next": ["erc_receive"] },
+        { "id": "erc_receive", "lane": "erc", "kind": "task", "title": "รับคำขอแจ้งกิจการที่ได้รับการยกเว้นผ่านระบบ Online", "next": ["erc_notify"] },
+        { "id": "install", "lane": "operator", "kind": "task", "title": "ติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["file_pk2", "inspection"] },
+        { "id": "file_pk2", "lane": "operator", "kind": "task", "title": "ยื่นคำขอ พค.2", "next": ["erc_receive_pk2"] },
+        { "id": "erc_receive_pk2", "lane": "erc", "kind": "task", "title": "รับคำขอ พค.2 ตรวจสอบเอกสารและขอความเห็น พพ.", "next": ["dede_receive"] },
+        { "id": "dede_receive", "lane": "dede", "kind": "task", "title": "รับคำขอ พค.2", "next": ["dede_opinion"] },
+        { "id": "dede_opinion", "lane": "dede", "kind": "task", "title": "พิจารณาและให้ความเห็นต่อสำนักงาน กกพ.",
+          "sla": { "max": 30, "unit": "days", "covers": ["dede_receive", "dede_opinion"] }, "next": ["erc_opinion"] },
+        { "id": "erc_opinion", "lane": "erc", "kind": "task", "title": "จัดทำความเห็น เสนอต่อ กกพ.", "next": ["erc_sign_pk2"] },
+        { "id": "erc_sign_pk2", "lane": "erc", "kind": "task", "title": "ลงนาม พค.2", "next": ["submit_pk2_for_cod"] },
+        { "id": "submit_pk2_for_cod", "lane": "operator", "kind": "task", "title": "ยื่น พค.2 เพื่อประกอบการ COD / ขนานไฟฟ้า", "next": ["cod_gate"] },
+        { "id": "inspection", "lane": "private_grid", "kind": "decision", "title": "ตรวจสอบระบบไฟฟ้า / อุปกรณ์การเชื่อมต่อ",
+          "sla": { "unit": "by_grid_owner" }, "on_pass": ["cod_gate"], "on_fail": ["fix"] },
+        { "id": "fix", "lane": "operator", "kind": "task", "title": "แก้ไขการติดตั้งเครื่องจักร อุปกรณ์ สายไฟฟ้า", "next": ["inspection"] },
+        { "id": "cod_gate", "lane": "private_grid", "kind": "gate", "title": "รอ พค.2 ก่อนขนานไฟ (ถ้าเจ้าของโครงข่ายกำหนด)", "footnote": "*", "next": ["cod"] },
+        { "id": "cod", "lane": "private_grid", "kind": "end", "title": "ขนานไฟ / COD" },
+        { "id": "erc_notify", "lane": "erc", "kind": "task", "title": "แจ้งผลการแจ้งยกเว้นฯ แก่ผู้ประกอบการผ่านระบบอิเล็กทรอนิกส์", "next": ["erc_publish"] },
+        { "id": "erc_publish", "lane": "erc", "kind": "end", "title": "ประกาศรายชื่อผู้ที่ได้รับการยกเว้นฯ บนเว็บไซต์สำนักงาน" }
+      ],
+      "footnotes": {
+        "*": "ขึ้นอยู่กับเงื่อนไขของโครงข่ายเอกชนนั้นๆ ว่าจะขอ พค.2 ก่อนขนานไฟ/COD หรือไม่",
+        "หมายเหตุ": "ระยะเวลาดำเนินการ ในการพิจารณาคำขอและการตรวจสอบระบบไฟฟ้า ขึ้นกับเจ้าของระบบโครงข่ายนั้นๆ"
+      }
+    }
+  ],
+
+  "app_mapping": {
+    "home_jobs": {
+      "flow": "utility_lt200",
+      "why": "บ้านในพื้นที่ PEA เชื่อมต่อโครงข่ายการไฟฟ้า และอินเวอร์เตอร์ต่ำกว่า 200 kVA ทุกงาน",
+      "map_steps": {
+        "submit_design": "ppimRequest (ผลิตใช้เอง) / sellRequest (ขายไฟ)",
+        "design_review": "peaApproval",
+        "install": "ขั้น ติดตั้ง (installLog, ICL, ผู้รับเหมา)",
+        "inspection": "peaInspection",
+        "fix": "Punch list / แก้ตามผลตรวจ",
+        "cod": "connectionDate",
+        "erc_notify": "ผลจดแจ้งยกเว้นจาก กกพ. (เอกสารใหม่ ไม่บังคับ: เก็บอีเมล/ผลจากระบบ)"
+      },
+      "changes_to_current_app": [
+        "เลิกใช้ ercNotice / ercNoticeSelfUse: ทีมไม่ต้องยื่นแจ้งยกเว้นเอง PEA ส่งข้อมูลให้ กกพ. หลังตรวจผ่าน",
+        "เพิ่มเอกสาร 'ผลจดแจ้งยกเว้นจาก กกพ.' ผู้ส่ง = กกพ. ขั้นส่งมอบ ไม่บล็อกปิดงาน",
+        "ผลิตใช้เอง: PEA พิจารณาแบบไม่เกิน 15 วันทำการ (แทน 45 วันจากระเบียบ 2559) และตรวจระบบไม่เกิน 30 วันทำการ ไม่นับเวลาแก้ไข",
+        "ขายไฟ (ภาคประชาชน 2569): ระยะเวลาของ PEA ตามประกาศโครงการ (ประกาศรายชื่อ 30 วัน) ไม่ใช่ 15/30 วันทำการ",
+        "นับเป็นวันทำการ: ต้องมีปฏิทินวันหยุดราชการ",
+        "เกณฑ์ 200 kVA: ใช้ kVA สูงสุดของอินเวอร์เตอร์รวมจาก datasheet"
+      ]
+    },
+    "pwa_stations": {
+      "flow": "utility_lt200 หรือ utility_200_1000 ตาม kVA ของสถานี",
+      "note": "งาน 200 kVA ขึ้นไปใช้ พค.2 ผูกกับ forms/pwa/catalog/erc-pk2-checklist.json"
+    },
+    "suggested_model": {
+      "ERCFlow": ["id", "title", "grid_owner", "capacity_kva {min, max_exclusive}", "operator_files_with_erc", "steps[]", "footnotes{}"],
+      "ERCStep": ["id", "lane", "kind", "title", "sla {max, unit, covers?, footnote?}", "next[] | on_pass[] + on_fail[]", "join? (any)", "footnote?"],
+      "job_state": ["flow_id", "step_id → {started_at, done_at, result: pass|fail}", "sla_due = started_at + sla (วันทำการ/วัน)"]
+    }
+  },
+
+  "open_questions": [
+    "ภาคประชาชน 2569 (ขายไฟ): PEA ส่งข้อมูลให้ กกพ. เองแบบเดียวกันหรือไม่ (แผนภาพบอกแค่ว่าระยะเวลาตามประกาศโครงการ)",
+    "ผลแจ้งยกเว้นส่งถึงใคร: เจ้าของบ้านหรือผู้ประสานงานใน PPIM",
+    "ปฏิทินวันทำการ: ใช้วันหยุดราชการของ ครม. ปีไหน และใครอัปเดต"
+  ]
+}

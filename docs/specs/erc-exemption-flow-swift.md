@@ -1,9 +1,11 @@
 # ERC exemption flow per station, 200 to under 1,000 kVA (Swift dev spec)
 
 **Status:** §3 (`TCRoofCore/ERCFlow.swift`, 10 tests) and §4's tab, step sheet and history built 2026-10-13
-(`TCRoof/Views/Job/StationDocs/ERCFlowViews.swift`). Not built: the line on the job's `StationDocsCard`, linking
-steps 3 and 7 to their packages (the row only shows how many papers are ready), and all of §5 (deadlines on the PWA
-plan page, notifications). Written from the two diagrams in `docs/permit/`; the open questions (§7) were not
+(`TCRoof/Views/Job/StationDocs/ERCFlowViews.swift`), with the line on the job's `StationDocsCard` and the links from
+steps 3 and 7 to their packages. §5 built the same day: a waiting step with a time limit is a `กำหนดส่ง` row of the
+PWA plan page (`PWAPlan.deadlines`, from `ERCFlow.waits`), and `ERCNotification` reminds 3 days before the limit and
+the day after it. The reminders are posted as MP plan notifications (`NotificationType.mp`), so a tap opens the job,
+not the tab; a plan-page row opens เอกสารสถานี กปภ. on its first tab. Written from the two diagrams in `docs/permit/`; the open questions (§7) were not
 answered, so the build took these defaults: stations under 200 kVA don't get the tab, working days are Monday–Friday
 less the site's own holidays (`RoutineReport.Settings.holidays`), step 10 is asked per station, and steps 4, 5 and 9
 can be recorded or passed over.

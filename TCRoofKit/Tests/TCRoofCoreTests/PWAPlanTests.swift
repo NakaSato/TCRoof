@@ -133,6 +133,36 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertTrue(PWAPlan.deadlines([s], today: today).isEmpty)
     }
 
+    func testERCWaitsAreDeadlinesOfStationsOver200() {
+        var s = station("s", mp: 154, start: day(2026, 10, 1), end: day(2026, 12, 20), over200: true)
+        s.docsContext = StationDocs.Context(s.docs, inverterKW: 210)
+        var r = ERCFlow.Record()
+        r.add(.designRequest, day: "2026-10-01") // due Thursday 22 Oct; today is Monday 12 Oct
+        s.docs.erc = r
+        var due = PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }
+        XCTAssertEqual(due.map(\.id), ["erc-designResult-s"])
+        XCTAssertEqual(due[0].date, day(2026, 10, 22))
+        XCTAssertEqual(due[0].title, "รอผลพิจารณาแบบและระบบไฟฟ้า")
+        XCTAssertEqual(due[0].chip, "เหลือ 8 วันทำการ")
+        XCTAssertEqual(due[0].tone, .ok)
+        XCTAssertEqual(due[0].opens, .docs)
+
+        // the site's holiday moves the limit; past it the row is late
+        s.holidays = ["2026-10-13"]
+        due = PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }
+        XCTAssertEqual(due[0].date, day(2026, 10, 23))
+        due = PWAPlan.deadlines([s], today: day(2026, 10, 27)).filter { $0.id.hasPrefix("erc-") }
+        XCTAssertEqual(due[0].chip, "เกินกำหนด 2 วันทำการ")
+        XCTAssertEqual(due[0].tone, .late)
+
+        // answered, or a station under 200 kVA: no row
+        s.docs.erc?.add(.designResult, day: "2026-10-20")
+        XCTAssertTrue(PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }.isEmpty)
+        var small = station("t", start: day(2026, 10, 1), end: day(2026, 12, 20))
+        small.docs.erc = r
+        XCTAssertTrue(PWAPlan.deadlines([small], today: today).filter { $0.id.hasPrefix("erc-") }.isEmpty)
+    }
+
     func testSubmissionsComeFromThePlanAndClearWhenSubmitted() {
         var s = station("s", mp: 154, start: day(2026, 10, 1), end: day(2026, 12, 20), over200: true)
         s.docs.buildingRoute = .notify

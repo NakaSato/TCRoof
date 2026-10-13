@@ -19,6 +19,8 @@ extension Job {
 struct ERCFlowRows: View {
     @Bindable var job: Job
     let library: StationDocs.Library
+    /// Opens a submission's papers (steps 3 and 7).
+    let openPackage: (StationDocs.Package) -> Void
 
     @State private var recording: ERCFlow.Step?
 
@@ -33,6 +35,13 @@ struct ERCFlowRows: View {
                 PadSection(section.title) {
                     ForEach(ERCFlow.Step.allCases.filter { $0.section == section }) { step in
                         row(step, states[step] ?? .blocked)
+                        if states[step] == .open, let package = package(step) {
+                            Button { openPackage(package) } label: {
+                                Label("ดูเอกสารชุด\(package.title)", systemImage: "folder").font(.sarabun(15, relativeTo: .subheadline))
+                            }
+                            .frame(minHeight: touchMin)
+                            .accessibilityIdentifier("erc.papers." + package.rawValue)
+                        }
                     }
                     if section == .connect { wantsPK2Picker }
                 }
@@ -132,10 +141,14 @@ struct ERCFlowRows: View {
         }
     }
 
+    /// The submission behind a request of ours.
+    private func package(_ step: ERCFlow.Step) -> StationDocs.Package? {
+        step == .pk2Request ? .pk2 : step == .inspectionRequest ? .gridConnection : nil
+    }
+
     /// How far the papers of the submission behind a request are.
     private func papers(_ step: ERCFlow.Step) -> String {
-        let package: StationDocs.Package? = step == .pk2Request ? .pk2 : step == .inspectionRequest ? .gridConnection : nil
-        guard let package else { return "" }
+        guard let package = package(step) else { return "" }
         let p = StationDocs.progress(package, station: job.stationDocs, library: library, job.stationContext)
         return " · เอกสารชุด\(package.title)พร้อม \(p.ready)/\(p.total)"
     }

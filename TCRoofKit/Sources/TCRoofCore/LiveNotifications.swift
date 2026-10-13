@@ -76,6 +76,40 @@ public enum MPNotification {
     }
 }
 
+// MARK: - ERC flow
+
+public enum ERCNotification {
+    /// How many days before a time limit ends the reminder comes.
+    public static let lead = 3
+
+    /// For each step the utility or DEDE has: `ใกล้ครบกำหนด` at 08:00 three days before its time limit ends (working
+    /// days where the limit counts them) and `เกินกำหนด` at 08:00 the day after. Posted as MP plan notifications, so a
+    /// tap opens the job.
+    public static func plans(jobKey: String, station: String, record: ERCFlow.Record, context: ERCFlow.Context = .init(),
+                             now: Date, calendar cal: Calendar = MasterSchedule.calendar) -> [NotificationPlan] {
+        func at8(_ day: String?, plus days: Int = 0) -> Date? {
+            guard let d = day.flatMap(ERCFlow.date), let shifted = cal.date(byAdding: .day, value: days, to: d) else { return nil }
+            return cal.date(bySettingHour: 8, minute: 0, second: 0, of: shifted)
+        }
+        var out: [NotificationPlan] = []
+        for wait in ERCFlow.waits(record, context, today: now) {
+            let working = wait.step.limit?.working == true
+            let sub = "\(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.step.number ?? 0) · ครบกำหนด \(ERCFlow.date(wait.due).map(RoutineReport.thaiDate) ?? wait.due)"
+            if let at = at8(ERCFlow.day(wait.due, before: lead, working: working, context)), at > now {
+                out.append(NotificationPlan(id: "erc-soon-\(jobKey)-\(wait.step.rawValue)-\(wait.due)", type: .mp,
+                                            title: "\(wait.title) เหลือ \(lead) \(wait.unit)", body: station, sub: sub,
+                                            fire: .at(at), info: [NotificationInfo.job: jobKey]))
+            }
+            if let at = at8(wait.due, plus: 1), at > now {
+                out.append(NotificationPlan(id: "erc-over-\(jobKey)-\(wait.step.rawValue)-\(wait.due)", type: .mp,
+                                            title: "\(wait.title) เกินกำหนดแล้ว", body: station, sub: sub + " · ติดตามกับ\(wait.step.party.title)",
+                                            fire: .at(at), info: [NotificationInfo.job: jobKey]))
+            }
+        }
+        return out
+    }
+}
+
 // MARK: - Project feed
 
 /// A feed post as a notification, with the post's id: a report sent, work waiting for the inspector, a test result,

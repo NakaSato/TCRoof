@@ -126,6 +126,39 @@ final class ERCFlowTests: XCTestCase {
         XCTAssertEqual(E.daysLeft(.designResult, due: "2026-10-22", on: wed, E.Context(holidays: ["2026-10-15"])), 5)
     }
 
+    func testWaitsHeadlineAndTheDayBefore() {
+        var r = E.Record()
+        XCTAssertEqual(E.headline(r), "ถึงคิวทีมเรา: ข้อ 1 ยื่นคำขอตรวจสอบแบบและระบบไฟฟ้า")
+        r.add(.designRequest, day: "2026-10-01")
+        XCTAssertEqual(E.headline(r), "รอการไฟฟ้า: ข้อ 2 ผลพิจารณาแบบและระบบไฟฟ้า")
+        let waits = E.waits(r, today: E.date("2026-10-19")!)
+        XCTAssertEqual(waits, [E.Wait(step: .designResult, since: "2026-10-01", due: "2026-10-22", left: 3)])
+        XCTAssertEqual(waits[0].text, "เหลือ 3 วันทำการ")
+        XCTAssertEqual(E.waits(r, today: E.date("2026-10-26")!)[0].text, "เกินกำหนด 2 วันทำการ")
+        XCTAssertEqual(E.day("2026-10-22", before: 3, working: true), "2026-10-19")
+        XCTAssertEqual(E.day("2026-10-20", before: 3, working: true), "2026-10-15")
+        XCTAssertEqual(E.day("2026-10-20", before: 3, working: false), "2026-10-17")
+        r.add(.designResult, day: "2026-10-10")
+        XCTAssertTrue(E.waits(r).isEmpty)
+    }
+
+    func testRemindersComeBeforeAndAfterTheLimit() {
+        var r = E.Record()
+        r.add(.designRequest, day: "2026-10-01") // due 2026-10-22
+        let cal = MasterSchedule.calendar
+        func at(_ day: String, _ hour: Int) -> Date { cal.date(bySettingHour: hour, minute: 0, second: 0, of: E.date(day)!)! }
+        var plans = ERCNotification.plans(jobKey: "J", station: "สถานี ก", record: r, now: at("2026-10-05", 9))
+        XCTAssertEqual(plans.map(\.id), ["erc-soon-J-designResult-2026-10-22", "erc-over-J-designResult-2026-10-22"])
+        XCTAssertEqual(plans.map(\.fire), [.at(at("2026-10-19", 8)), .at(at("2026-10-23", 8))])
+        XCTAssertEqual(plans[0].title, "รอผลพิจารณาแบบและระบบไฟฟ้า เหลือ 3 วันทำการ")
+        XCTAssertEqual(DeepLink.route(type: plans[0].type, action: nil, info: plans[0].info), .job(job: "J"))
+        // past the first reminder: only the overdue one is left; past both: none
+        plans = ERCNotification.plans(jobKey: "J", station: "สถานี ก", record: r, now: at("2026-10-20", 9))
+        XCTAssertEqual(plans.map(\.id), ["erc-over-J-designResult-2026-10-22"])
+        XCTAssertTrue(ERCNotification.plans(jobKey: "J", station: "สถานี ก", record: r, now: at("2026-10-24", 9)).isEmpty)
+        XCTAssertTrue(ERCNotification.plans(jobKey: "J", station: "สถานี ก", record: E.Record(), now: at("2026-10-05", 9)).isEmpty)
+    }
+
     func testStationKeepsTheRecordAndOldJSONHasNone() {
         XCTAssertNil(StationDocs.Station.decode(#"{"docs":{}}"#).erc)
         var s = StationDocs.Station()

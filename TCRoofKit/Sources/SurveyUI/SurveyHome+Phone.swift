@@ -46,17 +46,15 @@ extension SurveyHomeView {
     // MARK: stage pills and the filter
 
     var stagePills: some View {
-        HStack(spacing: 6) {
-            TCCountPill("ทั้งหมด", count: model.jobs(in: .survey).count, selected: tab == .survey) { select(.survey) }
-            TCCountPill("งานติดตั้ง", count: installStations.count, selected: tab == .install) { select(.install) }
-            TCCountPill("บำรุงรักษา", count: maintenanceStations.count, selected: tab == .maintenance) { select(.maintenance) }
+        let stages: [JobStage] = [.survey, .install, .maintenance]
+        return HStack(spacing: 6) {
+            TCCountSegments([.init("ทั้งหมด", count: model.jobs(in: .survey).count), .init("ติดตั้ง", count: installStations.count),
+                             .init("บำรุงรักษา", count: maintenanceStations.count)],
+                            selection: Binding(get: { stages.firstIndex(of: tab) ?? 0 },
+                                               set: { i in withAnimation(reduceMotion ? nil : .snappy) { tab = stages[i] } }))
             // the overviews have their own filters
             if tab == .survey { filterButton }
         }
-    }
-
-    private func select(_ stage: JobStage) {
-        withAnimation(reduceMotion ? nil : .snappy) { tab = stage }
     }
 
     /// Status other than all, or a sort other than `แก้ไขล่าสุด`.

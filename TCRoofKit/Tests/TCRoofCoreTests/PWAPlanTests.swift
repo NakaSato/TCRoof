@@ -322,4 +322,49 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(rows.first?.title, "ผู้แทน กปภ. ตรวจ 2.5 Inverter")
         XCTAssertEqual(rows.first?.contractor, "C")
     }
+
+    // MARK: Calendar
+
+    /// October 2026 starts on a Thursday: three blank cells, then five Monday-first rows.
+    func testMonthRowsAreMondayFirst() {
+        let rows = PWAPlan.monthRows(containing: today)
+        XCTAssertEqual(rows.count, 5)
+        XCTAssertTrue(rows.allSatisfy { $0.count == 7 })
+        XCTAssertEqual(rows[0].map { $0 == nil }, [true, true, true, false, false, false, false])
+        XCTAssertEqual(rows[0][3], PWAPlan.calendar.date(from: DateComponents(year: 2026, month: 10, day: 1)))
+        XCTAssertEqual(rows[2], PWAPlan.week(from: today).map(Optional.some))
+        XCTAssertEqual(rows[4].compactMap { $0 }.count, 6)
+        XCTAssertEqual(PWAPlan.calendar.component(.weekOfYear, from: today), 42)
+    }
+
+    /// The board's week of 12 ต.ค.: with the 12th selected `ติดตั้ง` runs 13–16, `เอกสาร` joins the 14th and 15th in
+    /// lane 1 and `ทดสอบ` goes under it.
+    func testBarRunsJoinDaysAndKeepTheirLane() {
+        let week = PWAPlan.week(from: today)
+        let types: [Date: Set<PWAPlan.JobType>] = [
+            week[0]: [.install, .survey, .document], week[1]: [.install, .inspection], week[2]: [.install, .document],
+            week[3]: [.install, .test, .document], week[4]: [.install],
+        ]
+        func run(_ t: PWAPlan.JobType, _ lane: Int, _ from: Int, _ to: Int) -> PWAPlan.BarRun { .init(type: t, lane: lane, from: from, to: to) }
+        XCTAssertEqual(PWAPlan.barRuns(week, types: types, selected: week[0]), [
+            run(.install, 0, 0, 0), run(.install, 0, 1, 4),
+            run(.survey, 1, 0, 0), run(.document, 2, 0, 0), run(.inspection, 1, 1, 1), run(.document, 1, 2, 3), run(.test, 2, 3, 3),
+        ])
+        // the selected 15th breaks `ติดตั้ง` and `เอกสาร` on both sides
+        let split = PWAPlan.barRuns(week, types: types, selected: week[3])
+        XCTAssertEqual(split.filter { $0.type == .install }, [run(.install, 0, 0, 2), run(.install, 0, 3, 3), run(.install, 0, 4, 4)])
+        XCTAssertEqual(split.filter { $0.type == .document }, [run(.document, 2, 0, 0), run(.document, 1, 2, 2), run(.document, 1, 3, 3)])
+        // no selection: one line from Monday to Friday
+        XCTAssertEqual(PWAPlan.barRuns(week, types: types).filter { $0.type == .install }, [run(.install, 0, 0, 4)])
+    }
+
+    /// A third other type on a day has no lane; a blank cell ends a run.
+    func testBarRunsLeaveOutWhatHasNoLane() {
+        let week = PWAPlan.week(from: today)
+        let all = Set(PWAPlan.JobType.allCases)
+        let runs = PWAPlan.barRuns([week[0], nil, week[2]], types: [week[0]: all, week[2]: all])
+        XCTAssertEqual(runs.filter { $0.from == 0 }.map(\.type), [.install, .survey, .inspection])
+        XCTAssertTrue(runs.allSatisfy { $0.from == $0.to })
+        XCTAssertEqual(PWAPlan.types([.init(id: "a", day: week[0], type: .test, ref: "", title: "", subtitle: "", status: .booked)]), [week[0]: [.test]])
+    }
 }

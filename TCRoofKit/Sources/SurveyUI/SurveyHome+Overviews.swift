@@ -193,7 +193,7 @@ extension SurveyHomeView {
                 ForEach(InstallOverview.RowFilter.allCases, id: \.self) { f in
                     let title = [.behind: "ช้ากว่าแผน", .noReport: "ยังไม่ส่งรายงาน", .all: "ทั้งหมด"][f] ?? ""
                     TCCountPill(title, count: stations.filter { InstallOverview.matches($0, f, threshold: threshold) }.count,
-                                selected: selected == f, style: .plain) { installFilter = f }
+                                selected: selected == f) { installFilter = f }
                 }
             }
         }
@@ -299,7 +299,7 @@ extension SurveyHomeView {
                 ForEach(MaintenanceOverview.RowFilter.allCases, id: \.self) { f in
                     let title = [.issue: "มีปัญหา", .pmSoon: "ใกล้ถึง PM", .all: "ทั้งหมด"][f] ?? ""
                     TCCountPill(title, count: stations.filter { MaintenanceOverview.matches($0, f) }.count,
-                                selected: maintenanceFilter == f, style: .plain) { maintenanceFilter = f }
+                                selected: maintenanceFilter == f) { maintenanceFilter = f }
                 }
             }
         }

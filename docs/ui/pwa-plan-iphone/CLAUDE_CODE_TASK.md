@@ -45,18 +45,21 @@ Then read the source and the board.
 | File | Shows |
 |---|---|
 | `PROMPT.md` | The prompt to paste into Claude Code |
-| `preview.png` = `states/01-schedule-today.png` | Default: `ตารางงาน`, today selected, every type and team. @2x (780 × 1688) |
+| `preview.png` = `states/01-schedule-today.png` | Default: `ตารางงาน`, week view, today selected, list at today. @2x (780 × 1688) |
 | `states/02-schedule-filter-open.png` | Agenda filter popover open (`กรองตารางงาน`) |
-| `states/03-schedule-filtered-install-A.png` | Type `ติดตั้ง` + team `A`: navy filter button with orange dot, removable chips under the heading, count `1 จาก 7 รายการ` |
-| `states/04-schedule-day-13.png` | อ. 13 selected (today keeps a blue tint) |
-| `states/05-schedule-filter-empty.png` | A filter with no match: dashed empty card with `ล้างตัวกรอง` |
-| `states/06-mp.png`, `12-mp-crop.png` | `แผน MP`: S-curve card and `รายสถานี` Gantt |
-| `states/07-due.png` | `กำหนดส่ง`: `สัปดาห์นี้` / `สัปดาห์หน้า` groups; the filter button sits at the end of the pill row |
-| `states/08-due-filter-open.png` | Deadline filter menu open (right-aligned under the button) |
-| `states/09-due-filtered-docs.png` | `ยื่นเอกสาร` only: button navy with orange dot |
-| `states/10-search-open.png` | Header search expanded (same component as the PWA home) |
-| `states/11-header-tabs-crop.png`, `13-dock-crop.png` | Close-ups |
-| `states/01-schedule-today.pdf`, `06-mp.pdf`, `07-due.pdf` | **Vector** 390 × 844 renders. Measure here. |
+| `states/03-schedule-filtered-install-A.png` | Type `ติดตั้ง` + team `A`: navy filter button with orange dot, removable chips, counts `N จาก M` |
+| `states/04-schedule-scrolled-to-15.png` | The list scrolled to พฤ. 15: the calendar highlight followed the scroll |
+| `states/05-schedule-month.png`, `15-month-grid-crop.png` | Month view: whole October, colour bars, legend |
+| `states/06-schedule-month-day-20.png` | Month view after tapping 20: the list jumped to 20 |
+| `states/07-schedule-month-empty-day.png` | Month view, ส. 17 selected: that day's group shows `ไม่มีงาน` |
+| `states/14-week-strip-crop.png` | Week strip close-up: title, `สัปดาห์ที่ 42`, `สัปดาห์ / เดือน` switch, bars |
+| `states/08-mp.png` | `แผน MP`: S-curve card and `รายสถานี` Gantt |
+| `states/09-due.png` | `กำหนดส่ง`: `สัปดาห์นี้` / `สัปดาห์หน้า` groups; the filter button sits at the end of the pill row |
+| `states/10-due-filter-open.png` | Deadline filter menu open (right-aligned under the button) |
+| `states/11-due-filtered-docs.png` | `ยื่นเอกสาร` only: button navy with orange dot |
+| `states/12-search-open.png` | Header search expanded (same component as the PWA home) |
+| `states/13-header-tabs-crop.png`, `16-dock-crop.png` | Close-ups |
+| `states/01-schedule-today.pdf`, `05-schedule-month.pdf`, `08-mp.pdf`, `09-due.pdf` | **Vector** 390 × 844 renders. Measure here. |
 | `PhonePwaPlan.dc.html` + `grf.css` | Design source. Read it as text: every size and colour is inline; `renderVals()` holds the logic and the rules. Fonts there point at `/_blob/…`: they are Sarabun 400/700, already in the app. |
 | `icons/` | Glyphs and the SF Symbol to prefer (`icons/README.md`) |
 | `assets/sample-data.json` | The board's stations, agenda, deadlines and type colours as JSON, for the demo flag, previews and tests |
@@ -81,34 +84,57 @@ Then read the source and the board.
 ### 2. Header and pills (all views)
 - Header: reuse the PWA home header (`TCPWAHeader` + the growing search button). Title `แผนงาน PWA`, subtitle
   `การประปาส่วนภูมิภาค`. Search filters the current view by MP number or station name.
-- Pill row: 12 pt top, 16 pt sides, gap 6. Three equal pills, height 44, radius 22, label 13 bold (selected) / 600,
-  count badge 20 high radius 10:
+- View switch (segmented, same as the PWA home's stage switch): one track `#E6ECF3`, radius 22, padding 3, height 44,
+  12 pt top / 16 pt sides. Three equal segments 38 high, radius 19, label 13 + count 12 bold as plain text after it:
   - `ตารางงาน` + today's item count · `แผน MP` + stations with a plan · `กำหนดส่ง` + open deadlines in the next 2 weeks
-    (this badge is red-tinted, `Theme.dangerSoft` / `dangerText`, when any is late).
-  - Selected: `Theme.navySolid` fill, white text, badge white 22 %. Unselected: `Theme.surface`, 1 pt `borderSubtle`.
-  Use `TCCapsuleTabs` if it can show counts; otherwise extend it, don't fork it.
+    (this count is `dangerText` when any is late).
+  - Selected: white segment with a 1 pt soft shadow (`0 1 3 navy 16 %`), `navy` 700, count `primary`. Unselected: no
+    fill, `inkMuted` 600. Build it once as a `TCSegmented` variant with counts and use it on the home, plan and docs pages.
 - **Only on `กำหนดส่ง`** a 44 × 44 round filter button sits at the end of the same row (§5). The pills shrink to make room.
 
 ### 3. `ตารางงาน`
-**Week strip card** (surface, 1 pt `borderSubtle`, radius 16, padding 8/6):
-- Row: `‹` · `ตุลาคม 2569 · สัปดาห์ที่ 42` (15 bold, centred) · `›`; arrows 44 × 36, `Theme.primary`. Buddhist-era year.
-- 7 day cells (Mon–Sun), min height 62, radius 12: weekday 11, number 17 bold, up to 3 dots (5 pt) — one per job type on
-  that day, in the type's colour.
-  - selected: `navySolid` fill, white text, white dots · today (not selected): `primarySoft` fill, `primary` text ·
-    Sat/Sun: muted `#9FB3CC` text.
+The page is a fixed calendar card on top and **one scrolling list of days** under it. Only the list scrolls.
 
-**Day heading row**: `วันจันทร์ 12 ต.ค. · วันนี้` (16 bold) + count (`7 รายการ`, or `1 จาก 7 รายการ` when filtered), filter
-button at the right (44 × 44 round, `icons/filter.svg`).
+**Calendar card** (surface, 1 pt `borderSubtle`, radius 16, padding 8/6):
+- Top row: `‹` · title · `›` on the left (arrows 40 × 44, `primary`), a `สัปดาห์ | เดือน` segmented switch on the right
+  (same look as §2, segments 38 high, label 13).
+  - Week: title `12–18 ต.ค. 2569` (15 bold) with `สัปดาห์ที่ 42` under it (11.5 600 `primary`) — the ISO week number.
+  - Month: title `ตุลาคม 2569` only. Buddhist-era years.
+- **Week view**: 7 cells Mon–Sun, min height 62, radius 12: weekday 11, number 17 bold, then the colour bars.
+- **Month view**: weekday header row (11, weekend muted), then a Mon-first grid of the month (blank cells before the 1st),
+  cells min height 46, radius 10, number 15 bold, then the colour bars. A legend under the grid: a 12 × 4 bar + label
+  per job type.
+- Cell states (both views): selected `navySolid` fill, white text, white bars · today (not selected) `primarySoft` fill,
+  `primary` text · Sat/Sun muted `#9FB3CC`.
+- **Colour bars** (`states/14`, `15`) replace dots. Bars are 4 pt high, 2 pt apart, in the job type's ink colour:
+  - Lane 1 is always `ติดตั้ง`. Lanes 2–3 hold the other types of that day.
+  - A type that runs on consecutive days is **one continuous line** across those cells within the same week row:
+    square ends where it continues, 2 pt rounded ends where it starts and stops. Keep a run in the same lane for its
+    whole length (pack runs per week row, earliest first, into lanes 2–3).
+  - The selected day breaks runs (its bars are white inside the navy cell).
+  - Draw it as one overlay per week row (`Canvas` or a `Path` per run) rather than per-cell pieces, so the joins are clean.
+- Tapping a day selects it **and scrolls the list to that day** (smooth). Switching week → month keeps the day; month →
+  week jumps back to today if the day is outside the shown week.
+
+**List heading row** (fixed, above the list): `งานสัปดาห์นี้` / `งานทั้งเดือน` (16 bold) + total
+(`15 รายการ · เลื่อนดูได้`, or `N จาก M รายการ` when filtered) and the 44 round filter button at the right.
 - Filter button states — normal: surface + `borderSubtle`; open: `primarySoft` + 1 pt `primary`; filtered: `navySolid`
   with white glyph and an 8 pt orange (`Theme.warning`, `#F08C00`) dot top-right with a 2 pt ring. Same as the PWA home.
 - **Filter popover** `กรองตารางงาน` (300 wide, radius 18, 1 pt `borderOutdoor`, no shadow, arrow under the button):
-  - header `กรองตารางงาน` + `ล้าง` (disabled grey when nothing is set)
-  - `ประเภทงาน`: 3-column grid of 44-high chips: `ทั้งหมด` + one per type, each with a colour dot and its count for the day
-    (counts respect the team filter; zero-count chips are greyed but tappable)
-  - `ทีม`: segmented `ทุกทีม · A · B · C · TC` (track `segmentTrack`, selected white)
-  - primary button `แสดง N รายการ` closes it.
-  - Reuse the PWA home's popover presentation (`presentationCompactAdaptation(.popover)`).
-- When filtered, removable chips (`ติดตั้ง ✕`, `ผู้รับเหมา A ✕`; 30 high, `primarySoft`, `primary` 12 bold) sit under the heading.
+  `ล้าง`; `ประเภทงาน` 3-column grid of 44-high chips with colour dot and count; `ทีม` segmented
+  `ทุกทีม · A · B · C · TC`; primary button `แสดง N รายการ`. The filter applies to every day in the list.
+  Reuse the PWA home's popover presentation (`presentationCompactAdaptation(.popover)`).
+- When filtered, removable chips (`ติดตั้ง ✕`, `ผู้รับเหมา A ✕`; 30 high, `primarySoft`, `primary` 12 bold) sit under the row.
+
+**Day list** (`ScrollViewReader` + `LazyVStack`, bottom inset so the last day can reach the top):
+- Every day of the range (week: 7 days, month: the whole month), in order. Each day = a header + its rows.
+- Day header: `วันพฤหัสบดี 15 ต.ค.` (13 bold) + count (12 muted); `· วันนี้` after today. The header of the selected
+  day is `primary` with a 6 pt `primary` dot before it.
+- Rows sorted by start time. A day with nothing: dashed 12-radius row `ไม่มีงาน` (`ไม่มีงานในตัวกรองนี้` when the
+  filter hid its rows).
+- **Scroll-spy:** the day whose header is at (or just above) the top of the list is the selected day, so the calendar
+  highlight follows the scroll (`states/04`). Ignore scroll events while a tap-triggered smooth scroll is running.
+- On first appear the list is at today.
 
 **Agenda rows** (surface card, radius 16, padding 10/12, gap 10):
 - left 44 pt column: start `08:00` (14 bold), end `–17:00` (11 muted)
@@ -117,7 +143,6 @@ button at the right (44 × 44 round, `icons/filter.svg`).
   (11 bold; colours from `STT` in the board: `กำลังทำ` primary, `นัดแล้ว`/`ตามแผน` success, `รอ` muted, `ต้องยื่น` warning text,
   `เตือน` danger text)
 - line 2: title 14 bold, one line · line 3: subtitle 12 muted, one line
-- Empty / no match: dashed card `ไม่มีงานในตัวกรองนี้ · ล้างตัวกรอง` (state 05); a day with nothing at all: `ไม่มีงานในวันนี้`.
 
 **Job types** (board `TY`, also in `sample-data.json`). Add them as `Theme` tokens if missing, never hex in views:
 
@@ -166,15 +191,17 @@ station sorted by due date, min height 30:
   `N รายการ`. Picking closes it. Filtered = navy button + orange dot (state 09). `TCDropdownList` may fit.
 
 ### 6. What changed since the v2 draft
-- `ตารางงาน`: the agenda filter (round button + `กรองตารางงาน` popover + removable chips + empty state) is new; the draft had none.
-- `กำหนดส่ง`: the full-width `แสดง ทั้งหมด 9 ▾` dropdown row is gone; its filter is the round button at the end of the
-  pill row.
+- View pills → one segmented switch with plain counts (§2).
+- `ตารางงาน`: week/month switch, week number, colour bars with continuous runs (instead of dots), one scrolling list of
+  days with scroll-spy (instead of one day's agenda), agenda filter popover + chips.
+- `กำหนดส่ง`: the full-width `แสดง ทั้งหมด 9 ▾` row is gone; its filter is the round button at the end of the switch row.
 - `แผน MP`: unchanged apart from spacing.
 
 ### 7. Debug launch arguments (add to `CLAUDE.md` next to `-surveyHomeTab`)
 - `-pwaPlanView schedule|mp|due` picks the pill (with `-screen pwa -surveyHomeTab plan`).
-- `-pwaPlanDay 2026-10-13`, `-pwaPlanFilter open|ins-A|empty`, `-pwaPlanDueFilter open|doc`, `-pwaPlanDemo YES` (seed
-  `assets/sample-data.json` dated from today). These reproduce states 01–10.
+- `-pwaPlanCalendar week|month`, `-pwaPlanDay 2026-10-15` (selects and scrolls to it), `-pwaPlanFilter open|ins-A`,
+  `-pwaPlanDueFilter open|doc`, `-pwaPlanDemo YES` (seed `assets/sample-data.json` dated from today; `monthTypesByDay`
+  drives the bars). These reproduce states 01–12.
 
 ## Rules (from `CLAUDE.md`)
 - Build from `TCRoofUI` components and `Theme` tokens; no hex literals, no `Color.white` in views.
@@ -186,13 +213,15 @@ station sorted by due date, min height 30:
 
 ## Check list
 - [ ] iPhone `แผนงาน` tab opens `PWAPlanPhoneView`; iPad still opens `MPOverviewView`
-- [ ] Pills with counts; filter button appears only on `กำหนดส่ง`
-- [ ] Week strip: selected / today / weekend styles, type dots
-- [ ] Agenda filter popover, chips, `ล้าง`, empty state
+- [ ] Segmented view switch with counts; filter button at its end only on `กำหนดส่ง`
+- [ ] Week strip with `สัปดาห์ที่ N`; `สัปดาห์ / เดือน` switch; month grid with legend
+- [ ] Colour bars: continuous runs per type within a week row, lane-stable, broken by the selected day
+- [ ] Day list scrolls; scroll-spy moves the highlight; tapping a day scrolls the list
+- [ ] Agenda filter popover, chips, `ล้าง`, per-day empty rows
 - [ ] S-curve from real plans, kWp-weighted; today line; variance text
 - [ ] Gantt rows sorted by due date with plan tick and behind colour
 - [ ] Deadline groups with overdue in `สัปดาห์นี้`; filter menu and filtered state
-- [ ] Screenshots of states 01–10 on an iPhone simulator match the PNGs (put yours in `screenshots/`)
+- [ ] Screenshots of states 01–12 on an iPhone simulator match the PNGs (put yours in `screenshots/`)
 
 ## Report back
 1. Which data you found for each job type and deadline kind, and which you left out.

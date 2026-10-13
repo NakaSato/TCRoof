@@ -1,5 +1,5 @@
 {
-  "note": "Example data from the board PhonePwaPlan.dc.html (today = 2026-10-12, จันทร์ 12 ต.ค. 2569, week 42). Use real Job / MasterSchedule data in the app; use this only for demo seeding, previews and tests.",
+  "note": "Example data from the board PhonePwaPlan.dc.html (today = 2026-10-12, จันทร์ 12 ต.ค. 2569, week 42). Use real Job / MasterSchedule data in the app; use this only for demo seeding, previews and tests. monthTypesByDay = the job types on each day of October (drives the colour bars in week and month views).",
   "today": "2026-10-12",
   "jobTypes": {
     "ins": {
@@ -155,31 +155,6 @@
       "due": "10/10"
     }
   ],
-  "weekDots": {
-    "12": [
-      "ins",
-      "srv",
-      "doc"
-    ],
-    "13": [
-      "ins",
-      "chk"
-    ],
-    "14": [
-      "ins",
-      "doc"
-    ],
-    "15": [
-      "ins",
-      "tst",
-      "doc"
-    ],
-    "16": [
-      "ins"
-    ],
-    "17": [],
-    "18": []
-  },
   "agenda": {
     "12": [
       {
@@ -381,5 +356,98 @@
     31,
     39,
     47
-  ]
+  ],
+  "monthTypesByDay": {
+    "2026-10-01": [
+      "ins"
+    ],
+    "2026-10-02": [
+      "ins",
+      "srv"
+    ],
+    "2026-10-05": [
+      "ins",
+      "doc"
+    ],
+    "2026-10-06": [
+      "ins",
+      "chk"
+    ],
+    "2026-10-07": [
+      "ins"
+    ],
+    "2026-10-08": [
+      "ins",
+      "ntf",
+      "tst"
+    ],
+    "2026-10-09": [
+      "ins",
+      "tst"
+    ],
+    "2026-10-10": [
+      "srv"
+    ],
+    "2026-10-12": [
+      "ins",
+      "srv",
+      "doc"
+    ],
+    "2026-10-13": [
+      "ins",
+      "chk"
+    ],
+    "2026-10-14": [
+      "ins",
+      "doc"
+    ],
+    "2026-10-15": [
+      "ins",
+      "tst",
+      "doc"
+    ],
+    "2026-10-16": [
+      "ins"
+    ],
+    "2026-10-19": [
+      "ins"
+    ],
+    "2026-10-20": [
+      "ins",
+      "doc"
+    ],
+    "2026-10-21": [
+      "ins",
+      "chk",
+      "doc"
+    ],
+    "2026-10-22": [
+      "ins",
+      "doc"
+    ],
+    "2026-10-23": [
+      "ins"
+    ],
+    "2026-10-24": [
+      "tst"
+    ],
+    "2026-10-26": [
+      "ins"
+    ],
+    "2026-10-27": [
+      "ins",
+      "srv"
+    ],
+    "2026-10-28": [
+      "ins",
+      "doc"
+    ],
+    "2026-10-29": [
+      "ins"
+    ],
+    "2026-10-30": [
+      "ins",
+      "chk"
+    ]
+  }
 }

@@ -111,16 +111,29 @@ struct StationDocsScreen: View {
         }
     }
 
+    /// The packages with their ready counts, then the พค.2 check list and the ERC flow of a station of 200 kVA and over.
+    private var tabs: [(tab: Pane, title: String, count: String?)] {
+        var out: [(Pane, String, String?)] = StationDocs.packages(ctx).map { p in
+            let pr = StationDocs.progress(p, station: job.stationDocs, library: library, ctx)
+            return (.package(p), p.title, "\(pr.ready)/\(pr.total)")
+        }
+        if ctx.over200kVA { out += [(.checklist, "Check list พค.2", nil), (.erc, "ลำดับ กกพ.", nil)] }
+        return out
+    }
+
     private var tabPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(StationDocs.packages(ctx)) { p in
-                    let pr = StationDocs.progress(p, station: job.stationDocs, library: library, ctx)
-                    chip("\(p.title) \(pr.ready)/\(pr.total)", selected: tab == .package(p)) { tab = .package(p) }
-                }
-                if ctx.over200kVA {
-                    chip("Check list พค.2", selected: tab == .checklist) { tab = .checklist }
-                    chip("ลำดับ กกพ.", selected: tab == .erc) { tab = .erc }
+        let tabs = self.tabs
+        return ScrollView(.horizontal, showsIndicators: false) {
+            if sizeClass == .compact {
+                // the PWA module's view switch on iPhone (docs/ui/pwa-plan-iphone §2)
+                TCCountSegments(tabs.map { .init($0.title, count: $0.count) },
+                                selection: Binding(get: { tabs.firstIndex { $0.tab == tab } ?? 0 }, set: { tab = tabs[$0].tab }),
+                                equalWidths: false)
+            } else {
+                HStack(spacing: 8) {
+                    ForEach(tabs, id: \.title) { t in
+                        chip([t.title, t.count].compactMap { $0 }.joined(separator: " "), selected: tab == t.tab) { tab = t.tab }
+                    }
                 }
             }
         }

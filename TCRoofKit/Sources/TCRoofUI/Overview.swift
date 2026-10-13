@@ -3,49 +3,78 @@ import SwiftUI
 
 /// Parts of the PWA project home's overviews on iPhone (docs/ui/pwa-solar-survey-iphone-v2). No shadows.
 
-/// A 44 pt capsule with a count: the stage pills (`counted`, equal widths, the count in a chip) and the
-/// overviews' row filters (`plain`, 40 pt high in a 44 pt hit area, the count after the title).
-public struct TCCountPill: View {
-    public enum Style: Sendable { case counted, plain }
+/// The view switch of the PWA module's iPhone pages (docs/ui/pwa-plan-iphone §2): one 44 pt track holding 38 pt
+/// segments, the selected one white with a soft shadow. A count stands after its label as plain bold text, red
+/// when `alert` (`กำหนดส่ง` with something late). Segments share the width, or with `equalWidths` off take their own
+/// (`สัปดาห์ | เดือน`).
+public struct TCCountSegments: View {
+    public struct Segment: Sendable {
+        let title: String
+        let count: String?
+        let alert: Bool
 
-    let title: String
-    let count: Int
-    let selected: Bool
-    let style: Style
-    /// Tints the count red while the pill is not selected (`กำหนดส่ง` with something late).
-    let alert: Bool
-    let action: () -> Void
+        public init(_ title: String, count: String? = nil, alert: Bool = false) {
+            self.title = title; self.count = count; self.alert = alert
+        }
 
-    public init(_ title: String, count: Int, selected: Bool, style: Style = .counted, alert: Bool = false, action: @escaping () -> Void) {
-        self.title = title; self.count = count; self.selected = selected; self.style = style; self.alert = alert; self.action = action
+        public init(_ title: String, count: Int, alert: Bool = false) { self.init(title, count: "\(count)", alert: alert) }
+    }
+
+    let segments: [Segment]
+    @Binding var selection: Int
+    let equalWidths: Bool
+
+    public init(_ segments: [Segment], selection: Binding<Int>, equalWidths: Bool = true) {
+        self.segments = segments; self._selection = selection; self.equalWidths = equalWidths
     }
 
     public var body: some View {
-        Button(action: action) { label }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(title) \(count)")
-            .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        HStack(spacing: 2) {
+            ForEach(Array(segments.enumerated()), id: \.offset) { i, s in segment(s, on: i == selection) { selection = i } }
+        }
+        .padding(3)
+        .background(Theme.track, in: Capsule())
     }
 
-    @ViewBuilder private var label: some View {
-        switch style {
-        case .counted:
+    private func segment(_ s: Segment, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 5) {
-                Text(title).font(.sarabunFixed(13, selected ? .bold : .semibold))
-                Text("\(count)").font(.sarabunFixed(12, .bold)).monospacedDigit()
-                    .foregroundStyle(selected ? Theme.onPrimary : alert ? Theme.dangerText : Theme.navySolid)
-                    .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
-                    .background(selected ? Theme.onPrimary.opacity(0.22) : alert ? Theme.dangerSoft : Theme.hairline, in: Capsule())
+                Text(s.title).font(.sarabunFixed(13, on ? .bold : .semibold))
+                if let count = s.count {
+                    Text(count).font(.sarabunFixed(12, .bold)).monospacedDigit()
+                        .foregroundStyle(s.alert ? Theme.dangerText : on ? Theme.primary : Theme.inkMuted)
+                }
             }
-            .lineLimit(1).fixedSize()
-            .foregroundStyle(selected ? Theme.onPrimary : Theme.navySolid)
-            .padding(.horizontal, 6)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(selected ? Theme.navySolid : Theme.surface, in: Capsule())
-            .overlay { if !selected { Capsule().strokeBorder(Theme.borderSubtle) } }
-            .contentShape(Capsule())
-        case .plain:
+            .lineLimit(1).minimumScaleFactor(0.8)
+            .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+            .padding(.horizontal, equalWidths ? 6 : 12)
+            .frame(maxWidth: equalWidths ? .infinity : nil, minHeight: 38)
+            .background {
+                if on { Capsule().fill(Theme.surface).shadow(color: Theme.navySolid.opacity(0.16), radius: 1.5, y: 1) }
+            }
+            // the track's padding is part of the hit area
+            .padding(.vertical, 3).contentShape(Rectangle()).padding(.vertical, -3)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([s.title, s.count].compactMap { $0 }.joined(separator: " "))
+        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+/// A row filter of the overviews with its count after the title: a capsule 40 pt high in a 44 pt hit area.
+public struct TCCountPill: View {
+    let title: String
+    let count: Int
+    let selected: Bool
+    let action: () -> Void
+
+    public init(_ title: String, count: Int, selected: Bool, action: @escaping () -> Void) {
+        self.title = title; self.count = count; self.selected = selected; self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
             Text("\(title) \(count)").font(.sarabunFixed(13, .bold)).monospacedDigit()
                 .lineLimit(1).fixedSize()
                 .foregroundStyle(selected ? Theme.onPrimary : Theme.navySolid)
@@ -55,6 +84,10 @@ public struct TCCountPill: View {
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title) \(count)")
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 }
 

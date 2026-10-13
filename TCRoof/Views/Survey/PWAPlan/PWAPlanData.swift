@@ -10,6 +10,8 @@ struct PWAPlanBoard {
     var deadlines: [PWAPlan.Deadline]
     /// The agenda rows of some days, sorted.
     var agenda: ([Date]) -> [PWAPlan.AgendaItem]
+    /// The job types the calendar draws a bar for on each day; nil takes them from the agenda rows.
+    var typesByDay: [Date: Set<PWAPlan.JobType>]?
 
     /// From the PWA jobs: their MP plans, survey appointments, papers and daily reports.
     init(stations: [PWAPlan.Station], library: StationDocs.Library, today: Date, threshold: Double) {
@@ -21,8 +23,9 @@ struct PWAPlanBoard {
         self.agenda = { PWAPlan.agenda(stations, deadlines: deadlines, days: $0, today: today, threshold: threshold) }
     }
 
-    init(today: Date, bars: [PWAPlan.Bar], curve: PWAPlan.Curve, deadlines: [PWAPlan.Deadline], items: [PWAPlan.AgendaItem]) {
-        self.today = today; self.bars = bars; self.curve = curve; self.deadlines = deadlines
+    init(today: Date, bars: [PWAPlan.Bar], curve: PWAPlan.Curve, deadlines: [PWAPlan.Deadline], items: [PWAPlan.AgendaItem],
+         typesByDay: [Date: Set<PWAPlan.JobType>]? = nil) {
+        self.today = today; self.bars = bars; self.curve = curve; self.deadlines = deadlines; self.typesByDay = typesByDay
         self.agenda = { days in
             let keys = Set(days.map { PWAPlan.calendar.startOfDay(for: $0) })
             return PWAPlan.sorted(items.filter { keys.contains($0.day) })
@@ -47,8 +50,8 @@ extension Job {
 
 #if DEBUG
 /// `-pwaPlanDemo YES`: the example of docs/ui/pwa-plan-iphone (`assets/sample-data.json`), dated from `today` where
-/// the board's today is Monday 12 ต.ค. 2569. The board has an agenda for the 12th and 13th only; the rows of the
-/// 14th to 16th are made up to give its week strip the same dots.
+/// the board's today is Monday 12 ต.ค. 2569. The board has an agenda for the 12th and 13th only; every other day of
+/// its October gets one template row per job type of `monthTypesByDay`, as the board's list does.
 enum PWAPlanDemo {
     /// MP, name, kWp, actual, plan, contractor, due as days from today.
     private static let stations: [(Int, String, Double, Double, Double, String, Int)] = [
@@ -77,12 +80,30 @@ enum PWAPlanDemo {
         (0, "16:00", "", .notice, "รายงาน", "ส่งรายงานประจำวันก่อน 18:00", "ยังไม่ส่ง 4 สถานี · วัดชัย บ้านโป่ง หนองแค บ้านบึง", .alert, .dailies),
         (1, "08:00", "17:00", .install, "MP 189", "2.3 ติดตั้งแผงเซลล์", "ทุ่งน้อย · ผู้รับเหมา A · TCR01", .onPlan, .station),
         (1, "09:00", "11:00", .inspection, "MP 98", "ผู้แทน กปภ. ตรวจ 2.2 สาย DC", "บ้านโป่ง · ผู้รับเหมา A", .waiting, .station),
-        (2, "08:00", "17:00", .install, "MP 189", "2.3 ติดตั้งแผงเซลล์", "ทุ่งน้อย · ผู้รับเหมา A · TCR01", .onPlan, .station),
-        (2, "13:00", "", .document, "MP 88", "ส่ง Punch List ให้ผู้ว่าจ้างลงนาม", "พนัสนิคม · ผู้รับเหมา B", .mustSubmit, .docs),
-        (3, "08:00", "17:00", .install, "MP 120", "2.1 โครงสร้างรองรับ + Walkway", "วัดชัย · ผู้รับเหมา B · TCR03", .onPlan, .station),
-        (3, "09:00", "12:00", .test, "MP 109", "3.1 Pre-Commissioning (IEC 62446)", "ศรีราชา · ผู้รับเหมา A", .booked, .station),
-        (3, "13:00", "", .document, "MP 154", "รวมเอกสาร พค.2 (กกพ.)", "แพรกหนามแดง · ผู้รับเหมา C", .mustSubmit, .docs),
-        (4, "08:00", "17:00", .install, "MP 120", "2.1 โครงสร้างรองรับ + Walkway", "วัดชัย · ผู้รับเหมา B · TCR03", .onPlan, .station),
+    ]
+
+    /// `monthTypesByDay`: the job types on each day of the board's October, by day of the month. They are the
+    /// calendar's bars; the 12th has more rows than bars.
+    private static let monthTypes: [Int: [PWAPlan.JobType]] = [
+        1: [.install], 2: [.install, .survey], 5: [.install, .document], 6: [.install, .inspection], 7: [.install],
+        8: [.install, .notice, .test], 9: [.install, .test], 10: [.survey],
+        12: [.install, .survey, .document], 13: [.install, .inspection], 14: [.install, .document], 15: [.install, .test, .document], 16: [.install],
+        19: [.install], 20: [.install, .document], 21: [.install, .inspection, .document], 22: [.install, .document], 23: [.install], 24: [.test],
+        26: [.install], 27: [.install, .survey], 28: [.install, .document], 29: [.install], 30: [.install, .inspection],
+    ]
+    private static let boardDay = 12
+
+    /// The board's rows for a day it has no agenda for: start, end, ref, title, subtitle, status, opens. A day takes
+    /// the template at its day of the month modulo the type's count.
+    private static let templates: [PWAPlan.JobType: [(String, String, String, String, String, PWAPlan.AgendaStatus, PWAPlan.Target)]] = [
+        .install: [("08:00", "17:00", "MP 133", "2.3 ติดตั้งแผงเซลล์", "บางปะกง · ผู้รับเหมา A · TCR01", .onPlan, .station),
+                   ("08:00", "17:00", "MP 142", "2.2 เดินสาย DC", "หนองแค · ผู้รับเหมา C · TCR07", .onPlan, .station),
+                   ("08:30", "17:00", "MP 88", "2.5 ติดตั้ง Inverter", "พนัสนิคม · ผู้รับเหมา B · TCR08", .onPlan, .station)],
+        .survey: [("09:30", "11:30", "NO.231", "นัดสำรวจ สถานีผลิตน้ำ 2", "กปภ. สาขาตัวอย่าง · TCR02", .booked, .survey)],
+        .inspection: [("10:00", "11:30", "MP 109", "ผู้แทน กปภ. ตรวจ 2.6 ระบบ AC", "ศรีราชา · ผู้รับเหมา A", .waiting, .station)],
+        .document: [("13:00", "", "MP 154", "ส่งเอกสาร พค.2 ข้อ 19–23", "แพรกหนามแดง · กกพ.", .mustSubmit, .docs)],
+        .test: [("14:00", "16:30", "MP 109", "3.1 Pre-Commissioning (IEC 62446)", "ศรีราชา · TCR10", .booked, .station)],
+        .notice: [("16:00", "", "รายงาน", "ส่งรายงานประจำวันก่อน 18:00", "ยังไม่ส่ง 3 สถานี", .alert, .dailies)],
     ]
 
     /// Day offset, title, subtitle, kind, chip, tone, MP.
@@ -121,11 +142,16 @@ enum PWAPlanDemo {
         }
         .sorted { $0.due < $1.due }
 
-        let items = agenda.enumerated().map { i, a in
+        let written = Set(agenda.map(\.0))
+        let rows = agenda + monthTypes.sorted { $0.key < $1.key }.filter { !written.contains($0.key - boardDay) }.flatMap { n, types in
+            types.compactMap { t in templates[t].map { $0[n % $0.count] }.map { (n - boardDay, $0.0, $0.1, t, $0.2, $0.3, $0.4, $0.5, $0.6) } }
+        }
+        let items = rows.enumerated().map { i, a in
             PWAPlan.AgendaItem(id: "demo-\(i)", day: day(a.0), start: minutes(a.1), end: minutes(a.2), type: a.3, ref: a.4, title: a.5,
                                subtitle: a.6, status: a.7, contractor: contractor(a.6), team: team(a.6),
                                station: a.4.hasPrefix("MP ") ? "demo-" + a.4.dropFirst(3) : "", opens: a.8)
         }
+        let types = Dictionary(uniqueKeysWithValues: monthTypes.map { (day($0.key - boardDay), Set($0.value)) })
 
         let due = deadlines.enumerated().map { i, d in
             PWAPlan.Deadline(id: "demo-\(i)", date: day(d.0), kind: d.3, title: d.1, subtitle: d.2, chip: d.4, tone: d.5,
@@ -142,7 +168,7 @@ enum PWAPlanDemo {
         let curve = PWAPlan.Curve(weeks: weeks, plan: logistic.map { min(100, $0 * scale) }, actual: actualByWeek + [done.rounded()],
                                   todayIndex: 11, planned: planned, done: done)
 
-        return PWAPlanBoard(today: today, bars: bars, curve: curve, deadlines: due, items: items)
+        return PWAPlanBoard(today: today, bars: bars, curve: curve, deadlines: due, items: items, typesByDay: types)
     }
 }
 #endif

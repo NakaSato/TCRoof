@@ -180,10 +180,16 @@ public enum PWAPlan {
         let mp = MasterSchedule.calendar
         let today = cal.startOfDay(for: today)
         var out: [AgendaItem] = []
+        // a month of days asks for each station's plan 31 times
+        let planned = stations.map { s -> (plan: [MasterSchedule.PlannedTask], status: MasterSchedule.Status)? in
+            guard let input = s.input, !s.handedOver else { return nil }
+            let plan = MasterSchedule.plan(input, calendar: mp)
+            return (plan, MasterSchedule.status(plan: plan, actual: s.actual, through: today, calendar: mp))
+        }
         for d in days.map({ cal.startOfDay(for: $0) }) {
             let key = dayKey(d, cal), isToday = d == today
             let works = { (s: Station) in s.workingWeekdays.contains(cal.component(.weekday, from: d)) }
-            for s in stations {
+            for (s, planned) in zip(stations, planned) {
                 if let at = s.surveyAt, cal.isDate(at, inSameDayAs: d) {
                     let c = cal.dateComponents([.hour, .minute], from: at)
                     out.append(AgendaItem(id: "srv-\(s.id)-\(key)", day: d, start: (c.hour ?? 0) * 60 + (c.minute ?? 0), type: .survey,
@@ -197,9 +203,7 @@ public enum PWAPlan {
                                           ref: s.ref, title: subject.isEmpty ? "ผู้แทน กปภ. ตรวจรับ" : "ผู้แทน กปภ. ตรวจ " + subject, subtitle: who(s),
                                           status: .waiting, contractor: s.contractor, team: s.team, station: s.id, opens: .station))
                 }
-                guard let input = s.input, !s.handedOver, works(s) else { continue }
-                let plan = MasterSchedule.plan(input, calendar: mp)
-                let status = MasterSchedule.status(plan: plan, actual: s.actual, through: today, calendar: mp)
+                guard let (plan, status) = planned, works(s) else { continue }
                 let on = plan.filter { p in
                     guard p.weight > 0, let a = p.start, let b = p.end else { return false }
                     return mp.startOfDay(for: a) <= d && d <= mp.startOfDay(for: b)
@@ -254,6 +258,68 @@ public enum PWAPlan {
     static func dayKey(_ d: Date, _ cal: Calendar) -> String {
         let c = cal.dateComponents([.year, .month, .day], from: d)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    // MARK: Calendar
+
+    /// The seven days of the week that starts on `monday`.
+    public static func week(from monday: Date, calendar cal: Calendar = calendar) -> [Date] {
+        (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: cal.startOfDay(for: monday)) }
+    }
+
+    /// The month of `date` as Monday-first rows of seven; nil is a blank cell before the 1st or after the last day.
+    public static func monthRows(containing date: Date, calendar cal: Calendar = calendar) -> [[Date?]] {
+        guard let month = cal.dateInterval(of: .month, for: date), let count = cal.range(of: .day, in: .month, for: date)?.count else { return [] }
+        let blanks = (cal.component(.weekday, from: month.start) + 5) % 7
+        var cells: [Date?] = Array(repeating: nil, count: blanks) + (0..<count).map { cal.date(byAdding: .day, value: $0, to: month.start) }
+        cells += Array(repeating: nil, count: (7 - cells.count % 7) % 7)
+        return stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0 ..< $0 + 7]) }
+    }
+
+    /// The job types of each day that has rows.
+    public static func types(_ items: [AgendaItem]) -> [Date: Set<JobType>] {
+        items.reduce(into: [:]) { $0[$1.day, default: []].insert($1.type) }
+    }
+
+    /// One colour bar of a calendar row: a job type over the cells `from...to`.
+    public struct BarRun: Equatable, Sendable {
+        public var type: JobType
+        /// 0 is `ติดตั้ง`; 1 and 2 hold the other types.
+        public var lane: Int
+        public var from: Int
+        public var to: Int
+    }
+
+    /// Lanes under `ติดตั้ง` in a calendar cell.
+    public static let otherLanes = 2
+
+    /// The bars of one week row of the calendar. A type on consecutive days is one run, which the selected day
+    /// breaks on both sides. `ติดตั้ง` has lane 0; the other runs take the first of lanes 1–2 that is free from
+    /// their first day, earliest run first (then in the types' order), and a run with no free lane is left out.
+    public static func barRuns(_ cells: [Date?], types: [Date: Set<JobType>], selected: Date? = nil) -> [BarRun] {
+        var runs: [BarRun] = []
+        for type in JobType.allCases {
+            var open = false
+            for (i, cell) in cells.enumerated() {
+                guard let d = cell, types[d]?.contains(type) == true else { open = false; continue }
+                if open, d != selected, cells[i - 1] != selected {
+                    runs[runs.count - 1].to = i
+                } else {
+                    runs.append(BarRun(type: type, lane: 0, from: i, to: i))
+                    open = true
+                }
+            }
+        }
+        var out = runs.filter { $0.type == .install }
+        var laneEnd = Array(repeating: -1, count: otherLanes)
+        let others = runs.enumerated().filter { $0.element.type != .install }
+            .sorted { $0.element.from != $1.element.from ? $0.element.from < $1.element.from : $0.offset < $1.offset }
+        for (_, run) in others {
+            guard let lane = laneEnd.firstIndex(where: { $0 < run.from }) else { continue }
+            laneEnd[lane] = run.to
+            out.append(BarRun(type: run.type, lane: lane + 1, from: run.from, to: run.to))
+        }
+        return out
     }
 
     // MARK: S-curve

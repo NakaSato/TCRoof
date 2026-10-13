@@ -4,11 +4,12 @@ import TCRoofUI
 import TCRoofCore
 import SurveyUI
 
-/// The PWA module's `แผนงาน` tab on iPhone (docs/ui/pwa-plan-iphone): the header with its growing search, three pills
-/// (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under them. The dock comes from `PWAPhoneTabs`; iPad keeps
+/// The PWA module's `แผนงาน` tab on iPhone (docs/ui/pwa-plan-iphone): the header with its growing search, the view
+/// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The dock comes from `PWAPhoneTabs`; iPad keeps
 /// `MPOverviewView`.
 struct PWAPlanPhoneView: View {
-    enum Pane: String { case schedule, mp, due }
+    enum Pane: String, CaseIterable { case schedule, mp, due }
+    enum CalendarMode: String, CaseIterable { case week, month }
 
     /// A screen a row opens.
     enum Route: Hashable {
@@ -20,9 +21,17 @@ struct PWAPlanPhoneView: View {
     @State var search = ""
     @State var searchOpen = Debug.searchOpen
     // ตารางงาน
-    /// The Monday of the shown week, and the selected day in it.
+    @State var calendarMode = Debug.calendar
+    /// The Monday of the week view's week, and the selected day: in that week, or in month view any day of its month.
     @State var weekStart = PWAPlanPhoneView.monday(of: Debug.day ?? PWAPlanPhoneView.today)
     @State var day = PWAPlan.calendar.startOfDay(for: Debug.day ?? PWAPlanPhoneView.today)
+    /// Raised to scroll the day list to `day`, smoothly after a tap.
+    @State var jump = 0
+    @State var jumpAnimated = false
+    /// The list's position doesn't select a day before this: while a jump is on its way.
+    @State var spyLock = Date.distantFuture
+    /// The list's last seen scroll offset.
+    @State var spyOffset: CGFloat = 0
     @State var type: PWAPlan.JobType? = Debug.type
     @State var team: String? = Debug.team
     @State var showFilter = Debug.filterOpen
@@ -41,18 +50,19 @@ struct PWAPlanPhoneView: View {
         let today = board.agenda([Self.today]).count, due = PWAPlan.groups(board.deadlines, today: Self.today)
         VStack(spacing: 0) {
             pills(today: today, plans: board.bars.count, due: due)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    switch pane {
-                    case .schedule: schedule(board)
-                    case .mp: mpPlan(board)
-                    case .due: dueList(due)
+            if pane == .schedule {
+                // the calendar stays; only the list of days scrolls
+                schedule(board)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if pane == .mp { mpPlan(board) } else { dueList(due) }
                     }
+                    // 20 pt clear of the dock, which is the stack's bottom safe-area inset
+                    .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 20)
                 }
-                // 20 pt clear of the dock, which is the stack's bottom safe-area inset
-                .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 20)
+                .scrollDismissesKeyboard(.immediately)
             }
-            .scrollDismissesKeyboard(.immediately)
         }
         .overlay(alignment: .topTrailing) { if pane == .due && showDueMenu { dueMenu(due) } }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -77,9 +87,9 @@ struct PWAPlanPhoneView: View {
 
     private func pills(today: Int, plans: Int, due: PWAPlan.DeadlineGroups) -> some View {
         HStack(spacing: 6) {
-            TCCountPill("ตารางงาน", count: today, selected: pane == .schedule) { select(.schedule) }
-            TCCountPill("แผน MP", count: plans, selected: pane == .mp) { select(.mp) }
-            TCCountPill("กำหนดส่ง", count: due.all.count, selected: pane == .due, alert: due.hasLate) { select(.due) }
+            TCCountSegments([.init("ตารางงาน", count: today), .init("แผน MP", count: plans),
+                             .init("กำหนดส่ง", count: due.all.count, alert: due.hasLate)],
+                            selection: Binding(get: { Pane.allCases.firstIndex(of: pane) ?? 0 }, set: { select(Pane.allCases[$0]) }))
             if pane == .due { dueFilterButton(due) }
         }
         .padding(.horizontal, 16).padding(.top, 12)
@@ -87,6 +97,8 @@ struct PWAPlanPhoneView: View {
 
     private func select(_ p: Pane) {
         showDueMenu = false
+        // the day list comes back at its top: it scrolls to the selected day again
+        if p == .schedule && pane != .schedule { spyLock = .distantFuture }
         withAnimation(reduceMotion ? nil : .snappy) { pane = p }
     }
 
@@ -140,7 +152,7 @@ struct PWAPlanPhoneView: View {
 
     // MARK: DEBUG
 
-    /// `-pwaPlanView schedule|mp|due`, `-pwaPlanDay 2026-10-13`, `-pwaPlanFilter open|ins-A|empty`,
+    /// `-pwaPlanView schedule|mp|due`, `-pwaPlanCalendar week|month`, `-pwaPlanDay 2026-10-13`, `-pwaPlanFilter open|ins-A|empty`,
     /// `-pwaPlanDueFilter open|doc`, `-pwaPlanSearch YES`, `-pwaPlanToday 2026-10-12`. Release builds get the defaults.
     enum Debug {
         #if DEBUG
@@ -149,6 +161,7 @@ struct PWAPlanPhoneView: View {
         private static let due = d.string(forKey: "pwaPlanDueFilter")
         static let today = d.string(forKey: "pwaPlanToday").flatMap(PWAPlanPhoneView.isoDay)
         static let pane = d.string(forKey: "pwaPlanView").flatMap(Pane.init) ?? .schedule
+        static let calendar = d.string(forKey: "pwaPlanCalendar").flatMap(CalendarMode.init) ?? .week
         static let day = d.string(forKey: "pwaPlanDay").flatMap(PWAPlanPhoneView.isoDay)
         static let searchOpen = d.bool(forKey: "pwaPlanSearch")
         static let filterOpen = filter == "open"
@@ -158,6 +171,7 @@ struct PWAPlanPhoneView: View {
         static let dueFilter: PWAPlan.DeadlineKind? = due == "doc" ? .document : nil
         #else
         static let pane = Pane.schedule
+        static let calendar = CalendarMode.week
         static let day: Date? = nil
         static let searchOpen = false, filterOpen = false, dueMenuOpen = false
         static let type: PWAPlan.JobType? = nil
@@ -180,6 +194,8 @@ enum PWAPlanFormat {
 
     /// `ตุลาคม 2569`
     static let monthYear = make("LLLL yyyy")
+    /// `2569`
+    static let year = make("yyyy")
     /// `วันจันทร์`
     static let weekday = make("EEEE")
     /// `12 ต.ค.`

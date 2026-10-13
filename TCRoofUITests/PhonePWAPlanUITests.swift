@@ -2,8 +2,8 @@ import XCTest
 
 /// docs/ui/pwa-plan-iphone, on an iPhone simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<iphone udid>' -only-testing:TCRoofUITests/PhonePWAPlanUITests -derivedDataPath <scratch>`.
-/// The pills change the view; an agenda row, a Gantt row and a deadline open their screens and the page comes back;
-/// the two filters narrow their lists.
+/// The view switch changes the view; an agenda row, a Gantt row and a deadline open their screens and the page comes
+/// back; the two filters narrow their lists; the calendar's month, a tapped day and the list's position select a day.
 final class PhonePWAPlanUITests: XCTestCase {
     let slow: TimeInterval = 90
 
@@ -51,24 +51,25 @@ final class PhonePWAPlanUITests: XCTestCase {
         XCTAssertTrue(button(app, "BEGINSWITH", "กรองกำหนดส่ง").waitForExistence(timeout: 8), "the filter button stands in the pill row of `กำหนดส่ง`")
     }
 
-    /// Today's install row opens its station; the week arrows move the strip.
+    /// Today is selected at first; an install row opens its station; the week arrows move the strip.
     func testAgendaRow() {
         let app = launch("schedule")
         let row = button(app, "CONTAINS", " · ติดตั้ง · ")
         XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station is in its install window today")
+        let today = button(app, "CONTAINS", " · วันนี้ · ")
+        XCTAssertTrue(today.isSelected, "today is selected at first")
+        // the first install row can be an earlier day's: the list scrolls back to it, which selects that day
         row.tap()
         XCTAssertTrue(app.staticTexts["ข้อมูลลูกค้า"].waitForExistence(timeout: 8), "an install row should open the station")
         back(app, to: row)
 
-        let today = button(app, "CONTAINS", " · วันนี้ · ")
-        XCTAssertTrue(today.isSelected, "today is selected at first")
         app.buttons["สัปดาห์ถัดไป"].tap()
         XCTAssertFalse(today.exists, "the next week has no today")
         app.buttons["สัปดาห์ก่อน"].tap()
         XCTAssertTrue(today.waitForExistence(timeout: 8))
     }
 
-    /// The agenda filter: a type with no row leaves the empty card, and `ล้างตัวกรอง` brings the rows back.
+    /// The agenda filter: a type with no row leaves every day's `ไม่มีงานในตัวกรองนี้`, and its chip brings the rows back.
     func testAgendaFilter() {
         let app = launch("schedule")
         let row = button(app, "CONTAINS", " · ติดตั้ง · ")
@@ -78,11 +79,45 @@ final class PhonePWAPlanUITests: XCTestCase {
         XCTAssertTrue(inspection.waitForExistence(timeout: 8), "the filter button should open `กรองตารางงาน`")
         inspection.tap()
         button(app, "BEGINSWITH", "แสดง ").tap()
-        let clear = app.buttons["ล้างตัวกรอง"].firstMatch
-        XCTAssertTrue(clear.waitForExistence(timeout: 8), "no inspection is kept, so the day is empty under that filter")
+        let clear = app.buttons["ล้างตัวกรอง ตรวจรับ"].firstMatch
+        XCTAssertTrue(clear.waitForExistence(timeout: 8), "the picked type stands as a chip under the heading")
+        XCTAssertTrue(app.staticTexts["ไม่มีงานในตัวกรองนี้"].firstMatch.exists, "no inspection is kept, so the days are empty under that filter")
         XCTAssertFalse(row.exists)
         clear.tap()
         XCTAssertTrue(row.waitForExistence(timeout: 8))
+    }
+
+    /// The month view lists the whole month; a tapped day becomes selected and heads the list, and scrolling the
+    /// list on moves the selection to a later day.
+    func testCalendarAndDayList() {
+        let app = launch("schedule")
+        let today = button(app, "CONTAINS", " · วันนี้ · ")
+        XCTAssertTrue(today.waitForExistence(timeout: slow))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "สัปดาห์ที่ ")).firstMatch.exists)
+        app.buttons["เดือน"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["งานทั้งเดือน"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["เดือนถัดไป"].exists)
+        XCTAssertTrue(today.isSelected, "the month keeps the day")
+        app.buttons["เดือนถัดไป"].tap()
+        let first = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "วัน", " 1 ")).firstMatch
+        XCTAssertTrue(first.waitForExistence(timeout: 8))
+        XCTAssertTrue(first.isSelected, "another month opens on its 1st")
+        app.buttons["เดือนก่อน"].tap()
+        XCTAssertTrue(today.waitForExistence(timeout: 8))
+        XCTAssertTrue(today.isSelected, "today's month opens on today")
+
+        app.buttons["สัปดาห์"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["งานสัปดาห์นี้"].waitForExistence(timeout: 8))
+        let cells = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND (label CONTAINS %@ OR label ENDSWITH %@)", "วัน", " ประเภทงาน", " · ไม่มีงาน"))
+        XCTAssertEqual(cells.count, 7)
+        // a day that is not today: the first or the second of the week
+        let other = cells.element(boundBy: 0).isSelected ? cells.element(boundBy: 1) : cells.element(boundBy: 0)
+        other.tap()
+        XCTAssertTrue(other.isSelected)
+        let unselected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == false"), object: other)
+        sleep(1)
+        app.swipeUp()
+        XCTAssertEqual(XCTWaiter.wait(for: [unselected], timeout: 8), .completed, "the day at the top of the list is the selected day")
     }
 
     /// A Gantt row opens the station's MP plan.

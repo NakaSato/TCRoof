@@ -3,22 +3,21 @@ import SwiftUI
 
 /// Parts of the PWA project home on iPhone (docs/ui/pwa-solar-survey-iphone-v2), shown with section 5's cards.
 struct GalleryOverview: View {
-    @State var stage = 1
+    @State var stage = 0
+    @State var calendar = 0
     @State var filter = 0
     @State var remind = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            GalleryItem("แท็บขั้นงาน + ตัวกรองแถว", note: "แท็บสูง 44 กว้างเท่ากัน · ตัวกรองแถวสูง 40 พื้นที่แตะ 44") {
+            GalleryItem("สวิตช์มุมมอง + ตัวกรองแถว", note: "ราง 44 ช่อง 38 กว้างเท่ากัน ตัวเลขแดงเมื่อเตือน · ตัวกรองแถวสูง 40 พื้นที่แตะ 44") {
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        ForEach(Array([("ทั้งหมด", 6), ("งานติดตั้ง", 12), ("บำรุงรักษา", 6)].enumerated()), id: \.offset) { i, p in
-                            TCCountPill(p.0, count: p.1, selected: stage == i) { stage = i }
-                        }
-                    }
+                    TCCountSegments([.init("ตารางงาน", count: 7), .init("แผน MP", count: 12), .init("กำหนดส่ง", count: 9, alert: true)],
+                                    selection: $stage)
+                    TCCountSegments([.init("สัปดาห์"), .init("เดือน")], selection: $calendar, equalWidths: false)
                     HStack(spacing: 6) {
                         ForEach(Array([("ช้ากว่าแผน", 4), ("ยังไม่ส่งรายงาน", 4), ("ทั้งหมด", 12)].enumerated()), id: \.offset) { i, p in
-                            TCCountPill(p.0, count: p.1, selected: filter == i, style: .plain) { filter = i }
+                            TCCountPill(p.0, count: p.1, selected: filter == i) { filter = i }
                         }
                     }
                 }

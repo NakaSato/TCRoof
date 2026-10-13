@@ -23,7 +23,7 @@ public enum HomeStage: String, Codable, CaseIterable, Sendable {
 
 /// Who brings a document.
 public enum HomeProvider: String, Codable, Sendable {
-    case customer, team, engineer, pea, local
+    case customer, team, engineer, pea, local, erc
 
     public var title: String {
         switch self {
@@ -32,6 +32,7 @@ public enum HomeProvider: String, Codable, Sendable {
         case .engineer: "วิศวกร"
         case .pea: "PEA"
         case .local: "เทศบาล/อบต."
+        case .erc: "กกพ."
         }
     }
 }
@@ -173,6 +174,10 @@ public struct HomeJob: Codable, Equatable, Sendable {
         roofKgPerM2 = try c.decodeIfPresent(Double.self, forKey: .roofKgPerM2)
         ppimRequestNo = try c.decodeIfPresent(String.self, forKey: .ppimRequestNo) ?? ""
         documents = try c.decodeIfPresent([String: HomeDocument].self, forKey: .documents) ?? [:]
+        // The two "แจ้ง กกพ." rows became one optional "ผลแจ้งยกเว้นจาก กกพ."; keep what a job already recorded.
+        for old in Self.retiredERCDocs {
+            if let d = documents.removeValue(forKey: old), documents[HomeCatalog.ercResultID] == nil { documents[HomeCatalog.ercResultID] = d }
+        }
         ppim = try c.decodeIfPresent(PPIMEntry.self, forKey: .ppim) ?? PPIMEntry()
         photoReport = try c.decodeIfPresent(PhotoReport.self, forKey: .photoReport) ?? PhotoReport()
         coeCertIssued = try c.decodeIfPresent(Date.self, forKey: .coeCertIssued)
@@ -190,6 +195,9 @@ public struct HomeJob: Codable, Equatable, Sendable {
              roofKgPerM2, ppimRequestNo, documents, ppim, photoReport, coeCertIssued,
              connectRequestNo, offer, announcedOn, scod, cod, libraryPicks, usesContractor, site
     }
+
+    /// Document ids of the old "แจ้ง กกพ." rows (sell and self-use), folded into `HomeCatalog.ercResultID`.
+    static let retiredERCDocs = ["ercNotice", "ercNoticeSelfUse"]
 
     /// The council's certificate is valid 120 days from its date (printed on it). Nil until the date is set.
     public static let coeCertValidDays = 120
@@ -326,6 +334,48 @@ public struct HomeJob: Codable, Equatable, Sendable {
     }
 }
 
+/// One step of the job's permit route with PEA (ขออนุญาต · กฟภ.), as the permit card shows it.
+public struct HomePermitStep: Equatable, Sendable, Identifiable {
+    public enum State: String, Sendable { case done, current, todo }
+    public let id: String
+    public let title: String
+    /// Who acts, and what goes with it.
+    public let who: String
+    /// PEA's time limit for the step; "" when it has none.
+    public let limit: String
+    public let state: State
+}
+
+extension HomeJob {
+    /// The five steps with PEA for this route, each done when the documents that close it are in. The first step not
+    /// done is the current one. Homes in a PEA area, inverter below 200 kVA (แผนภาพจดแจ้งยกเว้นฯ ของ กกพ.).
+    public var permitSteps: [HomePermitStep] {
+        func done(_ ids: String...) -> Bool { ids.allSatisfy { document($0).status.isDone } }
+        let raw: [(String, String, String, String, Bool)] = mode == .sell
+            ? [("request", "ยื่นคำขอขายไฟใน PPIM", "ทีมเรา · ส่วนที่ 1–5 · ล็อกขนาดที่เสนอ ≤ 5 kW", "", done("sellRequest")),
+               ("announce", "PEA ประกาศรายชื่อ + ใบแจ้งค่าเชื่อมต่อ", "PEA", "≤ 30 วันนับจากคำขอครบ", done("peaApproval")),
+               ("contract", "ชำระ 2,140 บาท · ลงนามสัญญา", "ลูกค้า · ส่งเอกสารสัญญา 2 ชุด", "≤ 30 วันนับจากประกาศ", done("feeReceipt", "contract")),
+               ("connect", "ติดตั้ง · ขออนุญาตเชื่อมต่อ", "ทีมเรา · แบบรับรองตนเอง + เอกสารแนบ 1–10", "ก่อน SCOD", done("connectRequest")),
+               ("cod", "PEA ตรวจระบบ · First Sync · COD", "PEA · เปลี่ยนมิเตอร์", "≤ 30 วันนับจากแจ้งขอตรวจ", done("connectionDate"))]
+            : [("request", "ยื่นคำขอเชื่อมต่อใน PPIM", "ทีมเรา · แนบ 8 ไฟล์ ช่อง 1–6, 8, 9", "", done("ppimRequest")),
+               ("review", "PEA พิจารณาแบบและระบบไฟฟ้า", "PEA · ผลพร้อมเงื่อนไข", "≤ 15 วันทำการ", done("peaApproval")),
+               ("install", "ติดตั้ง + ตั้งค่า zero export", "ทีมเรา · รูป 9 หัวข้อ", "", done("icl")),
+               ("inspect", "แบบรับรองการติดตั้ง · PEA ตรวจระบบ", "วิศวกรเซ็น · PEA ตรวจ", "≤ 30 วันทำการ", done("peaInspection")),
+               ("cod", "PEA แจ้งวันเริ่มเชื่อมต่อ / ขนานไฟ", "PEA · กกพ. แจ้งผลยกเว้นเอง", "", done("connectionDate"))]
+        let current = raw.firstIndex { !$0.4 }
+        return raw.enumerated().map { i, r in
+            HomePermitStep(id: r.0, title: r.1, who: r.2, limit: r.3, state: r.4 ? .done : (i == current ? .current : .todo))
+        }
+    }
+
+    /// The line under the permit steps.
+    public var permitNote: String {
+        mode == .sell
+            ? "ภาคประชาชน 2569 · ยื่น PPIM 2 ครั้ง คั่นด้วยประกาศรายชื่อและสัญญา · ไม่ลงนามภายใน 30 วันนับจากประกาศ คำขอถูกยกเลิก"
+            : "บ้านพื้นที่ PEA อินเวอร์เตอร์ต่ำกว่า 200 kVA · PEA ส่งข้อมูลให้ กกพ. เองหลังตรวจผ่าน ทีมไม่ต้องยื่นแจ้งยกเว้น · ระยะเวลาไม่รวมเวลาแก้ไข"
+    }
+}
+
 /// Sizes filed in the sell request.
 public struct HomeOffer: Codable, Equatable, Sendable {
     public var pvKWp: Double?
@@ -432,7 +482,7 @@ public enum HomeCatalog {
         HomeDocSpec(id: "poa", title: "หนังสือมอบอำนาจ เซ็นสด + อากร 30 บาท + สำเนาบัตรผู้มอบและผู้รับมอบ", stage: .apply, provider: .customer,
                     form: .powerOfAttorney, when: { $0.teamFiles }),
         HomeDocSpec(id: "ppimRequest", title: "ยื่นคำขอใน PPIM และบันทึกเลขคำขอ", stage: .apply, provider: .team,
-                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ · ผลิตใช้เอง: PEA แจ้งผลภายใน 45 วันนับจากเอกสารครบ", when: selfUse),
+                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ · PEA พิจารณาแบบไม่เกิน 15 วันทำการนับจากเอกสารครบ (ไม่รวมเวลาแก้ไข)", when: selfUse),
         HomeDocSpec(id: "sellRequest", title: "ยื่นคำขอขายไฟใน PPIM และบันทึกเลขคำขอ (ล็อกขนาดที่เสนอ)", stage: .apply, provider: .team,
                     note: "เลข D… ระหว่างรออัปโหลด เปลี่ยนเป็น PPIM1A6… เมื่อเอกสารครบ · แผงไม่เกิน 10 kWp ยินยอมส่งข้อมูลให้สรรพากร", when: sell),
         HomeDocSpec(id: "peaApproval", title: "PEA อนุมัติคำขอ / ประกาศรายชื่อ", stage: .apply, provider: .pea,
@@ -463,10 +513,9 @@ public enum HomeCatalog {
                     note: "เลือกยืนยันข้อมูลเดิม หรือแก้ไขไม่เกินที่ยื่นขอขายไฟ (แนบแผง/อินเวอร์เตอร์/SLD ที่แก้)", when: sell),
         HomeDocSpec(id: "installCert", title: "แบบรับรองการติดตั้ง + รูปหน้างาน (วิศวกรเซ็น)", stage: .connect, provider: .engineer,
                     note: "ฉบับที่ PEA ใช้กับสายผลิตใช้เองยังไม่ยืนยัน — ใช้แบบรับรองตนเองเป็นโครง", form: .selfCertification, when: selfUse),
-        HomeDocSpec(id: "ercNotice", title: "แจ้ง กกพ. การผลิตไฟฟ้าที่ได้รับยกเว้นใบอนุญาต (inverter < 1,000 kW)", stage: .connect, provider: .team,
-                    note: "ผลิตใช้เอง: ยังไม่ยืนยันว่าต้องแจ้ง", optional: false, when: sell),
-        HomeDocSpec(id: "ercNoticeSelfUse", title: "แจ้ง กกพ. (ถ้า PEA เขตขอ)", stage: .connect, provider: .team,
-                    note: "ยังไม่ยืนยันว่าสายผลิตใช้เองต้องแจ้ง", optional: true, when: selfUse),
+        // งานบ้าน PEA อินเวอร์เตอร์ต่ำกว่า 200 kVA: PEA ส่งข้อมูลให้ กกพ. หลังตรวจผ่าน ทีมไม่ต้องแจ้งเอง (แผนภาพ กกพ.)
+        HomeDocSpec(id: ercResultID, title: "ผลแจ้งยกเว้นจาก กกพ.", stage: .connect, provider: .erc,
+                    note: "PEA ส่งข้อมูลให้ กกพ. เองหลังตรวจผ่าน ทีมไม่ต้องยื่นแจ้งยกเว้น · เก็บอีเมลหรือผลจากระบบไว้ถ้าได้รับ", optional: true),
         HomeDocSpec(id: "peaInspection", title: "PEA ตรวจระบบ / ทดสอบขนาน (First Sync, Anti-islanding, กันไหลย้อน)", stage: .connect, provider: .pea,
                     note: "PEA ตรวจภายใน 30 วันนับจากแจ้งขอตรวจ"),
 
@@ -477,6 +526,9 @@ public enum HomeCatalog {
                     when: { $0.taxEligible }),
         HomeDocSpec(id: "handoverPack", title: "ส่งมอบคู่มือ รูปติดตั้ง และ SLD ให้ลูกค้า", stage: .handover, provider: .team),
     ]
+
+    /// "ผลแจ้งยกเว้นจาก กกพ." — optional on both routes, never blocks handover.
+    public static let ercResultID = "ercResult"
 
     public static func spec(_ id: String) -> HomeDocSpec? { all.first { $0.id == id } }
 }

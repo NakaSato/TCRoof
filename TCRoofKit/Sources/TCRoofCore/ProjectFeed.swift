@@ -80,6 +80,8 @@ public struct FeedPost: Identifiable, Equatable, Sendable {
     /// Nil on a post about every project (the daily summary).
     public var project: Project?
     public var team: String
+    /// Who signed the record, when it names one; a post by the viewer raises no notification.
+    public var recorder: String
     /// The avatar's letters.
     public var initials: String
     public var who: String
@@ -97,10 +99,10 @@ public struct FeedPost: Identifiable, Equatable, Sendable {
     /// Acknowledgements the post starts with (sample posts only).
     public var seedAcks: Int
 
-    public init(id: String, kind: Kind, project: Project?, team: String = "", initials: String, who: String, place: String,
+    public init(id: String, kind: Kind, project: Project?, team: String = "", recorder: String = "", initials: String, who: String, place: String,
                 date: Date, text: String, photos: [String] = [], chips: [Chip] = [], stats: [Stat] = [], issue: Issue? = nil,
                 source: Source, pinned: Bool = false, seedAcks: Int = 0) {
-        self.id = id; self.kind = kind; self.project = project; self.team = team; self.initials = initials; self.who = who
+        self.id = id; self.kind = kind; self.project = project; self.team = team; self.recorder = recorder; self.initials = initials; self.who = who
         self.place = place; self.date = date; self.text = text; self.photos = photos; self.chips = chips; self.stats = stats
         self.issue = issue; self.source = source; self.pinned = pinned; self.seedAcks = seedAcks
     }
@@ -249,7 +251,7 @@ public enum FeedBuilder {
             let task = main?.line.task.map { "\($0.code) \($0.title)" }
             return FeedPost(id: "daily-\(s.id)-\(RoutineReport.dayKey(d.date))",
                             kind: finished && r.inspectorAckAt == nil ? .waitingInspector : .progress,
-                            project: s.project, team: s.team, initials: initials(team: s.team),
+                            project: s.project, team: s.team, recorder: r.recorder, initials: initials(team: s.team),
                             who: who(s.team, r.recorder), place: [s.label, task].compactMap { $0 }.joined(separator: " · "),
                             date: signedAt, text: text, photos: r.photos, chips: chips,
                             source: .dailyReport(project: s.id, day: d.date))
@@ -276,7 +278,7 @@ public enum FeedBuilder {
             let owner = s.settings.siteEngineer.isEmpty ? first.recorder : s.settings.siteEngineer
             let text = p.solution.isEmpty ? p.description : p.description + " — " + p.solution
             return FeedPost(id: "problem-\(s.id)-\(p.id.uuidString)", kind: .issue, project: s.project, team: s.team,
-                            initials: initials(team: s.team), who: who(s.team, first.recorder), place: place(s, on: first.daily.date),
+                            recorder: first.recorder, initials: initials(team: s.team), who: who(s.team, first.recorder), place: place(s, on: first.daily.date),
                             date: at, text: text, issue: .init(owner: owner, fixed: p.closed),
                             source: .problem(project: s.id, id: p.id))
         }

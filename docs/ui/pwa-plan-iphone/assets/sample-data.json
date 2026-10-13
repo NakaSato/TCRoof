@@ -1,0 +1,385 @@
+{
+  "note": "Example data from the board PhonePwaPlan.dc.html (today = 2026-10-12, จันทร์ 12 ต.ค. 2569, week 42). Use real Job / MasterSchedule data in the app; use this only for demo seeding, previews and tests.",
+  "today": "2026-10-12",
+  "jobTypes": {
+    "ins": {
+      "label": "ติดตั้ง",
+      "ink": "#1F6FB5",
+      "fill": "#E3EEF8"
+    },
+    "srv": {
+      "label": "สำรวจ",
+      "ink": "#0E7C86",
+      "fill": "#E0F4F5"
+    },
+    "chk": {
+      "label": "ตรวจรับ",
+      "ink": "#6B4FBB",
+      "fill": "#EFEBFA"
+    },
+    "doc": {
+      "label": "เอกสาร",
+      "ink": "#9A4A06",
+      "fill": "#FFF3E6"
+    },
+    "tst": {
+      "label": "ทดสอบ",
+      "ink": "#1F6B43",
+      "fill": "#E8F5EE"
+    },
+    "ntf": {
+      "label": "เตือน",
+      "ink": "#B42318",
+      "fill": "#FDECEA"
+    }
+  },
+  "stations": [
+    {
+      "mp": 189,
+      "shortName": "ทุ่งน้อย",
+      "name": "สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล",
+      "kWp": 92.34,
+      "actualPct": 38,
+      "planPct": 50,
+      "contractor": "A",
+      "due": "15/10"
+    },
+    {
+      "mp": 120,
+      "shortName": "วัดชัย",
+      "name": "การประปาวัดชัย",
+      "kWp": 250,
+      "actualPct": 22,
+      "planPct": 28,
+      "contractor": "B",
+      "due": "30/10"
+    },
+    {
+      "mp": 98,
+      "shortName": "บ้านโป่ง",
+      "name": "การประปาบ้านโป่ง",
+      "kWp": 90,
+      "actualPct": 50,
+      "planPct": 52,
+      "contractor": "A",
+      "due": "6/10"
+    },
+    {
+      "mp": 154,
+      "shortName": "แพรกหนามแดง",
+      "name": "สถานีจ่ายน้ำแพรกหนามแดง",
+      "kWp": 209.76,
+      "actualPct": 71,
+      "planPct": 68,
+      "contractor": "C",
+      "due": "12/10"
+    },
+    {
+      "mp": 77,
+      "shortName": "โชคชัย",
+      "name": "สถานีผลิตน้ำโชคชัย",
+      "kWp": 171,
+      "actualPct": 94,
+      "planPct": 92,
+      "contractor": "B",
+      "due": "8/10"
+    },
+    {
+      "mp": 61,
+      "shortName": "แม่ข่ายชนบท",
+      "name": "สถานีผลิตน้ำแม่ข่ายชนบท",
+      "kWp": 145.2,
+      "actualPct": 12,
+      "planPct": 10,
+      "contractor": "D",
+      "due": "9/11"
+    },
+    {
+      "mp": 133,
+      "shortName": "บางปะกง",
+      "name": "สถานีผลิตน้ำบางปะกง",
+      "kWp": 120.5,
+      "actualPct": 55,
+      "planPct": 54,
+      "contractor": "A",
+      "due": "20/10"
+    },
+    {
+      "mp": 142,
+      "shortName": "หนองแค",
+      "name": "สถานีผลิตน้ำหนองแค",
+      "kWp": 180,
+      "actualPct": 30,
+      "planPct": 36,
+      "contractor": "C",
+      "due": "28/10"
+    },
+    {
+      "mp": 88,
+      "shortName": "พนัสนิคม",
+      "name": "สถานีผลิตน้ำพนัสนิคม",
+      "kWp": 160.4,
+      "actualPct": 64,
+      "planPct": 62,
+      "contractor": "B",
+      "due": "14/10"
+    },
+    {
+      "mp": 171,
+      "shortName": "สามโคก",
+      "name": "สถานีผลิตน้ำสามโคก",
+      "kWp": 98.2,
+      "actualPct": 8,
+      "planPct": 8,
+      "contractor": "D",
+      "due": "25/11"
+    },
+    {
+      "mp": 66,
+      "shortName": "บ้านบึง",
+      "name": "สถานีผลิตน้ำบ้านบึง",
+      "kWp": 210,
+      "actualPct": 42,
+      "planPct": 40,
+      "contractor": "C",
+      "due": "2/11"
+    },
+    {
+      "mp": 109,
+      "shortName": "ศรีราชา",
+      "name": "สถานีผลิตน้ำศรีราชา",
+      "kWp": 115,
+      "actualPct": 80,
+      "planPct": 78,
+      "contractor": "A",
+      "due": "10/10"
+    }
+  ],
+  "weekDots": {
+    "12": [
+      "ins",
+      "srv",
+      "doc"
+    ],
+    "13": [
+      "ins",
+      "chk"
+    ],
+    "14": [
+      "ins",
+      "doc"
+    ],
+    "15": [
+      "ins",
+      "tst",
+      "doc"
+    ],
+    "16": [
+      "ins"
+    ],
+    "17": [],
+    "18": []
+  },
+  "agenda": {
+    "12": [
+      {
+        "start": "08:00",
+        "end": "17:00",
+        "type": "ins",
+        "ref": "MP 189",
+        "title": "2.3 ติดตั้งแผงเซลล์",
+        "subtitle": "ทุ่งน้อย · ผู้รับเหมา A · TCR01",
+        "status": "กำลังทำ",
+        "opens": "iPadDaily.dc.html"
+      },
+      {
+        "start": "08:30",
+        "end": "17:00",
+        "type": "ins",
+        "ref": "MP 120",
+        "title": "2.1 โครงสร้างรองรับ + Walkway",
+        "subtitle": "วัดชัย · ผู้รับเหมา B · TCR03 · ช้ากว่าแผน 6%",
+        "status": "กำลังทำ",
+        "opens": "iPadDaily.dc.html"
+      },
+      {
+        "start": "09:30",
+        "end": "11:30",
+        "type": "srv",
+        "ref": "NO.224",
+        "title": "นัดสำรวจ สถานีผลิตน้ำ 1",
+        "subtitle": "กปภ. สาขาตัวอย่าง · TCR02",
+        "status": "นัดแล้ว",
+        "opens": "iPadD1.dc.html"
+      },
+      {
+        "start": "10:30",
+        "end": "12:00",
+        "type": "chk",
+        "ref": "MP 154",
+        "title": "ผู้แทน กปภ. ตรวจ 2.5 Inverter",
+        "subtitle": "แพรกหนามแดง · ผู้รับเหมา C",
+        "status": "รอ",
+        "opens": "iPadInstall.dc.html"
+      },
+      {
+        "start": "13:00",
+        "end": null,
+        "type": "doc",
+        "ref": "MP 189",
+        "title": "ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)",
+        "subtitle": "เทศบาลเมืองพล · ครบกำหนดวันนี้",
+        "status": "ต้องยื่น",
+        "opens": "PhonePwaDocs.dc.html"
+      },
+      {
+        "start": "14:00",
+        "end": "16:30",
+        "type": "tst",
+        "ref": "MP 77",
+        "title": "3.1 Pre-Commissioning (IEC 62446)",
+        "subtitle": "โชคชัย · TCR05 · ใช้เครื่องวัดฉนวน + I-V",
+        "status": "นัดแล้ว",
+        "opens": "IECTest.dc.html"
+      },
+      {
+        "start": "16:00",
+        "end": null,
+        "type": "ntf",
+        "ref": "รายงาน",
+        "title": "ส่งรายงานประจำวันก่อน 18:00",
+        "subtitle": "ยังไม่ส่ง 4 สถานี · วัดชัย บ้านโป่ง หนองแค บ้านบึง",
+        "status": "เตือน",
+        "opens": "iPadInstall.dc.html"
+      }
+    ],
+    "13": [
+      {
+        "start": "08:00",
+        "end": "17:00",
+        "type": "ins",
+        "ref": "MP 189",
+        "title": "2.3 ติดตั้งแผงเซลล์",
+        "subtitle": "ทุ่งน้อย · ผู้รับเหมา A · TCR01",
+        "status": "ตามแผน",
+        "opens": "iPadDaily.dc.html"
+      },
+      {
+        "start": "09:00",
+        "end": "11:00",
+        "type": "chk",
+        "ref": "MP 98",
+        "title": "ผู้แทน กปภ. ตรวจ 2.2 สาย DC",
+        "subtitle": "บ้านโป่ง · ผู้รับเหมา A",
+        "status": "รอ",
+        "opens": "iPadInstall.dc.html"
+      }
+    ]
+  },
+  "deadlines": [
+    {
+      "week": "this",
+      "date": "2026-10-08",
+      "title": "ส่งมอบงาน",
+      "subtitle": "MP 77 โชคชัย · Punch list + As-Built",
+      "kind": "hand",
+      "chip": "เลยกำหนด 4 วัน",
+      "tone": "late",
+      "opens": "iPadInstall.dc.html"
+    },
+    {
+      "week": "this",
+      "date": "2026-10-12",
+      "title": "ส่งมอบงาน",
+      "subtitle": "MP 154 แพรกหนามแดง · จริง 71% / แผน 68%",
+      "kind": "hand",
+      "chip": "เสี่ยงช้า",
+      "tone": "risk",
+      "opens": "iPadInstall.dc.html"
+    },
+    {
+      "week": "this",
+      "date": "2026-10-12",
+      "title": "แจ้งเทศบาล (ยกเว้น ข.1)",
+      "subtitle": "MP 189 ทุ่งน้อย · เทศบาลเมืองพล",
+      "kind": "doc",
+      "chip": "วันนี้",
+      "tone": "risk",
+      "opens": "PhonePwaDocs.dc.html"
+    },
+    {
+      "week": "this",
+      "date": "2026-10-14",
+      "title": "ส่งมอบงาน",
+      "subtitle": "MP 88 พนัสนิคม · ผู้รับเหมา B",
+      "kind": "hand",
+      "chip": "ตามแผน",
+      "tone": "ok",
+      "opens": "iPadInstall.dc.html"
+    },
+    {
+      "week": "this",
+      "date": "2026-10-15",
+      "title": "ส่งมอบงาน",
+      "subtitle": "MP 189 ทุ่งน้อย · จริง 38% / แผน 50%",
+      "kind": "hand",
+      "chip": "ช้ากว่าแผน",
+      "tone": "late",
+      "opens": "iPadInstall.dc.html"
+    },
+    {
+      "week": "next",
+      "date": "2026-10-20",
+      "title": "ยื่น พค.2 (กกพ.)",
+      "subtitle": "MP 154 แพรกหนามแดง · 209.76 kWp ≥ 200 kVA",
+      "kind": "doc",
+      "chip": "เอกสาร 18/23",
+      "tone": "risk",
+      "opens": "PhonePwaDocs.dc.html"
+    },
+    {
+      "week": "next",
+      "date": "2026-10-20",
+      "title": "ส่งมอบงาน",
+      "subtitle": "MP 133 บางปะกง · ผู้รับเหมา A",
+      "kind": "hand",
+      "chip": "ตามแผน",
+      "tone": "ok",
+      "opens": "iPadInstall.dc.html"
+    },
+    {
+      "week": "next",
+      "date": "2026-10-22",
+      "title": "ยื่นขอขนานไฟ (กฟภ.)",
+      "subtitle": "MP 109 ศรีราชา · ชุด 4.2 ครบ 11/11",
+      "kind": "doc",
+      "chip": "พร้อมยื่น",
+      "tone": "ok",
+      "opens": "PhonePwaDocs.dc.html"
+    },
+    {
+      "week": "next",
+      "date": "2026-10-24",
+      "title": "อบรม O&M (3.2)",
+      "subtitle": "MP 77 โชคชัย · คู่มือภาคตะวันออกเฉียงเหนือ",
+      "kind": "tst",
+      "chip": "นัดแล้ว",
+      "tone": "ok",
+      "opens": "iPadInstall.dc.html"
+    }
+  ],
+  "projectActualByWeek": [
+    0,
+    0.5,
+    1.5,
+    3,
+    5,
+    8,
+    12,
+    17,
+    24,
+    31,
+    39,
+    47
+  ]
+}

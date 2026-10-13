@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แผนงาน PWA (iPhone)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/d24f28679a46e443412954e7a5c3ee56) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/dcb0af62409156d0e0eb9482cbe81560) format("truetype");font-weight:700}
+body{margin:0}
+@keyframes srGrow{from{max-width:44px;background-color:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.4)}to{max-width:400px;background-color:rgba(255,255,255,0.97);border-color:rgba(255,255,255,0.97)}}
+@keyframes srShrink{from{flex:1 1 auto;max-width:400px;background-color:rgba(255,255,255,0.97)}to{flex:1 1 auto;max-width:44px;background-color:rgba(255,255,255,0.18)}}
+@keyframes srTitleOut{from{flex:1 1 0px;max-width:280px;opacity:1;transform:none}to{flex:0 1 0px;max-width:0;opacity:0;transform:translateX(-16px)}}
+@keyframes srTitleIn{from{max-width:0;opacity:0;transform:translateX(-16px)}to{max-width:280px;opacity:1;transform:none}}
+@keyframes srIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head" style="flex-direction:column;align-items:stretch;gap:6px;padding:0 16px 10px;border-bottom-left-radius:15px;border-bottom-right-radius:15px">
+<div aria-hidden="true" style="height:44px;margin:0 -16px -4px;padding:0 26px 0 32px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700"><span>9:41</span><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 18 12" style="width:18px;height:12px;fill:#fff"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><svg viewBox="0 0 16 12" style="width:16px;height:12px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round"><path d="M1.5 4.5a9.5 9.5 0 0 1 13 0M4 7.3a6 6 0 0 1 8 0M6.5 10a2.4 2.4 0 0 1 3 0"></path></svg><svg viewBox="0 0 27 13" style="width:27px;height:13px"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".5"></rect><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"></rect><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"></rect></svg></span></div>
+<div style="display:flex;align-items:center;gap:10px"><div aria-hidden="{{srOnS}}" style="{{tStyle}}"><div style="font-size:18px;line-height:23px;font-weight:700;white-space:nowrap">แผนงาน PWA</div><div style="font-size:12px;line-height:16px;opacity:.9;white-space:nowrap">Solar Rooftop กปภ. · ระยะ 3–4</div></div><div role="search" style="{{sStyle}}"><sc-if value="{{srNo}}" hint-placeholder-val="{{true}}"><button onClick="{{srOpen}}" aria-label="ค้นหาเลขที่ ชื่อโครงการ" title="ค้นหา" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;cursor:pointer;padding:0;display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" style="{{sIcon}}"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button></sc-if><sc-if value="{{srOn}}" hint-placeholder-val="{{false}}"><span style="width:44px;flex:none;display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" style="{{sIcon}}"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span><input type="search" autofocus="" placeholder="ค้นหาเลขที่ ชื่อโครงการ…" aria-label="ค้นหาเลขที่ ชื่อโครงการ" style="flex:1;min-width:0;height:42px;border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#16325C;animation:srIn .24s .42s both"><button onClick="{{srClose}}" aria-label="ปิดการค้นหา" title="ปิดการค้นหา" style="width:44px;height:42px;flex:none;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;color:#5B6B82;animation:srIn .24s .42s both"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if></div></div>
+</header>
+<div role="tablist" style="display:flex;gap:6px;padding:12px 16px 0;flex:none"><sc-for list="{{pills}}" as="p" hint-placeholder-count="3"><button role="tab" aria-selected="{{p.on}}" onClick="{{p.go}}" style="{{p.st}}">{{p.t}}<b style="{{p.cs}}">{{p.n}}</b></button></sc-for></div>
+<sc-if value="{{isCal}}" hint-placeholder-val="{{true}}"><main style="flex-grow:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:10px 16px 108px">
+<section aria-label="เลือกวัน" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:8px 6px 8px;display:flex;flex-direction:column;gap:6px;flex:none">
+<div style="display:flex;align-items:center;gap:4px;padding:0 4px"><button aria-label="สัปดาห์ก่อน" style="width:44px;height:36px;border:0;background:transparent;color:#1F6FB5;font-size:20px;cursor:pointer">‹</button><b style="flex:1;text-align:center;font-size:15px;color:#16325C">{{wkTitle}}</b><button aria-label="สัปดาห์ถัดไป" style="width:44px;height:36px;border:0;background:transparent;color:#1F6FB5;font-size:20px;cursor:pointer">›</button></div>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px"><sc-for list="{{days}}" as="d" hint-placeholder-count="7"><button onClick="{{d.go}}" aria-label="{{d.aria}}" aria-pressed="{{d.on}}" style="{{d.st}}"><span style="font-size:11px;line-height:14px">{{d.w}}</span><b style="font-size:17px;line-height:22px">{{d.n}}</b><span style="display:flex;gap:2px;height:6px;align-items:center"><sc-for list="{{d.dots}}" as="o" hint-placeholder-count="3"><i style="{{o.st}}"></i></sc-for></span></button></sc-for></div>
+</section>
+<div style="display:flex;align-items:center;gap:8px;flex:none"><b style="font-size:16px;color:#16325C">{{dayTitle}}</b><span style="font-size:13px;color:#5B6B82">{{dayCount}}</span><span style="margin-left:auto;min-height:44px;display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#1F6FB5">ทุกทีม ▾</span></div>
+<sc-for list="{{agenda}}" as="g" hint-placeholder-count="6"><a href="{{g.href}}" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:10px 12px;display:flex;gap:10px;text-decoration:none;color:#16325C;flex:none"><div style="width:44px;flex:none;display:flex;flex-direction:column;align-items:flex-start;line-height:18px"><b style="font-size:14px">{{g.t}}</b><span style="font-size:11px;color:#5B6B82">{{g.end}}</span></div><i style="{{g.bar}}"></i><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:18px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><span style="{{g.chipSt}}">{{g.chip}}</span><span style="font-size:12px;font-weight:700;color:#5B6B82;white-space:nowrap">{{g.mp}}</span><span style="margin-left:auto;font-size:11px;font-weight:700;white-space:nowrap;{{g.stSt}}">{{g.stt}}</span></div><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{g.title}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{g.sub}}</span></div></a></sc-for>
+</main></sc-if>
+<sc-if value="{{isMp}}" hint-placeholder-val="{{false}}"><main style="flex-grow:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:10px 16px 108px">
+<section aria-label="S-curve ทั้งโครงการ" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:none">
+<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:15px;color:#16325C">ความก้าวหน้าทั้งโครงการ</b><span style="margin-left:auto;font-size:12px;color:#5B6B82">สัปดาห์ {{wkNo}}/20</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13px;color:#5B6B82"><span>จริง <b style="font-size:20px;color:#1F6FB5">{{avgA}}%</b></span><span>แผน <b style="font-size:20px;color:#16325C">{{avgP}}%</b></span><span style="margin-left:auto;font-weight:700;color:{{varC}}">{{varT}}</span></div>
+<svg viewBox="0 0 330 120" role="img" aria-label="S-curve แผนเทียบจริง" style="width:100%;height:120px"><sc-for list="{{grid}}" as="l" hint-placeholder-count="5"><line x1="24" x2="326" y1="{{l.y}}" y2="{{l.y}}" stroke="#EEF2F7" stroke-width="1"></line><text x="0" y="{{l.ty}}" font-size="9" fill="#9FB3CC">{{l.t}}</text></sc-for><polyline points="{{planPts}}" fill="none" stroke="#9FB3CC" stroke-width="2" stroke-dasharray="4 3"></polyline><polyline points="{{actPts}}" fill="none" stroke="#1F6FB5" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline><line x1="{{todayX}}" x2="{{todayX}}" y1="2" y2="104" stroke="#D9453B" stroke-width="1.5"></line><text x="{{todayX}}" y="10" dx="4" font-size="9" fill="#D9453B">วันนี้</text><sc-for list="{{months}}" as="m" hint-placeholder-count="4"><text x="{{m.x}}" y="116" font-size="9" fill="#5B6B82">{{m.t}}</text></sc-for></svg>
+<div style="display:flex;gap:14px;font-size:11px;color:#5B6B82"><span style="display:flex;align-items:center;gap:4px"><i style="width:14px;height:0;border-top:2px dashed #9FB3CC"></i>แผน</span><span style="display:flex;align-items:center;gap:4px"><i style="width:14px;height:3px;border-radius:2px;background:#1F6FB5"></i>จริง</span><span style="display:flex;align-items:center;gap:4px"><i style="width:2px;height:10px;background:#D9453B"></i>12 ต.ค.</span></div>
+</section>
+<section aria-label="แผนรายสถานี" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;flex:none">
+<div style="display:flex;align-items:center;gap:6px;padding-bottom:2px"><b style="font-size:14px;color:#16325C">รายสถานี</b><span style="font-size:11px;color:#5B6B82">เรียงตามวันส่งมอบ</span></div>
+<div style="display:flex;padding-left:96px;font-size:10px;color:#9FB3CC"><sc-for list="{{gMonths}}" as="m" hint-placeholder-count="4"><span style="{{m.st}}">{{m.t}}</span></sc-for></div>
+<sc-for list="{{gantt}}" as="r" hint-placeholder-count="8"><a href="iPadInstall.dc.html" aria-label="{{r.aria}}" style="display:flex;align-items:center;gap:6px;min-height:30px;text-decoration:none;color:#16325C"><span style="width:90px;flex:none;display:flex;flex-direction:column;line-height:13px;min-width:0"><b style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.name}}</b><span style="font-size:10px;color:#5B6B82">MP {{r.mp}} · {{r.ct}}</span></span><span style="position:relative;flex:1;height:22px"><i style="position:absolute;top:0;bottom:0;left:{{r.todayL}};width:1.5px;background:#D9453B"></i><i style="position:absolute;top:7px;height:8px;border-radius:4px;background:#E3E9F1;left:{{r.l}};width:{{r.w}}"></i><i style="position:absolute;top:7px;height:8px;border-radius:4px;background:{{r.c}};left:{{r.l}};width:{{r.aw}}"></i><i style="position:absolute;top:4px;height:14px;width:2px;background:#16325C;left:{{r.pl}}"></i></span><span style="width:40px;flex:none;text-align:right;font-size:11px;font-weight:700;color:{{r.dc}}">{{r.d}}</span></a></sc-for>
+<div style="text-align:center;font-size:12px;color:#5B6B82">{{ganttMore}}</div>
+</section>
+</main></sc-if>
+<sc-if value="{{isDue}}" hint-placeholder-val="{{false}}"><main style="flex-grow:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:8px;padding:10px 16px 108px">
+<div style="position:relative;flex:none;z-index:6"><button onClick="{{dTog}}" aria-haspopup="listbox" aria-expanded="{{dOpenS}}" aria-label="กรองกำหนดส่ง: {{dSelT}} {{dSelN}} รายการ" style="width:100%;min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid {{dBd}};border-radius:12px;background:#fff;font-family:inherit;color:#16325C;cursor:pointer;text-align:left"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:#5B6B82;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg><span style="font-size:12px;color:#5B6B82">แสดง</span><b style="font-size:14px">{{dSelT}}</b><span style="min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:700;background:#EEF2F7">{{dSelN}}</span><svg viewBox="0 0 24 24" aria-hidden="true" style="{{dChev}}"><path d="M6 9l6 6 6-6"></path></svg></button><sc-if value="{{dOpen}}" hint-placeholder-val="{{false}}"><div role="listbox" aria-label="กรองกำหนดส่ง" style="position:absolute;left:0;right:0;top:50px;background:#fff;border:1px solid #C9D3E0;border-radius:12px;overflow:hidden;padding:4px 0"><sc-for list="{{dFlt}}" as="f" hint-placeholder-count="3"><button role="option" aria-selected="{{f.on}}" onClick="{{f.go}}" style="{{f.st}}"><span style="width:20px;flex:none;color:#1F6FB5;font-weight:800">{{f.ck}}</span><span style="flex:1;min-width:0">{{f.t}}</span><span style="font-size:12px;color:#5B6B82">{{f.n}} รายการ</span></button></sc-for></div></sc-if></div>
+<sc-for list="{{dueGroups}}" as="w" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:6px;flex:none"><div style="display:flex;align-items:baseline;gap:6px;padding:4px 2px 0"><b style="font-size:14px;color:#16325C">{{w.t}}</b><span style="font-size:12px;color:#5B6B82">{{w.r}}</span></div><sc-for list="{{w.rows}}" as="r" hint-placeholder-count="3"><a href="{{r.href}}" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:8px 12px;display:flex;align-items:center;gap:10px;text-decoration:none;color:#16325C"><span style="width:46px;flex:none;border-radius:10px;padding:4px 0;text-align:center;display:flex;flex-direction:column;line-height:15px;{{r.dSt}}"><b style="font-size:16px">{{r.dd}}</b><span style="font-size:10px">{{r.mm}}</span></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.t}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.sub}}</span></span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;white-space:nowrap;{{r.cSt}}">{{r.c}}</span></a></sc-for></div></sc-for>
+</main></sc-if>
+<div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:128px;z-index:11;pointer-events:none;background:linear-gradient(to bottom,rgba(245,248,251,0) 0%,rgba(245,248,251,0.85) 38%,#F5F8FB 62%)"></div><nav aria-label="เมนูหลัก" style="position:absolute;left:12px;right:12px;bottom:22px;z-index:12;display:flex;align-items:center;gap:2px;padding:5px;border-radius:28px;background:#fff;border:1px solid #C9D3E0"><a href="PhoneMenu.dc.html" aria-label="หน้าหลัก" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">หน้าหลัก</span></a><a href="PhoneHome.dc.html" aria-label="โครงการ · นัดวันนี้ 2" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">โครงการ</span><b aria-hidden="true" style="position:absolute;top:4px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;outline:2px solid #fff">2</b></a><a href="PhonePwaPlan.dc.html" aria-current="page" aria-label="แผนงาน" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#fff;background:#16325C"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:800;white-space:nowrap">แผนงาน</span></a><a href="PhonePwaDocs.dc.html" aria-label="เอกสารสถานี กปภ. · รอส่ง 3" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14.5l2 2 4-4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">เอกสาร</span><b aria-hidden="true" style="position:absolute;top:4px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#F08C00;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;outline:2px solid #fff">3</b></a><i aria-hidden="true" style="width:1px;align-self:stretch;margin:12px 2px;background:#DDE4ED;flex:none"></i><a href="PhonePwaSettings.dc.html" aria-label="ตั้งค่าโครงการ PWA" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">ตั้งค่า</span></a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const v = {};
+    // ── ค้นหา: กดแว่นขยาย ช่องค้นหาเลื่อนขยายไปทางซ้าย ชื่อโครงการจางหาย
+    v.srOn = !!st.srOn; v.srNo = !v.srOn; v.srOnS = v.srOn ? 'true' : 'false';
+        // จังหวะ: หน่วง 0.1 วิหลังกด แล้วช่องค้นหาขยาย 0.36 วิ ข้อความในช่องหน่วงตามอีก 0.3 วิ (keyframes เล่นทุกครั้งที่สลับสถานะ)
+    v.srWas = !!st.srWas;
+    v.srOpen = () => this.setState({ srOn: true, srWas: true }); v.srClose = () => this.setState({ srOn: false, srWas: true });
+    const srE = 'cubic-bezier(.2,.8,.2,1)';
+    const srBg = v.srOn ? 'background-color:rgba(255,255,255,0.97);border:1px solid rgba(255,255,255,0.97)' : 'background-color:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4)';
+    v.tStyle = 'min-width:0;overflow:hidden;white-space:nowrap;' + (v.srOn ? 'flex:0 1 0px;max-width:0;opacity:0;animation:srTitleOut .3s .1s ' + srE + ' both' : 'flex:1 1 0px;max-width:280px;' + (v.srWas ? 'animation:srTitleIn .34s .14s ' + srE + ' both' : ''));
+    v.sStyle = 'position:relative;height:44px;min-width:44px;margin-left:auto;box-sizing:border-box;border-radius:12px;display:flex;align-items:center;overflow:hidden;' + srBg + ';' + (v.srOn ? 'flex:1 1 auto;max-width:400px;animation:srGrow .36s .1s ' + srE + ' both' : 'flex:0 0 44px;max-width:44px;' + (v.srWas ? 'animation:srShrink .3s .06s ' + srE + ' both' : ''));
+    v.sIcon = 'width:21px;height:21px;flex:none;fill:none;stroke:' + (v.srOn ? '#5B6B82' : '#fff') + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .25s ease';
+    const pOn = 'flex:1 1 0;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:0;background:#16325C;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+    const pOff = 'flex:1 1 0;min-width:0;height:44px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:1px solid #DDE4ED;background:#fff;color:#16325C;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap';
+    const pCnt = (o, w) => 'min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:700;' + (o ? 'background:rgba(255,255,255,0.22);color:#fff' : w ? 'background:#FDECEA;color:#B42318' : 'background:#EEF2F7;color:#16325C');
+    const mkPills = (key, cur, list) => list.map(([k, t, n, w]) => ({ t, n, on: cur === k ? 'true' : 'false', st: cur === k ? pOn : pOff, cs: pCnt(cur === k, w), go: () => this.setState({ [key]: k }) }));
+    const fl = (on) => 'min-height:40px;padding:0 12px;border-radius:20px;font-family:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;' + (on ? 'border:0;background:#16325C;color:#fff' : 'border:1px solid #DDE4ED;background:#fff;color:#16325C');
+    // ── สถานีในช่วงติดตั้งของโครงการ กปภ. (example data, same as the PWA home)
+    const S = [
+      { mp: 189, name: 'ทุ่งน้อย', full: 'สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล', kwp: 92.34, a: 38, p: 50, ct: 'A', s: 20, e: 75, due: '15/10' },
+      { mp: 120, name: 'วัดชัย', full: 'การประปาวัดชัย', kwp: 250, a: 22, p: 28, ct: 'B', s: 30, e: 90, due: '30/10' },
+      { mp: 98, name: 'บ้านโป่ง', full: 'การประปาบ้านโป่ง', kwp: 90, a: 50, p: 52, ct: 'A', s: 8, e: 66, due: '6/10' },
+      { mp: 154, name: 'แพรกหนามแดง', full: 'สถานีจ่ายน้ำแพรกหนามแดง', kwp: 209.76, a: 71, p: 68, ct: 'C', s: 5, e: 72, due: '12/10' },
+      { mp: 77, name: 'โชคชัย', full: 'สถานีผลิตน้ำโชคชัย', kwp: 171, a: 94, p: 92, ct: 'B', s: 0, e: 68, due: '8/10' },
+      { mp: 61, name: 'แม่ข่ายชนบท', full: 'สถานีผลิตน้ำแม่ข่ายชนบท', kwp: 145.2, a: 12, p: 10, ct: 'D', s: 38, e: 100, due: '9/11' },
+      { mp: 133, name: 'บางปะกง', full: 'สถานีผลิตน้ำบางปะกง', kwp: 120.5, a: 55, p: 54, ct: 'A', s: 18, e: 80, due: '20/10' },
+      { mp: 142, name: 'หนองแค', full: 'สถานีผลิตน้ำหนองแค', kwp: 180, a: 30, p: 36, ct: 'C', s: 28, e: 88, due: '28/10' },
+      { mp: 88, name: 'พนัสนิคม', full: 'สถานีผลิตน้ำพนัสนิคม', kwp: 160.4, a: 64, p: 62, ct: 'B', s: 14, e: 74, due: '14/10' },
+      { mp: 171, name: 'สามโคก', full: 'สถานีผลิตน้ำสามโคก', kwp: 98.2, a: 8, p: 8, ct: 'D', s: 50, e: 116, due: '25/11' },
+      { mp: 66, name: 'บ้านบึง', full: 'สถานีผลิตน้ำบ้านบึง', kwp: 210, a: 42, p: 40, ct: 'C', s: 32, e: 93, due: '2/11' },
+      { mp: 109, name: 'ศรีราชา', full: 'สถานีผลิตน้ำศรีราชา', kwp: 115, a: 80, p: 78, ct: 'A', s: 10, e: 70, due: '10/10' }];
+    // ── แผนงาน PWA: ตารางงาน · แผน MP · กำหนดส่ง (example data, today 12 ต.ค. 2569)
+    const pv = st.pv || 'cal';
+    v.isCal = pv === 'cal'; v.isMp = pv === 'mp'; v.isDue = pv === 'due';
+    const d = (s) => s.a - s.p, behind = (s) => d(s) <= -2;
+    v.pills = mkPills('pv', pv, [['cal', 'ตารางงาน', 7], ['mp', 'แผน MP', 12], ['due', 'กำหนดส่ง', 9, true]]);
+    // ตารางงาน
+    const TY = { ins: ['ติดตั้ง', '#1F6FB5', '#E3EEF8'], srv: ['สำรวจ', '#0E7C86', '#E0F4F5'], chk: ['ตรวจรับ', '#6B4FBB', '#EFEBFA'], doc: ['เอกสาร', '#9A4A06', '#FFF3E6'], tst: ['ทดสอบ', '#1F6B43', '#E8F5EE'], ntf: ['เตือน', '#B42318', '#FDECEA'] };
+    const sel = st.day || 12;
+    const DAYS = [[12, 'จ', ['ins', 'srv', 'doc']], [13, 'อ', ['ins', 'chk']], [14, 'พ', ['ins', 'doc']], [15, 'พฤ', ['ins', 'tst', 'doc']], [16, 'ศ', ['ins']], [17, 'ส', []], [18, 'อา', []]];
+    v.wkTitle = 'ตุลาคม 2569 · สัปดาห์ที่ 42';
+    v.days = DAYS.map(([n, w, ts]) => { const on = n === sel, today = n === 12;
+      return { n, w, on: on ? 'true' : 'false', aria: 'วัน' + w + ' ' + n + ' ต.ค. · ' + ts.length + ' ประเภทงาน', go: () => this.setState({ day: n }),
+        st: 'min-height:62px;border:0;border-radius:12px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;' + (on ? 'background:#16325C;color:#fff' : today ? 'background:#E3EEF8;color:#1F6FB5' : 'background:transparent;color:' + (w === 'ส' || w === 'อา' ? '#9FB3CC' : '#16325C')),
+        dots: ts.map((t) => ({ st: 'width:5px;height:5px;border-radius:50%;background:' + (on ? '#fff' : TY[t][1]) })) }; });
+    const AG = {
+      12: [['08:00', '17:00', 'ins', 'MP 189', '2.3 ติดตั้งแผงเซลล์', 'ทุ่งน้อย · ผู้รับเหมา A · TCR01', 'กำลังทำ', 'iPadDaily.dc.html'],
+           ['08:30', '17:00', 'ins', 'MP 120', '2.1 โครงสร้างรองรับ + Walkway', 'วัดชัย · ผู้รับเหมา B · TCR03 · ช้ากว่าแผน 6%', 'กำลังทำ', 'iPadDaily.dc.html'],
+           ['09:30', '11:30', 'srv', 'NO.224', 'นัดสำรวจ สถานีผลิตน้ำ 1', 'กปภ. สาขาตัวอย่าง · TCR02', 'นัดแล้ว', 'iPadD1.dc.html'],
+           ['10:30', '12:00', 'chk', 'MP 154', 'ผู้แทน กปภ. ตรวจ 2.5 Inverter', 'แพรกหนามแดง · ผู้รับเหมา C', 'รอ', 'iPadInstall.dc.html'],
+           ['13:00', '', 'doc', 'MP 189', 'ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)', 'เทศบาลเมืองพล · ครบกำหนดวันนี้', 'ต้องยื่น', 'PhonePwaDocs.dc.html'],
+           ['14:00', '16:30', 'tst', 'MP 77', '3.1 Pre-Commissioning (IEC 62446)', 'โชคชัย · TCR05 · ใช้เครื่องวัดฉนวน + I-V', 'นัดแล้ว', 'IECTest.dc.html'],
+           ['16:00', '', 'ntf', 'รายงาน', 'ส่งรายงานประจำวันก่อน 18:00', 'ยังไม่ส่ง 4 สถานี · วัดชัย บ้านโป่ง หนองแค บ้านบึง', 'เตือน', 'iPadInstall.dc.html']],
+      13: [['08:00', '17:00', 'ins', 'MP 189', '2.3 ติดตั้งแผงเซลล์', 'ทุ่งน้อย · ผู้รับเหมา A · TCR01', 'ตามแผน', 'iPadDaily.dc.html'],
+           ['09:00', '11:00', 'chk', 'MP 98', 'ผู้แทน กปภ. ตรวจ 2.2 สาย DC', 'บ้านโป่ง · ผู้รับเหมา A', 'รอ', 'iPadInstall.dc.html']] };
+    const ag = AG[sel] || AG[13];
+    const STT = { 'กำลังทำ': 'color:#1F6FB5', 'นัดแล้ว': 'color:#1F6B43', 'รอ': 'color:#5B6B82', 'ต้องยื่น': 'color:#9A4A06', 'เตือน': 'color:#B42318', 'ตามแผน': 'color:#1F6B43' };
+    const WD = { 12: 'วันจันทร์', 13: 'วันอังคาร', 14: 'วันพุธ', 15: 'วันพฤหัสบดี', 16: 'วันศุกร์', 17: 'วันเสาร์', 18: 'วันอาทิตย์' };
+    v.dayTitle = WD[sel] + ' ' + sel + ' ต.ค.' + (sel === 12 ? ' · วันนี้' : ''); v.dayCount = ag.length + ' รายการ';
+    v.agenda = ag.map(([t, end, ty, mp, title, sub, stt, href]) => ({ t, end: end ? '–' + end : '', mp, title, sub, stt, href, stSt: STT[stt] || 'color:#5B6B82',
+      chip: TY[ty][0], chipSt: 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;white-space:nowrap;background:' + TY[ty][2] + ';color:' + TY[ty][1],
+      bar: 'width:3px;flex:none;border-radius:2px;background:' + TY[ty][1] }));
+    // แผน MP: S-curve (20 weeks from 3 ส.ค.) + Gantt by station
+    const wsum = S.reduce((a, s) => a + s.kwp, 0);
+    v.avgA = Math.round(S.reduce((a, s) => a + s.a * s.kwp, 0) / wsum); v.avgP = Math.round(S.reduce((a, s) => a + s.p * s.kwp, 0) / wsum);
+    v.varT = v.avgA >= v.avgP ? 'ตามแผน' : 'ช้ากว่าแผน ' + (v.avgP - v.avgA) + '%'; v.varC = v.avgA >= v.avgP ? '#1F6B43' : '#B42318';
+    v.wkNo = 11;
+    const X = (w) => (24 + (w / 20) * 302).toFixed(1), Y = (p) => (104 - p).toFixed(1);
+    const plan = Array.from({ length: 21 }, (_, w) => 100 / (1 + Math.exp(-(w - 11.4) / 2.6)));
+    const k = v.avgP / plan[11];
+    v.planPts = plan.map((p, w) => X(w) + ',' + Y(Math.min(100, p * k))).join(' ');
+    const act = [0, 0.5, 1.5, 3, 5, 8, 12, 17, 24, 31, 39, v.avgA];
+    v.actPts = act.map((p, w) => X(w) + ',' + Y(p)).join(' ');
+    v.todayX = X(11);
+    v.grid = [0, 25, 50, 75, 100].map((p) => ({ y: Y(p), ty: (+Y(p) + 3).toFixed(1), t: p + '%' }));
+    v.months = [['ส.ค.', 0], ['ก.ย.', 4.3], ['ต.ค.', 8.6], ['พ.ย.', 13], ['ธ.ค.', 17.3]].map(([t, w]) => ({ t, x: X(w) }));
+    const T0 = 0, T1 = 120, TD = 41; // days from 1 ก.ย.; today = 12 ต.ค.
+    const pct = (x) => ((x - T0) / (T1 - T0) * 100).toFixed(1) + '%';
+    v.gMonths = [['ก.ย.', 30], ['ต.ค.', 31], ['พ.ย.', 30], ['ธ.ค.', 29]].map(([t, n]) => ({ t, st: 'width:' + (n / 120 * 100).toFixed(1) + '%' }));
+    S.forEach((s) => { const [dd, mm] = s.due.split('/').map(Number); s.e = (mm === 9 ? 0 : mm === 10 ? 30 : mm === 11 ? 61 : 91) + dd - 1; s.s = Math.max(0, s.e - 62); });
+    const gs = S.slice().sort((x, y) => x.e - y.e);
+    v.gantt = gs.slice(0, 8).map((s) => { const dv = d(s);
+      return { name: s.name, mp: s.mp, ct: 'ผู้รับเหมา ' + s.ct, l: pct(s.s), w: ((s.e - s.s) / 120 * 100).toFixed(1) + '%', aw: ((s.e - s.s) * s.a / 100 / 120 * 100).toFixed(1) + '%',
+        pl: pct(s.s + (s.e - s.s) * s.p / 100), todayL: pct(TD), c: behind(s) ? '#D9453B' : '#1F6FB5', d: s.due, dc: behind(s) ? '#B42318' : '#16325C',
+        aria: s.full + ' · จริง ' + s.a + '% แผน ' + s.p + '% · ส่งมอบ ' + s.due }; });
+    v.ganttMore = 'อีก ' + (S.length - 8) + ' สถานี · เลื่อนดู';
+    // กำหนดส่ง
+    const fd = st.fd || 'all';
+    const DUE = [
+      ['w1', 8, 'ต.ค.', 'ส่งมอบงาน', 'MP 77 โชคชัย · Punch list + As-Built', 'hand', 'เลยกำหนด 4 วัน', 'late', 'iPadInstall.dc.html'],
+      ['w1', 12, 'ต.ค.', 'ส่งมอบงาน', 'MP 154 แพรกหนามแดง · จริง 71% / แผน 68%', 'hand', 'เสี่ยงช้า', 'risk', 'iPadInstall.dc.html'],
+      ['w1', 12, 'ต.ค.', 'แจ้งเทศบาล (ยกเว้น ข.1)', 'MP 189 ทุ่งน้อย · เทศบาลเมืองพล', 'doc', 'วันนี้', 'risk', 'PhonePwaDocs.dc.html'],
+      ['w1', 14, 'ต.ค.', 'ส่งมอบงาน', 'MP 88 พนัสนิคม · ผู้รับเหมา B', 'hand', 'ตามแผน', 'ok', 'iPadInstall.dc.html'],
+      ['w1', 15, 'ต.ค.', 'ส่งมอบงาน', 'MP 189 ทุ่งน้อย · จริง 38% / แผน 50%', 'hand', 'ช้ากว่าแผน', 'late', 'iPadInstall.dc.html'],
+      ['w2', 20, 'ต.ค.', 'ยื่น พค.2 (กกพ.)', 'MP 154 แพรกหนามแดง · 209.76 kWp ≥ 200 kVA', 'doc', 'เอกสาร 18/23', 'risk', 'PhonePwaDocs.dc.html'],
+      ['w2', 20, 'ต.ค.', 'ส่งมอบงาน', 'MP 133 บางปะกง · ผู้รับเหมา A', 'hand', 'ตามแผน', 'ok', 'iPadInstall.dc.html'],
+      ['w2', 22, 'ต.ค.', 'ยื่นขอขนานไฟ (กฟภ.)', 'MP 109 ศรีราชา · ชุด 4.2 ครบ 11/11', 'doc', 'พร้อมยื่น', 'ok', 'PhonePwaDocs.dc.html'],
+      ['w2', 24, 'ต.ค.', 'อบรม O&M (3.2)', 'MP 77 โชคชัย · คู่มือภาคตะวันออกเฉียงเหนือ', 'tst', 'นัดแล้ว', 'ok', 'iPadInstall.dc.html']];
+    const DF = { all: ['ทั้งหมด', () => true], hand: ['ส่งมอบ', (r) => r[5] === 'hand'], doc: ['ยื่นเอกสาร', (r) => r[5] === 'doc'] };
+    const dOpen = !!st.dOpen; v.dOpen = dOpen; v.dOpenS = dOpen ? 'true' : 'false'; v.dTog = () => this.setState({ dOpen: !dOpen });
+    v.dBd = dOpen ? '#1F6FB5' : '#C9D3E0'; v.dChev = 'width:18px;height:18px;flex:none;margin-left:auto;fill:none;stroke:#1F6FB5;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;' + (dOpen ? 'transform:rotate(180deg)' : '');
+    v.dSelT = DF[fd][0]; v.dSelN = DUE.filter(DF[fd][1]).length;
+    v.dFlt = Object.keys(DF).map((kk) => ({ t: DF[kk][0], n: DUE.filter(DF[kk][1]).length, on: fd === kk ? 'true' : 'false', ck: fd === kk ? '✓' : '',
+      st: 'width:100%;min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border:0;font-family:inherit;font-size:14px;text-align:left;cursor:pointer;color:#16325C;' + (fd === kk ? 'background:#E3EEF8;font-weight:700' : 'background:#fff;font-weight:500'),
+      go: () => this.setState({ fd: kk, dOpen: false }) }));
+    const CS = { late: 'background:#FDECEA;color:#B42318', risk: 'background:#FFF3E6;color:#9A4A06', ok: 'background:#E8F5EE;color:#1F6B43' };
+    const DS = { late: 'background:#FDECEA;color:#B42318', risk: 'background:#FFF3E6;color:#9A4A06', ok: 'background:#EEF4FB;color:#16325C' };
+    const rowsOf = (g) => DUE.filter((r) => r[0] === g).filter(DF[fd][1]).map((r) => ({ dd: r[1], mm: r[2], t: r[3], sub: r[4], c: r[6], cSt: CS[r[7]], dSt: DS[r[7]], href: r[8] }));
+    v.dueGroups = [{ t: 'สัปดาห์นี้', r: '12–18 ต.ค. · รวมที่เลยกำหนด', rows: rowsOf('w1') }, { t: 'สัปดาห์หน้า', r: '19–25 ต.ค.', rows: rowsOf('w2') }].filter((g) => g.rows.length);
+    return v;
+  }
+}
+</script>
+</body>
+</html>

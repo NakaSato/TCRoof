@@ -50,6 +50,7 @@ struct GalleryCards: View {
                 }
             }
             GalleryFeed()
+            GalleryOverview()
         }
     }
 }

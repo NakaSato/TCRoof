@@ -11,7 +11,7 @@ struct OpenReportPage: Identifiable, Hashable {
 }
 
 /// iPhone home (compact width, docs/ui/tcroof-home-iphone-v3): logo and bell header, today's appointments as a pager
-/// when there are any, and the project feed, above `PhoneTabs`' tab bar. The modules without a tab are on the
+/// when there are any, and the project feed, behind `PhoneTabs`' floating dock. The modules without a tab are on the
 /// `เครื่องมือ` tab (`ToolsView`).
 struct PhoneHome: View {
     let appointments: [TodayAppointment]
@@ -36,8 +36,8 @@ struct PhoneHome: View {
                 }
                 HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), open: openFeed)
             }
-            // the tab bar and `PhoneTab.barGap` are the bottom safe-area inset; the board leaves 11 pt above the bar
-            .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 11 - PhoneTab.barGap)
+            // the dock and `PhoneTab.barGap` are the bottom safe-area inset: the feed ends the board's 104 pt up
+            .padding(.horizontal, 16).padding(.top, 12)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             HomeBrandHeader(size: .phone, initials: userInitials(userName, email: session.email), unread: unread,

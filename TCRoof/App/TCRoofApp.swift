@@ -66,7 +66,10 @@ struct RootView: View {
             // `-screen <name>` opens that screen as the stack's root. Pushed over the home at launch
             // (`.navigationDestination(isPresented: .constant(true))`), iOS 27 never draws a frame: a blank
             // screen and "Observation tracking feedback loop detected".
-            if DebugScreen.isKnown {
+            if DebugScreen.requested == "pwa" && sizeClass == .compact {
+                // the iPhone PWA module is its own tabs under its own dock
+                PWAPhoneTabs {}
+            } else if DebugScreen.isKnown {
                 NavigationStack { DebugScreen() }
             } else if sizeClass == .compact {
                 PhoneTabs { home }
@@ -93,11 +96,13 @@ struct RootView: View {
             // Simulator checks run on sample data, offline.
             if DebugScreen.requested != nil {
                 SampleData.seedIfNeeded(context)
+                Job.keepKinds(context)
                 if UserDefaults.standard.bool(forKey: "planDemo") { SampleData.redate(context, today: PlanCalendarView.today) }
                 return
             }
             #endif
             SampleData.removeSamples(context)
+            Job.keepKinds(context)
             CloudSync.shared.start(context: context, survey: session.survey)
             let survey = session.survey
             NotificationService.shared.syncNow = { survey.cloudPush?() }

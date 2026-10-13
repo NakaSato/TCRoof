@@ -43,13 +43,25 @@ final class PhoneHomeFeedUITests: XCTestCase {
         XCTAssertTrue(app.buttons["แก้แล้ว"].firstMatch.waitForExistence(timeout: 8))
     }
 
+    /// A tap on a post's text opens its record, as its link does: the summary opens the install records.
+    func testTappingAPostOpensItsRecord() {
+        let app = launch()
+        let text = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "สรุปวันที่")).firstMatch
+        XCTAssertTrue(text.waitForExistence(timeout: slow))
+        text.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["รับทราบ"].firstMatch)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 8), .completed, "the tap should push the record over the feed")
+    }
+
     func testModulesMovedToTheToolsTab() {
         let app = launch()
         let tools = app.buttons["เครื่องมือวัด"].firstMatch
         XCTAssertTrue(tools.waitForExistence(timeout: slow))
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "สแกนอุปกรณ์")).firstMatch.exists)
+        // กปภ. is a tab of its own now, not a row
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "กปภ.")).firstMatch.exists)
         tools.tap()
-        for title in ["สแกนอุปกรณ์", "บันทึกงานติดตั้ง", "การประปา"] {
+        for title in ["แผนก่อสร้าง", "สแกนอุปกรณ์", "บันทึกงานติดตั้ง"] {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch.waitForExistence(timeout: 8), title)
         }
     }

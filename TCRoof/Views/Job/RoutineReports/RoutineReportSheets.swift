@@ -185,10 +185,50 @@ struct RoutineSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var s: RoutineReport.Settings
     @State private var holiday = Date()
+    @State private var inspectionAt = Date()
+    @State private var inspectionSubject = ""
 
     init(job: Job) {
         self.job = job
         _s = State(initialValue: job.routineSettings)
+    }
+
+    /// A time of day kept as minutes after midnight.
+    private func clock(_ minutes: Binding<Int>) -> Binding<Date> {
+        let cal = RoutineReport.calendar
+        return Binding {
+            cal.date(bySettingHour: minutes.wrappedValue / 60, minute: minutes.wrappedValue % 60, second: 0, of: .now) ?? .now
+        } set: {
+            let c = cal.dateComponents([.hour, .minute], from: $0)
+            minutes.wrappedValue = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+        }
+    }
+
+    /// The PWA representative's inspection appointments: the `ตรวจรับ` rows of the PWA plan page's agenda.
+    private var inspections: some View {
+        PadSection("นัดตรวจรับ (ผู้แทน กปภ.)") {
+            ForEach(s.inspections) { i in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(i.at.formatted(.dateTime.day().month(.abbreviated).year().hour().minute()))
+                        if !i.subject.isEmpty { Text(i.subject).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.muted) }
+                    }
+                    Spacer(minLength: 0)
+                    PadRowButton("ลบนัดตรวจรับ", systemImage: "trash", destructive: true) { s.inspections.removeAll { $0.id == i.id } }
+                }
+            }
+            DatePicker("วันและเวลา", selection: $inspectionAt)
+            HStack {
+                TextField("งานที่ตรวจ เช่น 2.5 Inverter", text: $inspectionSubject)
+                Button("เพิ่ม") {
+                    s.inspections.append(.init(at: inspectionAt, subject: inspectionSubject.trimmingCharacters(in: .whitespaces)))
+                    s.inspections.sort { $0.at < $1.at }
+                    inspectionSubject = ""
+                }
+            }
+        } footer: {
+            Text("นัดจะแสดงเป็นแถวตรวจรับในตารางงานของหน้าแผนงาน PWA")
+        }
     }
 
     private static let weekdays = [(2, "จ."), (3, "อ."), (4, "พ."), (5, "พฤ."), (6, "ศ."), (7, "ส."), (1, "อา.")]
@@ -200,6 +240,7 @@ struct RoutineSettingsSheet: View {
                     TextField("ชื่อสัญญา / โครงการ", text: $s.contractName, axis: .vertical)
                     TextField("ผู้ว่าจ้าง", text: $s.employer)
                     TextField("ผู้รับจ้าง", text: $s.contractor)
+                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) · เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
                     TextField("Site Engineer", text: $s.siteEngineer)
                     TextField("Inspector", text: $s.inspector)
                 }
@@ -229,6 +270,8 @@ struct RoutineSettingsSheet: View {
                                 .buttonStyle(.plain)
                         }
                     }
+                    DatePicker("เริ่มงาน", selection: clock($s.workStart), displayedComponents: .hourAndMinute)
+                    DatePicker("เลิกงาน", selection: clock($s.workEnd), displayedComponents: .hourAndMinute)
                     ForEach(s.holidays, id: \.self) { h in
                         HStack {
                             Text(ISODate.date(h).map(RoutineReport.thaiDate) ?? h)
@@ -246,6 +289,7 @@ struct RoutineSettingsSheet: View {
                 } footer: {
                     Text("วันทำงานที่ไม่มีรายงานจะแสดงเป็นวันที่ขาดในรายงานสัปดาห์และเดือน")
                 }
+                inspections
                 ListEditor(title: "ตำแหน่งงาน (กำลังคน)", placeholder: "เพิ่มตำแหน่ง", items: $s.roles)
                 ListEditor(title: "เครื่องมือ", placeholder: "เพิ่มเครื่องมือ", items: $s.tools)
             }

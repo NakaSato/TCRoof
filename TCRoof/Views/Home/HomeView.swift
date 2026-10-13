@@ -90,6 +90,8 @@ struct HomeView: View {
     @State private var installLogs: Job?
     @AppStorage("userName") private var engineerName = ""
     @State private var notificationService = NotificationService.shared
+    @State private var liveFeed = LiveFeed.shared
+    @State private var instruments = InstrumentStore.shared
     /// A screen opened from a system notification.
     @State private var linked: LinkedScreen?
     @State private var shareURL: SharedLink?
@@ -161,7 +163,7 @@ struct HomeView: View {
 
     private func notificationsView(large: Bool, close: (() -> Void)? = nil) -> PhoneNotificationsView {
         PhoneNotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: sync,
-                               surveyHint: surveyHint, openSurvey: openSurvey, large: large, close: close)
+                               surveyHint: surveyHint, openSurvey: openSurvey, openLink: openLater, large: large, close: close)
     }
 
     private var installChip: String? {
@@ -276,7 +278,19 @@ struct HomeView: View {
 
     // MARK: notifications
 
-    private var notifications: [AppNotification] { AppNotification.list(jobs: todaysJobs, survey: session.survey) }
+    private var notifications: [AppNotification] {
+        AppNotification.list(jobs: todaysJobs, survey: session.survey, posts: liveFeed.posts, tools: instruments.all)
+    }
+
+    /// Opens a bell row's screen after the cover has gone, so the push lands on the home stack.
+    private func openLater(_ link: DeepLink) {
+        Task { try? await Task.sleep(for: .milliseconds(350)); open(link) }
+    }
+
+    /// A job's record, when the job is on this device.
+    private func openRecord(_ link: FeedLink, job key: String) {
+        if job(key) != nil { feedLink = link }
+    }
     private var readIDs: Set<String> { Set(readRaw.split(separator: "\n").map(String.init)) }
 
     /// Marks these read; ids no longer shown are dropped so the stored list stays small.
@@ -317,6 +331,11 @@ struct HomeView: View {
         case .pendingList: linked = .pending
         case .dailyReport(let key): linked = .dailyReport(job: key)
         case .weeklyRequest(let key): linked = .weeklyRequest(job: key)
+        case .job(let key): openRecord(.job(key), job: key)
+        case .daily(let key, let day): openRecord(.daily(job: key, day: day), job: key)
+        case .inspection(let key): openRecord(.inspection(job: key), job: key)
+        case .homework(let key): openRecord(.homework(job: key), job: key)
+        case .records: feedLink = .records
         case .driveFolder(let url): openURL(url)
         case .share(let url): shareURL = SharedLink(url: url)
         case .remindLater, .home: break

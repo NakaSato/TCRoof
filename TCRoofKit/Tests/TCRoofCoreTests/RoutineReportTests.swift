@@ -168,6 +168,7 @@ final class RoutineReportTests: XCTestCase {
         let s = try JSONDecoder().decode(RoutineReport.Settings.self, from: Data(#"{"locations": ["หลังคา 1"]}"#.utf8))
         XCTAssertEqual(s.workingWeekdays, [2, 3, 4, 5, 6, 7])
         XCTAssertEqual(s.roles, RoutineReport.defaultRoles)
+        XCTAssertEqual(s.subcontractor, "", "settings saved before the subcontractor was kept have none")
         let round = try JSONDecoder().decode(RoutineReport.Daily.self, from: JSONEncoder().encode(daily(3, rain: 2)))
         XCTAssertEqual(round, daily(3, rain: 2).withIDs(of: round))
     }
@@ -206,10 +207,12 @@ final class RoutineReportTests: XCTestCase {
     func testKeyPointsDecodeAndRead() throws {
         var s = RoutineReport.Settings()
         s.keyPoints = ["หลังคา 1": [0.25, 0.5], "ผิด": [1]]
+        s.subcontractor = "A"
         let back = try JSONDecoder().decode(RoutineReport.Settings.self, from: JSONEncoder().encode(s))
         XCTAssertEqual(back.keyPoint("หลังคา 1")?.x, 0.25)
         XCTAssertNil(back.keyPoint("ผิด"))
         XCTAssertNil(back.keyPoint("หลังคา 2"))
+        XCTAssertEqual(back.subcontractor, "A")
     }
 
     func testWeatherTapCycle() {

@@ -184,13 +184,24 @@ final class Job {
         set { statusRaw = newValue.rawValue }
     }
 
-    /// A job with no kind kept is a PWA job once it has an MP plan, routine reports or station papers, a home job otherwise.
+    /// A job with no kind kept is a home job: only a job set to งาน PWA is in the PWA module, whatever data it has.
     var kind: JobKind {
-        get { kindRaw.flatMap(JobKind.init) ?? (hasPWAData ? .pwa : .home) }
+        get { kindRaw.flatMap(JobKind.init) ?? .home }
         set { kindRaw = newValue.rawValue }
     }
     private var hasPWAData: Bool {
         mpNumber != nil || scheduleInputJSON != nil || routineSettingsJSON != nil || weeklyRequestsJSON != nil || stationDocsJSON != nil
+    }
+
+    /// Once per device: the jobs made before the kind was kept, which counted as PWA jobs for their MP plan, routine
+    /// reports or station papers, are set to งาน PWA. Sync then writes every job's kind (`Job.record`).
+    static func keepKinds(_ context: ModelContext, defaults: UserDefaults = .standard) {
+        let key = "jobs.kindsKept"
+        guard !defaults.bool(forKey: key) else { return }
+        guard let jobs = try? context.fetch(FetchDescriptor<Job>()) else { return }
+        for job in jobs where job.kindRaw == nil && job.hasPWAData { job.kind = .pwa }
+        try? context.save()
+        defaults.set(true, forKey: key)
     }
 
     var installEnd: Date { installStart.startOfDay.adding(days: max(installDays, 1) - 1) }
@@ -509,4 +520,9 @@ final class DocumentAsset {
         self.data = data
         self.addedAt = .now
     }
+}
+
+extension Sequence where Element == Job {
+    /// The stations of the PWA module: the jobs set to งาน PWA.
+    var pwaStations: [Job] { filter { $0.kind == .pwa } }
 }

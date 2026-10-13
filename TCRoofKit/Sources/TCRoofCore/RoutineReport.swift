@@ -149,16 +149,36 @@ public enum RoutineReport {
 
     // MARK: Station settings (§2.3)
 
+    /// An appointment for the PWA's representative to inspect work at the station.
+    public struct Inspection: Codable, Equatable, Sendable, Identifiable {
+        public var id: String
+        public var at: Date
+        /// What is inspected (`2.5 Inverter`); may be empty.
+        public var subject: String
+
+        public init(id: String = UUID().uuidString, at: Date, subject: String = "") {
+            self.id = id; self.at = at; self.subject = subject
+        }
+    }
+
     public struct Settings: Codable, Equatable, Sendable {
         public var contractName = ""
         public var employer = "การไฟฟ้าส่วนภูมิภาค"
         public var contractor = "บริษัท ทีซี รีนิวอะเบิ้ล เอ็นเนอร์ยี่ จำกัด"
+        /// The short name of the subcontractor that installs this station (`A`); empty when our own team does.
+        /// The PWA plan page's team filter groups stations by it.
+        public var subcontractor = ""
+        /// The PWA representative's inspection appointments, shown as `ตรวจรับ` rows in the PWA plan page's agenda.
+        public var inspections: [Inspection] = []
         /// หลังคา 1…n, ถังน้ำใส 1…n, ห้องอินเวอร์เตอร์ …
         public var locations: [String] = []
         /// `Calendar` weekdays (1 = Sunday); จ.–ส. by default.
         public var workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7]
         /// `yyyy-MM-dd` (Bangkok).
         public var holidays: [String] = []
+        /// The site's working hours, as minutes after midnight: 08:00–17:00 by default.
+        public var workStart = 8 * 60
+        public var workEnd = 17 * 60
         public var siteEngineer = ""
         public var inspector = ""
         public var roles = RoutineReport.defaultRoles
@@ -173,7 +193,7 @@ public enum RoutineReport {
 
         enum CodingKeys: String, CodingKey {
             case contractName, employer, contractor, locations, workingWeekdays, holidays, siteEngineer, inspector, roles, tools, taskLocations
-            case keyPoints
+            case keyPoints, subcontractor, inspections, workStart, workEnd
         }
 
         public init(from decoder: Decoder) throws {
@@ -191,6 +211,10 @@ public enum RoutineReport {
             tools = try c.decodeIfPresent([String].self, forKey: .tools) ?? d.tools
             taskLocations = try c.decodeIfPresent([String: [String]].self, forKey: .taskLocations) ?? d.taskLocations
             keyPoints = try c.decodeIfPresent([String: [Double]].self, forKey: .keyPoints) ?? d.keyPoints
+            subcontractor = try c.decodeIfPresent(String.self, forKey: .subcontractor) ?? d.subcontractor
+            inspections = try c.decodeIfPresent([Inspection].self, forKey: .inspections) ?? d.inspections
+            workStart = try c.decodeIfPresent(Int.self, forKey: .workStart) ?? d.workStart
+            workEnd = try c.decodeIfPresent(Int.self, forKey: .workEnd) ?? d.workEnd
         }
 
         /// The location's key-plan point as fractions, when placed.

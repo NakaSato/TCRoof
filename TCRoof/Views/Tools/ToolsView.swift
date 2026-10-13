@@ -50,7 +50,7 @@ import TCRoofCore
 }
 
 /// `เครื่องมือวัด`: the register of measuring tools with each one's calibration date, overdue first. On the iPhone
-/// `เครื่องมือ` tab it also carries the modules that have no tab of their own (scan, install records, PWA).
+/// `เครื่องมือ` tab it also carries the modules that have no tab of their own (the plan calendar, scan, install records).
 struct ToolsView: View {
     /// The quick action of a tools notification that opened this screen (`คืนอุปกรณ์`, `ดูคิว`…).
     var request: String? = nil

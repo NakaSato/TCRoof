@@ -200,59 +200,6 @@ extension SurveyHomeView {
         }
     }
 
-    /// iPhone: one row of three pills instead of the boxes (docs/ui/pwa-solar-survey-iphone); รอซิงก์ stays in the ••• menu,
-    /// and shows as a fourth pill only while it is the filter (opened from the sync notification, or kept from the iPad layout).
-    var filterPills: some View {
-        let jobs = searched
-        return HStack(spacing: 6) {
-            ForEach([Filter.all, .active, .draft] + (filter == .unsynced ? [.unsynced] : []), id: \.self) { f in
-                let on = filter == f
-                let n = jobs.filter { matches($0, f) }.count
-                Button { withAnimation(.snappy) { filter = f } } label: {
-                    HStack(spacing: 5) {
-                        Text(f.shortTitle).font(.sarabunFixed(13, on ? .bold : .semibold)).lineLimit(1)
-                        Text("\(n)").font(.sarabunFixed(12, .bold)).monospacedDigit()
-                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20)
-                            .background(on ? Theme.onPrimary.opacity(0.22) : Theme.hairline, in: RoundedRectangle(cornerRadius: 10))
-                    }
-                    .foregroundStyle(on ? Theme.onPrimary : Theme.navySolid)
-                    .padding(.horizontal, 6)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(on ? Theme.navySolid : Theme.surface, in: Capsule())
-                    .overlay { if !on { Capsule().stroke(Theme.borderSubtle) } }
-                    .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(f.title) \(n) งาน")
-                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
-            }
-        }
-    }
-
-    /// iPhone: heading, count and a sort menu on one row.
-    var compactListHeading: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Text(tab == .survey ? filter.heading : tab.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-            Text("\(shown.count) งาน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().lineLimit(1)
-            Spacer(minLength: 8)
-            Menu {
-                Picker("เรียงตาม", selection: $sort) {
-                    ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Text(sort.title).font(.sarabunFixed(12.5, .semibold))
-                    Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Theme.primary)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .accessibilityLabel("เรียงตาม \(sort.title)")
-        }
-    }
-
     var listHeading: some View {
         let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
         return layout {

@@ -8,8 +8,27 @@ extension View {
     func systemNotifications(survey: SurveyModel) -> some View { modifier(NotificationScheduler(survey: survey)) }
 }
 
-/// Survey reminders 30 min before today's and tomorrow's appointments, the one `รอซิงก์`, and
-/// `บันทึกขึ้น Drive แล้ว`; rescheduled when jobs, reports, the toggles or the day change.
+/// The feed's posts as the scheduler last built them, for the bell, and which of them were already announced.
+@MainActor
+@Observable final class LiveFeed {
+    static let shared = LiveFeed()
+    private(set) var posts: [FeedPost] = []
+    private static let seenKey = "notifications.feed.seen"
+
+    /// Keeps `posts` and returns the ones to announce. The first run announces nothing: every post is old news then.
+    func update(_ posts: [FeedPost], me: String, now: Date) -> [NotificationPlan] {
+        self.posts = posts
+        let d = UserDefaults.standard
+        let saved = d.string(forKey: Self.seenKey).map { Set($0.split(separator: "\n").map(String.init)) }
+        let fresh = saved.map { FeedNotification.fresh(posts, seen: $0, me: me, now: now) } ?? []
+        d.set(posts.map(\.id).sorted().joined(separator: "\n"), forKey: Self.seenKey)
+        return fresh
+    }
+}
+
+/// Survey reminders 30 min before today's and tomorrow's appointments, the one `รอซิงก์`, `บันทึกขึ้น Drive แล้ว`, the
+/// routine-report and calibration reminders, install days, the MP plan and the project feed's events; rescheduled when
+/// jobs, reports, tools, the toggles or the minute change.
 private struct NotificationScheduler: ViewModifier {
     let survey: SurveyModel
     @Query private var jobs: [Job]
@@ -17,7 +36,12 @@ private struct NotificationScheduler: ViewModifier {
     @AppStorage(NotificationGroup.survey.defaultsKey) private var surveyOn = true
     @AppStorage(NotificationGroup.syncExport.defaultsKey) private var syncOn = true
     @AppStorage(NotificationGroup.report.defaultsKey) private var reportOn = true
-    /// Bumped when the app comes back, so a new day reschedules.
+    @AppStorage(NotificationGroup.calibration.defaultsKey) private var calibrationOn = true
+    @AppStorage(NotificationGroup.plan.defaultsKey) private var planOn = true
+    @AppStorage(NotificationGroup.feed.defaultsKey) private var feedOn = true
+    @AppStorage("userName") private var userName = ""
+    @State private var instruments = InstrumentStore.shared
+    /// Bumped each minute and when the app comes back, so a new day reschedules and a synced record is announced.
     @State private var tick = 0
 
     func body(content: Content) -> some View {
@@ -42,6 +66,16 @@ private struct NotificationScheduler: ViewModifier {
             }
             .task(id: surveyPlans(tick)) { await NotificationService.shared.scheduleSurveys(surveyPlans(tick)) }
             .task(id: reportPlans(tick)) { await NotificationService.shared.schedule(reportPlans(tick), type: .report) }
+            .task(id: calibrationPlans(tick)) { await NotificationService.shared.schedule(calibrationPlans(tick), type: .cal) }
+            .task(id: installPlans(tick)) { await NotificationService.shared.schedule(installPlans(tick), type: .install) }
+            .task(id: mpPlans(tick)) { await NotificationService.shared.schedule(mpPlans(tick), type: .mp) }
+            .task(id: FeedState(tick: tick, jobs: jobs.count, on: feedOn)) { await refreshFeed() }
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(60))
+                    tick += 1
+                }
+            }
             .task(id: SyncState(survey: survey, on: syncOn)) {
                 let pending = survey.jobsToSync
                 await NotificationService.shared.updateSync(names: pending.map(Self.label), oldest: pending.map(\.updated).min())
@@ -87,6 +121,54 @@ private struct NotificationScheduler: ViewModifier {
         .sorted { $0.id < $1.id }
     }
 
+    /// 30 and 7 days before each tool's calibration runs out (the register of the `เครื่องมือ` tab).
+    private func calibrationPlans(_: Int) -> [NotificationPlan] {
+        guard calibrationOn else { return [] }
+        return instruments.all.flatMap { tool -> [NotificationPlan] in
+            guard let due = tool.calibrationDue else { return [] }
+            return ToolNotification.scheduleCalibration(toolID: tool.id, tool: tool.name, kind: tool.kind, due: due, now: .now)
+        }
+        .sorted { $0.id < $1.id }
+    }
+
+    /// `เริ่มติดตั้งพรุ่งนี้` on the eve, then `ติดตั้ง Day n/m` 30 min before each install day starts.
+    private func installPlans(_: Int) -> [NotificationPlan] {
+        guard planOn else { return [] }
+        let now = Date.now
+        return jobs.filter { $0.status != .completed && $0.installEnd.endOfDay > now }.flatMap { job in
+            InstallNotification.plans(jobKey: job.syncID ?? job.code, name: [job.code, job.projectName].filter { !$0.isEmpty }.joined(separator: " "),
+                                      team: job.teamRaw, start: job.installStart, days: job.installDays, now: now)
+        }
+        .sorted { $0.id < $1.id }
+    }
+
+    /// Tasks of a PWA station's MP plan that start tomorrow, and a station behind its plan.
+    private func mpPlans(_: Int) -> [NotificationPlan] {
+        guard planOn else { return [] }
+        let now = Date.now
+        return jobs.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
+            guard let input = job.scheduleInput else { return [] }
+            return MPNotification.plans(jobKey: job.syncID ?? job.code, station: job.stationName, plan: MasterSchedule.plan(input),
+                                        actual: job.scheduleActual, now: now)
+        }
+        .sorted { $0.id < $1.id }
+    }
+
+    /// Rebuilds the project feed: a post not seen before is announced at once, today's summary waits for 18:00, and
+    /// an open issue reminds on its due day. Records made on another device show up here once sync has brought them in.
+    private func refreshFeed() async {
+        let now = Date.now
+        let stations = jobs.map(\.feedStation)
+        let posts = FeedBuilder.posts(stations, now: now)
+        let fresh = LiveFeed.shared.update(posts, me: userName, now: now)
+        let service = NotificationService.shared
+        await service.schedule([FeedNotification.summary(stations, now: now)].compactMap { $0 }, type: .feed)
+        await service.schedule(FeedNotification.due(posts, now: now), type: .issue)
+        fresh.forEach(service.post)
+    }
+
+    private struct FeedState: Equatable { let tick: Int; let jobs: Int; let on: Bool }
+
     #if DEBUG
     /// `-notifDemo survey|all`, `-notifAction <type>.<action>` (see `NotificationService.demo`).
     private func debugDemo(_ service: NotificationService) async {
@@ -96,6 +178,11 @@ private struct NotificationScheduler: ViewModifier {
             UserDefaults.standard.set(job.syncID ?? job.code, forKey: "notifJob")
         }
         if NotificationService.demo == "all" { service.postBoardExamples() }
+        if NotificationService.demo == "live" {
+            let first = jobs.sorted { $0.code < $1.code }.first
+            service.postLiveExamples(job: first.map { $0.syncID ?? $0.code } ?? "demo",
+                                     only: UserDefaults.standard.object(forKey: "notifOnly") as? Int ?? UserDefaults.standard.string(forKey: "notifOnly").flatMap(Int.init))
+        }
         if let action = UserDefaults.standard.string(forKey: "notifAction") {
             if UserDefaults.standard.string(forKey: "notifJob") == nil, let job = jobs.first {
                 UserDefaults.standard.set(job.syncID ?? job.code, forKey: "notifJob")

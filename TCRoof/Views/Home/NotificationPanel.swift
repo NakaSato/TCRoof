@@ -4,7 +4,11 @@ import SurveyUI
 
 /// One notification of the bell. `id` stays the same while the event does, so "read" survives relaunches.
 struct AppNotification: Identifiable {
-    enum Kind { case survey, install, syncPending, saved }
+    enum Kind: Equatable {
+        case survey, install, syncPending, saved
+        /// A tool due for calibration, today's daily report not sent by 17:00, and a post of the project feed.
+        case calibration, report, feed(FeedPost.Kind)
+    }
     let id: String
     let kind: Kind
     let title: String
@@ -12,20 +16,27 @@ struct AppNotification: Identifiable {
     let date: Date
     /// The job of a survey appointment, for the iPhone row's tap action.
     var job: Job? = nil
+    /// The screen the row opens, the same one its system notification does.
+    var link: DeepLink? = nil
+    /// Counted under `ต้องทำ`.
+    var todo = false
     /// "อีก 9 ชม." for an appointment still ahead; otherwise the time (today) or date and time (earlier).
     var timeText: String {
         if kind == .survey, date > .now {
             let mins = Int(date.timeIntervalSinceNow / 60)
             return mins >= 60 ? "อีก \(mins / 60) ชม." : "อีก \(max(mins, 1)) นาที"
         }
+        // a calibration row is about a day, not a time
+        if kind == .calibration { return "" }
         return date.isToday ? date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
             : ThaiFormat.dayMonthTime.string(from: date)
     }
-    var isToday: Bool { date.isToday || kind == .survey || kind == .install || kind == .syncPending }
+    var isToday: Bool { date.isToday || kind == .survey || kind == .install || kind == .syncPending || kind == .calibration }
 
-    /// Today's survey appointments and install days, survey reports still waiting to sync,
-    /// and Drive saves of the last 7 days.
-    @MainActor static func list(jobs: [Job], survey: SurveyModel) -> [AppNotification] {
+    /// Today's survey appointments and install days, a daily report still owed after 17:00, tools due for calibration,
+    /// the project feed's posts of today and yesterday, survey reports still waiting to sync, and Drive saves of the
+    /// last 7 days. Ids are the system notifications' (`NotificationPlan.bellID`).
+    @MainActor static func list(jobs: [Job], survey: SurveyModel, posts: [FeedPost] = [], tools: [Instrument] = []) -> [AppNotification] {
         let day = ISODate.string(.now)
         var out: [AppNotification] = []
         for job in jobs {
@@ -41,8 +52,12 @@ struct AppNotification: Identifiable {
                                  detail: "\(job.code) · ทีม \(job.team.rawValue) · \(job.capacityKW.plain) kWp · จ.\(job.province)",
                                  date: Calendar.current.date(bySettingHour: Calendar.current.component(.hour, from: job.installStart),
                                                              minute: Calendar.current.component(.minute, from: job.installStart), second: 0, of: .now) ?? .now))
+                if let owed = dailyReportOwed(job, key: key, day: day) { out.append(owed) }
             }
         }
+        out += tools.compactMap(calibration)
+        let yesterday = Date.now.startOfDay.adding(days: -1)
+        out += posts.filter { $0.date >= yesterday }.map(feed)
         let pending = survey.jobsToSync
         if let latest = pending.map(\.updated).max() {
             // a new id whenever the count changes, so a fresh backlog shows as unread again
@@ -57,5 +72,34 @@ struct AppNotification: Identifiable {
                              detail: "\(name.isEmpty ? "งานสำรวจ" : name) · \(j.photoCount) ภาพ", date: saved))
         }
         return out.sorted { a, b in a.isToday != b.isToday ? a.isToday : a.date > b.date }
+    }
+
+    /// `ยังไม่ได้ส่งรายงานประจำวัน` once 17:00 has passed on a working install day whose report isn't signed.
+    @MainActor private static func dailyReportOwed(_ job: Job, key: String, day: String) -> AppNotification? {
+        let now = Date.now
+        guard let at = RoutineReport.calendar.date(bySettingHour: 17, minute: 0, second: 0, of: now), at <= now,
+              RoutineReport.isWorkingDay(now, settings: job.routineSettings), job.dailyState(on: now) != .signed else { return nil }
+        return .init(id: "report-daily-\(key)-\(day)", kind: .report, title: "ยังไม่ได้ส่งรายงานประจำวัน", detail: job.stationName, date: at,
+                     link: .dailyReport(job: key), todo: true)
+    }
+
+    private static func calibration(_ tool: Instrument) -> AppNotification? {
+        let state = tool.calibration(on: .now)
+        guard state.needsAction, let due = tool.calibrationDue else { return nil }
+        var overdue = false
+        if case .overdue = state { overdue = true }
+        return .init(id: ToolNotification.calibrationBellID(toolID: tool.id, due: due), kind: .calibration,
+                     title: overdue ? "เกินกำหนดสอบเทียบ" : "ใกล้ครบกำหนดสอบเทียบ",
+                     detail: [tool.name, tool.kind].filter { !$0.isEmpty }.joined(separator: " ") + " · " + state.title,
+                     date: Date.now.startOfDay, link: .toolRecord(tool: tool.id), todo: true)
+    }
+
+    private static func feed(_ post: FeedPost) -> AppNotification {
+        let fixed = post.issue?.fixed == true
+        let type = FeedNotification.type(post.kind)
+        return .init(id: post.id, kind: .feed(post.kind), title: fixed ? "ปัญหา · แก้แล้ว" : FeedNotification.title(post.kind),
+                     detail: post.kind == .summary ? post.text : post.place + " · " + post.text, date: post.date,
+                     link: DeepLink.route(type: type, action: nil, info: FeedNotification.plan(post).info),
+                     todo: post.issue != nil && !fixed)
     }
 }

@@ -80,12 +80,12 @@ struct GalleryLayout: View {
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
-        GalleryItem("แถบแท็บล่าง (iPhone)", note: "ชิดขอบล่าง · เส้นบน 1 · แท็บ ≥ 48 · เลือก = แคปซูล 52 × 28 สีฟ้าอ่อน · ป้ายแดงนับนัดวันนี้") {
+        GalleryItem("แถบแท็บลอย (iPhone)", note: "แคปซูล r28 ขอบ 1 · ห่างขอบ 12 / ล่าง 22 · แท็บสูง 56 · เลือก = แคปซูลกรมท่า r22 · ป้ายแดงนับนัดวันนี้ · เนื้อหาจางใต้แถบ 128") {
             GalleryTabBar()
-                // the board's 22 pt home-indicator inset
-                .padding(.bottom, 22)
-                .padding(.top, 28)
-                .background(alignment: .top) { Theme.phonePage.frame(height: 28) }
+                .padding(.horizontal, 12).padding(.bottom, 22)
+                .frame(height: 128, alignment: .bottom)
+                .background { TCDockFade() }
+                .background(Theme.surface)
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
@@ -118,11 +118,11 @@ private struct GalleryTabBar: View {
     var body: some View {
         TCTabBar(items: [
             TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
-            TCTabItem("survey", title: "สำรวจ", symbol: "list.clipboard", badge: 2, accessibilityLabel: "สำรวจ · นัดวันนี้ 2"),
-            TCTabItem("plan", title: "แผนงาน", symbol: "calendar"),
+            TCTabItem("homework", title: "งานบ้าน", asset: "tab-homework"),
+            TCTabItem("pwa", title: "กปภ.", asset: "tab-pwa", badge: 2, accessibilityLabel: "กปภ. · นัดวันนี้ 2"),
             TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
-        ], selection: $selection)
+        ], selection: $selection, dividerBefore: "settings")
     }
 }
 

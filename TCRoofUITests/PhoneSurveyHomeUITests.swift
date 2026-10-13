@@ -13,13 +13,13 @@ final class PhoneSurveyHomeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeDemo", "YES", "-noNotificationPrompt", "YES"]
         app.launch()
-        XCTAssertTrue(app.buttons["สำรวจ"].firstMatch.waitForExistence(timeout: slow) || app.buttons.firstMatch.waitForExistence(timeout: slow))
+        XCTAssertTrue(app.buttons["งานบ้าน"].firstMatch.waitForExistence(timeout: slow) || app.buttons.firstMatch.waitForExistence(timeout: slow))
         app.terminate()
     }
 
     func launch() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-screen", "home", "-homeTab", "survey", "-surveyListDraft", "YES", "-noNotificationPrompt", "YES"]
+        app.launchArguments = ["-screen", "home", "-homeTab", "homework", "-surveyListDraft", "YES", "-noNotificationPrompt", "YES"]
         app.launch()
         return app
     }

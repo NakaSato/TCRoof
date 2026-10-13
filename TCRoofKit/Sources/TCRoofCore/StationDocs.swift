@@ -264,6 +264,8 @@ public enum StationDocs {
         /// Package raw value → the day its papers are due, `yyyy-MM-dd` (Bangkok), where the team set one. A package
         /// without an entry is due on its task's planned start in the MP plan.
         public var dueDates: [String: String]
+        /// The answers of หนังสือแจ้งดับไฟ, once the team has drafted it in the app.
+        public var outageLetter: OutageLetter?
 
         public init(over200kVA: Bool? = nil, buildingRoute: BuildingRoute = .unknown, requestType: RequestType = .new,
                     sellsPower: Bool = false, srtProject: Bool = true, docs: [String: DocState] = [:], dueDates: [String: String] = [:]) {
@@ -294,6 +296,7 @@ public enum StationDocs {
             srtProject = try c.decodeIfPresent(Bool.self, forKey: .srtProject) ?? true
             docs = try c.decodeIfPresent([String: DocState].self, forKey: .docs) ?? [:]
             dueDates = try c.decodeIfPresent([String: String].self, forKey: .dueDates) ?? [:]
+            outageLetter = try? c.decodeIfPresent(OutageLetter.self, forKey: .outageLetter)
         }
 
         public static func decode(_ json: String?) -> Station {

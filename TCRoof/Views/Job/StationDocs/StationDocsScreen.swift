@@ -37,8 +37,29 @@ struct StationDocsScreen: View {
             StationDocSheet(job: job, kind: kind, library: $library)
         }
         .sheet(isPresented: $showStation) { StationFactsSheet(job: job) }
-        .onAppear { library = StationDocsStore.loadLibrary() }
+        .onAppear {
+            library = StationDocsStore.loadLibrary()
+            #if DEBUG
+            debugDraft()
+            #endif
+        }
     }
+
+    #if DEBUG
+    /// `-stationDocsDraft outage` opens ร่างหนังสือแจ้งดับไฟ; `pdf` writes the letter with example answers to
+    /// `Documents/outage.pdf` without keeping them.
+    private func debugDraft() {
+        switch UserDefaults.standard.string(forKey: "stationDocsDraft") {
+        case "outage": editing = StationDocs.kind("outage_letter")
+        case "pdf":
+            let letter = job.stationDocs.outageLetter ?? StationDocs.OutageLetter(
+                number: "TC-PML-001/2569", to: "ผู้จัดการการไฟฟ้าส่วนภูมิภาค", outageDay: .now, signer: "ชื่อ นามสกุล", position: "วิศวกรโครงการ")
+            let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("outage.pdf")
+            try? StationPaperRenderer.pdf(letter.letter(job.stationFacts), company: job.stationLetterhead).write(to: url)
+        default: break
+        }
+    }
+    #endif
 
     // MARK: Header
 
@@ -212,6 +233,8 @@ struct StationDocSheet: View {
     @State private var state = StationDocs.DocState()
     @State private var importing = false
     @State private var preview: URL?
+    @State private var drafting = false
+    @State private var askRedraft = false
 
     var body: some View {
         NavigationStack {
@@ -239,6 +262,12 @@ struct StationDocSheet: View {
                     TextField("หมายเหตุ เช่น ส่งให้ ผจก.สาขาแล้ว รอลงนาม", text: $state.note, axis: .vertical)
                 }
                 PadSection("ไฟล์") {
+                    if StationDocs.draft(for: kind) != nil {
+                        Button { if state.status.isReady, state.fileName != nil { askRedraft = true } else { drafting = true } } label: {
+                            Label("ร่างในแอป", systemImage: "square.and.pencil")
+                        }
+                        .frame(minHeight: touchMin)
+                    }
                     if let name = state.fileName {
                         Button { open(name) } label: { Label(name, systemImage: "doc.text.magnifyingglass") }
                             .frame(minHeight: touchMin)
@@ -263,8 +292,30 @@ struct StationDocSheet: View {
             .fileImporter(isPresented: $importing, allowedContentTypes: [.pdf, .image, .spreadsheet, .data],
                           onCompletion: attach)
             .quickLookPreview($preview)
-            .onAppear { state = StationDocs.state(kind, station: job.stationDocs, library: library) }
+            .sheet(isPresented: $drafting) { OutageLetterSheet(job: job, keep: keepDraft) }
+            .confirmationDialog("เอกสารนี้\(state.status.title) ร่างใหม่จะแทนไฟล์เดิม และสถานะกลับเป็น “ร่างแล้ว”",
+                                isPresented: $askRedraft, titleVisibility: .visible) {
+                Button("ร่างใหม่", role: .destructive) { drafting = true }
+                Button("ยกเลิก", role: .cancel) {}
+            }
+            .onAppear {
+                state = StationDocs.state(kind, station: job.stationDocs, library: library)
+                #if DEBUG
+                if UserDefaults.standard.string(forKey: "stationDocsDraft") == "outage" { drafting = true }
+                #endif
+            }
         }
+    }
+
+    /// The drafted paper becomes the paper's file, in place of the one before it.
+    private func keepDraft(_ data: Data) {
+        let name = HomeArchive.name("\(job.code) \(kind.name)", ext: "pdf")
+        guard let kept = HomeArchive.keep(data, name: name, job: job)?.name else { return }
+        if let old = state.fileName, old != kept, let doc = job.documents.first(where: { $0.name == old }) {
+            job.modelContext?.delete(doc)
+        }
+        state.fileName = kept
+        state.status = .draft
     }
 
     private func attach(_ result: Result<URL, Error>) {

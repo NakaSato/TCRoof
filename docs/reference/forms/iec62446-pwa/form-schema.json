@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tcroof/pwa-iec62446-before-after/v1",
+  "title": "PWA — IEC 62446 Test Report (ก่อน/หลังการเชื่อมต่อระบบ)",
+  "description": "ข้อมูล 1 งาน = 1 สถานี กปภ. ใช้เติมทั้ง Excel (IEC 62446 Test Report) และ Word (IV TEST Before-After ภาพถ่าย) ค่า null = ยังไม่ได้กรอก ห้ามใช้ 0 แทนค่าว่าง ยกเว้นกระแสก่อนเชื่อมต่อที่วัดได้ 0 จริง",
+  "type": "object",
+  "required": ["formId", "formVersion", "site", "module", "inverters"],
+  "properties": {
+    "formId": { "const": "pwa-iec62446-before-after" },
+    "formVersion": { "const": 1 },
+    "site": {
+      "type": "object",
+      "required": ["name", "branch", "capacityKWp"],
+      "properties": {
+        "name": { "type": "string", "description": "สถานี เช่น สถานีจ่ายน้ำแพรกหนามแดง" },
+        "branch": { "type": "string", "description": "การประปาส่วนภูมิภาคสาขา…" },
+        "capacityKWp": { "type": "number", "description": "ต้องเท่ากับผลรวม inverters[].installedKWp" },
+        "titleLine": { "type": "string", "description": "บรรทัด C3 ของ Excel (สร้างอัตโนมัติจาก name + branch + capacity)" }
+      }
+    },
+    "module": {
+      "type": "object",
+      "properties": {
+        "brand": { "type": "string" },
+        "powerW": { "type": "number", "description": "Excel AA4 — ใช้คำนวณ kWp ต่อ inverter" },
+        "areaM2": { "type": ["number", "null"], "description": "จาก datasheet — ใช้คำนวณ System Efficiency" }
+      }
+    },
+    "testDate": { "type": ["string", "null"], "format": "date", "description": "ไม่มีในฟอร์มเดิม — เพิ่มเพื่อความสมบูรณ์" },
+    "tester": { "type": ["string", "null"] },
+    "instruments": {
+      "type": "object",
+      "description": "Serial ของเครื่องมือ (ไม่มีในฟอร์มเดิม แต่เห็นในรูป: แคลมป์มิเตอร์, เครื่องวัด IR, weather station)",
+      "properties": {
+        "multimeterClamp": { "type": ["string", "null"] },
+        "insulationTester": { "type": ["string", "null"] },
+        "irradianceMeter": { "type": ["string", "null"] },
+        "thermalCamera": { "type": ["string", "null"] }
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "before": { "$ref": "#/$defs/conditions" },
+        "after": {
+          "allOf": [{ "$ref": "#/$defs/conditions" }],
+          "properties": {
+            "avgIrradiationKWhM2Day": { "type": ["number", "null"], "description": "Solar irradiance เฉลี่ย 7 วัน (Yr) — Excel AA25" },
+            "arrayTempC": { "type": ["number", "null"], "description": "Excel AA26" }
+          }
+        }
+      }
+    },
+    "inverters": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/inverter" } },
+    "attachments": {
+      "type": "object",
+      "properties": {
+        "thermalImages": { "type": "array", "items": { "$ref": "#/$defs/photo" } },
+        "irradiancePhoto": { "$ref": "#/$defs/photoOrNull" }
+      }
+    }
+  },
+  "$defs": {
+    "result": { "enum": ["normal", "pass", "fail", null], "description": "Excel: 'Normal' / 'P' (Wingdings = ✓)" },
+    "photo": {
+      "type": "object",
+      "required": ["fileName"],
+      "properties": { "fileName": { "type": "string" }, "takenAt": { "type": "string", "format": "date-time" } }
+    },
+    "photoOrNull": { "oneOf": [{ "$ref": "#/$defs/photo" }, { "type": "null" }] },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "ambientC": { "type": ["number", "null"], "description": "อุณหภูมิของอากาศ (ºC) — Excel E29" },
+        "irradianceWm2": { "type": ["number", "null"], "description": "ความเข้มแสงอาทิตย์ (W/m²) — Excel E30" },
+        "time": { "type": ["string", "null"], "pattern": "^\\d{2}:\\d{2}$", "description": "เวลาทดสอบ — Excel AA30" }
+      }
+    },
+    "inverter": {
+      "type": "object",
+      "required": ["index", "ratedKW", "serial", "strings"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 1, "description": "1 inverter = 2 แผ่นงาน Excel (INV 0n-ก่อน / INV 0n-หลัง)" },
+        "ratedKW": { "type": "number" },
+        "serial": { "type": "string" },
+        "mpptCount": { "type": "integer", "default": 10, "maximum": 10 },
+        "slotsPerMppt": { "type": "integer", "default": 2, "maximum": 2 },
+        "installedKWp": { "type": "number", "description": "= Σ moduleCount × module.powerW / 1000 (Excel AA9)" },
+        "before": {
+          "type": "object",
+          "description": "ค่าที่ Excel merge ทั้งแถว (1 ค่าต่อ inverter)",
+          "properties": {
+            "continuity": { "$ref": "#/$defs/result" },
+            "irPositiveEarth": { "$ref": "#/$defs/result" },
+            "irNegativeEarth": { "$ref": "#/$defs/result" },
+            "inverterFunctional": { "$ref": "#/$defs/result" }
+          }
+        },
+        "after": {
+          "type": "object",
+          "properties": {
+            "inverterFunctional": { "$ref": "#/$defs/result" },
+            "performanceRatio": { "type": ["number", "null"], "description": "PR = Yf / Yr" },
+            "finalYieldKWhPerKWp": { "type": ["number", "null"], "description": "Yf = dailyEnergyKWh / installedKWp" },
+            "dailyEnergyKWh": { "type": ["number", "null"] },
+            "sevenDayEnergyKWh": { "type": ["number", "null"] },
+            "systemEfficiency": { "type": ["number", "null"], "description": "สัดส่วน 0–1; Excel แสดงเป็น %" },
+            "remark": { "type": ["string", "null"], "description": "Excel D31 เช่น 'กำลังผลิตถูกหรี่โดยโหลด'" }
+          }
+        },
+        "pass": {
+          "type": "object",
+          "description": "คอลัมน์ ผ่าน/ไม่ผ่าน (Y/Z) — ฟอร์มเดิมว่างทั้งหมด",
+          "properties": { "before": { "type": ["boolean", "null"] }, "after": { "type": ["boolean", "null"] } }
+        },
+        "strings": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/string" } }
+      }
+    },
+    "string": {
+      "type": "object",
+      "required": ["seq", "label", "mppt", "slot", "moduleCount"],
+      "properties": {
+        "seq": { "type": "integer", "description": "ลำดับสตริงที่ใช้งานจริง 1..n → ป้ายในรายงานภาพ INV{i}ST{seq}" },
+        "label": { "type": "string", "pattern": "^INV\\d+ST\\d+$" },
+        "mppt": { "type": "integer", "minimum": 1, "maximum": 10, "description": "= ceil(slot / 2)" },
+        "slot": { "type": "integer", "minimum": 1, "maximum": 20, "description": "ช่อง String 1..20 ใน Excel (คอลัมน์ E..X)" },
+        "excelColumn": { "type": "string", "pattern": "^[E-X]$" },
+        "moduleBrand": { "type": "string" },
+        "moduleCount": { "type": "integer", "minimum": 1 },
+        "optimizerCount": { "type": ["integer", "null"] },
+        "before": {
+          "type": "object",
+          "properties": {
+            "polarity": { "$ref": "#/$defs/result" },
+            "irTestVoltageV": { "enum": [250, 500, 1000, null] },
+            "irPositiveEarthMOhm": { "type": ["number", "null"], "description": "ตัวเลขจริงจากเครื่องวัด (ฟอร์มเดิมเขียนแค่ Normal)" },
+            "irNegativeEarthMOhm": { "type": ["number", "null"] },
+            "voltageV": { "type": ["number", "null"], "description": "Voc ก่อนเชื่อมต่อ — Excel แถว 16" },
+            "currentA": { "type": ["number", "null"], "description": "ก่อนเชื่อมต่อ = 0 (วงจรเปิด) — Excel แถว 18" }
+          }
+        },
+        "after": {
+          "type": "object",
+          "properties": {
+            "voltageV": { "type": ["number", "null"], "description": "Vmp ขณะจ่ายไฟ — Excel แถว 17 (ฟอร์มเดิมว่าง)" },
+            "currentA": { "type": ["number", "null"], "description": "Imp ขณะจ่ายไฟ — Excel แถว 19 (ฟอร์มเดิมว่าง)" }
+          }
+        },
+        "photos": {
+          "type": "object",
+          "description": "Word: ช่องละ 2 รูป (มิเตอร์วัดแรงดัน + แคลมป์วัดกระแส), IR 1 รูป",
+          "properties": {
+            "before": { "type": "object", "properties": { "voltage": { "$ref": "#/$defs/photoOrNull" }, "current": { "$ref": "#/$defs/photoOrNull" } } },
+            "after": { "type": "object", "properties": { "voltage": { "$ref": "#/$defs/photoOrNull" }, "current": { "$ref": "#/$defs/photoOrNull" } } },
+            "insulation": { "$ref": "#/$defs/photoOrNull" }
+          }
+        }
+      }
+    }
+  }
+}

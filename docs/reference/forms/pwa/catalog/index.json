@@ -1,0 +1,223 @@
+{
+ "title": "คลังเอกสาร ลูกค้า กปภ. (PWA) — ดัชนี",
+ "version": "2026-10-05",
+ "source": "ไล่จากชุดตัวอย่าง สถานีจ่ายน้ำรัตนาภา (กปภ.สาขาขอนแก่น, 246.24 kWp) และ สถานีผลิตน้ำโชคชัย (กปภ.สาขาโชคชัย, 171 kWp) + Check list สำนักงาน กกพ. (พค.2) + MP 189 ทุ่งน้อย",
+ "note": "id ไม่ซ้ำข้ามไฟล์ — โครงการอ้าง id ได้โดยไม่ต้องรู้ว่าอยู่ไฟล์ไหน",
+ "files": {
+  "internal": "internal.json",
+  "internal_signoff": "internal-signoff.json",
+  "external": "external.json"
+ },
+ "scopes": {
+  "org": "ใช้ร่วมทั้ง กปภ. (อัปโหลดครั้งเดียว ใช้ทุกสถานี) — ต้องเช็กวันหมดอายุ/ฉบับล่าสุด",
+  "contractor": "เอกสารของบริษัทผู้รับจ้าง/วิศวกร ใช้ซ้ำได้ทุกโครงการ",
+  "project": "ใช้ร่วมภายในโครงการเดียวกัน (สัญญา, คู่มือรายภาค, datasheet รุ่นที่ใช้)",
+  "branch": "ต่อ กปภ.สาขา (ผู้รับมอบอำนาจ = ผู้จัดการสาขา)",
+  "site": "ทำใหม่ทุกสถานี"
+ },
+ "producers": {
+  "pwa": "กปภ. ออกให้ (ผู้ว่าจ้างต้องส่งมา)",
+  "contractor": "ผู้รับจ้างจัดทำ",
+  "engineer": "วิศวกรออกแบบ/ลงนาม",
+  "authority": "หน่วยงานรัฐออกให้ (เทศบาล/กกพ./การไฟฟ้า)",
+  "vendor": "ผู้ผลิตอุปกรณ์",
+  "app": "แอป TCRoof สร้างได้จากข้อมูลหน้างาน"
+ },
+ "origins": {
+  "internal": "ภายใน — ทีมเราจัดทำและจบในทีม (แอป/วิศวกร/ผู้รับจ้าง)",
+  "internal_signoff": "ภายใน → ภายนอก — เราร่าง แล้วส่งให้ กปภ. ลงนาม/ออกเลข/อนุมัติ",
+  "external": "ภายนอก — ต้องขอจาก กปภ. หน่วยงานรัฐ หรือผู้ผลิต (แอปทำได้แค่ติดตามและเก็บไฟล์)"
+ },
+ "index": {
+  "pwa_act": {
+   "name": "พ.ร.บ.การประปาส่วนภูมิภาค (พ.ร.บ.จัดตั้ง)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "pwa_poa_order": {
+   "name": "คำสั่งการประปาส่วนภูมิภาค (หนังสือมอบอำนาจ)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "grantor_docs": {
+   "name": "เอกสารผู้มอบอำนาจ (บัตร/ทะเบียนบ้าน ผู้ว่าการหรือผู้มีอำนาจ)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "grantee_docs": {
+   "name": "เอกสารผู้รับมอบอำนาจ (บัตร ผจก.สาขา หรือผู้ได้รับมอบ)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "poa_letter": {
+   "name": "หนังสือมอบอำนาจ (ติดอากร)",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "electric_bill": {
+   "name": "ใบแจ้งค่าไฟฟ้า (สำเนา)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "land_deed": {
+   "name": "สำเนาโฉนด/เอกสารสิทธิ์ที่ดิน",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "house_reg": {
+   "name": "สำเนาทะเบียนบ้านของสถานที่ติดตั้ง",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "site_map": {
+   "name": "แผนผังแสดงที่ตั้ง / แผนที่ Google Map",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "layout_plan": {
+   "name": "แผนผังบริเวณ (Layout) วิศวกรรับรอง",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "route_line": {
+   "name": "แผนผังรวมแปลงโฉนด (Route Line / Combine Layout)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "sld": {
+   "name": "Single Line Diagram + เอกสารวิศวกรไฟฟ้า",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "engineer_license": {
+   "name": "สำเนาใบอนุญาตประกอบวิชาชีพวิศวกรรมควบคุม (กว.) + หนังสือรับรองผู้ตรวจสอบ ตพค.",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "elec_calc": {
+   "name": "รายการคำนวณทางไฟฟ้า",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "asbuilt": {
+   "name": "แบบ As-Built Drawing",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "structural_plan": {
+   "name": "แบบแปลน Forcon (โครงสร้างรองรับ)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "structural_calc": {
+   "name": "รายการคำนวณโยธา",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "building_permit_request": {
+   "name": "คำขออนุญาตก่อสร้าง/ดัดแปลงอาคาร (แบบ ข.1) + หนังสือนำส่งเทศบาล",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "building_exempt_notice": {
+   "name": "หนังสือแจ้งเทศบาลการติดตั้งตามกฎกระทรวงยกเว้น (พ.ร.บ.ควบคุมอาคาร) + สำเนา กว. โยธา/ไฟฟ้า",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "building_permit_o1": {
+   "name": "ใบอนุญาตก่อสร้าง/ดัดแปลง (อ.1) ที่ได้รับ",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "pv_datasheet": {
+   "name": "Datasheet แผงเซลล์แสงอาทิตย์",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "inverter_datasheet": {
+   "name": "Datasheet เครื่องแปลงไฟฟ้า (Inverter)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "other_equipment": {
+   "name": "Datasheet อุปกรณ์อื่นๆ (ตู้ AC/DC, Zero Export, PQM, SPD, CB, สาย)",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "spec_summary": {
+   "name": "พิกัดขนาดติดตั้งเครื่องใช้พลังงาน (Specification)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "install_photo_report": {
+   "name": "รายงานติดตั้ง / ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "iec62446_report": {
+   "name": "ตารางตรวจสอบก่อน/หลังเชื่อมต่อ ตาม IEC 62446 (IEC Test)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "iv_photo_report": {
+   "name": "รายงานภาพถ่ายตรวจสอบก่อน/หลังเชื่อมต่อ (Form IV Test)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "thermal_report": {
+   "name": "ภาพถ่ายความร้อน",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "punch_list": {
+   "name": "Punch List Inspection Report",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "om_manual": {
+   "name": "คู่มือการใช้งานและบำรุงรักษา (Instruction Manual)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "pk2_readiness_letter": {
+   "name": "หนังสือแจ้งความพร้อมให้เข้าตรวจสถานประกอบกิจการ (นำส่ง กกพ.)",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "pk1_form": {
+   "name": "คำขออนุญาต แบบ พค.1",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "pk_inspection_form": {
+   "name": "แบบตรวจสอบระบบผลิตพลังงานควบคุม ส่วนที่ 1–3 (ประกาศ พพ. 31 ส.ค. 2565)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "contract_mou": {
+   "name": "MOU และใบสั่งจ้าง",
+   "origin": "external",
+   "file": "external.json"
+  },
+  "vat_pp20": {
+   "name": "ภพ.20 ของผู้รับจ้าง",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "anti_bribery": {
+   "name": "หนังสือแสดงความมุ่งมั่นป้องกันสินบน (FM-ABCF-11)",
+   "origin": "internal_signoff",
+   "file": "internal-signoff.json"
+  },
+  "erc_checklist": {
+   "name": "Check list เอกสารประกอบคำขอ พค.2 (แบบของสำนักงาน กกพ.)",
+   "origin": "internal",
+   "file": "internal.json"
+  },
+  "erc_qr": {
+   "name": "QR Code คำขอ (ระบบ กกพ.)",
+   "origin": "external",
+   "file": "external.json"
+  }
+ }
+}

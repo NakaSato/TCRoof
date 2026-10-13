@@ -1,0 +1,604 @@
+{
+ "project_id": "pwa-ppa-phase3-4",
+ "name": "โครงการประปา ระยะที่ 3–4 (PPA กปภ. ผ่านสัญญา กฟภ. PEA(EMD)-03/2024, 05/2024)",
+ "source": "ไฟล์ติดตามสถานะ (xlsx 15 ชีต) ที่ผู้ใช้แนบ 2026-10-05",
+ "scale": {
+  "stations": 102,
+  "phase3": 45,
+  "phase4": 57,
+  "pv_kwp_total": 24289.41,
+  "inverter_kw_total": 23060,
+  "pk2_required": 42
+ },
+ "note": "ชื่อเอกสารตามหัวคอลัมน์ในไฟล์ ไม่ได้แก้คำ; catalog_id = ชนิดที่มีอยู่แล้วใน forms/pwa/catalog/, new = ยังไม่มีในคลัง",
+ "stages": [
+  {
+   "stage": "ข้อมูลสถานี / ยืนยันที่อยู่",
+   "sheets": [
+    "ชีต11",
+    "วันตัดรอบ"
+   ],
+   "documents": [
+    {
+     "name": "ภพ.20 (ที่อยู่, เลขผู้เสียภาษี, เลขที่สาขา)",
+     "origin": "external",
+     "catalog_id": "vat_pp20",
+     "note": "ในโครงการนี้เป็น ภพ.20 ของ กปภ. ไม่ใช่ของผู้รับจ้าง"
+    },
+    {
+     "name": "ใบแจ้งค่าไฟ CA20 (บิลไม่ใช่ใบเสร็จ / บิลสีฟ้า) + วันตัดรอบบิล",
+     "origin": "external",
+     "catalog_id": "electric_bill"
+    },
+    {
+     "name": "บันทึกยืนยันจุดติดตั้ง",
+     "origin": "internal_signoff",
+     "new": true
+    },
+    {
+     "name": "เอกสารอ้างอิงที่อยู่ (โฉนด)",
+     "origin": "external",
+     "catalog_id": "land_deed"
+    },
+    {
+     "name": "Land Map",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "Lat/Long + Link Map",
+     "origin": "internal",
+     "catalog_id": "site_map"
+    },
+    {
+     "name": "ผลเทียบที่อยู่: บิลค่าไฟ / Lat-Long / เอกสารสิทธิ์ (ตรง/ไม่ตรง)",
+     "origin": "internal",
+     "new": true,
+     "kind": "check"
+    },
+    {
+     "name": "หนังสือ กปภ. มท 55400/295 (16 ม.ค. 2569) แก้ชื่อ/ที่อยู่ออกใบเสร็จ-ใบกำกับภาษี",
+     "origin": "external",
+     "new": true,
+     "scope": "project"
+    },
+    {
+     "name": "หนังสือ กฟภ. ส่งมอบพื้นที่ให้ TC ทั้ง 3 สัญญา (23 ธ.ค. 2568)",
+     "origin": "external",
+     "new": true,
+     "scope": "project"
+    },
+    {
+     "name": "ข้อมูลโครงสร้าง SAP (BP / Con.obj)",
+     "origin": "external",
+     "new": true
+    }
+   ]
+  },
+  {
+   "stage": "ส่งอุปกรณ์",
+   "sheets": [
+    "หนังสือส่งแผง"
+   ],
+   "documents": [
+    {
+     "name": "หนังสือออกส่งแผง (เลขที่ TC-PML-…)",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "ใบเบิก-ใบโอน: แผง / อินเวอร์เตอร์ / Smart Energy / Weather Station",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "รายงานผลการทดสอบแผง: Sampling / Flash",
+     "origin": "external",
+     "new": true,
+     "obtain_from": "ผู้ผลิตแผง/แล็บ"
+    }
+   ]
+  },
+  {
+   "stage": "อนุญาตอาคาร / แจ้งยกเว้น",
+   "sheets": [
+    "สรุปไฟฟ้า"
+   ],
+   "documents": [
+    {
+     "name": "อ.1",
+     "origin": "external",
+     "catalog_id": "building_permit_o1"
+    },
+    {
+     "name": "จดแจ้งยกเว้น (กกพ.)",
+     "origin": "internal_signoff",
+     "new": true
+    }
+   ]
+  },
+  {
+   "stage": "รายงานระหว่างก่อสร้าง",
+   "repeat": "ทำซ้ำตลอดช่วงติดตั้ง",
+   "sheets": [],
+   "source": "โฟลเดอร์ Report สถานีโชคชัย (ส.ค. 2568)",
+   "send_to": "ผู้ควบคุมงาน (Inspector) กฟภ.",
+   "documents": [
+    {
+     "code": "R0",
+     "name": "ภาพถ่ายประจำวัน",
+     "origin": "internal",
+     "by": "ผรม.",
+     "cadence": "ทุกวัน",
+     "format": "jpg (LINE album)",
+     "naming": "YYYY-MM-DD <ตำแหน่ง> (n).jpg"
+    },
+    {
+     "code": "R1",
+     "name": "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)",
+     "origin": "internal_signoff",
+     "sign_by": "Site Engineer → Inspector อนุมัติ",
+     "cadence": "ก่อนเริ่มทุกสัปดาห์",
+     "format": "xls → pdf",
+     "fields": [
+      "Manpower plan",
+      "Tool & machinery plan",
+      "Work plan (รายการ, ตำแหน่ง, จำนวน, หน่วย)",
+      "ประเมินความเสี่ยง (ระดับ, แนวทางป้องกัน)"
+     ]
+    },
+    {
+     "code": "R2",
+     "name": "รายงานประจำวัน (Daily Report)",
+     "origin": "internal_signoff",
+     "sign_by": "Site Engineer → Inspector รับทราบ",
+     "cadence": "ทุกวันทำงาน",
+     "format": "xlsx → pdf",
+     "fields": [
+      "Weather 06:00–20:00 รายชั่วโมง (F/R)",
+      "Manpower",
+      "Tools & machinery",
+      "Material on site",
+      "Key plan (รูป)",
+      "Progress: today / accumulated",
+      "Problems, obstructions, solutions"
+     ],
+     "issue": "ไฟล์ xlsx ทุกไฟล์มีชีตแฝง Week3/Week4 จากโครงการอื่นปี 2560"
+    },
+    {
+     "code": "R3",
+     "name": "รายงานประจำสัปดาห์ (Weekly Report)",
+     "origin": "internal",
+     "cadence": "ทุกสัปดาห์",
+     "format": "pptx → pdf",
+     "fields": [
+      "Construction progress % plan / actual",
+      "Progress for this week (รูปรายวัน)",
+      "Weather report",
+      "ปัญหาและอุปสรรค"
+     ]
+    },
+    {
+     "code": "R4",
+     "name": "รายงานผลความก้าวหน้าประจำเดือน",
+     "origin": "internal",
+     "cadence": "ทุกเดือน; เดือนสุดท้าย = ติดตั้งแล้วเสร็จ 100%",
+     "format": "docx → pdf",
+     "fields": [
+      "รายละเอียดโครงการ, เงื่อนไขเบิกจ่าย, Site layout",
+      "ความก้าวหน้าปัจจุบัน (ตารางแผน MP)",
+      "สถานะการยื่นขออนุญาต",
+      "รูปความก้าวหน้า",
+      "แผนเดือนถัดไป",
+      "สรุปแรงงาน"
+     ]
+    },
+    {
+     "code": "R5",
+     "name": "การอนุมัติ / รับทราบของ Inspector กฟภ.",
+     "origin": "external",
+     "obtain_from": "Inspector กฟภ."
+    }
+   ]
+  },
+  {
+   "stage": "ขนานไฟ (PPIM)",
+   "sheets": [
+    "ขนานไฟ"
+   ],
+   "documents": [
+    {
+     "name": "เอกสารเจ้าของพื้นที่ส่งท่านรองลงนาม (กปภ.)",
+     "origin": "internal_signoff",
+     "new": true
+    },
+    {
+     "name": "แผนที่ติดตั้งโครงการ",
+     "origin": "internal",
+     "catalog_id": "site_map"
+    },
+    {
+     "name": "ภพ.20",
+     "origin": "external",
+     "catalog_id": "vat_pp20"
+    },
+    {
+     "name": "พรบ.จัดตั้ง",
+     "origin": "external",
+     "catalog_id": "pwa_act"
+    },
+    {
+     "name": "ใบแจ้งค่าไฟ",
+     "origin": "external",
+     "catalog_id": "electric_bill"
+    },
+    {
+     "name": "รูปถ่ายสถานประกอบการ",
+     "origin": "internal",
+     "catalog_id": "install_photo_report"
+    },
+    {
+     "name": "Spec",
+     "origin": "external",
+     "catalog_id": "pv_datasheet|inverter_datasheet"
+    },
+    {
+     "name": "Single Line Diagram",
+     "origin": "internal",
+     "catalog_id": "sld"
+    },
+    {
+     "name": "ใบ กว./หนังสือรับรอง วิศวกรไฟฟ้า",
+     "origin": "internal",
+     "catalog_id": "engineer_license"
+    },
+    {
+     "name": "หนังสือรับรองตนเอง",
+     "origin": "internal_signoff",
+     "new": true,
+     "ref": "forms/pea-rooftop-2569/forms.json#self_cert (แบบ VSPP ของ กฟภ.)"
+    },
+    {
+     "name": "หนังสือรับรองตนเอง ก.1",
+     "origin": "internal_signoff",
+     "new": true
+    },
+    {
+     "name": "รายงานตรวจสอบการติดตั้ง",
+     "origin": "internal",
+     "new": true
+    }
+   ],
+   "tracking": [
+    "เลขที่ยื่นคำขอ PPIM",
+    "เลขที่ยื่นคำขอ Rev.01",
+    "สถานะ PPIM",
+    "วันที่ยื่นในระบบ",
+    "จำนวนเงิน / วันที่แจ้ง / วันสิ้นสุดการชำระ",
+    "วันที่เริ่ม First Sync"
+   ],
+   "ppim_statuses": [
+    "รอตรวจสอบแบบคำขอ",
+    "รอผู้ยื่นคำขอแก้ไขข้อมูล",
+    "รอผู้ยื่นคำขอดำเนินการ",
+    "รอผู้ยื่นคำขอชำระเงิน",
+    "รออนุมัติ/รับพิจารณาเชื่อมต่อ",
+    "รอตรวจสอบระบบผลิตไฟฟ้า"
+   ]
+  },
+  {
+   "stage": "แจ้งดับไฟ",
+   "sheets": [
+    "แจ้งดับไฟ"
+   ],
+   "documents": [
+    {
+     "name": "หนังสือแจ้งดับไฟ (เลขที่ TC-PML-…)",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "เอกสารแนบหนังสือแจ้งดับไฟ",
+     "origin": "external",
+     "new": true
+    }
+   ],
+   "tracking": [
+    "วิศวกรผู้ประสานงาน",
+    "Zero Export ฝั่ง HV/LV",
+    "แผนวันดับไฟ (ประชุม ผรม.)",
+    "วันเข้าดับไฟ",
+    "วันที่ได้รับเอกสารแนบ",
+    "วันที่ส่งหนังสือออก"
+   ]
+  },
+  {
+   "stage": "พค.2 (inverter ≥ 200 kVA · 42 สถานี)",
+   "sheets": [
+    "พค.2",
+    "ตรวจ พค.2 ก่อนยื่น"
+   ],
+   "submit_via": "อีเมล (วันที่ยื่นในอีเมล์)",
+   "documents": [
+    {
+     "name": "เอกสารเจ้าของพื้นที่ส่งท่านรองลงนาม (กปภ.)",
+     "origin": "internal_signoff",
+     "new": true
+    },
+    {
+     "name": "Check-list",
+     "checklist_no": 0,
+     "origin": "internal",
+     "catalog_id": "erc_checklist"
+    },
+    {
+     "name": "ใบแจ้งความพร้อมเข้าตรวจสถานประกอบการ",
+     "checklist_no": 1,
+     "origin": "internal_signoff",
+     "catalog_id": "pk2_readiness_letter"
+    },
+    {
+     "name": "แบบฟอร์ม พค.1",
+     "checklist_no": 5,
+     "origin": "internal_signoff",
+     "catalog_id": "pk1_form"
+    },
+    {
+     "name": "พรบ.จัดตั้ง",
+     "checklist_no": 6,
+     "origin": "external",
+     "catalog_id": "pwa_act"
+    },
+    {
+     "name": "มอบอำนาจ",
+     "checklist_no": 7,
+     "origin": "external",
+     "catalog_id": "pwa_poa_order"
+    },
+    {
+     "name": "แผนผัง Layout",
+     "checklist_no": 8,
+     "origin": "internal",
+     "catalog_id": "layout_plan"
+    },
+    {
+     "name": "แผนผัง Google Map / แผนที่ติดตั้งโครงการ",
+     "checklist_no": 9,
+     "origin": "internal",
+     "catalog_id": "site_map"
+    },
+    {
+     "name": "SLD",
+     "checklist_no": 10,
+     "origin": "internal",
+     "catalog_id": "sld"
+    },
+    {
+     "name": "ใบ กว./หนังสือรับรอง วิศวกรไฟฟ้า / วิศวกรตรวจสอบ / วิศวกรควบคุม",
+     "checklist_no": 11,
+     "origin": "internal",
+     "catalog_id": "engineer_license",
+     "note": "แยก 3 บทบาท"
+    },
+    {
+     "name": "Spec",
+     "checklist_no": 12,
+     "origin": "internal",
+     "catalog_id": "spec_summary",
+     "note": "ช่องตรวจมีโน้ตชุด inverter เช่น Inv.125=2/80=1"
+    },
+    {
+     "name": "แบบส่งข้อมูลส่วนที่ 1 / 2 / 3",
+     "checklist_no": 13,
+     "origin": "internal",
+     "catalog_id": "pk_inspection_form"
+    },
+    {
+     "name": "MOU และใบสั่งจ้าง",
+     "checklist_no": 15,
+     "origin": "external",
+     "catalog_id": "contract_mou"
+    },
+    {
+     "name": "เอกสารสิทธิ์ (+ ทะเบียนบ้าน)",
+     "checklist_no": "16/18",
+     "origin": "external",
+     "catalog_id": "land_deed|house_reg",
+     "note": "มีกรณีขอหนังสือใช้ที่สาธารณะ"
+    },
+    {
+     "name": "บิลค่าไฟ",
+     "checklist_no": 17,
+     "origin": "external",
+     "catalog_id": "electric_bill"
+    },
+    {
+     "name": "Route-line",
+     "checklist_no": 19,
+     "origin": "internal",
+     "catalog_id": "route_line"
+    },
+    {
+     "name": "หนังสือแสดงความมุ่งมั่น",
+     "checklist_no": 21,
+     "origin": "internal_signoff",
+     "catalog_id": "anti_bribery"
+    },
+    {
+     "name": "อื่นๆ: อ.1 / ภพ.20 / รูปถ่ายสถานประกอบการ",
+     "checklist_no": 23,
+     "origin": "mixed",
+     "catalog_id": "building_permit_o1|vat_pp20|install_photo_report"
+    },
+    {
+     "name": "แบบแปลน (AS-Built)",
+     "origin": "internal",
+     "catalog_id": "asbuilt"
+    }
+   ],
+   "tracking": [
+    "การจัดเตรียม พค.2",
+    "สถานะการยื่น",
+    "เลขที่ยื่นคำขอ / เลขรับ กกพ.",
+    "วันที่ยื่นในอีเมล์",
+    "วันที่ส่ง/ได้รับกลับจากผู้รับเหมา (พค.1, ส่วนที่ 1–2, Route line)"
+   ],
+   "remark_examples": [
+    "ร่างไว้แล้ว รอกำหนดส่งมอบ",
+    "ขอทะเบียนบ้านเพิ่มเติม",
+    "ขอหนังสือใช้ที่สาธารณะ",
+    "เน้นการอธิบายชื่อสถานี"
+   ]
+  },
+  {
+   "stage": "C-Form",
+   "sheets": [
+    "C-Form รอบแรก",
+    "C-Form รอบไฟนอล",
+    "C-Form รอบ pdf"
+   ],
+   "documents": [
+    {
+     "name": "ภาคผนวก ก.",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "ภาคผนวก ข.",
+     "origin": "internal",
+     "new": true,
+     "rule": "ตารางต้องตรงกับภาคผนวก ข. (เขียว = ตรง, แดง = ไม่ตรง)"
+    }
+   ],
+   "rounds": [
+    "รอบแรก",
+    "รอบไฟนอล",
+    "รอบ pdf (ข. 25.09.69, ก. 30.09.69)"
+   ]
+  },
+  {
+   "stage": "ส่งมอบงวดงาน",
+   "sheets": [
+    "ส่งมอบงวดงาน",
+    "ติดตามเอกสารวิศวกร"
+   ],
+   "documents": [
+    {
+     "name": "รายงานการติดตั้งฯ: ภาพถ่ายความร้อน",
+     "origin": "internal",
+     "catalog_id": "thermal_report"
+    },
+    {
+     "name": "รายงานการติดตั้งฯ: รูปส่งมอบงวดงาน",
+     "origin": "internal",
+     "catalog_id": "install_photo_report"
+    },
+    {
+     "name": "คู่มือ: Instruction Manual",
+     "origin": "internal",
+     "catalog_id": "om_manual"
+    },
+    {
+     "name": "คู่มือการใช้งานระบบผลิตไฟฟ้า",
+     "origin": "internal",
+     "new": true,
+     "note": "แยกจาก Instruction Manual"
+    },
+    {
+     "name": "แบบฟอร์มรับรองตนเอง",
+     "origin": "internal_signoff",
+     "new": true
+    },
+    {
+     "name": "แบบแปลน As-Built Drawing",
+     "origin": "internal",
+     "catalog_id": "asbuilt"
+    },
+    {
+     "name": "รายการคำนวณไฟฟ้า",
+     "origin": "internal",
+     "catalog_id": "elec_calc"
+    },
+    {
+     "name": "IEC 62446 ก่อนทดสอบ: ตาราง + รูปประกอบ",
+     "origin": "internal",
+     "catalog_id": "iec62446_report|iv_photo_report"
+    },
+    {
+     "name": "IEC 62446 หลังทดสอบ: ตาราง + รูปประกอบ",
+     "origin": "internal",
+     "catalog_id": "iec62446_report|iv_photo_report"
+    },
+    {
+     "name": "Punch list (PEA)",
+     "origin": "external",
+     "new": true,
+     "obtain_from": "กฟภ. (เข้าตรวจ)"
+    },
+    {
+     "name": "Punch list",
+     "origin": "internal_signoff",
+     "catalog_id": "punch_list"
+    },
+    {
+     "name": "รายงานตรวจระบบติดตั้ง (ขนานไฟ)",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "Monitoring",
+     "origin": "internal",
+     "new": true
+    }
+   ],
+   "tracking": [
+    "เลขที่ยื่นคำขอ อ.1 / ขนานไฟ / พค.2",
+    "รอบการส่งมอบ (อัปเดตหลายครั้ง)",
+    "กฟภ. เข้าตรวจ",
+    "วันที่ส่งผู้รับเหมา",
+    "วันที่ได้รับกลับจากผู้รับเหมา",
+    "ผู้รับผิดชอบ Admin / Engineer / ผรม."
+   ],
+   "cell_statuses": [
+    "ลงนามแล้ว",
+    "ได้แล้ว",
+    "วันที่"
+   ]
+  },
+  {
+   "stage": "บัญชี / หลัง COD",
+   "sheets": [
+    "บัญชี"
+   ],
+   "documents": [
+    {
+     "name": "เลขที่สัญญาไฟฟ้า (CA) + ประเภทอัตรา",
+     "origin": "external",
+     "new": true
+    },
+    {
+     "name": "เลขที่สัญญาประปา (PPA-PWA-PH02-…)",
+     "origin": "external",
+     "new": true
+    },
+    {
+     "name": "เลขที่เอกสารบัญชี (ธพ.(บล) 20/2566) + ลำดับใบแจ้งหนี้ (TCEMS…)",
+     "origin": "internal",
+     "new": true
+    },
+    {
+     "name": "วันที่เริ่มระบบ / อายุสัญญา 20 ปี / วันที่คิดหน่วย",
+     "origin": "internal",
+     "new": true
+    }
+   ]
+  }
+ ],
+ "roles": [
+  "Admin",
+  "Engineer",
+  "ผรม. (ผู้รับเหมา: A/B/S…)",
+  "Vendor",
+  "ผู้รับผิดชอบเช็ค C-Form"
+ ]
+}

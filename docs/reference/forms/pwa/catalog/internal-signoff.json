@@ -1,0 +1,122 @@
+{
+ "title": "เอกสารภายใน → ภายนอก — เราร่าง กปภ. ลงนาม/อนุมัติ",
+ "origin": "internal_signoff",
+ "definition": "ภายใน → ภายนอก — เราร่าง แล้วส่งให้ กปภ. ลงนาม/ออกเลข/อนุมัติ",
+ "version": "2026-10-05",
+ "count": 7,
+ "documents": [
+  {
+   "id": "poa_letter",
+   "name": "หนังสือมอบอำนาจ (ติดอากร)",
+   "scope": "site",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "building",
+    "pk2"
+   ],
+   "fields": [
+    "ผู้มอบ",
+    "ผู้รับมอบ",
+    "เรื่องที่มอบ",
+    "วันที่",
+    "พยาน 2"
+   ],
+   "note": "รัตนาภา: ผจก.สาขามอบให้ผู้รับจ้างยื่นดัดแปลงอาคาร ติดอากร",
+   "sign_by": "กปภ.สาขา (ผจก.สาขา)"
+  },
+  {
+   "id": "building_permit_request",
+   "name": "คำขออนุญาตก่อสร้าง/ดัดแปลงอาคาร (แบบ ข.1) + หนังสือนำส่งเทศบาล",
+   "scope": "site",
+   "producer": "contractor",
+   "format": "pdf",
+   "used_in": [
+    "building"
+   ],
+   "when": "building_route = permit",
+   "evidence": "รัตนาภา",
+   "sign_by": "กปภ.สาขา (ผจก.สาขา)"
+  },
+  {
+   "id": "building_exempt_notice",
+   "name": "หนังสือแจ้งเทศบาลการติดตั้งตามกฎกระทรวงยกเว้น (พ.ร.บ.ควบคุมอาคาร) + สำเนา กว. โยธา/ไฟฟ้า",
+   "scope": "site",
+   "producer": "contractor",
+   "format": "pdf",
+   "used_in": [
+    "building"
+   ],
+   "when": "building_route = notify",
+   "evidence": "โชคชัย (ลงนาม ผจก.สาขา, เทศบาลประทับรับ)",
+   "sign_by": "กปภ.สาขา (ผจก.สาขา)"
+  },
+  {
+   "id": "punch_list",
+   "name": "Punch List Inspection Report",
+   "scope": "site",
+   "producer": "app",
+   "format": "pdf",
+   "used_in": [
+    "handover"
+   ],
+   "fields": [
+    "วันที่",
+    "REV",
+    "สถานะ APPROVE/APP with note/NOT APPROVE",
+    "รายการ: คำอธิบาย, ตำแหน่ง, รูปก่อน, รูปหลัง, กำหนดเสร็จ",
+    "ลายเซ็น Owner/Inspection/Test"
+   ],
+   "sign_by": "ผู้ว่าจ้าง (Owner)"
+  },
+  {
+   "id": "pk2_readiness_letter",
+   "name": "หนังสือแจ้งความพร้อมให้เข้าตรวจสถานประกอบกิจการ (นำส่ง กกพ.)",
+   "scope": "site",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "fields": [
+    "เลขที่หนังสือ",
+    "วันที่",
+    "สถานี",
+    "ที่ตั้ง",
+    "กำลังการผลิตติดตั้ง (kW)",
+    "ผู้ลงนาม",
+    "ผู้ประสานงาน"
+   ],
+   "app": "ร่างจากข้อมูลสถานีแล้วให้ กปภ. ออกเลข/ลงนาม",
+   "sign_by": "กปภ.สาขา (ผจก.สาขา)"
+  },
+  {
+   "id": "pk1_form",
+   "name": "คำขออนุญาต แบบ พค.1",
+   "scope": "site",
+   "producer": "contractor",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "signed_by": [
+    "ผู้มีอำนาจ กปภ."
+   ],
+   "sign_by": "กปภ.สาขา (ผจก.สาขา)"
+  },
+  {
+   "id": "anti_bribery",
+   "name": "หนังสือแสดงความมุ่งมั่นป้องกันสินบน (FM-ABCF-11)",
+   "scope": "site",
+   "producer": "pwa",
+   "format": "pdf",
+   "used_in": [
+    "pk2"
+   ],
+   "signed_by": [
+    "ผู้มีอำนาจ กปภ."
+   ],
+   "sign_by": "กปภ.สาขา (ผจก.สาขา)"
+  }
+ ]
+}

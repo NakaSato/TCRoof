@@ -1,0 +1,113 @@
+{
+  "title": "TCRoof — ระบบงานบ้านอยู่อาศัย สายไม่ขายไฟ (PEA)",
+  "version": "2026-10-07",
+  "refs": {
+    "workflow": "./workflow.json",
+    "forms": "../non-sell-forms.json",
+    "conventions": "../../pwa/README.md (สถานะเอกสาร, scope, ไฟล์เดียวใช้หลายที่, ปิดข้อมูลบัตร)"
+  },
+
+  "principles": [
+    "กรอกครั้งเดียว ใช้ทุกฟอร์ม: ข้อมูลลูกค้า/อุปกรณ์/รูป เก็บที่งาน แล้วฟอร์มดึงไปเอง",
+    "แอปตัดสินเส้นทางให้จากตัวเลข: ประเภท CA, kWp, kW inverter, กก./ตร.ม.",
+    "Gate ก่อนเปลี่ยนสถานะ: เอกสาร/รูปไม่ครบ กดไปขั้นถัดไปไม่ได้ และบอกว่าขาดอะไร",
+    "แยกงานภายใน (ทีมทำได้เลย) กับงานรอภายนอก (PEA, เทศบาล, กกพ., ลูกค้า) และนับ SLA ของฝั่งภายนอก",
+    "ทุกอย่างที่ยังไม่ยืนยันมีป้าย 'ยังไม่ยืนยัน' ในแอป จนกว่าแอดมินจะปิดป้ายจากหน้าตั้งค่า"
+  ],
+
+  "modules": [
+    {"id": "M1", "name": "งาน (Job)", "does": ["สร้างงานจากลูกค้าใหม่", "กรอก job_params", "ตรวจสิทธิ์อัตโนมัติ (พื้นที่ PEA, CA ขึ้นต้น 1, ชื่อตรงบิล)", "แสดง timeline สถานะ S0–S7"]},
+    {"id": "M2", "name": "คลังเอกสาร (Document vault)", "does": ["สร้าง checklist จาก rules ของงาน", "ติดตามสถานะต่อเอกสาร", "ไฟล์เดียวผูกหลายช่อง (reuse)", "เตือน กว. ใกล้หมดอายุ", "ปิดข้อมูลบัตร ปชช. ก่อนเก็บ"]},
+    {"id": "M3", "name": "หน้างาน (Field capture)", "does": ["ถ่ายรูปตาม slot พร้อมพิกัด/เวลา", "ใช้งาน offline แล้ว sync ภายหลัง", "บันทึก zero export test", "สำรวจหลังคา + รูปสภาพโครงสร้าง"]},
+    {"id": "M4", "name": "สร้างฟอร์ม (Form generator)", "does": ["เติมข้อมูลลง PDF: มอบอำนาจ, ใบคำนวณน้ำหนัก, แบบรับรองการติดตั้ง, ข.1, ปกชุดภาษี", "ระบุช่องเซ็นสด vs เซ็นในแอป", "สร้างไฟล์ชื่อตาม PPIM พร้อม ZIP"]},
+    {"id": "M5", "name": "ติดตามภายนอก (External tracker)", "does": ["เก็บเลขคำขอ PPIM / เลข อ.1 / ref กกพ.", "นับ SLA 45 วัน (พิจารณา) และ 30 วัน (ตรวจ)", "เตือนเช็กสถานะ PPIM ทุก 3 วันทำการ", "บันทึกผลอนุมัติ/ขอแก้"]},
+    {"id": "M6", "name": "สื่อสารลูกค้า", "does": ["สร้างข้อความ LINE ขอเอกสาร (คัดลอกส่ง)", "นัดเซ็นเอกสาร", "แจ้งค่าธรรมเนียม", "ส่งชุดส่งมอบทางอีเมล"]},
+    {"id": "M7", "name": "แดชบอร์ด", "does": ["งานแยกตามสถานะ", "งานติด gate และสาเหตุ", "SLA ภายนอกใกล้ครบ", "เอกสารรอลูกค้า"]}
+  ],
+
+  "entities": {
+    "Customer": {"name": "string", "national_id_last4": "string(4)", "phone": "string", "line_id": "string?", "email": "string?", "address": "address", "note": "เก็บเลขบัตรแค่ 4 ตัวท้าย ตัวเต็มอยู่ในไฟล์สำเนาที่ปิดข้อมูลแล้วเท่านั้น"},
+    "Site": {"customer_id": "ref", "ca_no": "string", "rate_code": "string(4)", "meter_phase": "enum[1,3]", "meter_size": "string", "lat": "number", "lng": "number", "province": "string", "local_authority": "string", "roof_type": "enum", "roof_structure": "enum"},
+    "Job": {"site_id": "ref", "workflow": "pea-residential-non-sell", "state": "S0..S7|S0_BLOCK|S6_FIX|DONE|CANCELLED", "params": "job_params (workflow.json)", "flags": {"poa_needed": "bool", "tax_eligible": "bool", "route": "enum[exempt, permit]", "erc_notice": "enum[required, not_required, unknown]"}, "assignees": "{role: user_id}"},
+    "Equipment": {"job_id": "ref", "kind": "enum[pv, inverter, battery, zero_export, ocd, spd]", "brand": "string", "model": "string", "qty": "int", "spec": "{watt, kg, length_m, width_m, rated_kw, phase, ...}", "datasheet_file_id": "ref", "in_pea_list": "bool?"},
+    "Document": {"job_id": "ref", "type": "id จาก non-sell-forms", "slot": "key ของช่องแนบ", "status": "missing → requested → received → draft → signed → submitted → approved | rejected", "provided_by": "role", "channel": "enum[line, email, in_person, ppim, app]", "file_ids": "ref[]", "wet_signature": "bool", "signers": "[{role, signed_at}]", "expires_at": "date?", "reused_from": "document_id?", "unverified": "bool"},
+    "File": {"sha256": "string", "mime": "string", "pages": "int", "masked": "bool", "uploaded_by": "user_id", "uploaded_at": "datetime"},
+    "Photo": {"job_id": "ref", "slot": "string (เช่น cert.5 inverter_setting#2)", "file_id": "ref", "lat": "number", "lng": "number", "taken_at": "datetime", "by": "user_id"},
+    "ExternalCase": {"job_id": "ref", "party": "enum[pea, local_authority, erc]", "ref_no": "string", "opened_at": "date", "sla_days": "int?", "status": "enum[open, need_fix, approved, rejected]", "log": "[{at, note, by}]"},
+    "Task": {"job_id": "ref", "task_id": "t*.* จาก workflow", "assignee": "user_id", "due": "date?", "done_at": "datetime?"}
+  },
+
+  "computed": {
+    "pv_kwp": "Σ pv.watt × qty / 1000",
+    "inverter_kw_total": "Σ inverter.rated_kw × qty",
+    "kg_per_m2": "ns_roof_weight (คิดทุกกลุ่มแผง เอาค่าสูงสุด)",
+    "route": "kg_per_m2 ≤ 20 ? exempt : permit",
+    "tax_eligible": "wants_tax_deduction && pv_kwp ≤ 10",
+    "poa_needed": "submit_mode = poa",
+    "license_exempt": "inverter_kw_total < 1000"
+  },
+
+  "reuse_map": [
+    {"source": "bill", "used_in": ["ns_connection_request.bill", "ns_install_cert.10"]},
+    {"source": "house_registration", "used_in": ["ns_connection_request", "ns_building_permit"]},
+    {"source": "id_card", "used_in": ["ns_connection_request", "ns_poa", "ns_building_permit"]},
+    {"source": "engineer_license", "used_in": ["ns_connection_request", "ns_install_cert.9"], "scope": "contractor (ใช้ทุกงานจนหมดอายุ)"},
+    {"source": "site photo (S0)", "used_in": ["ns_connection_request.site_map", "ns_install_cert.1"]},
+    {"source": "S4 photo slots", "used_in": ["ns_install_cert.1-8", "ชุดส่งมอบลูกค้า"]},
+    {"source": "Equipment", "used_in": ["ns_connection_request part 2", "ns_install_cert header", "ns_roof_weight", "SLD title block"]},
+    {"source": "datasheets", "scope": "contractor (คลังกลางตามรุ่น ไม่ต้องอัปโหลดซ้ำทุกงาน)"}
+  ],
+
+  "gates": [
+    {"id": "G0", "from": "S0", "to": "S1", "require": ["บิล ≤ 3 เดือน", "ทะเบียนบ้าน", "บัตร ปชช.", "พื้นที่ PEA", "rate_code ขึ้นต้น 1", "ชื่อ/ที่อยู่ตรงบิล", "รูปสำรวจหน้างาน"], "fail_to": "S0_BLOCK เมื่อชื่อ/ที่อยู่ไม่ตรง"},
+    {"id": "G1", "from": "S1", "to": "S2", "require": ["SLD เซ็นแล้ว", "กว. ไม่หมดอายุ (เหลือ ≥ 60 วัน)", "inverter อยู่ใน PEA list", "datasheet ครบ 3 ชนิด", "ns_roof_weight มี route", "ns_poa signed (ถ้า poa_needed)"]},
+    {"id": "G2", "from": "S3", "to": "S4", "require": ["PEA เห็นชอบ", "อ.1 ได้แล้ว (ถ้า route = permit)"]},
+    {"id": "G3", "from": "S4", "to": "S5", "require": ["รูป 8 slot ครบ (inverter setting ครบทุกเครื่อง)", "zero export test ผ่าน", "e-Tax Invoice ออกแล้ว (ถ้า tax_eligible)"]},
+    {"id": "G4", "from": "S5", "to": "S6", "require": ["ns_install_cert เซ็นครบ (วิศวกรทุกแผ่น + เจ้าของ)", "ใบเสร็จค่าธรรมเนียม", "อัปโหลด PPIM แล้ว"]},
+    {"id": "G5", "from": "S6", "to": "S7", "require": ["ผลตรวจผ่าน", "connection_start_date"]}
+  ],
+
+  "roles_access": {
+    "sales": {"see": "งานของตน + ลูกค้า", "do": ["สร้างงาน", "ขอเอกสารลูกค้า", "นัดเซ็น", "ส่งมอบ"]},
+    "doc": {"see": "ทุกงาน", "do": ["จัดเอกสาร", "ยื่น PPIM/เทศบาล", "บันทึก ExternalCase", "ออก e-Tax Invoice"]},
+    "engineer": {"see": "งานที่ได้รับมอบหมาย", "do": ["กรอกอุปกรณ์", "SLD", "คำนวณน้ำหนัก", "เซ็นแบบรับรอง"]},
+    "installer": {"see": "งานที่ได้รับมอบหมาย (offline ได้)", "do": ["ถ่ายรูป slot", "บันทึกผลทดสอบ", "แก้ไขตามผลตรวจ"]},
+    "admin": {"do": ["แก้ rules/SLA", "ปิดป้ายยังไม่ยืนยัน", "จัดคลัง datasheet และ กว."]}
+  },
+
+  "notifications": [
+    {"when": "เอกสารลูกค้ายังไม่มาเกิน 3 วัน", "to": "sales", "action": "สร้างข้อความ LINE ทวง"},
+    {"when": "PPIM ไม่อัปเดตครบ 3 วันทำการ", "to": "doc", "action": "เตือนเช็กสถานะ"},
+    {"when": "SLA ภายนอกเหลือ ≤ 7 วัน หรือเกิน", "to": "doc + หัวหน้า", "action": "ติดธงแดงบนแดชบอร์ด"},
+    {"when": "กว. หมดอายุใน 60 วัน", "to": "engineer + admin"},
+    {"when": "route = permit", "to": "doc", "action": "เปิดงาน S1B ทันที (ใช้เวลานาน)"},
+    {"when": "PEA นัดตรวจ", "to": "installer", "action": "ลงปฏิทินทีม"}
+  ],
+
+  "ppim_handoff": {
+    "reason": "PPIM ไม่มี API: แอปเตรียมข้อมูลให้คัดลอกและไฟล์ให้อัปโหลด",
+    "export": ["หน้า 'ข้อมูลสำหรับกรอก PPIM' เรียงตามหน้าจอ PPIM พร้อมปุ่มคัดลอกทีละช่อง", "ZIP ไฟล์แนบตั้งชื่อตามลำดับช่อง เช่น 01_บิลค่าไฟ.pdf", "ตรวจขนาดไฟล์/ชนิดก่อน export"],
+    "after_submit": "กรอกเลขคำขอ → สร้าง ExternalCase party=pea sla=45"
+  },
+
+  "pii": [
+    "สำเนาบัตร: ปิดศาสนา กรุ๊ปเลือด วันเกิด ก่อนบันทึก (masked = true)",
+    "ไม่เก็บเลขบัตร 13 หลักเป็นข้อความ เก็บแค่ 4 ตัวท้าย",
+    "ลบ/ซ่อนไฟล์บัตรหลังปิดงานตามระยะที่บริษัทกำหนด"
+  ],
+
+  "build_order": [
+    {"phase": 1, "scope": "M1 งาน + M2 คลังเอกสาร (checklist + สถานะ + gate G0–G1)", "why": "ใช้ได้ทันทีแม้ยังยื่นมือ"},
+    {"phase": 2, "scope": "M3 หน้างาน (slot รูป, offline) + M4 สร้าง ns_install_cert และ ns_roof_weight", "why": "ลดงานเอกสารมากที่สุด"},
+    {"phase": 3, "scope": "M5 ติดตามภายนอก + M7 แดชบอร์ด + แจ้งเตือน", "why": "คุมเวลาเมื่อมีหลายงาน"},
+    {"phase": 4, "scope": "M6 สื่อสารลูกค้า + PPIM handoff + ชุดส่งมอบ", "why": "ขัดเกลาประสบการณ์ลูกค้า"}
+  ],
+
+  "open_questions": [
+    "PEA เห็นชอบแบบก่อนติดตั้ง (S3) จริงหรือไม่ — กระทบ G2",
+    "ค่าธรรมเนียมและฉบับแบบรับรอง",
+    "ต้องแจ้ง กกพ. หรือไม่",
+    "กรณีน้ำหนัก ≤ 20 กก./ตร.ม. ต้องแจ้งเทศบาลหรือไม่",
+    "เซ็นในแอปได้กับเอกสารใดบ้าง (เอกสารติดอากรต้องเซ็นสด)"
+  ]
+}

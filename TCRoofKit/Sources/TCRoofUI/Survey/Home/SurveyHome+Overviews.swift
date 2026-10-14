@@ -174,6 +174,11 @@ extension SurveyHomeView {
     }
 
     func openStation(_ s: InstallStationSummary) {
+        // iPad: a host station opens the host's install tracking page, even when a survey job here is linked to it
+        if !compact, let open = host.openStation, host.installStations?.contains(where: { $0.id == s.id }) == true {
+            open(s)
+            return
+        }
         if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
             lastOpened = j.id.uuidString
             tracking = j.id

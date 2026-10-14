@@ -282,7 +282,14 @@ struct SurveyHomeView: View {
         case .survey: go(j, at: j.nextStep?.page)
         // the editor opens a moved survey read-only, on its summary
         case .locked: go(j)
-        case .install: lastOpened = j.id.uuidString; tracking = j.id
+        case .install:
+            lastOpened = j.id.uuidString
+            // iPad: a survey linked to a host station opens the host's install tracking page; the rest keep this one's
+            if !compact, let sync = j.jobSyncID, let s = host.installStations?.first(where: { $0.id == sync }), let open = host.openStation {
+                open(s)
+            } else {
+                tracking = j.id
+            }
         }
     }
 

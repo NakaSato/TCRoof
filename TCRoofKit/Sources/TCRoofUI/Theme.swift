@@ -128,6 +128,10 @@ public enum Theme {
     public static let successText = Color(light: 0x1F6B43, dark: 0x8FD16A)
     public static let warningText = Color(light: 0x9A4A06, dark: 0xF5B35C)
     public static let ringDone = Color(hex: 0x8FD16A)
+    // iPad install tracking (docs/ui/install-tracking-ipad)
+    /// The page's tab bar track, and its tabs' resting text.
+    public static let projectTabTrack = Color(light: 0xE9EEF5, dark: 0x1C2734)
+    public static let projectTabInk = Color(light: 0x3B4A60, dark: 0x9DB0C7)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
     public static let segmentTrack = Color(light: 0xEEF2F7, dark: 0x1C2734)

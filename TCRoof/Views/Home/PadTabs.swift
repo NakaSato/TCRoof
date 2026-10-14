@@ -45,7 +45,6 @@ struct PadTabs<HomeRoot: View>: View {
 
     @State private var dock = PadDock(Self.initialTab)
     @State private var notificationService = NotificationService.shared
-    @Query(sort: \Job.installStart) private var jobs: [Job]
 
     var body: some View {
         ZStack {
@@ -86,18 +85,34 @@ struct PadTabs<HomeRoot: View>: View {
                 default: if let module = t.module { module.destination } else { home() }
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: PadTab.barGap) {
-                TCTabBar(items: items, selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
-                    .padding(.bottom, 18)
-                    .frame(maxWidth: .infinity)
-                    .background(alignment: .bottom) { if !dock.noFade { TCDockFade(t.fade, height: 90) } }
-            }
-            // the dock measures from the screen's bottom edge, not the home indicator's safe area
-            .ignoresSafeArea(.container, edges: .bottom)
+            .padDock(fade: dock.noFade ? nil : t.fade)
         }
     }
 
-    private var items: [TCTabItem<PadTab>] {
+    private static var initialTab: PadTab {
+        #if DEBUG
+        // `-screen pwa` is the PWA module: the `โครงการ` tab
+        if DebugScreen.requested == "pwa" { return .pwa }
+        // `-homeTab survey|pwa|docs|tools|scan` opens with that tab selected, for simulator checks
+        if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PadTab(rawValue: raw), PadTab.stacks.contains(t) { return t }
+        #endif
+        return .home
+    }
+}
+
+/// The iPad dock (`TCTabBar`): `PadTabs` puts it under each tab's root, and a pushed page that keeps the dock
+/// (the install tracking page, docs/ui/install-tracking-ipad) puts it under itself. Outside `PadTabs` it is not shown.
+struct PadDockBar: View {
+    @Environment(PadDock.self) private var dock: PadDock?
+    @Query(sort: \Job.installStart) private var jobs: [Job]
+
+    var body: some View {
+        if let dock {
+            TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
+        }
+    }
+
+    private func items(_ dock: PadDock) -> [TCTabItem<PadTab>] {
         let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
             TCTabItem(.home, title: "หน้าแรก", symbol: "house"),
@@ -110,15 +125,19 @@ struct PadTabs<HomeRoot: View>: View {
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape", accessibilityLabel: "ตั้งค่าและบัญชี") { dock.showSettings = true },
         ]
     }
+}
 
-    private static var initialTab: PadTab {
-        #if DEBUG
-        // `-screen pwa` is the PWA module: the `โครงการ` tab
-        if DebugScreen.requested == "pwa" { return .pwa }
-        // `-homeTab survey|pwa|docs|tools|scan` opens with that tab selected, for simulator checks
-        if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PadTab(rawValue: raw), PadTab.stacks.contains(t) { return t }
-        #endif
-        return .home
+extension View {
+    /// The dock as the bottom safe-area inset, 18 pt above the screen's edge, over the page's fade when it has one.
+    func padDock(fade: Color?) -> some View {
+        safeAreaInset(edge: .bottom, spacing: PadTab.barGap) {
+            PadDockBar()
+                .padding(.bottom, 18)
+                .frame(maxWidth: .infinity)
+                .background(alignment: .bottom) { if let fade { TCDockFade(fade, height: 90) } }
+        }
+        // the dock measures from the screen's bottom edge, not the home indicator's safe area
+        .ignoresSafeArea(.container, edges: .bottom)
     }
 }
 

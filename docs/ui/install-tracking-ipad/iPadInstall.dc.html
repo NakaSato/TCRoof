@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>PWA Solar Survey — ติดตามงานติดตั้ง (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/cce3275ea50e42de3cbe91576b63f24b) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/6981a627824e19ea636fd6eabaa19e55) format("truetype");font-weight:700}
+body{margin:0}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden"><div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:120px;z-index:8;pointer-events:none;background:linear-gradient(to bottom,rgba(243,246,250,0) 0%,rgba(243,246,250,0.85) 40%,#F3F6FA 70%)"></div><nav aria-label="เมนูหลัก" style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:2px;padding:6px;border-radius:28px;background:rgba(255,255,255,0.96);border:1px solid #C9D3E0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)"><a href="iPadMenu.dc.html" aria-label="หน้าแรก" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">หน้าแรก</span></a><a href="iPadHome.dc.html" aria-current="page" aria-label="โครงการ · นัดวันนี้ 2" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#fff;background:#16325C"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:800;white-space:nowrap">โครงการ</span><b aria-hidden="true" style="position:absolute;top:5px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;outline:2px solid #fff">2</b></a><a href="iPadSurveyHome.dc.html" aria-label="งานบ้าน" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M3.5 11.5L12 4l8.5 7.5"></path><path d="M6 10v10h12V10"></path><path d="M9 14.5l3-1.8 3 1.8M9 17.5l3-1.8 3 1.8"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">งานบ้าน</span></a><a href="iPadPdfPreview.dc.html" aria-label="เอกสาร" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14.5l2 2 4-4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">เอกสาร</span></a><a href="iPadTools.dc.html" aria-label="เครื่องมือ" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><rect x="8.5" y="5" width="7" height="4" rx="1"></rect><circle cx="12" cy="14" r="2.6"></circle><path d="M12 14l1.4-1.4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">เครื่องมือ</span></a><a href="iPadEquip.dc.html" aria-label="สแกน" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"></path><path d="M8 8v8M11 8v8M14 8v8M17 8v8"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">สแกน</span></a><i aria-hidden="true" style="width:1px;align-self:stretch;margin:10px 4px;background:#DDE4ED"></i><a href="iPadSettings.dc.html" aria-label="ตั้งค่าและบัญชี" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">ตั้งค่า</span></a></nav>
+<header class="g-head" style="padding:12px 24px 14px">
+<a href="iPadHome.dc.html" aria-label="กลับหน้ารายการงาน" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.14);color:#fff;display:grid;place-items:center;text-decoration:none"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none"><path d="M15 5l-7 7 7 7"></path></svg></a>
+<div style="flex-grow:1;min-width:0"><div style="font-size:22px;line-height:28px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">การประปาบ้านโป่ง (ตัวอย่าง)</div><div class="s">งานติดตั้ง NO.098 · สถานีจ่ายน้ำบ้านโป่ง · 90 kWp · ทีม TCR02 · เริ่ม 24/9/2569 · ส่งมอบ 6/10/2569</div></div>
+<a href="iPadPresent.dc.html" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.14);color:#fff;font-size:15px;font-weight:600;text-decoration:none"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>รายงานสำรวจ (ดูอย่างเดียว)</a>
+</header>
+<nav aria-label="เมนูงานติดตั้ง" style="flex:none;padding:12px 24px 0"><div style="display:grid;grid-template-columns:repeat(7,auto);gap:4px;padding:4px;border-radius:14px;background:#E9EEF5"><button onClick="{{goOv}}" aria-current="{{curOv}}" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;{{stOv}}"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"></path></svg>ภาพรวม</button><button onClick="{{goDy}}" aria-current="{{curDy}}" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;{{stDy}}"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4v2h6V4M9 11h6M9 15h4"></path></svg>รายงานประจำวัน<span aria-label="วันนี้ยังไม่ส่ง" title="วันนี้ยังไม่ส่ง" style="width:8px;height:8px;border-radius:50%;background:#E8A15A;flex:none"></span></button><a href="iPadWeekly1.dc.html" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;background:none;color:#3B4A60"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>คำขอรายสัปดาห์</a><button onClick="{{openWr}}" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;background:none;color:#3B4A60"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg>Weekly Report</button><a href="iPadIECStep1.dc.html" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;background:none;color:#3B4A60"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"></path></svg><span>ทดสอบ IEC 62446</span></a><a href="iPadPlanJob.dc.html" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;background:none;color:#3B4A60"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg>เอกสาร</a><a href="iPadPlanJob.dc.html" style="min-height:44px;padding:0 14px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;border:0;box-sizing:border-box;background:none;color:#3B4A60"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M4 6h10M4 12h16M4 18h7"></path><circle cx="17" cy="6" r="2"></circle><circle cx="14" cy="18" r="2"></circle></svg>แผนก่อสร้าง</a></div></nav>
+<sc-if value="{{isOv}}" hint-placeholder-val="true"><div style="flex-grow:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:14px 24px 24px">
+<div style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);flex:none;height:52px;box-sizing:border-box;display:grid;grid-template-columns:1.45fr 0.85fr 1.12fr 0.68fr 1.4fr;align-items:center;overflow:hidden"><sc-for list="{{strip}}" as="k" hint-placeholder-count="5"><button onClick="{{k.go}}" aria-label="{{k.aria}}" style="{{k.st}}"><span style="font-size:12px;color:#5B6B82;white-space:nowrap">{{k.l}}</span><b style="font-size:18px;line-height:24px;white-space:nowrap;{{k.vSt}}">{{k.v}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{k.s}}</span></button></sc-for></div>
+<section style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:12px 18px;display:flex;flex-direction:column;gap:6px;flex:none;height:{{ganttH}}px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:12px"><span style="display:flex;flex-direction:column;min-width:0"><b style="font-size:18px;line-height:24px;color:#16325C">ความคืบหน้าเทียบแผน</b><span style="font-size:13px;line-height:18px;color:#5B6B82">{{gSub}}</span></span><sc-if value="{{isGantt}}" hint-placeholder-val="true"><span style="margin-left:auto;display:inline-flex;align-items:center;gap:14px;font-size:12px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:18px;height:9px;border-radius:3px;border:1.5px dashed #1F6FB5;box-sizing:border-box"></i>คาดการณ์</span><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:18px;height:9px;border-radius:3px;background:#E0574A"></i>เกินแผน</span><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:9px;height:9px;background:#16325C;transform:rotate(45deg)"></i>เหตุการณ์สำคัญ</span></span></sc-if><sc-if value="{{isCurve}}" hint-placeholder-val="false"><span style="margin-left:auto;display:inline-flex;align-items:center;gap:12px;font-size:12px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:20px;height:3px;border-radius:2px;background:#8FA3BC"></i>แผนสะสม</span><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:20px;height:3px;border-radius:2px;background:#1F6FB5"></i>งานจริงสะสม</span><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:20px;height:0;border-top:3px dashed #1F6FB5"></i>คาดการณ์</span><span style="display:inline-flex;align-items:center;gap:5px;color:#C0392B"><i style="width:0;height:12px;border-left:2px dashed #C0392B"></i>วันนี้</span></span></sc-if><div role="tablist" aria-label="มุมมอง" style="display:inline-flex;flex:none;margin-left:6px;gap:2px;padding:2px;border-radius:10px;background:#E3EEF8"><sc-for list="{{views}}" as="w" hint-placeholder-count="2"><button role="tab" aria-selected="{{w.on}}" onClick="{{w.go}}" style="{{w.st}}">{{w.t}}</button></sc-for></div></div>
+<div style="position:relative">
+<div style="position:absolute;top:51px;bottom:{{shadeB}}px;left:250px;right:64px;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));pointer-events:none"><sc-for list="{{shade}}" as="h" hint-placeholder-count="13"><i style="{{h.st}}"></i></sc-for></div>
+<div style="display:grid;grid-template-columns:250px repeat(13,minmax(0,1fr)) 64px;grid-template-rows:16px 18px 17px;border-bottom:1px solid #DDE4ED;padding-bottom:2px">
+<span style="grid-row:2;grid-column:1;align-self:end;font-size:12px;color:#5B6B82">{{hdL}}</span><span style="grid-row:3;grid-column:1;font-size:12px;line-height:17px;color:#1F6FB5;white-space:nowrap">พยากรณ์อากาศ - อัปเดต 30/9 06:00</span>
+<span style="grid-row:1;grid-column:2 / 9;font-size:12px;font-weight:700;color:#16325C;border-left:1px solid #DDE4ED;padding-left:6px">ก.ย. 2569</span><span style="grid-row:1;grid-column:9 / 15;font-size:12px;font-weight:700;color:#16325C;border-left:1px solid #DDE4ED;padding-left:6px">ต.ค. 2569</span>
+<sc-for list="{{days}}" as="d" hint-placeholder-count="13"><span style="{{d.st}}">{{d.t}}</span><span style="{{d.wSt}}">{{d.w}}</span></sc-for>
+<span style="grid-row:1 / 4;grid-column:15;align-self:end;text-align:right;font-size:12px;color:#5B6B82">{{hdR}}</span>
+</div>
+<sc-if value="{{isGantt}}" hint-placeholder-val="true"><div style="height:{{rowsH}}px;overflow-y:auto;overscroll-behavior:contain"><sc-for list="{{rows}}" as="r" hint-placeholder-count="7"><div style="{{r.rowSt}}">
+<button onClick="{{r.go}}" aria-label="{{r.aria}}" style="grid-row:1;grid-column:1 / 16;align-self:stretch;border:0;padding:0;background:transparent;cursor:pointer"></button>
+<span style="grid-row:1;grid-column:1;display:flex;align-items:center;gap:6px;min-width:0;padding-left:2px"><button onClick="{{r.tog}}" aria-expanded="{{r.openS}}" aria-label="{{r.togAria}}" style="position:relative;z-index:1;width:28px;height:36px;flex:none;border:0;border-radius:8px;background:transparent;color:#5B6B82;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s;{{r.chevSt}}"><path d="M9 6l6 6-6 6"></path></svg></button><span style="{{r.dotSt}};pointer-events:none"><sc-if value="{{r.done}}" hint-placeholder-val="false"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5 9-10"></path></svg></sc-if><sc-if value="{{r.notDone}}" hint-placeholder-val="true">{{r.no}}</sc-if></span><span style="pointer-events:none;display:flex;flex-direction:column;min-width:0"><span style="font-size:14px;line-height:18px;font-weight:700;color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.t}}</span><span style="font-size:12px;line-height:16px;color:#5B6B82">{{r.subTxt}}</span></span></span>
+<i style="{{r.planSt}};pointer-events:none"></i><i style="{{r.actSt}};pointer-events:none"></i><i style="{{r.lateSt}};pointer-events:none"></i><i style="{{r.fcSt}};pointer-events:none"></i><span style="{{r.noteSt}};pointer-events:none">{{r.note}}</span><span style="{{r.causeSt}};pointer-events:none">{{r.cause}}</span>
+<span style="grid-row:1;grid-column:15;text-align:right;line-height:15px;pointer-events:none"><b style="display:block;font-size:14px;{{r.pctSt}}">{{r.pct}}</b></span>
+</div>
+<sc-if value="{{r.open}}" hint-placeholder-val="false"><sc-for list="{{r.subs}}" as="u" hint-placeholder-count="4"><div style="{{u.rowSt}}">
+<span style="grid-row:1;grid-column:1;display:flex;align-items:center;gap:8px;min-width:0;padding-left:44px"><i style="{{u.dotSt}}"></i><span style="font-size:13px;color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{u.t}}</span></span>
+<i style="{{u.planSt}}"></i><i style="{{u.actSt}}"></i>
+<span style="grid-row:1;grid-column:15;text-align:right;font-size:12px;font-weight:700;{{u.pctSt}}">{{u.pct}}</span>
+</div></sc-for></sc-if></sc-for></div>
+<div style="display:grid;grid-template-columns:250px repeat(13,minmax(0,1fr)) 64px;grid-template-rows:32px;align-items:center">
+<span style="grid-row:1;grid-column:1;padding-left:8px;font-size:13px;font-weight:700;color:#5B6B82">เหตุการณ์สำคัญ</span>
+<sc-for list="{{miles}}" as="m" hint-placeholder-count="5"><span style="{{m.st}}"><i style="{{m.dSt}}"></i><span style="font-size:12px;line-height:15px;color:#16325C;white-space:nowrap">{{m.t}}</span></span></sc-for>
+</div>
+<div style="display:grid;grid-template-columns:250px repeat(13,minmax(0,1fr)) 64px;grid-template-rows:30px;align-items:center;border-top:1px solid #EEF2F7">
+<span style="grid-row:1;grid-column:1;padding-left:8px;font-size:13px;font-weight:700;color:#5B6B82">งวดเบิกเงิน <span style="font-weight:400">(ตัวอย่าง)</span></span>
+<sc-for list="{{bills}}" as="b" hint-placeholder-count="3"><span style="{{b.st}}"><b style="{{b.icSt}}">฿</b><span style="font-size:12px;line-height:15px;white-space:nowrap;color:#16325C">{{b.t}}</span><span style="{{b.sSt}}">{{b.s}}</span></span></sc-for>
+</div></sc-if>
+<sc-if value="{{isCurve}}" hint-placeholder-val="false"><div style="display:grid;grid-template-columns:250px minmax(0,1fr) 64px;height:{{curveH}}px">
+<div style="display:flex;flex-direction:column;justify-content:center;gap:8px;padding:8px 16px 8px 0"><sc-for list="{{cstats}}" as="c" hint-placeholder-count="4"><div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:10px;background:#F3F6FA"><span style="font-size:13px;color:#5B6B82">{{c.l}}</span><b style="font-size:18px;line-height:24px;{{c.vSt}}">{{c.v}}</b></div></sc-for></div>
+<div style="position:relative;border-left:1px solid #DDE4ED;border-bottom:1px solid #DDE4ED">
+<svg viewBox="0 0 1000 300" preserveAspectRatio="none" aria-label="S-Curve แผนสะสมเทียบงานจริงสะสม" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+<path d="M0 290H1000M0 220H1000M0 150H1000M0 80H1000M0 10H1000" fill="none" stroke="#EEF2F7" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+<path d="{{pPlan}}" fill="none" stroke="#8FA3BC" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+<path d="{{pFc}}" fill="none" stroke="#1F6FB5" stroke-width="2.5" stroke-dasharray="7 6" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+<path d="{{pAct}}" fill="none" stroke="#1F6FB5" stroke-width="3.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+</svg>
+<i style="{{dotPlan}}"></i><i style="{{dotAct}}"></i>
+<span style="{{lblAct}}">{{actTxt}}</span><span style="{{lblPlan}}">{{planTxt}}</span>
+</div>
+<div style="position:relative"><sc-for list="{{yl}}" as="y" hint-placeholder-count="5"><span style="{{y.st}}">{{y.t}}</span></sc-for></div>
+</div></sc-if>
+<i style="{{todaySt}}"></i>
+</div>
+</section>
+<div style="flex:none;height:330px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+
+<section style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:14px 18px;display:flex;flex-direction:column;gap:10px;min-height:0">
+<div style="display:flex;align-items:center;gap:10px"><b style="font-size:16px;color:#16325C">เอกสารโครงการ</b><span style="font-size:13px;color:#5B6B82">แตะเพื่อดูรายละเอียด</span><span style="margin-left:auto;{{docSumSt}}">{{docSum}}</span></div>
+<div style="flex-grow:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(32px,1fr);gap:6px"><sc-for list="{{docs}}" as="d" hint-placeholder-count="12"><button onClick="{{d.go}}" style="display:flex;align-items:center;gap:8px;min-width:0;padding:0 10px;border-radius:10px;border:1px solid #DDE4ED;background:#fff;font-family:inherit;color:#16325C;text-align:left;cursor:pointer"><span style="{{d.dotSt}}"></span><b style="flex-grow:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.t}}</b><span style="{{d.pillSt}}">{{d.st}}</span></button></sc-for></div>
+</section>
+<section style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:14px 18px;display:flex;flex-direction:column;gap:10px;min-height:0">
+<div style="display:flex;align-items:center;gap:10px"><div role="tablist" aria-label="ข้อมูลหน้างาน" style="display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:#E3EEF8"><sc-for list="{{spTabs}}" as="t" hint-placeholder-count="3"><button role="tab" aria-selected="{{t.on}}" onClick="{{t.go}}" style="{{t.st}}">{{t.t}}</button></sc-for></div><span style="margin-left:auto;font-size:12px;color:#5B6B82">ณ 30/9/2569 · ข้อมูลตัวอย่าง</span></div>
+<sc-if value="{{spSite}}" hint-placeholder-val="true"><div style="flex-grow:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px">
+<div style="display:flex;flex-direction:column;justify-content:space-between;gap:6px"><div style="font-size:12px;font-weight:700;color:#5B6B82">ปริมาณงานติดตั้งแล้ว</div><sc-for list="{{qty}}" as="q" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:3px"><div style="display:flex;align-items:baseline;gap:8px;font-size:13px;color:#16325C"><span style="flex-grow:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{q.t}}</span><b style="font-variant-numeric:tabular-nums">{{q.v}}</b></div><div style="height:6px;border-radius:3px;background:#EEF2F7;overflow:hidden"><i style="{{q.bar}}"></i></div></div></sc-for></div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;gap:8px"><sc-for list="{{site}}" as="m" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;justify-content:center;padding:8px 12px;border-radius:12px;background:#F3F6FA;min-width:0"><span style="font-size:12px;line-height:17px;color:#5B6B82">{{m.l}}</span><b style="font-size:18px;line-height:24px;{{m.vSt}}">{{m.v}}</b><span style="font-size:11px;line-height:15px;color:#5B6B82">{{m.s}}</span></div></sc-for></div>
+</div></sc-if>
+<sc-if value="{{spRisk}}" hint-placeholder-val="false"><div style="flex-grow:1;min-height:0;display:flex;flex-direction:column;gap:6px"><sc-for list="{{risks}}" as="k" hint-placeholder-count="3"><div style="flex:1 1 0;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:12px;background:#F3F6FA;min-height:0"><span style="{{k.lvSt}}">{{k.lv}}</span><span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:14px;line-height:20px;color:#16325C">{{k.t}}</b><span style="font-size:12px;line-height:17px;color:#5B6B82">รับมือ: {{k.m}}</span></span><span style="flex:none;font-size:12px;color:#5B6B82;text-align:right">{{k.o}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{spLab}}" hint-placeholder-val="false"><div style="flex-grow:1;min-height:0;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:12px;font-size:12px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:12px;height:10px;border-radius:2px;background:#DDE4ED"></i>แผน</span><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:12px;height:10px;border-radius:2px;background:#1F6FB5"></i>จริง</span><span style="margin-left:auto">{{labSum}}</span></div>
+<div style="flex-grow:1;min-height:0;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px;align-items:end;border-bottom:1px solid #DDE4ED"><sc-for list="{{lab}}" as="l" hint-placeholder-count="13"><div style="height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px"><span style="font-size:10px;line-height:12px;color:#16325C;font-weight:700">{{l.n}}</span><div style="{{l.boxSt}}"><i style="{{l.planSt}}"></i><i style="{{l.actSt}}"></i></div></div></sc-for></div>
+<div style="display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px"><sc-for list="{{lab}}" as="l" hint-placeholder-count="13"><span style="{{l.dSt}}">{{l.d}}</span></sc-for></div>
+</div></sc-if>
+</section>
+</div>
+</div></sc-if>
+<sc-if value="{{isDy}}" hint-placeholder-val="false"><div style="flex-grow:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:14px 24px 24px"><div style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));overflow:hidden"><sc-for list="{{dyK}}" as="k" hint-placeholder-count="5"><div style="padding:10px 14px;border-right:1px solid #EEF2F7;display:flex;flex-direction:column;line-height:20px"><span style="font-size:12px;color:#5B6B82">{{k.l}}</span><b style="font-size:22px;line-height:28px;color:{{k.c}}">{{k.v}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{k.s}}</span></div></sc-for></div><section aria-label="ทุกรายงานประจำวัน" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden"><div style="display:flex;align-items:center;gap:10px"><b style="font-size:16px;color:#16325C">ทุกรายงาน</b><div role="tablist" aria-label="กรอง" style="display:inline-flex;gap:3px;padding:3px;border-radius:12px;background:#E9EEF5"><sc-for list="{{dyF}}" as="f" hint-placeholder-count="3"><button role="tab" aria-selected="{{f.on}}" onClick="{{f.go}}" style="min-height:40px;padding:0 12px;border:0;border-radius:9px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;{{f.st}}">{{f.t}} <span style="font-weight:400;color:#5B6B82">{{f.n}}</span></button></sc-for></div><span style="margin-left:auto;display:flex;gap:8px"><button onClick="{{openWr}}" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(22,50,92,0.5);background:#fff;color:#16325C;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg>สร้าง Weekly Report W40 จาก 6 รายงาน</button><button onClick="{{dyZip}}" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(22,50,92,0.5);background:#fff;color:#16325C;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>PDF รวม</button></span></div><div role="table" aria-label="รายงานประจำวันทั้งหมด" style="display:grid;grid-template-columns:96px 92px 70px 50px minmax(0,1fr) 140px 54px 176px minmax(0,0.7fr) 150px;border:1px solid #DDE4ED;border-radius:10px;overflow:hidden"><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">วันที่</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">สถานะ</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">อากาศ</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED;justify-content:center">คน</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">งานที่ทำ</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">สะสม (แผน MP)</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED;justify-content:center">รูป</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">ลงนาม · รับทราบ</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED">ปัญหา</span><span style="font-size:12px;font-weight:700;color:#5B6B82;padding:0 10px;height:30px;display:flex;align-items:center;background:#F6F8FB;border-bottom:1px solid #DDE4ED"></span><sc-for list="{{dyRows}}" as="r" hint-placeholder-count="7"><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;{{r.bg}}"><b>{{r.d}}</b></span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;{{r.bg}}"><span style="padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;{{r.pill}}">{{r.stT}}</span></span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;{{r.bg}}">{{r.wx}}</span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;justify-content:center;{{r.bg}}">{{r.man}}</span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;{{r.bg}}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.work}}</span></span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;gap:8px;{{r.bg}}"><span style="flex:1;height:8px;border-radius:4px;background:#E3E9F1;overflow:hidden;display:flex"><i style="width:{{r.accW}};background:#1F6FB5"></i></span><b style="font-size:13px;white-space:nowrap">{{r.acc}}</b></span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;justify-content:center;color:{{r.phC}};{{r.bg}}">{{r.ph}}</span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;gap:4px;{{r.bg}}"><span title="วิศวกรผู้รายงาน" style="padding:1px 7px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;{{r.engSt}}">{{r.engT}}</span><span title="ผู้ตรวจงาน" style="padding:1px 7px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;{{r.inspSt}}">{{r.inspT}}</span></span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;font-size:13px;color:{{r.probC}};{{r.bg}}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.prob}}</span></span><span style="padding:0 10px;min-height:44px;display:flex;align-items:center;border-bottom:1px solid #EEF2F7;font-size:14px;color:#16325C;min-width:0;padding:4px 8px;{{r.bg}}"><a href="iPadDaily.dc.html" style="width:100%;min-height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;text-decoration:none;{{r.ctaSt}}">{{r.cta}}</a></span></sc-for></div><sc-if value="{{dyEmpty}}" hint-placeholder-val="false"><div style="padding:16px;text-align:center;font-size:14px;color:#7A8BA3">ไม่มีรายการในตัวกรองนี้</div></sc-if></section><div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1fr) 300px 330px;gap:12px"><section aria-label="กำลังคนรายวัน" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;color:#16325C;white-space:nowrap">กำลังคนรายวัน</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap">เส้นประ = แผน</span></div><div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px;align-items:end"><sc-for list="{{dyMan}}" as="b" hint-placeholder-count="13"><div style="display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end"><span style="font-size:11px;font-weight:700;color:#16325C">{{b.v}}</span><i style="width:100%;height:{{b.h}}%;border-radius:4px 4px 0 0;{{b.st}}"></i><span style="font-size:11px;color:{{b.dc}}">{{b.d}}</span></div></sc-for></div></section><section aria-label="ความก้าวหน้าสะสม" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;color:#16325C;white-space:nowrap">ความก้าวหน้าสะสม</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap">เทียบแผน MP</span><b style="margin-left:auto;font-size:12px;color:#1F6B43;white-space:nowrap">{{dyVar}}</b></div><svg viewBox="0 0 520 150" preserveAspectRatio="none" role="img" aria-label="กราฟความก้าวหน้าสะสม" style="flex:1;min-height:0;width:100%"><g stroke="#EEF2F7" stroke-width="1"><line x1="0" y1="10" x2="520" y2="10"></line><line x1="0" y1="45" x2="520" y2="45"></line><line x1="0" y1="80" x2="520" y2="80"></line><line x1="0" y1="115" x2="520" y2="115"></line></g><line x1="{{dyTx}}" y1="0" x2="{{dyTx}}" y2="150" stroke="#D9453B" stroke-width="1.5" stroke-dasharray="4 3"></line><polyline points="{{dyPlanPts}}" fill="none" stroke="#9FB3CC" stroke-width="2.5" stroke-dasharray="6 4"></polyline><polyline points="{{dyActPts}}" fill="none" stroke="#1F6FB5" stroke-width="3.5" stroke-linejoin="round"></polyline></svg><div style="display:flex;gap:12px;font-size:11px;color:#5B6B82"><span>24/9</span><span style="margin-left:auto;color:#D9453B">วันนี้ 30/9</span><span style="margin-left:auto">6/10 ส่งมอบ</span></div></section><section aria-label="รูปตามงาน MP" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:12px 14px;display:flex;flex-direction:column;gap:5px;min-height:0"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;color:#16325C">รูปตามงาน MP</b><span style="margin-left:auto;font-size:12px;color:#5B6B82">IEC 62446 · 9 <b style="color:#16325C">{{mpPhIec}}</b></span></div><sc-for list="{{mpPh}}" as="m" hint-placeholder-count="9"><div style="display:grid;grid-template-columns:30px minmax(0,1fr) 60px 46px;align-items:center;gap:6px;min-height:22px;font-size:12px"><b style="color:#1F6FB5">{{m.c}}</b><span style="color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{m.t}}</span><span style="height:6px;border-radius:3px;background:#E3E9F1;overflow:hidden;display:flex"><i style="width:{{m.w}};background:{{m.col}}"></i></span><b style="text-align:right;color:{{m.col}}">{{m.n}}</b></div></sc-for></section><section aria-label="พรุ่งนี้" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:0;border-top:4px solid #1F6FB5"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:15px;color:#16325C">พรุ่งนี้ พฤ. 1/10</b><span style="font-size:12px;color:#5B6B82">ร่างจากแผน MP</span><span style="margin-left:auto;font-size:13px">⛅ 20%</span></div><sc-for list="{{tmr}}" as="t" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;min-height:30px;padding:0 8px;border-radius:8px;background:#F3F6FA;font-size:13px"><b style="color:#1F6FB5;font-size:12px">{{t.c}}</b><span style="flex:1;min-width:0;color:#16325C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.t}}</span><span style="font-size:12px;color:#5B6B82;white-space:nowrap">{{t.p}}</span></div></sc-for><div style="font-size:12px;color:#5B6B82">ทีมงานและเครื่องมือ: ใช้ชุดเดียวกับวันนี้ (9 คน · 5 รายการ)</div><div style="padding:6px 8px;border-radius:8px;background:#FFF3E6;color:#9A4A06;font-size:12px;line-height:17px">☂ 2–3/10 ฝน 60–70% · ทำงานบนหลังคาให้เสร็จภายใน 1/10</div><a href="iPadDaily.dc.html" style="margin-top:auto;min-height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:700;text-decoration:none;background:#fff;color:#16325C;border:1px solid rgba(22,50,92,0.5)">สร้างร่างรายงาน 1/10</a></section></div></div></sc-if></div>
+<sc-if value="{{stageOpen}}" hint-placeholder-val="false"><div style="position:absolute;inset:0;z-index:9;background:rgba(22,50,92,0.35);display:grid;place-items:center"><div role="dialog" aria-label="{{cur.t}}" style="width:820px;display:flex;flex-direction:column;gap:14px;padding:20px 24px 22px;border-radius:20px;background:#fff;box-shadow:0 20px 50px rgba(22,50,92,0.3)">
+<div style="display:flex;align-items:flex-start;gap:12px"><div style="flex-grow:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#5B6B82">ขั้นที่ {{cur.no}}/7 · {{cur.meta}}</div><div style="font-size:21px;line-height:28px;font-weight:700;color:#16325C">{{cur.t}}</div></div><span style="{{cur.stSt}}">{{cur.stTxt}}</span><button onClick="{{closeStage}}" aria-label="ปิด" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid #DDE4ED;background:#fff;color:#16325C;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<sc-if value="{{hasLate}}" hint-placeholder-val="false"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:#FDF1EF;border:1px solid #F4C7C0"><b style="font-size:14px;color:#C0392B">คาดว่าเกินแผน {{lateDays}} วัน · สาเหตุ</b><sc-for list="{{causes}}" as="c" hint-placeholder-count="4"><button onClick="{{c.go}}" aria-pressed="{{c.on}}" style="{{c.st}}">{{c.t}}</button></sc-for></div></sc-if>
+<div><div style="font-size:14px;font-weight:700;color:#16325C;margin-bottom:6px">รายการตรวจ {{chkCount}}</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><sc-for list="{{checks}}" as="k" hint-placeholder-count="4"><button onClick="{{k.go}}" aria-pressed="{{k.on}}" style="{{k.st}}"><span style="{{k.boxSt}}"><sc-if value="{{k.isOn}}" hint-placeholder-val="false"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5 9-10"></path></svg></sc-if></span><span style="text-align:left">{{k.t}}</span></button></sc-for></div></div>
+<sc-if value="{{hasReady}}" hint-placeholder-val="false"><div><div style="font-size:14px;font-weight:700;color:#16325C;margin-bottom:6px">ความพร้อมก่อนเริ่มขั้นนี้</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><sc-for list="{{readyD}}" as="y" hint-placeholder-count="3"><div style="{{y.st}}"><b>{{y.ic}}</b><span style="flex-grow:1">{{y.t}}</span><span style="font-size:12px;color:#5B6B82">{{y.n}}</span></div></sc-for></div></div></sc-if>
+<div style="display:flex;align-items:flex-end;gap:12px;margin-top:6px">
+<div style="flex-grow:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="font-size:14px;color:#16325C">รูปถ่ายหน้างาน</b><span style="font-size:13px;color:#5B6B82">{{photoTxt}}</span></div>
+<div style="display:flex;gap:8px;align-items:center"><sc-for list="{{thumbs}}" as="p" hint-placeholder-count="4"><i style="width:64px;height:64px;border-radius:10px;background:linear-gradient(160deg,#9EE6D6,#5E9BD0)"></i></sc-for><span style="width:64px;height:64px;border-radius:10px;border:1.5px dashed #8FA3BC;color:#1F6FB5;display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path></svg></span></div></div>
+<sc-if value="{{canConfirm}}" hint-placeholder-val="true"><button onClick="{{confirm}}" style="{{confirmSt}}">ยืนยันเสร็จขั้นนี้</button></sc-if><sc-if value="{{cantConfirm}}" hint-placeholder-val="false"><span style="flex:none;font-size:14px;color:#5B6B82;padding-bottom:12px">{{confirmNote}}</span></sc-if>
+</div>
+</div></div></sc-if>
+<sc-if value="{{docOpen}}" hint-placeholder-val="false"><div style="position:absolute;inset:0;z-index:9;background:rgba(22,50,92,0.35);display:grid;place-items:center"><div role="dialog" aria-label="{{doc.t}}" style="width:760px;max-height:820px;display:flex;flex-direction:column;border-radius:20px;background:#fff;box-shadow:0 20px 50px rgba(22,50,92,0.3);overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px 24px;border-bottom:1px solid #DDE4ED"><div style="flex-grow:1;min-width:0"><div style="font-size:22px;line-height:30px;font-weight:700;color:#16325C">{{doc.t}}</div><div style="font-size:14px;line-height:20px;color:#5B6B82">{{doc.desc}}</div></div><span style="{{doc.pillSt}}">{{doc.st}}</span><button onClick="{{closeDoc}}" aria-label="ปิด" style="width:44px;height:44px;border-radius:12px;border:1px solid #DDE4ED;background:#fff;color:#16325C;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<div style="overflow-y:auto;padding:4px 24px 16px"><sc-for list="{{doc.items}}" as="it" hint-placeholder-count="4"><div style="display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:1px solid #EEF2F7"><span style="width:92px;flex:none;font-size:13px;line-height:20px;font-weight:700;color:#1F6FB5">{{it.no}}</span><span style="flex-grow:1;min-width:0"><b style="display:block;font-size:15px;line-height:22px;color:#16325C">{{it.t}}</b><span style="display:block;font-size:13px;line-height:19px;color:#5B6B82">{{it.d}}</span></span><span style="{{it.pillSt}}">{{it.st}}</span><a href="{{it.href}}" style="{{it.aSt}}">เปิดบันทึก ›</a></div></sc-for></div>
+</div></div></sc-if>
+<sc-if value="{{actOpen}}" hint-placeholder-val="false"><div style="position:absolute;inset:0;z-index:9;background:rgba(22,50,92,0.35);display:grid;place-items:center"><div role="dialog" aria-label="ต้องดำเนินการ" style="width:680px;display:flex;flex-direction:column;border-radius:20px;background:#fff;box-shadow:0 20px 50px rgba(22,50,92,0.3);overflow:hidden"><div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px 24px;border-bottom:1px solid #DDE4ED"><div style="flex-grow:1"><div style="font-size:22px;line-height:30px;font-weight:700;color:#16325C">ต้องดำเนินการ</div><div style="font-size:14px;color:#5B6B82">ปัญหาที่เปิดอยู่และเอกสารที่ค้าง · แตะเพื่อเปิดรายการ</div></div><button onClick="{{closeAct}}" aria-label="ปิด" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid #DDE4ED;background:#fff;color:#16325C;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div style="padding:8px 24px 16px"><sc-for list="{{acts}}" as="a" hint-placeholder-count="3"><button onClick="{{a.go}}" style="width:100%;display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 0;border:0;border-bottom:1px solid #EEF2F7;background:none;font-family:inherit;text-align:left;cursor:pointer"><span style="{{a.lvSt}}">{{a.lv}}</span><span style="flex-grow:1;min-width:0"><b style="display:block;font-size:15px;line-height:22px;color:#16325C">{{a.t}}</b><span style="font-size:13px;color:#5B6B82">{{a.d}}</span></span><span style="font-size:20px;color:#1F6FB5">›</span></button></sc-for></div></div></div></sc-if>
+<sc-if value="{{wrOpen}}" hint-placeholder-val="false"><div style="position:absolute;inset:0;z-index:9;background:rgba(22,50,92,0.35);display:grid;place-items:center"><div role="dialog" aria-label="Weekly Report" style="width:860px;max-height:900px;display:flex;flex-direction:column;border-radius:20px;background:#fff;box-shadow:0 20px 50px rgba(22,50,92,0.3);overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px 24px;border-bottom:1px solid #DDE4ED"><div style="flex-grow:1"><div style="font-size:13px;font-weight:700;color:#5B6B82">WR-02 · ร่างอัตโนมัติจากข้อมูลในหน้า</div><div style="font-size:22px;line-height:30px;font-weight:700;color:#16325C">Weekly Report · สัปดาห์ที่ 40 (28/9–4/10/2569)</div></div><button onClick="{{closeWr}}" aria-label="ปิด" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid #DDE4ED;background:#fff;color:#16325C;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<div style="overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px"><sc-for list="{{wrKpi}}" as="k" hint-placeholder-count="4"><div style="padding:10px 12px;border-radius:12px;background:#F3F6FA"><div style="font-size:12px;color:#5B6B82">{{k.l}}</div><b style="font-size:20px;line-height:28px;{{k.vSt}}">{{k.v}}</b></div></sc-for></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><sc-for list="{{wrSec}}" as="w" hint-placeholder-count="4"><div><b style="display:block;font-size:14px;color:#16325C;margin-bottom:4px">{{w.h}}</b><sc-for list="{{w.items}}" as="it" hint-placeholder-count="3"><div style="font-size:13px;line-height:20px;color:#16325C;padding-left:12px;position:relative"><i style="position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%;background:#8FA3BC"></i>{{it}}</div></sc-for></div></sc-for></div>
+<div><b style="display:block;font-size:14px;color:#16325C;margin-bottom:6px">รูปหน้างานประจำสัปดาห์</b><div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px"><sc-for list="{{wrPics}}" as="p" hint-placeholder-count="6"><i style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(160deg,#9EE6D6,#5E9BD0)"></i></sc-for></div></div>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid #DDE4ED"><span style="margin-right:auto;align-self:center;font-size:13px;color:#5B6B82">ตัวอย่างหน้าจอ · ปุ่มยังไม่ส่งไฟล์จริง</span><button style="min-height:44px;padding:0 18px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;color:#1F6FB5;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">ดาวน์โหลด PDF</button><button style="min-height:44px;padding:0 18px;border-radius:12px;border:0;background:#1F6FB5;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">ส่งให้เจ้าของงาน</button></div>
+</div></div></sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = Object.assign({ s: 3, chk: {}, done: 3 }, this.state || {});
+    // Example install plan for NO.098 (illustrative data). Day index 0 = 24/9/2569, today = 6 (30/9/2569).
+    const TODAY = 6, DUE = 12;
+    const DAYS = ['24', '25', '26', '27', '28', '29', '30', '1', '2', '3', '4', '5', '6'];
+    // [name, date text, duration, scope, checklist, photos, planStart, planEnd, actualStart, actualEnd]
+    const S = [
+      ['ส่งวัสดุเข้าหน้างาน', '24/9/2569', '1 วัน', 'แผง 164 · ราง · อินเวอร์เตอร์', ['ตรวจนับแผงตามใบส่งของ', 'ตรวจสภาพกล่องแผง', 'ตรวจรุ่นอินเวอร์เตอร์', 'เก็บวัสดุในที่ร่ม'], 6, 0, 0, 0, 0],
+      ['ติดตั้งโครงสร้างราง', '25–26/9/2569', '2 วัน', 'หลังคาเมทัลชีท', ['วางแนวรางตามแบบ', 'ขันแคลมป์ตามแรงบิด', 'ซีลกันรั่วจุดยึด', 'ตรวจระดับราง'], 12, 1, 2, 1, 2],
+      ['ติดตั้งแผงโซลาร์', '27–28/9/2569', '2 วัน', '164 แผง · 12 สตริง', ['ยึดแผงครบทุกแถว', 'ต่อสายดินโครงแผง', 'ตรวจช่องว่างระหว่างแผง', 'ถ่ายรูปรายแถว'], 18, 3, 4, 3, 4],
+      ['เดินสาย DC · ตู้ DC', '29/9–1/10/2569', '3 วัน', '12 สตริง · ตู้ DC 1 ตู้', ['เดินสายสตริงครบ 12 สตริง', 'ติดตั้งตู้ DC combiner', 'วัด Voc / Isc ทุกสตริง', 'ติดป้ายเตือนสาย DC'], 4, 5, 7, 5, null],
+      ['ติดตั้งอินเวอร์เตอร์ · ตู้ AC', '2/10/2569', '1 วัน', 'อินเวอร์เตอร์ 1 เครื่อง', ['ยึดอินเวอร์เตอร์ตามระยะ', 'ต่อสาย AC เข้าตู้', 'ติดตั้งกันย้อน', 'ต่อสายดินระบบ'], 0, 8, 8, null, null],
+      ['ทดสอบระบบ', '3/10/2569', '1 วัน', 'Commissioning', ['วัดค่าฉนวน', 'ทดสอบ Anti-islanding', 'ตรวจค่าผลิตไฟจริง', 'บันทึกผลทดสอบ'], 0, 9, 9, null, null],
+      ['ขนานไฟ · ส่งมอบ', '6/10/2569', '1 วัน', 'ส่งมอบให้ กปภ.', ['ยื่นเอกสารขนานไฟ', 'อบรมผู้ใช้งาน', 'ลงนามรับมอบงาน', 'ส่งเอกสาร As-built'], 0, 12, 12, null, null]];
+    const chk = Object.assign({ '3-0': true, '3-1': true }, st.chk);
+    const done = st.done;
+    const nOn = i => S[i][4].filter((_, k) => i < done || chk[i + '-' + k]).length;
+    const status = i => i < done ? 'done' : i === done ? 'cur' : 'wait';
+    const pct = Math.round(((done + (done < 7 ? nOn(done) / 4 : 0)) / 7) * 100);
+    const planPct = Math.round(S.reduce((a, x) => a + Math.max(0, Math.min(1, (TODAY + 1 - x[6]) / (x[7] - x[6] + 1))), 0) / 7 * 100);
+    const C = 2 * Math.PI * 30;
+    const TXT = { done: 'เสร็จแล้ว', cur: 'กำลังทำ', wait: 'รอดำเนินการ' };
+    const PILL = { done: 'background:#E2EFDA;color:#3B7420', cur: 'background:#E3EEF8;color:#1F6FB5', wait: 'background:#EEF2F7;color:#5B6B82' };
+    const pill = s => 'flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;' + PILL[s];
+    const sel = Math.min(st.s, 6), sc = status(sel);
+    const v = {};
+    v.pct = pct; v.planPct = planPct; v.dash = (C * pct / 100).toFixed(1) + ' ' + C.toFixed(1);
+    v.doneTxt = 'เสร็จ ' + done + ' / 7 ขั้น';
+    const diff = pct - planPct, left = done < 7 ? 4 - nOn(done) : 0;
+    v.kpis = [
+      { l: 'กำหนดการ', v: Math.abs(diff) <= 5 ? 'ตามแผน' : diff < 0 ? 'ช้ากว่าแผน' : 'เร็วกว่าแผน', s: 'ต่างจากแผน ' + (diff > 0 ? '+' : '') + diff + '%', vSt: 'color:' + (Math.abs(diff) <= 5 ? '#3B7420' : diff < 0 ? '#C0392B' : '#1F6FB5') },
+      { l: 'เหลือถึงส่งมอบ', v: (DUE - TODAY) + ' วัน', s: 'กำหนดส่งมอบ 6/10/2569', vSt: 'color:#16325C' },
+      { l: 'ค้างในขั้นปัจจุบัน', v: left + ' รายการ', s: done < 7 ? 'รายการตรวจขั้น ' + (done + 1) + '/7' : 'ครบทุกขั้นแล้ว', vSt: 'color:' + (left ? '#B45309' : '#3B7420') }];
+    const COLS = 'calc(250px + (100% - 314px) * ';
+    const col = (a, b) => 'grid-row:1;grid-column:' + (a + 2) + ' / ' + (b + 3) + ';';
+    const TH = ['พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ'];
+    const SUN = i => TH[i] === 'อา';
+    const WAIT0 = 10, WAIT1 = 11, RAIN = 3;
+    // (2) weather from forecast data at project location (example values; production: forecast API by lat/lon)
+    const WX = [['☀', ''], ['⛅', ''], ['☀', ''], ['☂', 'ฝน'], ['☀', ''], ['⛅', ''], ['☀', '10%'], ['⛅', '20%'], ['☂', '70%'], ['☂', '60%'], ['⛅', '30%'], ['☀', '10%'], ['☀', '10%']];
+    v.days = DAYS.map((t, i) => ({ t: t + ' ' + TH[i], w: WX[i][0] + (WX[i][1] ? ' ' + WX[i][1] : ''),
+      wSt: 'grid-row:3;grid-column:' + (i + 2) + ';text-align:center;font-size:12px;line-height:16px;white-space:nowrap;' + (i >= TODAY ? (parseInt(WX[i][1]) >= 50 ? 'color:#C0392B;font-weight:700' : 'color:#1F6FB5') : 'color:#8FA3BC'),
+      st: 'grid-row:2;grid-column:' + (i + 2) + ';justify-self:center;text-align:center;font-size:12px;white-space:nowrap;' + (i === TODAY ? 'font-weight:700;color:#fff;background:#C0392B;border-radius:999px;padding:0 7px;line-height:16px' : SUN(i) ? 'color:#B0506A' : 'color:#5B6B82') }));
+    v.shade = DAYS.map((_, i) => ({ st: 'grid-column:' + (i + 1) + ';' + (i >= WAIT0 && i <= WAIT1 ? 'background:repeating-linear-gradient(135deg,rgba(143,163,188,0.10) 0 6px,transparent 6px 12px)' : '') + (i === 7 ? ';border-left:1px solid #DDE4ED' : '') }));
+    // forecast: current stage duration projected from checklist rate; later stages follow in sequence
+    // (1) make-ready for upcoming stages [label, ready, note]
+    const READY = { 4: [['วัสดุ', false, 'ตู้ AC รออนุมัติ MA-05'], ['ใบอนุญาต', true, 'WP-02 งานไฟฟ้า'], ['ทีม', true, 'TCR02 · 4 คน']],
+      5: [['เครื่องมือ', true, 'Insulation tester · Clamp meter'], ['ทีม', true, 'วิศวกรไฟฟ้า 1 คน'], ['ผู้ตรวจ', false, 'ยังไม่นัดผู้ควบคุมงาน']],
+      6: [['เอกสาร', true, 'ยื่นขนานไฟแล้ว 25/9'], ['การไฟฟ้า', false, 'รอนัดวันตรวจ']] };
+    // WBS sub-tasks per stage [name, planStart, planEnd, checklist index (stage 4 only)] — example zones for a large site
+    const SUB = [
+      [['แผงโซลาร์ 164 แผง', 0, 0], ['ราง · แคลมป์ · อุปกรณ์ยึด', 0, 0], ['อินเวอร์เตอร์ · ตู้ไฟฟ้า', 0, 0]],
+      [['โซน A อาคารผลิต · แถว A1–A4', 1, 1], ['โซน B อาคารสูบน้ำ · แถว B1–B4', 1, 2], ['โซน C โรงเก็บสารเคมี', 2, 2], ['ซีลกันรั่วจุดยึดทุกโซน', 2, 2]],
+      [['โซน A · 64 แผง', 3, 3], ['โซน B · 60 แผง', 3, 4], ['โซน C · 40 แผง', 4, 4], ['สายดินโครงแผงทุกโซน', 4, 4]],
+      [['เดินสายสตริง 1–6 (โซน A)', 5, 5, 0], ['เดินสายสตริง 7–12 (โซน B, C)', 6, 6, 0], ['ติดตั้งตู้ DC combiner', 6, 6, 1], ['วัด Voc / Isc ทุกสตริง', 7, 7, 2], ['ติดป้ายเตือนสาย DC', 7, 7, 3]],
+      [['ยึดอินเวอร์เตอร์', 8, 8], ['เดินสาย AC เข้าตู้ MDB', 8, 8], ['ติดตั้งกันย้อน', 8, 8], ['ต่อสายดินระบบ', 8, 8]],
+      [['วัดค่าฉนวน', 9, 9], ['ค่าความต้านทานดิน', 9, 9], ['ทดสอบ Anti-islanding', 9, 9], ['ทดสอบผลิตไฟจริง', 9, 9]],
+      [['การไฟฟ้าตรวจและขนานไฟ', 12, 12], ['อบรมผู้ใช้งาน', 12, 12], ['ส่งเอกสาร As-built · ใบรับประกัน', 12, 12]]];
+    const exp = st.exp || { 3: true, 4: true };
+    const F = [];
+    S.forEach((x, i) => {
+      const dur = x[7] - x[6] + 1, s0 = status(i);
+      if (s0 === 'done') F.push([x[8] !== null ? x[8] : x[6], x[9] !== null ? x[9] : Math.min(x[7], TODAY)]);
+      else if (s0 === 'cur') { const st0 = x[8] !== null ? x[8] : TODAY, el = TODAY - st0 + 1, fr = nOn(i) / 4;
+        const tot = fr >= 1 ? el : fr > 0 ? Math.ceil(el / fr) : dur; F.push([st0, Math.max(TODAY, st0 + tot - 1)]); }
+      else { const prev = F[i - 1][1] + 1, s1 = i === 6 ? Math.max(x[6], prev) : Math.max(x[6], prev); F.push([s1, s1 + dur - 1]); }
+    });
+    const endF = F[6][1], slack = DUE - F[5][1] - 1;
+    v.fcTxt = endF <= DUE ? 'คาดส่งมอบ 6/10 ตามกำหนด · เผื่อ ' + Math.max(0, slack) + ' วัน' : 'คาดส่งมอบช้า ' + (endF - DUE) + ' วัน';
+    v.fcSt = 'font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;' + (endF <= DUE ? (slack > 0 ? 'background:#E2EFDA;color:#3B7420' : 'background:#FFF1DC;color:#B45309') : 'background:#FDE7E4;color:#C0392B');
+    const dstr = i => DAYS[i] + '/' + (i < 7 ? 9 : 10);
+    const GH = 1024 - 114 - 14 - 52 - 14 - 18, RH = GH - 24 - 44 - 6 - 53 - 63 - 4;
+    const nSub = S.reduce((t, _, i) => t + (exp[i] ? SUB[i].length : 0), 0);
+    const ROWH = Math.max(40, Math.floor((RH - nSub * 31 - 8) / 7));
+    v.rows = S.map((x, i) => { const s = status(i), on = i === sel && !!st.so, f = F[i];
+      const a0 = s === 'wait' ? null : f[0], a1 = s === 'done' ? f[1] : s === 'cur' ? TODAY : null;
+      const late0 = Math.max(x[7] + 1, a0 === null ? 99 : a0), late1 = s === 'done' ? f[1] : s === 'cur' ? f[1] : -1;
+      const shifted = s === 'wait' && (f[0] !== x[6]);
+      const pctR = s === 'done' ? 100 : s === 'cur' ? Math.round(nOn(i) / 4 * 100) : 0;
+      const rd = READY[i] || [], lateN = late1 >= late0 ? late1 - late0 + 1 : 0, cz = (st.cause || {})[i];
+      const subs = SUB[i].map(u => { const sd = s === 'done' ? true : s === 'cur' ? (u[3] !== undefined ? !!chk[i + '-' + u[3]] : u[2] <= TODAY) : false;
+        return { t: u[0], pct: sd ? '100%' : '0%', pctSt: 'color:' + (sd ? '#3B7420' : '#8FA3BC'),
+          rowSt: 'display:grid;grid-template-columns:250px repeat(13,minmax(0,1fr)) 64px;grid-template-rows:30px;align-items:center;border-bottom:1px solid #F3F6FA;background:#FAFCFE',
+          dotSt: 'width:8px;height:8px;flex:none;border-radius:50%;background:' + (sd ? '#70AD47' : s === 'cur' ? '#1F6FB5' : '#C9D3DF'),
+          planSt: col(u[1], u[2]) + 'height:10px;margin:0 6px;border-radius:3px;background:#E3E9F0',
+          actSt: sd ? col(u[1], u[2]) + 'height:6px;margin:0 8px;border-radius:3px;background:#70AD47' : 'display:none' }; });
+      const nd = subs.filter(u => u.pct === '100%').length;
+      return { open: !!exp[i], openS: String(!!exp[i]), subs, subTxt: 'งานย่อย ' + nd + '/' + subs.length,
+        tog: () => this.setState({ exp: Object.assign({}, exp, { [i]: !exp[i] }) }), togAria: (exp[i] ? 'ย่อ' : 'ขยาย') + 'งานย่อยของ ' + x[0],
+        chevSt: exp[i] ? 'transform:rotate(90deg)' : '',
+        ready: rd.map(r => ({ t: r[0] + ' ' + (r[1] ? '✓' : '✗'), st: 'font-size:11px;line-height:14px;font-weight:700;color:' + (r[1] ? '#3B7420' : '#C0392B') })),
+        cause: lateN ? '+' + lateN + ' วัน' + (cz ? ' · ' + cz : '') : '', causeSt: lateN ? col(Math.min(late1 + 1, 12), Math.min(late1 + 2, 12)) + 'font-size:12px;font-weight:700;white-space:nowrap;padding-left:6px;color:#C0392B' : 'display:none',
+        no: i + 1, t: x[0], done: s === 'done', notDone: s !== 'done', on: String(on), aria: x[0] + ' · ' + TXT[s] + ' · ' + pctR + '%', go: () => this.setState({ s: i, so: true }),
+        rowSt: 'width:100%;display:grid;grid-template-columns:250px repeat(13,minmax(0,1fr)) 64px;grid-template-rows:' + ROWH + 'px;align-items:center;border-bottom:1px solid #EEF2F7;position:relative;background:' + (on ? 'rgba(31,111,181,0.08);box-shadow:inset 3px 0 0 #1F6FB5' : 'transparent'),
+        dotSt: 'width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;' + (s === 'done' ? 'background:#70AD47;color:#fff' : s === 'cur' ? 'background:#1F6FB5;color:#fff' : 'background:#EEF2F7;color:#5B6B82'),
+        planSt: col(x[6], x[7]) + 'height:22px;margin:0 3px;border-radius:5px;background:#DDE4ED',
+        actSt: s === 'cur' ? col(x[6], x[7]) + 'height:12px;margin:0 3px;border-radius:4px;background:linear-gradient(90deg,#1F6FB5 ' + pctR + '%,rgba(31,111,181,0.15) ' + pctR + '%)' : a0 === null || a1 === null ? 'display:none' : col(a0, Math.min(a1, x[7])) + 'height:12px;margin:0 3px;border-radius:4px;background:#70AD47',
+        lateSt: late1 >= late0 ? col(late0, late1) + 'height:12px;margin:0 3px;border-radius:4px;background:' + (s === 'cur' && late0 > TODAY ? 'repeating-linear-gradient(90deg,#E0574A 0 6px,rgba(224,87,74,0.35) 6px 10px)' : '#E0574A') : 'display:none',
+        fcSt: shifted ? col(f[0], f[1]) + 'height:14px;margin:0 3px;border-radius:4px;border:1.5px dashed #1F6FB5;box-sizing:border-box;background:rgba(31,111,181,0.06)' : 'display:none',
+        note: i === 6 ? 'รอการไฟฟ้านัดตรวจ' : '', noteSt: i === 6 ? col(WAIT0, WAIT1) + 'justify-self:center;font-size:12px;color:#5B6B82;white-space:nowrap;background:#fff;padding:1px 8px;border-radius:999px;border:1px solid #DDE4ED;position:relative;z-index:1' : 'display:none',
+        pct: pctR + '%', pctSt: 'color:' + (s === 'done' ? '#3B7420' : s === 'cur' ? '#1F6FB5' : '#8FA3BC'),
+        range: x[6] === x[7] ? dstr(x[6]) : dstr(x[6]) + '–' + dstr(x[7]) }; });
+    // milestones [day, label, done]
+    const M = [[1, 'ยื่นขนานไฟ', true], [2, 'RFI-01', true], [4, 'RFI-02', true], [7, 'RFI-03', false], [9, 'ทดสอบ', false], [12, 'ส่งมอบ', false]];
+    v.miles = M.map(m => ({ t: m[1], st: 'grid-row:1;grid-column:' + (m[0] + 2) + ';display:flex;flex-direction:column;align-items:center;gap:3px',
+      dSt: 'width:10px;height:10px;transform:rotate(45deg);box-sizing:border-box;' + (m[2] ? 'background:#16325C' : 'border:2px solid #16325C;background:#fff') }));
+    const allOpen = S.every((_, i) => exp[i]);
+    v.togAllTxt = allOpen ? '▾ ย่อทั้งหมด' : '▸ ขยายงานย่อยทั้งหมด';
+    v.togAll = () => this.setState({ exp: allOpen ? {} : { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true } });
+    v.ganttH = 1024 - 114 - 14 - 52 - 14 - 18;
+    v.gSub = '24/9 – 6/10/2569 · 7 ขั้นตอน · ' + SUB.reduce((t, x) => t + x.length, 0) + ' งานย่อย';
+    v.rowsH = v.ganttH - 24 - 44 - 6 - 53 - 63 - 4;
+    // (4) billing milestones [day, label, status]
+    const BL = [[4, 'งวด 1 · 40%', 'วางบิลแล้ว', 'wait'], [9, 'งวด 2 · 40%', 'ทดสอบผ่าน', 'none'], [12, 'งวด 3 · 20%', 'ส่งมอบ', 'none']];
+    const BC = { ok: '#3B7420', wait: '#1F6FB5', none: '#8FA3BC' };
+    v.bills = BL.map(b => ({ t: b[1], s: b[2], st: 'grid-row:1;grid-column:' + (b[0] + 1) + ' / ' + (b[0] + 4) + ';justify-self:center;display:flex;align-items:center;gap:4px',
+      icSt: 'width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;color:#fff;background:' + BC[b[3]], sSt: 'font-size:12px;font-weight:700;color:' + BC[b[3]] }));
+    // ---- view toggle + S-curve (cumulative % of 7 equal-weight stages)
+    const view = st.view || 'gantt';
+    v.isGantt = view === 'gantt'; v.isCurve = !v.isGantt;
+    v.views = [['gantt', 'Gantt'], ['curve', 'S-Curve']].map(([id, t]) => ({ t, on: String(view === id), go: () => this.setState({ view: id }),
+      st: 'min-height:32px;padding:0 13px;border:0;border-radius:8px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;' + (view === id ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(22,50,92,0.2)' : 'background:none;color:#5B6B82') }));
+    const lin = (d, a, b) => Math.max(0, Math.min(1, (d + 1 - a) / (b - a + 1)));
+    const planAt = d => S.reduce((t, x) => t + lin(d, x[6], x[7]), 0) / 7 * 100;
+    const actAt = d => S.reduce((t, x, i) => { const s0 = status(i);
+      if (s0 === 'done') return t + lin(d, F[i][0], F[i][1]);
+      if (s0 === 'cur') return t + (nOn(i) / 4) * lin(d, F[i][0], TODAY); return t; }, 0) / 7 * 100;
+    const fcAt = d => S.reduce((t, x, i) => { const s0 = status(i);
+      if (s0 === 'done') return t + 1;
+      if (s0 === 'cur') { const f0 = nOn(i) / 4; return t + f0 + (1 - f0) * (d <= TODAY ? 0 : lin(d, TODAY + 1, Math.max(TODAY + 1, F[i][1]))); }
+      return t + lin(d, F[i][0], F[i][1]); }, 0) / 7 * 100;
+    const X = d => ((d + 1) / 13 * 1000).toFixed(1), Y = p => (290 - p * 2.8).toFixed(1);
+    const path = (f, d0, d1, start) => { let s0 = start !== undefined ? 'M' + X(d0 - 1) + ' ' + Y(start) : ''; for (let d = d0; d <= d1; d++) s0 += (s0 ? 'L' : 'M') + X(d) + ' ' + Y(f(d)); return s0; };
+    v.pPlan = path(planAt, 0, 12, 0);
+    v.pAct = path(actAt, 0, TODAY, 0);
+    const lastF = Math.max(endF, TODAY + 1);
+    v.pFc = 'M' + X(TODAY) + ' ' + Y(actAt(TODAY)) + path(fcAt, TODAY + 1, Math.min(12, lastF)).replace(/^M/, 'L');
+    const aT = actAt(TODAY), pT = planAt(TODAY);
+    v.curveH = v.rowsH + 63;
+    v.hdL = v.isGantt ? 'ขั้นตอน' : 'สรุป ณ วันนี้'; v.hdR = v.isGantt ? '%' : '% สะสม';
+    const pos = (d, p) => 'left:calc(' + ((d + 1) / 13 * 100).toFixed(3) + '% - 6px);top:calc(' + ((290 - p * 2.8) / 300 * 100).toFixed(3) + '% - 6px)';
+    v.dotAct = 'position:absolute;width:12px;height:12px;border-radius:50%;background:#1F6FB5;border:2px solid #fff;box-shadow:0 1px 3px rgba(22,50,92,0.4);' + pos(TODAY, aT);
+    v.dotPlan = 'position:absolute;width:12px;height:12px;border-radius:50%;background:#8FA3BC;border:2px solid #fff;' + pos(TODAY, pT);
+    v.actTxt = 'จริง ' + Math.round(aT) + '%'; v.planTxt = 'แผน ' + Math.round(pT) + '%';
+    const lab = (d, p, dy) => 'position:absolute;left:calc(' + ((d + 1) / 13 * 100).toFixed(3) + '% - 92px);top:calc(' + ((290 - p * 2.8) / 300 * 100).toFixed(3) + '% + ' + dy + 'px);width:80px;text-align:right;font-size:12px;font-weight:700;white-space:nowrap;';
+    v.lblAct = 'position:absolute;left:calc(' + ((TODAY + 1) / 13 * 100).toFixed(3) + '% + 12px);top:calc(' + ((290 - aT * 2.8) / 300 * 100).toFixed(3) + '% + 4px);font-size:12px;font-weight:700;white-space:nowrap;color:#1F6FB5';
+    v.lblPlan = lab(TODAY, pT, -22) + 'color:#5B6B82';
+    v.yl = [100, 75, 50, 25, 0].map(p => ({ t: p + '%', st: 'position:absolute;left:8px;top:calc(' + ((290 - p * 2.8) / 300 * 100).toFixed(3) + '% - 8px);font-size:11px;color:#5B6B82' }));
+    v.cstats = [
+      { l: 'แผนสะสม ณ วันนี้', v: Math.round(pT) + '%', vSt: 'color:#5B6B82' },
+      { l: 'งานจริงสะสม', v: Math.round(aT) + '%', vSt: 'color:#1F6FB5' },
+      { l: 'ต่างจากแผน', v: (aT - pT >= 0 ? '+' : '') + Math.round(aT - pT) + '%', vSt: 'color:' + (Math.abs(aT - pT) <= 5 ? '#3B7420' : aT < pT ? '#C0392B' : '#1F6FB5') },
+      { l: 'คาดเสร็จงานติดตั้ง', v: dstr(F[5][1]), vSt: 'color:#16325C' }];
+    v.shadeB = v.isGantt ? 63 : 0;
+    v.todaySt = 'position:absolute;top:53px;bottom:' + (v.isGantt ? 63 : 0) + 'px;width:0;border-left:2px dashed rgba(192,57,43,0.7);left:' + COLS + ((TODAY + (v.isGantt ? 0.5 : 1)) / 13).toFixed(4) + ' - 1px);pointer-events:none;z-index:0';
+    const rs = READY[sel] || [];
+    v.hasReady = rs.length > 0 && sc === 'wait';
+    v.readyD = rs.map(r => ({ ic: r[1] ? '✓' : '✗', t: r[0], n: r[2], st: 'display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;font-size:14px;color:#16325C;border:1px solid ' + (r[1] ? '#CFE3C3' : '#F4C7C0') + ';background:' + (r[1] ? '#F4FAF0' : '#FDF1EF') }));
+    const lr = v.rows[sel], lateDays = (() => { const x = S[sel], f = F[sel]; return sc !== 'wait' && f[1] > x[7] ? f[1] - x[7] : 0; })();
+    v.hasLate = lateDays > 0; v.lateDays = lateDays;
+    const curC = (st.cause || {})[sel];
+    v.causes = ['สภาพอากาศ', 'วัสดุ', 'เจ้าของงาน', 'ผู้รับเหมา'].map(t => ({ t, on: String(curC === t), go: () => this.setState({ cause: Object.assign({}, st.cause || {}, { [sel]: t }) }),
+      st: 'min-height:36px;padding:0 14px;border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;' + (curC === t ? 'border:0;background:#C0392B;color:#fff' : 'border:1px solid #F4C7C0;background:#fff;color:#C0392B') }));
+    v.stageOpen = !!st.so; v.closeStage = () => this.setState({ so: false });
+    v.cur = { no: sel + 1, t: S[sel][0], meta: S[sel][1] + ' · ' + S[sel][2] + ' · ' + S[sel][3], stTxt: TXT[sc], stSt: pill(sc) };
+    v.checks = S[sel][4].map((t, k) => { const on = sel < done || !!chk[sel + '-' + k], edit = sc === 'cur'; return {
+      t, on: String(on), isOn: on, go: () => { if (edit) this.setState({ chk: Object.assign({}, chk, { [sel + '-' + k]: !on }) }); },
+      st: 'display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid ' + (!on && edit ? '#F5DDB0' : '#DDE4ED') + ';background:' + (on ? '#F3F8FD' : edit ? '#FFF8EC' : '#fff') + ';font-family:inherit;font-size:14px;color:#16325C;cursor:' + (edit ? 'pointer' : 'default'),
+      boxSt: 'width:22px;height:22px;flex:none;border-radius:6px;display:grid;place-items:center;box-sizing:border-box;' + (on ? 'background:' + (sc === 'done' ? '#70AD47' : '#1F6FB5') : 'border:2px solid ' + (edit ? '#D08A1E' : '#8FA3BC') + ';background:#fff') }; });
+    v.chkCount = nOn(sel) + '/4';
+    v.thumbs = Array.from({ length: Math.min(S[sel][5], 6) }, () => ({}));
+    v.photoTxt = S[sel][5] ? S[sel][5] + ' รูป' : 'ยังไม่มีรูป';
+    const all = nOn(sel) === 4;
+    v.canConfirm = sc === 'cur'; v.cantConfirm = !v.canConfirm;
+    v.confirmNote = sc === 'done' ? 'ขั้นนี้ยืนยันเสร็จแล้ว' : 'เริ่มได้เมื่อขั้นก่อนหน้าเสร็จ';
+    v.confirm = () => { if (all) this.setState({ done: done + 1, s: Math.min(done + 1, 6) }); };
+    v.confirmSt = 'flex:none;min-height:48px;padding:0 22px;border:0;border-radius:12px;font-family:inherit;font-size:16px;font-weight:700;' + (all ? 'background:#1F6FB5;color:#fff;cursor:pointer' : 'background:#EEF2F7;color:#8FA3BC;cursor:default');
+    // Project documents (example data)
+    const P = { ok: 'background:#E2EFDA;color:#3B7420', wait: 'background:#E3EEF8;color:#1F6FB5', due: 'background:#FFF1DC;color:#B45309', none: 'background:#EEF2F7;color:#5B6B82' };
+    const DOT = { ok: '#70AD47', wait: '#1F6FB5', due: '#D08A1E', none: '#B9C6D6' };
+    const I = (no, t, d, k, stx, hr) => ({ no, t, d, pillSt: 'flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;' + P[k], st: stx, href: hr || (no === 'TC-01' ? 'iPadTC01.dc.html' : '#'), aSt: (hr || no === 'TC-01') ? 'flex:none;display:flex;align-items:center;min-height:44px;padding:0 14px;border-radius:10px;background:#1F6FB5;color:#fff;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap' : 'display:none' });
+    const DOCS = [
+      ['Daily Report', 'ok', 'วันนี้ส่งแล้ว', 'รายงานประจำวัน: งานที่ทำ จำนวนคน สภาพอากาศ ปัญหา และรูปหน้างาน', [
+        I('DR-007', 'เดินสายสตริง 1–12 ครบ ติดตั้งตู้ DC combiner', '30/9/2569 · 6 คน · แดดจัด · 4 รูป · ทีม TCR02', 'ok', 'ส่งแล้ว'),
+        I('DR-006', 'เริ่มเดินสาย DC สตริง 1–6', '29/9/2569 · 6 คน · มีเมฆ · 5 รูป', 'ok', 'ส่งแล้ว'),
+        I('DR-005', 'ติดตั้งแผงครบ 164 แผง ต่อสายดินโครงแผง', '28/9/2569 · 8 คน · แดดจัด · 10 รูป', 'ok', 'ส่งแล้ว'),
+        I('DR-004', 'ติดตั้งแผงแถว A–C (96 แผง)', '27/9/2569 · 8 คน · ฝนช่วงบ่าย หยุด 2 ชม. · 8 รูป', 'ok', 'ส่งแล้ว'),
+        I('DR-003', 'ติดตั้งรางครบทุกแถว ซีลกันรั่วจุดยึด', '26/9/2569 · 6 คน · แดดจัด · 6 รูป', 'ok', 'ส่งแล้ว'),
+        I('DR-002', 'วางแนวรางแถว A–C', '25/9/2569 · 6 คน · มีเมฆ · 6 รูป', 'ok', 'ส่งแล้ว'),
+        I('DR-001', 'รับวัสดุเข้าหน้างาน ตรวจนับครบตามใบส่งของ', '24/9/2569 · 4 คน · แดดจัด · 6 รูป', 'ok', 'ส่งแล้ว')]],
+      ['Weekly Report', 'due', 'W40 ครบ 4/10', 'รายงานประจำสัปดาห์: % จริงเทียบแผน (S-curve) งานสัปดาห์นี้ แผนสัปดาห์หน้า และปัญหาที่ค้าง', [
+        I('WR-02', 'สัปดาห์ที่ 40 (28/9–4/10)', 'ครบกำหนดส่ง 4/10/2569 · ความคืบหน้าปัจจุบัน ' + pct + '%', 'due', 'ครบกำหนด 4/10'),
+        I('WR-01', 'สัปดาห์ที่ 39 (24–27/9)', 'ส่ง 27/9/2569 · จริง 36% / แผน 36%', 'ok', 'ส่งแล้ว')]],
+      ['Work Permit', 'ok', 'ใช้งาน 2', 'ใบอนุญาตทำงานที่มีความเสี่ยง', [
+        I('WP-01', 'ทำงานบนที่สูง (หลังคา)', '24/9–6/10/2569 · ผู้อนุมัติ: จป. หน้างาน', 'ok', 'ใช้งานอยู่'),
+        I('WP-02', 'งานไฟฟ้า DC', '29/9–1/10/2569 · ผู้อนุมัติ: วิศวกรไฟฟ้า', 'ok', 'ใช้งานอยู่')]],
+      ['MOM', 'ok', '2 ฉบับ', 'บันทึกการประชุมกับเจ้าของงานและผู้ควบคุมงาน', [
+        I('MOM-02', 'ประชุมความคืบหน้า', '29/9/2569 · อนุมัติย้ายตำแหน่งตู้ DC (CO-01)', 'ok', 'ลงนามแล้ว'),
+        I('MOM-01', 'ประชุมเริ่มงาน (Kick-off)', '23/9/2569 · ยืนยันแผนงานและกำหนดส่งมอบ 6/10', 'ok', 'ลงนามแล้ว')]],
+      ['RFI ขอตรวจงาน', 'due', 'รอยื่น 1', 'ขอให้ผู้ควบคุมงานตรวจรับแต่ละขั้นก่อนทำขั้นต่อไป', [
+        I('RFI-03', 'ตรวจรับงานเดินสาย DC · ตู้ DC', 'ยื่นได้เมื่อรายการตรวจขั้น 4 ครบ', 'due', 'รอยื่น'),
+        I('RFI-02', 'ตรวจรับการติดตั้งแผงโซลาร์', 'ยื่น 28/9 · ตรวจ 28/9/2569', 'ok', 'อนุมัติ'),
+        I('RFI-01', 'ตรวจรับโครงสร้างราง', 'ยื่น 26/9 · ตรวจ 26/9/2569', 'ok', 'อนุมัติ')]],
+      ['Material Approval', 'wait', 'อนุมัติ 4/5', 'ขออนุมัติวัสดุและอุปกรณ์ก่อนติดตั้ง', [
+        I('MA-05', 'ตู้ AC และอุปกรณ์กันย้อน', 'ยื่น 27/9/2569 · ต้องได้ก่อนขั้น 5 (2/10)', 'wait', 'รออนุมัติ'),
+        I('MA-04', 'สาย DC และขั้วต่อ', 'อนุมัติ 22/9/2569', 'ok', 'อนุมัติ'),
+        I('MA-03', 'รางและแคลมป์', 'อนุมัติ 22/9/2569', 'ok', 'อนุมัติ'),
+        I('MA-02', 'อินเวอร์เตอร์', 'อนุมัติ 20/9/2569', 'ok', 'อนุมัติ'),
+        I('MA-01', 'แผงโซลาร์', 'อนุมัติ 20/9/2569', 'ok', 'อนุมัติ')]],
+      ['NCR งานไม่ตรงสเปก', 'ok', 'เปิด 0', 'รายงานงานที่ไม่เป็นไปตามข้อกำหนด และการแก้ไข', [
+        I('NCR-01', 'แคลมป์ยึดแผงหลวม 2 จุด แถว B', 'พบ 27/9 · ขันแรงบิดใหม่และตรวจซ้ำ 27/9/2569', 'ok', 'ปิดแล้ว')]],
+      ['Change Order', 'ok', '1 รายการ', 'การเปลี่ยนแปลงแบบหรือขอบเขตงาน', [
+        I('CO-01', 'ย้ายตำแหน่งตู้ DC ไปใกล้ทางขึ้นหลังคา', 'อนุมัติใน MOM-02 29/9/2569 · ไม่มีผลต่อค่าใช้จ่ายและกำหนดส่งมอบ', 'ok', 'อนุมัติ')]],
+      ['Test & Commissioning', 'none', '3/10', 'ผลทดสอบระบบก่อนขนานไฟ', [
+        I('TC-01', 'Voc / Isc รายสตริง (12 สตริง)', 'ทำในขั้น 4 · เทียบค่าที่คำนวณ', 'due', 'รอวัด'),
+        I('TC-02', 'ค่าความต้านทานฉนวน', 'กำหนด 3/10/2569', 'none', 'ยังไม่ถึง'),
+        I('TC-03', 'ค่าความต้านทานดิน', 'กำหนด 3/10/2569', 'none', 'ยังไม่ถึง'),
+        I('TC-04', 'ทดสอบ Anti-islanding', 'กำหนด 3/10/2569', 'none', 'ยังไม่ถึง')]],
+      ['Punch List', 'none', 'หลังทดสอบ', 'รายการที่ต้องแก้ไขก่อนส่งมอบ', [
+        I('—', 'ยังไม่มีรายการ', 'เดินตรวจร่วมกับเจ้าของงานหลังทดสอบระบบ 3/10/2569', 'none', 'ยังไม่ถึง')]],
+      ['ขออนุญาตขนานไฟ', 'wait', 'รอนัดตรวจ', 'เอกสารยื่นการไฟฟ้าเพื่อขอขนานไฟ', [
+        I('GC-01', 'ยื่นคำขอขนานไฟกับการไฟฟ้า', 'ยื่น 25/9/2569 · รอนัดวันตรวจ', 'wait', 'รอนัดตรวจ')]],
+      ['อุปกรณ์ที่ติดตั้ง', 'due', 'S/N ขาด 14', 'ทะเบียนอุปกรณ์ที่ติดตั้งจริง พร้อม Serial No. และภาพป้ายข้อมูล · ใช้ทำใบรับประกันและ As-built', [
+        I('EQ-PV', 'แผงโซลาร์ (PV) · 570 W', 'ติดตั้ง 164/164 แผง · S/N 158/164 · สำรอง 2 แผง', 'due', 'ขาด S/N 6', 'iPadEquip.dc.html'),
+        I('EQ-INV', 'อินเวอร์เตอร์ · 60 + 30 kW', 'ติดตั้ง 0/2 (ขั้น 5 · 2/10) · S/N 2/2 บันทึกตอนรับของ', 'wait', 'รอติดตั้ง', 'iPadEquip.dc.html'),
+        I('EQ-MTR', 'มิเตอร์ · Smart meter กันย้อน + มิเตอร์ กฟภ.', 'ติดตั้ง 0/2 · มิเตอร์ กฟภ. บันทึกหลังขนานไฟ', 'none', 'ยังไม่ถึง', 'iPadEquip.dc.html'),
+        I('EQ-RSD', 'Rapid shutdown · 1 ตัวต่อ 2 แผง', 'ติดตั้ง 82/82 · S/N 76/82 · ตัวส่งสัญญาณ 2 ชุด', 'due', 'ขาด S/N 6', 'iPadEquip.dc.html')]],
+      ['ส่งมอบงาน', 'none', 'กำหนด 6/10', 'เอกสารปิดงาน', [
+        I('HO-01', 'แบบ As-built', 'จัดทำหลังทดสอบระบบ', 'none', 'ยังไม่ถึง'),
+        I('HO-02', 'ใบรับประกันแผงและอินเวอร์เตอร์ (Serial No.)', 'รวบรวมจากขั้น 3 และ 5', 'none', 'ยังไม่ถึง'),
+        I('HO-03', 'ใบส่งมอบงานและอบรมผู้ใช้', 'กำหนด 6/10/2569', 'none', 'ยังไม่ถึง')]]];
+    const pillD = k => 'flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;' + P[k];
+    v.docs = DOCS.map((d, i) => ({ t: d[0], st: d[2], pillSt: pillD(d[1]), dotSt: 'width:8px;height:8px;flex:none;border-radius:50%;background:' + DOT[d[1]], go: () => this.setState({ doc: i }) }));
+    const nDue = DOCS.filter(d => d[1] === 'due').length;
+    v.docSum = nDue ? 'ต้องดำเนินการ ' + nDue : 'ไม่มีค้าง';
+    v.docSumSt = 'font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;' + (nDue ? P.due : P.ok);
+    const di = st.doc;
+    v.docOpen = di !== undefined && di !== null && di >= 0;
+    const D = DOCS[v.docOpen ? di : 0];
+    v.doc = { t: D[0], desc: D[3], st: D[2], pillSt: pillD(D[1]), items: D[4] };
+    v.closeDoc = () => this.setState({ doc: -1 });
+    // construction site data (example)
+    const Q = [['แผงโซลาร์', 164, 164, 'แผง'], ['สตริง DC', 12, 12, 'สตริง'], ['ตู้ DC combiner', 1, 1, 'ตู้'], ['อินเวอร์เตอร์', 0, 1, 'เครื่อง'], ['ตู้ AC · กันย้อน', 0, 1, 'ชุด']];
+    v.qty = Q.map(q => ({ t: q[0], v: q[1] + '/' + q[2] + ' ' + q[3], bar: 'display:block;height:100%;border-radius:3px;width:' + Math.round(q[1] / q[2] * 100) + '%;background:' + (q[1] >= q[2] ? '#70AD47' : '#1F6FB5') }));
+    v.site = [
+      { l: 'แรงงานวันนี้', v: '6 คน', s: 'สะสม 44 man-day', vSt: 'color:#16325C' },
+      { l: 'สภาพอากาศ', v: 'แดดจัด', s: 'ฝนหยุดงาน 2 ชม. (27/9)', vSt: 'color:#16325C' },
+      { l: 'ความปลอดภัย', v: '7 วัน', s: 'ติดต่อกันไม่มีอุบัติเหตุ', vSt: 'color:#3B7420' },
+      { l: 'ปัญหาที่เปิดอยู่', v: '1 เรื่อง', s: 'รออนุมัติตู้ AC ก่อน 2/10', vSt: 'color:#B45309' }];
+    // (6) PPC tile replaces weather (weather now in chart header)
+    v.site[1] = { l: 'งานตามแผนรายวัน (PPC)', v: '86%', s: '6 จาก 7 วันทำได้ตามแผน', vSt: 'color:#3B7420' };
+    const sp = st.sp || 'site';
+    v.spSite = sp === 'site'; v.spRisk = sp === 'risk'; v.spLab = sp === 'lab';
+    v.spTabs = [['site', 'ข้อมูลหน้างาน'], ['risk', 'ความเสี่ยง 3'], ['lab', 'แรงงาน']].map(([id, t]) => ({ t, on: String(sp === id), go: () => this.setState({ sp: id }),
+      st: 'min-height:32px;padding:0 12px;border:0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;' + (sp === id ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(22,50,92,0.2)' : 'background:none;color:#5B6B82') }));
+    // (5) risk register (example)
+    const LV = { สูง: 'background:#FDE7E4;color:#C0392B', กลาง: 'background:#FFF1DC;color:#B45309', ต่ำ: 'background:#E2EFDA;color:#3B7420' };
+    v.risks = [['สูง', 'ตู้ AC ส่งไม่ทันขั้น 5 (2/10)', 'ติดตาม MA-05 ทุกวัน · สำรองตู้จากคลัง', 'จัดซื้อ'],
+      ['กลาง', 'ฝนตก 2–3/10 (โอกาส 60–70%)', 'ทำงานในร่มก่อน · เผื่อ 1 วันในแผน', 'หัวหน้าทีม'],
+      ['กลาง', 'การไฟฟ้านัดตรวจช้ากว่า 6/10', 'โทรตามทุก 2 วัน · เตรียมเอกสารครบ', 'PM']].map(r => ({ lv: r[0], t: r[1], m: r[2], o: r[3],
+      lvSt: 'flex:none;min-width:44px;text-align:center;font-size:12px;font-weight:700;border-radius:999px;padding:3px 8px;' + LV[r[0]] }));
+    // (7) labour histogram plan vs actual (man/day)
+    const LP = [4, 6, 6, 8, 8, 6, 6, 6, 4, 4, 0, 0, 4], LA = [4, 6, 6, 8, 8, 6, 6];
+    const LMAX = 10;
+    v.lab = LP.map((p, i) => { const a = LA[i]; return { n: a !== undefined ? a : (p || ''), d: DAYS[i],
+      dSt: 'text-align:center;font-size:10px;color:' + (i === TODAY ? '#C0392B;font-weight:700' : '#5B6B82'),
+      boxSt: 'position:relative;width:100%;height:' + Math.round(Math.max(p, a || 0) / LMAX * 100) + '%;min-height:2px',
+      planSt: 'position:absolute;inset:0;border-radius:4px 4px 0 0;background:#DDE4ED;height:100%;top:auto;bottom:0;height:' + (p ? Math.round(p / Math.max(p, a || 0) * 100) : 0) + '%',
+      actSt: a === undefined ? 'display:none' : 'position:absolute;left:20%;right:20%;bottom:0;border-radius:3px 3px 0 0;background:#1F6FB5;height:' + Math.round(a / Math.max(p, a) * 100) + '%' }; });
+    v.labSum = 'สะสม 44 man-day · แผนทั้งโครงการ 62';
+    // (8) weekly report draft
+    v.wrOpen = !!st.wr; v.openWr = () => this.setState({ wr: true }); v.closeWr = () => this.setState({ wr: false });
+    v.wrKpi = [{ l: 'งานจริงสะสม', v: pct + '%', vSt: 'color:#1F6FB5' }, { l: 'แผนสะสม', v: planPct + '%', vSt: 'color:#5B6B82' }, { l: 'ต่างจากแผน', v: (diff > 0 ? '+' : '') + diff + '%', vSt: 'color:' + (Math.abs(diff) <= 5 ? '#3B7420' : '#C0392B') }, { l: 'คาดส่งมอบ', v: endF <= DUE ? '6/10 ตามกำหนด' : 'ช้า ' + (endF - DUE) + ' วัน', vSt: 'color:#16325C' }];
+    v.wrSec = [{ h: 'งานที่ทำสัปดาห์นี้', items: ['ติดตั้งแผงครบ 164 แผง (28/9)', 'เดินสายสตริง 1–12 ครบ (29–30/9)', 'ติดตั้งตู้ DC combiner (30/9)'] },
+      { h: 'แผนสัปดาห์หน้า', items: ['วัด Voc/Isc และยื่น RFI-03 (1/10)', 'ติดตั้งอินเวอร์เตอร์ · ตู้ AC (2/10)', 'ทดสอบระบบ (3/10) · ส่งมอบ 6/10'] },
+      { h: 'ปัญหาและความเสี่ยง', items: ['ตู้ AC รออนุมัติ MA-05 (เสี่ยงสูง)', 'ฝนตกช่วง 2–3/10', 'รอการไฟฟ้านัดวันตรวจ'] },
+      { h: 'ความปลอดภัยและแรงงาน', items: ['ไม่มีอุบัติเหตุ 7 วันติดต่อกัน', 'แรงงานสะสม 44 man-day', 'NCR เปิด 0 · Change Order 1 (ไม่มีผลค่าใช้จ่าย)'] }];
+    v.wrPics = [{}, {}, {}, {}, {}, {}];
+    // KPI strip (option B): 5 inline metrics, no duplicates
+    const spi = planPct ? pct / planPct : 1, okS = Math.abs(diff) <= 5;
+    const cell = (first) => 'display:flex;gap:8px;min-width:0;padding:0 12px;height:100%;align-items:center;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer;' + (first ? '' : 'border-left:1px solid #EEF2F7');
+    v.strip = [
+      { l: 'ความคืบหน้า', v: pct + '%', s: 'แผน ' + planPct + '% · ▲' + (pct - 36) + '% สัปดาห์นี้', vSt: 'color:#1F6FB5', go: () => this.setState({ view: 'curve' }) },
+      { l: 'กำหนดการ', v: okS ? 'ตามแผน' : diff < 0 ? 'ช้ากว่าแผน' : 'เร็วกว่าแผน', s: (diff > 0 ? '+' : '') + diff + '%', vSt: 'color:' + (okS ? '#3B7420' : diff < 0 ? '#C0392B' : '#1F6FB5'), go: () => this.setState({ view: 'curve' }) },
+      { l: 'คาดส่งมอบ', v: endF <= DUE ? '6/10' : dstr(Math.min(endF, 12)), s: endF <= DUE ? 'ตามกำหนด เผื่อ ' + Math.max(0, slack) + ' วัน' : 'ช้า ' + (endF - DUE) + ' วัน', vSt: 'color:' + (endF <= DUE ? (slack > 0 ? '#16325C' : '#B45309') : '#C0392B'), go: () => this.setState({ view: 'gantt' }) },
+      { l: 'SPI', v: spi.toFixed(2), s: spi >= 0.95 ? 'ปกติ' : 'ต่ำกว่าแผน', vSt: 'color:' + (spi >= 0.95 ? '#3B7420' : '#C0392B'), go: () => this.setState({ view: 'curve' }) },
+      { l: 'ต้องดำเนินการ', v: (nDue + 1) + ' เรื่อง', s: 'ตู้ AC · WR-02 · RFI-03', vSt: 'color:#B45309', go: () => this.setState({ act: true }) }].map((k, i) => Object.assign(k, { st: cell(i === 0), aria: k.l + ' ' + k.v + ' · แตะเพื่อดูรายละเอียด' }));
+    v.actOpen = !!st.act; v.closeAct = () => this.setState({ act: false });
+    const AI = (t, d, lv, go) => ({ t, d, go, lvSt: 'flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;' + (lv === 'สูง' ? 'background:#FDE7E4;color:#C0392B' : 'background:#FFF1DC;color:#B45309'), lv });
+    v.acts = [AI('ตู้ AC · กันย้อน รออนุมัติ (MA-05)', 'ต้องได้ก่อนขั้น 5 วันที่ 2/10 · ผู้รับผิดชอบ: จัดซื้อ', 'สูง', () => this.setState({ act: false, doc: 5 })),
+      AI('Weekly Report W40 (WR-02)', 'ครบกำหนดส่ง 4/10 · ร่างอัตโนมัติพร้อมแล้ว', 'กลาง', () => this.setState({ act: false, wr: true })),
+      AI('ยื่น RFI-03 ตรวจรับงานสาย DC', 'ยื่นได้เมื่อรายการตรวจขั้น 4 ครบ (เหลือ ' + left + ' รายการ)', 'กลาง', () => this.setState({ act: false, doc: 4 }))];
+    {
+    // ── menu: ภาพรวม / รายงานประจำวัน are in-page tabs (example daily data for this job)
+    const menu = this.state.menu || 'ov', ON = 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(14,30,56,0.15)', OFF = 'background:none;color:#3B4A60';
+    v.isOv = menu === 'ov'; v.isDy = menu === 'dy'; v.curOv = v.isOv ? 'page' : 'false'; v.curDy = v.isDy ? 'page' : 'false';
+    v.stOv = v.isOv ? ON : OFF; v.stDy = v.isDy ? ON : OFF;
+    v.goOv = () => this.setState({ menu: 'ov' }); v.goDy = () => this.setState({ menu: 'dy' });
+    const DW = ['พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ'], DD = [24, 25, 26, 27, 28, 29, 30, 1, 2, 3, 4, 5, 6];
+    const WXI = ['☀', '⛅', '☀', '☂ ฝน', '☀', '⛅', '☀', '⛅ 20%', '☂ 70%', '☂ 60%', '⛅ 30%', '☀ 10%', '☀ 10%'];
+    const SKY = ['FFFFFFFFFFFFFFF', 'FFFFFFFFFFFFFFF', 'FFFFFFFFFFFFFFF', 'FFFRRRRRRRRRFFF', 'FFFFFFFFFFFFFFF', 'FFFFFFFFFFFFFFF', 'FFFFFFFFFFFFFFF'];
+    const ph = (f, alt) => ({ src: 'assets/iec/install/' + f + '.svg', alt });
+    const REP = [
+      { st: 'sent', at: '18:10', man: 6, tools: 3, lines: [['รับวัสดุเข้าหน้างาน ตรวจนับตามใบส่งของ', 'ลานวางวัสดุ', '100%', '100%']], ph: [ph('station', 'วัสดุเข้าหน้างาน'), ph('cabOut', 'ตู้ AC/DC เข้าหน้างาน')], prob: 'ไม่มีปัญหาอุปสรรค' },
+      { st: 'sent', at: '18:02', man: 8, tools: 4, lines: [['ติดตั้งรางยึดแผง', 'หลังคา แถว 1–6', '50%', '50%']], ph: [ph('rail', 'ติดตั้งราง'), ph('rail', 'ติดตั้งราง'), ph('gnd', 'ยึดรางกับโครงหลังคา')], prob: 'ไม่มีปัญหาอุปสรรค' },
+      { st: 'sent', at: '17:55', man: 8, tools: 4, lines: [['ติดตั้งรางยึดแผง ซีลกันรั่วจุดยึด', 'หลังคา แถว 7–12', '50%', '100%']], ph: [ph('rail', 'ติดตั้งราง'), ph('rail', 'ซีลกันรั่ว'), ph('rail', 'ตรวจแนวราง'), ph('gnd', 'จุดยึด')], prob: 'ไม่มีปัญหาอุปสรรค' },
+      { st: 'off', at: '13:20', man: 0, tools: 0, lines: [], noT: 'หยุดงาน · ฝนตกตั้งแต่ 09:00 ไม่ขึ้นหลังคา', ph: [], prob: 'ปัญหา: ฝนตกทั้งช่วงทำงาน · แนวทาง: ย้ายงานติดตั้งแผงไปวันจันทร์ (ตามแผน MP ยังไม่ช้า)' },
+      { st: 'sent', at: '18:20', man: 9, tools: 5, lines: [['ติดตั้งแผงเซลล์แสงอาทิตย์ 164 แผง', 'หลังคา', '100%', '100%'], ['ต่อสายดินโครงแผง', 'หลังคา', '100%', '100%']], ph: [ph('pv', 'ติดตั้งแผง'), ph('pv', 'ติดตั้งแผง'), ph('gnd', 'สายดินโครงแผง'), ph('pv', 'ภาพรวมหลังคา')], prob: 'ไม่มีปัญหาอุปสรรค' },
+      { st: 'draft', at: '', man: 7, tools: 4, lines: [['เดินสายสตริง 1–6 (โซน A)', 'หลังคา → ตู้ DC', '100%', '100%']], ph: [ph('cabIn', 'เดินสายสตริง'), ph('cabIn', 'เข้าตู้ DC')], prob: 'ร่างยังไม่ลงชื่อ · ขาดรูป 2 รูป' },
+      { st: 'today', at: '', man: 0, tools: 0, lines: [], noT: 'ยังไม่ได้ทำรายงานวันนี้ · แผน MP วันนี้: เดินสายสตริง 7–12, ติดตั้งตู้ DC combiner', ph: [], prob: '' }];
+    const SN = { sent: ['ส่งแล้ว', 'background:#E8F5EE;color:#1F6B43', '#2E9E5B'], draft: ['ร่าง', 'background:#FFF3E6;color:#9A4A06', '#F08C00'], off: ['หยุดงาน', 'background:#EEF1F5;color:#5B6B82', '#8A97A8'], today: ['ยังไม่ส่ง', 'background:#FDECEA;color:#B42318', '#D9453B'], future: ['—', 'background:none;color:#9FB3CC', '#C9D3DF'] };
+    const sel = this.state.dyDay ?? 6;
+    v.dyDays = DD.map((dd, i) => { const r = REP[i], k = r ? r.st : 'future', on = sel === i;
+      return { dd, wd: DW[i], wx: WXI[i], stT: SN[k][0], pill: SN[k][1], sub: r && r.man ? r.man + ' คน' : (k === 'future' ? 'แผน' : ''), on: on ? 'true' : 'false',
+        aria: dd + ' ' + SN[k][0], go: () => this.setState({ dyDay: i }),
+        st: (on ? 'border:2px solid #1F6FB5;background:#E3EEF8' : k === 'today' ? 'border:2px solid #D9453B;background:#fff' : k === 'future' ? 'border:1px dashed #C9D3DF;background:#FAFBFD' : 'border:1px solid #DDE4ED;background:#fff') + ';box-shadow:inset 0 4px 0 ' + SN[k][2] }; });
+    const sent = REP.filter((r) => r.st === 'sent').length, manDays = REP.reduce((a, r) => a + r.man, 0);
+    v.dyK = [{ l: 'ส่งแล้ว', v: sent + ' / 6 วัน', s: 'นับถึงเมื่อวาน', c: '#2E9E5B' }, { l: 'ร่างค้าง', v: '1', s: '29/9 ยังไม่ลงชื่อ', c: '#C2410C' },
+      { l: 'วันนี้ 30/9', v: 'ยังไม่ส่ง', s: 'ส่งก่อน 18:00', c: '#B42318' }, { l: 'คน·วันรวม', v: manDays + '', s: 'เฉลี่ย ' + (manDays / 5).toFixed(1) + ' คน/วันที่ทำงาน', c: '#16325C' },
+      { l: 'หยุดเพราะฝน', v: '1 วัน', s: 'พยากรณ์ 2–3/10 ฝน 60–70%', c: '#16325C' }];
+    const cur = REP[sel], k = cur ? cur.st : 'future', FUL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    const HR = ['06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
+    const sky = (cur && SKY[sel]) || '';
+    const ACC = [5, 12, 20, 20, 40, 47, null], PLAN = [4, 10, 18, 26, 36, 44, 52];
+    const order = [6, 5, 4, 3, 2, 1, 0];
+    const fK = this.state.dyFil || 'all';
+    const isTodo = (i) => ['today', 'draft'].includes(REP[i].st), isProb = (i) => REP[i].prob && REP[i].prob !== 'ไม่มีปัญหาอุปสรรค' && REP[i].st !== 'today';
+    const keep = order.filter((i) => fK === 'all' || (fK === 'todo' ? isTodo(i) : isProb(i)));
+    v.dyF = [['all', 'ทั้งหมด', order.length], ['todo', 'ต้องทำ', order.filter(isTodo).length], ['prob', 'มีปัญหา', order.filter(isProb).length]].map(([k2, t, n]) => ({ t, n, on: fK === k2 ? 'true' : 'false', go: () => this.setState({ dyFil: k2 }),
+      st: fK === k2 ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(14,30,56,0.15)' : 'background:none;color:#3B4A60' }));
+    v.dyEmpty = keep.length === 0;
+    const PLANF = [4, 10, 18, 26, 36, 44, 52, 60, 68, 76, 84, 92, 100], X = (i) => (i * 520 / 12).toFixed(1), Y = (p) => (145 - p * 1.35).toFixed(1);
+    v.dyPlanPts = PLANF.map((p, i) => X(i) + ',' + Y(p)).join(' ');
+    v.dyActPts = ACC.slice(0, 6).map((p, i) => X(i) + ',' + Y(p)).join(' ');
+    v.dyTx = X(6); v.dyVar = 'เร็วกว่า ' + (ACC[5] - PLAN[5]) + '%';
+    const MANP = [6, 8, 8, 0, 9, 7, null, 9, 9, 6, 0, 8, 8];
+    v.dyMan = DD.map((d, i) => { const r = REP[i], m = r ? r.man : MANP[i], fut = !r, today = r && r.st === 'today';
+      return { d, v: today ? '?' : m || (r && r.st === 'off' ? '☂' : '0'), h: Math.max(3, ((today ? 9 : m) || 0) / 10 * 100),
+        st: today ? 'border:2px dashed #D9453B;background:#FFF7F6' : fut ? 'border:2px dashed #9FB3CC;background:#F3F6FA' : r.st === 'off' ? 'background:#C9D3DF' : 'background:#1F6FB5', dc: today ? '#D9453B' : '#5B6B82' }; });
+    const allPh = []; [5, 4, 2, 1, 0].forEach((i) => REP[i].ph.forEach((p) => allPh.push({ src: p.src, alt: p.alt, d: DD[i] + '/9' })));
+    v.dyPh = allPh.slice(0, 6); v.dyPhN = allPh.length;
+    v.dyZip = () => this.setState({ toast: 'รวม DAILY REPORT 24–29/9 เป็น PDF เดียว' });
+    const SIGN = [['✓', '✓ 25/9'], ['✓', '✓ 26/9'], ['✓', 'รอ 4 วัน'], ['✓', '✓ 28/9'], ['✓', 'รอ 2 วัน'], ['—', '—'], ['—', '—']];
+    const sg = (t) => (t.startsWith('✓') ? 'background:#E8F5EE;color:#1F6B43' : t.startsWith('รอ') ? 'background:#FDECEA;color:#B42318' : 'background:#F1F4F8;color:#9FB3CC');
+    const MPPH = [['2.1', 'โครงสร้าง + ราง', 7, 4], ['2.2', 'ระบบไฟฟ้า DC', 2, 2], ['2.3', 'แผงเซลล์', 4, 2], ['2.4', 'FFS', 0, 1], ['2.5', 'อินเวอร์เตอร์', 0, 2], ['2.6', 'ระบบไฟฟ้า AC', 0, 1], ['2.7', 'ตู้ควบคุม', 0, 1], ['2.8', 'Zero Export', 0, 1], ['2.9', 'Monitoring', 0, 1]];
+    v.mpPh = MPPH.map(([c, t, n, need]) => ({ c, t, n: n + '/' + need, w: Math.min(100, n / need * 100) + '%', col: n >= need ? '#2E9E5B' : n ? '#F08C00' : '#9FB3CC' }));
+    v.mpPhIec = MPPH.filter((m) => m[2] >= m[3]).reduce((a, m) => a + m[3], 0) + '/' + MPPH.reduce((a, m) => a + m[3], 0) + ' ช่อง';
+    v.tmr = [{ c: '2.2', t: 'เดินสายสตริง 7–12 (ต่อจากวันนี้)', p: '→ 100%' }, { c: '2.2', t: 'ติดตั้งตู้ DC combiner', p: '→ 100%' }, { c: '2.5', t: 'ยึดอินเวอร์เตอร์ 2 ตัว', p: '0 → 50%' }];
+    v.dyK[1] = { l: 'รอลงนาม · รับทราบ', v: '1 · 2', s: 'ร่าง 29/9 · ผู้ตรวจยังไม่รับทราบ 26, 28/9', c: '#C2410C' };
+    v.dyRows = keep.map((i) => { const r = REP[i], k = r.st, on = sel === i;
+      return { engT: 'วิศวกร ' + SIGN[i][0], inspT: 'ผู้ตรวจ ' + SIGN[i][1], engSt: sg(SIGN[i][0]), inspSt: sg(SIGN[i][1]), d: DW[i] + '. ' + DD[i] + '/9', stT: SN[k][0], pill: SN[k][1], wx: WXI[i], man: r.man ? r.man : '—',
+        work: r.lines.length ? r.lines.map((l) => l[0] + ' (' + l[1] + ')').join(' · ') : (r.noT || '').split(' · ')[0],
+        acc: ACC[i] == null ? '— / ' + PLAN[i] + '%' : ACC[i] + '% / ' + PLAN[i] + '%', accW: (ACC[i] || 0) + '%',
+        ph: r.ph.length + '/4', phC: r.ph.length >= 4 ? '#1F6B43' : r.ph.length ? '#C2410C' : '#9FB3CC',
+        prob: r.prob && r.prob !== 'ไม่มีปัญหาอุปสรรค' ? r.prob.replace(/^ปัญหา: /, '') : '—', probC: r.prob && r.prob !== 'ไม่มีปัญหาอุปสรรค' ? '#9A4A06' : '#9FB3CC',
+        bg: k === 'today' ? 'background:#FFF7F6' : '',
+        cta: k === 'today' ? 'ทำรายงานวันนี้' : k === 'draft' ? 'ทำต่อ · ส่ง' : 'เปิดรายงาน',
+        ctaSt: k === 'today' || k === 'draft' ? 'background:linear-gradient(90deg,#1F6FB5,#2E8FDB);color:#fff' : 'background:#fff;color:#16325C;border:1px solid rgba(22,50,92,0.5)' }; });
+    v.dyCur = [{ title: DW[sel] + '. ' + DD[sel] + (sel < 7 ? ' ก.ย.' : ' ต.ค.') + ' 2569', stT: SN[k][0], pill: SN[k][1],
+      meta: k === 'sent' ? 'ส่งเมื่อ ' + cur.at + ' · ผู้รายงาน วิศวกรหน้างาน (ตัวอย่าง)' : k === 'draft' ? 'บันทึกร่างไว้ · ยังไม่ลงชื่อ' : k === 'off' ? 'ส่งเมื่อ ' + cur.at + ' · บันทึกหยุดงาน' : k === 'today' ? 'เวลาทำงาน 08:00–18:00' : 'ยังไม่ถึงวัน',
+      wx: HR.map((t, i) => { const c = sky[i]; return { t, v: c || '·', st: c === 'R' ? 'background:#FF0000;color:#fff' : c === 'F' ? 'background:#B7DEE8;color:#16325C' : 'background:#F6F8FB;color:#9FB3CC' }; }),
+      facts: [{ k: 'กำลังคน', v: cur && cur.man ? cur.man + ' คน' : '—' }, { k: 'เครื่องมือ', v: cur && cur.tools ? cur.tools + ' รายการ' : '—' }, { k: 'อากาศ', v: WXI[sel] }],
+      lines: (cur ? cur.lines : []).map((l) => ({ t: l[0], loc: l[1], today: l[2], acc: l[3] })), noLines: !cur || !cur.lines.length,
+      noLinesT: cur ? cur.noT || '' : 'แผน MP: ' + (sel === 7 ? 'เดินสาย DC (ต่อ) · ติดตั้งอินเวอร์เตอร์' : 'ติดตั้งอินเวอร์เตอร์ · ตู้ AC · ทดสอบระบบ'),
+      prob: cur ? cur.prob : '', nPh: cur ? cur.ph.length : 0,
+      ph: [0, 1, 2, 3].map((i) => { const x = cur && cur.ph[i]; return { has: !!x, none: !x, src: x ? x.src : '', alt: x ? x.alt : 'ไม่มีรูป', bg: x ? '#1E2630' : '#F6F8FB' }; }),
+      cta: k === 'today' ? 'ทำรายงานวันนี้' : k === 'draft' ? 'ทำต่อ · ลงชื่อและส่ง' : k === 'future' ? 'ยังทำรายงานไม่ได้' : 'เปิดรายงาน',
+      ctaSt: k === 'today' || k === 'draft' ? 'background:linear-gradient(90deg,#1F6FB5,#2E8FDB);color:#fff' : k === 'future' ? 'background:#EEF1F5;color:#9FB3CC;pointer-events:none' : 'background:#fff;color:#16325C;border:1px solid rgba(22,50,92,0.6)',
+      hasPdf: k === 'sent' || k === 'off', pdf: () => this.setState({ toast: 'เปิด DAILY REPORT ' + DD[sel] + '/9' }) }];
+    }
+    v.logs = [
+      { d: '30/9/2569', t: 'เดินสายสตริง 1–12 ครบ ติดตั้งตู้ DC combiner แล้ว', who: 'ทีม TCR02' },
+      { d: '28/9/2569', t: 'ติดตั้งแผงครบ 164 แผง ต่อสายดินโครงแผงแล้ว', who: 'ทีม TCR02' },
+      { d: '26/9/2569', t: 'ติดตั้งรางครบทุกแถว ซีลกันรั่วจุดยึดแล้ว', who: 'ทีม TCR02' },
+      { d: '24/9/2569', t: 'รับวัสดุเข้าหน้างาน ตรวจนับครบตามใบส่งของ', who: 'ทีม TCR02' }];
+    return v;
+  }
+}
+</script>
+</body>
+</html>

@@ -22,11 +22,15 @@ struct PWARoot: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad: the dock over this stack (`PadTabs`).
     @Environment(PadDock.self) private var dock: PadDock?
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         SolarSurveyEntryView()
             .environment(\.pwaOverview, overview)
-            .navigationDestination(item: $station) { JobDetailView(job: $0) }
+            .navigationDestination(item: $station) { job in
+                // iPad: a station being installed opens its install tracking page (docs/ui/install-tracking-ipad)
+                if sizeClass != .compact, jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
+            }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
             .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
@@ -44,6 +48,17 @@ struct PWARoot: View {
                 guard sizeClass == .compact, UserDefaults.standard.string(forKey: "surveyHomeTab") == "plan" else { return }
                 try? await Task.sleep(for: .milliseconds(600))
                 showPlan = true
+            }
+            // `-installOpen YES` (iPad): the first installing station's install tracking page, seeding one with an MP
+            // plan and daily reports when none is installing. It changes that job for good.
+            .task {
+                guard sizeClass != .compact, UserDefaults.standard.bool(forKey: "installOpen") else { return }
+                if jobs.pwaInstalling.isEmpty, let job = jobs.first(where: { $0.kind == .pwa }) ?? jobs.first {
+                    job.kind = .pwa
+                    job.seedRoutineDemo(context)
+                }
+                try? await Task.sleep(for: .milliseconds(600))
+                station = jobs.pwaInstalling.first
             }
             #endif
     }

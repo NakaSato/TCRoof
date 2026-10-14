@@ -34,6 +34,18 @@ extension PWAPlanPhoneView {
         }
     }
 
+    /// iPad: the framed `กำหนดส่ง` card, beside `รายสถานี`. It grows with its rows. No filter: the board has none.
+    func padDueCard(_ due: PWAPlan.DeadlineGroups) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            padCardHeader("กำหนดส่ง", "งานส่งมอบและเอกสาร")
+            dueList(due)
+        }
+        .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+    }
+
     private func dueGroup(_ title: String, _ range: String, _ rows: [PWAPlan.Deadline]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -84,8 +96,7 @@ extension PWAPlanPhoneView {
             }
             .lineLimit(1)
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+            .padRow(pad)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

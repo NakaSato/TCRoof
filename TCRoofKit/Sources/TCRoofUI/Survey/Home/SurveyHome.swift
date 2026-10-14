@@ -65,6 +65,8 @@ struct SurveyHomeView: View {
     @AppStorage("solarSurvey.homeTab") var tab = JobStage.survey
     @State var showInstallPicker = false
     @State var showMaintenancePicker = false
+    /// iPad: the nav's `แผนงาน` is selected and the host's plan page is under it.
+    @State var planOpen = false
     /// Installation job whose tracking page is open.
     @State var tracking: UUID?
     // the home page (docs/ui/pwa-solar-survey-iphone-v3, docs/ui/pwa-solar-survey-ipad-v3)

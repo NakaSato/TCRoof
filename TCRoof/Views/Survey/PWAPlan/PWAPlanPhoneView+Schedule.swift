@@ -54,6 +54,26 @@ extension PWAPlanPhoneView {
         .onChange(of: items.count) { scrollToDay(animated: false) }
     }
 
+    /// iPad: the framed `ตารางงาน` card. The calendar stays and only the day list scrolls, inside the card. No filter
+    /// button: the board has none.
+    func padSchedule(_ board: PWAPlanBoard) -> some View {
+        let rows = calendarRows, days = rows.flatMap { $0 }.compactMap { $0 }
+        let items = board.agenda(days), shown = items.filter(passes)
+        let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return VStack(alignment: .leading, spacing: 10) {
+            padCardHeader("ตารางงาน", "ทุกงานของโครงการ")
+            calendarCard(rows, types: board.typesByDay ?? PWAPlan.types(items), today: board.today)
+            listHeading(items, shown: shown.count, teams: PWAPlan.teamKeys(items), today: board.today)
+            dayList(days, all: Dictionary(grouping: items, by: \.day), shown: Dictionary(grouping: shown, by: \.day), today: board.today)
+        }
+        .padding(.horizontal, 12).padding(.top, 10)
+        .background(Theme.surface, in: frame)
+        .clipShape(frame)
+        .overlay(frame.strokeBorder(Theme.borderSubtle))
+        .onChange(of: search) { scrollToDay(animated: false) }
+        .onChange(of: items.count) { scrollToDay(animated: false) }
+    }
+
     /// Scrolls the day list to the selected day. Until it is there the list's position selects nothing.
     private func scrollToDay(animated: Bool) {
         spyLock = .distantFuture
@@ -84,8 +104,9 @@ extension PWAPlanPhoneView {
             if !week { legend }
         }
         .padding(.horizontal, 6).padding(.vertical, 8)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        // iPad: a soft panel inside the `ตารางงาน` card
+        .background(pad ? Theme.stripFill : Theme.surface, in: RoundedRectangle(cornerRadius: pad ? 12 : 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: pad ? 12 : 16, style: .continuous).strokeBorder(pad ? Theme.track : Theme.borderSubtle))
     }
 
     /// `12–18 ต.ค. 2569` over the ISO week number, or `ตุลาคม 2569`.
@@ -236,13 +257,15 @@ extension PWAPlanPhoneView {
             Text(isFiltered || searching ? "\(shown) จาก \(items.count) รายการ" : "\(items.count) รายการ · เลื่อนดูได้")
                 .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().minimumScaleFactor(0.8)
             Spacer(minLength: 0)
-            Button { showFilter.toggle() } label: { TCFilterCircle(open: showFilter, filtered: isFiltered) }
-                .buttonStyle(.plain)
-                .accessibilityLabel("กรองตารางงาน: \(type?.title ?? "ทุกประเภท") · \(team.map(teamTitle) ?? "ทุกทีม") · \(shown) รายการ")
-                .popover(isPresented: $showFilter, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
-                    filterPopover(items, shown: shown, teams: teams)
-                        .presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
-                }
+            if !pad {
+                Button { showFilter.toggle() } label: { TCFilterCircle(open: showFilter, filtered: isFiltered) }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("กรองตารางงาน: \(type?.title ?? "ทุกประเภท") · \(team.map(teamTitle) ?? "ทุกทีม") · \(shown) รายการ")
+                    .popover(isPresented: $showFilter, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+                        filterPopover(items, shown: shown, teams: teams)
+                            .presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
+                    }
+            }
         }
         .lineLimit(1)
     }
@@ -265,12 +288,13 @@ extension PWAPlanPhoneView {
                         }
                     }
                     // room under the last day for it to reach the top
-                    .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, max(g.size.height - 60, 20))
+                    .padding(.horizontal, pad ? 0 : 16).padding(.top, 2).padding(.bottom, max(g.size.height - 60, 20))
                     .background {
                         GeometryReader { p in Color.clear.preference(key: DayTops.self, value: .init(offset: p.frame(in: .named("days")).minY)) }
                     }
                 }
                 .coordinateSpace(name: "days")
+                .scrollIndicators(pad ? .hidden : .automatic)
                 .scrollDismissesKeyboard(.immediately)
                 .onPreferenceChange(DayTops.self) { at in
                     // only a list that moved selects a day, not rows that came or went
@@ -484,8 +508,7 @@ extension PWAPlanPhoneView {
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+            .padRow(pad)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

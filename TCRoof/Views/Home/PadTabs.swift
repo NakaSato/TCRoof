@@ -23,6 +23,8 @@ enum PadTab: String, CaseIterable {
     var tab: PadTab
     private(set) var opened: Set<PadTab>
     var showSettings = false
+    /// The page shown has no fade behind the dock (the PWA plan page, docs/ui/pwa-plan-ipad).
+    var noFade = false
 
     init(_ tab: PadTab) {
         self.tab = tab
@@ -88,7 +90,7 @@ struct PadTabs<HomeRoot: View>: View {
                 TCTabBar(items: items, selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
                     .padding(.bottom, 18)
                     .frame(maxWidth: .infinity)
-                    .background(alignment: .bottom) { TCDockFade(t.fade, height: 90) }
+                    .background(alignment: .bottom) { if !dock.noFade { TCDockFade(t.fade, height: 90) } }
             }
             // the dock measures from the screen's bottom edge, not the home indicator's safe area
             .ignoresSafeArea(.container, edges: .bottom)

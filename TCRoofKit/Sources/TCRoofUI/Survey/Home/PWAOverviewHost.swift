@@ -22,6 +22,9 @@ public struct PWAOverviewHost {
     public var returnToInstall: ((String) -> Void)?
     /// Opens the `แผนงาน` page from the home's nav; nil leaves the segment out.
     public var openPlan: (() -> Void)?
+    /// iPad: the plan page for the home to show under its nav, with `แผนงาน` selected, given the header's search
+    /// text. Without it the segment calls `openPlan`.
+    public var planBody: ((String) -> AnyView)?
     /// The header's bell: the unread count and the notifications screen. nil leaves the bell out.
     public var unread = 0
     public var openNotifications: (() -> Void)?
@@ -30,7 +33,9 @@ public struct PWAOverviewHost {
                 openDailyReports: (() -> Void)? = nil, maintenanceStations: [MaintenanceStationSummary] = [],
                 maintenanceTasks: [MaintenanceTask] = [], openMaintenanceStation: ((MaintenanceStationSummary) -> Void)? = nil,
                 handOver: ((String) -> Void)? = nil, returnToInstall: ((String) -> Void)? = nil,
-                openPlan: (() -> Void)? = nil, unread: Int = 0, openNotifications: (() -> Void)? = nil) {
+                openPlan: (() -> Void)? = nil, planBody: ((String) -> AnyView)? = nil, unread: Int = 0,
+                openNotifications: (() -> Void)? = nil) {
+        self.planBody = planBody
         self.handOver = handOver; self.returnToInstall = returnToInstall
         self.installStations = installStations; self.openStation = openStation; self.openDailyReports = openDailyReports
         self.maintenanceStations = maintenanceStations; self.maintenanceTasks = maintenanceTasks

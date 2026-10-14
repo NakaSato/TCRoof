@@ -40,7 +40,8 @@ struct PWARoot: View {
             #if DEBUG
             // `-surveyHomeTab plan` opens แผนงาน. Not at launch: iOS 27 leaves a screen pushed then blank.
             .task {
-                guard UserDefaults.standard.string(forKey: "surveyHomeTab") == "plan" else { return }
+                // iPad shows the plan in the home, under its nav
+                guard sizeClass == .compact, UserDefaults.standard.string(forKey: "surveyHomeTab") == "plan" else { return }
                 try? await Task.sleep(for: .milliseconds(600))
                 showPlan = true
             }
@@ -60,6 +61,7 @@ struct PWARoot: View {
             handOver: { id in stations.first { $0.overviewID == id }?.status = .completed },
             returnToInstall: { id in stations.first { $0.overviewID == id }?.status = .installing },
             openPlan: { showPlan = true },
+            planBody: { search in AnyView(PWAPlanPhoneView(padSearch: search)) },
             unread: notifications.filter { !read.contains($0.id) }.count,
             openNotifications: { showNotifications.toggle() })
     }

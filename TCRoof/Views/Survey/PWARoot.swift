@@ -55,7 +55,10 @@ struct PWARoot: View {
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
+            maintenanceStations: stations.filter { $0.status == .completed }.map(\.maintenanceSummary),
             openMaintenanceStation: { s in station = stations.first { $0.overviewID == s.id } ?? demoStation(stations) },
+            handOver: { id in stations.first { $0.overviewID == id }?.status = .completed },
+            returnToInstall: { id in stations.first { $0.overviewID == id }?.status = .installing },
             openPlan: { showPlan = true },
             unread: notifications.filter { !read.contains($0.id) }.count,
             openNotifications: { showNotifications.toggle() })

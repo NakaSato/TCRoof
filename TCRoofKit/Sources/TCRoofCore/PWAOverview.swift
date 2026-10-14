@@ -225,6 +225,9 @@ public struct MaintenanceStationSummary: Identifiable, Hashable, Sendable {
         self.pr = pr; self.status = status; self.openRepairs = openRepairs; self.nextPM = nextPM; self.note = note
     }
 
+    /// False for an offline station and for one with no monitoring yet: its PR is shown as a dash and left out of the average.
+    public var reportsPR: Bool { status != .offline && pr > 0 }
+
     /// Energy over expected, 0…1.
     public var yield: Double { expected > 0 ? min(max(energy / expected, 0), 1) : 0 }
 }
@@ -253,7 +256,7 @@ public enum MaintenanceOverview {
         public var energy = 0.0, expected = 0.0
         /// Energy over expected, percent.
         public var yield = 0
-        /// kWp-weighted PR of the stations that report (not offline); nil when none does.
+        /// kWp-weighted PR of the stations that report (`reportsPR`); nil when none does.
         public var pr: Int?
         public var normal = 0, alarm = 0, offline = 0
     }
@@ -265,7 +268,7 @@ public enum MaintenanceOverview {
         t.energy = stations.reduce(0) { $0 + $1.energy }
         t.expected = stations.reduce(0) { $0 + $1.expected }
         t.yield = t.expected > 0 ? Int((t.energy / t.expected * 100).rounded()) : 0
-        t.pr = InstallOverview.weighted(stations.filter { $0.status != .offline }.map { ($0.pr, $0.kWp) }).map { Int($0.rounded()) }
+        t.pr = InstallOverview.weighted(stations.filter(\.reportsPR).map { ($0.pr, $0.kWp) }).map { Int($0.rounded()) }
         t.normal = stations.filter { $0.status == .normal }.count
         t.alarm = stations.filter { $0.status == .alarm }.count
         t.offline = stations.filter { $0.status == .offline }.count

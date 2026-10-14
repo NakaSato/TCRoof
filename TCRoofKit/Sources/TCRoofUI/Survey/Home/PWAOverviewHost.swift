@@ -12,11 +12,14 @@ public struct PWAOverviewHost {
     public var openStation: ((InstallStationSummary) -> Void)?
     /// Opens the daily report list from the overview's strip.
     public var openDailyReports: (() -> Void)?
-    /// Handed-over stations. There is no monitoring feed yet, so a host leaves it empty.
+    /// Handed-over stations. There is no monitoring feed yet, so a host gives them without energy or PR.
     public var maintenanceStations: [MaintenanceStationSummary]
     public var maintenanceTasks: [MaintenanceTask]
     /// Opens a handed-over station from its row of the maintenance overview.
     public var openMaintenanceStation: ((MaintenanceStationSummary) -> Void)?
+    /// Hands one of `installStations` over to maintenance, by its id; `returnToInstall` undoes it.
+    public var handOver: ((String) -> Void)?
+    public var returnToInstall: ((String) -> Void)?
     /// Opens the `แผนงาน` page from the home's nav; nil leaves the segment out.
     public var openPlan: (() -> Void)?
     /// The header's bell: the unread count and the notifications screen. nil leaves the bell out.
@@ -26,7 +29,9 @@ public struct PWAOverviewHost {
     public init(installStations: [InstallStationSummary]? = nil, openStation: ((InstallStationSummary) -> Void)? = nil,
                 openDailyReports: (() -> Void)? = nil, maintenanceStations: [MaintenanceStationSummary] = [],
                 maintenanceTasks: [MaintenanceTask] = [], openMaintenanceStation: ((MaintenanceStationSummary) -> Void)? = nil,
+                handOver: ((String) -> Void)? = nil, returnToInstall: ((String) -> Void)? = nil,
                 openPlan: (() -> Void)? = nil, unread: Int = 0, openNotifications: (() -> Void)? = nil) {
+        self.handOver = handOver; self.returnToInstall = returnToInstall
         self.installStations = installStations; self.openStation = openStation; self.openDailyReports = openDailyReports
         self.maintenanceStations = maintenanceStations; self.maintenanceTasks = maintenanceTasks
         self.openMaintenanceStation = openMaintenanceStation; self.openPlan = openPlan

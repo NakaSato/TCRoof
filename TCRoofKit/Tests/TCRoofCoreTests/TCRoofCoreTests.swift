@@ -204,6 +204,26 @@ final class TCRoofCoreTests: XCTestCase {
         XCTAssertTrue(j.canMoveToInstall)
     }
 
+    /// Only an installation job is handed over to maintenance, and coming back it keeps its installation progress.
+    func testMoveToMaintenance() throws {
+        var j = Job.new(template: JobTemplate.all[2])
+        XCTAssertFalse(j.moveToMaintenance())
+        XCTAssertFalse(j.moveBackToInstall())
+        for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
+        XCTAssertTrue(j.moveToInstall())
+        j.install?.doneSteps = 5; j.install?.team = "TCR02"
+        XCTAssertTrue(j.moveToMaintenance())
+        XCTAssertEqual(j.stage, .maintenance)
+        XCTAssertFalse(j.moveToMaintenance())
+        XCTAssertFalse(j.moveBackToSurvey())
+        let back = try JSONDecoder().decode(Job.self, from: JSONEncoder().encode(j))
+        XCTAssertEqual(back.stage, .maintenance)
+        XCTAssertTrue(j.moveBackToInstall())
+        XCTAssertEqual(j.stage, .install)
+        XCTAssertEqual(j.install?.doneSteps, 5)
+        XCTAssertEqual(j.install?.team, "TCR02")
+    }
+
     /// A2 saved before the card page: the six original symbols, no siteShapes, no mark labels. It must still open as it was.
     func testDecodeOldSitePage() throws {
         let kinds = ["meter", "trafo", "mdb", "inv", "water", "office"]

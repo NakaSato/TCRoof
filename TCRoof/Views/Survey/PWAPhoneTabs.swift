@@ -152,6 +152,12 @@ extension Job {
         return s
     }
 
+    /// This handed-over station for the maintenance overview. No monitoring feed yet, so it has no energy or PR.
+    var maintenanceSummary: MaintenanceStationSummary {
+        MaintenanceStationSummary(id: overviewID, mpNumber: mpNumber, name: projectName, kWp: capacityKW, status: .normal,
+                                  note: "ยังไม่มีข้อมูลการผลิต")
+    }
+
     /// Papers signed and not yet sent, over the station's packages.
     var papersWaitingToSend: Int {
         let ctx = stationContext, station = stationDocs, library = StationDocsStore.loadLibrary()

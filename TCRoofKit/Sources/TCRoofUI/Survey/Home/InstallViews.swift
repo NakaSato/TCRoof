@@ -87,6 +87,76 @@ struct InstallPickerSheet: View {
     }
 }
 
+/// "เพิ่มโครงการบำรุงรักษา": the stations being installed, furthest along first; adding one hands it over.
+struct MaintenancePickerSheet: View {
+    let stations: [InstallStationSummary]
+    let add: (InstallStationSummary) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var rows: [InstallStationSummary] { stations.sorted { $0.actual != $1.actual ? $0.actual > $1.actual : $0.name < $1.name } }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("เพิ่มโครงการบำรุงรักษา").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
+                    Text("เลือกจากงานติดตั้ง · สถานีที่เพิ่มจะนับเป็นส่งมอบแล้ว").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                }
+                Spacer(minLength: 0)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.navy)
+                        .frame(width: 44, height: 44)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).accessibilityLabel("ปิด")
+            }
+            .padding(.horizontal, 24).padding(.vertical, 20)
+            Divider()
+            if rows.isEmpty {
+                TCEmptyState("ไม่มีงานติดตั้ง", systemImage: "list.clipboard", description: Text("เพิ่มโครงการเป็นงานติดตั้งก่อน แล้วจึงย้ายมาบำรุงรักษา"))
+                    .padding(.vertical, 40)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(rows) { s in
+                            row(s)
+                            Divider()
+                        }
+                    }
+                }
+            }
+        }
+        .background(Theme.surface)
+    }
+
+    func row(_ s: InstallStationSummary) -> some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                if let mp = s.mpNumber { Text("MP \(mp)").font(.sarabun(12, .heavy, relativeTo: .caption)).foregroundStyle(Theme.inkMuted) }
+                Text(s.name).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text(detail(s)).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+            }
+            .lineLimit(1)
+            Spacer(minLength: 0)
+            Button { add(s) } label: {
+                Text("เพิ่ม").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
+                    .frame(minWidth: 88, minHeight: 44).padding(.horizontal, 6)
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("เพิ่ม \(s.name) เป็นงานบำรุงรักษา")
+        }
+        .padding(.horizontal, 24).padding(.vertical, 10)
+    }
+
+    /// "ติดตั้ง 85% · 90 kWp · TCR02"
+    func detail(_ s: InstallStationSummary) -> String {
+        let kWp = s.kWp.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US")))
+        return ["ติดตั้ง \(Int(s.actual.rounded()))%", s.kWp > 0 ? kWp + " kWp" : "", s.contractor].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+}
+
 /// Installation tracking of one job.
 // TODO: build from the canvas board `iPadInstall.dc.html` (steps, team, handover); only a placeholder for now.
 struct InstallTrackingView: View {

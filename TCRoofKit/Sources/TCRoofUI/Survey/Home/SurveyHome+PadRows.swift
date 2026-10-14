@@ -101,7 +101,7 @@ extension SurveyHomeView {
         case .offline: (Theme.hairline, Theme.inkMuted)
         case .normal: (Theme.progressBox, Theme.navy)
         }
-        let pr = "PR \(s.status == .offline ? "—" : number(s.pr, digits: 0))%"
+        let pr = "PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%"
         return VStack(alignment: .leading, spacing: 8) {
             padRowTop(mp: s.mpNumber, chip: TCToneChip(status.0, tone: status.1), name: s.name,
                       detail: [s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", pr].filter { !$0.isEmpty }.joined(separator: " · "),

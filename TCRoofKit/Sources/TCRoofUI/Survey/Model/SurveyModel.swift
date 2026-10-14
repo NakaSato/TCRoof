@@ -140,6 +140,24 @@ public final class SurveyModel {
         return true
     }
 
+    /// Hands an installation job over to maintenance.
+    @discardableResult
+    public func moveToMaintenance(_ id: UUID) -> Bool {
+        guard var j = job(id), j.moveToMaintenance() else { return false }
+        update(j)
+        flush(id)
+        return true
+    }
+
+    /// Returns a handed-over job to the installation stage.
+    @discardableResult
+    public func moveBackToInstall(_ id: UUID) -> Bool {
+        guard var j = job(id), j.moveBackToInstall() else { return false }
+        update(j)
+        flush(id)
+        return true
+    }
+
     // MARK: link to the host app's jobs
 
     /// Reports that belong to one host-app job, newest first.

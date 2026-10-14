@@ -64,6 +64,7 @@ struct SurveyHomeView: View {
     /// Home tab: surveys, installations, maintenance; kept between launches.
     @AppStorage("solarSurvey.homeTab") var tab = JobStage.survey
     @State var showInstallPicker = false
+    @State var showMaintenancePicker = false
     /// Installation job whose tracking page is open.
     @State var tracking: UUID?
     // the home page (docs/ui/pwa-solar-survey-iphone-v3, docs/ui/pwa-solar-survey-ipad-v3)
@@ -74,7 +75,8 @@ struct SurveyHomeView: View {
     @State var installFilter: InstallOverview.RowFilter?
     /// The contractor whose stations the install overview is narrowed to.
     @State var contractor: String?
-    @State var maintenanceFilter = MaintenanceOverview.RowFilter.issue
+    /// Row filter of the maintenance overview; nil until picked, then `มีปัญหา` when any station has a problem.
+    @State var maintenanceFilter: MaintenanceOverview.RowFilter?
 
     /// A job to open, optionally at the step "continue" points to.
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
@@ -168,6 +170,13 @@ struct SurveyHomeView: View {
                 guard model.moveToInstall(id) else { return }
                 showInstallPicker = false
                 withAnimation(.snappy) { tab = .install }
+            }
+        }
+        .sheet(isPresented: $showMaintenancePicker) {
+            MaintenancePickerSheet(stations: installStations) { s in
+                addToMaintenance(s)
+                showMaintenancePicker = false
+                maintenanceFilter = .all
             }
         }
         #if DEBUG

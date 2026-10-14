@@ -14,7 +14,8 @@ extension SurveyHomeView {
         if UserDefaults.standard.string(forKey: "surveyHomeDemo") == "install" { return PWAOverviewDemo.install }
         #endif
         let given = host.installStations ?? []
-        let ids = Set(given.map(\.id))
+        // a station the host has handed over is no installation here either
+        let ids = Set(given.map(\.id) + host.maintenanceStations.map(\.id))
         let local = model.jobs(in: .install).filter { j in !(j.jobSyncID.map(ids.contains) ?? false) }.map { j in
             let info = j.install ?? InstallInfo(movedAt: j.updated)
             return InstallStationSummary(id: j.id.uuidString, name: j.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : j.projectName,
@@ -29,7 +30,26 @@ extension SurveyHomeView {
         #if DEBUG
         if UserDefaults.standard.string(forKey: "surveyHomeDemo") == "maintenance" { return PWAOverviewDemo.maintenance }
         #endif
-        return host.maintenanceStations
+        let given = host.maintenanceStations
+        let ids = Set(given.map(\.id))
+        // no monitoring feed yet: a job handed over here has no energy or PR to show
+        let local = model.jobs(in: .maintenance).filter { j in !(j.jobSyncID.map(ids.contains) ?? false) }.map { j in
+            MaintenanceStationSummary(id: j.id.uuidString, name: j.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : j.projectName,
+                                      kWp: Double(j.values.text("capacity").trimmingCharacters(in: .whitespaces)) ?? 0,
+                                      status: .normal, note: "ยังไม่มีข้อมูลการผลิต")
+        }
+        return given + local
+    }
+
+    /// Hands a station of the install overview over: its jobs here, and the host's station.
+    func addToMaintenance(_ s: InstallStationSummary) {
+        for j in model.jobs(in: .install) where j.id.uuidString == s.id || j.jobSyncID == s.id { model.moveToMaintenance(j.id) }
+        host.handOver?(s.id)
+    }
+
+    private func returnToInstall(_ s: MaintenanceStationSummary) {
+        for j in model.jobs(in: .maintenance) where j.id.uuidString == s.id || j.jobSyncID == s.id { model.moveBackToInstall(j.id) }
+        host.returnToInstall?(s.id)
     }
 
     private var maintenanceTasks: [MaintenanceTask] {
@@ -109,10 +129,9 @@ extension SurveyHomeView {
     var stageEmpty: some View {
         VStack(spacing: 8) {
             Text(tab == .install ? "ยังไม่มีงานติดตั้งในเครื่องนี้" : "ยังไม่มีงานบำรุงรักษา").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-            if tab == .install {
-                Text("กด \"เพิ่มโครงการ\" เพื่อดึงงานสำรวจที่ครบ 100% มาเป็นงานติดตั้ง").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
-                    .multilineTextAlignment(.center)
-            }
+            Text(tab == .install ? "กด \"เพิ่มโครงการ\" เพื่อดึงงานสำรวจที่ครบ 100% มาเป็นงานติดตั้ง"
+                 : "กด \"เพิ่มโครงการบำรุงรักษา\" เพื่อย้ายงานติดตั้งที่ส่งมอบแล้วมาที่นี่")
+                .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
         }
         .padding(24)
         .frame(maxWidth: .infinity, minHeight: compact ? 280 : 520)
@@ -312,9 +331,11 @@ extension SurveyHomeView {
         if stations.isEmpty {
             stageEmpty
         } else {
-            let rows = stations.filter { MaintenanceOverview.matches($0, maintenanceFilter) }
+            // with no station in trouble `มีปัญหา` would be empty, so start on every station
+            let rowFilter = maintenanceFilter ?? (stations.contains { MaintenanceOverview.matches($0, .issue) } ? .issue : .all)
+            let rows = stations.filter { MaintenanceOverview.matches($0, rowFilter) }
             card(maintenanceSummary(MaintenanceOverview.totals(stations)), padding: summaryPadding)
-            rowFilters(maintenanceFilters(stations), count: rows.count)
+            rowFilters(maintenanceFilters(stations, selected: rowFilter), count: rows.count)
             stationRows {
                 ForEach(rows) { s in
                     Button { openMaintenanceStation(s) } label: {
@@ -322,10 +343,23 @@ extension SurveyHomeView {
                     }
                         .buttonStyle(TCStationRowStyle())
                         .accessibilityLabel(maintenanceLabel(s))
+                        .contextMenu {
+                            Button { returnToInstall(s) } label: { Label("ย้ายกลับเป็นงานติดตั้ง", systemImage: "arrow.uturn.backward") }
+                        }
                 }
             }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
         }
+        addMaintenanceButton
+    }
+
+    /// As `addInstallButton`: a row under the stations.
+    private var addMaintenanceButton: some View {
+        Button { showMaintenancePicker = true } label: {
+            Label("เพิ่มโครงการบำรุงรักษา", systemImage: "plus").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+                .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// The station's job here when it has one, else the host's screen for it.
@@ -396,13 +430,13 @@ extension SurveyHomeView {
         .accessibilityElement(children: .combine)
     }
 
-    private func maintenanceFilters(_ stations: [MaintenanceStationSummary]) -> some View {
+    private func maintenanceFilters(_ stations: [MaintenanceStationSummary], selected: MaintenanceOverview.RowFilter) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(MaintenanceOverview.RowFilter.allCases, id: \.self) { f in
                     let title = [.issue: "มีปัญหา", .pmSoon: "ใกล้ถึง PM", .all: "ทั้งหมด"][f] ?? ""
                     TCCountPill(title, count: stations.filter { MaintenanceOverview.matches($0, f) }.count,
-                                selected: maintenanceFilter == f) { maintenanceFilter = f }
+                                selected: selected == f) { maintenanceFilter = f }
                 }
             }
         }
@@ -439,7 +473,7 @@ extension SurveyHomeView {
             HStack(spacing: 6) {
                 Text(number(s.energy, digits: 0)).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).fixedSize()
                 Text("/ คาด \(number(s.expected, digits: 0)) kWh").fixedSize()
-                Text("· PR \(s.status == .offline ? "—" : number(s.pr, digits: 0))%").foregroundStyle(Theme.navy).fixedSize()
+                Text("· PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%").foregroundStyle(Theme.navy).fixedSize()
                 Spacer(minLength: 6)
                 Text(s.note).lineLimit(1)
                 Text("›").font(.sarabunFixed(17)).foregroundStyle(Theme.inkFaint).frame(height: 12).accessibilityHidden(true)

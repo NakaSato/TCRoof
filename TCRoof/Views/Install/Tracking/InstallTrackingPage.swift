@@ -9,7 +9,7 @@ struct InstallTrackingPage: View {
     enum Tab: String, CaseIterable { case overview, daily }
 
     /// A screen the page pushes.
-    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID) }
+    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail }
 
     let job: Job
     @State var tab = Debug.tab
@@ -68,6 +68,8 @@ struct InstallTrackingPage: View {
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {
+            // `-installDetail YES` opens รายละเอียดงาน
+            if Debug.detail { route = .detail }
             guard let n = Debug.stage, let rows = data.gantt?.rows, rows.indices.contains(n - 1) else { return }
             stage = rows[n - 1]
         }
@@ -92,6 +94,7 @@ struct InstallTrackingPage: View {
         case .dailies: DailyReportListView(job: job)
         case .day(let d): DailyReportScreen(job: job, date: d)
         case .survey(let id): SurveyReportEditor(jobID: id)
+        case .detail: JobDetailView(job: job)
         }
     }
 
@@ -156,17 +159,10 @@ struct InstallTrackingPage: View {
             }
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
+            // the job's own screen: customer, schedule, scans, install logs, ICL, R4, survey link, documents and Drive
+            headerButton("รายละเอียดงาน", "info.circle") { route = .detail }
             if let id = data.surveyReport {
-                Button { route = .survey(id) } label: {
-                    Label("รายงานสำรวจ (ดูอย่างเดียว)", systemImage: "lock")
-                        .font(.sarabunFixed(15, .semibold))
-                        .padding(.horizontal, 16).frame(height: 44)
-                        .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.onPrimary.opacity(0.6)))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .fixedSize()
+                headerButton("รายงานสำรวจ (ดูอย่างเดียว)", "lock") { route = .survey(id) }
             }
         }
         .foregroundStyle(Theme.onPrimary)
@@ -175,6 +171,20 @@ struct InstallTrackingPage: View {
             UnevenRoundedRectangle(bottomLeadingRadius: 15, bottomTrailingRadius: 15, style: .continuous)
                 .fill(Theme.headerGradient).ignoresSafeArea(edges: .top)
         }
+    }
+
+    /// An outlined button on the blue header.
+    private func headerButton(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(.sarabunFixed(15, .semibold))
+                .padding(.horizontal, 16).frame(height: 44)
+                .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.onPrimary.opacity(0.6)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
     }
 
     // MARK: tabs
@@ -308,7 +318,7 @@ struct InstallTrackingPage: View {
     // MARK: DEBUG
 
     /// `-installTab overview|daily`, `-installView gantt|curve`, `-installStage n`, `-installDemo YES`, `-installSheet
-    /// actions|<tile id>`, `-installSite info|risk|labour`, `-installScrollEnd YES`. Release builds
+    /// actions|<tile id>`, `-installSite info|risk|labour`, `-installScrollEnd YES`, `-installDetail YES`. Release builds
     /// get the defaults.
     enum Debug {
         #if DEBUG
@@ -319,6 +329,7 @@ struct InstallTrackingPage: View {
         static let sheet: Sheet? = UserDefaults.standard.string(forKey: "installSheet").map { $0 == "actions" ? .actions : .doc($0) }
         static let site = UserDefaults.standard.string(forKey: "installSite").flatMap(SiteTab.init) ?? .info
         static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
+        static let detail = UserDefaults.standard.bool(forKey: "installDetail")
         #else
         static let tab = Tab.overview
         static let view = ProgressView.gantt

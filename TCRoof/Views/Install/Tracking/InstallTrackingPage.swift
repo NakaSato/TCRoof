@@ -21,6 +21,9 @@ struct InstallTrackingPage: View {
     @State var route: Route?
     @State var sheet: Sheet? = Debug.sheet
     @State var siteTab = Debug.site
+    /// `ทุกรายงาน`'s segment: all, to do, with a problem.
+    @State var dailyFilter = 0
+    @State var shared: Shared?
     @State private var survey = SurveyModel.shared
     @Environment(\.dismiss) private var dismiss
 
@@ -36,6 +39,8 @@ struct InstallTrackingPage: View {
                             kpiStrip(data)
                             if let g = data.gantt { progressCard(data, g) }
                             siteRow(data)
+                        } else {
+                            dailyTab(dailyData, site: data.site)
                         }
                     }
                     .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
@@ -56,6 +61,7 @@ struct InstallTrackingPage: View {
         .padDock(fade: nil)
         .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
         .overlay { if let s = sheet { pageSheet(s, data) } }
+        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {

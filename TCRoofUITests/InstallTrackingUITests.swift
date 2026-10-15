@@ -8,10 +8,10 @@ final class InstallTrackingUITests: XCTestCase {
 
     override func setUp() { continueAfterFailure = false }
 
-    func launch() -> XCUIApplication {
+    func launch(_ extra: [String] = ["-installScrollEnd", "YES"], demo: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
-                               "-installScrollEnd", "YES", "-noNotificationPrompt", "YES"]
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", demo ? "YES" : "NO",
+                               "-noNotificationPrompt", "YES"] + extra
         app.launch()
         return app
     }
@@ -71,5 +71,32 @@ final class InstallTrackingUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "แรงงาน")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "สะสม 44 man-day")).firstMatch.waitForExistence(timeout: 8),
                       "แรงงาน should show the crew chart")
+    }
+
+    /// `รายงานประจำวัน`: the tab opens in place, `ต้องทำ` keeps today and the draft, and a row's button opens its report.
+    func testDailyTabFiltersAndOpensAReport() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "รายงานประจำวัน")).firstMatch.tap()
+        let open = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "เปิดรายงาน"))
+        XCTAssertTrue(open.firstMatch.waitForExistence(timeout: 8), "the tab should list the reports")
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ต้องทำ")).firstMatch.tap()
+        XCTAssertTrue(waitGone(open.firstMatch), "ต้องทำ should leave out the signed reports")
+        let draft = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำต่อ · ส่ง")).firstMatch
+        XCTAssertTrue(draft.exists && app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำรายงานวันนี้")).firstMatch.exists)
+        draft.tap()
+        XCTAssertTrue(waitGone(pageBack(app)), "the button should open the daily report")
+        back(app)
+    }
+
+    /// `PDF รวม` on a station with reports (`-installSeed YES` gives it the routine demo's): the share sheet opens.
+    func testCombinedPDFShares() {
+        let app = launch(["-installSeed", "YES", "-installTab", "daily"], demo: false)
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        let pdf = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "PDF รวม")).firstMatch
+        XCTAssertTrue(pdf.waitForExistence(timeout: 10))
+        pdf.tap()
+        let sheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 30), "PDF รวม should open the share sheet")
     }
 }

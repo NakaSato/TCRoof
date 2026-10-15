@@ -58,6 +58,8 @@ struct PWARoot: View {
                     job.seedRoutineDemo(context)
                 }
                 try? await Task.sleep(for: .milliseconds(600))
+                // `-installSeed YES`: that station gets the routine demo's reports, for a real daily tab
+                if UserDefaults.standard.bool(forKey: "installSeed") { jobs.pwaInstalling.first?.seedRoutineDemo(context) }
                 station = jobs.pwaInstalling.first
             }
             #endif

@@ -1,7 +1,7 @@
 import XCTest
 
 /// The IEC sheet preview on iPad (docs/ui/iec62446-sheet-before): `ดูชีต Excel` opens INV 01-ก่อน drawn from the
-/// export, the source toggle switches, the picker opens INV 02, `PDF ชีตนี้` opens the share sheet, and a tap on a Voc cell opens step 2 at that string.
+/// export, the source toggle switches, the picker opens INV 02 and INV 01-หลัง, `PDF ชีตนี้` opens the share sheet, and a tap on a Voc cell opens step 2 at that string.
 /// iPad simulator: `-only-testing:TCRoofUITests/IECSheetPreviewUITests`. Uses the sample (`-iecDemo reset`).
 final class IECSheetPreviewUITests: XCTestCase {
     let slow: TimeInterval = 90
@@ -27,6 +27,9 @@ final class IECSheetPreviewUITests: XCTestCase {
         app.buttons["เลือกชีต"].tap()
         app.buttons["INV 02-ก่อน"].tap()
         XCTAssertTrue(app.staticTexts["ชีต INV 02-ก่อน · ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 10))
+        app.buttons["เลือกชีต"].tap()
+        app.buttons["INV 01-หลัง"].tap()
+        XCTAssertTrue(app.staticTexts["ชีต INV 01-หลัง · ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 10), "the after sheet")
         app.buttons["เลือกชีต"].tap()
         app.buttons["INV 01-ก่อน"].tap()
         XCTAssertTrue(app.staticTexts["ไม่พิมพ์ลงไฟล์ Excel"].waitForExistence(timeout: 10))

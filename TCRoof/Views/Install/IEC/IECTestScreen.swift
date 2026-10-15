@@ -15,9 +15,9 @@ struct IECTestScreen: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// Step 1's designed page (iPad); the iPhone keeps the set-up sheet.
     @State private var step1 = false
-    /// The sheet preview (iPad): the inverter whose before sheet it opens on.
+    /// The sheet preview (iPad): the inverter and phase whose sheet it opens on.
     @State private var sheetPreview: SheetTarget?
-    struct SheetTarget: Hashable { let inverter: Int }
+    struct SheetTarget: Hashable { let inverter: Int; var phase: IECReport.Phase = .before }
     @Environment(\.dismiss) private var dismiss
     @State private var exported: ExportedFile?
     /// The file the station-line question is about.
@@ -89,7 +89,7 @@ struct IECTestScreen: View {
         } message: { Text(exportError ?? "") }
         .navigationDestination(item: $grid) { IECStringGrid(job: job, inverter: $0.inverter, phase: $0.phase, page: $0.page) }
         .navigationDestination(item: $step2) { IECVIPage(job: job, phase: $0.phase, inverter: $0.inverter, slot: $0.slot, openStage: open) }
-        .navigationDestination(item: $sheetPreview) { IECSheetPreview(job: job, inverter: $0.inverter, open: openFromSheet) }
+        .navigationDestination(item: $sheetPreview) { IECSheetPreview(job: job, inverter: $0.inverter, phase: $0.phase, open: openFromSheet) }
         .navigationDestination(isPresented: $step1) { IECSetupPage(job: job, openStage: open, leave: leaveFromSetup) }
         #if DEBUG
         .task {
@@ -108,10 +108,10 @@ struct IECTestScreen: View {
             if Debug.step2 { step2 = Step2Target(inverter: 0) }
             if Debug.step4 { step2 = Step2Target(inverter: 0, phase: .after) }
             if Debug.step1 { step1 = true }
-            if let n = Debug.sheet {
+            if let s = Debug.sheet {
                 // after the install page and this screen have settled: a third push at once is dropped
                 try? await Task.sleep(for: .milliseconds(900))
-                sheetPreview = SheetTarget(inverter: n)
+                sheetPreview = s
             }
             if let n = Debug.inverter, (job.iecReport?.inverters.count ?? 0) >= n { grid = GridTarget(inverter: n - 1, phase: Debug.phase, page: Debug.page) }
         }
@@ -581,10 +581,11 @@ struct IECTestScreen: View {
         /// `-iecStep 1`: step 1's page; `-iecDemo praek` the sample with the board's models, MPPTs and a drawn SLD.
         static let step1 = UserDefaults.standard.integer(forKey: "iecStep") == 1
         static let praek = UserDefaults.standard.string(forKey: "iecDemo") == "praek"
-        /// `-iecSheet INV01-before|INV02-before`: the sheet preview on that inverter (`-iecSheetSource off` hides the
+        /// `-iecSheet INV01-before|INV02-after|…`: the sheet preview on that sheet (`-iecSheetSource off` hides the
         /// sources). Step 1's `-iecSheet add|delete|sn` are its own.
-        static let sheet: Int? = UserDefaults.standard.string(forKey: "iecSheet").flatMap { v in
-            v.hasPrefix("INV") ? Int(v.dropFirst(3).prefix(2)).map { $0 - 1 } : nil
+        static let sheet: SheetTarget? = UserDefaults.standard.string(forKey: "iecSheet").flatMap { v in
+            guard v.hasPrefix("INV"), let n = Int(v.dropFirst(3).prefix(2)) else { return nil }
+            return SheetTarget(inverter: n - 1, phase: v.hasSuffix("after") ? .after : .before)
         }
         #else
         static let entry = false

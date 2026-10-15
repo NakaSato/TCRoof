@@ -6,15 +6,18 @@ import ExcelExport
 /// `ชีต INV 01-ก่อน · ตามฟอร์ม 1FORMI1` (docs/ui/iec62446-sheet-before): the exported Excel sheet drawn as the form,
 /// read only. With `แสดงที่มา` each cell the app fills is tinted by the wizard step that fills it (a value still
 /// missing gets a dashed red border), and a tap on it opens that step. iPad only. The sheet is read from an export
-/// of the test, so it shows what the file holds; the after sheets can use the same view later.
+/// of the test, so it shows what the file holds. The after sheets `INV nn-หลัง` (board 5b) add steps 4 and 5.
 struct IECSheetPreview: View {
     @Bindable var job: Job
     @State var inverter: Int
+    /// `INV nn-ก่อน` or `INV nn-หลัง`.
+    @State var phase: IECReport.Phase = .before
     /// A tinted cell or a legend swatch: the step, at an inverter and (for a string column) a slot.
     let open: (IECReport.Stage, Int, Int?) -> Void
 
     @State private var sources = true
-    @State private var layouts: [Int: IECSheetLayout] = [:]
+    /// By sheet name.
+    @State private var layouts: [String: IECSheetLayout] = [:]
     @State private var failed: String?
     @State private var zoom: CGFloat = 1
     @State private var lastZoom: CGFloat = 1
@@ -23,15 +26,16 @@ struct IECSheetPreview: View {
     @State private var printFailed: String?
 
     private var report: IECReport { job.iecReport ?? job.newIECReport }
-    private func sheetName(_ i: Int) -> String { String(format: "INV %02d-ก่อน", i + 1) }
+    private func sheetName(_ i: Int, _ p: IECReport.Phase) -> String { String(format: "INV %02d-", i + 1) + (p == .before ? "ก่อน" : "หลัง") }
+    private var sheet: String { sheetName(inverter, phase) }
 
     var body: some View {
         let r = report
         VStack(spacing: 0) {
-            IECHeader(title: "ชีต \(sheetName(inverter)) · ตามฟอร์ม 1FORMI1", subtitle: r.stationLine.isEmpty ? job.stationName : r.stationLine) {
+            IECHeader(title: "ชีต \(sheet) · ตามฟอร์ม 1FORMI1", subtitle: r.stationLine.isEmpty ? job.stationName : r.stationLine) {
                 sheetPicker(r)
                 IECHeaderButton(title: "PDF ชีตนี้", symbol: "doc.richtext") { printSheet(r) }
-                    .disabled(layouts[inverter] == nil)
+                    .disabled(layouts[sheet] == nil)
                     .accessibilityIdentifier("iec.sheet.pdf")
                 Toggle("แสดงที่มา", isOn: $sources).toggleStyle(.button).font(.sarabunFixed(15, .bold))
                     .tint(Theme.onPrimary).foregroundStyle(Theme.onPrimary)
@@ -41,9 +45,9 @@ struct IECSheetPreview: View {
             GeometryReader { g in
                 ScrollView([.horizontal, .vertical]) {
                     VStack(alignment: .leading, spacing: 16) {
-                        if let l = layouts[inverter] {
+                        if let l = layouts[sheet] {
                             let scale = (g.size.width - 48) / l.width * zoom
-                            IECSheetCanvas(layout: l, report: r, inverter: inverter, sources: sources, scale: scale,
+                            IECSheetCanvas(layout: l, report: r, inverter: inverter, phase: phase, sources: sources, scale: scale,
                                            doubleTap: { withAnimation { zoom = zoom > 1.01 ? 1 : 2; lastZoom = zoom } }) { stage, slot in
                                 open(stage, inverter, slot)
                             }
@@ -76,14 +80,14 @@ struct IECSheetPreview: View {
         #endif
     }
 
-    /// Every inverter's before sheet from one export of the test, off the main thread.
+    /// Every inverter's before and after sheets from one export of the test, off the main thread.
     private func load(_ r: IECReport) async {
-        let names = r.inverters.indices.map(sheetName)
+        let names = IECReport.Phase.allCases.flatMap { p in r.inverters.indices.map { sheetName($0, p) } }
         do {
-            let result = try await Task.detached(priority: .userInitiated) { () -> [Int: IECSheetLayout] in
+            let result = try await Task.detached(priority: .userInitiated) { () -> [String: IECSheetLayout] in
                 let data = try IECExcel.export(r)
-                var out: [Int: IECSheetLayout] = [:]
-                for (i, n) in names.enumerated() { out[i] = try IECSheetLayout.make(workbook: data, sheet: n) }
+                var out: [String: IECSheetLayout] = [:]
+                for n in names { out[n] = try IECSheetLayout.make(workbook: data, sheet: n) }
                 return out
             }.value
             layouts = result
@@ -102,15 +106,15 @@ struct IECSheetPreview: View {
     /// before the Excel is final. Only shared, not kept with the job's documents.
     private func printSheet(_ r: IECReport) {
         let station = r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("IEC 62446 \(sheetName(inverter)) \(station).pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("IEC 62446 \(sheet) \(station).pdf")
         if writePDF(r, to: url) { printed = IECTestScreen.ExportedFile(url: url) } else { printFailed = "เขียนไฟล์ไม่ได้" }
     }
 
     private func writePDF(_ r: IECReport, to url: URL) -> Bool {
-        guard let l = layouts[inverter] else { return false }
+        guard let l = layouts[sheet] else { return false }
         let page = CGRect(x: 0, y: 0, width: 842, height: 595), margin: CGFloat = 24
         let scale = min((page.width - 2 * margin) / l.width, (page.height - 2 * margin) / l.height)
-        let renderer = ImageRenderer(content: IECSheetCanvas(layout: l, report: r, inverter: inverter, sources: false, scale: scale,
+        let renderer = ImageRenderer(content: IECSheetCanvas(layout: l, report: r, inverter: inverter, phase: phase, sources: false, scale: scale,
                                                              doubleTap: {}) { _, _ in }
             .frame(width: l.width * scale, height: l.height * scale))
         var box = page
@@ -127,11 +131,15 @@ struct IECSheetPreview: View {
 
     private func sheetPicker(_ r: IECReport) -> some View {
         Menu {
-            ForEach(r.inverters.indices, id: \.self) { i in
-                Button(sheetName(i)) { inverter = i; zoom = 1; lastZoom = 1 }
+            ForEach(IECReport.Phase.allCases, id: \.self) { p in
+                Section {
+                    ForEach(r.inverters.indices, id: \.self) { i in
+                        Button(sheetName(i, p)) { inverter = i; phase = p; zoom = 1; lastZoom = 1 }
+                    }
+                }
             }
         } label: {
-            Label(sheetName(inverter), systemImage: "chevron.down").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
+            Label(sheet, systemImage: "chevron.down").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 12).frame(minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.onPrimary.opacity(0.6)))
         }
@@ -169,6 +177,7 @@ struct IECSheetCanvas: View {
     let layout: IECSheetLayout
     let report: IECReport
     let inverter: Int
+    let phase: IECReport.Phase
     let sources: Bool
     let scale: CGFloat
     /// Fit ↔ 2×: on the same view as the cell tap, which it comes before.
@@ -216,7 +225,7 @@ struct IECSheetCanvas: View {
                     rect = CGRect(x: layout.x(m.c0), y: layout.y(m.r0), width: layout.x(m.c1 + 1) - layout.x(m.c0), height: layout.y(m.r1 + 1) - layout.y(m.r0))
                 }
                 guard rect.width > 0, rect.height > 0 else { continue }
-                out.append(Box(ref: ref, rect: rect, cell: layout.cells[ref], source: IECReport.sheetSource(ref, inverter: inv, phase: .before)))
+                out.append(Box(ref: ref, rect: rect, cell: layout.cells[ref], source: IECReport.sheetSource(ref, inverter: inv, phase: phase)))
             }
         }
         return out
@@ -320,7 +329,7 @@ struct IECSheetCanvas: View {
     private func tap(_ p: CGPoint, _ boxes: [Box]) {
         guard sources, let hit = layout.cell(at: p.x / scale, p.y / scale) else { return }
         let ref = Self.ref(hit.col, hit.row)
-        guard let stage = IECReport.sheetSource(ref, inverter: inv, phase: .before) else { return }
+        guard let stage = IECReport.sheetSource(ref, inverter: inv, phase: phase) else { return }
         open(stage, IECReport.sheetSlot(ref))
     }
 }

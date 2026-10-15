@@ -49,4 +49,29 @@ final class IECSheetLayoutTests: XCTestCase {
         XCTAssertEqual(exported.cells["E16"]?.text, "753")
         XCTAssertEqual(exported.cells["F16"]?.text ?? "", "", "slot 2 has no string on INV 2")
     }
+
+    /// The after sheets (board 5b): the same layout, and the export's cells as the original's.
+    func testTheAfterSheetsComeFromTheTemplateToo() throws {
+        let r = try sample()
+        for n in ["INV 01-หลัง", "INV 02-หลัง"] {
+            let l = try IECSheetLayout.make(workbook: IECExcel.template(), sheet: n)
+            XCTAssertEqual(l.columns.count, 28, n)
+            XCTAssertEqual(l.rows.count, 35, n)
+            XCTAssertTrue(l.merges.contains(.init(c0: 3, r0: 1, c1: 26, r1: 2)), n)
+            XCTAssertEqual(l.images.count, 2, n)
+        }
+        let original = try IECSheetLayout.make(workbook: IECExcel.template(), sheet: "INV 01-หลัง")
+        // PR, Yf, the daily energy and the efficiency are the app's own figures (IECExcelTests pins them), not the original's
+        let computed: Set = ["E22", "E23", "E24", "E26"]
+        for (ref, v) in IECExcel.cells(for: r, sheet: "INV 01-หลัง") where !ref.hasPrefix("Y") && !ref.hasPrefix("Z") && ref != "E14" && !computed.contains(ref) {
+            let shown: String = switch v {
+            case .number(let n): IECExcel.number(n)
+            case .text(let t): t == "P" ? "✓" : t == "O" ? "✗" : t
+            case .empty: ""
+            }
+            XCTAssertEqual(original.cells[ref]?.text ?? "", shown, ref)
+        }
+        let exported = try IECSheetLayout.make(workbook: IECExcel.export(r), sheet: "INV 01-หลัง")
+        XCTAssertEqual(exported.cells["E16"]?.text, original.cells["E16"]?.text, "the before values are on the after sheet too")
+    }
 }

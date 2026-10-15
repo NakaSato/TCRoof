@@ -21,10 +21,14 @@ extension Job {
     }
 
     #if DEBUG
-    /// `-iecDemo YES`: the แพรกหนามแดง sample of docs/forms/iec62446-pwa, when the job has no test yet (for good).
-    func seedIECDemo() {
-        guard iecReport == nil, let url = Bundle.main.url(forResource: "iec-demo-praek-nam-daeng", withExtension: "json"),
-              let data = try? Data(contentsOf: url), let r = try? IECReport(form: data) else { return }
+    /// `-iecDemo YES`: the แพรกหนามแดง sample of docs/forms/iec62446-pwa, when the job has no test yet (for good);
+    /// `-iecDemo reset` replaces the job's test with it.
+    func seedIECDemo(replacing: Bool = false) {
+        guard iecReport == nil || replacing, let url = Bundle.main.url(forResource: "iec-demo-praek-nam-daeng", withExtension: "json"),
+              let data = try? Data(contentsOf: url), var r = try? IECReport(form: data) else { return }
+        // labelled as the sample in the sheet (C3) and the file name, so it can't pass for this job's test
+        r.sampleName = "แพรกหนามแดง"
+        r.stationLine += " (ตัวอย่าง)"
         iecReport = r
     }
     #endif

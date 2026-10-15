@@ -176,6 +176,9 @@ public struct IECReport: Codable, Equatable, Sendable {
     /// Photo ids: the irradiance meter's screen, and the thermal images.
     public var irradiancePhoto: String?
     public var thermalPhotos: [String]
+    /// Set on example data copied from another station (the app's demo of the แพรกหนามแดง form): that station's
+    /// name, so an export of it can't pass for this job's test. nil on a real test.
+    public var sampleName: String?
 
     public init(stationLine: String = "", module: Module = .init(), inverters: [Inverter] = [], before: Conditions = .init(),
                 after: Conditions = .init(), yrKWhM2Day: Double? = nil, arrayTempC: Double? = nil, testDate: Date? = nil,
@@ -187,6 +190,7 @@ public struct IECReport: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case stationLine, module, inverters, before, after, yrKWhM2Day, arrayTempC, testDate, tester, instruments, irradiancePhoto, thermalPhotos
+        case sampleName
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -202,6 +206,15 @@ public struct IECReport: Codable, Equatable, Sendable {
         instruments = try c.decodeIfPresent(Instruments.self, forKey: .instruments) ?? .init()
         irradiancePhoto = try c.decodeIfPresent(String.self, forKey: .irradiancePhoto)
         thermalPhotos = try c.decodeIfPresent([String].self, forKey: .thermalPhotos) ?? []
+        sampleName = try c.decodeIfPresent(String.self, forKey: .sampleName)
+    }
+
+    /// The sheet's station line doesn't name this job's station (`stationName`): the job was renamed after the test
+    /// was set up, or the line was edited. Example data says what it is instead (`sampleName`), so it never counts.
+    public func namesAnotherStation(than stationName: String) -> Bool {
+        let name = stationName.trimmingCharacters(in: .whitespaces)
+        guard sampleName == nil, !name.isEmpty, !stationLine.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        return !stationLine.contains(name)
     }
 
     static func padded(_ s: [Slot?]) -> [Slot?] {

@@ -209,4 +209,31 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
                       "the export should open the share sheet")
     }
+
+    /// A station line that names another station is flagged; `ใช้ชื่อของงาน` fixes it, and exporting with it asks first.
+    func testIECStationLineMismatch() {
+        var app = launch(["-iecOpen", "YES", "-iecDemo", "YES", "-iecStationLine", "สถานีอื่น ขนาดกำลังผลิต 1 kWp"], demo: false)
+        let notice = app.staticTexts["บรรทัดสถานีในแผ่นงานไม่ตรงกับชื่องาน"]
+        XCTAssertTrue(notice.waitForExistence(timeout: slow), "the overview should flag the station line")
+        app.buttons["ใช้ชื่อของงาน"].tap()
+        XCTAssertTrue(waitGone(notice), "ใช้ชื่อของงาน should fix it")
+        app.terminate()
+        app = launch(["-iecOpen", "YES", "-iecDemo", "YES", "-iecStationLine", "สถานีอื่น ขนาดกำลังผลิต 1 kWp"], demo: false)
+        let export = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch
+        XCTAssertTrue(export.waitForExistence(timeout: slow))
+        export.tap()
+        let useJob = app.buttons["ใช้ชื่อของงานแล้วส่งออก"]
+        XCTAssertTrue(useJob.waitForExistence(timeout: 10), "exporting with another station's line should ask first")
+        useJob.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30))
+    }
+
+    /// Example data says so, and exports without the station question.
+    func testIECSampleIsLabelled() {
+        let app = launch(["-iecOpen", "YES", "-iecDemo", "reset"], demo: false)
+        XCTAssertTrue(app.staticTexts["ข้อมูลตัวอย่างจากสถานีแพรกหนามแดง ไม่ใช่ผลทดสอบของงานนี้"].waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
+                      "a sample exports at once, named as the sample")
+    }
 }

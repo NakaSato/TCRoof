@@ -12,6 +12,8 @@ struct IECTestScreen: View {
     @State private var grid: GridTarget?
     @State private var exported: ExportedFile?
     @State private var exportError: String?
+    /// The station line names another station: asked before exporting.
+    @State private var confirmExport = false
     @Environment(\.modelContext) private var context
 
     struct ExportedFile: Identifiable { let url: URL; var id: URL { url } }
@@ -24,11 +26,12 @@ struct IECTestScreen: View {
         VStack(spacing: 0) {
             IECHeader(title: "ทดสอบระบบ IEC 62446", subtitle: (report?.stationLine).flatMap { $0.isEmpty ? nil : $0 } ?? job.stationName) {
                 IECHeaderButton(title: report == nil ? "ตั้งค่าการทดสอบ" : "ตั้งค่า", symbol: "slider.horizontal.3") { setup = true }
-                if report?.inverters.isEmpty == false { IECHeaderButton(title: "ส่งออก", symbol: "square.and.arrow.up") { exportExcel() } }
+                if report?.inverters.isEmpty == false { IECHeaderButton(title: "ส่งออก", symbol: "square.and.arrow.up") { startExport() } }
             }
             if let report, !report.inverters.isEmpty {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
+                        stationNotice(report)
                         stats(report)
                         inverterCards(report)
                         missingCard(report)
@@ -45,13 +48,21 @@ struct IECTestScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $setup) { IECSetupSheet(report: job.iecReport ?? job.newIECReport) { r in job.updateIEC(context) { $0 = r } } }
         .sheet(item: $exported) { ActivitySheet(items: [$0.url]) }
+        .confirmationDialog("บรรทัดสถานีในแผ่นงานไม่ตรงกับชื่องาน", isPresented: $confirmExport, titleVisibility: .visible) {
+            Button("ใช้ชื่อของงานแล้วส่งออก") { useJobName(); exportExcel() }
+            Button("ส่งออกตามเดิม") { exportExcel() }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: {
+            Text("แผ่นงานเขียนว่า “\(job.iecReport?.stationLine ?? "")” แต่งานนี้คือ “\(job.stationName)”")
+        }
         .alert("ส่งออกไม่ได้", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(exportError ?? "") }
         .navigationDestination(item: $grid) { IECStringGrid(job: job, inverter: $0.inverter, phase: $0.phase, page: $0.page) }
         #if DEBUG
         .task {
-            if Debug.demo { job.seedIECDemo() }
+            if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset) }
+            if let line = Debug.stationLine { job.updateIEC(context) { $0.stationLine = line; $0.sampleName = nil } }  // a real test with that line
             // after the seed, so the sheet starts from it, and after the push, which a sheet would cut short
             try? await Task.sleep(for: .milliseconds(700))
             if Debug.setup { setup = true }
@@ -232,7 +243,7 @@ struct IECTestScreen: View {
             if !r.missing.isEmpty {
                 Text("ยังขาด \(r.missing.count) รายการ · ส่งออกได้ ช่องที่ยังไม่มีค่าจะว่างไว้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
-            Button { exportExcel() } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
+            Button { startExport() } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
                 .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
@@ -240,7 +251,48 @@ struct IECTestScreen: View {
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
     }
 
+    // MARK: station line
+
+    /// A sample's banner, or a warning when the sheet's station line doesn't name this job (renamed since, or edited).
+    @ViewBuilder private func stationNotice(_ r: IECReport) -> some View {
+        if let sample = r.sampleName {
+            notice("info.circle", Theme.primary, Theme.primarySoft,
+                   "ข้อมูลตัวอย่างจากสถานี\(sample) ไม่ใช่ผลทดสอบของงานนี้", "แฟ้มที่ส่งออกจะตั้งชื่อว่าตัวอย่าง") { EmptyView() }
+        } else if r.namesAnotherStation(than: job.stationName) {
+            notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
+                   "บรรทัดสถานีในแผ่นงานไม่ตรงกับชื่องาน", "แผ่นงานเขียนว่า “\(r.stationLine)” · งานนี้คือ “\(job.stationName)”") {
+                Button("ใช้ชื่อของงาน", action: useJobName).buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            }
+        }
+    }
+
+    private func notice<Action: View>(_ symbol: String, _ ink: Color, _ fill: Color, _ title: String, _ detail: String,
+                                      @ViewBuilder action: () -> Action) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(ink)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text(detail).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            action()
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(fill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Rewrites the sheet's station line from the job, as a new test would have it.
+    private func useJobName() {
+        let line = job.newIECReport.stationLine
+        job.updateIEC(context) { $0.stationLine = line }
+    }
+
     // MARK: export
+
+    private func startExport() {
+        if job.iecReport?.namesAnotherStation(than: job.stationName) == true { confirmExport = true } else { exportExcel() }
+    }
 
     /// The PWA's own workbook with this test typed in (`IECExcel`): kept in the job's documents under `IEC 62446`
     /// (so it goes to Drive with them), then offered to the share sheet; both are the same file.
@@ -248,7 +300,8 @@ struct IECTestScreen: View {
         guard let r = job.iecReport else { return }
         do {
             let data = try IECExcel.export(r)
-            let name = IECExcel.fileName(station: job.stationName, date: r.testDate ?? .now)
+            // example data is named as such, never as this job
+            let name = IECExcel.fileName(station: r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName, date: r.testDate ?? .now)
             for old in job.documents where old.name == name { context.delete(old) }
             let doc = DocumentAsset(name: name, data: data)
             doc.folderPath = "IEC 62446"
@@ -267,12 +320,15 @@ struct IECTestScreen: View {
 
     // MARK: DEBUG
 
-    /// `-iecDemo YES` seeds the sample, `-iecSetup YES` opens the set-up, `-iecInverter n -iecPhase before|after`
+    /// `-iecDemo YES` seeds the sample (`reset` replaces the test with it), `-iecStationLine <text>` writes the
+    /// sheet's station line, `-iecSetup YES` opens the set-up, `-iecInverter n -iecPhase before|after`
     /// opens a string table (`-iecPage performance|conditions|photos` another page of it), `-iecSlot n` selects its
     /// slot and `-iecEntry YES` opens that string in `กรอกทีละสตริง`.
     enum Debug {
         #if DEBUG
-        static let demo = UserDefaults.standard.bool(forKey: "iecDemo")
+        static let demo = UserDefaults.standard.bool(forKey: "iecDemo") || demoReset
+        static let demoReset = UserDefaults.standard.string(forKey: "iecDemo") == "reset"
+        static let stationLine = UserDefaults.standard.string(forKey: "iecStationLine")
         static let setup = UserDefaults.standard.bool(forKey: "iecSetup")
         static let inverter: Int? = UserDefaults.standard.object(forKey: "iecInverter") == nil ? nil : UserDefaults.standard.integer(forKey: "iecInverter")
         static let phase = UserDefaults.standard.string(forKey: "iecPhase").flatMap(IECReport.Phase.init) ?? .before

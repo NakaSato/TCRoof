@@ -75,6 +75,16 @@ final class IECReportTests: XCTestCase {
         XCTAssertFalse(r.missing.contains(.moduleArea))
     }
 
+    func testStationLineMustNameTheJob() throws {
+        var r = try sample()
+        XCTAssertTrue(r.namesAnotherStation(than: "โรงงานสยามแพ็คกิ้ง"), "the sample's line names แพรกหนามแดง")
+        XCTAssertFalse(r.namesAnotherStation(than: "สถานีจ่ายน้ำแพรกหนามแดง"))
+        XCTAssertFalse(r.namesAnotherStation(than: "  "), "a job without a name can't be checked")
+        r.sampleName = "แพรกหนามแดง"
+        XCTAssertFalse(r.namesAnotherStation(than: "โรงงานสยามแพ็คกิ้ง"), "example data says it's a sample instead")
+        XCTAssertEqual(try JSONDecoder().decode(IECReport.self, from: JSONEncoder().encode(r)).sampleName, "แพรกหนามแดง")
+    }
+
     func testOldAndShortJSONStillDecode() throws {
         let empty = try JSONDecoder().decode(IECReport.self, from: Data("{}".utf8))
         XCTAssertTrue(empty.inverters.isEmpty)

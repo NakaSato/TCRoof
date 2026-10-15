@@ -148,7 +148,16 @@ extension InstallPageData {
             let tone: Tone = p.isComplete ? .ok : (left ?? 1) < 0 ? .danger : (left ?? 8) <= 7 ? .warn : .idle
             return DocTile(id: id, title: title, about: "เอกสารชุดยื่น\(package.title)", chip: chip, tone: tone, items: paperItems(papers))
         }
-        if let t = packageTile("commissioning", "Test & Commissioning", .commissioning, due: station.due(.commissioning)) { tiles.append(t) }
+        if var t = packageTile("commissioning", "Test & Commissioning", .commissioning, due: station.due(.commissioning)) {
+            // the IEC 62446 test itself first, then the submission's papers
+            let iec = job.iecReport
+            let line = DocItem(id: "iec", code: "IEC", title: "ทดสอบ IEC 62446 ก่อน / หลังเชื่อมต่อ",
+                               detail: iec.map { "ค่าที่วัดแล้ว \($0.readings.done)/\($0.readings.total) · รูป \($0.photos.done)/\($0.photos.total)" } ?? "ยังไม่ได้ตั้งค่า inverter และสตริง",
+                               chip: iec.map { "\(Int(($0.completion * 100).rounded()))%" } ?? "ยังไม่เริ่ม",
+                               tone: iec.map { $0.missing.isEmpty ? .ok : .info } ?? .idle, target: .iec)
+            t = DocTile(id: t.id, title: t.title, about: t.about, chip: t.chip, tone: t.tone, items: [line] + t.items)
+            tiles.append(t)
+        }
         if let punch = StationDocs.kind("punch_list"), StationDocs.applies(punch, ctx) {
             let s = StationDocs.state(punch, station: station, library: library).status
             tiles.append(DocTile(id: "punch", title: "Punch List", about: punch.name, chip: s.title,

@@ -20,6 +20,7 @@ extension InstallTrackingPage {
         case .weekly: .weekly
         case .docs: .docs
         case .plan: .plan
+        case .iec: .iec
         }
     }
 

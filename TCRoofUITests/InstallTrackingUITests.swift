@@ -23,6 +23,11 @@ final class InstallTrackingUITests: XCTestCase {
         return XCTWaiter().wait(for: [gone], timeout: timeout) == .completed
     }
 
+    func waitValue(_ element: XCUIElement, _ value: String, timeout: TimeInterval = 10) -> Bool {
+        let e = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: element)
+        return XCTWaiter().wait(for: [e], timeout: timeout) == .completed
+    }
+
     /// Back from a pushed screen (its iPad header's `กลับหน้าหลัก`) to the page.
     func back(_ app: XCUIApplication) {
         app.buttons.matching(NSPredicate(format: "label == %@", "กลับหน้าหลัก")).firstMatch.tap()
@@ -142,5 +147,66 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(scan.isHittable, "the job's screen should offer สแกนอุปกรณ์")
         XCTAssertTrue(waitGone(pageBack(app)))
         back(app)
+    }
+
+    /// `ทดสอบ IEC 62446` opens the IEC test (seeded with the แพรกหนามแดง sample); a band opens its string table, and a
+    /// Vmp typed into slot 1 after the connection is kept after going back and in again.
+    func testIECTabTypesAReading() {
+        let app = launch(["-iecDemo", "YES"], demo: false)
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["ทดสอบระบบ IEC 62446"].waitForExistence(timeout: 10), "the tab should open the IEC test")
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "หลังการเชื่อมต่อระบบ")).firstMatch.tap()
+        let cell = app.buttons["Vmp (V) ช่อง 1"]
+        XCTAssertTrue(cell.waitForExistence(timeout: 10), "the band should open the after table")
+        cell.tap()
+        let field = app.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        if let old = field.value as? String, !old.isEmpty, old != "0" { field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
+        field.typeText("612.5")
+        app.buttons["เสร็จ"].tap()
+        XCTAssertTrue(NSPredicate(format: "value == %@", "612.5").evaluate(with: cell) || waitValue(cell, "612.5"), "the reading should show in its cell")
+        app.buttons["กลับ"].firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "หลังการเชื่อมต่อระบบ")).firstMatch.tap()
+        XCTAssertTrue(waitValue(app.buttons["Vmp (V) ช่อง 1"], "612.5"), "the reading should be kept")
+    }
+
+    /// `กรอกทีละสตริง`: from the before table, a selected string opens; the pad types IR +E after `ถัดไป` moves past the
+    /// voltage and current, and the stub camera fills the voltage photo.
+    func testIECStringEntryTypesAndTakesAPhoto() {
+        let app = launch(["-iecDemo", "YES", "-iecCameraStub", "YES"], demo: false)
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ก่อนการเชื่อมต่อระบบ")).firstMatch.tap()
+        let cell = app.buttons["ป้ายรูป (Word) ช่อง 2"]
+        XCTAssertTrue(cell.waitForExistence(timeout: 10))
+        cell.tap()
+        app.buttons["เปิดสตริงนี้ ›"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "INV1ST2")).firstMatch.waitForExistence(timeout: 10),
+                      "the string should open in กรอกทีละสตริง")
+        app.buttons["ถัดไป ›"].tap()
+        app.buttons["ถัดไป ›"].tap()
+        for k in ["3", "0", "0"] { app.buttons[k].tap() }
+        XCTAssertTrue(waitValue(app.buttons["Positive – Earth"], "300 MΩ"), "the pad should type into IR +E")
+        // typed readings are kept when the screen closes, and are there when the string opens again
+        app.buttons["กลับ"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["เปิดสตริงนี้ ›"].waitForExistence(timeout: 10))
+        app.buttons["เปิดสตริงนี้ ›"].tap()
+        XCTAssertTrue(waitValue(app.buttons["Positive – Earth"], "300 MΩ"), "the reading should be kept after leaving")
+        let photo = app.buttons["แรงดัน"].firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 5))
+        photo.tap()
+        XCTAssertTrue(waitValue(photo, "มีรูปแล้ว"), "the stub camera should fill the photo")
+    }
+
+    /// `ส่งออก Excel IEC 62446` fills the PWA's workbook and opens the share sheet with it.
+    func testIECExportOpensTheShareSheet() {
+        let app = launch(["-iecDemo", "YES", "-iecOpen", "YES"], demo: false)
+        let export = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch
+        XCTAssertTrue(export.waitForExistence(timeout: slow))
+        export.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
+                      "the export should open the share sheet")
     }
 }

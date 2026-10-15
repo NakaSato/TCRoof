@@ -9,7 +9,7 @@ struct InstallTrackingPage: View {
     enum Tab: String, CaseIterable { case overview, daily }
 
     /// A screen the page pushes.
-    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail }
+    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec }
 
     let job: Job
     @State var tab = Debug.tab
@@ -70,6 +70,8 @@ struct InstallTrackingPage: View {
         .task {
             // `-installDetail YES` opens รายละเอียดงาน
             if Debug.detail { route = .detail }
+            // `-iecOpen YES` opens ทดสอบ IEC 62446
+            if Debug.iec { route = .iec }
             guard let n = Debug.stage, let rows = data.gantt?.rows, rows.indices.contains(n - 1) else { return }
             stage = rows[n - 1]
         }
@@ -95,6 +97,7 @@ struct InstallTrackingPage: View {
         case .day(let d): DailyReportScreen(job: job, date: d)
         case .survey(let id): SurveyReportEditor(jobID: id)
         case .detail: JobDetailView(job: job)
+        case .iec: IECTestScreen(job: job)
         }
     }
 
@@ -199,12 +202,12 @@ struct InstallTrackingPage: View {
         var dot = false
     }
 
-    /// `ทดสอบ IEC 62446` is left out: the app has no IEC test screen yet.
     private func items(_ data: InstallPageData) -> [Item] {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
          Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", route: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", route: .weekly),
+         Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", route: .docs),
          Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", route: .plan)]
     }
@@ -330,6 +333,7 @@ struct InstallTrackingPage: View {
         static let site = UserDefaults.standard.string(forKey: "installSite").flatMap(SiteTab.init) ?? .info
         static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
         static let detail = UserDefaults.standard.bool(forKey: "installDetail")
+        static let iec = UserDefaults.standard.bool(forKey: "iecOpen")
         #else
         static let tab = Tab.overview
         static let view = ProgressView.gantt

@@ -1,0 +1,899 @@
+{
+  "$schema": "./form-schema.json",
+  "formId": "pwa-iec62446-before-after",
+  "formVersion": 1,
+  "source": {
+    "excel": "1_Form_ IEC 62446 Test Report_PWA.xlsx",
+    "word": "2_Form_IV TEST_Before-After_PWA.docx",
+    "extractedAt": "2026-09-30"
+  },
+  "site": {
+    "name": "สถานีจ่ายน้ำแพรกหนามแดง",
+    "branch": "การประปาส่วนภูมิภาคสาขาสมุทรสงคราม",
+    "capacityKWp": 209.76,
+    "titleLine": "สถานีจ่ายน้ำแพรกหนามแดง การประปาส่วนภูมิภาคสาขาสมุทรสงคราม ขนาดกำลังผลิต 209.76 kWp"
+  },
+  "module": {
+    "brand": "Znshine",
+    "powerW": 570,
+    "areaM2": null
+  },
+  "testDate": null,
+  "tester": null,
+  "instruments": {
+    "multimeterClamp": null,
+    "insulationTester": null,
+    "irradianceMeter": null,
+    "thermalCamera": null
+  },
+  "conditions": {
+    "before": {
+      "ambientC": 34.3,
+      "irradianceWm2": 1022,
+      "time": "13:00"
+    },
+    "after": {
+      "ambientC": 34.3,
+      "irradianceWm2": 1022,
+      "time": "13:00",
+      "avgIrradiationKWhM2Day": 4.24,
+      "arrayTempC": 59.4
+    }
+  },
+  "inverters": [
+    {
+      "index": 1,
+      "ratedKW": 125.0,
+      "serial": "GKLRF5N02R",
+      "mpptCount": 10,
+      "slotsPerMppt": 2,
+      "installedKWp": 145.92,
+      "before": {
+        "continuity": "normal",
+        "irPositiveEarth": "normal",
+        "irNegativeEarth": null,
+        "inverterFunctional": "normal"
+      },
+      "after": {
+        "inverterFunctional": "normal",
+        "performanceRatio": 0.69,
+        "finalYieldKWhPerKWp": 2.93,
+        "dailyEnergyKWh": 457.18,
+        "sevenDayEnergyKWh": 3200.03,
+        "systemEfficiency": 0.15,
+        "remark": "กำลังผลิตถูกหรี่โดยโหลด"
+      },
+      "pass": {
+        "before": null,
+        "after": null
+      },
+      "strings": [
+        {
+          "seq": 1,
+          "label": "INV1ST1",
+          "mppt": 1,
+          "slot": 1,
+          "excelColumn": "E",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 755,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 2,
+          "label": "INV1ST2",
+          "mppt": 1,
+          "slot": 2,
+          "excelColumn": "F",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 752,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 3,
+          "label": "INV1ST3",
+          "mppt": 2,
+          "slot": 3,
+          "excelColumn": "G",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 752,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 4,
+          "label": "INV1ST4",
+          "mppt": 2,
+          "slot": 4,
+          "excelColumn": "H",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 5,
+          "label": "INV1ST5",
+          "mppt": 3,
+          "slot": 5,
+          "excelColumn": "I",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 750,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 6,
+          "label": "INV1ST6",
+          "mppt": 3,
+          "slot": 6,
+          "excelColumn": "J",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 750,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 7,
+          "label": "INV1ST7",
+          "mppt": 4,
+          "slot": 7,
+          "excelColumn": "K",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 749,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 8,
+          "label": "INV1ST8",
+          "mppt": 5,
+          "slot": 9,
+          "excelColumn": "M",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 9,
+          "label": "INV1ST9",
+          "mppt": 5,
+          "slot": 10,
+          "excelColumn": "N",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 756,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 10,
+          "label": "INV1ST10",
+          "mppt": 6,
+          "slot": 11,
+          "excelColumn": "O",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 752,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 11,
+          "label": "INV1ST11",
+          "mppt": 6,
+          "slot": 12,
+          "excelColumn": "P",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 12,
+          "label": "INV1ST12",
+          "mppt": 7,
+          "slot": 13,
+          "excelColumn": "Q",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 754,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 13,
+          "label": "INV1ST13",
+          "mppt": 7,
+          "slot": 14,
+          "excelColumn": "R",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 750,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 14,
+          "label": "INV1ST14",
+          "mppt": 8,
+          "slot": 15,
+          "excelColumn": "S",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 15,
+          "label": "INV1ST15",
+          "mppt": 9,
+          "slot": 17,
+          "excelColumn": "U",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 16,
+          "label": "INV1ST16",
+          "mppt": 10,
+          "slot": 19,
+          "excelColumn": "W",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 756,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "ratedKW": 60.0,
+      "serial": "BUFUEXB009",
+      "mpptCount": 10,
+      "slotsPerMppt": 2,
+      "installedKWp": 63.84,
+      "before": {
+        "continuity": "normal",
+        "irPositiveEarth": "normal",
+        "irNegativeEarth": null,
+        "inverterFunctional": "normal"
+      },
+      "after": {
+        "inverterFunctional": "normal",
+        "performanceRatio": 0.79,
+        "finalYieldKWhPerKWp": 3.33,
+        "dailyEnergyKWh": 214.94,
+        "sevenDayEnergyKWh": 1504.6,
+        "systemEfficiency": 0.17,
+        "remark": null
+      },
+      "pass": {
+        "before": null,
+        "after": null
+      },
+      "strings": [
+        {
+          "seq": 1,
+          "label": "INV2ST1",
+          "mppt": 1,
+          "slot": 1,
+          "excelColumn": "E",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 2,
+          "label": "INV2ST2",
+          "mppt": 2,
+          "slot": 3,
+          "excelColumn": "G",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 754,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 3,
+          "label": "INV2ST3",
+          "mppt": 3,
+          "slot": 5,
+          "excelColumn": "I",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 753,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 4,
+          "label": "INV2ST4",
+          "mppt": 4,
+          "slot": 7,
+          "excelColumn": "K",
+          "moduleBrand": "Znshine",
+          "moduleCount": 16,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 755,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 5,
+          "label": "INV2ST5",
+          "mppt": 5,
+          "slot": 9,
+          "excelColumn": "M",
+          "moduleBrand": "Znshine",
+          "moduleCount": 12,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 561.2,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 6,
+          "label": "INV2ST6",
+          "mppt": 5,
+          "slot": 10,
+          "excelColumn": "N",
+          "moduleBrand": "Znshine",
+          "moduleCount": 12,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 563.5,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 7,
+          "label": "INV2ST7",
+          "mppt": 6,
+          "slot": 11,
+          "excelColumn": "O",
+          "moduleBrand": "Znshine",
+          "moduleCount": 12,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 560.6,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        },
+        {
+          "seq": 8,
+          "label": "INV2ST8",
+          "mppt": 6,
+          "slot": 12,
+          "excelColumn": "P",
+          "moduleBrand": "Znshine",
+          "moduleCount": 12,
+          "optimizerCount": null,
+          "before": {
+            "polarity": "pass",
+            "irTestVoltageV": 1000,
+            "irPositiveEarthMOhm": null,
+            "irNegativeEarthMOhm": null,
+            "voltageV": 560.5,
+            "currentA": 0
+          },
+          "after": {
+            "voltageV": null,
+            "currentA": null
+          },
+          "photos": {
+            "before": {
+              "voltage": null,
+              "current": null
+            },
+            "after": {
+              "voltage": null,
+              "current": null
+            },
+            "insulation": null
+          }
+        }
+      ]
+    }
+  ],
+  "attachments": {
+    "thermalImages": [],
+    "irradiancePhoto": null
+  }
+}

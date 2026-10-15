@@ -106,11 +106,25 @@ public enum IECExcel {
                 "AA26": phase == .after ? (r.arrayTempC.map { "Array Temperature = \(number($0)) (ºC)" } ?? blankArrayTemp) : blankArrayTemp]
     }
 
-    static func write(_ r: IECReport, _ inv: IECReport.Inverter, inverter i: Int, phase: IECReport.Phase,
-                      into sheet: inout SheetCells, strings: SharedStrings, overrides: Overrides) {
+    /// A cell the export writes: a number, text (through the shared strings), or empty.
+    public enum CellValue: Equatable, Sendable { case number(Double), text(String), empty }
+
+    /// Every input cell of a sheet (`INV 01-ก่อน`), as the export writes it: the one source of truth for the file and
+    /// the in-app preview. Formula caches (AA9, the INV 02+ links) are refreshed by the export, not listed here.
+    public static func cells(for r: IECReport, sheet: String) -> [String: CellValue] {
+        let after = sheet.hasSuffix("หลัง")
+        guard let n = Int(sheet.dropFirst(4).prefix(2)), n >= 1 else { return [:] }
+        let inv = r.inverters.indices.contains(n - 1) ? r.inverters[n - 1] : IECReport.Inverter()
+        return Dictionary(cells(r, inv, inverter: n - 1, phase: after ? .after : .before, overrides: Overrides()), uniquingKeysWith: { _, b in b })
+    }
+
+    /// The input cells of one inverter's sheet, in the order they are written.
+    static func cells(_ r: IECReport, _ inv: IECReport.Inverter, inverter i: Int, phase: IECReport.Phase,
+                      overrides: Overrides) -> [(String, CellValue)] {
+        var out: [(String, CellValue)] = []
         let after = phase == .after
-        func text(_ ref: String, _ s: String?) { sheet.set(ref, s.flatMap { $0.isEmpty ? nil : .string(strings.index($0)) } ?? .empty) }
-        func num(_ ref: String, _ v: Double?) { sheet.set(ref, v.map { .number($0) } ?? .empty) }
+        func text(_ ref: String, _ s: String?) { out.append((ref, s.flatMap { $0.isEmpty ? nil : .text($0) } ?? .empty)) }
+        func num(_ ref: String, _ v: Double?) { out.append((ref, v.map { .number($0) } ?? .empty)) }
 
         if i == 0 { for (ref, t) in linkTexts(r, phase) { text(ref, t) } }
         text("E5", "Inverter \(i + 1) (\(number(inv.ratedKW)) kW) ")
@@ -140,10 +154,20 @@ public enum IECExcel {
         num("E26", after ? (o?.efficiency ?? r.efficiency(inv)) : nil)
         text("D31", after ? inv.remark : nil)
 
-        for row in tickRows { sheet.set("Y\(row)", .empty); sheet.set("Z\(row)", .empty) }
-        guard overrides.ticks else { return }
-        for (row, pass) in ticks(r, inv, phase) {
-            sheet.set(pass ? "Y\(row)" : "Z\(row)", .string(strings.index("✓")))
+        for row in tickRows { out.append(("Y\(row)", .empty)); out.append(("Z\(row)", .empty)) }
+        guard overrides.ticks else { return out }
+        for (row, pass) in ticks(r, inv, phase).sorted(by: { $0.key < $1.key }) { out.append((pass ? "Y\(row)" : "Z\(row)", .text("✓"))) }
+        return out
+    }
+
+    static func write(_ r: IECReport, _ inv: IECReport.Inverter, inverter i: Int, phase: IECReport.Phase,
+                      into sheet: inout SheetCells, strings: SharedStrings, overrides: Overrides) {
+        for (ref, v) in cells(r, inv, inverter: i, phase: phase, overrides: overrides) {
+            switch v {
+            case .empty: sheet.set(ref, .empty)
+            case .number(let n): sheet.set(ref, .number(n))
+            case .text(let t): sheet.set(ref, .string(strings.index(t)))
+            }
         }
     }
 

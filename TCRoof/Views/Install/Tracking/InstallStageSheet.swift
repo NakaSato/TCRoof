@@ -3,7 +3,7 @@ import TCRoofUI
 import TCRoofCore
 
 /// A task's sheet over the install tracking page (docs/ui/install-tracking-ipad §B, `states/03`): its days and status,
-/// the overrun box when it runs late, its places as the checklist, and the daily reports' photos tagged to it.
+/// the overrun box with its cause chips when it runs late, its places as the checklist, and the daily reports' photos tagged to it.
 /// Progress is booked in the daily report (`RoutineReport.feed`), so the button opens today's report instead of
 /// marking the task done here, which the next report would undo.
 struct InstallStageSheet: View {
@@ -11,6 +11,9 @@ struct InstallStageSheet: View {
     let count: Int
     let index: Int
     let photos: [Data]
+    /// The picked late cause, kept in the MP actual (`MasterSchedule.Actual.lateCauses`); tapping it again clears it.
+    let cause: MasterSchedule.LateCause?
+    let setCause: (MasterSchedule.LateCause?) -> Void
     let close: () -> Void
     let openDaily: () -> Void
 
@@ -61,13 +64,28 @@ struct InstallStageSheet: View {
         }
     }
 
-    /// The board's cause chips are left out: the app has nowhere to keep a late cause yet.
     private var lateBox: some View {
-        Text("คาดว่าเกินแผน \(row.overrunDays) วัน · ตามความเร็วงานที่ผ่านมา")
-            .font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
-            .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-            .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.danger.opacity(0.35)))
+        HStack(spacing: 10) {
+            Text("คาดว่าเกินแผน \(row.overrunDays) วัน · สาเหตุ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+                .fixedSize()
+            Spacer(minLength: 4)
+            ForEach(MasterSchedule.LateCause.allCases, id: \.self) { c in
+                let on = cause == c
+                Button { setCause(on ? nil : c) } label: {
+                    Text(c.title).font(.sarabunFixed(14, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.dangerText)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(on ? Theme.danger : Theme.surface, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Theme.danger.opacity(on ? 0 : 0.45)))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("สาเหตุ " + c.title)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 6).frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.danger.opacity(0.35)))
     }
 
     private var checklist: some View {

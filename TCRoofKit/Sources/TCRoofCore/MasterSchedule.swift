@@ -260,13 +260,41 @@ public enum MasterSchedule {
     // MARK: Actual
 
     /// What the site reports: weight points done per task per week, plus the actual start and finish when known.
+    /// Why a task runs past its plan, picked on the iPad install tracking page's task sheet.
+    public enum LateCause: String, Codable, CaseIterable, Sendable {
+        case weather, material, owner, contractor
+
+        public var title: String {
+            switch self {
+            case .weather: "สภาพอากาศ"
+            case .material: "วัสดุ"
+            case .owner: "เจ้าของงาน"
+            case .contractor: "ผู้รับเหมา"
+            }
+        }
+    }
+
     public struct Actual: Codable, Equatable, Sendable {
         /// Task raw value → week start (`yyyy-MM-dd`, Sunday) → weight points done that week.
         public var points: [String: [String: Double]] = [:]
         public var started: [String: Date] = [:]
         public var finished: [String: Date] = [:]
+        /// Task raw value → why it runs late; optional in older plans.
+        public var lateCauses: [String: LateCause] = [:]
 
         public init() {}
+
+        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            points = try c.decodeIfPresent([String: [String: Double]].self, forKey: .points) ?? [:]
+            started = try c.decodeIfPresent([String: Date].self, forKey: .started) ?? [:]
+            finished = try c.decodeIfPresent([String: Date].self, forKey: .finished) ?? [:]
+            // a cause this build doesn't know is dropped, not a failed plan
+            let raw = (try? c.decodeIfPresent([String: String].self, forKey: .lateCauses)) ?? nil
+            lateCauses = (raw ?? [:]).compactMapValues(LateCause.init(rawValue:))
+        }
 
         public static func key(_ week: Date, calendar cal: Calendar = MasterSchedule.calendar) -> String {
             let c = cal.dateComponents([.year, .month, .day], from: weekStart(week, calendar: cal))

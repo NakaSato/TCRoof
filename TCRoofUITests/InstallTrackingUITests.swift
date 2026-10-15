@@ -99,4 +99,27 @@ final class InstallTrackingUITests: XCTestCase {
         let sheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
         XCTAssertTrue(sheet.waitForExistence(timeout: 30), "PDF รวม should open the share sheet")
     }
+
+    /// A late task's sheet keeps the picked cause in the job (MP 192's 2.2 is past its end with nothing done): it is
+    /// still picked after a relaunch, and tapping it again clears it.
+    func testLateCauseIsKept() {
+        func open() -> XCUIApplication {
+            let app = launch(["-installStage", "2"], demo: false)
+            XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+            return app
+        }
+        var app = open()
+        let material = app.buttons["สาเหตุ วัสดุ"]
+        XCTAssertTrue(material.waitForExistence(timeout: 10), "a late task's sheet should offer the causes")
+        if material.isSelected { material.tap() }
+        material.tap()
+        XCTAssertTrue(material.isSelected)
+        app.terminate()
+        app = open()
+        let again = app.buttons["สาเหตุ วัสดุ"]
+        XCTAssertTrue(again.waitForExistence(timeout: 10))
+        XCTAssertTrue(again.isSelected, "the cause should be kept")
+        again.tap()
+        XCTAssertFalse(again.isSelected, "tapping the picked cause should clear it")
+    }
 }

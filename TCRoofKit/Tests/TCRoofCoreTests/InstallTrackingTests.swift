@@ -88,4 +88,22 @@ final class InstallGanttTests: XCTestCase {
         XCTAssertEqual(places[.structure]?.map(\.percent), [80, 50])
         XCTAssertEqual(RoutineReport.places(reports: [r1, r2], through: day(5), settings: .init())[.structure]?.first?.percent, 30)
     }
+
+    func testLateCauseIsKeptAndOldPlansStillDecode() throws {
+        let old = #"{"points":{"structure":{"2026-10-04":5}},"started":{},"finished":{}}"#
+        let a = try JSONDecoder().decode(MasterSchedule.Actual.self, from: Data(old.utf8))
+        XCTAssertEqual(a.points["structure"]?["2026-10-04"], 5)
+        XCTAssertTrue(a.lateCauses.isEmpty)
+
+        var b = a
+        b.lateCauses["dcSide"] = .material
+        let back = try JSONDecoder().decode(MasterSchedule.Actual.self, from: JSONEncoder().encode(b))
+        XCTAssertEqual(back, b)
+        let (_, p) = plan()
+        XCTAssertEqual(InstallGantt(plan: p, actual: back, places: [:], today: day(14), calendar: cal).rows.first { $0.id == "dcSide" }?.lateCause, .material)
+
+        // a cause from a newer build is dropped, the rest of the plan kept
+        let newer = #"{"points":{},"lateCauses":{"dcSide":"crane","panels":"weather"}}"#
+        XCTAssertEqual(try JSONDecoder().decode(MasterSchedule.Actual.self, from: Data(newer.utf8)).lateCauses, ["panels": .weather])
+    }
 }

@@ -34,13 +34,16 @@ public struct InstallGantt: Equatable, Sendable {
         public var forecastEnd: Date?
         /// Days past the plan's end: finished late, forecast late, or not done and past its end.
         public var overrunDays: Int
+        /// Why it runs late, when the team picked one.
+        public var lateCause: MasterSchedule.LateCause?
         public var subs: [Sub]
 
         public init(id: String, code: String, title: String, status: Status, start: Date, end: Date, actualStart: Date? = nil,
-                    actualEnd: Date? = nil, percent: Double, forecastEnd: Date? = nil, overrunDays: Int = 0, subs: [Sub] = []) {
+                    actualEnd: Date? = nil, percent: Double, forecastEnd: Date? = nil, overrunDays: Int = 0,
+                    lateCause: MasterSchedule.LateCause? = nil, subs: [Sub] = []) {
             self.id = id; self.code = code; self.title = title; self.status = status; self.start = start; self.end = end
             self.actualStart = actualStart; self.actualEnd = actualEnd; self.percent = percent; self.forecastEnd = forecastEnd
-            self.overrunDays = overrunDays; self.subs = subs
+            self.overrunDays = overrunDays; self.lateCause = lateCause; self.subs = subs
         }
     }
 
@@ -63,7 +66,7 @@ public struct InstallGantt: Equatable, Sendable {
             let finished = actual.finished[p.task.rawValue]
             let status: Status = done ? .done : (percent > 0 || began != nil || start <= day) ? .current : .waiting
             var row = Row(id: p.task.rawValue, code: p.task.code, title: p.task.title, status: status, start: start, end: end,
-                          actualStart: began, percent: percent, subs: places[p.task] ?? [])
+                          actualStart: began, percent: percent, lateCause: actual.lateCauses[p.task.rawValue], subs: places[p.task] ?? [])
             switch status {
             case .done:
                 row.actualEnd = finished ?? min(day, end)

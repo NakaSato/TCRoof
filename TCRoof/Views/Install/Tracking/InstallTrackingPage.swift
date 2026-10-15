@@ -24,8 +24,11 @@ struct InstallTrackingPage: View {
     /// `ทุกรายงาน`'s segment: all, to do, with a problem.
     @State var dailyFilter = 0
     @State var shared: Shared?
+    /// `-installDemo YES` keeps its picked late causes here instead of in a job.
+    @State private var demoCauses: [String: MasterSchedule.LateCause] = [:]
     @State private var survey = SurveyModel.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         let data = self.data
@@ -99,10 +102,28 @@ struct InstallTrackingPage: View {
                 .onTapGesture { stage = nil }
                 .accessibilityHidden(true)
             InstallStageSheet(row: row, count: g.rows.count, index: (g.rows.firstIndex { $0.id == row.id } ?? 0) + 1,
-                              photos: photos(for: row), close: { stage = nil },
+                              photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) }, close: { stage = nil },
                               openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) })
         }
         .transition(.opacity)
+    }
+
+    private func cause(_ task: String) -> MasterSchedule.LateCause? {
+        #if DEBUG
+        if Debug.demo { return demoCauses[task] }
+        #endif
+        return job.scheduleActual.lateCauses[task]
+    }
+
+    /// Keeps the cause in the job's MP actual, which syncs with the plan.
+    private func setCause(_ c: MasterSchedule.LateCause?, task: String) {
+        #if DEBUG
+        if Debug.demo { demoCauses[task] = c; return }
+        #endif
+        var a = job.scheduleActual
+        a.lateCauses[task] = c
+        job.scheduleActual = a
+        try? context.save()
     }
 
     /// The daily reports' photos tagged with a progress line of the task.

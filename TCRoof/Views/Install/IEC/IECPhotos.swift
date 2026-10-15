@@ -5,16 +5,18 @@ import TCRoofUI
 import TCRoofCore
 
 /// The IEC test's photos are `PhotoAsset`s on the job (`Job.iecPhotos`), tagged with a new id that the report keeps
-/// per string and kind. They stay on the device and go to Drive with the job's other photos; Firestore carries only
-/// the ids.
+/// per string and kind. They stay on the device and go to Drive with the job's documents (`ProjectDriveUpload`, under
+/// `IEC 62446/รูปถ่าย`); Firestore carries only the ids.
 extension Job {
     func iecPhoto(_ id: String?) -> PhotoAsset? {
         guard let id else { return nil }
         return iecPhotos.first { $0.tag == id }
     }
 
-    /// Keeps a photo, removing the one it replaces; returns its id for the report.
+    /// Keeps a photo, removing the one it replaces; returns its id for the report. A closed test keeps its photos
+    /// (the old id comes back, and `updateIEC` refuses the change anyway).
     func storeIECPhoto(_ data: Data, replacing old: String?, context: ModelContext) -> String {
+        if iecReport?.isLocked == true { return old ?? "" }
         if let o = iecPhoto(old) { context.delete(o) }
         let id = UUID().uuidString
         let asset = PhotoAsset(data: data, tag: id)
@@ -24,6 +26,7 @@ extension Job {
     }
 
     func removeIECPhoto(_ id: String?, context: ModelContext) {
+        guard iecReport?.isLocked != true else { return }
         if let o = iecPhoto(id) { context.delete(o) }
     }
 }
@@ -106,8 +109,10 @@ struct IECPhotoTile: View {
 
     @ViewBuilder private var tile: some View {
         if let asset, let img = UIImage(data: asset.data) {
-            Image(uiImage: img).resizable().scaledToFill()
-                .frame(maxWidth: .infinity).frame(height: height).clipped()
+            // the tile's size first, the photo filling it: a photo wider than a narrow tile (IR, 150 pt) would
+            // otherwise widen the frame and spill out of its card
+            Color.clear.frame(maxWidth: .infinity).frame(height: height)
+                .overlay { Image(uiImage: img).resizable().scaledToFill() }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(alignment: .bottomLeading) {
                     Text("\(caption) · \(ThaiFormat.time.string(from: asset.createdAt))").font(.sarabunFixed(13, .bold))

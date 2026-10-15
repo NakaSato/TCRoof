@@ -20,9 +20,9 @@ enum ProjectDriveUpload {
         job.documents.filter { $0.driveFileID == nil }.count + (pendingInspection(job) == nil ? 0 : 1) + pendingPhotos(job).count
     }
 
-    /// Photos of signed daily reports not on Drive yet, with the folder and name each goes under.
+    /// Photos of signed daily reports and of the IEC test not on Drive yet, with the folder and name each goes under.
     private static func pendingPhotos(_ job: Job) -> [(photo: PhotoAsset, folder: [String], name: String)] {
-        job.dailyLogs.filter { $0.engineerSignedAt != nil }.flatMap { log -> [(PhotoAsset, [String], String)] in
+        let daily = job.dailyLogs.filter { $0.engineerSignedAt != nil }.flatMap { log -> [(PhotoAsset, [String], String)] in
             let lines = log.report?.progress ?? []
             return log.sortedPhotos.enumerated().compactMap { i, p in
                 guard p.driveFileID == nil else { return nil }
@@ -30,6 +30,26 @@ enum ProjectDriveUpload {
                 return (p, RoutineReport.photoFolder(date: log.date), RoutineReport.photoName(date: log.date, index: i + 1, line: line))
             }
         }
+        return daily + pendingIECPhotos(job)
+    }
+
+    /// The IEC test's photos (`IEC 62446/รูปถ่าย/INV1ST3 ก่อน แรงดัน.jpg`), only those the test still uses; a sample's
+    /// photos stay on the device, since they aren't this job's.
+    static func pendingIECPhotos(_ job: Job) -> [(photo: PhotoAsset, folder: [String], name: String)] {
+        guard let r = job.iecReport, r.sampleName == nil else { return [] }
+        let names = r.photoFileNames()
+        return job.iecPhotos.compactMap { p in
+            guard p.driveFileID == nil, let name = names[p.tag] else { return nil }
+            return (p, IECReport.photoFolder, name)
+        }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    /// The IEC photos on Drive over those the test uses, for the install page's line.
+    static func iecPhotoUpload(_ job: Job) -> IECReport.Tally? {
+        guard let r = job.iecReport, r.sampleName == nil else { return nil }
+        let used = Set(r.photoFileNames().keys)
+        guard !used.isEmpty else { return nil }
+        return .init(job.iecPhotos.filter { $0.driveFileID != nil && used.contains($0.tag) }.count, used.count)
     }
 
     private static func pendingInspection(_ job: Job) -> Inspection? {

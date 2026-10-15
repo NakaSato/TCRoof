@@ -179,6 +179,16 @@ public struct IECReport: Codable, Equatable, Sendable {
     /// Set on example data copied from another station (the app's demo of the แพรกหนามแดง form): that station's
     /// name, so an export of it can't pass for this job's test. nil on a real test.
     public var sampleName: String?
+    /// When the system was switched on to the grid (the after phase is measured from then).
+    public var gridOnAt: Date?
+    /// Thermal photo id → where it was taken (`หลังคาอาคาร 1`, `ตู้ DC` …); a photo without one has no entry.
+    public var thermalPlaces: [String: String] = [:]
+    /// `Stage` raw value → who confirmed it complete and when (`IECReport+Stages`).
+    public var stageRecords: [String: StageRecord] = [:]
+    /// Every Excel / Word file exported, oldest first.
+    public var exports: [ExportRecord] = []
+    /// Set by `เสร็จ`: the test is closed and locked until reopened.
+    public var result: TestResult?
 
     public init(stationLine: String = "", module: Module = .init(), inverters: [Inverter] = [], before: Conditions = .init(),
                 after: Conditions = .init(), yrKWhM2Day: Double? = nil, arrayTempC: Double? = nil, testDate: Date? = nil,
@@ -190,7 +200,7 @@ public struct IECReport: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case stationLine, module, inverters, before, after, yrKWhM2Day, arrayTempC, testDate, tester, instruments, irradiancePhoto, thermalPhotos
-        case sampleName
+        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, result
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -207,6 +217,11 @@ public struct IECReport: Codable, Equatable, Sendable {
         irradiancePhoto = try c.decodeIfPresent(String.self, forKey: .irradiancePhoto)
         thermalPhotos = try c.decodeIfPresent([String].self, forKey: .thermalPhotos) ?? []
         sampleName = try c.decodeIfPresent(String.self, forKey: .sampleName)
+        gridOnAt = try c.decodeIfPresent(Date.self, forKey: .gridOnAt)
+        thermalPlaces = try c.decodeIfPresent([String: String].self, forKey: .thermalPlaces) ?? [:]
+        stageRecords = try c.decodeIfPresent([String: StageRecord].self, forKey: .stageRecords) ?? [:]
+        exports = try c.decodeIfPresent([ExportRecord].self, forKey: .exports) ?? []
+        result = try c.decodeIfPresent(TestResult.self, forKey: .result)
     }
 
     /// The sheet's station line doesn't name this job's station (`stationName`): the job was renamed after the test

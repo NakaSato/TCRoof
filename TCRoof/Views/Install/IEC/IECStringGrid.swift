@@ -65,22 +65,27 @@ struct IECStringGrid: View {
                     sidebar(report)
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
-                            switch page {
-                            case .table:
-                                summary(report, inv)
-                                table(report, inv, index)
-                                legend
-                            case .performance: IECPerformancePage(job: job, inverter: index)
-                            case .conditions: IECConditionsPage(job: job)
-                            case .photos: IECStationPhotosPage(job: job)
+                            if report.isLocked { lockedNotice }
+                            Group {
+                                switch page {
+                                case .table:
+                                    summary(report, inv)
+                                    table(report, inv, index)
+                                    legend
+                                case .performance: IECPerformancePage(job: job, inverter: index)
+                                case .conditions: IECConditionsPage(job: job)
+                                case .photos: IECStationPhotosPage(job: job)
+                                }
                             }
+                            // a closed test is read only; the side list still switches pages
+                            .disabled(report.isLocked)
                         }
                         .padding(20)
                     }
                     .scrollIndicators(.hidden)
                 }
                 switch page {
-                case .table: bottomBar(inv, index)
+                case .table: bottomBar(inv, index).disabled(report.isLocked)
                 case .performance: performanceBar(report, index)
                 case .conditions, .photos: EmptyView()
                 }
@@ -116,6 +121,13 @@ struct IECStringGrid: View {
         case .photos:
             IECHeader(title: "ความเข้มแสงและภาพความร้อน", subtitle: r.stationLine) { EmptyView() }
         }
+    }
+
+    private var lockedNotice: some View {
+        Label("ปิดการทดสอบแล้ว · ดูได้อย่างเดียว กด แก้ไข ที่หน้าภาพรวมเพื่อเปิดให้แก้", systemImage: "lock.fill")
+            .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.successInk)
+            .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     /// `Inverter 2 ›` to the next inverter's performance.

@@ -14,6 +14,8 @@ struct IECTestScreen: View {
     @State private var exportError: String?
     /// The station line names another station: asked before exporting.
     @State private var confirmExport = false
+    /// `แก้ไข` on a closed test asks first: it reopens it.
+    @State private var confirmReopen = false
     /// The debug flags apply once: `.task` runs again each time the screen reappears (back from a table).
     @State private var debugApplied = false
     @Environment(\.modelContext) private var context
@@ -27,16 +29,19 @@ struct IECTestScreen: View {
         let report = job.iecReport
         VStack(spacing: 0) {
             IECHeader(title: "ทดสอบระบบ IEC 62446", subtitle: (report?.stationLine).flatMap { $0.isEmpty ? nil : $0 } ?? job.stationName) {
-                IECHeaderButton(title: report == nil ? "ตั้งค่าการทดสอบ" : "ตั้งค่า", symbol: "slider.horizontal.3") { setup = true }
+                if report?.isLocked != true {
+                    IECHeaderButton(title: report == nil ? "ตั้งค่าการทดสอบ" : "ตั้งค่า", symbol: "slider.horizontal.3") { setup = true }
+                }
                 if report?.inverters.isEmpty == false { IECHeaderButton(title: "ส่งออก", symbol: "square.and.arrow.up") { startExport() } }
             }
             if let report, !report.inverters.isEmpty {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
+                        resultNotice(report)
                         stationNotice(report)
                         stats(report)
                         inverterCards(report)
-                        missingCard(report)
+                        stagesCard(report)
                     }
                     .padding(24)
                 }
@@ -57,6 +62,10 @@ struct IECTestScreen: View {
         } message: {
             Text("แผ่นงานเขียนว่า “\(job.iecReport?.stationLine ?? "")” แต่งานนี้คือ “\(job.stationName)”")
         }
+        .confirmationDialog("เปิดผลทดสอบให้แก้ไข", isPresented: $confirmReopen, titleVisibility: .visible) {
+            Button("แก้ไข") { job.updateIEC(context, evenWhenLocked: true) { $0.reopen() } }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: { Text("ผลที่สรุปไว้จะถูกยกเลิก ต้องกด เสร็จ อีกครั้งหลังแก้") }
         .alert("ส่งออกไม่ได้", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(exportError ?? "") }
@@ -67,7 +76,7 @@ struct IECTestScreen: View {
             debugApplied = true
             // `-iecClear YES`: the station starts with no test, its photos removed (for good)
             if Debug.clear { for p in job.iecPhotos { context.delete(p) }; job.iecReport = nil; try? context.save() }
-            if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset) }
+            if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset || Debug.demoFull, full: Debug.demoFull ? context : nil); try? context.save() }
             if let line = Debug.stationLine { job.updateIEC(context) { $0.stationLine = line; $0.sampleName = nil } }  // a real test with that line
             // after the seed, so the sheet starts from it, and after the push, which a sheet would cut short
             try? await Task.sleep(for: .milliseconds(700))
@@ -178,22 +187,19 @@ struct IECTestScreen: View {
         .accessibilityHint("เปิดตารางสตริง")
     }
 
-    // MARK: missing
+    // MARK: steps
 
-    private func missingCard(_ r: IECReport) -> some View {
-        let missing = r.missing
+    /// The 7 steps of the board: what each lacks, who confirmed it, and the files exported (step 7).
+    private func stagesCard(_ r: IECReport) -> some View {
+        let open = IECReport.Stage.allCases.filter { $0 != .review && !r.isDone($0) }.count
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                Text("ยังขาดก่อนส่งออก").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                if !missing.isEmpty {
-                    Text("● \(missing.count) รายการ").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.warningInk)
-                        .padding(.horizontal, 10).frame(height: 26).background(Theme.pendingSoft, in: Capsule())
-                }
+                Text("ขั้นตอนการทดสอบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text(open == 0 ? "ครบ 6/6" : "● ยังขาด \(open) ขั้น").font(.sarabunFixed(13, .bold))
+                    .foregroundStyle(open == 0 ? Theme.successInk : Theme.warningInk)
+                    .padding(.horizontal, 10).frame(height: 26).background(open == 0 ? Theme.successSoft : Theme.pendingSoft, in: Capsule())
             }
-            if missing.isEmpty {
-                Label("ครบทุกรายการ", systemImage: "checkmark.circle.fill").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.successInk)
-            }
-            ForEach(Array(missing.enumerated()), id: \.offset) { _, m in missingRow(r, m) }
+            ForEach(IECReport.Stage.allCases) { stageRow(r, $0) }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -201,60 +207,131 @@ struct IECTestScreen: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    /// Where `ไปกรอก` leads: a string table for readings, the performance page for the energy, the conditions page,
-    /// and the set-up for the module area and the record.
-    private func go(_ r: IECReport, _ m: IECReport.Missing) -> (() -> Void)? {
-        func firstShort(_ reading: IECReport.Reading, _ phase: IECReport.Phase) -> (() -> Void)? {
-            guard let i = r.inverters.firstIndex(where: { !r.tally($0, reading).isComplete }) else { return nil }
-            return { grid = .init(inverter: i, phase: phase) }
+    /// Where `แก้ ›` leads for a step.
+    private func go(_ r: IECReport, _ stage: IECReport.Stage) -> (() -> Void)? {
+        func first(_ reading: IECReport.Reading?, _ phase: IECReport.Phase, page: IECStringGrid.Page = .table) -> () -> Void {
+            let i = reading.flatMap { k in r.inverters.firstIndex { !r.tally($0, k).isComplete } } ?? 0
+            return { grid = .init(inverter: i, phase: phase, page: page) }
         }
-        switch m {
-        case .insulation: return firstShort(.insulation, .before)
-        case .vocAndCurrent: return firstShort(.vocAndCurrent, .before)
-        case .vmpAndImp: return firstShort(.vmpAndImp, .after)
-        case .checks: return { grid = .init(inverter: 0, phase: .before) }
-        case .moduleArea, .testRecord: return { setup = true }
+        let readingsDone: (IECReport.Reading) -> Bool = { k in r.inverters.allSatisfy { r.tally($0, k).isComplete } }
+        switch stage {
+        case .setup: return { setup = true }
+        case .beforeVoltage: return readingsDone(.vocAndCurrent) && !r.before.isComplete ? first(nil, .before, page: .conditions) : first(.vocAndCurrent, .before)
+        case .beforeInsulation: return first(.insulation, .before)
+        case .afterVoltage: return readingsDone(.vmpAndImp) && !r.after.isComplete ? first(nil, .after, page: .conditions) : first(.vmpAndImp, .after)
         case .energy: return { grid = .init(inverter: r.inverters.firstIndex { $0.energy7dKWh == nil } ?? 0, phase: .after, page: .performance) }
-        case .conditions: return { grid = .init(inverter: 0, phase: .before, page: .conditions) }
+        case .thermal: return first(nil, .after, page: .photos)
+        case .review: return nil
         }
     }
 
-    private func missingRow(_ r: IECReport, _ m: IECReport.Missing) -> some View {
-        let action = go(r, m)
-        return Button { action?() } label: {
-            HStack(spacing: 10) {
-                Circle().fill(Theme.pending).frame(width: 8, height: 8)
-                Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Spacer(minLength: 8)
-                if action != nil { Text("ไปกรอก ›").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary) }
-            }
-            .padding(.horizontal, 14).frame(minHeight: 44)
-            .background(Theme.pendingSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .contentShape(Rectangle())
+    private func stageRow(_ r: IECReport, _ stage: IECReport.Stage) -> some View {
+        let missing = r.missing(stage), done = missing.isEmpty, confirmed = r.record(stage)
+        let detail: String = if stage == .review {
+            done ? exportLine(r) : missing.joined(separator: " · ")
+        } else if let confirmed {
+            "ยืนยันแล้ว " + Self.stamp(confirmed.confirmedAt, confirmed.by)
+        } else {
+            done ? "ครบ · ยังไม่ได้ยืนยัน" : "ขาด " + missing.joined(separator: " · ")
         }
-        .buttonStyle(.plain)
-        .disabled(action == nil)
+        let action = done ? nil : go(r, stage)
+        return HStack(spacing: 12) {
+            // ✓ once confirmed (or the closed step 7); a done step still waiting keeps its number in green
+            let sealed = confirmed != nil || (stage == .review && r.isLocked)
+            Text(sealed ? "✓" : "\(stage.rawValue)").font(.sarabunFixed(15, .bold))
+                .foregroundStyle(sealed ? Theme.onPrimary : done ? Theme.successInk : Theme.warningInk)
+                .frame(width: 32, height: 32).background(sealed ? Theme.success : done ? Theme.successSoft : Theme.pendingSoft, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(stage.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text(detail).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            if done, confirmed == nil, stage != .review, !r.isLocked {
+                Button("ยืนยัน") { job.updateIEC(context) { _ = $0.confirm(stage, by: job.iecActor) } }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                    .accessibilityLabel("ยืนยันขั้น \(stage.title)")
+            } else if let action, !r.isLocked {
+                Button("แก้ ›", action: action).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
+                    .accessibilityLabel("ไปกรอก \(stage.title)")
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 6).frame(minHeight: 56)
+        .background(done ? Theme.surface : Theme.pendingSoft.opacity(0.5), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .contain)
+    }
+
+    /// Step 7's line: the last Excel and whether the values changed since.
+    private func exportLine(_ r: IECReport) -> String {
+        guard let last = r.lastExport(.excel) else { return "พร้อมส่งออก · ยังไม่ได้ส่งออก Excel" }
+        return "Excel ล่าสุด " + Self.stamp(last.record.at, "") + (last.current ? " · ตรงกับข้อมูลปัจจุบัน" : " · ข้อมูลเปลี่ยนหลังส่งออก ควรส่งออกใหม่")
     }
 
     // MARK: bottom bar
 
     private func bottomBar(_ r: IECReport) -> some View {
         HStack(spacing: 12) {
-            IECRing(fraction: r.completion, size: 30)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("บันทึกอัตโนมัติ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text("ความคืบหน้ารวม \(Int((r.completion * 100).rounded()))%").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-            }
-            Spacer()
-            if !r.missing.isEmpty {
-                Text("ยังขาด \(r.missing.count) รายการ · ส่งออกได้ ช่องที่ยังไม่มีค่าจะว่างไว้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            if let result = r.result {
+                Text(result.passed ? "ผ่าน" : "ไม่ผ่าน").font(.sarabunFixed(15, .bold))
+                    .foregroundStyle(result.passed ? Theme.successInk : Theme.dangerText)
+                    .padding(.horizontal, 12).frame(height: 30).background(result.passed ? Theme.successSoft : Theme.dangerSoft, in: Capsule())
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("ปิดการทดสอบแล้ว · แก้ไขไม่ได้").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(Self.stamp(result.completedAt, result.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                }
+                Spacer()
+                Button { confirmReopen = true } label: { Label("แก้ไข", systemImage: "lock.open") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            } else {
+                IECRing(fraction: r.completion, size: 30)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("บันทึกอัตโนมัติ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("ครบ \(IECReport.Stage.allCases.filter { $0 != .review && r.isDone($0) }.count)/6 ขั้น · ความคืบหน้ารวม \(Int((r.completion * 100).rounded()))%")
+                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                }
+                Spacer()
             }
             Button { startExport() } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
-                .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+                .buttonStyle(TCButtonStyle(r.isLocked || !r.isDone(.review) ? .primary : .secondary, size: .card)).fixedSize()
+            if !r.isLocked {
+                Button(action: complete) { Label("เสร็จ", systemImage: "checkmark.seal") }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+                    .disabled(!r.isDone(.review))
+                    .accessibilityHint(r.isDone(.review) ? "สรุปผลและล็อกการทดสอบ" : "ทำขั้นที่ 1–6 ให้ครบก่อน")
+            }
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
         .background(Theme.surface)
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+    }
+
+    /// `เสร็จ`: closes and locks the test, and books the MP plan's `3.1 Pre-Commissioning Test` as done that week (a
+    /// real test of a station with a plan; the sample never touches the plan). Reopening leaves the plan as it is.
+    private func complete() {
+        job.updateIEC(context) { _ = $0.complete(by: job.iecActor) }
+        guard let r = job.iecReport, let result = r.result, r.sampleName == nil, let input = job.scheduleInput else { return }
+        var a = job.scheduleActual
+        a.setPercent(100, task: .preCommissioning, week: result.completedAt, over200kVA: input.over200kVA)
+        if a.finished[MasterSchedule.Task.preCommissioning.rawValue] == nil { a.finished[MasterSchedule.Task.preCommissioning.rawValue] = result.completedAt }
+        job.scheduleActual = a
+        try? context.save()
+    }
+
+    /// `15 ต.ค. 2569 14:20 · ทีมทดสอบ`.
+    static func stamp(_ at: Date, _ by: String) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "th_TH"); f.calendar = Calendar(identifier: .buddhist); f.dateFormat = "d MMM yyyy HH:mm"
+        return f.string(from: at) + (by.isEmpty ? "" : " · " + by)
+    }
+
+    /// A closed test says so above everything; a result whose values changed since (a sync) says that too.
+    @ViewBuilder private func resultNotice(_ r: IECReport) -> some View {
+        if r.resultIsStale {
+            notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
+                   "ข้อมูลเปลี่ยนหลังปิดการทดสอบ", "อาจมาจากเครื่องอื่น · กด แก้ไข แล้ว เสร็จ อีกครั้งเพื่อสรุปผลใหม่") { EmptyView() }
+        } else if r.isLocked {
+            notice("lock.fill", Theme.successInk, Theme.successSoft,
+                   "ปิดการทดสอบแล้ว", "ค่าทั้งหมดถูกล็อก · กด แก้ไข เพื่อเปิดให้แก้") { EmptyView() }
+        }
     }
 
     // MARK: station line
@@ -313,7 +390,7 @@ struct IECTestScreen: View {
             doc.folderPath = "IEC 62446"
             context.insert(doc)
             doc.job = job
-            try? context.save()
+            job.updateIEC(context, evenWhenLocked: true) { $0.recordExport(.excel, name: name) }
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
             try data.write(to: url, options: .atomic)
             exported = ExportedFile(url: url)
@@ -332,8 +409,10 @@ struct IECTestScreen: View {
     /// slot and `-iecEntry YES` opens that string in `กรอกทีละสตริง`.
     enum Debug {
         #if DEBUG
-        static let demo = UserDefaults.standard.bool(forKey: "iecDemo") || demoReset
+        static let demo = UserDefaults.standard.bool(forKey: "iecDemo") || demoReset || demoFull
         static let demoReset = UserDefaults.standard.string(forKey: "iecDemo") == "reset"
+        /// `-iecDemo full`: the sample with everything filled in (each step done, none confirmed), replacing the test.
+        static let demoFull = UserDefaults.standard.string(forKey: "iecDemo") == "full"
         static let clear = UserDefaults.standard.bool(forKey: "iecClear")
         static let stationLine = UserDefaults.standard.string(forKey: "iecStationLine")
         static let setup = UserDefaults.standard.bool(forKey: "iecSetup")

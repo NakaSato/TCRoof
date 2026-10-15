@@ -12,10 +12,14 @@ final class IECFlowUITests: XCTestCase {
     /// Voc, Vmp before and after for the four strings of 16 panels.
     static let voc = ["752", "751", "753", "750"], vmp = ["612", "611", "613", "610"]
 
-    func type(_ field: XCUIElement, _ text: String, _ what: String) {
+    /// `edge`: at the right edge, so the cursor lands after any text (the number fields are right-aligned); the narrow
+    /// centred slot fields are tapped in the middle.
+    func type(_ field: XCUIElement, _ text: String, _ what: String, edge: Bool = true) {
         XCTAssertTrue(field.waitForExistence(timeout: 10), what)
-        // at the right edge, so the cursor lands after any text (the number fields are right-aligned)
-        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        if edge { field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap() } else { field.tap() }
+        // the keyboard can take a moment to attach to a field the form just scrolled in
+        let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
+        if XCTWaiter.wait(for: [focused], timeout: 3) != .completed { field.tap() }
         // a pre-filled value (the inverter's kW comes from the job's MP plan) is replaced, not added to
         if let old = field.value as? String, !old.isEmpty, old != field.placeholderValue, old != "—" {
             field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count))
@@ -46,7 +50,7 @@ final class IECFlowUITests: XCTestCase {
         type(app.textFields["พื้นที่ต่อแผ่น (datasheet)"], "2.58", "area")
         type(app.textFields["พิกัด inverter 1"], "80", "kW")
         type(app.textFields["S/N inverter 1"], "TEST-INV1", "serial")
-        for slot in 1...4 { type(app.textFields["Inverter 1 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)") }
+        for slot in 1...4 { type(app.textFields["Inverter 1 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)", edge: false) }
         // the record section is further down the form
         let toggle = app.switches.matching(NSPredicate(format: "label == %@", "ระบุวันที่ทดสอบ")).firstMatch
         for _ in 0..<5 where !toggle.isHittable { app.textFields["Inverter 1 ช่อง 4 จำนวนแผง"].swipeUp() }
@@ -131,7 +135,7 @@ final class IECFlowUITests: XCTestCase {
         // the slot grid is the section's next row, under the keyboard
         let slot1 = app.textFields["Inverter 3 ช่อง 1 จำนวนแผง"]
         for _ in 0..<4 where !(slot1.exists && slot1.isHittable) { app.collectionViews.firstMatch.swipeUp() }
-        for slot in 1...2 { type(app.textFields["Inverter 3 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)") }
+        for slot in 1...2 { type(app.textFields["Inverter 3 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)", edge: false) }
         app.buttons["บันทึก"].tap()
 
         let export = button(app, "ส่งออก Excel IEC 62446", contains: true)

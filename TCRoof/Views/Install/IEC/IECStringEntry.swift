@@ -19,6 +19,7 @@ struct IECStringEntry: View {
     /// (the install page and the PWA home watch the job).
     @State private var draft: IECReport?
     @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
 
     private var report: IECReport { draft ?? job.iecReport ?? job.newIECReport }
 
@@ -64,6 +65,8 @@ struct IECStringEntry: View {
             .background(Theme.phonePage.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .onDisappear(perform: commit)
+            // the app going to the background may be the last chance: it can be closed from there
+            .onChange(of: scenePhase) { _, p in if p != .active { commit() } }
         } else {
             Text("ไม่มีสตริงในช่องนี้").font(.sarabunFixed(17)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.phonePage)
@@ -324,6 +327,10 @@ struct IECStringEntry: View {
             chip("รูป \(photos)/\(kinds.count)", photos == kinds.count)
             chip("ค่า \(values)/\(fields(phase).count)", values == fields(phase).count)
             Spacer()
+            // `บันทึกร่างตอนนี้`: what the pad typed goes to the job now, not only on ถัดไป
+            Button(action: commit) { Label(draft == nil ? "บันทึกแล้ว" : "บันทึกร่างตอนนี้", systemImage: draft == nil ? "checkmark" : "square.and.arrow.down") }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .disabled(draft == nil)
             if let p = neighbour(inv, -1), let st = inv.strings.first(where: { $0.slot == p }) {
                 Button { go(p) } label: { Text("‹ " + IECReport.label(inverter: inverter + 1, seq: st.seq)) }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card))

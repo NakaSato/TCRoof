@@ -260,7 +260,7 @@ struct IECNumberField: View {
                 }
             }
             HStack {
-                TextField(placeholder, text: $text).keyboardType(.decimalPad).focused($focused)
+                TextField(placeholder, text: $text).keyboardType(.decimalPad).focused($focused).accessibilityLabel(title)
                     .font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                 Text(unit).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             }
@@ -294,7 +294,7 @@ struct IECTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
-            TextField(placeholder, text: $draft).focused($focused).font(.sarabunFixed(17)).foregroundStyle(Theme.navy)
+            TextField(placeholder, text: $draft).focused($focused).accessibilityLabel(title).font(.sarabunFixed(17)).foregroundStyle(Theme.navy)
                 .padding(.horizontal, 14).frame(minHeight: 50)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(focused ? Theme.primary : Theme.borderControl, lineWidth: focused ? 2 : 1))
         }

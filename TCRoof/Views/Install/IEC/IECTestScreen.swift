@@ -14,6 +14,8 @@ struct IECTestScreen: View {
     @State private var exportError: String?
     /// The station line names another station: asked before exporting.
     @State private var confirmExport = false
+    /// The debug flags apply once: `.task` runs again each time the screen reappears (back from a table).
+    @State private var debugApplied = false
     @Environment(\.modelContext) private var context
 
     struct ExportedFile: Identifiable { let url: URL; var id: URL { url } }
@@ -61,6 +63,10 @@ struct IECTestScreen: View {
         .navigationDestination(item: $grid) { IECStringGrid(job: job, inverter: $0.inverter, phase: $0.phase, page: $0.page) }
         #if DEBUG
         .task {
+            guard !debugApplied else { return }
+            debugApplied = true
+            // `-iecClear YES`: the station starts with no test, its photos removed (for good)
+            if Debug.clear { for p in job.iecPhotos { context.delete(p) }; job.iecReport = nil; try? context.save() }
             if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset) }
             if let line = Debug.stationLine { job.updateIEC(context) { $0.stationLine = line; $0.sampleName = nil } }  // a real test with that line
             // after the seed, so the sheet starts from it, and after the push, which a sheet would cut short
@@ -328,6 +334,7 @@ struct IECTestScreen: View {
         #if DEBUG
         static let demo = UserDefaults.standard.bool(forKey: "iecDemo") || demoReset
         static let demoReset = UserDefaults.standard.string(forKey: "iecDemo") == "reset"
+        static let clear = UserDefaults.standard.bool(forKey: "iecClear")
         static let stationLine = UserDefaults.standard.string(forKey: "iecStationLine")
         static let setup = UserDefaults.standard.bool(forKey: "iecSetup")
         static let inverter: Int? = UserDefaults.standard.object(forKey: "iecInverter") == nil ? nil : UserDefaults.standard.integer(forKey: "iecInverter")

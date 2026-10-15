@@ -36,6 +36,7 @@ struct IECSetupSheet: View {
             Text(title)
             Spacer()
             TextField("—", value: value, format: .number.grouping(.never)).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                .accessibilityLabel(title)
                 .frame(width: 140)
             Text(unit).foregroundStyle(Theme.inkMuted).frame(width: 44, alignment: .leading)
         }
@@ -60,6 +61,7 @@ struct IECSetupSheet: View {
             HStack {
                 Text("S/N")
                 TextField("serial", text: $report.inverters[i].serial).multilineTextAlignment(.trailing)
+                    .accessibilityLabel("S/N inverter \(i + 1)")
             }
             slotGrid(i)
             if report.inverters.count > 1 {

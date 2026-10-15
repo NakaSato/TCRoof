@@ -24,6 +24,8 @@ struct InstallTrackingPage: View {
     /// `ทุกรายงาน`'s segment: all, to do, with a problem.
     @State var dailyFilter = 0
     @State var shared: Shared?
+    /// The debug flags apply once: `.task` runs again each time the page reappears (back from a pushed screen).
+    @State private var debugApplied = false
     /// `-installDemo YES` keeps its picked late causes here instead of in a job.
     @State private var demoCauses: [String: MasterSchedule.LateCause] = [:]
     @State private var survey = SurveyModel.shared
@@ -68,6 +70,8 @@ struct InstallTrackingPage: View {
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {
+            guard !debugApplied else { return }
+            debugApplied = true
             // `-installDetail YES` opens รายละเอียดงาน
             if Debug.detail { route = .detail }
             // `-iecOpen YES` opens ทดสอบ IEC 62446

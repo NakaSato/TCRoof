@@ -15,6 +15,8 @@ struct IECStringGrid: View {
     @State private var page: Page
     /// The string opened in `กรอกทีละสตริง`.
     @State private var entry: EntryTarget?
+    /// `-iecEntry` opens the string once, not again when the cover closes.
+    @State private var debugApplied = false
     @Environment(\.modelContext) private var context
 
     /// What the side list shows: an inverter's table or its performance, or the station's conditions or photos.
@@ -90,6 +92,8 @@ struct IECStringGrid: View {
         .fullScreenCover(item: $entry) { IECStringEntry(job: job, inverter: inverter, phase: phase, slot: $0.slot) }
         #if DEBUG
         .task {
+            guard !debugApplied else { return }
+            debugApplied = true
             try? await Task.sleep(for: .milliseconds(1200))
             if IECTestScreen.Debug.entry, let s = selected { entry = EntryTarget(slot: s) }
         }

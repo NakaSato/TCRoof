@@ -77,13 +77,12 @@ final class IECStagesUITests: XCTestCase {
         XCTAssertTrue(finish.waitForExistence(timeout: 10))
     }
 
-    /// A reading typed on the pad is kept when the app goes to the background and is closed there (no ถัดไป).
+    /// A reading typed on the pad is kept when the app goes to the background and is closed there (no ถัดไป). The
+    /// after phase's pad (the before phase is step 2's page on iPad, `IECStep2UITests`).
     func testThePadKeepsAReadingWhenTheAppIsClosed() {
         var app = launch(["-iecDemo", "reset"])
         openFirstString(app)
-        let next = app.buttons.matching(NSPredicate(format: "label == %@", "ถัดไป ›")).firstMatch
-        // Voc → current → IR +E, then 3 2 1 typed and left there
-        next.tap(); next.tap()
+        // Vmp, typed and left there
         for c in "321" { app.buttons[String(c)].tap() }
         XCTAssertTrue(app.buttons["บันทึกร่างตอนนี้"].isEnabled, "a draft waits")
         XCUIDevice.shared.press(.home)
@@ -93,17 +92,17 @@ final class IECStagesUITests: XCTestCase {
         app = launch()
         openFirstString(app)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "321")).firstMatch.waitForExistence(timeout: 10),
-                      "IR +E 321 was saved on the way to the background")
+                      "Vmp 321 was saved on the way to the background")
         XCTAssertTrue(app.buttons["บันทึกแล้ว"].exists, "nothing left unsaved")
     }
 
-    /// Through the screens, as a tester: the before table, its first string, `เปิดสตริงนี้`.
+    /// Through the screens, as a tester: the after table, its first string, `เปิดสตริงนี้`.
     func openFirstString(_ app: XCUIApplication) {
-        let band = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ก่อนการเชื่อมต่อระบบ")).firstMatch
+        let band = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "หลังการเชื่อมต่อระบบ")).firstMatch
         XCTAssertTrue(band.waitForExistence(timeout: slow), "the overview")
         band.tap()
         let slot = app.buttons["ป้ายรูป (Word) ช่อง 1"]
-        XCTAssertTrue(slot.waitForExistence(timeout: 10), "the before table")
+        XCTAssertTrue(slot.waitForExistence(timeout: 10), "the after table")
         slot.tap()
         app.buttons.matching(NSPredicate(format: "label == %@", "เปิดสตริงนี้ ›")).firstMatch.tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label == %@", "ถัดไป ›")).firstMatch.waitForExistence(timeout: 10), "the pad")

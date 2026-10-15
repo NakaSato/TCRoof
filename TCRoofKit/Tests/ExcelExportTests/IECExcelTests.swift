@@ -227,4 +227,22 @@ final class IECExcelTests: XCTestCase {
         XCTAssertEqual(out.paths, orig.paths)
         for p in ["xl/workbook.xml", "docProps/app.xml", "xl/calcChain.xml", "[Content_Types].xml"] { XCTAssertEqual(out.data(p), orig.data(p), p) }
     }
+
+    /// Step 2's edits change only their own cells: a reversed Voc on INV1ST5 (slot 5, column I) writes I16 and I12
+    /// (and the row ticks), nothing else.
+    func testStepTwoEditsChangeOnlyTheirCells() throws {
+        let before = try sample()
+        var after = before
+        after.setVoc(-712, inverter: 0, slot: 5)
+        after.inverters[0].slots[4]?.iBeforeA = 0.5
+        let (a, b) = (try ZipArchive(IECExcel.export(before)), try ZipArchive(IECExcel.export(after)))
+        var changed: [String] = []
+        for (n, p) in sheets.enumerated() {
+            let (x, y) = (cells(a.string(p)!, strings(a)), cells(b.string(p)!, strings(b)))
+            for (ref, c) in x where y[ref] != c { changed.append("\(n + 1)!\(ref)") }
+        }
+        // the ก่อน sheet (1) and the หลัง sheet (3) both carry rows 12, 16, 18; ticks Y/Z move with the rules
+        XCTAssertEqual(Set(changed), ["1!I12", "1!I16", "1!I18", "1!Y12", "1!Z12", "1!Y16", "1!Z16", "1!Y18", "1!Z18",
+                                      "3!I12", "3!I16", "3!I18", "3!Y12", "3!Z12", "3!Y16", "3!Z16", "3!Y18", "3!Z18"])
+    }
 }

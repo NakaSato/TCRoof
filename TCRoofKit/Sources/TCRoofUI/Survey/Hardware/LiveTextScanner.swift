@@ -232,8 +232,8 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
 // MARK: - photos already taken
 
 /// Text recognition on a photo that is already in the job (Vision, on device, offline).
-enum PlatePhotoReader {
-    static func text(in image: UIImage) async -> String {
+public enum PlatePhotoReader {
+    public static func text(in image: UIImage) async -> String {
         guard let cg = image.cgImage else { return "" }
         return await Task.detached(priority: .utility) {
             let request = VNRecognizeTextRequest()

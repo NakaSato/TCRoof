@@ -65,6 +65,10 @@ final class IECFlowUITests: XCTestCase {
 
         // 2 · before: rows for every string, and the inverter's checks
         button(app, "ก่อนการเชื่อมต่อระบบ", contains: true).tap()
+        // on iPad that is step 2's page; its ถัดไป opens the string table with every before row
+        let toTable = button(app, "ถัดไป 3/7", contains: true)
+        XCTAssertTrue(toTable.waitForExistence(timeout: 10), "step 2's page")
+        toTable.tap()
         let fill = button(app, "กรอกทั้งแถว")
         XCTAssertTrue(fill.waitForExistence(timeout: 10))
         for item in ["Polarity ✓ ทุกสตริง", "Test Voltage 1000 V ทุกสตริง", "String Current 0 A ทุกสตริง (วงจรเปิด)"] {

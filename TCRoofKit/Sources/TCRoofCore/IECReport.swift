@@ -64,6 +64,8 @@ public struct IECReport: Codable, Equatable, Sendable {
         public var modules: Int
         public var optimizers: Int?
         public var polarityOK: Bool?
+        /// The polarity was set on the ✓ / ✗ segment, so a Voc typed later doesn't set it from its sign (step 2).
+        public var polarityByHand: Bool?
         public var irTestV: Int?
         public var irPosMOhm: Double?
         public var irNegMOhm: Double?
@@ -84,6 +86,7 @@ public struct IECReport: Codable, Equatable, Sendable {
 
         enum CodingKeys: String, CodingKey {
             case brand, modules, optimizers, polarityOK, irTestV, irPosMOhm, irNegMOhm, vocV, iBeforeA, vmpV, impA, photos
+            case polarityByHand
         }
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -99,6 +102,7 @@ public struct IECReport: Codable, Equatable, Sendable {
             vmpV = try c.decodeIfPresent(Double.self, forKey: .vmpV)
             impA = try c.decodeIfPresent(Double.self, forKey: .impA)
             photos = try c.decodeIfPresent([String: String].self, forKey: .photos) ?? [:]
+            polarityByHand = try c.decodeIfPresent(Bool.self, forKey: .polarityByHand)
         }
 
         public func photo(_ kind: PhotoKind) -> String? { photos[kind.rawValue] }

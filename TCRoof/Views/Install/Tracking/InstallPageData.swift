@@ -7,7 +7,7 @@ import TCRoofCore
 struct InstallPageData {
     enum Priority { case high, medium }
     /// A screen an open item leads to.
-    enum Target: Hashable { case daily, request, docs, plan }
+    enum Target: Hashable { case daily, request, docs, plan, weekly, day(Date) }
 
     struct Action: Identifiable {
         let id: String
@@ -31,6 +31,9 @@ struct InstallPageData {
     var curve: PWAPlan.Curve?
     /// Days in the Gantt's span that are not working days (hatched).
     var nonWorking: Set<Date> = []
+    /// `เอกสารโครงการ` and the site panel (§C).
+    var docs: [DocTile] = []
+    var site: Site?
 
     init(title: String, subtitle: String, tracking: InstallTracking?, actions: [Action], dailyUnsent: Bool, surveyReport: UUID?,
          gantt: InstallGantt? = nil, curve: PWAPlan.Curve? = nil, nonWorking: Set<Date> = []) {
@@ -100,6 +103,8 @@ struct InstallPageData {
             items.append(.init(id: "docs", priority: .medium, title: "เอกสารรอยื่น \(waiting) ฉบับ", detail: "ลงนามแล้ว · ยังไม่ส่ง", target: .docs))
         }
         actions = items
+        docs = Self.docTiles(job: job, today: today)
+        self.site = Self.site(job: job, gantt: gantt, today: today)
     }
 }
 
@@ -110,7 +115,7 @@ extension InstallPageData {
         let cal = Calendar.current, day = cal.startOfDay(for: today)
         let start = day.adding(days: -6), due = day.adding(days: 6)
         let ac = Action(id: "ac", priority: .high, title: "ตู้ AC · กันย้อน รออนุมัติ (MA-05)", detail: "ต้องได้ก่อนขั้น 5 · ผู้รับผิดชอบ: จัดซื้อ", target: .docs)
-        let wr = Action(id: "wr", priority: .medium, title: "Weekly Report W40 (WR-02)", detail: "ร่างอัตโนมัติพร้อมแล้ว", target: .plan)
+        let wr = Action(id: "wr", priority: .medium, title: "Weekly Report W40 (WR-02)", detail: "ร่างอัตโนมัติพร้อมแล้ว", target: .weekly)
         let rfi = Action(id: "rfi", priority: .medium, title: "ยื่น RFI-03 ตรวจรับงานสาย DC", detail: "ยื่นได้เมื่อรายการตรวจขั้น 4 ครบ", target: .docs)
         let daily = Action(id: "daily", priority: .medium, title: "รายงานประจำวัน", detail: "ยังไม่ได้ทำ", target: .daily)
         // the board's seven steps: days from its 24/9 start, today is day 6
@@ -139,12 +144,15 @@ extension InstallPageData {
         // the plan's weeks from the start to the handover, and the actual to this week
         let weeks = (-1...1).map { MasterSchedule.weekStart(day.adding(days: 7 * $0)) }
         let curve = PWAPlan.Curve(weeks: weeks, plan: [0, 52, 100], actual: [0, 50], todayIndex: 1, planned: 52, done: 50)
-        return InstallPageData(
+        var data = InstallPageData(
             title: "การประปาบ้านโป่ง (ตัวอย่าง)",
             subtitle: "งานติดตั้ง NO.098 · สถานีจ่ายน้ำบ้านโป่ง · 90 kWp · ทีม TCR02 · เริ่ม \(ThaiFormat.numericDate.string(from: start)) · ส่งมอบ \(ThaiFormat.numericDate.string(from: due))",
             tracking: InstallTracking(actual: 50, planned: 52, actualWeekAgo: 36, start: start, due: due, today: day),
             actions: [ac, wr, rfi, daily], dailyUnsent: true, surveyReport: nil,
             gantt: InstallGantt(rows: rows, today: day), curve: curve, nonWorking: [d(10), d(11)])
+        data.docs = demoTiles(day: day)
+        data.site = demoSite(day: day)
+        return data
     }
 }
 #endif

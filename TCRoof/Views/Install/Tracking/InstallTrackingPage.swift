@@ -18,7 +18,9 @@ struct InstallTrackingPage: View {
     @State var toggled: Set<String> = []
     /// The task whose sheet is open.
     @State var stage: InstallGantt.Row?
-    @State private var route: Route?
+    @State var route: Route?
+    @State var sheet: Sheet? = Debug.sheet
+    @State var siteTab = Debug.site
     @State private var survey = SurveyModel.shared
     @Environment(\.dismiss) private var dismiss
 
@@ -27,20 +29,33 @@ struct InstallTrackingPage: View {
         VStack(spacing: 0) {
             header(data)
             tabBar(data)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    if tab == .overview {
-                        kpiStrip(data)
-                        if let g = data.gantt { progressCard(data, g) }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        if tab == .overview {
+                            kpiStrip(data)
+                            if let g = data.gantt { progressCard(data, g) }
+                            siteRow(data)
+                        }
                     }
+                    .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+                    Color.clear.frame(height: 1).id("end")
                 }
-                .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+                .scrollIndicators(.hidden)
+                #if DEBUG
+                // `-installScrollEnd YES` opens the overview at its end
+                .task {
+                    guard Debug.scrollEnd else { return }
+                    try? await Task.sleep(for: .milliseconds(400))
+                    proxy.scrollTo("end", anchor: .bottom)
+                }
+                #endif
             }
-            .scrollIndicators(.hidden)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .padDock(fade: nil)
         .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
+        .overlay { if let s = sheet { pageSheet(s, data) } }
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {
@@ -201,6 +216,8 @@ struct InstallTrackingPage: View {
         let note: String
         /// Its share of the strip's width, as on the board.
         let weight: CGFloat
+        /// `ต้องดำเนินการ`: tapped, it opens the open items' sheet.
+        var opensActions = false
     }
 
     /// `ความคืบหน้า · กำหนดการ · คาดส่งมอบ · SPI · ต้องดำเนินการ`. Without an MP plan only the open items are left.
@@ -227,7 +244,7 @@ struct InstallTrackingPage: View {
         }
         let open = data.actions
         out.append(Cell(label: "ต้องดำเนินการ", value: open.isEmpty ? "ไม่มี" : "\(open.count) เรื่อง", ink: open.isEmpty ? Theme.successInk : Theme.pending,
-                        note: open.prefix(3).map(\.title).joined(separator: " · "), weight: 1.4))
+                        note: open.prefix(3).map(\.title).joined(separator: " · "), weight: 1.4, opensActions: !open.isEmpty))
         return out
     }
 
@@ -248,7 +265,10 @@ struct InstallTrackingPage: View {
                     .padding(.horizontal, 12)
                     .frame(width: g.size.width * c.weight / total, height: g.size.height, alignment: .leading)
                     .overlay(alignment: .leading) { if i > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
+                    .contentShape(Rectangle())
+                    .onTapGesture { if c.opensActions { sheet = .actions } }
                     .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(c.opensActions ? .isButton : [])
                 }
             }
         }
@@ -260,7 +280,8 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily`, `-installView gantt|curve`, `-installStage n`, `-installDemo YES`. Release builds
+    /// `-installTab overview|daily`, `-installView gantt|curve`, `-installStage n`, `-installDemo YES`, `-installSheet
+    /// actions|<tile id>`, `-installSite info|risk|labour`, `-installScrollEnd YES`. Release builds
     /// get the defaults.
     enum Debug {
         #if DEBUG
@@ -268,9 +289,14 @@ struct InstallTrackingPage: View {
         static let view = UserDefaults.standard.string(forKey: "installView").flatMap(ProgressView.init) ?? .gantt
         static let stage: Int? = UserDefaults.standard.object(forKey: "installStage") == nil ? nil : UserDefaults.standard.integer(forKey: "installStage")
         static let demo = UserDefaults.standard.bool(forKey: "installDemo")
+        static let sheet: Sheet? = UserDefaults.standard.string(forKey: "installSheet").map { $0 == "actions" ? .actions : .doc($0) }
+        static let site = UserDefaults.standard.string(forKey: "installSite").flatMap(SiteTab.init) ?? .info
+        static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
         #else
         static let tab = Tab.overview
         static let view = ProgressView.gantt
+        static let sheet: Sheet? = nil
+        static let site = SiteTab.info
         #endif
     }
 }

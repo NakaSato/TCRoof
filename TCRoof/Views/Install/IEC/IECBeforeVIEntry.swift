@@ -164,7 +164,7 @@ struct IECBeforeVIEntry: View {
                 Text("MPPT \(IECReport.mppt(slot: target.slot)) · ฟิวส์ F\(target.slot) (+/−)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
             }
             HStack(spacing: 3) {
-                ForEach(1...(IECReport.slotCount / 2), id: \.self) { m in
+                ForEach(1...inv.mpptCount, id: \.self) { m in
                     VStack(spacing: 3) {
                         Text("\(m)").font(.sarabunFixed(9, IECReport.mppt(slot: target.slot) == m ? .bold : .regular)).foregroundStyle(Theme.inkMuted)
                         boxCell((m - 1) * 2 + 1)

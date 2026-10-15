@@ -74,9 +74,7 @@ struct IECBeforeVIPage: View {
     }
 
     /// Step 1 is the set-up sheet here until its page is built; the other steps belong to the overview.
-    func go(_ stage: IECReport.Stage) {
-        if stage == .setup { setup = true } else { openStage(stage) }
-    }
+    func go(_ stage: IECReport.Stage) { openStage(stage) }
 
     func stationLine(_ r: IECReport) -> String {
         let line = r.stationLine.isEmpty ? job.stationName : r.stationLine
@@ -130,7 +128,7 @@ struct IECBeforeVIPage: View {
                     }
                 }
                 .frame(height: 5)
-                Text("\(IECFormat.number(inv.ratedKW)) kW · \(IECReport.slotCount) ช่อง" + (inv.serial.isEmpty ? "" : " · S/N \(inv.serial)"))
+                Text("\(IECFormat.number(inv.ratedKW)) kW · \(inv.slotsInUse) ช่อง" + (inv.serial.isEmpty ? "" : " · S/N \(inv.serial)"))
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .padding(.horizontal, 14).padding(.vertical, 12).frame(width: 228, alignment: .leading)
@@ -169,7 +167,7 @@ struct IECBeforeVIPage: View {
             Text(meta).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             Spacer(minLength: 4)
             stepButton("chevron.left", "ช่องก่อนหน้า", enabled: slot > 1) { slot -= 1 }
-            stepButton("chevron.right", "ช่องถัดไป", enabled: slot < IECReport.slotCount) { slot += 1 }
+            stepButton("chevron.right", "ช่องถัดไป", enabled: slot < inv.slotsInUse) { slot += 1 }
         }
     }
 
@@ -301,7 +299,7 @@ struct IECBeforeVIPage: View {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .bar))
             .accessibilityLabel("บันทึกร่างตอนนี้")
-            twoLine("ก่อนหน้า 1/7", IECReport.Stage.setup.title, leading: true, primary: false) { setup = true }
+            twoLine("ก่อนหน้า 1/7", IECReport.Stage.setup.title, leading: true, primary: false) { openStage(.setup) }
             twoLine("ถัดไป 3/7", IECReport.Stage.beforeInsulation.title, leading: false, primary: true) { openStage(.beforeInsulation) }
         }
         .padding(.horizontal, 24).padding(.vertical, 12)

@@ -69,6 +69,7 @@ public extension IECReport {
         var out: [String?] = []
         switch stage {
         case .setup:
+            if sld == nil { out.append("แบบ SLD") }
             if inverters.isEmpty || strings.isEmpty { out.append("inverter และสตริง") }
             if inverters.contains(where: { $0.ratedKW <= 0 }) { out.append("พิกัด inverter") }
             if module.powerW <= 0 { out.append("กำลังต่อแผง") }
@@ -169,9 +170,12 @@ public extension IECReport {
         func cond(_ c: Conditions) -> String { [t(c.ambientC), t(c.irradianceWm2), t(c.time)].joined(separator: ",") }
         switch stage {
         case .setup:
-            let invs = inverters.map { [t($0.ratedKW), $0.serial].joined(separator: ",") }.joined(separator: "|")
+            let invs = inverters.map { inv in
+                ([t(inv.ratedKW), inv.serial, t(inv.model), t(inv.mppt)] + InverterPhoto.allCases.map { t(inv.photos[$0.rawValue]) }).joined(separator: ",")
+            }.joined(separator: "|")
+            let diagram = sld.map { "\($0.name)#\($0.version)" } ?? "-"
             return [stationLine, module.brand, t(module.powerW), d(testDate), tester, instruments.multimeterClamp, instruments.insulationTester,
-                    instruments.irradianceMeter, instruments.thermalCamera, invs, each { [$0.modules, $0.brand, $0.optimizers] }].joined(separator: "\n")
+                    instruments.irradianceMeter, instruments.thermalCamera, invs, diagram, each { [$0.modules, $0.brand, $0.optimizers] }].joined(separator: "\n")
         case .beforeVoltage:
             return [each { [$0.vocV, $0.iBeforeA, $0.polarityOK, $0.photo(.voltageBefore), $0.photo(.currentBefore)] }, cond(before)].joined(separator: "\n")
         case .beforeInsulation:
@@ -204,6 +208,7 @@ public extension IECReport {
         let kinds: [(PhotoKind, String)] = [(.voltageBefore, "ก่อน แรงดัน"), (.currentBefore, "ก่อน กระแส"), (.insulation, "ก่อน IR"),
                                             (.voltageAfter, "หลัง แรงดัน"), (.currentAfter, "หลัง กระแส")]
         for (i, inv) in inverters.enumerated() {
+            for k in InverterPhoto.allCases { if let id = inv.photos[k.rawValue] { out[id] = "INV\(i + 1) \(k.title.replacingOccurrences(of: " · ", with: " ")).jpg" } }
             for s in inv.strings {
                 for (k, text) in kinds { if let id = s.value.photo(k) { out[id] = "\(Self.label(inverter: i + 1, seq: s.seq)) \(text).jpg" } }
             }

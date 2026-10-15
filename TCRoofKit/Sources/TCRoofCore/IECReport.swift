@@ -124,6 +124,11 @@ public struct IECReport: Codable, Equatable, Sendable {
         public var functionalAfter: Check?
         public var energy7dKWh: Double?
         public var remark: String
+        /// From the add-inverter sheet (step 1): the model, its MPPT count (slots = MPPT × 2; nil = the sheet's 10)
+        /// and its photos by `InverterPhoto` raw value. None of them has an Excel cell.
+        public var model: String?
+        public var mppt: Int?
+        public var photos: [String: String] = [:]
 
         public init(ratedKW: Double = 0, serial: String = "", slots: [Slot?] = Array(repeating: nil, count: IECReport.slotCount),
                     continuity: Check? = nil, functionalBefore: Check? = nil, functionalAfter: Check? = nil,
@@ -133,7 +138,7 @@ public struct IECReport: Codable, Equatable, Sendable {
             self.energy7dKWh = energy7dKWh; self.remark = remark
         }
 
-        enum CodingKeys: String, CodingKey { case ratedKW, serial, slots, continuity, functionalBefore, functionalAfter, energy7dKWh, remark }
+        enum CodingKeys: String, CodingKey { case ratedKW, serial, slots, continuity, functionalBefore, functionalAfter, energy7dKWh, remark, model, mppt, photos }
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             ratedKW = try c.decodeIfPresent(Double.self, forKey: .ratedKW) ?? 0
@@ -144,7 +149,15 @@ public struct IECReport: Codable, Equatable, Sendable {
             functionalAfter = try c.decodeIfPresent(Check.self, forKey: .functionalAfter)
             energy7dKWh = try c.decodeIfPresent(Double.self, forKey: .energy7dKWh)
             remark = try c.decodeIfPresent(String.self, forKey: .remark) ?? ""
+            model = try c.decodeIfPresent(String.self, forKey: .model)
+            mppt = try c.decodeIfPresent(Int.self, forKey: .mppt)
+            photos = try c.decodeIfPresent([String: String].self, forKey: .photos) ?? [:]
         }
+
+        /// MPPTs on the sheet: the model's, or all 10 when it isn't known.
+        public var mpptCount: Int { min(max(mppt ?? IECReport.slotCount / 2, 1), IECReport.slotCount / 2) }
+        /// The slots this inverter has, MPPT × 2 (slots past them stay empty).
+        public var slotsInUse: Int { mpptCount * 2 }
 
         /// The used slots with their 1-based slot number and the Word label's sequence (`INV{i}ST{seq}`).
         public var strings: [(slot: Int, seq: Int, value: Slot)] {
@@ -193,6 +206,8 @@ public struct IECReport: Codable, Equatable, Sendable {
     public var exports: [ExportRecord] = []
     /// Set by `เสร็จ`: the test is closed and locked until reopened.
     public var result: TestResult?
+    /// The single line diagram attached in step 1 (the file is a job document; this says which and which version).
+    public var sld: SLDRef?
 
     public init(stationLine: String = "", module: Module = .init(), inverters: [Inverter] = [], before: Conditions = .init(),
                 after: Conditions = .init(), yrKWhM2Day: Double? = nil, arrayTempC: Double? = nil, testDate: Date? = nil,
@@ -204,7 +219,7 @@ public struct IECReport: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case stationLine, module, inverters, before, after, yrKWhM2Day, arrayTempC, testDate, tester, instruments, irradiancePhoto, thermalPhotos
-        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, result
+        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, result, sld
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -226,6 +241,7 @@ public struct IECReport: Codable, Equatable, Sendable {
         stageRecords = try c.decodeIfPresent([String: StageRecord].self, forKey: .stageRecords) ?? [:]
         exports = try c.decodeIfPresent([ExportRecord].self, forKey: .exports) ?? []
         result = try c.decodeIfPresent(TestResult.self, forKey: .result)
+        sld = try c.decodeIfPresent(SLDRef.self, forKey: .sld)
     }
 
     /// The sheet's station line doesn't name this job's station (`stationName`): the job was renamed after the test

@@ -40,7 +40,7 @@ struct IECDCInputMap: View {
     let toggleEmpty: (Int) -> Void
 
     var body: some View {
-        let inv = report.inverters[inverter], mppts = IECReport.slotCount / 2
+        let inv = report.inverters[inverter], mppts = inv.mpptCount
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("ช่อง DC input · MPPT 1–\(mppts)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
@@ -127,12 +127,12 @@ struct IECBeforeVITable: View {
 
     var body: some View {
         let inv = report.inverters[inverter]
-        let statuses = (1...IECReport.slotCount).map { report.beforeVIStatus(inv, slot: $0) }
+        let statuses = (1...inv.slotsInUse).map { report.beforeVIStatus(inv, slot: $0) }
         VStack(spacing: 0) {
             HStack {
                 Text("ตารางค่าวัด · INV\(inverter + 1) ก่อนออนระบบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                filterSwitch(todo: statuses.filter { $0 == .todo }.count, failed: statuses.filter { $0 == .fail }.count)
+                filterSwitch(slots: inv.slotsInUse, todo: statuses.filter { $0 == .todo }.count, failed: statuses.filter { $0 == .fail }.count)
             }
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 10)
             headerRow
@@ -151,7 +151,7 @@ struct IECBeforeVITable: View {
     }
 
     private func rows(_ statuses: [IECReport.BeforeVIStatus]) -> [Int] {
-        (1...IECReport.slotCount).filter { n in
+        (1...statuses.count).filter { n in
             switch filter {
             case .all: true
             case .todo: statuses[n - 1] == .todo
@@ -160,9 +160,9 @@ struct IECBeforeVITable: View {
         }
     }
 
-    private func filterSwitch(todo: Int, failed: Int) -> some View {
+    private func filterSwitch(slots: Int, todo: Int, failed: Int) -> some View {
         HStack(spacing: 2) {
-            segment("\(IECReport.slotCount) ช่อง", .all)
+            segment("\(slots) ช่อง", .all)
             segment("ยังไม่ครบ \(todo)", .todo)
             segment("ไม่ผ่าน \(failed)", .failed)
         }

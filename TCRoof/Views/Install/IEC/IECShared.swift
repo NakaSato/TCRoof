@@ -61,6 +61,8 @@ extension Job {
             }
         }
         iecReport = r
+        // step 1 needs its SLD to be done
+        if let context { seedDemoSLD(context: context) }
     }
     #endif
 }

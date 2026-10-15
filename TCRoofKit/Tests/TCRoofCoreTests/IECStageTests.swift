@@ -14,6 +14,7 @@ final class IECStageTests: XCTestCase {
         r.testDate = Date(timeIntervalSinceReferenceDate: 813_000_000); r.tester = "ทีมทดสอบ"
         r.instruments.multimeterClamp = "C1"; r.instruments.insulationTester = "I1"; r.instruments.irradianceMeter = "S1"
         r.module.areaM2 = 2.58
+        r.sld = .init(name: "SLD.pdf", version: 1, at: Date(timeIntervalSinceReferenceDate: 812_000_000))
         r.before = .init(ambientC: 34.3, irradianceWm2: 1022, time: "13:00"); r.after = .init(ambientC: 34, irradianceWm2: 1000, time: "13:20")
         r.yrKWhM2Day = 4.24; r.arrayTempC = 59.4; r.irradiancePhoto = "sun"; r.thermalPhotos = ["th1"]
         for i in r.inverters.indices {
@@ -29,7 +30,7 @@ final class IECStageTests: XCTestCase {
 
     func testTheSampleIsDoneOnlyWhereItHasEverything() throws {
         let r = try sample()
-        XCTAssertEqual(r.missing(.setup), ["วันที่ทดสอบ", "ผู้ทดสอบ", "S/N เครื่องมือ"])
+        XCTAssertEqual(r.missing(.setup), ["แบบ SLD", "วันที่ทดสอบ", "ผู้ทดสอบ", "S/N เครื่องมือ"])
         XCTAssertEqual(r.missing(.beforeVoltage), ["รูปแรงดัน / กระแส 24 สตริง"], "Voc, 0 A, polarity and the conditions are in the form")
         XCTAssertEqual(r.missing(.beforeInsulation).first, "IR (MΩ) 24 สตริง")
         XCTAssertEqual(r.missing(.thermal), ["ภาพถ่ายความร้อนอย่างน้อย 1 รูป"])
@@ -62,6 +63,7 @@ final class IECStageTests: XCTestCase {
         let base = try complete()
         let changes: [(IECReport.Stage, (inout IECReport) -> Void)] = [
             (.setup, { $0.instruments.thermalCamera = "T9" }), (.setup, { $0.inverters[1].slots[0]?.modules = 15 }),
+            (.setup, { $0.sld?.version = 2 }), (.setup, { $0.inverters[0].mppt = 9 }), (.setup, { $0.inverters[0].photos["front"] = "p" }),
             (.beforeVoltage, { $0.inverters[1].slots[2]?.photos["currentBefore"] = "x" }), (.beforeVoltage, { $0.before.time = "13:05" }),
             (.beforeInsulation, { $0.inverters[0].continuity = .abnormal }), (.afterVoltage, { $0.gridOnAt = .now }),
             (.energy, { $0.inverters[0].remark = "" }), (.thermal, { $0.thermalPlaces["th1"] = "ตู้ DC" })]

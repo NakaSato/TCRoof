@@ -129,7 +129,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `TCRoofUI/Survey`: the editor, in folders by area (`Editor`, `Home`, `Model`, `Export`, `Photos`, `Hardware`, `Review`, `Pages/<page>`). It was the `SurveyUI` module until it was merged into `TCRoofUI`; older task briefs in `docs/ui` still name `Sources/SurveyUI/<file>.swift`.
   - `SurveyModel` (job storage, photos) and `JobEditorView` (sidebar, page routing, `cardBar` bottom bar).
   - The generic schema form `groupPage` is used on iPhone and wherever a wide page doesn't apply.
-  - `SurveyHomeView` is the PWA project home, one page (`homePage`) for both sizes: 16 pt margins and one column on iPhone, 63 pt margins and three columns on iPad.
+  - `SurveyHomeView` is the PWA project home, one page (`homePage`) for both sizes: 16 pt margins and one column on iPhone, 63 pt margins and three columns on iPad, two in portrait (page width under 1100 pt).
   - Designed "wide" pages: `InfoPageWide` (A1), `SitePageWide` (A2), `ElectricalPageWide` (A3), `FloodPageWide` (A4), `PanelsPageWide` (B1), `InverterPageWide` (B2), `WaterPageWide` (B3), `FtsPageWide` (B5), `RoofPageWide` (C1), `TankPageWide` (D1), `FinalPageWide` (E1), `SingleLinePage`.
 
 **Data rules every change must keep:**

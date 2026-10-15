@@ -84,12 +84,19 @@ extension SurveyHomeView {
         compact ? EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12) : EdgeInsets(top: 12, leading: 14, bottom: 10, trailing: 14)
     }
 
-    /// The summary's three parts: one under another on iPhone; on iPad the board's columns 330 | 300 | the rest.
+    /// The summary's three parts: one under another on iPhone; on iPad the board's columns 330 | 300 | the rest, and
+    /// in portrait the head and tiles side by side over the rest.
     @ViewBuilder private func summaryParts(_ head: some View, tiles: some View, hasTiles: Bool = true, rest: some View) -> some View {
         if compact {
             head
             tiles
             rest
+        } else if portrait {
+            HStack(alignment: .top, spacing: 20) {
+                head.frame(maxWidth: .infinity, alignment: .leading)
+                if hasTiles { tiles.frame(width: 300) }
+            }
+            rest.frame(maxWidth: .infinity, alignment: .leading)
         } else {
             HStack(alignment: .top, spacing: 20) {
                 head.frame(width: 330, alignment: .leading)
@@ -112,12 +119,12 @@ extension SurveyHomeView {
         }
     }
 
-    /// The station rows: one under another on iPhone, three columns on iPad.
+    /// The station rows: one under another on iPhone, three columns on iPad (two in portrait).
     @ViewBuilder private func stationRows(@ViewBuilder _ rows: () -> some View) -> some View {
         if compact {
             rows()
         } else {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: 3), spacing: 16) { rows() }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: padColumns), spacing: 16) { rows() }
         }
     }
 

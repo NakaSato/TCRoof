@@ -67,6 +67,8 @@ struct SurveyHomeView: View {
     @State var showMaintenancePicker = false
     /// iPad: the nav's `แผนงาน` is selected and the host's plan page is under it.
     @State var planOpen = false
+    /// The page's width, for the iPad's columns: three in landscape, two in portrait.
+    @State var pageWidth: CGFloat = 0
     /// Installation job whose tracking page is open.
     @State var tracking: UUID?
     // the home page (docs/ui/pwa-solar-survey-iphone-v3, docs/ui/pwa-solar-survey-ipad-v3)
@@ -129,6 +131,9 @@ struct SurveyHomeView: View {
     }
 
     var compact: Bool { sizeClass == .compact }
+    /// iPad portrait (1032 pt on the 13", 820 on the Air): two columns instead of three.
+    var portrait: Bool { !compact && pageWidth > 0 && pageWidth < 1100 }
+    var padColumns: Int { portrait ? 2 : 3 }
 
     var body: some View {
         homePage
@@ -229,7 +234,7 @@ struct SurveyHomeView: View {
 
     var grid: some View {
         let stations = phaseStations
-        return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: compact ? 10 : 16) {
+        return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: padColumns), spacing: compact ? 10 : 16) {
             ForEach(shown) { j in
                 let station = stations[j.id]
                 let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey && station == nil ? .survey : .locked

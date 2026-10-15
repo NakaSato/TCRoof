@@ -5,7 +5,7 @@ import TCRoofCore
 /// The PWA project home (docs/ui/pwa-solar-survey-iphone-v3, and on iPad docs/ui/pwa-solar-survey-ipad-v3): a header
 /// whose search button grows into the field, with a bell; the nav `โครงการ | แผนงาน | บำรุงรักษา` with a filter button; the
 /// project cards, and the install and maintenance overviews. The iPad has the same parts at 63 pt margins, in three
-/// columns. The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
+/// columns (two in portrait). The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
 extension SurveyHomeView {
     /// The page's side margin.
     var margin: CGFloat { compact ? 16 : 63 }
@@ -25,6 +25,7 @@ extension SurveyHomeView {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) { phoneHeader }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
         .background(Theme.phonePage.ignoresSafeArea())
         // iPad: the filter list hangs under its button, in the page
         .overlayPreferenceValue(FilterAnchorKey.self) { anchor in

@@ -5,14 +5,40 @@ import TCRoofCore
 /// Step 2's entry dialog (states 03, 04, 05, 09): the string's photo with its place in the DC box, the value typed
 /// from it on the pad, the reading Vision found in the photo, and for Voc the polarity. `บันทึก` hands the value to
 /// the page, which goes on V → the clamp's photo → A → the next string.
-struct IECBeforeVIEntry: View {
+struct IECVIEntry: View {
     enum Kind: Hashable {
         case voltage, current
         var cardTitle: String { self == .voltage ? "มิเตอร์ V" : "แคลมป์ A" }
         var unit: String { self == .voltage ? "V" : "A" }
-        var fieldTitle: String { self == .voltage ? "แรงดัน Voc" : "กระแส (วงจรเปิด)" }
-        var row: Int { self == .voltage ? 16 : 18 }
         func format(_ v: Double) -> String { self == .voltage ? String(format: "%.1f", v) : String(format: "%.2f", v) }
+
+        /// Before: Voc and the open-circuit current (rows 16, 18); after: Vmp and Imp (rows 17, 19).
+        func fieldTitle(_ phase: IECReport.Phase) -> String {
+            switch (self, phase) {
+            case (.voltage, .before): "แรงดัน Voc"
+            case (.current, .before): "กระแส (วงจรเปิด)"
+            case (.voltage, .after): "แรงดัน Vmp"
+            case (.current, .after): "กระแส Imp"
+            }
+        }
+        func short(_ phase: IECReport.Phase) -> String { self == .voltage ? (phase == .before ? "Voc" : "Vmp") : (phase == .before ? "กระแส" : "Imp") }
+        func row(_ phase: IECReport.Phase) -> Int { (self == .voltage ? 16 : 18) + (phase == .after ? 1 : 0) }
+        func photoKind(_ phase: IECReport.Phase) -> IECReport.PhotoKind {
+            switch (self, phase) {
+            case (.voltage, .before): .voltageBefore
+            case (.current, .before): .currentBefore
+            case (.voltage, .after): .voltageAfter
+            case (.current, .after): .currentAfter
+            }
+        }
+        func value(_ s: IECReport.Slot, _ phase: IECReport.Phase) -> Double? {
+            switch (self, phase) {
+            case (.voltage, .before): s.vocV
+            case (.current, .before): s.iBeforeA
+            case (.voltage, .after): s.vmpV
+            case (.current, .after): s.impA
+            }
+        }
     }
 
     /// `โหมดต่อเนื่อง · 13/16 สตริง`.
@@ -23,10 +49,10 @@ struct IECBeforeVIEntry: View {
         let kind: Kind
         var continuous: Continuous?
         var id: String { "\(slot)-\(kind)" }
-        var photoKind: IECReport.PhotoKind { kind == .voltage ? .voltageBefore : .currentBefore }
     }
 
     @Bindable var job: Job
+    let phase: IECReport.Phase
     let report: IECReport
     let inverter: Int
     let slot: IECReport.Slot
@@ -52,7 +78,11 @@ struct IECBeforeVIEntry: View {
     private var inv: IECReport.Inverter { report.inverters[inverter] }
     private var seq: Int { inv.strings.first { $0.slot == target.slot }?.seq ?? 0 }
     private var label: String { IECReport.label(inverter: inverter + 1, seq: seq) }
-    private var stored: Double? { target.kind == .voltage ? slot.vocV : slot.iBeforeA }
+    private var stored: Double? { target.kind.value(slot, phase) }
+    private var photoKind: IECReport.PhotoKind { target.kind.photoKind(phase) }
+    /// `ก่อนออน` / `หลังออน`, and the sheet's `ก่อน` / `หลัง`.
+    private var phaseName: String { phase == .before ? "ก่อนออน" : "หลังออน" }
+    private var sheetSide: String { phase == .before ? "ก่อน" : "หลัง" }
     private var text: String { typed ?? stored.map(target.kind.format) ?? "" }
     private var value: Double? { Double(text) }
 
@@ -64,7 +94,7 @@ struct IECBeforeVIEntry: View {
                 photoColumn.frame(width: 470)
                 VStack(spacing: 14) {
                     valueTile
-                    if target.kind == .voltage { polarityRow }
+                    if target.kind == .voltage, phase == .before { polarityRow }
                     readingRow
                     pad
                 }
@@ -77,7 +107,7 @@ struct IECBeforeVIEntry: View {
             prefill()
             #if DEBUG
             // state 09: a value typed over the photo's reading
-            if IECBeforeVIPage.debugState == "differs", typed == nil || fromPhoto { typed = "735"; fromPhoto = false }
+            if IECVIPage.debugState == "differs", typed == nil || fromPhoto { typed = "735"; fromPhoto = false }
             #endif
         }
         .onChange(of: reading) { _, _ in prefill() }
@@ -89,7 +119,7 @@ struct IECBeforeVIEntry: View {
     /// The first time a field opens empty, it takes the photo's reading.
     private func prefill() {
         #if DEBUG
-        if IECBeforeVIPage.debugState == "differs" { return }
+        if IECVIPage.debugState == "differs" { return }
         #endif
         guard typed == nil, stored == nil, let reading else { return }
         typed = target.kind.format(reading); fromPhoto = true
@@ -102,8 +132,8 @@ struct IECBeforeVIEntry: View {
             Text(label).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 12).frame(height: 36).background(Theme.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
-                Text(target.kind.cardTitle + " · ก่อนออน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                Text("รูป \(target.kind == .voltage ? 1 : 2)/2 · \(slot.modules) แผง · เติม \(IECReport.excelColumn(slot: target.slot))\(target.kind.row) · INV \(String(format: "%02d", inverter + 1))-ก่อน · รูปไปที่รายงาน 6 หน้า \(report.reportPage(inverter: inverter, seq: seq))")
+                Text(target.kind.cardTitle + " · " + phaseName).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("รูป \(target.kind == .voltage ? 1 : 2)/2 · \(slot.modules) แผง · เติม \(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase)) · INV \(String(format: "%02d", inverter + 1))-\(sheetSide) · รูปไปที่รายงาน \(phase == .before ? 6 : 7) หน้า \(report.reportPage(inverter: inverter, seq: seq, phase))")
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
@@ -134,7 +164,7 @@ struct IECBeforeVIEntry: View {
     private var photoColumn: some View {
         VStack(spacing: 12) {
             Group {
-                if let a = job.iecPhoto(slot.photo(target.photoKind)), let img = UIImage(data: a.data) {
+                if let a = job.iecPhoto(slot.photo(photoKind)), let img = UIImage(data: a.data) {
                     Color.clear.overlay { Image(uiImage: img).resizable().scaledToFill() }.clipped()
                 } else {
                     Theme.phonePage.overlay { Text("ยังไม่มีรูป").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted) }
@@ -151,7 +181,7 @@ struct IECBeforeVIEntry: View {
                     .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: true))
                 Button { zoom = true } label: { Text("ซูมรูป") }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: true))
-                    .disabled(slot.photo(target.photoKind) == nil)
+                    .disabled(slot.photo(photoKind) == nil)
             }
         }
     }
@@ -189,7 +219,7 @@ struct IECBeforeVIEntry: View {
     private var zoomView: some View {
         ZStack(alignment: .topTrailing) {
             Theme.mediaBackdrop.ignoresSafeArea()
-            if let a = job.iecPhoto(slot.photo(target.photoKind)), let img = UIImage(data: a.data) {
+            if let a = job.iecPhoto(slot.photo(photoKind)), let img = UIImage(data: a.data) {
                 IECZoomableImage(image: img)
             }
             Button { zoom = false } label: {
@@ -212,13 +242,15 @@ struct IECBeforeVIEntry: View {
         }
         if fromPhoto { return ("✓ อ่านจากรูปแล้ว · ตรวจแล้วกดบันทึก", .ok) }
         if target.kind == .current {
+            // after the connection Imp is only recorded
+            if phase == .after { return ("✓ บันทึกแล้ว", .ok) }
             return IECReport.currentPassesBefore(v) ? ("✓ วงจรเปิด 0 A", .ok) : ("× ก่อนออนต้องเป็น 0 A", .bad)
         }
-        // the Voc against its group's median, as if this value were kept
+        // the voltage against its group's median, as if this value were kept
         var r = report
-        r.setVoc(v, inverter: inverter, slot: target.slot)
+        if phase == .before { r.setVoc(v, inverter: inverter, slot: target.slot) } else { r.inverters[inverter].slots[target.slot - 1]?.vmpV = v }
         let inv2 = r.inverters[inverter]
-        guard let d = r.vocDeviation(inv2, slot: target.slot) else { return ("✓ ไม่มีสตริงขนาดเดียวกันให้เทียบ", .ok) }
+        guard let d = r.voltageDeviation(inv2, slot: target.slot, phase) else { return ("✓ ไม่มีสตริงขนาดเดียวกันให้เทียบ", .ok) }
         let ok = abs(d) <= IECReport.vocTolerance
         return ((ok ? "✓ " : "× ") + "ต่างจากมัธยฐาน " + IECReport.signedPercent(d), ok ? .ok : .bad)
     }
@@ -232,9 +264,9 @@ struct IECBeforeVIEntry: View {
         }
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(target.kind.fieldTitle).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text(target.kind.fieldTitle(phase)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("\(IECReport.excelColumn(slot: target.slot))\(target.kind.row)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase))").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(text.isEmpty ? "—" : text).font(.sarabunFixed(40, .bold)).foregroundStyle(text.isEmpty ? Theme.disabledText : Theme.navy).monospacedDigit()
@@ -250,7 +282,7 @@ struct IECBeforeVIEntry: View {
         .background(fill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(border, lineWidth: 2))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(target.kind.fieldTitle)
+        .accessibilityLabel(target.kind.fieldTitle(phase))
         .accessibilityValue(text.isEmpty ? "ว่าง" : text + " " + target.kind.unit)
     }
 
@@ -294,7 +326,7 @@ struct IECBeforeVIEntry: View {
             Button { typed = target.kind.format(reading); fromPhoto = true } label: {
                 HStack {
                     Text("อ่านจากรูป").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                    Text("\(target.kind == .voltage ? "Voc" : "กระแส") \(target.kind.format(reading)) \(target.kind.unit)").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+                    Text("\(target.kind.short(phase)) \(target.kind.format(reading)) \(target.kind.unit)").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
                     Spacer()
                     Text("ใช้ค่านี้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                 }

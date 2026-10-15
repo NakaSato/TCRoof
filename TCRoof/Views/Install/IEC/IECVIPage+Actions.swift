@@ -4,19 +4,19 @@ import SwiftData
 import TCRoofUI
 import TCRoofCore
 
-extension IECBeforeVIPage {
+extension IECVIPage {
     /// Strings of the inverter still missing Voc, current or polarity, in slot order.
     func unfinished(_ r: IECReport, _ i: Int) -> [Int] {
         guard r.inverters.indices.contains(i) else { return [] }
         let inv = r.inverters[i]
-        return inv.strings.filter { $0.value.vocV == nil || $0.value.iBeforeA == nil || $0.value.polarityOK == nil }.map(\.slot)
+        return inv.strings.filter { !IECReport.viDone($0.value, phase) }.map(\.slot)
     }
 
     /// Photo first: a value without its photo opens the camera, then the dialog.
-    func open(_ kind: IECBeforeVIEntry.Kind, _ s: IECReport.Slot, continuous: IECBeforeVIEntry.Continuous? = nil, at target: Int? = nil) {
+    func open(_ kind: IECVIEntry.Kind, _ s: IECReport.Slot, continuous: IECVIEntry.Continuous? = nil, at target: Int? = nil) {
         let n = target ?? slot
-        let photo: IECReport.PhotoKind = kind == .voltage ? .voltageBefore : .currentBefore
-        let next = IECBeforeVIEntry.Target(slot: n, kind: kind, continuous: continuous)
+        let photo = kind.photoKind(phase)
+        let next = IECVIEntry.Target(slot: n, kind: kind, continuous: continuous)
         if s.photo(photo) == nil { shooting = Shot(slot: n, kind: photo, then: next) } else { entry = next }
     }
 
@@ -45,7 +45,15 @@ extension IECBeforeVIPage {
     func stubReading(_ shot: Shot) -> String {
         let r = report
         guard let inv = r.inverters[safe: inverter], let s = inv.slots[shot.slot - 1] else { return "0.0" }
-        if shot.kind == .currentBefore { return "0.00" }
+        switch shot.kind {
+        case .currentBefore: return "0.00"
+        case .currentAfter: return String(format: "%.2f", s.impA ?? 12.5)
+        case .voltageAfter:
+            // Vmp ≈ 0.815 × Voc, as the board's example
+            let v = s.vmpV ?? r.vmpMedians(inv).first { $0.modules == s.modules }?.median ?? (s.vocV ?? Double(s.modules) * 47) * 0.815
+            return String(format: "%.1f", v)
+        default: break
+        }
         let v = s.vocV ?? r.vocMedians(inv).first { $0.modules == s.modules }?.median ?? Double(s.modules) * 47
         return String(format: "%.1f", v)
     }
@@ -56,23 +64,23 @@ extension IECBeforeVIPage {
         if let target = entry, let inv = r.inverters[safe: inverter], let s = inv.slots[target.slot - 1] {
             ZStack {
                 Theme.navy.opacity(0.45).ignoresSafeArea().onTapGesture { entry = nil }
-                IECBeforeVIEntry(job: job, report: r, inverter: inverter, slot: s, target: target,
+                IECVIEntry(job: job, phase: phase, report: r, inverter: inverter, slot: s, target: target,
                                  reading: reading(target, s), sample: r.sampleName != nil,
                                  nextLabel: nextLabel(r, target),
                                  save: { v in save(v, target) },
                                  keep: { v in keep(v, target) },
-                                 retake: { shooting = Shot(slot: target.slot, kind: target.photoKind, then: target); entry = nil },
+                                 retake: { shooting = Shot(slot: target.slot, kind: target.kind.photoKind(phase), then: target); entry = nil },
                                  close: { entry = nil })
                     .frame(width: 1000)
-                    .task(id: s.photo(target.photoKind)) { await read(s.photo(target.photoKind)) }
+                    .task(id: s.photo(target.kind.photoKind(phase))) { await read(s.photo(target.kind.photoKind(phase))) }
             }
             .transition(.opacity)
         }
     }
 
     /// The photo's reading once read; `.some(nil)` = read, nothing found; nil = not read yet.
-    func reading(_ target: IECBeforeVIEntry.Target, _ s: IECReport.Slot) -> Double? {
-        s.photo(target.photoKind).flatMap { readings[$0] ?? nil }
+    func reading(_ target: IECVIEntry.Target, _ s: IECReport.Slot) -> Double? {
+        s.photo(target.kind.photoKind(phase)).flatMap { readings[$0] ?? nil }
     }
 
     func read(_ id: String?) async {
@@ -82,33 +90,42 @@ extension IECBeforeVIPage {
     }
 
     /// The pad's `บันทึก` sub label: where it goes next.
-    func nextLabel(_ r: IECReport, _ t: IECBeforeVIEntry.Target) -> String {
+    func nextLabel(_ r: IECReport, _ t: IECVIEntry.Target) -> String {
         guard let inv = r.inverters[safe: inverter] else { return "" }
-        if t.kind == .voltage { return inv.slots[t.slot - 1]?.photo(.currentBefore) == nil ? "→ ถ่ายแคลมป์ A" : "→ แคลมป์ A" }
+        if t.kind == .voltage { return inv.slots[t.slot - 1]?.photo(IECVIEntry.Kind.current.photoKind(phase)) == nil ? "→ ถ่ายแคลมป์ A" : "→ แคลมป์ A" }
         guard let n = nextSlot(r, after: t) else { return "→ จบ INV\(inverter + 1)" }
         return "→ " + IECReport.label(inverter: inverter + 1, seq: inv.strings.first { $0.slot == n }?.seq ?? 0)
     }
 
     /// The next string after a current is saved: the next unfinished one in continuous mode, else the next string.
-    func nextSlot(_ r: IECReport, after t: IECBeforeVIEntry.Target) -> Int? {
+    func nextSlot(_ r: IECReport, after t: IECVIEntry.Target) -> Int? {
         guard let inv = r.inverters[safe: inverter] else { return nil }
         if t.continuous != nil { return unfinished(r, inverter).first { $0 > t.slot } ?? unfinished(r, inverter).first { $0 != t.slot } }
         return inv.strings.first { $0.slot > t.slot }?.slot
     }
 
-    func keep(_ value: Double, _ t: IECBeforeVIEntry.Target) {
-        let i = inverter
+    /// A typed value into its field: Voc (and the polarity from its sign) or the current before; Vmp or Imp after.
+    func write(_ value: Double, _ t: IECVIEntry.Target, inverter i: Int) {
+        let phase = phase
         job.updateIEC(context) { r in
-            if t.kind == .voltage { r.setVoc(value, inverter: i, slot: t.slot) } else { r.inverters[i].slots[t.slot - 1]?.iBeforeA = value }
+            switch (t.kind, phase) {
+            case (.voltage, .before): r.setVoc(value, inverter: i, slot: t.slot)
+            case (.current, .before): r.inverters[i].slots[t.slot - 1]?.iBeforeA = value
+            case (.voltage, .after): r.inverters[i].slots[t.slot - 1]?.vmpV = value
+            case (.current, .after): r.inverters[i].slots[t.slot - 1]?.impA = value
+            }
         }
     }
 
-    /// `บันทึก`: V → the clamp's photo → A → the next string's photo, or closes on the last.
-    func save(_ value: Double, _ t: IECBeforeVIEntry.Target) {
+    func keep(_ value: Double, _ t: IECVIEntry.Target) {
         let i = inverter
-        job.updateIEC(context) { r in
-            if t.kind == .voltage { r.setVoc(value, inverter: i, slot: t.slot) } else { r.inverters[i].slots[t.slot - 1]?.iBeforeA = value }
-        }
+        write(value, t, inverter: i)
+    }
+
+    /// `บันทึก`: V → the clamp's photo → A → the next string's photo, or closes on the last.
+    func save(_ value: Double, _ t: IECVIEntry.Target) {
+        let i = inverter
+        write(value, t, inverter: i)
         let r = report
         guard let s = r.inverters[safe: i]?.slots[t.slot - 1] else { entry = nil; return }
         entry = nil
@@ -118,7 +135,7 @@ extension IECBeforeVIPage {
         }
         guard let n = nextSlot(r, after: t), let next = r.inverters[i].slots[n - 1] else { return }
         slot = n
-        let c = t.continuous.map { IECBeforeVIEntry.Continuous(done: min($0.done + 1, $0.total), total: $0.total) }
+        let c = t.continuous.map { IECVIEntry.Continuous(done: min($0.done + 1, $0.total), total: $0.total) }
         open(.voltage, next, continuous: c, at: n)
     }
 
@@ -150,13 +167,17 @@ extension IECBeforeVIPage {
 }
 
 #if DEBUG
-extension IECBeforeVIPage {
+extension IECVIPage {
     /// `-iecStep2State default|inv2|voc|clamp|continuous|fail|empty|todo|differs`: the board's states 01–09 on the
     /// sample `-iecStep2` seeded (the changes go into that sample test).
     static var debugState: String? { UserDefaults.standard.string(forKey: "iecStep2State") }
+    /// `-iecStep4State default|vmp|imp|partial|fail|continuous|done|todo|inv2`: step 4's states 01–09.
+    static var debugState4: String? { UserDefaults.standard.string(forKey: "iecStep4State") }
 
     func applyDebugState() {
-        guard !debugApplied, let state = Self.debugState else { return }
+        guard !debugApplied else { return }
+        if phase == .after { applyStep4Debug(); return }
+        guard let state = Self.debugState else { return }
         debugApplied = true
         let clearLast = { (job: Job, context: ModelContext) in
             // INV1ST14–16 (slots 15, 17, 19) not measured yet
@@ -175,7 +196,58 @@ extension IECBeforeVIPage {
     }
 }
 
+extension IECVIPage {
+    func applyStep4Debug() {
+        guard let state = Self.debugState4 else { return }
+        debugApplied = true
+        /// INV 1's first `n` strings measured (Vmp ≈ Voc × 0.815, Imp 12.2–12.6 A) with drawn photos.
+        func measure(_ n: Int) {
+            job.updateIEC(context) { r in
+                for (k, st) in r.inverters[0].strings.prefix(n).enumerated() {
+                    let voc = st.value.vocV ?? 753
+                    r.inverters[0].slots[st.slot - 1]?.vmpV = (voc * 0.815 * 10).rounded() / 10
+                    r.inverters[0].slots[st.slot - 1]?.impA = [12.5, 12.4, 12.3, 12.2, 12.6][k % 5]
+                }
+            }
+            for st in report.inverters[0].strings.prefix(n) { addAfterPhotos(st.slot) }
+        }
+        switch state {
+        case "vmp": addAfterPhotos(1, values: false); entry = .init(slot: 1, kind: .voltage)
+        case "imp":
+            addAfterPhotos(1, values: false)
+            job.updateIEC(context) { $0.inverters[0].slots[0]?.vmpV = 615.3 }
+            entry = .init(slot: 1, kind: .current)
+        case "partial": measure(9); slot = 11
+        case "fail": measure(9); job.updateIEC(context) { $0.inverters[0].slots[4]?.vmpV = 561 }; slot = 5
+        case "continuous": measure(9); slot = 11; startContinuous(report, 0)
+        case "done": measure(16); slot = 1
+        case "todo": measure(9); filter = .todo; slot = 11
+        case "inv2": inverter = 1; slot = 1
+        default: slot = 1
+        }
+    }
+
+    /// Drawn meter and clamp photos for a string's after readings (its values, or the board's example ones).
+    func addAfterPhotos(_ n: Int, values: Bool = true) {
+        let i = inverter
+        guard let s = report.inverters[safe: i]?.slots[n - 1] else { return }
+        let v = String(format: "%.1f", values ? (s.vmpV ?? 615.3) : 615.3), a = String(format: "%.2f", values ? (s.impA ?? 12.5) : 12.5)
+        let vid = job.storeIECPhoto(IECCamera.stubPhoto(v), replacing: s.photo(.voltageAfter), context: context)
+        let aid = job.storeIECPhoto(IECCamera.stubPhoto(a), replacing: s.photo(.currentAfter), context: context)
+        job.updateIEC(context) { r in
+            r.inverters[i].slots[n - 1]?.photos[IECReport.PhotoKind.voltageAfter.rawValue] = vid
+            r.inverters[i].slots[n - 1]?.photos[IECReport.PhotoKind.currentAfter.rawValue] = aid
+        }
+    }
+}
+
 extension Job {
+    /// `-iecStep4 YES`: the sample (it has no after readings), its before photos left as they were.
+    func seedIECStep4Demo(context: ModelContext) {
+        seedIECDemo(replacing: true)
+        try? context.save()
+    }
+
     /// `-iecStep2 YES`: the sample with a drawn meter photo for every string's Voc and current (for good).
     func seedIECStep2Demo(context: ModelContext) {
         seedIECDemo(replacing: true)

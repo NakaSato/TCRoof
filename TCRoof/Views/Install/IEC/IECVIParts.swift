@@ -35,6 +35,7 @@ struct IECStepProgress: View {
 struct IECDCInputMap: View {
     let report: IECReport
     let inverter: Int
+    var phase: IECReport.Phase = .before
     let selected: Int
     let select: (Int) -> Void
     let toggleEmpty: (Int) -> Void
@@ -50,13 +51,16 @@ struct IECDCInputMap: View {
             }
             HStack(spacing: 4) {
                 ForEach(1...mppts, id: \.self) { m in
+                    // the selected slot's MPPT column is yellow, as the dialog's DC box strip
+                    let on = IECReport.mppt(slot: selected) == m
                     VStack(spacing: 6) {
-                        Text("\(m)").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                        Text("\(m)").font(.sarabunFixed(11, on ? .bold : .regular)).foregroundStyle(on ? Theme.slotColumnInk : Theme.inkMuted)
                         dot(inv, (m - 1) * 2 + 1)
                         dot(inv, (m - 1) * 2 + 2)
                     }
                     .padding(.vertical, 6).frame(maxWidth: .infinity)
-                    .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(on ? Theme.slotColumnFill : Theme.phonePage, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay { if on { RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.slotColumnLine, lineWidth: 1.5) } }
                 }
             }
             legend
@@ -67,7 +71,7 @@ struct IECDCInputMap: View {
     }
 
     private func dot(_ inv: IECReport.Inverter, _ slot: Int) -> some View {
-        let status = report.beforeVIStatus(inv, slot: slot)
+        let status = report.viStatus(inv, slot: slot, phase)
         let seq = inv.strings.first { $0.slot == slot }?.seq
         let text = seq.map { "ST\($0)" } ?? "\(slot)"
         let (fill, ink): (Color, Color) = switch status {
@@ -84,8 +88,16 @@ struct IECDCInputMap: View {
                     if status == .todo { Circle().strokeBorder(Theme.borderControl, lineWidth: 1.5) }
                     if status == .empty { Circle().strokeBorder(Theme.disabledText, style: StrokeStyle(lineWidth: 1, dash: [3, 3])) }
                 }
+                // selected: a 2 pt gap, a 3 pt yellow ring and its 1 pt outline
+                .padding(2)
+                .overlay { if slot == selected { Circle().strokeBorder(Theme.surface, lineWidth: 2) } }
                 .padding(3)
-                .overlay { if slot == selected { Circle().strokeBorder(Theme.primary, lineWidth: 2) } }
+                .overlay {
+                    if slot == selected {
+                        Circle().strokeBorder(Theme.slotRing, lineWidth: 3)
+                        Circle().strokeBorder(Theme.slotRingLine, lineWidth: 1)
+                    }
+                }
                 .frame(minWidth: 38, minHeight: 38)
         }
         .buttonStyle(.plain)
@@ -116,21 +128,22 @@ struct IECDCInputMap: View {
 }
 
 /// `ตารางค่าวัด · INV1 ก่อนออนระบบ`: every slot of the inverter with its readings and result; a row selects its slot.
-struct IECBeforeVITable: View {
+struct IECVITable: View {
     let report: IECReport
     let inverter: Int
+    var phase: IECReport.Phase = .before
     let selected: Int
-    @Binding var filter: IECBeforeVIPage.Filter
+    @Binding var filter: IECVIPage.Filter
     let select: (Int) -> Void
 
     private static let widths: [CGFloat] = [130, 90, 60, 90, 70, 100, 50]
 
     var body: some View {
         let inv = report.inverters[inverter]
-        let statuses = (1...inv.slotsInUse).map { report.beforeVIStatus(inv, slot: $0) }
+        let statuses = (1...inv.slotsInUse).map { report.viStatus(inv, slot: $0, phase) }
         VStack(spacing: 0) {
             HStack {
-                Text("ตารางค่าวัด · INV\(inverter + 1) ก่อนออนระบบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("ตารางค่าวัด · INV\(inverter + 1) \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ")").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 filterSwitch(slots: inv.slotsInUse, todo: statuses.filter { $0 == .todo }.count, failed: statuses.filter { $0 == .fail }.count)
             }
@@ -169,7 +182,7 @@ struct IECBeforeVITable: View {
         .padding(3).background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    private func segment(_ title: String, _ f: IECBeforeVIPage.Filter) -> some View {
+    private func segment(_ title: String, _ f: IECVIPage.Filter) -> some View {
         Button { filter = f } label: {
             Text(title).font(.sarabunFixed(14, filter == f ? .bold : .regular)).foregroundStyle(filter == f ? Theme.navy : Theme.inkMuted)
                 .padding(.horizontal, 12).frame(minHeight: 38)
@@ -184,10 +197,11 @@ struct IECBeforeVITable: View {
             cell("สตริง", 0, .leading)
             cell("MPPT · ช่อง", 1, .leading)
             cell("แผง", 2, .leading)
-            Text("Voc (V)").frame(maxWidth: .infinity, alignment: .trailing)
+            Text(phase == .before ? "Voc (V)" : "Vmp (V)").frame(maxWidth: .infinity, alignment: .trailing)
             cell("ต่าง", 3, .trailing)
-            cell("กระแส (A)", 5, .trailing)
-            cell("ขั้ว", 6, .center)
+            cell(phase == .before ? "กระแส (A)" : "Imp (A)", 5, .trailing)
+            // no polarity after the connection
+            if phase == .before { cell("ขั้ว", 6, .center) }
             Text("ผล").frame(width: 100)
         }
         .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
@@ -225,18 +239,21 @@ struct IECBeforeVITable: View {
 
     private func stringRow(_ inv: IECReport.Inverter, _ slot: Int, _ s: IECReport.Slot, _ status: IECReport.BeforeVIStatus) -> some View {
         let seq = inv.strings.first { $0.slot == slot }?.seq ?? 0
-        let vocBad = report.vocPasses(inv, slot: slot) == false
-        let ampBad = s.iBeforeA.map { !IECReport.currentPassesBefore($0) } ?? false
-        let dev = s.vocV == nil ? nil : report.vocDeviation(inv, slot: slot)
+        let volts = IECVIEntry.Kind.voltage.value(s, phase), amps = IECVIEntry.Kind.current.value(s, phase)
+        let vocBad = (phase == .before ? report.vocPasses(inv, slot: slot) : report.vmpPasses(inv, slot: slot)) == false
+        // after the connection Imp is only recorded
+        let ampBad = phase == .before && (amps.map { !IECReport.currentPassesBefore($0) } ?? false)
+        let dev = volts == nil ? nil : report.voltageDeviation(inv, slot: slot, phase)
         return HStack(spacing: 0) {
-            Text(IECReport.label(inverter: inverter + 1, seq: seq)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            // the board's `String n` (the chip, the dialog and the map keep `INV1ST1` / `ST1`)
+            Text("String \(seq)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 .frame(width: Self.widths[0], alignment: .leading)
             cell("\(IECReport.mppt(slot: slot)) · \(slot)", 1, .leading)
             cell("\(s.modules)", 2, .leading)
-            value(s.vocV.map { IECFormat.number($0, digits: 1) }, bad: vocBad).frame(maxWidth: .infinity, alignment: .trailing)
+            value(volts.map { IECFormat.number($0, digits: 1) }, bad: vocBad).frame(maxWidth: .infinity, alignment: .trailing)
             value(dev.map(IECReport.signedPercent), bad: vocBad).frame(width: Self.widths[3], alignment: .trailing)
-            value(s.iBeforeA.map { String(format: "%.2f", $0) }, bad: ampBad).frame(width: Self.widths[5], alignment: .trailing)
-            polarity(s.polarityOK).frame(width: Self.widths[6])
+            value(amps.map { String(format: "%.2f", $0) }, bad: ampBad).frame(width: Self.widths[5], alignment: .trailing)
+            if phase == .before { polarity(s.polarityOK).frame(width: Self.widths[6]) }
             resultPill(status).frame(width: 100)
         }
         .font(.sarabunFixed(15)).foregroundStyle(Theme.navy).monospacedDigit()
@@ -266,9 +283,18 @@ struct IECBeforeVITable: View {
     }
 
     /// `วัดแล้ว` · the median of each module-count group (or one median and V per module) · polarity.
+    /// Step 4's footer: measured · the Vmp median(s) · Σ Imp · the Excel rows.
+    private func afterCells(_ inv: IECReport.Inverter, _ t: IECReport.BeforeVITally) -> [(String, String)] {
+        let medians = report.vmpMedians(inv)
+        let median = medians.isEmpty ? "—" : medians.map { String(format: "%.1f V", $0.median) + (medians.count > 1 ? " (\($0.modules))" : "") }.joined(separator: " · ")
+        let amps = inv.strings.compactMap(\.value.impA)
+        return [("วัดแล้ว", "\(t.done) / \(t.total) สตริง"), ("มัธยฐาน Vmp", median),
+                ("กระแสรวม", amps.isEmpty ? "—" : String(format: "%.1f A", amps.reduce(0, +))), ("Excel", "แถว 17 · 19")]
+    }
+
     private func footer(_ inv: IECReport.Inverter) -> some View {
-        let t = report.beforeVITally(inv), medians = report.vocMedians(inv)
-        let reversed = inv.strings.filter { $0.value.polarityOK == false }.count
+        let t = report.viTally(inv, phase), medians = report.vocMedians(inv)
+        let reversed = phase == .before ? inv.strings.filter { $0.value.polarityOK == false }.count : 0
         var cells: [(String, String)] = [("วัดแล้ว", "\(t.done) / \(t.total) สตริง")]
         if medians.count > 1 {
             cells += medians.prefix(2).map { ("มัธยฐาน \($0.modules) แผง", String(format: "%.1f V", $0.median)) }
@@ -278,6 +304,7 @@ struct IECBeforeVITable: View {
             cells += [("มัธยฐาน", "—"), ("V ต่อแผง", "—")]
         }
         cells.append(("ขั้วสาย", reversed == 0 ? "ถูกทุกสตริง" : "กลับขั้ว \(reversed)"))
+        if phase == .after { cells = afterCells(inv, t) }
         return HStack(spacing: 0) {
             ForEach(Array(cells.enumerated()), id: \.offset) { k, c in
                 VStack(alignment: .leading, spacing: 0) {
@@ -297,7 +324,7 @@ struct IECBeforeVITable: View {
 /// One of the selected string's photos with its value: `ยังไม่มีรูป` (dashed orange) → `แตะเพื่อป้อนค่า` (blue) →
 /// the value with ✓ / ✗ (green or red).
 struct IECValuePhotoCard: View {
-    let kind: IECBeforeVIEntry.Kind
+    let kind: IECVIEntry.Kind
     let asset: PhotoAsset?
     let value: Double?
     let cell: String
@@ -392,14 +419,14 @@ struct IECValuePhotoCard: View {
 
 /// Takes a photo for `shot`: the drawn stub with `-iecCameraStub`, else the camera, else the library.
 struct IECShutter: ViewModifier {
-    @Binding var shot: IECBeforeVIPage.Shot?
+    @Binding var shot: IECVIPage.Shot?
     let job: Job
-    var stubReading: (IECBeforeVIPage.Shot) -> String = { _ in "0.0" }
-    let store: (IECBeforeVIPage.Shot, Data) -> Void
-    @State private var camera: IECBeforeVIPage.Shot?
+    var stubReading: (IECVIPage.Shot) -> String = { _ in "0.0" }
+    let store: (IECVIPage.Shot, Data) -> Void
+    @State private var camera: IECVIPage.Shot?
     @State private var library = false
     @State private var picked: PhotosPickerItem?
-    @State private var pending: IECBeforeVIPage.Shot?
+    @State private var pending: IECVIPage.Shot?
 
     func body(content: Content) -> some View {
         content

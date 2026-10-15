@@ -114,3 +114,74 @@ public extension IECReport {
         return read == 0 ? typed != 0 : abs(typed - read) / base > 0.01
     }
 }
+
+// MARK: - After the connection (step 4)
+
+/// Step 4, `หลังออน · แรงดัน / กระแส` (docs/ui/iec62446-step4-after-vi-ipad): Vmp against the median of the strings
+/// with as many modules, as Voc before; Imp is recorded with no pass or fail; there is no polarity.
+public extension IECReport {
+    /// How far a string's Vmp is from the median Vmp of the inverter's strings with as many modules; nil without a
+    /// reading or with no other string to compare to.
+    func vmpDeviation(_ inv: Inverter, slot: Int) -> Double? {
+        guard inv.slots.indices.contains(slot - 1), let s = inv.slots[slot - 1], let v = s.vmpV else { return nil }
+        let peers = inv.slots.compactMap { $0 }.filter { $0.modules == s.modules }.compactMap(\.vmpV).sorted()
+        guard peers.count > 1 else { return nil }
+        let m = peers.count % 2 == 1 ? peers[peers.count / 2] : (peers[peers.count / 2 - 1] + peers[peers.count / 2]) / 2
+        return m > 0 ? (v - m) / m : nil
+    }
+
+    func vmpPasses(_ inv: Inverter, slot: Int) -> Bool? {
+        guard inv.slots.indices.contains(slot - 1), inv.slots[slot - 1]?.vmpV != nil else { return nil }
+        return vmpDeviation(inv, slot: slot).map { abs($0) <= Self.vocTolerance } ?? true
+    }
+
+    func vmpMedians(_ inv: Inverter) -> [(modules: Int, median: Double)] {
+        let strings = inv.strings.map(\.value)
+        return Set(strings.map(\.modules)).sorted(by: >).compactMap { m in
+            let v = strings.filter { $0.modules == m }.compactMap(\.vmpV).sorted()
+            guard !v.isEmpty else { return nil }
+            return (m, v.count % 2 == 1 ? v[v.count / 2] : (v[v.count / 2 - 1] + v[v.count / 2]) / 2)
+        }
+    }
+
+    /// The voltage deviation of a phase: Voc before, Vmp after.
+    func voltageDeviation(_ inv: Inverter, slot: Int, _ phase: Phase) -> Double? {
+        phase == .before ? vocDeviation(inv, slot: slot) : vmpDeviation(inv, slot: slot)
+    }
+
+    func voltageMedians(_ inv: Inverter, _ phase: Phase) -> [(modules: Int, median: Double)] {
+        phase == .before ? vocMedians(inv) : vmpMedians(inv)
+    }
+
+    /// A string has every value of the phase: Voc, current and polarity before; Vmp and Imp after.
+    static func viDone(_ s: Slot, _ phase: Phase) -> Bool {
+        phase == .before ? s.vocV != nil && s.iBeforeA != nil && s.polarityOK != nil : s.vmpV != nil && s.impA != nil
+    }
+
+    func viStatus(_ inv: Inverter, slot: Int, _ phase: Phase) -> BeforeVIStatus {
+        if phase == .before { return beforeVIStatus(inv, slot: slot) }
+        guard inv.slots.indices.contains(slot - 1), let s = inv.slots[slot - 1] else { return .empty }
+        if vmpPasses(inv, slot: slot) == false { return .fail }
+        return Self.viDone(s, .after) ? .pass : .todo
+    }
+
+    func viFailures(_ inv: Inverter, slot: Int, _ phase: Phase) -> [String] {
+        if phase == .before { return beforeVIFailures(inv, slot: slot) }
+        guard vmpPasses(inv, slot: slot) == false, let v = inv.slots[slot - 1]?.vmpV, let d = vmpDeviation(inv, slot: slot) else { return [] }
+        return ["Vmp \(String(format: "%.1f", v)) V ต่างจากมัธยฐาน \(Self.signedPercent(d)) (เกณฑ์ ±\(Int(Self.vocTolerance * 100))%)"]
+    }
+
+    func viTally(_ inv: Inverter, _ phase: Phase) -> BeforeVITally {
+        if phase == .before { return beforeVITally(inv) }
+        let states = inv.strings.map { viStatus(inv, slot: $0.slot, .after) }
+        return BeforeVITally(done: inv.strings.filter { Self.viDone($0.value, .after) }.count, total: states.count,
+                             failed: states.filter { $0 == .fail }.count)
+    }
+
+    /// The Word page a string's photos go to: before, 3 strings a page after the before cover; after, the same after
+    /// the before part and the after cover.
+    func reportPage(inverter i: Int, seq: Int, _ phase: Phase) -> Int {
+        let before = reportPage(inverter: i, seq: seq)
+        return phase == .before ? before : before + 1 + (stringCount + 2) / 3
+    }
+}

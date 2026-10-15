@@ -4,10 +4,12 @@ import TCRoofCore
 
 /// Step 2/7 `ก่อนออน · แรงดัน / กระแส` on iPad (docs/ui/iec62446-step2-before-vi-ipad): the inverters, the DC input
 /// map of one inverter, the selected string's two photos and values, and its table. Values are typed in the entry
-/// dialog (`IECBeforeVIEntry`), photo first; continuous mode walks the unfinished strings. iPhone and the after phase
+/// dialog (`IECVIEntry`), photo first; continuous mode walks the unfinished strings. iPhone and the after phase
 /// keep `IECStringGrid` / `IECStringEntry`.
-struct IECBeforeVIPage: View {
+struct IECVIPage: View {
     @Bindable var job: Job
+    /// Step 2 (before the connection: Voc, current, polarity) or step 4 (after: Vmp, Imp).
+    var phase: IECReport.Phase = .before
     @State var inverter: Int
     /// The selected slot, 1-based (an empty slot can be selected).
     @State var slot: Int
@@ -15,7 +17,7 @@ struct IECBeforeVIPage: View {
     let openStage: (IECReport.Stage) -> Void
 
     @State var filter: Filter = .all
-    @State var entry: IECBeforeVIEntry.Target?
+    @State var entry: IECVIEntry.Target?
     /// The photo being taken: the slot and kind, then the dialog to open after it (nil = stay on the page).
     @State var shooting: Shot?
     @State var setup = false
@@ -32,7 +34,7 @@ struct IECBeforeVIPage: View {
     struct Shot: Identifiable, Equatable {
         let slot: Int
         let kind: IECReport.PhotoKind
-        var then: IECBeforeVIEntry.Target?
+        var then: IECVIEntry.Target?
         var id: String { "\(slot)-\(kind.rawValue)" }
     }
 
@@ -42,9 +44,9 @@ struct IECBeforeVIPage: View {
         let r = report
         let i = min(inverter, max(r.inverters.count - 1, 0))
         VStack(spacing: 0) {
-            IECHeader(title: "IEC 62446 · ก่อนออนระบบ · แรงดัน / กระแส", subtitle: stationLine(r)) { EmptyView() }
+            IECHeader(title: "IEC 62446 · \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ") · แรงดัน / กระแส", subtitle: stationLine(r)) { EmptyView() }
             if r.inverters.indices.contains(i) {
-                IECStepProgress(current: .beforeVoltage, report: r, open: go)
+                IECStepProgress(current: stage, report: r, open: go)
                     .padding(.horizontal, 24).padding(.top, 14)
                 HStack(alignment: .top, spacing: 24) {
                     ScrollView { leftColumn(r, i).padding(.bottom, 16) }
@@ -88,7 +90,7 @@ struct IECBeforeVIPage: View {
         VStack(alignment: .leading, spacing: 14) {
             inverterCards(r)
             banner(i)
-            IECDCInputMap(report: r, inverter: i, selected: slot, select: { slot = $0 }, toggleEmpty: { toggleEmpty($0) })
+            IECDCInputMap(report: r, inverter: i, phase: phase, selected: slot, select: { slot = $0 }, toggleEmpty: { toggleEmpty($0) })
                 .disabled(r.isLocked)
             selectedBar(r, inv, i)
             if let s = inv.slots[slot - 1] {
@@ -112,7 +114,7 @@ struct IECBeforeVIPage: View {
     }
 
     func inverterCard(_ r: IECReport, _ k: Int, _ inv: IECReport.Inverter) -> some View {
-        let t = r.beforeVITally(inv), on = k == inverter
+        let t = r.viTally(inv, phase), on = k == inverter
         return Button { inverter = k; slot = inv.strings.first?.slot ?? 1; filter = .all } label: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -140,7 +142,33 @@ struct IECBeforeVIPage: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    func banner(_ i: Int) -> some View {
+    /// The step this page is.
+    var stage: IECReport.Stage { phase == .before ? .beforeVoltage : .afterVoltage }
+
+    @ViewBuilder func banner(_ i: Int) -> some View {
+        if phase == .after { afterBanner(i) } else { beforeBanner(i) }
+    }
+
+    /// `ออนระบบแล้ว 13:20 น. · วัดขณะจ่ายไฟ`: the switch-on time, else the after conditions' time.
+    func afterBanner(_ i: Int) -> some View {
+        let r = report
+        let time = r.gridOnAt.map { ThaiFormat.time.string(from: $0) } ?? r.after.time
+        return HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "checkmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
+                .frame(width: 30, height: 30).background(Theme.success, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text("ออนระบบแล้ว" + (time.map { " \($0) น." } ?? "") + " · วัดขณะจ่ายไฟ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.okText)
+                Text("แรงดัน Vmp และกระแส Imp · เติม INV \(String(format: "%02d", i + 1))-หลัง แถว 17, 19")
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.okText)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Theme.okSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
+    func beforeBanner(_ i: Int) -> some View {
         HStack(alignment: .center, spacing: 12) {
             Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 30, height: 30).background(Theme.warning, in: Circle())
@@ -184,8 +212,8 @@ struct IECBeforeVIPage: View {
 
     /// `✓ ① ถ่ายรูป → ✓ ② ป้อนค่าจากรูป`, `ถ่ายแล้ว n/2`, and the continuous-mode button.
     func flowLine(_ r: IECReport, _ inv: IECReport.Inverter, _ s: IECReport.Slot, _ i: Int) -> some View {
-        let shots = [s.photo(.voltageBefore), s.photo(.currentBefore)].compactMap { $0 }.count
-        let typed = s.vocV != nil && s.iBeforeA != nil
+        let shots = [s.photo(IECVIEntry.Kind.voltage.photoKind(phase)), s.photo(IECVIEntry.Kind.current.photoKind(phase))].compactMap { $0 }.count
+        let typed = IECVIEntry.Kind.voltage.value(s, phase) != nil && IECVIEntry.Kind.current.value(s, phase) != nil
         let left = unfinished(r, i).count
         return HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
@@ -218,15 +246,17 @@ struct IECBeforeVIPage: View {
     }
 
     @ViewBuilder func failAlert(_ r: IECReport, _ inv: IECReport.Inverter) -> some View {
-        let reasons = r.beforeVIFailures(inv, slot: slot)
+        let reasons = r.viFailures(inv, slot: slot, phase)
         if !reasons.isEmpty {
             HStack(spacing: 12) {
                 Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.danger, in: Circle())
                 Text(reasons.joined(separator: " · ") + " · รูปเดิมเก็บไว้เทียบ").font(.sarabunFixed(13)).foregroundStyle(Theme.dangerText)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
-                Button("วัดซ้ำ") { shooting = Shot(slot: slot, kind: reasons.first?.hasPrefix("กระแส") == true ? .currentBefore : .voltageBefore,
-                                                    then: .init(slot: slot, kind: reasons.first?.hasPrefix("กระแส") == true ? .current : .voltage)) }
+                Button("วัดซ้ำ") {
+                    let kind: IECVIEntry.Kind = reasons.first?.hasPrefix("กระแส") == true ? .current : .voltage
+                    shooting = Shot(slot: slot, kind: kind.photoKind(phase), then: .init(slot: slot, kind: kind))
+                }
                     .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 14).frame(minHeight: 44).background(Theme.danger, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .buttonStyle(.plain).disabled(r.isLocked)
@@ -237,24 +267,40 @@ struct IECBeforeVIPage: View {
         }
     }
 
-    func photoCards(_ r: IECReport, _ inv: IECReport.Inverter, _ s: IECReport.Slot, _ i: Int) -> some View {
+    @ViewBuilder func photoCards(_ r: IECReport, _ inv: IECReport.Inverter, _ s: IECReport.Slot, _ i: Int) -> some View {
         HStack(alignment: .top, spacing: 14) {
-            IECValuePhotoCard(kind: .voltage, asset: job.iecPhoto(s.photo(.voltageBefore)), value: s.vocV,
-                              cell: IECReport.excelColumn(slot: slot) + "16", hint: vocHint(r, inv)) { open(.voltage, s) }
-            IECValuePhotoCard(kind: .current, asset: job.iecPhoto(s.photo(.currentBefore)), value: s.iBeforeA,
-                              cell: IECReport.excelColumn(slot: slot) + "18", hint: currentHint(s)) { open(.current, s) }
+            ForEach([IECVIEntry.Kind.voltage, .current], id: \.self) { kind in
+                IECValuePhotoCard(kind: kind, asset: job.iecPhoto(s.photo(kind.photoKind(phase))), value: kind.value(s, phase),
+                                  cell: IECReport.excelColumn(slot: slot) + "\(kind.row(phase))",
+                                  hint: kind == .voltage ? voltageHint(r, inv) : currentHint(s)) { open(kind, s) }
+            }
         }
         .disabled(r.isLocked)
+        if phase == .after, let seq = inv.strings.first(where: { $0.slot == slot })?.seq { reportLine(r, i, seq) }
     }
 
-    /// `✓ ต่างจากมัธยฐาน +0.3%` / `✗ ต่างจากมัธยฐาน −5.4%`.
-    func vocHint(_ r: IECReport, _ inv: IECReport.Inverter) -> (text: String, ok: Bool)? {
-        guard let pass = r.vocPasses(inv, slot: slot) else { return nil }
-        let d = r.vocDeviation(inv, slot: slot)
+    /// `รูปที่ถ่ายไปที่ 7 · ภาพถ่าย IEC-test After · หน้า 11 · ช่อง INV1ST1 · Vmp + Imp`.
+    func reportLine(_ r: IECReport, _ i: Int, _ seq: Int) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("รูปที่ถ่ายไปที่ 7 · ภาพถ่าย IEC-test After").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+            Text("หน้า \(r.reportPage(inverter: i, seq: seq, .after)) · ช่อง \(IECReport.label(inverter: i + 1, seq: seq)) · Vmp + Imp")
+                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// `✓ ต่างจากมัธยฐาน +0.3%` / `✗ ต่างจากมัธยฐาน −5.4%`, of Voc before or Vmp after.
+    func voltageHint(_ r: IECReport, _ inv: IECReport.Inverter) -> (text: String, ok: Bool)? {
+        guard let pass = phase == .before ? r.vocPasses(inv, slot: slot) : r.vmpPasses(inv, slot: slot) else { return nil }
+        let d = r.voltageDeviation(inv, slot: slot, phase)
         return ((pass ? "✓ " : "× ") + (d.map { "ต่างจากมัธยฐาน " + IECReport.signedPercent($0) } ?? "ไม่มีสตริงขนาดเดียวกันให้เทียบ"), pass)
     }
 
+    /// Before: 0 A or not; after: Imp is only recorded.
     func currentHint(_ s: IECReport.Slot) -> (text: String, ok: Bool)? {
+        if phase == .after { return s.impA == nil ? nil : ("✓ บันทึกแล้ว", true) }
         guard let a = s.iBeforeA else { return nil }
         let ok = IECReport.currentPassesBefore(a)
         return (ok ? "✓ วงจรเปิด 0 A" : "× ก่อนออนต้องเป็น 0 A", ok)
@@ -276,18 +322,18 @@ struct IECBeforeVIPage: View {
     // MARK: right column
 
     func tableCard(_ r: IECReport, _ i: Int) -> some View {
-        IECBeforeVITable(report: r, inverter: i, selected: slot, filter: $filter) { slot = $0 }
+        IECVITable(report: r, inverter: i, phase: phase, selected: slot, filter: $filter) { slot = $0 }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: bottom bar
 
     func bottomBar(_ r: IECReport) -> some View {
-        let failed = r.inverters.reduce(0) { $0 + r.beforeVITally($1).failed }
-        let all = r.inverters.allSatisfy { r.beforeVITally($0).isComplete }
-        let summary = r.inverters.enumerated().map { k, inv in let t = r.beforeVITally(inv); return "INV\(k + 1) \(t.done)/\(t.total)" }.joined(separator: " · ")
-        let text = r.isLocked ? "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว"
-            : failed > 0 ? "มีค่าไม่ผ่าน \(failed) สตริง" : "วัดก่อนออน " + summary + " · ครบทุกอินเวอร์เตอร์แล้วจึงออนระบบ"
+        let failed = r.inverters.reduce(0) { $0 + r.viTally($1, phase).failed }
+        let all = r.inverters.allSatisfy { r.viTally($0, phase).isComplete }
+        let summary = r.inverters.enumerated().map { k, inv in let t = r.viTally(inv, phase); return "INV\(k + 1) \(t.done)/\(t.total)" }.joined(separator: " · ")
+        let measured = phase == .before ? "วัดก่อนออน " + summary + " · ครบทุกอินเวอร์เตอร์แล้วจึงออนระบบ" : "วัดแล้ว " + summary
+        let text = r.isLocked ? "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว" : failed > 0 ? "มีค่าไม่ผ่าน \(failed) สตริง" : measured
         let ok = !r.isLocked && failed == 0 && all
         return HStack(spacing: 14) {
             Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
@@ -299,8 +345,10 @@ struct IECBeforeVIPage: View {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .bar))
             .accessibilityLabel("บันทึกร่างตอนนี้")
-            twoLine("ก่อนหน้า 1/7", IECReport.Stage.setup.title, leading: true, primary: false) { openStage(.setup) }
-            twoLine("ถัดไป 3/7", IECReport.Stage.beforeInsulation.title, leading: false, primary: true) { openStage(.beforeInsulation) }
+            // the neighbouring steps: 1 and 3 around step 2, 3 and 5 around step 4
+            let (prev, next) = phase == .before ? (IECReport.Stage.setup, IECReport.Stage.beforeInsulation) : (.beforeInsulation, .energy)
+            twoLine("ก่อนหน้า \(prev.rawValue)/7", prev.title, leading: true, primary: false) { openStage(prev) }
+            twoLine("ถัดไป \(next.rawValue)/7", next.title, leading: false, primary: true) { openStage(next) }
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
         .background(Theme.surface)

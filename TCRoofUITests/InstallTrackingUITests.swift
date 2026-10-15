@@ -149,27 +149,31 @@ final class InstallTrackingUITests: XCTestCase {
         back(app)
     }
 
-    /// `ทดสอบ IEC 62446` opens the IEC test (seeded with the แพรกหนามแดง sample); a band opens its string table, and a
-    /// Vmp typed into slot 1 after the connection is kept after going back and in again.
+    /// `ทดสอบ IEC 62446` opens the IEC test (seeded with the แพรกหนามแดง sample); the after band opens step 4's page, and
+    /// a Vmp typed for String 1 (photo first, from the stub camera) is kept after going back and in again.
     func testIECTabTypesAReading() {
-        let app = launch(["-iecDemo", "YES"], demo: false)
+        let app = launch(["-iecDemo", "YES", "-iecCameraStub", "YES"], demo: false)
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["ทดสอบระบบ IEC 62446"].waitForExistence(timeout: 10), "the tab should open the IEC test")
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "หลังการเชื่อมต่อระบบ")).firstMatch.tap()
-        let cell = app.buttons["Vmp (V) ช่อง 1"]
-        XCTAssertTrue(cell.waitForExistence(timeout: 10), "the band should open the after table")
-        cell.tap()
-        let field = app.textFields.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        field.tap()
-        if let old = field.value as? String, !old.isEmpty, old != "0" { field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count)) }
-        field.typeText("612.5")
-        app.buttons["เสร็จ"].tap()
-        XCTAssertTrue(NSPredicate(format: "value == %@", "612.5").evaluate(with: cell) || waitValue(cell, "612.5"), "the reading should show in its cell")
+        let card = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "มิเตอร์ V")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 15), "the band should open step 4's page")
+        card.tap()
+        let clear = app.buttons["ล้างค่า"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 15), "the photo, then the dialog")
+        clear.tap()
+        for c in "612.5" { app.buttons[c == "." ? "จุด" : String(c)].tap() }
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "บันทึก")).firstMatch.tap()
+        // on to the clamp's dialog; closed there
+        XCTAssertTrue(app.buttons["ปิด"].firstMatch.waitForExistence(timeout: 15))
+        app.buttons["ปิด"].firstMatch.tap()
+        // the card reads `มิเตอร์ V 612.5 V` (its parts are one accessibility element)
+        let kept = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "มิเตอร์ V", "612.5")).firstMatch
+        XCTAssertTrue(kept.waitForExistence(timeout: 10), "the reading should show on String 1's card")
         app.buttons["กลับ"].firstMatch.tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "หลังการเชื่อมต่อระบบ")).firstMatch.tap()
-        XCTAssertTrue(waitValue(app.buttons["Vmp (V) ช่อง 1"], "612.5"), "the reading should be kept")
+        XCTAssertTrue(kept.waitForExistence(timeout: 15), "the reading should be kept")
     }
 
     /// `กรอกทีละสตริง`: from the before table, a selected string opens; the pad types IR +E after `ถัดไป` moves past the

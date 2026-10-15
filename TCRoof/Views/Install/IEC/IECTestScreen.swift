@@ -34,7 +34,8 @@ struct IECTestScreen: View {
 
     /// The string table of one inverter and phase.
     struct GridTarget: Hashable { let inverter: Int; let phase: IECReport.Phase; var page: IECStringGrid.Page = .table }
-    struct Step2Target: Hashable { let inverter: Int; var slot = 1 }
+    /// Step 2 (before) or step 4 (after)'s designed page.
+    struct Step2Target: Hashable { let inverter: Int; var slot = 1; var phase: IECReport.Phase = .before }
 
     var body: some View {
         let report = job.iecReport
@@ -81,7 +82,7 @@ struct IECTestScreen: View {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(exportError ?? "") }
         .navigationDestination(item: $grid) { IECStringGrid(job: job, inverter: $0.inverter, phase: $0.phase, page: $0.page) }
-        .navigationDestination(item: $step2) { IECBeforeVIPage(job: job, inverter: $0.inverter, slot: $0.slot, openStage: open) }
+        .navigationDestination(item: $step2) { IECVIPage(job: job, phase: $0.phase, inverter: $0.inverter, slot: $0.slot, openStage: open) }
         .navigationDestination(isPresented: $step1) { IECSetupPage(job: job, openStage: open, leave: leaveFromSetup) }
         #if DEBUG
         .task {
@@ -90,6 +91,7 @@ struct IECTestScreen: View {
             // `-iecClear YES`: the station starts with no test, its photos removed (for good)
             if Debug.clear { for p in job.iecPhotos { context.delete(p) }; job.iecReport = nil; try? context.save() }
             if Debug.step2 { job.seedIECStep2Demo(context: context) }
+            else if Debug.step4 { job.seedIECStep4Demo(context: context) }
             else if Debug.praek { job.seedIECDemo(replacing: true); job.seedIECStep1Demo(context: context) }
             else if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset || Debug.demoFull, full: Debug.demoFull ? context : nil); try? context.save() }
             if let line = Debug.stationLine { job.updateIEC(context) { $0.stationLine = line; $0.sampleName = nil } }  // a real test with that line
@@ -97,6 +99,7 @@ struct IECTestScreen: View {
             try? await Task.sleep(for: .milliseconds(700))
             if Debug.setup { setup = true }
             if Debug.step2 { step2 = Step2Target(inverter: 0) }
+            if Debug.step4 { step2 = Step2Target(inverter: 0, phase: .after) }
             if Debug.step1 { step1 = true }
             if let n = Debug.inverter, (job.iecReport?.inverters.count ?? 0) >= n { grid = GridTarget(inverter: n - 1, phase: Debug.phase, page: Debug.page) }
         }
@@ -226,8 +229,8 @@ struct IECTestScreen: View {
 
     /// The before phase's table is step 2's page on iPad; the rest, and the iPhone, open the string table.
     private func show(_ target: GridTarget) {
-        if target.phase == .before, target.page == .table, sizeClass == .regular {
-            step2 = Step2Target(inverter: target.inverter, slot: job.iecReport?.inverters[safe: target.inverter]?.strings.first?.slot ?? 1)
+        if target.page == .table, sizeClass == .regular {
+            step2 = Step2Target(inverter: target.inverter, slot: job.iecReport?.inverters[safe: target.inverter]?.strings.first?.slot ?? 1, phase: target.phase)
         } else {
             grid = target
         }
@@ -242,7 +245,7 @@ struct IECTestScreen: View {
         step1 = false
         let target: GridTarget? = switch stage {
         case .beforeInsulation: .init(inverter: inverter, phase: .before)
-        case .afterVoltage: .init(inverter: inverter, phase: .after)
+        case .afterVoltage: nil
         case .energy: .init(inverter: inverter, phase: .after, page: .performance)
         case .thermal: .init(inverter: inverter, phase: .after, page: .photos)
         case .setup, .beforeVoltage, .review: nil
@@ -251,6 +254,8 @@ struct IECTestScreen: View {
             try? await Task.sleep(for: .milliseconds(450))
             if stage == .setup { showSetup() }
             else if stage == .beforeVoltage, fromSetup { show(.init(inverter: 0, phase: .before)) }
+            // step 4 is the after phase's page on iPad, the after table on iPhone
+            else if stage == .afterVoltage { show(.init(inverter: inverter, phase: .after)) }
             else if let target { grid = target }
         }
     }
@@ -280,7 +285,10 @@ struct IECTestScreen: View {
             let i = r.inverters.firstIndex { !r.beforeVITally($0).isComplete } ?? 0
             return { show(.init(inverter: i, phase: .before)) }
         case .beforeInsulation: return first(.insulation, .before)
-        case .afterVoltage: return readingsDone(.vmpAndImp) && !r.after.isComplete ? first(nil, .after, page: .conditions) : first(.vmpAndImp, .after)
+        case .afterVoltage:
+            if readingsDone(.vmpAndImp) && !r.after.isComplete { return first(nil, .after, page: .conditions) }
+            let i = r.inverters.firstIndex { !r.viTally($0, .after).isComplete } ?? 0
+            return { show(.init(inverter: i, phase: .after)) }
         case .energy: return { grid = .init(inverter: r.inverters.firstIndex { $0.energy7dKWh == nil } ?? 0, phase: .after, page: .performance) }
         case .thermal: return first(nil, .after, page: .photos)
         case .review: return nil
@@ -533,6 +541,8 @@ struct IECTestScreen: View {
         static let entry = UserDefaults.standard.bool(forKey: "iecEntry")
         /// `-iecStep2 YES`: step 2's page on the sample with a photo for every reading (`-iecStep2State` its states).
         static let step2 = UserDefaults.standard.bool(forKey: "iecStep2")
+        /// `-iecStep4 YES`: step 4's page on the sample (`-iecStep4State` its states).
+        static let step4 = UserDefaults.standard.bool(forKey: "iecStep4")
         /// `-iecStep 1`: step 1's page; `-iecDemo praek` the sample with the board's models, MPPTs and a drawn SLD.
         static let step1 = UserDefaults.standard.integer(forKey: "iecStep") == 1
         static let praek = UserDefaults.standard.string(forKey: "iecDemo") == "praek"

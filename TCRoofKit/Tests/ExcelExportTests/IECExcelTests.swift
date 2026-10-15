@@ -245,4 +245,19 @@ final class IECExcelTests: XCTestCase {
         XCTAssertEqual(Set(changed), ["1!I12", "1!I16", "1!I18", "1!Y12", "1!Z12", "1!Y16", "1!Z16", "1!Y18", "1!Z18",
                                       "3!I12", "3!I16", "3!I18", "3!Y12", "3!Z12", "3!Y16", "3!Z16", "3!Y18", "3!Z18"])
     }
+
+    /// Step 4's values land in rows 17 and 19 of `INV nn-หลัง` only (the ก่อน sheet never gets them).
+    func testStepFourValuesLandInRows17And19() throws {
+        let before = try sample()
+        var after = before
+        after.inverters[0].slots[4]?.vmpV = 612.4
+        after.inverters[0].slots[4]?.impA = 12.6
+        let (a, b) = (try ZipArchive(IECExcel.export(before)), try ZipArchive(IECExcel.export(after)))
+        var changed: [String] = []
+        for (n, p) in sheets.enumerated() {
+            let (x, y) = (cells(a.string(p)!, strings(a)), cells(b.string(p)!, strings(b)))
+            for (ref, c) in x where y[ref] != c { changed.append("\(n + 1)!\(ref)") }
+        }
+        XCTAssertEqual(Set(changed.filter { !$0.contains("!Y") && !$0.contains("!Z") }), ["3!I17", "3!I19"])
+    }
 }

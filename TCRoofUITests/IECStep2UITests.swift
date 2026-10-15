@@ -70,7 +70,7 @@ final class IECStep2UITests: XCTestCase {
         XCTAssertTrue(add.waitForExistence(timeout: slow), "slot 8 is empty")
         add.tap()
         // the new string is INV1ST8, so the old ST8 onwards move up one
-        XCTAssertTrue(app.staticTexts["INV1ST17"].waitForExistence(timeout: 10), "17 strings now")
+        XCTAssertTrue(app.staticTexts["String 17"].waitForExistence(timeout: 10), "17 strings now (the table reads String n)")
         XCTAssertTrue(button(app, "ตั้งช่อง 8 เป็นว่าง").exists)
     }
 

@@ -1,6 +1,6 @@
 # IEC 62446 Excel export: fill the original 1FORMI1 workbook in place (Swift spec)
 
-**Status:** Not built.
+**Status:** Built for 1 and 2 inverters (`ExcelExport/IECExcel.swift`, tests `IECExcelTests`); 3 or more are refused until the sheet cloning of §4 is built. Open questions answered 2026-10-15: `.XLS` name kept, author path kept, ผ่าน / ไม่ผ่าน ticked from the app's rules, more than 20 strings refused (the app's set-up has 20 slots), computed Yf / PR written, `Abnormal` for a failed check.
 **Platform:** `TCRoofKit` package. Pure logic in `TCRoofCore` (`IECReport`), the writer in `ExcelExport`
 (`IECExcel.swift`), testable with `swift test` on macOS.
 **Source file:** `docs/specs/iec62446/1FORMI1.xlsx`, a byte-for-byte copy of the customer's `1FORMI1.XLS`

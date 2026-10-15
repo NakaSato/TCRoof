@@ -132,4 +132,14 @@ final class IECStagesUITests: XCTestCase {
         again.buttons.matching(NSPredicate(format: "label == %@", "แก้ไข")).element(boundBy: 1).tap()
         gone(again.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"], "reopened")
     }
+
+    /// `ส่งออก Word ภาพถ่าย` on the full sample: the appendix is made from every photo and offered to share (the file
+    /// is `ตัวอย่าง แพรกหนามแดง …docx` in the app's `tmp/`).
+    func testWordAppendixExports() {
+        let app = launch(["-iecDemo", "full"])
+        let word = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Word ภาพถ่าย")).firstMatch
+        XCTAssertTrue(word.waitForExistence(timeout: slow))
+        word.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 60), "the Word file opens the share sheet")
+    }
 }

@@ -11,6 +11,10 @@ struct IECTestScreen: View {
     @State private var setup = false
     @State private var grid: GridTarget?
     @State private var exported: ExportedFile?
+    /// The file the station-line question is about.
+    @State private var exportKind: IECReport.ExportRecord.Kind = .excel
+    /// The Word appendix is being made (its photos are shrunk first).
+    @State private var makingWord = false
     @State private var exportError: String?
     /// The station line names another station: asked before exporting.
     @State private var confirmExport = false
@@ -56,8 +60,8 @@ struct IECTestScreen: View {
         .sheet(isPresented: $setup) { IECSetupSheet(report: job.iecReport ?? job.newIECReport) { r in job.updateIEC(context) { $0 = r } } }
         .sheet(item: $exported) { ActivitySheet(items: [$0.url]) }
         .confirmationDialog("บรรทัดสถานีในแผ่นงานไม่ตรงกับชื่องาน", isPresented: $confirmExport, titleVisibility: .visible) {
-            Button("ใช้ชื่อของงานแล้วส่งออก") { useJobName(); exportExcel() }
-            Button("ส่งออกตามเดิม") { exportExcel() }
+            Button("ใช้ชื่อของงานแล้วส่งออก") { useJobName(); export(exportKind) }
+            Button("ส่งออกตามเดิม") { export(exportKind) }
             Button("ยกเลิก", role: .cancel) {}
         } message: {
             Text("แผ่นงานเขียนว่า “\(job.iecReport?.stationLine ?? "")” แต่งานนี้คือ “\(job.stationName)”")
@@ -260,10 +264,13 @@ struct IECTestScreen: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// Step 7's line: the last Excel and whether the values changed since.
+    /// Step 7's line: the last Excel and Word, and whether the values changed since.
     private func exportLine(_ r: IECReport) -> String {
-        guard let last = r.lastExport(.excel) else { return "พร้อมส่งออก · ยังไม่ได้ส่งออก Excel" }
-        return "Excel ล่าสุด " + Self.stamp(last.record.at, "") + (last.current ? " · ตรงกับข้อมูลปัจจุบัน" : " · ข้อมูลเปลี่ยนหลังส่งออก ควรส่งออกใหม่")
+        let parts = [(IECReport.ExportRecord.Kind.excel, "Excel"), (.word, "Word")].map { kind, name -> String in
+            guard let last = r.lastExport(kind) else { return "ยังไม่ได้ส่งออก \(name)" }
+            return "\(name) " + Self.stamp(last.record.at, "") + (last.current ? " ✓" : " · ข้อมูลเปลี่ยนแล้ว ควรส่งออกใหม่")
+        }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: bottom bar
@@ -290,7 +297,12 @@ struct IECTestScreen: View {
                 }
                 Spacer()
             }
-            Button { startExport() } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
+            Button { startExport(.word) } label: {
+                Label(makingWord ? "กำลังทำ Word…" : "ส่งออก Word ภาพถ่าย", systemImage: "doc.richtext")
+            }
+            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            .disabled(makingWord)
+            Button { startExport(.excel) } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
                 .buttonStyle(TCButtonStyle(r.isLocked || !r.isDone(.review) ? .primary : .secondary, size: .card)).fixedSize()
             if !r.isLocked {
                 Button(action: complete) { Label("เสร็จ", systemImage: "checkmark.seal") }
@@ -373,8 +385,51 @@ struct IECTestScreen: View {
 
     // MARK: export
 
-    private func startExport() {
-        if job.iecReport?.namesAnotherStation(than: job.stationName) == true { confirmExport = true } else { exportExcel() }
+    private func startExport(_ kind: IECReport.ExportRecord.Kind = .excel) {
+        exportKind = kind
+        if job.iecReport?.namesAnotherStation(than: job.stationName) == true { confirmExport = true } else { export(kind) }
+    }
+
+    private func export(_ kind: IECReport.ExportRecord.Kind) {
+        switch kind {
+        case .excel: exportExcel()
+        case .word: exportWord()
+        }
+    }
+
+    /// Keeps a made file in the job's documents under `IEC 62446` (so it goes to Drive with them), records it on the
+    /// test, and offers it to the share sheet; both are the same bytes.
+    private func file(_ data: Data, name: String, kind: IECReport.ExportRecord.Kind) throws {
+        for old in job.documents where old.name == name { context.delete(old) }
+        let doc = DocumentAsset(name: name, data: data)
+        doc.folderPath = "IEC 62446"
+        context.insert(doc)
+        doc.job = job
+        job.updateIEC(context, evenWhenLocked: true) { $0.recordExport(kind, name: name) }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        try data.write(to: url, options: .atomic)
+        exported = ExportedFile(url: url)
+    }
+
+    /// The photo appendix (`IECWord`): every photo the test uses, shrunk to 1600 px off the main thread first.
+    private func exportWord() {
+        guard let r = job.iecReport else { return }
+        let originals = Dictionary(uniqueKeysWithValues: r.photoFileNames().keys.compactMap { id in job.iecPhoto(id).map { (id, $0.data) } })
+        let name = IECWord.fileName(station: r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName, date: r.testDate ?? .now)
+        makingWord = true
+        Task {
+            defer { makingWord = false }
+            do {
+                let data = try await Task.detached(priority: .userInitiated) {
+                    try IECWord.export(r, photos: originals.mapValues { ImageUtil.compressed($0) })
+                }.value
+                try file(data, name: name, kind: .word)
+            } catch IECWord.Failure.noStrings {
+                exportError = "ยังไม่มีสตริงให้ทำภาคผนวกภาพถ่าย"
+            } catch {
+                exportError = error.localizedDescription
+            }
+        }
     }
 
     /// The PWA's own workbook with this test typed in (`IECExcel`): kept in the job's documents under `IEC 62446`
@@ -385,15 +440,7 @@ struct IECTestScreen: View {
             let data = try IECExcel.export(r)
             // example data is named as such, never as this job
             let name = IECExcel.fileName(station: r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName, date: r.testDate ?? .now)
-            for old in job.documents where old.name == name { context.delete(old) }
-            let doc = DocumentAsset(name: name, data: data)
-            doc.folderPath = "IEC 62446"
-            context.insert(doc)
-            doc.job = job
-            job.updateIEC(context, evenWhenLocked: true) { $0.recordExport(.excel, name: name) }
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-            try data.write(to: url, options: .atomic)
-            exported = ExportedFile(url: url)
+            try file(data, name: name, kind: .excel)
         } catch let f as IECExcel.Failure {
             exportError = f.message
         } catch {

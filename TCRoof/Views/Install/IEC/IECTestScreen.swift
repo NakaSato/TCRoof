@@ -10,6 +10,9 @@ struct IECTestScreen: View {
     @Bindable var job: Job
     @State private var setup = false
     @State private var grid: GridTarget?
+    /// Step 2's designed page (iPad): the inverter it opens on.
+    @State private var step2: Step2Target?
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var exported: ExportedFile?
     /// The file the station-line question is about.
     @State private var exportKind: IECReport.ExportRecord.Kind = .excel
@@ -28,6 +31,7 @@ struct IECTestScreen: View {
 
     /// The string table of one inverter and phase.
     struct GridTarget: Hashable { let inverter: Int; let phase: IECReport.Phase; var page: IECStringGrid.Page = .table }
+    struct Step2Target: Hashable { let inverter: Int; var slot = 1 }
 
     var body: some View {
         let report = job.iecReport
@@ -74,17 +78,20 @@ struct IECTestScreen: View {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(exportError ?? "") }
         .navigationDestination(item: $grid) { IECStringGrid(job: job, inverter: $0.inverter, phase: $0.phase, page: $0.page) }
+        .navigationDestination(item: $step2) { IECBeforeVIPage(job: job, inverter: $0.inverter, slot: $0.slot, openStage: open) }
         #if DEBUG
         .task {
             guard !debugApplied else { return }
             debugApplied = true
             // `-iecClear YES`: the station starts with no test, its photos removed (for good)
             if Debug.clear { for p in job.iecPhotos { context.delete(p) }; job.iecReport = nil; try? context.save() }
-            if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset || Debug.demoFull, full: Debug.demoFull ? context : nil); try? context.save() }
+            if Debug.step2 { job.seedIECStep2Demo(context: context) }
+            else if Debug.demo { job.seedIECDemo(replacing: Debug.demoReset || Debug.demoFull, full: Debug.demoFull ? context : nil); try? context.save() }
             if let line = Debug.stationLine { job.updateIEC(context) { $0.stationLine = line; $0.sampleName = nil } }  // a real test with that line
             // after the seed, so the sheet starts from it, and after the push, which a sheet would cut short
             try? await Task.sleep(for: .milliseconds(700))
             if Debug.setup { setup = true }
+            if Debug.step2 { step2 = Step2Target(inverter: 0) }
             if let n = Debug.inverter, (job.iecReport?.inverters.count ?? 0) >= n { grid = GridTarget(inverter: n - 1, phase: Debug.phase, page: Debug.page) }
         }
         #endif
@@ -174,7 +181,7 @@ struct IECTestScreen: View {
 
     /// The green band of a phase and its bars; tapped, it opens that phase's string table.
     private func phaseBand<Content: View>(_ title: String, target: GridTarget, @ViewBuilder _ content: () -> Content) -> some View {
-        Button { grid = target } label: {
+        Button { show(target) } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
@@ -211,6 +218,33 @@ struct IECTestScreen: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
+    /// The before phase's table is step 2's page on iPad; the rest, and the iPhone, open the string table.
+    private func show(_ target: GridTarget) {
+        if target.phase == .before, target.page == .table, sizeClass == .regular {
+            step2 = Step2Target(inverter: target.inverter, slot: job.iecReport?.inverters[safe: target.inverter]?.strings.first?.slot ?? 1)
+        } else {
+            grid = target
+        }
+    }
+
+    /// Another step from step 2's page: back to this overview first, then that step's screen (a push on top of the
+    /// page would be the fourth in a row, which SwiftUI drops).
+    private func open(_ stage: IECReport.Stage) {
+        let inverter = step2?.inverter ?? 0
+        step2 = nil
+        let target: GridTarget? = switch stage {
+        case .beforeInsulation: .init(inverter: inverter, phase: .before)
+        case .afterVoltage: .init(inverter: inverter, phase: .after)
+        case .energy: .init(inverter: inverter, phase: .after, page: .performance)
+        case .thermal: .init(inverter: inverter, phase: .after, page: .photos)
+        case .setup, .beforeVoltage, .review: nil
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            if stage == .setup { setup = true } else if let target { grid = target }
+        }
+    }
+
     /// Where `แก้ ›` leads for a step.
     private func go(_ r: IECReport, _ stage: IECReport.Stage) -> (() -> Void)? {
         func first(_ reading: IECReport.Reading?, _ phase: IECReport.Phase, page: IECStringGrid.Page = .table) -> () -> Void {
@@ -220,7 +254,10 @@ struct IECTestScreen: View {
         let readingsDone: (IECReport.Reading) -> Bool = { k in r.inverters.allSatisfy { r.tally($0, k).isComplete } }
         switch stage {
         case .setup: return { setup = true }
-        case .beforeVoltage: return readingsDone(.vocAndCurrent) && !r.before.isComplete ? first(nil, .before, page: .conditions) : first(.vocAndCurrent, .before)
+        case .beforeVoltage:
+            if readingsDone(.vocAndCurrent) && !r.before.isComplete { return first(nil, .before, page: .conditions) }
+            let i = r.inverters.firstIndex { !r.beforeVITally($0).isComplete } ?? 0
+            return { show(.init(inverter: i, phase: .before)) }
         case .beforeInsulation: return first(.insulation, .before)
         case .afterVoltage: return readingsDone(.vmpAndImp) && !r.after.isComplete ? first(nil, .after, page: .conditions) : first(.vmpAndImp, .after)
         case .energy: return { grid = .init(inverter: r.inverters.firstIndex { $0.energy7dKWh == nil } ?? 0, phase: .after, page: .performance) }
@@ -473,6 +510,8 @@ struct IECTestScreen: View {
         default: .table
         }
         static let entry = UserDefaults.standard.bool(forKey: "iecEntry")
+        /// `-iecStep2 YES`: step 2's page on the sample with a photo for every reading (`-iecStep2State` its states).
+        static let step2 = UserDefaults.standard.bool(forKey: "iecStep2")
         #else
         static let entry = false
         static let setup = false

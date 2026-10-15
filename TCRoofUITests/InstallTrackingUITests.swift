@@ -179,6 +179,10 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ก่อนการเชื่อมต่อระบบ")).firstMatch.tap()
+        // on iPad the band opens step 2's page; its ถัดไป opens the before table
+        let toTable = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ถัดไป 3/7")).firstMatch
+        XCTAssertTrue(toTable.waitForExistence(timeout: 10))
+        toTable.tap()
         let cell = app.buttons["ป้ายรูป (Word) ช่อง 2"]
         XCTAssertTrue(cell.waitForExistence(timeout: 10))
         cell.tap()

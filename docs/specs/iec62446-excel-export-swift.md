@@ -1,6 +1,6 @@
 # IEC 62446 Excel export: fill the original 1FORMI1 workbook in place (Swift spec)
 
-**Status:** Built for 1 and 2 inverters (`ExcelExport/IECExcel.swift`, tests `IECExcelTests`); 3 or more are refused until the sheet cloning of §4 is built. Open questions answered 2026-10-15: `.XLS` name kept, author path kept, ผ่าน / ไม่ผ่าน ticked from the app's rules, more than 20 strings refused (the app's set-up has 20 slots), computed Yf / PR written, `Abnormal` for a failed check.
+**Status:** Built for any number of inverters (`ExcelExport/IECExcel.swift`, tests `IECExcelTests`): 1 drops the INV 02 sheets, 3 or more clone them (§4). Open questions answered 2026-10-15: `.XLS` name kept, author path kept, ผ่าน / ไม่ผ่าน ticked from the app's rules, more than 20 strings refused (the app's set-up has 20 slots), computed Yf / PR written, `Abnormal` for a failed check.
 **Platform:** `TCRoofKit` package. Pure logic in `TCRoofCore` (`IECReport`), the writer in `ExcelExport`
 (`IECExcel.swift`), testable with `swift test` on macOS.
 **Source file:** `docs/specs/iec62446/1FORMI1.xlsx`, a byte-for-byte copy of the customer's `1FORMI1.XLS`
@@ -199,6 +199,10 @@ names (renumber the remaining `localSheetId`s to the new sheet positions), their
 - `calcChain` entries for the clone's formula cells (`C3, AA25, AA26, E29, E30, AA30, AA9`, `i` = its sheetId);
 - `TitlesOfParts` and its counts updated.
 Formulas in a clone are copied unchanged (they point at INV 01, which is what the PWA expects).
+As built: INV k (k ≥ 3) uses parts `sheet{2k−1}` (ก่อน) and `sheet{2k}` (หลัง) with sheetId 86 + part number and
+`rId{part + 4}`; each clone gets its own `xr:uid` and a VML id block (`o:idmap` 94 + part number, above the
+template's 85 / 91 / 97 / 98); `definedNames` and `TitlesOfParts` are rewritten whole, listed by sheet name. With 2
+inverters `workbook.xml`, `app.xml`, `calcChain.xml` and the content types stay as in §3.
 
 **More than 20 strings on one inverter:** export is refused with a message naming the inverter (open question 4).
 

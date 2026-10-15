@@ -44,7 +44,7 @@ final class IECFlowUITests: XCTestCase {
         type(app.textFields["ยี่ห้อ / รุ่นแผง"], "Znshine", "panel")
         type(app.textFields["กำลังต่อแผง"], "570", "power")
         type(app.textFields["พื้นที่ต่อแผ่น (datasheet)"], "2.58", "area")
-        type(app.textFields["พิกัด"], "80", "kW")
+        type(app.textFields["พิกัด inverter 1"], "80", "kW")
         type(app.textFields["S/N inverter 1"], "TEST-INV1", "serial")
         for slot in 1...4 { type(app.textFields["Inverter 1 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)") }
         // the record section is further down the form
@@ -110,5 +110,34 @@ final class IECFlowUITests: XCTestCase {
         XCTAssertTrue(export.waitForExistence(timeout: 10))
         export.tap()
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30), "the export opens the share sheet")
+    }
+
+    /// A third inverter added in the set-up exports too (its sheets are cloned from INV 02's), on the sample
+    /// (`-iecDemo reset`): the file is `ตัวอย่าง แพรกหนามแดง …` in the app's `tmp/`.
+    func testThirdInverterExports() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
+                               "-iecOpen", "YES", "-iecDemo", "reset", "-iecSetup", "YES"]
+        app.launch()
+
+        XCTAssertTrue(app.textFields["S/N inverter 1"].waitForExistence(timeout: slow), "the set-up sheet")
+        // below the two inverters; the form only builds rows near the screen
+        let add = button(app, "เพิ่ม inverter", contains: true)
+        for _ in 0..<10 where !(add.exists && add.isHittable) { app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(add.isHittable, "เพิ่ม inverter")
+        add.tap()
+        type(app.textFields["พิกัด inverter 3"], "50", "kW")
+        type(app.textFields["S/N inverter 3"], "TEST-INV3", "serial")
+        // the slot grid is the section's next row, under the keyboard
+        let slot1 = app.textFields["Inverter 3 ช่อง 1 จำนวนแผง"]
+        for _ in 0..<4 where !(slot1.exists && slot1.isHittable) { app.collectionViews.firstMatch.swipeUp() }
+        for slot in 1...2 { type(app.textFields["Inverter 3 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)") }
+        app.buttons["บันทึก"].tap()
+
+        let export = button(app, "ส่งออก Excel IEC 62446", contains: true)
+        XCTAssertTrue(export.waitForExistence(timeout: 10))
+        export.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
+                      "3 inverters export instead of being refused")
     }
 }

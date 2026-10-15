@@ -31,12 +31,12 @@ struct IECSetupSheet: View {
         }
     }
 
-    private func numberRow(_ title: String, _ unit: String, _ value: Binding<Double?>) -> some View {
+    private func numberRow(_ title: String, _ unit: String, _ value: Binding<Double?>, label: String? = nil) -> some View {
         HStack {
             Text(title)
             Spacer()
             TextField("—", value: value, format: .number.grouping(.never)).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                .accessibilityLabel(title)
+                .accessibilityLabel(label ?? title)
                 .frame(width: 140)
             Text(unit).foregroundStyle(Theme.inkMuted).frame(width: 44, alignment: .leading)
         }
@@ -57,7 +57,7 @@ struct IECSetupSheet: View {
 
     private func inverterSection(_ i: Int) -> some View {
         Section {
-            numberRow("พิกัด", "kW", optional($report.inverters[i].ratedKW))
+            numberRow("พิกัด", "kW", optional($report.inverters[i].ratedKW), label: "พิกัด inverter \(i + 1)")
             HStack {
                 Text("S/N")
                 TextField("serial", text: $report.inverters[i].serial).multilineTextAlignment(.trailing)

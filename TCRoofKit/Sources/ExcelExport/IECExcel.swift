@@ -8,14 +8,11 @@ import TCRoofCore
 public enum IECExcel {
     public enum Failure: Error, Equatable {
         case noInverters
-        /// The template has sheets for 2 inverters; more would mean cloning sheets (spec §4), not built yet.
-        case tooManyInverters(Int)
         case template(String)
 
         public var message: String {
             switch self {
             case .noInverters: "ยังไม่ได้ตั้งค่า inverter"
-            case .tooManyInverters(let n): "ส่งออก Excel ได้ไม่เกิน 2 inverter ต่อแฟ้ม (สถานีนี้มี \(n))"
             case .template(let s): "แม่แบบ Excel ผิดรูป: \(s)"
             }
         }
@@ -50,15 +47,15 @@ public enum IECExcel {
 
     static func export(_ r: IECReport, template: Data?, overrides: Overrides) throws -> Data {
         guard !r.inverters.isEmpty else { throw Failure.noInverters }
-        guard r.inverters.count <= 2 else { throw Failure.tooManyInverters(r.inverters.count) }
         var zip = try ZipArchive(template ?? Self.template())
         guard let sstXML = zip.string("xl/sharedStrings.xml") else { throw Failure.template("sharedStrings.xml") }
         let strings = SharedStrings(sstXML)
+        if r.inverters.count > 2 { try addInverterSheets(&zip, count: r.inverters.count) }
 
-        // INV 01-ก่อน, INV 02-ก่อน, INV 01-หลัง, INV 02-หลัง
-        let layout: [(part: String, inverter: Int, phase: IECReport.Phase)] = [
-            ("xl/worksheets/sheet1.xml", 0, .before), ("xl/worksheets/sheet2.xml", 1, .before),
-            ("xl/worksheets/sheet3.xml", 0, .after), ("xl/worksheets/sheet4.xml", 1, .after)]
+        // INV 01-ก่อน, INV 02-ก่อน, INV 01-หลัง, INV 02-หลัง, then the clones of a third inverter on
+        let layout = IECReport.Phase.allCases.flatMap { phase in
+            (0..<max(r.inverters.count, 2)).map { (part: "xl/worksheets/sheet\(sheetNumber($0, phase)).xml", inverter: $0, phase: phase) }
+        }
         var linked: [IECReport.Phase: [String: String]] = [:]
         for phase in IECReport.Phase.allCases { linked[phase] = linkTexts(r, phase) }
         for (part, i, phase) in layout {
@@ -219,6 +216,83 @@ public enum IECExcel {
         }
         zip.set("xl/workbook.xml", wb); zip.set("xl/_rels/workbook.xml.rels", rels)
         zip.set("[Content_Types].xml", ct); zip.set("docProps/app.xml", app)
+    }
+
+    // MARK: three or more inverters (spec §4)
+
+    /// The sheet part of inverter `i` (0-based) in a phase: the template's 1–4, then 5 / 6 for INV 03 and so on.
+    static func sheetNumber(_ i: Int, _ phase: IECReport.Phase) -> Int {
+        i < 2 ? i + 1 + (phase == .after ? 2 : 0) : 2 * i + 1 + (phase == .after ? 1 : 0)
+    }
+
+    static func sheetName(_ i: Int, _ phase: IECReport.Phase) -> String {
+        String(format: "INV %02d-", i + 1) + (phase == .before ? "ก่อน" : "หลัง")
+    }
+
+    /// The INV 02 formula cells, which a clone keeps pointing at INV 01.
+    static let linkFormulaCells = ["AA9", "C3", "AA25", "AA26", "E29", "E30", "AA30"]
+
+    /// Clones `INV 02-ก่อน` / `INV 02-หลัง` for INV 03 on: their own sheet, drawing, header VML and printer settings
+    /// parts (the images stay shared), new sheetIds 91, 92 … and rIds 9, 10 …, the ก่อน clones after INV 02-ก่อน and
+    /// the หลัง clones last, every Print_Area renumbered to its tab, their calcChain cells and `TitlesOfParts`.
+    static func addInverterSheets(_ zip: inout ZipArchive, count: Int) throws {
+        guard var wb = zip.string("xl/workbook.xml"), var rels = zip.string("xl/_rels/workbook.xml.rels"),
+              var ct = zip.string("[Content_Types].xml"), var app = zip.string("docProps/app.xml"),
+              var chain = zip.string("xl/calcChain.xml") else { throw Failure.template("workbook parts") }
+        var sheetEntries: [IECReport.Phase: String] = [:]
+        for phase in IECReport.Phase.allCases {
+            let src = sheetNumber(1, phase)
+            guard let sheet = zip.string("xl/worksheets/sheet\(src).xml"), let sheetRels = zip.string("xl/worksheets/_rels/sheet\(src).xml.rels"),
+                  let drawing = zip.data("xl/drawings/drawing\(src).xml"), let drawingRels = zip.data("xl/drawings/_rels/drawing\(src).xml.rels"),
+                  let vml = zip.string("xl/drawings/vmlDrawing\(src).vml"), let vmlRels = zip.data("xl/drawings/_rels/vmlDrawing\(src).vml.rels"),
+                  let printer = zip.data("xl/printerSettings/printerSettings\(src).bin") else { throw Failure.template("INV 02 parts") }
+            for i in 2..<count {
+                let n = sheetNumber(i, phase), sheetId = 86 + n, rId = "rId\(n + 4)"
+                // a sheet's own revision id, and a VML id block above the template's (85, 91, 97, 98)
+                let uid = String(format: "{6800007C-B798-4FEF-9DDE-%012X}", n)
+                let idmap = 94 + n
+                zip.set("xl/worksheets/sheet\(n).xml", sheet.replacingOccurrences(of: #"xr:uid="\{[0-9A-F-]+\}""#, with: #"xr:uid="\#(uid)""#, options: .regularExpression))
+                zip.set("xl/worksheets/_rels/sheet\(n).xml.rels", sheetRels
+                    .replacingOccurrences(of: "vmlDrawing\(src).vml", with: "vmlDrawing\(n).vml")
+                    .replacingOccurrences(of: "drawing\(src).xml", with: "drawing\(n).xml")
+                    .replacingOccurrences(of: "printerSettings\(src).bin", with: "printerSettings\(n).bin"))
+                zip.set("xl/drawings/drawing\(n).xml", drawing)
+                zip.set("xl/drawings/_rels/drawing\(n).xml.rels", drawingRels)
+                zip.set("xl/drawings/vmlDrawing\(n).vml", vml
+                    .replacingOccurrences(of: #"data="\d+""#, with: #"data="\#(idmap)""#, options: .regularExpression)
+                    .replacingOccurrences(of: #"o:spid="_x0000_s\d+""#, with: #"o:spid="_x0000_s\#(idmap * 1024 + 1)""#, options: .regularExpression))
+                zip.set("xl/drawings/_rels/vmlDrawing\(n).vml.rels", vmlRels)
+                zip.set("xl/printerSettings/printerSettings\(n).bin", printer)
+
+                ct = ct.replacingOccurrences(of: "</Types>", with:
+                    #"<Override PartName="/xl/worksheets/sheet\#(n).xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>"#
+                    + #"<Override PartName="/xl/drawings/drawing\#(n).xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>"#)
+                rels = rels.replacingOccurrences(of: "</Relationships>", with:
+                    #"<Relationship Id="\#(rId)" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet\#(n).xml"/></Relationships>"#)
+                sheetEntries[phase, default: ""] += #"<sheet name="\#(sheetName(i, phase))" sheetId="\#(sheetId)" r:id="\#(rId)"/>"#
+                chain = chain.replacingOccurrences(of: "</calcChain>", with: linkFormulaCells.map { #"<c r="\#($0)" i="\#(sheetId)"/>"# }.joined() + "</calcChain>")
+            }
+        }
+        // tabs: every ก่อน sheet, then every หลัง sheet
+        for phase in IECReport.Phase.allCases {
+            let after = #"<sheet name="\#(sheetName(1, phase))"[^>]*/>"#
+            guard let r = wb.range(of: after, options: .regularExpression) else { throw Failure.template("INV 02 sheet") }
+            wb.insert(contentsOf: sheetEntries[phase] ?? "", at: r.upperBound)
+        }
+        let tabs = IECReport.Phase.allCases.flatMap { p in (0..<count).map { sheetName($0, p) } }
+        // Print_Areas listed by name, as Excel keeps them
+        let byName = (0..<count).flatMap { i in IECReport.Phase.allCases.map { sheetName(i, $0) } }
+        let names = byName.map { #"<definedName name="_xlnm.Print_Area" localSheetId="\#(tabs.firstIndex(of: $0)!)">'\#($0)'!$A$1:$AB$35</definedName>"# }
+        guard let defs = wb.range(of: "<definedNames>.*</definedNames>", options: .regularExpression) else { throw Failure.template("definedNames") }
+        wb.replaceSubrange(defs, with: "<definedNames>" + names.joined() + "</definedNames>")
+
+        app = app.replacingOccurrences(of: "<vt:i4>4</vt:i4>", with: "<vt:i4>\(2 * count)</vt:i4>")
+        guard let titles = app.range(of: "<TitlesOfParts>.*</TitlesOfParts>", options: .regularExpression) else { throw Failure.template("TitlesOfParts") }
+        let parts = tabs.map { "<vt:lpstr>\($0)</vt:lpstr>" } + byName.map { "<vt:lpstr>'\($0)'!Print_Area</vt:lpstr>" }
+        app.replaceSubrange(titles, with: #"<TitlesOfParts><vt:vector size="\#(parts.count)" baseType="lpstr">"# + parts.joined() + "</vt:vector></TitlesOfParts>")
+
+        zip.set("xl/workbook.xml", wb); zip.set("xl/_rels/workbook.xml.rels", rels)
+        zip.set("[Content_Types].xml", ct); zip.set("docProps/app.xml", app); zip.set("xl/calcChain.xml", chain)
     }
 }
 

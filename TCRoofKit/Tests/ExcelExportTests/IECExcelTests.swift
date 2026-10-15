@@ -147,10 +147,84 @@ final class IECExcelTests: XCTestCase {
         }
     }
 
-    func testMoreThanTwoInvertersIsRefused() throws {
-        var r = try sample()
-        r.inverters.append(r.inverters[1])
-        XCTAssertThrowsError(try IECExcel.export(r)) { XCTAssertEqual($0 as? IECExcel.Failure, .tooManyInverters(3)) }
+    func testThreeAndFourInvertersCloneTheSecondSheets() throws {
+        for count in [3, 4] {
+            var r = try sample()
+            while r.inverters.count < count {
+                var inv = r.inverters[1]
+                inv.ratedKW = 50; inv.serial = "SN-\(r.inverters.count + 1)"
+                inv.slots[0]?.vocV = 700 + Double(r.inverters.count)
+                r.inverters.append(inv)
+            }
+            let data = try IECExcel.export(r)
+            if count == 3, let path = ProcessInfo.processInfo.environment["IEC_EXPORT_OUT3"] { try data.write(to: URL(fileURLWithPath: path)) }
+            let out = try ZipArchive(data)
+            let wb = out.string("xl/workbook.xml")!, rels = out.string("xl/_rels/workbook.xml.rels")!
+            let ct = out.string("[Content_Types].xml")!, app = out.string("docProps/app.xml")!, chain = out.string("xl/calcChain.xml")!
+
+            // tabs: every ก่อน, then every หลัง; names unique and ≤ 31 characters; ids unique
+            let tabs = wb.components(separatedBy: #"<sheet name=""#).dropFirst().map { $0.components(separatedBy: "\"")[0] }
+            let expected = ["ก่อน", "หลัง"].flatMap { p in (1...count).map { String(format: "INV %02d-", $0) + p } }
+            XCTAssertEqual(tabs, expected)
+            XCTAssertTrue(tabs.allSatisfy { $0.count <= 31 })
+            let ids = wb.components(separatedBy: #"sheetId=""#).dropFirst().map { Int($0.components(separatedBy: "\"")[0])! }
+            XCTAssertEqual(Set(ids).count, ids.count)
+            // a Print_Area per tab, on the right localSheetId
+            for (n, tab) in tabs.enumerated() {
+                XCTAssertTrue(wb.contains(#"localSheetId="\#(n)">'\#(tab)'!$A$1:$AB$35<"#), tab)
+            }
+            XCTAssertEqual(wb.components(separatedBy: "_xlnm.Print_Area").count - 1, 2 * count)
+            // calcChain points only at sheets that exist
+            let chainIds = Set(chain.components(separatedBy: #" i=""#).dropFirst().map { Int($0.components(separatedBy: "\"")[0])! })
+            XCTAssertTrue(chainIds.isSubset(of: Set(ids)), "\(chainIds) ⊄ \(ids)")
+            XCTAssertTrue(app.contains(#"<vt:vector size="\#(4 * count)" baseType="lpstr">"#) && app.contains("<vt:i4>\(2 * count)</vt:i4>"))
+            XCTAssertTrue(app.contains("<vt:lpstr>INV 03-หลัง</vt:lpstr>"))
+            // every relationship target exists, every part has a content type, each VML id block is its own
+            let targets = rels.components(separatedBy: #"Target=""#).dropFirst().map { "xl/" + $0.components(separatedBy: "\"")[0] }
+            for t in targets { XCTAssertTrue(out.contains(t), t) }
+            for p in out.paths where p.hasSuffix(".rels") {
+                let base = p.replacingOccurrences(of: "_rels/", with: "").replacingOccurrences(of: ".rels", with: "")
+                let dir = (base as NSString).deletingLastPathComponent
+                for t in out.string(p)!.components(separatedBy: #"Target=""#).dropFirst().map({ $0.components(separatedBy: "\"")[0] }) where p.hasPrefix("xl/") && !p.hasPrefix("xl/_rels") {
+                    let resolved = (dir.split(separator: "/") + t.split(separator: "/")).reduce(into: [Substring]()) {
+                        if $1 == ".." { $0.removeLast() } else { $0.append($1) }
+                    }.joined(separator: "/")
+                    XCTAssertTrue(out.contains(resolved), "\(p) → \(resolved)")
+                }
+            }
+            for p in out.paths where p.hasSuffix(".xml") && (p.contains("worksheets/sheet") || p.contains("drawings/drawing")) {
+                XCTAssertTrue(ct.contains(#"PartName="/\#(p)""#), p)
+            }
+            let idmaps = out.paths.filter { $0.hasSuffix(".vml") }.map { out.string($0)!.components(separatedBy: #"data=""#)[1].components(separatedBy: "\"")[0] }
+            XCTAssertEqual(Set(idmaps).count, idmaps.count, "VML id blocks \(idmaps)")
+            let uids = out.paths.filter { $0.hasPrefix("xl/worksheets/sheet") }.map { out.string($0)!.components(separatedBy: #"xr:uid=""#)[1].prefix(38) }
+            XCTAssertEqual(Set(uids).count, uids.count)
+
+            // the clones carry their inverter's values and keep their links to INV 01
+            let s = strings(out)
+            let before3 = cells(out.string("xl/worksheets/sheet5.xml")!, s), after3 = cells(out.string("xl/worksheets/sheet6.xml")!, s)
+            XCTAssertEqual(before3["E5"]?.value, "Inverter 3 (50 kW) ")
+            XCTAssertEqual(after3["O5"]?.value, "S/N : SN-3")
+            XCTAssertEqual(before3["E16"]?.value, "702")
+            XCTAssertEqual(before3["C3"]?.formula, "'INV 01-ก่อน'!$C$3")
+            XCTAssertEqual(after3["C3"]?.formula, "'INV 01-หลัง'!$C$3")
+            XCTAssertEqual(before3["C3"]?.value, r.stationLine, "the link's cached value")
+            XCTAssertEqual(after3["AA9"]?.formula, "SUM(E9:X9)*$AA$4")
+            if count == 4 {
+                XCTAssertEqual(cells(out.string("xl/worksheets/sheet8.xml")!, s)["E5"]?.value, "Inverter 4 (50 kW) ")
+            }
+            let sst = out.string("xl/sharedStrings.xml")!
+            let refs = out.paths.filter { $0.hasPrefix("xl/worksheets/sheet") }.reduce(0) { $0 + SheetCells.sharedCount(out.string($1)!) }
+            XCTAssertTrue(sst.contains(#" count="\#(refs)""#), "count covers the clones")
+        }
         XCTAssertEqual(IECExcel.fileName(station: "สถานีจ่ายน้ำแพรกหนามแดง", date: Date(timeIntervalSince1970: 1_791_000_000)).suffix(4), ".XLS")
+    }
+
+    /// Two inverters change only the sheets and the shared strings (spec §3.1).
+    func testTwoInvertersKeepThePackage() throws {
+        let template = try IECExcel.template()
+        let out = try ZipArchive(IECExcel.export(try sample())), orig = try ZipArchive(template)
+        XCTAssertEqual(out.paths, orig.paths)
+        for p in ["xl/workbook.xml", "docProps/app.xml", "xl/calcChain.xml", "[Content_Types].xml"] { XCTAssertEqual(out.data(p), orig.data(p), p) }
     }
 }

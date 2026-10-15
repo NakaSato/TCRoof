@@ -87,10 +87,22 @@ struct InstallDailyData {
         let worked = start <= end ? RoutineReport.workingDays(settings: settings, from: start, to: end) : []
         let days = Array(Set(worked + logs.map { cal.startOfDay(for: $0.date) })).sorted(by: >)
         let all = job.dailyReports
+        // looked up once: `job.dailyLog(on:)` fetches and sorts every log on each call
+        let logByDay = Dictionary(logs.map { (RoutineReport.dayKey($0.date), $0) }, uniquingKeysWith: { a, _ in a })
+        // the plan's status only changes by the week (planned to the week's start, done to the week's key)
+        var weekStatus: [String: MasterSchedule.Status] = [:]
+        func status(_ d: Date) -> MasterSchedule.Status? {
+            guard let plan else { return nil }
+            let k = MasterSchedule.Actual.key(d)
+            if let s = weekStatus[k] { return s }
+            let s = MasterSchedule.status(plan: plan, actual: actual, through: d)
+            weekStatus[k] = s
+            return s
+        }
 
         rows = days.map { d in
-            let log = job.dailyLog(on: d), r = log?.report
-            let status = plan.map { MasterSchedule.status(plan: $0, actual: actual, through: d) }
+            let log = logByDay[RoutineReport.dayKey(d)], r = log?.report
+            let status = status(d)
             let state: State
             if let log, let r {
                 state = log.engineerSignedAt == nil ? .draft : r.progress.isEmpty && !r.stopReason.isEmpty ? .stopped : .signed
@@ -127,7 +139,7 @@ struct InstallDailyData {
 
         if let plan {
             points = RoutineReport.workingDays(settings: settings, from: cal.startOfDay(for: job.installStart), to: cal.startOfDay(for: job.installEnd)).map { d in
-                let s = MasterSchedule.status(plan: plan, actual: actual, through: d)
+                guard let s = status(d) else { return Point(date: d, actual: nil, planned: 0) }
                 return Point(date: d, actual: d <= day ? s.actual : nil, planned: s.planned)
             }
             // tomorrow: the next working day and the install tasks planned on it

@@ -79,7 +79,8 @@ struct InstallPageData {
             }
         }
         let working = RoutineReport.isWorkingDay(day, settings: settings) && job.installDay(on: day) != nil
-        dailyUnsent = working && job.dailyState(on: day) != .signed
+        let todayState = job.dailyState(on: day)
+        dailyUnsent = working && todayState != .signed
 
         var items: [Action] = []
         if let input = job.scheduleInput {
@@ -92,7 +93,7 @@ struct InstallPageData {
         }
         if dailyUnsent {
             items.append(.init(id: "daily", priority: .medium, title: "รายงานประจำวัน " + ThaiFormat.dayMonth.string(from: day),
-                               detail: job.dailyState(on: day) == .draft ? "ร่างไว้ · ยังไม่ลงนาม" : "ยังไม่ได้ทำ", target: .daily))
+                               detail: todayState == .draft ? "ร่างไว้ · ยังไม่ลงนาม" : "ยังไม่ได้ทำ", target: .daily))
         }
         let nextWeek = cal.date(byAdding: .day, value: 7, to: RoutineReport.week(of: day).lowerBound) ?? day
         if job.scheduleInput != nil, job.weeklyRequest(for: nextWeek)?.engineerSignedAt == nil {

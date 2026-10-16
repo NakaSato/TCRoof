@@ -12,10 +12,12 @@
 
 **Lock removed 2026-10-16** (branch `feat/survey-to-install-no-lock`): feature 7 (§4) is gone. Signing both no
 longer locks the form or issues a REV, nothing is read-only, and the PDF has no check-code footer. `Job.lock`,
-`pendingReason`, `FormHash` and the lock / integrity banners and sheets were deleted; an old `job.json` with `lock`
-still decodes and drops it. REVs issued before stay: their snapshots, PDFs, the รายการแก้ไข page, the change markers
-and their sync. With the lock sheet gone nothing issues a new REV; §4 and the hash parts of §5–§6 are kept below as
-history only.
+`pendingReason` and the lock / integrity banners and sheets were deleted; an old `job.json` with `lock` still
+decodes and drops it. REVs, their snapshots, PDFs, the รายการแก้ไข page, the change markers and their sync stay.
+**Issuing without the lock (same day):** once both have signed and the answers aren't the last issued REV, E1 shows
+`ออก REV nn`. The first issue keeps the cover's number and needs no reason; after that the issue takes the next number
+(`RevisionRule.next`) and needs a reason, written to the cover's REV field at issue time. The snapshot, its
+`FormHash` check code and the PDF are kept as before; the form stays editable. §4.1–§4.4 are kept below as history.
 
 Not built: the Drive `REV/` upload (`DriveSync.Kind.revisions`), the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
 and the leaving-site reminder (§2.4, open question 5).

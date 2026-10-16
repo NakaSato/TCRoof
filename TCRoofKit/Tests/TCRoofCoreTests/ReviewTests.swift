@@ -151,6 +151,81 @@ final class ReviewTests: XCTestCase {
         XCTAssertEqual(rows.map(\.new), ["ไม่ใช้แล้ว"])
     }
 
+    // MARK: hash
+
+    func testHashStableAndSensitive() throws {
+        var j = station()
+        let p = photo(), s = photo(png: true)
+        j.values["siteMap"] = .photo(p)
+        j.values["surveyorSign"] = .photo(s)
+        var files: [UUID: Data] = [p.id: Data([1, 2, 3]), s.id: Data([9])]
+        let h = FormHash.of(j.snapshot) { files[$0.id] }
+        XCTAssertNotNil(h)
+        // encode / decode round trip and a rebuilt dictionary give the same hash
+        let round = try JobStore.decoder.decode(FormSnapshot.self, from: JobStore.encoder.encode(j.snapshot))
+        XCTAssertEqual(FormHash.of(round) { files[$0.id] }, h)
+        var rebuilt = j.snapshot
+        rebuilt.values.storage = Dictionary(uniqueKeysWithValues: j.values.storage.reversed().map { ($0.key, $0.value) })
+        XCTAssertEqual(FormHash.of(rebuilt) { files[$0.id] }, h)
+        // any value, any photo byte, a signature
+        var v = j; v.values["engineer"] = .text("ก")
+        XCTAssertNotEqual(FormHash.of(v.snapshot) { files[$0.id] }, h)
+        files[p.id] = Data([1, 2, 4])
+        XCTAssertNotEqual(FormHash.of(j.snapshot) { files[$0.id] }, h)
+        files[p.id] = Data([1, 2, 3]); files[s.id] = Data([8])
+        XCTAssertNotEqual(FormHash.of(j.snapshot) { files[$0.id] }, h)
+        // a photo not on this device: no hash rather than a wrong one
+        XCTAssertNil(FormHash.of(j.snapshot) { $0.id == p.id ? nil : files[$0.id] })
+    }
+
+    /// NIST FIPS 180-2 examples: the fallback matches CryptoKit.
+    func testPureSHA256() {
+        let vectors = [
+            ("", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+            ("abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+            ("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"),
+        ]
+        for (msg, hex) in vectors {
+            XCTAssertEqual(FormHash.hex(SHA256Pure.hash(Data(msg.utf8))), hex)
+            XCTAssertEqual(FormHash.hex(FormHash.sha256(Data(msg.utf8))), hex)
+        }
+        let million = Data(repeating: UInt8(ascii: "a"), count: 1_000_000)
+        XCTAssertEqual(FormHash.hex(SHA256Pure.hash(million)), "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0")
+    }
+
+    // MARK: issuing
+
+    func testNextRevRule() {
+        XCTAssertEqual(RevisionRule.next(after: "00"), "01")
+        XCTAssertEqual(RevisionRule.next(after: "09"), "10")
+        XCTAssertEqual(RevisionRule.next(after: "99"), "100")
+        XCTAssertEqual(RevisionRule.next(after: "A"), "A-1")
+        XCTAssertEqual(RevisionRule.next(after: "A-1"), "A-2")
+        XCTAssertEqual(RevisionRule.next(after: ""), "01")
+    }
+
+    /// The first issue keeps the cover's number and needs no reason; the next takes the number after and needs one.
+    func testIssueNumbersWithoutLocking() {
+        var j = station()
+        j.values["engineer"] = .text("วิศวกร ก")
+        XCTAssertEqual(j.nextIssueRev, "00")
+        XCTAssertFalse(j.issueNeedsReason)
+        j.issue(reason: "", hash: "a1b2c3d4ff", pdfFile: "revisions/REV00.pdf", now: Date(timeIntervalSince1970: 0))
+        XCTAssertEqual(j.revisions?.map(\.rev), ["00"])
+        XCTAssertEqual(j.revisions?.first?.issuedBy, "วิศวกร ก")
+        XCTAssertEqual(j.previousRevision?.rev, "00")
+        XCTAssertEqual(j.nextIssueRev, "01")
+        XCTAssertTrue(j.issueNeedsReason)
+        j.values["rev"] = .text(j.nextIssueRev)
+        j.issue(reason: "  สถานีแจ้งขนาดหม้อแปลงใหม่ ", hash: "ff", pdfFile: nil)
+        XCTAssertEqual(j.revisions?.map(\.rev), ["00", "01"])
+        XCTAssertEqual(j.revisions?.last?.reason, "สถานีแจ้งขนาดหม้อแปลงใหม่")
+        XCTAssertEqual(j.nextIssueRev, "02")
+        // a cover number typed ahead of the issued ones is used as it is
+        j.values["rev"] = .text("05")
+        XCTAssertEqual(j.nextIssueRev, "05")
+    }
+
     func testShortCode() {
         XCTAssertEqual(Revision(rev: "00", issuedAt: Date(), issuedBy: "", reason: "", hash: "a1b2c3d4e5").shortCode, "A1B2-C3D4")
         XCTAssertEqual(Revision(rev: "00", issuedAt: Date(), issuedBy: "", reason: "", hash: "ab").shortCode, "AB")

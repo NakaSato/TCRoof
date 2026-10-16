@@ -24,6 +24,7 @@ struct JobEditorView: View {
     @State var pendingExport: PendingExport?
     struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; var photos = false; let go: () -> Void }
     // review (docs/specs/review-lock-revisions-swift.md)
+    @State var showIssueSheet = false
     @State var photoFilter = PhotoReviewPage.Filter.all
     /// The REV the comparison page starts from.
     @State var revisionCompare: String?
@@ -195,6 +196,9 @@ struct JobEditorView: View {
         }
         // the previous issued REV, for the change dots
         .task(id: "\(job.previousRevision?.rev ?? "")|\(model.revisionArrivals)") { loadRevisionBase() }
+        .sheet(isPresented: $showIssueSheet) {
+            IssueRevisionSheet(job: job, changes: job.lastRevision == nil ? nil : changedPages.values.reduce(0, +)) { issueRevision($0) }
+        }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .alert("ข้อมูลยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in

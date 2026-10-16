@@ -4,7 +4,7 @@ import UIKit
 import TCRoofCore
 import PDFReport
 
-/// Issued REVs: their snapshots, changes, PDFs and sync (docs/specs/review-lock-revisions-swift.md).
+/// Issued REVs: issuing, their snapshots, changes, PDFs and sync (docs/specs/review-lock-revisions-swift.md, without the lock).
 extension SurveyModel {
     /// The snapshot `rev` of a job, as issued.
     func snapshot(_ job: Job, rev: String) -> FormSnapshot? { store.loadRevision(rev: rev, job: job.id) }
@@ -13,6 +13,47 @@ extension SurveyModel {
     func revisionChanges(_ job: Job) -> [FieldChange] {
         guard let prev = job.previousRevision, let snap = snapshot(job, rev: prev.rev) else { return [] }
         return FormDiff.changes(from: snap, to: job.snapshot)
+    }
+
+    /// The answers differ from the last issued REV, or none has been issued: there is something to issue.
+    func hasUnissuedChanges(_ job: Job) -> Bool {
+        guard let last = job.lastRevision else { return true }
+        return snapshot(job, rev: last.rev) != job.snapshot
+    }
+
+    enum IssueError: LocalizedError {
+        case photosNotHere, alreadyIssued(String)
+        var errorDescription: String? {
+            switch self {
+            case .photosNotHere: return "รูปบางรูปยังไม่อยู่ในเครื่องนี้ · ดึงรูปจาก Drive ให้ครบก่อนออก REV"
+            case .alreadyIssued(let r): return "REV \(r) ออกไปแล้วด้วยข้อมูลอื่น"
+            }
+        }
+    }
+
+    /// ออก REV nn: the number (the next one once the current is issued), the snapshot and its hash in
+    /// `revisions/REVnn.json`, the report as `REVnn.pdf`, then the `Revision`. Nothing is locked.
+    func issue(_ id: UUID, reason: String, now: Date = Date()) throws {
+        flush(id)
+        guard var j = job(id) else { return }
+        j.values["rev"] = .text(j.nextIssueRev)
+        let store = store
+        guard let hash = FormHash.of(j.snapshot, photoData: { store.data(of: $0, in: id) }) else { throw IssueError.photosNotHere }
+        do { try store.saveRevision(j.snapshot, rev: j.rev, job: id) }
+        catch JobStore.RevisionError.exists {
+            // an issue that stopped after writing the snapshot may finish; another REV with this number may not
+            guard snapshot(j, rev: j.rev) == j.snapshot else { throw IssueError.alreadyIssued(j.rev) }
+        }
+        let path = JobStore.revisionPDFPath(rev: j.rev)
+        j.issue(reason: reason, hash: hash, pdfFile: path, now: now)
+        // the PDF as issued: its รายการแก้ไข lists the changes from the REV before
+        let pdfOK = (try? pdfData(j).write(to: store.revisionPDF(rev: j.rev, job: id), options: .atomic)) != nil
+        if !pdfOK, var list = j.revisions, !list.isEmpty {
+            list[list.count - 1].pdfFile = nil
+            j.revisions = list
+        }
+        update(j)
+        flush(id)
     }
 
     // MARK: other devices

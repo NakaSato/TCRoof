@@ -12,9 +12,11 @@ extension JobEditorView {
         model.update(j)
     }
 
-    /// E1 above the page: required photos missing before the first signature.
+    /// E1 above the page: signed and not issued yet (ออก REV), or required photos missing before the first signature.
     @ViewBuilder var finalBanners: some View {
-        if job.values.photo("surveyorSign") == nil && job.values.photo("customerSign") == nil, job.missingRequiredPhotos > 0 {
+        if job.bothSigned && unissued {
+            IssueRevisionBanner(rev: job.nextIssueRev) { showIssueSheet = true }
+        } else if job.values.photo("surveyorSign") == nil && job.values.photo("customerSign") == nil, job.missingRequiredPhotos > 0 {
             MissingPhotosBanner(missing: job.missingRequiredPhotos) { photoFilter = .missing; select(.photos) }
         }
     }
@@ -64,6 +66,22 @@ extension JobEditorView {
         } else {
             RevisionsPage(job: job, openPDF: { url, title in preview = PDFPreviewItem(url: url, title: title) }, from: revisionCompare)
                 .id(revisionCompare)
+        }
+    }
+
+    /// These answers aren't an issued REV: none is issued yet, or they differ from the last one. A last REV whose
+    /// snapshot hasn't reached this device counts as issued.
+    var unissued: Bool {
+        guard job.lastRevision != nil else { return true }
+        return revisionBase.map { $0 != job.snapshot } ?? false
+    }
+
+    /// ออก REV nn; the change dots then compare with it.
+    func issueRevision(_ reason: String) {
+        run("กำลังออก REV \(job.nextIssueRev)…") {
+            try model.issue(job.id, reason: reason)
+            if let j = model.job(job.id) { job = j }
+            loadRevisionBase()
         }
     }
 

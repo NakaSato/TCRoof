@@ -399,6 +399,15 @@ extension SurveyHomeView {
         #if DEBUG
         let d = UserDefaults.standard
         guard page == .project else { return }
+        // `-surveyCompleteJob YES` (UI tests): a new survey filled to 100% (docNo `UITEST-MOVE`), replacing the last one
+        if d.bool(forKey: "surveyCompleteJob") {
+            for j in model.jobs where j.docNo == "UITEST-MOVE" { model.delete(j.id) }
+            let t = JobTemplate.all[2]
+            var j = model.create(t, engineer: "สมชาย")
+            for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
+            j.values["docNo"] = .text("UITEST-MOVE"); j.values["projectName"] = .text("ทดสอบย้ายติดตั้ง")
+            model.update(j)
+        }
         switch d.string(forKey: "surveyHomeTab") {
         case "projects": tab = .survey
         case "maintenance": tab = .maintenance

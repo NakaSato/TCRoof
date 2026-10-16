@@ -406,6 +406,8 @@ extension SurveyHomeView {
             var j = model.create(t, engineer: "สมชาย")
             for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
             j.values["docNo"] = .text("UITEST-MOVE"); j.values["projectName"] = .text("ทดสอบย้ายติดตั้ง")
+            // `-surveyCompleteJobLink <syncID>`: linked to that TCRoof job, whose status the move then changes
+            j.jobSyncID = d.string(forKey: "surveyCompleteJobLink")
             model.update(j)
         }
         switch d.string(forKey: "surveyHomeTab") {

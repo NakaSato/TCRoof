@@ -160,6 +160,7 @@ struct DailyReportEditor: View {
         guard let log else { return }
         log.engineerSignedAt = nil
         log.inspectorAckAt = nil
+        job.feedMP()
         try? context.save()
     }
 
@@ -348,6 +349,7 @@ struct DailyReportEditor: View {
         }
         let target = write()
         target.engineerSignedAt = .now
+        job.feedMP()   // write() booked it as a draft, which doesn't count
         if let built = RoutineReportFiles.daily(job, log: target) {
             let data = RoutineReportFiles.file(built, job: job, context: context)
             if let url = try? RoutineReportFiles.temporaryURL(built, data: data) { share = ReportShare(url: url) }

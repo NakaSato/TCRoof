@@ -34,6 +34,32 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: 8), "back should return to the page")
     }
 
+    /// `แผนก่อสร้าง` (docs/ui/install-tracking-ipad-v2 §6) is a tab of the page: a stage's chevron hides its sub-tasks,
+    /// `ตาราง` shows the table and `แก้ไขแผน` pushes the MP plan screen.
+    func testPlanTab() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label == %@", "แผนก่อสร้าง")).firstMatch.tap()
+        let stage = app.descendants(matching: .any)["plan-stage-4"]
+        XCTAssertTrue(stage.waitForExistence(timeout: 8), "แผนก่อสร้าง should open the tab in the page")
+        XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
+        let sub = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "4.1 ")).firstMatch
+        XCTAssertTrue(sub.waitForExistence(timeout: 8), "the running stage starts open")
+        stage.tap()
+        XCTAssertTrue(waitGone(sub), "the chevron should hide the stage's sub-tasks")
+        stage.tap()
+        XCTAssertTrue(sub.waitForExistence(timeout: 8), "a second tap shows them again")
+
+        app.buttons.matching(NSPredicate(format: "label == %@", "ตาราง")).firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["plan-table"].waitForExistence(timeout: 8), "ตาราง should show the table")
+        XCTAssertFalse(stage.exists)
+
+        app.buttons.matching(NSPredicate(format: "label == %@", "แก้ไขแผน")).firstMatch.tap()
+        XCTAssertTrue(waitGone(pageBack(app)), "แก้ไขแผน should push the MP plan screen")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "แผนงาน MP")).firstMatch.waitForExistence(timeout: 8))
+        back(app)
+    }
+
     func testActionsSheetOpensAnItem() {
         let app = launch()
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))

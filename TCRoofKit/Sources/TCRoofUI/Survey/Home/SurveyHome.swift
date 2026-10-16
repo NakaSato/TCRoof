@@ -173,6 +173,7 @@ struct SurveyHomeView: View {
             InstallPickerSheet(jobs: model.jobs(in: .survey).filter { $0.stage == .survey }) { id in
                 guard model.moveToInstall(id) else { return }
                 showInstallPicker = false
+                installFilter = .noPlan
                 withAnimation(.snappy) { tab = .install }
             }
         }
@@ -241,7 +242,7 @@ struct SurveyHomeView: View {
                 }
                 .buttonStyle(.plain)
                 // on the card, so the iPad popover points at it
-                .modifier(MoveToInstallDialog(job: j, asking: $toInstall, go: go))
+                .modifier(MoveToInstallDialog(job: j, asking: $toInstall, go: go) { installFilter = .noPlan })
                 .contextMenu {
                     switch mode {
                     case .survey:
@@ -304,12 +305,14 @@ struct SurveyHomeView: View {
         let job: Job
         @Binding var asking: Job?
         let go: (Job, MissingGroup.Target?) -> Void
+        /// After the move: the install overview then opens on ยังไม่มีแผน MP, where the new station is.
+        var moved: () -> Void = {}
         @Environment(SurveyModel.self) private var model
 
         func body(content: Content) -> some View {
             content.confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { asking?.id == job.id }, set: { if !$0 { asking = nil } }),
                                        titleVisibility: .visible) {
-                Button("ย้าย \(job.projectName) ไปงานติดตั้ง") { asking = nil; model.moveToInstall(job.id) }
+                Button("ย้าย \(job.projectName) ไปงานติดตั้ง") { asking = nil; if model.moveToInstall(job.id) { moved() } }
                 Button("เปิดดูแบบสำรวจ") { asking = nil; go(job, nil) }
                 Button("ยกเลิก", role: .cancel) { asking = nil }
             } message: {

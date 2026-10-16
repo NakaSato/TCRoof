@@ -153,8 +153,8 @@ extension SurveyHomeView {
             stageEmpty
         } else {
             let totals = InstallOverview.totals(stations, threshold: threshold)
-            // with no MP plan anywhere nothing is behind, so start on every station
-            let rowFilter = installFilter ?? (totals.plan == nil ? .all : .behind)
+            // behind first, then those still waiting for an MP plan, else every station
+            let rowFilter = installFilter ?? InstallOverview.defaultFilter(stations, threshold: threshold)
             let rows = InstallOverview.rows(stations, filter: rowFilter, contractor: contractor, threshold: threshold)
             card(installSummary(stations, totals), padding: summaryPadding)
             rowFilters(installFilters(stations, selected: rowFilter), count: rows.count, note: contractor)
@@ -289,9 +289,12 @@ extension SurveyHomeView {
             HStack(spacing: 6) {
                 // the permit block is on the iPad rows only, and so is its filter
                 ForEach(InstallOverview.RowFilter.allCases.filter { !compact || $0 != .permit }, id: \.self) { f in
-                    let title = [.behind: "ช้ากว่าแผน", .noReport: "ยังไม่ส่งรายงาน", .permit: "ขออนุญาตค้าง", .all: "ทั้งหมด"][f] ?? ""
-                    TCCountPill(title, count: stations.filter { InstallOverview.matches($0, f, threshold: threshold) }.count,
-                                selected: selected == f) { installFilter = f }
+                    let title = [.behind: "ช้ากว่าแผน", .noPlan: "ยังไม่มีแผน MP", .noReport: "ยังไม่ส่งรายงาน", .permit: "ขออนุญาตค้าง", .all: "ทั้งหมด"][f] ?? ""
+                    let count = stations.filter { InstallOverview.matches($0, f, threshold: threshold) }.count
+                    // ยังไม่มีแผน MP only while a station waits for its plan
+                    if f != .noPlan || count > 0 || selected == f {
+                        TCCountPill(title, count: count, selected: selected == f) { installFilter = f }
+                    }
                 }
             }
         }

@@ -84,12 +84,19 @@ extension SurveyHomeView {
         compact ? EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12) : EdgeInsets(top: 12, leading: 14, bottom: 10, trailing: 14)
     }
 
-    /// The summary's three parts: one under another on iPhone; on iPad the board's columns 330 | 300 | the rest.
+    /// The summary's three parts: one under another on iPhone; on iPad the board's columns 330 | 300 | the rest, and
+    /// in portrait the head and tiles side by side over the rest.
     @ViewBuilder private func summaryParts(_ head: some View, tiles: some View, hasTiles: Bool = true, rest: some View) -> some View {
         if compact {
             head
             tiles
             rest
+        } else if portrait {
+            HStack(alignment: .top, spacing: 20) {
+                head.frame(maxWidth: .infinity, alignment: .leading)
+                if hasTiles { tiles.frame(width: 300) }
+            }
+            rest.frame(maxWidth: .infinity, alignment: .leading)
         } else {
             HStack(alignment: .top, spacing: 20) {
                 head.frame(width: 330, alignment: .leading)
@@ -112,12 +119,12 @@ extension SurveyHomeView {
         }
     }
 
-    /// The station rows: one under another on iPhone, three columns on iPad.
+    /// The station rows: one under another on iPhone, three columns on iPad (two in portrait).
     @ViewBuilder private func stationRows(@ViewBuilder _ rows: () -> some View) -> some View {
         if compact {
             rows()
         } else {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: 3), spacing: 16) { rows() }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: padColumns), spacing: 16) { rows() }
         }
     }
 
@@ -146,8 +153,8 @@ extension SurveyHomeView {
             stageEmpty
         } else {
             let totals = InstallOverview.totals(stations, threshold: threshold)
-            // with no MP plan anywhere nothing is behind, so start on every station
-            let rowFilter = installFilter ?? (totals.plan == nil ? .all : .behind)
+            // behind first, then those still waiting for an MP plan, else every station
+            let rowFilter = installFilter ?? InstallOverview.defaultFilter(stations, threshold: threshold)
             let rows = InstallOverview.rows(stations, filter: rowFilter, contractor: contractor, threshold: threshold)
             card(installSummary(stations, totals), padding: summaryPadding)
             rowFilters(installFilters(stations, selected: rowFilter), count: rows.count, note: contractor)
@@ -174,14 +181,12 @@ extension SurveyHomeView {
     }
 
     func openStation(_ s: InstallStationSummary) {
-        // iPad: a host station opens the host's install tracking page, even when a survey job here is linked to it
-        if !compact, let open = host.openStation, host.installStations?.contains(where: { $0.id == s.id }) == true {
+        // a host station opens the host's screen for it, even when a survey job here is linked to it
+        if let open = host.openStation, host.installStations?.contains(where: { $0.id == s.id }) == true {
             open(s)
-            return
-        }
-        if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
-            lastOpened = j.id.uuidString
-            tracking = j.id
+        } else if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
+            // a station made from a survey job's own InstallInfo (no host station): the survey
+            go(j)
         } else {
             host.openStation?(s)
         }
@@ -284,9 +289,12 @@ extension SurveyHomeView {
             HStack(spacing: 6) {
                 // the permit block is on the iPad rows only, and so is its filter
                 ForEach(InstallOverview.RowFilter.allCases.filter { !compact || $0 != .permit }, id: \.self) { f in
-                    let title = [.behind: "ช้ากว่าแผน", .noReport: "ยังไม่ส่งรายงาน", .permit: "ขออนุญาตค้าง", .all: "ทั้งหมด"][f] ?? ""
-                    TCCountPill(title, count: stations.filter { InstallOverview.matches($0, f, threshold: threshold) }.count,
-                                selected: selected == f) { installFilter = f }
+                    let title = [.behind: "ช้ากว่าแผน", .noPlan: "ยังไม่มีแผน MP", .noReport: "ยังไม่ส่งรายงาน", .permit: "ขออนุญาตค้าง", .all: "ทั้งหมด"][f] ?? ""
+                    let count = stations.filter { InstallOverview.matches($0, f, threshold: threshold) }.count
+                    // ยังไม่มีแผน MP only while a station waits for its plan
+                    if f != .noPlan || count > 0 || selected == f {
+                        TCCountPill(title, count: count, selected: selected == f) { installFilter = f }
+                    }
                 }
             }
         }
@@ -367,11 +375,12 @@ extension SurveyHomeView {
         .buttonStyle(.plain)
     }
 
-    /// The station's job here when it has one, else the host's screen for it.
+    /// The host's screen for the station when it has it, else the station's survey job here.
     private func openMaintenanceStation(_ s: MaintenanceStationSummary) {
-        if let j = model.jobs(in: .maintenance).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
-            lastOpened = j.id.uuidString
-            tracking = j.id
+        if let open = host.openMaintenanceStation, host.maintenanceStations.contains(where: { $0.id == s.id }) {
+            open(s)
+        } else if let j = model.jobs(in: .maintenance).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
+            go(j)
         } else {
             host.openMaintenanceStation?(s)
         }

@@ -15,6 +15,9 @@ struct IECTestScreen: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// Step 1's designed page (iPad); the iPhone keeps the set-up sheet.
     @State private var step1 = false
+    /// The sheet preview (iPad): the inverter and phase whose sheet it opens on.
+    @State private var sheetPreview: SheetTarget?
+    struct SheetTarget: Hashable { let inverter: Int; var phase: IECReport.Phase = .before }
     @Environment(\.dismiss) private var dismiss
     @State private var exported: ExportedFile?
     /// The file the station-line question is about.
@@ -43,6 +46,9 @@ struct IECTestScreen: View {
             IECHeader(title: "ทดสอบระบบ IEC 62446", subtitle: (report?.stationLine).flatMap { $0.isEmpty ? nil : $0 } ?? job.stationName) {
                 if report?.isLocked != true {
                     IECHeaderButton(title: report == nil ? "ตั้งค่าการทดสอบ" : "ตั้งค่า", symbol: "slider.horizontal.3") { showSetup() }
+                }
+                if report?.inverters.isEmpty == false, sizeClass == .regular {
+                    IECHeaderButton(title: "ดูชีต Excel", symbol: "tablecells") { sheetPreview = SheetTarget(inverter: 0) }
                 }
                 if report?.inverters.isEmpty == false { IECHeaderButton(title: "ส่งออก", symbol: "square.and.arrow.up") { startExport() } }
             }
@@ -83,6 +89,7 @@ struct IECTestScreen: View {
         } message: { Text(exportError ?? "") }
         .navigationDestination(item: $grid) { IECStringGrid(job: job, inverter: $0.inverter, phase: $0.phase, page: $0.page) }
         .navigationDestination(item: $step2) { IECVIPage(job: job, phase: $0.phase, inverter: $0.inverter, slot: $0.slot, openStage: open) }
+        .navigationDestination(item: $sheetPreview) { IECSheetPreview(job: job, inverter: $0.inverter, phase: $0.phase, open: openFromSheet) }
         .navigationDestination(isPresented: $step1) { IECSetupPage(job: job, openStage: open, leave: leaveFromSetup) }
         #if DEBUG
         .task {
@@ -101,6 +108,11 @@ struct IECTestScreen: View {
             if Debug.step2 { step2 = Step2Target(inverter: 0) }
             if Debug.step4 { step2 = Step2Target(inverter: 0, phase: .after) }
             if Debug.step1 { step1 = true }
+            if let s = Debug.sheet {
+                // after the install page and this screen have settled: a third push at once is dropped
+                try? await Task.sleep(for: .milliseconds(900))
+                sheetPreview = s
+            }
             if let n = Debug.inverter, (job.iecReport?.inverters.count ?? 0) >= n { grid = GridTarget(inverter: n - 1, phase: Debug.phase, page: Debug.page) }
         }
         #endif
@@ -260,6 +272,25 @@ struct IECTestScreen: View {
         }
     }
 
+    /// A tinted cell or a legend swatch of the sheet preview: off the preview, then that step at its inverter (and the
+    /// string, for a column cell). Steps without a page yet open their existing screen.
+    private func openFromSheet(_ stage: IECReport.Stage, _ inverter: Int, _ slot: Int?) {
+        sheetPreview = nil
+        let first = job.iecReport?.inverters[safe: inverter]?.strings.first?.slot ?? 1
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            switch stage {
+            case .setup: showSetup()
+            case .beforeVoltage: step2 = Step2Target(inverter: inverter, slot: slot ?? first, phase: .before)
+            case .afterVoltage: step2 = Step2Target(inverter: inverter, slot: slot ?? first, phase: .after)
+            case .beforeInsulation: grid = GridTarget(inverter: inverter, phase: .before)
+            case .energy: grid = GridTarget(inverter: inverter, phase: .after, page: .performance)
+            case .thermal: grid = GridTarget(inverter: inverter, phase: .after, page: .photos)
+            case .review: break
+            }
+        }
+    }
+
     /// Step 1: the page on iPad, the sheet on iPhone.
     private func showSetup() {
         if sizeClass == .regular { step1 = true } else { setup = true }
@@ -316,6 +347,10 @@ struct IECTestScreen: View {
                 Text(detail).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
             Spacer(minLength: 8)
+            if stage == .review, sizeClass == .regular {
+                Button("ดูชีต Excel") { sheetPreview = SheetTarget(inverter: 0) }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            }
             if done, confirmed == nil, stage != .review, !r.isLocked {
                 Button("ยืนยัน") { job.updateIEC(context) { _ = $0.confirm(stage, by: job.iecActor) } }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
@@ -546,6 +581,12 @@ struct IECTestScreen: View {
         /// `-iecStep 1`: step 1's page; `-iecDemo praek` the sample with the board's models, MPPTs and a drawn SLD.
         static let step1 = UserDefaults.standard.integer(forKey: "iecStep") == 1
         static let praek = UserDefaults.standard.string(forKey: "iecDemo") == "praek"
+        /// `-iecSheet INV01-before|INV02-after|…`: the sheet preview on that sheet (`-iecSheetSource off` hides the
+        /// sources). Step 1's `-iecSheet add|delete|sn` are its own.
+        static let sheet: SheetTarget? = UserDefaults.standard.string(forKey: "iecSheet").flatMap { v in
+            guard v.hasPrefix("INV"), let n = Int(v.dropFirst(3).prefix(2)) else { return nil }
+            return SheetTarget(inverter: n - 1, phase: v.hasSuffix("after") ? .after : .before)
+        }
         #else
         static let entry = false
         static let setup = false

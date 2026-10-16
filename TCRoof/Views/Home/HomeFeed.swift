@@ -90,6 +90,12 @@ struct HomeFeed: View {
     let open: (FeedLink) -> Void
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    /// Every server snapshot sync brings in moves `lastSync`: a record added to a job already here rebuilds the feed
+    /// then, not at the next minute.
+    @State private var sync = CloudSync.shared
+    /// Post ids on show while the feed's top was in view; posts beyond them are `มีโพสต์ใหม่`.
+    @State private var seen: Set<String>?
+    @State private var topVisible = true
     @Environment(GoogleSession.self) private var session
     @AppStorage("userTeam") private var userTeam = ""
     @AppStorage("feed.hidden") private var hiddenRaw = ""
@@ -103,6 +109,8 @@ struct HomeFeed: View {
     // `-homeFeedIssue fixed`: the demo's issue fixed and its summary acknowledged; the demo keeps neither
     @State private var demoFixed: Set<String> = UserDefaults.standard.string(forKey: "homeFeedIssue") == "fixed" ? ["demo-issue"] : []
     @State private var demoAcked: Set<String> = UserDefaults.standard.string(forKey: "homeFeedIssue") == "fixed" ? ["demo-summary"] : []
+    /// `-homeFeedArrive <s>`: a post that came in by sync, not by a pull, that many seconds after the feed appeared.
+    @State private var demoArrived = 0
     #endif
 
     private var me: String { session.email ?? "me" }
@@ -114,28 +122,50 @@ struct HomeFeed: View {
 
     var body: some View {
         let shown = FeedBuilder.filter(posts, by: filter, myTeams: myTeams, hidden: hidden)
+        let fresh = FeedBuilder.newCount(shown, seen: seen)
         Group {
             switch layout {
             case .phone:
                 VStack(spacing: 10) {
-                    segments
+                    segments.overlay(alignment: .top) { topMarker }
+                    if sync.refreshFailed { offlineLine }
                     list(shown)
                 }
             case .column(let scrolls):
                 VStack(spacing: 12) {
                     columnHeader
                     if scrolls {
-                        ScrollView { VStack(spacing: 14) { list(shown) } }.scrollIndicators(.hidden)
+                        // the column scrolls on its own: its pill is its own
+                        ScrollViewReader { proxy in
+                            ScrollView { VStack(spacing: 14) { list(shown) }.overlay(alignment: .top) { topMarker } }.scrollIndicators(.hidden)
+                                .refreshable { await sync.refresh() }
+                                .overlay(alignment: .top) {
+                                    if !topVisible, fresh > 0 { NewPostsPill(count: fresh) { Self.scrollToTop(proxy) }.padding(.top, 8) }
+                                }
+                        }
                     } else {
                         VStack(spacing: 14) { list(shown) }
                     }
                 }
+                .overlay(alignment: .top) { if case .column(false) = layout { topMarker } }
                 .tcFeedSize(.pad)
             }
         }
-        .task(id: Refresh(now: now, jobs: jobs.count, days: days)) { rebuild() }
+        // the page that scrolls the feed shows the pill
+        .preference(key: FeedNewPostsKey.self, value: topVisible ? 0 : fresh)
+        .onChange(of: topVisible) { if topVisible { seen = Set(posts.map(\.id)) } }
+        .task(id: Refresh(now: now, jobs: jobs.count, days: days, synced: sync.lastSync, pulls: sync.refreshes)) { rebuild() }
         // back from a record a post opened
         .onAppear { rebuild() }
+        #if DEBUG
+        .task {
+            let s = UserDefaults.standard.double(forKey: "homeFeedArrive")
+            guard Self.isDemo, s > 0, demoArrived == 0 else { return }
+            try? await Task.sleep(for: .seconds(s))
+            demoArrived = 1
+            rebuild()
+        }
+        #endif
         .alert("ยังปิดรายการไม่ได้", isPresented: Binding(get: { needsPhoto != nil }, set: { if !$0 { needsPhoto = nil } }), presenting: needsPhoto) { post in
             Button("เปิด Punch list") { link(post, source: true) }
             Button("ยกเลิก", role: .cancel) {}
@@ -144,7 +174,7 @@ struct HomeFeed: View {
         }
     }
 
-    private struct Refresh: Equatable { let now: Date; let jobs: Int; let days: Int }
+    private struct Refresh: Equatable { let now: Date; let jobs: Int; let days: Int; let synced: Date?; let pulls: Int }
 
     /// The posts, the empty state and `ดูโพสต์ก่อนหน้า`, for the layout's stack.
     @ViewBuilder private func list(_ shown: [FeedPost]) -> some View {
@@ -170,6 +200,20 @@ struct HomeFeed: View {
 
     /// iPad: `ฟีดโครงการ`, the time of the newest post, and the 440 pt filter at the right; in a narrow column the
     /// filter goes under the title, across the width.
+    /// After a pull to refresh that couldn't reach the server: the feed is what this device has.
+    private var offlineLine: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "wifi.slash").font(.system(size: 11, weight: .semibold))
+            Text(["ออฟไลน์ · แสดงข้อมูลในเครื่อง", sync.lastSync.map { "ซิงก์ล่าสุด " + ThaiFormat.time.string(from: $0) }]
+                .compactMap { $0 }.joined(separator: " · "))
+                .font(.sarabun(12.5, relativeTo: .caption)).lineLimit(1)
+        }
+        .foregroundStyle(Theme.warningText)
+        .padding(.horizontal, 10).padding(.vertical, 2)
+        .background(Theme.warningSoft, in: Capsule())
+        .accessibilityElement(children: .combine)
+    }
+
     private var columnHeader: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) {
@@ -188,7 +232,9 @@ struct HomeFeed: View {
         HStack(spacing: 10) {
             Text("ฟีดโครงการ").font(.sarabun(20, .bold, relativeTo: .title3)).foregroundStyle(Theme.navy)
                 .accessibilityAddTraits(.isHeader)
-            if let latest = posts.map(\.date).max() {
+            if sync.refreshFailed {
+                offlineLine
+            } else if let latest = posts.map(\.date).max() {
                 HStack(spacing: 6) {
                     Circle().fill(Theme.success).frame(width: 7, height: 7)
                     Text("อัปเดตล่าสุด " + ThaiFormat.time.string(from: latest)).font(.sarabun(12.5, relativeTo: .caption))
@@ -286,9 +332,33 @@ struct HomeFeed: View {
 
     private func rebuild() {
         #if DEBUG
-        if Self.isDemo { posts = Self.demoPosts(now: now); return }
+        if Self.isDemo { posts = Self.refreshDemoPosts(now: now, pulls: sync.refreshes + demoArrived) + Self.demoPosts(now: now); markSeen(); return }
         #endif
         posts = FeedBuilder.posts(jobs.map(\.feedStation), now: now, days: days)
+        markSeen()
+    }
+
+    /// Posts on show while the top is in view, or at the first build, are seen.
+    private func markSeen() {
+        if seen == nil || topVisible { seen = Set(posts.map(\.id)) }
+    }
+
+    // MARK: มีโพสต์ใหม่
+
+    static let topID = "homeFeed.top"
+
+    /// Marks the feed's top for `scrollTo` and tells whether it is in the scroll view's visible part.
+    private var topMarker: some View {
+        Color.clear.frame(height: 1).id(Self.topID)
+            .onGeometryChange(for: Bool.self) { g in
+                let y = g.frame(in: .scrollView).minY
+                return y > -24 && y < (g.bounds(of: .scrollView)?.height ?? .infinity)
+            } action: { topVisible = $0 }
+            .accessibilityHidden(true)
+    }
+
+    static func scrollToTop(_ proxy: ScrollViewProxy) {
+        withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo(topID, anchor: .top) }
     }
 
     /// The post's link (`ดูรายงาน`, `ดูงาน` …), or with `source` the record it was made from.
@@ -384,6 +454,20 @@ struct HomeFeed: View {
                      source: .dailyReport(project: "demo", day: day), seedAcks: 2),
         ]
     }
+
+    /// `-homeFeedRefresh YES` (with `-homeFeed demo`): each pull to refresh (and `-homeFeedArrive`'s post) brings one
+    /// more example post, as if sync had brought a daily report in. Nothing is saved.
+    static func refreshDemoPosts(now: Date, pulls: Int) -> [FeedPost] {
+        let d = UserDefaults.standard
+        guard d.bool(forKey: "homeFeedRefresh") || d.double(forKey: "homeFeedArrive") > 0, pulls > 0 else { return [] }
+        let day = FeedBuilder.calendar.startOfDay(for: now)
+        return (1...pulls).reversed().map { n in
+            FeedPost(id: "demo-pull-\(n)", kind: .progress, project: .pwa, team: "TCR02", initials: "C", who: "ทีม C · ผู้รับเหมา C",
+                     place: "MP 154 แพรกหนามแดง · 2.6 สาย AC", date: now.addingTimeInterval(Double(n - pulls) * 60),
+                     text: "รายงานใหม่ \(n) (ตัวอย่าง): เดินสาย AC ช่วงที่ \(n) เสร็จ",
+                     chips: [.init("+\(n)% วันนี้", .green)], source: .dailyReport(project: "demo", day: day))
+        }
+    }
     #endif
 }
 
@@ -423,5 +507,52 @@ private struct FeedPhoto: View {
         let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 1000,
                                      kCGImageSourceCreateThumbnailWithTransform: true]
         return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
+    }
+}
+
+/// The number of posts new since the feed's top was last in view, for the page that scrolls it.
+struct FeedNewPostsKey: PreferenceKey {
+    static let defaultValue = 0
+    static func reduce(value: inout Int, nextValue: () -> Int) { value = max(value, nextValue()) }
+}
+
+/// `มีโพสต์ใหม่ N`: floats at the top of the scrolled page; a tap goes back to the feed's top.
+struct NewPostsPill: View {
+    let count: Int
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label("มีโพสต์ใหม่ \(count)", systemImage: "arrow.up")
+                .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onPrimary)
+                .padding(.horizontal, 16).frame(minHeight: 44)
+                .background(Theme.primary, in: Capsule())
+                .shadow(color: Theme.navy.opacity(0.25), radius: 8, y: 4)
+        }
+        .buttonStyle(.plain)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .accessibilityIdentifier("feed.newPosts")
+    }
+}
+
+extension View {
+    /// The `มีโพสต์ใหม่` pill over a page's scroll view that holds the home feed.
+    func feedNewPostsPill(top: CGFloat = 8) -> some View {
+        modifier(FeedNewPostsPillModifier(top: top))
+    }
+}
+
+private struct FeedNewPostsPillModifier: ViewModifier {
+    let top: CGFloat
+    @State private var count = 0
+
+    func body(content: Content) -> some View {
+        ScrollViewReader { proxy in
+            content
+                .onPreferenceChange(FeedNewPostsKey.self) { v in withAnimation { count = v } }
+                .overlay(alignment: .top) {
+                    if count > 0 { NewPostsPill(count: count) { HomeFeed.scrollToTop(proxy) }.padding(.top, top) }
+                }
+        }
     }
 }

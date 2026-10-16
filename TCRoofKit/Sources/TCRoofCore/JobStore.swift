@@ -81,6 +81,8 @@ public final class JobStore: @unchecked Sendable {
     /// "revisions/REV00.pdf", relative to the job folder, as stored in `Revision.pdfFile`.
     public static func revisionPDFPath(rev: String) -> String { "revisions/REV\(rev).pdf" }
     public func revisionPDF(rev: String, job: UUID) -> URL { folder(job).appendingPathComponent(Self.revisionPDFPath(rev: rev)) }
+    /// A file in the job's `revisions/` folder by its name ("REV00.pdf", "REV00.json").
+    public func revisionFile(_ name: String, job: UUID) -> URL { revisionsFolder(job).appendingPathComponent(name) }
     public func revisionJSON(rev: String, job: UUID) -> URL { revisionsFolder(job).appendingPathComponent("REV\(rev).json") }
 
     /// Writes an issued REV's answers once; an issued REV is never rewritten.
@@ -134,7 +136,7 @@ public final class JobStore: @unchecked Sendable {
         copy.id = UUID(); copy.created = now; copy.updated = now; copy.drive = nil
         // a copy of a survey already moved on is a new survey
         copy.stage = .survey; copy.install = nil
-        copy.revisions = nil; copy.lock = nil; copy.pendingReason = nil
+        copy.revisions = nil
         copy.values["rev"] = .text("00")
         for id in RevisionRule.signatureIDs { copy.values[id] = nil }
         copy.values["projectName"] = .text(job.projectName.isEmpty ? "(สำเนา)" : job.projectName + " (สำเนา)")

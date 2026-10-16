@@ -8,7 +8,7 @@ This document is in English. Thai strings in `backticks` are literal UI labels.
 ## Context
 The 3-tab home from `CLAUDE_CODE_TASK.md` (v1, 30 ก.ย.) is already in the code:
 - `SurveyHome.swift`, `SurveyHome+Header.swift`, `SurveyHome+Sync.swift`
-- `JobCard.swift`: modes `survey` / `locked` / `install`
+- `JobCard.swift`: modes `survey` / `locked` / `install` (`locked` was removed on 2026-10-16: a survey moved to installation stays editable)
 - `JobStage`
 - the install picker
 

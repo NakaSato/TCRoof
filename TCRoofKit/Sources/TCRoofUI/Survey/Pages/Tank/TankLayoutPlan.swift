@@ -134,6 +134,9 @@ struct TankLayoutPlan: View {
                 let r = TankLayout.offsetRange(values, p)
                 p.offX = TankLayout.snap(min(max(0, layout.params.offX + g.translation.width / (fit.s * f.k)), r.x))
                 p.offY = TankLayout.snap(min(max(0, layout.params.offY + g.translation.height / (fit.s * f.k)), r.y))
+                // the 5 cm snap keeps most touch events on the same offset: lay out and redraw only when it moves
+                let current = shown.params
+                guard p.offX != current.offX || p.offY != current.offY else { return }
                 preview = TankLayout(values, params: p, off: TankLayout.off(values))
             }
             .onEnded { g in

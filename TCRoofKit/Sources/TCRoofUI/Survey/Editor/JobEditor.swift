@@ -23,25 +23,19 @@ struct JobEditorView: View {
     @State var collapsed: Set<SectionCategory> = []
     @State var pendingExport: PendingExport?
     struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; var photos = false; let go: () -> Void }
-    // review lock (docs/specs/review-lock-revisions-swift.md)
-    @State var showLockSheet = false
-    @State var showNextRevision = false
-    /// An edit to a signed, unlocked form, held until the signatures may be cleared.
-    @State var pendingSignedEdit: Job?
+    // review (docs/specs/review-lock-revisions-swift.md)
+    @State var showIssueSheet = false
     @State var photoFilter = PhotoReviewPage.Filter.all
-    /// The REV the comparison page starts from (the integrity banner's เทียบกับ REV nn).
+    /// The REV the comparison page starts from.
     @State var revisionCompare: String?
     /// The previous issued REV's answers, for the sidebar's change dots.
     @State var revisionBase: FormSnapshot?
-    @State var integrityBroken = false
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dismiss) var dismiss
 
     /// - Parameter start: page to open on (the home card's "continue" step); nil opens A1.
     init(job: Job, start: MissingGroup.Target? = nil) {
         _job = State(initialValue: job)
-        // a survey moved to installation opens on its report summary
-        if start == nil, job.stage != .survey { _page = State(initialValue: .summary) }
         if let start {
             _page = State(initialValue: Self.page(for: start))
             _startedOnPage = State(initialValue: true)
@@ -51,9 +45,6 @@ struct JobEditorView: View {
 
     /// iPhone (and narrow iPad split view): the section list and the form take turns filling the screen.
     var compact: Bool { sizeClass == .compact }
-
-    /// A survey moved to installation, or a REV locked after both signatures, is kept as it was: view and export only.
-    var readOnly: Bool { job.stage != .survey || job.isLocked }
 
     @State var detailSize: CGSize = .zero
     /// Visible height of the scrolling detail (inside the header and the bottom bar); A1 fills it in landscape.
@@ -203,7 +194,11 @@ struct JobEditorView: View {
         .sheet(isPresented: $showExport, onDismiss: { if let d = model.job(job.id)?.drive { job.drive = d } }) {
             ExportSheet(jobID: job.id) { select(page(for: $0)) }.environment(model)
         }
-        .modifier(ReviewLockModifiers(editor: self))
+        // the previous issued REV, for the change dots
+        .task(id: "\(job.previousRevision?.rev ?? "")|\(model.revisionArrivals)") { loadRevisionBase() }
+        .sheet(isPresented: $showIssueSheet) {
+            IssueRevisionSheet(job: job, changes: job.lastRevision == nil ? nil : changedPages.values.reduce(0, +)) { issueRevision($0) }
+        }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
         .alert("ข้อมูลยังไม่ครบ", isPresented: Binding(get: { pendingExport != nil }, set: { if !$0 { pendingExport = nil } }), presenting: pendingExport) { p in
@@ -222,10 +217,8 @@ struct JobEditorView: View {
     @ViewBuilder var detailArea: some View {
         if cardElectrical {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 ElectricalPageWide(job: $job, request: $electricalRequest, focus: $electricalFocus, openDiagram: { showSLD = true },
                                    narrow: compact)
-                    .disabled(readOnly)
             }
             // iPhone: the page pads and scrolls itself
             .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
@@ -233,22 +226,18 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if let m = cardPanels {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 PanelsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
                                stacked: compact || infoColumns != 2,
                                select: { id in withAnimation { page = id.map { .module($0) } ?? .info } },
                                openForm: { panelForm = m.id })
-                    .disabled(readOnly)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if let m = cardInverter {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                                  stacked: compact || infoColumns != 2)
-                    .disabled(readOnly)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
@@ -256,10 +245,8 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if let m = cardWater {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 WaterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), openSite: { select(.site) },
                               stacked: compact || infoColumns != 2)
-                    .disabled(readOnly)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
@@ -267,10 +254,8 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if let m = cardBackfeed {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 BackfeedPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                                  openSite: { select(.site) }, openDiagram: { showSLD = true }, stacked: compact || infoColumns != 2)
-                    .disabled(readOnly)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, compact || infoColumns != 2 ? 0 : 16)
@@ -278,10 +263,8 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if let m = cardFts {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 FtsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                             openSite: { select(.site) }, openDiagram: { showSLD = true }, stacked: compact || infoColumns != 2)
-                    .disabled(readOnly)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
@@ -289,10 +272,8 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if let m = cardRoof {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                              stacked: compact || infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
-                    .disabled(readOnly)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
@@ -300,10 +281,8 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if let m = cardTank {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 TankPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                              stacked: compact || infoColumns != 2 || detailSize.width < 1100, tab: $tankTab)
-                    .disabled(readOnly)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
@@ -311,31 +290,25 @@ struct JobEditorView: View {
             .frame(maxWidth: .infinity)
         } else if cardFinal {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 finalBanners
                 FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
                               stacked: compact || infoColumns != 2 || detailSize.width < 1100,
                               open: { select(page(for: $0)) })
-                    .disabled(readOnly)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if cardFlood {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 FloodPageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), stacked: compact || infoColumns != 2)
-                    .disabled(readOnly)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
             .frame(maxWidth: .infinity)
         } else if cardSite {
             VStack(spacing: 12) {
-                if readOnly { readOnlyBanner }
                 SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 0 : 48), request: $siteRequest,
                              stacked: compact || infoColumns != 2)
-                    .disabled(readOnly)
             }
             // iPhone: the bands run edge to edge
             .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
@@ -346,20 +319,17 @@ struct JobEditorView: View {
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
-                    if readOnly { readOnlyBanner.padding(.horizontal, 24).padding(.top, 16).frame(maxWidth: 1240 + 48) }
                     Group {
                         if cardInfo {
                             // iPhone: the bands run edge to edge
                             // landscape: the cards fill the visible height (less the 16-pt padding above and below)
                             InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2,
-                                         fillHeight: compact || readOnly ? 0 : max(0, scrollHeight - 32))
+                                         fillHeight: compact ? 0 : max(0, scrollHeight - 32))
                                 .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16).frame(maxWidth: 1240 + 48)
                         } else {
                             detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
                         }
                     }
-                    // the summary only reads answers; everywhere else fields stay shown but can't be changed
-                    .disabled(readOnly && page != .summary)
                     .frame(maxWidth: .infinity).id("top")
                 }
                 .onChange(of: page) { _, _ in proxy.scrollTo("top", anchor: .top) }
@@ -501,13 +471,6 @@ struct JobEditorView: View {
                 t < names.count ? { withAnimation { tankTab = t + 1 } } : nil, t < names.count ? "ถัดไป " + label(t + 1) : nil)
     }
 
-    var stageBanner: some View {
-        Label("งานนี้ย้ายไปงานติดตั้งแล้ว · งดแก้ไข ดูและส่งออกได้อย่างเดียว", systemImage: "lock")
-            .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(Theme.borderSubtle, in: RoundedRectangle(cornerRadius: 10))
-    }
 }
 
 extension Job {

@@ -3,19 +3,10 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import DriveSync
 
-/// Issuing a REV, opening the next one and checking a locked job (docs/specs/review-lock-revisions-swift.md §4).
+/// Issued REVs: issuing, their snapshots, changes, PDFs and sync (docs/specs/review-lock-revisions-swift.md, without the lock).
 extension SurveyModel {
-    enum ReviewError: LocalizedError {
-        case photosNotHere, alreadyIssued(String)
-        var errorDescription: String? {
-            switch self {
-            case .photosNotHere: return "รูปบางรูปยังไม่อยู่ในเครื่องนี้ · ดึงรูปจาก Drive ให้ครบก่อนล็อก"
-            case .alreadyIssued(let r): return "REV \(r) ออกไปแล้วด้วยข้อมูลอื่น · เปิด REV ใหม่ก่อนลงนาม"
-            }
-        }
-    }
-
     /// The snapshot `rev` of a job, as issued.
     func snapshot(_ job: Job, rev: String) -> FormSnapshot? { store.loadRevision(rev: rev, job: job.id) }
 
@@ -25,41 +16,56 @@ extension SurveyModel {
         return FormDiff.changes(from: snap, to: job.snapshot)
     }
 
-    /// nil when a photo isn't on this device yet.
-    func formHash(_ job: Job) -> String? {
-        let store = store
-        return FormHash.of(job.snapshot) { store.data(of: $0, in: job.id) }
+    /// The answers differ from the last issued REV, or none has been issued: there is something to issue.
+    func hasUnissuedChanges(_ job: Job) -> Bool {
+        guard let last = job.lastRevision else { return true }
+        return snapshot(job, rev: last.rev) != job.snapshot
     }
 
-    /// The answers no longer match what was signed (`job.json` edited by hand, a restore of other content).
-    /// False while a photo is missing here: that's not proof of a change.
-    func integrityBroken(_ job: Job) -> Bool {
-        guard let lock = job.lock, let h = formHash(job) else { return false }
-        return h != lock.hash
+    enum IssueError: LocalizedError {
+        case photosNotHere, alreadyIssued(String)
+        var errorDescription: String? {
+            switch self {
+            case .photosNotHere: return "รูปบางรูปยังไม่อยู่ในเครื่องนี้ · ดึงรูปจาก Drive ให้ครบก่อนออก REV"
+            case .alreadyIssued(let r): return "REV \(r) ออกไปแล้วด้วยข้อมูลอื่น"
+            }
+        }
     }
 
-    /// ล็อกและออก REV nn (§4.2): snapshot and hash, `revisions/REVnn.json`, the report as `REVnn.pdf`, then the lock.
-    func issue(_ id: UUID, now: Date = Date()) throws {
+    /// ออก REV nn: the number (the next one once the current is issued), the snapshot and its hash in
+    /// `revisions/REVnn.json`, the report as `REVnn.pdf`, then the `Revision`. Nothing is locked.
+    func issue(_ id: UUID, reason: String, now: Date = Date()) throws {
         flush(id)
-        guard let j = job(id), !j.isLocked else { return }
-        guard let hash = formHash(j) else { throw ReviewError.photosNotHere }
+        guard var j = job(id) else { return }
+        j.values["rev"] = .text(j.nextIssueRev)
+        let store = store
+        guard let hash = FormHash.of(j.snapshot, photoData: { store.data(of: $0, in: id) }) else { throw IssueError.photosNotHere }
         do { try store.saveRevision(j.snapshot, rev: j.rev, job: id) }
         catch JobStore.RevisionError.exists {
             // an issue that stopped after writing the snapshot may finish; another REV with this number may not
-            guard snapshot(j, rev: j.rev) == j.snapshot else { throw ReviewError.alreadyIssued(j.rev) }
+            guard snapshot(j, rev: j.rev) == j.snapshot else { throw IssueError.alreadyIssued(j.rev) }
         }
         let path = JobStore.revisionPDFPath(rev: j.rev)
-        var issued = j
-        issued.issue(hash: hash, pdfFile: path, now: now)
-        // the PDF as signed: its footer carries the code, its รายการแก้ไข the changes from the REV before
-        let pdf = pdfData(issued)
-        let pdfOK = (try? pdf.write(to: store.revisionPDF(rev: j.rev, job: id), options: .atomic)) != nil
-        if !pdfOK, var list = issued.revisions, !list.isEmpty {
+        j.issue(reason: reason, hash: hash, pdfFile: path, now: now)
+        // the PDF as issued: its รายการแก้ไข lists the changes from the REV before
+        let pdfOK = (try? pdfData(j).write(to: store.revisionPDF(rev: j.rev, job: id), options: .atomic)) != nil
+        if !pdfOK, var list = j.revisions, !list.isEmpty {
             list[list.count - 1].pdfFile = nil
-            issued.revisions = list
+            j.revisions = list
         }
-        update(issued)
+        update(j)
         flush(id)
+        // the REV's PDF and snapshot go to Drive's REV folder with the next background upload
+        autoUploadPhotos(id, after: 1)
+    }
+
+    /// The issued REV files on this device that Drive doesn't have yet: each REV's PDF and snapshot, for `REV/`.
+    func revisionUploads(_ job: Job) -> [DriveSync.RevisionUpload] {
+        let sent = job.drive?.revisionFiles ?? [:], fm = FileManager.default, name = baseName(job)
+        return (job.revisions ?? []).flatMap { r in
+            ["pdf", "json"].map { ext in DriveSync.RevisionUpload(key: "REV\(r.rev).\(ext)", name: "REV\(r.rev) \(name).\(ext)") }
+        }
+        .filter { sent[$0.key] == nil && fm.fileExists(atPath: store.revisionFile($0.key, job: job.id).path) }
     }
 
     // MARK: other devices
@@ -93,21 +99,12 @@ extension SurveyModel {
         guard let list = job.revisions, let i = list.firstIndex(where: { $0.rev == rev }), let snap = snapshot(job, rev: rev) else { return nil }
         var j = job
         j.values = snap.values; j.modules = snap.modules
-        j.revisions = Array(list[...i]); j.pendingReason = nil
-        j.lock = FormLock(rev: rev, lockedAt: list[i].issuedAt, hash: list[i].hash)
+        j.revisions = Array(list[...i])
         let complete = missingPhotos(j).isEmpty
         let out = complete ? url : tempURL("REV\(rev) " + baseName(j) + ".pdf")
         try? FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
         guard (try? pdfData(j).write(to: out, options: .atomic)) != nil else { return nil }
         return out
-    }
-
-    /// แก้ไข (เปิด REV nn+1) (§4.4).
-    func openNextRevision(_ id: UUID, reason: String, updateDate: Bool) {
-        guard var j = job(id), j.isLocked else { return }
-        j.openNextRevision(reason: reason, updateDate: updateDate)
-        update(j)
-        flush(id)
     }
 }
 #endif

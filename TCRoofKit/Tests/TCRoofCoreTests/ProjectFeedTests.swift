@@ -45,6 +45,19 @@ final class ProjectFeedTests: XCTestCase {
 
     // MARK: Daily reports
 
+    func testNewPostsAreThoseNotSeenAtTheTop() {
+        let first = station(reports: [.init(daily(11, [(.panels, "หลังคา 1", 32)]), signedAt: d(11, 17), recorder: "สมชาย")])
+        let seen = Set(records([first], now: d(12, 17)).map(\.id))
+        let later = station(reports: [
+            .init(daily(11, [(.panels, "หลังคา 1", 32)]), signedAt: d(11, 17), recorder: "สมชาย"),
+            .init(daily(12, [(.panels, "หลังคา 1", 38)]), signedAt: d(12, 16, 35), recorder: "สมชาย"),
+        ])
+        let posts = records([later], now: d(12, 17))
+        XCTAssertEqual(FeedBuilder.newCount(posts, seen: seen), 1, "the report synced in after")
+        XCTAssertEqual(FeedBuilder.newCount(posts, seen: Set(posts.map(\.id))), 0)
+        XCTAssertEqual(FeedBuilder.newCount(posts, seen: nil), 0, "nothing is new before the feed was seen")
+    }
+
     func testASignedReportBecomesAProgressPostAndADraftDoesNot() {
         let s = station(reports: [
             .init(daily(11, [(.panels, "หลังคา 1", 32)]), signedAt: d(11, 17), recorder: "สมชาย"),

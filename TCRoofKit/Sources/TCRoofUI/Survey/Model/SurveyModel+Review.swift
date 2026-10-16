@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import DriveSync
 
 /// Issued REVs: issuing, their snapshots, changes, PDFs and sync (docs/specs/review-lock-revisions-swift.md, without the lock).
 extension SurveyModel {
@@ -54,6 +55,17 @@ extension SurveyModel {
         }
         update(j)
         flush(id)
+        // the REV's PDF and snapshot go to Drive's REV folder with the next background upload
+        autoUploadPhotos(id, after: 1)
+    }
+
+    /// The issued REV files on this device that Drive doesn't have yet: each REV's PDF and snapshot, for `REV/`.
+    func revisionUploads(_ job: Job) -> [DriveSync.RevisionUpload] {
+        let sent = job.drive?.revisionFiles ?? [:], fm = FileManager.default, name = baseName(job)
+        return (job.revisions ?? []).flatMap { r in
+            ["pdf", "json"].map { ext in DriveSync.RevisionUpload(key: "REV\(r.rev).\(ext)", name: "REV\(r.rev) \(name).\(ext)") }
+        }
+        .filter { sent[$0.key] == nil && fm.fileExists(atPath: store.revisionFile($0.key, job: job.id).path) }
     }
 
     // MARK: other devices

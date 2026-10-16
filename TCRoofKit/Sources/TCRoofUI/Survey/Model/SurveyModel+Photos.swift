@@ -107,7 +107,8 @@ extension SurveyModel {
             guard let self, !Task.isCancelled else { return }
             await self.uploadRun[id]?.value
             guard !Task.isCancelled, !self.manualDriveSave.contains(id), let job = self.job(id),
-                  !(job.projectName.isEmpty && job.docNo.isEmpty), self.photosToUpload(job) > 0 else { return }
+                  !(job.projectName.isEmpty && job.docNo.isEmpty),
+                  self.photosToUpload(job) > 0 || !self.revisionUploads(job).isEmpty else { return }
             let run = Task { await self.uploadPhotos(id) }
             self.uploadRun[id] = run
             await run.value
@@ -127,7 +128,9 @@ extension SurveyModel {
         let store = self.store
         photoUpload[id] = PhotoTransfer(total: photosToUpload(job))
         do {
-            let link = try await drive.syncPhotos(job, photos: job.driveFolders, photoData: { store.data(of: $0, in: id) }) { [weak self] step in
+            let link = try await drive.syncPhotos(job, photos: job.driveFolders, photoData: { store.data(of: $0, in: id) },
+                                                  revisions: revisionUploads(job),
+                                                  revisionData: { try? Data(contentsOf: store.revisionFile($0.key, job: id)) }) { [weak self] step in
                 guard case .photos(let done, let total) = step else { return }
                 Task { @MainActor in self?.photoUpload[id] = PhotoTransfer(total: total, done: done) }
             }

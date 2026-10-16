@@ -31,8 +31,10 @@ final class MoveToInstallUITests: XCTestCase {
         let move = app.buttons["ย้าย ทดสอบย้ายติดตั้ง ไปงานติดตั้ง"]
         XCTAssertTrue(move.waitForExistence(timeout: 10))
         move.tap()
-        // the card turns into an install-phase card: ติดตั้ง, กำลังทำ <the first install step>
-        let moved = NSPredicate(format: "label CONTAINS %@ AND NOT (label CONTAINS %@)", "ติดตั้ง กำลังทำ", "ย้ายไปงานติดตั้ง")
+        // the card turns into an install-phase card: ติดตั้ง, กำลังทำ <the first install step>, or (linked, the job's
+        // station with no MP plan yet) ยังไม่มีแผน MP
+        let phase = NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "ติดตั้ง กำลังทำ", "ติดตั้ง ยังไม่มีแผน MP")
+        let moved = NSCompoundPredicate(andPredicateWithSubpredicates: [phase, NSPredicate(format: "NOT (label CONTAINS %@)", "ย้ายไปงานติดตั้ง")])
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: moved, object: c)], timeout: 10), .completed, c.label)
         XCTAssertFalse(c.label.contains("ล็อก"), "a moved survey isn't locked")
 
@@ -41,7 +43,7 @@ final class MoveToInstallUITests: XCTestCase {
         app = launch()
         var again = card(app)
         XCTAssertTrue(again.waitForExistence(timeout: slow))
-        XCTAssertTrue(again.label.contains("ติดตั้ง กำลังทำ"), again.label)
+        XCTAssertTrue(phase.evaluate(with: again), again.label)
 
         // the install overview has it under ยังไม่มีแผน MP (it has no MP plan yet)
         app.terminate()
@@ -49,12 +51,25 @@ final class MoveToInstallUITests: XCTestCase {
         let noPlan = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ยังไม่มีแผน MP")).firstMatch
         XCTAssertTrue(noPlan.waitForExistence(timeout: slow), "the overview offers ยังไม่มีแผน MP")
         noPlan.tap()
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบย้ายติดตั้ง")).firstMatch.waitForExistence(timeout: 10),
+        // linked, the station is the TCRoof job's, under its name (`TEST_RUNNER_MOVE_LINK_NAME`)
+        let listed = ProcessInfo.processInfo.environment["MOVE_LINK_NAME"] ?? "ทดสอบย้ายติดตั้ง"
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", listed)).firstMatch.waitForExistence(timeout: 10),
                       "the moved survey is listed there")
         app.terminate()
         app = launch()
         again = card(app)
         XCTAssertTrue(again.waitForExistence(timeout: slow))
+
+        // linked, a tap on the card opens the station's install tracking page, as the overview's row does
+        if !link.isEmpty {
+            again.tap()
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "รายละเอียดงาน")).firstMatch.waitForExistence(timeout: 15),
+                          "the install tracking page opens")
+            app.terminate()
+            app = launch()
+            again = card(app)
+            XCTAssertTrue(again.waitForExistence(timeout: slow))
+        }
 
         // and its survey still opens editable, from the card's menu
         again.press(forDuration: 1.2)

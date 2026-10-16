@@ -41,7 +41,7 @@ struct NewJobPhoneView: View {
     private var nameMissing: Bool { triedSave && trimmedName.isEmpty }
     private var timeText: String { String(format: "%02d:%02d น.", hour, minute) }
     private var dayText: String {
-        NewJobRules.relativeDay(day, from: today) + " · " + NewJobFormat.weekdayDayMonth.string(from: day)
+        NewJobRules.relativeDay(day, from: today) + " · " + ThaiFormat.weekdayTiny.string(from: day)
     }
     private var installRange: (start: Date, end: Date) {
         NewJobRules.installRange(survey: day, offsetDays: installOffset, days: installDays)
@@ -164,7 +164,7 @@ struct NewJobPhoneView: View {
 
     private var installRangeText: String {
         let r = installRange
-        return "\(NewJobFormat.weekdayDayMonth.string(from: r.start)) – \(NewJobFormat.weekdayDayMonth.string(from: r.end)) \(ThaiFormat.year.string(from: r.end))"
+        return "\(ThaiFormat.weekdayTiny.string(from: r.start)) – \(ThaiFormat.weekdayTiny.string(from: r.end)) \(ThaiFormat.year.string(from: r.end))"
     }
 
     private var detailsCard: some View {
@@ -303,13 +303,13 @@ struct NewJobPhoneView: View {
     }
 }
 
-/// Thai short weekdays as the board shows them (`พฤ. 1 ต.ค.`); `ThaiFormat.weekdayShort` gives `พฤหัส`.
+/// Thai short weekdays as the board shows them (`พฤ.`); `ThaiFormat.weekdayShort` gives `พฤหัส`. With the date:
+/// `ThaiFormat.weekdayTiny`.
 enum NewJobFormat {
     private static func make(_ format: String) -> DateFormatter {
         let f = DateFormatter(); f.locale = ThaiFormat.locale; f.dateFormat = format; return f
     }
     static let weekday = make("EEEEEE")
-    static let weekdayDayMonth = make("EEEEEE d MMM")
 }
 
 // MARK: - Group, card, row

@@ -115,7 +115,7 @@ struct NewJobPickerSheet: View {
         return frame("วันนัดสำรวจ") {
             VStack(spacing: 8) {
                 grid(4, options)
-                otherButton(custom ? NewJobFormat.weekdayDayMonth.string(from: day) : "เลือกวันอื่น", sub: custom ? "เลือกวันอื่น" : nil,
+                otherButton(custom ? ThaiFormat.weekdayTiny.string(from: day) : "เลือกวันอื่น", sub: custom ? "เลือกวันอื่น" : nil,
                             selected: custom) { current = .dateCustom }
             }
         }
@@ -216,7 +216,7 @@ struct NewJobPickerSheet: View {
     private var installGrid: some View {
         let offsets = Self.offsets.map { n in
             GridOption(id: "o\(n)", title: "+\(n) วัน",
-                       sub: NewJobFormat.weekdayDayMonth.string(from: NewJobRules.installRange(survey: day, offsetDays: n, days: 1).start),
+                       sub: ThaiFormat.weekdayTiny.string(from: NewJobRules.installRange(survey: day, offsetDays: n, days: 1).start),
                        selected: n == installOffset) { installOffset = n }
         }
         let durations = Self.durations.map { n in

@@ -374,8 +374,7 @@ struct AppointmentHero: View {
                 .accessibilityHidden(true)
             }
             Spacer(minLength: 4)
-            Text(ThaiFormat.weekdayShort.string(from: current?.date ?? .now) + (appointments.isEmpty ? "" : " · \(page + 1)/\(appointments.count)"))
-                .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(labelOpacity).lineLimit(1)
+            dateLabel
             if appointments.count > 1 {
                 pagerButton("chevron.left", label: pagerLabels.previous, enabled: page > 0) { go(-1) }
                 pagerButton("chevron.right", label: pagerLabels.next, enabled: page < appointments.count - 1) { go(1) }
@@ -383,6 +382,20 @@ struct AppointmentHero: View {
         }
         .frame(minHeight: 32)
         .padding(.trailing, size.isPad ? -10 : -8).padding(.vertical, -6)
+    }
+
+    /// `พฤ. 1 ต.ค. · 1/3`: only the date may truncate, never the counter. VoiceOver reads the full weekday and month.
+    private var dateLabel: some View {
+        let date = current?.date ?? .now
+        let counter = appointments.isEmpty ? nil : (page + 1, appointments.count)
+        return HStack(spacing: 0) {
+            Text(ThaiFormat.weekdayTiny.string(from: date)).lineLimit(1)
+            if let (n, m) = counter { Text(" · \(n)/\(m)").lineLimit(1).fixedSize().layoutPriority(1) }
+        }
+        .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(labelOpacity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([ThaiFormat.weekday.string(from: date) + " " + ThaiFormat.dayMonthLong.string(from: date),
+                             counter.map { "รายการที่ \($0.0) จาก \($0.1)" }].compactMap { $0 }.joined(separator: " · "))
     }
 
     private func pagerButton(_ symbol: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {

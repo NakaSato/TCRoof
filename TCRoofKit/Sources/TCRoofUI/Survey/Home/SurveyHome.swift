@@ -213,17 +213,6 @@ struct SurveyHomeView: View {
             Text(n > 0 ? "ความคืบหน้าติดตั้ง \(n)/\(InstallInfo.steps.count) ขั้น ทีม และวันส่งมอบจะถูกลบ งานจะกลับไปอยู่ในแท็บงานสำรวจ"
                  : "งานจะกลับไปอยู่ในแท็บงานสำรวจ")
         }
-        .confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { toInstall != nil }, set: { if !$0 { toInstall = nil } }),
-                            titleVisibility: .visible, presenting: toInstall) { j in
-            Button("ย้าย \(j.projectName) ไปงานติดตั้ง") {
-                toInstall = nil
-                model.moveToInstall(j.id)
-            }
-            Button("เปิดดูแบบสำรวจ") { toInstall = nil; go(j) }
-            Button("ยกเลิก", role: .cancel) { toInstall = nil }
-        } message: { _ in
-            Text("แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)")
-        }
         .alert("ซิงก์ต่อหรือไม่?", isPresented: Binding(get: { pendingSync != nil }, set: { if !$0 { pendingSync = nil } }), presenting: pendingSync) { _ in
             Button("ซิงก์ต่อ") { pendingSync = nil; runSync() }
             Button("ยกเลิก", role: .cancel) { pendingSync = nil }
@@ -251,6 +240,8 @@ struct SurveyHomeView: View {
                             recent: j.id.uuidString == lastOpened, station: station)
                 }
                 .buttonStyle(.plain)
+                // on the card, so the iPad popover points at it
+                .modifier(MoveToInstallDialog(job: j, asking: $toInstall, go: go))
                 .contextMenu {
                     switch mode {
                     case .survey:
@@ -304,6 +295,25 @@ struct SurveyHomeView: View {
                 open(s)
             } else {
                 go(j)
+            }
+        }
+    }
+
+    /// ย้ายไปงานติดตั้ง? for a complete survey, asked from its card.
+    struct MoveToInstallDialog: ViewModifier {
+        let job: Job
+        @Binding var asking: Job?
+        let go: (Job, MissingGroup.Target?) -> Void
+        @Environment(SurveyModel.self) private var model
+
+        func body(content: Content) -> some View {
+            content.confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { asking?.id == job.id }, set: { if !$0 { asking = nil } }),
+                                       titleVisibility: .visible) {
+                Button("ย้าย \(job.projectName) ไปงานติดตั้ง") { asking = nil; model.moveToInstall(job.id) }
+                Button("เปิดดูแบบสำรวจ") { asking = nil; go(job, nil) }
+                Button("ยกเลิก", role: .cancel) { asking = nil }
+            } message: {
+                Text("แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)")
             }
         }
     }

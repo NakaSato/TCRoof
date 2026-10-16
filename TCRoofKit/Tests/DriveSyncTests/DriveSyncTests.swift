@@ -133,6 +133,45 @@ final class DriveSyncTests: XCTestCase {
     }
 }
 
+extension DriveSyncTests {
+    /// Issued REV files go to REV/ inside the job folder, each once; a REV folder that is gone is made and filled again.
+    func testRevisionsGoToTheRevFolderOnce() async throws {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [FakeDrive.self]
+        let sync = DriveSync(client: DriveClient(tokens: FixedToken(), session: URLSession(configuration: cfg)))
+        var job = Job.new(template: JobTemplate.all[1])
+        job.values["docNo"] = .text("402"); job.values["projectName"] = .text("REV ทดสอบ")
+        let rev00 = [DriveSync.RevisionUpload(key: "REV00.pdf", name: "REV00 a.pdf"), DriveSync.RevisionUpload(key: "REV00.json", name: "REV00 a.json")]
+        let data: @Sendable (DriveSync.RevisionUpload) -> Data? = { Data($0.key.utf8) }
+
+        let link = try await sync.syncPhotos(job, photos: [], photoData: { _ in nil }, revisions: rev00, revisionData: data)
+        let folder = FakeDrive.items.first { $0["id"] as? String == link.revisionsFolderID }
+        XCTAssertEqual(folder?["name"] as? String, "REV")
+        XCTAssertEqual(folder?["parent"] as? String, link.folderID)
+        XCTAssertEqual(Set(link.revisionFiles?.keys ?? [:].keys), ["REV00.pdf", "REV00.json"])
+        let pdf = FakeDrive.items.first { $0["id"] as? String == link.revisionFiles?["REV00.pdf"] }
+        XCTAssertEqual(pdf?["mimeType"] as? String, "application/pdf")
+        XCTAssertEqual(pdf?["parent"] as? String, link.revisionsFolderID)
+
+        // the next save sends only REV 01, and a file the device doesn't have is skipped
+        job.drive = link
+        let rev01 = rev00 + [DriveSync.RevisionUpload(key: "REV01.pdf", name: "REV01 a.pdf"), DriveSync.RevisionUpload(key: "REV01.json", name: "gone")]
+        let before = FakeDrive.log.filter { $0.contains("/upload/") }.count
+        let (again, _) = try await sync.save(job, kinds: [], build: { _ in Data() }, revisions: rev01,
+                                             revisionData: { $0.name == "gone" ? nil : Data($0.key.utf8) })
+        XCTAssertEqual(FakeDrive.log.filter { $0.contains("/upload/") }.count - before, 1)
+        XCTAssertEqual(again.revisionsFolderID, link.revisionsFolderID)
+        XCTAssertEqual(again.revisionFiles?.count, 3)
+
+        // REV folder deleted on Drive: made again and every file sent again
+        FakeDrive.items.removeAll { $0["id"] as? String == again.revisionsFolderID }
+        job.drive = again
+        let refilled = try await sync.syncPhotos(job, photos: [], photoData: { _ in nil }, revisions: rev00, revisionData: data)
+        XCTAssertNotEqual(refilled.revisionsFolderID, again.revisionsFolderID)
+        XCTAssertEqual(refilled.revisionFiles?.count, 2)
+    }
+}
+
 final class StepLog: @unchecked Sendable {
     private var totals: [Int] = []
     func add(_ s: DriveSync.Step) { if case .photos(_, let t) = s { totals.append(t) } }

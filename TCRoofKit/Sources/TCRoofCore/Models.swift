@@ -385,6 +385,10 @@ public struct DriveLink: Codable, Hashable, Sendable {
     public var photosFolderID: String?
     /// Photo id → Drive file id of photos already uploaded, so each save sends only new ones.
     public var photoFiles: [String: String]?
+    /// "REV" folder inside the job folder: each issued REV's PDF and snapshot.
+    public var revisionsFolderID: String?
+    /// File name on the device ("REV00.pdf", "REV00.json") → Drive file id of the REV files already uploaded.
+    public var revisionFiles: [String: String]?
     public init() {}
 }
 

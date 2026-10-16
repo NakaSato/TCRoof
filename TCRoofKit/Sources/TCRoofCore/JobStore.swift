@@ -81,6 +81,8 @@ public final class JobStore: @unchecked Sendable {
     /// "revisions/REV00.pdf", relative to the job folder, as stored in `Revision.pdfFile`.
     public static func revisionPDFPath(rev: String) -> String { "revisions/REV\(rev).pdf" }
     public func revisionPDF(rev: String, job: UUID) -> URL { folder(job).appendingPathComponent(Self.revisionPDFPath(rev: rev)) }
+    /// A file in the job's `revisions/` folder by its name ("REV00.pdf", "REV00.json").
+    public func revisionFile(_ name: String, job: UUID) -> URL { revisionsFolder(job).appendingPathComponent(name) }
     public func revisionJSON(rev: String, job: UUID) -> URL { revisionsFolder(job).appendingPathComponent("REV\(rev).json") }
 
     /// Writes an issued REV's answers once; an issued REV is never rewritten.

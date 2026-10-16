@@ -19,7 +19,12 @@ decodes and drops it. REVs, their snapshots, PDFs, the รายการแก�
 (`RevisionRule.next`) and needs a reason, written to the cover's REV field at issue time. The snapshot, its
 `FormHash` check code and the PDF are kept as before; the form stays editable. §4.1–§4.4 are kept below as history.
 
-Not built: the Drive `REV/` upload (`DriveSync.Kind.revisions`), the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
+**Drive `REV` folder (2026-10-16):** each issued REV's `REVnn.pdf` and `REVnn.json` go to a `REV` folder in the job's
+Drive folder, named `REVnn แบบสำรวจ NO.<doc> <project>.pdf/.json`, once each (`DriveLink.revisionFiles`), with any Drive
+save and with the background upload, which `ออก REV` starts. Not `DriveSync.Kind.revisions`: the files ride along like
+the photos rather than being a kind to tick.
+
+Not built: the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
 and the leaving-site reminder (§2.4, open question 5).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same code runs on iPhone in compact layout.
 **Modules:** `TCRoofCore` (model, diff, hash; testable with `swift test`), `SurveyUI` (pages), `PDFReport` (page and

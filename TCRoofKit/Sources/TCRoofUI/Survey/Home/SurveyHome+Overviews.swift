@@ -181,14 +181,12 @@ extension SurveyHomeView {
     }
 
     func openStation(_ s: InstallStationSummary) {
-        // iPad: a host station opens the host's install tracking page, even when a survey job here is linked to it
-        if !compact, let open = host.openStation, host.installStations?.contains(where: { $0.id == s.id }) == true {
+        // a host station opens the host's screen for it, even when a survey job here is linked to it
+        if let open = host.openStation, host.installStations?.contains(where: { $0.id == s.id }) == true {
             open(s)
-            return
-        }
-        if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
-            lastOpened = j.id.uuidString
-            tracking = j.id
+        } else if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
+            // a station made from a survey job's own InstallInfo (no host station): the survey, read-only
+            go(j)
         } else {
             host.openStation?(s)
         }
@@ -374,11 +372,12 @@ extension SurveyHomeView {
         .buttonStyle(.plain)
     }
 
-    /// The station's job here when it has one, else the host's screen for it.
+    /// The host's screen for the station when it has it, else the station's survey job here, read-only.
     private func openMaintenanceStation(_ s: MaintenanceStationSummary) {
-        if let j = model.jobs(in: .maintenance).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
-            lastOpened = j.id.uuidString
-            tracking = j.id
+        if let open = host.openMaintenanceStation, host.maintenanceStations.contains(where: { $0.id == s.id }) {
+            open(s)
+        } else if let j = model.jobs(in: .maintenance).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
+            go(j)
         } else {
             host.openMaintenanceStation?(s)
         }

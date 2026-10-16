@@ -156,26 +156,4 @@ struct MaintenancePickerSheet: View {
         return ["ติดตั้ง \(Int(s.actual.rounded()))%", s.kWp > 0 ? kWp + " kWp" : "", s.contractor].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 }
-
-/// Installation tracking of one job.
-// TODO: build from the canvas board `iPadInstall.dc.html` (steps, team, handover); only a placeholder for now.
-struct InstallTrackingView: View {
-    let job: Job
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Text(job.docNo.isEmpty ? "NO. —" : "NO.\(job.docNo)").font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
-            Text(job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName).font(.sarabun(22, .bold, relativeTo: .title2)).foregroundStyle(Theme.navy)
-                .multilineTextAlignment(.center)
-            Label("อยู่ระหว่างพัฒนา", systemImage: "hammer").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.inkMuted).padding(.top, 8)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.pageGradient.ignoresSafeArea())
-        .navigationTitle("ติดตามงานติดตั้ง")
-        .toolbar(.visible, for: .navigationBar)
-        .navigationBarTitleDisplayMode(.inline)
-        .tcPadNavBar("ติดตามงานติดตั้ง", trail: ["หน้าหลัก", "PWA Solar Survey"])
-    }
-}
 #endif

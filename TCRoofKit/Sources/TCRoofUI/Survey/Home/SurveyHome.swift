@@ -69,8 +69,6 @@ struct SurveyHomeView: View {
     @State var planOpen = false
     /// The page's width, for the iPad's columns: three in landscape, two in portrait.
     @State var pageWidth: CGFloat = 0
-    /// Installation job whose tracking page is open.
-    @State var tracking: UUID?
     // the home page (docs/ui/pwa-solar-survey-iphone-v3, docs/ui/pwa-solar-survey-ipad-v3)
     /// The header's search button grown into its field.
     @State var searchOpen = false
@@ -142,9 +140,6 @@ struct SurveyHomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $open) { o in
             if let j = model.job(o.id) { JobEditorView(job: j, start: o.start).environment(model) }
-        }
-        .navigationDestination(item: $tracking) { id in
-            if let j = model.job(id) { InstallTrackingView(job: j) }
         }
         #if DEBUG
         // `-surveyDemo YES` opens a job right away for simulator checks; add `-surveyDemoSection YES` to open its first section.
@@ -288,12 +283,13 @@ struct SurveyHomeView: View {
         // the editor opens a moved survey read-only, on its summary
         case .locked: go(j)
         case .install:
+            // a survey linked to a host station opens the host's screen for it (the install tracking page on iPad, the
+            // station on iPhone); one with no station opens read-only, on its summary
             lastOpened = j.id.uuidString
-            // iPad: a survey linked to a host station opens the host's install tracking page; the rest keep this one's
-            if !compact, let sync = j.jobSyncID, let s = host.installStations?.first(where: { $0.id == sync }), let open = host.openStation {
+            if let sync = j.jobSyncID, let s = host.installStations?.first(where: { $0.id == sync }), let open = host.openStation {
                 open(s)
             } else {
-                tracking = j.id
+                go(j)
             }
         }
     }

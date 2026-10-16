@@ -70,8 +70,10 @@ struct RevisionsPage: View {
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             }
-            Label("REV \(job.rev) กำลังแก้ไข", systemImage: "pencil")
-                .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
+            if model.hasUnissuedChanges(job) {
+                Label("ฉบับปัจจุบันแก้แล้ว · ออกครั้งต่อไปเป็น REV \(job.nextIssueRev)", systemImage: "pencil")
+                    .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import SwiftData
 import CryptoKit
 import FirebaseAuth
 import FirebaseFirestore
+import Network
 import TCRoofCore
 import TCRoofUI
 
@@ -25,6 +26,8 @@ final class CloudSync {
 
     private(set) var state = State.off
     private(set) var lastSync: Date?
+    /// The last pull to refresh found no network or couldn't reach the server; the feed says it shows what's here.
+    private(set) var refreshFailed = false
 
     @ObservationIgnored private var context: ModelContext?
     @ObservationIgnored private var survey: SurveyModel?
@@ -153,6 +156,31 @@ final class CloudSync {
     private func synced() {
         state = .synced
         lastSync = .now
+        refreshFailed = false
+    }
+
+    // MARK: pull to refresh
+
+    /// The home's pull to refresh. The listeners already bring every change in, so this restarts a failed sync or
+    /// pushes what's waiting, then waits up to 8 s for the server. Offline, Firestore keeps serving its cache and the
+    /// state stays `.synced`, so the network is checked too.
+    func refresh() async {
+        guard context != nil else { return }
+        if case .failed = state { retry() } else { push() }
+        for _ in 0..<32 where state != .synced { try? await Task.sleep(for: .milliseconds(250)) }
+        let online = await Self.isOnline()
+        refreshFailed = !online || state != .synced
+    }
+
+    private static func isOnline() async -> Bool {
+        await withCheckedContinuation { done in
+            let monitor = NWPathMonitor()
+            monitor.pathUpdateHandler = { path in
+                monitor.cancel()
+                done.resume(returning: path.status == .satisfied)
+            }
+            monitor.start(queue: DispatchQueue(label: "cloudSync.path"))
+        }
     }
 
     private func failed(_ error: Error) {

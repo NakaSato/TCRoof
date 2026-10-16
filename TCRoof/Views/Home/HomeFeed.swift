@@ -122,6 +122,7 @@ struct HomeFeed: View {
             case .phone:
                 VStack(spacing: 10) {
                     segments
+                    if sync.refreshFailed { offlineLine }
                     list(shown)
                 }
             case .column(let scrolls):
@@ -129,6 +130,7 @@ struct HomeFeed: View {
                     columnHeader
                     if scrolls {
                         ScrollView { VStack(spacing: 14) { list(shown) } }.scrollIndicators(.hidden)
+                            .refreshable { await sync.refresh() }
                     } else {
                         VStack(spacing: 14) { list(shown) }
                     }
@@ -173,6 +175,20 @@ struct HomeFeed: View {
 
     /// iPad: `ฟีดโครงการ`, the time of the newest post, and the 440 pt filter at the right; in a narrow column the
     /// filter goes under the title, across the width.
+    /// After a pull to refresh that couldn't reach the server: the feed is what this device has.
+    private var offlineLine: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "wifi.slash").font(.system(size: 11, weight: .semibold))
+            Text(["ออฟไลน์ · แสดงข้อมูลในเครื่อง", sync.lastSync.map { "ซิงก์ล่าสุด " + ThaiFormat.time.string(from: $0) }]
+                .compactMap { $0 }.joined(separator: " · "))
+                .font(.sarabun(12.5, relativeTo: .caption)).lineLimit(1)
+        }
+        .foregroundStyle(Theme.warningText)
+        .padding(.horizontal, 10).padding(.vertical, 2)
+        .background(Theme.warningSoft, in: Capsule())
+        .accessibilityElement(children: .combine)
+    }
+
     private var columnHeader: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) {
@@ -191,7 +207,9 @@ struct HomeFeed: View {
         HStack(spacing: 10) {
             Text("ฟีดโครงการ").font(.sarabun(20, .bold, relativeTo: .title3)).foregroundStyle(Theme.navy)
                 .accessibilityAddTraits(.isHeader)
-            if let latest = posts.map(\.date).max() {
+            if sync.refreshFailed {
+                offlineLine
+            } else if let latest = posts.map(\.date).max() {
                 HStack(spacing: 6) {
                     Circle().fill(Theme.success).frame(width: 7, height: 7)
                     Text("อัปเดตล่าสุด " + ThaiFormat.time.string(from: latest)).font(.sarabun(12.5, relativeTo: .caption))

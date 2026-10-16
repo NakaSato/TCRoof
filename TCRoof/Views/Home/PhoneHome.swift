@@ -41,6 +41,7 @@ struct PhoneHome: View {
             // the dock and `PhoneTab.barGap` are the bottom safe-area inset: the feed ends the board's 104 pt up
             .padding(.horizontal, 16).padding(.top, 12)
         }
+        .refreshable { await CloudSync.shared.refresh() }
         .safeAreaInset(edge: .top, spacing: 0) {
             HomeBrandHeader(size: .phone, unread: unread, notificationsShown: $notificationsShown)
         }

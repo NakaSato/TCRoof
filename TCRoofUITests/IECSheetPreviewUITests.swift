@@ -58,6 +58,38 @@ final class IECSheetPreviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["INV1ST5"].waitForExistence(timeout: 5), "at String 5")
     }
 
+    /// On a closed test a tap asks `แก้ไข` first: `ยกเลิก` stays on the sheet, `แก้ไข` reopens the test and opens the step.
+    func testATapOnAClosedTestAsksToEditFirst() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
+                               "-iecOpen", "YES", "-iecDemo", "full"]
+        app.launch()
+        let finish = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "เสร็จ")).firstMatch
+        XCTAssertTrue(finish.waitForExistence(timeout: slow))
+        finish.tap()
+        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10), "closed")
+
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ดูชีต Excel")).firstMatch.tap()
+        let sheet = app.otherElements["ชีต Excel"]
+        XCTAssertTrue(app.staticTexts["ไม่พิมพ์ลงไฟล์ Excel"].waitForExistence(timeout: 20))
+        let voc = sheet.coordinate(withNormalizedOffset: CGVector(dx: Self.vocI16.x, dy: Self.vocI16.y))
+        voc.tap()
+        let ask = app.staticTexts["เปิดผลทดสอบให้แก้ไข"]
+        XCTAssertTrue(ask.waitForExistence(timeout: 10), "asks first")
+        // iPad shows the question as a popover: no ยกเลิก, a tap outside closes it
+        let cancel = app.buttons["ยกเลิก"].firstMatch
+        if cancel.exists { cancel.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap() }
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: ask)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed)
+        XCTAssertTrue(app.staticTexts["ชีต INV 01-ก่อน · ตามฟอร์ม 1FORMI1"].exists, "still on the sheet")
+
+        voc.tap()
+        XCTAssertTrue(ask.waitForExistence(timeout: 10))
+        app.buttons.matching(NSPredicate(format: "label == %@", "แก้ไข")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["IEC 62446 · ก่อนออนระบบ · แรงดัน / กระแส"].waitForExistence(timeout: 15), "step 2's page")
+        XCTAssertTrue(app.staticTexts["INV1ST5"].waitForExistence(timeout: 5), "at String 5")
+    }
+
     /// I16 in the sheet, as a fraction of its width and height (from the template: columns A–AB, rows 1–35, hidden
     /// row 10 left out).
     static let vocI16 = (x: 0.3228, y: 0.4010)

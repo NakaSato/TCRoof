@@ -23,6 +23,10 @@ struct IECSheetPreview: View {
     @State private var lastZoom: CGFloat = 1
     @State private var debugApplied = false
     @State private var printed: IECTestScreen.ExportedFile?
+    /// A tap on a closed test: the step it asked for, opened once `แก้ไข` has reopened the test.
+    @State private var pendingOpen: PendingOpen?
+    struct PendingOpen { let stage: IECReport.Stage; let inverter: Int; let slot: Int? }
+    @Environment(\.modelContext) private var context
     @State private var printFailed: String?
 
     private var report: IECReport { job.iecReport ?? job.newIECReport }
@@ -49,7 +53,7 @@ struct IECSheetPreview: View {
                             let scale = (g.size.width - 48) / l.width * zoom
                             IECSheetCanvas(layout: l, report: r, inverter: inverter, phase: phase, sources: sources, scale: scale,
                                            doubleTap: { withAnimation { zoom = zoom > 1.01 ? 1 : 2; lastZoom = zoom } }) { stage, slot in
-                                open(stage, inverter, slot)
+                                request(stage, inverter, slot)
                             }
                             .frame(width: l.width * scale, height: l.height * scale)
                             .simultaneousGesture(MagnifyGesture().onChanged { zoom = min(3, max(1, lastZoom * $0.magnification)) }.onEnded { _ in lastZoom = zoom })
@@ -67,6 +71,14 @@ struct IECSheetPreview: View {
         .background(Theme.phonePage.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $printed) { ActivitySheet(items: [$0.url]) }
+        .confirmationDialog("เปิดผลทดสอบให้แก้ไข", isPresented: Binding(get: { pendingOpen != nil }, set: { if !$0 { pendingOpen = nil } }),
+                            titleVisibility: .visible, presenting: pendingOpen) { p in
+            Button("แก้ไข") {
+                job.updateIEC(context, evenWhenLocked: true) { $0.reopen() }
+                open(p.stage, p.inverter, p.slot)
+            }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: { _ in Text("การทดสอบนี้ปิดแล้ว ผลที่สรุปไว้จะถูกยกเลิก ต้องกด เสร็จ อีกครั้งหลังแก้") }
         .alert("ทำ PDF ไม่ได้", isPresented: Binding(get: { printFailed != nil }, set: { if !$0 { printFailed = nil } })) {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(printFailed ?? "") }
@@ -100,6 +112,11 @@ struct IECSheetPreview: View {
         } catch {
             failed = "วาดชีตไม่ได้: \(error.localizedDescription)"
         }
+    }
+
+    /// A tinted cell or a swatch: its step, or on a closed test the `แก้ไข` question first.
+    private func request(_ stage: IECReport.Stage, _ inverter: Int, _ slot: Int?) {
+        if job.iecReport?.isLocked == true { pendingOpen = PendingOpen(stage: stage, inverter: inverter, slot: slot) } else { open(stage, inverter, slot) }
     }
 
     /// `PDF ชีตนี้`: the sheet as exported (no source tints), vector, fitted on one A4 landscape page, for sending
@@ -151,7 +168,7 @@ struct IECSheetPreview: View {
         HStack(spacing: 14) {
             Text("ค่าที่มาจากแอป iPad · IEC 62446").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
             ForEach(IECSheetCanvas.legendStages, id: \.self) { s in
-                Button { open(s, inverter, nil) } label: {
+                Button { request(s, inverter, nil) } label: {
                     HStack(spacing: 6) {
                         RoundedRectangle(cornerRadius: 3).fill(IECSheetCanvas.fill(s)).frame(width: 18, height: 14)
                             .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(IECSheetCanvas.line(s)))

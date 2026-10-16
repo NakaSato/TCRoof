@@ -48,4 +48,22 @@ final class SurveyPagesPerformanceUITests: XCTestCase {
         let ms = Date().timeIntervalSince(start) * 1000 / Double(text.count)
         print("TYPE \(Int(ms)) ms per key over \(text.count) keys")
     }
+
+    /// D1 sub-step 3 (`-surveyD1 layout`): `เลื่อนผัง` drags the panel layout slowly across and back; time and the app's
+    /// CPU over 5 runs. Compare a build with and without perf/tank-page.
+    func testDragTheTankLayout() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyWideA1", "YES",
+                               "-surveyPage", "tank", "-surveyD1", "layout", "-noNotificationPrompt", "YES"]
+        app.launch()
+        let plan = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ผังแผง")).firstMatch
+        XCTAssertTrue(plan.waitForExistence(timeout: slow), "the layout plan")
+        sleep(2)
+        let a = plan.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.5))
+        let b = plan.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.55))
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(application: app)]) {
+            a.press(forDuration: 0.1, thenDragTo: b, withVelocity: 60, thenHoldForDuration: 0.1)
+            b.press(forDuration: 0.1, thenDragTo: a, withVelocity: 60, thenHoldForDuration: 0.1)
+        }
+    }
 }

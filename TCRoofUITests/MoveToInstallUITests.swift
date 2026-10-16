@@ -21,7 +21,9 @@ final class MoveToInstallUITests: XCTestCase {
     }
 
     func testMoveFromCard() {
-        var app = launch(["-surveyCompleteJob", "YES"])
+        // `TEST_RUNNER_MOVE_LINK=<syncID>` links the survey to that TCRoof job, to check its status afterwards
+        let link = ProcessInfo.processInfo.environment["MOVE_LINK"].map { ["-surveyCompleteJobLink", $0] } ?? []
+        var app = launch(["-surveyCompleteJob", "YES"] + link)
         let c = card(app)
         XCTAssertTrue(c.waitForExistence(timeout: slow))
         XCTAssertTrue(c.label.contains("ย้ายไปงานติดตั้ง"), "a complete survey offers the move: \(c.label)")

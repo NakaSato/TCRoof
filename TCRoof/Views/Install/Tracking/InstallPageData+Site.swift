@@ -69,6 +69,21 @@ extension InstallPageData {
         var plannedManDays: Int? { let p = labour.compactMap(\.plan); return p.isEmpty ? nil : p.reduce(0, +) }
     }
 
+    /// The IEC line: closed with its date and who, or the steps done and what the first open one lacks; and the
+    /// photos on Drive.
+    static func iecDetail(_ r: IECReport, drive: IECReport.Tally?) -> String {
+        let photos = drive.map { " · รูปขึ้น Drive \($0.done)/\($0.total)" } ?? ""
+        if let result = r.result {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "th_TH"); f.calendar = Calendar(identifier: .buddhist); f.dateFormat = "d MMM yyyy"
+            return "ปิดการทดสอบ " + f.string(from: result.completedAt) + (result.by.isEmpty ? "" : " · " + result.by) + photos
+        }
+        let steps = IECReport.Stage.allCases.filter { $0 != .review }
+        let done = steps.filter(r.isDone).count
+        let next = steps.first { !r.isDone($0) }.map { " · ขั้น \($0.rawValue) ขาด " + (r.missing($0).first ?? "") } ?? " · พร้อมสรุปผล"
+        return "ครบ \(done)/\(steps.count) ขั้น" + next + photos
+    }
+
     @MainActor static func docTiles(job: Job, today: Date) -> [DocTile] {
         let cal = RoutineReport.calendar, day = cal.startOfDay(for: today)
         var tiles: [DocTile] = []
@@ -152,9 +167,9 @@ extension InstallPageData {
             // the IEC 62446 test itself first, then the submission's papers
             let iec = job.iecReport
             let line = DocItem(id: "iec", code: "IEC", title: "ทดสอบ IEC 62446 ก่อน / หลังเชื่อมต่อ",
-                               detail: iec.map { "ค่าที่วัดแล้ว \($0.readings.done)/\($0.readings.total) · รูป \($0.photos.done)/\($0.photos.total)" } ?? "ยังไม่ได้ตั้งค่า inverter และสตริง",
-                               chip: iec.map { "\(Int(($0.completion * 100).rounded()))%" } ?? "ยังไม่เริ่ม",
-                               tone: iec.map { $0.missing.isEmpty ? .ok : .info } ?? .idle, target: .iec)
+                               detail: iec.map { Self.iecDetail($0, drive: ProjectDriveUpload.iecPhotoUpload(job)) } ?? "ยังไม่ได้ตั้งค่า inverter และสตริง",
+                               chip: iec.map { r in r.result.map { $0.passed ? "ผ่าน" : "ไม่ผ่าน" } ?? "\(Int((r.completion * 100).rounded()))%" } ?? "ยังไม่เริ่ม",
+                               tone: iec.map { r in r.result.map { $0.passed ? .ok : .danger } ?? .info } ?? .idle, target: .iec)
             t = DocTile(id: t.id, title: t.title, about: t.about, chip: t.chip, tone: t.tone, items: [line] + t.items)
             tiles.append(t)
         }

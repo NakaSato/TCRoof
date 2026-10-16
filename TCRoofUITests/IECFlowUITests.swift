@@ -12,10 +12,14 @@ final class IECFlowUITests: XCTestCase {
     /// Voc, Vmp before and after for the four strings of 16 panels.
     static let voc = ["752", "751", "753", "750"], vmp = ["612", "611", "613", "610"]
 
-    func type(_ field: XCUIElement, _ text: String, _ what: String) {
+    /// `edge`: at the right edge, so the cursor lands after any text (the number fields are right-aligned); the narrow
+    /// centred slot fields are tapped in the middle.
+    func type(_ field: XCUIElement, _ text: String, _ what: String, edge: Bool = true) {
         XCTAssertTrue(field.waitForExistence(timeout: 10), what)
-        // at the right edge, so the cursor lands after any text (the number fields are right-aligned)
-        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        if edge { field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap() } else { field.tap() }
+        // the keyboard can take a moment to attach to a field the form just scrolled in
+        let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
+        if XCTWaiter.wait(for: [focused], timeout: 3) != .completed { field.tap() }
         // a pre-filled value (the inverter's kW comes from the job's MP plan) is replaced, not added to
         if let old = field.value as? String, !old.isEmpty, old != field.placeholderValue, old != "—" {
             field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count))
@@ -37,30 +41,41 @@ final class IECFlowUITests: XCTestCase {
                                "-iecOpen", "YES", "-iecClear", "YES"]
         app.launch()
 
-        // 1 · set-up
+        // 1 · set-up: on iPad step 1's page
         let setUp = button(app, "ตั้งค่าการทดสอบ", contains: true)
         XCTAssertTrue(setUp.waitForExistence(timeout: slow), "a station with no test offers its set-up")
         setUp.tap()
+        let panel = button(app, "แผงโซลาร์ แก้ไข")
+        XCTAssertTrue(panel.waitForExistence(timeout: 15), "step 1's page")
+        panel.tap()
         type(app.textFields["ยี่ห้อ / รุ่นแผง"], "Znshine", "panel")
         type(app.textFields["กำลังต่อแผง"], "570", "power")
-        type(app.textFields["พื้นที่ต่อแผ่น (datasheet)"], "2.58", "area")
-        type(app.textFields["พิกัด inverter 1"], "80", "kW")
-        type(app.textFields["S/N inverter 1"], "TEST-INV1", "serial")
-        for slot in 1...4 { type(app.textFields["Inverter 1 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)") }
-        // the record section is further down the form
-        let toggle = app.switches.matching(NSPredicate(format: "label == %@", "ระบุวันที่ทดสอบ")).firstMatch
-        for _ in 0..<5 where !toggle.isHittable { app.textFields["Inverter 1 ช่อง 4 จำนวนแผง"].swipeUp() }
-        XCTAssertTrue(toggle.isHittable, "the test date switch")
-        toggle.tap()
-        type(app.textFields["ผู้ทดสอบ"], "ทีมทดสอบ", "tester")
-        type(app.textFields["S/N แคลมป์มิเตอร์"], "CLAMP-01", "clamp")
-        type(app.textFields["S/N เครื่องวัดความเป็นฉนวน (IR)"], "IR-01", "IR tester")
-        type(app.textFields["S/N เครื่องวัดความเข้มแสง"], "SUN-01", "irradiance meter")
-        app.buttons["บันทึก"].tap()
+        type(app.textFields["พื้นที่ต่อแผ่น"], "2.58", "area")
+        app.buttons["เสร็จ"].firstMatch.tap()
+        // the inverter's kW comes from the job (80); its S/N and strings 1–4 of 16 panels
+        type(app.textFields["S/N อินเวอร์เตอร์"], "TEST-INV1\n", "serial")
+        for slot in 1...4 { app.switches["String \(slot)"].tap() }
+        XCTAssertTrue(app.staticTexts["4 / 20 ช่อง"].waitForExistence(timeout: 5))
+        app.buttons["วันที่ทดสอบ"].tap()
+        app.staticTexts["รายการสตริง (String list)"].tap()
+        type(app.textFields["ผู้ทดสอบ"], String(repeating: XCUIKeyboardKey.delete.rawValue, count: 30) + "ทีมทดสอบ\n", "tester")
+        for (row, serial) in [("แคลมป์มิเตอร์", "CLAMP-01"), ("เครื่องวัดฉนวน (IR)", "IR-01"), ("เครื่องวัดแสง", "SUN-01")] {
+            app.buttons[row + " S/N"].tap()
+            app.buttons["พิมพ์ S/N"].tap()
+            let field = app.alerts.textFields.firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 5), row)
+            field.typeText(serial)
+            app.alerts.buttons["บันทึก"].tap()
+        }
+        app.buttons["กลับ"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["1 / 4"].waitForExistence(timeout: 10), "1 inverter, 4 strings")
 
         // 2 · before: rows for every string, and the inverter's checks
         button(app, "ก่อนการเชื่อมต่อระบบ", contains: true).tap()
+        // on iPad that is step 2's page; its ถัดไป opens the string table with every before row
+        let toTable = button(app, "ถัดไป 3/7", contains: true)
+        XCTAssertTrue(toTable.waitForExistence(timeout: 10), "step 2's page")
+        toTable.tap()
         let fill = button(app, "กรอกทั้งแถว")
         XCTAssertTrue(fill.waitForExistence(timeout: 10))
         for item in ["Polarity ✓ ทุกสตริง", "Test Voltage 1000 V ทุกสตริง", "String Current 0 A ทุกสตริง (วงจรเปิด)"] {
@@ -112,27 +127,25 @@ final class IECFlowUITests: XCTestCase {
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30), "the export opens the share sheet")
     }
 
-    /// A third inverter added in the set-up exports too (its sheets are cloned from INV 02's), on the sample
-    /// (`-iecDemo reset`): the file is `ตัวอย่าง แพรกหนามแดง …` in the app's `tmp/`.
+    /// A third inverter added on step 1's page exports too (its sheets are cloned from INV 02's), on the sample
+    /// (`-iecDemo praek`): the file is `ตัวอย่าง แพรกหนามแดง …` in the app's `tmp/`.
     func testThirdInverterExports() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
-                               "-iecOpen", "YES", "-iecDemo", "reset", "-iecSetup", "YES"]
+                               "-iecOpen", "YES", "-iecDemo", "praek", "-iecStep", "1", "-iecCameraStub", "YES"]
         app.launch()
 
-        XCTAssertTrue(app.textFields["S/N inverter 1"].waitForExistence(timeout: slow), "the set-up sheet")
-        // below the two inverters; the form only builds rows near the screen
-        let add = button(app, "เพิ่ม inverter", contains: true)
-        for _ in 0..<10 where !(add.exists && add.isHittable) { app.collectionViews.firstMatch.swipeUp() }
-        XCTAssertTrue(add.isHittable, "เพิ่ม inverter")
+        // step 1's add sheet: the 60 kW model (6 MPPT, 12 strings of 16), its two required photos from the stub camera
+        let add = button(app, "+ เพิ่มอินเวอร์เตอร์")
+        XCTAssertTrue(add.waitForExistence(timeout: slow), "step 1's page")
         add.tap()
-        type(app.textFields["พิกัด inverter 3"], "50", "kW")
-        type(app.textFields["S/N inverter 3"], "TEST-INV3", "serial")
-        // the slot grid is the section's next row, under the keyboard
-        let slot1 = app.textFields["Inverter 3 ช่อง 1 จำนวนแผง"]
-        for _ in 0..<4 where !(slot1.exists && slot1.isHittable) { app.collectionViews.firstMatch.swipeUp() }
-        for slot in 1...2 { type(app.textFields["Inverter 3 ช่อง \(slot) จำนวนแผง"], "16", "slot \(slot)") }
-        app.buttons["บันทึก"].tap()
+        app.buttons["ด้านหน้า"].firstMatch.tap()
+        app.buttons["ด้านข้าง · ป้าย S/N"].firstMatch.tap()
+        let commit = button(app, "เพิ่ม INV3")
+        XCTAssertTrue(commit.waitForExistence(timeout: 10))
+        commit.tap()
+        XCTAssertTrue(app.staticTexts["12/12 สตริง"].waitForExistence(timeout: 10))
+        app.buttons["กลับ"].firstMatch.tap()
 
         let export = button(app, "ส่งออก Excel IEC 62446", contains: true)
         XCTAssertTrue(export.waitForExistence(timeout: 10))

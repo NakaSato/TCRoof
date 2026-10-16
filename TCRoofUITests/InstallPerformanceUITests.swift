@@ -39,14 +39,14 @@ final class InstallPerformanceUITests: XCTestCase {
         }
     }
 
-    /// The IEC test's overview to Inverter 1's before table (20 × 8 cells) and back.
+    /// The IEC test's overview to Inverter 1's before page (step 2: the DC map and the 20-row table) and back.
     func testOpenIECStringTable() {
         let app = launch(["-iecDemo", "YES", "-iecOpen", "YES"])
         let band = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ก่อนการเชื่อมต่อระบบ")).firstMatch
         XCTAssertTrue(band.waitForExistence(timeout: 15))
         measure(metrics: metrics(app)) {
             band.tap()
-            let cell = app.buttons["String Voltage (V) ช่อง 1"]
+            let cell = app.staticTexts["ตารางค่าวัด · INV1 ก่อนออนระบบ"]
             XCTAssertTrue(cell.waitForExistence(timeout: 10))
             app.buttons["กลับ"].firstMatch.tap()
             XCTAssertTrue(gone(cell))

@@ -1,6 +1,6 @@
 # IEC 62446 Word photo appendix (Swift spec, draft)
 
-**Status:** Draft, not built. Open questions in §7 decide the approach (§3).
+**Status:** Built with approach B (`ExcelExport/IECWord.swift`, tests `IECWordTests`; `ส่งออก Word ภาพถ่าย` on the IEC overview) and the draft answers of §7: a missing photo keeps its frame with `ไม่มีรูป`, captions are labels only, the thermal images are a part 7, photos are shrunk to 1600 px at JPEG 0.7 (`ImageUtil.compressed`), and the font is TH Sarabun New 16 pt. The header's title line is the app's wording until the original is available; with the customer's .docx, approach A replaces it.
 **Platform:** `TCRoofKit` package: the writer beside the Excel one in `ExcelExport` (`IECWord.swift`, reusing
 `ZipArchive`), testable with `swift test` on macOS; the app passes the photos' bytes in.
 **Source:** the customer's `2_Form_IV TEST_Before-After_PWA.docx` (A4 portrait, 37 pages, 123 photos for

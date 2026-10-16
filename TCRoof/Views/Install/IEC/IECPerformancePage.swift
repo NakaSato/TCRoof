@@ -143,23 +143,39 @@ struct IECConditionsPage: View {
         VStack(spacing: 14) {
             HStack(alignment: .top, spacing: 14) {
                 phase("ก่อนการเชื่อมต่อระบบ", r.before) { c in job.updateIEC(context) { $0.before = c } }
-                phase("หลังการเชื่อมต่อระบบ", r.after) { c in job.updateIEC(context) { $0.after = c } }
+                phase("หลังการเชื่อมต่อระบบ", r.after, gridOn: r.gridOnAt) { c in job.updateIEC(context) { $0.after = c } }
             }
             record(r)
         }
     }
 
-    private func phase(_ title: String, _ c: IECReport.Conditions, set: @escaping (IECReport.Conditions) -> Void) -> some View {
+    /// `gridOn`: the after phase also keeps when the system was switched on (nil until set), `.distantPast` = not that phase.
+    private func phase(_ title: String, _ c: IECReport.Conditions, gridOn: Date? = .distantPast, set: @escaping (IECReport.Conditions) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                 .background(Theme.paperBand, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             IECNumberField(title: "อุณหภูมิอากาศ", unit: "°C", value: c.ambientC) { v in var n = c; n.ambientC = v; set(n) }
             IECNumberField(title: "ความเข้มแสง", unit: "W/m²", value: c.irradianceWm2) { v in var n = c; n.irradianceWm2 = v; set(n) }
             IECTextField(title: "เวลาทดสอบ", text: c.time ?? "", placeholder: "13:00") { t in var n = c; n.time = t.isEmpty ? nil : t; set(n) }
+            if gridOn != .distantPast { gridOnRow(gridOn) }
         }
         .padding(18).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+    }
+
+    /// `ออนระบบเมื่อ`: the after readings are taken from then on.
+    private func gridOnRow(_ at: Date?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("ออนระบบเมื่อ").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+            if let at {
+                DatePicker("ออนระบบเมื่อ", selection: Binding(get: { at }, set: { d in job.updateIEC(context) { $0.gridOnAt = d } }))
+                    .labelsHidden().environment(\.locale, Locale(identifier: "th_TH")).frame(minHeight: 50)
+            } else {
+                Button { job.updateIEC(context) { $0.gridOnAt = .now } } label: { Label("ออนระบบแล้ว · บันทึกเวลานี้", systemImage: "bolt.fill") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).frame(minHeight: 50)
+            }
+        }
     }
 
     private func record(_ r: IECReport) -> some View {
@@ -221,12 +237,18 @@ struct IECStationPhotosPage: View {
                 Text("ภาพถ่ายความร้อน · \(r.thermalPhotos.count) รูป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                     ForEach(r.thermalPhotos, id: \.self) { id in
-                        IECPhotoTile(caption: "ความร้อน", asset: job.iecPhoto(id), height: 150, stubReading: "59.4") { data in
-                            let new = job.storeIECPhoto(data, replacing: id, context: context)
-                            job.updateIEC(context) { r in if let k = r.thermalPhotos.firstIndex(of: id) { r.thermalPhotos[k] = new } }
-                        } remove: {
-                            job.removeIECPhoto(id, context: context)
-                            job.updateIEC(context) { $0.thermalPhotos.removeAll { $0 == id } }
+                        VStack(spacing: 6) {
+                            IECPhotoTile(caption: r.thermalPlaces[id] ?? "ความร้อน", asset: job.iecPhoto(id), height: 150, stubReading: "59.4") { data in
+                                let new = job.storeIECPhoto(data, replacing: id, context: context)
+                                job.updateIEC(context) { r in
+                                    if let k = r.thermalPhotos.firstIndex(of: id) { r.thermalPhotos[k] = new }
+                                    r.thermalPlaces[new] = r.thermalPlaces.removeValue(forKey: id)
+                                }
+                            } remove: {
+                                job.removeIECPhoto(id, context: context)
+                                job.updateIEC(context) { $0.thermalPhotos.removeAll { $0 == id }; $0.thermalPlaces[id] = nil }
+                            }
+                            placeMenu(id, r.thermalPlaces[id])
                         }
                     }
                     IECPhotoTile(caption: "ภาพความร้อนเพิ่ม", asset: nil, height: 150, stubReading: "59.4") { data in
@@ -241,6 +263,24 @@ struct IECStationPhotosPage: View {
     }
 }
 
+extension IECStationPhotosPage {
+    /// The board's places for a thermal photo (step 6).
+    static let thermalPlaces = ["หลังคาอาคาร 1", "หลังคาอาคาร 2", "ตู้ DC", "ตู้ AC", "อินเวอร์เตอร์"]
+
+    func placeMenu(_ id: String, _ place: String?) -> some View {
+        Menu {
+            ForEach(Self.thermalPlaces, id: \.self) { p in
+                Button(p) { job.updateIEC(context) { $0.thermalPlaces[id] = p } }
+            }
+            if place != nil { Button("ไม่ระบุ", role: .destructive) { job.updateIEC(context) { $0.thermalPlaces[id] = nil } } }
+        } label: {
+            Label(place ?? "ระบุตำแหน่ง", systemImage: "mappin.and.ellipse").font(.sarabunFixed(14, .bold))
+                .foregroundStyle(place == nil ? Theme.primary : Theme.navy).frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .accessibilityLabel("ตำแหน่งภาพความร้อน " + (place ?? "ยังไม่ระบุ"))
+    }
+}
+
 /// A number in a box, saved when typing ends.
 struct IECNumberField: View {
     let title: String
@@ -250,6 +290,7 @@ struct IECNumberField: View {
     let set: (Double?) -> Void
     @State private var text = ""
     @FocusState private var focused: Bool
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -273,6 +314,7 @@ struct IECNumberField: View {
         .onChange(of: focused) { _, on in if !on { commit() } }
         .onSubmit(commit)
         .onDisappear(perform: commit)
+        .onChange(of: scenePhase) { _, p in if p != .active { commit() } }
         .accessibilityElement(children: .contain)
     }
 
@@ -290,6 +332,7 @@ struct IECTextField: View {
     let set: (String) -> Void
     @State private var draft = ""
     @FocusState private var focused: Bool
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -304,5 +347,6 @@ struct IECTextField: View {
         .onChange(of: focused) { _, on in if !on, draft != text { set(draft) } }
         .onSubmit { if draft != text { set(draft) } }
         .onDisappear { if draft != text { set(draft) } }
+        .onChange(of: scenePhase) { _, p in if p != .active, draft != text { set(draft) } }
     }
 }

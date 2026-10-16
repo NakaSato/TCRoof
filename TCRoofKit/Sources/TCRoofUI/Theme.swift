@@ -248,6 +248,13 @@ public enum Theme {
     public static let padLine = Color(hex: 0x5B6B82)
     // Over the camera (D1 compass): the aim mark, a locked heading and the read-out panel
     public static let hudYellow = Color(hex: 0xFFD43B)
+    /// The selected DC input slot (IEC steps 2 and 4), as the dialog's DC box strip: ring, its outline, and the
+    /// MPPT column's fill, border and number.
+    public static let slotRing = Color(hex: 0xFFD400)
+    public static let slotRingLine = Color(hex: 0x8A6D00)
+    public static let slotColumnFill = Color(hex: 0xFFF6CC)
+    public static let slotColumnLine = Color(hex: 0xE8B21A)
+    public static let slotColumnInk = Color(hex: 0x7A5B00)
     public static let hudGreen = Color(hex: 0x2EC27E)
     public static let hudPanel = Color(hex: 0x1F2937, opacity: 0.92)
     // E1 automatic suggestions (docs/ui/survey-e1)

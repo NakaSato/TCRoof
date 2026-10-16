@@ -56,7 +56,7 @@ extension PWAPlanPhoneView {
             }
             .accessibilityElement(children: .combine)
             PWAPlanCurveChart(curve: curve, labelSize: pad ? 11 : 9)
-                .frame(height: pad ? 170 : 120)
+                .frame(height: curveHeight)
                 .accessibilityElement()
                 .accessibilityLabel("S-curve แผนเทียบจริง · จริง \(PWAPlanFormat.percent(curve.done)) แผน \(PWAPlanFormat.percent(curve.planned))")
             curveLegend(today)
@@ -137,6 +137,10 @@ extension PWAPlanPhoneView {
     }
 
     private var ganttNameWidth: CGFloat { pad ? 170 : 90 }
+
+    /// The S-curve's height: 268 pt on iPad (FIX-01, docs/ui/pwa-plan-ipad), 120 on iPhone. The chart draws from its
+    /// frame, so the plot grows and the labels keep their size.
+    private var curveHeight: CGFloat { pad ? 268 : 120 }
 
     private func ganttRow(_ bar: PWAPlan.Bar, axis: PWAPlanAxis) -> some View {
         let who = [bar.ref, bar.contractor.isEmpty ? bar.team : PWAPlan.contractorTitle(bar.contractor)].filter { !$0.isEmpty }.joined(separator: " · ")

@@ -13,23 +13,56 @@ extension Job {
                          inverters: [IECReport.Inverter(ratedKW: inverterKW ?? 0)])
     }
 
-    func updateIEC(_ context: ModelContext, _ change: (inout IECReport) -> Void) {
+    /// Saves an edit at once. A closed test (`เสร็จ`) refuses edits; `evenWhenLocked` is for closing, reopening and
+    /// recording an export, which don't change the values.
+    func updateIEC(_ context: ModelContext, evenWhenLocked: Bool = false, _ change: (inout IECReport) -> Void) {
         var r = iecReport ?? newIECReport
+        guard !r.isLocked || evenWhenLocked else { return }
         change(&r)
         iecReport = r
         try? context.save()
     }
 
+    /// Who confirms a step or closes the test: the name in settings, else the test's tester.
+    var iecActor: String {
+        let name = UserDefaults.standard.string(forKey: GoogleSession.userNameKey)?.trimmingCharacters(in: .whitespaces) ?? ""
+        return name.isEmpty ? (iecReport?.tester ?? "") : name
+    }
+
     #if DEBUG
     /// `-iecDemo YES`: the แพรกหนามแดง sample of docs/forms/iec62446-pwa, when the job has no test yet (for good);
     /// `-iecDemo reset` replaces the job's test with it.
-    func seedIECDemo(replacing: Bool = false) {
+    /// `-iecDemo full` (with `context`): the sample with every reading, check, record and a drawn photo in every slot,
+    /// so each step is done but none confirmed.
+    func seedIECDemo(replacing: Bool = false, full context: ModelContext? = nil) {
         guard iecReport == nil || replacing, let url = Bundle.main.url(forResource: "iec-demo-praek-nam-daeng", withExtension: "json"),
               let data = try? Data(contentsOf: url), var r = try? IECReport(form: data) else { return }
         // labelled as the sample in the sheet (C3) and the file name, so it can't pass for this job's test
         r.sampleName = "แพรกหนามแดง"
         r.stationLine += " (ตัวอย่าง)"
+        if let context {
+            for p in iecPhotos { context.delete(p) }
+            let photo = IECCamera.stubPhoto("OK")
+            func store() -> String { let id = UUID().uuidString; let a = PhotoAsset(data: photo, tag: id); context.insert(a); a.iecJob = self; return id }
+            r.testDate = .now; r.tester = "ทีมทดสอบ"
+            r.instruments.multimeterClamp = "CLAMP-01"; r.instruments.insulationTester = "IR-01"; r.instruments.irradianceMeter = "SUN-01"
+            r.module.areaM2 = 2.58; r.after = r.before; r.gridOnAt = .now
+            r.yrKWhM2Day = r.yrKWhM2Day ?? 4.24; r.arrayTempC = r.arrayTempC ?? 59.4
+            r.irradiancePhoto = store(); r.thermalPhotos = [store()]
+            for i in r.inverters.indices {
+                r.inverters[i].continuity = .normal; r.inverters[i].functionalBefore = .normal; r.inverters[i].functionalAfter = .normal
+                for n in r.inverters[i].slots.indices where r.inverters[i].slots[n] != nil {
+                    r.inverters[i].slots[n]?.irPosMOhm = 250; r.inverters[i].slots[n]?.irNegMOhm = 300
+                    let voc = r.inverters[i].slots[n]?.vocV
+                    r.inverters[i].slots[n]?.vmpV = voc.map { ($0 * 0.82).rounded() }
+                    r.inverters[i].slots[n]?.impA = 9.5
+                    for k in IECReport.PhotoKind.allCases { r.inverters[i].slots[n]?.photos[k.rawValue] = store() }
+                }
+            }
+        }
         iecReport = r
+        // step 1 needs its SLD to be done
+        if let context { seedDemoSLD(context: context) }
     }
     #endif
 }

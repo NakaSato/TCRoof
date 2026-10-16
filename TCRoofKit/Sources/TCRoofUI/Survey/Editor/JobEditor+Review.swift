@@ -3,48 +3,18 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// ตรวจรูปทั้งหมด, REV และรายการแก้ไข and the lock after signing in the editor
-/// (docs/specs/review-lock-revisions-swift.md).
+/// ตรวจรูปทั้งหมด and REV และรายการแก้ไข in the editor (docs/specs/review-lock-revisions-swift.md).
 extension JobEditorView {
-    /// Every edit passes here before it is saved: a locked job refuses it, and an edit to a signed form asks first,
-    /// because the signatures were given for the data before it.
+    /// Every edit passes here before it is saved.
     func jobChanged(_ old: Job, _ new: Job) {
-        let stored = model.job(new.id)
-        if let stored, stored.signedUnlocked, new.bothSigned, stored.contentDiffers(from: new) {
-            pendingSignedEdit = new
-            job = stored
-            return
-        }
         var j = new
-        j.drive = stored?.drive ?? new.drive
-        guard model.update(j) else {
-            // a stray write to a locked job (a page filling a derived field): show what is stored again
-            if let stored { job = stored }
-            return
-        }
-        // the second signature, in either order: offer to lock
-        if old.id == new.id, !old.bothSigned, new.bothSigned, !new.isLocked { showLockSheet = true }
+        j.drive = model.job(new.id)?.drive ?? new.drive
+        model.update(j)
     }
 
-    /// The banner above every page: moved to installation, or locked (with the integrity warning).
-    @ViewBuilder var readOnlyBanner: some View {
-        if job.stage != .survey {
-            stageBanner
-        } else if job.isLocked {
-            VStack(spacing: 10) {
-                if integrityBroken, let rev = job.lock?.rev {
-                    IntegrityBanner(rev: rev, compare: { revisionCompare = rev; select(.revisions) }, openNext: { showNextRevision = true })
-                }
-                LockBanner(job: job) { showNextRevision = true }
-            }
-        }
-    }
-
-    /// E1 above the page: signed but not locked, or required photos missing before the first signature.
+    /// E1 above the page: required photos missing before the first signature.
     @ViewBuilder var finalBanners: some View {
-        if !readOnly && job.signedUnlocked {
-            SignedUnlockedBanner { showLockSheet = true }
-        } else if !readOnly && job.values.photo("surveyorSign") == nil && job.values.photo("customerSign") == nil, job.missingRequiredPhotos > 0 {
+        if job.values.photo("surveyorSign") == nil && job.values.photo("customerSign") == nil, job.missingRequiredPhotos > 0 {
             MissingPhotosBanner(missing: job.missingRequiredPhotos) { photoFilter = .missing; select(.photos) }
         }
     }
@@ -65,7 +35,7 @@ extension JobEditorView {
 
     /// Pages that differ from the previous issued REV, with how many rows: the orange dot on their sidebar row.
     var changedPages: [Page: Int] {
-        guard !job.isLocked, let base = revisionBase else { return [:] }
+        guard let base = revisionBase else { return [:] }
         var out: [Page: Int] = [:]
         for c in FormDiff.changes(from: base, to: job.snapshot) {
             let p: Page = c.module.map { .module($0) } ?? Self.coverPage(code: String(c.group.prefix(2)))
@@ -90,75 +60,15 @@ extension JobEditorView {
 
     @ViewBuilder var reviewDetail: some View {
         if page == .photos {
-            VStack(spacing: 0) {
-                if readOnly { readOnlyBanner.padding(.horizontal, 16).padding(.top, 16) }
-                PhotoReviewPage(job: $job, filter: $photoFilter, readOnly: readOnly, width: detailSize.width, openField: openField)
-            }
+            PhotoReviewPage(job: $job, filter: $photoFilter, width: detailSize.width, openField: openField)
         } else {
-            VStack(spacing: 0) {
-                if readOnly { readOnlyBanner.padding(.horizontal, 16).padding(.top, 16) }
-                RevisionsPage(job: job, openPDF: { url, title in preview = PDFPreviewItem(url: url, title: title) }, from: revisionCompare)
-                    .id(revisionCompare)
-            }
+            RevisionsPage(job: job, openPDF: { url, title in preview = PDFPreviewItem(url: url, title: title) }, from: revisionCompare)
+                .id(revisionCompare)
         }
-    }
-
-    // MARK: actions
-
-    func issueRevision() {
-        showLockSheet = false
-        run("กำลังออก REV \(job.rev)…") {
-            try model.issue(job.id)
-            if let j = model.job(job.id) { job = j }
-            integrityBroken = false
-        }
-    }
-
-    func openNextRevision(reason: String, updateDate: Bool) {
-        model.openNextRevision(job.id, reason: reason, updateDate: updateDate)
-        if let j = model.job(job.id) { job = j }
-        integrityBroken = false
-        loadRevisionBase()
-    }
-
-    /// The signatures go; the edit stays.
-    func confirmSignedEdit() {
-        guard var j = pendingSignedEdit else { return }
-        for f in RevisionRule.signatureIDs { j.values[f] = nil }
-        pendingSignedEdit = nil
-        job = j
     }
 
     func loadRevisionBase() {
         revisionBase = job.previousRevision.flatMap { model.snapshot(job, rev: $0.rev) }
-    }
-
-    func checkIntegrity() {
-        guard job.isLocked else { integrityBroken = false; return }
-        integrityBroken = model.integrityBroken(job)
-    }
-}
-
-/// The editor's sheets and dialogs of the review lock, kept off `body` so it type-checks.
-struct ReviewLockModifiers: ViewModifier {
-    let editor: JobEditorView
-    func body(content: Content) -> some View {
-        let e = editor
-        content
-            .sheet(isPresented: e.$showLockSheet) {
-                LockSheet(job: e.job, changes: e.job.previousRevision == nil ? nil : e.model.revisionChanges(e.job).count,
-                          lock: { e.issueRevision() }, notNow: { e.showLockSheet = false })
-            }
-            .sheet(isPresented: e.$showNextRevision) {
-                NextRevisionSheet(job: e.job) { reason, date in e.openNextRevision(reason: reason, updateDate: date) }
-            }
-            .confirmationDialog("การแก้ไขนี้จะล้างลายเซ็นทั้งสอง", isPresented: Binding(get: { e.pendingSignedEdit != nil }, set: { if !$0 { e.pendingSignedEdit = nil } }),
-                                titleVisibility: .visible) {
-                Button("ล้างลายเซ็นและแก้ไข", role: .destructive) { e.confirmSignedEdit() }
-                Button("ยกเลิก", role: .cancel) { e.pendingSignedEdit = nil }
-            } message: { Text("ลายเซ็นต้องตรงกับข้อมูลที่ลงนาม · แก้แล้วต้องลงนามใหม่ทั้งสองฝ่าย") }
-            .task(id: "\(e.job.previousRevision?.rev ?? "")|\(e.model.revisionArrivals)") { e.loadRevisionBase(); e.checkIntegrity() }
-            .onAppear { e.checkIntegrity() }
     }
 }
 #endif

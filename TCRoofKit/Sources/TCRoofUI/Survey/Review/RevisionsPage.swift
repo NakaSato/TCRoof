@@ -19,9 +19,9 @@ struct RevisionsPage: View {
 
     var body: some View {
         let revs = job.revisions ?? []
-        // default: the last issued REV against the current draft, or the two last REVs while locked
-        let a = from ?? (job.isLocked ? job.previousRevision?.rev : revs.last?.rev) ?? revs.first?.rev ?? "00"
-        let b = to ?? (job.isLocked ? job.rev : Self.current)
+        // default: the last issued REV against the current draft
+        let a = from ?? revs.last?.rev ?? "00"
+        let b = to ?? Self.current
         _ = model.revisionArrivals   // a REV from another device: read the files again
         let changes = compare(a, b)
         return ScrollView {
@@ -54,7 +54,7 @@ struct RevisionsPage: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(ISODate.thai(ISODate.string(r.issuedAt))) · \(r.issuedBy.isEmpty ? "—" : r.issuedBy)").font(.sarabun(15, .semibold, relativeTo: .subheadline))
                         Text(r.reason.isEmpty ? "ออกครั้งแรก" : r.reason).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
-                        Label(r.shortCode, systemImage: "lock.fill").font(.caption.monospaced()).foregroundStyle(Theme.inkMuted)
+                        Label(r.shortCode, systemImage: "number").font(.caption.monospaced()).foregroundStyle(Theme.inkMuted)
                     }
                     Spacer(minLength: 8)
                     if model.snapshot(job, rev: r.rev) != nil || FileManager.default.fileExists(atPath: model.store.revisionPDF(rev: r.rev, job: job.id).path) {
@@ -70,17 +70,15 @@ struct RevisionsPage: View {
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             }
-            if !job.isLocked {
-                Label("REV \(job.rev) กำลังแก้ไข" + ((job.pendingReason ?? "").isEmpty ? "" : " · " + job.pendingReason!), systemImage: "pencil")
-                    .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
-            }
+            Label("REV \(job.rev) กำลังแก้ไข", systemImage: "pencil")
+                .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
         }
     }
 
     // MARK: compare
 
     func picker(_ revs: [Revision], _ a: String, _ b: String) -> some View {
-        let options = revs.map(\.rev) + (job.isLocked ? [] : [Self.current])
+        let options = revs.map(\.rev) + [Self.current]
         func name(_ r: String) -> String { r == Self.current ? "ฉบับปัจจุบัน (ยังไม่ออก)" : "REV \(r)" }
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) { menus(options, a, b, name); Spacer(minLength: 8); filters }

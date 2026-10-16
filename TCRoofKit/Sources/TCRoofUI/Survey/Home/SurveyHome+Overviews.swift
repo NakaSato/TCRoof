@@ -185,7 +185,7 @@ extension SurveyHomeView {
         if let open = host.openStation, host.installStations?.contains(where: { $0.id == s.id }) == true {
             open(s)
         } else if let j = model.jobs(in: .install).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
-            // a station made from a survey job's own InstallInfo (no host station): the survey, read-only
+            // a station made from a survey job's own InstallInfo (no host station): the survey
             go(j)
         } else {
             host.openStation?(s)
@@ -372,7 +372,7 @@ extension SurveyHomeView {
         .buttonStyle(.plain)
     }
 
-    /// The host's screen for the station when it has it, else the station's survey job here, read-only.
+    /// The host's screen for the station when it has it, else the station's survey job here.
     private func openMaintenanceStation(_ s: MaintenanceStationSummary) {
         if let open = host.openMaintenanceStation, host.maintenanceStations.contains(where: { $0.id == s.id }) {
             open(s)

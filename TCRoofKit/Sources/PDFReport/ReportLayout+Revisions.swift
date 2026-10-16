@@ -1,16 +1,8 @@
 import Foundation
 import TCRoofCore
 
-/// รายการแก้ไข after the cover from REV 01 on, and the check code in the footer of a locked job
-/// (docs/specs/review-lock-revisions-swift.md §3.5).
+/// รายการแก้ไข after the cover from REV 01 on (docs/specs/review-lock-revisions-swift.md §3.5).
 extension ReportLayout {
-    /// "REV 01 · รหัสตรวจสอบ A1B2-C3D4", left of the page number, once the job is locked.
-    func revisionFooter(y: Double) -> [DrawOp] {
-        guard let lock = job.lock else { return [] }
-        let right = Self.pageW - Self.margin - m.width("หน้า 00 / 00", size: 7.5, bold: false) - 14
-        return [.text("REV \(lock.rev) · รหัสตรวจสอบ \(FormHash.short(lock.hash))", at: Pt(right, y), size: 7.5, bold: true, color: .ink2, align: .right)]
-    }
-
     /// One row of the revision table: every issued REV, then the current draft when it isn't issued yet.
     struct RevisionRow { let rev, date, by, reason, code: String }
     var revisionRows: [RevisionRow] {
@@ -19,7 +11,7 @@ extension ReportLayout {
                         code: $0.shortCode)
         }
         guard !issued.contains(where: { $0.rev == job.rev }) else { return issued }
-        return issued + [RevisionRow(rev: job.rev, date: ISODate.thai(j.text("date")), by: j.text("engineer"), reason: job.pendingReason ?? "",
+        return issued + [RevisionRow(rev: job.rev, date: ISODate.thai(j.text("date")), by: j.text("engineer"), reason: "",
                                      code: "ยังไม่ออก")]
     }
 

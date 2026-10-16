@@ -11,7 +11,6 @@ struct PhotoReviewPage: View {
 
     @Binding var job: Job
     @Binding var filter: Filter
-    let readOnly: Bool
     let width: CGFloat
     /// The page (and field) a slot belongs to: ไปที่ช่องในฟอร์ม, and a signature slot.
     var openField: (ReviewSlot) -> Void
@@ -22,7 +21,6 @@ struct PhotoReviewPage: View {
     @State private var showCamera = false
     @State private var showPicker = false
     @State private var viewing: ReviewSlot?
-    @State private var lockedNote = false
 
     var body: some View {
         let groups = job.photoSlots
@@ -58,7 +56,6 @@ struct PhotoReviewPage: View {
             target = nil
         }
         .sheet(item: $viewing) { s in viewer(s) }
-        .alert("ฟอร์มล็อกแล้ว · เปิด REV ใหม่เพื่อเพิ่มรูป", isPresented: $lockedNote) { Button("ตกลง", role: .cancel) {} }
     }
 
     func shows(_ s: ReviewSlot) -> Bool {
@@ -141,7 +138,7 @@ struct PhotoReviewPage: View {
             VStack(spacing: 6) {
                 Image(systemName: s.kind == .signature ? "signature" : s.kind == .photosAdd ? "plus.viewfinder" : "camera")
                     .font(.system(size: 22, weight: .semibold))
-                Text(s.kind == .signature ? "ไปลงนาม" : readOnly ? "ยังไม่มีรูป" : "แตะเพื่อถ่าย").font(.sarabun(12, .semibold, relativeTo: .caption))
+                Text(s.kind == .signature ? "ไปลงนาม" : "แตะเพื่อถ่าย").font(.sarabun(12, .semibold, relativeTo: .caption))
             }
             .foregroundStyle(red ? Theme.dangerText : Theme.inkMuted)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -154,7 +151,6 @@ struct PhotoReviewPage: View {
     func tap(_ s: ReviewSlot) {
         if s.kind == .signature && s.photo == nil { return openField(s) }
         if s.photo != nil { viewing = s; return }
-        if readOnly { lockedNote = true; return }
         capture(s, camera: true)
     }
 
@@ -176,7 +172,7 @@ struct PhotoReviewPage: View {
 
     @ViewBuilder func actions(_ s: ReviewSlot) -> some View {
         if s.photo != nil { Button { viewing = s } label: { Label("ดูภาพ", systemImage: "eye") } }
-        if !readOnly && s.kind != .leftover && s.kind != .signature {
+        if s.kind != .leftover && s.kind != .signature {
             Button { capture(s, camera: true) } label: { Label(s.photo == nil ? "ถ่ายภาพ" : "ถ่ายใหม่", systemImage: "camera") }
             Button { capture(s, camera: false) } label: { Label("เลือกจากคลังภาพ", systemImage: "photo.on.rectangle") }
             if s.photo != nil { Button(role: .destructive) { job.removePhoto(slot: s) } label: { Label("ลบ", systemImage: "trash") } }
@@ -199,7 +195,7 @@ struct PhotoReviewPage: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("ปิด") { viewing = nil } }
                 ToolbarItemGroup(placement: .bottomBar) {
-                    if !readOnly && s.kind != .leftover && s.kind != .signature {
+                    if s.kind != .leftover && s.kind != .signature {
                         Button { after { capture(s, camera: true) } } label: { Label("ถ่ายใหม่", systemImage: "camera") }
                         Button { after { capture(s, camera: false) } } label: { Label("เลือกจากคลังภาพ", systemImage: "photo.on.rectangle") }
                         Button(role: .destructive) { viewing = nil; job.removePhoto(slot: s) } label: { Label("ลบ", systemImage: "trash") }

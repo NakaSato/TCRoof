@@ -28,6 +28,9 @@ public final class SurveyModel {
     /// Called after a Drive save succeeds, with the saved job (its `drive` link updated), the file kinds and
     /// whether photos were sent. TCRoof posts `บันทึกขึ้น Drive แล้ว` from here.
     @ObservationIgnored public var onDriveSaved: ((Job, [DriveSync.Kind], Bool) -> Void)?
+    /// Called with a survey's linked job (`jobSyncID`) once it has moved to installation. TCRoof sets that job to
+    /// `กำลังติดตั้ง` from here.
+    @ObservationIgnored public var onMovedToInstall: ((String) -> Void)?
     let cache = NSCache<NSString, UIImage>()
     /// Download progress per job of photos taken on another iPad.
     public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]
@@ -72,14 +75,9 @@ public final class SurveyModel {
         return j
     }
 
-    /// Keeps the list current at once and writes to disk shortly after the last change. A change to the answers of a
-    /// locked job is refused (false): only `openNextRevision` unlocks it, so no stray binding can bypass the lock.
+    /// Keeps the list current at once and writes to disk shortly after the last change.
     @discardableResult
     public func update(_ job: Job) -> Bool {
-        if let old = self.job(job.id), let lock = old.lock, job.lock == lock, old.values != job.values || old.modules != job.modules {
-            print("SurveyModel: refused an edit to locked REV \(lock.rev) of \(job.id)")
-            return false
-        }
         var j = job
         // only answers count as an edit — a Drive link landing after a save mustn't make the job look unsaved again
         if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID,
@@ -117,7 +115,7 @@ public final class SurveyModel {
 
     // MARK: project stages
 
-    /// Jobs of one home tab. Surveys include those moved on, which stay listed there locked.
+    /// Jobs of one home tab. Surveys include those moved on, which stay listed there.
     public func jobs(in stage: JobStage) -> [Job] {
         stage == .survey ? jobs.filter { $0.stage != .maintenance } : jobs.filter { $0.stage == stage }
     }
@@ -128,6 +126,7 @@ public final class SurveyModel {
         guard var j = job(id), j.moveToInstall() else { return false }
         update(j)
         flush(id)
+        if let link = j.jobSyncID { onMovedToInstall?(link) }
         return true
     }
 

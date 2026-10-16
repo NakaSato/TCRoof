@@ -398,16 +398,12 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
     public var drive: DriveLink?
     /// Sync id of the host app's job this report belongs to (TCRoof `Job.syncID`); nil when it stands alone.
     public var jobSyncID: String?
-    /// Where the project is: a survey moved to installation is locked and read-only.
+    /// Where the project is: survey, installation or maintenance.
     public var stage: JobStage = .survey
     /// Installation progress, set when the survey moves to `.install`.
     public var install: InstallInfo?
     /// Issued REVs, oldest first (docs/specs/review-lock-revisions-swift.md §3). nil for a job never issued.
     public var revisions: [Revision]?
-    /// Set while the issued REV is locked after both signatures (§4); nil when the form can be edited.
-    public var lock: FormLock?
-    /// Reason typed when the current REV was opened, kept for its `Revision` (§4.4).
-    public var pendingReason: String?
     public init(id: UUID = UUID(), created: Date = Date(), updated: Date = Date(), values: Values = Values(), modules: [SurveyModule] = [],
                 drive: DriveLink? = nil, jobSyncID: String? = nil, stage: JobStage = .survey, install: InstallInfo? = nil) {
         self.id = id; self.created = created; self.updated = updated; self.values = values; self.modules = modules; self.drive = drive
@@ -426,8 +422,6 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
         stage = try c.decodeIfPresent(JobStage.self, forKey: .stage) ?? .survey
         install = try c.decodeIfPresent(InstallInfo.self, forKey: .install)
         revisions = try c.decodeIfPresent([Revision].self, forKey: .revisions)
-        lock = try c.decodeIfPresent(FormLock.self, forKey: .lock)
-        pendingReason = try c.decodeIfPresent(String.self, forKey: .pendingReason)
     }
 
     /// Only a survey filled in completely can become an installation job.

@@ -48,6 +48,8 @@ final class CloudSync {
     private static let surveyCollection = "pwaSurveys"
     /// One document per issued REV of a survey report (docs/specs/review-lock-revisions-swift.md), written once.
     private static let revisionCollection = "pwaSurveyRevisions"
+    /// One document per feed post: the emails of the members who acknowledged it (`รับทราบ`).
+    private static let ackCollection = "feedAcks"
     private var db: Firestore { Firestore.firestore() }
 
     /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
@@ -89,6 +91,7 @@ final class CloudSync {
         survey?.onChange = nil
         survey?.cloudPush = nil
         survey?.cloudPending = nil
+        FeedAcks.shared.send = nil
         pending = [:]
         unconfirmed = [:]
         context = nil; survey = nil; uid = nil
@@ -116,6 +119,7 @@ final class CloudSync {
             listen(Inspection.self)
             listenSurveys()
             listenRevisions()
+            listenFeedAcks()
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.schedulePush() }
             })
@@ -444,6 +448,43 @@ final class CloudSync {
             }
         }
         listeners.append(registration)
+    }
+
+    /// The home feed's acknowledgements, live. A toggle adds or removes only its own member (`arrayUnion` /
+    /// `arrayRemove`), so two people acknowledging at once never overwrite each other; offline, Firestore keeps the
+    /// write and sends it later. Acknowledgements made before they were synced are sent once.
+    private func listenFeedAcks() {
+        let acks = FeedAcks.shared
+        acks.send = { [weak self] post, member, on in
+            guard let self else { return }
+            self.db.document(Self.ackKey(post)).setData(
+                ["post": post, "members": on ? FieldValue.arrayUnion([member]) : FieldValue.arrayRemove([member])], merge: true
+            ) { error in
+                if let error { print("CloudSync: acknowledgement refused: \(error.localizedDescription)") }
+            }
+        }
+        let uploaded = "feed.acks.uploaded.\(uid ?? "")"
+        if !UserDefaults.standard.bool(forKey: uploaded), let me = survey?.google.email, !me.isEmpty {
+            for (post, set) in acks.members where set.contains(me) { acks.send?(post, me, true) }
+            UserDefaults.standard.set(true, forKey: uploaded)
+        }
+        let registration = db.collection(Self.ackCollection).addSnapshotListener { snapshot, error in
+            MainActor.assumeIsolated {
+                // never fail the whole sync over acknowledgements (rule not deployed yet): the jobs still sync
+                if let error { return print("CloudSync: acknowledgement listener: \(error.localizedDescription)") }
+                for change in snapshot?.documentChanges ?? [] {
+                    let data = change.document.data()
+                    guard let post = data["post"] as? String else { continue }
+                    acks.receive(post, change.type == .removed ? [] : Set(data["members"] as? [String] ?? []))
+                }
+            }
+        }
+        listeners.append(registration)
+    }
+
+    /// A post id as a document id: Firestore ids can't hold `/`.
+    static func ackKey(_ post: String) -> String {
+        "\(ackCollection)/\(post.replacingOccurrences(of: "/", with: "-"))"
     }
 
     /// A job's document and fingerprint, kept until the job changes: the push runs after every edit and every 20 s,

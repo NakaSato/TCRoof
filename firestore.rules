@@ -27,6 +27,21 @@ service cloud.firestore {
       allow update: if isMember() && request.resource.data.json == resource.data.json;
     }
 
+    // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
+    // A member adds or removes only their own email.
+    match /feedAcks/{doc} {
+      allow read: if isMember();
+      allow create, update: if isMember()
+        && request.resource.data.keys().hasOnly(['post', 'members'])
+        && request.resource.data.post is string
+        && request.resource.data.members is list
+        && request.resource.data.members.toSet()
+             .difference(resource == null ? [].toSet() : resource.data.members.toSet())
+             .union((resource == null ? [].toSet() : resource.data.members.toSet())
+             .difference(request.resource.data.members.toSet()))
+             .hasOnly([signedInEmail(), request.auth.token.email]);
+    }
+
     match /{collection}/{doc} {
       allow read, write: if isMember()
         && collection in ['jobs', 'surveyForms', 'devices', 'installLogs', 'inspections', 'pwaSurveys'];

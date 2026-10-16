@@ -154,6 +154,8 @@ struct TankPointsPlan: View {
                         if dragStart == nil { dragStart = TankPoints.rect(m.point); selected = m.id }
                         guard let s = dragStart, let d = TankPoints.drop(values, m.id, x: s.x + g.translation.width / (fit.s * f.k),
                                                                           y: s.y + g.translation.height / (fit.s * f.k)) else { return }
+                        // snapped: most touch events land on the same spot, and only a move needs a redraw
+                        if let old = drag, old.id == m.id, old.drop.x == d.x, old.drop.y == d.y { return }
                         drag = (m.id, d)
                     }
                     .onEnded { _ in

@@ -77,9 +77,11 @@ struct PWAPhoneTabs: View {
         }
     }
 
-    /// `StationDocsScreen` is one station's papers: the first station being installed, else the first PWA station.
+    /// Every station's papers; a card pushes that station's `StationDocsScreen`.
     @ViewBuilder private var docs: some View {
-        if let job = installing.first ?? stations.first {
+        if sizeClass == .compact {
+            PWADocsHomeView()
+        } else if let job = installing.first ?? stations.first {
             StationDocsScreen(job: job).toolbar(.visible, for: .navigationBar)
         } else {
             TCEmptyState("ยังไม่มีสถานี กปภ.", systemImage: "doc.text", description: Text("เอกสารสถานีจะแสดงเมื่อมีงาน PWA ในเครื่องนี้"))

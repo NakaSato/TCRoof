@@ -169,6 +169,9 @@ public enum Theme {
     public static let planSurveySoft = Color(light: 0xE0F4F5, dark: 0x12292B)
     public static let planInspect = Color(light: 0x6B4FBB, dark: 0xB09CF0)
     public static let planInspectSoft = Color(light: 0xEFEBFA, dark: 0x221C38)
+    // iPhone PWA documents page (docs/ui/pwa-docs-iphone-v2): papers waiting on an outside office, and the `บริษัท` badge
+    public static let outside = planInspect
+    public static let outsideSoft = planInspectSoft
     /// Fill of a document chip and of an at-risk deadline, under `warningText`.
     public static let warningTint = Color(light: 0xFFF3E6, dark: 0x2E2213)
     /// Weekend days, the S-curve's plan line and axis labels, a filter chip with nothing to show.

@@ -142,7 +142,13 @@ struct JobCard: View {
     /// What VoiceOver reads for the install-phase card.
     private func phaseLabel(_ s: InstallStationSummary) -> String {
         [job.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : job.projectName, "ติดตั้ง",
-         s.currentTask.isEmpty ? "" : "กำลังทำ " + s.currentTask, paceText(s) ?? ""].filter { !$0.isEmpty }.joined(separator: " ")
+         taskText(s), paceText(s) ?? ""].filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
+    /// `กำลังทำ <task>`, or `ยังไม่มีแผน MP` for a station with no plan and no task yet, such as a survey just moved.
+    private func taskText(_ s: InstallStationSummary) -> String {
+        if !s.currentTask.isEmpty { return "กำลังทำ " + s.currentTask }
+        return s.plan == nil ? "ยังไม่มีแผน MP" : ""
     }
 
     var phaseBadge: some View {
@@ -162,8 +168,12 @@ struct JobCard: View {
             }
         }
         HStack(spacing: 6) {
-            Text("กำลังทำ").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).fixedSize()
-            Text(s.currentTask.isEmpty ? "—" : s.currentTask).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            if s.currentTask.isEmpty, s.plan == nil {
+                Text("ยังไม่มีแผน MP").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            } else {
+                Text("กำลังทำ").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).fixedSize()
+                Text(s.currentTask.isEmpty ? "—" : s.currentTask).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            }
             Spacer(minLength: 0)
             if let pace = paceText(s) { Text(pace).font(.sarabunFixed(11.5, .bold)).fixedSize() }
             Text("›").font(.sarabunFixed(17))

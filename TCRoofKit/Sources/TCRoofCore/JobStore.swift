@@ -134,7 +134,7 @@ public final class JobStore: @unchecked Sendable {
         copy.id = UUID(); copy.created = now; copy.updated = now; copy.drive = nil
         // a copy of a survey already moved on is a new survey
         copy.stage = .survey; copy.install = nil
-        copy.revisions = nil; copy.lock = nil; copy.pendingReason = nil
+        copy.revisions = nil
         copy.values["rev"] = .text("00")
         for id in RevisionRule.signatureIDs { copy.values[id] = nil }
         copy.values["projectName"] = .text(job.projectName.isEmpty ? "(สำเนา)" : job.projectName + " (สำเนา)")

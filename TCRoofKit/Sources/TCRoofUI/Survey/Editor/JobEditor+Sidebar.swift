@@ -59,13 +59,13 @@ extension JobEditorView {
                 VStack(alignment: .leading, spacing: 14) {
                     sidebarHeader
                     row(SidebarItem(page: .summary, code: "", title: "สรุปภาพรวม 1 หน้า", completion: Completion()), symbol: "doc.text.magnifyingglass")
-                    if !readOnly { cardImportRow }
+                    cardImportRow
                     ForEach(groups) { g in
                         VStack(alignment: .leading, spacing: 4) {
                             groupHeader(g)
                             if !collapsed.contains(g.category) {
                                 ForEach(g.items) { item in
-                                    if let m = item.module, !readOnly {
+                                    if let m = item.module {
                                         row(item, changed: changed).contextMenu {
                                             Button { duplicate(m) } label: { Label("ทำสำเนาหัวข้อ", systemImage: "plus.square.on.square") }
                                             Button(role: .destructive) { confirmDelete = m } label: { Label("ลบหัวข้อ", systemImage: "trash") }
@@ -83,7 +83,7 @@ extension JobEditorView {
             }
             .background(Theme.surface)
             .overlay(alignment: .trailing) { if !compact { Rectangle().fill(Theme.borderSubtle).frame(width: 1) } }
-            .safeAreaInset(edge: .bottom, spacing: 0) { if !readOnly { sidebarFooter } }
+            .safeAreaInset(edge: .bottom, spacing: 0) { sidebarFooter }
             // keep the open section visible when "next" or "continue" jumps into a collapsed group
             .onChange(of: page) { _, p in
                 if let c = category(of: p) { collapsed.remove(c) }
@@ -116,13 +116,7 @@ extension JobEditorView {
             }
             .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             photoStatus
-            if job.isLocked && job.stage == .survey {
-                Label("REV \(job.rev) ล็อก · \(FormHash.short(job.lock?.hash ?? ""))", systemImage: "lock.fill").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
-                    .padding(.horizontal, 10).padding(.vertical, 6).background(Theme.borderSubtle, in: Capsule())
-            } else if readOnly {
-                Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
-                    .padding(.horizontal, 10).padding(.vertical, 6).background(Theme.borderSubtle, in: Capsule())
-            } else if let next = nextIncomplete, next.page != page {
+            if let next = nextIncomplete, next.page != page {
                 Button { select(next.page) } label: {
                     HStack(spacing: 6) {
                         Text("ทำต่อ").font(.sarabun(12, relativeTo: .caption)).opacity(0.85)

@@ -57,6 +57,8 @@ struct SurveyHomeView: View {
     @State var toDelete: Job?
     /// Installation job to return to the survey tab, after confirming.
     @State var toSurvey: Job?
+    /// Complete survey to move to installation, after confirming.
+    @State var toInstall: Job?
     @State var message: String?
     @State var error: String?
     @State var busy: String?
@@ -208,8 +210,19 @@ struct SurveyHomeView: View {
             }
         } message: { j in
             let n = j.install?.doneSteps ?? 0
-            Text(n > 0 ? "ความคืบหน้าติดตั้ง \(n)/\(InstallInfo.steps.count) ขั้น ทีม และวันส่งมอบจะถูกลบ งานจะแก้ไขได้อีกครั้งในแท็บงานสำรวจ"
-                 : "งานจะกลับไปแก้ไขได้ในแท็บงานสำรวจ")
+            Text(n > 0 ? "ความคืบหน้าติดตั้ง \(n)/\(InstallInfo.steps.count) ขั้น ทีม และวันส่งมอบจะถูกลบ งานจะกลับไปอยู่ในแท็บงานสำรวจ"
+                 : "งานจะกลับไปอยู่ในแท็บงานสำรวจ")
+        }
+        .confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { toInstall != nil }, set: { if !$0 { toInstall = nil } }),
+                            titleVisibility: .visible, presenting: toInstall) { j in
+            Button("ย้าย \(j.projectName) ไปงานติดตั้ง") {
+                toInstall = nil
+                model.moveToInstall(j.id)
+            }
+            Button("เปิดดูแบบสำรวจ") { toInstall = nil; go(j) }
+            Button("ยกเลิก", role: .cancel) { toInstall = nil }
+        } message: { _ in
+            Text("แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)")
         }
         .alert("ซิงก์ต่อหรือไม่?", isPresented: Binding(get: { pendingSync != nil }, set: { if !$0 { pendingSync = nil } }), presenting: pendingSync) { _ in
             Button("ซิงก์ต่อ") { pendingSync = nil; runSync() }
@@ -232,7 +245,7 @@ struct SurveyHomeView: View {
         return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: padColumns), spacing: compact ? 10 : 16) {
             ForEach(shown) { j in
                 let station = stations[j.id]
-                let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey && station == nil ? .survey : .locked
+                let mode: JobCard.Mode = tab == .install ? .install : .survey
                 Button { if let station { openStation(station) } else { open(j, mode) } } label: {
                     JobCard(job: j, mode: mode, pendingSync: model.waitsForSync(j), synced: model.isSynced(j),
                             recent: j.id.uuidString == lastOpened, station: station)
@@ -241,14 +254,15 @@ struct SurveyHomeView: View {
                 .contextMenu {
                     switch mode {
                     case .survey:
+                        // an install-phase card opens the install record, so the report is here
+                        if station != nil { Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") } }
+                        if j.canMoveToInstall {
+                            Button { toInstall = j } label: { Label("ย้ายไปงานติดตั้ง", systemImage: "hammer") }
+                        }
                         Button { go(j) } label: { Label("เปิดที่ A1", systemImage: "doc.text") }
                         Button { model.duplicate(j.id) } label: { Label("ทำสำเนา", systemImage: "plus.square.on.square") }
                         exportButton(j)
                         Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
-                    case .locked:
-                        // the card opens the install record, so the report is here
-                        if station != nil { Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") } }
-                        exportButton(j)
                     case .install:
                         Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") }
                         exportButton(j)
@@ -279,12 +293,12 @@ struct SurveyHomeView: View {
 
     func open(_ j: Job, _ mode: JobCard.Mode) {
         switch mode {
+        // a complete survey asks first whether it moves to installation
+        case .survey where j.canMoveToInstall: toInstall = j
         case .survey: go(j, at: j.nextStep?.page)
-        // the editor opens a moved survey read-only, on its summary
-        case .locked: go(j)
         case .install:
             // a survey linked to a host station opens the host's screen for it (the install tracking page on iPad, the
-            // station on iPhone); one with no station opens read-only, on its summary
+            // station on iPhone); one with no station opens its survey
             lastOpened = j.id.uuidString
             if let sync = j.jobSyncID, let s = host.installStations?.first(where: { $0.id == sync }), let open = host.openStation {
                 open(s)

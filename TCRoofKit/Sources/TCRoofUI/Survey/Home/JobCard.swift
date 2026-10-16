@@ -12,8 +12,8 @@ struct TightLabel: LabelStyle {
 
 /// The project card of docs/ui/pwa-solar-survey-iphone: one size, in one column on iPhone and three on iPad.
 struct JobCard: View {
-    /// A survey in progress, a survey moved to installation (read-only), or the installation job itself.
-    enum Mode { case survey, locked, install }
+    /// A survey (also once moved to installation), or the installation job itself.
+    enum Mode { case survey, install }
     let job: Job
     var mode = Mode.survey
     var pendingSync = false
@@ -23,7 +23,7 @@ struct JobCard: View {
     /// install phase (docs/ui/pwa-solar-survey-iphone-v3 §4).
     var station: InstallStationSummary?
     @Environment(SurveyModel.self) private var model
-    var phase: InstallStationSummary? { mode != .survey ? station : nil }
+    var phase: InstallStationSummary? { station }
 
     @ViewBuilder var body: some View {
         if let phase {
@@ -40,13 +40,8 @@ struct JobCard: View {
                     HStack(spacing: 6) {
                         Text("NO.\(job.docNo.isEmpty ? " —" : job.docNo)").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
                         if phase != nil { phaseBadge }
-                        else if mode == .install { installBadge }
-                        else if mode == .locked {
-                            // the lock matters more than the answer count once the survey is closed
-                            ViewThatFits(in: .horizontal) { HStack(spacing: 8) { badge; lockBadge }; lockBadge }
-                        } else {
-                            surveyBadge
-                        }
+                        else if mode == .install || job.stage != .survey { installBadge }
+                        else { surveyBadge }
                     }
                     if job.projectName.isEmpty {
                         Text("ยังไม่ได้ตั้งชื่อโครงการ").font(.sarabunFixed(16, .bold)).italic().foregroundStyle(Theme.inkMuted)
@@ -93,7 +88,7 @@ struct JobCard: View {
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(mode == .locked && phase == nil ? Theme.background : Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(recent ? Theme.primary : Theme.borderSubtle, lineWidth: 1))
         .contentShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -105,11 +100,7 @@ struct JobCard: View {
         HStack(spacing: 2) {
             ForEach(steps, id: \.step.id) { s in Capsule().fill(color(s.status)).frame(height: 6) }
         }
-        if mode == .locked {
-            actionRow(Text("งดแก้ไข · ดูได้อย่างเดียว"), Text("ดูรายงานสำรวจ"), background: Theme.rowSelected)
-        } else {
-            continueRow(next: next, index: nextIndex.map { $0 + 1 }, total: steps.count)
-        }
+        continueRow(next: next, index: nextIndex.map { $0 + 1 }, total: steps.count)
     }
 
     var install: InstallInfo { job.install ?? InstallInfo(movedAt: job.updated) }
@@ -210,12 +201,6 @@ struct JobCard: View {
             .padding(.horizontal, 8).padding(.vertical, 1).background(Theme.background, in: Capsule())
     }
 
-    var lockBadge: some View {
-        Label("ล็อก · อยู่ในงานติดตั้ง", systemImage: "lock").font(.sarabun(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.navy)
-            .labelStyle(TightLabel()).fixedSize()
-            .padding(.horizontal, 8).padding(.vertical, 2).background(Theme.borderSubtle, in: Capsule())
-    }
-
     func chip(_ text: String) -> some View {
         Text(text).font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.navy)
             .padding(.horizontal, 9).padding(.vertical, 4).background(Theme.primarySoft, in: Capsule())
@@ -270,6 +255,11 @@ struct JobCard: View {
                 Text("ทำต่อ \(index)/\(total)").font(.system(size: 11)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                 // code and title on one line, cut at the end
                 Text(next.code + " " + next.title).font(font).foregroundStyle(Theme.navy).lineLimit(1)
+            } else if job.canMoveToInstall {
+                // a tap asks to move it to installation (SurveyHomeView)
+                Label("ครบแล้ว", systemImage: "checkmark.circle.fill").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.teal)
+                    .labelStyle(TightLabel()).fixedSize()
+                Text("ย้ายไปงานติดตั้ง").font(font).foregroundStyle(Theme.navy).lineLimit(1)
             } else {
                 Label("กรอกครบทุกขั้นแล้ว", systemImage: "checkmark.circle.fill").font(font).foregroundStyle(Theme.teal)
             }

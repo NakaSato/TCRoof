@@ -92,6 +92,13 @@ struct RootView: View {
             session.survey.linkedJobLabel = { id in
                 (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first?.linkLabel
             }
+            // a survey moved to installation puts its job into construction, as its first install log does
+            session.survey.onMovedToInstall = { id in
+                guard let job = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first,
+                      job.status == .confirmed || job.status == .interested else { return }
+                job.status = .installing
+                try? context.save()
+            }
             #if DEBUG
             // Simulator checks run on sample data, offline.
             if DebugScreen.requested != nil {

@@ -30,6 +30,8 @@ enum ThaiFormat {
     static let longDate = make("EEE d MMMM yyyy")
     /// "พุธ 30 ก.ย."
     static let weekdayShort = make("EEE d MMM")
+    /// "พ. 30 ก.ย.", the short weekday the boards draw (`weekdayShort` gives `พฤหัส`)
+    static let weekdayTiny = make("EEEEEE d MMM")
     /// "พุธ 30 ก.ย. 2569"
     static let weekdayShortYear = make("EEE d MMM yyyy")
     /// "1 ต.ค."

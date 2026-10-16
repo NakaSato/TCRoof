@@ -48,6 +48,8 @@ final class CloudSync {
     private static let surveyCollection = "pwaSurveys"
     /// One document per issued REV of a survey report (docs/specs/review-lock-revisions-swift.md), written once.
     private static let revisionCollection = "pwaSurveyRevisions"
+    /// One document per feed post: the emails of the members who acknowledged it (`รับทราบ`).
+    private static let ackCollection = "feedAcks"
     private var db: Firestore { Firestore.firestore() }
 
     /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
@@ -89,6 +91,8 @@ final class CloudSync {
         survey?.onChange = nil
         survey?.cloudPush = nil
         survey?.cloudPending = nil
+        FeedAcks.shared.send = nil
+        PhotoSync.shared.stop()
         pending = [:]
         unconfirmed = [:]
         context = nil; survey = nil; uid = nil
@@ -114,11 +118,18 @@ final class CloudSync {
             listen(ScannedDevice.self)
             listen(InstallLog.self)
             listen(Inspection.self)
+            listen(PhotoAsset.self, optional: true)
             listenSurveys()
             listenRevisions()
+            listenFeedAcks()
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.schedulePush() }
+                MainActor.assumeIsolated {
+                    self?.schedulePush()
+                    // photos taken here go up to Drive, photos received download
+                    PhotoSync.shared.schedule()
+                }
             })
+            if let context, let survey { PhotoSync.shared.start(context: context, survey: survey) }
             survey?.onChange = { [weak self] in self?.schedulePush() }
             // Catches edits that haven't been autosaved yet.
             timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
@@ -224,6 +235,8 @@ final class CloudSync {
         collect(ScannedDevice.self, context, &changes, &present)
         collect(InstallLog.self, context, &changes, &present)
         collect(Inspection.self, context, &changes, &present)
+        var photos: [Change] = []
+        collect(PhotoAsset.self, context, &photos, &present)
         for job in survey.jobs {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
             present.insert(key)
@@ -235,11 +248,13 @@ final class CloudSync {
         let revisions = revisionChanges(survey, &present)
         for key in known.keys where !present.contains(key) {
             let ref = db.document(key)
-            changes.append(Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil))
+            let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
+            if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) } else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
         defer { refreshSurveyPending() }
-        commitRevisions(revisions)
+        commitSeparately(revisions, "REV upload")
+        commitSeparately(photos, "photo upload")
         guard !changes.isEmpty else { return }
 
         // Firestore takes at most 500 writes per batch.
@@ -297,22 +312,24 @@ final class CloudSync {
         "\(revisionCollection)/\(job.uuidString)_\(rev.replacingOccurrences(of: "/", with: "-"))"
     }
 
-    /// Its own batch: a refusal here (rules not deployed yet) must not hold back the jobs. Tried again on the next push.
-    private func commitRevisions(_ changes: [Change]) {
-        guard !changes.isEmpty else { return }
-        let batch = db.batch()
-        var previous: [String: String?] = [:]
-        for change in changes {
-            guard (try? change.write(batch)) != nil else { continue }
-            previous[change.key] = known[change.key]
-            known[change.key] = change.fingerprint
-        }
-        batch.commit { [weak self] error in
-            MainActor.assumeIsolated {
-                guard let self, let error else { return }
-                for (key, old) in previous { self.known[key] = old }
-                self.saveKnown()
-                print("CloudSync: REV upload refused: \(error.localizedDescription)")
+    /// Their own batches (REVs, photos): a refusal here (rules not deployed yet) must not hold back the jobs. Tried
+    /// again on the next push.
+    private func commitSeparately(_ changes: [Change], _ label: String) {
+        for start in stride(from: 0, to: changes.count, by: 400) {
+            let batch = db.batch()
+            var previous: [String: String?] = [:]
+            for change in changes[start..<min(start + 400, changes.count)] {
+                guard (try? change.write(batch)) != nil else { continue }
+                previous[change.key] = known[change.key]
+                known[change.key] = change.fingerprint
+            }
+            batch.commit { [weak self] error in
+                MainActor.assumeIsolated {
+                    guard let self, let error else { return }
+                    for (key, old) in previous { self.known[key] = old }
+                    self.saveKnown()
+                    print("CloudSync: \(label) refused: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -321,6 +338,7 @@ final class CloudSync {
         guard let models = try? context.fetch(FetchDescriptor<M>()) else { return }
         for model in models {
             if model.syncID == nil { model.syncID = UUID().uuidString }
+            guard model.syncs else { continue }
             let key = "\(M.collection)/\(model.syncID!)"
             present.insert(key)
             let record = model.record
@@ -335,14 +353,18 @@ final class CloudSync {
 
     /// The listeners take metadata changes too: when the cache already matches the server, the only event
     /// after the first (cached) snapshot is `isFromCache` turning false, and without it the state stays `.connecting`.
-    private func listen<M: CloudSynced>(_ type: M.Type) {
+    /// `optional`: a refused listener (its rule not deployed yet) is logged and the rest still syncs.
+    private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false) {
         let registration = db.collection(M.collection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                if let error { return self.failed(error) }
+                if let error {
+                    if optional { return print("CloudSync: \(M.collection) listener: \(error.localizedDescription)") }
+                    return self.failed(error)
+                }
                 guard let snapshot else { return }
                 self.receive(M.self, snapshot.documentChanges)
-                if !snapshot.metadata.isFromCache { self.synced() }
+                if !snapshot.metadata.isFromCache, !optional { self.synced() }
             }
         }
         listeners.append(registration)
@@ -366,7 +388,8 @@ final class CloudSync {
                 pending[key] = { [weak self] in self?.upsert(M.self, id: id, record: record, existing: nil) ?? true }
             }
         }
-        if M.self == Job.self {
+        // records waiting for their job, and photos waiting for their log or inspection
+        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self {
             for (key, retry) in pending where retry() { pending[key] = nil }
         }
         try? context.save()
@@ -391,7 +414,8 @@ final class CloudSync {
                 guard let made = M.make(record, jobs: jobs) else { return false }
                 made.syncID = id
                 context.insert(made)
-                _ = made.apply(record, jobs: jobs)
+                // a photo whose log or inspection hasn't arrived yet waits for it
+                guard made.apply(record, jobs: jobs) else { context.delete(made); return false }
                 model = made
             }
         }
@@ -416,6 +440,8 @@ final class CloudSync {
                           let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
                     survey.applyRemote(job)
                     self.known[key] = SurveyRecord(job)?.fingerprint
+                    // its photos taken on the other device, from Drive, without waiting for the editor to open
+                    if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }
                 }
                 self.saveKnown()
                 self.refreshSurveyPending()
@@ -444,6 +470,43 @@ final class CloudSync {
             }
         }
         listeners.append(registration)
+    }
+
+    /// The home feed's acknowledgements, live. A toggle adds or removes only its own member (`arrayUnion` /
+    /// `arrayRemove`), so two people acknowledging at once never overwrite each other; offline, Firestore keeps the
+    /// write and sends it later. Acknowledgements made before they were synced are sent once.
+    private func listenFeedAcks() {
+        let acks = FeedAcks.shared
+        acks.send = { [weak self] post, member, on in
+            guard let self else { return }
+            self.db.document(Self.ackKey(post)).setData(
+                ["post": post, "members": on ? FieldValue.arrayUnion([member]) : FieldValue.arrayRemove([member])], merge: true
+            ) { error in
+                if let error { print("CloudSync: acknowledgement refused: \(error.localizedDescription)") }
+            }
+        }
+        let uploaded = "feed.acks.uploaded.\(uid ?? "")"
+        if !UserDefaults.standard.bool(forKey: uploaded), let me = survey?.google.email, !me.isEmpty {
+            for (post, set) in acks.members where set.contains(me) { acks.send?(post, me, true) }
+            UserDefaults.standard.set(true, forKey: uploaded)
+        }
+        let registration = db.collection(Self.ackCollection).addSnapshotListener { snapshot, error in
+            MainActor.assumeIsolated {
+                // never fail the whole sync over acknowledgements (rule not deployed yet): the jobs still sync
+                if let error { return print("CloudSync: acknowledgement listener: \(error.localizedDescription)") }
+                for change in snapshot?.documentChanges ?? [] {
+                    let data = change.document.data()
+                    guard let post = data["post"] as? String else { continue }
+                    acks.receive(post, change.type == .removed ? [] : Set(data["members"] as? [String] ?? []))
+                }
+            }
+        }
+        listeners.append(registration)
+    }
+
+    /// A post id as a document id: Firestore ids can't hold `/`.
+    static func ackKey(_ post: String) -> String {
+        "\(ackCollection)/\(post.replacingOccurrences(of: "/", with: "-"))"
     }
 
     /// A job's document and fingerprint, kept until the job changes: the push runs after every edit and every 20 s,

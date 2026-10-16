@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CryptoKit)
+import CryptoKit
+#endif
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -16,6 +19,8 @@ public struct DriveFile: Decodable, Hashable, Sendable, Identifiable {
     public let size: String?
     public let webViewLink: String?
     public let trashed: Bool?
+    /// Content checksum Drive keeps for each uploaded file (none for folders).
+    public let md5Checksum: String?
     public var isFolder: Bool { mimeType == DriveClient.folderMime }
     public var modified: Date? {
         guard let s = modifiedTime else { return nil }
@@ -45,7 +50,7 @@ public struct DriveClient: Sendable {
     public static let folderMime = "application/vnd.google-apps.folder"
     static let api = URL(string: "https://www.googleapis.com/drive/v3/files")!
     static let upload = URL(string: "https://www.googleapis.com/upload/drive/v3/files")!
-    static let fields = "id,name,mimeType,modifiedTime,size,webViewLink,trashed"
+    static let fields = "id,name,mimeType,modifiedTime,size,webViewLink,trashed,md5Checksum"
 
     let tokens: DriveTokenProvider
     let session: URLSession
@@ -86,6 +91,14 @@ public struct DriveClient: Sendable {
         return f.trashed != true
     }
 
+    /// True only when Drive says the file or folder is gone (not found, or in the trash). Any other failure throws (a
+    /// lost connection, an expired sign-in, a 403 rate limit), so it never passes for a deleted folder and starts its
+    /// uploads over.
+    public func isGone(_ id: String) async throws -> Bool {
+        do { return try await metadata(id).trashed == true }
+        catch DriveError.http(404, _) { return true }
+    }
+
     public func findFolder(_ name: String, parent: String) async throws -> DriveFile? {
         try await search("name = '\(Self.q(name))' and mimeType = '\(Self.folderMime)' and '\(Self.q(parent))' in parents and trashed = false").first
     }
@@ -119,6 +132,17 @@ public struct DriveClient: Sendable {
         r.httpBody = body
         r.timeoutInterval = 300
         return try JSONDecoder().decode(DriveFile.self, from: try await send(r))
+    }
+
+    /// Uploads unless `parent` already holds a file of that name with the same content, which it returns instead: an
+    /// upload whose answer was lost, or a photo a stale list says was never sent, never lands on Drive twice.
+    public func uploadOnce(_ data: Data, name: String, mimeType: String, parent: String) async throws -> DriveFile {
+        #if canImport(CryptoKit)
+        let md5 = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let same = try await search("name = '\(Self.q(name))' and '\(Self.q(parent))' in parents and trashed = false")
+        if let f = same.first(where: { $0.md5Checksum == md5 }) { return f }
+        #endif
+        return try await upload(data, name: name, mimeType: mimeType, parent: parent)
     }
 
     public func download(_ id: String) async throws -> Data {

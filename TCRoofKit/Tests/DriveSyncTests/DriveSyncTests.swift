@@ -1,4 +1,5 @@
 import XCTest
+import CryptoKit
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -9,6 +10,10 @@ import FoundationNetworking
 final class FakeDrive: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var items: [[String: Any]] = []
     nonisolated(unsafe) static var log: [String] = []
+    /// Ids never repeat, even after a test removes an item.
+    nonisolated(unsafe) static var made = 0
+    /// Answers every metadata request with this status (a 500 for a Drive hiccup), when set.
+    nonisolated(unsafe) static var metadataStatus: Int?
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func stopLoading() {}
@@ -34,6 +39,9 @@ final class FakeDrive: URLProtocol, @unchecked Sendable {
         } else if method == "GET", comps.queryItems?.contains(where: { $0.name == "alt" }) == true {
             let id = url.lastPathComponent
             out = Self.items.first { $0["id"] as? String == id }?["data"] as? Data ?? Data()
+        } else if method == "GET", let status = Self.metadataStatus {
+            client?.urlProtocol(self, didReceive: HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: Data("{}".utf8)); client?.urlProtocolDidFinishLoading(self); return
         } else if method == "GET" {
             let id = url.lastPathComponent
             out = Self.items.first { $0["id"] as? String == id } ?? [:]
@@ -54,7 +62,9 @@ final class FakeDrive: URLProtocol, @unchecked Sendable {
                 let m = try! JSONSerialization.jsonObject(with: body) as! [String: Any]
                 name = m["name"] as! String; parent = (m["parents"] as! [String])[0]; mime = m["mimeType"] as! String
             }
-            let item: [String: Any] = ["id": "id\(Self.items.count + 1)", "name": name, "mimeType": mime, "parent": parent, "data": data]
+            Self.made += 1
+            var item: [String: Any] = ["id": "id\(Self.made)", "name": name, "mimeType": mime, "parent": parent, "data": data]
+            if url.path.contains("/upload/") { item["md5Checksum"] = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined() }
             Self.items.append(item); out = item
         }
         var json = out
@@ -70,6 +80,9 @@ final class FakeDrive: URLProtocol, @unchecked Sendable {
 struct FixedToken: DriveTokenProvider { func accessToken() async throws -> String { "t" } }
 
 final class DriveSyncTests: XCTestCase {
+    /// Each test starts on an empty Drive: the tests look items up by name.
+    override func setUp() { FakeDrive.items = []; FakeDrive.metadataStatus = nil }
+
     func testSaveAndOpen() async throws {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.protocolClasses = [FakeDrive.self]
@@ -169,6 +182,58 @@ extension DriveSyncTests {
         let refilled = try await sync.syncPhotos(job, photos: [], photoData: { _ in nil }, revisions: rev00, revisionData: data)
         XCTAssertNotEqual(refilled.revisionsFolderID, again.revisionsFolderID)
         XCTAssertEqual(refilled.revisionFiles?.count, 2)
+    }
+}
+
+extension DriveSyncTests {
+    /// A file already in the folder with the same name and content is reused; another content is uploaded.
+    func testUploadOnceReusesTheSameFile() async throws {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [FakeDrive.self]
+        let client = DriveClient(tokens: FixedToken(), session: URLSession(configuration: cfg))
+        let folder = try await client.ensureFolder("ครั้งเดียว", parent: "root")
+        let uploads = { FakeDrive.log.filter { $0.contains("/upload/") }.count }
+        let before = uploads()
+        let first = try await client.uploadOnce(Data("jpg-1".utf8), name: "a.jpg", mimeType: "image/jpeg", parent: folder.id)
+        let again = try await client.uploadOnce(Data("jpg-1".utf8), name: "a.jpg", mimeType: "image/jpeg", parent: folder.id)
+        XCTAssertEqual(again.id, first.id)
+        XCTAssertEqual(uploads() - before, 1)
+        let other = try await client.uploadOnce(Data("jpg-2".utf8), name: "a.jpg", mimeType: "image/jpeg", parent: folder.id)
+        XCTAssertNotEqual(other.id, first.id, "a different photo of the same name still goes up")
+        XCTAssertEqual(uploads() - before, 2)
+    }
+
+    /// A Drive hiccup never passes for a deleted photo folder, and a stale list of sent photos sends none twice.
+    func testPhotosAreNeverSentTwice() async throws {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [FakeDrive.self]
+        let sync = DriveSync(client: DriveClient(tokens: FixedToken(), session: URLSession(configuration: cfg)))
+        var job = Job.new(template: JobTemplate.all[1])
+        job.values["docNo"] = .text("303"); job.values["projectName"] = .text("ไม่ซ้ำ")
+        job.values["siteMap"] = .photo(Photo(fileName: "a.jpg", width: 10, height: 10))
+        let photo: @Sendable (Photo) -> Data? = { Data("jpg-\($0.id)".utf8) }
+        let link = try await sync.syncPhotos(job, photos: job.photoFolders, photoData: photo, revisions: [], revisionData: { _ in nil })
+        XCTAssertEqual(link.photoFiles?.count, 1)
+        let uploads = { FakeDrive.log.filter { $0.contains("/upload/") }.count }
+
+        // the folder check fails: the save stops instead of starting the photos over
+        job.drive = link
+        let before = uploads()
+        FakeDrive.metadataStatus = 500
+        defer { FakeDrive.metadataStatus = nil }
+        do {
+            _ = try await sync.syncPhotos(job, photos: job.photoFolders, photoData: photo, revisions: [], revisionData: { _ in nil })
+            XCTFail("a failed folder check stops the upload")
+        } catch {}
+        FakeDrive.metadataStatus = nil
+        XCTAssertEqual(uploads(), before)
+
+        // another device's copy of the job lacks the photo: Drive's file is found and reused
+        var stale = link; stale.photoFiles = [:]
+        job.drive = stale
+        let again = try await sync.syncPhotos(job, photos: job.photoFolders, photoData: photo, revisions: [], revisionData: { _ in nil })
+        XCTAssertEqual(uploads(), before)
+        XCTAssertEqual(again.photoFiles, link.photoFiles)
     }
 }
 

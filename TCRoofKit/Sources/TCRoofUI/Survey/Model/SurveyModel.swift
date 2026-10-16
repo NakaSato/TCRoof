@@ -204,10 +204,13 @@ public final class SurveyModel {
     /// Host-supplied name of a linked job ("TC-0012 · สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
     @ObservationIgnored public var linkedJobLabel: ((String) -> String?)?
 
-    /// A job changed on another device; replaces the local copy as is.
+    /// A job changed on another device; replaces the local copy, except that the Drive files either side knows of are
+    /// kept (`DriveLink.merged`): a copy saved before this device's upload landed would otherwise send those photos again.
     /// Photo files don't travel with it — the editor downloads them from Drive (`fetchMissingPhotos`).
     public func applyRemote(_ job: Job) {
         pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
+        var job = job
+        if let local = self.job(job.id)?.drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
         if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job } else { jobs.insert(job, at: 0) }
         try? store.save(job)
     }

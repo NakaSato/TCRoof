@@ -78,12 +78,16 @@ final class IECStageTests: XCTestCase {
 
     func testCompleteLocksAndKeepsThePass() throws {
         var r = try sample()
-        XCTAssertFalse(r.complete(by: "ก"), "steps 1–6 aren't done")
+        XCTAssertFalse(r.submit(by: "ก"), "steps 1–6 aren't done")
+        XCTAssertFalse(r.complete(by: "ก"))
         XCTAssertNil(r.result)
         r = try complete()
+        XCTAssertFalse(r.complete(by: "ทีมภายใน"), "the team closes only what the contractor sent")
+        XCTAssertTrue(r.submit(by: "ผู้รับเหมา"))
         let at = Date(timeIntervalSinceReferenceDate: 813_100_000)
         XCTAssertTrue(r.complete(by: "ทีมทดสอบ", at: at))
         XCTAssertTrue(r.isLocked)
+        XCTAssertFalse(r.isAwaitingClose)
         XCTAssertEqual(r.result?.completedAt, at)
         XCTAssertEqual(r.result?.inverters, [.init(before: true, after: true), .init(before: true, after: true)])
         XCTAssertEqual(r.result?.passed, true)
@@ -94,9 +98,11 @@ final class IECStageTests: XCTestCase {
         XCTAssertTrue(r.resultIsStale)
         r.reopen()
         XCTAssertFalse(r.isLocked)
+        XCTAssertNil(r.submission, "reopened, it goes back to the contractor")
         // an IR under 1 MΩ fails the before phase of that inverter
         var bad = try complete()
         bad.inverters[1].slots[0]?.irNegMOhm = 0.5
+        XCTAssertTrue(bad.submit(by: "ผู้รับเหมา"))
         XCTAssertTrue(bad.complete(by: "ก"))
         XCTAssertEqual(bad.result?.inverters[1].before, false)
         XCTAssertEqual(bad.result?.passed, false)
@@ -120,6 +126,8 @@ final class IECStageTests: XCTestCase {
         r.thermalPlaces = ["th1": "หลังคาอาคาร 1"]
         r.confirm(.setup, by: "ก")
         r.recordExport(.excel, name: "a.XLS")
+        r.submit(by: "ผู้รับเหมา")
+        r.sentBack = .init(at: Date(timeIntervalSinceReferenceDate: 813_060_000), by: "ข", note: "รูป IR ไม่ชัด")
         r.complete(by: "ก")
         let back = try JSONDecoder().decode(IECReport.self, from: JSONEncoder().encode(r))
         XCTAssertEqual(back, r)
@@ -127,9 +135,53 @@ final class IECStageTests: XCTestCase {
         // a report saved before these fields existed
         let old = try JSONEncoder().encode(try sample())
         var json = try JSONSerialization.jsonObject(with: old) as! [String: Any]
-        for k in ["gridOnAt", "thermalPlaces", "stageRecords", "exports", "result"] { json[k] = nil }
+        for k in ["gridOnAt", "thermalPlaces", "stageRecords", "exports", "submission", "sentBack", "result"] { json[k] = nil }
         let decoded = try JSONDecoder().decode(IECReport.self, from: JSONSerialization.data(withJSONObject: json))
         XCTAssertTrue(decoded.stageRecords.isEmpty && decoded.exports.isEmpty && decoded.result == nil && decoded.thermalPlaces.isEmpty)
+        XCTAssertTrue(decoded.submission == nil && decoded.sentBack == nil && !decoded.isLocked)
+        // a test closed before the hand-over existed stays closed
+        var closed = json
+        closed["result"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(back.result!))
+        let oldClosed = try JSONDecoder().decode(IECReport.self, from: JSONSerialization.data(withJSONObject: closed))
+        XCTAssertTrue(oldClosed.isLocked && !oldClosed.isAwaitingClose && oldClosed.lockedLine == "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว")
+    }
+
+    /// The contractor fills and sends; the internal team closes or sends back, like a daily report (fill, then sign).
+    func testContractorSendsAndTheTeamClosesOrSendsBack() throws {
+        var r = try complete()
+        let sentAt = Date(timeIntervalSinceReferenceDate: 813_100_000)
+        XCTAssertFalse(r.sendBack(by: "ทีม", note: "x"), "nothing sent yet")
+        XCTAssertTrue(r.submit(by: "หัวหน้างานผู้รับเหมา", at: sentAt))
+        XCTAssertEqual(r.submission?.by, "หัวหน้างานผู้รับเหมา")
+        XCTAssertEqual(r.submission?.submittedAt, sentAt)
+        XCTAssertTrue(r.isLocked && r.isAwaitingClose)
+        XCTAssertNil(r.result, "sending isn't closing: the MP plan doesn't count it")
+        XCTAssertEqual(r.lockedLine, "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด · ดูได้อย่างเดียว")
+        XCTAssertTrue(IECReport.Stage.allCases.allSatisfy(r.isConfirmed), "sending confirms every step")
+        XCTAssertEqual(r.record(.setup)?.by, "หัวหน้างานผู้รับเหมา")
+        XCTAssertFalse(r.submit(by: "หัวหน้างานผู้รับเหมา"), "sent once")
+
+        // sent back with what to fix: open again, the note kept until the next send
+        XCTAssertTrue(r.sendBack(by: "วิศวกร", note: "  ถ่ายรูป IR ใหม่ \n"))
+        XCTAssertFalse(r.isLocked)
+        XCTAssertEqual(r.sentBack?.note, "ถ่ายรูป IR ใหม่")
+        XCTAssertFalse(r.complete(by: "วิศวกร"))
+        r.inverters[0].slots[0]?.irPosMOhm = 260
+        XCTAssertTrue(r.submit(by: "หัวหน้างานผู้รับเหมา"))
+        XCTAssertNil(r.sentBack)
+
+        // values changed behind the hand-over (a sync): the team can't close it, only send it back
+        var stale = r
+        stale.inverters[0].slots[0]?.irPosMOhm = 270
+        XCTAssertTrue(stale.submissionIsStale)
+        XCTAssertFalse(stale.complete(by: "วิศวกร"))
+        XCTAssertTrue(stale.sendBack(by: "วิศวกร", note: ""))
+
+        XCTAssertFalse(r.submissionIsStale)
+        XCTAssertTrue(r.complete(by: "วิศวกร"))
+        XCTAssertEqual(r.result?.by, "วิศวกร")
+        XCTAssertEqual(r.submission?.by, "หัวหน้างานผู้รับเหมา", "who sent it stays on record")
+        XCTAssertFalse(r.sendBack(by: "วิศวกร", note: "x"), "closed: reopen instead")
     }
 }
 

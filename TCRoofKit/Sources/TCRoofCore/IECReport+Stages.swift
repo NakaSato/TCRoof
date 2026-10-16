@@ -58,6 +58,24 @@ public extension IECReport {
         public var passed: Bool { inverters.allSatisfy { $0.before == true && $0.after == true } }
     }
 
+    /// The contractor's hand-over (`ส่งผลให้ทีม`): who sent the filled test and the values sent. The internal team then
+    /// closes it (`complete`) or sends it back (`sendBack`), the same as a daily report the foreman fills and our
+    /// engineer signs.
+    struct Submission: Codable, Equatable, Sendable {
+        public var submittedAt: Date
+        public var by: String
+        public var fingerprint: String
+        public init(submittedAt: Date, by: String, fingerprint: String) { self.submittedAt = submittedAt; self.by = by; self.fingerprint = fingerprint }
+    }
+
+    /// The team's answer when it sends a test back: when, who, and what to fix.
+    struct SendBack: Codable, Equatable, Sendable {
+        public var at: Date
+        public var by: String
+        public var note: String
+        public init(at: Date, by: String, note: String) { self.at = at; self.by = by; self.note = note }
+    }
+
     // MARK: done and missing
 
     /// What a step still lacks, as the bottom bar and step 7's list say it; empty = done.
@@ -124,13 +142,49 @@ public extension IECReport {
 
     // MARK: result and lock
 
-    /// Closed by `เสร็จ`: edits are refused until `reopen()`.
-    var isLocked: Bool { result != nil }
+    /// Sent to the team (`ส่งผลให้ทีม`) or closed (`ปิดการทดสอบ`): edits are refused until the team sends it back or
+    /// reopens it.
+    var isLocked: Bool { result != nil || submission != nil }
 
-    /// Closes the test when steps 1–6 are done, keeping each inverter's pass and confirming every step.
+    /// Sent and waiting for the team to close it or send it back.
+    var isAwaitingClose: Bool { submission != nil && result == nil }
+
+    /// What a locked page says instead of its own status line.
+    var lockedLine: String? {
+        if result != nil { return "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว" }
+        if submission != nil { return "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด · ดูได้อย่างเดียว" }
+        return nil
+    }
+
+    /// `ส่งผลให้ทีม`: the contractor hands the filled test over when steps 1–6 are done, confirming every step in its
+    /// name. Clears an earlier send-back.
+    @discardableResult
+    mutating func submit(by: String, at: Date = .now) -> Bool {
+        guard !isLocked, isDone(.review) else { return false }
+        for s in Stage.allCases where !isConfirmed(s) { confirm(s, by: by, at: at) }
+        submission = Submission(submittedAt: at, by: by, fingerprint: fingerprint(.review))
+        sentBack = nil
+        return true
+    }
+
+    /// The values changed after they were sent (a sync from a device that hadn't seen the hand-over): the team can't
+    /// close what it hasn't seen, so it sends it back.
+    var submissionIsStale: Bool { submission.map { $0.fingerprint != fingerprint(.review) } ?? false }
+
+    /// `ส่งกลับให้แก้`: the team returns a sent test to the contractor with what to fix; it opens for editing again.
+    @discardableResult
+    mutating func sendBack(by: String, note: String, at: Date = .now) -> Bool {
+        guard isAwaitingClose else { return false }
+        submission = nil
+        sentBack = SendBack(at: at, by: by, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+        return true
+    }
+
+    /// `ปิดการทดสอบ`: the internal team closes a sent test, keeping each inverter's pass. Only this counts in the MP
+    /// plan (3.1). A test that wasn't sent, was changed since, or is closed already stays as it is (false).
     @discardableResult
     mutating func complete(by: String, at: Date = .now) -> Bool {
-        guard result == nil, isDone(.review) else { return false }
+        guard isAwaitingClose, !submissionIsStale, isDone(.review) else { return false }
         for s in Stage.allCases where !isConfirmed(s) { confirm(s, by: by, at: at) }
         result = TestResult(completedAt: at, by: by,
                             inverters: inverters.map { .init(before: passes($0, .before), after: passes($0, .after)) },
@@ -138,7 +192,8 @@ public extension IECReport {
         return true
     }
 
-    mutating func reopen() { result = nil }
+    /// `แก้ไข` on a closed test: back to the contractor's editing, to be sent and closed again.
+    mutating func reopen() { result = nil; submission = nil }
 
     /// The values changed after the test was closed (a sync from another device that hadn't seen the lock).
     var resultIsStale: Bool { result.map { $0.fingerprint != fingerprint(.review) } ?? false }

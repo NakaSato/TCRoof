@@ -333,7 +333,7 @@ struct IECVIPage: View {
         let all = r.inverters.allSatisfy { r.viTally($0, phase).isComplete }
         let summary = r.inverters.enumerated().map { k, inv in let t = r.viTally(inv, phase); return "INV\(k + 1) \(t.done)/\(t.total)" }.joined(separator: " · ")
         let measured = phase == .before ? "วัดก่อนออน " + summary + " · ครบทุกอินเวอร์เตอร์แล้วจึงออนระบบ" : "วัดแล้ว " + summary
-        let text = r.isLocked ? "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว" : failed > 0 ? "มีค่าไม่ผ่าน \(failed) สตริง" : measured
+        let text = r.lockedLine ?? (failed > 0 ? "มีค่าไม่ผ่าน \(failed) สตริง" : measured)
         let ok = !r.isLocked && failed == 0 && all
         return HStack(spacing: 14) {
             Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)

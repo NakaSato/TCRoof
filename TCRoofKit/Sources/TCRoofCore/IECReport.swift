@@ -204,7 +204,11 @@ public struct IECReport: Codable, Equatable, Sendable {
     public var stageRecords: [String: StageRecord] = [:]
     /// Every Excel / Word file exported, oldest first.
     public var exports: [ExportRecord] = []
-    /// Set by `เสร็จ`: the test is closed and locked until reopened.
+    /// Set by `ส่งผลให้ทีม`: the contractor sent the filled test; locked until the team closes it or sends it back.
+    public var submission: Submission?
+    /// The team's last send-back, shown until the test is sent again.
+    public var sentBack: SendBack?
+    /// Set by `ปิดการทดสอบ` (the internal team): the test is closed and locked until reopened.
     public var result: TestResult?
     /// The single line diagram attached in step 1 (the file is a job document; this says which and which version).
     public var sld: SLDRef?
@@ -219,7 +223,7 @@ public struct IECReport: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case stationLine, module, inverters, before, after, yrKWhM2Day, arrayTempC, testDate, tester, instruments, irradiancePhoto, thermalPhotos
-        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, result, sld
+        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, submission, sentBack, result, sld
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -240,6 +244,8 @@ public struct IECReport: Codable, Equatable, Sendable {
         thermalPlaces = try c.decodeIfPresent([String: String].self, forKey: .thermalPlaces) ?? [:]
         stageRecords = try c.decodeIfPresent([String: StageRecord].self, forKey: .stageRecords) ?? [:]
         exports = try c.decodeIfPresent([ExportRecord].self, forKey: .exports) ?? []
+        submission = try c.decodeIfPresent(Submission.self, forKey: .submission)
+        sentBack = try c.decodeIfPresent(SendBack.self, forKey: .sentBack)
         result = try c.decodeIfPresent(TestResult.self, forKey: .result)
         sld = try c.decodeIfPresent(SLDRef.self, forKey: .sld)
     }

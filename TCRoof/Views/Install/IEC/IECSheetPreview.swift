@@ -78,7 +78,8 @@ struct IECSheetPreview: View {
                 open(p.stage, p.inverter, p.slot)
             }
             Button("ยกเลิก", role: .cancel) {}
-        } message: { _ in Text("การทดสอบนี้ปิดแล้ว ผลที่สรุปไว้จะถูกยกเลิก ต้องกด เสร็จ อีกครั้งหลังแก้") }
+        } message: { _ in Text(job.iecReport?.result != nil ? "การทดสอบนี้ปิดแล้ว ผลที่สรุปไว้จะถูกยกเลิก ต้องส่งผลให้ทีมและให้ทีมภายในปิดอีกครั้งหลังแก้"
+                                                          : "ผลนี้ส่งให้ทีมแล้ว แก้แล้วต้องกด ส่งผลให้ทีม อีกครั้ง") }
         .alert("ทำ PDF ไม่ได้", isPresented: Binding(get: { printFailed != nil }, set: { if !$0 { printFailed = nil } })) {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(printFailed ?? "") }

@@ -357,6 +357,13 @@ public enum FeedBuilder {
         }
     }
 
+    /// `มีโพสต์ใหม่ N`: the posts not among those already seen at the top of the feed. Before the feed was first seen
+    /// (nil) nothing counts as new.
+    public static func newCount(_ posts: [FeedPost], seen: Set<String>?) -> Int {
+        guard let seen else { return 0 }
+        return posts.filter { !seen.contains($0.id) }.count
+    }
+
     public static func counts(_ posts: [FeedPost], myTeams: Set<String> = [], hidden: Set<String> = []) -> [FeedFilter: Int] {
         Dictionary(uniqueKeysWithValues: FeedFilter.allCases.map { ($0, filter(posts, by: $0, myTeams: myTeams, hidden: hidden).count) })
     }

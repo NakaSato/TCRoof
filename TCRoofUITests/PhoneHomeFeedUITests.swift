@@ -4,7 +4,8 @@ import XCTest
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<iphone udid>' -only-testing:TCRoofUITests/PhoneHomeFeedUITests -derivedDataPath <scratch>`.
 /// On the demo feed: a filter chip narrows the posts, `รับทราบ` adds the viewer to the count and takes them off again,
 /// `แก้แล้ว` and `เปิดอีกครั้ง` swap, the `เอกสาร` tab opens the document library, and the modules that left the dock
-/// are behind the settings sheet's `เครื่องมือวัด` row.
+/// are behind the settings sheet's `เครื่องมือวัด` row. Pull to refresh brings a new post, and one that arrives while
+/// the feed is scrolled down shows `มีโพสต์ใหม่`.
 final class PhoneHomeFeedUITests: XCTestCase {
     let slow: TimeInterval = 90
 
@@ -15,6 +16,32 @@ final class PhoneHomeFeedUITests: XCTestCase {
         app.launchArguments = ["-screen", "home", "-homeFeed", "demo", "-homeNoAppointments", "YES", "-noNotificationPrompt", "YES"] + extra
         app.launch()
         return app
+    }
+
+    /// Pull to refresh rebuilds the feed: `-homeFeedRefresh` brings one example post per pull.
+    func testPullToRefreshBringsTheNewPost() {
+        let app = launch(["-homeFeedRefresh", "YES"])
+        XCTAssertTrue(app.buttons["รับทราบ"].firstMatch.waitForExistence(timeout: slow))
+        let post = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "รายงานใหม่ 1")).firstMatch
+        XCTAssertFalse(post.exists)
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+            .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85)))
+        XCTAssertTrue(post.waitForExistence(timeout: 15), "the pulled post")
+        XCTAssertFalse(app.buttons["feed.newPosts"].exists, "pulled at the top: nothing to point to")
+    }
+
+    /// A post that comes in while the feed is scrolled down shows `มีโพสต์ใหม่ 1`; a tap goes back to the top.
+    func testANewPostWhileScrolledShowsThePill() {
+        let app = launch(["-homeFeedArrive", "14"])
+        XCTAssertTrue(app.buttons["รับทราบ"].firstMatch.waitForExistence(timeout: slow))
+        app.swipeUp(); app.swipeUp()
+        let pill = app.buttons["feed.newPosts"]
+        XCTAssertTrue(pill.waitForExistence(timeout: 30), "the pill")
+        XCTAssertEqual(pill.label, "มีโพสต์ใหม่ 1")
+        pill.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: pill)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed, "back at the top, seen")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "รายงานใหม่ 1")).firstMatch.isHittable)
     }
 
     func testAcknowledgeTogglesTheCount() {

@@ -36,7 +36,7 @@ public enum TCFeedTone: CaseIterable, Sendable {
         self == .blue ? (Theme.progressBox, Theme.navy) : badge
     }
 
-    /// The left edge of an iPad post.
+    /// The icon of an iPad post's stat strip.
     var accent: Color { self == .blue ? Theme.primary : solid }
 
     /// iPad summary strip: the glyph before a cell's label.
@@ -251,8 +251,6 @@ public struct TCFeedPost<Photo: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: cardRadius, style: .continuous).strokeBorder(Theme.borderSubtle))
-        // iPad: a 4 pt edge in the badge's tone
-        .overlay(alignment: .leading) { if pad { tone.accent.frame(width: 4) } }
         .clipShape(RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
     }
 

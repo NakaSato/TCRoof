@@ -166,8 +166,10 @@ struct TimelineItem: Identifiable {
         // a PWA job with an MP plan gets its install rows from the plan's agenda, as on the plan page
         for job in jobs where job.kind != .pwa || job.scheduleInput == nil {
             guard let day = job.installDay(on: .now) else { continue }
-            let start = cal.date(bySettingHour: cal.component(.hour, from: job.installStart),
-                                 minute: cal.component(.minute, from: job.installStart), second: 0, of: .now) ?? .now
+            let hour = cal.component(.hour, from: job.installStart), minute = cal.component(.minute, from: job.installStart)
+            // a start date picked with no time (00:00) is the whole day, as a plan row with no time: ทั้งวัน, first
+            let allDay = hour == 0 && minute == 0
+            let start = allDay ? Date.now.startOfDay : cal.date(bySettingHour: hour, minute: minute, second: 0, of: .now) ?? .now
             let started = start <= .now
             let a = TodayAppointment(job: job, report: report(job))
             out.append(TimelineItem(kind: .live, date: start, isInstall: true, appointment: a,
@@ -178,7 +180,7 @@ struct TimelineItem: Identifiable {
                                             job.capacityKW > 0 ? "\(job.capacityKW.plain) kWp" : nil,
                                             started ? "ทีมเข้างานแล้ว" : nil].compactMap { $0 }.joined(separator: " · "),
                                     progress: Double(day) / Double(max(job.installDays, 1)),
-                                    action: "เปิดบันทึกประจำวัน ›"))
+                                    action: "เปิดบันทึกประจำวัน ›", clock: allDay ? "ทั้งวัน" : nil))
         }
         let surveys = jobs.filter { $0.surveyDate.isToday }.sorted { $0.surveyDate < $1.surveyDate }
         let nextID = surveys.first { $0.surveyDate > .now }?.persistentModelID

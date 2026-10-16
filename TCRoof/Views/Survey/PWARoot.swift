@@ -14,11 +14,8 @@ struct PWARoot: View {
     @State private var dailies: Job?
     @State private var showPlan = false
     @State private var showNotifications = false
-    @AppStorage("notifications.read") private var readRaw = ""
-    @State private var liveFeed = LiveFeed.shared
-    @State private var instruments = InstrumentStore.shared
+    private var bell = PWABell()
     @Query(sort: \Job.installStart) private var jobs: [Job]
-    @Environment(GoogleSession.self) private var session
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad: the dock over this stack (`PadTabs`).
     @Environment(PadDock.self) private var dock: PadDock?
@@ -34,7 +31,7 @@ struct PWARoot: View {
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
             .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
-                notificationsView().environment(\.homeInk, .outdoor)
+                bell.view().environment(\.homeInk, .outdoor)
             }
             // iPad: the panel of the home's bell (`PadHome`), under this header's bell
             .overlay(alignment: .topTrailing) { if sizeClass != .compact && showNotifications { bellPanel } }
@@ -67,7 +64,6 @@ struct PWARoot: View {
 
     private var overview: PWAOverviewHost {
         let installing = jobs.pwaInstalling, stations = jobs.pwaStations
-        let read = readIDs
         return PWAOverviewHost(
             installStations: installing.map(\.installSummary),
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
@@ -79,7 +75,7 @@ struct PWARoot: View {
             returnToInstall: { id in stations.first { $0.overviewID == id }?.status = .installing },
             openPlan: { showPlan = true },
             planBody: { search in AnyView(PWAPlanPhoneView(padSearch: search)) },
-            unread: notifications.filter { !read.contains($0.id) }.count,
+            unread: bell.unread,
             openNotifications: { showNotifications.toggle() })
     }
 
@@ -91,25 +87,6 @@ struct PWARoot: View {
         return nil
     }
 
-    // MARK: notifications
-
-    // The bell's list, read marks and row actions, as `HomeView` has them. A row's screen opens on the home stack:
-    // `PhoneTabs` switches to it when `NotificationService.link` is set.
-
-    private var notifications: [AppNotification] {
-        AppNotification.list(jobs: jobs.filter { $0.installDay(on: .now) != nil || $0.surveyDate.isToday },
-                             survey: session.survey, posts: liveFeed.posts, tools: instruments.all)
-    }
-
-    private var readIDs: Set<String> { Set(readRaw.split(separator: "\n").map(String.init)) }
-
-    private func notificationsView(large: Bool = false, close: (() -> Void)? = nil) -> PhoneNotificationsView {
-        PhoneNotificationsView(items: notifications, read: readIDs, markRead: markRead, sync: { session.survey.cloudPush?() },
-                               surveyHint: surveyHint,
-                               openSurvey: { n in if let job = n.job { openLater(.survey(job: job.syncID ?? job.code)) } },
-                               openLink: openLater, large: large, close: close)
-    }
-
     /// The home bell's panel (`PadHome`: 440 wide, r18) under this header's bell, without its arrow. The page is
     /// dimmed lightly; a tap on it closes the panel, while the header's and the dock's buttons stay live.
     private var bellPanel: some View {
@@ -117,32 +94,13 @@ struct PWARoot: View {
         ZStack(alignment: .topTrailing) {
             Theme.popoverDim.ignoresSafeArea().allowsHitTesting(false)
             Color.clear.contentShape(Rectangle()).onTapGesture { showNotifications = false }.padding(.top, 88)
-            notificationsView(large: true) { showNotifications = false }
+            bell.view(large: true) { showNotifications = false }
                 .background(Theme.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .shadow(color: Theme.navy.opacity(0.28), radius: 20, y: 16)
                 .padding(.top, 88 - 22 + 11).padding(.trailing, 58)
         }
         .transition(.opacity)
-    }
-
-    /// Marks these read; ids no longer shown are dropped so the stored list stays small.
-    private func markRead(_ list: [AppNotification]) {
-        let shown = Set(notifications.map(\.id))
-        readRaw = readIDs.intersection(shown).union(list.map(\.id)).sorted().joined(separator: "\n")
-        NotificationService.shared.bellRead(Set(list.map(\.id)))
-    }
-
-    private func surveyHint(_ n: AppNotification) -> String {
-        guard let job = n.job else { return "" }
-        let report = job.syncID.flatMap { session.survey.jobs(linkedTo: $0).max { $0.updated < $1.updated } }
-        guard report != nil else { return "แตะเพื่อเริ่มสำรวจ A1" }
-        return TodayAppointment(job: job, report: report).nextStepLabel.map { "แตะเพื่อทำต่อ \($0)" } ?? "แตะเพื่อเปิดแบบสำรวจ"
-    }
-
-    /// After the cover has gone, so the push lands on the home stack.
-    private func openLater(_ link: DeepLink) {
-        Task { try? await Task.sleep(for: .milliseconds(350)); NotificationService.shared.link = link }
     }
 }
 

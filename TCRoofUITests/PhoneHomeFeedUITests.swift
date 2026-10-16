@@ -3,7 +3,7 @@ import XCTest
 /// docs/ui/tcroof-home-iphone-v3, on an iPhone simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<iphone udid>' -only-testing:TCRoofUITests/PhoneHomeFeedUITests -derivedDataPath <scratch>`.
 /// On the demo feed: a filter chip narrows the posts, `รับทราบ` adds the viewer to the count and takes them off again,
-/// `แก้แล้ว` and `เปิดอีกครั้ง` swap, the `เอกสาร` tab opens the document library, and the modules that left the dock
+/// `แก้แล้ว` and `เปิดอีกครั้ง` swap, the `เอกสาร` tab opens the PWA papers, and the modules that left the dock
 /// are behind the settings sheet's `เครื่องมือวัด` row. Pull to refresh brings a new post, and one that arrives while
 /// the feed is scrolled down shows `มีโพสต์ใหม่`.
 final class PhoneHomeFeedUITests: XCTestCase {
@@ -84,13 +84,13 @@ final class PhoneHomeFeedUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 8), .completed, "the tap should push the record over the feed")
     }
 
-    func testDocsTabOpensTheLibrary() {
+    func testDocsTabOpensThePWAPapers() {
         let app = launch()
         let docs = app.buttons["เอกสาร"].firstMatch
         XCTAssertTrue(docs.waitForExistence(timeout: slow))
         docs.tap()
         XCTAssertTrue(docs.isSelected)
-        XCTAssertTrue(app.staticTexts["คลังเอกสาร"].firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["เอกสาร PWA"].firstMatch.waitForExistence(timeout: 8))
     }
 
     func testModulesMovedToSettings() {
@@ -108,6 +108,8 @@ final class PhoneHomeFeedUITests: XCTestCase {
         for _ in 0..<4 { from.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))) }
         let tools = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "เครื่องมือวัด")).firstMatch
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        // the residential library left the dock's เอกสาร for this row
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "เอกสารงานบ้าน")).firstMatch.exists)
         tools.tap()
         for title in ["แผนก่อสร้าง", "สแกนอุปกรณ์", "บันทึกงานติดตั้ง"] {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch.waitForExistence(timeout: 8), title)

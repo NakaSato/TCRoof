@@ -21,7 +21,7 @@ enum PhoneTab: String {
     }
 
     /// The page colour its content fades into behind the dock.
-    var fade: Color { self == .homeWork || self == .docs ? Theme.background : Theme.phonePage }
+    var fade: Color { self == .homeWork ? Theme.background : Theme.phonePage }
 
     /// The fade's height: the board's 128 pt, or lower under the survey list so it stays clear of that list's own dock.
     var fadeHeight: CGFloat { self == .homeWork ? 108 : 128 }
@@ -73,8 +73,9 @@ struct PhoneTabs<HomeRoot: View>: View {
         NavigationStack {
             Group {
                 switch t {
-                // the residential document library; the tools register is under the settings sheet for now
-                case .docs: HomeLibraryView()
+                // every PWA station's papers (docs/ui/pwa-docs-iphone-v2); the residential library is a row of the
+                // settings sheet, as the tools register is
+                case .docs: PWADocsHomeView()
                 // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-iphone-v3 §1)
                 case .pwa: PWARoot()
                 default: if let module = t.module { module.destination } else { home() }

@@ -62,6 +62,10 @@ struct PhoneSettingsList: View {
                         row("เครื่องมือวัด", toolsValue)
                     }
                     .buttonStyle(.plain)
+                    divider
+                    // the dock's เอกสาร is the PWA papers now (docs/ui/pwa-docs-iphone-v2); the residential library is here
+                    NavigationLink { HomeLibraryView() } label: { row("เอกสารงานบ้าน", "›") }
+                        .buttonStyle(.plain)
                 }
                 section("รูปถ่าย") {
                     Toggle(isOn: $saveToLibrary) {

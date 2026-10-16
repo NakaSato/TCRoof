@@ -170,8 +170,8 @@ final class PhotoStampReportTests: XCTestCase {
         XCTAssertTrue(texts(ReportHeader(photoStamps: true)).contains(line))
     }
 
-    /// รายการแก้ไข follows the cover from REV 01 on; a locked job's footer carries its REV and check code.
-    func testRevisionPageAndFooter() {
+    /// รายการแก้ไข follows the cover from REV 01 on; no page carries a lock footer.
+    func testRevisionPage() {
         func texts(_ pages: [ReportLayout.Page]) -> [String] {
             pages.flatMap(\.ops).compactMap {
                 if case .text(let s, _, _, _, _, _, _) = $0 { return s }
@@ -182,19 +182,19 @@ final class PhotoStampReportTests: XCTestCase {
         var j = Job.new(template: JobTemplate.all[0])
         j.values["projectName"] = .text("สถานี ก")
         XCTAssertFalse(texts(ReportLayout(job: j).pages()).contains { $0.hasPrefix("รายการแก้ไข") })
-        j.issue(hash: "a1b2c3d4ee", pdfFile: nil)
-        XCTAssertTrue(texts(ReportLayout(job: j).pages()).contains("REV 00 · รหัสตรวจสอบ A1B2-C3D4"))
         let before = j.snapshot
-        j.openNextRevision(reason: "สถานีแจ้งขนาดหม้อแปลงใหม่", updateDate: false)
+        // REV 00 issued earlier (an older job), now edited as REV 01
+        j.revisions = [Revision(rev: "00", issuedAt: Date(timeIntervalSince1970: 0), issuedBy: "", reason: "", hash: "a1b2c3d4ee")]
+        j.values["rev"] = .text("01")
         j.values["projectName"] = .text("สถานี ข")
         let changes = FormDiff.changes(from: before, to: j.snapshot)
         let draft = texts(ReportLayout(job: j, header: ReportHeader(changes: changes)).pages())
         XCTAssertTrue(draft.contains("รายการแก้ไข (REV 01)"))
-        XCTAssertTrue(draft.contains("สถานีแจ้งขนาดหม้อแปลงใหม่"))
+        XCTAssertTrue(draft.contains("A1B2-C3D4"))
         XCTAssertTrue(draft.contains("ยังไม่ออก"))
         XCTAssertTrue(draft.contains("รายการที่แก้จาก REV 00"))
         XCTAssertTrue(draft.contains("สถานี ข"))
-        XCTAssertFalse(draft.contains { $0.hasPrefix("REV 01 · รหัสตรวจสอบ") }, "not locked yet")
+        XCTAssertFalse(draft.contains { $0.contains("· รหัสตรวจสอบ") }, "no lock footer")
         // a long list continues with the column titles repeated
         let many = (0..<120).flatMap { _ in changes }
         let long = texts(ReportLayout(job: j, header: ReportHeader(changes: many)).pages())

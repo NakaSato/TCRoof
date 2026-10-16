@@ -87,7 +87,7 @@ public struct ReportLayout {
                 .line(Pt(Self.margin, fy - 10), Pt(Self.pageW - Self.margin, fy - 10), width: 0.5, color: .faint),
                 .text(title, at: Pt(Self.margin, fy), size: 7.5, color: .ink2),
                 .text("หน้า \(i + 1) / \(n)", at: Pt(Self.pageW - Self.margin, fy), size: 7.5, color: .ink2, align: .right),
-            ] + revisionFooter(y: fy))
+            ])
         }
         // "แนบในรายงาน": the A3 diagram goes in after the A3 electrical pages; the A4 pages keep their own numbering
         if Self.attachesSingleLine(job) { result.insert(singleLinePage(), at: min(sldAfter + 1, result.count)) }

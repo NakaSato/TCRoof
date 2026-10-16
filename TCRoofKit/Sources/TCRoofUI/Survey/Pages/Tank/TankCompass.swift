@@ -182,14 +182,17 @@ struct TankCompassView: View {
     func start() {
         guard available else { return }
         manager.delegate = self
-        manager.headingFilter = kCLHeadingFilterNone
+        // whole degrees are shown and the lock allows ±2°: smaller changes only cost redraws
+        manager.headingFilter = 0.5
+        // true north needs only a rough position, not GPS
+        manager.desiredAccuracy = kCLLocationAccuracyKilometer
         manager.headingOrientation = Self.orientation
         if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
         manager.startUpdatingLocation()
         manager.startUpdatingHeading()
     }
     func stop() { manager.stopUpdatingHeading(); manager.stopUpdatingLocation() }
-    func unlock() { lock.reset(); locked = nil }
+    func unlock() { lock.reset(); locked = nil; if available { manager.startUpdatingLocation(); manager.startUpdatingHeading() } }
 
     /// The camera looks out of the back, so the heading is the device's top edge turned by the interface orientation.
     static var orientation: CLDeviceOrientation {
@@ -206,6 +209,9 @@ struct TankCompassView: View {
         let value = h.trueHeading >= 0 ? h.trueHeading : h.magneticHeading
         heading = value; accuracy = h.headingAccuracy
         if locked == nil { locked = lock.add(value) }
+        // locked with a good accuracy: the reading is final, so the sensor and the redraws stop until `unlock`. A poor
+        // accuracy keeps it running, since the figure 8 the panel asks for has to show up in `accuracy`.
+        if locked != nil, accuracyOK { manager.stopUpdatingHeading(); manager.stopUpdatingLocation() }
     }
     func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool { true }
 }

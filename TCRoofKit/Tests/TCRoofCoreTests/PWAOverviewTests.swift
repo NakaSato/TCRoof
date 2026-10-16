@@ -15,6 +15,16 @@ final class PWAOverviewTests: XCTestCase {
         XCTAssertEqual(InstallOverview.pace(station("f", actual: 45, plan: 50), threshold: 5), .behind)
     }
 
+    /// ยังไม่มีแผน MP holds the stations with no plan; the overview opens on behind, then no plan, else all.
+    func testNoPlanFilterAndDefault() {
+        let behind = station("a", actual: 10, plan: 50), onPlan = station("b", actual: 50, plan: 50), noPlan = station("c", actual: 0, plan: nil)
+        XCTAssertEqual(InstallOverview.rows([behind, onPlan, noPlan], filter: .noPlan).map(\.id), ["c"])
+        XCTAssertEqual(InstallOverview.defaultFilter([behind, onPlan, noPlan]), .behind)
+        XCTAssertEqual(InstallOverview.defaultFilter([onPlan, noPlan]), .noPlan)
+        XCTAssertEqual(InstallOverview.defaultFilter([onPlan]), .all)
+        XCTAssertEqual(InstallOverview.defaultFilter([]), .all)
+    }
+
     func testNoPlanIsNeitherBehindNorAhead() {
         let s = station("a", actual: 10, plan: nil)
         XCTAssertNil(InstallOverview.pace(s))

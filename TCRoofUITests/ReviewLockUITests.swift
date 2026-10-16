@@ -1,6 +1,6 @@
 import XCTest
 
-/// docs/specs/review-lock-revisions-swift.md §6 UI tests, on an iPad simulator:
+/// ตรวจรูปทั้งหมด and signing (docs/specs/review-lock-revisions-swift.md §6, without the lock), on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/ReviewLockUITests -derivedDataPath <scratch>`.
 /// Each test starts on a new job (`-surveyFreshJob YES`); signatures come from `-surveyReview sign`, as the pad can't be drawn on here.
 final class ReviewLockUITests: XCTestCase {
@@ -44,40 +44,39 @@ final class ReviewLockUITests: XCTestCase {
         XCTAssertEqual(filledCount(app), 1)
     }
 
-    /// 2–4. Sign both → lock → locked; open REV 01 → an edit gets its marker; sign again → REV 01 lists the change.
-    func testLockNextRevisionAndChangeList() {
-        // 2. both signatures → the lock sheet → locked banner, fields disabled
-        var app = launch(["-surveyFreshJob", "YES", "-surveyPage", "final", "-surveyReview", "sign"])
-        let lock00 = button(app, beginsWith: "ล็อกและออก REV 00")
-        XCTAssertTrue(lock00.waitForExistence(timeout: slow), "the second signature should open the lock sheet")
-        lock00.tap()
-        XCTAssertTrue(element(app, containing: "REV 00 ลงนามแล้ว · ล็อก").waitForExistence(timeout: 15))
+    /// 2. Both signatures leave the form editable and offer ออก REV 00; after an edit, REV 01 asks for a reason and
+    /// REV และรายการแก้ไข lists it.
+    func testSignIssueEditIssue() {
+        let app = launch(["-surveyFreshJob", "YES", "-surveyPage", "final", "-surveyReview", "sign"])
         let verdict = app.buttons["ติดตั้งได้"]
-        XCTAssertTrue(verdict.exists)
-        XCTAssertFalse(verdict.isEnabled, "a locked form can't be edited")
+        XCTAssertTrue(verdict.waitForExistence(timeout: slow))
+        // the second signature lands 1.2 s in
+        let issue00 = button(app, beginsWith: "ออก REV 00")
+        XCTAssertTrue(issue00.waitForExistence(timeout: 15), "both signatures offer ออก REV 00")
+        XCTAssertFalse(button(app, beginsWith: "ล็อก").exists, "nothing locks")
+        issue00.tap()
+        let confirm00 = app.navigationBars.buttons["ออก REV 00"]
+        XCTAssertTrue(confirm00.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirm00.isEnabled, "the first REV needs no reason")
+        confirm00.tap()
+        XCTAssertTrue(button(app, beginsWith: "REV และรายการแก้ไข").waitForExistence(timeout: 15), "REV 00 is issued")
+        XCTAssertTrue(verdict.isEnabled, "an issued form stays editable")
 
-        // 3. open REV 01 → the edit marks its page
-        button(app, beginsWith: "แก้ไข (เปิด REV 01)").tap()
-        let reason = app.textFields["nextRevision.reason"]
-        XCTAssertTrue(reason.waitForExistence(timeout: 5))
+        // an edit → ออก REV 01, which needs a reason
+        verdict.tap()
+        let issue01 = button(app, beginsWith: "ออก REV 01")
+        XCTAssertTrue(issue01.waitForExistence(timeout: 5), "an edit offers the next REV")
+        issue01.tap()
+        let confirm01 = app.navigationBars.buttons["ออก REV 01"]
+        XCTAssertTrue(confirm01.waitForExistence(timeout: 5))
+        XCTAssertFalse(confirm01.isEnabled, "REV 01 needs a reason")
+        let reason = app.textFields["issueRevision.reason"]
         reason.tap()
         reason.typeText("สถานีแจ้งขนาดหม้อแปลงใหม่")
-        app.buttons["เปิด REV 01"].tap()
-        XCTAssertTrue(verdict.waitForExistence(timeout: 5))
-        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: verdict)
-        XCTAssertEqual(XCTWaiter().wait(for: [enabled], timeout: 5), .completed, "REV 01 is editable")
-        verdict.tap()
-        XCTAssertTrue(element(app, containing: "แก้จาก REV ก่อน 1 รายการ").waitForExistence(timeout: 5), "the sidebar should mark E1 as changed")
-
-        // 4. sign REV 01 → issued; รายการแก้ไข lists the verdict
-        app.terminate()
-        app = launch(["-surveyTestJob", "YES", "-surveyPage", "final", "-surveyReview", "sign"])
-        let lock01 = button(app, beginsWith: "ล็อกและออก REV 01")
-        XCTAssertTrue(lock01.waitForExistence(timeout: slow))
-        lock01.tap()
-        XCTAssertTrue(element(app, containing: "REV 01 ลงนามแล้ว · ล็อก").waitForExistence(timeout: 15))
+        confirm01.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: issue01)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 15), .completed, "REV 01 is issued")
         button(app, beginsWith: "REV และรายการแก้ไข").tap()
-        XCTAssertTrue(element(app, containing: "สถานีแจ้งขนาดหม้อแปลงใหม่").waitForExistence(timeout: 5), "the history shows the reason")
-        XCTAssertTrue(element(app, containing: "ผลการประเมินความเหมาะสมในการติดตั้ง").waitForExistence(timeout: 5), "the verdict change is listed")
+        XCTAssertTrue(element(app, containing: "สถานีแจ้งขนาดหม้อแปลงใหม่").waitForExistence(timeout: 10), "the history shows the reason")
     }
 }

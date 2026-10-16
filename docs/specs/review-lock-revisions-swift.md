@@ -10,7 +10,21 @@
   pages have no per-field anchors; "ไปที่ช่องในฟอร์ม" opens the page without scrolling to the field.
 - `FormHash.of` returns nil while a photo isn't on the device: locking waits for it, and the integrity check skips.
 
-Not built: the Drive `REV/` upload (`DriveSync.Kind.revisions`), the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
+**Lock removed 2026-10-16** (branch `feat/survey-to-install-no-lock`): feature 7 (§4) is gone. Signing both no
+longer locks the form or issues a REV, nothing is read-only, and the PDF has no check-code footer. `Job.lock`,
+`pendingReason` and the lock / integrity banners and sheets were deleted; an old `job.json` with `lock` still
+decodes and drops it. REVs, their snapshots, PDFs, the รายการแก้ไข page, the change markers and their sync stay.
+**Issuing without the lock (same day):** once both have signed and the answers aren't the last issued REV, E1 shows
+`ออก REV nn`. The first issue keeps the cover's number and needs no reason; after that the issue takes the next number
+(`RevisionRule.next`) and needs a reason, written to the cover's REV field at issue time. The snapshot, its
+`FormHash` check code and the PDF are kept as before; the form stays editable. §4.1–§4.4 are kept below as history.
+
+**Drive `REV` folder (2026-10-16):** each issued REV's `REVnn.pdf` and `REVnn.json` go to a `REV` folder in the job's
+Drive folder, named `REVnn แบบสำรวจ NO.<doc> <project>.pdf/.json`, once each (`DriveLink.revisionFiles`), with any Drive
+save and with the background upload, which `ออก REV` starts. Not `DriveSync.Kind.revisions`: the files ride along like
+the photos rather than being a kind to tick.
+
+Not built: the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
 and the leaving-site reminder (§2.4, open question 5).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same code runs on iPhone in compact layout.
 **Modules:** `TCRoofCore` (model, diff, hash; testable with `swift test`), `SurveyUI` (pages), `PDFReport` (page and
@@ -260,6 +274,8 @@ the same order as the report.
 ---
 
 ## 4. Feature 7: ล็อกหลังลงนาม (lock after signing)
+
+> **Removed 2026-10-16.** Kept as history; see the status at the top.
 
 ### 4.1 States
 

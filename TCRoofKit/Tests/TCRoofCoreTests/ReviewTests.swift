@@ -2,7 +2,7 @@ import XCTest
 @testable import TCRoofCore
 
 /// docs/specs/review-lock-revisions-swift.md §6: photo slots, REV diff, hash, revisions on disk and the lock.
-final class ReviewLockTests: XCTestCase {
+final class ReviewTests: XCTestCase {
     func tmpStore() -> JobStore {
         JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("rl-" + UUID().uuidString))
     }
@@ -176,7 +176,6 @@ final class ReviewLockTests: XCTestCase {
         XCTAssertNotEqual(FormHash.of(j.snapshot) { files[$0.id] }, h)
         // a photo not on this device: no hash rather than a wrong one
         XCTAssertNil(FormHash.of(j.snapshot) { $0.id == p.id ? nil : files[$0.id] })
-        XCTAssertEqual(FormHash.short("a1b2c3d4e5"), "A1B2-C3D4")
     }
 
     /// NIST FIPS 180-2 examples: the fallback matches CryptoKit.
@@ -192,6 +191,44 @@ final class ReviewLockTests: XCTestCase {
         }
         let million = Data(repeating: UInt8(ascii: "a"), count: 1_000_000)
         XCTAssertEqual(FormHash.hex(SHA256Pure.hash(million)), "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0")
+    }
+
+    // MARK: issuing
+
+    func testNextRevRule() {
+        XCTAssertEqual(RevisionRule.next(after: "00"), "01")
+        XCTAssertEqual(RevisionRule.next(after: "09"), "10")
+        XCTAssertEqual(RevisionRule.next(after: "99"), "100")
+        XCTAssertEqual(RevisionRule.next(after: "A"), "A-1")
+        XCTAssertEqual(RevisionRule.next(after: "A-1"), "A-2")
+        XCTAssertEqual(RevisionRule.next(after: ""), "01")
+    }
+
+    /// The first issue keeps the cover's number and needs no reason; the next takes the number after and needs one.
+    func testIssueNumbersWithoutLocking() {
+        var j = station()
+        j.values["engineer"] = .text("วิศวกร ก")
+        XCTAssertEqual(j.nextIssueRev, "00")
+        XCTAssertFalse(j.issueNeedsReason)
+        j.issue(reason: "", hash: "a1b2c3d4ff", pdfFile: "revisions/REV00.pdf", now: Date(timeIntervalSince1970: 0))
+        XCTAssertEqual(j.revisions?.map(\.rev), ["00"])
+        XCTAssertEqual(j.revisions?.first?.issuedBy, "วิศวกร ก")
+        XCTAssertEqual(j.previousRevision?.rev, "00")
+        XCTAssertEqual(j.nextIssueRev, "01")
+        XCTAssertTrue(j.issueNeedsReason)
+        j.values["rev"] = .text(j.nextIssueRev)
+        j.issue(reason: "  สถานีแจ้งขนาดหม้อแปลงใหม่ ", hash: "ff", pdfFile: nil)
+        XCTAssertEqual(j.revisions?.map(\.rev), ["00", "01"])
+        XCTAssertEqual(j.revisions?.last?.reason, "สถานีแจ้งขนาดหม้อแปลงใหม่")
+        XCTAssertEqual(j.nextIssueRev, "02")
+        // a cover number typed ahead of the issued ones is used as it is
+        j.values["rev"] = .text("05")
+        XCTAssertEqual(j.nextIssueRev, "05")
+    }
+
+    func testShortCode() {
+        XCTAssertEqual(Revision(rev: "00", issuedAt: Date(), issuedBy: "", reason: "", hash: "a1b2c3d4e5").shortCode, "A1B2-C3D4")
+        XCTAssertEqual(Revision(rev: "00", issuedAt: Date(), issuedBy: "", reason: "", hash: "ab").shortCode, "AB")
     }
 
     // MARK: revisions on disk
@@ -230,88 +267,54 @@ final class ReviewLockTests: XCTestCase {
         XCTAssertTrue(s.hasPhoto(p, in: j.id))
     }
 
+    func issued(_ rev: String, hash: String = "a1b2c3d4ff", reason: String = "") -> Revision {
+        Revision(rev: rev, issuedAt: Date(timeIntervalSince1970: 0), issuedBy: "วิศวกร ก", reason: reason, hash: hash)
+    }
+
     func testDuplicateDropsRevisionsAndSignatures() throws {
         let s = tmpStore()
         var j = station()
         j.values["surveyorSign"] = .photo(photo(png: true))
         j.values["customerSign"] = .photo(photo(png: true))
         j.values["reviewer"] = .text("ผู้ตรวจ")
-        j.issue(hash: "abc", pdfFile: nil)
-        j.openNextRevision(reason: "แก้", updateDate: false)
-        j.issue(hash: "def", pdfFile: nil)
+        j.revisions = [issued("00"), issued("01", reason: "แก้")]
+        j.values["rev"] = .text("01")
         let copy = try s.duplicate(j)
-        XCTAssertNil(copy.revisions); XCTAssertNil(copy.lock); XCTAssertNil(copy.pendingReason)
+        XCTAssertNil(copy.revisions)
         XCTAssertEqual(copy.rev, "00")
-        XCTAssertFalse(copy.bothSigned)
+        XCTAssertNil(copy.values.photo("surveyorSign")); XCTAssertNil(copy.values.photo("customerSign"))
         XCTAssertEqual(copy.values.text("reviewer"), "ผู้ตรวจ")
     }
 
-    func testNextRevRule() {
-        XCTAssertEqual(RevisionRule.next(after: "00"), "01")
-        XCTAssertEqual(RevisionRule.next(after: "09"), "10")
-        XCTAssertEqual(RevisionRule.next(after: "99"), "100")
-        XCTAssertEqual(RevisionRule.next(after: "A"), "A-1")
-        XCTAssertEqual(RevisionRule.next(after: "A-1"), "A-2")
-        XCTAssertEqual(RevisionRule.next(after: ""), "01")
-    }
+    // MARK: issued REVs
 
-    // MARK: lock
-
-    func testIssueAndOpenNextRevision() {
+    func testPreviousRevisionIsTheLastIssued() {
         var j = station()
-        j.values["engineer"] = .text("วิศวกร ก")
-        j.values["reviewer"] = .text("ผู้ตรวจ")
-        j.values["surveyorSign"] = .photo(photo(png: true))
-        j.values["customerSign"] = .photo(photo(png: true))
-        XCTAssertTrue(j.signedUnlocked)
-        j.issue(hash: "a1b2c3d4ff", pdfFile: "revisions/REV00.pdf", now: Date(timeIntervalSince1970: 0))
-        XCTAssertTrue(j.isLocked)
-        XCTAssertEqual(j.lock?.rev, "00")
-        XCTAssertEqual(j.revisions?.map(\.rev), ["00"])
-        XCTAssertEqual(j.revisions?.first?.issuedBy, "วิศวกร ก")
-        XCTAssertEqual(j.revisions?.first?.shortCode, "A1B2-C3D4")
         XCTAssertNil(j.previousRevision)
-
-        j.openNextRevision(reason: "สถานีแจ้งขนาดหม้อแปลงใหม่", updateDate: true, now: Date(timeIntervalSince1970: 1_790_000_000))
-        XCTAssertFalse(j.isLocked)
-        XCTAssertEqual(j.rev, "01")
-        XCTAssertFalse(j.bothSigned)
-        XCTAssertNil(j.values.photo("surveyorSign"))
-        XCTAssertEqual(j.values.text("reviewer"), "ผู้ตรวจ")
-        XCTAssertEqual(j.values.text("date"), ISODate.string(Date(timeIntervalSince1970: 1_790_000_000)))
+        j.revisions = [issued("00")]
         XCTAssertEqual(j.previousRevision?.rev, "00")
-
-        j.issue(hash: "ff", pdfFile: nil)
-        XCTAssertEqual(j.revisions?.map(\.reason), ["", "สถานีแจ้งขนาดหม้อแปลงใหม่"])
-        XCTAssertNil(j.pendingReason)
-        XCTAssertEqual(j.previousRevision?.rev, "00")
+        XCTAssertEqual(j.previousRevision?.shortCode, "A1B2-C3D4")
+        j.revisions?.append(issued("01", hash: "ff", reason: "สถานีแจ้งขนาดหม้อแปลงใหม่"))
+        XCTAssertEqual(j.previousRevision?.rev, "01")
     }
 
-    func testContentDiffersIgnoresSignatures() {
-        var a = station()
-        a.values["surveyorSign"] = .photo(photo(png: true))
-        var b = a
-        b.values["customerSign"] = .photo(photo(png: true))
-        XCTAssertFalse(a.contentDiffers(from: b))
-        b.values["remarks"] = .text("x")
-        XCTAssertTrue(a.contentDiffers(from: b))
-        var c = a
-        c.modules[0].name = "y"
-        XCTAssertTrue(a.contentDiffers(from: c))
-    }
-
-    /// A job.json from before this change decodes unlocked, without revisions, and encodes without the new keys.
+    /// A job.json from before REVs decodes without revisions; one saved with the old lock decodes and drops it.
     func testOldJobDecodes() throws {
         let j = station()
         var obj = try JSONSerialization.jsonObject(with: JobStore.encoder.encode(j)) as! [String: Any]
-        XCTAssertNil(obj["lock"]); XCTAssertNil(obj["revisions"]); XCTAssertNil(obj["pendingReason"])
+        XCTAssertNil(obj["revisions"])
         obj["stage"] = nil
         let old = try JobStore.decoder.decode(Job.self, from: JSONSerialization.data(withJSONObject: obj))
-        XCTAssertFalse(old.isLocked)
         XCTAssertNil(old.revisions)
-        // and a locked one round-trips
-        var locked = j
-        locked.issue(hash: "ab", pdfFile: nil)
-        XCTAssertEqual(try JobStore.decoder.decode(Job.self, from: JobStore.encoder.encode(locked)), locked)
+        // a job locked before the lock was removed
+        obj["lock"] = ["rev": "00", "lockedAt": 0, "hash": "ab"]
+        obj["pendingReason"] = "แก้"
+        let locked = try JobStore.decoder.decode(Job.self, from: JSONSerialization.data(withJSONObject: obj))
+        let again = try JSONSerialization.jsonObject(with: JobStore.encoder.encode(locked)) as! [String: Any]
+        XCTAssertNil(again["lock"]); XCTAssertNil(again["pendingReason"])
+        // and issued REVs round-trip
+        var withRevs = j
+        withRevs.revisions = [issued("00")]
+        XCTAssertEqual(try JobStore.decoder.decode(Job.self, from: JobStore.encoder.encode(withRevs)), withRevs)
     }
 }

@@ -15,6 +15,16 @@ public struct DriveSync: Sendable {
     }
     public enum Step: Sendable { case folder(String), building(Kind), uploading(Kind, Int), uploaded(Kind, DriveFile), photos(done: Int, total: Int) }
     public static let photosFolderName = "รูปภาพ"
+    public static let revisionsFolderName = "REV"
+
+    /// One issued REV's file for the `REV` folder: `key` is its name on the device ("REV00.pdf"), which
+    /// `DriveLink.revisionFiles` records once it is uploaded; `name` is its name on Drive.
+    public struct RevisionUpload: Sendable, Equatable {
+        public let key: String
+        public let name: String
+        public var mime: String { key.hasSuffix(".pdf") ? "application/pdf" : "application/json" }
+        public init(key: String, name: String) { self.key = key; self.name = name }
+    }
 
     /// A save that stopped part-way; `link` still records what was uploaded so the next save continues from there.
     public struct Interrupted: Error, LocalizedError {
@@ -50,6 +60,7 @@ public struct DriveSync: Sendable {
     /// `photos` go to รูปภาพ/<section>/ — only those not uploaded by an earlier save.
     public func save(_ job: Job, kinds: [Kind], build: @Sendable (Kind) async throws -> Data,
                      photos: [PhotoFolder] = [], photoData: @Sendable (Photo) -> Data? = { _ in nil },
+                     revisions: [RevisionUpload] = [], revisionData: @Sendable (RevisionUpload) -> Data? = { _ in nil },
                      progress: @Sendable (Step) -> Void = { _ in }) async throws -> (DriveLink, [DriveFile]) {
         var link = try await ensureJobFolder(job)
         progress(.folder(link.folderName ?? ""))
@@ -67,6 +78,10 @@ public struct DriveSync: Sendable {
             do { try await uploadPhotos(photos, link: &link, photoData: photoData, progress: progress) }
             catch { throw Interrupted(link: link, underlying: error) }
         }
+        if !revisions.isEmpty {
+            do { try await uploadRevisions(revisions, link: &link, data: revisionData) }
+            catch { throw Interrupted(link: link, underlying: error) }
+        }
         link.lastSaved = Date()
         return (link, saved)
     }
@@ -76,19 +91,41 @@ public struct DriveSync: Sendable {
         public var errorDescription: String? { "โฟลเดอร์งานใน Drive สร้างจากบัญชี Google อื่นหรือถูกลบ — บันทึกลง Drive จากหน้าส่งออกเพื่อสร้างโฟลเดอร์ใหม่" }
     }
 
-    /// Sends only the photos Drive doesn't have yet — no report files, and `lastSaved` is left as it was.
+    /// Sends only the photos and issued REV files Drive doesn't have yet — no report files, and `lastSaved` is left as it was.
     /// Unlike `save`, it never replaces a folder it can't reach: two iPads on different accounts would
     /// otherwise keep making their own folders and wiping each other's upload records.
     public func syncPhotos(_ job: Job, photos: [PhotoFolder], photoData: @Sendable (Photo) -> Data?,
+                           revisions: [RevisionUpload] = [], revisionData: @Sendable (RevisionUpload) -> Data? = { _ in nil },
                            progress: @Sendable (Step) -> Void = { _ in }) async throws -> DriveLink {
         if let f = job.drive?.folderID {
             do { if try await client.metadata(f).trashed == true { throw FolderUnreachable() } }
             catch DriveError.http(let code, _) where code == 403 || code == 404 { throw FolderUnreachable() }
         }
         var link = try await ensureJobFolder(job)
-        do { try await uploadPhotos(photos, link: &link, photoData: photoData, progress: progress) }
-        catch { throw Interrupted(link: link, underlying: error) }
+        do {
+            try await uploadPhotos(photos, link: &link, photoData: photoData, progress: progress)
+            if !revisions.isEmpty { try await uploadRevisions(revisions, link: &link, data: revisionData) }
+        } catch { throw Interrupted(link: link, underlying: error) }
         return link
+    }
+
+    /// Uploads the issued REV files Drive doesn't have yet into `REV`, recording each on `link` as it lands. An issued
+    /// REV never changes, so a file is sent once; a REV folder that is gone is made again and filled again.
+    func uploadRevisions(_ files: [RevisionUpload], link: inout DriveLink, data: @Sendable (RevisionUpload) -> Data?) async throws {
+        var uploaded = link.revisionFiles ?? [:]
+        let folder: String
+        if let id = link.revisionsFolderID, await client.exists(id) { folder = id }
+        else {
+            folder = try await client.ensureFolder(Self.revisionsFolderName, parent: link.folderID!).id
+            uploaded = [:]
+        }
+        link.revisionsFolderID = folder
+        link.revisionFiles = uploaded
+        for f in files where uploaded[f.key] == nil {
+            guard let d = data(f) else { continue }
+            let up = try await client.upload(d, name: f.name, mimeType: f.mime, parent: folder)
+            link.revisionFiles?[f.key] = up.id
+        }
     }
 
     /// Uploads photos Drive doesn't have yet, one sub-folder per section, recording each on `link` as it lands.

@@ -27,6 +27,7 @@ extension SurveyModel {
         do {
             let (link, files) = try await drive.save(job, kinds: kinds, build: { k in k == .xlsx ? excel : k == .pdf ? pdf : json },
                                                      photos: photos ? job.driveFolders : [], photoData: { store.data(of: $0, in: id) },
+                                                     revisions: revisionUploads(job), revisionData: { try? Data(contentsOf: store.revisionFile($0.key, job: id)) },
                                                      progress: progress)
             keepLink(link, for: id)
             onDriveSaved?(self.job(id) ?? job, kinds, photos)

@@ -21,23 +21,19 @@ public struct Revision: Codable, Hashable, Identifiable, Sendable {
     public var issuedBy: String
     /// "" for REV 00; required from REV 01.
     public var reason: String
-    /// `FormHash` of the snapshot, hex.
+    /// SHA-256 of the snapshot and its photos, hex, as it was issued.
     public var hash: String
     /// "revisions/REV00.pdf": the report as signed. nil when the PDF could not be written.
     public var pdfFile: String?
     public init(rev: String, issuedAt: Date, issuedBy: String, reason: String, hash: String, pdfFile: String? = nil) {
         self.rev = rev; self.issuedAt = issuedAt; self.issuedBy = issuedBy; self.reason = reason; self.hash = hash; self.pdfFile = pdfFile
     }
-    /// "A1B2-C3D4"
-    public var shortCode: String { FormHash.short(hash) }
-}
-
-/// The form is locked as REV `rev` (§4).
-public struct FormLock: Codable, Hashable, Sendable {
-    public var rev: String
-    public var lockedAt: Date
-    public var hash: String
-    public init(rev: String, lockedAt: Date, hash: String) { self.rev = rev; self.lockedAt = lockedAt; self.hash = hash }
+    /// "A1B2-C3D4", from the first 8 hex digits of `hash`.
+    public var shortCode: String {
+        let h = hash.prefix(8).uppercased()
+        guard h.count == 8 else { return h }
+        return h.prefix(4) + "-" + h.suffix(4)
+    }
 }
 
 public enum RevisionRule {
@@ -54,8 +50,6 @@ public enum RevisionRule {
 }
 
 public extension Job {
-    var isLocked: Bool { lock != nil }
-    var bothSigned: Bool { values.photo("surveyorSign") != nil && values.photo("customerSign") != nil }
     /// "00" when the field is empty, as printed on the cover.
     var rev: String {
         let r = values.text("rev").trimmingCharacters(in: .whitespaces)
@@ -63,39 +57,20 @@ public extension Job {
     }
     var snapshot: FormSnapshot { FormSnapshot(values: values, modules: modules) }
     var lastRevision: Revision? { revisions?.last }
-    /// Signed by both but not locked: the E1 banner "ลงนามครบแต่ยังไม่ล็อก".
-    var signedUnlocked: Bool { bothSigned && !isLocked }
+    /// The last issued REV this draft is compared with (change markers, the รายการแก้ไข page). nil before REV 00 is issued.
+    var previousRevision: Revision? { revisions?.last }
+    var bothSigned: Bool { RevisionRule.signatureIDs.allSatisfy { values.photo($0) != nil } }
 
-    /// Whether `other` changes anything but the two signatures, i.e. data a signature in `self` was given for.
-    func contentDiffers(from other: Job) -> Bool {
-        var a = values, b = other.values
-        for id in RevisionRule.signatureIDs { a.storage[id] = nil; b.storage[id] = nil }
-        return a.storage != b.storage || modules != other.modules
-    }
+    /// The number the next issue takes: the current one until it has been issued, then the one after.
+    var nextIssueRev: String { (revisions ?? []).contains { $0.rev == rev } ? RevisionRule.next(after: rev) : rev }
+    /// Every REV after the first says why it was issued.
+    var issueNeedsReason: Bool { !(revisions ?? []).isEmpty }
 
-    /// Issues the current answers as REV `rev` and locks the form (§4.2 step 5). `hash` is `FormHash.of(snapshot)`.
-    mutating func issue(hash: String, pdfFile: String?, now: Date = Date()) {
-        let r = Revision(rev: rev, issuedAt: now, issuedBy: values.text("engineer"), reason: pendingReason ?? "", hash: hash, pdfFile: pdfFile)
-        var list = (revisions ?? []).filter { $0.rev != r.rev }
-        list.append(r)
-        revisions = list
-        lock = FormLock(rev: r.rev, lockedAt: now, hash: hash)
-        pendingReason = nil
-    }
-
-    /// Opens the next REV for editing (§4.4): new number, signatures cleared, unlocked. The issued REV's files stay.
-    mutating func openNextRevision(reason: String, updateDate: Bool, now: Date = Date()) {
-        values["rev"] = .text(RevisionRule.next(after: rev))
-        for id in RevisionRule.signatureIDs { values[id] = nil }
-        if updateDate { values["date"] = .text(ISODate.string(now)) }
-        lock = nil
-        pendingReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// The last issued REV this draft is compared with (change markers, the รายการแก้ไข page). nil before REV 00 is issued
-    /// or while the issued REV is the current one.
-    var previousRevision: Revision? {
-        guard let last = revisions?.last else { return nil }
-        return last.rev == rev && isLocked ? revisions?.dropLast().last : last
+    /// Records the current answers as an issued REV (nothing is locked: the form stays editable, and the next issue
+    /// takes the next number). `rev` must already hold the number; `hash` is `FormHash.of(snapshot)`.
+    mutating func issue(reason: String, hash: String, pdfFile: String?, now: Date = Date()) {
+        let r = Revision(rev: rev, issuedAt: now, issuedBy: values.text("engineer"),
+                         reason: reason.trimmingCharacters(in: .whitespacesAndNewlines), hash: hash, pdfFile: pdfFile)
+        revisions = (revisions ?? []).filter { $0.rev != r.rev } + [r]
     }
 }

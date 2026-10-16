@@ -3,7 +3,7 @@ import Foundation
 import CryptoKit
 #endif
 
-/// The check code of an issued REV (docs/specs/review-lock-revisions-swift.md §4.2): SHA-256 over the snapshot encoded with
+/// The check code of an issued REV (docs/specs/review-lock-revisions-swift.md §4.2, without the lock): SHA-256 over the snapshot encoded with
 /// `JobStore.encoder` (sorted keys), then the SHA-256 of every referenced photo file in `Photo.id` order, signatures included.
 public enum FormHash {
     /// Hex digest; nil when a referenced photo file isn't on this device (taken on another iPad and not downloaded yet),
@@ -16,13 +16,6 @@ public enum FormHash {
             data.append(sha256(d))
         }
         return hex(sha256(data))
-    }
-
-    /// "A1B2-C3D4" from the first 8 hex digits.
-    public static func short(_ hex: String) -> String {
-        let h = hex.prefix(8).uppercased()
-        guard h.count == 8 else { return h }
-        return h.prefix(4) + "-" + h.suffix(4)
     }
 
     public static func sha256(_ data: Data) -> Data {

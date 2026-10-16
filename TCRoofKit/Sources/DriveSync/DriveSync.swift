@@ -46,9 +46,9 @@ public struct DriveSync: Sendable {
     public func ensureJobFolder(_ job: Job) async throws -> DriveLink {
         var link = job.drive ?? DriveLink()
         let root: String
-        if let r = link.rootID, await client.exists(r) { root = r }
+        if let r = link.rootID, try await !client.isGone(r) { root = r }
         else { root = try await client.ensureFolder(rootName, parent: "root").id }
-        if let f = link.folderID, link.rootID == root, await client.exists(f) { return link }
+        if let f = link.folderID, link.rootID == root, try await !client.isGone(f) { return link }
         let name = Self.folderName(job)
         let folder = try await client.ensureFolder(name, parent: root)
         link.rootID = root; link.folderID = folder.id; link.folderName = name
@@ -114,7 +114,7 @@ public struct DriveSync: Sendable {
     func uploadRevisions(_ files: [RevisionUpload], link: inout DriveLink, data: @Sendable (RevisionUpload) -> Data?) async throws {
         var uploaded = link.revisionFiles ?? [:]
         let folder: String
-        if let id = link.revisionsFolderID, await client.exists(id) { folder = id }
+        if let id = link.revisionsFolderID, try await !client.isGone(id) { folder = id }
         else {
             folder = try await client.ensureFolder(Self.revisionsFolderName, parent: link.folderID!).id
             uploaded = [:]
@@ -123,7 +123,7 @@ public struct DriveSync: Sendable {
         link.revisionFiles = uploaded
         for f in files where uploaded[f.key] == nil {
             guard let d = data(f) else { continue }
-            let up = try await client.upload(d, name: f.name, mimeType: f.mime, parent: folder)
+            let up = try await client.uploadOnce(d, name: f.name, mimeType: f.mime, parent: folder)
             link.revisionFiles?[f.key] = up.id
         }
     }
@@ -133,7 +133,7 @@ public struct DriveSync: Sendable {
                       progress: @Sendable (Step) -> Void) async throws {
         var uploaded = link.photoFiles ?? [:]
         let root: String
-        if let id = link.photosFolderID, await client.exists(id) { root = id }
+        if let id = link.photosFolderID, try await !client.isGone(id) { root = id }
         else {
             // folder gone (or first save): start over so deleted photos are sent again
             root = try await client.ensureFolder(Self.photosFolderName, parent: link.folderID!).id
@@ -149,7 +149,7 @@ public struct DriveSync: Sendable {
             let folder = try await client.ensureFolder(name, parent: root).id
             for p in photos {
                 if let data = photoData(p.photo) {
-                    let f = try await client.upload(data, name: p.fileName, mimeType: p.photo.isPNG ? "image/png" : "image/jpeg", parent: folder)
+                    let f = try await client.uploadOnce(data, name: p.fileName, mimeType: p.photo.isPNG ? "image/png" : "image/jpeg", parent: folder)
                     link.photoFiles?[p.photo.id.uuidString] = f.id
                 }
                 done += 1

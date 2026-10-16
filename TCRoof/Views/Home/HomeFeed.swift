@@ -47,12 +47,15 @@ extension Job {
     }
 }
 
-/// Who acknowledged which post. Kept on this device: a shared count needs a synced `feedAcks` collection, whose
-/// Firestore rule has to be deployed before any build writes to it (docs/ui/tcroof-home-iphone-v3, open question 2).
-@Observable final class FeedAcks {
+/// Who acknowledged which post, shared by every member: `CloudSync` keeps it in step with the `feedAcks` collection
+/// (one document per post, its `members` the emails that acknowledged it) and its listener brings in the others'
+/// acknowledgements as they happen. The copy on this device shows the counts before sync connects and offline.
+@MainActor @Observable final class FeedAcks {
     static let shared = FeedAcks()
     private static let key = "feed.acks"
     private(set) var members: [String: Set<String>]
+    /// Sends one member's acknowledgement of a post (true) or its removal; set by `CloudSync` while it is connected.
+    @ObservationIgnored var send: ((_ post: String, _ member: String, _ on: Bool) -> Void)?
 
     private init() {
         let saved = UserDefaults.standard.data(forKey: Self.key).flatMap { try? JSONDecoder().decode([String: Set<String>].self, from: $0) }
@@ -64,8 +67,22 @@ extension Job {
 
     func toggle(_ post: String, _ member: String) {
         var set = members[post] ?? []
-        if set.remove(member) == nil { set.insert(member) }
+        let on = set.remove(member) == nil
+        if on { set.insert(member) }
         members[post] = set.isEmpty ? nil : set
+        save()
+        send?(post, member, on)
+    }
+
+    /// A post's members as Firestore has them (with this device's writes not yet confirmed); an empty set when its
+    /// document was deleted.
+    func receive(_ post: String, _ set: Set<String>) {
+        guard members[post] ?? [] != set else { return }
+        members[post] = set.isEmpty ? nil : set
+        save()
+    }
+
+    private func save() {
         if let data = try? JSONEncoder().encode(members) { UserDefaults.standard.set(data, forKey: Self.key) }
     }
 }

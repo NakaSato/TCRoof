@@ -20,9 +20,11 @@ enum ProjectDriveUpload {
         job.documents.filter { $0.driveFileID == nil }.count + (pendingInspection(job) == nil ? 0 : 1) + pendingPhotos(job).count
     }
 
-    /// Photos of signed daily reports and of the IEC test not on Drive yet, with the folder and name each goes under.
-    private static func pendingPhotos(_ job: Job) -> [(photo: PhotoAsset, folder: [String], name: String)] {
-        let daily = job.dailyLogs.filter { $0.engineerSignedAt != nil }.flatMap { log -> [(PhotoAsset, [String], String)] in
+    /// Photos of daily reports, the ICL and the IEC test not on Drive yet, with the folder and name each goes under.
+    /// `PhotoSync` sends them a few seconds after they're taken, so the other devices get them; a daily report's
+    /// photos go before it is signed, and one deleted afterwards stays on Drive.
+    static func pendingPhotos(_ job: Job) -> [(photo: PhotoAsset, folder: [String], name: String)] {
+        let daily = job.dailyLogs.flatMap { log -> [(PhotoAsset, [String], String)] in
             let lines = log.report?.progress ?? []
             return log.sortedPhotos.enumerated().compactMap { i, p in
                 guard p.driveFileID == nil else { return nil }
@@ -30,7 +32,17 @@ enum ProjectDriveUpload {
                 return (p, RoutineReport.photoFolder(date: log.date), RoutineReport.photoName(date: log.date, index: i + 1, line: line))
             }
         }
-        return daily + pendingIECPhotos(job)
+        return daily + pendingICLPhotos(job) + pendingIECPhotos(job)
+    }
+
+    /// The ICL's step photos (`ICL รูปถ่าย/โครงสร้าง 1.jpg`).
+    private static func pendingICLPhotos(_ job: Job) -> [(photo: PhotoAsset, folder: [String], name: String)] {
+        guard let inspection = job.inspection else { return [] }
+        return InspectionStep.all.flatMap { step in
+            inspection.photos(for: step.id).enumerated().compactMap { i, p in
+                p.driveFileID == nil ? (p, ["ICL รูปถ่าย"], "\(step.short) \(i + 1).jpg") : nil
+            }
+        }
     }
 
     /// The IEC test's photos (`IEC 62446/รูปถ่าย/INV1ST3 ก่อน แรงดัน.jpg`), only those the test still uses; a sample's
@@ -59,6 +71,9 @@ enum ProjectDriveUpload {
 
     /// Records each file's Drive id as soon as it lands, so a failure part-way doesn't re-upload finished files.
     static func run(_ job: Job, session: GoogleSession, progress: (Int, Int) -> Void) async throws {
+        // one Drive writer: a background photo upload finishes first, so no photo is sent twice
+        await PhotoSync.shared.pause()
+        defer { PhotoSync.shared.resume() }
         let docs = job.documents.filter { $0.driveFileID == nil }.sorted { $0.addedAt < $1.addedAt }
         let inspection = pendingInspection(job)
         let photos = pendingPhotos(job)

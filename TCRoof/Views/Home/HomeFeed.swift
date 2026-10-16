@@ -90,6 +90,9 @@ struct HomeFeed: View {
     let open: (FeedLink) -> Void
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    /// Every server snapshot sync brings in moves `lastSync`: a record added to a job already here rebuilds the feed
+    /// then, not at the next minute.
+    @State private var sync = CloudSync.shared
     @Environment(GoogleSession.self) private var session
     @AppStorage("userTeam") private var userTeam = ""
     @AppStorage("feed.hidden") private var hiddenRaw = ""
@@ -133,7 +136,7 @@ struct HomeFeed: View {
                 .tcFeedSize(.pad)
             }
         }
-        .task(id: Refresh(now: now, jobs: jobs.count, days: days)) { rebuild() }
+        .task(id: Refresh(now: now, jobs: jobs.count, days: days, synced: sync.lastSync)) { rebuild() }
         // back from a record a post opened
         .onAppear { rebuild() }
         .alert("ยังปิดรายการไม่ได้", isPresented: Binding(get: { needsPhoto != nil }, set: { if !$0 { needsPhoto = nil } }), presenting: needsPhoto) { post in
@@ -144,7 +147,7 @@ struct HomeFeed: View {
         }
     }
 
-    private struct Refresh: Equatable { let now: Date; let jobs: Int; let days: Int }
+    private struct Refresh: Equatable { let now: Date; let jobs: Int; let days: Int; let synced: Date? }
 
     /// The posts, the empty state and `ดูโพสต์ก่อนหน้า`, for the layout's stack.
     @ViewBuilder private func list(_ shown: [FeedPost]) -> some View {

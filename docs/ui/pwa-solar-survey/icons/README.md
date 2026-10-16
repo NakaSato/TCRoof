@@ -5,7 +5,7 @@ Icons are 24×24 with a stroke of 2, round caps and `#16325C`. Recolour them wit
 | File | SF Symbol | Used for |
 |---|---|---|
 | `icons/search.svg` | `magnifyingglass` | header search field |
-| `icons/lock.svg` | `lock.fill` | locked survey card · ล็อก · อยู่ในงานติดตั้ง |
+| `icons/lock.svg` | `lock.fill` | locked survey card · ล็อก · อยู่ในงานติดตั้ง (no longer used: the lock was removed on 2026-10-16) |
 | `icons/calendar.svg` | `calendar` | card footer date · time |
 | `icons/photo.svg` | `photo` | card footer photo count |
 | `icons/plus.svg` | `plus` | floating add buttons (stroke 2.6 on the 68 pt button) |

@@ -22,11 +22,15 @@ struct PWARoot: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad: the dock over this stack (`PadTabs`).
     @Environment(PadDock.self) private var dock: PadDock?
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         SolarSurveyEntryView()
             .environment(\.pwaOverview, overview)
-            .navigationDestination(item: $station) { JobDetailView(job: $0) }
+            .navigationDestination(item: $station) { job in
+                // iPad: a station being installed opens its install tracking page (docs/ui/install-tracking-ipad)
+                if sizeClass != .compact, jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
+            }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
             .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
@@ -40,9 +44,23 @@ struct PWARoot: View {
             #if DEBUG
             // `-surveyHomeTab plan` opens แผนงาน. Not at launch: iOS 27 leaves a screen pushed then blank.
             .task {
-                guard UserDefaults.standard.string(forKey: "surveyHomeTab") == "plan" else { return }
+                // iPad shows the plan in the home, under its nav
+                guard sizeClass == .compact, UserDefaults.standard.string(forKey: "surveyHomeTab") == "plan" else { return }
                 try? await Task.sleep(for: .milliseconds(600))
                 showPlan = true
+            }
+            // `-installOpen YES` (iPad): the first installing station's install tracking page, seeding one with an MP
+            // plan and daily reports when none is installing. It changes that job for good.
+            .task {
+                guard sizeClass != .compact, UserDefaults.standard.bool(forKey: "installOpen") else { return }
+                if jobs.pwaInstalling.isEmpty, let job = jobs.first(where: { $0.kind == .pwa }) ?? jobs.first {
+                    job.kind = .pwa
+                    job.seedRoutineDemo(context)
+                }
+                try? await Task.sleep(for: .milliseconds(600))
+                // `-installSeed YES`: that station gets the routine demo's reports, for a real daily tab
+                if UserDefaults.standard.bool(forKey: "installSeed") { jobs.pwaInstalling.first?.seedRoutineDemo(context) }
+                station = jobs.pwaInstalling.first
             }
             #endif
     }
@@ -55,8 +73,12 @@ struct PWARoot: View {
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
+            maintenanceStations: stations.filter { $0.status == .completed }.map(\.maintenanceSummary),
             openMaintenanceStation: { s in station = stations.first { $0.overviewID == s.id } ?? demoStation(stations) },
+            handOver: { id in stations.first { $0.overviewID == id }?.status = .completed },
+            returnToInstall: { id in stations.first { $0.overviewID == id }?.status = .installing },
             openPlan: { showPlan = true },
+            planBody: { search in AnyView(PWAPlanPhoneView(padSearch: search)) },
             unread: notifications.filter { !read.contains($0.id) }.count,
             openNotifications: { showNotifications.toggle() })
     }

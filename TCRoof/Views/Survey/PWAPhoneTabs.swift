@@ -132,7 +132,7 @@ extension Job {
     var sentDailyReportToday: Bool { dailyLog(on: .now)?.engineerSignedAt != nil }
 
     /// This station for the survey home's install overview: plan and actual from its MP plan to this week, the task
-    /// planned this week and not done, and whether today's daily report is signed. The team stands in for the
+    /// planned this week and not done, the permit tasks' states, and whether today's daily report is signed. The team stands in for the
     /// contractor, which no record keeps.
     var installSummary: InstallStationSummary {
         var s = InstallStationSummary(id: overviewID, mpNumber: mpNumber, name: projectName, kWp: capacityKW, actual: 0,
@@ -148,7 +148,14 @@ extension Job {
         s.actual = status.actual
         s.plan = status.planned
         s.currentTask = current.map { "\($0.task.code) \($0.task.title)" } ?? ""
+        s.permits = InstallOverview.permits(RoutineReport.permits(plan: plan, actual: scheduleActual, at: .now))
         return s
+    }
+
+    /// This handed-over station for the maintenance overview. No monitoring feed yet, so it has no energy or PR.
+    var maintenanceSummary: MaintenanceStationSummary {
+        MaintenanceStationSummary(id: overviewID, mpNumber: mpNumber, name: projectName, kWp: capacityKW, status: .normal,
+                                  note: "ยังไม่มีข้อมูลการผลิต")
     }
 
     /// Papers signed and not yet sent, over the station's packages.

@@ -39,6 +39,24 @@ public enum TCFeedTone: CaseIterable, Sendable {
     /// The left edge of an iPad post.
     var accent: Color { self == .blue ? Theme.primary : solid }
 
+    /// iPad summary strip: the glyph before a cell's label.
+    var statIcon: String {
+        switch self {
+        case .green: "feed-stat-trend"
+        case .red: "feed-stat-issue"
+        case .blue, .orange: "feed-stat-report"
+        }
+    }
+
+    /// iPad summary strip: a cell's value. A red `0` is nothing to act on, so it stays navy.
+    func stripValue(_ value: String) -> Color {
+        switch self {
+        case .red: value == "0" ? Theme.navy : Theme.dangerText
+        case .green: Theme.successText
+        case .blue, .orange: Theme.navy
+        }
+    }
+
     /// Fill of a chip over a photo.
     var solid: Color {
         switch self {
@@ -135,7 +153,8 @@ public struct TCIssueBox: View {
     }
 }
 
-/// One feed post: avatar, who, badge, `where · when`, text, then the record's photos or stat tiles, an issue box,
+/// One feed post: avatar, who, badge, `where · when`, text, then the record's photos or stat tiles (on iPad one
+/// summary strip, docs/ui/tcroof-home-ipad-v3), an issue box,
 /// the acknowledgement line and the action row (`รับทราบ` · the link to the source record). No comments.
 /// A tap on the header, text, photo or tiles opens the record too, as the link does.
 public struct TCFeedPost<Photo: View>: View {
@@ -183,6 +202,8 @@ public struct TCFeedPost<Photo: View>: View {
     let acknowledged: Bool
     let link: String
     var menu: [MenuItem]
+    /// The coloured capsule after `who`; the iPad home leaves it out.
+    var showsBadge: Bool
     let onAck: () -> Void
     let onOpen: () -> Void
     @ViewBuilder var photo: (Int) -> Photo
@@ -199,12 +220,12 @@ public struct TCFeedPost<Photo: View>: View {
     /// (iPad: the card's width × 250).
     public init(initials: String, avatar: Color, who: String, badge: String, tone: TCFeedTone, detail: String, text: String,
                 stats: [Stat] = [], photoCount: Int = 0, photoChips: [PhotoChip] = [], issue: Issue? = nil,
-                ackLine: String, ackFaces: Int = 0, acknowledged: Bool, link: String, menu: [MenuItem] = [],
+                ackLine: String, ackFaces: Int = 0, acknowledged: Bool, link: String, menu: [MenuItem] = [], showsBadge: Bool = true,
                 onAck: @escaping () -> Void, onOpen: @escaping () -> Void, @ViewBuilder photo: @escaping (Int) -> Photo) {
         self.initials = initials; self.avatar = avatar; self.who = who; self.badge = badge; self.tone = tone
         self.detail = detail; self.text = text; self.stats = stats; self.photoCount = photoCount; self.photoChips = photoChips
         self.issue = issue; self.ackLine = ackLine; self.ackFaces = ackFaces; self.acknowledged = acknowledged; self.link = link; self.menu = menu
-        self.onAck = onAck; self.onOpen = onOpen; self.photo = photo
+        self.showsBadge = showsBadge; self.onAck = onAck; self.onOpen = onOpen; self.photo = photo
     }
 
     public var body: some View {
@@ -216,7 +237,10 @@ public struct TCFeedPost<Photo: View>: View {
                 .padding(.horizontal, inset).padding(.bottom, pad ? 12 : 8)
                 .contentShape(Rectangle()).onTapGesture(perform: onOpen)
             if photoCount > 0 { photos.padding(.horizontal, inset).onTapGesture(perform: onOpen) }
-            if !stats.isEmpty { tiles.padding(.horizontal, inset).contentShape(Rectangle()).onTapGesture(perform: onOpen) }
+            if !stats.isEmpty {
+                Group { if pad { strip } else { tiles } }
+                    .padding(.horizontal, inset).contentShape(Rectangle()).onTapGesture(perform: onOpen)
+            }
             if let issue {
                 TCIssueBox(owner: issue.owner, due: issue.due, fixed: issue.fixed, action: issue.toggle)
                     .padding(.horizontal, inset).padding(.top, pad ? 4 : 8)
@@ -270,9 +294,11 @@ public struct TCFeedPost<Photo: View>: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 5) {
                     Text(who).font(.sarabun(pad ? 15.5 : 14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text(badge).font(.sarabun(10.5, .bold, relativeTo: .caption2)).foregroundStyle(tone.badge.text)
-                        .lineLimit(1).fixedSize()
-                        .padding(.horizontal, 7).background(tone.badge.fill, in: Capsule())
+                    if showsBadge {
+                        Text(badge).font(.sarabun(10.5, .bold, relativeTo: .caption2)).foregroundStyle(tone.badge.text)
+                            .lineLimit(1).fixedSize()
+                            .padding(.horizontal, 7).background(tone.badge.fill, in: Capsule())
+                    }
                 }
                 Text(detail).font(.sarabun(pad ? 12.5 : 11.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
@@ -342,6 +368,50 @@ public struct TCFeedPost<Photo: View>: View {
                 .background(s.tone.tile.fill, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
             }
         }
+    }
+
+    /// iPad: the stats as one strip of equal cells, each a glyph and label over the value, with a bar under an `x/y` value.
+    private var strip: some View {
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        return HStack(spacing: 0) {
+            ForEach(Array(stats.prefix(3).enumerated()), id: \.element.id) { i, s in
+                if i > 0 { Rectangle().fill(Theme.borderSubtle).frame(width: 1) }
+                stripCell(s)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Theme.stripFill, in: shape)
+        .overlay(shape.strokeBorder(Theme.borderSubtle))
+    }
+
+    private func stripCell(_ s: Stat) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(s.tone.statIcon, bundle: .module).resizable().scaledToFit().frame(width: 15, height: 15)
+                    .foregroundStyle(s.tone.accent)
+                Text(s.label).font(.sarabun(12.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            Text(s.value).font(.sarabun(24, .bold, relativeTo: .title3)).foregroundStyle(s.tone.stripValue(s.value))
+                .lineLimit(1).minimumScaleFactor(0.7)
+            if let fraction = Self.fraction(s.value) {
+                GeometryReader { g in
+                    RoundedRectangle(cornerRadius: 3).fill(Theme.ganttTrack)
+                        .overlay(alignment: .leading) { RoundedRectangle(cornerRadius: 3).fill(Theme.primary).frame(width: g.size.width * fraction) }
+                }
+                .frame(height: 5)
+                .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// `8/12` → 0.67; nil for a value that isn't `x/y`.
+    private static func fraction(_ value: String) -> Double? {
+        let parts = value.split(separator: "/", omittingEmptySubsequences: false)
+        guard parts.count == 2, let x = Int(parts[0]), let y = Int(parts[1]), x >= 0, y > 0 else { return nil }
+        return min(Double(x) / Double(y), 1)
     }
 
     private var actions: some View {

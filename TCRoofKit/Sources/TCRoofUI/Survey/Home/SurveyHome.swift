@@ -64,6 +64,11 @@ struct SurveyHomeView: View {
     /// Home tab: surveys, installations, maintenance; kept between launches.
     @AppStorage("solarSurvey.homeTab") var tab = JobStage.survey
     @State var showInstallPicker = false
+    @State var showMaintenancePicker = false
+    /// iPad: the nav's `แผนงาน` is selected and the host's plan page is under it.
+    @State var planOpen = false
+    /// The page's width, for the iPad's columns: three in landscape, two in portrait.
+    @State var pageWidth: CGFloat = 0
     /// Installation job whose tracking page is open.
     @State var tracking: UUID?
     // the home page (docs/ui/pwa-solar-survey-iphone-v3, docs/ui/pwa-solar-survey-ipad-v3)
@@ -74,7 +79,8 @@ struct SurveyHomeView: View {
     @State var installFilter: InstallOverview.RowFilter?
     /// The contractor whose stations the install overview is narrowed to.
     @State var contractor: String?
-    @State var maintenanceFilter = MaintenanceOverview.RowFilter.issue
+    /// Row filter of the maintenance overview; nil until picked, then `มีปัญหา` when any station has a problem.
+    @State var maintenanceFilter: MaintenanceOverview.RowFilter?
 
     /// A job to open, optionally at the step "continue" points to.
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
@@ -125,6 +131,9 @@ struct SurveyHomeView: View {
     }
 
     var compact: Bool { sizeClass == .compact }
+    /// iPad portrait (1032 pt on the 13", 820 on the Air): two columns instead of three.
+    var portrait: Bool { !compact && pageWidth > 0 && pageWidth < 1100 }
+    var padColumns: Int { portrait ? 2 : 3 }
 
     var body: some View {
         homePage
@@ -168,6 +177,13 @@ struct SurveyHomeView: View {
                 guard model.moveToInstall(id) else { return }
                 showInstallPicker = false
                 withAnimation(.snappy) { tab = .install }
+            }
+        }
+        .sheet(isPresented: $showMaintenancePicker) {
+            MaintenancePickerSheet(stations: installStations) { s in
+                addToMaintenance(s)
+                showMaintenancePicker = false
+                maintenanceFilter = .all
             }
         }
         #if DEBUG
@@ -218,7 +234,7 @@ struct SurveyHomeView: View {
 
     var grid: some View {
         let stations = phaseStations
-        return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: compact ? 10 : 16) {
+        return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: padColumns), spacing: compact ? 10 : 16) {
             ForEach(shown) { j in
                 let station = stations[j.id]
                 let mode: JobCard.Mode = tab == .install ? .install : j.stage == .survey && station == nil ? .survey : .locked
@@ -271,7 +287,14 @@ struct SurveyHomeView: View {
         case .survey: go(j, at: j.nextStep?.page)
         // the editor opens a moved survey read-only, on its summary
         case .locked: go(j)
-        case .install: lastOpened = j.id.uuidString; tracking = j.id
+        case .install:
+            lastOpened = j.id.uuidString
+            // iPad: a survey linked to a host station opens the host's install tracking page; the rest keep this one's
+            if !compact, let sync = j.jobSyncID, let s = host.installStations?.first(where: { $0.id == sync }), let open = host.openStation {
+                open(s)
+            } else {
+                tracking = j.id
+            }
         }
     }
 

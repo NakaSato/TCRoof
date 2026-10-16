@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แผนงาน PWA (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/cce3275ea50e42de3cbe91576b63f24b) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/6981a627824e19ea636fd6eabaa19e55) format("truetype");font-weight:700}
+body{margin:0}
+@keyframes srGrow{from{max-width:44px;background-color:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.4)}to{max-width:400px;background-color:rgba(255,255,255,0.97);border-color:rgba(255,255,255,0.97)}}
+@keyframes srShrink{from{flex:1 1 auto;max-width:400px;background-color:rgba(255,255,255,0.97)}to{flex:1 1 auto;max-width:44px;background-color:rgba(255,255,255,0.18)}}
+@keyframes srTitleOut{from{flex:1 1 0px;max-width:304px;opacity:1;transform:none}to{flex:0 1 0px;max-width:0;opacity:0;transform:translateX(-16px)}}
+@keyframes srTitleIn{from{max-width:0;opacity:0;transform:translateX(-16px)}to{max-width:304px;opacity:1;transform:none}}
+@keyframes srIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div class="g" style="position: relative; width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden; background:#F5F8FB">
+<header class="g-head" style="flex-direction:column;align-items:stretch;gap:6px;padding:22px 63px 22px;border-bottom-left-radius:20px;border-bottom-right-radius:20px">
+<div style="display:flex;align-items:center;gap:10px"><div style="flex:1 1 0;min-width:0"><div style="font-size:30px;line-height:36px;font-weight:700;white-space:nowrap">โครงการ PWA</div></div><div role="search" style="{{sStyle}}"><sc-if value="{{srNo}}" hint-placeholder-val="{{true}}"><button onClick="{{srOpen}}" aria-label="ค้นหาเลขที่ ชื่อโครงการ" title="ค้นหา" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;cursor:pointer;padding:0;display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" style="{{sIcon}}"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button></sc-if><sc-if value="{{srOn}}" hint-placeholder-val="{{false}}"><span style="width:44px;flex:none;display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" style="{{sIcon}}"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span><input type="search" autofocus="" placeholder="ค้นหาเลขที่ ชื่อโครงการ…" aria-label="ค้นหาเลขที่ ชื่อโครงการ" style="flex:1;min-width:0;height:42px;border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#16325C;animation:srIn .24s .42s both"><button onClick="{{srClose}}" aria-label="ปิดการค้นหา" title="ปิดการค้นหา" style="width:44px;height:42px;flex:none;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;color:#5B6B82;animation:srIn .24s .42s both"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if></div><a href="iPadNotif.dc.html" aria-label="การแจ้งเตือน · ยังไม่อ่าน 2" style="position:relative;width:44px;height:44px;flex:none;border-radius:22px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);box-sizing:border-box;display:grid;place-items:center;text-decoration:none"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:21px;height:21px;fill:none;stroke:#fff;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg><b aria-hidden="true" style="position:absolute;top:5px;right:5px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#D9453B;color:#fff;font-size:10px;font-weight:800;line-height:16px;text-align:center;outline:2px solid #2A84CF">2</b></a></div>
+</header>
+<div style="display:flex;align-items:center;gap:8px;padding:20px 63px 0;flex:none"><nav aria-label="เมนู กปภ." style="flex:1;min-width:0;display:flex;gap:2px;padding:3px;border-radius:22px;background:#E6ECF3"><a href="iPadHome.dc.html" style="flex:1 1 0;min-width:0;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;white-space:nowrap;color:#5B6B82;font-weight:600">โครงการ</a><a href="iPadPwaPlan.dc.html" aria-current="page" style="flex:1 1 0;min-width:0;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;white-space:nowrap;background:#fff;color:#16325C;font-weight:700;box-shadow:0 1px 3px rgba(22,50,92,0.16)">แผนงาน</a><a href="iPadPwaMaintenance.dc.html" style="flex:1 1 0;min-width:0;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;white-space:nowrap;color:#5B6B82;font-weight:600">บำรุงรักษา</a></nav></div>
+<main style="flex:1;min-height:0;display:grid;grid-template-columns:440px minmax(0,1fr);gap:20px;padding:16px 63px 0"><section aria-label="ตารางงาน" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:10px 12px 0;margin-bottom:116px;overflow:hidden;min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:6px;flex:none;padding-bottom:2px"><b style="font-size:14px;color:#16325C">ตารางงาน</b><span style="font-size:11px;color:#5B6B82">ทุกงานของโครงการ</span></div><section aria-label="เลือกวัน" style="background:#F8FAFC;border:1px solid #E6ECF3;border-radius:12px;padding:8px 6px 8px;display:flex;flex-direction:column;gap:6px;flex:none">
+<div style="display:flex;align-items:center;gap:2px;padding:0 4px 0 0"><button aria-label="{{prevAria}}" style="width:40px;height:44px;flex:none;border:0;background:transparent;color:#1F6FB5;font-size:20px;cursor:pointer">‹</button><span style="min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:15px;color:#16325C;white-space:nowrap">{{wkTitle}}</b><sc-if value="{{isWeek}}" hint-placeholder-val="{{true}}"><span style="font-size:11.5px;line-height:15px;font-weight:600;color:#1F6FB5;white-space:nowrap">สัปดาห์ที่ {{wkNo2}}</span></sc-if></span><button aria-label="{{nextAria}}" style="width:40px;height:44px;flex:none;border:0;background:transparent;color:#1F6FB5;font-size:20px;cursor:pointer">›</button><div role="tablist" aria-label="มุมมองปฏิทิน" style="margin-left:auto;flex:none;display:flex;gap:2px;padding:3px;border-radius:22px;background:#E6ECF3"><sc-for list="{{cvItems}}" as="t" hint-placeholder-count="2"><button role="tab" aria-selected="{{t.on}}" onClick="{{t.go}}" style="{{t.st}}">{{t.t}}</button></sc-for></div></div>
+<sc-if value="{{isWeek}}" hint-placeholder-val="{{true}}"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px"><sc-for list="{{days}}" as="d" hint-placeholder-count="7"><button onClick="{{d.go}}" aria-label="{{d.aria}}" aria-pressed="{{d.on}}" style="{{d.st}}"><span style="font-size:11px;line-height:14px">{{d.w}}</span><b style="font-size:17px;line-height:22px">{{d.n}}</b><span aria-hidden="true" style="align-self:stretch;display:flex;flex-direction:column;gap:2px;padding:0 6px;height:{{d.bh}}"><sc-for list="{{d.bars}}" as="o" hint-placeholder-count="3"><i style="{{o.st}}"></i></sc-for></span></button></sc-for></div></sc-if><sc-if value="{{isMonth}}" hint-placeholder-val="{{false}}"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0 2px;padding:0 0 2px"><sc-for list="{{wdHead}}" as="h" hint-placeholder-count="7"><span style="{{h.st}}">{{h.t}}</span></sc-for></div><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px"><sc-for list="{{mCells}}" as="d" hint-placeholder-count="35"><sc-if value="{{d.blank}}" hint-placeholder-val="{{false}}"><span aria-hidden="true"></span></sc-if><sc-if value="{{d.real}}" hint-placeholder-val="{{true}}"><button onClick="{{d.go}}" aria-label="{{d.aria}}" aria-pressed="{{d.on}}" style="{{d.st}}"><b style="font-size:15px;line-height:19px">{{d.n}}</b><span aria-hidden="true" style="align-self:stretch;display:flex;flex-direction:column;gap:2px;padding:0 6px;height:{{d.bh}}"><sc-for list="{{d.bars}}" as="o" hint-placeholder-count="3"><i style="{{o.st}}"></i></sc-for></span></button></sc-if></sc-for></div><div style="display:flex;flex-wrap:wrap;gap:4px 12px;padding:4px 8px 2px;font-size:11px;color:#5B6B82"><sc-for list="{{tyLegend}}" as="l" hint-placeholder-count="6"><span style="display:flex;align-items:center;gap:4px"><i style="{{l.st}}"></i>{{l.t}}</span></sc-for></div></sc-if>
+</section>
+<div style="position:relative;display:flex;align-items:center;gap:8px;flex:none;z-index:12"><b style="font-size:16px;color:#16325C;white-space:nowrap">{{dayTitle}}</b><span style="font-size:13px;color:#5B6B82;white-space:nowrap">{{dayCount}}</span></div><sc-if value="{{agActOn}}" hint-placeholder-val="{{false}}"><div style="display:flex;align-items:center;gap:2px;margin:-8px 0 -6px -4px;flex:none"><sc-for list="{{agAct}}" as="c" hint-placeholder-count="1"><button onClick="{{c.go}}" aria-label="ล้างตัวกรอง {{c.t}}" style="min-height:44px;padding:0 4px;border:0;background:transparent;font-family:inherit;cursor:pointer;display:flex;align-items:center"><span style="display:flex;align-items:center;gap:5px;height:30px;padding:0 6px 0 10px;border-radius:15px;background:#E3EEF8;color:#1F6FB5;font-size:12px;font-weight:700;white-space:nowrap">{{c.t}}<svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></button></sc-for></div></sc-if>
+<div ref="{{agRef}}" onScroll="{{agScroll}}" aria-label="รายการงานรายวัน" style="position:relative;flex:1;min-height:0;overflow-y:auto;margin:0 -4px;padding:2px 4px 40px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none"><sc-for list="{{agDays}}" as="gd" hint-placeholder-count="3"><section data-day="{{gd.n}}" aria-label="{{gd.aria}}" style="display:flex;flex-direction:column;gap:8px;flex:none"><div style="{{gd.headSt}}"><i aria-hidden="true" style="{{gd.dotSt}}"></i><b style="font-size:13px">{{gd.t}}</b><span style="font-size:12px;font-weight:400;color:#5B6B82">{{gd.c}}</span></div><sc-for list="{{gd.rows}}" as="g" hint-placeholder-count="2"><a href="{{g.href}}" style="background:#F8FAFC;border:1px solid #E6ECF3;border-radius:12px;padding:10px 12px;display:flex;gap:10px;text-decoration:none;color:#16325C;flex:none"><div style="width:44px;flex:none;display:flex;flex-direction:column;align-items:flex-start;line-height:18px"><b style="font-size:14px">{{g.t}}</b><span style="font-size:11px;color:#5B6B82">{{g.end}}</span></div><i style="{{g.bar}}"></i><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:18px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><span style="{{g.chipSt}}">{{g.chip}}</span><span style="font-size:12px;font-weight:700;color:#5B6B82;white-space:nowrap">{{g.mp}}</span><span style="margin-left:auto;font-size:11px;font-weight:700;white-space:nowrap;{{g.stSt}}">{{g.stt}}</span></div><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{g.title}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{g.sub}}</span></div></a></sc-for><sc-if value="{{gd.empty}}" hint-placeholder-val="{{false}}"><div style="border:1px dashed #C9D3E0;border-radius:12px;padding:10px 12px;font-size:12.5px;color:#5B6B82;flex:none">{{gd.emptyT}}</div></sc-if></section></sc-for></div>
+</section><div style="min-width:0;min-height:0;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;gap:20px;padding-bottom:130px"><section aria-label="แผน MP" style="background:#F5F8FB;min-width:0;display:flex;flex-direction:column;gap:10px;flex:none"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:20px;color:#16325C">แผน MP</b><span style="font-size:13px;color:#5B6B82">Master Plan · 12 สถานี</span></div><section aria-label="S-curve ทั้งโครงการ" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;min-width:0">
+<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:15px;color:#16325C">ความก้าวหน้าทั้งโครงการ</b><span style="margin-left:auto;font-size:12px;color:#5B6B82">สัปดาห์ {{wkNo}}/20</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13px;color:#5B6B82"><span>จริง <b style="font-size:20px;color:#1F6FB5">{{avgA}}%</b></span><span>แผน <b style="font-size:20px;color:#16325C">{{avgP}}%</b></span><span style="margin-left:auto;font-weight:700;color:{{varC}}">{{varT}}</span></div>
+<svg viewBox="0 0 540 188" role="img" aria-label="S-curve แผนเทียบจริง" style="width:100%;height:268px" preserveAspectRatio="none"><sc-for list="{{grid}}" as="l" hint-placeholder-count="5"><line x1="24" x2="536" y1="{{l.y}}" y2="{{l.y}}" stroke="#EEF2F7" stroke-width="1"></line><text x="0" y="{{l.ty}}" font-size="9" fill="#9FB3CC">{{l.t}}</text></sc-for><polyline points="{{planPts}}" fill="none" stroke="#9FB3CC" stroke-width="2" stroke-dasharray="4 3"></polyline><polyline points="{{actPts}}" fill="none" stroke="#1F6FB5" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline><line x1="{{todayX}}" x2="{{todayX}}" y1="2" y2="168" stroke="#D9453B" stroke-width="1.5"></line><text x="{{todayX}}" y="10" dx="4" font-size="9" fill="#D9453B">วันนี้</text><sc-for list="{{months}}" as="m" hint-placeholder-count="4"><text x="{{m.x}}" y="182" font-size="9" fill="#5B6B82">{{m.t}}</text></sc-for></svg>
+<div style="display:flex;gap:14px;font-size:11px;color:#5B6B82"><span style="display:flex;align-items:center;gap:4px"><i style="width:14px;height:0;border-top:2px dashed #9FB3CC"></i>แผน</span><span style="display:flex;align-items:center;gap:4px"><i style="width:14px;height:3px;border-radius:2px;background:#1F6FB5"></i>จริง</span><span style="display:flex;align-items:center;gap:4px"><i style="width:2px;height:10px;background:#D9453B"></i>12 ต.ค.</span></div>
+</section>
+</section><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;flex:none"><section aria-label="แผนรายสถานี" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0">
+<div style="display:flex;align-items:center;gap:6px;padding-bottom:2px"><b style="font-size:14px;color:#16325C">รายสถานี</b><span style="font-size:11px;color:#5B6B82">เรียงตามวันส่งมอบ</span></div>
+<div style="display:flex;padding-left:176px;font-size:11px;color:#9FB3CC"><sc-for list="{{gMonths}}" as="m" hint-placeholder-count="4"><span style="{{m.st}}">{{m.t}}</span></sc-for></div>
+<sc-for list="{{gantt}}" as="r" hint-placeholder-count="8"><a href="iPadInstall.dc.html" aria-label="{{r.aria}}" style="display:flex;align-items:center;gap:6px;min-height:36px;text-decoration:none;color:#16325C"><span style="width:170px;flex:none;display:flex;flex-direction:column;line-height:15px;min-width:0"><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.name}}</b><span style="font-size:11px;color:#5B6B82;white-space:nowrap">MP {{r.mp}} · {{r.ct}}</span></span><span style="position:relative;flex:1;height:22px"><i style="position:absolute;top:0;bottom:0;left:{{r.todayL}};width:1.5px;background:#D9453B"></i><i style="position:absolute;top:7px;height:8px;border-radius:4px;background:#E3E9F1;left:{{r.l}};width:{{r.w}}"></i><i style="position:absolute;top:7px;height:8px;border-radius:4px;background:{{r.c}};left:{{r.l}};width:{{r.aw}}"></i><i style="position:absolute;top:4px;height:14px;width:2px;background:#16325C;left:{{r.pl}}"></i></span><span style="width:40px;flex:none;text-align:right;font-size:11px;font-weight:700;color:{{r.dc}}">{{r.d}}</span></a></sc-for>
+<div style="text-align:center;font-size:12px;color:#5B6B82">{{ganttMore}}</div>
+</section>
+<section aria-label="กำหนดส่ง" style="background:#fff;border:1px solid #DDE4ED;border-radius:16px;padding:10px 12px 12px;min-width:0;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:6px;padding-bottom:2px"><b style="font-size:14px;color:#16325C">กำหนดส่ง</b><span style="font-size:11px;color:#5B6B82">งานส่งมอบและเอกสาร</span></div><sc-for list="{{dueGroups}}" as="w" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:6px;flex:none"><div style="display:flex;align-items:baseline;gap:6px;padding:4px 2px 0"><b style="font-size:14px;color:#16325C">{{w.t}}</b><span style="font-size:12px;color:#5B6B82">{{w.r}}</span></div><sc-for list="{{w.rows}}" as="r" hint-placeholder-count="3"><a href="{{r.href}}" style="background:#F8FAFC;border:1px solid #E6ECF3;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;text-decoration:none;color:#16325C"><span style="width:46px;flex:none;border-radius:10px;padding:4px 0;text-align:center;display:flex;flex-direction:column;line-height:15px;{{r.dSt}}"><b style="font-size:16px">{{r.dd}}</b><span style="font-size:10px">{{r.mm}}</span></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.t}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.sub}}</span></span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;white-space:nowrap;{{r.cSt}}">{{r.c}}</span></a></sc-for></div></sc-for>
+</section></div></div></main>
+<nav aria-label="เมนูหลัก" style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:15;display:flex;align-items:center;gap:2px;padding:6px;border-radius:28px;background:rgba(255,255,255,0.96);border:1px solid #C9D3E0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)"><a href="iPadMenu.dc.html" aria-label="หน้าแรก" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">หน้าแรก</span></a><a href="iPadHome.dc.html" aria-current="page" aria-label="โครงการ · นัดวันนี้ 2" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#fff;background:#16325C"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:800;white-space:nowrap">โครงการ</span><b aria-hidden="true" style="position:absolute;top:5px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;outline:2px solid #fff">2</b></a><a href="iPadSurveyHome.dc.html" aria-label="งานบ้าน" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M3.5 11.5L12 4l8.5 7.5"></path><path d="M6 10v10h12V10"></path><path d="M9 14.5l3-1.8 3 1.8M9 17.5l3-1.8 3 1.8"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">งานบ้าน</span></a><a href="iPadPdfPreview.dc.html" aria-label="เอกสาร" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14.5l2 2 4-4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">เอกสาร</span></a><a href="iPadTools.dc.html" aria-label="เครื่องมือ" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><rect x="8.5" y="5" width="7" height="4" rx="1"></rect><circle cx="12" cy="14" r="2.6"></circle><path d="M12 14l1.4-1.4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">เครื่องมือ</span></a><a href="iPadEquip.dc.html" aria-label="สแกน" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"></path><path d="M8 8v8M11 8v8M14 8v8M17 8v8"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">สแกน</span></a><i aria-hidden="true" style="width:1px;align-self:stretch;margin:10px 4px;background:#DDE4ED"></i><a href="iPadSettings.dc.html" aria-label="ตั้งค่าและบัญชี" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">ตั้งค่า</span></a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  // ตารางงาน: the agenda scrolls through every day of the range; the day at the top of the list is the day highlighted in the calendar.
+  scrollToDay(n, smooth) { const el = this._ag; if (!el) return; const d = el.querySelector('[data-day="' + n + '"]'); if (!d) return;
+    this._lock = Date.now(); el.scrollTo({ top: Math.max(0, d.offsetTop - 2), behavior: smooth ? 'smooth' : 'auto' }); }
+  componentDidMount() { setTimeout(() => this.scrollToDay((this.state || {}).day || 12, false), 0); }
+  componentDidUpdate() { const s = this.state || {}; if (s.jump) { const n = s.jump; this.setState({ jump: null }); setTimeout(() => this.scrollToDay(n, true), 0); } }
+  renderVals() {
+    const st = this.state || {};
+    const v = {};
+    // ── ค้นหา: กดแว่นขยาย ช่องค้นหาเลื่อนขยายไปทางซ้าย ชื่อโครงการจางหาย
+    v.srOn = !!st.srOn; v.srNo = !v.srOn; v.srOnS = v.srOn ? 'true' : 'false';
+        // จังหวะ: หน่วง 0.1 วิหลังกด แล้วช่องค้นหาขยาย 0.36 วิ ข้อความในช่องหน่วงตามอีก 0.3 วิ (keyframes เล่นทุกครั้งที่สลับสถานะ)
+    v.srWas = !!st.srWas;
+    v.srOpen = () => this.setState({ srOn: true, srWas: true }); v.srClose = () => this.setState({ srOn: false, srWas: true });
+    const srE = 'cubic-bezier(.2,.8,.2,1)';
+    const srBg = v.srOn ? 'background-color:rgba(255,255,255,0.97);border:1px solid rgba(255,255,255,0.97)' : 'background-color:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4)';
+    v.tStyle = 'min-width:0;overflow:hidden;white-space:nowrap;' + (v.srOn ? 'flex:0 1 0px;max-width:0;opacity:0;animation:srTitleOut .3s .1s ' + srE + ' both' : 'flex:1 1 0px;max-width:304px;' + (v.srWas ? 'animation:srTitleIn .34s .14s ' + srE + ' both' : ''));
+    v.sStyle = 'position:relative;height:44px;min-width:44px;margin-left:auto;box-sizing:border-box;border-radius:22px;display:flex;align-items:center;overflow:hidden;' + srBg + ';' + (v.srOn ? 'flex:1 1 auto;max-width:400px;animation:srGrow .36s .1s ' + srE + ' both' : 'flex:0 0 44px;max-width:44px;' + (v.srWas ? 'animation:srShrink .3s .06s ' + srE + ' both' : ''));
+    v.sIcon = 'width:21px;height:21px;flex:none;fill:none;stroke:' + (v.srOn ? '#5B6B82' : '#fff') + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .25s ease';
+    const pOn = 'flex:1 1 0;min-width:0;height:38px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:19px;border:0;background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(22,50,92,0.16);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+    const pOff = 'flex:1 1 0;min-width:0;height:38px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:19px;border:0;background:transparent;color:#5B6B82;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap';
+    const pCnt = (o, w) => 'font-size:12px;font-weight:700;' + (w ? 'color:#B42318' : o ? 'color:#1F6FB5' : 'color:#5B6B82');
+    const mkPills = (key, cur, list) => list.map(([k, t, n, w]) => ({ t, n, on: cur === k ? 'true' : 'false', st: cur === k ? pOn : pOff, cs: pCnt(cur === k, w), go: () => this.setState({ [key]: k }) }));
+    const fl = (on) => 'min-height:40px;padding:0 12px;border-radius:20px;font-family:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;' + (on ? 'border:0;background:#16325C;color:#fff' : 'border:1px solid #DDE4ED;background:#fff;color:#16325C');
+    // ── สถานีในช่วงติดตั้งของโครงการ กปภ. (example data, same as the PWA home)
+    const S = [
+      { mp: 189, name: 'ทุ่งน้อย', full: 'สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล', kwp: 92.34, a: 38, p: 50, ct: 'A', s: 20, e: 75, due: '15/10' },
+      { mp: 120, name: 'วัดชัย', full: 'การประปาวัดชัย', kwp: 250, a: 22, p: 28, ct: 'B', s: 30, e: 90, due: '30/10' },
+      { mp: 98, name: 'บ้านโป่ง', full: 'การประปาบ้านโป่ง', kwp: 90, a: 50, p: 52, ct: 'A', s: 8, e: 66, due: '6/10' },
+      { mp: 154, name: 'แพรกหนามแดง', full: 'สถานีจ่ายน้ำแพรกหนามแดง', kwp: 209.76, a: 71, p: 68, ct: 'C', s: 5, e: 72, due: '12/10' },
+      { mp: 77, name: 'โชคชัย', full: 'สถานีผลิตน้ำโชคชัย', kwp: 171, a: 94, p: 92, ct: 'B', s: 0, e: 68, due: '8/10' },
+      { mp: 61, name: 'แม่ข่ายชนบท', full: 'สถานีผลิตน้ำแม่ข่ายชนบท', kwp: 145.2, a: 12, p: 10, ct: 'D', s: 38, e: 100, due: '9/11' },
+      { mp: 133, name: 'บางปะกง', full: 'สถานีผลิตน้ำบางปะกง', kwp: 120.5, a: 55, p: 54, ct: 'A', s: 18, e: 80, due: '20/10' },
+      { mp: 142, name: 'หนองแค', full: 'สถานีผลิตน้ำหนองแค', kwp: 180, a: 30, p: 36, ct: 'C', s: 28, e: 88, due: '28/10' },
+      { mp: 88, name: 'พนัสนิคม', full: 'สถานีผลิตน้ำพนัสนิคม', kwp: 160.4, a: 64, p: 62, ct: 'B', s: 14, e: 74, due: '14/10' },
+      { mp: 171, name: 'สามโคก', full: 'สถานีผลิตน้ำสามโคก', kwp: 98.2, a: 8, p: 8, ct: 'D', s: 50, e: 116, due: '25/11' },
+      { mp: 66, name: 'บ้านบึง', full: 'สถานีผลิตน้ำบ้านบึง', kwp: 210, a: 42, p: 40, ct: 'C', s: 32, e: 93, due: '2/11' },
+      { mp: 109, name: 'ศรีราชา', full: 'สถานีผลิตน้ำศรีราชา', kwp: 115, a: 80, p: 78, ct: 'A', s: 10, e: 70, due: '10/10' }];
+    // ── แผนงาน PWA: ตารางงาน · แผน MP · กำหนดส่ง (example data, today 12 ต.ค. 2569)
+    const pv = st.pv || 'cal';
+    v.isCal = pv === 'cal'; v.isMp = pv === 'mp'; v.isDue = pv === 'due';
+    const d = (s) => s.a - s.p, behind = (s) => d(s) <= -2;
+    v.pills = mkPills('pv', pv, [['cal', 'ตารางงาน', 7], ['mp', 'แผน MP', 12], ['due', 'กำหนดส่ง', 9, true]]);
+    // ตารางงาน
+    const TY = { ins: ['ติดตั้ง', '#1F6FB5', '#E3EEF8'], srv: ['สำรวจ', '#0E7C86', '#E0F4F5'], chk: ['ตรวจรับ', '#6B4FBB', '#EFEBFA'], doc: ['เอกสาร', '#9A4A06', '#FFF3E6'], tst: ['ทดสอบ', '#1F6B43', '#E8F5EE'], ntf: ['เตือน', '#B42318', '#FDECEA'] };
+    const sel = st.day || 12;
+    const cv = st.cv || 'week'; v.isWeek = cv === 'week'; v.isMonth = cv === 'month';
+    const DAYS = [[12, 'จ', ['ins', 'srv', 'doc']], [13, 'อ', ['ins', 'chk']], [14, 'พ', ['ins', 'doc']], [15, 'พฤ', ['ins', 'tst', 'doc']], [16, 'ศ', ['ins']], [17, 'ส', []], [18, 'อา', []]];
+    v.wkTitle = v.isMonth ? 'ตุลาคม 2569' : '12–18 ต.ค. 2569';
+    v.wkNo2 = 42; // ISO week of 12 ต.ค. 2569 (2026-10-12)
+    v.prevAria = v.isMonth ? 'เดือนก่อน' : 'สัปดาห์ก่อน'; v.nextAria = v.isMonth ? 'เดือนถัดไป' : 'สัปดาห์ถัดไป';
+    const segSt = (on) => 'height:38px;padding:0 12px;border-radius:19px;border:0;font-family:inherit;font-size:13px;cursor:pointer;white-space:nowrap;' + (on ? 'background:#fff;color:#16325C;font-weight:700;box-shadow:0 1px 3px rgba(22,50,92,0.16)' : 'background:transparent;color:#5B6B82;font-weight:600');
+    v.cvItems = [['week', 'สัปดาห์'], ['month', 'เดือน']].map(([k, t]) => ({ t, on: cv === k ? 'true' : 'false', st: segSt(cv === k),
+      go: () => this.setState(k === 'week' && (sel < 12 || sel > 18) ? { cv: k, day: 12, jump: 12 } : { cv: k, jump: sel }) }));
+    // เดือน: ต.ค. 2569 starts on Thursday (Mon-first grid → 3 blanks). Dots = job types that day (example data)
+    const WDS = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'], OFF = 3;
+    const MDOTS = { 1: ['ins'], 2: ['ins', 'srv'], 5: ['ins', 'doc'], 6: ['ins', 'chk'], 7: ['ins'], 8: ['ins', 'ntf', 'tst'], 9: ['ins', 'tst'], 10: ['srv'],
+      12: ['ins', 'srv', 'doc'], 13: ['ins', 'chk'], 14: ['ins', 'doc'], 15: ['ins', 'tst', 'doc'], 16: ['ins'],
+      19: ['ins'], 20: ['ins', 'doc'], 21: ['ins', 'chk', 'doc'], 22: ['ins', 'doc'], 23: ['ins'], 24: ['tst'], 26: ['ins'], 27: ['ins', 'srv'], 28: ['ins', 'doc'], 29: ['ins'], 30: ['ins', 'chk'] };
+    v.wdHead = WDS.map((t, i) => ({ t, st: 'text-align:center;font-size:11px;line-height:16px;font-weight:600;color:' + (i > 4 ? '#9FB3CC' : '#5B6B82') }));
+    v.tyLegend = Object.keys(TY).map((k) => ({ t: TY[k][0], st: 'width:12px;height:4px;border-radius:2px;background:' + TY[k][1] }));
+    // แถบสีงาน: lane 1 = ติดตั้ง (continuous across days in the same week row, rounded only at the run's ends); lanes 2–3 = other types that day
+    // แถบสีงาน: every multi-day run of the same type is one continuous line within a week row (rounded only at its ends).
+    // Lane 0 = ติดตั้ง; lanes 1–2 = other types, packed per week row so a run keeps its lane. The selected day breaks a run.
+    const LANES = {};
+    for (let r = 0; r < 5; r++) {
+      const days = Array.from({ length: 7 }, (_, col) => r * 7 + col - OFF + 1).filter((n) => n >= 1 && n <= 31);
+      const runs = [];
+      Object.keys(TY).filter((t) => t !== 'ins').forEach((t) => { let cur = null;
+        days.forEach((n) => { if (!(MDOTS[n] || []).includes(t)) { cur = null; return; } if (cur && cur.end === n - 1 && n !== sel && cur.end !== sel) cur.end = n; else { cur = { t, s: n, end: n }; runs.push(cur); } }); });
+      runs.sort((a, b) => a.s - b.s); const laneEnd = [0, 0];
+      runs.forEach((ru) => { const l = laneEnd.findIndex((e) => e < ru.s); if (l < 0) return; laneEnd[l] = ru.end;
+        for (let n = ru.s; n <= ru.end; n++) { (LANES[n] = LANES[n] || [null, null])[l] = { t: ru.t, cL: n > ru.s, cR: n < ru.end }; } });
+    }
+    const insRun = (n, d) => n + d >= 1 && n + d <= 31 && (MDOTS[n + d] || []).includes('ins') && n + d !== sel;
+    const barsOf = (n, col, on, H) => { const ts = MDOTS[n] || [];
+      const lane = (bg, contL, contR) => ({ st: 'display:block;height:4px;flex:none;border-radius:' + (contL ? 0 : 2) + 'px ' + (contR ? 0 : 2) + 'px ' + (contR ? 0 : 2) + 'px ' + (contL ? 0 : 2) + 'px;margin:0 ' + (contR ? -7 : 0) + 'px 0 ' + (contL ? -7 : 0) + 'px;background:' + bg });
+      const ins = ts.includes('ins'), cL = ins && !on && col > 0 && insRun(n, -1), cR = ins && !on && col < 6 && insRun(n, 1);
+      const rest = (LANES[n] || [null, null]).map((x) => x ? lane(on ? 'rgba(255,255,255,0.85)' : TY[x.t][1], !on && x.cL, !on && x.cR) : lane('transparent', false, false));
+      while (rest.length && rest[rest.length - 1].st.endsWith('transparent')) rest.pop();
+      return { bh: H, bars: [lane(ins ? (on ? '#fff' : TY.ins[1]) : 'transparent', cL, cR)].concat(rest) }; };
+    v.mCells = Array.from({ length: 35 }, (_, i) => { const n = i - OFF + 1;
+      if (n < 1 || n > 31) return { blank: true, real: false };
+      const on = n === sel, today = n === 12, we = i % 7 > 4, ts = MDOTS[n] || [];
+      return { blank: false, real: true, n, on: on ? 'true' : 'false', go: () => this.setState({ day: n, jump: n }),
+        aria: 'วัน' + WDS[i % 7] + ' ' + n + ' ต.ค. · ' + (ts.length ? ts.length + ' ประเภทงาน' : 'ไม่มีงาน'),
+        st: 'width:100%;min-height:46px;border:0;border-radius:10px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;' + (on ? 'background:#16325C;color:#fff' : today ? 'background:#E3EEF8;color:#1F6FB5' : 'background:transparent;color:' + (we ? '#9FB3CC' : '#16325C')),
+        ...barsOf(n, i % 7, on, '16px') }; });
+    const hasDots = (MDOTS[sel] || []).length > 0;
+    v.days = DAYS.map(([n, w, ts]) => { const on = n === sel, today = n === 12;
+      return { n, w, on: on ? 'true' : 'false', aria: 'วัน' + w + ' ' + n + ' ต.ค. · ' + ts.length + ' ประเภทงาน', go: () => this.setState({ day: n, jump: n }),
+        st: 'min-height:62px;border:0;border-radius:12px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;' + (on ? 'background:#16325C;color:#fff' : today ? 'background:#E3EEF8;color:#1F6FB5' : 'background:transparent;color:' + (w === 'ส' || w === 'อา' ? '#9FB3CC' : '#16325C')),
+        ...barsOf(n, n - 12, on, '16px') }; });
+    const AG = {
+      12: [['08:00', '17:00', 'ins', 'MP 189', '2.3 ติดตั้งแผงเซลล์', 'ทุ่งน้อย · ผู้รับเหมา A · TCR01', 'กำลังทำ', 'iPadDaily.dc.html'],
+           ['08:30', '17:00', 'ins', 'MP 120', '2.1 โครงสร้างรองรับ + Walkway', 'วัดชัย · ผู้รับเหมา B · TCR03 · ช้ากว่าแผน 6%', 'กำลังทำ', 'iPadDaily.dc.html'],
+           ['09:30', '11:30', 'srv', 'NO.224', 'นัดสำรวจ สถานีผลิตน้ำ 1', 'กปภ. สาขาตัวอย่าง · TCR02', 'นัดแล้ว', 'iPadD1.dc.html'],
+           ['10:30', '12:00', 'chk', 'MP 154', 'ผู้แทน กปภ. ตรวจ 2.5 Inverter', 'แพรกหนามแดง · ผู้รับเหมา C', 'รอ', 'iPadInstall.dc.html'],
+           ['13:00', '', 'doc', 'MP 189', 'ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)', 'เทศบาลเมืองพล · ครบกำหนดวันนี้', 'ต้องยื่น', 'PhonePwaDocs.dc.html'],
+           ['14:00', '16:30', 'tst', 'MP 77', '3.1 Pre-Commissioning (IEC 62446)', 'โชคชัย · TCR05 · ใช้เครื่องวัดฉนวน + I-V', 'นัดแล้ว', 'IECTest.dc.html'],
+           ['16:00', '', 'ntf', 'รายงาน', 'ส่งรายงานประจำวันก่อน 18:00', 'ยังไม่ส่ง 4 สถานี · วัดชัย บ้านโป่ง หนองแค บ้านบึง', 'เตือน', 'iPadInstall.dc.html']],
+      13: [['08:00', '17:00', 'ins', 'MP 189', '2.3 ติดตั้งแผงเซลล์', 'ทุ่งน้อย · ผู้รับเหมา A · TCR01', 'ตามแผน', 'iPadDaily.dc.html'],
+           ['09:00', '11:00', 'chk', 'MP 98', 'ผู้แทน กปภ. ตรวจ 2.2 สาย DC', 'บ้านโป่ง · ผู้รับเหมา A', 'รอ', 'iPadInstall.dc.html']] };
+    const ag = AG[sel] || (hasDots ? AG[13] : []);
+    const STT = { 'กำลังทำ': 'color:#1F6FB5', 'นัดแล้ว': 'color:#1F6B43', 'รอ': 'color:#5B6B82', 'ต้องยื่น': 'color:#9A4A06', 'เตือน': 'color:#B42318', 'ตามแผน': 'color:#1F6B43' };
+    const WDN = ['วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์', 'วันอาทิตย์']; const WD = Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 1, WDN[(i + OFF) % 7]]));
+    // ── ตัวกรองตารางงาน (ปุ่มกรอง + popover แบบเดียวกับหน้าโครงการ)
+    const pty = st.pty || 'all', ptm = st.ptm || 'all', agOpen = !!st.agOpen;
+    const tmOf = (sub) => { const m = sub.match(/ผู้รับเหมา ([A-D])/); return m ? m[1] : /TCR/.test(sub) ? 'TC' : ''; };
+    const tmOk = (r) => ptm === 'all' || tmOf(r[5]) === ptm || (ptm === 'TC' && /TCR/.test(r[5]));
+    const agF = ag.filter((r) => (pty === 'all' || r[2] === pty) && tmOk(r));
+    const agAct = pty !== 'all' || ptm !== 'all';
+    v.dayTitle = WD[sel] + ' ' + sel + ' ต.ค.' + (sel === 12 ? ' · วันนี้' : ''); v.dayCount = agAct ? agF.length + ' จาก ' + ag.length + ' รายการ' : ag.length + ' รายการ'; v.agActOn = agAct;
+    v.agOpen = agOpen; v.agOpenS = agOpen ? 'true' : 'false'; v.agEmpty = agF.length === 0 && ag.length > 0; v.dayEmpty = ag.length === 0;
+    v.agTog = () => this.setState({ agOpen: !agOpen }); v.agDone = () => this.setState({ agOpen: false });
+    v.agReset = () => this.setState({ pty: 'all', ptm: 'all' });
+    v.agResetSt = agAct ? 'color:#1F6FB5' : 'color:#9FB3CC;pointer-events:none';
+    v.agDoneT = 'แสดง ' + agF.length + ' รายการ';
+    v.agFbSt = 'position:relative;width:44px;height:44px;flex:none;border-radius:22px;display:grid;place-items:center;cursor:pointer;font-family:inherit;' + (agOpen ? 'border:1px solid #1F6FB5;background:#E3EEF8' : agAct ? 'border:0;background:#16325C' : 'border:1px solid #DDE4ED;background:#fff');
+    v.agFbIc = 'width:20px;height:20px;fill:none;stroke:' + (agOpen ? '#1F6FB5' : agAct ? '#fff' : '#16325C') + ';stroke-width:2.2;stroke-linecap:round';
+    v.agFbDot = agAct ? 'position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#F08C00;outline:2px solid ' + (agOpen ? '#E3EEF8' : '#16325C') : 'display:none';
+    const TMN = { all: 'ทุกทีม', A: 'ผู้รับเหมา A', B: 'ผู้รับเหมา B', C: 'ผู้รับเหมา C', TC: 'ทีม TC' };
+    v.agAria = (pty === 'all' ? 'ทุกประเภท' : TY[pty][0]) + ' · ' + TMN[ptm] + ' · ' + agF.length + ' รายการ';
+    v.agAct = [].concat(pty !== 'all' ? [{ t: TY[pty][0], go: () => this.setState({ pty: 'all' }) }] : [], ptm !== 'all' ? [{ t: TMN[ptm], go: () => this.setState({ ptm: 'all' }) }] : []);
+    v.agTy = [['all', 'ทั้งหมด', '#16325C']].concat(Object.keys(TY).map((k) => [k, TY[k][0], TY[k][1]])).map(([k, t, c]) => { const on = k === pty;
+      const n = ag.filter((r) => (k === 'all' || r[2] === k) && tmOk(r)).length;
+      return { t, n, on: on ? 'true' : 'false', go: () => this.setState({ pty: k }),
+        dot: 'width:8px;height:8px;border-radius:50%;flex:none;background:' + (on ? '#fff' : c),
+        st: 'min-height:44px;padding:0 8px;border-radius:12px;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;text-align:left;min-width:0;' + (on ? 'border:0;background:#16325C;color:#fff' : n ? 'border:1px solid #DDE4ED;background:#fff;color:#16325C' : 'border:1px solid #EEF2F7;background:#fff;color:#9FB3CC') }; });
+    v.agTm = [['all', 'ทุกทีม'], ['A', 'A'], ['B', 'B'], ['C', 'C'], ['TC', 'TC']].map(([k, t]) => { const on = k === ptm;
+      return { t, on: on ? 'true' : 'false', go: () => this.setState({ ptm: k }),
+        st: 'flex:1;min-height:44px;border:0;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;' + (on ? 'background:#fff;color:#16325C;outline:1px solid #DDE4ED' : 'background:transparent;color:#5B6B82') }; });
+    v.agenda = agF.map(([t, end, ty, mp, title, sub, stt, href]) => ({ t, end: end ? '–' + end : '', mp, title, sub, stt, href, stSt: STT[stt] || 'color:#5B6B82',
+      chip: TY[ty][0], chipSt: 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;white-space:nowrap;background:' + TY[ty][2] + ';color:' + TY[ty][1],
+      bar: 'width:3px;flex:none;border-radius:2px;background:' + TY[ty][1] }));
+    // every day of the range, for the scrolling list (days without a board row get example rows from their colour bars)
+    const TPL = { ins: [['08:00', '17:00', 'MP 133', '2.3 ติดตั้งแผงเซลล์', 'บางปะกง · ผู้รับเหมา A · TCR01', 'ตามแผน'], ['08:00', '17:00', 'MP 142', '2.2 เดินสาย DC', 'หนองแค · ผู้รับเหมา C · TCR07', 'ตามแผน'], ['08:30', '17:00', 'MP 88', '2.5 ติดตั้ง Inverter', 'พนัสนิคม · ผู้รับเหมา B · TCR08', 'ตามแผน']],
+      srv: [['09:30', '11:30', 'NO.231', 'นัดสำรวจ สถานีผลิตน้ำ 2', 'กปภ. สาขาตัวอย่าง · TCR02', 'นัดแล้ว']], chk: [['10:00', '11:30', 'MP 109', 'ผู้แทน กปภ. ตรวจ 2.6 ระบบ AC', 'ศรีราชา · ผู้รับเหมา A', 'รอ']],
+      doc: [['13:00', '', 'MP 154', 'ส่งเอกสาร พค.2 ข้อ 19–23', 'แพรกหนามแดง · กกพ.', 'ต้องยื่น']], tst: [['14:00', '16:30', 'MP 109', '3.1 Pre-Commissioning (IEC 62446)', 'ศรีราชา · TCR10', 'นัดแล้ว']], ntf: [['16:00', '', 'รายงาน', 'ส่งรายงานประจำวันก่อน 18:00', 'ยังไม่ส่ง 3 สถานี', 'เตือน']] };
+    const HREF = { ins: 'iPadDaily.dc.html', srv: 'iPadD1.dc.html', chk: 'iPadInstall.dc.html', doc: 'PhonePwaDocs.dc.html', tst: 'IECTest.dc.html', ntf: 'iPadInstall.dc.html' };
+    const rowsFor = (n) => (AG[n] || (MDOTS[n] || []).map((t) => { const T = TPL[t][n % TPL[t].length]; return [T[0], T[1], t, T[2], T[3], T[4], T[5], HREF[t]]; })).slice().sort((a, b) => a[0].localeCompare(b[0]));
+    const toCard = ([t, end, ty, mp, title, sub, stt, href]) => ({ t, end: end ? '–' + end : '', mp, title, sub, stt, href, stSt: STT[stt] || 'color:#5B6B82',
+      chip: TY[ty][0], chipSt: 'font-size:11px;font-weight:700;border-radius:999px;padding:0 8px;white-space:nowrap;background:' + TY[ty][2] + ';color:' + TY[ty][1],
+      bar: 'width:3px;flex:none;border-radius:2px;background:' + TY[ty][1] });
+    const range = v.isMonth ? Array.from({ length: 31 }, (_, i) => i + 1) : [12, 13, 14, 15, 16, 17, 18];
+    v.agDays = range.map((n) => { const all = rowsFor(n), rows = all.filter((r) => (pty === 'all' || r[2] === pty) && tmOk(r)), on = n === sel;
+      return { n, rows: rows.map(toCard), empty: rows.length === 0, emptyT: all.length ? 'ไม่มีงานในตัวกรองนี้' : 'ไม่มีงาน',
+        t: WD[n] + ' ' + n + ' ต.ค.' + (n === 12 ? ' · วันนี้' : ''), c: all.length ? (rows.length === all.length ? all.length + ' รายการ' : rows.length + ' จาก ' + all.length) : '',
+        aria: WD[n] + ' ' + n + ' ต.ค.',
+        headSt: 'display:flex;align-items:baseline;gap:6px;padding:2px 2px 0;color:' + (on ? '#1F6FB5' : '#16325C'),
+        dotSt: 'width:6px;height:6px;border-radius:50%;flex:none;align-self:center;background:' + (on ? '#1F6FB5' : 'transparent') }; });
+    const tot = v.agDays.reduce((a, d) => a + rowsFor(d.n).length, 0), shown = v.agDays.reduce((a, d) => a + d.rows.length, 0);
+    v.dayTitle = v.isMonth ? 'งานทั้งเดือน' : 'งานสัปดาห์นี้'; v.dayCount = agAct ? shown + ' จาก ' + tot + ' รายการ' : tot + ' รายการ · เลื่อนดูได้';
+    v.agRef = (el) => { this._ag = el; };
+    v.agScroll = (e) => { if (this._lock && Date.now() - this._lock < 700) return; const el = e.currentTarget; let at = null;
+      el.querySelectorAll('[data-day]').forEach((d) => { if (d.offsetTop <= el.scrollTop + 24) at = +d.getAttribute('data-day'); });
+      if (at && at !== sel) this.setState({ day: at }); };
+    // แผน MP: S-curve (20 weeks from 3 ส.ค.) + Gantt by station
+    const wsum = S.reduce((a, s) => a + s.kwp, 0);
+    v.avgA = Math.round(S.reduce((a, s) => a + s.a * s.kwp, 0) / wsum); v.avgP = Math.round(S.reduce((a, s) => a + s.p * s.kwp, 0) / wsum);
+    v.varT = v.avgA >= v.avgP ? 'ตามแผน' : 'ช้ากว่าแผน ' + (v.avgP - v.avgA) + '%'; v.varC = v.avgA >= v.avgP ? '#1F6B43' : '#B42318';
+    v.wkNo = 11;
+    const X = (w) => (24 + (w / 20) * 512).toFixed(1), Y = (p) => (168 - p * 1.6).toFixed(1);
+    const plan = Array.from({ length: 21 }, (_, w) => 100 / (1 + Math.exp(-(w - 11.4) / 2.6)));
+    const k = v.avgP / plan[11];
+    v.planPts = plan.map((p, w) => X(w) + ',' + Y(Math.min(100, p * k))).join(' ');
+    const act = [0, 0.5, 1.5, 3, 5, 8, 12, 17, 24, 31, 39, v.avgA];
+    v.actPts = act.map((p, w) => X(w) + ',' + Y(p)).join(' ');
+    v.todayX = X(11);
+    v.grid = [0, 25, 50, 75, 100].map((p) => ({ y: Y(p), ty: (+Y(p) + 3).toFixed(1), t: p + '%' }));
+    v.months = [['ส.ค.', 0], ['ก.ย.', 4.3], ['ต.ค.', 8.6], ['พ.ย.', 13], ['ธ.ค.', 17.3]].map(([t, w]) => ({ t, x: X(w) }));
+    const T0 = 0, T1 = 120, TD = 41; // days from 1 ก.ย.; today = 12 ต.ค.
+    const pct = (x) => ((x - T0) / (T1 - T0) * 100).toFixed(1) + '%';
+    v.gMonths = [['ก.ย.', 30], ['ต.ค.', 31], ['พ.ย.', 30], ['ธ.ค.', 29]].map(([t, n]) => ({ t, st: 'width:' + (n / 120 * 100).toFixed(1) + '%' }));
+    S.forEach((s) => { const [dd, mm] = s.due.split('/').map(Number); s.e = (mm === 9 ? 0 : mm === 10 ? 30 : mm === 11 ? 61 : 91) + dd - 1; s.s = Math.max(0, s.e - 62); });
+    const gs = S.slice().sort((x, y) => x.e - y.e);
+    v.gantt = gs.slice(0, 8).map((s) => { const dv = d(s);
+      return { name: s.name, mp: s.mp, ct: 'ผู้รับเหมา ' + s.ct, l: pct(s.s), w: ((s.e - s.s) / 120 * 100).toFixed(1) + '%', aw: ((s.e - s.s) * s.a / 100 / 120 * 100).toFixed(1) + '%',
+        pl: pct(s.s + (s.e - s.s) * s.p / 100), todayL: pct(TD), c: behind(s) ? '#D9453B' : '#1F6FB5', d: s.due, dc: behind(s) ? '#B42318' : '#16325C',
+        aria: s.full + ' · จริง ' + s.a + '% แผน ' + s.p + '% · ส่งมอบ ' + s.due }; });
+    v.ganttMore = 'อีก ' + (S.length - 8) + ' สถานี · เลื่อนดู';
+    // ตัวกรองแผนรายสถานี
+    const mf = st.mf || 'all', mOpen = !!st.mOpen;
+    const MF = { all: ['ทุกสถานี', () => true], late: ['ช้ากว่าแผน', (x) => behind(x)], ok: ['ตามแผน', (x) => !behind(x)] };
+    const gf = gs.filter(MF[mf][1]);
+    v.gantt = v.gantt.length && mf === 'all' ? v.gantt : gf.slice(0, 8).map((s) => ({ name: s.name, mp: s.mp, ct: 'ผู้รับเหมา ' + s.ct, l: pct(s.s), w: ((s.e - s.s) / 120 * 100).toFixed(1) + '%', aw: ((s.e - s.s) * s.a / 100 / 120 * 100).toFixed(1) + '%',
+        pl: pct(s.s + (s.e - s.s) * s.p / 100), todayL: pct(TD), c: behind(s) ? '#D9453B' : '#1F6FB5', d: s.due, dc: behind(s) ? '#B42318' : '#16325C', aria: s.full + ' · จริง ' + s.a + '% แผน ' + s.p + '% · ส่งมอบ ' + s.due }));
+    v.ganttMore = gf.length > 8 ? 'อีก ' + (gf.length - 8) + ' สถานี · เลื่อนดู' : (mf === 'all' ? '' : gf.length + ' สถานี' + MF[mf][0]);
+    v.mFlt = Object.keys(MF).map((kk) => ({ t: MF[kk][0], n: gs.filter(MF[kk][1]).length, on: mf === kk ? 'true' : 'false', ck: mf === kk ? '✓' : '',
+      st: 'width:100%;min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border:0;font-family:inherit;font-size:14px;text-align:left;cursor:pointer;color:#16325C;' + (mf === kk ? 'background:#E3EEF8;font-weight:700' : 'background:#fff;font-weight:500'),
+      go: () => this.setState({ mf: kk, mOpen: false }) }));
+    const mAct = mf !== 'all';
+    // กำหนดส่ง
+    const fd = st.fd || 'all';
+    const DUE = [
+      ['w1', 8, 'ต.ค.', 'ส่งมอบงาน', 'MP 77 โชคชัย · Punch list + As-Built', 'hand', 'เลยกำหนด 4 วัน', 'late', 'iPadInstall.dc.html'],
+      ['w1', 12, 'ต.ค.', 'ส่งมอบงาน', 'MP 154 แพรกหนามแดง · จริง 71% / แผน 68%', 'hand', 'เสี่ยงช้า', 'risk', 'iPadInstall.dc.html'],
+      ['w1', 12, 'ต.ค.', 'แจ้งเทศบาล (ยกเว้น ข.1)', 'MP 189 ทุ่งน้อย · เทศบาลเมืองพล', 'doc', 'วันนี้', 'risk', 'PhonePwaDocs.dc.html'],
+      ['w1', 14, 'ต.ค.', 'ส่งมอบงาน', 'MP 88 พนัสนิคม · ผู้รับเหมา B', 'hand', 'ตามแผน', 'ok', 'iPadInstall.dc.html'],
+      ['w1', 15, 'ต.ค.', 'ส่งมอบงาน', 'MP 189 ทุ่งน้อย · จริง 38% / แผน 50%', 'hand', 'ช้ากว่าแผน', 'late', 'iPadInstall.dc.html'],
+      ['w2', 20, 'ต.ค.', 'ยื่น พค.2 (กกพ.)', 'MP 154 แพรกหนามแดง · 209.76 kWp ≥ 200 kVA', 'doc', 'เอกสาร 18/23', 'risk', 'PhonePwaDocs.dc.html'],
+      ['w2', 20, 'ต.ค.', 'ส่งมอบงาน', 'MP 133 บางปะกง · ผู้รับเหมา A', 'hand', 'ตามแผน', 'ok', 'iPadInstall.dc.html'],
+      ['w2', 22, 'ต.ค.', 'ยื่นขอขนานไฟ (กฟภ.)', 'MP 109 ศรีราชา · ชุด 4.2 ครบ 11/11', 'doc', 'พร้อมยื่น', 'ok', 'PhonePwaDocs.dc.html'],
+      ['w2', 24, 'ต.ค.', 'อบรม O&M (3.2)', 'MP 77 โชคชัย · คู่มือภาคตะวันออกเฉียงเหนือ', 'tst', 'นัดแล้ว', 'ok', 'iPadInstall.dc.html']];
+    const DF = { all: ['ทั้งหมด', () => true], hand: ['ส่งมอบ', (r) => r[5] === 'hand'], doc: ['ยื่นเอกสาร', (r) => r[5] === 'doc'] };
+    const dOpen = !!st.dOpen; v.dOpen = dOpen; v.dOpenS = dOpen ? 'true' : 'false'; v.dTog = () => this.setState({ dOpen: !dOpen });
+    v.dBd = dOpen ? '#1F6FB5' : '#C9D3E0'; v.dChev = 'width:18px;height:18px;flex:none;fill:none;stroke:#1F6FB5;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;' + (dOpen ? 'transform:rotate(180deg)' : '');
+    v.dSelT = DF[fd][0]; v.dSelN = DUE.filter(DF[fd][1]).length;
+    const dAct = fd !== 'all';
+    v.dFbSt = 'position:relative;width:44px;height:44px;flex:none;border-radius:22px;display:grid;place-items:center;cursor:pointer;font-family:inherit;' + (dOpen ? 'border:1px solid #1F6FB5;background:#E3EEF8' : dAct ? 'border:0;background:#16325C' : 'border:1px solid #DDE4ED;background:#fff');
+    v.dFbIc = 'width:20px;height:20px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke:' + (dAct && !dOpen ? '#fff' : '#16325C');
+    v.dFbDot = dAct ? 'position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#F08C00;outline:2px solid ' + (dOpen ? '#E3EEF8' : '#16325C') : 'display:none';
+    v.dFlt = Object.keys(DF).map((kk) => ({ t: DF[kk][0], n: DUE.filter(DF[kk][1]).length, on: fd === kk ? 'true' : 'false', ck: fd === kk ? '✓' : '',
+      st: 'width:100%;min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border:0;font-family:inherit;font-size:14px;text-align:left;cursor:pointer;color:#16325C;' + (fd === kk ? 'background:#E3EEF8;font-weight:700' : 'background:#fff;font-weight:500'),
+      go: () => this.setState({ fd: kk, dOpen: false }) }));
+    const CS = { late: 'background:#FDECEA;color:#B42318', risk: 'background:#FFF3E6;color:#9A4A06', ok: 'background:#E8F5EE;color:#1F6B43' };
+    const DS = { late: 'background:#FDECEA;color:#B42318', risk: 'background:#FFF3E6;color:#9A4A06', ok: 'background:#EEF4FB;color:#16325C' };
+    const rowsOf = (g) => DUE.filter((r) => r[0] === g).filter(DF[fd][1]).map((r) => ({ dd: r[1], mm: r[2], t: r[3], sub: r[4], c: r[6], cSt: CS[r[7]], dSt: DS[r[7]], href: r[8] }));
+    v.dueGroups = [{ t: 'สัปดาห์นี้', r: '12–18 ต.ค. · รวมที่เลยกำหนด', rows: rowsOf('w1') }, { t: 'สัปดาห์หน้า', r: '19–25 ต.ค.', rows: rowsOf('w2') }].filter((g) => g.rows.length);
+    // ── ปุ่มกรองท้ายแถบ: ใช้ได้ทุกแท็บ (ตารางงาน · แผน MP · กำหนดส่ง)
+    { const tab = v.isCal ? 'cal' : v.isMp ? 'mp' : 'due';
+      const open = tab === 'cal' ? !!st.agOpen : tab === 'mp' ? !!st.mOpen : !!st.dOpen;
+      const act = tab === 'cal' ? (pty !== 'all' || ptm !== 'all') : tab === 'mp' ? (st.mf || 'all') !== 'all' : (st.fd || 'all') !== 'all';
+      v.agOpenTop = tab === 'cal' && open; v.mOpenTop = tab === 'mp' && open; v.dOpenTop = tab === 'due' && open;
+      v.fOpenS = open ? 'true' : 'false';
+      v.fTog = () => this.setState(tab === 'cal' ? { agOpen: !open } : tab === 'mp' ? { mOpen: !open } : { dOpen: !open });
+      v.fAria = 'กรอง' + (tab === 'cal' ? 'ตารางงาน' : tab === 'mp' ? 'แผนรายสถานี' : 'กำหนดส่ง');
+      v.fFbSt = 'position:relative;width:44px;height:44px;flex:none;border-radius:22px;display:grid;place-items:center;cursor:pointer;font-family:inherit;' + (open ? 'border:1px solid #1F6FB5;background:#E3EEF8' : act ? 'border:0;background:#16325C' : 'border:1px solid #DDE4ED;background:#fff');
+      v.fFbIc = 'width:20px;height:20px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke:' + (act && !open ? '#fff' : open ? '#1F6FB5' : '#16325C');
+      v.fFbDot = act ? 'position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#F08C00;outline:2px solid ' + (open ? '#E3EEF8' : '#16325C') : 'display:none'; }
+    return v;
+  }
+}
+</script>
+</body>
+</html>

@@ -449,6 +449,21 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
         install = nil
         return true
     }
+    /// Hands an installation job over to maintenance; false (and unchanged) otherwise. The installation progress stays.
+    @discardableResult
+    public mutating func moveToMaintenance() -> Bool {
+        guard stage == .install else { return false }
+        stage = .maintenance
+        return true
+    }
+    /// Undoes `moveToMaintenance`: the job is an installation job again, with the progress it had.
+    @discardableResult
+    public mutating func moveBackToInstall(now: Date = Date()) -> Bool {
+        guard stage == .maintenance else { return false }
+        stage = .install
+        if install == nil { install = InstallInfo(movedAt: now) }
+        return true
+    }
     public var docNo: String { values.text("docNo") }
     public var projectName: String { values.text("projectName") }
     public var allPhotos: [Photo] { values.allPhotos + modules.flatMap { $0.values.allPhotos } }

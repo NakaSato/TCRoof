@@ -43,6 +43,7 @@ extension Job: CloudSynced {
         var routineSettings, weeklyRequests: String?
         var stationDocs: String?
         var kind: String?
+        var iecReport: String?
 
         var hasPWAData: Bool {
             mpNumber != nil || scheduleInput != nil || routineSettings != nil || weeklyRequests != nil || stationDocs != nil
@@ -57,7 +58,8 @@ extension Job: CloudSynced {
                surveyDate: surveyDate.millis, installStart: installStart.millis, createdAt: createdAt.millis,
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
-               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue)
+               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue,
+               iecReport: iecReportJSON)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -74,6 +76,7 @@ extension Job: CloudSynced {
         if let v = r.routineSettings { routineSettingsJSON = v }
         if let v = r.weeklyRequests { weeklyRequestsJSON = v }
         if let v = r.stationDocs { stationDocsJSON = v }
+        if let v = r.iecReport { iecReportJSON = v }
         // a record with no kind is from an app version that took a job with PWA data for a PWA job
         if let v = r.kind { kindRaw = v } else if kindRaw == nil, r.hasPWAData { kind = .pwa }
         return true

@@ -133,6 +133,8 @@ final class Job {
     @Relationship(deleteRule: .cascade, inverse: \InstallLog.job) var logs: [InstallLog] = []
     @Relationship(deleteRule: .cascade, inverse: \Inspection.job) var inspections: [Inspection] = []
     @Relationship(deleteRule: .cascade, inverse: \DocumentAsset.job) var documents: [DocumentAsset] = []
+    /// Photos of the IEC 62446 test, tagged with the id the `IECReport` keeps for them.
+    @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.iecJob) var iecPhotos: [PhotoAsset] = []
     /// Project folder on Google Drive, set after the first upload.
     var driveFolderURL: String?
     /// Firestore document id shared by every device; nil only on records made before cloud sync.
@@ -154,6 +156,8 @@ final class Job {
     var stationDocsJSON: String?
     /// `JobKind`; nil on jobs made before the kind was kept, which `kind` reads from their data.
     var kindRaw: String?
+    /// Encoded `IECReport`: the station's IEC 62446 test before and after the grid connection; optional for the same reason.
+    var iecReportJSON: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -238,6 +242,11 @@ final class Job {
     var stationDocs: StationDocs.Station {
         get { StationDocs.Station.decode(stationDocsJSON) }
         set { stationDocsJSON = newValue.json }
+    }
+    /// The IEC 62446 test; nil until the team sets up its inverters.
+    var iecReport: IECReport? {
+        get { iecReportJSON.flatMap { try? JSONDecoder().decode(IECReport.self, from: Data($0.utf8)) } }
+        set { iecReportJSON = newValue.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } } }
     }
     var stationContext: StationDocs.Context {
         StationDocs.Context(stationDocs, inverterKW: inverterKW ?? (scheduleInput?.over200kVA == true ? 200 : nil))
@@ -494,6 +503,8 @@ final class PhotoAsset {
     var survey: SurveyForm?
     var log: InstallLog?
     var inspection: Inspection?
+    /// The job of an IEC 62446 test photo.
+    var iecJob: Job?
     /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).
     var driveFileID: String?
 

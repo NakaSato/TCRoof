@@ -46,7 +46,6 @@ struct JobCard: View {
                             ViewThatFits(in: .horizontal) { HStack(spacing: 8) { badge; lockBadge }; lockBadge }
                         } else {
                             surveyBadge
-                            badge
                         }
                     }
                     if job.projectName.isEmpty {

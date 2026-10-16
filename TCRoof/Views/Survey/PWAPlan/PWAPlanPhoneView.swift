@@ -5,7 +5,8 @@ import TCRoofCore
 
 /// The PWA module's `แผนงาน` tab on iPhone (docs/ui/pwa-plan-iphone): the header with its growing search, the view
 /// switch (`ตารางงาน`, `แผน MP`, `กำหนดส่ง`) and the selected view under it. The PWA home's nav pushes it (`PWARoot`),
-/// so the header has a back button; iPad keeps `MPOverviewView`.
+/// so the header has a back button. On iPad (docs/ui/pwa-plan-ipad) the PWA home shows it under its own header and
+/// nav, given `padSearch`: the three views at once, in two columns (`PWAPlanPhoneView+Pad`).
 struct PWAPlanPhoneView: View {
     enum Pane: String, CaseIterable { case schedule, mp, due }
     enum CalendarMode: String, CaseIterable { case week, month }
@@ -16,8 +17,14 @@ struct PWAPlanPhoneView: View {
     }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    /// iPad: the text of the PWA home's search, which is the page's header there. nil on iPhone.
+    var padSearch: String? = nil
     @State var pane = Debug.pane
-    @State var search = ""
+    @State private var ownSearch = ""
+    var search: String { padSearch ?? ownSearch }
+    var pad: Bool { padSearch != nil }
+    /// iPad: `รายสถานี` past its first eight rows.
+    @State var ganttAll = false
     @State var searchOpen = Debug.searchOpen
     // ตารางงาน
     @State var calendarMode = Debug.calendar
@@ -43,13 +50,23 @@ struct PWAPlanPhoneView: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.isPresented) private var isPushed
     @Environment(\.dismiss) private var dismiss
+    /// iPad: the dock under the page (`PadTabs`).
+    @Environment(PadDock.self) var dock: PadDock?
 
     private var stations: [Job] { jobs.pwaStations }
 
     var body: some View {
         let board = self.board
+        Group {
+            if pad { padPage(board) } else { phonePage(board) }
+        }
+        .navigationDestination(item: $route) { destination($0) }
+        .onAppear { library = StationDocsStore.loadLibrary() }
+    }
+
+    private func phonePage(_ board: PWAPlanBoard) -> some View {
         let today = board.agenda([Self.today]).count, due = PWAPlan.groups(board.deadlines, today: Self.today)
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             pills(today: today, plans: board.bars.count, due: due)
             if pane == .schedule {
                 // the calendar stays; only the list of days scrolls
@@ -67,13 +84,11 @@ struct PWAPlanPhoneView: View {
         }
         .overlay(alignment: .topTrailing) { if pane == .due && showDueMenu { dueMenu(due) } }
         .safeAreaInset(edge: .top, spacing: 0) {
-            TCPhoneSearchHeader(title: "แผนงาน PWA", subtitle: "การประปาส่วนภูมิภาค", search: $search, isOpen: $searchOpen,
+            TCPhoneSearchHeader(title: "แผนงาน PWA", subtitle: "การประปาส่วนภูมิภาค", search: $ownSearch, isOpen: $searchOpen,
                                 onBack: isPushed ? { dismiss() } : nil)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(item: $route) { destination($0) }
-        .onAppear { library = StationDocsStore.loadLibrary() }
     }
 
     /// What the page shows: worked out from the PWA jobs, or the board's example with `-pwaPlanDemo YES`.
@@ -155,7 +170,8 @@ struct PWAPlanPhoneView: View {
     // MARK: DEBUG
 
     /// `-pwaPlanView schedule|mp|due`, `-pwaPlanCalendar week|month`, `-pwaPlanDay 2026-10-13`, `-pwaPlanFilter open|ins-A|empty`,
-    /// `-pwaPlanDueFilter open|doc`, `-pwaPlanSearch YES`, `-pwaPlanToday 2026-10-12`. Release builds get the defaults.
+    /// `-pwaPlanDueFilter open|doc`, `-pwaPlanSearch YES`, `-pwaPlanToday 2026-10-12`, and on iPad `-pwaPlanScrollEnd YES` (the right
+    /// column at its end). Release builds get the defaults.
     enum Debug {
         #if DEBUG
         private static let d = UserDefaults.standard
@@ -166,6 +182,7 @@ struct PWAPlanPhoneView: View {
         static let calendar = d.string(forKey: "pwaPlanCalendar").flatMap(CalendarMode.init) ?? .week
         static let day = d.string(forKey: "pwaPlanDay").flatMap(PWAPlanPhoneView.isoDay)
         static let searchOpen = d.bool(forKey: "pwaPlanSearch")
+        static let scrollEnd = d.bool(forKey: "pwaPlanScrollEnd")
         static let filterOpen = filter == "open"
         static let type: PWAPlan.JobType? = filter == "ins-A" ? .install : filter == "empty" ? .test : nil
         static let team: String? = filter == "ins-A" ? "A" : filter == "empty" ? "B" : nil
@@ -175,7 +192,7 @@ struct PWAPlanPhoneView: View {
         static let pane = Pane.schedule
         static let calendar = CalendarMode.week
         static let day: Date? = nil
-        static let searchOpen = false, filterOpen = false, dueMenuOpen = false
+        static let searchOpen = false, filterOpen = false, dueMenuOpen = false, scrollEnd = false
         static let type: PWAPlan.JobType? = nil
         static let team: String? = nil
         static let dueFilter: PWAPlan.DeadlineKind? = nil

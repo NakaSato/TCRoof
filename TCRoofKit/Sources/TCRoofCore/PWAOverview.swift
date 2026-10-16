@@ -1,5 +1,30 @@
 import Foundation
 
+/// One permit of a station on the iPad install row's `งานขออนุญาต` block (docs/ui/pwa-solar-survey-ipad-v3 FIX-01).
+public struct InstallPermit: Hashable, Sendable {
+    /// Who the permit is from, in the row's order: อปท. · กกพ. · กฟภ. · กว.
+    public enum Authority: String, CaseIterable, Sendable {
+        case local, erc, pea, engineer
+
+        public var title: String {
+            switch self {
+            case .local: "อปท."
+            case .erc: "กกพ."
+            case .pea: "กฟภ."
+            case .engineer: "กว."
+            }
+        }
+    }
+
+    /// Got, handed in and waiting, not handed in yet, or past its planned end.
+    public enum State: String, Sendable { case done, submitted, pending, overdue }
+
+    public var authority: Authority
+    public var state: State
+
+    public init(_ authority: Authority, _ state: State) { self.authority = authority; self.state = state }
+}
+
 /// One station of the PWA project in its installation phase, as the survey home's `งานติดตั้ง` overview shows it
 /// (docs/ui/pwa-solar-survey-iphone-v2 §4). The host app fills it from the station's MP plan and daily reports.
 public struct InstallStationSummary: Identifiable, Hashable, Sendable {
@@ -16,11 +41,15 @@ public struct InstallStationSummary: Identifiable, Hashable, Sendable {
     public var dueDate: Date?
     /// Today's daily report is signed; nil when the station keeps no daily reports.
     public var reportSentToday: Bool?
+    /// The permits the MP plan has tasks for; nil when it has none, or the station has no plan.
+    public var permits: [InstallPermit]?
 
     public init(id: String, mpNumber: Int? = nil, name: String, kWp: Double = 0, actual: Double, plan: Double? = nil,
-                currentTask: String = "", contractor: String = "", dueDate: Date? = nil, reportSentToday: Bool? = nil) {
+                currentTask: String = "", contractor: String = "", dueDate: Date? = nil, reportSentToday: Bool? = nil,
+                permits: [InstallPermit]? = nil) {
         self.id = id; self.mpNumber = mpNumber; self.name = name; self.kWp = kWp; self.actual = actual; self.plan = plan
         self.currentTask = currentTask; self.contractor = contractor; self.dueDate = dueDate; self.reportSentToday = reportSentToday
+        self.permits = permits
     }
 
     /// Actual minus plan in whole percent, as the row prints it; nil without a plan.
@@ -29,7 +58,8 @@ public struct InstallStationSummary: Identifiable, Hashable, Sendable {
 
 public enum InstallOverview {
     public enum Pace: Sendable { case behind, onPlan, ahead }
-    public enum RowFilter: String, CaseIterable, Sendable { case behind, noReport, all }
+    /// `permit` (`ขออนุญาตค้าง`) is a filter of the iPad rows only.
+    public enum RowFilter: String, CaseIterable, Sendable { case behind, noReport, permit, all }
 
     /// `เกณฑ์ "ช้ากว่าแผน"` when the setting is unset.
     public static let defaultThreshold = 2.0
@@ -112,8 +142,48 @@ public enum InstallOverview {
         switch filter {
         case .behind: pace(s, threshold: threshold) == .behind
         case .noReport: s.reportSentToday == false
+        case .permit: permitsOpen(s)
         case .all: true
         }
+    }
+
+    // MARK: Permits
+
+    /// The MP plan's permit tasks behind the four chips: 1.4 building permit or notice (อปท.), 1.5 พค.2 (กกพ.),
+    /// 1.7 grid connection (กฟภ.) and 1.2 Engineering Approve, the engineer's signed design (กว.). Kick Off, the site
+    /// handover and COP have no chip.
+    public static let permitTasks: [(task: MasterSchedule.Task, authority: InstallPermit.Authority)] =
+        [(.buildingPermit, .local), (.pk2, .erc), (.gridConnection, .pea), (.engineering, .engineer)]
+
+    /// The chips of a station from `RoutineReport.permits`: a task under way counts as handed in, one past its
+    /// planned end as overdue, and one not started, not due or undated as not handed in. A task the plan leaves out
+    /// (พค.2 under 200 kVA) has no chip; nil when none of the four is in the plan.
+    public static func permits(_ rows: [RoutineReport.PermitRow]) -> [InstallPermit]? {
+        let out = permitTasks.compactMap { pair -> InstallPermit? in
+            guard let row = rows.first(where: { $0.task == pair.task }) else { return nil }
+            let state: InstallPermit.State = switch row.state {
+            case .done: .done
+            case .inProgress: .submitted
+            case .late: .overdue
+            case .notStarted, .notDue, .unplanned: .pending
+            }
+            return InstallPermit(pair.authority, state)
+        }
+        return out.isEmpty ? nil : out
+    }
+
+    /// Any permit not done yet.
+    public static func permitsOpen(_ s: InstallStationSummary) -> Bool { s.permits?.contains { $0.state != .done } == true }
+
+    /// The line beside `งานขออนุญาต x/n`: the overdue permits first, then those not handed in, then those waiting.
+    public static func permitNote(_ permits: [InstallPermit]) -> String {
+        func names(_ state: InstallPermit.State) -> String { permits.filter { $0.state == state }.map(\.authority.title).joined(separator: " ") }
+        if permits.contains(where: { $0.state == .overdue }) { return names(.overdue) + " เกินกำหนด" }
+        let pending = permits.filter { $0.state == .pending }.count
+        if pending > 1 { return "ยังไม่ยื่น \(pending) รายการ" }
+        if pending == 1 { return "ยังไม่ยื่น " + names(.pending) }
+        if permits.contains(where: { $0.state == .submitted }) { return names(.submitted) + " ยื่นแล้ว รอผล" }
+        return "ได้ครบทุกใบแล้ว"
     }
 
     /// The rows of a filter and, when set, one contractor: furthest behind the plan first, stations without a plan last.
@@ -155,6 +225,9 @@ public struct MaintenanceStationSummary: Identifiable, Hashable, Sendable {
         self.pr = pr; self.status = status; self.openRepairs = openRepairs; self.nextPM = nextPM; self.note = note
     }
 
+    /// False for an offline station and for one with no monitoring yet: its PR is shown as a dash and left out of the average.
+    public var reportsPR: Bool { status != .offline && pr > 0 }
+
     /// Energy over expected, 0…1.
     public var yield: Double { expected > 0 ? min(max(energy / expected, 0), 1) : 0 }
 }
@@ -183,7 +256,7 @@ public enum MaintenanceOverview {
         public var energy = 0.0, expected = 0.0
         /// Energy over expected, percent.
         public var yield = 0
-        /// kWp-weighted PR of the stations that report (not offline); nil when none does.
+        /// kWp-weighted PR of the stations that report (`reportsPR`); nil when none does.
         public var pr: Int?
         public var normal = 0, alarm = 0, offline = 0
     }
@@ -195,7 +268,7 @@ public enum MaintenanceOverview {
         t.energy = stations.reduce(0) { $0 + $1.energy }
         t.expected = stations.reduce(0) { $0 + $1.expected }
         t.yield = t.expected > 0 ? Int((t.energy / t.expected * 100).rounded()) : 0
-        t.pr = InstallOverview.weighted(stations.filter { $0.status != .offline }.map { ($0.pr, $0.kWp) }).map { Int($0.rounded()) }
+        t.pr = InstallOverview.weighted(stations.filter(\.reportsPR).map { ($0.pr, $0.kWp) }).map { Int($0.rounded()) }
         t.normal = stations.filter { $0.status == .normal }.count
         t.alarm = stations.filter { $0.status == .alarm }.count
         t.offline = stations.filter { $0.status == .offline }.count

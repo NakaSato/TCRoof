@@ -5,12 +5,41 @@ import TCRoofCore
 /// The PWA project home (docs/ui/pwa-solar-survey-iphone-v3, and on iPad docs/ui/pwa-solar-survey-ipad-v3): a header
 /// whose search button grows into the field, with a bell; the nav `โครงการ | แผนงาน | บำรุงรักษา` with a filter button; the
 /// project cards, and the install and maintenance overviews. The iPad has the same parts at 63 pt margins, in three
-/// columns. The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
+/// columns (two in portrait). The host's floating dock is the bottom safe-area inset, so the page scrolls behind it.
 extension SurveyHomeView {
     /// The page's side margin.
     var margin: CGFloat { compact ? 16 : 63 }
 
+    /// iPad (docs/ui/pwa-plan-ipad): the host's plan page under the nav, in place of the scrolling page.
+    var showsPlan: Bool { !compact && planOpen && page == .project && host.planBody != nil }
+
     var homePage: some View {
+        Group {
+            if showsPlan, let plan = host.planBody {
+                VStack(spacing: 0) {
+                    navRow.padding(.horizontal, margin).padding(.top, 20)
+                    plan(search)
+                }
+            } else {
+                homeScroll
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) { phoneHeader }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
+        .background(Theme.phonePage.ignoresSafeArea())
+        // iPad: the filter list hangs under its button, in the page
+        .overlayPreferenceValue(FilterAnchorKey.self) { anchor in
+            GeometryReader { g in
+                if !compact, showFilter, !showsPlan, let anchor { padFilterPanel(under: g[anchor], in: g.size) }
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // iPad: 116 pt above the screen's edge, over the dock's 98
+            if page == .project && tab == .survey && !showsPlan { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
+        }
+    }
+
+    private var homeScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: compact ? 10 : 16) {
                 if let message { Label(message, systemImage: "checkmark.circle").font(.sarabunFixed(13)).foregroundStyle(Paper.tick) }
@@ -30,12 +59,6 @@ extension SurveyHomeView {
             .padding(.bottom, page == .project && tab == .survey ? (compact ? 82 : 98) : 20)
         }
         .scrollDismissesKeyboard(.immediately)
-        .safeAreaInset(edge: .top, spacing: 0) { phoneHeader }
-        .background(Theme.phonePage.ignoresSafeArea())
-        .overlay(alignment: .bottomTrailing) {
-            // iPad: 116 pt above the screen's edge, over the dock's 98
-            if page == .project && tab == .survey { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
-        }
     }
 
     // MARK: header
@@ -57,26 +80,34 @@ extension SurveyHomeView {
 
     private enum NavItem { case project, plan, maintenance }
 
-    /// `โครงการ` is the project list or, picked in the filter, the install overview; `แผนงาน` is a link to the host's
-    /// plan page and never the selected segment.
+    /// `โครงการ` is the project list or, picked in the filter, the install overview. `แผนงาน` on iPhone is a link to
+    /// the host's plan page and never the selected segment; on iPad it is the plan page under this nav, which has no
+    /// filter button.
     var navRow: some View {
         let items: [(NavItem, String)] = [(.project, "โครงการ")] + (host.openPlan == nil ? [] : [(.plan, "แผนงาน")]) + [(.maintenance, "บำรุงรักษา")]
-        let selected = items.firstIndex { $0.0 == (tab == .maintenance ? .maintenance : .project) } ?? 0
+        let current: NavItem = showsPlan ? .plan : tab == .maintenance ? .maintenance : .project
+        let selected = items.firstIndex { $0.0 == current } ?? 0
         return HStack(spacing: 8) {
             TCCountSegments(items.map { .init($0.1) }, selection: Binding(get: { selected }, set: { i in
                 switch items[i].0 {
-                case .project: if tab == .maintenance { select(.survey) }
-                case .plan: host.openPlan?()
+                case .project: if tab == .maintenance || showsPlan { select(tab == .maintenance ? .survey : tab) }
+                case .plan:
+                    if !compact, host.planBody != nil {
+                        showFilter = false
+                        withAnimation(reduceMotion ? nil : .snappy) { planOpen = true }
+                    } else {
+                        host.openPlan?()
+                    }
                 case .maintenance: select(.maintenance)
                 }
             }), fontSize: 14)
-            filterButton
+            if !showsPlan { filterButton }
         }
     }
 
     /// `ประเภทงาน`: the project list, the install overview or the maintenance overview.
     private func select(_ stage: JobStage) {
-        withAnimation(reduceMotion ? nil : .snappy) { tab = stage }
+        withAnimation(reduceMotion ? nil : .snappy) { tab = stage; planOpen = false }
     }
 
     /// A type other than `ทั้งหมด`, a status other than all, or a sort other than `แก้ไขล่าสุด`.
@@ -111,13 +142,38 @@ extension SurveyHomeView {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(filterLabel)
-        .popover(isPresented: $showFilter, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
-            filterPopover.presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
+        .anchorPreference(key: FilterAnchorKey.self, value: .bounds) { $0 }
+        // iPhone: a system popover. iPad: `padFilterPanel`, drawn in the page at the board's size
+        .popover(isPresented: Binding(get: { compact && showFilter }, set: { showFilter = $0 }), attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+            filterPanel.presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
         }
     }
 
-    @ViewBuilder private var filterPopover: some View {
-        if compact { filterPanel } else { filterList }
+    /// iPad (docs/ui/pwa-solar-survey-ipad-v3 FIX-01 §3): the 248 pt list under the filter button, radius 16 with a
+    /// 1 pt border and an arrow on the button, its right edge on the button's. A tap outside closes it.
+    private func padFilterPanel(under button: CGRect, in area: CGSize) -> some View {
+        let width: CGFloat = 248
+        let left = min(max(button.maxX - width, 8), area.width - width - 8)
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return ZStack(alignment: .topLeading) {
+            Color.clear.contentShape(Rectangle()).onTapGesture { showFilter = false }
+                .accessibilityLabel("ปิดตัวกรอง").accessibilityAddTraits(.isButton)
+            VStack(alignment: .leading, spacing: -1) {
+                FilterArrow(closed: true).fill(Theme.surface)
+                    .overlay(FilterArrow(closed: false).stroke(Theme.borderOutdoor, lineWidth: 1))
+                    .frame(width: 18, height: 9)
+                    .offset(x: button.midX - left - 9)
+                    .zIndex(1)
+                filterList
+                    .background(Theme.surface, in: shape)
+                    .clipShape(shape)
+                    .overlay(shape.strokeBorder(Theme.borderOutdoor))
+            }
+            .compositingGroup()
+            .shadow(color: Theme.navy.opacity(0.16), radius: 14, y: 8)
+            .offset(x: left, y: button.maxY + 2)
+        }
+        .transition(.opacity)
     }
 
     private var clearButton: some View {
@@ -337,7 +393,7 @@ extension SurveyHomeView {
 
     // MARK: DEBUG
 
-    /// `-surveyHomeTab projects|maintenance` (`plan` is the host's), `-surveyHomeType all|install|maintenance`,
+    /// `-surveyHomeTab projects|plan|maintenance` (on iPhone `plan` is the host's push), `-surveyHomeType all|install|maintenance`,
     /// `-surveyHomeSearch YES`, `-surveyHomeFilter YES|draft`, `-pwaMaintenanceFilter issue|pmSoon|all`.
     func applyDebugHome() {
         #if DEBUG
@@ -346,6 +402,10 @@ extension SurveyHomeView {
         switch d.string(forKey: "surveyHomeTab") {
         case "projects": tab = .survey
         case "maintenance": tab = .maintenance
+        // iPad: the plan page under the nav, with the plan's own search flag
+        case "plan":
+            planOpen = true
+            if !compact, d.bool(forKey: "pwaPlanSearch") { searchOpen = true }
         default: break
         }
         switch d.string(forKey: "surveyHomeType") {
@@ -363,6 +423,25 @@ extension SurveyHomeView {
         default: break
         }
         #endif
+    }
+}
+/// Where the filter button is, for the iPad's filter list under it.
+private struct FilterAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = nextValue() ?? value }
+}
+
+/// The filter list's arrow, pointing up at the button: the triangle, or with `closed` off only its two sides.
+private struct FilterArrow: Shape {
+    let closed: Bool
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        if closed { p.closeSubpath() }
+        return p
     }
 }
 #endif

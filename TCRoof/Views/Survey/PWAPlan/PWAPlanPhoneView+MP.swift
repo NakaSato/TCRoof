@@ -14,6 +14,26 @@ extension PWAPlanPhoneView {
         }
     }
 
+    /// iPad: the heading and the S-curve at the column's width; `padGantt` goes under it beside `กำหนดส่ง`.
+    func padPlan(_ board: PWAPlanBoard) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("แผน MP").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("Master Plan · \(board.bars.count) สถานี").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+            }
+            if board.bars.isEmpty {
+                TCEmptyState("ยังไม่มีสถานีที่มีแผน MP", systemImage: "chart.bar.xaxis", description: Text("สร้างแผนจากการ์ดแผนงาน MP ในหน้างาน"))
+                    .frame(maxWidth: .infinity).padding(.vertical, 24)
+            } else {
+                curveCard(board.curve, today: board.today)
+            }
+        }
+    }
+
+    func padGantt(_ board: PWAPlanBoard) -> some View {
+        ganttCard(board.bars.filter { $0.matches(search: search) }, today: board.today)
+    }
+
     // MARK: S-curve
 
     private func curveCard(_ curve: PWAPlan.Curve, today: Date) -> some View {
@@ -35,14 +55,14 @@ extension PWAPlanPhoneView {
                     .foregroundStyle(behind > 0 ? Theme.dangerText : Theme.successText)
             }
             .accessibilityElement(children: .combine)
-            PWAPlanCurveChart(curve: curve)
-                .frame(height: 120)
+            PWAPlanCurveChart(curve: curve, labelSize: pad ? 11 : 9)
+                .frame(height: curveHeight)
                 .accessibilityElement()
                 .accessibilityLabel("S-curve แผนเทียบจริง · จริง \(PWAPlanFormat.percent(curve.done)) แผน \(PWAPlanFormat.percent(curve.planned))")
             curveLegend(today)
         }
         .lineLimit(1)
-        .padding(.horizontal, 14).padding(.vertical, 12)
+        .padding(.horizontal, pad ? 16 : 14).padding(.vertical, 12)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
@@ -78,32 +98,49 @@ extension PWAPlanPhoneView {
 
     private func ganttCard(_ bars: [PWAPlan.Bar], today: Date) -> some View {
         let axis = PWAPlanAxis(bars: bars, today: today)
+        // iPad: the first eight, and a row that shows the rest
+        let listed = pad && !ganttAll ? Array(bars.prefix(8)) : bars
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Text("รายสถานี").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 Text("เรียงตามวันส่งมอบ").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.bottom, 2)
-            // the months sit over the bars: past the name column (90) and its gap (6), short of the due column (40 + 6)
+            // the months sit over the bars: past the name column (90, on iPad 170) and its gap (6), short of the due column (40 + 6)
             GeometryReader { g in
                 ForEach(axis.months, id: \.start) { m in
-                    Text(PWAPlanFormat.month.string(from: m.start)).font(.sarabunFixed(10)).foregroundStyle(Theme.inkFaint)
+                    Text(PWAPlanFormat.month.string(from: m.start)).font(.sarabunFixed(pad ? 11 : 10)).foregroundStyle(Theme.inkFaint)
                         .fixedSize().offset(x: axis.fraction(m.start) * g.size.width)
                 }
             }
             .frame(height: 14)
-            .padding(.leading, 96).padding(.trailing, 46)
+            .padding(.leading, ganttNameWidth + 6).padding(.trailing, 46)
             .accessibilityHidden(true)
             if bars.isEmpty {
                 Text("ไม่พบสถานีที่ค้นหา").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
-            ForEach(bars) { ganttRow($0, axis: axis) }
+            ForEach(listed) { ganttRow($0, axis: axis) }
+            if listed.count < bars.count {
+                Button { ganttAll = true } label: {
+                    Text("อีก \(bars.count - listed.count) สถานี · เลื่อนดู").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                        .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("แสดงอีก \(bars.count - listed.count) สถานี")
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12).padding(.vertical, 10)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
+
+    private var ganttNameWidth: CGFloat { pad ? 170 : 90 }
+
+    /// The S-curve's height: 268 pt on iPad (FIX-01, docs/ui/pwa-plan-ipad), 120 on iPhone. The chart draws from its
+    /// frame, so the plot grows and the labels keep their size.
+    private var curveHeight: CGFloat { pad ? 268 : 120 }
 
     private func ganttRow(_ bar: PWAPlan.Bar, axis: PWAPlanAxis) -> some View {
         let who = [bar.ref, bar.contractor.isEmpty ? bar.team : PWAPlan.contractorTitle(bar.contractor)].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -111,11 +148,11 @@ extension PWAPlanPhoneView {
         return Button { open(.schedule, station: bar.id) } label: {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(bar.name).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).frame(height: 14)
-                    Text(who).font(.sarabunFixed(10)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.85).frame(height: 13)
+                    Text(bar.name).font(.sarabunFixed(pad ? 13 : 12, .bold)).foregroundStyle(Theme.navy).frame(height: pad ? 15 : 14)
+                    Text(who).font(.sarabunFixed(pad ? 11 : 10)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.85).frame(height: pad ? 15 : 13)
                 }
                 .lineLimit(1)
-                .frame(width: 90, alignment: .leading)
+                .frame(width: ganttNameWidth, alignment: .leading)
                 PWAPlanGanttBar(bar: bar, axis: axis).frame(height: 22)
                 Text(due).font(.sarabunFixed(11, .bold)).monospacedDigit().foregroundStyle(bar.behind ? Theme.dangerText : Theme.navy)
                     .frame(width: 40, alignment: .trailing)
@@ -191,10 +228,13 @@ struct PWAPlanGanttBar: View {
 /// the months under the axis. 24 pt on the left for the percent labels, 16 pt under the plot for the months.
 struct PWAPlanCurveChart: View {
     let curve: PWAPlan.Curve
+    /// 9 pt on iPhone; 11 on iPad, where the chart is wider and taller. The margins grow with it.
+    var labelSize: CGFloat = 9
 
     var body: some View {
         Canvas { ctx, size in
-            let left: CGFloat = 24, right = size.width - 4, top: CGFloat = 4, bottom = size.height - 16
+            let grow = labelSize / 9
+            let left = 24 * grow, right = size.width - 4, top: CGFloat = 4, bottom = size.height - 16 * grow
             let last = CGFloat(max(curve.weeks.count - 1, 1))
             func x(_ week: CGFloat) -> CGFloat { left + week / last * (right - left) }
             func y(_ percent: Double) -> CGFloat { bottom - CGFloat(min(max(percent, 0), 100)) / 100 * (bottom - top) }
@@ -206,7 +246,7 @@ struct PWAPlanCurveChart: View {
                 }
                 return p
             }
-            func label(_ s: String, _ color: Color) -> Text { Text(s).font(.sarabunFixed(9)).foregroundColor(color) }
+            func label(_ s: String, _ color: Color) -> Text { Text(s).font(.sarabunFixed(labelSize)).foregroundColor(color) }
 
             for p in stride(from: 0.0, through: 100, by: 25) {
                 var grid = Path()
@@ -226,7 +266,7 @@ struct PWAPlanCurveChart: View {
                 let flip = x(CGFloat(i)) > right - 30
                 ctx.draw(label("วันนี้", Theme.danger), at: CGPoint(x: x(CGFloat(i)) + (flip ? -4 : 4), y: top + 4), anchor: flip ? .trailing : .leading)
             }
-            for m in months { ctx.draw(label(m.title, Theme.inkMuted), at: CGPoint(x: x(m.week), y: size.height - 5), anchor: .leading) }
+            for m in months { ctx.draw(label(m.title, Theme.inkMuted), at: CGPoint(x: x(m.week), y: size.height - 5 * grow), anchor: .leading) }
         }
     }
 

@@ -28,11 +28,14 @@ public struct TCCountSegments: View {
     @Binding var selection: Int
     let equalWidths: Bool
     let fontSize: CGFloat
+    let countSize: CGFloat
     @Namespace private var slide
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(_ segments: [Segment], selection: Binding<Int>, equalWidths: Bool = true, fontSize: CGFloat = 13) {
+    public init(_ segments: [Segment], selection: Binding<Int>, equalWidths: Bool = true, fontSize: CGFloat = 13,
+                countSize: CGFloat = 12) {
         self.segments = segments; self._selection = selection; self.equalWidths = equalWidths; self.fontSize = fontSize
+        self.countSize = countSize
     }
 
     public var body: some View {
@@ -49,7 +52,7 @@ public struct TCCountSegments: View {
             HStack(spacing: 5) {
                 Text(s.title).font(.sarabunFixed(fontSize, on ? .bold : .semibold))
                 if let count = s.count {
-                    Text(count).font(.sarabunFixed(12, .bold)).monospacedDigit()
+                    Text(count).font(.sarabunFixed(countSize, .bold)).monospacedDigit()
                         .foregroundStyle(s.alert ? Theme.dangerText : on ? Theme.primary : Theme.inkMuted)
                 }
             }
@@ -304,25 +307,29 @@ public struct TCPlanRing: View {
     let actual: Double
     let plan: Double?
     let tint: Color
+    let small: Bool
 
     /// - Parameters:
     ///   - actual: 0…1, the arc and the centre text.
     ///   - plan: 0…1, the tick; nil for no tick.
-    public init(actual: Double, plan: Double? = nil, tint: Color = Theme.primary) {
-        self.actual = min(max(actual, 0), 1); self.plan = plan.map { min(max($0, 0), 1) }; self.tint = tint
+    ///   - small: the 44 pt ring of an iPad station row, else 64 pt.
+    public init(actual: Double, plan: Double? = nil, tint: Color = Theme.primary, small: Bool = false) {
+        self.actual = min(max(actual, 0), 1); self.plan = plan.map { min(max($0, 0), 1) }; self.tint = tint; self.small = small
     }
 
     public var body: some View {
+        let line: CGFloat = small ? 5 : 7, size: CGFloat = small ? 44 : 64
         ZStack {
-            Circle().stroke(Theme.borderSubtle, lineWidth: 7)
-            Circle().trim(from: 0, to: actual).stroke(tint, style: StrokeStyle(lineWidth: 7, lineCap: .round)).rotationEffect(.degrees(-90))
+            Circle().stroke(Theme.borderSubtle, lineWidth: line)
+            Circle().trim(from: 0, to: actual).stroke(tint, style: StrokeStyle(lineWidth: line, lineCap: .round)).rotationEffect(.degrees(-90))
             if let plan {
-                Capsule().fill(Theme.navySolid).frame(width: 2.5, height: 11).offset(y: -26).rotationEffect(.degrees(plan * 360))
+                Capsule().fill(Theme.navySolid).frame(width: small ? 2 : 2.5, height: small ? 8 : 11).offset(y: -(size - line) / 2 - 0.5)
+                    .rotationEffect(.degrees(plan * 360))
             }
-            Text("\(Int((actual * 100).rounded()))%").font(.sarabunFixed(15, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
+            Text("\(Int((actual * 100).rounded()))%").font(.sarabunFixed(small ? 12 : 15, .bold)).monospacedDigit().foregroundStyle(Theme.navy)
         }
-        .padding(3.5)
-        .frame(width: 64, height: 64)
+        .padding(line / 2)
+        .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 }

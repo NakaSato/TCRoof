@@ -128,6 +128,10 @@ public enum Theme {
     public static let successText = Color(light: 0x1F6B43, dark: 0x8FD16A)
     public static let warningText = Color(light: 0x9A4A06, dark: 0xF5B35C)
     public static let ringDone = Color(hex: 0x8FD16A)
+    // iPad install tracking (docs/ui/install-tracking-ipad)
+    /// The page's tab bar track, and its tabs' resting text.
+    public static let projectTabTrack = Color(light: 0xE9EEF5, dark: 0x1C2734)
+    public static let projectTabInk = Color(light: 0x3B4A60, dark: 0x9DB0C7)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
     public static let segmentTrack = Color(light: 0xEEF2F7, dark: 0x1C2734)
@@ -171,6 +175,16 @@ public enum Theme {
     public static let inkFaint = Color(light: 0x9FB3CC, dark: 0x5E6E83)
     /// Track of a Gantt row.
     public static let ganttTrack = Color(light: 0xE3E9F1, dark: 0x243142)
+
+    // iPad home v3 (docs/ui/tcroof-home-ipad-v3)
+    // iPad PWA home v3, station rows (docs/ui/pwa-solar-survey-ipad-v3 FIX-01)
+    /// Fill of a station row's `งานขออนุญาต` block.
+    public static let permitFill = Color(light: 0xFAFBFD, dark: 0x161E29)
+    /// Border of that block when a permit is overdue, on `photoEmptyFill`.
+    public static let permitOverdueLine = Color(light: 0xF3C4BF, dark: 0x5A2B28)
+
+    /// Fill of a feed post's summary strip.
+    public static let stripFill = Color(light: 0xF8FAFC, dark: 0x161E29)
 
     // D1 จัดแผง (docs/ui/survey-d1-layout-iphone)
     /// A panel on the tank plan.
@@ -234,6 +248,24 @@ public enum Theme {
     public static let padLine = Color(hex: 0x5B6B82)
     // Over the camera (D1 compass): the aim mark, a locked heading and the read-out panel
     public static let hudYellow = Color(hex: 0xFFD43B)
+    /// The selected DC input slot (IEC steps 2 and 4), as the dialog's DC box strip: ring, its outline, and the
+    /// MPPT column's fill, border and number.
+    public static let slotRing = Color(hex: 0xFFD400)
+    public static let slotRingLine = Color(hex: 0x8A6D00)
+    public static let slotColumnFill = Color(hex: 0xFFF6CC)
+    public static let slotColumnLine = Color(hex: 0xE8B21A)
+    public static let slotColumnInk = Color(hex: 0x7A5B00)
+    /// The IEC sheet preview's `แสดงที่มา` (docs/ui/iec62446-sheet-before): each wizard step's cell tint and inner border.
+    public static let sheetSource1Fill = Color(hex: 0xEEF2F7)
+    public static let sheetSource1Line = Color(hex: 0x7D8FA8)
+    public static let sheetSource2Fill = Color(hex: 0xFFF1DC)
+    public static let sheetSource2Line = Color(hex: 0xF08C00)
+    public static let sheetSource3Fill = Color(hex: 0xEFE8FB)
+    public static let sheetSource3Line = Color(hex: 0x7B5CC4)
+    public static let sheetSource4Fill = Color(hex: 0xE4F3E6)
+    public static let sheetSource4Line = Color(hex: 0x2E9E5B)
+    public static let sheetSource5Fill = Color(hex: 0xE1F2F5)
+    public static let sheetSource5Line = Color(hex: 0x1B8A9E)
     public static let hudGreen = Color(hex: 0x2EC27E)
     public static let hudPanel = Color(hex: 0x1F2937, opacity: 0.92)
     // E1 automatic suggestions (docs/ui/survey-e1)

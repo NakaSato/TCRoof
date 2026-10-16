@@ -37,9 +37,22 @@ final class MoveToInstallUITests: XCTestCase {
         // after a relaunch the card is still an installation (the move was saved)
         app.terminate()
         app = launch()
-        let again = card(app)
+        var again = card(app)
         XCTAssertTrue(again.waitForExistence(timeout: slow))
         XCTAssertTrue(again.label.contains("ติดตั้ง กำลังทำ"), again.label)
+
+        // the install overview has it under ยังไม่มีแผน MP (it has no MP plan yet)
+        app.terminate()
+        app = launch(["-surveyHomeType", "install"])
+        let noPlan = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ยังไม่มีแผน MP")).firstMatch
+        XCTAssertTrue(noPlan.waitForExistence(timeout: slow), "the overview offers ยังไม่มีแผน MP")
+        noPlan.tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบย้ายติดตั้ง")).firstMatch.waitForExistence(timeout: 10),
+                      "the moved survey is listed there")
+        app.terminate()
+        app = launch()
+        again = card(app)
+        XCTAssertTrue(again.waitForExistence(timeout: slow))
 
         // and its survey still opens editable, from the card's menu
         again.press(forDuration: 1.2)

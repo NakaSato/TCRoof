@@ -59,7 +59,13 @@ public struct InstallStationSummary: Identifiable, Hashable, Sendable {
 public enum InstallOverview {
     public enum Pace: Sendable { case behind, onPlan, ahead }
     /// `permit` (`ขออนุญาตค้าง`) is a filter of the iPad rows only.
-    public enum RowFilter: String, CaseIterable, Sendable { case behind, noReport, permit, all }
+    /// `noPlan`: stations with no MP plan yet, such as a survey just moved to installation.
+    public enum RowFilter: String, CaseIterable, Sendable { case behind, noPlan, noReport, permit, all }
+
+    /// The filter the overview opens on: the first of ช้ากว่าแผน and ยังไม่มีแผน MP that has a station, else ทั้งหมด.
+    public static func defaultFilter(_ stations: [InstallStationSummary], threshold: Double = defaultThreshold) -> RowFilter {
+        [RowFilter.behind, .noPlan].first { f in stations.contains { matches($0, f, threshold: threshold) } } ?? .all
+    }
 
     /// `เกณฑ์ "ช้ากว่าแผน"` when the setting is unset.
     public static let defaultThreshold = 2.0
@@ -141,6 +147,7 @@ public enum InstallOverview {
     public static func matches(_ s: InstallStationSummary, _ filter: RowFilter, threshold: Double = defaultThreshold) -> Bool {
         switch filter {
         case .behind: pace(s, threshold: threshold) == .behind
+        case .noPlan: s.plan == nil
         case .noReport: s.reportSentToday == false
         case .permit: permitsOpen(s)
         case .all: true

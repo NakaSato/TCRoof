@@ -507,6 +507,10 @@ final class PhotoAsset {
     var iecJob: Job?
     /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).
     var driveFileID: String?
+    /// Firestore document id once synced (`photos`, `CloudRecords`): a photo on Drive reaches every device that way.
+    var syncID: String?
+    /// Received from another device and not downloaded from Drive yet; `data` is empty until `PhotoSync` brings it.
+    var needsDownload = false
 
     init(data: Data, tag: String = "") {
         self.data = data

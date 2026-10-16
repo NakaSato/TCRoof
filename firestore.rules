@@ -44,7 +44,7 @@ service cloud.firestore {
 
     match /{collection}/{doc} {
       allow read, write: if isMember()
-        && collection in ['jobs', 'surveyForms', 'devices', 'installLogs', 'inspections', 'pwaSurveys'];
+        && collection in ['jobs', 'surveyForms', 'devices', 'installLogs', 'inspections', 'pwaSurveys', 'photos'];
     }
   }
 }

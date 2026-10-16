@@ -35,5 +35,10 @@ public extension SurveyModel {
     func driveUpload(_ file: DriveUpload, to folderID: String) async throws -> String {
         try await DriveClient(tokens: google).upload(file.data, name: file.name, mimeType: file.mimeType, parent: folderID).id
     }
+
+    /// Downloads one file by id, such as a photo another device uploaded.
+    func driveDownload(_ fileID: String) async throws -> Data {
+        try await DriveClient(tokens: google).download(fileID)
+    }
 }
 #endif

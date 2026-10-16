@@ -52,6 +52,7 @@ struct PadHome<Popover: View>: View {
                     .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
                 }
                 .refreshable { await CloudSync.shared.refresh() }
+                .feedNewPostsPill()
             }
         }
         // a tap on the page outside the panel closes it; the bar's and the dock's buttons stay live, so `ตั้งค่า`

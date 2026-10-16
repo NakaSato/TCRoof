@@ -28,6 +28,8 @@ final class CloudSync {
     private(set) var lastSync: Date?
     /// The last pull to refresh found no network or couldn't reach the server; the feed says it shows what's here.
     private(set) var refreshFailed = false
+    /// Pulls to refresh so far: the feed rebuilds after each, at the time it ends.
+    private(set) var refreshes = 0
 
     @ObservationIgnored private var context: ModelContext?
     @ObservationIgnored private var survey: SurveyModel?
@@ -165,6 +167,7 @@ final class CloudSync {
     /// pushes what's waiting, then waits up to 8 s for the server. Offline, Firestore keeps serving its cache and the
     /// state stays `.synced`, so the network is checked too.
     func refresh() async {
+        defer { refreshes += 1 }
         guard context != nil else { return }
         if case .failed = state { retry() } else { push() }
         for _ in 0..<32 where state != .synced { try? await Task.sleep(for: .milliseconds(250)) }

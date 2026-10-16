@@ -390,6 +390,30 @@ public struct DriveLink: Codable, Hashable, Sendable {
     /// File name on the device ("REV00.pdf", "REV00.json") → Drive file id of the REV files already uploaded.
     public var revisionFiles: [String: String]?
     public init() {}
+
+    /// This link with the uploads `other` knows of added, for two devices saving one job: the folders are this link's
+    /// where it has them, and a photo or REV file either side sent counts as sent.
+    public func merged(with other: DriveLink) -> DriveLink {
+        var m = self
+        m.rootID = rootID ?? other.rootID
+        if folderID == nil { m.folderID = other.folderID; m.folderURL = other.folderURL; m.folderName = other.folderName }
+        m.lastSaved = [lastSaved, other.lastSaved].compactMap { $0 }.max()
+        // files listed under a folder this link has replaced belong to the old folder; they don't count
+        if photosFolderID == nil || photosFolderID == other.photosFolderID {
+            m.photosFolderID = photosFolderID ?? other.photosFolderID
+            m.photoFiles = Self.union(photoFiles, other.photoFiles)
+        }
+        if revisionsFolderID == nil || revisionsFolderID == other.revisionsFolderID {
+            m.revisionsFolderID = revisionsFolderID ?? other.revisionsFolderID
+            m.revisionFiles = Self.union(revisionFiles, other.revisionFiles)
+        }
+        return m
+    }
+
+    private static func union(_ a: [String: String]?, _ b: [String: String]?) -> [String: String]? {
+        guard a != nil || b != nil else { return nil }
+        return (b ?? [:]).merging(a ?? [:]) { _, mine in mine }
+    }
 }
 
 public struct Job: Codable, Hashable, Identifiable, Sendable {

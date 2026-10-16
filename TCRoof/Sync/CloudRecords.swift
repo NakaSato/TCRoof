@@ -12,6 +12,12 @@ protocol CloudSynced: PersistentModel {
     func apply(_ r: Record, jobs: [String: Job]) -> Bool
     /// An unlinked model to insert and then `apply` the record to; nil when its job isn't on this device yet.
     static func make(_ r: Record, jobs: [String: Job]) -> Self?
+    /// False keeps the model on this device only, for now (a photo not on Drive yet).
+    var syncs: Bool { get }
+}
+
+extension CloudSynced {
+    var syncs: Bool { true }
 }
 
 extension Date {
@@ -242,5 +248,55 @@ extension Inspection: CloudSynced {
         guard parent(r.jobID, in: jobs) != nil else { return nil }
         let inspection = Inspection(inspector: r.inspector, customerName: r.customerName)
         return inspection
+    }
+}
+
+// MARK: - Photo
+
+/// A daily-report, ICL or IEC 62446 photo, one document each, so photos added or deleted on two devices at once never
+/// overwrite each other. Only the Drive file travels: the other devices download it (`PhotoSync`).
+extension PhotoAsset: CloudSynced {
+    struct Record: Codable {
+        var tag: String
+        var createdAt: Int64
+        var drive: String
+        /// The syncID of the install log, inspection or job (IEC 62446) the photo belongs to; one is set.
+        var log, inspection, iecJob: String?
+    }
+
+    static let collection = "photos"
+
+    var record: Record {
+        Record(tag: tag, createdAt: createdAt.millis, drive: driveFileID ?? "", log: log?.syncID, inspection: inspection?.syncID,
+               iecJob: iecJob?.syncID)
+    }
+
+    /// Once on Drive, and only the photos of the records that sync (a home survey's stay on the device).
+    var syncs: Bool { driveFileID != nil && (log?.syncID ?? inspection?.syncID ?? iecJob?.syncID) != nil }
+
+    func apply(_ r: Record, jobs: [String: Job]) -> Bool {
+        guard let context = modelContext else { return false }
+        if let id = r.log {
+            guard let owner = try? context.fetch(FetchDescriptor<InstallLog>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+            if log !== owner { log = owner }
+        } else if let id = r.inspection {
+            guard let owner = try? context.fetch(FetchDescriptor<Inspection>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+            if inspection !== owner { inspection = owner }
+        } else if let id = r.iecJob {
+            guard let owner = jobs[id] else { return false }
+            if iecJob !== owner { iecJob = owner }
+        } else {
+            return false
+        }
+        tag = r.tag; createdAt = Date(millis: r.createdAt)
+        if driveFileID != r.drive { driveFileID = r.drive; needsDownload = true }
+        return true
+    }
+
+    /// Empty until downloaded; `apply` links it to its owner, or the photo waits for the owner to arrive.
+    static func make(_ r: Record, jobs: [String: Job]) -> PhotoAsset? {
+        let photo = PhotoAsset(data: Data(), tag: r.tag)
+        photo.needsDownload = true
+        return photo
     }
 }

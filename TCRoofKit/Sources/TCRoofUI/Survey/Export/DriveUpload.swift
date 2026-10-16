@@ -31,9 +31,14 @@ public extension SurveyModel {
         return id
     }
 
-    /// Uploads one file into a folder from `driveFolder` and returns the new file's id.
+    /// Uploads one file into a folder from `driveFolder` and returns its id; the same file already there is reused.
     func driveUpload(_ file: DriveUpload, to folderID: String) async throws -> String {
-        try await DriveClient(tokens: google).upload(file.data, name: file.name, mimeType: file.mimeType, parent: folderID).id
+        try await DriveClient(tokens: google).uploadOnce(file.data, name: file.name, mimeType: file.mimeType, parent: folderID).id
+    }
+
+    /// Downloads one file by id, such as a photo another device uploaded.
+    func driveDownload(_ fileID: String) async throws -> Data {
+        try await DriveClient(tokens: google).download(fileID)
     }
 }
 #endif

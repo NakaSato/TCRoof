@@ -27,8 +27,7 @@ struct PWAPhoneTabs: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var stations: [Job] { jobs.pwaStations }
-    /// The stations being installed: the PWA jobs with an MP plan that aren't handed over.
-    private var installing: [Job] { stations.filter { $0.scheduleInput != nil && $0.status != .completed } }
+    private var installing: [Job] { jobs.pwaInstalling }
 
     var body: some View {
         ZStack {

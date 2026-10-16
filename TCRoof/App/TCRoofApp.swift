@@ -92,11 +92,13 @@ struct RootView: View {
             session.survey.linkedJobLabel = { id in
                 (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first?.linkLabel
             }
-            // a survey moved to installation puts its job into construction, as its first install log does
+            // a survey moved to installation puts its job into construction, as its first install log does, and in the
+            // PWA module, whose install overview and install tracking page list it
             session.survey.onMovedToInstall = { id in
                 guard let job = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first,
                       job.status == .confirmed || job.status == .interested else { return }
                 job.status = .installing
+                job.kind = .pwa
                 try? context.save()
             }
             #if DEBUG

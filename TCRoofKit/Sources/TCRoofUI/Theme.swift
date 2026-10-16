@@ -169,6 +169,10 @@ public enum Theme {
     public static let planSurveySoft = Color(light: 0xE0F4F5, dark: 0x12292B)
     public static let planInspect = Color(light: 0x6B4FBB, dark: 0xB09CF0)
     public static let planInspectSoft = Color(light: 0xEFEBFA, dark: 0x221C38)
+    // iPad one-page daily report (docs/ui/daily-report-ipad): the work lines' pin colours, in order, and the picked `วันนี้` step
+    public static let dailyTasks: [Color] = [Color(hex: 0x1F6FB5), Color(hex: 0x2E9E5B), Color(hex: 0xD9822B),
+                                             Color(hex: 0x8E44AD), Color(hex: 0xC0392B)]
+    public static let dailyPick = Color(light: 0xA8E6D4, dark: 0x2C6B5A)
     /// Fill of a document chip and of an at-risk deadline, under `warningText`.
     public static let warningTint = Color(light: 0xFFF3E6, dark: 0x2E2213)
     /// Weekend days, the S-curve's plan line and axis labels, a filter chip with nothing to show.

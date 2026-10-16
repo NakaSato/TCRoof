@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import QuickLook
 import TCRoofUI
 import TCRoofCore
 
@@ -12,11 +13,36 @@ struct DraftPhoto: Identifiable, Equatable {
     var asset: PersistentIdentifier?
 }
 
-/// รายงานประจำวัน R2 (docs/specs/routine-reports-swift.md §4.2). iPad wide: sections 1–6 on the left, photos on the
-/// right; otherwise one column with photos last. Bottom bar: บันทึกร่าง · ตรวจ & ลงนาม.
+/// รายงานประจำวัน R2 (docs/specs/routine-reports-swift.md §4.2), for one day at a time: the iPad one-page layout's
+/// day switcher moves it to another report day.
 struct DailyReportScreen: View {
+    let job: Job
+    @State private var date: Date
+
+    init(job: Job, date: Date) {
+        self.job = job
+        var day = RoutineReport.calendar.startOfDay(for: date)
+        #if DEBUG
+        // `-routineDailyState daybefore`: the report day before (state 07)
+        if DailyOnePage.Debug.state == "daybefore" {
+            day = RoutineReport.reportDay(from: day, by: -1, settings: job.routineSettings) ?? day
+        }
+        #endif
+        _date = State(initialValue: day)
+    }
+
+    var body: some View {
+        DailyReportEditor(job: job, date: date) { date = $0 }.id(RoutineReport.dayKey(date))
+    }
+}
+
+/// One day's report. iPad regular width (≥ 1000 pt): the one-page layout of docs/ui/daily-report-ipad
+/// (`DailyOnePage`); otherwise one column of sections 1–6 and the photos, with the bottom bar บันทึกร่าง · ตรวจ & ลงนาม.
+struct DailyReportEditor: View {
     @Bindable var job: Job
     let date: Date
+    /// Opens another day's report.
+    var moveTo: (Date) -> Void = { _ in }
 
     @Environment(\.modelContext) private var context
     @AppStorage("userName") private var userName = ""
@@ -31,10 +57,14 @@ struct DailyReportScreen: View {
     @State private var showSettings = false
     @State private var share: ReportShare?
     @State private var toast: String?
+    @State private var preview: URL?
+    /// A day to open once the signed report's unsaved edits are dealt with.
+    @State private var pendingDay: Date?
 
-    init(job: Job, date: Date) {
+    init(job: Job, date: Date, moveTo: @escaping (Date) -> Void = { _ in }) {
         self.job = job
         self.date = RoutineReport.calendar.startOfDay(for: date)
+        self.moveTo = moveTo
         _report = State(initialValue: RoutineReport.Daily(date: date))
     }
 
@@ -45,29 +75,11 @@ struct DailyReportScreen: View {
 
     var body: some View {
         GeometryReader { g in
-            ScrollView {
-                if !isPhone && g.size.width >= 1000 {
-                    HStack(alignment: .top, spacing: 20) {
-                        VStack(spacing: 16) { header; sections }
-                        VStack(spacing: 16) { photoCard }.frame(width: 400)
-                    }
-                    .padding(24)
-                } else {
-                    VStack(spacing: 16) { header; sections; photoCard }.padding(isPhone ? 16 : 24)
-                }
+            if !isPhone && (g.size.width >= 1000 || Self.forceOnePage) {
+                onePage
+            } else {
+                classic
             }
-        }
-        .background(Theme.pageGradient.ignoresSafeArea())
-        .safeAreaInset(edge: .bottom) { bottomBar }
-        .navigationTitle("รายงานประจำวัน")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showSettings = true } label: { Label("ตั้งค่ารายงาน", systemImage: "gearshape") }
-            }
-        }
-        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code], current: date.thaiLong) {
-            TCButton("ตั้งค่ารายงาน", systemImage: "gearshape", kind: .secondary) { showSettings = true }
         }
         .sheet(isPresented: $showSign) {
             DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), engineer: job.routineSettings.siteEngineer) { name in
@@ -81,14 +93,87 @@ struct DailyReportScreen: View {
         }
         .sheet(isPresented: $showSettings) { RoutineSettingsSheet(job: job) }
         .confirmationDialog("รายงานนี้ลงนามแล้ว", isPresented: $askUnsign, titleVisibility: .visible) {
-            Button("บันทึกและยกเลิกการลงนาม", role: .destructive, action: saveDraft)
-            Button("กลับไปแก้ไข", role: .cancel) {}
+            Button("บันทึกและยกเลิกการลงนาม", role: .destructive) {
+                saveDraft()
+                if let d = pendingDay { pendingDay = nil; moveTo(d) }
+            }
+            Button("กลับไปแก้ไข", role: .cancel) { pendingDay = nil }
         } message: {
             Text("บันทึกแล้วลายเซ็นและการรับทราบของ Inspector จะถูกล้าง ต้องลงนามใหม่")
         }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
+        .quickLookPreview($preview)
         .overlay(alignment: .top) { toastView }
         .onAppear(perform: load)
+    }
+
+    /// `-routineDaily onepage`: the one-page layout whatever the width.
+    private static var forceOnePage: Bool {
+        #if DEBUG
+        UserDefaults.standard.string(forKey: "routineDaily") == "onepage"
+        #else
+        false
+        #endif
+    }
+
+    private var onePage: some View {
+        DailyOnePage(job: job, date: date, report: $report, photos: $photos, others: others, log: log, dirty: dirty,
+                     actions: .init(saveDraft: requestSaveDraft, sign: { showSign = true }, acknowledge: requestAck,
+                                    clearSignature: clearSignature, clearAck: clearAck, preview: previewPDF, send: exportPDF,
+                                    day: moveDay, settings: { showSettings = true }))
+    }
+
+    private var classic: some View {
+        ScrollView {
+            VStack(spacing: 16) { header; sections; photoCard }.padding(isPhone ? 16 : 24)
+        }
+        .background(Theme.pageGradient.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom) { bottomBar }
+        .navigationTitle("รายงานประจำวัน")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showSettings = true } label: { Label("ตั้งค่ารายงาน", systemImage: "gearshape") }
+            }
+        }
+        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code], current: date.thaiLong) {
+            TCButton("ตั้งค่ารายงาน", systemImage: "gearshape", kind: .secondary) { showSettings = true }
+        }
+    }
+
+    // MARK: One-page actions
+
+    /// The previous or next report day; today's unsaved edits are kept as a draft first (a signed report asks).
+    private func moveDay(_ step: Int) {
+        guard let d = RoutineReport.reportDay(from: date, by: step, settings: job.routineSettings, limit: .now) else { return }
+        if dirty, log?.engineerSignedAt != nil { pendingDay = d; askUnsign = true; return }
+        if dirty { write() }
+        moveTo(d)
+    }
+
+    /// The inspector acknowledges a signed report only.
+    private func requestAck() {
+        if log?.engineerSignedAt != nil, !dirty { showAck = true } else { withAnimation { toast = "ผู้รายงานต้องเซ็นก่อน" } }
+    }
+
+    private func clearSignature() {
+        guard let log else { return }
+        log.engineerSignedAt = nil
+        log.inspectorAckAt = nil
+        try? context.save()
+    }
+
+    private func clearAck() {
+        log?.inspectorAckAt = nil
+        try? context.save()
+    }
+
+    /// The daily PDF of what is on screen: saved as a draft first (a signed report asks before losing its signature).
+    private func previewPDF() {
+        if dirty, log?.engineerSignedAt != nil { askUnsign = true; return }
+        let target = dirty || log == nil ? write() : log!
+        guard let built = RoutineReportFiles.daily(job, log: target), let url = try? RoutineReportFiles.temporaryURL(built) else { return }
+        preview = url
     }
 
     // MARK: Parts

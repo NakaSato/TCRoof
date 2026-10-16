@@ -21,15 +21,19 @@ public struct Revision: Codable, Hashable, Identifiable, Sendable {
     public var issuedBy: String
     /// "" for REV 00; required from REV 01.
     public var reason: String
-    /// `FormHash` of the snapshot, hex.
+    /// SHA-256 of the snapshot and its photos, hex, as it was issued.
     public var hash: String
     /// "revisions/REV00.pdf": the report as signed. nil when the PDF could not be written.
     public var pdfFile: String?
     public init(rev: String, issuedAt: Date, issuedBy: String, reason: String, hash: String, pdfFile: String? = nil) {
         self.rev = rev; self.issuedAt = issuedAt; self.issuedBy = issuedBy; self.reason = reason; self.hash = hash; self.pdfFile = pdfFile
     }
-    /// "A1B2-C3D4"
-    public var shortCode: String { FormHash.short(hash) }
+    /// "A1B2-C3D4", from the first 8 hex digits of `hash`.
+    public var shortCode: String {
+        let h = hash.prefix(8).uppercased()
+        guard h.count == 8 else { return h }
+        return h.prefix(4) + "-" + h.suffix(4)
+    }
 }
 
 public enum RevisionRule {

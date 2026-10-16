@@ -10,6 +10,13 @@
   pages have no per-field anchors; "ไปที่ช่องในฟอร์ม" opens the page without scrolling to the field.
 - `FormHash.of` returns nil while a photo isn't on the device: locking waits for it, and the integrity check skips.
 
+**Lock removed 2026-10-16** (branch `feat/survey-to-install-no-lock`): feature 7 (§4) is gone. Signing both no
+longer locks the form or issues a REV, nothing is read-only, and the PDF has no check-code footer. `Job.lock`,
+`pendingReason`, `FormHash` and the lock / integrity banners and sheets were deleted; an old `job.json` with `lock`
+still decodes and drops it. REVs issued before stay: their snapshots, PDFs, the รายการแก้ไข page, the change markers
+and their sync. With the lock sheet gone nothing issues a new REV; §4 and the hash parts of §5–§6 are kept below as
+history only.
+
 Not built: the Drive `REV/` upload (`DriveSync.Kind.revisions`), the Excel รายการแก้ไข sheet, REVs in `WebBackup`,
 and the leaving-site reminder (§2.4, open question 5).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same code runs on iPhone in compact layout.
@@ -260,6 +267,8 @@ the same order as the report.
 ---
 
 ## 4. Feature 7: ล็อกหลังลงนาม (lock after signing)
+
+> **Removed 2026-10-16.** Kept as history; see the status at the top.
 
 ### 4.1 States
 

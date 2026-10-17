@@ -27,6 +27,9 @@ struct IECTestScreen: View {
     @State private var exportError: String?
     /// The station line names another station: asked before exporting.
     @State private var confirmExport = false
+    /// `ส่งกลับให้แก้` asks what to fix first.
+    @State private var sendingBack = false
+    @State private var sendBackNote = ""
     /// `แก้ไข` on a closed test asks first: it reopens it.
     @State private var confirmReopen = false
     /// The debug flags apply once: `.task` runs again each time the screen reappears (back from a table).
@@ -83,7 +86,16 @@ struct IECTestScreen: View {
         .confirmationDialog("เปิดผลทดสอบให้แก้ไข", isPresented: $confirmReopen, titleVisibility: .visible) {
             Button("แก้ไข") { job.updateIEC(context, evenWhenLocked: true) { $0.reopen() } }
             Button("ยกเลิก", role: .cancel) {}
-        } message: { Text("ผลที่สรุปไว้จะถูกยกเลิก ต้องกด เสร็จ อีกครั้งหลังแก้") }
+        } message: { Text("ผลที่สรุปไว้จะถูกยกเลิก ต้องส่งผลให้ทีมและให้ทีมภายในปิดอีกครั้งหลังแก้") }
+        .alert("ส่งกลับให้ผู้รับเหมาแก้", isPresented: $sendingBack) {
+            TextField("สิ่งที่ต้องแก้", text: $sendBackNote)
+            Button("ส่งกลับ") {
+                let note = sendBackNote
+                job.updateIEC(context, evenWhenLocked: true) { _ = $0.sendBack(by: job.iecActor, note: note) }
+                sendBackNote = ""
+            }
+            Button("ยกเลิก", role: .cancel) { sendBackNote = "" }
+        } message: { Text("ผลที่ส่งมาจะเปิดให้แก้อีกครั้ง แผน MP ยังไม่นับ 3.1") }
         .alert("ส่งออกไม่ได้", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(exportError ?? "") }
@@ -389,6 +401,14 @@ struct IECTestScreen: View {
                 Spacer()
                 Button { confirmReopen = true } label: { Label("แก้ไข", systemImage: "lock.open") }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            } else if let sent = r.submission {
+                Text("รอปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk)
+                    .padding(.horizontal, 12).frame(height: 30).background(Theme.pendingSoft, in: Capsule())
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("ส่งผลให้ทีมแล้ว · รอทีมภายในปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(Self.stamp(sent.submittedAt, sent.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                }
+                Spacer()
             } else {
                 IECRing(fraction: r.completion, size: 30)
                 VStack(alignment: .leading, spacing: 0) {
@@ -406,10 +426,17 @@ struct IECTestScreen: View {
             Button { startExport(.excel) } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
                 .buttonStyle(TCButtonStyle(r.isLocked || !r.isDone(.review) ? .primary : .secondary, size: .card)).fixedSize()
             if !r.isLocked {
-                Button(action: complete) { Label("เสร็จ", systemImage: "checkmark.seal") }
+                Button(action: submit) { Label("ส่งผลให้ทีม", systemImage: "paperplane") }
                     .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
                     .disabled(!r.isDone(.review))
-                    .accessibilityHint(r.isDone(.review) ? "สรุปผลและล็อกการทดสอบ" : "ทำขั้นที่ 1–6 ให้ครบก่อน")
+                    .accessibilityHint(r.isDone(.review) ? "ส่งผลให้ทีมภายในตรวจและปิด" : "ทำขั้นที่ 1–6 ให้ครบก่อน")
+            } else if r.isAwaitingClose {
+                Button { sendingBack = true } label: { Label("ส่งกลับให้แก้", systemImage: "arrow.uturn.backward") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                Button(action: complete) { Label("ปิดการทดสอบ", systemImage: "checkmark.seal") }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+                    .disabled(r.submissionIsStale)
+                    .accessibilityHint(r.submissionIsStale ? "ข้อมูลเปลี่ยนหลังส่ง ส่งกลับให้แก้แล้วส่งใหม่" : "ทีมภายในสรุปผลและล็อกการทดสอบ")
             }
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
@@ -417,10 +444,17 @@ struct IECTestScreen: View {
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
     }
 
-    /// `เสร็จ`: closes and locks the test, and books the MP plan's `3.1 Pre-Commissioning Test` as done that week (a
-    /// real test of a station with a plan; the sample never touches the plan). Reopening leaves the plan as it is.
+    /// `ส่งผลให้ทีม`: the contractor hands the filled test over; it locks until the team closes it or sends it back.
+    /// The MP plan doesn't count it yet.
+    private func submit() {
+        job.updateIEC(context) { _ = $0.submit(by: job.iecActor) }
+    }
+
+    /// `ปิดการทดสอบ` (the internal team, like signing a daily report): closes and locks the sent test, and books the
+    /// MP plan's `3.1 Pre-Commissioning Test` as done that week (a real test of a station with a plan; the sample
+    /// never touches the plan). Reopening leaves the plan as it is.
     private func complete() {
-        job.updateIEC(context) { _ = $0.complete(by: job.iecActor) }
+        job.updateIEC(context, evenWhenLocked: true) { _ = $0.complete(by: job.iecActor) }
         guard let r = job.iecReport, let result = r.result, r.sampleName == nil, let input = job.scheduleInput else { return }
         var a = job.scheduleActual
         a.setPercent(100, task: .preCommissioning, week: result.completedAt, over200kVA: input.over200kVA)
@@ -441,9 +475,19 @@ struct IECTestScreen: View {
         if r.resultIsStale {
             notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
                    "ข้อมูลเปลี่ยนหลังปิดการทดสอบ", "อาจมาจากเครื่องอื่น · กด แก้ไข แล้ว เสร็จ อีกครั้งเพื่อสรุปผลใหม่") { EmptyView() }
-        } else if r.isLocked {
+        } else if r.result != nil {
             notice("lock.fill", Theme.successInk, Theme.successSoft,
                    "ปิดการทดสอบแล้ว", "ค่าทั้งหมดถูกล็อก · กด แก้ไข เพื่อเปิดให้แก้") { EmptyView() }
+        } else if r.submissionIsStale {
+            notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
+                   "ข้อมูลเปลี่ยนหลังส่งผล", "อาจมาจากเครื่องอื่น · ทีมภายในกด ส่งกลับให้แก้ แล้วให้ผู้รับเหมาส่งใหม่") { EmptyView() }
+        } else if r.isAwaitingClose {
+            notice("paperplane.fill", Theme.primary, Theme.primarySoft,
+                   "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด", "ค่าทั้งหมดถูกล็อก · ทีมภายในตรวจแล้วกด ปิดการทดสอบ หรือ ส่งกลับให้แก้") { EmptyView() }
+        } else if let back = r.sentBack {
+            notice("arrow.uturn.backward.circle.fill", Theme.warningInk, Theme.pendingSoft,
+                   "ทีมส่งกลับให้แก้" + (back.note.isEmpty ? "" : ": " + back.note),
+                   Self.stamp(back.at, back.by) + " · แก้แล้วกด ส่งผลให้ทีม อีกครั้ง") { EmptyView() }
         }
     }
 

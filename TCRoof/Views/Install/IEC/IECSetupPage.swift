@@ -278,7 +278,7 @@ struct IECSetupPage: View {
         return HStack(spacing: 14) {
             Image(systemName: s.ok ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 28, height: 28).background(s.ok ? Theme.success : Theme.warning, in: Circle())
-            Text(r.isLocked ? "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว" : s.text).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(2)
+            Text(r.lockedLine ?? s.text).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(2)
             Spacer(minLength: 8)
             Button { try? context.save(); savedFlash = true; Task { try? await Task.sleep(for: .seconds(1.5)); savedFlash = false } } label: {
                 Text(savedFlash ? "บันทึกแล้ว ✓" : "บันทึกร่างตอนนี้").frame(minWidth: 140)

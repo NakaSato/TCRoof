@@ -78,6 +78,9 @@ extension InstallPageData {
             f.locale = Locale(identifier: "th_TH"); f.calendar = Calendar(identifier: .buddhist); f.dateFormat = "d MMM yyyy"
             return "ปิดการทดสอบ " + f.string(from: result.completedAt) + (result.by.isEmpty ? "" : " · " + result.by) + photos
         }
+        if let sent = r.submission {
+            return "ส่งผลให้ทีมแล้ว" + (sent.by.isEmpty ? "" : " · " + sent.by) + " · รอทีมภายในปิด" + photos
+        }
         let steps = IECReport.Stage.allCases.filter { $0 != .review }
         let done = steps.filter(r.isDone).count
         let next = steps.first { !r.isDone($0) }.map { " · ขั้น \($0.rawValue) ขาด " + (r.missing($0).first ?? "") } ?? " · พร้อมสรุปผล"
@@ -168,7 +171,7 @@ extension InstallPageData {
             let iec = job.iecReport
             let line = DocItem(id: "iec", code: "IEC", title: "ทดสอบ IEC 62446 ก่อน / หลังเชื่อมต่อ",
                                detail: iec.map { Self.iecDetail($0, drive: ProjectDriveUpload.iecPhotoUpload(job)) } ?? "ยังไม่ได้ตั้งค่า inverter และสตริง",
-                               chip: iec.map { r in r.result.map { $0.passed ? "ผ่าน" : "ไม่ผ่าน" } ?? "\(Int((r.completion * 100).rounded()))%" } ?? "ยังไม่เริ่ม",
+                               chip: iec.map { r in r.result.map { $0.passed ? "ผ่าน" : "ไม่ผ่าน" } ?? (r.isAwaitingClose ? "รอปิด" : "\(Int((r.completion * 100).rounded()))%") } ?? "ยังไม่เริ่ม",
                                tone: iec.map { r in r.result.map { $0.passed ? .ok : .danger } ?? .info } ?? .idle, target: .iec)
             t = DocTile(id: t.id, title: t.title, about: t.about, chip: t.chip, tone: t.tone, items: [line] + t.items)
             tiles.append(t)

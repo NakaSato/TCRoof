@@ -65,7 +65,7 @@ struct IECStringGrid: View {
                     sidebar(report)
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
-                            if report.isLocked { lockedNotice }
+                            if report.isLocked { lockedNotice(report) }
                             Group {
                                 switch page {
                                 case .table:
@@ -123,8 +123,8 @@ struct IECStringGrid: View {
         }
     }
 
-    private var lockedNotice: some View {
-        Label("ปิดการทดสอบแล้ว · ดูได้อย่างเดียว กด แก้ไข ที่หน้าภาพรวมเพื่อเปิดให้แก้", systemImage: "lock.fill")
+    private func lockedNotice(_ r: IECReport) -> some View {
+        Label((r.lockedLine ?? "") + (r.result != nil ? " กด แก้ไข ที่หน้าภาพรวมเพื่อเปิดให้แก้" : ""), systemImage: "lock.fill")
             .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.successInk)
             .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))

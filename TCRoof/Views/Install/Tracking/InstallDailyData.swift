@@ -28,14 +28,6 @@ struct InstallDailyData {
         var hasProblem: Bool { !problem.isEmpty }
     }
 
-    /// A day of `ความก้าวหน้าสะสม`.
-    struct Point: Identifiable {
-        let date: Date
-        let actual: Double?
-        let planned: Double
-        var id: Date { date }
-    }
-
     /// A line of `พรุ่งนี้`: an MP task planned for that day and where it stands.
     struct Next: Identifiable {
         let id: String
@@ -61,7 +53,6 @@ struct InstallDailyData {
     /// Days stopped with rain and no progress, and the rain hours over all reports.
     var rainStops = 0
     var rainHours = 0
-    var points: [Point] = []
     /// Photos tagged to each MP install task.
     var photosByTask: [(code: String, title: String, count: Int)] = []
     var nextDay: Date?
@@ -138,10 +129,6 @@ struct InstallDailyData {
         rainHours = reports.reduce(0) { $0 + $1.rainHours }
 
         if let plan {
-            points = RoutineReport.workingDays(settings: settings, from: cal.startOfDay(for: job.installStart), to: cal.startOfDay(for: job.installEnd)).map { d in
-                guard let s = status(d) else { return Point(date: d, actual: nil, planned: 0) }
-                return Point(date: d, actual: d <= day ? s.actual : nil, planned: s.planned)
-            }
             // tomorrow: the next working day and the install tasks planned on it
             var t = cal.date(byAdding: .day, value: 1, to: day) ?? day
             for _ in 0..<14 where !RoutineReport.isWorkingDay(t, settings: settings) { t = cal.date(byAdding: .day, value: 1, to: t) ?? t }
@@ -196,9 +183,6 @@ extension InstallDailyData {
         x.sentThroughYesterday = 4; x.workingThroughYesterday = 6
         x.drafts = [d(5)]; x.unacknowledged = [d(2), d(4)]
         x.workEnd = "18.00"; x.manDays = 38; x.workedDays = 5; x.rainStops = 1; x.rainHours = 8
-        let plan: [Double] = [4, 10, 18, 26, 36, 44, 52, 60, 70, 80, 90, 100]
-        let actual: [Double] = [5, 12, 20, 20, 40, 47]
-        x.points = plan.indices.map { Point(date: d($0), actual: $0 < actual.count ? actual[$0] : nil, planned: plan[$0]) }
         x.photosByTask = [("2.1", "โครงสร้าง + ราง", 7), ("2.2", "ระบบไฟฟ้า DC", 2), ("2.3", "แผงเซลล์", 4)]
         x.nextDay = d(7)
         x.next = [Next(id: "dc", code: "2.2", title: "เดินสายสตริง 7–12 (ต่อจากวันนี้)", percent: 50),

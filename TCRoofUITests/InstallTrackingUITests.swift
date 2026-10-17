@@ -28,10 +28,38 @@ final class InstallTrackingUITests: XCTestCase {
         return XCTWaiter().wait(for: [e], timeout: timeout) == .completed
     }
 
-    /// Back from a pushed screen (its iPad header's `กลับหน้าหลัก`) to the page.
+    /// Back from a pushed screen (its iPad header's `กลับหน้าหลัก`, or the one-page daily report's `ย้อนกลับ`) to the page.
     func back(_ app: XCUIApplication) {
-        app.buttons.matching(NSPredicate(format: "label == %@", "กลับหน้าหลัก")).firstMatch.tap()
+        let button = app.buttons.matching(NSPredicate(format: "label IN %@", ["กลับหน้าหลัก", "ย้อนกลับ"])).firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 8), "the pushed screen should have a back button")
+        button.tap()
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: 8), "back should return to the page")
+    }
+
+    /// `แผนก่อสร้าง` (docs/ui/install-tracking-ipad-v2 §6) is a tab of the page: a stage's chevron hides its sub-tasks,
+    /// `ตาราง` shows the table and `แก้ไขแผน` pushes the MP plan screen.
+    func testPlanTab() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label == %@", "แผนก่อสร้าง")).firstMatch.tap()
+        let stage = app.descendants(matching: .any)["plan-stage-4"]
+        XCTAssertTrue(stage.waitForExistence(timeout: 8), "แผนก่อสร้าง should open the tab in the page")
+        XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
+        let sub = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "4.1 ")).firstMatch
+        XCTAssertTrue(sub.waitForExistence(timeout: 8), "the running stage starts open")
+        stage.tap()
+        XCTAssertTrue(waitGone(sub), "the chevron should hide the stage's sub-tasks")
+        stage.tap()
+        XCTAssertTrue(sub.waitForExistence(timeout: 8), "a second tap shows them again")
+
+        app.buttons.matching(NSPredicate(format: "label == %@", "ตาราง")).firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["plan-table"].waitForExistence(timeout: 8), "ตาราง should show the table")
+        XCTAssertFalse(stage.exists)
+
+        app.buttons.matching(NSPredicate(format: "label == %@", "แก้ไขแผน")).firstMatch.tap()
+        XCTAssertTrue(waitGone(pageBack(app)), "แก้ไขแผน should push the MP plan screen")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "แผนงาน MP")).firstMatch.waitForExistence(timeout: 8))
+        back(app)
     }
 
     func testActionsSheetOpensAnItem() {
@@ -150,9 +178,10 @@ final class InstallTrackingUITests: XCTestCase {
     }
 
     /// `ทดสอบ IEC 62446` opens the IEC test (seeded with the แพรกหนามแดง sample); the after band opens step 4's page, and
-    /// a Vmp typed for String 1 (photo first, from the stub camera) is kept after going back and in again.
+    /// a Vmp typed for String 1 (photo first, from the stub camera) is kept after going back and in again. It starts
+    /// from a fresh sample (`reset`): readings the other IEC tests left on the station would change the step's flow.
     func testIECTabTypesAReading() {
-        let app = launch(["-iecDemo", "YES", "-iecCameraStub", "YES"], demo: false)
+        let app = launch(["-iecDemo", "reset", "-iecCameraStub", "YES"], demo: false)
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["ทดสอบระบบ IEC 62446"].waitForExistence(timeout: 10), "the tab should open the IEC test")

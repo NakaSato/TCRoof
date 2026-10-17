@@ -6,7 +6,7 @@ import TCRoofCore
 /// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
 /// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily }
+    enum Tab: String, CaseIterable { case overview, daily, plan }
 
     /// A screen the page pushes.
     enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec }
@@ -14,6 +14,14 @@ struct InstallTrackingPage: View {
     let job: Job
     @State var tab = Debug.tab
     @State var view = Debug.view
+    /// `แผนก่อสร้าง`'s `Gantt | ตาราง`.
+    @State var planView = Debug.planView
+    /// Stages opened or closed against their default: the running stage and the next start open, or none with
+    /// `-installPlanCollapsed YES`.
+    @State var planToggled: Set<String> = []
+    @State var planAllClosed = Debug.planCollapsed
+    /// The scroll view's height: the Gantt card ends above the dock.
+    @State var viewport: CGFloat = 0
     /// Task rows opened or closed against their default (the running task starts open).
     @State var toggled: Set<String> = []
     /// The task whose sheet is open.
@@ -40,18 +48,23 @@ struct InstallTrackingPage: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        if tab == .overview {
+                        switch tab {
+                        case .overview:
                             kpiStrip(data)
                             if let g = data.gantt { progressCard(data, g) }
                             siteRow(data)
-                        } else {
+                        case .daily:
                             dailyTab(dailyData, site: data.site)
+                        case .plan:
+                            planTab(data)
                         }
                     }
-                    .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+                    // the last cards end above the dock
+                    .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, Self.dockClearance)
                     Color.clear.frame(height: 1).id("end")
                 }
                 .scrollIndicators(.hidden)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewport = $0 }
                 #if DEBUG
                 // `-installScrollEnd YES` opens the overview at its end
                 .task {
@@ -213,7 +226,7 @@ struct InstallTrackingPage: View {
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", route: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", route: .docs),
-         Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", route: .plan)]
+         Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan)]
     }
 
     private func tabBar(_ data: InstallPageData) -> some View {
@@ -324,13 +337,15 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily`, `-installView gantt|curve`, `-installStage n`, `-installDemo YES`, `-installSheet
-    /// actions|<tile id>`, `-installSite info|risk|labour`, `-installScrollEnd YES`, `-installDetail YES`. Release builds
-    /// get the defaults.
+    /// `-installTab overview|daily|plan`, `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
+    /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
+    /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
     enum Debug {
         #if DEBUG
         static let tab = UserDefaults.standard.string(forKey: "installTab").flatMap(Tab.init) ?? .overview
         static let view = UserDefaults.standard.string(forKey: "installView").flatMap(ProgressView.init) ?? .gantt
+        static let planView = UserDefaults.standard.string(forKey: "installPlanView").flatMap(PlanView.init) ?? .gantt
+        static let planCollapsed = UserDefaults.standard.bool(forKey: "installPlanCollapsed")
         static let stage: Int? = UserDefaults.standard.object(forKey: "installStage") == nil ? nil : UserDefaults.standard.integer(forKey: "installStage")
         static let demo = UserDefaults.standard.bool(forKey: "installDemo")
         static let sheet: Sheet? = UserDefaults.standard.string(forKey: "installSheet").map { $0 == "actions" ? .actions : .doc($0) }
@@ -341,6 +356,8 @@ struct InstallTrackingPage: View {
         #else
         static let tab = Tab.overview
         static let view = ProgressView.gantt
+        static let planView = PlanView.gantt
+        static let planCollapsed = false
         static let sheet: Sheet? = nil
         static let site = SiteTab.info
         #endif

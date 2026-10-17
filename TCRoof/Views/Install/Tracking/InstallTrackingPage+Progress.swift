@@ -2,39 +2,51 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// `ความคืบหน้าเทียบแผน` (docs/ui/install-tracking-ipad §B): the Gantt of the MP plan's install tasks over a day (or,
-/// past a month, a week) axis, or the station's S-curve, behind a `Gantt | S-Curve` switch. A task row opens its sheet.
+/// `ความคืบหน้าเทียบแผน` (docs/ui/install-tracking-ipad-v2 §2–3): the Gantt of the MP plan's install tasks over a day
+/// (or, past a month, a week) axis, or the station's S-curve by day, behind a `Gantt | S-Curve` switch. The card ends
+/// above the dock and its rows scroll inside it under the pinned day header. A task row opens its sheet.
 extension InstallTrackingPage {
     enum ProgressView: String { case gantt, curve }
 
     /// The left column of names and the right column of percents, as on the board.
     static let nameWidth: CGFloat = 250
     static let percentWidth: CGFloat = 64
+    /// The page's bottom padding: the last cards end above the dock.
+    static let dockClearance: CGFloat = 24
+    static let stageHeight: CGFloat = 46
+    static let subHeight: CGFloat = 31
+
+    /// The card's height on a tab whose first card sits under a 52 pt strip: what is left above the dock.
+    var fittedHeight: CGFloat { max(viewport - 14 - 52 - 14 - Self.dockClearance, 440) }
 
     func progressCard(_ data: InstallPageData, _ g: InstallGantt) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return VStack(alignment: .leading, spacing: 10) {
-            progressHeader(g)
+            progressHeader(data, g)
             if view == .gantt { ganttGrid(g, nonWorking: data.nonWorking) } else { curvePanel(data) }
         }
-        .padding(.horizontal, 18).padding(.vertical, 12)
+        .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 8)
+        .frame(height: fittedHeight, alignment: .top)
         .background(Theme.surface, in: frame)
         .overlay(frame.strokeBorder(Theme.borderSubtle))
         .cardShadow()
     }
 
-    private func progressHeader(_ g: InstallGantt) -> some View {
+    private func progressHeader(_ data: InstallPageData, _ g: InstallGantt) -> some View {
         let span = g.span()
         let range = span.map { "\(ThaiFormat.dayMonth.string(from: $0.lowerBound)) – \(ThaiFormat.numericDate.string(from: $0.upperBound))" } ?? ""
         return HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("ความคืบหน้าเทียบแผน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).frame(height: 24)
                     .accessibilityAddTraits(.isHeader)
-                Text([range, "\(g.rows.count) ขั้นตอน", g.subCount > 0 ? "\(g.subCount) งานย่อย" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                HStack(spacing: 10) {
+                    Text([range, "\(g.rows.count) ขั้นตอน", g.subCount > 0 ? "\(g.subCount) งานย่อย" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    if let t = data.tracking { forecastPill(t) }
+                }
             }
             Spacer(minLength: 8)
-            if view == .gantt { legend.padding(.top, 10) }
+            (view == .gantt ? AnyView(ganttLegend) : AnyView(curveLegend)).padding(.top, 10)
             TCCountSegments([.init("Gantt"), .init("S-Curve")],
                             selection: Binding(get: { view == .gantt ? 0 : 1 }, set: { view = $0 == 0 ? .gantt : .curve }), equalWidths: false)
                 .fixedSize()
@@ -42,20 +54,56 @@ extension InstallTrackingPage {
         }
     }
 
+    /// `คาดส่งมอบ 6/10 ตามกำหนด · เผื่อ 1 วัน`, amber with no spare day, red `คาดส่งมอบช้า n วัน` when late.
+    private func forecastPill(_ t: InstallTracking) -> some View {
+        let slack = t.slackDays(), end = ThaiFormat.dayMonth.string(from: t.forecastEnd())
+        let (text, tone): (String, InstallPageData.Tone) = slack < 0 ? ("คาดส่งมอบ \(end) · ช้า \(-slack) วัน", .danger)
+            : slack == 0 ? ("คาดส่งมอบ \(end) ตามกำหนดพอดี", .warn) : ("คาดส่งมอบ \(end) ตามกำหนด · เผื่อ \(slack) วัน", .ok)
+        return Text(text).font(.sarabunFixed(12, .bold)).foregroundStyle(Self.ink(tone)).lineLimit(1)
+            .padding(.horizontal, 10).frame(height: 22)
+            .background(Self.fill(tone), in: Capsule())
+            .fixedSize()
+    }
+
     /// `คาดการณ์` dashed and `เกินแผน` red; the board's `◆ เหตุการณ์สำคัญ` has no milestones to point at.
-    private var legend: some View {
+    private var ganttLegend: some View {
         HStack(spacing: 14) {
             HStack(spacing: 5) {
-                RoundedRectangle(cornerRadius: 3).strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.2, dash: [3, 2])).frame(width: 18, height: 10)
+                Capsule().strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.2, dash: [3, 2])).frame(width: 18, height: 10)
                 Text("คาดการณ์")
             }
             HStack(spacing: 5) {
-                RoundedRectangle(cornerRadius: 3).fill(Theme.danger).frame(width: 18, height: 10)
+                Capsule().fill(Theme.danger).frame(width: 18, height: 10)
                 Text("เกินแผน")
             }
         }
         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
         .accessibilityHidden(true)
+    }
+
+    private var curveLegend: some View {
+        HStack(spacing: 14) {
+            legendLine(Theme.inkFaint, "แผนสะสม")
+            legendLine(Theme.primary, "งานจริงสะสม")
+            HStack(spacing: 5) {
+                Path { p in p.move(to: CGPoint(x: 0, y: 1.5)); p.addLine(to: CGPoint(x: 18, y: 1.5)) }
+                    .stroke(Theme.primary, style: StrokeStyle(lineWidth: 2.5, dash: [4, 3])).frame(width: 18, height: 3)
+                Text("คาดการณ์")
+            }
+            HStack(spacing: 4) {
+                Rectangle().fill(Theme.danger).frame(width: 2, height: 14)
+                Text("วันนี้").foregroundStyle(Theme.dangerText)
+            }
+        }
+        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .accessibilityHidden(true)
+    }
+
+    private func legendLine(_ c: Color, _ title: String) -> some View {
+        HStack(spacing: 5) {
+            Capsule().fill(c).frame(width: 18, height: 3)
+            Text(title)
+        }
     }
 
     // MARK: Gantt
@@ -64,16 +112,22 @@ extension InstallTrackingPage {
         let axis = InstallAxis(g)
         return VStack(spacing: 0) {
             ganttHeader(axis)
-            ForEach(g.rows) { row in
-                stepRow(row, axis: axis)
-                if isExpanded(row) {
-                    ForEach(row.subs) { subRow($0, parent: row, axis: axis) }
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(g.rows) { row in
+                        stepRow(row, axis: axis)
+                        if isExpanded(row) {
+                            ForEach(row.subs) { subRow($0, parent: row, axis: axis) }
+                        }
+                    }
                 }
             }
+            .scrollIndicators(.automatic)
+            // Sundays, days off and today's column behind the rows, today's line over them; they don't scroll
+            .background(alignment: .topLeading) { axisLayer(axis) { x, w, h in InstallColumns(axis: axis, nonWorking: nonWorking, x: x, width: w, height: h) } }
+            .overlay(alignment: .topLeading) { axisLayer(axis) { x, w, h in todayLine(axis, x: x, w: w, h: h) } }
         }
-        // weekends and holidays hatched, and today's dashed line, behind and over the rows
-        .background(alignment: .topLeading) { axisLayer(axis) { x, w, h in nonWorkingHatch(axis, nonWorking, x: x, w: w, h: h) } }
-        .overlay(alignment: .topLeading) { axisLayer(axis) { x, w, h in todayLine(axis, x: x, w: w, h: h) } }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     /// A layer over the bars' column only, given where it starts, its width and height.
@@ -85,29 +139,17 @@ extension InstallTrackingPage {
         .allowsHitTesting(false)
     }
 
-    private func nonWorkingHatch(_ axis: InstallAxis, _ days: Set<Date>, x: CGFloat, w: CGFloat, h: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
-            if axis.unit == .day {
-                ForEach(axis.columns.filter { days.contains($0) }, id: \.self) { d in
-                    InstallHatch(ink: Theme.inkFaint.opacity(0.25))
-                        .frame(width: axis.columnWidth(w), height: max(h - InstallAxis.headerHeight, 0))
-                        .offset(x: x + axis.x(d, w), y: InstallAxis.headerHeight)
-                }
-            }
-        }
-    }
-
     private func todayLine(_ axis: InstallAxis, x: CGFloat, w: CGFloat, h: CGFloat) -> some View {
         Path { p in
             // the middle of today's day, in a week column too
             let tx = x + (axis.x(axis.today, w) + axis.xEnd(axis.today, w)) / 2
-            p.move(to: CGPoint(x: tx, y: InstallAxis.headerHeight - 4))
+            p.move(to: CGPoint(x: tx, y: 0))
             p.addLine(to: CGPoint(x: tx, y: h))
         }
-        .stroke(Theme.danger, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+        .stroke(Theme.danger, lineWidth: 1.5)
     }
 
-    /// `ขั้นตอน`, then the months over the days (or weeks), today in a red pill.
+    /// `ขั้นตอน`, then the months over the days (or weeks), Sundays rose and today in a red pill.
     private func ganttHeader(_ axis: InstallAxis) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             Text("ขั้นตอน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
@@ -120,8 +162,9 @@ extension InstallTrackingPage {
                 }
                 ForEach(axis.labelled, id: \.self) { d in
                     let today = axis.unit == .day ? Calendar.current.isDate(d, inSameDayAs: axis.today) : axis.contains(axis.today, week: d)
+                    let sunday = axis.unit == .day && InstallPlanData.isSunday(d)
                     Text(axis.label(d)).font(.sarabunFixed(12, today ? .bold : .regular))
-                        .foregroundStyle(today ? Theme.onPrimary : Theme.inkMuted)
+                        .foregroundStyle(today ? Theme.onPrimary : sunday ? Theme.survey : Theme.inkMuted)
                         .padding(.horizontal, today ? 7 : 0).frame(height: 16)
                         .background { if today { Capsule().fill(Theme.danger) } }
                         .fixedSize()
@@ -141,23 +184,27 @@ extension InstallTrackingPage {
         !row.subs.isEmpty && ((row.status == .current) != toggled.contains(row.id))
     }
 
-    private func percentInk(_ status: InstallGantt.Status) -> Color {
-        switch status {
-        case .done: Theme.successInk
-        case .current: Theme.primary
-        case .waiting: Theme.inkMuted
+    /// The right column's pill: green done, blue running, grey waiting.
+    private func percentPill(_ row: InstallGantt.Row) -> some View {
+        let (ink, fill): (Color, Color) = switch row.status {
+        case .done: (Theme.successInk, Theme.successSoft)
+        case .current: (Theme.onPrimary, Theme.primary)
+        case .waiting: (Theme.inkFaint, Theme.segmentTrack)
         }
+        return Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(15, .bold)).foregroundStyle(ink).monospacedDigit()
+            .frame(minWidth: 48).padding(.horizontal, 4).frame(height: 24)
+            .background(fill, in: Capsule())
     }
 
     private func stepRow(_ row: InstallGantt.Row, axis: InstallAxis) -> some View {
         let open = isExpanded(row)
         return HStack(spacing: 0) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button {
                     if toggled.contains(row.id) { toggled.remove(row.id) } else { toggled.insert(row.id) }
                 } label: {
                     Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.inkMuted).frame(width: 30, height: 44).contentShape(Rectangle())
+                        .foregroundStyle(Theme.inkMuted).frame(width: 26, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .opacity(row.subs.isEmpty ? 0 : 1).disabled(row.subs.isEmpty)
@@ -168,7 +215,7 @@ extension InstallTrackingPage {
                         // the MP plan's long task names get two lines when there is no sub-task count under them
                         Text(row.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(2).lineSpacing(-2)
                     } else {
-                        Text(row.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).frame(height: 21).lineLimit(1)
+                        Text(row.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).frame(height: 21).lineLimit(1).minimumScaleFactor(0.8)
                         Text("งานย่อย \(row.subs.filter { $0.percent >= 99.95 }.count)/\(row.subs.count)")
                             .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).frame(height: 17)
                     }
@@ -177,12 +224,11 @@ extension InstallTrackingPage {
             }
             .frame(width: Self.nameWidth, alignment: .leading)
             GeometryReader { geo in InstallBars(row: row, axis: axis, width: geo.size.width) }
-                .frame(height: 48)
-            Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(18, .bold)).foregroundStyle(percentInk(row.status)).monospacedDigit()
-                .frame(width: Self.percentWidth, alignment: .trailing)
+                .frame(height: Self.stageHeight)
+            percentPill(row).frame(width: Self.percentWidth, alignment: .trailing)
         }
-        .frame(height: 48)
-        .background(row.status == .current ? Theme.primarySoft.opacity(0.35) : .clear)
+        .frame(height: Self.stageHeight)
+        .background(row.status == .current ? Theme.primary.opacity(0.035) : .clear)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
         .contentShape(Rectangle())
         .onTapGesture { stage = row }
@@ -198,16 +244,16 @@ extension InstallTrackingPage {
             switch row.status {
             case .done:
                 Circle().fill(Theme.success)
-                Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.onPrimary)
+                Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onPrimary)
             case .current:
                 Circle().fill(Theme.primary)
                 Text(row.code).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.onPrimary).minimumScaleFactor(0.7)
             case .waiting:
-                Circle().fill(Theme.hairline)
+                Circle().fill(Theme.segmentTrack)
                 Text(row.code).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.7)
             }
         }
-        .frame(width: 30, height: 30)
+        .frame(width: 28, height: 28)
         .accessibilityHidden(true)
     }
 
@@ -223,59 +269,78 @@ extension InstallTrackingPage {
             .padding(.trailing, -150)
             .zIndex(1)
             GeometryReader { geo in InstallSubBar(sub: s, parent: parent, axis: axis, width: geo.size.width) }
-                .frame(height: 31)
-            Text("\(Int(s.percent.rounded()))%").font(.sarabunFixed(15, .bold)).foregroundStyle(s.percent >= 99.95 ? Theme.successInk : Theme.inkMuted)
+                .frame(height: Self.subHeight)
+            Text("\(Int(s.percent.rounded()))%").font(.sarabunFixed(14, .bold)).foregroundStyle(s.percent >= 99.95 ? Theme.successInk : Theme.inkFaint)
                 .monospacedDigit().frame(width: Self.percentWidth, alignment: .trailing)
         }
-        .frame(height: 44)
-        .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+        .frame(height: Self.subHeight)
+        // a rule under the stage's disc ties the sub-tasks to it
+        .overlay(alignment: .leading) { Rectangle().fill(Theme.borderSubtle).frame(width: 1).padding(.leading, 48) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline.opacity(0.6)).frame(height: 1) }
         .accessibilityElement(children: .combine)
     }
 
     // MARK: S-curve
 
-    private func curvePanel(_ data: InstallPageData) -> some View {
-        HStack(alignment: .top, spacing: 18) {
-            if let t = data.tracking { curveSummary(t) }
-            if let curve = data.curve, !curve.weeks.isEmpty {
-                InstallCurveChart(curve: curve, today: data.gantt?.today ?? .now, forecastEnd: data.tracking?.forecastEnd())
-                    .frame(height: 340)
-                    .frame(maxWidth: .infinity)
+    @ViewBuilder private func curvePanel(_ data: InstallPageData) -> some View {
+        if data.curveDays.contains(where: { $0.actual != nil || $0.planned > 0 }) {
+            VStack(alignment: .leading, spacing: 6) {
+                InstallCurveChart(days: data.curveDays, today: data.gantt?.today ?? .now, forecastEnd: data.tracking?.forecastEnd(),
+                                  nonWorking: data.nonWorking, waitLabel: data.waitLabel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityElement()
-                    .accessibilityLabel("S-curve แผนสะสมเทียบงานจริงสะสม")
-            } else {
-                Text("ยังไม่มีแผน MP").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 200)
+                    .accessibilityLabel("S-curve แผนสะสมเทียบงานจริงสะสมรายวัน")
+                    .accessibilityValue(curveSummary(data))
+                HStack(spacing: 18) {
+                    HStack(spacing: 4) {
+                        RoundedRectangle(cornerRadius: 2).fill(Theme.ganttTrack).frame(width: 10, height: 12)
+                        RoundedRectangle(cornerRadius: 2).fill(Theme.primary.opacity(0.55)).frame(width: 10, height: 12)
+                        Text("แท่ง = งานต่อวัน (แผน · จริง)")
+                    }
+                    Text("เส้นแดงที่วันนี้ = ห่างจากแผน")
+                }
+                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                .padding(.leading, 48)
+                .accessibilityHidden(true)
             }
+            .padding(.top, 4)
+        } else {
+            Text("ยังไม่มีแผน MP").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.top, 4)
     }
 
-    private func curveSummary(_ t: InstallTracking) -> some View {
+    private func curveSummary(_ data: InstallPageData) -> String {
+        guard let t = data.tracking else { return "" }
         let late = t.slackDays()
-        return VStack(alignment: .leading, spacing: 10) {
-            summaryBlock("แผนสะสม ณ วันนี้", "\(Int(t.planned.rounded()))%", Theme.inkMuted)
-            summaryBlock("งานจริงสะสม", "\(Int(t.actual.rounded()))%", Theme.primary)
-            summaryBlock("ต่างจากแผน", (t.variance > 0 ? "+" : "") + "\(t.variance)%",
-                         t.schedule == .behind ? Theme.dangerText : Theme.successInk)
-            summaryBlock("คาดเสร็จงานติดตั้ง", ThaiFormat.numericDate.string(from: t.forecastEnd()), late < 0 ? Theme.dangerText : Theme.navy,
-                         note: late < 0 ? "ช้า \(-late) วัน" : "ตามกำหนด")
-        }
-        .frame(width: 210, alignment: .leading)
+        return "แผน \(Int(t.planned.rounded()))% จริง \(Int(t.actual.rounded()))% · คาดเสร็จ \(ThaiFormat.numericDate.string(from: t.forecastEnd()))"
+            + (late < 0 ? " ช้า \(-late) วัน" : "")
     }
+}
 
-    private func summaryBlock(_ label: String, _ value: String, _ ink: Color, note: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(value).font(.sarabunFixed(24, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
-                if let note { Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+/// The columns behind the Gantt's rows: Sundays tinted, days off and waiting days hatched, today tinted red.
+struct InstallColumns: View {
+    let axis: InstallAxis
+    let nonWorking: Set<Date>
+    let x: CGFloat
+    let width: CGFloat
+    let height: CGFloat
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if axis.unit == .day {
+                ForEach(axis.columns, id: \.self) { d in
+                    let cw = axis.columnWidth(width)
+                    if nonWorking.contains(d) {
+                        InstallHatch(ink: Theme.installWait, line: 6).frame(width: cw, height: height).offset(x: x + axis.x(d, width))
+                    } else if InstallPlanData.isSunday(d) {
+                        Theme.installSunday.frame(width: cw, height: height).offset(x: x + axis.x(d, width))
+                    }
+                }
             }
+            let tx = axis.x(axis.today, width), te = axis.xEnd(axis.today, width)
+            Theme.installCritical.opacity(0.06).frame(width: max(te - tx, 1), height: height).offset(x: x + tx)
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.stripFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.track))
-        .accessibilityElement(children: .combine)
+        .frame(width: x + width, height: height, alignment: .topLeading)
     }
 }
 
@@ -351,7 +416,8 @@ struct InstallAxis {
         unit == .day ? "\(MasterSchedule.calendar.component(.day, from: d)) " + Self.weekday.string(from: d) : ThaiFormat.dayMonth.string(from: d)
     }
 
-    private static let weekday: DateFormatter = {
+    /// `พฤ`, `อา`: a day's short Thai name.
+    static let weekday: DateFormatter = {
         let f = DateFormatter()
         f.locale = ThaiFormat.locale
         f.dateFormat = "EEEEE"
@@ -359,37 +425,50 @@ struct InstallAxis {
     }()
 }
 
-/// A step row's bars: the plan in light grey, the actual green (done) or blue (to today), the forecast dashed, and the
-/// days past the plan red and hatched with `+n วัน`.
+/// A step row's capsules: the plan as a light 24 pt track, the actual over it (green when done; while it runs, blue to
+/// its percent of the plan), the forecast dashed, and the days past the plan red with `+n วัน`.
 struct InstallBars: View {
     let row: InstallGantt.Row
     let axis: InstallAxis
     let width: CGFloat
 
     var body: some View {
-        let x0 = axis.x(row.start, width), x1 = axis.xEnd(row.end, width)
+        let x0 = axis.x(row.start, width) + 3, x1 = axis.xEnd(row.end, width) - 3
+        let plan = max(x1 - x0, 8)
         ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 5).fill(Theme.ganttTrack).frame(width: max(x1 - x0, 4), height: 20).offset(x: x0)
-            if let a = row.actualStart, let b = row.actualEnd {
-                let ax = axis.x(a, width)
-                // a running task fills to the middle of today
-                let bx = row.status == .current ? (axis.x(b, width) + axis.xEnd(b, width)) / 2 : axis.xEnd(b, width)
-                RoundedRectangle(cornerRadius: 5).fill(row.status == .done ? Theme.success : Theme.primary)
-                    .frame(width: max(min(bx, x1) - ax, 3), height: 14).offset(x: ax + 0)
+            Capsule().fill(Theme.segmentTrack).overlay(Capsule().strokeBorder(Theme.borderSubtle))
+                .frame(width: plan, height: 24).offset(x: x0)
+            switch row.status {
+            case .done:
+                if let a = row.actualStart, let b = row.actualEnd {
+                    let ax = max(axis.x(a, width) + 7, x0 + 4), bx = min(axis.xEnd(b, width) - 7, x1 - 4)
+                    Capsule().fill(Theme.success).frame(width: max(bx - ax, 6), height: 16).offset(x: ax)
+                }
+            case .current:
+                let inner = max(plan - 8, 6), share = CGFloat(min(max(row.percent, 0), 100)) / 100
+                Capsule().fill(Theme.primary.opacity(0.14)).frame(width: inner, height: 16)
+                    .overlay(alignment: .leading) { Capsule().fill(Theme.primary).frame(width: max(inner * share, 6)) }
+                    .offset(x: x0 + 4)
+            case .waiting:
+                EmptyView()
             }
             if row.overrunDays > 0, row.status != .done || (row.actualEnd.map { $0 > row.end } ?? false) {
-                let ox = x1 + 4, oend = x1 + width * CGFloat(row.overrunDays) / CGFloat(max(axis.dayCount, 1))
-                InstallHatch(ink: Theme.danger).frame(width: max(oend - ox, 6), height: 14)
-                    .clipShape(RoundedRectangle(cornerRadius: 3)).offset(x: ox)
+                let ox = x1 + 7, oend = x1 + width * CGFloat(row.overrunDays) / CGFloat(max(axis.dayCount, 1)) - 4
+                Group {
+                    if row.status == .done { Capsule().fill(Theme.danger) } else { InstallHatch(ink: Theme.danger).clipShape(Capsule()) }
+                }
+                .frame(width: max(oend - ox, 10), height: 16).offset(x: ox)
                 Text("+\(row.overrunDays) วัน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dangerText).fixedSize()
-                    .offset(x: oend + 6)
-            } else if let f = row.forecastEnd, row.status == .current, f > (row.actualEnd ?? row.start) {
-                let fx = axis.xEnd(f, width), sx = (axis.x(row.actualEnd ?? row.start, width) + axis.xEnd(row.actualEnd ?? row.start, width)) / 2
-                RoundedRectangle(cornerRadius: 5).strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
-                    .frame(width: max(fx - sx, 6), height: 18).offset(x: sx)
+                    .padding(.horizontal, 8).frame(height: 22).background(Theme.dangerSoft, in: Capsule())
+                    .offset(x: max(oend - ox, 10) + ox + 8)
+            } else if let f = row.forecastEnd, row.status == .current, f > row.end {
+                let fx = axis.xEnd(f, width) - 3
+                Capsule().strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .background(Theme.primary.opacity(0.06), in: Capsule())
+                    .frame(width: max(fx - x1 - 6, 10), height: 24).offset(x: x1 + 6)
             }
         }
-        .frame(width: width, height: 48, alignment: .leading)
+        .frame(width: width, height: InstallTrackingPage.stageHeight, alignment: .leading)
         .accessibilityHidden(true)
     }
 }
@@ -409,7 +488,7 @@ struct InstallSubBar: View {
             Capsule().fill(sub.percent >= 99.95 ? Theme.success : Theme.primary).frame(width: w * CGFloat(min(max(sub.percent, 0), 100)) / 100, height: 8)
         }
         .offset(x: x0 + 4)
-        .frame(width: width, height: 31, alignment: .leading)
+        .frame(width: width, height: InstallTrackingPage.subHeight, alignment: .leading)
         .accessibilityHidden(true)
     }
 }
@@ -417,6 +496,7 @@ struct InstallSubBar: View {
 /// Diagonal stripes, for days past the plan and days off.
 struct InstallHatch: View {
     let ink: Color
+    var line: CGFloat = 2.5
 
     var body: some View {
         Canvas { ctx, size in
@@ -425,81 +505,165 @@ struct InstallHatch: View {
             while x < size.width {
                 p.move(to: CGPoint(x: x, y: size.height))
                 p.addLine(to: CGPoint(x: x + size.height, y: 0))
-                x += 6
+                x += max(6, line * 2)
             }
-            ctx.stroke(p, with: .color(ink), lineWidth: 2.5)
+            ctx.stroke(p, with: .color(ink), lineWidth: line)
         }
     }
 }
 
-/// The station's S-curve: cumulative plan (grey dashed), actual (blue, to this week), and the forecast (blue dashed)
-/// from today to the forecast end at 100 %. Today's red line with `แผน x%` / `จริง y%` beside it, past the plan's last
-/// week too.
+/// The station's S-curve by day (docs/ui/install-tracking-ipad-v2 §3): each day's planned and actual work as bars
+/// (×3 so they read), the cumulative plan and actual over filled areas, today's column with its pill and the red gap
+/// between plan and actual, the forecast dashed to its end dot at 100 %, and the hatched days off.
 struct InstallCurveChart: View {
-    let curve: PWAPlan.Curve
+    let days: [InstallPageData.CurveDay]
     let today: Date
     let forecastEnd: Date?
+    let nonWorking: Set<Date>
+    let waitLabel: String?
+
+    private static let weekday: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = ThaiFormat.locale
+        f.calendar = MasterSchedule.calendar
+        f.timeZone = MasterSchedule.calendar.timeZone
+        f.dateFormat = "EEEEE"
+        return f
+    }()
 
     var body: some View {
-        Canvas { ctx, size in
-            let left: CGFloat = 40, right = size.width - 8, top: CGFloat = 8, bottom = size.height - 24
-            let first = curve.weeks.first ?? .now
-            let lastWeek = max(CGFloat(curve.weeks.count - 1), 1)
-            let forecastWeek = forecastEnd.map { CGFloat($0.timeIntervalSince(first) / (7 * 86_400)) } ?? 0
-            let todayWeek = CGFloat(today.timeIntervalSince(first) / (7 * 86_400))
-            let span = max(lastWeek, forecastWeek, todayWeek)
-            func x(_ w: CGFloat) -> CGFloat { left + w / span * (right - left) }
-            func y(_ p: Double) -> CGFloat { bottom - CGFloat(min(max(p, 0), 100)) / 100 * (bottom - top) }
-            func label(_ s: String, _ c: Color, bold: Bool = false) -> Text { Text(s).font(.sarabunFixed(12, bold ? .bold : .regular)).foregroundColor(c) }
-            func line(_ v: [Double]) -> Path {
-                var p = Path()
-                for (i, value) in v.enumerated() {
-                    let pt = CGPoint(x: x(CGFloat(i)), y: y(value))
-                    if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+        Canvas { ctx, size in draw(&ctx, size) }
+    }
+
+    private func label(_ s: String, _ c: Color, size: CGFloat = 12, bold: Bool = false) -> Text {
+        Text(s).font(.sarabunFixed(size, bold ? .bold : .regular)).foregroundColor(c)
+    }
+
+    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize) {
+        let cal = MasterSchedule.calendar
+        guard !days.isEmpty else { return }
+        let day0 = cal.startOfDay(for: today)
+        // the axis runs to the forecast end when it falls past the plan
+        var axis = days.map(\.date)
+        if let f = forecastEnd.map(cal.startOfDay(for:)), let last = axis.last, f > last {
+            var d = last
+            while d < f, let n = cal.date(byAdding: .day, value: 1, to: d) { axis.append(n); d = n }
+        }
+        let left: CGFloat = 48, right = size.width - 12, top: CGFloat = 26, bottom = size.height - 30
+        let n = CGFloat(max(axis.count, 1)), cw = (right - left) / n
+        func index(_ d: Date) -> Int? { axis.firstIndex { cal.isDate($0, inSameDayAs: d) } }
+        func xs(_ i: Int) -> CGFloat { left + cw * CGFloat(i) }
+        func y(_ p: Double) -> CGFloat { bottom - CGFloat(min(max(p, 0), 100)) / 100 * (bottom - top) }
+
+        // columns: Sundays, days off hatched (with what they wait on), today
+        var waitRun: [Int] = []
+        for (i, d) in axis.enumerated() {
+            let r = CGRect(x: xs(i), y: top, width: cw, height: bottom - top)
+            if nonWorking.contains(d) {
+                waitRun.append(i)
+                ctx.drawLayer { l in
+                    l.clip(to: Path(r))
+                    var p = Path(), x = r.minX - r.height
+                    while x < r.maxX { p.move(to: CGPoint(x: x, y: r.maxY)); p.addLine(to: CGPoint(x: x + r.height, y: r.minY)); x += 12 }
+                    l.stroke(p, with: .color(Theme.installWait), lineWidth: 6)
                 }
-                return p
+            } else if InstallPlanData.isSunday(d) {
+                ctx.fill(Path(r), with: .color(Theme.installSunday))
             }
-            for p in stride(from: 0.0, through: 100, by: 25) {
-                var g = Path()
-                g.move(to: CGPoint(x: left, y: y(p))); g.addLine(to: CGPoint(x: right, y: y(p)))
-                ctx.stroke(g, with: .color(Theme.hairline), lineWidth: 1)
-                ctx.draw(label("\(Int(p))%", Theme.inkFaint), at: CGPoint(x: 0, y: y(p)), anchor: .leading)
+        }
+        if let w = waitLabel, let a = waitRun.first, let b = waitRun.last {
+            ctx.draw(label(w, Theme.inkMuted), at: CGPoint(x: (xs(a) + xs(b + 1)) / 2, y: bottom - 10), anchor: .center)
+        }
+        let ti = index(day0)
+        if let ti {
+            ctx.fill(Path(CGRect(x: xs(ti), y: top, width: cw, height: bottom - top)), with: .color(Theme.installCritical.opacity(0.06)))
+        }
+        // grid and Y labels
+        for p in stride(from: 0.0, through: 100, by: 25) {
+            var g = Path()
+            g.move(to: CGPoint(x: left, y: y(p))); g.addLine(to: CGPoint(x: right, y: y(p)))
+            ctx.stroke(g, with: .color(Theme.hairline), style: StrokeStyle(lineWidth: 1, dash: p == 0 ? [] : [4, 4]))
+            ctx.draw(label("\(Int(p))%", Theme.inkFaint), at: CGPoint(x: left - 10, y: y(p)), anchor: .trailing)
+        }
+        var axisLine = Path()
+        axisLine.move(to: CGPoint(x: left, y: top - 6)); axisLine.addLine(to: CGPoint(x: left, y: bottom))
+        ctx.stroke(axisLine, with: .color(Theme.borderSubtle), lineWidth: 1)
+
+        // each day's work, plan grey and actual blue side by side
+        let bw = min(cw * 0.26, 18)
+        for (i, d) in days.enumerated() {
+            let prev = i > 0 ? days[i - 1] : nil
+            let pInc = d.planned - (prev?.planned ?? 0)
+            if pInc > 0 {
+                let h = (bottom - top) * CGFloat(min(pInc * 3, 100)) / 100
+                ctx.fill(Path(roundedRect: CGRect(x: xs(i) + cw / 2 - bw - 1, y: bottom - h, width: bw, height: h), cornerRadius: 2), with: .color(Theme.ganttTrack))
             }
-            ctx.stroke(line(curve.plan), with: .color(Theme.inkFaint), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
-            ctx.stroke(line(curve.actual), with: .color(Theme.primary), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-            if todayWeek >= 0 {
-                let tx = x(min(todayWeek, span))
-                // the actual stops at its last week; past it the work stood still until today
-                let lastActual = CGFloat(max(curve.actual.count - 1, 0))
-                if todayWeek > lastActual, curve.todayIndex == nil {
-                    var flat = Path()
-                    flat.move(to: CGPoint(x: x(lastActual), y: y(curve.done))); flat.addLine(to: CGPoint(x: tx, y: y(curve.done)))
-                    ctx.stroke(flat, with: .color(Theme.primary), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            if let a = d.actual {
+                let inc = a - (prev?.actual ?? 0)
+                if inc > 0 {
+                    let h = (bottom - top) * CGFloat(min(inc * 3, 100)) / 100
+                    ctx.fill(Path(roundedRect: CGRect(x: xs(i) + cw / 2 + 1, y: bottom - h, width: bw, height: h), cornerRadius: 2),
+                             with: .color(Theme.primary.opacity(0.55)))
                 }
-                if forecastWeek > todayWeek, curve.done < 100 {
-                    var f = Path()
-                    f.move(to: CGPoint(x: tx, y: y(curve.done))); f.addLine(to: CGPoint(x: x(forecastWeek), y: y(100)))
-                    ctx.stroke(f, with: .color(Theme.primary), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
-                }
-                var t = Path()
-                t.move(to: CGPoint(x: tx, y: top)); t.addLine(to: CGPoint(x: tx, y: bottom))
-                ctx.stroke(t, with: .color(Theme.danger), lineWidth: 1.5)
-                ctx.draw(label("แผน \(Int(curve.planned.rounded()))%", Theme.inkMuted, bold: true), at: CGPoint(x: tx + 8, y: max(y(curve.planned) - 12, top + 10)), anchor: .leading)
-                ctx.draw(label("จริง \(Int(curve.done.rounded()))%", Theme.primary, bold: true), at: CGPoint(x: tx + 8, y: y(curve.done) + 12), anchor: .leading)
             }
-            // a month label where each month begins
-            let cal = MasterSchedule.calendar
-            var m = cal.date(from: cal.dateComponents([.year, .month], from: first)) ?? first
-            var placed: CGFloat = -100
-            while m <= cal.date(byAdding: .day, value: Int(span * 7), to: first) ?? first {
-                let w = max(CGFloat(m.timeIntervalSince(first) / (7 * 86_400)), 0)
-                if x(w) - placed > 50 {
-                    ctx.draw(label(ThaiFormat.month.string(from: m), Theme.inkMuted), at: CGPoint(x: x(w), y: size.height - 6), anchor: .leading)
-                    placed = x(w)
-                }
-                guard let next = cal.date(byAdding: .month, value: 1, to: m) else { break }
-                m = next
+        }
+
+        // the cumulative lines: from 0 at the first day's start to each day's end
+        func points(_ v: [Double]) -> [CGPoint] { [CGPoint(x: left, y: y(0))] + v.enumerated().map { CGPoint(x: xs($0.offset + 1), y: y($0.element)) } }
+        func line(_ pts: [CGPoint]) -> Path { var p = Path(); p.addLines(pts); return p }
+        func area(_ pts: [CGPoint]) -> Path {
+            var p = line(pts)
+            if let last = pts.last { p.addLine(to: CGPoint(x: last.x, y: bottom)); p.addLine(to: CGPoint(x: left, y: bottom)); p.closeSubpath() }
+            return p
+        }
+        let plan = points(days.map(\.planned))
+        let actual = points(days.compactMap(\.actual))
+        ctx.fill(area(plan), with: .color(Theme.inkFaint.opacity(0.10)))
+        ctx.fill(area(actual), with: .linearGradient(Gradient(colors: [Theme.primary.opacity(0.30), Theme.primary.opacity(0.06)]),
+                                                     startPoint: CGPoint(x: 0, y: top), endPoint: CGPoint(x: 0, y: bottom)))
+        ctx.stroke(line(plan), with: .color(Theme.inkFaint), style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
+        ctx.stroke(line(actual), with: .color(Theme.primary), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+
+        // today: the line, its pill, the gap to plan and the two figures
+        if let ti, let t = days.indices.contains(ti) ? days[ti] : nil {
+            let tx = xs(ti + 1)
+            var tl = Path(); tl.move(to: CGPoint(x: tx, y: top)); tl.addLine(to: CGPoint(x: tx, y: bottom))
+            ctx.stroke(tl, with: .color(Theme.danger), lineWidth: 1.5)
+            let pill = ctx.resolve(label("วันนี้ " + ThaiFormat.dayMonth.string(from: day0), Theme.onPrimary, size: 13, bold: true))
+            let ps = pill.measure(in: size)
+            let pr = CGRect(x: tx - ps.width / 2 - 9, y: top - 22, width: ps.width + 18, height: 20)
+            ctx.fill(Path(roundedRect: pr, cornerRadius: 10), with: .color(Theme.danger))
+            ctx.draw(pill, at: CGPoint(x: pr.midX, y: pr.midY), anchor: .center)
+            let done = t.actual ?? days[..<ti].last { $0.actual != nil }?.actual ?? 0
+            var gap = Path(); gap.move(to: CGPoint(x: tx, y: y(t.planned))); gap.addLine(to: CGPoint(x: tx, y: y(done)))
+            ctx.stroke(gap, with: .color(Theme.danger), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            for (v, c) in [(t.planned, Theme.inkFaint), (done, Theme.primary)] {
+                let r = CGRect(x: tx - 5, y: y(v) - 5, width: 10, height: 10)
+                ctx.fill(Path(ellipseIn: r), with: .color(c))
+                ctx.stroke(Path(ellipseIn: r), with: .color(Theme.surface), lineWidth: 2)
             }
+            ctx.draw(label("แผน \(Int(t.planned.rounded()))%", Theme.inkMuted, size: 14, bold: true), at: CGPoint(x: tx - 10, y: y(max(t.planned, done)) - 14), anchor: .trailing)
+            ctx.draw(label("จริง \(Int(done.rounded()))%", Theme.primary, size: 14, bold: true), at: CGPoint(x: tx + 10, y: y(min(t.planned, done)) + 14), anchor: .leading)
+            // the forecast from today's actual to 100 % on its end day
+            if let f = forecastEnd.map(cal.startOfDay(for:)), let fi = index(f), done < 100 {
+                let end = CGPoint(x: xs(fi + 1), y: y(100))
+                var fp = Path(); fp.move(to: CGPoint(x: tx, y: y(done))); fp.addLine(to: end)
+                ctx.stroke(fp, with: .color(Theme.primary), style: StrokeStyle(lineWidth: 2.5, dash: [6, 5]))
+                let dot = CGRect(x: end.x - 6, y: end.y - 6, width: 12, height: 12)
+                ctx.fill(Path(ellipseIn: dot), with: .color(Theme.surface))
+                ctx.stroke(Path(ellipseIn: dot), with: .color(Theme.primary), lineWidth: 2.5)
+                ctx.draw(label("คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f)) · 100%", Theme.primary, size: 14, bold: true),
+                         at: CGPoint(x: end.x - 12, y: end.y), anchor: .trailing)
+            }
+        }
+
+        // X labels: every day, or every other past 20; Sundays rose, today bold red
+        let step = axis.count > 40 ? 7 : axis.count > 20 ? 2 : 1
+        for (i, d) in axis.enumerated() where i % step == 0 || i == ti {
+            let isToday = i == ti
+            let text = "\(cal.component(.day, from: d)) " + Self.weekday.string(from: d)
+            ctx.draw(label(text, isToday ? Theme.dangerText : InstallPlanData.isSunday(d) ? Theme.survey : Theme.inkMuted, size: 13, bold: isToday),
+                     at: CGPoint(x: xs(i) + cw / 2, y: bottom + 16), anchor: .center)
         }
     }
 }

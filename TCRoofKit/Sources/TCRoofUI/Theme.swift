@@ -132,6 +132,17 @@ public enum Theme {
     /// The page's tab bar track, and its tabs' resting text.
     public static let projectTabTrack = Color(light: 0xE9EEF5, dark: 0x1C2734)
     public static let projectTabInk = Color(light: 0x3B4A60, dark: 0x9DB0C7)
+    // iPad install tracking v2 (docs/ui/install-tracking-ipad-v2)
+    /// The outline of a critical-path bar that isn't done, and today's column tint (at 6 %).
+    public static let installCritical = Color(light: 0xC0392B, dark: 0xF07468)
+    /// A sub-task's dotted float tail.
+    public static let installFloat = Color(light: 0x8FA3BC, dark: 0x6A7D95)
+    /// Stripes of the days waiting on the utility, and of days off.
+    public static let installWait = Color(light: 0x8FA3BC, dark: 0x5E6E83, opacity: 0.16)
+    /// A Sunday's column.
+    public static let installSunday = Color(light: 0xF8FAFC, dark: 0x18212C)
+    /// A planned sub-task bar.
+    public static let installPlanned = Color(light: 0xAFC0D4, dark: 0x4A5D74)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
     public static let segmentTrack = Color(light: 0xEEF2F7, dark: 0x1C2734)

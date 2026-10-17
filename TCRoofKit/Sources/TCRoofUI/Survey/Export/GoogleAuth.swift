@@ -10,7 +10,17 @@ import DriveSync
 /// Needs an OAuth client of type "iOS" in Google Cloud Console; paste its client ID in Settings.
 public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable {
     public var clientID: String { didSet { if clientID != oldValue { signOut() } } }
-    public static let scope = "openid email profile https://www.googleapis.com/auth/drive.file"
+    /// Full Drive (not `drive.file`): a TC engineer writes into the company account's center folder, which `drive.file`
+    /// can't see since another account made it. Accounts signed in before ask again (`hasFullDrive`).
+    public static let scope = "openid email profile https://www.googleapis.com/auth/drive"
+    static let fullDrive = "https://www.googleapis.com/auth/drive"
+    private static let grantedKey = "solarSurvey.googleScope"
+
+    /// Google granted full Drive to the signed-in account (from the last token's `scope`). False for an account
+    /// signed in under `drive.file`: it uploads to its own Drive until it signs in again.
+    public var hasFullDrive: Bool {
+        (UserDefaults.standard.string(forKey: Self.grantedKey) ?? "").split(separator: " ").contains { $0 == Self.fullDrive }
+    }
 
     private let lock = NSLock()
     private var accessTokenValue: String?
@@ -80,6 +90,7 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
         Keychain.delete("google.refresh")
         UserDefaults.standard.removeObject(forKey: "solarSurvey.googleEmail")
         UserDefaults.standard.removeObject(forKey: "solarSurvey.googleName")
+        UserDefaults.standard.removeObject(forKey: Self.grantedKey)
     }
 
     public func accessToken() async throws -> String {
@@ -130,6 +141,7 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
             throw Failure.badResponse((obj["error_description"] as? String) ?? (obj["error"] as? String) ?? "HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)")
         }
         setToken(at, expiresIn: (obj["expires_in"] as? NSNumber)?.intValue ?? 3600)
+        if let granted = obj["scope"] as? String { UserDefaults.standard.set(granted, forKey: Self.grantedKey) }
         return obj
     }
 

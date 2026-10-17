@@ -107,7 +107,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .permitPPIM: (.allow, .allow, .deny),
         .engineerCertify: (.conditional, .conditional, .conditional),
         .attachFiles: (.allow, .allow, .conditional),
-        .driveUpload: (.allow, .allow, .deny),
+        .driveUpload: (.allow, .allow, .conditional),
         .ercFlow: (.allow, .allow, .deny),
         .stationDocsDrafts: (.allow, .allow, .deny),
         .workOrder: (.allow, .allow, .conditional),

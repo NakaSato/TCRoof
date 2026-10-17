@@ -112,6 +112,16 @@ public struct DriveClient: Sendable {
         return try JSONDecoder().decode(DriveFile.self, from: try await send(r))
     }
 
+    /// Gives `email` access to a file or folder (a folder's files inherit it), without an email from Drive.
+    public func share(_ id: String, with email: String, role: String = "reader") async throws {
+        var c = URLComponents(url: Self.api.appendingPathComponent(id).appendingPathComponent("permissions"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [.init(name: "sendNotificationEmail", value: "false"), .init(name: "fields", value: "id")]
+        var r = URLRequest(url: c.url!); r.httpMethod = "POST"
+        r.setValue("application/json; charset=UTF-8", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: ["role": role, "type": "user", "emailAddress": email])
+        _ = try await send(r)
+    }
+
     public func ensureFolder(_ name: String, parent: String) async throws -> DriveFile {
         if let f = try await findFolder(name, parent: parent) { return f }
         return try await createFolder(name, parent: parent)

@@ -4,7 +4,8 @@ import TCRoofUI
 import TCRoofCore
 
 enum DriveFolders {
-    /// Top-level folder in the signed-in user's Drive that holds one folder per job.
+    /// Top-level folder in the signed-in user's own Drive that holds one folder per job (a contractor's, or a TC
+    /// engineer's before the center folder is set: `DriveRoute`).
     static let root = "TCRoof Projects"
 
     static func name(for job: Job) -> String {
@@ -81,36 +82,37 @@ enum ProjectDriveUpload {
         guard total > 0 else { return }
 
         progress(0, total)
-        let folder = try await session.survey.driveFolder(DriveFolders.name(for: job), root: DriveFolders.root)
+        let route = DriveRoute(survey: session.survey)
+        let folder = try await route.jobFolder(job)
         job.driveFolderURL = folder.url.absoluteString
 
         var done = 0
         var subfolders: [String: String] = [:]
+        func target(_ path: [String]) async throws -> String {
+            guard !path.isEmpty else { return folder.id }
+            let key = path.joined(separator: "/")
+            if let id = subfolders[key] { return id }
+            let id = try await session.survey.driveSubfolder(path, under: folder.id)
+            subfolders[key] = id
+            return id
+        }
         for doc in docs {
-            var target = folder.id
-            if let path = doc.folderPath, !path.isEmpty {
-                if subfolders[path] == nil {
-                    subfolders[path] = try await session.survey.driveSubfolder(path.components(separatedBy: "/"), under: folder.id)
-                }
-                target = subfolders[path] ?? folder.id
-            }
-            let file = DriveUpload(name: doc.name, data: doc.data, mimeType: mimeType(for: doc.name))
-            doc.driveFileID = try await session.survey.driveUpload(file, to: target)
+            let place = route.place(doc, in: job)
+            let file = DriveUpload(name: place.name, data: doc.data, mimeType: mimeType(for: doc.name))
+            doc.driveFileID = try await session.survey.driveUpload(file, to: try await target(place.folder))
             done += 1
             progress(done, total)
         }
         for p in photos {
-            let path = p.folder.joined(separator: "/")
-            if subfolders[path] == nil { subfolders[path] = try await session.survey.driveSubfolder(p.folder, under: folder.id) }
             let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: "image/jpeg")
-            p.photo.driveFileID = try await session.survey.driveUpload(file, to: subfolders[path] ?? folder.id)
+            p.photo.driveFileID = try await session.survey.driveUpload(file, to: try await target(route.construction(p.folder)))
             done += 1
             progress(done, total)
         }
         if let inspection, let url = InspectionReport.renderPDF(inspection) {
             let data = try Data(contentsOf: url)
             let file = DriveUpload(name: url.lastPathComponent, data: data, mimeType: "application/pdf")
-            inspection.driveFileID = try await session.survey.driveUpload(file, to: folder.id)
+            inspection.driveFileID = try await session.survey.driveUpload(file, to: try await target(route.construction([])))
             progress(total, total)
         }
     }

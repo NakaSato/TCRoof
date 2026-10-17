@@ -296,7 +296,15 @@ struct JobDetailView: View {
 
     /// Upload button and link to the job's Drive folder.
     @ViewBuilder private var driveRow: some View {
-        if permissions.can(.driveUpload) { driveButtons }
+        if permissions.can(.driveUpload, on: job.access) { driveButtons }
+    }
+
+    /// Where the upload goes (`DriveRoute`), and what an account signed in before full Drive has to do.
+    private var driveDestination: String {
+        if permissions.role == .external { return "ไป Drive ของคุณ (TCRoof Projects) · ทีมเปิดดูได้" }
+        guard DriveConfig.centerFolderID != nil else { return "ไป Drive ของคุณ (TCRoof Projects) · ยังไม่ได้ตั้ง Drive กลาง" }
+        return session.survey.google.hasFullDrive ? "ไป Drive กลาง: 1. เอกสารส่งมอบ · 2. เอกสารระหว่างก่อสร้าง"
+            : "ยังไป Drive ของคุณ · ออกจากระบบแล้วลงชื่อเข้าใช้ใหม่เพื่ออัปโหลดเข้า Drive กลาง"
     }
 
     @ViewBuilder private var driveButtons: some View {
@@ -315,6 +323,7 @@ struct JobDetailView: View {
             }
         }
         .padding(.vertical, 4)
+        Text(driveDestination).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
         if job.inspection?.submittedAt != nil {
             Text("รวมรายงานใบตรวจรับงาน (ICL) ที่ลงนามแล้วเป็น PDF")
                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)

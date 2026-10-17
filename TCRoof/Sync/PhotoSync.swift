@@ -106,12 +106,14 @@ final class PhotoSync {
         for job in jobs where paused == 0 {
             let photos = ProjectDriveUpload.pendingPhotos(job)
             guard !photos.isEmpty else { continue }
-            let folder = try await survey.driveFolder(DriveFolders.name(for: job), root: DriveFolders.root)
+            let route = DriveRoute(survey: survey)
+            let folder = try await route.jobFolder(job)
             if job.driveFolderURL == nil { job.driveFolderURL = folder.url.absoluteString }
             var subfolders: [String: String] = [:]
             for p in photos where paused == 0 && !p.photo.isDeleted && p.photo.driveFileID == nil {
-                let path = p.folder.joined(separator: "/")
-                if subfolders[path] == nil { subfolders[path] = try await survey.driveSubfolder(p.folder, under: folder.id) }
+                let place = route.construction(p.folder)
+                let path = place.joined(separator: "/")
+                if subfolders[path] == nil { subfolders[path] = try await survey.driveSubfolder(place, under: folder.id) }
                 let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: "image/jpeg")
                 let id = try await survey.driveUpload(file, to: subfolders[path] ?? folder.id)
                 // deleted while it uploaded: the Drive file stays, the record isn't made

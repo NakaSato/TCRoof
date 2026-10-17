@@ -593,13 +593,17 @@ final class CloudSync {
         listeners.append(registration)
     }
 
-    /// `config/app.contactsSplit`, switched on in the Firebase console once every device runs this version: the jobs
-    /// are then sent again without their phone and address.
+    /// `config/app`, set in the Firebase console: `centerDriveFolder` and `driveShareWith` (`DriveConfig`), and
+    /// `contactsSplit`, switched on once every device runs this version: the jobs are then sent again without their
+    /// phone and address.
     private func listenConfig() {
         let registration = db.document(Self.configDocument).addSnapshotListener { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
+                // the center Drive (a folder id or link) and the team emails a contractor's job folder is shared with
+                DriveConfig.set(center: snapshot?.get("centerDriveFolder") as? String,
+                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [])
                 let split = snapshot?.get("contactsSplit") as? Bool ?? false
                 guard split != Job.contactsSplit else { return }
                 Job.contactsSplit = split

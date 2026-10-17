@@ -68,7 +68,6 @@ struct InstallPickerSheet: View {
                 Text(detail(j)).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             .lineLimit(1)
-            .opacity(ok ? 1 : 0.55)
             Spacer(minLength: 0)
             if ok {
                 Button { add(j.id) } label: {

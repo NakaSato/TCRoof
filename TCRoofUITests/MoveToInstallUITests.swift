@@ -20,6 +20,31 @@ final class MoveToInstallUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบย้ายติดตั้ง")).firstMatch
     }
 
+    /// An unfinished survey (`-surveyCompleteJob partial`) moves from its card's menu after the warning.
+    func testMoveUnfinishedFromMenu() {
+        var app = launch(["-surveyCompleteJob", "partial"])
+        let c = card(app)
+        XCTAssertTrue(c.waitForExistence(timeout: slow))
+        XCTAssertFalse(c.label.contains("ย้ายไปงานติดตั้ง"), "an unfinished card offers its next step: \(c.label)")
+        c.press(forDuration: 1.2)
+        let menu = app.buttons["ย้ายไปงานติดตั้ง"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "the menu offers the move")
+        menu.tap()
+        XCTAssertTrue(app.buttons["กรอกต่อ"].waitForExistence(timeout: 10), "the warning offers to go on filling")
+        let move = app.buttons["ย้ายทั้งที่ยังไม่ครบ"]
+        XCTAssertTrue(move.exists)
+        move.tap()
+        let phase = NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "ติดตั้ง กำลังทำ", "ติดตั้ง ยังไม่มีแผน MP")
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: phase, object: c)], timeout: 10), .completed, c.label)
+
+        // saved: still an installation after a relaunch
+        app.terminate()
+        app = launch()
+        let again = card(app)
+        XCTAssertTrue(again.waitForExistence(timeout: slow))
+        XCTAssertTrue(phase.evaluate(with: again), again.label)
+    }
+
     func testMoveFromCard() {
         // `TEST_RUNNER_MOVE_LINK=<syncID>` links the survey to that TCRoof job, to check its status afterwards
         let link = ProcessInfo.processInfo.environment["MOVE_LINK"].map { ["-surveyCompleteJobLink", $0] } ?? []

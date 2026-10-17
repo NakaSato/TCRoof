@@ -399,12 +399,14 @@ extension SurveyHomeView {
         #if DEBUG
         let d = UserDefaults.standard
         guard page == .project else { return }
-        // `-surveyCompleteJob YES` (UI tests): a new survey filled to 100% (docNo `UITEST-MOVE`), replacing the last one
-        if d.bool(forKey: "surveyCompleteJob") {
+        // `-surveyCompleteJob YES` (UI tests): a new survey filled to 100% (docNo `UITEST-MOVE`), replacing the last one;
+        // `partial` leaves it unfinished
+        let seed = d.string(forKey: "surveyCompleteJob")
+        if seed == "partial" || d.bool(forKey: "surveyCompleteJob") {
             for j in model.jobs where j.docNo == "UITEST-MOVE" { model.delete(j.id) }
             let t = JobTemplate.all[2]
             var j = model.create(t, engineer: "สมชาย")
-            for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
+            if seed != "partial" { for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } } }
             j.values["docNo"] = .text("UITEST-MOVE"); j.values["projectName"] = .text("ทดสอบย้ายติดตั้ง")
             // `-surveyCompleteJobLink <syncID>`: linked to that TCRoof job, whose status the move then changes
             j.jobSyncID = d.string(forKey: "surveyCompleteJobLink")

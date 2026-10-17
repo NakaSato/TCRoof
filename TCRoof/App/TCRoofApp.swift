@@ -1,5 +1,6 @@
 import SwiftUI
 import TCRoofUI
+import TCRoofCore
 import SwiftData
 import FirebaseCore
 
@@ -86,11 +87,16 @@ struct RootView: View {
             #endif
         }
         .systemNotifications(survey: session.survey)
+        // what the signed-in member's role lets them do, for every screen
+        .environment(\.permissions, MemberRole.shared.permissions)
         .task {
             // report cards name the TCRoof job they belong to
             let context = context
             session.survey.linkedJobLabel = { id in
                 (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first?.linkLabel
+            }
+            session.survey.linkedJobAccess = { id in
+                (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first?.access
             }
             // a survey moved to installation puts its job into construction, as its first install log does, and in the
             // PWA module, whose install overview and install tracking page list it

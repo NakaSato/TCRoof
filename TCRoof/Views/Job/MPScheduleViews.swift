@@ -46,13 +46,14 @@ extension Job {
 struct MPScheduleCard: View {
     @Bindable var job: Job
     @State private var showSetup = false
+    @Environment(\.permissions) private var permissions
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? "")).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
-                if job.scheduleInput != nil {
+                if job.scheduleInput != nil, permissions.can(.mpSetup) {
                     Button("แก้ไข") { showSetup = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
                 }
             }
@@ -61,11 +62,13 @@ struct MPScheduleCard: View {
             } else {
                 Text("สร้างแผนจากวันติดตั้งและวันยื่นขออนุญาต ระบบจัดวัน 18 งานตามไฟล์ MP ให้")
                     .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
-                Button { showSetup = true } label: {
-                    Label("สร้างแผน MP", systemImage: "calendar.badge.plus")
-                        .font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
+                if permissions.can(.mpSetup) {
+                    Button { showSetup = true } label: {
+                        Label("สร้างแผน MP", systemImage: "calendar.badge.plus")
+                            .font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
+                    }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
                 }
-                .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -168,7 +168,7 @@ extension SurveyHomeView {
             }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
         }
-        addInstallButton
+        if permissions.can(.moveToInstall) { addInstallButton }
     }
 
     /// The add button is over the survey list only, so adding an installation project is a row under the stations.

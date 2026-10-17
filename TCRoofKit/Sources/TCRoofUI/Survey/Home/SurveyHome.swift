@@ -42,6 +42,8 @@ struct SurveyHomeView: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dismiss) var dismiss
+    /// Moving a survey to installation and back (`survey.move_to_install`) and deleting one (`job.delete`) go by role.
+    @Environment(\.permissions) var permissions
     /// Pushed by the host app (TCRoof) rather than the root of its own scene — show a back button.
     @Environment(\.isPresented) var isPushed
     @State var search = ""
@@ -248,17 +250,21 @@ struct SurveyHomeView: View {
                     case .survey:
                         // an install-phase card opens the install record, so the report is here
                         if station != nil { Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") } }
-                        if j.canMoveToInstall {
+                        if j.canMoveToInstall, canMove(j) {
                             Button { toInstall = j } label: { Label("ย้ายไปงานติดตั้ง", systemImage: "hammer") }
                         }
                         Button { go(j) } label: { Label("เปิดที่ A1", systemImage: "doc.text") }
                         Button { model.duplicate(j.id) } label: { Label("ทำสำเนา", systemImage: "plus.square.on.square") }
                         exportButton(j)
-                        Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
+                        if permissions.can(.jobDelete, on: model.access(j)) {
+                            Button(role: .destructive) { toDelete = j } label: { Label("ลบงาน", systemImage: "trash") }
+                        }
                     case .install:
                         Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") }
                         exportButton(j)
-                        Button(role: .destructive) { toSurvey = j } label: { Label("ย้ายกลับเป็นงานสำรวจ", systemImage: "arrow.uturn.backward") }
+                        if canMove(j) {
+                            Button(role: .destructive) { toSurvey = j } label: { Label("ย้ายกลับเป็นงานสำรวจ", systemImage: "arrow.uturn.backward") }
+                        }
                     }
                 }
             }
@@ -283,10 +289,12 @@ struct SurveyHomeView: View {
         return found
     }
 
+    func canMove(_ j: Job) -> Bool { permissions.can(.moveToInstall, on: model.access(j)) }
+
     func open(_ j: Job, _ mode: JobCard.Mode) {
         switch mode {
         // a complete survey asks first whether it moves to installation
-        case .survey where j.canMoveToInstall: toInstall = j
+        case .survey where j.canMoveToInstall && canMove(j): toInstall = j
         case .survey: go(j, at: j.nextStep?.page)
         case .install:
             // a survey linked to a host station opens the host's screen for it (the install tracking page on iPad, the

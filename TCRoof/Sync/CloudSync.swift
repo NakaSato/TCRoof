@@ -37,19 +37,27 @@ final class CloudSync {
     @ObservationIgnored private var listeners: [ListenerRegistration] = []
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var timer: Timer?
-    @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, record: SurveyRecord, fingerprint: String)] = [:]
+    @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, externals: [String]?, record: SurveyRecord, fingerprint: String)] = [:]
     @ObservationIgnored private var pushTask: Task<Void, Never>?
     @ObservationIgnored private var known: [String: String] = [:]
     /// Writes per document not yet confirmed by the server (offline, or still uploading).
     @ObservationIgnored private var unconfirmed: [String: Int] = [:]
     /// Child records waiting for their job to arrive, keyed like `known`.
     @ObservationIgnored private var pending: [String: () -> Bool] = [:]
+    /// The signed-in email when the member is external (roles): the listeners then ask only for the documents that
+    /// list it in `externals`, which is all firestore.rules lets them read, and the push sends only what they may change.
+    @ObservationIgnored private var external: String?
 
     private static let surveyCollection = "pwaSurveys"
     /// One document per issued REV of a survey report (docs/specs/review-lock-revisions-swift.md), written once.
     private static let revisionCollection = "pwaSurveyRevisions"
     /// One document per feed post: the emails of the members who acknowledged it (`รับทราบ`).
     private static let ackCollection = "feedAcks"
+    /// One document per job: the customer's phone and address, for the team only (`JobContactRecord`).
+    private static let contactCollection = "jobContacts"
+    /// `config/app`: switches set in the Firebase console (`contactsSplit`).
+    private static let configDocument = "config/app"
+    private static let contactsSplitKey = "cloudSync.contactsSplit"
     private var db: Firestore { Firestore.firestore() }
 
     /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
@@ -71,6 +79,7 @@ final class CloudSync {
         Self.configureCache()
         self.context = context
         self.survey = survey
+        Job.contactsSplit = UserDefaults.standard.bool(forKey: Self.contactsSplitKey)
         // the survey home shows what Firestore still lacks, even before sign-in finishes
         if let u = Auth.auth().currentUser?.uid { known = UserDefaults.standard.dictionary(forKey: "cloudSync.known.\(u)") as? [String: String] ?? [:] }
         survey.cloudPush = { [weak self] in
@@ -95,6 +104,7 @@ final class CloudSync {
         PhotoSync.shared.stop()
         pending = [:]
         unconfirmed = [:]
+        external = nil
         context = nil; survey = nil; uid = nil
         try? Auth.auth().signOut()
         state = .off
@@ -112,6 +122,11 @@ final class CloudSync {
             let user = try await firebaseUser()
             guard context != nil else { return }
             uid = user.uid
+            // the role decides what the listeners may ask for; offline it is the one last read
+            await MemberRole.shared.refresh()
+            guard context != nil else { return }
+            let me = MemberRole.shared.permissions
+            external = me.role == .external && !me.email.isEmpty ? me.email : nil
             known = UserDefaults.standard.dictionary(forKey: knownKey) as? [String: String] ?? [:]
             listen(Job.self)
             listen(SurveyForm.self)
@@ -122,6 +137,8 @@ final class CloudSync {
             listenSurveys()
             listenRevisions()
             listenFeedAcks()
+            listenContacts()
+            listenConfig()
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.schedulePush()
@@ -230,13 +247,15 @@ final class CloudSync {
         guard let context, let survey, uid != nil else { return }
         var changes: [Change] = []
         var present = Set<String>()
-        collect(Job.self, context, &changes, &present)
+        // an external member changes only a job's IEC test (`iec.fill_submit`) and only reads the ICL (`icl.checklist`)
+        collect(Job.self, context, &changes, &present, external == nil ? .full : .iecOnly)
         collect(SurveyForm.self, context, &changes, &present)
         collect(ScannedDevice.self, context, &changes, &present)
         collect(InstallLog.self, context, &changes, &present)
-        collect(Inspection.self, context, &changes, &present)
+        collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly)
         var photos: [Change] = []
         collect(PhotoAsset.self, context, &photos, &present)
+        var contacts = external == nil ? contactChanges(context, &present) : []
         for job in survey.jobs {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
             present.insert(key)
@@ -245,16 +264,19 @@ final class CloudSync {
             changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: fingerprint))
         }
         surveyRecords = surveyRecords.filter { present.contains("\(Self.surveyCollection)/\($0.key.uuidString)") }
-        let revisions = revisionChanges(survey, &present)
+        let revisions = external == nil ? revisionChanges(survey, &present) : []
         for key in known.keys where !present.contains(key) {
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
-            if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) } else { changes.append(change) }
+            if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
+            else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
+            else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
         commitSeparately(photos, "photo upload")
+        commitSeparately(contacts, "contact upload")
         guard !changes.isEmpty else { return }
 
         // Firestore takes at most 500 writes per batch.
@@ -334,19 +356,48 @@ final class CloudSync {
         }
     }
 
-    private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>) {
+    /// What a push may send of a collection: everything, nothing (still kept, never deleted), or a job's IEC test.
+    private enum Upload { case full, readOnly, iecOnly }
+
+    private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
+                                         _ upload: Upload = .full) {
         guard let models = try? context.fetch(FetchDescriptor<M>()) else { return }
         for model in models {
             if model.syncID == nil { model.syncID = UUID().uuidString }
             guard model.syncs else { continue }
             let key = "\(M.collection)/\(model.syncID!)"
             present.insert(key)
+            guard upload != .readOnly else { continue }
             let record = model.record
             let print = fingerprint(record)
             guard known[key] != print else { continue }
             let ref = db.document(key)
-            changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))
+            if upload == .iecOnly {
+                guard let job = model as? Job else { continue }
+                let iec: Any = job.iecReportJSON ?? NSNull()
+                changes.append(Change(key: key, write: { $0.setData(["iecReport": iec], forDocument: ref, merge: true) }, fingerprint: print))
+            } else {
+                changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))
+            }
         }
+    }
+
+    /// Each job's phone and address in `jobContacts`, written by the team whether or not the job's own document still
+    /// carries them, so they are all there when `contactsSplit` is switched on.
+    private func contactChanges(_ context: ModelContext, _ present: inout Set<String>) -> [Change] {
+        guard let jobs = try? context.fetch(FetchDescriptor<Job>()) else { return [] }
+        var out: [Change] = []
+        for job in jobs {
+            guard let id = job.syncID else { continue }
+            let key = "\(Self.contactCollection)/\(id)"
+            present.insert(key)
+            let record = JobContactRecord(job)
+            let print = fingerprint(record)
+            guard known[key] != print else { continue }
+            let ref = db.document(key)
+            out.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))
+        }
+        return out
     }
 
     // MARK: pull
@@ -355,7 +406,7 @@ final class CloudSync {
     /// after the first (cached) snapshot is `isFromCache` turning false, and without it the state stays `.connecting`.
     /// `optional`: a refused listener (its rule not deployed yet) is logged and the rest still syncs.
     private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false) {
-        let registration = db.collection(M.collection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+        let registration = query(M.collection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error {
@@ -424,7 +475,7 @@ final class CloudSync {
     }
 
     private func listenSurveys() {
-        let registration = db.collection(Self.surveyCollection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+        let registration = query(Self.surveyCollection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self, let survey = self.survey else { return }
                 if let error { return self.failed(error) }
@@ -439,7 +490,7 @@ final class CloudSync {
                     guard let record = try? change.document.data(as: SurveyRecord.self), self.known[key] != record.fingerprint,
                           let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
                     survey.applyRemote(job)
-                    self.known[key] = SurveyRecord(job)?.fingerprint
+                    self.known[key] = self.surveyRecord(job)?.fingerprint
                     // its photos taken on the other device, from Drive, without waiting for the editor to open
                     if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }
                 }
@@ -451,8 +502,17 @@ final class CloudSync {
         listeners.append(registration)
     }
 
-    /// REVs issued on other devices: their snapshots are stored next to the job, as if issued here.
+    /// A whole collection for the team; for an external member only the documents of their jobs, the one query
+    /// firestore.rules allows them.
+    private func query(_ collection: String) -> Query {
+        let all = db.collection(collection)
+        guard let external else { return all }
+        return all.whereField("externals", arrayContains: external)
+    }
+
+    /// REVs issued on other devices: their snapshots are stored next to the job, as if issued here. The team's only.
     private func listenRevisions() {
+        guard external == nil else { return }
         let registration = db.collection(Self.revisionCollection).addSnapshotListener { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self, let survey = self.survey else { return }
@@ -504,6 +564,56 @@ final class CloudSync {
         listeners.append(registration)
     }
 
+    /// The customers' phones and addresses (team only). A contact whose job hasn't arrived yet waits for it.
+    private func listenContacts() {
+        guard external == nil else { return }
+        let registration = db.collection(Self.contactCollection).addSnapshotListener { [weak self] snapshot, error in
+            MainActor.assumeIsolated {
+                guard let self, let context = self.context else { return }
+                // never fail the whole sync over contacts (rule not deployed yet): the jobs still sync
+                if let error { return print("CloudSync: contact listener: \(error.localizedDescription)") }
+                for change in snapshot?.documentChanges ?? [] {
+                    let id = change.document.documentID
+                    let key = "\(Self.contactCollection)/\(id)"
+                    if change.type == .removed { self.known[key] = nil; self.pending[key] = nil; continue }
+                    guard let record = try? change.document.data(as: JobContactRecord.self), self.known[key] != self.fingerprint(record) else { continue }
+                    let apply = { [weak self] () -> Bool in
+                        guard let self, let context = self.context,
+                              let job = try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+                        record.apply(to: job)
+                        self.known[key] = self.fingerprint(record)
+                        return true
+                    }
+                    if !apply() { self.pending[key] = apply }
+                }
+                try? context.save()
+                self.saveKnown()
+            }
+        }
+        listeners.append(registration)
+    }
+
+    /// `config/app`, set in the Firebase console: `centerDriveFolder` and `driveShareWith` (`DriveConfig`), and
+    /// `contactsSplit`, switched on once every device runs this version: the jobs are then sent again without their
+    /// phone and address.
+    private func listenConfig() {
+        let registration = db.document(Self.configDocument).addSnapshotListener { [weak self] snapshot, error in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
+                // the center Drive (a folder id or link) and the team emails a contractor's job folder is shared with
+                DriveConfig.set(center: snapshot?.get("centerDriveFolder") as? String,
+                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [])
+                let split = snapshot?.get("contactsSplit") as? Bool ?? false
+                guard split != Job.contactsSplit else { return }
+                Job.contactsSplit = split
+                UserDefaults.standard.set(split, forKey: Self.contactsSplitKey)
+                self.push()
+            }
+        }
+        listeners.append(registration)
+    }
+
     /// A post id as a document id: Firestore ids can't hold `/`.
     static func ackKey(_ post: String) -> String {
         "\(ackCollection)/\(post.replacingOccurrences(of: "/", with: "-"))"
@@ -512,10 +622,12 @@ final class CloudSync {
     /// A job's document and fingerprint, kept until the job changes: the push runs after every edit and every 20 s,
     /// and encoding and hashing every job each time held the main thread.
     private func surveyRecord(_ job: TCRoofCore.Job) -> (record: SurveyRecord, fingerprint: String)? {
-        if let hit = surveyRecords[job.id], hit.job == job { return (hit.record, hit.fingerprint) }
-        guard let record = SurveyRecord(job) else { return nil }
+        // none is nil, so a survey with no one assigned keeps the document and fingerprint it had before roles
+        let externals = survey?.access(job)?.externals.nilIfEmpty
+        if let hit = surveyRecords[job.id], hit.job == job, hit.externals == externals { return (hit.record, hit.fingerprint) }
+        guard let record = SurveyRecord(job, externals: externals) else { return nil }
         let fingerprint = record.fingerprint
-        surveyRecords[job.id] = (job, record, fingerprint)
+        surveyRecords[job.id] = (job, externals, record, fingerprint)
         return (record, fingerprint)
     }
 
@@ -531,20 +643,31 @@ final class CloudSync {
     }
 }
 
+private extension Array {
+    var nilIfEmpty: Self? { isEmpty ? nil : self }
+}
+
 /// A NO.224 survey report job as one document; the job's own JSON keeps every field the survey module has.
 private struct SurveyRecord: Codable {
     var projectName: String
     var updated: Int64
     var json: String
+    /// The linked job's external people (roles), so an external member's device can ask for the surveys of their jobs.
+    var externals: [String]?
 
-    init?(_ job: TCRoofCore.Job) {
+    init?(_ job: TCRoofCore.Job, externals: [String]? = nil) {
         guard let data = try? JobStore.encoder.encode(job), let json = String(data: data, encoding: .utf8) else { return nil }
         self.projectName = job.projectName
         self.updated = job.updated.millis
         self.json = json
+        self.externals = externals
     }
 
-    var fingerprint: String { SHA256.hash(data: Data(json.utf8)).map { String(format: "%02x", $0) }.joined() }
+    /// The survey's own JSON, and the external people when it has any (so a survey with none keeps its old fingerprint).
+    var fingerprint: String {
+        let text = externals.map { json + "\n" + $0.joined(separator: ",") } ?? json
+        return SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
 /// One issued REV: the snapshot's JSON exactly as stored on the device that issued it.

@@ -19,6 +19,8 @@ struct FinalPageWide: View {
     /// false for offscreen renders (`-surveyFinalRender`): ImageRenderer leaves scroll views blank.
     var scrolls = true
     @Environment(SurveyModel.self) var model
+    /// Signing (`survey.sign_rev`): the team, or the external engineer assigned to the job.
+    @Environment(\.permissions) var permissions
     @State var signingSurveyor = false
     @State var signingCustomer = false
 

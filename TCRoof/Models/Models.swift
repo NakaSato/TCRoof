@@ -158,6 +158,11 @@ final class Job {
     var kindRaw: String?
     /// Encoded `IECReport`: the station's IEC 62446 test before and after the grid connection; optional for the same reason.
     var iecReportJSON: String?
+    // Roles (docs/reference/roles/user-roles.json); optional for the same reason.
+    /// Emails of the external engineers and contractors assigned to the job, one per line: they see and work on it.
+    var externalsRaw: String?
+    /// Email of the internal engineer supervising the job (ผู้ควบคุมงาน), who may sign its final acceptance.
+    var supervisorEmail: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -177,6 +182,19 @@ final class Job {
         self.createdAt = .now
         self.syncID = UUID().uuidString
     }
+
+    /// Assigned external people, lowercased, without blanks or repeats.
+    var externals: [String] {
+        get { (externalsRaw ?? "").split(separator: "\n").map(String.init) }
+        set {
+            var seen = Set<String>()
+            let list = newValue.map(Permissions.normalized).filter { !$0.isEmpty && seen.insert($0).inserted }
+            externalsRaw = list.isEmpty ? nil : list.joined(separator: "\n")
+        }
+    }
+
+    /// Who the job is open to, for `Permissions.can`.
+    var access: JobAccess { JobAccess(externals: externals, supervisor: supervisorEmail) }
 
     var team: Team {
         get { Team(rawValue: teamRaw) ?? .t1 }

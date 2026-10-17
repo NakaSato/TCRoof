@@ -23,6 +23,19 @@ public extension SurveyModel {
         return (folder.id, URL(string: link) ?? URL(string: "https://drive.google.com")!)
     }
 
+    /// Finds or creates `<name>/` in a folder another account shares with this one (the company's center folder).
+    func driveFolder(_ name: String, in parentID: String) async throws -> (id: String, url: URL) {
+        let folder = try await DriveClient(tokens: google).ensureFolder(name, parent: parentID)
+        let link = folder.webViewLink ?? "https://drive.google.com/drive/folders/\(folder.id)"
+        return (folder.id, URL(string: link) ?? URL(string: "https://drive.google.com")!)
+    }
+
+    /// Lets `emails` read a folder and everything in it (a contractor's job folder, for the team).
+    func driveShare(_ folderID: String, with emails: [String]) async throws {
+        let client = DriveClient(tokens: google)
+        for email in emails { try await client.share(folderID, with: email) }
+    }
+
     /// Finds or creates the folders of `path` under a folder from `driveFolder`, one inside the next, and returns the last id.
     func driveSubfolder(_ path: [String], under parentID: String) async throws -> String {
         let client = DriveClient(tokens: google)

@@ -14,7 +14,7 @@ extension JobEditorView {
 
     /// E1 above the page: signed and not issued yet (ออก REV), or required photos missing before the first signature.
     @ViewBuilder var finalBanners: some View {
-        if job.bothSigned && unissued {
+        if job.bothSigned && unissued && permissions.can(.surveySignRev, on: model.access(job)) {
             IssueRevisionBanner(rev: job.nextIssueRev) { showIssueSheet = true }
         } else if job.values.photo("surveyorSign") == nil && job.values.photo("customerSign") == nil, job.missingRequiredPhotos > 0 {
             MissingPhotosBanner(missing: job.missingRequiredPhotos) { photoFilter = .missing; select(.photos) }

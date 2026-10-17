@@ -35,6 +35,8 @@ struct IECTestScreen: View {
     /// The debug flags apply once: `.task` runs again each time the screen reappears (back from a table).
     @State private var debugApplied = false
     @Environment(\.modelContext) private var context
+    /// The contractor sends (`iec.fill_submit`); only the internal team closes, sends back or reopens (`iec.close`).
+    @Environment(\.permissions) private var permissions
 
     struct ExportedFile: Identifiable { let url: URL; var id: URL { url } }
 
@@ -399,8 +401,10 @@ struct IECTestScreen: View {
                     Text(Self.stamp(result.completedAt, result.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
-                Button { confirmReopen = true } label: { Label("แก้ไข", systemImage: "lock.open") }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                if permissions.can(.iecClose, on: job.access) {
+                    Button { confirmReopen = true } label: { Label("แก้ไข", systemImage: "lock.open") }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                }
             } else if let sent = r.submission {
                 Text("รอปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk)
                     .padding(.horizontal, 12).frame(height: 30).background(Theme.pendingSoft, in: Capsule())
@@ -425,12 +429,12 @@ struct IECTestScreen: View {
             .disabled(makingWord)
             Button { startExport(.excel) } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
                 .buttonStyle(TCButtonStyle(r.isLocked || !r.isDone(.review) ? .primary : .secondary, size: .card)).fixedSize()
-            if !r.isLocked {
+            if !r.isLocked, permissions.can(.iecFillSubmit, on: job.access) {
                 Button(action: submit) { Label("ส่งผลให้ทีม", systemImage: "paperplane") }
                     .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
                     .disabled(!r.isDone(.review))
                     .accessibilityHint(r.isDone(.review) ? "ส่งผลให้ทีมภายในตรวจและปิด" : "ทำขั้นที่ 1–6 ให้ครบก่อน")
-            } else if r.isAwaitingClose {
+            } else if r.isAwaitingClose, permissions.can(.iecClose, on: job.access) {
                 Button { sendingBack = true } label: { Label("ส่งกลับให้แก้", systemImage: "arrow.uturn.backward") }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 Button(action: complete) { Label("ปิดการทดสอบ", systemImage: "checkmark.seal") }

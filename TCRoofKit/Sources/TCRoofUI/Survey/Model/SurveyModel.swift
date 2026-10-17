@@ -203,6 +203,13 @@ public final class SurveyModel {
 
     /// Host-supplied name of a linked job ("TC-0012 · สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
     @ObservationIgnored public var linkedJobLabel: ((String) -> String?)?
+    /// Host-supplied external people and supervising engineer of a linked job (by its syncID), for the role checks.
+    @ObservationIgnored public var linkedJobAccess: ((String) -> JobAccess?)?
+
+    /// Who a survey's linked job is open to; nil for a survey with no linked job.
+    public func access(_ job: Job) -> JobAccess? {
+        job.jobSyncID.flatMap { linkedJobAccess?($0) }
+    }
 
     /// A job changed on another device; replaces the local copy, except that the Drive files either side knows of are
     /// kept (`DriveLink.merged`): a copy saved before this device's upload landed would otherwise send those photos again.

@@ -19,7 +19,21 @@ struct StationDocsScreen: View {
 
     private var ctx: StationDocs.Context { job.stationContext }
 
+    /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).
+    @Environment(\.permissions) private var permissions
+
     var body: some View {
+        if permissions.can(.stationDocsDrafts) {
+            content
+        } else {
+            TCEmptyState("เอกสารสำหรับทีมภายใน", systemImage: "lock.doc",
+                         description: Text("เอกสารสถานี กปภ. ร่างและยื่นโดยทีมภายใน"))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.pageGradient.ignoresSafeArea())
+        }
+    }
+
+    private var content: some View {
         PadForm {
             PadSection { stationSummary }
             PadSection { tabPicker }

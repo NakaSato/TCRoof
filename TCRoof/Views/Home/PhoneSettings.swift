@@ -8,6 +8,7 @@ struct PhoneSettingsList: View {
     /// Opened from the `กปภ.` tab: show `ตั้งค่าโครงการ PWA`.
     var pwa = false
     @Environment(GoogleSession.self) private var session
+    @Environment(\.permissions) private var permissions
     @AppStorage("userName") private var userName = ""
     @AppStorage("userTeam") private var userTeam = ""
     @AppStorage(CameraRoll.defaultsKey) private var saveToLibrary = true
@@ -79,6 +80,9 @@ struct PhoneSettingsList: View {
                 }
                 section("GOOGLE DRIVE") {
                     row("บัญชี Google", session.email.flatMap { $0.isEmpty ? nil : $0 } ?? "เชื่อมต่อแล้ว")
+                    divider
+                    // from members/<email>.role; set in the Firebase console
+                    row("บทบาท", permissions.role.label)
                     divider
                     Button {
                         let q = DriveFolders.root.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import TCRoofCore
 import TCRoofUI
 
 /// App sign-in with a Google account. The same account receives project files on Google Drive
@@ -33,6 +34,7 @@ final class GoogleSession {
             email = screen == "login" ? nil : "demo@survey.co.th"
         }
         #endif
+        if let email { MemberRole.shared.signedIn(email) }
     }
 
     var isSignedIn: Bool { email != nil }
@@ -52,6 +54,7 @@ final class GoogleSession {
     func signIn() async throws {
         try await survey.google.signIn()
         email = survey.google.email ?? ""
+        MemberRole.shared.signedIn(email ?? "")
         Self.fillUserName()
     }
 
@@ -59,6 +62,7 @@ final class GoogleSession {
         CloudSync.shared.stop()
         survey.google.signOut()
         email = nil
+        MemberRole.shared.signedOut()
         // the display name belongs to the account; the next person signs in with their own
         UserDefaults.standard.removeObject(forKey: Self.userNameKey)
         UserDefaults.standard.removeObject(forKey: Self.userNameAutoKey)

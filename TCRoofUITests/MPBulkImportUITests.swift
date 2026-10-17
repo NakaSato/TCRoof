@@ -21,7 +21,7 @@ final class MPBulkImportUITests: XCTestCase {
         app.launchArguments = ["-screen", "mpall", "-homeBoard", "YES", "-mpImportFiles", "\(fixture)|\(fixture)", "-noNotificationPrompt", "YES"]
         app.launch()
 
-        let title = app.staticTexts["นำเข้าไฟล์แผน 2 ไฟล์"]
+        let title = app.staticTexts["นำเข้า 2 ไฟล์"]
         XCTAssertTrue(title.waitForExistence(timeout: slow), "the files should open their check")
         XCTAssertEqual(app.staticTexts.matching(identifier: "ไม่พบสถานี").count, 2)
         let none = app.buttons["นำเข้า 0 สถานี"]

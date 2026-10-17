@@ -93,7 +93,7 @@ struct MPBulkImportSheet: View {
                 .frame(maxWidth: .infinity)
             }
             .background(Theme.pageGradient.ignoresSafeArea())
-            .navigationTitle("นำเข้าไฟล์แผน \(items.count) ไฟล์")
+            .navigationTitle("นำเข้า \(items.count) ไฟล์")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
@@ -113,15 +113,23 @@ struct MPBulkImportSheet: View {
             } else {
                 Text(fileLine(it)).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                 HStack(spacing: 8) {
-                    Picker("สถานี", selection: item.job) {
-                        Text("ไม่นำเข้า").tag(PersistentIdentifier?.none)
-                        ForEach(order(it)) { j in Text(label(j)).tag(Optional(j.persistentModelID)) }
+                    // a menu with its own one-line label: a menu-style Picker wraps a long station name on iPhone
+                    Menu {
+                        Picker("สถานี", selection: item.job) {
+                            Text("ไม่นำเข้า").tag(PersistentIdentifier?.none)
+                            ForEach(order(it)) { j in Text(label(j)).tag(Optional(j.persistentModelID)) }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(picked.map(label) ?? "ไม่นำเข้า").lineLimit(1).truncationMode(.middle)
+                            Image(systemName: "chevron.up.chevron.down").font(.sarabun(12, relativeTo: .caption))
+                        }
+                        .font(.sarabun(17, relativeTo: .body))
+                        .foregroundStyle(it.job == nil ? Theme.dangerText : Theme.primary)
+                        .frame(minHeight: touchMin)
                     }
-                    .pickerStyle(.menu)
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                    .tint(it.job == nil ? Theme.dangerText : Theme.primary)
                     .accessibilityLabel("สถานีของ \(it.name)")
+                    .accessibilityValue(picked.map(label) ?? "ไม่นำเข้า")
                     .accessibilityIdentifier("mpBulk.station")
                     Spacer(minLength: 8)
                     if let j = it.job, twice.contains(j) {

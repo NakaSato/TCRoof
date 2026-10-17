@@ -58,15 +58,18 @@ final class IECSheetPreviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["INV1ST5"].waitForExistence(timeout: 5), "at String 5")
     }
 
-    /// On a closed test a tap asks `แก้ไข` first: `ยกเลิก` stays on the sheet, `แก้ไข` reopens the test and opens the step.
+    /// On a closed test (sent, then closed by the team) a tap asks `แก้ไข` first: `ยกเลิก` stays on the sheet, `แก้ไข` reopens the test and opens the step.
     func testATapOnAClosedTestAsksToEditFirst() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecDemo", "full"]
         app.launch()
-        let finish = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "เสร็จ")).firstMatch
-        XCTAssertTrue(finish.waitForExistence(timeout: slow))
-        finish.tap()
+        let submit = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งผลให้ทีม")).firstMatch
+        XCTAssertTrue(submit.waitForExistence(timeout: slow))
+        submit.tap()
+        let close = app.buttons.matching(NSPredicate(format: "label == %@", "ปิดการทดสอบ")).firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        close.tap()
         XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10), "closed")
 
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ดูชีต Excel")).firstMatch.tap()

@@ -13,7 +13,7 @@ extension Job {
                          inverters: [IECReport.Inverter(ratedKW: inverterKW ?? 0)])
     }
 
-    /// Saves an edit at once. A closed test (`เสร็จ`) refuses edits; `evenWhenLocked` is for closing, reopening and
+    /// Saves an edit at once. A sent or closed test refuses edits; `evenWhenLocked` is for closing, reopening and
     /// recording an export, which don't change the values.
     func updateIEC(_ context: ModelContext, evenWhenLocked: Bool = false, _ change: (inout IECReport) -> Void) {
         var r = iecReport ?? newIECReport

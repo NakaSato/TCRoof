@@ -474,7 +474,7 @@ struct IECTestScreen: View {
     @ViewBuilder private func resultNotice(_ r: IECReport) -> some View {
         if r.resultIsStale {
             notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
-                   "ข้อมูลเปลี่ยนหลังปิดการทดสอบ", "อาจมาจากเครื่องอื่น · กด แก้ไข แล้ว เสร็จ อีกครั้งเพื่อสรุปผลใหม่") { EmptyView() }
+                   "ข้อมูลเปลี่ยนหลังปิดการทดสอบ", "อาจมาจากเครื่องอื่น · กด แก้ไข แล้วส่งผลและปิดอีกครั้งเพื่อสรุปผลใหม่") { EmptyView() }
         } else if r.result != nil {
             notice("lock.fill", Theme.successInk, Theme.successSoft,
                    "ปิดการทดสอบแล้ว", "ค่าทั้งหมดถูกล็อก · กด แก้ไข เพื่อเปิดให้แก้") { EmptyView() }

@@ -1,7 +1,7 @@
 import XCTest
 
 /// The IEC test's steps keep their result: confirmed steps and the closed test survive a relaunch, a closed test is
-/// read only until `แก้ไข`. iPad simulator: `-only-testing:TCRoofUITests/IECStagesUITests`. It replaces the first
+/// read only until `แก้ไข`. A test closes in two taps: `ส่งผลให้ทีม` (the contractor), then `ปิดการทดสอบ` (the team). iPad simulator: `-only-testing:TCRoofUITests/IECStagesUITests`. It replaces the first
 /// installing station's test with the full sample (`-iecDemo full`: every step done, none confirmed).
 final class IECStagesUITests: XCTestCase {
     let slow: TimeInterval = 90
@@ -27,6 +27,24 @@ final class IECStagesUITests: XCTestCase {
         try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name + ".png"))
     }
 
+    func submitButton(_ app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งผลให้ทีม")).firstMatch
+    }
+
+    /// `ส่งผลให้ทีม` locks the test until the team's `ปิดการทดสอบ` closes it.
+    func sendAndClose(_ app: XCUIApplication) {
+        let submit = submitButton(app)
+        XCTAssertTrue(submit.waitForExistence(timeout: slow))
+        XCTAssertTrue(submit.isEnabled)
+        submit.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด")).firstMatch
+            .waitForExistence(timeout: 10), "sent, waiting for the team")
+        let close = app.buttons.matching(NSPredicate(format: "label == %@", "ปิดการทดสอบ")).firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        close.tap()
+        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10))
+    }
+
     func confirmed(_ app: XCUIApplication) -> XCUIElementQuery {
         app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ยืนยันแล้ว"))
     }
@@ -48,11 +66,8 @@ final class IECStagesUITests: XCTestCase {
         shot("steps-confirmed")
         XCTAssertFalse(app.buttons["ยืนยันขั้น ตั้งค่าระบบ"].exists)
 
-        // เสร็จ closes the test and confirms the rest
-        let finish = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "เสร็จ")).firstMatch
-        XCTAssertTrue(finish.isEnabled)
-        finish.tap()
-        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10))
+        // sending and closing confirms the rest
+        sendAndClose(app)
         gone(app.buttons["ยืนยันขั้น ก่อนออน · ฉนวน (IR)"], "closing confirms every step")
 
         // still closed after a relaunch, and the string table is read only
@@ -74,7 +89,7 @@ final class IECStagesUITests: XCTestCase {
         app.sheets.buttons["แก้ไข"].firstMatch.exists ? app.sheets.buttons["แก้ไข"].firstMatch.tap()
             : app.buttons.matching(NSPredicate(format: "label == %@", "แก้ไข")).element(boundBy: 1).tap()
         gone(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"], "reopened")
-        XCTAssertTrue(finish.waitForExistence(timeout: 10))
+        XCTAssertTrue(submitButton(app).waitForExistence(timeout: 10), "back to the contractor")
     }
 
     /// A reading typed on the pad is kept when the app goes to the background and is closed there (no ถัดไป). The pad
@@ -113,14 +128,11 @@ final class IECStagesUITests: XCTestCase {
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label == %@", "ถัดไป ›")).firstMatch.waitForExistence(timeout: 10), "the pad")
     }
 
-    /// `เสร็จ` on a real test (the full sample made the job's own by `-iecStationLine`) books the MP plan's
+    /// Sending and closing a real test (the full sample made the job's own by `-iecStationLine`) books the MP plan's
     /// `3.1 Pre-Commissioning Test` as done, and the install page's IEC line shows the result.
     func testClosingARealTestBooksTheMPTask() {
         let app = launch(["-iecDemo", "full", "-iecStationLine", "โรงงานสยามแพ็คกิ้ง ขนาดกำลังผลิต 199.8 kWp"])
-        let finish = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "เสร็จ")).firstMatch
-        XCTAssertTrue(finish.waitForExistence(timeout: slow))
-        finish.tap()
-        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10))
+        sendAndClose(app)
         app.buttons["กลับ"].firstMatch.tap()
 
         let task = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "3.1 ")).firstMatch

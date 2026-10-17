@@ -447,7 +447,7 @@ struct InstallBars: View {
             case .current:
                 let inner = max(plan - 8, 6), share = CGFloat(min(max(row.percent, 0), 100)) / 100
                 Capsule().fill(Theme.primary.opacity(0.14)).frame(width: inner, height: 16)
-                    .overlay(alignment: .leading) { Capsule().fill(Theme.primary).frame(width: max(inner * share, 6)) }
+                    .overlay(alignment: .leading) { if share > 0 { Capsule().fill(Theme.primary).frame(width: max(inner * share, 6)) } }
                     .offset(x: x0 + 4)
             case .waiting:
                 EmptyView()
@@ -589,19 +589,25 @@ struct InstallCurveChart: View {
         axisLine.move(to: CGPoint(x: left, y: top - 6)); axisLine.addLine(to: CGPoint(x: left, y: bottom))
         ctx.stroke(axisLine, with: .color(Theme.borderSubtle), lineWidth: 1)
 
-        // each day's work, plan grey and actual blue side by side
+        // each day's work, plan grey and actual blue side by side: ×3 so a day's work reads, less when the MP plan's
+        // weekly booking lands a week's work on one day
         let bw = min(cw * 0.26, 18)
+        let incs = days.indices.flatMap { i -> [Double] in
+            let prev = i > 0 ? days[i - 1] : nil
+            return [days[i].planned - (prev?.planned ?? 0), (days[i].actual ?? 0) - (prev?.actual ?? 0)]
+        }
+        let scale = min(3, 40 / max(incs.max() ?? 1, 1))
         for (i, d) in days.enumerated() {
             let prev = i > 0 ? days[i - 1] : nil
             let pInc = d.planned - (prev?.planned ?? 0)
             if pInc > 0 {
-                let h = (bottom - top) * CGFloat(min(pInc * 3, 100)) / 100
+                let h = (bottom - top) * CGFloat(min(pInc * scale, 100)) / 100
                 ctx.fill(Path(roundedRect: CGRect(x: xs(i) + cw / 2 - bw - 1, y: bottom - h, width: bw, height: h), cornerRadius: 2), with: .color(Theme.ganttTrack))
             }
             if let a = d.actual {
                 let inc = a - (prev?.actual ?? 0)
                 if inc > 0 {
-                    let h = (bottom - top) * CGFloat(min(inc * 3, 100)) / 100
+                    let h = (bottom - top) * CGFloat(min(inc * scale, 100)) / 100
                     ctx.fill(Path(roundedRect: CGRect(x: xs(i) + cw / 2 + 1, y: bottom - h, width: bw, height: h), cornerRadius: 2),
                              with: .color(Theme.primary.opacity(0.55)))
                 }
@@ -642,7 +648,7 @@ struct InstallCurveChart: View {
                 ctx.fill(Path(ellipseIn: r), with: .color(c))
                 ctx.stroke(Path(ellipseIn: r), with: .color(Theme.surface), lineWidth: 2)
             }
-            ctx.draw(label("แผน \(Int(t.planned.rounded()))%", Theme.inkMuted, size: 14, bold: true), at: CGPoint(x: tx - 10, y: y(max(t.planned, done)) - 14), anchor: .trailing)
+            ctx.draw(label("แผน \(Int(t.planned.rounded()))%", Theme.inkMuted, size: 14, bold: true), at: CGPoint(x: tx - 10, y: max(y(max(t.planned, done)) - 14, top + 12)), anchor: .trailing)
             ctx.draw(label("จริง \(Int(done.rounded()))%", Theme.primary, size: 14, bold: true), at: CGPoint(x: tx + 10, y: y(min(t.planned, done)) + 14), anchor: .leading)
             // the forecast from today's actual to 100 % on its end day
             if let f = forecastEnd.map(cal.startOfDay(for:)), let fi = index(f), done < 100 {

@@ -179,7 +179,10 @@ extension InstallTrackingPage {
             .padding(.leading, 16).frame(width: PlanCol.left)
             GeometryReader { geo in
                 let w = geo.size.width
-                ForEach(axis.columns, id: \.self) { d in planDayLabel(d, axis: axis).frame(width: axis.columnWidth(w)).offset(x: axis.x(d, w), y: 10) }
+                // a week column shows its first day, every other one past 16 weeks
+                ForEach(axis.unit == .day ? axis.columns : axis.labelled, id: \.self) { d in
+                    planDayLabel(d, axis: axis, dense: axis.columns.count > 20).frame(width: axis.columnWidth(w)).offset(x: axis.x(d, w), y: axis.unit == .day ? 10 : 20)
+                }
             }
             .padding(.trailing, 16)
         }
@@ -188,16 +191,17 @@ extension InstallTrackingPage {
         .accessibilityHidden(true)
     }
 
-    /// The weekday over the date, Sundays rose and today in a red pill; a week column shows its first day.
-    private func planDayLabel(_ d: Date, axis: InstallAxis) -> some View {
-        let today = axis.unit == .day ? MasterSchedule.calendar.isDate(d, inSameDayAs: axis.today) : axis.contains(axis.today, week: d)
-        let sunday = axis.unit == .day && InstallPlanData.isSunday(d)
+    /// The weekday over the date, Sundays rose and today in a red pill; a week column shows only its first day.
+    private func planDayLabel(_ d: Date, axis: InstallAxis, dense: Bool) -> some View {
+        let week = axis.unit == .week
+        let today = week ? axis.contains(axis.today, week: d) : MasterSchedule.calendar.isDate(d, inSameDayAs: axis.today)
+        let sunday = !week && InstallPlanData.isSunday(d)
         let ink = today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted
         return VStack(spacing: 2) {
-            Text(axis.unit == .day ? InstallAxis.weekday.string(from: d) : "สัปดาห์").font(.sarabunFixed(11)).foregroundStyle(ink)
-            Text(axis.unit == .day ? "\(MasterSchedule.calendar.component(.day, from: d))" : ThaiFormat.dayMonth.string(from: d))
-                .font(.sarabunFixed(15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
-                .padding(.horizontal, today ? 6 : 0).frame(height: 20)
+            if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(ink) }
+            Text(week ? ThaiFormat.dayMonth.string(from: d) : "\(MasterSchedule.calendar.component(.day, from: d))")
+                .font(.sarabunFixed(week || dense ? 12 : 15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
+                .padding(.horizontal, today ? 4 : 0).frame(height: 20)
                 .background { if today { Capsule().fill(Theme.danger) } }
         }
         .fixedSize()
@@ -211,7 +215,8 @@ extension InstallTrackingPage {
                     HStack(spacing: 8) {
                         Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 13, weight: .bold))
                             .foregroundStyle(Theme.navy).frame(width: 14).opacity(s.subs.isEmpty ? 0 : 1)
-                        Text(r.title).font(.sarabunFixed(16, .bold)).lineLimit(1)
+                        // the MP plan's long task names take two lines
+                        Text(r.title).font(.sarabunFixed(r.title.count > 34 ? 14 : 16, .bold)).lineLimit(2).lineSpacing(-2)
                     }
                 }
                 GeometryReader { geo in PlanStageBar(row: r, axis: axis, width: geo.size.width) }
@@ -517,7 +522,8 @@ struct PlanStageBar: View {
         ZStack(alignment: .leading) {
             Theme.ganttTrack
             (row.status == .done ? Theme.success : Theme.navy).frame(width: w * share)
-            if row.days > 1, row.percent > 0 {
+            // the label needs room: none on a 1-day bar or a narrow week-axis bar
+            if row.days > 1, row.percent > 0, w >= 44 {
                 Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(12, .bold))
                     .foregroundStyle(share >= 0.5 ? Theme.onPrimary : Theme.navy).padding(.leading, 6).fixedSize()
             }

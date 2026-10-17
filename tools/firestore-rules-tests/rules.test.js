@@ -122,6 +122,11 @@ test('photos of their records', async () => {
   await assertSucceeds(setDoc(doc(d, 'photos', 'p2'), { tag: 'x', drive: 'id', iecJob: 'mine', externals: [CON] }));
   await assertFails(setDoc(doc(d, 'photos', 'p3'), { tag: 'x', drive: 'id', iecJob: 'theirs', externals: [CON] }));
   await assertFails(setDoc(doc(d, 'photos', 'p4'), { tag: 'x', drive: 'id', log: 'log2' }));
+  // listing themselves doesn't let them attach a photo to another contractor's report or to an ICL
+  await assertFails(setDoc(doc(d, 'photos', 'p5'), { tag: 'x', drive: 'id', log: 'log2', externals: [CON] }));
+  await assertFails(setDoc(doc(d, 'photos', 'p6'), { tag: 'x', drive: 'id', log: 'nope', externals: [CON] }));
+  await assertFails(setDoc(doc(d, 'photos', 'p7'), { tag: 'x', drive: 'id', inspection: 'icl1', externals: [CON] }));
+  await assertSucceeds(setDoc(doc(db(TEAM), 'photos', 'p8'), { tag: 'x', drive: 'id', inspection: 'icl1', externals: [CON] }));
 });
 
 test('a manager invites, changes the role of and removes members, never themselves', async () => {

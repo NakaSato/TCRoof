@@ -51,6 +51,11 @@ service cloud.firestore {
       return jobID is string
         && listsMe(get(/databases/$(database)/documents/jobs/$(jobID)).data);
     }
+    // The daily report a photo points at lists the signed-in external member.
+    function logIsMine(logID) {
+      return logID is string
+        && listsMe(get(/databases/$(database)/documents/installLogs/$(logID)).data);
+    }
     function unchanged(field) {
       return request.resource.data.get(field, null) == (resource == null ? null : resource.data.get(field, null));
     }
@@ -113,7 +118,11 @@ service cloud.firestore {
     match /photos/{doc} {
       allow read: if isTeam() || readsMine();
       allow write: if isTeam();
+      // The record it points at must be theirs too: a daily report of their job, or their job's IEC test. Never an
+      // ICL, which they only read. Otherwise team devices would attach it to someone else's record.
       allow create, update: if isExternal() && keepsMe()
+        && request.resource.data.get('inspection', null) == null
+        && (request.resource.data.get('log', null) == null || logIsMine(request.resource.data.log))
         && (request.resource.data.get('iecJob', null) == null || jobIsMine(request.resource.data.iecJob));
       allow delete: if isExternal() && listsMe(resource.data);
     }

@@ -137,7 +137,8 @@ final class IECStagesUITests: XCTestCase {
 
         let task = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "3.1 ")).firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 10), "the plan's test task on the install page")
-        XCTAssertTrue(task.label.contains("· 100%"), task.label)
+        // the Gantt row reads "· 100%", the plan tab's row ", 100%"
+        XCTAssertTrue(task.label.hasSuffix("100%") || task.label.contains("· 100%"), task.label)
 
         // reopened, so the station's test is left editable for the other tests
         app.terminate()

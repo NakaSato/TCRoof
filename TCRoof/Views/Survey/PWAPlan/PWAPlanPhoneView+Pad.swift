@@ -14,6 +14,7 @@ extension PWAPlanPhoneView {
                 padSchedule(board).frame(width: 440).padding(.bottom, 18)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
+                        mineChip(labelled: true)
                         padPlan(board)
                         // side by side in landscape; the portrait column is too narrow for two
                         if g.size.width >= 1200 {

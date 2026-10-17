@@ -53,7 +53,44 @@ struct PWAPlanPhoneView: View {
     /// iPad: the dock under the page (`PadTabs`).
     @Environment(PadDock.self) var dock: PadDock?
 
-    private var stations: [Job] { jobs.pwaStations }
+    @Environment(\.permissions) private var permissions
+    /// `งานของฉัน`: only the stations that name the signed-in member (`Permissions.isNamed`), for the agenda, the plans
+    /// and the deadlines alike. The same setting as the PWA home's filter, so one switch serves both pages.
+    @AppStorage("solarSurvey.onlyMine") var onlyMine = false
+
+    /// Every PWA station, or with `งานของฉัน` the signed-in member's.
+    private var stations: [Job] {
+        let all = jobs.pwaStations
+        guard onlyMine, let mine = jobs.mine(permissions) else { return all }
+        return all.filter { $0.syncID.map(mine.contains) ?? false }
+    }
+
+    /// How many PWA stations name the signed-in member; nil before sign-in, which leaves the switch out.
+    var mineCount: Int? {
+        jobs.mine(permissions).map { mine in jobs.pwaStations.filter { $0.syncID.map(mine.contains) ?? false }.count }
+    }
+
+    /// The `งานของฉัน` switch: a person icon, filled when on.
+    @ViewBuilder func mineChip(labelled: Bool) -> some View {
+        if let n = mineCount {
+            Button { onlyMine.toggle() } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: onlyMine ? "person.crop.circle.fill" : "person.crop.circle").font(.system(size: 17, weight: .semibold))
+                    if labelled { Text("งานของฉัน · \(n) สถานี").font(.sarabunFixed(13, .bold)) }
+                }
+                .foregroundStyle(onlyMine ? Theme.onPrimary : Theme.navySolid)
+                .padding(.horizontal, labelled ? 12 : 0)
+                .frame(minWidth: 44, minHeight: 44)
+                .background(onlyMine ? Theme.primary : Theme.surface, in: Capsule())
+                .overlay { if !onlyMine { Capsule().strokeBorder(Theme.borderSubtle) } }
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("งานของฉัน \(n) สถานี")
+            .accessibilityValue(onlyMine ? "เปิดอยู่" : "ปิด")
+            .accessibilityIdentifier("pwaPlan.mine")
+        }
+    }
 
     var body: some View {
         let board = self.board
@@ -108,6 +145,7 @@ struct PWAPlanPhoneView: View {
                              .init("กำหนดส่ง", count: due.all.count, alert: due.hasLate)],
                             selection: Binding(get: { Pane.allCases.firstIndex(of: pane) ?? 0 }, set: { select(Pane.allCases[$0]) }))
             if pane == .due { dueFilterButton(due) }
+            mineChip(labelled: false)
         }
         .padding(.horizontal, 16).padding(.top, 12)
     }

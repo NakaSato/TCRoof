@@ -371,20 +371,90 @@ public enum MasterSchedule {
             set(target - others, task: task, week: week, weight: w, calendar: cal)
         }
 
-        /// Another copy's progress (a workbook updated in Excel) taken into this one: its points win for the task-weeks it
-        /// has, its actual start and finish where it has them; what only this copy has is kept. `changed` counts the
-        /// task-weeks and dates that came out different.
-        public func merging(_ other: Actual) -> (actual: Actual, changed: Int) {
-            var out = self, changed = 0
-            for (task, weeks) in other.points {
-                for (week, v) in weeks where v > 0 {
-                    if abs((out.points[task]?[week] ?? 0) - v) > 1e-9 { changed += 1 }
-                    out.points[task, default: [:]][week] = v
+        /// The tasks (raw values) and weeks (`key`) a plan file has Actual cells for: what a merge may take from it, a
+        /// cleared cell included.
+        public struct Coverage: Sendable, Equatable {
+            public var tasks: Set<String>
+            public var weeks: Set<String>
+            public init(tasks: Set<String>, weeks: Set<String>) { self.tasks = tasks; self.weeks = weeks }
+        }
+
+        /// Another copy's progress (a workbook updated in Excel) taken into this one.
+        ///
+        /// With `base`, the progress the file held when the app last wrote or read it, and `covering`, only what was
+        /// changed in the file since is taken, a cleared cell included: a booking moved or removed in Excel moves or goes
+        /// here too, and what the app booked since stays. Without them (a file the app never saw), the file's points win
+        /// for the task-weeks it has and its dates where it has them, and what only this copy has is kept.
+        ///
+        /// Either way no task the file changed ends above its weight in `weights` (task raw value → its weight points): its
+        /// latest weeks give way. `changed` counts the task-weeks and dates the file changed.
+        public func merging(_ other: Actual, base: Actual? = nil, covering: Coverage? = nil, weights: [String: Double] = [:])
+            -> (actual: Actual, changed: Int) {
+            var out = self, changed = 0, touched = Set<String>()
+            func near(_ a: Double, _ b: Double) -> Bool { abs(a - b) <= 1e-9 * max(1, abs(a)) }
+            let dates: [WritableKeyPath<Actual, [String: Date]>] = [\.started, \.finished]
+            if let base, let covering {
+                for task in covering.tasks {
+                    for week in covering.weeks {
+                        let f = other.points[task]?[week] ?? 0
+                        // unchanged in the file since the app saw it, or already the same here
+                        guard !near(f, base.points[task]?[week] ?? 0), !near(f, out.points[task]?[week] ?? 0) else { continue }
+                        out.put(f, task: task, week: week)
+                        changed += 1; touched.insert(task)
+                    }
+                    for kp in dates {
+                        let f = other[keyPath: kp][task]
+                        guard !Self.sameDay(f, base[keyPath: kp][task]), !Self.sameDay(f, out[keyPath: kp][task]) else { continue }
+                        out[keyPath: kp][task] = f
+                        changed += 1
+                    }
+                }
+            } else {
+                for (task, weeks) in other.points {
+                    for (week, v) in weeks where v > 0 && !near(v, out.points[task]?[week] ?? 0) {
+                        out.put(v, task: task, week: week)
+                        changed += 1; touched.insert(task)
+                    }
+                }
+                for kp in dates {
+                    for (task, d) in other[keyPath: kp] where !Self.sameDay(d, out[keyPath: kp][task]) {
+                        out[keyPath: kp][task] = d
+                        changed += 1
+                    }
                 }
             }
-            for (task, d) in other.started where out.started[task] != d { out.started[task] = d; changed += 1 }
-            for (task, d) in other.finished where out.finished[task] != d { out.finished[task] = d; changed += 1 }
+            out.cap(weights.filter { touched.contains($0.key) })
             return (out, changed)
+        }
+
+        static func sameDay(_ a: Date?, _ b: Date?, calendar cal: Calendar = MasterSchedule.calendar) -> Bool {
+            switch (a, b) {
+            case (nil, nil): true
+            case let (x?, y?): cal.isDate(x, inSameDayAs: y)
+            default: false
+            }
+        }
+
+        /// One task-week's points as given, 0 clearing it.
+        private mutating func put(_ v: Double, task: String, week: String) {
+            var byWeek = points[task] ?? [:]
+            byWeek[week] = v > 0 ? v : nil
+            points[task] = byWeek.isEmpty ? nil : byWeek
+        }
+
+        /// Each task in `weights` trimmed to its weight, its latest weeks first.
+        private mutating func cap(_ weights: [String: Double]) {
+            for (task, w) in weights {
+                guard var byWeek = points[task] else { continue }
+                var over = byWeek.values.reduce(0, +) - max(w, 0)
+                guard over > 1e-9 else { continue }
+                for week in byWeek.keys.sorted(by: >) where over > 1e-9 {
+                    let v = byWeek[week] ?? 0, cut = min(v, over)
+                    byWeek[week] = v - cut > 1e-9 ? v - cut : nil
+                    over -= cut
+                }
+                points[task] = byWeek.isEmpty ? nil : byWeek
+            }
         }
 
         /// Points done up to and including the week of `date`.

@@ -132,6 +132,63 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertTrue(zip.string("xl/workbook.xml")!.contains("fullCalcOnLoad=\"1\""), "Excel works them out on opening")
     }
 
+    /// Taking an Excel-edited copy's progress back: a booking moved in Excel moves, one booked in the app since stays.
+    func testAMoveInExcelComesBackAsAMove() throws {
+        let r = try MPWorkbook.read(original())
+        XCTAssertNil(r.base, "a file the app never wrote")
+        var a = r.actual
+        a.set(4, task: .structure, week: day(2024, 10, 27), weight: 10)       // BC30
+        let exported = try MPWorkbook.export(original(), input: r.input, actual: a).data
+        let back = try MPWorkbook.read(exported)
+        XCTAssertEqual(back.base, back.actual, "the record is what the file holds")
+        XCTAssertEqual(back.base?.points(.structure, week: day(2024, 10, 27)), 4)
+        XCTAssertTrue(back.coverage.tasks.contains(MasterSchedule.Task.structure.rawValue))
+        XCTAssertTrue(back.coverage.weeks.contains(MasterSchedule.Actual.key(day(2024, 11, 3))))
+        XCTAssertEqual(try MPWorkbook.export(exported, input: back.input, actual: back.actual).data, exported,
+                       "nothing new: the same bytes, record and all")
+
+        // in Excel: 27 ต.ค.'s 4 moved to 3 พ.ย. (BD30); in the app since the export: 2 in 10 พ.ย.
+        var zip = try ZipArchive(exported)
+        var xml = zip.string("xl/worksheets/sheet1.xml")!
+        XCTAssertTrue(xml.contains(#"<c r="BC30" s="36"><v>4</v></c>"#))
+        xml = xml.replacingOccurrences(of: #"<c r="BC30" s="36"><v>4</v></c>"#, with: #"<c r="BC30" s="36"/>"#)
+        xml = xml.replacingOccurrences(of: #"<c r="BD30" s="36"/>"#, with: #"<c r="BD30" s="36"><v>4</v></c>"#)
+        zip.set("xl/worksheets/sheet1.xml", xml)
+        let edited = try MPWorkbook.read(zip.write())
+        var app = a
+        app.set(2, task: .structure, week: day(2024, 11, 10), weight: 10)
+        let (merged, changed) = app.merging(edited.actual, base: edited.base, covering: edited.coverage)
+        XCTAssertEqual(merged.points(.structure, week: day(2024, 10, 27)), 0, "moved in Excel")
+        XCTAssertEqual(merged.points(.structure, week: day(2024, 11, 3)), 4)
+        XCTAssertEqual(merged.points(.structure, week: day(2024, 11, 10)), 2, "booked in the app since")
+        XCTAssertEqual(changed, 2)
+
+        // a record that is out of date (the file edited in Excel) is brought up to date by the next export
+        let again = try MPWorkbook.export(zip.write(), input: edited.input, actual: edited.actual)
+        XCTAssertEqual(again.changedCells, 0)
+        XCTAssertEqual(try MPWorkbook.read(again.data).base, edited.actual)
+    }
+
+    /// The record survives being read whatever prefix and declaration a save gives the part.
+    func testTheRecordReadsAfterASave() throws {
+        var a = MasterSchedule.Actual()
+        a.set(1.5, task: .panels, week: day(2024, 11, 3), weight: 10)
+        var zip = ZipArchive()
+        zip.set("xl/_rels/workbook.xml.rels", #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#)
+        zip.set("[Content_Types].xml", #"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>"#)
+        MPWorkbook.Snapshot.write(a, into: &zip)
+        XCTAssertTrue(zip.string("[Content_Types].xml")!.contains(#"<Default Extension="xml" ContentType="application/xml"/>"#))
+        XCTAssertEqual(MPWorkbook.Snapshot.read(zip), a)
+        let saved = zip.string("customXml/item1.xml")!
+            .replacingOccurrences(of: #"<?xml version="1.0" encoding="UTF-8" standalone="no"?>"#, with: "<?xml version=\"1.0\"?><!-- saved -->")
+            .replacingOccurrences(of: "tc:", with: "ns0:").replacingOccurrences(of: "xmlns:tc", with: "xmlns:ns0")
+        zip.set("customXml/item1.xml", saved)
+        XCTAssertEqual(MPWorkbook.Snapshot.read(zip), a)
+        // written again: the same part, no second one
+        MPWorkbook.Snapshot.write(a, into: &zip)
+        XCTAssertFalse(zip.contains("customXml/item2.xml"))
+    }
+
     func testUnchangedPlanGivesTheSameBytes() throws {
         let data = try original()
         let r = try MPWorkbook.read(data)
@@ -158,12 +215,22 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertEqual(back.actual, a)
         XCTAssertEqual(MasterSchedule.plan(back.input), MasterSchedule.plan(r.input))
 
-        // only the sheet's cells, the S-curve's saved series and the recalc flag changed; every other part is the original's
+        // only the sheet's cells, the S-curve's saved series and the recalc flag changed, and the progress record was
+        // added (`Snapshot`); every other part is the original's
         let before = try ZipArchive(data), after = try ZipArchive(out.data)
-        XCTAssertEqual(before.paths, after.paths)
-        for p in before.paths where !["xl/worksheets/sheet1.xml", "xl/workbook.xml", "xl/charts/chart1.xml"].contains(p) {
+        let record = ["customXml/item1.xml", "customXml/itemProps1.xml", "customXml/_rels/item1.xml.rels"]
+        XCTAssertEqual(before.paths + record, after.paths)
+        for p in before.paths where !["xl/worksheets/sheet1.xml", "xl/workbook.xml", "xl/charts/chart1.xml",
+                                      "xl/_rels/workbook.xml.rels", "[Content_Types].xml"].contains(p) {
             XCTAssertEqual(before.data(p), after.data(p), p)
         }
+        XCTAssertEqual(back.base, a, "the record is the progress the file now holds")
+        XCTAssertEqual(after.string("xl/_rels/workbook.xml.rels"),
+                       before.string("xl/_rels/workbook.xml.rels")?.replacingOccurrences(of: "</Relationships>", with:
+                           #"<Relationship Id="rIdTCRoofProgress" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" Target="../customXml/item1.xml"/></Relationships>"#))
+        XCTAssertEqual(after.string("[Content_Types].xml"),
+                       before.string("[Content_Types].xml")?.replacingOccurrences(of: "</Types>", with:
+                           #"<Override PartName="/customXml/itemProps1.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/></Types>"#))
         XCTAssertEqual(after.string("xl/workbook.xml"),
                        before.string("xl/workbook.xml")?.replacingOccurrences(of: #"<calcPr calcId="191029"/>"#,
                                                                               with: #"<calcPr calcId="191029" fullCalcOnLoad="1"/>"#))

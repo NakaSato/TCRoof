@@ -14,13 +14,14 @@ struct LoginView: View {
     var body: some View {
         GeometryReader { geo in
             let wide = geo.size.width >= 700
+            let panelWidth = min(480, geo.size.width * 0.42)
             Group {
                 if wide {
                     HStack(spacing: 0) {
                         hero(wide: true)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         panel(wide: true)
-                            .frame(width: min(480, geo.size.width * 0.42))
+                            .frame(width: panelWidth)
                     }
                 } else {
                     VStack(spacing: 0) {
@@ -30,8 +31,11 @@ struct LoginView: View {
                     }
                 }
             }
-            .background { backdrop }
+            .background { backdrop(coveredWidth: wide ? panelWidth : 0) }
         }
+        #if DEBUG
+        .onAppear(perform: debugState)
+        #endif
         .environment(\.colorScheme, .light)
         .animation(.snappy, value: notice)
         .animation(.snappy, value: showsHelp)
@@ -39,13 +43,15 @@ struct LoginView: View {
 
     // MARK: Photo and brand
 
-    /// The photo, filling the screen behind both halves, shaded navy where the brand text sits.
-    private var backdrop: some View {
+    /// The photo, shaded navy where the brand text sits. Beside the iPad's panel it fills only the uncovered part (and
+    /// the panel's rounded corners), cropped from the right so the solar roof stays in view.
+    private func backdrop(coveredWidth: CGFloat) -> some View {
         GeometryReader { geo in
+            let width = coveredWidth > 0 ? geo.size.width - coveredWidth + 28 : geo.size.width
             Image("LoginBackground")
                 .resizable()
                 .scaledToFill()
-                .frame(width: geo.size.width, height: geo.size.height)
+                .frame(width: width, height: geo.size.height, alignment: coveredWidth > 0 ? .trailing : .center)
                 .clipped()
                 .overlay {
                     LinearGradient(
@@ -235,6 +241,17 @@ struct LoginView: View {
     private var version: String? {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String).map { "v" + $0 }
     }
+
+    #if DEBUG
+    /// `-loginState help|error` opens the help or shows a sign-in failure, for screenshots.
+    private func debugState() {
+        switch UserDefaults.standard.string(forKey: "loginState") {
+        case "help": showsHelp = true
+        case "error": errorMessage = GoogleAuth.Failure.badResponse("access_denied").localizedDescription
+        default: break
+        }
+    }
+    #endif
 
     private func signIn() {
         errorMessage = nil

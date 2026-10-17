@@ -120,10 +120,11 @@ public final class SurveyModel {
         stage == .survey ? jobs.filter { $0.stage != .maintenance } : jobs.filter { $0.stage == stage }
     }
 
-    /// Makes a complete survey an installation job; it saves and waits for sync like any edit.
+    /// Makes a survey an installation job (an unfinished one only with `evenIfIncomplete`); it saves and waits for sync
+    /// like any edit.
     @discardableResult
-    public func moveToInstall(_ id: UUID) -> Bool {
-        guard var j = job(id), j.moveToInstall() else { return false }
+    public func moveToInstall(_ id: UUID, evenIfIncomplete: Bool = false) -> Bool {
+        guard var j = job(id), j.moveToInstall(evenIfIncomplete: evenIfIncomplete) else { return false }
         update(j)
         flush(id)
         if let link = j.jobSyncID { onMovedToInstall?(link) }

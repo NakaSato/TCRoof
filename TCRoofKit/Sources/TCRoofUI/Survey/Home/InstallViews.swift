@@ -2,11 +2,13 @@
 import SwiftUI
 import TCRoofCore
 
-/// "เพิ่มโครงการติดตั้ง": every survey still in the survey stage, complete ones first; only those can be added.
+/// "เพิ่มโครงการติดตั้ง": every survey still in the survey stage, complete ones first; an unfinished one is added after
+/// a question.
 struct InstallPickerSheet: View {
     let jobs: [Job]
     let add: (UUID) -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var unfinished: Job?
 
     var rows: [Job] {
         jobs.sorted { a, b in
@@ -20,7 +22,7 @@ struct InstallPickerSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("เพิ่มโครงการติดตั้ง").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
-                    Text("ดึงข้อมูลจากงานสำรวจ · เลือกได้เฉพาะงานที่สำรวจครบ 100%").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                    Text("ดึงข้อมูลจากงานสำรวจ · งานที่สำรวจยังไม่ครบจะถามก่อนเพิ่ม").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
                 Button { dismiss() } label: {
@@ -48,6 +50,13 @@ struct InstallPickerSheet: View {
             }
         }
         .background(Theme.surface)
+        .confirmationDialog("สำรวจยังไม่ครบ", isPresented: Binding(get: { unfinished != nil }, set: { if !$0 { unfinished = nil } }),
+                            titleVisibility: .visible, presenting: unfinished) { j in
+            Button("เพิ่มทั้งที่ยังไม่ครบ") { unfinished = nil; add(j.id) }
+            Button("ยกเลิก", role: .cancel) { unfinished = nil }
+        } message: { j in
+            Text("แบบสำรวจกรอกแล้ว \(j.completion.percent)% · เพิ่มเป็นงานติดตั้งได้ และยังกรอกแบบสำรวจต่อได้")
+        }
     }
 
     func row(_ j: Job) -> some View {
@@ -70,10 +79,14 @@ struct InstallPickerSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("เพิ่ม \(j.projectName) เป็นงานติดตั้ง")
             } else {
-                Text("เพิ่มไม่ได้").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.disabledText)
-                    .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
-                    .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 12))
-                    .accessibilityLabel("เพิ่มไม่ได้ สำรวจยังไม่ครบ")
+                Button { unfinished = j } label: {
+                    Text("ยังไม่ครบ \(j.completion.percent)%").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                        .frame(minWidth: 120, minHeight: 44).padding(.horizontal, 6)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("เพิ่ม \(j.projectName) เป็นงานติดตั้ง สำรวจยังไม่ครบ")
             }
         }
         .padding(.horizontal, 24).padding(.vertical, 10)

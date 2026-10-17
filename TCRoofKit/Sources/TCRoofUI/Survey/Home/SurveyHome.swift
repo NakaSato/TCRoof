@@ -173,7 +173,7 @@ struct SurveyHomeView: View {
         }
         .sheet(isPresented: $showInstallPicker) {
             InstallPickerSheet(jobs: model.jobs(in: .survey).filter { $0.stage == .survey }) { id in
-                guard model.moveToInstall(id) else { return }
+                guard model.moveToInstall(id, evenIfIncomplete: true) else { return }
                 showInstallPicker = false
                 installFilter = .noPlan
                 withAnimation(.snappy) { tab = .install }
@@ -250,7 +250,8 @@ struct SurveyHomeView: View {
                     case .survey:
                         // an install-phase card opens the install record, so the report is here
                         if station != nil { Button { go(j) } label: { Label("ดูรายงานสำรวจ", systemImage: "doc.text.magnifyingglass") } }
-                        if j.canMoveToInstall, canMove(j) {
+                        // an unfinished survey can move too; the dialog says what is missing
+                        if j.stage == .survey, canMove(j) {
                             Button { toInstall = j } label: { Label("ย้ายไปงานติดตั้ง", systemImage: "hammer") }
                         }
                         Button { go(j) } label: { Label("เปิดที่ A1", systemImage: "doc.text") }
@@ -308,7 +309,7 @@ struct SurveyHomeView: View {
         }
     }
 
-    /// ย้ายไปงานติดตั้ง? for a complete survey, asked from its card.
+    /// ย้ายไปงานติดตั้ง? asked from a survey's card; an unfinished survey is warned and offered its next step.
     struct MoveToInstallDialog: ViewModifier {
         let job: Job
         @Binding var asking: Job?
@@ -318,13 +319,18 @@ struct SurveyHomeView: View {
         @Environment(SurveyModel.self) private var model
 
         func body(content: Content) -> some View {
-            content.confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { asking?.id == job.id }, set: { if !$0 { asking = nil } }),
-                                       titleVisibility: .visible) {
-                Button("ย้าย \(job.projectName) ไปงานติดตั้ง") { asking = nil; if model.moveToInstall(job.id) { moved() } }
-                Button("เปิดดูแบบสำรวจ") { asking = nil; go(job, nil) }
+            let complete = job.canMoveToInstall
+            return content.confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { asking?.id == job.id }, set: { if !$0 { asking = nil } }),
+                                              titleVisibility: .visible) {
+                Button(complete ? "ย้าย \(job.projectName) ไปงานติดตั้ง" : "ย้ายทั้งที่ยังไม่ครบ") {
+                    asking = nil
+                    if model.moveToInstall(job.id, evenIfIncomplete: true) { moved() }
+                }
+                Button(complete ? "เปิดดูแบบสำรวจ" : "กรอกต่อ") { asking = nil; go(job, complete ? nil : job.nextStep?.page) }
                 Button("ยกเลิก", role: .cancel) { asking = nil }
             } message: {
-                Text("แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)")
+                Text(complete ? "แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)"
+                     : "แบบสำรวจกรอกแล้ว \(job.completion.percent)% · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง และยังกรอกแบบสำรวจต่อได้ (ย้ายกลับได้จากงานติดตั้ง)")
             }
         }
     }

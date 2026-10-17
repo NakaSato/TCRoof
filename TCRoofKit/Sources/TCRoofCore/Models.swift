@@ -461,10 +461,11 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
     /// Only a survey filled in completely can become an installation job.
     public var canMoveToInstall: Bool { stage == .survey && completion.isComplete }
 
-    /// Moves a complete survey to installation; false (and unchanged) otherwise.
+    /// Moves a complete survey to installation, or an unfinished one with `evenIfIncomplete` (the card asks first);
+    /// false (and unchanged) otherwise.
     @discardableResult
-    public mutating func moveToInstall(now: Date = Date()) -> Bool {
-        guard canMoveToInstall else { return false }
+    public mutating func moveToInstall(now: Date = Date(), evenIfIncomplete: Bool = false) -> Bool {
+        guard canMoveToInstall || (evenIfIncomplete && stage == .survey) else { return false }
         stage = .install
         install = InstallInfo(movedAt: now)
         return true

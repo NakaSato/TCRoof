@@ -168,11 +168,17 @@ final class TCRoofCoreTests: XCTestCase {
         XCTAssertEqual(back, moved)
     }
 
-    /// Only a complete survey moves to installation; a copy of it starts over as a survey.
+    /// A complete survey moves to installation, an unfinished one only when asked; a copy of it starts over as a survey.
     func testMoveToInstall() throws {
         var j = Job.new(template: JobTemplate.all[2])
         XCTAssertFalse(j.moveToInstall())
         XCTAssertEqual(j.stage, .survey)
+        // an unfinished one moves only when asked to, and moves back
+        var early = j
+        XCTAssertTrue(early.moveToInstall(evenIfIncomplete: true))
+        XCTAssertEqual(early.stage, .install)
+        XCTAssertFalse(early.moveToInstall(evenIfIncomplete: true))
+        XCTAssertTrue(early.moveBackToSurvey())
         for g in Schema.jobGroups { for f in g.fields where f.isRequired(j.values) { j.values[f.id] = .text("1") } }
         XCTAssertTrue(j.completion.isComplete)
         XCTAssertTrue(j.moveToInstall())

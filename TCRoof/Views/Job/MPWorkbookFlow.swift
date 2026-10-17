@@ -203,6 +203,14 @@ private struct MPWorkbookModifier: ViewModifier {
     @Bindable var job: Job
     @Environment(\.modelContext) private var context
     @Query private var jobs: [Job]
+    /// The file goes to the station it fits, which has a plan already: asked again, with that station's summary.
+    @State private var retarget: Retarget?
+
+    struct Retarget: Identifiable {
+        let id = UUID()
+        let pending: MPWorkbookFlow.Pending
+        let job: Job
+    }
 
     private var mismatch: (file: String, fits: Job?)? {
         flow.pending.flatMap { flow.mismatch($0, job: job, stations: jobs.pwaStations) }
@@ -219,8 +227,10 @@ private struct MPWorkbookModifier: ViewModifier {
                 let other = mismatch
                 if let fits = other?.fits {
                     Button("นำเข้าที่ \(label(fits))") {
-                        flow.apply(p, to: fits, context: context)
                         flow.pending = nil
+                        // that station's own plan and progress would be replaced: ask again, about it
+                        if fits.scheduleInput != nil { retarget = Retarget(pending: p, job: fits); return }
+                        flow.apply(p, to: fits, context: context)
                         flow.message = .init(title: "นำเข้าแล้ว", text: "แผนจากไฟล์อยู่ที่ \(label(fits)) ไม่ใช่สถานีที่เปิดอยู่")
                     }
                 }
@@ -242,6 +252,21 @@ private struct MPWorkbookModifier: ViewModifier {
                 } else {
                     Text(flow.summary(p, job: job))
                 }
+            }
+            .alert(retarget.map { "นำเข้าที่ \(label($0.job))" } ?? "", isPresented: Binding(get: { retarget != nil }, set: { if !$0 { retarget = nil } }),
+                   presenting: retarget) { r in
+                Button("นำเข้า") {
+                    flow.apply(r.pending, to: r.job, context: context)
+                    retarget = nil
+                    flow.message = .init(title: "นำเข้าแล้ว", text: "แผนจากไฟล์อยู่ที่ \(label(r.job)) ไม่ใช่สถานีที่เปิดอยู่")
+                }
+                Button("รับเฉพาะความก้าวหน้า") {
+                    retarget = nil
+                    flow.takeProgress(r.pending, on: r.job, context: context)
+                }
+                Button("ยกเลิก", role: .cancel) { retarget = nil }
+            } message: { r in
+                Text("สถานีนี้มีแผน MP อยู่แล้ว\n\n" + flow.summary(r.pending, job: r.job))
             }
             .alert(flow.message?.title ?? "", isPresented: Binding(get: { flow.message != nil }, set: { if !$0 { flow.message = nil } }),
                    presenting: flow.message) { m in

@@ -203,7 +203,6 @@ This spec builds on all of these.
 
 **External display (USB-C / AirPlay, Stage Manager on M1+):**
 - In the office: form on the iPad, **report preview** on the monitor, re-rendered whenever the form changes.
-- In meetings: presentation mode ([`presentation-mode.md`](presentation-mode.md)).
 
 ### H7. Measuring distances
 

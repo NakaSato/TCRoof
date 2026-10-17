@@ -340,7 +340,7 @@ On **ล็อกและออก REV nn**, `SurveyModel.issue(job:)` runs the
 | Sidebar | **เพิ่มหัวข้อสำรวจ**, duplicate, delete and swipe actions hidden |
 | Photo check page (§2) | read-only |
 | Top of every page | banner 🔒 **"REV nn ลงนามแล้ว · ล็อก"** with the hash code and **แก้ไข (เปิด REV nn+1)** |
-| Export PDF / Excel, Drive save, share, presentation mode | allowed: they read only |
+| Export PDF / Excel, Drive save, share | allowed: they read only |
 | Duplicate job | allowed; the copy is unlocked (§3.4) |
 | `SurveyModel.update(_:)` | **defence in depth:** if the stored job is locked and the new `values`/`modules` differ, the update is rejected and logged. The lock cannot be bypassed by a stray binding |
 

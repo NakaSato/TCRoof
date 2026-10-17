@@ -5,7 +5,7 @@ import Foundation
 /// `x` / `y` the top-left corner in metres from the tank's top-left as before), so the plan drawings, the PDF and Excel
 /// keep reading them; points marked `absent` are left out of the drawings.
 public enum TankPoints {
-    public static let vent = "vent", hatch = "hatch"
+    public static let vent = "vent", hatch = "hatch", ladder = "ladder", pipe = "pipe"
     public static let ok = "ok", absent = "absent"
     public static let standard = "standard", added = "added"
     /// Side of the opening drawn on the plans (m).
@@ -35,13 +35,34 @@ public enum TankPoints {
     ]
 
     public static func size(_ kind: String) -> Double { kind == hatch ? hatchSize : ventSize }
-    /// "ช่องระบายอากาศ" / "ช่องลงถัง" / "สิ่งกีดขวาง"
+    /// "ช่องระบายอากาศ" / "ช่องลงถัง" / "บันไดขึ้นถัง" / "ท่อ" / "สิ่งกีดขวาง"
     public static func kindName(_ kind: String) -> String {
         switch kind {
         case vent: return "ช่องระบายอากาศ"
         case hatch: return "ช่องลงถัง"
+        case ladder: return "บันไดขึ้นถัง"
+        case pipe: return "ท่อ"
         default: return "สิ่งกีดขวาง"
         }
+    }
+    /// Ladders and pipes stand on a wall, outside the roof: they slide along it, overlap nothing and take no room from
+    /// the panels. They are kept just inside the wall (top-left corner on it) so the plan's clamping still applies.
+    /// The label's letter: V, H, L or P.
+    public static func prefix(_ kind: String) -> String {
+        switch kind {
+        case hatch: return "H"
+        case ladder: return "L"
+        case pipe: return "P"
+        default: return "V"
+        }
+    }
+    public static func onWall(_ kind: String) -> Bool { kind == ladder || kind == pipe }
+
+    public enum Wall: String, Sendable { case top, bottom, left, right }
+    /// The wall nearest a rectangle in a tank of this size.
+    public static func wall(_ r: Rect, w W: Double, h H: Double) -> Wall {
+        let d: [(Wall, Double)] = [(.top, r.y), (.bottom, H - r.y - r.h), (.left, r.x), (.right, W - r.x - r.w)]
+        return d.min { $0.1 < $1.1 }!.0
     }
     public static func snap(_ d: Double) -> Double { ((d / grid).rounded() * grid * 100).rounded() / 100 }
     static func text(_ d: Double) -> String { fmt(snap(d)) }
@@ -92,6 +113,7 @@ public enum TankPoints {
     @discardableResult public static func seed(_ v: inout Values) -> Bool {
         guard points(v).isEmpty, let t = tankSize(v) else { return false }
         write(&v, standardPoints(width: t.w, height: t.h))
+        v[Tank.Key.design] = nil
         return true
     }
 
@@ -145,11 +167,22 @@ public enum TankPoints {
         guard let t = tankSize(v), let me = list.first(where: { $0.id == id }), let r = rect(me) else { return nil }
         var nx = min(max(0, x), max(0, t.w - r.w)), ny = min(max(0, y), max(0, t.h - r.h))
         var gx: Double?, gy: Double?
+        // a ladder or a pipe slides along its wall
+        let side = onWall(me.kind) ? wall(r, w: t.w, h: t.h) : nil
+        switch side {
+        case .left: nx = 0
+        case .right: nx = max(0, t.w - r.w)
+        case .top: ny = 0
+        case .bottom: ny = max(0, t.h - r.h)
+        case nil: break
+        }
         let others = list.filter { $0.id != id && $0.status != absent }.compactMap(rect)
-        if let o = others.min(by: { abs($0.cx - (nx + r.w / 2)) < abs($1.cx - (nx + r.w / 2)) }), abs(o.cx - (nx + r.w / 2)) <= magnet {
+        if side != .left && side != .right,
+           let o = others.min(by: { abs($0.cx - (nx + r.w / 2)) < abs($1.cx - (nx + r.w / 2)) }), abs(o.cx - (nx + r.w / 2)) <= magnet {
             nx = o.cx - r.w / 2; gx = o.cx
         }
-        if let o = others.min(by: { abs($0.cy - (ny + r.h / 2)) < abs($1.cy - (ny + r.h / 2)) }), abs(o.cy - (ny + r.h / 2)) <= magnet {
+        if side != .top && side != .bottom,
+           let o = others.min(by: { abs($0.cy - (ny + r.h / 2)) < abs($1.cy - (ny + r.h / 2)) }), abs(o.cy - (ny + r.h / 2)) <= magnet {
             ny = o.cy - r.h / 2; gy = o.cy
         }
         nx = snap(nx); ny = snap(ny)
@@ -181,7 +214,7 @@ public enum TankPoints {
         for o in list where o.id != id && o.status != absent {
             guard let q = rect(o) else { continue }
             if abs(q.cx - r.cx) < 0.01 || abs(q.cy - r.cy) < 0.01 { c.aligned.append(o.label) }
-            if q.overlaps(r) { c.overlaps.append(o.label) }
+            if q.overlaps(r), !onWall(me.kind), !onWall(o.kind) { c.overlaps.append(o.label) }
         }
         // nearest first
         c.aligned.sort { a, b in
@@ -193,9 +226,9 @@ public enum TankPoints {
 
     // MARK: adding and deleting
 
-    /// "V11", "H6": one more than the highest number of that kind.
+    /// "V11", "H6", "L4", "P7": one more than the highest number of that kind.
     public static func nextLabel(_ list: [Obstacle], kind: String) -> String {
-        let p = kind == hatch ? "H" : "V"
+        let p = prefix(kind)
         let n = list.compactMap { $0.label.hasPrefix(p) ? Int($0.label.dropFirst()) : nil }.max() ?? 0
         return p + "\(n + 1)"
     }

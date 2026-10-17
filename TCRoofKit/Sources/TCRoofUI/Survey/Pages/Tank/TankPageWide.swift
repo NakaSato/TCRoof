@@ -50,6 +50,8 @@ struct TankPageWide: View {
     @State var rowCount = 3
     @State var rowSpacing = 4.0
     @State var deleteAsk = false
+    /// `เริ่มจากแบบมาตรฐาน กปภ.`: the designs, closest to the measured size first.
+    @State var designAsk = false
     /// iPhone sub-step 3: `แก้แผง` (else `เลื่อนผัง`), the plan full screen and its zoom, the question before a new
     /// layout, the max search running, the B1-C3 drawing.
     @State var layoutEditing = false
@@ -274,6 +276,18 @@ extension TankPageWide {
             span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
         case "tab2": tab = 2
+        case "design", "design64":
+            // docs/specs/standard-designs.md: the 40 × 40 (or 64 × 40) sheet, two points checked, one moved, one absent
+            update { v in
+                TankDesign.apply(&v, state == "design" ? .pwa40x40 : .pwa64x40)
+                let list = TankPoints.points(v)
+                TankPoints.setStatus(&v, list[0].id, TankPoints.ok)
+                TankPoints.setStatus(&v, list[1].id, TankPoints.absent)
+                TankPoints.move(&v, list[2].id, x: 13.7, y: nil)
+                TankPoints.setStatus(&v, list[2].id, TankPoints.ok)
+            }
+            pointSel = TankPoints.points(values)[safe: 2]?.id
+            tab = 2
         case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete":
             // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
             update { v in

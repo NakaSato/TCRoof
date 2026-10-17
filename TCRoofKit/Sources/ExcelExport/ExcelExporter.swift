@@ -256,6 +256,8 @@ struct Fill {
         // NO.224 has no cells for these — written into the blank tail of rows 16/17 beside the template labels.
         if let k = Schema.tankKind(d) { a.raw("R16", k) }
         if let sh = Schema.shadeText(d) { a.raw("R17", sh) }
+        // and the standard design the points came from, beside the obstacle heading (docs/specs/standard-designs.md §6)
+        if let from = TankDesign.current(d), let sum = TankDesign.summary(d) { a.raw("N19", "แบบ กปภ. \(from.design.size) · " + sum.counts) }
         let ob = d.photos("obstPhotos"); a.pic("A20:Z32", img(ob.first))
         let top = [d.photo("aerialPhoto")] + d.photos("sidePhotos").map { Optional($0) }
         for (i, q) in ["A41:M47", "N41:Z47", "A48:M54", "N48:Z54"].enumerated() { a.pic(q, img(top[safe: i] ?? nil)) }

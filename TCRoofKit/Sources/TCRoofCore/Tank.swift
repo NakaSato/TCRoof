@@ -11,6 +11,8 @@ public enum Tank {
         public static let azimuthSrc = "tankAzimuthSrc", azimuthAcc = "tankAzimuthAcc"
         /// The vents' height above the roof (docs/specs/tank-mounting-layout.md §2), one value per tank.
         public static let ventHeight = "ventHeight"
+        /// The standard design the points came from (`TankDesign.id`, "@r" when turned), nil for the generic layout.
+        public static let design = "tankDesign"
     }
 
     // MARK: vent height

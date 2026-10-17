@@ -54,7 +54,7 @@ struct TankLayoutPlan: View {
     func draw(_ ctx: inout GraphicsContext, _ f: (ox: Double, oy: Double, k: Double)) {
         let l = shown
         // obstacles from sub-step 2, faint: hatches and other obstacles block, vents may be covered
-        for o in TankPoints.points(values) where !o.isAbsent {
+        for o in TankPoints.points(values) where !o.isAbsent && !TankPoints.onWall(o.kind) {
             guard let r = TankPoints.rect(o) else { continue }
             let b = rect(r.x, r.y, r.w, r.h, f).insetBy(dx: -1, dy: -1)
             ctx.stroke(Path(b), with: .color(Theme.borderControl.opacity(0.6)), style: StrokeStyle(lineWidth: 0.8, dash: o.kind == TankPoints.vent ? [] : [2, 1.5]))

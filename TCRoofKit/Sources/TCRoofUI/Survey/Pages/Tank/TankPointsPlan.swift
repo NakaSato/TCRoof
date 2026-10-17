@@ -21,6 +21,8 @@ struct TankPointsPlan: View {
         let point: Obstacle
         let rect: TankPoints.Rect
         let state: Look
+        /// A ladder or a pipe is drawn just outside its wall (plan units), as on the กปภ. sheet.
+        var shift = CGSize.zero
     }
 
     static func color(_ s: Look) -> Color {
@@ -41,11 +43,21 @@ struct TankPointsPlan: View {
     }
 
     var marks: [Mark] {
-        TankPoints.points(values).compactMap { o in
+        let t = TankPoints.tankSize(values)
+        return TankPoints.points(values).compactMap { o in
             guard var r = TankPoints.rect(o) else { return nil }
             if let d = drag, d.id == o.id { r.x = d.drop.x; r.y = d.drop.y }
             let s: Look = o.id == selected ? .selected : o.isAbsent ? .absent : o.status.isEmpty ? .unconfirmed : .confirmed
-            return Mark(id: o.id, point: o, rect: r, state: s)
+            var m = Mark(id: o.id, point: o, rect: r, state: s)
+            if TankPoints.onWall(o.kind), let t {
+                switch TankPoints.wall(r, w: t.w, h: t.h) {
+                case .top: m.shift = CGSize(width: 0, height: -10)
+                case .bottom: m.shift = CGSize(width: 0, height: 10)
+                case .left: m.shift = CGSize(width: -10, height: 0)
+                case .right: m.shift = CGSize(width: 10, height: 0)
+                }
+            }
+            return m
         }
     }
 
@@ -71,8 +83,8 @@ struct TankPointsPlan: View {
 
     // MARK: drawing (in the plan's 330 × 300 units)
 
-    func centre(_ r: TankPoints.Rect, _ f: (ox: Double, oy: Double, k: Double)) -> CGPoint {
-        CGPoint(x: f.ox + r.cx * f.k, y: f.oy + r.cy * f.k)
+    func centre(_ m: Mark, _ f: (ox: Double, oy: Double, k: Double)) -> CGPoint {
+        CGPoint(x: f.ox + m.rect.cx * f.k + m.shift.width, y: f.oy + m.rect.cy * f.k + m.shift.height)
     }
 
     func draw(_ ctx: inout GraphicsContext, _ all: [Mark], _ f: (ox: Double, oy: Double, k: Double), _ t: (w: Double, h: Double)) {
@@ -90,7 +102,7 @@ struct TankPointsPlan: View {
         if let s = sel {
             symbol(&ctx, s, f)
             // distance from the left wall, under the symbol
-            let c = centre(s.rect, f), box = CGRect(x: c.x - 30, y: c.y + 12, width: 42, height: 13)
+            let c = centre(s, f), box = CGRect(x: c.x - 30, y: c.y + 12, width: 42, height: 13)
             ctx.fill(Path(roundedRect: box, cornerRadius: 6), with: .color(Theme.paper))
             ctx.stroke(Path(roundedRect: box, cornerRadius: 6), with: .color(Theme.warning), lineWidth: 1)
             ctx.draw(Text(String(format: "%.2f", s.rect.x)).font(.system(size: 8, weight: .bold)).foregroundColor(Theme.pending),
@@ -109,14 +121,26 @@ struct TankPointsPlan: View {
 
     /// A 12-pt symbol (vent: square + ring; hatch: hatched square) and its label pill, coloured by state.
     func symbol(_ ctx: inout GraphicsContext, _ m: Mark, _ f: (ox: Double, oy: Double, k: Double)) {
-        let c = centre(m.rect, f), col = Self.color(m.state), sq = CGRect(x: c.x - 6, y: c.y - 6, width: 12, height: 12)
+        let c = centre(m, f), col = Self.color(m.state), sq = CGRect(x: c.x - 6, y: c.y - 6, width: 12, height: 12)
         let dash: [CGFloat] = m.state == .absent ? [3, 2] : []
         if m.state == .selected {
             let halo = CGRect(x: c.x - 11, y: c.y - 11, width: 22, height: 22)
             ctx.fill(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning.opacity(0.18)))
             ctx.stroke(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning), lineWidth: 1)
         }
-        if m.point.kind == TankPoints.vent {
+        if TankPoints.onWall(m.point.kind) {
+            // ladder: a box with two rungs; pipe: a ring
+            ctx.fill(Path(sq), with: .color(Theme.paper))
+            if m.point.kind == TankPoints.ladder {
+                ctx.stroke(Path(sq), with: .color(col), style: StrokeStyle(lineWidth: 1.2, dash: dash))
+                var r = Path()
+                for y in [sq.minY + 4, sq.maxY - 4] { r.move(to: CGPoint(x: sq.minX, y: y)); r.addLine(to: CGPoint(x: sq.maxX, y: y)) }
+                ctx.stroke(r, with: .color(col), lineWidth: 1)
+            } else {
+                ctx.stroke(Path(ellipseIn: sq), with: .color(col), style: StrokeStyle(lineWidth: 1.5, dash: dash))
+                ctx.fill(Path(ellipseIn: sq.insetBy(dx: 3.5, dy: 3.5)), with: .color(col))
+            }
+        } else if m.point.kind == TankPoints.vent {
             ctx.fill(Path(sq), with: .color(Theme.paper))
             ctx.stroke(Path(sq), with: .color(col), style: StrokeStyle(lineWidth: 1.5, dash: dash))
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - 3, y: c.y - 3, width: 6, height: 6)), with: .color(col), lineWidth: 1)
@@ -142,7 +166,7 @@ struct TankPointsPlan: View {
 
     /// A 44-pt target on the symbol: tap selects it, a drag moves it (snapped by `TankPoints.drop`).
     func target(_ m: Mark, fit: SketchFit, f: (ox: Double, oy: Double, k: Double)) -> some View {
-        let c = centre(m.rect, f), p = fit.point(Pt(c.x, c.y))
+        let c = centre(m, f), p = fit.point(Pt(c.x, c.y))
         return Color.clear
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())

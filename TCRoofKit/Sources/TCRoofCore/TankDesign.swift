@@ -1,0 +1,183 @@
+import Foundation
+
+/// Standard designs of กปภ. clear-water tanks (docs/specs/standard-designs.md §2): only the two sheets the team supplied,
+/// as docs/specs/img/tank_plan.py draws them. Picking one in D1 sub-step 2 writes the tank's bays and the design's
+/// vents, hatches, ladders and pipes as standard points (`TankPoints`), in place of the generic layout; the surveyor then
+/// checks each one on site as before, and `summary` lists where the site differs from the design.
+public struct TankDesign: Hashable, Sendable, Identifiable {
+    /// A vent in the middle of a bay: row from the top, column from the left.
+    public struct Cell: Hashable, Sendable {
+        public let row, col: Int
+    }
+    /// A hatch, ladder or pipe on a wall, `along` metres from the wall's start (top-left corner).
+    public struct OnWall: Hashable, Sendable {
+        public let wall: TankPoints.Wall
+        public let along: Double
+        public var note = ""
+    }
+
+    public let id: String
+    public let name: String
+    public let source: String
+    public let nx, ny: Int
+    public let span: Double
+    /// "box" (ช่องระบายแบบกล่อง) or "cross" (แบบเห็ด on a column head).
+    public let ventStyle: String
+    public let vents: [Cell]
+    public let hatches, ladders, pipes: [OnWall]
+
+    public var width: Double { Double(nx) * span }
+    public var height: Double { Double(ny) * span }
+    /// "64 × 40 ม."
+    public var size: String { "\(fmt(width)) × \(fmt(height)) ม." }
+
+    /// The measured size matches a design within this, |ΔW| + |ΔL| in metres (§3.1).
+    public static let tolerance = 0.5
+    /// A hatch's distance in from its wall (m), as on the sheets.
+    static let hatchInset = 0.15
+
+    public static let pwa64x40 = TankDesign(
+        id: "pwa-64x40", name: "ถังน้ำใส 64×40 (ช่องระบายแบบกล่อง)", source: "แบบ กปภ. แปลนฝาถังน้ำใส",
+        nx: 16, ny: 10, span: 4, ventStyle: "box",
+        vents: [0, 3, 6, 9].flatMap { r in [0, 4, 8, 12, 15].map { Cell(row: r, col: $0) } },
+        hatches: [OnWall(wall: .top, along: 14.3), OnWall(wall: .top, along: 46), OnWall(wall: .bottom, along: 14.1),
+                  OnWall(wall: .bottom, along: 45.7), OnWall(wall: .left, along: 18), OnWall(wall: .left, along: 22),
+                  OnWall(wall: .right, along: 18.2), OnWall(wall: .right, along: 22.2)],
+        ladders: [OnWall(wall: .top, along: 14.3), OnWall(wall: .top, along: 46), OnWall(wall: .bottom, along: 14.1),
+                  OnWall(wall: .bottom, along: 45.7), OnWall(wall: .left, along: 22), OnWall(wall: .right, along: 22.2)],
+        pipes: [OnWall(wall: .left, along: 14, note: "ท่อเชื่อมถังน้ำใส Ø600 มม."), OnWall(wall: .left, along: 26, note: "ท่อเชื่อมถังน้ำใส Ø600 มม."),
+                OnWall(wall: .right, along: 14, note: "ท่อน้ำใส Ø700 มม."), OnWall(wall: .right, along: 26, note: "ท่อน้ำใส Ø700 มม."),
+                OnWall(wall: .right, along: 17, note: "ท่อน้ำล้น Ø500 มม."), OnWall(wall: .right, along: 23, note: "ท่อน้ำล้น Ø500 มม.")])
+
+    public static let pwa40x40 = TankDesign(
+        id: "pwa-40x40", name: "ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด)", source: "แบบ กปภ. แปลนพื้น เสา ค.ส.ล. ที่ฝาถัง",
+        nx: 10, ny: 10, span: 4, ventStyle: "cross",
+        vents: [0, 4, 9].flatMap { r in [0, 4, 5, 9].map { Cell(row: r, col: $0) } },
+        hatches: [OnWall(wall: .top, along: 10.2), OnWall(wall: .top, along: 29.6), OnWall(wall: .bottom, along: 10.2),
+                  OnWall(wall: .bottom, along: 29.6), OnWall(wall: .left, along: 21.7), OnWall(wall: .right, along: 21.7)],
+        ladders: [OnWall(wall: .left, along: 6.4), OnWall(wall: .left, along: 33.4), OnWall(wall: .right, along: 33.4)],
+        pipes: [])
+
+    public static let all = [pwa64x40, pwa40x40]
+
+    // MARK: matching the measured size
+
+    /// A design for a measured tank: `turned` when it fits a quarter turn (a 40 × 64 tank and the 64 × 40 design);
+    /// `difference` is |ΔW| + |ΔL| in the better orientation, nil without a measured size.
+    public struct Match: Hashable, Sendable, Identifiable {
+        public let design: TankDesign
+        public let turned: Bool
+        public let difference: Double?
+        public var id: String { design.id }
+        public var matches: Bool { (difference ?? .infinity) <= TankDesign.tolerance }
+        /// "ตรงกับขนาดที่วัด" / "ต่างจากที่วัด 24 ม." / nil without a size.
+        public var line: String? {
+            guard let difference else { return nil }
+            return matches ? "ตรงกับขนาดที่วัด" : "ต่างจากที่วัด \(fmt((difference * 100).rounded() / 100)) ม."
+        }
+    }
+
+    /// Every design, the closest to the tank's size first.
+    public static func ranked(_ v: Values) -> [Match] {
+        guard let t = TankPoints.tankSize(v) else { return all.map { Match(design: $0, turned: false, difference: nil) } }
+        return all.map { d in
+            let straight = abs(t.w - d.width) + abs(t.h - d.height), turned = abs(t.w - d.height) + abs(t.h - d.width)
+            return turned < straight - 1e-9 ? Match(design: d, turned: true, difference: turned) : Match(design: d, turned: false, difference: straight)
+        }
+        .enumerated()
+        .sorted { ($0.element.difference ?? 0, $0.offset) < ($1.element.difference ?? 0, $1.offset) }
+        .map(\.element)
+    }
+
+    // MARK: writing it into D1
+
+    /// The design's points, unchecked, at their positions; `turned` turns the plan a quarter clockwise (the design's
+    /// top wall becomes the right one).
+    public func points(turned: Bool = false) -> [Obstacle] {
+        let W = width, H = height
+        var out: [Obstacle] = []
+        func put(_ kind: String, cx: Double, cy: Double, note: String = "") {
+            let s = TankPoints.size(kind)
+            let (x, y) = turned ? (H - cy, cx) : (cx, cy)
+            let px = TankPoints.text(x - s / 2), py = TankPoints.text(y - s / 2)
+            let label = TankPoints.nextLabel(out, kind: kind)
+            out.append(Obstacle(label: label, x: px, y: py, w: fmt(s), h: fmt(s), kind: kind, origin: TankPoints.standard,
+                                stdX: px, stdY: py, note: note))
+        }
+        func centre(_ p: OnWall, size s: Double, inset: Double) -> (Double, Double) {
+            switch p.wall {
+            case .top: return (p.along, inset + s / 2)
+            case .bottom: return (p.along, H - inset - s / 2)
+            case .left: return (inset + s / 2, p.along)
+            case .right: return (W - inset - s / 2, p.along)
+            }
+        }
+        for c in vents { put(TankPoints.vent, cx: (Double(c.col) + 0.5) * span, cy: (Double(c.row) + 0.5) * span) }
+        for h in hatches { let c = centre(h, size: TankPoints.hatchSize, inset: Self.hatchInset); put(TankPoints.hatch, cx: c.0, cy: c.1) }
+        for l in ladders { let c = centre(l, size: TankPoints.size(TankPoints.ladder), inset: 0); put(TankPoints.ladder, cx: c.0, cy: c.1) }
+        for p in pipes { let c = centre(p, size: TankPoints.size(TankPoints.pipe), inset: 0); put(TankPoints.pipe, cx: c.0, cy: c.1, note: p.note) }
+        return out
+    }
+
+    /// Replaces the tank's bays and points with the design's (every check starts again) and remembers the design.
+    public static func apply(_ v: inout Values, _ d: TankDesign, turned: Bool = false) {
+        let sx = Array(repeating: d.span, count: turned ? d.ny : d.nx), sy = Array(repeating: d.span, count: turned ? d.nx : d.ny)
+        Roof.setSpans(&v, .x, sx)
+        Roof.setSpans(&v, .y, sy)
+        TankPoints.write(&v, d.points(turned: turned))
+        v[Tank.Key.design] = .text(d.id + (turned ? "@r" : ""))
+    }
+
+    /// The design the tank's points came from.
+    public static func current(_ v: Values) -> (design: TankDesign, turned: Bool)? {
+        let key = v.text(Tank.Key.design)
+        guard !key.isEmpty else { return nil }
+        let turned = key.hasSuffix("@r"), id = turned ? String(key.dropLast(2)) : key
+        return all.first { $0.id == id }.map { ($0, turned) }
+    }
+
+    // MARK: where the site differs (§6)
+
+    /// The check's result for the report: counts by state and one line per difference.
+    public struct Summary: Hashable, Sendable {
+        /// "ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด)", or the generic layout's name.
+        public var design: String
+        public var matches = 0, moved = 0, absent = 0, added = 0, open = 0
+        /// "V5 ย้าย 4.00 ม. (16.70, 18.70 → 12.70, 18.70)", "H3 ไม่มีจริง", "V13 เพิ่มหน้างาน (20.00, 21.70)"
+        public var differences: [String] = []
+        /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยังไม่ตรวจ 12"
+        public var counts: String {
+            var parts = ["ตรงแบบ \(matches)", "ย้าย \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
+            if open > 0 { parts.append("ยังไม่ตรวจ \(open)") }
+            return parts.joined(separator: " · ")
+        }
+    }
+
+    /// Nil when the tank has no standard points (an older job's obstacles, or none yet).
+    public static func summary(_ v: Values) -> Summary? {
+        let list = TankPoints.points(v)
+        guard list.contains(where: TankPoints.isStandard) else { return nil }
+        var s = Summary(design: current(v).map { $0.design.name + ($0.turned ? " (หมุน 90°)" : "") } ?? "ผังมาตรฐานทั่วไป")
+        func at(_ x: String, _ y: String) -> String {
+            String(format: "%.2f, %.2f", NumberInput.value(x) ?? 0, NumberInput.value(y) ?? 0)
+        }
+        for o in list {
+            let name = o.label + (o.note.isEmpty ? "" : " " + o.note)
+            if o.isAbsent {
+                s.absent += 1; s.differences.append("\(name) ไม่มีจริง")
+            } else if !TankPoints.isStandard(o) {
+                s.added += 1; s.differences.append("\(name) เพิ่มหน้างาน (\(at(o.x, o.y)))")
+            } else if o.status.isEmpty {
+                s.open += 1
+            } else if TankPoints.moved(o) {
+                s.moved += 1
+                let dx = (NumberInput.value(o.x) ?? 0) - (NumberInput.value(o.stdX) ?? 0)
+                let dy = (NumberInput.value(o.y) ?? 0) - (NumberInput.value(o.stdY) ?? 0)
+                s.differences.append(String(format: "%@ ย้าย %.2f ม. (%@ → %@)", name, hypot(dx, dy), at(o.stdX, o.stdY), at(o.x, o.y)))
+            } else {
+                s.matches += 1
+            }
+        }
+        return s
+    }
+}

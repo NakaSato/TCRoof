@@ -165,9 +165,9 @@ public struct TankLayout: Sendable {
     }
 
     struct Opening { var rect: TankPoints.Rect; var vent: Bool }
-    /// Vents, hatches and other obstacles from sub-step 2, not marked absent.
+    /// Vents, hatches and other obstacles from sub-step 2, not marked absent. Ladders and pipes stand on the walls.
     static func openings(_ v: Values) -> [Opening] {
-        TankPoints.points(v).filter { !$0.isAbsent }.compactMap { o in TankPoints.rect(o).map { Opening(rect: $0, vent: o.kind == TankPoints.vent) } }
+        TankPoints.points(v).filter { !$0.isAbsent && !TankPoints.onWall($0.kind) }.compactMap { o in TankPoints.rect(o).map { Opening(rect: $0, vent: o.kind == TankPoints.vent) } }
     }
 
     // MARK: layout

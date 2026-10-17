@@ -64,7 +64,7 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var h = ""
     /// What it is on the C1 plan (docs/ui/survey-c1): "" an obstacle, `sky` a skylight sheet, `keep` a keep-out zone
     /// drawn for the PV layout. Older entries are obstacles. On the D1 tank (docs/ui/survey-d1-obstacles-iphone): `vent`
-    /// a vent, `hatch` an access hatch.
+    /// a vent, `hatch` an access hatch; from a standard design (`TankDesign`) also `ladder` and `pipe`, which stand on a wall.
     public var kind = ""
     /// A skylight panels may cover (วางทับได้); false keeps panels off it (ห้ามวางทับ).
     public var canCover = false
@@ -75,10 +75,12 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     /// D1: where a standard point is on the standard layout (metres, as `x` / `y`), to tell it moved.
     public var stdX = ""
     public var stdY = ""
+    /// D1: what a point of a standard design is beyond its kind, e.g. a pipe's "ท่อน้ำใส Ø700 มม." (`TankDesign`).
+    public var note = ""
     public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "", kind: String = "", canCover: Bool = false,
-                status: String = "", origin: String = "", stdX: String = "", stdY: String = "") {
+                status: String = "", origin: String = "", stdX: String = "", stdY: String = "", note: String = "") {
         self.label = label; self.x = x; self.y = y; self.w = w; self.h = h; self.kind = kind; self.canCover = canCover
-        self.status = status; self.origin = origin; self.stdX = stdX; self.stdY = stdY
+        self.status = status; self.origin = origin; self.stdX = stdX; self.stdY = stdY; self.note = note
     }
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
@@ -94,6 +96,7 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
         origin = try c.decodeIfPresent(String.self, forKey: .origin) ?? ""
         stdX = try c.decodeIfPresent(String.self, forKey: .stdX) ?? ""
         stdY = try c.decodeIfPresent(String.self, forKey: .stdY) ?? ""
+        note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
     }
 }
 

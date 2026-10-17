@@ -74,6 +74,23 @@ public struct TankPlan: Sendable {
         // obstacles (sub-step 2), as on the old plan; points marked ไม่มีจริง are left out
         for ob in v.obstacles(Roof.Key.obstacles) where !ob.isAbsent {
             guard let x = NumberInput.value(ob.x), let y = NumberInput.value(ob.y), let ow = NumberInput.value(ob.w), let oh = NumberInput.value(ob.h), ow > 0, oh > 0 else { continue }
+            if TankPoints.onWall(ob.kind) {
+                // a ladder or a pipe of a standard design: a small box outside its wall, as on the กปภ. sheet
+                let r = TankPoints.Rect(x: x, y: y, w: ow, h: oh), c = Pt(ox + r.cx * k, oy + r.cy * k), d = 9.0
+                let side = TankPoints.wall(r, w: TW, h: TH)
+                let at: Pt
+                switch side {
+                case .top: at = Pt(c.x, oy - d)
+                case .bottom: at = Pt(c.x, oy + h + d)
+                case .left: at = Pt(ox - d, c.y)
+                case .right: at = Pt(ox + w + d, c.y)
+                }
+                let flat = side == .top || side == .bottom
+                let b = Box(at.x - (flat ? 3 : 5), at.y - (flat ? 5 : 3), flat ? 6 : 10, flat ? 10 : 6)
+                o.append(.rect(b, stroke: .red, fill: .white, width: 0.8))
+                if ob.kind == TankPoints.pipe { o.append(.line(Pt(b.x, b.y), Pt(b.maxX, b.maxY), width: 0.6, color: .red)) }
+                continue
+            }
             let b = Box(ox + x * k, oy + y * k, ow * k, oh * k)
             o.append(.rect(b, stroke: nil, fill: .white)); o.append(.hatch(b, color: .red)); o.append(.rect(b, stroke: .red, fill: nil, width: 1))
             if !ob.label.isEmpty { o.append(.text("\(ob.label) \(fmt(ow))x\(fmt(oh))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark)) }

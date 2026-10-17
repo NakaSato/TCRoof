@@ -201,33 +201,54 @@ extension ReportLayout {
             U += grid(title + " — ภาพเพิ่มเติม", d.photos("generalPhotos").map { ($0, nil) })
         } else {
             let ob = d.photos("obstPhotos"), list = d.obstacles("obst")
-            let imgH = ob.isEmpty ? 90.0 : 250, tableH = list.isEmpty ? 0 : Double(list.count + 1) * 15 + 8
+            // a standard design has up to 40 points: two tables side by side past 16
+            let halves = list.count > 16 ? 2 : 1, perHalf = (list.count + halves - 1) / halves
+            let imgH = ob.isEmpty ? 90.0 : 250, tableH = list.isEmpty ? 0 : Double(perHalf + 1) * 15 + 8
             let h2 = Self.band + 15 + imgH + tableH
             var s = box("สิ่งกีดขวาง", height: h2)
             s.append(.text("สำหรับวาดขนาดของสิ่งกีดขวาง", at: Pt(8, Self.band + 8), size: 8, bold: true))
             if let p = ob.first { s.append(.photo(p, Box(60, Self.band + 16, W - 120, imgH - 8))) }
             if !list.isEmpty {
-                let cols: [Double] = [W - 16 - 240, 120, 120], y0 = Self.band + 15 + imgH
-                for r in 0...list.count {
-                    var x = 8.0
-                    for (ci, cwid) in cols.enumerated() {
-                        let y = y0 + Double(r) * 15
-                        s.append(.rect(Box(x, y, cwid, 15), stroke: .black, fill: r == 0 ? .band : nil, width: 0.5))
-                        let t: String
-                        if r == 0 { t = ["สิ่งกีดขวาง", "ตำแหน่ง X, Y (ม.)", "ขนาด ก x ย (ม.)"][ci] }
-                        else { let q = list[r - 1]; t = [q.label.isEmpty ? "-" : q.label, q.isAbsent ? "ไม่มีจริง" : "\(q.x), \(q.y)", q.isAbsent ? "-" : "\(q.w) x \(q.h)"][ci] }
-                        s.append(.textBox(t, Box(x + 2, y + 2, cwid - 4, 13), size: 7.5, align: ci == 0 ? .left : .center))
-                        x += cwid
+                let tw = (W - 16) / Double(halves), side = halves == 1 ? 120.0 : 92
+                let cols: [Double] = [tw - 2 * side, side, side], y0 = Self.band + 15 + imgH
+                for half in 0..<halves {
+                    let part = Array(list.dropFirst(half * perHalf).prefix(perHalf))
+                    for r in 0...part.count {
+                        var x = 8.0 + Double(half) * tw
+                        for (ci, cwid) in cols.enumerated() {
+                            let y = y0 + Double(r) * 15
+                            s.append(.rect(Box(x, y, cwid, 15), stroke: .black, fill: r == 0 ? .band : nil, width: 0.5))
+                            let t: String
+                            if r == 0 { t = ["สิ่งกีดขวาง", "ตำแหน่ง X, Y (ม.)", "ขนาด ก x ย (ม.)"][ci] }
+                            else {
+                                let q = part[r - 1], name = q.label.isEmpty ? "-" : q.label + (q.note.isEmpty ? "" : " " + q.note)
+                                t = [name, q.isAbsent ? "ไม่มีจริง" : "\(q.x), \(q.y)", q.isAbsent ? "-" : "\(q.w) x \(q.h)"][ci]
+                            }
+                            s.append(.textBox(t, Box(x + 2, y + 2, cwid - 4, 13), size: halves == 1 ? 7.5 : 6.5, align: ci == 0 ? .left : .center))
+                            x += cwid
+                        }
                     }
                 }
             }
             s.append(.text("รูปภาพเพิ่มเติม: *รูปมุมสูง/รูปโดรน  *รูปสิ่งกีดขวาง  *รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", at: Pt(0, h2 + 9), size: 8))
             U.append(Unit(h: h2 + 16, ops: s))
+            if TankDesign.current(d) != nil, let sum = TankDesign.summary(d) { U.append(designUnit(sum)) }
             if let a = d.photo("aerialPhoto") { U += grid(title, [(a, nil)], cellH: 330, columns: 1) }
             U += grid("สิ่งกีดขวาง", ob.dropFirst().map { ($0, nil) })
             U += grid(title + " — รูปข้างถัง / รูปเพิ่มเติม", d.photos("sidePhotos").map { ($0, nil) })
         }
         return U
+    }
+
+    /// D1 from a standard design (docs/specs/standard-designs.md §6): the design, the counts and where the site differs.
+    func designUnit(_ sum: TankDesign.Summary) -> Unit {
+        let lineH = 11.0, h = Self.band + 34 + Double(max(1, sum.differences.count)) * lineH + 6
+        var s = box("เทียบกับแบบมาตรฐาน", height: h)
+        s.append(.text("เริ่มจากแบบมาตรฐาน: " + sum.design, at: Pt(8, Self.band + 9), size: 8.5, bold: true))
+        s.append(.text(sum.counts, at: Pt(8, Self.band + 22), size: 8))
+        let lines = sum.differences.isEmpty ? ["ไม่มีจุดที่ต่างจากแบบ"] : sum.differences
+        for (i, t) in lines.enumerated() { s.append(.text("• " + t, at: Pt(14, Self.band + 36 + Double(i) * lineH), size: 7.5)) }
+        return Unit(h: h + 8, ops: s)
     }
 
     func sed(_ mod: SurveyModule) -> [Unit] {

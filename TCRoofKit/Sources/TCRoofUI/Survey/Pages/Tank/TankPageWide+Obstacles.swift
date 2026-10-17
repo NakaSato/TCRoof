@@ -58,6 +58,39 @@ extension TankPageWide {
             Text("ลบได้เฉพาะจุดที่เพิ่มหน้างาน")
         }
         .sheet(isPresented: $rowAsk) { rowSheet }
+        .confirmationDialog("เริ่มจากแบบมาตรฐาน กปภ.", isPresented: $designAsk, titleVisibility: .visible) {
+            ForEach(TankDesign.ranked(values)) { m in
+                Button(m.design.name + (m.line.map { " · " + $0 } ?? "")) { useDesign(m) }
+            }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: {
+            Text("แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่")
+        }
+    }
+
+    /// The standard design the points came from and how the site differs so far, with `เริ่มจากแบบมาตรฐาน กปภ.`
+    /// (docs/specs/standard-designs.md).
+    var designRow: some View {
+        let s = TankDesign.summary(values), from = TankDesign.current(values) != nil
+        return VStack(alignment: .leading, spacing: 6) {
+            if let s, from {
+                Text("แบบ: " + s.design).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                Text(s.counts).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
+            Button { designAsk = true } label: {
+                Label(from ? "เปลี่ยนแบบมาตรฐาน กปภ." : "เริ่มจากแบบมาตรฐาน กปภ.", systemImage: "square.grid.3x3")
+                    .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    func useDesign(_ m: TankDesign.Match) {
+        update { TankDesign.apply(&$0, m.design, turned: m.turned) }
+        pointSel = TankPoints.points(values).first?.id
     }
 
     /// First open: the standard points from the tank's size, and the first point still to check selected.
@@ -78,6 +111,7 @@ extension TankPageWide {
             if obsShade { shadeFields } else {
                 obstaclePlanFrame
                 obstacleLegend
+                designRow
             }
         }
     }
@@ -183,7 +217,7 @@ extension TankPageWide {
                 }
                 if let p = selectedPoint {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("จุด \(p.label) · \(TankPoints.kindName(p.kind))").font(.sarabunFixed(16, .bold))
+                        Text("จุด \(p.label) · " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note)).font(.sarabunFixed(16, .bold))
                         statusChoice(p)
                     }
                     .padding(14)
@@ -214,7 +248,7 @@ extension TankPageWide {
             let moved = TankPoints.moved(p)
             let chip = !TankPoints.isStandard(p) ? ("เพิ่มหน้างาน", Theme.inkMuted, Theme.primarySoft)
                 : moved ? ("ย้ายแล้ว", Theme.okTick, Theme.okSoft) : ("ตามแบบ", Theme.inkMuted, Theme.primarySoft)
-            phoneCard(2, "จุด \(p.label) · \(TankPoints.kindName(p.kind))", chip: chip) {
+            phoneCard(2, "จุด \(p.label) · " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note), chip: chip) {
                 pointPicker(p)
                 field("สถานะ", required: true) { statusChoice(p) }
                 pointDistances(p)

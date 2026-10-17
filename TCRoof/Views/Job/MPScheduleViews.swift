@@ -31,6 +31,8 @@ extension Job {
         let cal = MasterSchedule.calendar, today = cal.startOfDay(for: .now)
         input.installStart = cal.date(byAdding: .day, value: -40, to: today)!
         input.installEnd = cal.date(byAdding: .day, value: 6, to: today)!
+        // a plan imported from a workbook keeps its own dates; the formulas place 2.2 in the moved window
+        input.fixed = nil
         scheduleInput = input
         var a = scheduleActual
         a.points[MasterSchedule.Task.dcSide.rawValue] = nil

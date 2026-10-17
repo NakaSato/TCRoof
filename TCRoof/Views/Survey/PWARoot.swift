@@ -55,11 +55,15 @@ struct PWARoot: View {
                     job.seedRoutineDemo(context)
                 }
                 try? await Task.sleep(for: .milliseconds(600))
+                // the same station on every launch: the seeding below moves its install dates, which order `jobs`
+                let key = "debug.installStation", remembered = UserDefaults.standard.string(forKey: key)
+                let pick = jobs.pwaInstalling.first { remembered != nil && $0.syncID == remembered } ?? jobs.pwaInstalling.first
+                UserDefaults.standard.set(pick?.syncID, forKey: key)
                 // `-installSeed YES`: that station gets the routine demo's reports, for a real daily tab
-                if UserDefaults.standard.bool(forKey: "installSeed") { jobs.pwaInstalling.first?.seedRoutineDemo(context) }
+                if UserDefaults.standard.bool(forKey: "installSeed") { pick?.seedRoutineDemo(context) }
                 // `-installLate YES`: that station's 2.2 runs late, for the task sheet's causes
-                if UserDefaults.standard.bool(forKey: "installLate") { jobs.pwaInstalling.first?.seedLatePlan(); try? context.save() }
-                station = jobs.pwaInstalling.first
+                if UserDefaults.standard.bool(forKey: "installLate") { pick?.seedLatePlan(); try? context.save() }
+                station = pick
             }
             #endif
     }

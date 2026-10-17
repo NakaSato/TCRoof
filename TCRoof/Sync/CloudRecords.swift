@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import TCRoofCore
 
 /// A SwiftData model mirrored to one Firestore collection. Only text fields travel; photos,
 /// signatures and documents stay on the device and Google Drive.

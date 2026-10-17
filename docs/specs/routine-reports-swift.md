@@ -4,7 +4,7 @@
 (§4.1), R2 daily report with signing, Excel and key plan (§4.2), R1 weekly request (§4.3), R3 and R4 (§4.4–4.5), A4 PDFs
 filed to the Drive report folders and daily photos to `5. ภาพถ่ายประจำวัน` (§4.6), and the 17:00 / Friday 15:00
 reminders (§5). R1 is stored as JSON on the job (`Job.weeklyRequestsJSON`), so it syncs with `jobs` and needed no new
-Firestore collection (§2.4). Not built: the R3 PowerPoint export (open question 2).
+Firestore collection (§2.4). R3 stays PDF only (open question 2, decided 2026-10-17).
 **Platform:** TCRoof host app (SwiftUI, SwiftData, iPadOS 17+, also iPhone). Pure logic in `TCRoofCore`
 (`RoutineReport.swift`, testable with `swift test`); PDF through `PDFReport`; Excel through `ExcelExport`.
 **Depends on:** `docs/specs/master-schedule-swift.md` (แผน MP). The daily report feeds the MP actual.
@@ -144,7 +144,7 @@ Opened for next week (default) with the draft from §3. Sections: กำลั�
 งานไฟฟ้ามีแรงดัน, ยกของหนัก). Buttons **ส่งขออนุมัติ** (PDF) and **บันทึกอนุมัติแล้ว** (date + inspector name).
 
 ### 4.4 รายงานประจำสัปดาห์ (R3)
-Read-only page built from the week's R2s, with an export to PDF (and later PPTX):
+Read-only page built from the week's R2s, with an export to PDF (no PPTX: the meeting takes the PDF):
 - cover: project, station, week number and dates
 - progress: MP plan % / actual % for the week and cumulative (from `MasterSchedule.status`)
 - per day: work done (progress lines with "วันนี้" > 0) and 2–4 tagged photos — replaces the hand-made slides
@@ -175,7 +175,7 @@ reaches 100 %, the title becomes "ติดตั้งแล้วเสร็�
 
 ## 6. Open questions
 1. Does the Inspector sign in the app (second iPad / link), or do we only record the date they signed on paper/LINE?
-2. Weekly report output: PDF only, or must it stay PowerPoint for the meeting?
+2. ~~Weekly report output: PDF only, or must it stay PowerPoint for the meeting?~~ PDF only (2026-10-17).
 3. Who fills R2 on site — our engineer or the ผรม. foreman? (decides who may edit, and whether ผรม. needs app access)
 4. Role and tool lists: fixed company lists, or per project? The 2560 template had 24 roles / 30 tools; โชคชัย used 3 / 4.
 5. Working days: Mon–Sat everywhere? Public holidays list from where?

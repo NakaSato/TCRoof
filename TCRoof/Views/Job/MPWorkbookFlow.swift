@@ -53,18 +53,23 @@ final class MPWorkbookFlow {
         }
     }
 
-    /// The plan from the file replaces the job's; the file's actual replaces the job's when it has any points, else the
-    /// job keeps what it has booked.
     func apply(_ p: Pending, to job: Job, context: ModelContext) {
-        let old = job.scheduleInput, new = p.imported.input
+        Self.install(p.imported, data: p.data, name: p.name, on: job)
+        try? context.save()
+    }
+
+    /// The plan from the file replaces the job's; the file's actual replaces the job's when it has any points, else the
+    /// job keeps what it has booked, each task keeping its % done under the file's weight. The file is kept on the job
+    /// and goes up to Drive on the next save (`PhotoSync`).
+    static func install(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) {
+        let old = job.scheduleInput, new = imported.input
         job.scheduleInput = new
-        let fileActual = p.imported.actual
+        let fileActual = imported.actual
         if !fileActual.points.isEmpty || !fileActual.started.isEmpty || !fileActual.finished.isEmpty {
             var a = fileActual
             a.lateCauses = job.scheduleActual.lateCauses
             job.scheduleActual = a
         } else if let old, !job.scheduleActual.points.isEmpty {
-            // the points kept were booked against the old weights: each task keeps its % done under the file's weight
             var a = job.scheduleActual
             for task in MasterSchedule.Task.allCases {
                 guard let byWeek = a.points[task.rawValue] else { continue }
@@ -75,11 +80,9 @@ final class MPWorkbookFlow {
             }
             job.scheduleActual = a
         }
-        job.scheduleWorkbook = p.data
-        job.scheduleWorkbookName = p.name
-        // uploads to the job's Drive folder on the save (`PhotoSync`), then the other devices download it
+        job.scheduleWorkbook = data
+        job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
-        try? context.save()
     }
 
     /// What the import will do, for its confirmation.

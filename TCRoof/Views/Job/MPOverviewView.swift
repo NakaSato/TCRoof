@@ -8,6 +8,12 @@ import TCRoofCore
 /// representative's inspection appointments and the deadlines of two weeks, as on the iPhone `แผนงาน` page.
 struct MPOverviewView: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    @Environment(\.permissions) private var permissions
+    /// นำเข้าไฟล์แผนหลายสถานี: the picker, then the files to check.
+    @State private var importing = false
+    @State private var batch: Batch?
+    @State private var importedCount: Int?
+    struct Batch: Identifiable { let id = UUID(); let items: [MPBulkImportSheet.Item] }
 
     /// One station's figures to this week.
     struct Row: Identifiable {
@@ -73,7 +79,41 @@ struct MPOverviewView: View {
         .background(Theme.pageGradient.ignoresSafeArea())
         .navigationTitle("แผน MP ทุกสถานี")
         .navigationBarTitleDisplayMode(.inline)
-        .tcPadNavBar("แผน MP ทุกสถานี", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"])
+        .toolbar {
+            if permissions.can(.mpSetup) {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { importing = true } label: { Label("นำเข้าไฟล์แผน", systemImage: "square.and.arrow.down.on.square") }
+                }
+            }
+        }
+        .tcPadNavBar("แผน MP ทุกสถานี", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"]) {
+            if permissions.can(.mpSetup) {
+                TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary) { importing = true }
+            }
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: MPWorkbookFlow.types, allowsMultipleSelection: true) { result in
+            guard case .success(let urls) = result, !urls.isEmpty else { return }
+            open(urls)
+        }
+        .sheet(item: $batch) { b in
+            MPBulkImportSheet(stations: jobs.pwaStations, items: b.items) { importedCount = $0 }
+        }
+        .alert("นำเข้าแล้ว \(importedCount ?? 0) สถานี", isPresented: Binding(get: { importedCount != nil }, set: { if !$0 { importedCount = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        } message: { Text("ไฟล์ต้นฉบับขึ้น Google Drive ของแต่ละงานในการซิงก์รอบถัดไป") }
+        #if DEBUG
+        // `-mpImportFiles "<path>|<path>"` opens the check of those files without the picker
+        .task {
+            guard batch == nil, let list = UserDefaults.standard.string(forKey: "mpImportFiles") else { return }
+            // after `-screen mpall` has made its stations PWA jobs
+            try? await Task.sleep(for: .seconds(1))
+            open(list.split(separator: "|").map { URL(fileURLWithPath: String($0)) })
+        }
+        #endif
+    }
+
+    private func open(_ urls: [URL]) {
+        batch = Batch(items: MPBulkImportSheet.items(urls, stations: jobs.pwaStations))
     }
 
     // MARK: inspections and deadlines

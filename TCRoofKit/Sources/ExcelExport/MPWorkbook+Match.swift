@@ -46,10 +46,10 @@ extension MPWorkbook {
             Double(text[$0].replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "kWp", with: "", options: .caseInsensitive)
                 .trimmingCharacters(in: .whitespaces))
         }
-        // "MP 189 …", or the list number the files start with ("37. Master Plan Weekly …")
+        // "MP 189 …" only: the number a file name starts with ("37. Master Plan Weekly …") is its place in the team's list,
+        // not the station's MP number, and would score a station that happens to have that number
         let mp = base.range(of: #"MP\s*\d+"#, options: [.regularExpression, .caseInsensitive])
             .flatMap { Int(base[$0].filter(\.isNumber)) }
-            ?? base.range(of: #"^\s*\d+"#, options: .regularExpression).flatMap { Int(base[$0].trimmingCharacters(in: .whitespaces)) }
         return FileStation(name: name, kWp: kWp, mpNumber: mp)
     }
 

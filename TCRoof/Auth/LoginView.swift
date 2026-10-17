@@ -1,44 +1,30 @@
 import SwiftUI
 import TCRoofUI
 
-/// The company logo on the brand gradient, and one card with the Google sign-in button: who may sign in, what went
-/// wrong when it fails, and the app version.
+/// Sign-in in the app's own design system (docs/ui/components): the light page, the company logo, and one card with
+/// the Google button (`TCButtonStyle` secondary), the error as a `TCWarningBanner`, then who may sign in and the version.
 struct LoginView: View {
     @Environment(GoogleSession.self) private var session
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var appeared = false
 
     var body: some View {
-        ZStack {
-            Theme.loginGradient.ignoresSafeArea()
-            glow
-
-            // the phone keeps the card at the thumb; the iPad centres logo and card as one group
-            VStack(spacing: 0) {
-                Spacer(minLength: 24)
-                brand
-                if isPhone { Spacer(minLength: 24) } else { Spacer().frame(height: 56) }
-                card
-                if !isPhone { Spacer(minLength: 24) }
-            }
-            .frame(maxWidth: 420)
-            .padding(.horizontal, isPhone ? Space.m + 4 : 32)
-            .padding(.bottom, isPhone ? Space.m : 56)
+        VStack(spacing: 0) {
+            Spacer(minLength: Space.xl)
+            brand
+            Spacer().frame(height: isPhone ? 32 : 40)
+            card
+            footer.padding(.top, Space.l)
+            Spacer(minLength: Space.xl)
         }
-        // the app runs dark here only for a white status bar; the brand colours stay light
+        .frame(maxWidth: 420)
+        .padding(.horizontal, isPhone ? Space.l : 32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.pageGradient.ignoresSafeArea())
+        .background(Theme.background.ignoresSafeArea())
         .environment(\.colorScheme, .light)
-        .onAppear { withAnimation(.easeOut(duration: 0.5)) { appeared = true } }
+        .animation(.snappy, value: notice)
     }
-
-    /// A soft light behind the logo, so the gradient isn't flat.
-    private var glow: some View {
-        RadialGradient(colors: [Theme.onPrimary.opacity(0.18), .clear], center: .init(x: 0.5, y: 0.3), startRadius: 0, endRadius: 320)
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-    }
-
-    private var logoSide: CGFloat { isPhone ? 104 : 128 }
 
     private var brand: some View {
         VStack(spacing: Space.m) {
@@ -46,81 +32,66 @@ struct LoginView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: logoSide, height: logoSide)
-                .clipShape(RoundedRectangle(cornerRadius: logoSide / 4, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: logoSide / 4, style: .continuous).stroke(Theme.onPrimary.opacity(0.25), lineWidth: 1))
-                .shadow(color: .black.opacity(0.3), radius: 24, y: 12)
+                .clipShape(RoundedRectangle(cornerRadius: logoSide * 0.23, style: .continuous))
+                .cardShadow()
                 .accessibilityHidden(true)
             Text("TCRoof")
-                .font(.system(size: isPhone ? 34 : 40, weight: .heavy))
-                .foregroundStyle(Theme.onPrimary)
+                .font(.sarabun(isPhone ? 30 : 34, .bold, relativeTo: .largeTitle))
+                .foregroundStyle(Theme.navy)
+                .accessibilityAddTraits(.isHeader)
         }
-        .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 12)
-        .accessibilityElement(children: .combine)
     }
 
+    private var logoSide: CGFloat { isPhone ? 88 : 104 }
+
     private var card: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
+        VStack(alignment: .leading, spacing: Space.l) {
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text("เข้าสู่ระบบ")
-                    .font(.sarabun(22, .bold, relativeTo: .title2))
+                    .font(.sarabun(20, .bold, relativeTo: .title3))
                     .foregroundStyle(Theme.navy)
                 Text("ใช้บัญชี Google ที่ได้รับเชิญเข้าทีม")
                     .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.inkMuted)
             }
-
             if let notice {
-                Label(notice, systemImage: "exclamationmark.circle.fill")
-                    .font(.sarabun(14, relativeTo: .footnote))
-                    .foregroundStyle(Theme.dangerText)
-                    .padding(.horizontal, Space.m - 4).padding(.vertical, Space.s + 2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                TCWarningBanner(notice.title, message: notice.message)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
-
-            googleButton
-
-            HStack(spacing: Space.xs + 2) {
-                Image(systemName: "lock.fill").font(.system(size: 11))
-                Text("เฉพาะสมาชิกทีม TC Renewable")
-                Spacer(minLength: Space.s)
-                if let version { Text(version).monospacedDigit() }
+            Button(action: signIn) {
+                HStack(spacing: Space.m - 2) {
+                    if !isLoading { GoogleMark() }
+                    Text(isLoading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบด้วย Google")
+                }
             }
-            .font(.sarabun(12, relativeTo: .caption))
-            .foregroundStyle(Theme.muted)
+            .buttonStyle(TCButtonStyle(.secondary, size: .page, fullWidth: true, working: isLoading))
+            .disabled(isLoading || !session.hasValidClientID)
         }
-        .padding(isPhone ? 20 : 28)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: .black.opacity(0.18), radius: 30, y: 14)
-        .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 24)
-        .animation(.snappy, value: notice)
+        .cardStyle(padding: isPhone ? 20 : 24)
+        .overlay(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous).stroke(Theme.borderSubtle, lineWidth: 1))
     }
 
-    private var googleButton: some View {
-        Button(action: signIn) {
-            HStack(spacing: Space.m - 4) {
-                if isLoading { ProgressView().tint(Theme.navy) } else { GoogleMark() }
-                Text(isLoading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบด้วย Google")
+    private var footer: some View {
+        HStack(spacing: Space.xs + 2) {
+            Image(systemName: "lock.fill").font(.system(size: 11))
+            Text("เฉพาะสมาชิกทีม TC Renewable")
+            if let version {
+                Text("·")
+                Text(version).monospacedDigit()
             }
-            .font(.sarabun(17, .semibold, relativeTo: .headline))
-            .foregroundStyle(Theme.navy)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg + 2, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg + 2, style: .continuous).stroke(Theme.borderSubtle, lineWidth: 1.5))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(PressableStyle())
-        .disabled(isLoading || !session.hasValidClientID)
-        .opacity(session.hasValidClientID ? 1 : 0.55)
+        .font(.sarabun(TypeScale.caption, relativeTo: .caption))
+        .foregroundStyle(Theme.muted)
+        .frame(maxWidth: .infinity)
     }
 
     /// The last sign-in failure, or why the button can't be used yet.
-    private var notice: String? {
-        errorMessage ?? (session.hasValidClientID ? nil : "ยังไม่ได้ตั้งค่า Google Client ID ของแอป")
+    private var notice: Notice? {
+        if let errorMessage { return Notice(title: "เข้าสู่ระบบไม่สำเร็จ", message: errorMessage) }
+        return session.hasValidClientID ? nil : Notice(title: "ยังเข้าสู่ระบบไม่ได้", message: "ยังไม่ได้ตั้งค่า Google Client ID ของแอป")
     }
+
+    private struct Notice: Equatable { let title: String; let message: String }
 
     private var version: String? {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String).map { "v" + $0 }
@@ -144,20 +115,11 @@ struct LoginView: View {
 private struct GoogleMark: View {
     var body: some View {
         Text("G")
-            .font(.system(size: 22, weight: .bold, design: .rounded))
+            .font(.system(size: 20, weight: .bold, design: .rounded))
             .foregroundStyle(AngularGradient(
                 colors: [Color(hex: 0xEA4335), Color(hex: 0xFBBC05), Color(hex: 0x34A853), Color(hex: 0x4285F4), Color(hex: 0xEA4335)],
                 center: .center, startAngle: .degrees(-40), endAngle: .degrees(320)))
-            .frame(width: 26, height: 26)
+            .frame(width: 24, height: 24)
             .accessibilityHidden(true)
-    }
-}
-
-private struct PressableStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }

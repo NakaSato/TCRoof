@@ -48,8 +48,8 @@ struct TCRoofApp: App {
             }
             .animation(.easeInOut, value: session.isSignedIn)
             .environment(session)
-            // dark only on the login gradient so the status bar turns white; signed in, always light
-            .preferredColorScheme(session.isSignedIn ? .light : .dark)
+            // light everywhere, the login page included (it's on the design system's light page)
+            .preferredColorScheme(.light)
             .tint(Theme.primary)
         }
         .modelContainer(container)

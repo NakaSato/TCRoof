@@ -40,7 +40,7 @@ struct JobPickerSheet: View {
                     TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
                 }
                 Text(job.projectName).font(.sarabun(15, relativeTo: .subheadline))
-                Text("\(job.province) · ติดตั้ง \(job.installStart.thaiLong)")
+                Text("\(job.province) · ติดตั้ง \(job.shown(job.installStart, none: "ยังไม่กำหนด"))")
                     .font(.sarabun(12, relativeTo: .caption))
                     .foregroundStyle(Theme.muted)
             }

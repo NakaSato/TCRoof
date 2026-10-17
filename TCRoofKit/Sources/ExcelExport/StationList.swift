@@ -192,7 +192,7 @@ extension StationList {
         }
         scored.sort { $0.row < $1.row }
         return scored.map { i, ranked in
-            Row(station: stations[i], match: picks[i], ranked: ranked.map(\.id))
+            Row(station: stations[i], match: picks[i], ranked: ranked.map { $0.id })
         }
     }
 

@@ -103,7 +103,7 @@ struct DailyReportListView: View {
         PadForm {
             if days.isEmpty {
                 TCEmptyState("ยังไม่ถึงช่วงติดตั้ง", systemImage: "calendar",
-                                       description: Text("เริ่มติดตั้ง \(job.installStart.thaiLong)"))
+                                       description: Text("เริ่มติดตั้ง \(job.shown(job.installStart, none: "ยังไม่กำหนด"))"))
             }
             PadSection {
                 ForEach(days, id: \.self) { d in

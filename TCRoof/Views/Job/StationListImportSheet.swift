@@ -269,6 +269,9 @@ extension Job {
     /// with its MP plan (`scheduleInput`); 1970 is a day no calendar or reminder reaches.
     static let unscheduled = Date(timeIntervalSince1970: 0)
 
+    /// The date as shown, or `none` for the placeholder of a station with no date yet.
+    func shown(_ date: Date, none: String) -> String { date > Job.unscheduled.addingTimeInterval(86_400 * 2) ? date.thaiLong : none }
+
     /// This job for `StationList`: a branch that is only the station's name again counts as empty.
     var stationListEntry: StationList.Existing {
         StationList.Existing(id: "", name: stationName, branch: customerName == projectName ? "" : customerName,

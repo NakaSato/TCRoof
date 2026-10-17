@@ -46,6 +46,32 @@ final class RoleTableTests: XCTestCase {
         XCTAssertFalse(me.can(.moveToInstall, on: job))
     }
 
+    func testTeamMembersNameTheJobAndHearItsNews() {
+        let job = JobAccess(externals: ["con@x.co"], supervisor: "Sup@TCRoof.co", teamMembers: [" Eng@TCRoof.co "])
+        let eng = Permissions(role: .internalTeam, email: "eng@tcroof.co")
+        let sup = Permissions(role: .internalTeam, email: "sup@tcroof.co")
+        let other = Permissions(role: .internalTeam, email: "other@tcroof.co")
+        let boss = Permissions(role: .manager, email: "boss@tcroof.co")
+        let con = Permissions(role: .external, email: "con@x.co")
+        XCTAssertTrue(eng.isOnTeam(job) && eng.isNamed(job))
+        XCTAssertTrue(sup.isNamed(job) && !sup.isOnTeam(job))
+        XCTAssertTrue(con.isNamed(job))
+        XCTAssertFalse(other.isNamed(job))
+        // news: the named, and a manager; the rest of the team doesn't hear it
+        XCTAssertTrue(eng.hearsNews(job) && sup.hearsNews(job) && con.hearsNews(job) && boss.hearsNews(job))
+        XCTAssertFalse(other.hearsNews(job))
+        // nobody of ours named (a contractor alone doesn't count): everyone hears it
+        let unowned = JobAccess(externals: ["con@x.co"])
+        XCTAssertFalse(unowned.hasOwners)
+        XCTAssertTrue(other.hearsNews(unowned))
+        XCTAssertTrue(other.hearsNews(nil))
+        // naming on the team opens nothing: the team sees every job anyway, and an external member only theirs
+        XCTAssertTrue(other.can(.dailyFill, on: job))
+        XCTAssertFalse(Permissions(role: .external, email: "eng@tcroof.co").can(.dailyFill, on: JobAccess(teamMembers: ["eng@tcroof.co"])))
+        XCTAssertTrue(eng.can(.assignTeam) && boss.can(.assignTeam))
+        XCTAssertFalse(con.can(.assignTeam, on: job))
+    }
+
     func testViewOnlyCells() {
         let me = Permissions(role: .external, email: "contractor@example.com")
         XCTAssertFalse(me.can(.iclChecklist, on: job))

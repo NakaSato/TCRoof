@@ -42,6 +42,7 @@ public enum Capability: String, CaseIterable, Sendable {
     case jobEdit = "job.edit"
     case jobDelete = "job.delete"
     case assignExternal = "job.assign_external"
+    case assignTeam = "job.assign_team"
     case mpSetup = "mp.setup"
     case mpProgress = "mp.progress"
     case moveToInstall = "survey.move_to_install"
@@ -93,6 +94,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .jobEdit: (.allow, .allow, .deny),
         .jobDelete: (.allow, .deny, .deny),
         .assignExternal: (.allow, .allow, .deny),
+        .assignTeam: (.allow, .allow, .deny),
         .mpSetup: (.allow, .allow, .deny),
         .mpProgress: (.allow, .allow, .deny),
         .moveToInstall: (.allow, .allow, .deny),
@@ -131,11 +133,18 @@ public enum Capability: String, CaseIterable, Sendable {
 public struct JobAccess: Equatable, Sendable {
     public var externals: [String]
     public var supervisor: String?
+    /// The team (internal) members working on the job (`job.assign_team`). It opens nothing: the team sees every job.
+    /// It decides whose job it is (`Permissions.isNamed`) and who hears its news first (`Permissions.hearsNews`).
+    public var teamMembers: [String]
 
-    public init(externals: [String] = [], supervisor: String? = nil) {
+    public init(externals: [String] = [], supervisor: String? = nil, teamMembers: [String] = []) {
         self.externals = externals
         self.supervisor = supervisor
+        self.teamMembers = teamMembers
     }
+
+    /// Someone of ours is named on the job (a team member or the supervisor), so its news goes to them.
+    public var hasOwners: Bool { !teamMembers.isEmpty || !(supervisor ?? "").isEmpty }
 }
 
 /// What the signed-in member may do. The app hides or disables an action `can` refuses; Firestore's rules enforce the
@@ -161,6 +170,22 @@ public struct Permissions: Equatable, Sendable {
     public func isAssigned(_ job: JobAccess?) -> Bool {
         guard let job, !email.isEmpty else { return false }
         return job.externals.contains { Self.normalized($0) == email }
+    }
+
+    /// The job lists this member on its team.
+    public func isOnTeam(_ job: JobAccess?) -> Bool {
+        guard let job, !email.isEmpty else { return false }
+        return job.teamMembers.contains { Self.normalized($0) == email }
+    }
+
+    /// The job names this member: on its team, its supervisor, or an assigned external (`งานของฉัน`).
+    public func isNamed(_ job: JobAccess?) -> Bool { isOnTeam(job) || isSupervisor(job) || isAssigned(job) }
+
+    /// Whether a job's news (a daily report sent, a test result, an issue) is announced on this member's device: a
+    /// manager hears every job's; the others hear a job's when it names them, or when it names none of ours.
+    public func hearsNews(_ job: JobAccess?) -> Bool {
+        guard role != .manager, let job, job.hasOwners else { return true }
+        return isNamed(job)
     }
 
     public func isSupervisor(_ job: JobAccess?) -> Bool {

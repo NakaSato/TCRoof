@@ -81,6 +81,9 @@ extension Job: CloudSynced {
         /// Assigned external people and the supervising engineer (roles); nil from app versions without roles.
         var externals: [String]?
         var supervisor: String?
+        /// The team members working on the job (`Job.teamMembers`); always written, so an emptied list reaches the other
+        /// devices; nil from app versions without it, which keeps the device's.
+        var teamMembers: [String]?
 
         var hasPWAData: Bool {
             mpNumber != nil || scheduleInput != nil || routineSettings != nil || weeklyRequests != nil || stationDocs != nil
@@ -103,7 +106,7 @@ extension Job: CloudSynced {
                scheduleWorkbookDriveID: scheduleWorkbookDriveID, scheduleWorkbookName: scheduleWorkbookDriveID == nil ? nil : scheduleWorkbookName,
                routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue,
                iecReport: iecReportJSON, iecState: iecReport?.lockState.rawValue, externals: externals,
-               supervisor: supervisorEmail ?? "")
+               supervisor: supervisorEmail ?? "", teamMembers: teamMembers)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -137,6 +140,7 @@ extension Job: CloudSynced {
         }
         if let v = r.externals { externals = v }
         if let v = r.supervisor { supervisorEmail = v.isEmpty ? nil : v }
+        if let v = r.teamMembers { teamMembers = v }
         // a record with no kind is from an app version that took a job with PWA data for a PWA job
         if let v = r.kind { kindRaw = v } else if kindRaw == nil, r.hasPWAData { kind = .pwa }
         return true

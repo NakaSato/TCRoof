@@ -15,6 +15,18 @@ TCRoof provides role-based access control across 3 roles:
 | **ทีมภายใน** | `.internalTeam` (`internal`) | Internal Engineer / Admin | Full visibility over all residential & PWA stations, MP scheduling, customer contacts, signing daily logs (`daily.sign`), closing IEC tests (`iec.close`). |
 | **วิศวกรภายนอก / ผู้รับเหมา** | `.external` | External Engineer / Contractor | Sees **only assigned jobs** (`externals`). Fills daily logs, scans devices, performs IEC tests and submits results to the team (`iec.fill_submit`). Customer contacts hidden. |
 
+### People on a job
+
+The role is the member's, across the app. Each job also names people, in the job screen's `JobAccessCard`:
+
+| List | Field | Set by | What it does |
+|---|---|---|---|
+| ทีมงานของเรา | `Job.teamMembers` (`teamMembers` in Firestore) | `job.assign_team`: manager, internal | Our team members working on the job. Opens nothing (the team sees every job): the job is in their `งานของฉัน` filter on the PWA home, and its news is announced to them. |
+| ผู้รับเหมา / วิศวกรภายนอก | `Job.externals` | `job.assign_external`: manager, internal | The only jobs an external member sees and works on. |
+| ผู้ควบคุมงาน | `Job.supervisorEmail` | `job.assign_external` | May sign final acceptance (`handover.final_signoff`). |
+
+`Permissions.isNamed(job)`: on its team, its supervisor or an assigned external. `Permissions.hearsNews(job)`: a feed notification about the job (a daily report sent, a test result, an issue and its due reminder) is posted on a device when the member is a manager, is named on the job, or the job names none of ours (no team member and no supervisor). The bell's list keeps every post.
+
 ---
 
 ## 2. Five-Layer Implementation Architecture

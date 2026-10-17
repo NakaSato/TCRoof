@@ -95,6 +95,21 @@
           }
         },
         {
+          "id": "job.assign_team",
+          "label": "กำหนดทีมงานของเราในงาน (งานของฉัน · แจ้งเตือนของงานไปถึงคนในทีมงานก่อน)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
           "id": "mp.setup",
           "label": "ตั้งแผนงาน MP (วันที่ เกิน 200 kVA)",
           "roles": {

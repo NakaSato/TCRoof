@@ -40,6 +40,7 @@ private struct NotificationScheduler: ViewModifier {
     @AppStorage(NotificationGroup.plan.defaultsKey) private var planOn = true
     @AppStorage(NotificationGroup.feed.defaultsKey) private var feedOn = true
     @AppStorage("userName") private var userName = ""
+    @Environment(\.permissions) private var permissions
     @State private var instruments = InstrumentStore.shared
     /// Bumped each minute and when the app comes back, so a new day reschedules and a synced record is announced.
     @State private var tick = 0
@@ -161,15 +162,20 @@ private struct NotificationScheduler: ViewModifier {
 
     /// Rebuilds the project feed: a post not seen before is announced at once, today's summary waits for 18:00, and
     /// an open issue reminds on its due day. Records made on another device show up here once sync has brought them in.
+    /// A job's posts are announced only to who hears its news (`Permissions.hearsNews`): its team members and supervisor
+    /// when it names any, a manager always, everyone when it names none. The bell's list keeps every post.
     private func refreshFeed() async {
         let now = Date.now
         let stations = jobs.map(\.feedStation)
         let posts = FeedBuilder.posts(stations, now: now)
         let fresh = LiveFeed.shared.update(posts, me: userName, now: now)
+        let access = Dictionary(jobs.map { ($0.feedKey, $0.access) }) { a, _ in a }
+        let permissions = permissions
+        let heard = { (p: NotificationPlan) in p.info[NotificationInfo.job].map { permissions.hearsNews(access[$0]) } ?? true }
         let service = NotificationService.shared
         await service.schedule([FeedNotification.summary(stations, now: now)].compactMap { $0 }, type: .feed)
-        await service.schedule(FeedNotification.due(posts, now: now), type: .issue)
-        fresh.forEach(service.post)
+        await service.schedule(FeedNotification.due(posts, now: now).filter(heard), type: .issue)
+        fresh.filter(heard).forEach(service.post)
     }
 
     private struct FeedState: Equatable { let tick: Int; let jobs: Int; let on: Bool }

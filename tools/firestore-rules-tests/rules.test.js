@@ -239,6 +239,17 @@ test('a new contractor sees a job only once assigned to it, and everything once 
   await assertSucceeds(getDoc(doc(d, 'jobContacts', 'mine')));
 });
 
+test('the team names who works on a job; a contractor can\'t change it', async () => {
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'jobs', 'mine'), { teamMembers: [TEAM, BOSS] }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'mine'), { teamMembers: [] }));
+  const d = db(CON);
+  await assertFails(updateDoc(doc(d, 'jobs', 'mine'), { teamMembers: [CON] }));
+  await assertFails(setDoc(doc(d, 'jobs', 'mine'), { iecReport: '{}', iecState: 'open', teamMembers: [CON] }, { merge: true }));
+  // naming opens nothing: a contractor on the team list still can't read a job not assigned to them
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'jobs', 'theirs'), { teamMembers: [CON] }));
+  await assertFails(getDoc(doc(d, 'jobs', 'theirs')));
+});
+
 test('an issued REV goes only with its survey, or by a manager', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const d = ctx.firestore();

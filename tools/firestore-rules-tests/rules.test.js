@@ -1,6 +1,7 @@
 // firestore.rules for the three roles (docs/reference/roles/user-roles.json).
 // `npm install && npm test` in this folder; the emulator needs Java (Homebrew: PATH=/opt/homebrew/opt/openjdk/bin:$PATH).
 import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { test, before, after, beforeEach } from 'node:test';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -171,6 +172,63 @@ test('only a manager reads the member list or changes it', async () => {
   }
   await assertSucceeds(getDoc(doc(db(TEAM), 'members', TEAM)));
   await assertSucceeds(getDoc(doc(db('stranger@gmail.com'), 'members', 'stranger@gmail.com')));
+});
+
+// A new user, from before the invite to removal: what each step lets them do.
+const NEW = 'new.person@gmail.com';
+
+test('a new team member: nothing before the invite, everything after, nothing once removed', async () => {
+  const boss = db(BOSS);
+  // before the invite: their own (missing) membership is readable, as sign-in checks it; nothing else
+  const before = await assertSucceeds(getDoc(doc(db(NEW), 'members', NEW)));
+  assert.equal(before.exists(), false);
+  await assertFails(getDoc(doc(db(NEW), 'jobs', 'mine')));
+  await assertFails(getDocs(collection(db(NEW), 'jobs')));
+
+  await assertSucceeds(setDoc(doc(boss, 'members', NEW), { role: 'internal', invitedBy: BOSS, invitedAt: new Date() }));
+  const after = await assertSucceeds(getDoc(doc(db(NEW), 'members', NEW)));
+  assert.equal(after.data().role, 'internal');
+  await assertSucceeds(getDocs(collection(db(NEW), 'jobs')));
+  await assertSucceeds(updateDoc(doc(db(NEW), 'jobs', 'mine'), { status: 'completed' }));
+  await assertSucceeds(getDoc(doc(db(NEW), 'jobContacts', 'mine')));
+  // a team member, not a manager: can't see or change the member list, their own role included
+  await assertFails(getDocs(collection(db(NEW), 'members')));
+  await assertFails(updateDoc(doc(db(NEW), 'members', NEW), { role: 'manager' }));
+
+  await assertSucceeds(deleteDoc(doc(boss, 'members', NEW)));
+  await assertFails(getDoc(doc(db(NEW), 'jobs', 'mine')));
+});
+
+test('a new member signs in with any capitals, but only with a verified email', async () => {
+  await assertSucceeds(setDoc(doc(db(BOSS), 'members', NEW), { role: 'internal', invitedBy: BOSS }));
+  const capitals = env.authenticatedContext('caps', { email: 'New.Person@Gmail.com', email_verified: true }).firestore();
+  await assertSucceeds(getDoc(doc(capitals, 'jobs', 'mine')));
+  const unverified = env.authenticatedContext('unverified', { email: NEW, email_verified: false }).firestore();
+  await assertFails(getDoc(doc(unverified, 'jobs', 'mine')));
+});
+
+test('a new contractor sees a job only once assigned to it, and everything once made team', async () => {
+  const boss = db(BOSS), d = db(NEW);
+  await assertSucceeds(setDoc(doc(boss, 'members', NEW), { role: 'external', invitedBy: BOSS, invitedAt: new Date() }));
+  // invited, not assigned: their query works and finds nothing; the job itself is closed to them
+  const none = await assertSucceeds(getDocs(query(collection(d, 'jobs'), where('externals', 'array-contains', NEW))));
+  assert.equal(none.size, 0);
+  await assertFails(getDoc(doc(d, 'jobs', 'mine')));
+
+  // the team assigns them next to the first contractor
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'jobs', 'mine'), { externals: [CON, NEW] }));
+  const mine = await assertSucceeds(getDocs(query(collection(d, 'jobs'), where('externals', 'array-contains', NEW))));
+  assert.deepEqual(mine.docs.map((x) => x.id), ['mine']);
+  await assertFails(getDoc(doc(d, 'jobs', 'theirs')));
+  await assertFails(getDoc(doc(d, 'jobContacts', 'mine')));
+  // a record made before the assignment still lists only the first contractor, so it stays closed to them
+  await assertFails(getDoc(doc(d, 'installLogs', 'log1')));
+  await assertSucceeds(setDoc(doc(d, 'installLogs', 'log9'), { jobID: 'mine', externals: [CON, NEW], report: '{}' }));
+
+  // made team: the whole list
+  await assertSucceeds(updateDoc(doc(boss, 'members', NEW), { role: 'internal' }));
+  await assertSucceeds(getDocs(collection(d, 'jobs')));
+  await assertSucceeds(getDoc(doc(d, 'jobContacts', 'mine')));
 });
 
 test('an issued REV goes only with its survey, or by a manager', async () => {

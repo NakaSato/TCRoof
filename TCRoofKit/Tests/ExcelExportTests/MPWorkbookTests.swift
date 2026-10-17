@@ -89,6 +89,49 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertEqual(zip.data("xl/styles.xml"), before.data("xl/styles.xml"))
     }
 
+    /// The fixture's formulas all work out as Excel saved them.
+    func testImportChecksTheFormulas() throws {
+        let check = try MPWorkbook.read(original()).formulas
+        XCTAssertTrue(check.isComplete)
+        XCTAssertGreaterThan(check.count, 3000)
+    }
+
+    /// The fixture with one sheet part changed, packed again.
+    func variant(_ change: (String) -> String) throws -> Data {
+        var zip = try ZipArchive(original())
+        zip.set("xl/worksheets/sheet1.xml", change(zip.string("xl/worksheets/sheet1.xml")!))
+        return try zip.write()
+    }
+
+    /// A function the app doesn't know: that cell and everything reading it are unknown, the rest still works out.
+    func testUnknownFunctionsAreReported() throws {
+        let data = try variant { $0.replacingOccurrences(of: ">SUM(L47,L27,L11)</f>", with: ">SUMPRODUCT(L47,L27,L11)</f>") }
+        let r = try MPWorkbook.read(data)
+        XCTAssertTrue(r.formulas.unknown.contains("L53"))
+        XCTAssertTrue(r.formulas.unknown.contains("DL54"), "the cumulative row reads L53")
+        XCTAssertTrue(r.formulas.differs.isEmpty)
+        // export still works out the rest
+        var a = r.actual
+        a.set(4, task: .structure, week: day(2024, 10, 27), weight: 10)
+        let sheet = MPWorkbook.Sheet(try ZipArchive(MPWorkbook.export(data, input: r.input, actual: a).data).string("xl/worksheets/sheet1.xml")!, shared: [])
+        XCTAssertEqual(sheet.number(MPWorkbook.Sheet.split("BC56")!.0, 56), 4)
+    }
+
+    /// A saved result the app works out differently: export writes no results of its own.
+    func testAFileTheAppMisreadsKeepsExcelsResults() throws {
+        let data = try variant { $0.replacingOccurrences(of: #"<f>H27-G27</f><v>58</v>"#, with: #"<f>H27-G27</f><v>57</v>"#) }
+        let r = try MPWorkbook.read(data)
+        XCTAssertEqual(r.formulas.differs, ["I27"])
+        var a = r.actual
+        a.set(4, task: .structure, week: day(2024, 10, 27), weight: 10)
+        let zip = try ZipArchive(MPWorkbook.export(data, input: r.input, actual: a).data)
+        let sheet = MPWorkbook.Sheet(zip.string("xl/worksheets/sheet1.xml")!, shared: [])
+        XCTAssertEqual(sheet.number(MPWorkbook.Sheet.split("BC30")!.0, 30), 4, "the input is written")
+        XCTAssertEqual(sheet.number(MPWorkbook.Sheet.split("BC56")!.0, 56), 0, "Excel's saved result stays")
+        XCTAssertEqual(zip.data("xl/charts/chart1.xml"), try ZipArchive(data).data("xl/charts/chart1.xml"))
+        XCTAssertTrue(zip.string("xl/workbook.xml")!.contains("fullCalcOnLoad=\"1\""), "Excel works them out on opening")
+    }
+
     func testUnchangedPlanGivesTheSameBytes() throws {
         let data = try original()
         let r = try MPWorkbook.read(data)

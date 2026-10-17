@@ -41,6 +41,32 @@ public enum MPWorkbook {
         public var tasks: [MasterSchedule.Task]
         /// The first and last week column.
         public var weeks: ClosedRange<Date>?
+        /// Whether the app works out the file's formulas as Excel did.
+        public var formulas: FormulaCheck
+    }
+
+    /// The plan sheet's formulas worked out on the untouched file and compared with the results Excel saved in it.
+    public struct FormulaCheck: Sendable, Equatable {
+        public var count: Int
+        /// Formulas the app can't work out (another sheet, a function it doesn't know), and those that read them: they
+        /// keep Excel's saved result, so a preview shows it until the file is opened in Excel.
+        public var unknown: [String]
+        /// Formulas the app works out differently from Excel: the app misreads this file, so export writes no results
+        /// of its own into it.
+        public var differs: [String]
+        public var isComplete: Bool { unknown.isEmpty && differs.isEmpty }
+    }
+
+    static func check(_ sheet: Sheet, _ cal: Calendar) -> FormulaCheck {
+        var f = sheet.formulas(cal)
+        var unknown: [String] = [], differs: [String] = []
+        let cells = f.formulas.keys.sorted { ($0.row, $0.col) < ($1.row, $1.col) }
+        for p in cells {
+            let ref = Sheet.ref(p.col, p.row), v = f.value(p)
+            if v == .unknown { unknown.append(ref) }
+            else if let saved = sheet.cell(ref)?.cached, !Sheet.same(saved, v) { differs.append(ref) }
+        }
+        return FormulaCheck(count: cells.count, unknown: unknown, differs: differs)
     }
 
     /// What `export` wrote.
@@ -98,7 +124,8 @@ public enum MPWorkbook {
         let weekDates = layout.weeks.map(\.date)
         return Imported(input: input, actual: actual, project: layout.project, owner: layout.owner,
                         tasks: layout.rows.map(\.task),
-                        weeks: weekDates.min().flatMap { a in weekDates.max().map { a...$0 } })
+                        weeks: weekDates.min().flatMap { a in weekDates.max().map { a...$0 } },
+                        formulas: check(sheet, cal))
     }
 
     // MARK: export
@@ -193,17 +220,19 @@ public enum MPWorkbook {
         guard changed > 0 else { return Export(data: original, changedCells: 0, weeksOutside: outside.sorted()) }
         var zip = book.zip
 
-        // the formulas' results from the new values, so a viewer that doesn't recalculate shows them too
+        // the formulas' results from the new values, so a viewer that doesn't recalculate shows them too; not when the
+        // app works out the untouched file differently from Excel, as it would write wrong numbers
         var formulas = sheet.formulas(cal)
         for (p, v) in written { formulas.setInput(p, v) }
-        for p in Array(formulas.formulas.keys) {
+        let trusted = check(book.sheet, cal).differs.isEmpty
+        for p in Array(formulas.formulas.keys) where trusted {
             let ref = Sheet.ref(p.col, p.row)
             guard let cell = sheet.cell(ref), let el = sheet.cells.element(ref) else { continue }
             let v = formulas.value(p)
             guard v != .unknown, !Sheet.same(cell.cached, v), let new = Sheet.cached(el, v) else { continue }
             sheet.cells.replace(ref, new)
         }
-        refreshCharts(&zip, sheet: book.sheetName, formulas: &formulas)
+        if trusted { refreshCharts(&zip, sheet: book.sheetName, formulas: &formulas) }
 
         zip.set(book.sheetPath, sheet.cells.xml)
         // the formulas recalculate when the file opens; a cell that lost its formula leaves the calc chain stale, and

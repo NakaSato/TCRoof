@@ -112,6 +112,9 @@ struct MPBulkImportSheet: View {
                 Label(error, systemImage: "exclamationmark.triangle.fill").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.dangerText)
             } else {
                 Text(fileLine(it)).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                if let note = it.imported.flatMap({ MPWorkbookFlow.formulaNote($0.formulas) }) {
+                    Label(note, systemImage: "function").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.warningText)
+                }
                 HStack(spacing: 8) {
                     // a menu with its own one-line label: a menu-style Picker wraps a long station name on iPhone
                     Menu {

@@ -105,6 +105,17 @@ final class MPWorkbookFlow {
                                        : "ใช้ตามไฟล์ \(n) ช่องที่ต่างจากในแอป แผนของสถานีคงเดิม")
     }
 
+    /// What a file's formula check means for its previews; nil when the app works out every formula as Excel did.
+    static func formulaNote(_ c: MPWorkbook.FormulaCheck) -> String? {
+        if !c.differs.isEmpty {
+            return "สูตร \(c.differs.count) ช่องในไฟล์ แอปคำนวณได้ไม่ตรงกับ Excel ไฟล์ที่ส่งออกจะไม่ลงผลคำนวณจากแอป ตัวเลขจะอัปเดตเมื่อเปิดใน Excel"
+        }
+        if !c.unknown.isEmpty {
+            return "สูตร \(c.unknown.count) ช่องในไฟล์ แอปคำนวณไม่ได้ ตัวเลขเหล่านั้นในตัวอย่างไฟล์จะอัปเดตเมื่อเปิดใน Excel"
+        }
+        return nil
+    }
+
     /// What the import will do, for its confirmation.
     func summary(_ p: Pending, job: Job) -> String {
         let r = p.imported
@@ -122,6 +133,7 @@ final class MPWorkbookFlow {
             let n = job.scheduleActual.merging(r.actual).changed
             lines.append("รับเฉพาะความก้าวหน้า: " + (n == 0 ? "ไม่มีช่องที่ต่างจากในแอป" : "ใช้ตามไฟล์ \(n) ช่องที่ต่างจากในแอป") + " แผนคงเดิม")
         }
+        if let note = Self.formulaNote(r.formulas) { lines.append("⚠︎ " + note) }
         return lines.joined(separator: "\n")
     }
 

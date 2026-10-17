@@ -14,11 +14,20 @@ protocol CloudSynced: PersistentModel {
     static func make(_ r: Record, jobs: [String: Job]) -> Self?
     /// False keeps the model on this device only, for now (a photo not on Drive yet).
     var syncs: Bool { get }
+    /// The job the record belongs to: an external member's device sends only the records of their jobs.
+    var ownerJob: Job? { get }
 }
 
 extension CloudSynced {
     var syncs: Bool { true }
 }
+
+extension Job { var ownerJob: Job? { self } }
+extension SurveyForm { var ownerJob: Job? { job } }
+extension ScannedDevice { var ownerJob: Job? { job } }
+extension InstallLog { var ownerJob: Job? { job } }
+extension Inspection { var ownerJob: Job? { job } }
+extension PhotoAsset { var ownerJob: Job? { log?.job ?? inspection?.job ?? iecJob } }
 
 extension Date {
     /// Whole milliseconds, so a date reads back from Firestore exactly as it was written.

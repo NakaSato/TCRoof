@@ -260,6 +260,7 @@ final class CloudSync {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
             present.insert(key)
             guard let (record, fingerprint) = surveyRecord(job), known[key] != fingerprint else { continue }
+            if let external, record.externals?.contains(external) != true { continue }
             let ref = db.document(key)
             changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: fingerprint))
         }
@@ -279,9 +280,11 @@ final class CloudSync {
         commitSeparately(contacts, "contact upload")
         guard !changes.isEmpty else { return }
 
-        // Firestore takes at most 500 writes per batch.
-        for start in stride(from: 0, to: changes.count, by: 400) {
-            let slice = changes[start..<min(start + 400, changes.count)]
+        // Firestore takes at most 500 writes per batch. An external member's writes go one by one: the rules refuse
+        // some (a record of a job just taken off them), and one refusal mustn't hold back the rest or stop the sync.
+        let size = external == nil ? 400 : 1
+        for start in stride(from: 0, to: changes.count, by: size) {
+            let slice = changes[start..<min(start + size, changes.count)]
             let batch = db.batch()
             var previous: [String: String?] = [:]
             for change in slice {
@@ -303,7 +306,11 @@ final class CloudSync {
                         // Put back what the server still has so the next push tries again.
                         for (key, old) in previous { self.known[key] = old }
                         self.saveKnown()
-                        self.failed(error)
+                        if self.external != nil, (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue {
+                            print("CloudSync: refused \(previous.keys.joined(separator: ", ")): \(error.localizedDescription)")
+                        } else {
+                            self.failed(error)
+                        }
                     } else {
                         self.synced()
                     }
@@ -368,6 +375,8 @@ final class CloudSync {
             let key = "\(M.collection)/\(model.syncID!)"
             present.insert(key)
             guard upload != .readOnly else { continue }
+            // an external member's record outside their jobs stays on the device: the rules would refuse it
+            if let external, model.ownerJob?.externals.contains(external) != true { continue }
             let record = model.record
             let print = fingerprint(record)
             guard known[key] != print else { continue }

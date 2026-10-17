@@ -149,7 +149,11 @@ struct DailyReportEditor: View {
     /// The previous or next report day; today's unsaved edits are kept as a draft first (a signed report asks).
     private func moveDay(_ step: Int) {
         guard let d = RoutineReport.reportDay(from: date, by: step, settings: job.routineSettings, limit: .now) else { return }
-        if dirty, log?.engineerSignedAt != nil { pendingDay = d; askUnsign = true; return }
+        if dirty, log?.engineerSignedAt != nil {
+            // a contractor's edits to a signed report aren't kept (they'd take our engineer's signature off)
+            guard canSign else { return moveTo(d) }
+            pendingDay = d; askUnsign = true; return
+        }
         if dirty { write() }
         moveTo(d)
     }
@@ -182,7 +186,10 @@ struct DailyReportEditor: View {
 
     /// The daily PDF of what is on screen: saved as a draft first (a signed report asks before losing its signature).
     private func previewPDF() {
-        if dirty, log?.engineerSignedAt != nil { askUnsign = true; return }
+        if dirty, log?.engineerSignedAt != nil {
+            guard canSign else { return withAnimation { toast = Self.signedForContractor } }
+            askUnsign = true; return
+        }
         let target = dirty || log == nil ? write() : log!
         guard let built = RoutineReportFiles.daily(job, log: target), let url = try? RoutineReportFiles.temporaryURL(built) else { return }
         preview = url
@@ -346,8 +353,15 @@ struct DailyReportEditor: View {
 
     /// A signed report that was edited loses its signatures on save, so ask first.
     private func requestSaveDraft() {
-        if dirty, log?.engineerSignedAt != nil { askUnsign = true } else { saveDraft() }
+        if dirty, log?.engineerSignedAt != nil {
+            if canSign { askUnsign = true } else { withAnimation { toast = Self.signedForContractor } }
+        } else {
+            saveDraft()
+        }
     }
+
+    /// Only our engineer takes a signature off (firestore.rules refuses a contractor's change to `engineerSignedAt`).
+    private static let signedForContractor = "รายงานนี้ลงนามแล้ว · แก้ได้เฉพาะวิศวกรของเรา"
 
     private func saveDraft() {
         write()

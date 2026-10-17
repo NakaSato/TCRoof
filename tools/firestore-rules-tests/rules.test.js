@@ -88,6 +88,21 @@ test('an external member fills daily reports but never signs them', async () => 
   await assertFails(deleteDoc(doc(d, 'installLogs', 'log1')));
 });
 
+test('an external member never takes our engineer\'s signature off', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'installLogs', 'signed'), { jobID: 'mine', externals: [CON], report: '{}', engineerSignedAt: 5, inspectorAckAt: 6 });
+  });
+  const d = db(CON);
+  await assertFails(setDoc(doc(d, 'installLogs', 'signed'), { jobID: 'mine', externals: [CON], report: '{"edited":1}' }));
+  await assertFails(updateDoc(doc(d, 'installLogs', 'signed'), { inspectorAckAt: null }));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'signed'), { engineerSignedAt: null, inspectorAckAt: null }));
+});
+
+test('a team member\'s job without externals (an older app) stays the team\'s and leaves the contractor out', async () => {
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { code: 'TC-1' }));
+  await assertFails(getDoc(doc(db(CON), 'jobs', 'mine')));
+});
+
 test('an external member only reads the ICL', async () => {
   const d = db(CON);
   await assertSucceeds(getDoc(doc(d, 'inspections', 'icl1')));

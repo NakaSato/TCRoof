@@ -34,10 +34,12 @@ final class MPWorkbookUITests: XCTestCase {
         let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
         XCTAssertTrue(importButton.waitForExistence(timeout: slow), "an empty plan should offer the import")
         importButton.tap()
-        let confirm = app.alerts["นำเข้าแผนจากไฟล์ Excel"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "the import should ask first")
+        // the demo job isn't บางไทร: the import warns, names both, and still lets it in here
+        let confirm = app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "a file for another station should warn first")
+        XCTAssertTrue(confirm.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "ไฟล์: สถานีผลิตน้ำประปาบางไทร")).firstMatch.exists)
         XCTAssertTrue(confirm.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "18 งาน")).firstMatch.exists)
-        confirm.buttons["นำเข้า"].tap()
+        confirm.buttons["นำเข้าที่สถานีนี้"].tap()
 
         // the file's own weights (2.4 Firefighter switch 7.5) and nothing done yet
         XCTAssertTrue(app.staticTexts["7.5%"].firstMatch.waitForExistence(timeout: 10), "the plan should take the file's weights")
@@ -78,7 +80,7 @@ final class MPWorkbookUITests: XCTestCase {
         let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
         XCTAssertTrue(importButton.waitForExistence(timeout: slow))
         importButton.tap()
-        app.alerts["นำเข้าแผนจากไฟล์ Excel"].buttons["นำเข้า"].tap()
+        app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"].buttons["นำเข้าที่สถานีนี้"].tap()
 
         let setup = app.buttons["ตั้งค่าแผน"].firstMatch
         XCTAssertTrue(setup.waitForExistence(timeout: 10))

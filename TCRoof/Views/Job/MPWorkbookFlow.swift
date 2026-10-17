@@ -101,6 +101,20 @@ final class MPWorkbookFlow {
         return lines.joined(separator: "\n")
     }
 
+    /// The file names a station that isn't `job` (`MPWorkbook.match`): the file's station, and the PWA station it does
+    /// fit when one does. Nil when it fits, or the file names no station to compare.
+    func mismatch(_ p: Pending, job: Job, stations: [Job]) -> (file: String, fits: Job?)? {
+        let f = MPWorkbook.station(project: p.imported.project, fileName: p.name)
+        guard let name = f.name else { return nil }
+        func candidates(_ jobs: [Job]) -> [MPWorkbook.Candidate] {
+            jobs.enumerated().map { .init(id: String($0.offset), name: $0.element.stationName, mpNumber: $0.element.mpNumber, kWp: $0.element.capacityKW) }
+        }
+        guard MPWorkbook.match(f, among: candidates([job])).pick == nil else { return nil }
+        let others = stations.filter { $0 !== job }
+        let fits = MPWorkbook.match(f, among: candidates(others)).pick.flatMap(Int.init).map { others[$0] }
+        return (name, fits)
+    }
+
     /// The kept file with the job's plan and progress written in, under its own name.
     func export(_ job: Job) {
         guard let original = job.scheduleWorkbook, let input = job.scheduleInput else { return }
@@ -138,18 +152,41 @@ private struct MPWorkbookModifier: ViewModifier {
     @Bindable var flow: MPWorkbookFlow
     @Bindable var job: Job
     @Environment(\.modelContext) private var context
+    @Query private var jobs: [Job]
+
+    private var mismatch: (file: String, fits: Job?)? {
+        flow.pending.flatMap { flow.mismatch($0, job: job, stations: jobs.pwaStations) }
+    }
+
+    private func label(_ j: Job) -> String { [j.mpNumber.map { "MP \($0)" }, j.stationName].compactMap { $0 }.joined(separator: " · ") }
 
     func body(content: Content) -> some View {
         content
             .fileImporter(isPresented: $flow.importing, allowedContentTypes: MPWorkbookFlow.types) { flow.read($0) }
-            .alert("นำเข้าแผนจากไฟล์ Excel", isPresented: Binding(get: { flow.pending != nil }, set: { if !$0 { flow.pending = nil } }),
+            .alert(mismatch == nil ? "นำเข้าแผนจากไฟล์ Excel" : "ไฟล์นี้อาจเป็นของสถานีอื่น",
+                   isPresented: Binding(get: { flow.pending != nil }, set: { if !$0 { flow.pending = nil } }),
                    presenting: flow.pending) { p in
-                Button("นำเข้า") {
+                let other = mismatch
+                if let fits = other?.fits {
+                    Button("นำเข้าที่ \(label(fits))") {
+                        flow.apply(p, to: fits, context: context)
+                        flow.pending = nil
+                        flow.message = .init(title: "นำเข้าแล้ว", text: "แผนจากไฟล์อยู่ที่ \(label(fits)) ไม่ใช่สถานีที่เปิดอยู่")
+                    }
+                }
+                Button(other == nil ? "นำเข้า" : "นำเข้าที่สถานีนี้") {
                     flow.apply(p, to: job, context: context)
                     flow.pending = nil
                 }
                 Button("ยกเลิก", role: .cancel) { flow.pending = nil }
-            } message: { p in Text(flow.summary(p, job: job)) }
+            } message: { p in
+                if let other = mismatch {
+                    Text("ไฟล์: \(other.file)\nสถานีนี้: \(label(job))"
+                         + (other.fits.map { "\nไฟล์ตรงกับ \(label($0))" } ?? "") + "\n\n" + flow.summary(p, job: job))
+                } else {
+                    Text(flow.summary(p, job: job))
+                }
+            }
             .alert(flow.message?.title ?? "", isPresented: Binding(get: { flow.message != nil }, set: { if !$0 { flow.message = nil } }),
                    presenting: flow.message) { m in
                 Button("ตกลง", role: .cancel) {

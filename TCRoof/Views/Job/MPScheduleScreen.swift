@@ -476,6 +476,7 @@ struct MPProgressSheet: View {
     @Bindable var job: Job
     let week: Date
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @State private var percent: [MasterSchedule.Task: Double] = [:]
     private let tasks: [MasterSchedule.PlannedTask]
     private let start: [MasterSchedule.Task: Double]
@@ -544,6 +545,8 @@ struct MPProgressSheet: View {
             a.setPercent(p, task: t.task, week: week, weight: t.weight)
         }
         job.scheduleActual = a
+        // saved now, not at the next autosave: a booking made just before the app closes stays
+        try? context.save()
         dismiss()
     }
 }

@@ -371,6 +371,22 @@ public enum MasterSchedule {
             set(target - others, task: task, week: week, weight: w, calendar: cal)
         }
 
+        /// Another copy's progress (a workbook updated in Excel) taken into this one: its points win for the task-weeks it
+        /// has, its actual start and finish where it has them; what only this copy has is kept. `changed` counts the
+        /// task-weeks and dates that came out different.
+        public func merging(_ other: Actual) -> (actual: Actual, changed: Int) {
+            var out = self, changed = 0
+            for (task, weeks) in other.points {
+                for (week, v) in weeks where v > 0 {
+                    if abs((out.points[task]?[week] ?? 0) - v) > 1e-9 { changed += 1 }
+                    out.points[task, default: [:]][week] = v
+                }
+            }
+            for (task, d) in other.started where out.started[task] != d { out.started[task] = d; changed += 1 }
+            for (task, d) in other.finished where out.finished[task] != d { out.finished[task] = d; changed += 1 }
+            return (out, changed)
+        }
+
         /// Points done up to and including the week of `date`.
         public func done(_ task: Task, through date: Date, calendar cal: Calendar = MasterSchedule.calendar) -> Double {
             let limit = Self.key(date, calendar: cal)

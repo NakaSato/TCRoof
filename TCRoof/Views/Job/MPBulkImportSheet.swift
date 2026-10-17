@@ -23,6 +23,8 @@ struct MPBulkImportSheet: View {
 
     let stations: [Job]
     @State var items: [Item]
+    /// A station that has a plan takes only the file's progress (`MPWorkbookFlow.takeProgress`).
+    @State private var progressOnly = false
     /// Called with the number of stations imported.
     let done: (Int) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -69,6 +71,15 @@ struct MPBulkImportSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("เลือกสถานีของแต่ละไฟล์ ระบบเลือกให้จากชื่อสถานีในไฟล์ ขนาด kWp และเลข MP ตรวจก่อนนำเข้า")
                         .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                    Toggle(isOn: $progressOnly) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("สถานีที่มีแผนแล้ว: รับเฉพาะความก้าวหน้า").font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
+                            Text("แผนในแอปคงเดิม ใช้ความก้าวหน้าตามไฟล์ในสัปดาห์ที่ไฟล์มี")
+                                .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
+                        }
+                    }
+                    .tint(Theme.primary)
+                    .cardStyle()
                     VStack(spacing: 0) {
                         ForEach($items) { $item in
                             row($item)
@@ -116,7 +127,7 @@ struct MPBulkImportSheet: View {
                     if let j = it.job, twice.contains(j) {
                         TCStatusChip("ซ้ำกับไฟล์อื่น", fill: Theme.dangerSoft, text: Theme.dangerText)
                     } else if picked?.scheduleInput != nil {
-                        TCStatusChip("แทนแผนเดิม", fill: Theme.primarySoft, text: Theme.navy)
+                        TCStatusChip(progressOnly ? "รับความก้าวหน้า" : "แทนแผนเดิม", fill: Theme.primarySoft, text: Theme.navy)
                     } else if it.job == nil {
                         TCStatusChip(it.ranked.isEmpty ? "ไม่พบสถานี" : "เลือกสถานี", fill: Theme.dangerSoft, text: Theme.dangerText)
                     }
@@ -154,7 +165,11 @@ struct MPBulkImportSheet: View {
         var n = 0
         for it in ready {
             guard let j = job(it.job), let imported = it.imported, let data = it.data else { continue }
-            MPWorkbookFlow.install(imported, data: data, name: it.name, on: j)
+            if progressOnly && j.scheduleInput != nil {
+                MPWorkbookFlow.takeProgress(imported, data: data, name: it.name, on: j)
+            } else {
+                MPWorkbookFlow.install(imported, data: data, name: it.name, on: j)
+            }
             n += 1
         }
         try? context.save()

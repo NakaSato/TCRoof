@@ -106,4 +106,64 @@ final class MPWorkbookUITests: XCTestCase {
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30))
         XCTAssertTrue(FileManager.default.fileExists(atPath: exported.path))
     }
+
+    /// A file updated elsewhere comes back: the export of a week booked at 20%, after the app booked 20% more, gives back
+    /// its own figure with รับเฉพาะความก้าวหน้า, and the plan stays.
+    func testReimportTakesOnlyTheProgress() throws {
+        try? FileManager.default.removeItem(at: exported)
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpWeek", "2024-11-03",
+                               "-mpImportFile", fixture.path, "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
+        app.launch()
+        let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
+        XCTAssertTrue(importButton.waitForExistence(timeout: slow))
+        importButton.tap()
+        app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"].buttons["นำเข้าที่สถานีนี้"].tap()
+
+        let done = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำได้ ")).firstMatch
+        func book() {
+            // a copy of the screen can sit off screen while a sheet closes: tap the one on screen
+            var update: XCUIElement?
+            for _ in 0..<20 where update == nil {
+                update = app.buttons.matching(identifier: "อัปเดตสัปดาห์ที่เลือก").allElementsBoundByIndex.first { $0.isHittable }
+                if update == nil { usleep(500_000) }
+            }
+            XCTAssertNotNil(update, "the update button should be on screen")
+            update?.tap()
+            let stepper = app.steppers.firstMatch
+            XCTAssertTrue(stepper.waitForExistence(timeout: 10))
+            for _ in 0..<4 { stepper.buttons.element(boundBy: 1).tap() }
+            app.buttons["บันทึก"].firstMatch.tap()
+        }
+        book()
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
+        let exportedFigure = done.label
+        app.buttons["ไฟล์ Excel"].firstMatch.tap()
+        app.buttons["ส่งออกไฟล์แผน (Excel)"].firstMatch.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: exported.path))
+
+        // the app moves on; then the exported copy comes back
+        app.terminate()
+        app.launchArguments = ["-screen", "mp", "-mpWeek", "2024-11-03", "-mpImportFile", exported.path, "-noNotificationPrompt", "YES"]
+        app.launch()
+        XCTAssertTrue(done.waitForExistence(timeout: slow))
+        book()
+        let moved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", exportedFigure), object: done)
+        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 5), .completed, "the second booking should move the figure")
+
+        app.buttons["ไฟล์ Excel"].firstMatch.tap()
+        app.buttons["นำเข้าไฟล์แผน (Excel)…"].firstMatch.tap()
+        let confirm = app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        XCTAssertTrue(confirm.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "ใช้ตามไฟล์ 1 ช่อง")).firstMatch.exists,
+                      "the confirmation should say how much differs")
+        confirm.buttons["รับเฉพาะความก้าวหน้า"].tap()
+        let report = app.alerts["รับความก้าวหน้าแล้ว"]
+        XCTAssertTrue(report.waitForExistence(timeout: 10))
+        report.buttons["ตกลง"].tap()
+        let back = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", exportedFigure), object: done)
+        XCTAssertEqual(XCTWaiter().wait(for: [back], timeout: 5), .completed, "the file's figure should be back")
+        XCTAssertTrue(app.staticTexts["7.5%"].firstMatch.exists, "the plan's weights stay")
+    }
 }

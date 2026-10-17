@@ -85,6 +85,26 @@ final class MPWorkbookFlow {
         job.scheduleWorkbookDriveID = nil
     }
 
+    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`Actual.merging`); the job keeps its plan, and
+    /// the file becomes the kept original. Returns how many task-weeks and dates changed.
+    @discardableResult
+    static func takeProgress(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) -> Int {
+        let (a, changed) = job.scheduleActual.merging(imported.actual)
+        if changed > 0 { job.scheduleActual = a }
+        job.scheduleWorkbook = data
+        job.scheduleWorkbookName = name
+        job.scheduleWorkbookDriveID = nil
+        return changed
+    }
+
+    func takeProgress(_ p: Pending, on job: Job, context: ModelContext) {
+        let n = Self.takeProgress(p.imported, data: p.data, name: p.name, on: job)
+        try? context.save()
+        message = Message(title: "รับความก้าวหน้าแล้ว",
+                          text: n == 0 ? "ความก้าวหน้าในไฟล์ตรงกับในแอปแล้ว แผนของสถานีคงเดิม"
+                                       : "ใช้ตามไฟล์ \(n) ช่องที่ต่างจากในแอป แผนของสถานีคงเดิม")
+    }
+
     /// What the import will do, for its confirmation.
     func summary(_ p: Pending, job: Job) -> String {
         let r = p.imported
@@ -97,7 +117,11 @@ final class MPWorkbookFlow {
         } else if !job.scheduleActual.points.isEmpty {
             lines.append("เก็บความก้าวหน้าที่บันทึกไว้")
         }
-        if job.scheduleInput != nil { lines.append("แทนแผน MP เดิมของสถานีนี้") }
+        if job.scheduleInput != nil {
+            lines.append("นำเข้า: แทนแผน MP เดิมของสถานีนี้")
+            let n = job.scheduleActual.merging(r.actual).changed
+            lines.append("รับเฉพาะความก้าวหน้า: " + (n == 0 ? "ไม่มีช่องที่ต่างจากในแอป" : "ใช้ตามไฟล์ \(n) ช่องที่ต่างจากในแอป") + " แผนคงเดิม")
+        }
         return lines.joined(separator: "\n")
     }
 
@@ -177,6 +201,12 @@ private struct MPWorkbookModifier: ViewModifier {
                 Button(other == nil ? "นำเข้า" : "นำเข้าที่สถานีนี้") {
                     flow.apply(p, to: job, context: context)
                     flow.pending = nil
+                }
+                if job.scheduleInput != nil {
+                    Button("รับเฉพาะความก้าวหน้า") {
+                        flow.pending = nil
+                        flow.takeProgress(p, on: job, context: context)
+                    }
                 }
                 Button("ยกเลิก", role: .cancel) { flow.pending = nil }
             } message: { p in

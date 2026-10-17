@@ -189,4 +189,24 @@ extension MasterScheduleTests {
             if case let .rect(b, _, _, _) = op { XCTAssertTrue(b.x >= 0 && b.maxX <= s.width + 0.01 && b.maxY <= s.height) }
         }
     }
+
+    func testMergingTakesTheOtherCopysProgress() {
+        let cal = MasterSchedule.calendar
+        let w1 = cal.date(from: DateComponents(year: 2024, month: 10, day: 27))!, w2 = cal.date(from: DateComponents(year: 2024, month: 11, day: 3))!
+        var app = MasterSchedule.Actual(), file = MasterSchedule.Actual()
+        app.set(4, task: .structure, week: w1, weight: 10)          // the file says 5
+        app.set(2, task: .structure, week: w2, weight: 10)          // only the app has it
+        app.lateCauses[MasterSchedule.Task.structure.rawValue] = .weather
+        file.set(5, task: .structure, week: w1, weight: 10)
+        file.set(1, task: .panels, week: w2, weight: 10)            // only the file has it
+        file.started[MasterSchedule.Task.structure.rawValue] = w1
+        let (merged, changed) = app.merging(file)
+        XCTAssertEqual(merged.points(.structure, week: w1), 5)
+        XCTAssertEqual(merged.points(.structure, week: w2), 2)
+        XCTAssertEqual(merged.points(.panels, week: w2), 1)
+        XCTAssertEqual(merged.started[MasterSchedule.Task.structure.rawValue], w1)
+        XCTAssertEqual(merged.lateCauses[MasterSchedule.Task.structure.rawValue], .weather)
+        XCTAssertEqual(changed, 3)
+        XCTAssertEqual(merged.merging(file).changed, 0, "taking the same file again changes nothing")
+    }
 }

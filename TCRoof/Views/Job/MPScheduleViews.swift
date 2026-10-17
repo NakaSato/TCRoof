@@ -223,6 +223,7 @@ struct MPPartBar: View {
 struct MPSetupSheet: View {
     @Bindable var job: Job
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @State private var input: MasterSchedule.Input
     @State private var mpNumber: Int?
     @State private var inverterKW: Double?
@@ -338,6 +339,7 @@ struct MPSetupSheet: View {
         var input = input
         input.fitInstallWindow()
         job.scheduleInput = input
+        try? context.save()
         dismiss()
     }
 }

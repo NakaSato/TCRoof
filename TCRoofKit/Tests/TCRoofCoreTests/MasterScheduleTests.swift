@@ -156,6 +156,33 @@ final class MasterScheduleTests: XCTestCase {
         XCTAssertNil(a.points[MasterSchedule.Task.pk2.rawValue])
     }
 
+    func testActualDatesAreDaysAndFinishNotBeforeStart() {
+        var a = MasterSchedule.Actual()
+        a.setDates(.panels, started: d(2026, 3, 30).addingTimeInterval(9 * 3600), finished: d(2026, 3, 28))
+        XCTAssertEqual(a.started["panels"], d(2026, 3, 30))
+        XCTAssertEqual(a.finished["panels"], d(2026, 3, 30), "a finish before the start moves to it")
+        a.setDates(.panels, started: d(2026, 3, 30), finished: nil)
+        XCTAssertNil(a.finished["panels"])
+        a.setDates(.panels, started: nil, finished: nil)
+        XCTAssertTrue(a.started.isEmpty && a.finished.isEmpty)
+    }
+
+    /// The install page's Gantt takes the typed finish: a task done 3 days past its plan overruns by 3.
+    func testTypedFinishGivesTheGanttsOverrun() throws {
+        let plan = MasterSchedule.plan(mp189())
+        let (start, end) = dates(plan, .panels)
+        let s = try XCTUnwrap(start), e = try XCTUnwrap(end)
+        var a = MasterSchedule.Actual()
+        a.setPercent(100, task: .panels, week: e, over200kVA: false)
+        let late = cal.date(byAdding: .day, value: 3, to: e)!
+        a.setDates(.panels, started: s, finished: late.addingTimeInterval(15 * 3600))
+        let row = try XCTUnwrap(InstallGantt(plan: plan, actual: a, places: [:], today: d(2026, 6, 1)).rows.first { $0.id == "panels" })
+        XCTAssertEqual(row.status, .done)
+        XCTAssertEqual(row.actualStart, s)
+        XCTAssertEqual(row.actualEnd, late)
+        XCTAssertEqual(row.overrunDays, 3)
+    }
+
     func testActualRoundTripsThroughJSON() throws {
         var a = mp189Actual()
         a.started["structure"] = d(2026, 3, 8)

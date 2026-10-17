@@ -462,6 +462,16 @@ public enum MasterSchedule {
             let limit = Self.key(date, calendar: cal)
             return (points[task.rawValue] ?? [:]).filter { $0.key <= limit }.values.reduce(0, +)
         }
+
+        /// Sets the task's วันเริ่มจริง / วันเสร็จจริง as days (nil clears one). A finish before the start moves to it.
+        public mutating func setDates(_ task: Task, started s: Date?, finished f: Date?,
+                                      calendar cal: Calendar = MasterSchedule.calendar) {
+            let s = s.map { cal.startOfDay(for: $0) }
+            var f = f.map { cal.startOfDay(for: $0) }
+            if let s, let e = f, e < s { f = s }
+            started[task.rawValue] = s
+            finished[task.rawValue] = f
+        }
     }
 
     // MARK: Report

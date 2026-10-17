@@ -22,6 +22,8 @@ struct ContractorWorkView: View {
 
     let job: Job
     @Binding var home: HomeJob
+    /// The final acceptance is signed by the manager or the job's supervising engineer (`handover.final_signoff`).
+    @Environment(\.permissions) private var permissions
     /// Tab to open on: the document row that opened the screen.
     var start: Tab = .order
 
@@ -330,7 +332,8 @@ struct ContractorWorkView: View {
             }
             if !home.site.acceptanceBlockers.isEmpty { PermitIssuesCard(issues: home.site.acceptanceBlockers) }
             signCard(title: "ตรวจรับงาน", sig: home.site.accepted, target: .accept,
-                     disabled: !home.site.acceptanceBlockers.isEmpty) { exportPDF(acceptDoc, name: "ใบตรวจรับงานผู้รับเหมา") }
+                     disabled: !home.site.acceptanceBlockers.isEmpty,
+                     allowed: permissions.can(.finalSignoff, on: job.access)) { exportPDF(acceptDoc, name: "ใบตรวจรับงานผู้รับเหมา") }
         }
     }
 
@@ -364,7 +367,8 @@ struct ContractorWorkView: View {
 
     // MARK: Signing
 
-    func signCard(title: String, sig: HomeSignature?, target: SignTarget, disabled: Bool, pdf: @escaping () -> Void) -> some View {
+    func signCard(title: String, sig: HomeSignature?, target: SignTarget, disabled: Bool, allowed: Bool = true,
+                  pdf: @escaping () -> Void) -> some View {
         PermitSection(title: title, subtitle: sig.map { "\($0.name) · \(PermitDate.long($0.at))" } ?? "เซ็นบนเครื่องนี้ได้เลย") {
             if let sig, let img = store.photo(sig.file).flatMap(UIImage.init(data:)) {
                 Image(uiImage: img).resizable().scaledToFit().frame(maxHeight: 90)
@@ -374,10 +378,12 @@ struct ContractorWorkView: View {
                 TCButton(sig == nil ? "เซ็น" : "เซ็นใหม่", systemImage: "signature", kind: sig == nil ? .primary : .secondary, size: .card) {
                     signing = target
                 }
-                .disabled(disabled)
+                .disabled(disabled || !allowed)
                 TCButton("PDF", systemImage: "square.and.arrow.up", kind: .secondary, size: .card) { pdf() }
             }
-            if disabled && sig == nil {
+            if !allowed {
+                Text("ผู้จัดการหรือวิศวกรผู้ควบคุมงานเป็นผู้เซ็น").font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.muted)
+            } else if disabled && sig == nil {
                 Text("แก้รายการด้านบนให้ครบก่อนเซ็น").font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.pending)
             }
         }

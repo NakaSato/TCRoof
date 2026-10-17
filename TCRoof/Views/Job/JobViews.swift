@@ -1,5 +1,6 @@
 import SwiftUI
 import TCRoofUI
+import TCRoofCore
 import SwiftData
 import QuickLook
 import UniformTypeIdentifiers
@@ -9,6 +10,9 @@ struct JobDetailView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(GoogleSession.self) private var session
+    /// The team edits the job (`job.edit`) and uploads to Drive (`drive.upload`); an external member sees their job
+    /// without the customer's phone and address.
+    @Environment(\.permissions) private var permissions
     @State private var showSchedule = false
     @State private var showImporter = false
     @State private var previewURL: URL?
@@ -27,9 +31,10 @@ struct JobDetailView: View {
                 if job.kind == .pwa {
                     MPScheduleCard(job: job)
                     RoutineReportCard(job: job)
-                    StationDocsCard(job: job)
+                    if permissions.can(.stationDocsDrafts) { StationDocsCard(job: job) }
                 }
                 actionsGrid
+                JobAccessCard(job: job)
                 if job.kind == .pwa { PWASurveyCard(job: job) }
                 surveysCard
                 documentsCard
@@ -86,9 +91,12 @@ struct JobDetailView: View {
             } label: {
                 HStack(spacing: 4) {
                     TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color)
-                    Image(systemName: "chevron.down").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(job.status.color)
+                    if permissions.can(.jobEdit) {
+                        Image(systemName: "chevron.down").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(job.status.color)
+                    }
                 }
             }
+            .disabled(!permissions.can(.jobEdit))
         }
         .cardStyle(padding: 20)
     }
@@ -113,6 +121,7 @@ struct JobDetailView: View {
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
+        .disabled(!permissions.can(.jobEdit))
         .accessibilityLabel("ประเภทงาน \(job.kind.title)")
     }
 
@@ -120,25 +129,30 @@ struct JobDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("ข้อมูลลูกค้า").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             InfoRow(title: "ชื่อ", value: job.customerName)
-            if !job.phone.isEmpty {
-                HStack {
-                    Text("โทรศัพท์").foregroundStyle(Theme.muted)
-                    Spacer()
-                    if let url = URL(string: "tel:\(job.phone)") {
-                        Link(job.phone, destination: url)
-                    }
-                }
-                .font(.sarabun(15, relativeTo: .subheadline))
-            }
-            InfoRow(title: "ที่อยู่", value: "\(job.address) \(job.province)")
-            if let url = job.mapsURL {
-                Link(destination: url) {
-                    Label("เปิดแผนที่", systemImage: "map").font(.sarabun(15, .semibold, relativeTo: .subheadline))
-                }
-            }
+            if permissions.can(.jobEdit) { contact }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
+    }
+
+    /// Phone, address and map: the team's only (user-roles.json findings 3).
+    @ViewBuilder private var contact: some View {
+        if !job.phone.isEmpty {
+            HStack {
+                Text("โทรศัพท์").foregroundStyle(Theme.muted)
+                Spacer()
+                if let url = URL(string: "tel:\(job.phone)") {
+                    Link(job.phone, destination: url)
+                }
+            }
+            .font(.sarabun(15, relativeTo: .subheadline))
+        }
+        InfoRow(title: "ที่อยู่", value: "\(job.address) \(job.province)")
+        if let url = job.mapsURL {
+            Link(destination: url) {
+                Label("เปิดแผนที่", systemImage: "map").font(.sarabun(15, .semibold, relativeTo: .subheadline))
+            }
+        }
     }
 
     private var scheduleCard: some View {
@@ -146,7 +160,9 @@ struct JobDetailView: View {
             HStack {
                 Text("แผนงาน").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
-                Button("แก้ไข") { showSchedule = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                if permissions.can(.jobEdit) {
+                    Button("แก้ไข") { showSchedule = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                }
             }
             InfoRow(title: "วันที่สำรวจ", value: job.surveyDate.thaiLong)
             InfoRow(title: "เริ่มติดตั้ง", value: job.installStart.thaiLong)
@@ -233,8 +249,10 @@ struct JobDetailView: View {
             HStack {
                 Text("เอกสารโครงการ").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
-                Button { showImporter = true } label: { Label("แนบไฟล์", systemImage: "paperclip") }
-                    .font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                if permissions.can(.attachFiles, on: job.access) {
+                    Button { showImporter = true } label: { Label("แนบไฟล์", systemImage: "paperclip") }
+                        .font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                }
             }
             if job.documents.isEmpty {
                 Text("แนบแบบติดตั้ง ใบเสนอราคา หรือเอกสารขออนุญาต (PDF, รูปภาพ)")
@@ -264,8 +282,10 @@ struct JobDetailView: View {
                             .foregroundStyle(Theme.teal)
                             .accessibilityLabel("อัปโหลดขึ้น Google Drive แล้ว")
                     }
-                    Button(role: .destructive) { context.delete(doc) } label: { Image(systemName: "trash") }
-                        .accessibilityLabel("ลบเอกสาร")
+                    if permissions.can(.attachFiles, on: job.access) {
+                        Button(role: .destructive) { context.delete(doc) } label: { Image(systemName: "trash") }
+                            .accessibilityLabel("ลบเอกสาร")
+                    }
                 }
                 .padding(.vertical, 4)
             }
@@ -276,6 +296,10 @@ struct JobDetailView: View {
 
     /// Upload button and link to the job's Drive folder.
     @ViewBuilder private var driveRow: some View {
+        if permissions.can(.driveUpload) { driveButtons }
+    }
+
+    @ViewBuilder private var driveButtons: some View {
         let pending = ProjectDriveUpload.pendingCount(job)
         let layout = isPhone ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
         layout {

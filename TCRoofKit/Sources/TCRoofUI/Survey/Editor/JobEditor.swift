@@ -32,6 +32,8 @@ struct JobEditorView: View {
     @State var revisionBase: FormSnapshot?
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dismiss) var dismiss
+    /// Issuing a REV (`survey.sign_rev`): the team, or the external engineer assigned to the job.
+    @Environment(\.permissions) var permissions
 
     /// - Parameter start: page to open on (the home card's "continue" step); nil opens A1.
     init(job: Job, start: MissingGroup.Target? = nil) {

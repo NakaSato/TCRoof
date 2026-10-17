@@ -32,6 +32,15 @@ private func parent(_ id: String?, in jobs: [String: Job]) -> Job?? {
     return jobs[id].map { .some($0) }
 }
 
+/// The external people of a child record's job, copied onto the record so an external member's device can ask
+/// Firestore for only the records of their jobs (`externals` array-contains their email). Derived: never applied back.
+/// None is nil, so a record with no one assigned keeps the document and fingerprint it had before roles. The job itself
+/// always writes its list: an empty one must reach the other devices to take the last person off.
+private func externals(of job: Job?) -> [String]? {
+    guard let list = job?.externals, !list.isEmpty else { return nil }
+    return list
+}
+
 // MARK: - Job
 
 extension Job: CloudSynced {
@@ -50,6 +59,9 @@ extension Job: CloudSynced {
         var stationDocs: String?
         var kind: String?
         var iecReport: String?
+        /// Assigned external people and the supervising engineer (roles); nil from app versions without roles.
+        var externals: [String]?
+        var supervisor: String?
 
         var hasPWAData: Bool {
             mpNumber != nil || scheduleInput != nil || routineSettings != nil || weeklyRequests != nil || stationDocs != nil
@@ -65,7 +77,7 @@ extension Job: CloudSynced {
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
                routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue,
-               iecReport: iecReportJSON)
+               iecReport: iecReportJSON, externals: externals, supervisor: supervisorEmail ?? "")
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -83,6 +95,8 @@ extension Job: CloudSynced {
         if let v = r.weeklyRequests { weeklyRequestsJSON = v }
         if let v = r.stationDocs { stationDocsJSON = v }
         if let v = r.iecReport { iecReportJSON = v }
+        if let v = r.externals { externals = v }
+        if let v = r.supervisor { supervisorEmail = v.isEmpty ? nil : v }
         // a record with no kind is from an app version that took a job with PWA data for a PWA job
         if let v = r.kind { kindRaw = v } else if kindRaw == nil, r.hasPWAData { kind = .pwa }
         return true
@@ -110,6 +124,7 @@ extension SurveyForm: CloudSynced {
         var isDraft: Bool?
         var utility, caNumber, meterSize, tariff, grounding: String?
         var monthlyKWh, latitude, longitude: Double?
+        var externals: [String]?
     }
 
     static let collection = "surveyForms"
@@ -120,7 +135,8 @@ extension SurveyForm: CloudSynced {
                monthlyBill: monthlyBill, recommendedKW: recommendedKW, tiltDegree: tiltDegree,
                mainBreakerAmp: mainBreakerAmp, structureOK: structureOK, jobID: job?.syncID,
                isDraft: isDraft, utility: utility, caNumber: caNumber, meterSize: meterSize, tariff: tariff,
-               grounding: grounding, monthlyKWh: monthlyKWh, latitude: latitude, longitude: longitude)
+               grounding: grounding, monthlyKWh: monthlyKWh, latitude: latitude, longitude: longitude,
+               externals: externals(of: job))
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -154,12 +170,14 @@ extension ScannedDevice: CloudSynced {
         var kind, serial, scannedBy: String
         var scannedAt: Int64
         var jobID: String?
+        var externals: [String]?
     }
 
     static let collection = "devices"
 
     var record: Record {
-        Record(kind: kindRaw, serial: serial, scannedBy: scannedBy, scannedAt: scannedAt.millis, jobID: job?.syncID)
+        Record(kind: kindRaw, serial: serial, scannedBy: scannedBy, scannedAt: scannedAt.millis, jobID: job?.syncID,
+               externals: externals(of: job))
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -186,13 +204,15 @@ extension InstallLog: CloudSynced {
         // daily report R2; optional so documents from older app versions still decode
         var report: String?
         var engineerSignedAt, inspectorAckAt: Int64?
+        var externals: [String]?
     }
 
     static let collection = "installLogs"
 
     var record: Record {
         Record(date: date.millis, createdAt: createdAt.millis, recorder: recorder, details: details, jobID: job?.syncID,
-               report: reportJSON, engineerSignedAt: engineerSignedAt?.millis, inspectorAckAt: inspectorAckAt?.millis)
+               report: reportJSON, engineerSignedAt: engineerSignedAt?.millis, inspectorAckAt: inspectorAckAt?.millis,
+               externals: externals(of: job))
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -224,6 +244,7 @@ extension Inspection: CloudSynced {
         var currentStep: Int
         var results: [InspectionResult]
         var driveFileID, jobID: String?
+        var externals: [String]?
     }
 
     static let collection = "inspections"
@@ -231,7 +252,7 @@ extension Inspection: CloudSynced {
     var record: Record {
         Record(createdAt: createdAt.millis, updatedAt: updatedAt.millis, submittedAt: submittedAt?.millis,
                inspector: inspector, customerName: customerName, currentStep: currentStep, results: results,
-               driveFileID: driveFileID, jobID: job?.syncID)
+               driveFileID: driveFileID, jobID: job?.syncID, externals: externals(of: job))
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -262,13 +283,14 @@ extension PhotoAsset: CloudSynced {
         var drive: String
         /// The syncID of the install log, inspection or job (IEC 62446) the photo belongs to; one is set.
         var log, inspection, iecJob: String?
+        var externals: [String]?
     }
 
     static let collection = "photos"
 
     var record: Record {
         Record(tag: tag, createdAt: createdAt.millis, drive: driveFileID ?? "", log: log?.syncID, inspection: inspection?.syncID,
-               iecJob: iecJob?.syncID)
+               iecJob: iecJob?.syncID, externals: externals(of: log?.job ?? inspection?.job ?? iecJob))
     }
 
     /// Once on Drive, and only the photos of the records that sync (a home survey's stay on the device).

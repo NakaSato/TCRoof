@@ -45,6 +45,9 @@ struct DailyReportEditor: View {
     var moveTo: (Date) -> Void = { _ in }
 
     @Environment(\.modelContext) private var context
+    /// The contractor's foreman fills the report (`daily.fill`); only our engineer signs it and records the
+    /// inspector's acknowledgement (`daily.sign`), since a signed report moves the MP plan.
+    @Environment(\.permissions) private var permissions
     @AppStorage("userName") private var userName = ""
     @State private var report: RoutineReport.Daily
     @State private var photos: [DraftPhoto] = []
@@ -118,7 +121,7 @@ struct DailyReportEditor: View {
 
     private var onePage: some View {
         DailyOnePage(job: job, date: date, report: $report, photos: $photos, others: others, log: log, dirty: dirty,
-                     actions: .init(saveDraft: requestSaveDraft, sign: { showSign = true }, acknowledge: requestAck,
+                     actions: .init(saveDraft: requestSaveDraft, sign: requestSign, acknowledge: requestAck,
                                     clearSignature: clearSignature, clearAck: clearAck, preview: previewPDF, send: exportPDF,
                                     day: moveDay, settings: { showSettings = true }))
     }
@@ -151,13 +154,20 @@ struct DailyReportEditor: View {
         moveTo(d)
     }
 
+    private var canSign: Bool { permissions.can(.dailySign, on: job.access) }
+
+    private func requestSign() {
+        if canSign { showSign = true } else { withAnimation { toast = "วิศวกรของเราเป็นผู้ลงนามรายงาน" } }
+    }
+
     /// The inspector acknowledges a signed report only.
     private func requestAck() {
+        guard canSign else { return withAnimation { toast = "วิศวกรของเราเป็นผู้บันทึก Inspector รับทราบ" } }
         if log?.engineerSignedAt != nil, !dirty { showAck = true } else { withAnimation { toast = "ผู้รายงานต้องเซ็นก่อน" } }
     }
 
     private func clearSignature() {
-        guard let log else { return }
+        guard let log, canSign else { return }
         log.engineerSignedAt = nil
         log.inspectorAckAt = nil
         job.feedMP()
@@ -165,6 +175,7 @@ struct DailyReportEditor: View {
     }
 
     private func clearAck() {
+        guard canSign else { return }
         log?.inspectorAckAt = nil
         try? context.save()
     }
@@ -213,7 +224,7 @@ struct DailyReportEditor: View {
             if let ack = log?.inspectorAckAt {
                 Label("Inspector รับทราบ \(ack.thaiLong)", systemImage: "person.fill.checkmark").foregroundStyle(Theme.okText)
             } else {
-                Button("บันทึก Inspector รับทราบ") { showAck = true }.frame(minHeight: touchMin)
+                Button("บันทึก Inspector รับทราบ", action: requestAck).frame(minHeight: touchMin)
             }
             Menu {
                 Button { exportPDF() } label: { Label("PDF", systemImage: "doc.richtext") }
@@ -258,7 +269,7 @@ struct DailyReportEditor: View {
                 Text("บันทึกร่าง").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
-            Button { showSign = true } label: {
+            Button(action: requestSign) {
                 Text("ตรวจ & ลงนาม").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.primary, size: .card))

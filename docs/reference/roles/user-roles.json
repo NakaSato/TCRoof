@@ -1,7 +1,7 @@
 {
   "schema": "tcroof.user-roles/1",
   "title": "สิทธิ์ผู้ใช้ในแอป TCRoof: 3 บทบาท",
-  "status": "design · not enforced in the app yet (see findings[0])",
+  "status": "design · roles in the app on branch feat/user-roles (TCRoofCore/UserRoles.swift); cloud rules not deployed",
   "checkedAgainst": "TCRoof main 593e3f0 · 2026-10-16",
   "canvas": "https://claude.ai/artifact/1QHYLS1kovMUkLWdfW222y (board Roles.dc.html)",
   "accessValues": {
@@ -511,7 +511,8 @@
               "access": "allow"
             },
             "internal": {
-              "access": "view"
+              "access": "conditional",
+              "note": "เฉพาะวิศวกรผู้ควบคุมงานของงานนั้น"
             },
             "external": {
               "access": "conditional",
@@ -607,6 +608,14 @@
     {
       "id": "shared-ipad",
       "text": "ข้อมูลบางส่วนอยู่ในเครื่องเดียว iPad ที่ใช้ร่วมกันต้องล็อกอินแยกคน บทบาทถึงจะมีผล"
+    },
+    {
+      "id": "one-external-role",
+      "text": "วิศวกรภายนอกกับผู้รับเหมาใช้บทบาทเดียวกัน (external)"
+    },
+    {
+      "id": "final-signoff",
+      "text": "เซ็นตรวจรับงานขั้นสุดท้าย: ผู้จัดการ หรือวิศวกรภายในที่เป็นผู้ควบคุมงานของงานนั้น"
     }
   ],
   "findings": [
@@ -639,8 +648,5 @@
       "text": "ช่อง role ในรายชื่อสมาชิก (บัญชีเดิมนับเป็น internal) · รายชื่อคนภายนอกต่องาน · กฎคลาวด์ให้คนภายนอกอ่าน / เขียนเฉพาะงานนั้นและข้อมูลลูก · แยกข้อมูลติดต่อลูกค้า · ซ่อนปุ่มในแอปตามบทบาท"
     }
   ],
-  "openQuestions": [
-    "1. วิศวกรภายนอกกับผู้รับเหมาใช้บทบาทเดียวกันพอไหม หรือแยกเป็น 2 บทบาท (วิศวกรภายนอกออกแบบและเซ็นแบบ ผู้รับเหมาติดตั้ง)",
-    "2. ใครเซ็นตรวจรับงานขั้นสุดท้ายได้บ้าง: ผู้จัดการเท่านั้น หรือวิศวกรภายในที่เป็นผู้ควบคุมงานด้วย"
-  ]
+  "openQuestions": []
 }

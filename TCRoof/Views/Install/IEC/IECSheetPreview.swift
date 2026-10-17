@@ -27,6 +27,7 @@ struct IECSheetPreview: View {
     @State private var pendingOpen: PendingOpen?
     struct PendingOpen { let stage: IECReport.Stage; let inverter: Int; let slot: Int? }
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
     @State private var printFailed: String?
 
     private var report: IECReport { job.iecReport ?? job.newIECReport }
@@ -117,7 +118,13 @@ struct IECSheetPreview: View {
 
     /// A tinted cell or a swatch: its step, or on a closed test the `แก้ไข` question first.
     private func request(_ stage: IECReport.Stage, _ inverter: Int, _ slot: Int?) {
-        if job.iecReport?.isLocked == true { pendingOpen = PendingOpen(stage: stage, inverter: inverter, slot: slot) } else { open(stage, inverter, slot) }
+        if let r = job.iecReport, r.isLocked {
+            // a closed test reopens for the team only (`iec.close`); a sent one also for the contractor who sent it
+            guard permissions.can(r.result != nil ? .iecClose : .iecFillSubmit, on: job.access) else { return }
+            pendingOpen = PendingOpen(stage: stage, inverter: inverter, slot: slot)
+        } else {
+            open(stage, inverter, slot)
+        }
     }
 
     /// `PDF ชีตนี้`: the sheet as exported (no source tints), vector, fitted on one A4 landscape page, for sending

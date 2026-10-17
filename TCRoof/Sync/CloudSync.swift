@@ -37,7 +37,7 @@ final class CloudSync {
     @ObservationIgnored private var listeners: [ListenerRegistration] = []
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var timer: Timer?
-    @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, record: SurveyRecord, fingerprint: String)] = [:]
+    @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, externals: [String]?, record: SurveyRecord, fingerprint: String)] = [:]
     @ObservationIgnored private var pushTask: Task<Void, Never>?
     @ObservationIgnored private var known: [String: String] = [:]
     /// Writes per document not yet confirmed by the server (offline, or still uploading).
@@ -112,6 +112,7 @@ final class CloudSync {
             let user = try await firebaseUser()
             guard context != nil else { return }
             uid = user.uid
+            Task { await MemberRole.shared.refresh() }
             known = UserDefaults.standard.dictionary(forKey: knownKey) as? [String: String] ?? [:]
             listen(Job.self)
             listen(SurveyForm.self)
@@ -439,7 +440,7 @@ final class CloudSync {
                     guard let record = try? change.document.data(as: SurveyRecord.self), self.known[key] != record.fingerprint,
                           let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
                     survey.applyRemote(job)
-                    self.known[key] = SurveyRecord(job)?.fingerprint
+                    self.known[key] = self.surveyRecord(job)?.fingerprint
                     // its photos taken on the other device, from Drive, without waiting for the editor to open
                     if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }
                 }
@@ -512,10 +513,12 @@ final class CloudSync {
     /// A job's document and fingerprint, kept until the job changes: the push runs after every edit and every 20 s,
     /// and encoding and hashing every job each time held the main thread.
     private func surveyRecord(_ job: TCRoofCore.Job) -> (record: SurveyRecord, fingerprint: String)? {
-        if let hit = surveyRecords[job.id], hit.job == job { return (hit.record, hit.fingerprint) }
-        guard let record = SurveyRecord(job) else { return nil }
+        // none is nil, so a survey with no one assigned keeps the document and fingerprint it had before roles
+        let externals = survey?.access(job)?.externals.nilIfEmpty
+        if let hit = surveyRecords[job.id], hit.job == job, hit.externals == externals { return (hit.record, hit.fingerprint) }
+        guard let record = SurveyRecord(job, externals: externals) else { return nil }
         let fingerprint = record.fingerprint
-        surveyRecords[job.id] = (job, record, fingerprint)
+        surveyRecords[job.id] = (job, externals, record, fingerprint)
         return (record, fingerprint)
     }
 
@@ -531,20 +534,31 @@ final class CloudSync {
     }
 }
 
+private extension Array {
+    var nilIfEmpty: Self? { isEmpty ? nil : self }
+}
+
 /// A NO.224 survey report job as one document; the job's own JSON keeps every field the survey module has.
 private struct SurveyRecord: Codable {
     var projectName: String
     var updated: Int64
     var json: String
+    /// The linked job's external people (roles), so an external member's device can ask for the surveys of their jobs.
+    var externals: [String]?
 
-    init?(_ job: TCRoofCore.Job) {
+    init?(_ job: TCRoofCore.Job, externals: [String]? = nil) {
         guard let data = try? JobStore.encoder.encode(job), let json = String(data: data, encoding: .utf8) else { return nil }
         self.projectName = job.projectName
         self.updated = job.updated.millis
         self.json = json
+        self.externals = externals
     }
 
-    var fingerprint: String { SHA256.hash(data: Data(json.utf8)).map { String(format: "%02x", $0) }.joined() }
+    /// The survey's own JSON, and the external people when it has any (so a survey with none keeps its old fingerprint).
+    var fingerprint: String {
+        let text = externals.map { json + "\n" + $0.joined(separator: ",") } ?? json
+        return SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
 /// One issued REV: the snapshot's JSON exactly as stored on the device that issued it.

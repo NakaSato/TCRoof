@@ -37,7 +37,21 @@ struct PWADocsHomeView: View {
 
     var today: Date { .now }
 
+    /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).
+    @Environment(\.permissions) private var permissions
+
     var body: some View {
+        if permissions.can(.stationDocsDrafts) {
+            content
+        } else {
+            TCEmptyState("เอกสารสำหรับทีมภายใน", systemImage: "lock.doc",
+                         description: Text("เอกสาร PWA ร่างและยื่นโดยทีมภายใน"))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.pageGradient.ignoresSafeArea())
+        }
+    }
+
+    private var content: some View {
         let data = self.data
         return VStack(spacing: 0) {
             paneSwitch(data)

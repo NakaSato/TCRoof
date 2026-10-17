@@ -127,7 +127,7 @@ extension FinalPageWide {
                 DotGrid().fill(Theme.navy.opacity(0.07))
                     .background(Self.canvasFill)
                     .contentShape(Rectangle())
-                    .onTapGesture { signing.wrappedValue = true }
+                    .onTapGesture { if permissions.can(.surveySignRev, on: model.access(job)) { signing.wrappedValue = true } }
                     .accessibilityElement()
                     .accessibilityAddTraits(.isButton)
                     .accessibilityLabel((photo == nil ? "เซ็นชื่อ" : "เซ็นชื่อใหม่ ") + role)

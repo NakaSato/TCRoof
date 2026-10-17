@@ -8,6 +8,8 @@ import PDFReport
 /// report right; otherwise the report first and the Gantt under it.
 struct MPScheduleScreen: View {
     @Bindable var job: Job
+    /// Only the team sets up the plan (`mp.setup`) and books progress by hand (`mp.progress`).
+    @Environment(\.permissions) private var permissions
     @State private var week = MasterSchedule.weekStart(.now)
     @State private var monthly = false
     @State private var showProgress = false
@@ -35,11 +37,13 @@ struct MPScheduleScreen: View {
                     .disabled(job.scheduleInput == nil)
                     .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์ที่เลือก หนึ่งหน้า A3")
             }
-            ToolbarItem(placement: .primaryAction) { Button("ตั้งค่าแผน") { showSetup = true } }
+            if permissions.can(.mpSetup) {
+                ToolbarItem(placement: .primaryAction) { Button("ตั้งค่าแผน") { showSetup = true } }
+            }
         }
         .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
             HStack(spacing: 12) {
-                TCButton("ตั้งค่าแผน", kind: .secondary) { showSetup = true }
+                if permissions.can(.mpSetup) { TCButton("ตั้งค่าแผน", kind: .secondary) { showSetup = true } }
                 TCButton("PDF ประชุม", systemImage: "square.and.arrow.up", kind: .secondary, action: exportPDF)
                     .disabled(job.scheduleInput == nil)
                     .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์ที่เลือก หนึ่งหน้า A3")
@@ -111,11 +115,13 @@ struct MPScheduleScreen: View {
                 TCSegmented(["Weekly", "Monthly"], selection: Binding(get: { monthly ? "Monthly" : "Weekly" }, set: { monthly = $0 == "Monthly" }))
                     .frame(maxWidth: 260).accessibilityLabel("รายงาน")
                 Spacer()
-                Button { showProgress = true } label: {
-                    Label(isPhone ? "อัปเดต" : "อัปเดตสัปดาห์นี้", systemImage: "square.and.pencil").font(.sarabun(17, .semibold, relativeTo: .body))
-                        .lineLimit(1).frame(minHeight: touchMin)
+                if permissions.can(.mpProgress) {
+                    Button { showProgress = true } label: {
+                        Label(isPhone ? "อัปเดต" : "อัปเดตสัปดาห์นี้", systemImage: "square.and.pencil").font(.sarabun(17, .semibold, relativeTo: .body))
+                            .lineLimit(1).frame(minHeight: touchMin)
+                    }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
                 }
-                .buttonStyle(TCButtonStyle(.primary, size: .card))
             }
         }
         .cardStyle()

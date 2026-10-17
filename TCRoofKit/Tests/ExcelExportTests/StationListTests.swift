@@ -55,6 +55,16 @@ final class StationListTests: XCTestCase {
         XCTAssertEqual(rows[1].ranked, ["n"], "the other still lists it")
     }
 
+    /// `สถานีจ่ายน้ำ กปภ.เขต 7` is all generic words: it matches its own name, so a second import doesn't add it again.
+    func testANameWithNoKeyMatchesItself() {
+        let s = [StationList.Station(row: 5, name: "สถานีจ่ายน้ำ กปภ.เขต 7")]
+        XCTAssertEqual(MPWorkbook.stationKey(s[0].name), "")
+        let rows = StationList.rows(s, existing: [StationList.Existing(id: "z", name: "สถานีจ่ายน้ำ  กปภ.เขต 7"),
+                                                  StationList.Existing(id: "o", name: "สถานีจ่ายน้ำ กปภ.เขต 8")])
+        XCTAssertEqual(rows[0].match, "z")
+        XCTAssertEqual(rows[0].ranked, ["z"])
+    }
+
     func testFillsOnlyEmptyFieldsAndShowsDifferences() {
         let row = StationList.Station(row: 5, name: "สถานีผลิตน้ำบ้านนา", branch: "การประปาส่วนภูมิภาคสาขาบ้านนา", kWp: 88.92,
                                       inverterKW: 80, latitude: 14.25748, longitude: 101.0725, address: "53 ม.6 ต.บ้านนา อ.บ้านนา จ.นครนายก 26110")

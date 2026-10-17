@@ -199,7 +199,11 @@ extension StationList {
     static func score(_ s: Station, _ e: Existing) -> Double {
         let key = MPWorkbook.stationKey(s.name), other = MPWorkbook.stationKey(e.name)
         var score = 0.0
-        if !key.isEmpty, !other.isEmpty {
+        // a name that is all generic words (`สถานีจ่ายน้ำ กปภ.เขต 7` gives an empty key) matches only itself, spaces aside
+        if key.isEmpty || other.isEmpty {
+            func squeezed(_ t: String) -> String { t.lowercased().filter { !$0.isWhitespace } }
+            if !squeezed(s.name).isEmpty, squeezed(s.name) == squeezed(e.name) { score = 100 }
+        } else {
             if key == other { score = 100 }
             else if min(key.count, other.count) >= 3, key.contains(other) || other.contains(key) { score = 80 }
             else {

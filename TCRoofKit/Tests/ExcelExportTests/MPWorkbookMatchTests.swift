@@ -10,7 +10,7 @@ final class MPWorkbookMatchTests: XCTestCase {
         let s = MPWorkbook.station(project: project, fileName: file)
         XCTAssertEqual(s.name, "สถานีผลิตน้ำประปาบางไทร")
         XCTAssertEqual(s.kWp, 414.96)
-        XCTAssertEqual(s.mpNumber, 37)
+        XCTAssertNil(s.mpNumber, "37. is the file's place in the list, not an MP number")
         XCTAssertEqual(MPWorkbook.station(project: nil, fileName: "MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx"),
                        .init(name: "สถานีผลิตน้ำทุ่งน้อย", kWp: 92.34, mpNumber: 189))
     }
@@ -31,6 +31,7 @@ final class MPWorkbookMatchTests: XCTestCase {
         let m = MPWorkbook.match(f, among: stations)
         XCTAssertEqual(m.pick, "b")
         XCTAssertEqual(m.ranked.first, "b")
+        XCTAssertFalse(m.ranked.contains("c"), "MP 37 shares only the file's list number")
     }
 
     func testTwoAsCloseAreLeftToTheTeam() {

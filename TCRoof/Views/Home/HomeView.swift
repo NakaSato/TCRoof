@@ -406,24 +406,71 @@ struct SettingsView: View {
     var pwa = false
     @Environment(\.dismiss) private var dismiss
     @Environment(GoogleSession.self) private var session
-    @State private var confirmLogout = false
+    @State private var leave: Leave?
+    /// Waiting for the server to take this account's writes before it signs out.
+    @State private var sending = false
+    /// The server didn't confirm every write in time: ask before signing out anyway.
+    @State private var unsent: Leave?
+
+    /// Signing out, or handing a shared iPad to the next person.
+    enum Leave { case switchAccount, signOut }
 
     /// The same grouped cards on iPhone (large sheet) and iPad (form sheet).
     var body: some View {
         NavigationStack {
-            PhoneSettingsList(confirmLogout: $confirmLogout, pwa: pwa)
+            PhoneSettingsList(leave: $leave, pwa: pwa)
                 .navigationTitle("ตั้งค่า")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }
-                .confirmationDialog("ต้องการออกจากระบบหรือไม่?", isPresented: $confirmLogout, titleVisibility: .visible) {
-                    Button("ออกจากระบบ", role: .destructive) {
-                        dismiss()
-                        session.signOut()
-                    }
+                .confirmationDialog(leave == .switchAccount ? "สลับไปบัญชีอื่น?" : "ต้องการออกจากระบบหรือไม่?",
+                                    isPresented: Binding(get: { leave != nil }, set: { if !$0 { leave = nil } }),
+                                    titleVisibility: .visible, presenting: leave) { kind in
+                    Button(kind == .switchAccount ? "สลับบัญชี" : "ออกจากระบบ", role: .destructive) { signOut(kind) }
                     Button("ยกเลิก", role: .cancel) {}
-                } message: {
-                    Text("งานที่ยังไม่ได้ซิงค์จะยังอยู่ในเครื่องนี้ จนกว่าบัญชีอื่นจะเข้าสู่ระบบ")
+                } message: { kind in
+                    Text(kind == .switchAccount
+                         ? "ส่งข้อมูลของบัญชีนี้ขึ้นคลาวด์ก่อน แล้วให้คนถัดไปเข้าสู่ระบบด้วยบัญชี Google ของตัวเอง"
+                         : "ส่งข้อมูลที่ยังไม่ได้ซิงค์ขึ้นคลาวด์ก่อนออกจากระบบ")
                 }
+                .alert("ยังส่งข้อมูลขึ้นคลาวด์ไม่ครบ",
+                       isPresented: Binding(get: { unsent != nil }, set: { if !$0 { unsent = nil } }), presenting: unsent) { kind in
+                    Button("ลองอีกครั้ง") { signOut(kind) }
+                    Button("ออกเลย", role: .destructive) { signOut(kind, waiting: false) }
+                    Button("ยกเลิก", role: .cancel) {}
+                } message: { _ in
+                    Text("ต่ออินเทอร์เน็ตแล้วลองอีกครั้ง ถ้าออกตอนนี้ ข้อมูลที่ยังไม่ส่งจะรออยู่ในเครื่องนี้ และส่งขึ้นเมื่อ \(session.email ?? "บัญชีนี้") เข้าสู่ระบบในเครื่องนี้อีกครั้ง")
+                }
+                .overlay { if sending { sendingCard } }
+                .allowsHitTesting(!sending)
+        }
+    }
+
+    private var sendingCard: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("กำลังส่งข้อมูลขึ้นคลาวด์…").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+        }
+        .padding(24)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.xl))
+        .shadow(color: .black.opacity(0.12), radius: 16, y: 4)
+    }
+
+    /// Sends this account's writes first (`CloudSync.flush`); the next account may be one whose sign-in removes the
+    /// records from this device.
+    private func signOut(_ kind: Leave, waiting: Bool = true) {
+        Task {
+            if waiting {
+                sending = true
+                let sent = await CloudSync.shared.flush()
+                sending = false
+                guard sent else { unsent = kind; return }
+            }
+            let who = session.email ?? ""
+            dismiss()
+            session.signOut()
+            if kind == .switchAccount, !who.isEmpty {
+                session.notice = "\(who) ออกจากระบบแล้ว · เข้าสู่ระบบด้วยบัญชี Google ของคุณ"
+            }
         }
     }
 }

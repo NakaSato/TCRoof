@@ -91,7 +91,7 @@ final class GoogleSession {
             try? Auth.auth().signOut()
             throw error
         }
-        LocalData.signedIn(mail)
+        LocalData.signedIn(mail, role: MemberRole.savedRole(mail))
         email = mail
         MemberRole.shared.signedIn(mail)
         Self.fillUserName()

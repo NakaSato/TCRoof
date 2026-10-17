@@ -58,7 +58,7 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
         c.queryItems = [.init(name: "client_id", value: clientID), .init(name: "redirect_uri", value: redirectURI),
                         .init(name: "response_type", value: "code"), .init(name: "scope", value: Self.scope),
                         .init(name: "code_challenge", value: challenge), .init(name: "code_challenge_method", value: "S256"),
-                        .init(name: "prompt", value: "consent"), .init(name: "access_type", value: "offline")]
+                        .init(name: "prompt", value: "select_account consent"), .init(name: "access_type", value: "offline")]
         let callback: URL = try await withCheckedThrowingContinuation { cont in
             let s = ASWebAuthenticationSession(url: c.url!, callbackURLScheme: redirectScheme) { url, err in
                 if let url { cont.resume(returning: url) }
@@ -66,7 +66,8 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
                 else { cont.resume(throwing: err ?? Failure.cancelled) }
             }
             s.presentationContextProvider = self
-            s.prefersEphemeralWebBrowserSession = false
+            // A shared iPad: Safari's saved Google session would offer the previous person's account to the next one.
+            s.prefersEphemeralWebBrowserSession = true
             self.session = s
             s.start()
         }

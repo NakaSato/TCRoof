@@ -150,3 +150,16 @@ test('only a manager reads the member list or changes it', async () => {
   await assertSucceeds(getDoc(doc(db(TEAM), 'members', TEAM)));
   await assertSucceeds(getDoc(doc(db('stranger@gmail.com'), 'members', 'stranger@gmail.com')));
 });
+
+test('an issued REV goes only with its survey, or by a manager', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const d = ctx.firestore();
+    await setDoc(doc(d, 'pwaSurveys', 'S9'), { json: '{}' });
+    await setDoc(doc(d, 'pwaSurveyRevisions', 'S9_REV 00'), { json: '{}' });
+    await setDoc(doc(d, 'pwaSurveyRevisions', 'S8_REV 00'), { json: '{}' });
+  });
+  await assertFails(deleteDoc(doc(db(TEAM), 'pwaSurveyRevisions', 'S9_REV 00')));
+  await assertFails(deleteDoc(doc(db(CON), 'pwaSurveyRevisions', 'S8_REV 00')));
+  await assertSucceeds(deleteDoc(doc(db(TEAM), 'pwaSurveyRevisions', 'S8_REV 00')));
+  await assertSucceeds(deleteDoc(doc(db(BOSS), 'pwaSurveyRevisions', 'S9_REV 00')));
+});

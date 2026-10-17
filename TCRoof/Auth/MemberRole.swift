@@ -22,6 +22,11 @@ final class MemberRole {
         permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: email)
     }
 
+    /// The role this device last read for an account.
+    static func savedRole(_ email: String) -> UserRole {
+        override ?? UserRole(field: UserDefaults.standard.string(forKey: key(Permissions.normalized(email))))
+    }
+
     /// Whether an account is on the member list, as far as this device can tell.
     enum Membership { case member, notMember, unknown }
 

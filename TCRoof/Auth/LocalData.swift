@@ -1,9 +1,11 @@
 import Foundation
 import SwiftData
+import TCRoofCore
 import TCRoofUI
 
-/// The team's records kept on this device. When a different account signs in, the previous account's copy is
-/// removed before sync starts, so nobody sees jobs their role doesn't give them; sync then brings back theirs.
+/// The team's records kept on this device. When an external account signs in after a different account, the previous
+/// account's copy is removed before sync starts, so nobody sees jobs their role doesn't give them; sync then brings
+/// back theirs. The next team member may read every job, so on a shared iPad the records stay for them.
 @MainActor
 enum LocalData {
     private static let ownerKey = "session.owner"
@@ -12,10 +14,15 @@ enum LocalData {
     /// The account the records on this device belong to.
     static var owner: String? { UserDefaults.standard.string(forKey: ownerKey) }
 
-    /// Records `email` as the owner; a different previous owner leaves the records to be removed at the next start.
-    static func signedIn(_ email: String) {
+    /// Records `email` as the owner. After a different owner, an external account leaves the records to be removed
+    /// at the next start; a team account takes them over with what sync knows of them.
+    static func signedIn(_ email: String, role: UserRole) {
         let d = UserDefaults.standard
-        if let owner, owner != email { d.set(true, forKey: wipeKey) }
+        if let owner, owner != email {
+            let external = role == .external
+            d.set(external, forKey: wipeKey)
+            d.set(!external, forKey: CloudSync.carryKnownKey)
+        }
         d.set(email, forKey: ownerKey)
     }
 

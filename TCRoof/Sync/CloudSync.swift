@@ -81,7 +81,10 @@ final class CloudSync {
         self.survey = survey
         Job.contactsSplit = UserDefaults.standard.bool(forKey: Self.contactsSplitKey)
         // the survey home shows what Firestore still lacks, even before sign-in finishes
-        if let u = Auth.auth().currentUser?.uid { known = UserDefaults.standard.dictionary(forKey: "cloudSync.known.\(u)") as? [String: String] ?? [:] }
+        if let u = Auth.auth().currentUser?.uid {
+            Self.carryKnown(to: u)
+            known = UserDefaults.standard.dictionary(forKey: "cloudSync.known.\(u)") as? [String: String] ?? [:]
+        }
         survey.cloudPush = { [weak self] in
             guard let self else { return }
             if case .failed = self.state { self.retry() } else { self.push() }
@@ -166,6 +169,22 @@ final class CloudSync {
 
     private var knownKey: String { "cloudSync.known.\(uid ?? "")" }
 
+    /// The Firebase account whose `known` matches the records on this device.
+    private static let lastUIDKey = "cloudSync.lastUID"
+    /// Set by `LocalData` when another team account takes over the device and keeps its records.
+    static let carryKnownKey = "cloudSync.carryKnown"
+
+    /// The records stay on the device for the next team account, so what the server has of them does too: without
+    /// the previous account's `known`, the first push would send every record again.
+    private static func carryKnown(to uid: String) {
+        let d = UserDefaults.standard
+        if d.bool(forKey: carryKnownKey), let last = d.string(forKey: lastUIDKey), last != uid {
+            d.set(d.dictionary(forKey: "cloudSync.known.\(last)"), forKey: "cloudSync.known.\(uid)")
+        }
+        d.removeObject(forKey: carryKnownKey)
+        d.set(uid, forKey: lastUIDKey)
+    }
+
     private func saveKnown() {
         guard uid != nil else { return }
         UserDefaults.standard.set(known, forKey: knownKey)
@@ -196,6 +215,30 @@ final class CloudSync {
         for _ in 0..<32 where state != .synced { try? await Task.sleep(for: .milliseconds(250)) }
         let online = await Self.isOnline()
         refreshFailed = !online || state != .synced
+    }
+
+    /// Before the account signs out: sends what is waiting, then waits up to `seconds` for the server to confirm
+    /// every write Firestore holds for this account, those queued in earlier launches too. False offline or on
+    /// timeout; the writes then stay queued under this account until it signs in here again.
+    func flush(seconds: Double = 10) async -> Bool {
+        guard context != nil, Auth.auth().currentUser != nil else { return true }
+        if case .failed = state { retry() } else { push() }
+        let done = Flag()
+        return await withCheckedContinuation { cont in
+            db.waitForPendingWrites { error in
+                MainActor.assumeIsolated { if done.set() { cont.resume(returning: error == nil) } }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(seconds))
+                if done.set() { cont.resume(returning: false) }
+            }
+        }
+    }
+
+    /// Resumes a continuation once, from whichever of two callbacks comes first.
+    @MainActor private final class Flag {
+        private var isSet = false
+        func set() -> Bool { defer { isSet = true }; return !isSet }
     }
 
     private static func isOnline() async -> Bool {

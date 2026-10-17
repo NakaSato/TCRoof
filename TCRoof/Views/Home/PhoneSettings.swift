@@ -4,7 +4,8 @@ import TCRoofCore
 
 /// iPhone settings (docs/ui/tcroof-home-iphone states/06, v2 colours via `homeInk`): grouped white cards on the page colour.
 struct PhoneSettingsList: View {
-    @Binding var confirmLogout: Bool
+    /// Asks before `สลับบัญชี` or `ออกจากระบบ` (`SettingsView`).
+    @Binding var leave: SettingsView.Leave?
     /// Opened from the `กปภ.` tab: show `ตั้งค่าโครงการ PWA`.
     var pwa = false
     @Environment(GoogleSession.self) private var session
@@ -97,7 +98,14 @@ struct PhoneSettingsList: View {
                     } label: { row("โฟลเดอร์หลัก", DriveFolders.root + " ›") }
                     .buttonStyle(.plain)
                     divider
-                    Button { confirmLogout = true } label: {
+                    // a shared iPad: the next person signs in with their own account, so their role applies
+                    Button { leave = .switchAccount } label: {
+                        Text("สลับบัญชี").font(.sarabun(16, .bold)).foregroundStyle(Theme.primary)
+                            .frame(maxWidth: .infinity).rowFrame()
+                    }
+                    .buttonStyle(.plain)
+                    divider
+                    Button { leave = .signOut } label: {
                         Text("ออกจากระบบ").font(.sarabun(16, .bold)).foregroundStyle(Theme.danger)
                             .frame(maxWidth: .infinity).rowFrame()
                     }

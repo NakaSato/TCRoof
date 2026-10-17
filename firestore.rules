@@ -132,9 +132,12 @@ service cloud.firestore {
     }
 
     // An issued REV of a survey report is written once: it may be created, sent again unchanged, or deleted
-    // with its job, never changed. The team's only.
+    // with its job, never changed. The team's only. Its id is `<survey id>_<rev>`; a team member deletes it once the
+    // survey is gone (the app retries the delete at its next push), a manager at any time.
     match /pwaSurveyRevisions/{doc} {
-      allow read, create, delete: if isTeam();
+      allow read, create: if isTeam();
+      allow delete: if isManager()
+        || (isTeam() && !exists(/databases/$(database)/documents/pwaSurveys/$(doc.split('_')[0])));
       allow update: if isTeam() && request.resource.data.json == resource.data.json;
     }
 

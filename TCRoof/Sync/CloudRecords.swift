@@ -45,7 +45,11 @@ private func externals(of job: Job?) -> [String]? {
 
 extension Job: CloudSynced {
     struct Record: Codable {
-        var code, projectName, customerName, phone, address, province: String
+        var code, projectName, customerName: String
+        /// The customer's contact; nil once it travels in `jobContacts` only (`Job.contactsSplit`), which external
+        /// members can't read.
+        var phone, address: String?
+        var province: String
         var capacityKW: Double
         var team, status: String
         var surveyDate, installStart, createdAt: Int64
@@ -70,8 +74,13 @@ extension Job: CloudSynced {
 
     static let collection = "jobs"
 
+    /// Set from `config/app.contactsSplit` once every device runs a version that reads `jobContacts`: the job's own
+    /// document then leaves out the phone and address. Before that, an older app would blank the ones it has.
+    nonisolated(unsafe) static var contactsSplit = false
+
     var record: Record {
-        Record(code: code, projectName: projectName, customerName: customerName, phone: phone, address: address,
+        Record(code: code, projectName: projectName, customerName: customerName,
+               phone: Self.contactsSplit ? nil : phone, address: Self.contactsSplit ? nil : address,
                province: province, capacityKW: capacityKW, team: teamRaw, status: statusRaw,
                surveyDate: surveyDate.millis, installStart: installStart.millis, createdAt: createdAt.millis,
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
@@ -81,8 +90,10 @@ extension Job: CloudSynced {
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
-        code = r.code; projectName = r.projectName; customerName = r.customerName; phone = r.phone
-        address = r.address; province = r.province; capacityKW = r.capacityKW
+        code = r.code; projectName = r.projectName; customerName = r.customerName
+        if let v = r.phone { phone = v }
+        if let v = r.address { address = v }
+        province = r.province; capacityKW = r.capacityKW
         teamRaw = r.team; statusRaw = r.status
         surveyDate = Date(millis: r.surveyDate); installStart = Date(millis: r.installStart)
         createdAt = Date(millis: r.createdAt); installDays = r.installDays; driveFolderURL = r.driveFolderURL
@@ -320,5 +331,20 @@ extension PhotoAsset: CloudSynced {
         let photo = PhotoAsset(data: Data(), tag: r.tag)
         photo.needsDownload = true
         return photo
+    }
+}
+
+// MARK: - Contact
+
+/// A job's customer phone and address in their own document (`jobContacts/<job syncID>`), read by the team only, so
+/// an external member assigned to the job never receives them (user-roles.json findings 3).
+struct JobContactRecord: Codable, Equatable {
+    var phone, address: String
+
+    init(_ job: Job) { phone = job.phone; address = job.address }
+
+    func apply(to job: Job) {
+        if job.phone != phone { job.phone = phone }
+        if job.address != address { job.address = address }
     }
 }

@@ -3,6 +3,12 @@ rules_version = '2';
 // TCRoof team data. Only team members can read or write, and only the collections the app syncs.
 // A member is a Google account with a document at members/<email, lowercase> — add or remove people
 // in the Firebase console (Firestore → members). The app can't edit this list.
+//
+// Roles (docs/reference/roles/user-roles.json): members/<email>.role is "manager", "internal" or "external";
+// none is the internal team. An external engineer or contractor reads only the documents that list their email in
+// `externals` (a job's assigned people, copied onto its records by the app) and writes only what their role lets
+// them: a job's IEC test, its daily reports (unsigned), device scans, photos and surveys. The customers' phones and
+// addresses are in jobContacts, which they never read.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedInEmail() {
@@ -13,18 +19,111 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && exists(/databases/$(database)/documents/members/$(signedInEmail()));
     }
+    function role() {
+      return get(/databases/$(database)/documents/members/$(signedInEmail())).data.get('role', 'internal');
+    }
+    function isTeam() {
+      return isMember() && role() != 'external';
+    }
+    function isExternal() {
+      return isMember() && role() == 'external';
+    }
+    // A read of a document that lists the signed-in external member, written plainly so Firestore can check the
+    // app's query (`externals` array-contains their email) against it.
+    function readsMine() {
+      return isExternal() && signedInEmail() in resource.data.externals;
+    }
+    // The document lists the signed-in external member.
+    function listsMe(data) {
+      return data.get('externals', []) is list && signedInEmail() in data.get('externals', []);
+    }
+    // An external member's write keeps the document theirs and doesn't change who it is open to.
+    function keepsMe() {
+      return listsMe(request.resource.data)
+        && (resource == null || (listsMe(resource.data)
+            && request.resource.data.get('externals', []) == resource.data.get('externals', [])));
+    }
+    // The job a record points at is assigned to the signed-in external member.
+    function jobIsMine(jobID) {
+      return jobID is string
+        && listsMe(get(/databases/$(database)/documents/jobs/$(jobID)).data);
+    }
+    function unchanged(field) {
+      return request.resource.data.get(field, null) == (resource == null ? null : resource.data.get(field, null));
+    }
 
-    // Each person may check their own membership (the app uses this to explain a refusal).
+    // Each person may check their own membership and role (the app reads it after sign-in).
     match /members/{email} {
       allow read: if request.auth != null && signedInEmail() == email;
       allow write: if false;
     }
 
+    // Switches set in the Firebase console (contactsSplit).
+    match /config/{doc} {
+      allow read: if isMember();
+      allow write: if false;
+    }
+
+    // Jobs: the team reads and writes them; an external member reads their jobs and changes only the IEC test.
+    match /jobs/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow create, delete: if isTeam();
+      allow update: if isTeam()
+        || (isExternal() && listsMe(resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['iecReport']));
+    }
+
+    // The customers' phones and addresses, one document per job: the team's only.
+    match /jobContacts/{doc} {
+      allow read, write: if isTeam();
+    }
+
+    // Daily reports: the contractor's foreman fills them; only our engineer signs or records the inspector.
+    match /installLogs/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+      allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID)
+        && unchanged('engineerSignedAt') && unchanged('inspectorAckAt');
+    }
+
+    // Device scans and survey forms of their jobs; photos of their records.
+    match /devices/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+      allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID);
+      allow delete: if isExternal() && listsMe(resource.data);
+    }
+    match /surveyForms/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+      allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID);
+    }
+    match /photos/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+      allow create, update: if isExternal() && keepsMe()
+        && (request.resource.data.get('iecJob', null) == null || jobIsMine(request.resource.data.iecJob));
+      allow delete: if isExternal() && listsMe(resource.data);
+    }
+
+    // ICL check lists: an external member only reads theirs.
+    match /inspections/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+    }
+
+    // NO.224 survey reports: an external engineer edits the surveys of the jobs assigned to them.
+    match /pwaSurveys/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+      allow update: if isExternal() && keepsMe();
+    }
+
     // An issued REV of a survey report is written once: it may be created, sent again unchanged, or deleted
-    // with its job, never changed.
+    // with its job, never changed. The team's only.
     match /pwaSurveyRevisions/{doc} {
-      allow read, create, delete: if isMember();
-      allow update: if isMember() && request.resource.data.json == resource.data.json;
+      allow read, create, delete: if isTeam();
+      allow update: if isTeam() && request.resource.data.json == resource.data.json;
     }
 
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
@@ -40,11 +139,6 @@ service cloud.firestore {
              .union((resource == null ? [].toSet() : resource.data.members.toSet())
              .difference(request.resource.data.members.toSet()))
              .hasOnly([signedInEmail(), request.auth.token.email]);
-    }
-
-    match /{collection}/{doc} {
-      allow read, write: if isMember()
-        && collection in ['jobs', 'surveyForms', 'devices', 'installLogs', 'inspections', 'pwaSurveys', 'photos'];
     }
   }
 }

@@ -72,6 +72,18 @@ final class RoleTableTests: XCTestCase {
         XCTAssertFalse(con.can(.assignTeam, on: job))
     }
 
+    /// Daily reports are signed by the job's own people; a job naming none of ours, by any team member.
+    func testDailyReportsAreSignedByTheJobsPeople() {
+        let job = JobAccess(externals: ["con@x.co"], supervisor: "sup@tcroof.co", teamMembers: ["eng@tcroof.co"])
+        XCTAssertTrue(Permissions(role: .internalTeam, email: "eng@tcroof.co").can(.dailySign, on: job))
+        XCTAssertTrue(Permissions(role: .internalTeam, email: "sup@tcroof.co").can(.dailySign, on: job))
+        XCTAssertTrue(Permissions(role: .manager, email: "boss@tcroof.co").can(.dailySign, on: job))
+        XCTAssertFalse(Permissions(role: .internalTeam, email: "other@tcroof.co").can(.dailySign, on: job), "not on this job")
+        XCTAssertFalse(Permissions(role: .external, email: "con@x.co").can(.dailySign, on: job), "the contractor fills, never signs")
+        XCTAssertTrue(Permissions(role: .internalTeam, email: "other@tcroof.co").can(.dailySign, on: JobAccess(externals: ["con@x.co"])),
+                      "a job naming none of ours: any team member")
+    }
+
     func testViewOnlyCells() {
         let me = Permissions(role: .external, email: "contractor@example.com")
         XCTAssertFalse(me.can(.iclChecklist, on: job))

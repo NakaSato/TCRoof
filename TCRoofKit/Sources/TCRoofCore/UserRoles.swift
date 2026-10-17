@@ -181,6 +181,13 @@ public struct Permissions: Equatable, Sendable {
     /// The job names this member: on its team, its supervisor, or an assigned external (`งานของฉัน`).
     public func isNamed(_ job: JobAccess?) -> Bool { isOnTeam(job) || isSupervisor(job) || isAssigned(job) }
 
+    /// The team's half of `daily.sign`: on the job's team, its supervisor, or the job names none of ours (firestore.rules
+    /// `signsFor`). No job to ask about: true.
+    public func signsDaily(_ job: JobAccess?) -> Bool {
+        guard let job else { return true }
+        return !job.hasOwners || isOnTeam(job) || isSupervisor(job)
+    }
+
     /// Whether a job's news (a daily report sent, a test result, an issue) is announced on this member's device: a
     /// manager hears every job's; the others hear a job's when it names them, or when it names none of ours.
     public func hearsNews(_ job: JobAccess?) -> Bool {
@@ -197,8 +204,10 @@ public struct Permissions: Equatable, Sendable {
     /// - an external member acts only on the jobs assigned to them (signing ones included: the job's signing
     ///   engineer is an assigned external);
     /// - final acceptance (`handover.final_signoff`) is signed by the manager or the job's supervising engineer;
-    /// - the team's other conditions (our engineer signs daily reports, an engineer with a licence certifies,
-    ///   change requests and punch-list steps) are left to the person: the app doesn't know licences.
+    /// - a daily report (`daily.sign`) is signed by the job's own people: its team members and supervisor, or, on a job
+    ///   that names none of ours, any team member (`signsDaily`);
+    /// - the team's other conditions (an engineer with a licence certifies, change requests and punch-list steps) are
+    ///   left to the person: the app doesn't know licences.
     public func can(_ capability: Capability, on job: JobAccess? = nil) -> Bool {
         switch capability.access(role) {
         case .allow: return true
@@ -206,6 +215,7 @@ public struct Permissions: Equatable, Sendable {
         case .conditional:
             if role == .external { return isAssigned(job) }
             if capability == .finalSignoff { return isSupervisor(job) }
+            if capability == .dailySign { return signsDaily(job) }
             return true
         }
     }

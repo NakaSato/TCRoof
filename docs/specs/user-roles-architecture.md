@@ -107,7 +107,7 @@ function readsMine() { return isExternal() && signedInEmail() in resource.data.e
 - **`members/{email}`**: Read allowed for self or managers; write allowed only for managers (managers cannot delete or edit their own document).
 - **`jobContacts/{doc}`**: Customer phone & address isolated to this sub-collection; external members have zero read access.
 - **`jobs/{doc}`**: The team creates and edits jobs; only a manager deletes one. External members can only update `iecReport` and `iecState`, and only while the test is `open` (`open` -> `sent`), never close or reopen it. Team devices drop a closing result the document's `iecState` doesn't record (`IECReport.trusting`).
-- **`installLogs/{doc}`** (daily reports): External members create and edit the reports of their jobs, but never set or remove `engineerSignedAt` or `inspectorAckAt`, and never delete one.
+- **`installLogs/{doc}`** (daily reports): External members create and edit the reports of their jobs, but never set or remove `engineerSignedAt` or `inspectorAckAt`, and never delete one. A team member sets them only on a job that names them (team member or supervisor) or names none of ours; a manager on any job (`signsFor`, `daily.sign`). Any team member may keep or clear them, as editing a signed report does.
 - **`devices`, `surveyForms`, `pwaSurveys`**: External members write only the documents of their jobs, and never change who a document is open to (`externals`).
 - **`photos/{doc}`**: An external member's photo must point at a daily report of their own job or at their job's IEC test; never at an ICL.
 - **`inspections/{doc}`** (ICL): External members read theirs, never write.

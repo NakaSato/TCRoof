@@ -56,6 +56,21 @@ service cloud.firestore {
       return logID is string
         && listsMe(get(/databases/$(database)/documents/installLogs/$(logID)).data);
     }
+    // The signed-in team member signs the daily reports of this job: on its team, its supervisor, or the job names
+    // none of ours (Permissions.signsDaily).
+    function signsFor(jobID) {
+      let job = get(/databases/$(database)/documents/jobs/$(jobID)).data;
+      let team = job.get('teamMembers', []);
+      let supervisor = job.get('supervisor', '');
+      return jobID is string
+        && ((team.size() == 0 && (supervisor == '' || supervisor == null))
+            || signedInEmail() in team || supervisor == signedInEmail());
+    }
+    // A daily report's engineer signature and inspector acknowledgement are as they were, or cleared.
+    function signaturesKeptOrCleared() {
+      return (unchanged('engineerSignedAt') || request.resource.data.get('engineerSignedAt', null) == null)
+        && (unchanged('inspectorAckAt') || request.resource.data.get('inspectorAckAt', null) == null);
+    }
     function unchanged(field) {
       return request.resource.data.get(field, null) == (resource == null ? null : resource.data.get(field, null));
     }
@@ -116,10 +131,14 @@ service cloud.firestore {
       allow read, write: if isTeam();
     }
 
-    // Daily reports: the contractor's foreman fills them; only our engineer signs or records the inspector.
+    // Daily reports: the contractor's foreman fills them; only our engineer signs or records the inspector, and on a job
+    // that names its people (teamMembers, supervisor) only they or a manager do (daily.sign). Anyone of the team may keep
+    // a signature or clear it, as editing a signed report does.
     match /installLogs/{doc} {
       allow read: if isTeam() || readsMine();
-      allow write: if isTeam();
+      allow create, update: if isTeam() && (isManager() || signaturesKeptOrCleared()
+        || signsFor(request.resource.data.get('jobID', null)));
+      allow delete: if isTeam();
       allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID)
         && unchanged('engineerSignedAt') && unchanged('inspectorAckAt');
     }

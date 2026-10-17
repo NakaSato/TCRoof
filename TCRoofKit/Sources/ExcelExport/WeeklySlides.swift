@@ -192,8 +192,11 @@ public enum WeeklySlides {
 
         func labour() -> [Slide] {
             let men = RoutineReport.manDays(reports), tools = RoutineReport.toolDays(reports)
-            let menRows = men.map { [$0.name, "\($0.days)"] } + (men.isEmpty ? [] : [["รวม", "\(men.reduce(0) { $0 + $1.days })"]])
-            let toolRows = tools.map { [$0.name, "\($0.days)"] }
+            // typed and split: one long untyped expression can be too slow for the type checker
+            let total = men.reduce(0) { $0 + $1.days }
+            var menRows: [[String]] = men.map { [$0.name, String($0.days)] }
+            if !men.isEmpty { menRows.append(["รวม", String(total)]) }
+            let toolRows: [[String]] = tools.map { [$0.name, String($0.days)] }
             let parts = max(Self.chunks(menRows, 10).count, Self.chunks(toolRows, 10).count, 1)
             let unconfirmed = reports.filter { !$0.crewConfirmed && $0.crewTotal > 0 }.count
             return (0..<parts).map { i in

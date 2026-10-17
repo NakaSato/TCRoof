@@ -28,9 +28,11 @@ final class InstallTrackingUITests: XCTestCase {
         return XCTWaiter().wait(for: [e], timeout: timeout) == .completed
     }
 
-    /// Back from a pushed screen (its iPad header's `กลับหน้าหลัก`) to the page.
+    /// Back from a pushed screen (its iPad header's `กลับหน้าหลัก`, or the one-page daily report's `ย้อนกลับ`) to the page.
     func back(_ app: XCUIApplication) {
-        app.buttons.matching(NSPredicate(format: "label == %@", "กลับหน้าหลัก")).firstMatch.tap()
+        let button = app.buttons.matching(NSPredicate(format: "label IN %@", ["กลับหน้าหลัก", "ย้อนกลับ"])).firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 8), "the pushed screen should have a back button")
+        button.tap()
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: 8), "back should return to the page")
     }
 

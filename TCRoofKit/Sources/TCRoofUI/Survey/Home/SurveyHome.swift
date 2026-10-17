@@ -49,6 +49,8 @@ struct SurveyHomeView: View {
     @State var search = ""
     @State var filter = Filter.all
     @State var sort = Sort.updated
+    /// `งานของฉัน`: only the surveys of jobs that name the signed-in member (`PWAOverviewHost.mine`); kept between launches.
+    @AppStorage("solarSurvey.onlyMine") var onlyMine = false
     @State var showNew = false
     @State var open: Opening?
     @AppStorage("solarSurvey.lastOpened") var lastOpened = ""
@@ -110,12 +112,18 @@ struct SurveyHomeView: View {
     /// The tab's jobs matching the search.
     var searched: [Job] {
         let q = search.trimmingCharacters(in: .whitespaces)
-        let jobs = model.jobs(in: tab)
+        let jobs = mineOn ? model.jobs(in: tab).filter(isMine) : model.jobs(in: tab)
         guard !q.isEmpty else { return jobs }
         return jobs.filter { j in
             [j.docNo, j.projectName, j.values.text("address"), j.values.text("coordinator"), j.values.text("engineer")].contains { $0.localizedCaseInsensitiveContains(q) }
         }
     }
+
+    /// `งานของฉัน` is on and the host knows whose jobs are whose.
+    var mineOn: Bool { onlyMine && host.mine != nil }
+
+    /// A survey linked to an app job that names the signed-in member.
+    func isMine(_ job: Job) -> Bool { job.jobSyncID.map { host.mine?.contains($0) == true } ?? false }
 
     var shown: [Job] {
         let list = tab == .survey ? searched.filter { matches($0, filter) } : searched

@@ -20,6 +20,7 @@ struct PWARoot: View {
     /// iPad: the dock over this stack (`PadTabs`).
     @Environment(PadDock.self) private var dock: PadDock?
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
 
     var body: some View {
         SolarSurveyEntryView()
@@ -82,7 +83,8 @@ struct PWARoot: View {
             openPlan: { showPlan = true },
             planBody: { search in AnyView(PWAPlanPhoneView(padSearch: search)) },
             unread: bell.unread,
-            openNotifications: { showNotifications.toggle() })
+            openNotifications: { showNotifications.toggle() },
+            mine: jobs.mine(permissions))
     }
 
     /// `-surveyHomeDemo maintenance`: the example stations are no jobs, so a row opens the first PWA station.

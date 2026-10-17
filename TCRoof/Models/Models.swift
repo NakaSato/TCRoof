@@ -170,6 +170,9 @@ final class Job {
     var externalsRaw: String?
     /// Email of the internal engineer supervising the job (ผู้ควบคุมงาน), who may sign its final acceptance.
     var supervisorEmail: String?
+    /// Emails of the team (internal) members working on the job, one per line (`job.assign_team`): `งานของฉัน` and
+    /// who hears the job's news first. Not the install crew (`team`). Optional for the same reason.
+    var teamMembersRaw: String?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -200,8 +203,18 @@ final class Job {
         }
     }
 
-    /// Who the job is open to, for `Permissions.can`.
-    var access: JobAccess { JobAccess(externals: externals, supervisor: supervisorEmail) }
+    /// Team members working on the job, lowercased, without blanks or repeats.
+    var teamMembers: [String] {
+        get { (teamMembersRaw ?? "").split(separator: "\n").map(String.init) }
+        set {
+            var seen = Set<String>()
+            let list = newValue.map(Permissions.normalized).filter { !$0.isEmpty && seen.insert($0).inserted }
+            teamMembersRaw = list.isEmpty ? nil : list.joined(separator: "\n")
+        }
+    }
+
+    /// Who the job is open to and whose it is, for `Permissions`.
+    var access: JobAccess { JobAccess(externals: externals, supervisor: supervisorEmail, teamMembers: teamMembers) }
 
     var team: Team {
         get { Team(rawValue: teamRaw) ?? .t1 }
@@ -570,4 +583,12 @@ final class DocumentAsset {
 extension Sequence where Element == Job {
     /// The stations of the PWA module: the jobs set to งาน PWA.
     var pwaStations: [Job] { filter { $0.kind == .pwa } }
+}
+
+extension Array where Element == Job {
+    /// `งานของฉัน`: the sync ids of the jobs that name the signed-in member (`Permissions.isNamed`); nil before sign-in.
+    func mine(_ permissions: Permissions) -> Set<String>? {
+        guard !permissions.email.isEmpty else { return nil }
+        return Set(filter { permissions.isNamed($0.access) }.compactMap(\.syncID))
+    }
 }

@@ -111,11 +111,11 @@ extension SurveyHomeView {
     }
 
     /// A type other than `ทั้งหมด`, a status other than all, or a sort other than `แก้ไขล่าสุด`.
-    var isFiltered: Bool { tab != .survey || filter != .all || sort != .updated }
+    var isFiltered: Bool { tab != .survey || filter != .all || sort != .updated || mineOn }
 
     private var filterLabel: String {
         switch tab {
-        case .survey: "กรองและเรียงงาน: \(filter.heading) \(shown.count) งาน · เรียง \(sort.title)"
+        case .survey: "กรองและเรียงงาน: \(mineOn ? "งานของฉัน · " : "")\(filter.heading) \(shown.count) งาน · เรียง \(sort.title)"
         case .install: "กรองงาน: ติดตั้ง \(installStations.count) สถานี"
         case .maintenance: "กรองงาน: บำรุงรักษา \(maintenanceStations.count) สถานี"
         }
@@ -177,7 +177,7 @@ extension SurveyHomeView {
     }
 
     private var clearButton: some View {
-        Button("ล้าง") { filter = .all; sort = .updated; select(.survey) }
+        Button("ล้าง") { filter = .all; sort = .updated; onlyMine = false; select(.survey) }
             .font(.sarabunFixed(13, .bold)).foregroundStyle(isFiltered ? Theme.primary : Theme.chevron)
             .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
             .buttonStyle(.plain)
@@ -197,6 +197,7 @@ extension SurveyHomeView {
             popoverSection("ประเภทงาน") { typeRows }
             // the overviews have their own row filters
             if tab == .survey {
+                if host.mine != nil { popoverSection("ผู้รับผิดชอบ") { mineRow } }
                 popoverSection("สถานะงาน") { statusTiles }
                 popoverSection("เรียงตาม") { sortSegments }
                 Button { showFilter = false } label: {
@@ -218,6 +219,11 @@ extension SurveyHomeView {
             typeRows
             // the overviews have their own row filters
             if tab == .survey {
+                if host.mine != nil {
+                    listDivider
+                    listTitle("ผู้รับผิดชอบ").padding(.top, 6).padding(.bottom, 2)
+                    mineRow
+                }
                 listDivider
                 HStack(spacing: 0) {
                     listTitle("สถานะงาน")
@@ -276,6 +282,15 @@ extension SurveyHomeView {
                 filterRow(title, count: count, on: tab == stage, label: "\(title) \(count) \(unit)") { select(stage); showFilter = false }
             }
         }
+    }
+
+    /// `งานของฉัน`: a row that turns the filter on and off, with how many of the surveys are mine.
+    private var mineRow: some View {
+        let n = model.jobs(in: .survey).filter(isMine).count
+        return filterRow("งานของฉัน", count: n, on: onlyMine, label: onlyMine ? "งานของฉัน \(n) งาน · เปิดอยู่" : "งานของฉัน \(n) งาน") {
+            onlyMine.toggle()
+        }
+        .accessibilityIdentifier("pwaHome.mine")
     }
 
     /// iPad: the statuses as rows.

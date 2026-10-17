@@ -25,6 +25,7 @@ struct PWAPhoneTabs: View {
     @State private var dailies: Job?
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.permissions) private var permissions
 
     private var stations: [Job] { jobs.pwaStations }
     private var installing: [Job] { jobs.pwaInstalling }
@@ -95,7 +96,8 @@ struct PWAPhoneTabs: View {
             installStations: installing.map(\.installSummary),
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
-            openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first })
+            openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
+            mine: jobs.mine(permissions))
     }
 
     private var items: [TCTabItem<PWATab>] {

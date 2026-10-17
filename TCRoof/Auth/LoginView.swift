@@ -26,14 +26,10 @@ struct LoginView: View {
                             .frame(width: panelWidth)
                     }
                 } else {
-                    VStack(spacing: 0) {
-                        hero(wide: false)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        panel(wide: false)
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
-                                // the shortest sheet: the help or an error then covers the field, not moves the roof
-                                if sheetHeight == 0 || h < sheetHeight { sheetHeight = h }
-                            }
+                    // large text sizes: the page scrolls rather than push the sheet off the screen
+                    ViewThatFits(in: .vertical) {
+                        phoneStack
+                        ScrollView { phoneStack }.scrollBounceBehavior(.basedOnSize)
                     }
                 }
             }
@@ -47,6 +43,18 @@ struct LoginView: View {
         .environment(\.colorScheme, .light)
         .animation(.snappy, value: notice)
         .animation(.snappy, value: showsHelp)
+    }
+
+    private var phoneStack: some View {
+        VStack(spacing: 0) {
+            hero(wide: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            panel(wide: false)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
+                    // the shortest sheet: the help or an error then covers the field, not moves the roof
+                    if sheetHeight == 0 || h < sheetHeight { sheetHeight = h }
+                }
+        }
     }
 
     // MARK: Photo and brand
@@ -150,6 +158,7 @@ struct LoginView: View {
                 Text("ใช้บัญชี Google ที่ได้รับเชิญเข้าทีม")
                     .font(.sarabun(15, relativeTo: .subheadline))
                     .foregroundStyle(Theme.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let notice {
                 TCWarningBanner(notice.title, message: notice.message)

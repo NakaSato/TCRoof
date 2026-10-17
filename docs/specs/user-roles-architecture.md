@@ -47,7 +47,7 @@ flowchart TD
 
 ### Layer 1: Core Models (`TCRoofCore/UserRoles.swift`)
 - **`UserRole`**: `manager`, `internal` (`.internalTeam`), `external`. Default fallback for legacy documents without a role is `.internalTeam`.
-- **`Capability`**: 34 granular capabilities across 4 groups (Jobs & Plan, Survey/Design, Customer Docs/Permits, Site/Contractor, System/Users).
+- **`Capability`**: 37 granular capabilities across 5 groups (Jobs & Plan, Survey/Design, Customer Docs/Permits, Site/Contractor, System/Users).
 - **`RoleAccess`**: `.allow`, `.view`, `.deny`, `.conditional`, `.disabled` (e.g. BOQ features are disabled for all roles).
 - **`Permissions`**: Evaluates `can(capability, on: job.access)`. Resolves conditional access:
   - `.external` can only act on jobs if their email is in `job.externals`.
@@ -64,7 +64,7 @@ flowchart TD
 Every view queries `@Environment(\.permissions) private var permissions`:
 - **Member Directory**: `if permissions.can(.usersManage)` in `PhoneSettings.swift`.
 - **Job Assignment**: `if permissions.can(.assignExternal, on: job.access)` in `JobAccessCard.swift`.
-- **Job Deletion**: `if permissions.can(.jobDelete)` in `JobViews.swift`.
+- **Job Deletion**: manager only (`.jobDelete`). The app has no delete-job button yet; when one is added it must check `permissions.can(.jobDelete)`. `firestore.rules` already refuses a delete from anyone but a manager.
 - **Daily Report Sign-off**: Contractor fills (`.dailyFill`), internal engineer signs (`.dailySign`).
 - **IEC 62446**: Contractor submits to team (`.iecFillSubmit`), internal engineer closes (`.iecClose`).
 
@@ -94,7 +94,16 @@ function readsMine() { return isExternal() && signedInEmail() in resource.data.e
 ```
 - **`members/{email}`**: Read allowed for self or managers; write allowed only for managers (managers cannot delete or edit their own document).
 - **`jobContacts/{doc}`**: Customer phone & address isolated to this sub-collection; external members have zero read access.
-- **`jobs/{doc}`**: External members can only update `iecReport` and `iecState` (`open` -> `sent`), never close.
+- **`jobs/{doc}`**: The team creates and edits jobs; only a manager deletes one. External members can only update `iecReport` and `iecState`, and only while the test is `open` (`open` -> `sent`), never close or reopen it. Team devices drop a closing result the document's `iecState` doesn't record (`IECReport.trusting`).
+- **`installLogs/{doc}`** (daily reports): External members create and edit the reports of their jobs, but never set or remove `engineerSignedAt` or `inspectorAckAt`, and never delete one.
+- **`devices`, `surveyForms`, `pwaSurveys`**: External members write only the documents of their jobs, and never change who a document is open to (`externals`).
+- **`photos/{doc}`**: An external member's photo must point at a daily report of their own job or at their job's IEC test; never at an ICL.
+- **`inspections/{doc}`** (ICL): External members read theirs, never write.
+- **`pwaSurveyRevisions/{doc}`** (issued REVs): The team's only; written once, deleted by a team member only once its survey is gone, or by a manager.
+- **`feedAcks/{doc}`**: Any member adds or removes only their own email.
+- **`config/{doc}`**: Read by every member, written only in the Firebase console.
+
+Tests: `tools/firestore-rules-tests` (`npm install && npm test`) covers each role, a new user from invite to removal, and the IEC hand-over.
 
 ---
 
@@ -102,8 +111,9 @@ function readsMine() { return isExternal() && signedInEmail() in resource.data.e
 
 File storage on Google Drive is separated according to corporate data governance:
 
-1. **Internal Team & Manager**:
+1. **Internal Team & Manager** signed in with full Drive access (`GoogleAuth.scope` is `drive`; `hasFullDrive`):
    - Files are stored directly in the **Company Center Drive** (`DriveConfig.centerFolderID`).
+   - A team account still signed in under the older `drive.file` access uploads to its own `TCRoof Projects/<job>/`, as a contractor does, until it signs in again.
    - Automatically generates structured handover folders:
      - `1. เอกสารส่งมอบ/` (PWA Handover folders)
      - `2. เอกสารระหว่างก่อสร้าง/` (Daily logs, test reports, inspection photos)
@@ -127,11 +137,12 @@ File storage on Google Drive is separated according to corporate data governance
    ↓ (Contractor taps 'ส่งผลให้ทีม')
 [Sent] (Locked read-only; waiting for engineer inspection)
    ↓ (Internal engineer inspects and approves)
-[Closed] (Locked permanently; auto-books Task 3.1 Pre-Commissioning in MP to 100%)
-   ↳ or [Reopened] / [Sent Back] if remediation is needed
+[Closed] (Locked; books Task 3.1 Pre-Commissioning in MP at 100%)
+   ↳ [Sent] can go back to [Open] with ส่งกลับให้แก้; [Closed] reopens to [Open] with แก้ไข (internal team only)
 ```
 
 ### 4.3 Shared iPad on Site
 For shared iPads in the field:
 - **ตั้งค่า › สลับบัญชี**: Flushes pending offline sync to the cloud, signs out of Google Session, and allows the next user to sign in with their personal Google account.
 - The UI and visible data dynamically reload based on the new user's role.
+- When the next account is external, the previous account's records are removed from the iPad before sync starts (`LocalData`), so a contractor never sees other jobs; a team account keeps them.

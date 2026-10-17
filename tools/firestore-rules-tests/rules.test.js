@@ -250,6 +250,27 @@ test('the team names who works on a job; a contractor can\'t change it', async (
   await assertFails(getDoc(doc(d, 'jobs', 'theirs')));
 });
 
+test('the team directory: the team reads it, each writes their own, a manager anyone\'s', async () => {
+  // each team member lists themselves, with a name
+  await assertSucceeds(setDoc(doc(db(TEAM), 'directory', TEAM), { email: TEAM, name: 'สมชาย' }));
+  await assertSucceeds(setDoc(doc(db(BOSS), 'directory', BOSS), { email: BOSS }));
+  await assertSucceeds(getDocs(collection(db(TEAM), 'directory')));
+  // an external member neither reads nor lists themselves
+  await assertFails(getDocs(collection(db(CON), 'directory')));
+  await assertFails(setDoc(doc(db(CON), 'directory', CON), { email: CON }));
+  // a team member writes only their own; a manager writes any team member's, never an outsider's or an external's
+  await assertFails(setDoc(doc(db(TEAM), 'directory', BOSS), { email: BOSS, name: 'x' }));
+  await assertSucceeds(setDoc(doc(db(BOSS), 'directory', TEAM), { email: TEAM }, { merge: true }));
+  await assertFails(setDoc(doc(db(BOSS), 'directory', CON), { email: CON }));
+  await assertFails(setDoc(doc(db(BOSS), 'directory', 'nobody@gmail.com'), { email: 'nobody@gmail.com' }));
+  // only the email and a name, the email being the entry's own
+  await assertFails(setDoc(doc(db(TEAM), 'directory', TEAM), { email: TEAM, role: 'manager' }));
+  await assertFails(setDoc(doc(db(TEAM), 'directory', TEAM), { email: BOSS }));
+  // a manager removes an entry; a team member can't
+  await assertFails(deleteDoc(doc(db(TEAM), 'directory', TEAM)));
+  await assertSucceeds(deleteDoc(doc(db(BOSS), 'directory', TEAM)));
+});
+
 test('an issued REV goes only with its survey, or by a manager', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const d = ctx.firestore();

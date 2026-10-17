@@ -271,6 +271,30 @@ test('the team directory: the team reads it, each writes their own, a manager an
   await assertSucceeds(deleteDoc(doc(db(BOSS), 'directory', TEAM)));
 });
 
+test('a job that names its people: only they or a manager sign its daily reports', async () => {
+  const ENG = 'eng@tcroof.co';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const d = ctx.firestore();
+    await setDoc(doc(d, 'members', ENG), { role: 'internal' });
+    await updateDoc(doc(d, 'jobs', 'mine'), { teamMembers: [ENG], supervisor: '' });
+    await setDoc(doc(d, 'installLogs', 'signed'), { jobID: 'mine', externals: [CON], report: '{}', engineerSignedAt: 5 });
+  });
+  // not on the job: no signing, but editing (keeping or clearing the signature) still goes
+  await assertFails(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { engineerSignedAt: 1 }));
+  await assertFails(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { inspectorAckAt: 1 }));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { report: '{"a":1}' }));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'signed'), { report: '{"b":1}' }));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'signed'), { report: '{"c":1}', engineerSignedAt: null }));
+  await assertFails(setDoc(doc(db(TEAM), 'installLogs', 'new'), { jobID: 'mine', report: '{}', engineerSignedAt: 1 }));
+  // the job's team member, the manager, and the supervisor once named, sign
+  await assertSucceeds(updateDoc(doc(db(ENG), 'installLogs', 'log1'), { engineerSignedAt: 2 }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'installLogs', 'log1'), { inspectorAckAt: 3 }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'mine'), { supervisor: TEAM }));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { engineerSignedAt: 4 }));
+  // a job naming none of ours: any team member (the first test signs log1 so)
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'log2'), { engineerSignedAt: 5 }));
+});
+
 test('an issued REV goes only with its survey, or by a manager', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const d = ctx.firestore();

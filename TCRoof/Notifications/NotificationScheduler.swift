@@ -102,12 +102,17 @@ private struct NotificationScheduler: ViewModifier {
         .sorted { $0.id < $1.id }
     }
 
+    /// The jobs whose reminders this member hears (`Permissions.hearsNews`): the ones naming them on the team, as
+    /// supervisor or as an assigned external, those naming none of ours, and every job for a manager. Install days, the
+    /// MP plan, the ERC flow and the routine reports follow the job's people, as the feed does.
+    private var heard: [Job] { jobs.filter { permissions.hearsNews($0.access) } }
+
     /// Routine-report reminders of the stations being installed (docs/specs/routine-reports-swift.md §5): 17:00 when today's
     /// daily report isn't signed, Friday 15:00 when next week has no request.
     private func reportPlans(_: Int) -> [NotificationPlan] {
         guard reportOn else { return [] }
         let now = Date.now, cal = RoutineReport.calendar
-        return jobs.filter { $0.status == .installing || $0.installInterval.contains(now) }.flatMap { job -> [NotificationPlan] in
+        return heard.filter { $0.status == .installing || $0.installInterval.contains(now) }.flatMap { job -> [NotificationPlan] in
             let key = job.syncID ?? job.code
             let settings = job.routineSettings
             let daily = RoutineReportNotification.daily(jobKey: key, station: job.stationName, now: now,
@@ -136,7 +141,7 @@ private struct NotificationScheduler: ViewModifier {
     private func installPlans(_: Int) -> [NotificationPlan] {
         guard planOn else { return [] }
         let now = Date.now
-        return jobs.filter { $0.status != .completed && $0.installEnd.endOfDay > now }.flatMap { job in
+        return heard.filter { $0.status != .completed && $0.installEnd.endOfDay > now }.flatMap { job in
             InstallNotification.plans(jobKey: job.syncID ?? job.code, name: [job.code, job.projectName].filter { !$0.isEmpty }.joined(separator: " "),
                                       team: job.teamRaw, start: job.installStart, days: job.installDays, now: now)
         }
@@ -148,7 +153,7 @@ private struct NotificationScheduler: ViewModifier {
     private func mpPlans(_: Int) -> [NotificationPlan] {
         guard planOn else { return [] }
         let now = Date.now
-        return jobs.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
+        return heard.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
             let key = job.syncID ?? job.code
             let erc = job.stationContext.over200kVA ? job.stationDocs.erc.map {
                 ERCNotification.plans(jobKey: key, station: job.stationName, record: $0, context: job.ercContext, now: now)

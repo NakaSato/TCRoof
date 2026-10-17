@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import TCRoofUI
 import TCRoofCore
+import ExcelExport
 
 /// ภาพรวมทุกสถานี (docs/specs/master-schedule-swift.md §3.5): one row per PWA job with an MP plan, most behind first,
 /// with how many stations are behind and the progress averaged over the stations' kWp. Under them, the PWA
@@ -14,6 +15,11 @@ struct MPOverviewView: View {
     @State private var batch: Batch?
     @State private var importedCount: Int?
     struct Batch: Identifiable { let id = UUID(); let items: [MPBulkImportSheet.Item] }
+    /// นำเข้ารายชื่อสถานี: the PWA tracking workbook (`StationListImportSheet`). One file picker serves both imports.
+    @State private var pickingList = false
+    @State private var list: StationBatch?
+    @State private var listResult: String?
+    struct StationBatch: Identifiable { let id = UUID(); let name: String; let items: [StationListImportSheet.Item] }
 
     /// One station's figures to this week.
     struct Row: Identifiable {
@@ -80,23 +86,41 @@ struct MPOverviewView: View {
         .navigationTitle("แผน MP ทุกสถานี")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if permissions.can(.mpSetup) {
+            if permissions.can(.mpSetup) || permissions.can(.jobEdit) {
                 ToolbarItem(placement: .primaryAction) {
-                    Button { importing = true } label: { Label("นำเข้าไฟล์แผน", systemImage: "square.and.arrow.down.on.square") }
+                    Menu {
+                        if permissions.can(.mpSetup) {
+                            Button { pick(list: false) } label: { Label("นำเข้าไฟล์แผน", systemImage: "square.and.arrow.down.on.square") }
+                        }
+                        if permissions.can(.jobEdit) {
+                            Button { pick(list: true) } label: { Label("นำเข้ารายชื่อสถานี", systemImage: "list.bullet.rectangle") }
+                        }
+                    } label: { Label("นำเข้า", systemImage: "square.and.arrow.down.on.square") }
                 }
             }
         }
         .tcPadNavBar("แผน MP ทุกสถานี", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"]) {
+            if permissions.can(.jobEdit) {
+                TCButton("นำเข้ารายชื่อสถานี", systemImage: "list.bullet.rectangle", kind: .secondary) { pick(list: true) }
+            }
             if permissions.can(.mpSetup) {
-                TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary) { importing = true }
+                TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary) { pick(list: false) }
             }
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: MPWorkbookFlow.types, allowsMultipleSelection: true) { result in
-            guard case .success(let urls) = result, !urls.isEmpty else { return }
-            open(urls)
+        .fileImporter(isPresented: $importing, allowedContentTypes: MPWorkbookFlow.types, allowsMultipleSelection: !pickingList) { result in
+            guard case .success(let urls) = result, let first = urls.first else { return }
+            if pickingList { openList(first) } else { open(urls) }
         }
         .sheet(item: $batch) { b in
             MPBulkImportSheet(stations: jobs.pwaStations, items: b.items) { importedCount = $0 }
+        }
+        .sheet(item: $list) { b in
+            StationListImportSheet(stations: jobs.pwaStations, fileName: b.name, items: b.items) { created, filled in
+                listResult = "สร้างงานใหม่ \(created) สถานี · เติมข้อมูล \(filled) สถานี"
+            }
+        }
+        .alert(listResult ?? "", isPresented: Binding(get: { listResult != nil }, set: { if !$0 { listResult = nil } })) {
+            Button("ตกลง", role: .cancel) {}
         }
         .alert("นำเข้าแล้ว \(importedCount ?? 0) สถานี", isPresented: Binding(get: { importedCount != nil }, set: { if !$0 { importedCount = nil } })) {
             Button("ตกลง", role: .cancel) {}
@@ -109,11 +133,29 @@ struct MPOverviewView: View {
             try? await Task.sleep(for: .seconds(1))
             open(list.split(separator: "|").map { URL(fileURLWithPath: String($0)) })
         }
+        // `-stationListFile <path>` opens the check of the tracking workbook without the picker
+        .task {
+            guard list == nil, let path = UserDefaults.standard.string(forKey: "stationListFile") else { return }
+            try? await Task.sleep(for: .seconds(1))
+            openList(URL(fileURLWithPath: path))
+        }
         #endif
     }
 
     private func open(_ urls: [URL]) {
         batch = Batch(items: MPBulkImportSheet.items(urls, stations: jobs.pwaStations))
+    }
+
+    private func pick(list: Bool) {
+        pickingList = list
+        importing = true
+    }
+
+    private func openList(_ url: URL) {
+        switch StationListImportSheet.items(url, stations: jobs.pwaStations) {
+        case .success(let items): list = StationBatch(name: url.lastPathComponent, items: items)
+        case .failure(let f): listResult = f.message
+        }
     }
 
     // MARK: inspections and deadlines

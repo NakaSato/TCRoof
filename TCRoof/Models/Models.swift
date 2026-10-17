@@ -173,6 +173,9 @@ final class Job {
     /// Emails of the team (internal) members working on the job, one per line (`job.assign_team`): `งานของฉัน` and
     /// who hears the job's news first. Not the install crew (`team`). Optional for the same reason.
     var teamMembersRaw: String?
+    /// The station's position from the PWA tracking workbook (`StationList`); optional for the same reason.
+    var latitude: Double?
+    var longitude: Double?
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,

@@ -45,7 +45,7 @@ final class MPWorkbookUITests: XCTestCase {
         XCTAssertTrue(nothingDone.waitForExistence(timeout: 5))
 
         // book the week of 3 พ.ย. 2567: the first task planned then up 20%
-        app.buttons["อัปเดตสัปดาห์นี้"].firstMatch.tap()
+        app.buttons["อัปเดตสัปดาห์ที่เลือก"].firstMatch.tap()
         let stepper = app.steppers.firstMatch
         XCTAssertTrue(stepper.waitForExistence(timeout: 10), "the week should have tasks to book")
         let increment = stepper.buttons.element(boundBy: 1)

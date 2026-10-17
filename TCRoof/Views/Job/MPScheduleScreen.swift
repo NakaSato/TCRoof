@@ -12,7 +12,7 @@ struct MPScheduleScreen: View {
     /// Only the team sets up the plan (`mp.setup`) and books progress by hand (`mp.progress`).
     @Environment(\.permissions) private var permissions
     @Environment(\.modelContext) private var context
-    @State private var week = MasterSchedule.weekStart(.now)
+    @State private var week: Date
     @State private var monthly = false
     @State private var showProgress = false
     @State private var showSetup = false
@@ -68,6 +68,8 @@ struct MPScheduleScreen: View {
                     .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์ที่เลือก หนึ่งหน้า A3")
             }
         }
+        // a plan made or imported here opens on its own weeks
+        .onChange(of: job.scheduleInputJSON) { _, _ in openOnPlan() }
         .sheet(isPresented: $showProgress) { MPProgressSheet(job: job, week: week) }
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
         .mpWorkbook(workbook, job: job)
@@ -151,7 +153,7 @@ struct MPScheduleScreen: View {
                 Spacer()
                 if permissions.can(.mpProgress) {
                     Button { showProgress = true } label: {
-                        Label(isPhone ? "อัปเดต" : "อัปเดตสัปดาห์นี้", systemImage: "square.and.pencil").font(.sarabun(17, .semibold, relativeTo: .body))
+                        Label(isPhone ? "อัปเดต" : isThisWeek ? "อัปเดตสัปดาห์นี้" : "อัปเดตสัปดาห์ที่เลือก", systemImage: "square.and.pencil").font(.sarabun(17, .semibold, relativeTo: .body))
                             .lineLimit(1).frame(minHeight: touchMin)
                     }
                     .buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -183,6 +185,22 @@ struct MPScheduleScreen: View {
         } catch { exportError = error.localizedDescription }
     }
 
+    init(job: Job) {
+        self.job = job
+        _week = State(initialValue: job.scheduleInput.map { MPModel.openingWeek(input: $0, actual: job.scheduleActual) }
+                      ?? MasterSchedule.weekStart(.now))
+    }
+
+    private func openOnPlan() {
+        guard let input = job.scheduleInput else { return }
+        #if DEBUG
+        if UserDefaults.standard.string(forKey: "mpWeek") != nil { return }
+        #endif
+        week = MPModel.openingWeek(input: input, actual: job.scheduleActual)
+    }
+
+    private var isThisWeek: Bool { week == MasterSchedule.weekStart(.now) }
+
     private func shift(_ days: Int) {
         week = MasterSchedule.calendar.date(byAdding: .day, value: days, to: week) ?? week
     }
@@ -209,6 +227,19 @@ struct MPModel {
         let booked = actual.points.values.flatMap(\.keys).compactMap(MPModel.date(fromKey:))
         let dates = plan.compactMap(\.start) + plan.compactMap(\.end) + booked + [week]
         weeks = MasterSchedule.weeks(from: dates.min() ?? week, to: dates.max() ?? week)
+    }
+
+    /// The week the screen opens on: this week while the plan runs; before it, its first week; after it, its last week
+    /// or the last week with booked progress, so an old plan (an imported 2567 workbook) opens on its own weeks.
+    static func openingWeek(input: MasterSchedule.Input, actual: MasterSchedule.Actual, today: Date = .now) -> Date {
+        let plan = MasterSchedule.plan(input)
+        let booked = actual.points.filter { !$0.value.isEmpty }.values.flatMap(\.keys).compactMap(date(fromKey:))
+        let now = MasterSchedule.weekStart(today)
+        guard let first = (plan.compactMap(\.start) + booked).min(),
+              let last = (plan.compactMap(\.end) + booked).max() else { return now }
+        if now < MasterSchedule.weekStart(first) { return MasterSchedule.weekStart(first) }
+        if now > MasterSchedule.weekStart(last) { return MasterSchedule.weekStart(last) }
+        return now
     }
 
     func weekIndex(_ w: Date) -> Int? { weeks.firstIndex(of: MasterSchedule.weekStart(w)) }

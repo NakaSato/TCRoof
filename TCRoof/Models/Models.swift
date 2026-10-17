@@ -147,11 +147,13 @@ final class Job {
     /// Encoded `MasterSchedule.Input` and `MasterSchedule.Actual`.
     var scheduleInputJSON: String?
     var scheduleActualJSON: String?
-    /// The station's own plan workbook as imported (`MPWorkbook`), kept whole so export writes into it; it stays on the
-    /// device that imported it (the plan it gave travels in `scheduleInputJSON`).
+    /// The station's own plan workbook as imported (`MPWorkbook`), kept whole so export writes into it. It reaches the
+    /// other devices through the job's Drive folder (`PhotoSync`): nil here while `scheduleWorkbookDriveID` waits to download.
     @Attribute(.externalStorage) var scheduleWorkbook: Data?
     /// Its file name, which the export keeps.
     var scheduleWorkbookName: String?
+    /// Google Drive file id of `scheduleWorkbook` once uploaded; nil for a file imported here and not uploaded yet.
+    var scheduleWorkbookDriveID: String?
     // Routine reports (docs/specs/routine-reports-swift.md §2.2–2.3); optional for the same reason.
     /// Encoded `RoutineReport.Settings`.
     var routineSettingsJSON: String?
@@ -240,6 +242,11 @@ final class Job {
         let diff = Calendar.current.dateComponents([.day], from: installStart.startOfDay, to: date.startOfDay).day ?? -1
         return (0..<max(installDays, 1)).contains(diff) ? diff + 1 : nil
     }
+
+    /// The plan workbook is on Drive and not on this device yet.
+    var scheduleWorkbookDownloading: Bool { scheduleWorkbookDriveID != nil && scheduleWorkbook == nil }
+    /// Imported here and not on Drive yet: a record from elsewhere must not replace it.
+    var scheduleWorkbookUnsent: Bool { scheduleWorkbookDriveID == nil && scheduleWorkbook != nil }
 
     /// The MP plan's dates and flag; setting it also moves the install window so the Plan calendar agrees.
     var scheduleInput: MasterSchedule.Input? {

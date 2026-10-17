@@ -1,12 +1,14 @@
 import Foundation
 import SwiftData
 import TCRoofUI
+import ExcelExport
 
 /// Moves the app's photos (daily reports, the ICL, the IEC 62446 test) through the job's Google Drive folder, so every
 /// device has them: a photo taken here uploads a few seconds after it is saved and then syncs as a `photos` record
 /// (`CloudSync`), and a photo received that way downloads here. Survey photos have their own (`SurveyModel.autoUploadPhotos`);
 /// both follow the survey setting `ซิงก์รูปขึ้น Google Drive อัตโนมัติ`. Every device reads the photos from the Drive of the
 /// account that took them, so a teammate on another Google account needs that `TCRoof Projects` folder shared.
+/// A station's MP plan workbook (`Job.scheduleWorkbook`) travels the same way, its Drive id on the job record.
 @MainActor
 final class PhotoSync {
     static let shared = PhotoSync()
@@ -58,6 +60,7 @@ final class PhotoSync {
             var failed = false
             do { try await self?.download(context, survey) } catch { failed = true; print("PhotoSync: download: \(error.localizedDescription)") }
             do { try await self?.upload(context, survey) } catch { failed = true; print("PhotoSync: upload: \(error.localizedDescription)") }
+            do { try await self?.workbooks(context, survey) } catch { failed = true; print("PhotoSync: workbooks: \(error.localizedDescription)") }
             guard let self else { return }
             self.running = nil
             // offline or a Drive hiccup: try again in a minute
@@ -123,4 +126,32 @@ final class PhotoSync {
             }
         }
     }
+
+    /// MP plan workbooks: one imported here goes up into the job's `แผนงาน MP` folder, one imported elsewhere comes down.
+    private func workbooks(_ context: ModelContext, _ survey: SurveyModel) async throws {
+        let jobs = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.scheduleWorkbookName != nil }))) ?? []
+        for job in jobs where paused == 0 {
+            if job.scheduleWorkbookDownloading, let id = job.scheduleWorkbookDriveID {
+                let data = try await survey.driveDownload(id)
+                // replaced while it downloaded: the next pass takes the new one
+                guard !job.isDeleted, job.scheduleWorkbookDriveID == id else { continue }
+                job.scheduleWorkbook = data
+                try? context.save()
+            } else if job.scheduleWorkbookUnsent, let data = job.scheduleWorkbook {
+                let route = DriveRoute(survey: survey)
+                let folder = try await route.jobFolder(job)
+                if job.driveFolderURL == nil { job.driveFolderURL = folder.url.absoluteString }
+                let sub = try await survey.driveSubfolder(route.construction([Self.workbookFolder]), under: folder.id)
+                let name = MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName)
+                let mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                let id = try await survey.driveUpload(DriveUpload(name: name, data: data, mimeType: mime), to: sub)
+                // another file imported while this one uploaded: it goes up next pass
+                guard !job.isDeleted, job.scheduleWorkbook == data else { continue }
+                job.scheduleWorkbookDriveID = id
+                try? context.save()
+            }
+        }
+    }
+
+    static let workbookFolder = "แผนงาน MP"
 }

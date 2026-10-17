@@ -71,6 +71,8 @@ final class MPWorkbookFlow {
         }
         job.scheduleWorkbook = p.data
         job.scheduleWorkbookName = p.name
+        // uploads to the job's Drive folder on the save (`PhotoSync`), then the other devices download it
+        job.scheduleWorkbookDriveID = nil
         try? context.save()
     }
 
@@ -157,7 +159,8 @@ struct MPWorkbookMenuItems: View {
             Button { flow.startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)…", systemImage: "square.and.arrow.down") }
         }
         Button { flow.export(job) } label: {
-            Label(job.scheduleWorkbook == nil ? "ส่งออกไฟล์แผน (นำเข้าไฟล์ก่อน)" : "ส่งออกไฟล์แผน (Excel)", systemImage: "square.and.arrow.up")
+            Label(job.scheduleWorkbookDownloading ? "ส่งออกไฟล์แผน (กำลังดาวน์โหลดจาก Drive…)"
+                  : job.scheduleWorkbook == nil ? "ส่งออกไฟล์แผน (นำเข้าไฟล์ก่อน)" : "ส่งออกไฟล์แผน (Excel)", systemImage: "square.and.arrow.up")
         }
         .disabled(job.scheduleWorkbook == nil || job.scheduleInput == nil)
     }

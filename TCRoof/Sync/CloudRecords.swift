@@ -68,6 +68,8 @@ extension Job: CloudSynced {
         var mpNumber: Int?
         var inverterKW: Double?
         var scheduleInput, scheduleActual: String?
+        /// The plan workbook on Drive (`Job.scheduleWorkbook`); the file itself goes through Drive, not Firestore.
+        var scheduleWorkbookDriveID, scheduleWorkbookName: String?
         var routineSettings, weeklyRequests: String?
         var stationDocs: String?
         var kind: String?
@@ -94,6 +96,7 @@ extension Job: CloudSynced {
                surveyDate: surveyDate.millis, installStart: installStart.millis, createdAt: createdAt.millis,
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
+               scheduleWorkbookDriveID: scheduleWorkbookDriveID, scheduleWorkbookName: scheduleWorkbookDriveID == nil ? nil : scheduleWorkbookName,
                routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue,
                iecReport: iecReportJSON, externals: externals, supervisor: supervisorEmail ?? "")
     }
@@ -111,6 +114,13 @@ extension Job: CloudSynced {
         if let v = r.inverterKW { inverterKW = v }
         if let v = r.scheduleInput { scheduleInputJSON = v }
         if let v = r.scheduleActual { scheduleActualJSON = v }
+        // another device's plan workbook replaces this one and downloads (`PhotoSync`); one imported here and not on
+        // Drive yet stays
+        if let id = r.scheduleWorkbookDriveID, id != scheduleWorkbookDriveID, !scheduleWorkbookUnsent {
+            scheduleWorkbookDriveID = id
+            scheduleWorkbookName = r.scheduleWorkbookName
+            scheduleWorkbook = nil
+        }
         if let v = r.routineSettings { routineSettingsJSON = v }
         if let v = r.weeklyRequests { weeklyRequestsJSON = v }
         if let v = r.stationDocs { stationDocsJSON = v }

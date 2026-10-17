@@ -128,28 +128,49 @@ final class PhotoSync {
     }
 
     /// MP plan workbooks: one imported here goes up into the job's `แผนงาน MP` folder, one imported elsewhere comes down.
+    /// Each job on its own: one that fails (offline, or a file this account can't read) doesn't hold back the others.
     private func workbooks(_ context: ModelContext, _ survey: SurveyModel) async throws {
         let jobs = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.scheduleWorkbookName != nil }))) ?? []
+        var failure: Error?
         for job in jobs where paused == 0 {
-            if job.scheduleWorkbookDownloading, let id = job.scheduleWorkbookDriveID {
-                let data = try await survey.driveDownload(id)
-                // replaced while it downloaded: the next pass takes the new one
-                guard !job.isDeleted, job.scheduleWorkbookDriveID == id else { continue }
-                job.scheduleWorkbook = data
-                try? context.save()
-            } else if job.scheduleWorkbookUnsent, let data = job.scheduleWorkbook {
-                let route = DriveRoute(survey: survey)
-                let folder = try await route.jobFolder(job)
-                if job.driveFolderURL == nil { job.driveFolderURL = folder.url.absoluteString }
-                let sub = try await survey.driveSubfolder(route.construction([Self.workbookFolder]), under: folder.id)
-                let name = MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName)
-                let mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                let id = try await survey.driveUpload(DriveUpload(name: name, data: data, mimeType: mime), to: sub)
-                // another file imported while this one uploaded: it goes up next pass
-                guard !job.isDeleted, job.scheduleWorkbook == data else { continue }
-                job.scheduleWorkbookDriveID = id
-                try? context.save()
+            do { try await workbook(job, context, survey) } catch {
+                failure = failure ?? error
+                print("PhotoSync: workbook of \(job.code): \(error.localizedDescription)")
             }
+        }
+        if let failure { throw failure }
+    }
+
+    /// Downloads that failed, by Drive id, and when to try again: a file this account can't read (another account's
+    /// Drive not shared with it, or deleted there) waits an hour rather than failing every minute.
+    private var workbookRetry: [String: Date] = [:]
+    private static let workbookRetryDelay: TimeInterval = 3600
+
+    private func workbook(_ job: Job, _ context: ModelContext, _ survey: SurveyModel) async throws {
+        if job.scheduleWorkbookDownloading, let id = job.scheduleWorkbookDriveID {
+            if let at = workbookRetry[id], at > .now { return }
+            let data: Data
+            do { data = try await survey.driveDownload(id) } catch {
+                workbookRetry[id] = Date.now.addingTimeInterval(Self.workbookRetryDelay)
+                throw error
+            }
+            workbookRetry[id] = nil
+            // replaced while it downloaded: the next pass takes the new one
+            guard !job.isDeleted, job.scheduleWorkbookDriveID == id else { return }
+            job.scheduleWorkbook = data
+            try? context.save()
+        } else if job.scheduleWorkbookUnsent, let data = job.scheduleWorkbook {
+            let route = DriveRoute(survey: survey)
+            let folder = try await route.jobFolder(job)
+            if job.driveFolderURL == nil { job.driveFolderURL = folder.url.absoluteString }
+            let sub = try await survey.driveSubfolder(route.construction([Self.workbookFolder]), under: folder.id)
+            let name = MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName)
+            let mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            let id = try await survey.driveUpload(DriveUpload(name: name, data: data, mimeType: mime), to: sub)
+            // another file imported while this one uploaded: it goes up next pass
+            guard !job.isDeleted, job.scheduleWorkbook == data else { return }
+            job.scheduleWorkbookDriveID = id
+            try? context.save()
         }
     }
 

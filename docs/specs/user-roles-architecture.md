@@ -25,7 +25,7 @@ The role is the member's, across the app. Each job also names people, in the job
 | ผู้รับเหมา / วิศวกรภายนอก | `Job.externals` | `job.assign_external`: manager, internal | The only jobs an external member sees and works on. |
 | ผู้ควบคุมงาน | `Job.supervisorEmail` | `job.assign_external` | May sign final acceptance (`handover.final_signoff`). |
 
-`Permissions.isNamed(job)`: on its team, its supervisor or an assigned external. `Permissions.hearsNews(job)`: a feed notification about the job (a daily report sent, a test result, an issue and its due reminder) is posted on a device when the member is a manager, is named on the job, or the job names none of ours (no team member and no supervisor). The bell's list keeps every post.
+`Permissions.isNamed(job)`: on its team, its supervisor or an assigned external. `Permissions.hearsNews(job)`: a feed notification about the job (a daily report sent, a test result, an issue and its due reminder) and its reminders (install days, the MP plan's start-tomorrow and behind-plan, the ERC flow's time limits, the routine reports) are posted on a device when the member is a manager, is named on the job, or the job names none of ours (no team member and no supervisor). The bell's list keeps every post.
 
 ---
 

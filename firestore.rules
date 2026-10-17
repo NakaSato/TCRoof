@@ -86,7 +86,9 @@ service cloud.firestore {
     // sent or closed, only the team sends it back or reopens it. Team devices drop a close the state doesn't record.
     match /jobs/{doc} {
       allow read: if isTeam() || readsMine();
-      allow create, delete: if isTeam();
+      allow create: if isTeam();
+      // ลบงาน (job.delete) is the manager's only
+      allow delete: if isManager();
       allow update: if isTeam()
         || (isExternal() && listsMe(resource.data)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['iecReport', 'iecState'])

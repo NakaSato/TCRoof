@@ -48,6 +48,14 @@ test('the team reads and writes everything, as before roles', async () => {
   await assertSucceeds(getDocs(collection(db(BOSS), 'jobs')));
 });
 
+test('only a manager deletes a job', async () => {
+  await assertFails(deleteDoc(doc(db(TEAM), 'jobs', 'mine')));
+  await assertFails(deleteDoc(doc(db(CON), 'jobs', 'mine')));
+  await assertSucceeds(deleteDoc(doc(db(BOSS), 'jobs', 'mine')));
+  // the team still creates them
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'new'), { code: 'TC-9' }));
+});
+
 test('a non-member reads nothing', async () => {
   await assertFails(getDoc(doc(db('stranger@gmail.com'), 'jobs', 'mine')));
 });

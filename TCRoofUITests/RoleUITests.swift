@@ -60,4 +60,29 @@ final class RoleUITests: XCTestCase {
         XCTAssertFalse(contractor.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch.waitForExistence(timeout: 5), "a contractor imports no plan")
         XCTAssertFalse(contractor.buttons["ตั้งค่าแผน"].firstMatch.exists, "nor sets one up")
     }
+
+    /// `daily.sign` is per job: on a job that names its team, a team member not on it can't open the sign sheet (the
+    /// line says who signs); one on it can, and so can anyone when the job names no one. `-jobTeam` writes the first
+    /// installing job's team for good, so the last run leaves it empty.
+    func testDailyReportsAreSignedByTheJobsPeople() {
+        let sheet = "ลงนามแล้วระบบจะสร้าง PDF"
+
+        let other = launch("daily", role: "internal", ["-jobTeam", "someone@tcroof.test"])
+        let sign = other.buttons["dailySign"].firstMatch
+        XCTAssertTrue(sign.waitForExistence(timeout: slow))
+        sign.tap()
+        XCTAssertTrue(text(other, "ทีมงานของงานนี้ ผู้ควบคุมงาน หรือผู้จัดการเป็นผู้ลงนามรายงาน").waitForExistence(timeout: 5),
+                      "a team member not on the job is told who signs")
+        XCTAssertFalse(text(other, sheet).exists, "and gets no sign sheet")
+        other.terminate()
+
+        for team in ["uitest@tcroof.test", "none"] {
+            let app = launch("daily", role: "internal", ["-jobTeam", team])
+            let button = app.buttons["dailySign"].firstMatch
+            XCTAssertTrue(button.waitForExistence(timeout: slow))
+            button.tap()
+            XCTAssertTrue(text(app, sheet).waitForExistence(timeout: 10), "the sign sheet opens (-jobTeam \(team))")
+            app.terminate()
+        }
+    }
 }

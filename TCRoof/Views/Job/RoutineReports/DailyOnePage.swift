@@ -410,6 +410,7 @@ extension DailyOnePage {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(title + " แตะเพื่อเซ็น")
+                    .accessibilityIdentifier(required ? "dailySign" : "dailyAck")
                 }
             }
             .frame(height: 82)

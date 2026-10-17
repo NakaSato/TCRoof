@@ -154,7 +154,7 @@ Each wide page has a `CLAUDE_CODE_TASK.md` (what to build, constraints, check li
 - Report the spec's open questions at the end.
 - Values in previews are examples; never hardcode them.
 
-`docs/specs/` holds feature specs (auto drawing, cable route, roof PV layout, tank mounting, site logistics, calendar and travel, hardware assist, review lock, standard designs, IEC 62446 Excel export and more), with images in `img/` and HTML prototypes in `prototype/`. Some are built by now (review and REVs without the lock, routine reports, the ERC exemption flow, the master schedule, hardware assist), so check the code before treating a spec as pending.
+`docs/specs/` holds feature specs (auto drawing, roof PV layout, tank mounting, calendar and travel, hardware assist, review lock, standard designs, IEC 62446 Excel export and more), with images in `img/` and HTML prototypes in `prototype/`. Some are built by now (review and REVs without the lock, routine reports, the ERC exemption flow, the master schedule, hardware assist), so check the code before treating a spec as pending.
 
 UI conventions from the specs:
 - Hit areas are at least 44 pt.

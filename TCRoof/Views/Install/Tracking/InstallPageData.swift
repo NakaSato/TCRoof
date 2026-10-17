@@ -35,7 +35,7 @@ struct InstallPageData {
     /// What the hatched days wait on (`รอการไฟฟ้านัดตรวจ`); the app keeps no such days, so only the board's example has it.
     var waitLabel: String?
     /// `แผนก่อสร้าง`: nil without an MP plan.
-    var plan: InstallPlanData?
+    var plan: InstallPlan?
 
     struct CurveDay: Identifiable {
         let date: Date
@@ -129,12 +129,12 @@ struct InstallPageData {
         self.site = Self.site(job: job, gantt: gantt, today: today)
         if let g = gantt, let input = job.scheduleInput {
             let tasks = Dictionary(MasterSchedule.plan(input).map { ($0.task, $0) }) { a, _ in a }
-            var milestones = [InstallPlanData.Milestone(title: "เริ่มงานหน้างาน", date: job.installStart)]
+            var milestones = [InstallPlan.Milestone(title: "เริ่มงานหน้างาน", date: job.installStart)]
             if let pre = tasks[.preCommissioning]?.start { milestones.append(.init(title: "ทดสอบระบบ (Pre-Commissioning)", date: pre)) }
             milestones.append(.init(title: "ส่งมอบ", date: job.installEnd))
             // the weekly requests' planned crew; the plan itself keeps no crew
             let crew = Dictionary((site?.labour ?? []).compactMap { l in l.plan.map { (cal.startOfDay(for: l.date), $0) } }) { a, _ in a }
-            plan = InstallPlanData(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)
+            plan = InstallPlan(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)
         }
     }
 }
@@ -190,7 +190,7 @@ extension InstallPageData {
         let planned: [Double] = [4, 10, 18, 26, 36, 44, 52, 60, 70, 85, 85, 85, 100], actual: [Double] = [5, 12, 20, 20, 40, 47, 50]
         data.curveDays = planned.indices.map { CurveDay(date: d($0), planned: planned[$0], actual: $0 < actual.count ? actual[$0] : nil) }
         data.waitLabel = "รอการไฟฟ้านัดตรวจ"
-        data.plan = InstallPlanData.demo(gantt: InstallGantt(rows: rows, today: day), nonWorking: data.nonWorking, tracking: data.tracking, day: day)
+        data.plan = InstallPlan.demo(gantt: InstallGantt(rows: rows, today: day), nonWorking: data.nonWorking, tracking: data.tracking, day: day)
         return data
     }
 }

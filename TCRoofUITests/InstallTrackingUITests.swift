@@ -8,6 +8,18 @@ final class InstallTrackingUITests: XCTestCase {
 
     override func setUp() { continueAfterFailure = false }
 
+    /// The first launch after an install can take longer than `slow`; one launch before the tests takes it, so a
+    /// test's own wait measures the page, not the cold start.
+    override class func setUp() {
+        super.setUp()
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
+                               "-noNotificationPrompt", "YES"]
+        app.launch()
+        _ = app.buttons["กลับหน้ารายการงาน"].waitForExistence(timeout: 300)
+        app.terminate()
+    }
+
     func launch(_ extra: [String] = ["-installScrollEnd", "YES"], demo: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", demo ? "YES" : "NO",

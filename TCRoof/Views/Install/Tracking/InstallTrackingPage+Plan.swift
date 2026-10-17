@@ -6,7 +6,7 @@ import PDFReport
 /// `แผนก่อสร้าง` (docs/ui/install-tracking-ipad-v2 §6, `states/05`–`07`): the install plan by WBS as a Gantt or a table,
 /// with the critical path outlined and the sub-tasks' float dotted, and beside it the planned crew, the milestones and
 /// the next stage's make-ready. `แก้ไขแผน` opens the MP plan screen. Crew, links, the baseline and the make-ready show
-/// only when there is a source (`InstallPlanData`).
+/// only when there is a source (`InstallPlan`).
 extension InstallTrackingPage {
     enum PlanView: String { case gantt, table }
 
@@ -42,7 +42,7 @@ extension InstallTrackingPage {
         }
     }
 
-    private func planOpen(_ s: InstallPlanData.Stage, _ p: InstallPlanData) -> Bool {
+    private func planOpen(_ s: InstallPlan.Stage, _ p: InstallPlan) -> Bool {
         let byDefault = !planAllClosed && (s.row.status == .current || s.id == p.nextStage?.id)
         return !s.subs.isEmpty && (byDefault != planToggled.contains(s.id))
     }
@@ -53,7 +53,7 @@ extension InstallTrackingPage {
 
     // MARK: header
 
-    private func planHeader(_ p: InstallPlanData) -> some View {
+    private func planHeader(_ p: InstallPlan) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
         let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) · \($0.by) · " + range } ?? range
@@ -117,10 +117,10 @@ extension InstallTrackingPage {
 
     // MARK: Gantt
 
-    private func showsCrew(_ p: InstallPlanData) -> Bool { p.stages.contains { $0.row.crew != nil } }
-    private func showsLinks(_ p: InstallPlanData) -> Bool { p.stages.contains { $0.row.after != nil } }
+    private func showsCrew(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.crew != nil } }
+    private func showsLinks(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.after != nil } }
 
-    private func planGantt(_ p: InstallPlanData, axis: InstallAxis, waitLabel: String?) -> some View {
+    private func planGantt(_ p: InstallPlan, axis: InstallAxis, waitLabel: String?) -> some View {
         VStack(spacing: 0) {
             planGanttHeader(p, axis: axis)
             ScrollView {
@@ -141,7 +141,7 @@ extension InstallTrackingPage {
     }
 
     /// The days' column layer under the rows: Sundays, days off and waiting, today tinted with a red edge.
-    private func planColumns(_ axis: InstallAxis, _ p: InstallPlanData) -> some View {
+    private func planColumns(_ axis: InstallAxis, _ p: InstallPlan) -> some View {
         GeometryReader { geo in
             let w = geo.size.width - PlanCol.left - 16
             ZStack(alignment: .topLeading) {
@@ -153,7 +153,7 @@ extension InstallTrackingPage {
     }
 
     /// The left block of a grid row: `WBS`, the name, `วัน`, then `คน` and `ต่อจาก` when they have a source.
-    private func planLeft<Name: View>(_ r: InstallPlanData.Row, _ p: InstallPlanData, bold: Bool, @ViewBuilder name: () -> Name) -> some View {
+    private func planLeft<Name: View>(_ r: InstallPlan.Row, _ p: InstallPlan, bold: Bool, @ViewBuilder name: () -> Name) -> some View {
         HStack(spacing: 0) {
             Text(r.code).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
             name().frame(maxWidth: .infinity, alignment: .leading)
@@ -166,7 +166,7 @@ extension InstallTrackingPage {
         .frame(width: PlanCol.left)
     }
 
-    private func planGanttHeader(_ p: InstallPlanData, axis: InstallAxis) -> some View {
+    private func planGanttHeader(_ p: InstallPlan, axis: InstallAxis) -> some View {
         HStack(spacing: 0) {
             HStack(spacing: 0) {
                 Text("WBS").frame(width: PlanCol.wbs, alignment: .leading)
@@ -195,7 +195,7 @@ extension InstallTrackingPage {
     private func planDayLabel(_ d: Date, axis: InstallAxis, dense: Bool) -> some View {
         let week = axis.unit == .week
         let today = week ? axis.contains(axis.today, week: d) : MasterSchedule.calendar.isDate(d, inSameDayAs: axis.today)
-        let sunday = !week && InstallPlanData.isSunday(d)
+        let sunday = !week && InstallPlan.isSunday(d)
         let ink = today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted
         return VStack(spacing: 2) {
             if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(ink) }
@@ -207,7 +207,7 @@ extension InstallTrackingPage {
         .fixedSize()
     }
 
-    private func planStageRow(_ s: InstallPlanData.Stage, _ p: InstallPlanData, axis: InstallAxis) -> some View {
+    private func planStageRow(_ s: InstallPlan.Stage, _ p: InstallPlan, axis: InstallAxis) -> some View {
         let open = planOpen(s, p), r = s.row
         return Button { if !s.subs.isEmpty { togglePlan(s.id) } } label: {
             HStack(spacing: 0) {
@@ -234,7 +234,7 @@ extension InstallTrackingPage {
         .accessibilityIdentifier("plan-stage-\(r.code)")
     }
 
-    private func planSubRow(_ r: InstallPlanData.Row, stage: InstallPlanData.Row, _ p: InstallPlanData, axis: InstallAxis) -> some View {
+    private func planSubRow(_ r: InstallPlan.Row, stage: InstallPlan.Row, _ p: InstallPlan, axis: InstallAxis) -> some View {
         HStack(spacing: 0) {
             planLeft(r, p, bold: false) {
                 Text(r.title).font(.sarabunFixed(15)).lineLimit(1).padding(.leading, 22)
@@ -247,14 +247,14 @@ extension InstallTrackingPage {
         .accessibilityLabel(planAccessibility(r))
     }
 
-    private func planAccessibility(_ r: InstallPlanData.Row) -> String {
+    private func planAccessibility(_ r: InstallPlan.Row) -> String {
         let status = switch r.status { case .done: "เสร็จ"; case .current: "กำลังทำ"; case .waiting: "ตามแผน" }
         return "\(r.code) \(r.title) · \(ThaiFormat.dayMonth.string(from: r.start))–\(ThaiFormat.dayMonth.string(from: r.end)) · \(status) \(Int(r.percent.rounded()))%"
             + (r.critical ? " · เส้นทางวิกฤต" : "") + ((r.float ?? 0) > 0 ? " · เผื่อ \(r.float ?? 0) วัน" : "")
     }
 
     /// Diamonds on their days: green filled when passed, navy outlined when ahead.
-    private func milestoneRow(_ p: InstallPlanData, axis: InstallAxis) -> some View {
+    private func milestoneRow(_ p: InstallPlan, axis: InstallAxis) -> some View {
         HStack(spacing: 0) {
             Text("Milestone").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 .padding(.leading, 16 + PlanCol.wbs).frame(width: PlanCol.left, alignment: .leading)
@@ -272,7 +272,7 @@ extension InstallTrackingPage {
         .accessibilityLabel("Milestone " + p.milestones.map { "\($0.title) \(ThaiFormat.dayMonth.string(from: $0.date))" }.joined(separator: " · "))
     }
 
-    private func planLegend(_ p: InstallPlanData, waitLabel: String?) -> some View {
+    private func planLegend(_ p: InstallPlan, waitLabel: String?) -> some View {
         HStack(spacing: 16) {
             legendSwatch("เสร็จ") { Capsule().fill(Theme.success) }
             legendSwatch("กำลังทำ") { Capsule().fill(Theme.primary) }
@@ -307,7 +307,7 @@ extension InstallTrackingPage {
         static let wbs: CGFloat = 60, date: CGFloat = 80, days: CGFloat = 54, crew: CGFloat = 54, after: CGFloat = 70, status: CGFloat = 100
     }
 
-    private func planTable(_ p: InstallPlanData) -> some View {
+    private func planTable(_ p: InstallPlan) -> some View {
         VStack(spacing: 0) {
             tableRow(nil, p, stage: true)
                 .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
@@ -332,7 +332,7 @@ extension InstallTrackingPage {
     }
 
     /// One line of the table; nil is the header.
-    private func tableRow(_ r: InstallPlanData.Row?, _ p: InstallPlanData, stage: Bool) -> some View {
+    private func tableRow(_ r: InstallPlan.Row?, _ p: InstallPlan, stage: Bool) -> some View {
         HStack(spacing: 0) {
             Text(r?.code ?? "WBS").frame(width: TableCol.wbs, alignment: .leading)
             Text(r?.title ?? "งาน").lineLimit(1).padding(.leading, r != nil && !stage ? 24 : 0).frame(maxWidth: .infinity, alignment: .leading)
@@ -365,7 +365,7 @@ extension InstallTrackingPage {
 
     // MARK: right column
 
-    private func planSide(_ p: InstallPlanData) -> some View {
+    private func planSide(_ p: InstallPlan) -> some View {
         ScrollView {
             VStack(spacing: 14) {
                 if !p.crew.isEmpty { crewPlanCard(p) }
@@ -386,7 +386,7 @@ extension InstallTrackingPage {
             .cardShadow()
     }
 
-    private func crewPlanCard(_ p: InstallPlanData) -> some View {
+    private func crewPlanCard(_ p: InstallPlan) -> some View {
         let days = p.crewDays, cap = p.teamSize, chart: CGFloat = 88
         let top = CGFloat(max((days.map(\.count).max() ?? 1), (cap ?? 0) + 2, 1))
         let over = p.overTeam
@@ -418,7 +418,7 @@ extension InstallTrackingPage {
                     HStack(spacing: 2) {
                         ForEach(days, id: \.date) { d in
                             Text("\(MasterSchedule.calendar.component(.day, from: d.date))").font(.sarabunFixed(11))
-                                .foregroundStyle(d.date == p.today ? Theme.dangerText : InstallPlanData.isSunday(d.date) ? Theme.survey : Theme.inkMuted)
+                                .foregroundStyle(d.date == p.today ? Theme.dangerText : InstallPlan.isSunday(d.date) ? Theme.survey : Theme.inkMuted)
                                 .lineLimit(1).minimumScaleFactor(0.6).frame(maxWidth: .infinity)
                         }
                     }
@@ -434,12 +434,12 @@ extension InstallTrackingPage {
         .accessibilityLabel("กำลังคนตามแผนรายวัน " + days.map { "\($0.count)" }.joined(separator: ", ") + " คน")
     }
 
-    private func crewInk(_ d: Date, _ n: Int, _ p: InstallPlanData) -> Color {
+    private func crewInk(_ d: Date, _ n: Int, _ p: InstallPlan) -> Color {
         if let cap = p.teamSize, n > cap { return Theme.danger }
         return d < p.today ? Theme.success.opacity(0.45) : d == p.today ? Theme.primary : Theme.installPlanned
     }
 
-    private func milestonesCard(_ p: InstallPlanData) -> some View {
+    private func milestonesCard(_ p: InstallPlan) -> some View {
         sideCard {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Milestone").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
@@ -462,7 +462,7 @@ extension InstallTrackingPage {
         }
     }
 
-    private func readyCard(_ r: InstallPlanData.Ready) -> some View {
+    private func readyCard(_ r: InstallPlan.Ready) -> some View {
         sideCard {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
@@ -511,7 +511,7 @@ struct MilestoneDiamond: View {
 /// A stage's 20 pt bar: the plan's track filled navy (green when done) to its percent with a white `n%`, outlined
 /// red while it is critical and not done.
 struct PlanStageBar: View {
-    let row: InstallPlanData.Row
+    let row: InstallPlan.Row
     let axis: InstallAxis
     let width: CGFloat
 
@@ -539,8 +539,8 @@ struct PlanStageBar: View {
 
 /// A sub-task's 10 pt bar by its status, ringed red when critical, with a dotted float tail to its stage's end.
 struct PlanSubBar: View {
-    let row: InstallPlanData.Row
-    let stage: InstallPlanData.Row
+    let row: InstallPlan.Row
+    let stage: InstallPlan.Row
     let axis: InstallAxis
     let width: CGFloat
 

@@ -13,7 +13,7 @@ struct JobAccessCard: View {
     @State private var newEmail = ""
     @State private var newMember = ""
     @State private var supervisor = ""
-    private var directory = TeamDirectory.shared
+    @State private var directory = TeamDirectory.shared
 
     var body: some View {
         let team = permissions.can(.assignTeam, on: job.access), externals = permissions.can(.assignExternal, on: job.access)

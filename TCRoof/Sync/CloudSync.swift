@@ -284,7 +284,8 @@ final class CloudSync {
 
     /// Sends every record that changed since it was last in step, and deletes documents removed here.
     private func push() {
-        guard let context, let survey, uid != nil else { return }
+        // an outdated build sends nothing (`config/app.minSyncVersion`); its edits wait here for the update
+        guard let context, let survey, uid != nil, !AppGate.shared.outdated else { return }
         var changes: [Change] = []
         var present = Set<String>()
         // an external member changes only a job's IEC test (`iec.fill_submit`) and only reads the ICL (`icl.checklist`)
@@ -669,9 +670,9 @@ final class CloudSync {
         listeners.append(registration)
     }
 
-    /// `config/app`, set in the Firebase console: `centerDriveFolder` and `driveShareWith` (`DriveConfig`), and
-    /// `contactsSplit`, switched on once every device runs this version: the jobs are then sent again without their
-    /// phone and address.
+    /// `config/app`, set in the Firebase console: `centerDriveFolder` and `driveShareWith` (`DriveConfig`),
+    /// `minSyncVersion` and `installLink` (`AppGate`: an older build stops sending), and `contactsSplit`, switched on
+    /// once every device runs this version: the jobs are then sent again without their phone and address.
     private func listenConfig() {
         let registration = db.document(Self.configDocument).addSnapshotListener { [weak self] snapshot, error in
             MainActor.assumeIsolated {
@@ -680,6 +681,11 @@ final class CloudSync {
                 // the center Drive (a folder id or link) and the team emails a contractor's job folder is shared with
                 DriveConfig.set(center: snapshot?.get("centerDriveFolder") as? String,
                                 shareWith: snapshot?.get("driveShareWith") as? [String] ?? [])
+                // a build the console has let through again sends what waited
+                if AppGate.shared.update(minimum: (snapshot?.get("minSyncVersion") as? NSNumber)?.intValue,
+                                         installLink: snapshot?.get("installLink") as? String) {
+                    self.push()
+                }
                 let split = snapshot?.get("contactsSplit") as? Bool ?? false
                 guard split != Job.contactsSplit else { return }
                 Job.contactsSplit = split

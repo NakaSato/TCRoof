@@ -159,3 +159,15 @@ For shared iPads in the field:
 - **ตั้งค่า › สลับบัญชี**: Flushes pending offline sync to the cloud, signs out of Google Session, and allows the next user to sign in with their personal Google account.
 - The UI and visible data dynamically reload based on the new user's role.
 - When the next account is external, the previous account's records are removed from the iPad before sync starts (`LocalData`), so a contractor never sees other jobs; a team account keeps them.
+
+### 4.4 Rolling Out a Rules Change
+The rules can't tell one app build from another, so a device on an older build keeps writing what it always did. A refused write leaves its sync stuck, and an accepted one can undo the change (a job sent with its contacts after `contactsSplit`). `config/app.minSyncVersion` stops such builds:
+- Each build carries `AppCompat.syncVersion` (`TCRoofCore/AppCompat.swift`, 1 for the roles). This is not the App Store version.
+- A build below the console's minimum shows `ต้องอัปเดตแอป` over the whole app, with `config/app.installLink` (`AppGate`).
+- That build sends nothing. Its edits stay on the device and go up after the update.
+- To roll out a change:
+  1. Raise `syncVersion` in the change.
+  2. Ship the build.
+  3. Set `minSyncVersion` to the new number.
+  4. Deploy `firestore.rules` or flip the switch.
+- Builds made before this gate existed don't read the minimum, so the first rollout still waits for every device to update.

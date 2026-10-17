@@ -40,6 +40,10 @@ struct TCRoofApp: App {
             Group {
                 if session.isSignedIn {
                     RootView()
+                        .overlay {
+                            // `config/app.minSyncVersion` is above this build: nothing more until the update
+                            if AppGate.shared.outdated { UpdateRequiredView().transition(.opacity) }
+                        }
                         .transition(.opacity)
                 } else {
                     LoginView()

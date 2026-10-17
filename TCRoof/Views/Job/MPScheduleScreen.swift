@@ -78,6 +78,8 @@ struct MPScheduleScreen: View {
         #if DEBUG
         // `-mpDemo screen|progress` (with `-screen mp`) opens this screen, or its progress sheet
         .task {
+            // `-mpWeek yyyy-MM-dd` opens on that week
+            if let s = UserDefaults.standard.string(forKey: "mpWeek"), let d = ISODate.date(s) { week = MasterSchedule.weekStart(d) }
             switch UserDefaults.standard.string(forKey: "mpDemo") {
             case "progress"?: showProgress = true
             // `-mpDemo pdf` also writes the weekly-meeting page to Documents/mp.pdf

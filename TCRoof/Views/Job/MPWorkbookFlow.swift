@@ -33,7 +33,13 @@ final class MPWorkbookFlow {
 
     static let types: [UTType] = [UTType(filenameExtension: "xlsx"), .spreadsheet].compactMap { $0 }
 
-    func startImport() { importing = true }
+    func startImport() {
+        #if DEBUG
+        // `-mpImportFile <path>` reads that file instead of opening the picker, for UI tests
+        if let path = UserDefaults.standard.string(forKey: "mpImportFile") { read(.success(URL(fileURLWithPath: path))); return }
+        #endif
+        importing = true
+    }
 
     func read(_ result: Result<URL, Error>) {
         guard case .success(let url) = result else { return }
@@ -101,6 +107,10 @@ final class MPWorkbookFlow {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let url = dir.appendingPathComponent(MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName))
             try out.data.write(to: url, options: .atomic)
+            #if DEBUG
+            // `-mpExportFile <path>` also writes the export there, for UI tests to read
+            if let path = UserDefaults.standard.string(forKey: "mpExportFile") { try? out.data.write(to: URL(fileURLWithPath: path)) }
+            #endif
             if out.weeksOutside.isEmpty {
                 shared = SharedFile(url: url)
             } else {

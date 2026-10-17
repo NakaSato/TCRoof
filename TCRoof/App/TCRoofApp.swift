@@ -166,7 +166,15 @@ struct DebugScreen: View {
         case "logs": if let job { JobInstallLogsView(job: job) }
         case "log": if let log = job?.logs.first { InstallLogDetailView(log: log) }
         case "icl": if let job { InspectionView(job: job) }
-        case "mp": if let job { MPScheduleScreen(job: job).onAppear { job.seedMPDemo() } }
+        // `-mpClear YES` opens it on the job with no plan, no progress and no plan file instead
+        case "mp": if let job {
+            MPScheduleScreen(job: job).onAppear {
+                if UserDefaults.standard.bool(forKey: "mpClear") {
+                    job.scheduleInputJSON = nil; job.scheduleActualJSON = nil
+                    job.scheduleWorkbook = nil; job.scheduleWorkbookName = nil; job.scheduleWorkbookDriveID = nil
+                } else { job.seedMPDemo() }
+            }
+        }
         case "mpall":
             MPOverviewView().onAppear {
                 for (i, j) in jobs.prefix(4).enumerated() { j.seedMPDemo(mp: 189 + i, shift: [0, -14, 10, -30][i], pace: [1, 1.6, 0.6, 2.2][i]) }

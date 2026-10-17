@@ -73,6 +73,16 @@ final class MemberDirectory {
         db.document("members/\(email)").setData(["role": role.rawValue, "invitedBy": me, "invitedAt": FieldValue.serverTimestamp()]) { [weak self] e in
             MainActor.assumeIsolated { if let e { self?.error = Self.message(e) } }
         }
+        listInDirectory(email, role: role)
+    }
+
+    /// The team directory (`TeamDirectory`) follows the list: a team member or manager is in it, an external member
+    /// isn't. Written after the member's own document, which the rules check.
+    private func listInDirectory(_ email: String, role: UserRole?) {
+        let doc = db.document("\(TeamDirectory.collection)/\(email)")
+        let done: (Error?) -> Void = { e in if let e { print("MemberDirectory: directory: \(e.localizedDescription)") } }
+        if let role, role != .external { doc.setData(TeamDirectory.entry(email: email, name: nil), merge: true, completion: done) }
+        else { doc.delete(completion: done) }
     }
 
     func setRole(_ role: UserRole, of email: String) {
@@ -80,6 +90,7 @@ final class MemberDirectory {
         db.document("members/\(email)").updateData(["role": role.rawValue]) { [weak self] e in
             MainActor.assumeIsolated { if let e { self?.error = Self.message(e) } }
         }
+        listInDirectory(email, role: role)
     }
 
     /// Takes the account off the list: it can't sign in again, and the app signs it out at its next sync.
@@ -88,6 +99,7 @@ final class MemberDirectory {
         db.document("members/\(email)").delete { [weak self] e in
             MainActor.assumeIsolated { if let e { self?.error = Self.message(e) } }
         }
+        listInDirectory(email, role: nil)
     }
 
     /// The message sent with the share sheet.

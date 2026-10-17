@@ -13,6 +13,7 @@ struct JobAccessCard: View {
     @State private var newEmail = ""
     @State private var newMember = ""
     @State private var supervisor = ""
+    private var directory = TeamDirectory.shared
 
     var body: some View {
         let team = permissions.can(.assignTeam, on: job.access), externals = permissions.can(.assignExternal, on: job.access)
@@ -41,15 +42,41 @@ struct JobAccessCard: View {
             }
             ForEach(job.teamMembers, id: \.self) { email in
                 HStack {
-                    Label(email, systemImage: "person.crop.circle.badge.checkmark").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
+                    Label {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(directory.person(email)?.label ?? email).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
+                            if let p = directory.person(email), !p.name.isEmpty {
+                                Text(email).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                            } else if !directory.people.isEmpty, directory.person(email) == nil {
+                                // not in the team directory: a slip, a personal address, or someone not on the team
+                                Text("ไม่อยู่ในรายชื่อทีม").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.warningText)
+                            }
+                        }
+                    } icon: {
+                        Image(systemName: "person.crop.circle.badge.checkmark").foregroundStyle(Theme.navy)
+                    }
                     Spacer()
                     Button(role: .destructive) { removeMember(email) } label: { Image(systemName: "xmark.circle.fill") }
                         .frame(minWidth: 44, minHeight: 44)
                         .accessibilityLabel("เอา \(email) ออกจากทีมงาน")
                 }
             }
+            let choices = directory.people.filter { !job.teamMembers.contains($0.email) }
+            if !choices.isEmpty {
+                Menu {
+                    ForEach(choices) { p in
+                        Button(p.name.isEmpty ? p.email : "\(p.name) · \(p.email)") { addMember(p.email) }
+                    }
+                } label: {
+                    Label("เลือกจากรายชื่อทีม", systemImage: "person.badge.plus")
+                        .font(.sarabun(17, .semibold, relativeTo: .body))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                .accessibilityIdentifier("jobAccess.teamPicker")
+            }
             HStack(spacing: 12) {
-                TCTextField("อีเมลคนในทีม เช่น somchai@tcroof.co.th", text: $newMember, keyboard: .emailAddress)
+                TCTextField("หรือพิมพ์อีเมล เช่น somchai@tcroof.co.th", text: $newMember, keyboard: .emailAddress)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .onSubmit(addMember)
                     .accessibilityIdentifier("jobAccess.teamEmail")
@@ -112,8 +139,12 @@ struct JobAccessCard: View {
 
     private func addMember() {
         guard Self.isEmail(newMember) else { return }
-        job.teamMembers.append(newMember)
+        addMember(newMember)
         newMember = ""
+    }
+
+    private func addMember(_ email: String) {
+        job.teamMembers.append(email)
         try? context.save()
     }
 

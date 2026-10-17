@@ -75,6 +75,21 @@ service cloud.firestore {
       allow delete: if isManager() && email != signedInEmail();
     }
 
+    // The team's names and emails (TeamDirectory), to pick a job's team members from: the team reads it, an external
+    // member never does. Only a team member or manager is listed; each writes their own entry, a manager anyone's;
+    // a manager removes one. No roles in it, only `email` (the id) and a `name`.
+    match /directory/{email} {
+      allow read: if isTeam();
+      allow create, update: if isTeam() && (email == signedInEmail() || isManager())
+        && request.resource.data.keys().hasOnly(['email', 'name'])
+        && request.resource.data.email == email
+        && request.resource.data.get('name', '') is string
+        && request.resource.data.get('name', '').size() <= 100
+        && exists(/databases/$(database)/documents/members/$(email))
+        && get(/databases/$(database)/documents/members/$(email)).data.get('role', 'internal') != 'external';
+      allow delete: if isManager();
+    }
+
     // Switches set in the Firebase console (contactsSplit).
     match /config/{doc} {
       allow read: if isMember();

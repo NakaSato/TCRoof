@@ -195,6 +195,22 @@ public extension IECReport {
     /// `แก้ไข` on a closed test: back to the contractor's editing, to be sent and closed again.
     mutating func reopen() { result = nil; submission = nil }
 
+    /// Where the hand-over stands, as the job's Firestore document carries it (`iecState`) beside the test, so the
+    /// rules can refuse a contractor's edit of a sent or closed test, or a close they made themselves.
+    enum LockState: String, Codable, Sendable { case open, sent, closed }
+
+    var lockState: LockState { result != nil ? .closed : submission != nil ? .sent : .open }
+
+    /// The test as it arrives from Firestore with the document's `iecState`: a close the document doesn't record was
+    /// never made by the team (only they can set `closed`), so it is dropped. Nil (an app version without the state)
+    /// keeps the test as it came.
+    func trusting(_ state: LockState?) -> IECReport {
+        guard let state, state != .closed, result != nil else { return self }
+        var r = self
+        r.result = nil
+        return r
+    }
+
     /// The values changed after the test was closed (a sync from another device that hadn't seen the lock).
     var resultIsStale: Bool { result.map { $0.fingerprint != fingerprint(.review) } ?? false }
 

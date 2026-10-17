@@ -183,6 +183,22 @@ final class IECStageTests: XCTestCase {
         XCTAssertEqual(r.submission?.by, "หัวหน้างานผู้รับเหมา", "who sent it stays on record")
         XCTAssertFalse(r.sendBack(by: "วิศวกร", note: "x"), "closed: reopen instead")
     }
+
+    func testLockStateAndAnUnconfirmedClose() throws {
+        var r = try complete()
+        XCTAssertEqual(r.lockState, .open)
+        XCTAssertTrue(r.submit(by: "หัวหน้างานผู้รับเหมา"))
+        XCTAssertEqual(r.lockState, .sent)
+        XCTAssertTrue(r.complete(by: "วิศวกร"))
+        XCTAssertEqual(r.lockState, .closed)
+
+        // a close the document's state doesn't record is dropped; the hand-over stays
+        XCTAssertNil(r.trusting(.sent).result)
+        XCTAssertNotNil(r.trusting(.sent).submission)
+        XCTAssertNil(r.trusting(.open).result)
+        XCTAssertEqual(r.trusting(.closed), r)
+        XCTAssertEqual(r.trusting(nil), r, "an older app's document keeps the test as it came")
+    }
 }
 
 final class IECPhotoNameTests: XCTestCase {

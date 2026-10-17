@@ -1,6 +1,6 @@
 # Standard design library (คลังแบบมาตรฐาน กปภ.), iPad app
 
-**Status:** Partly built (2026-10-17): the two sheets as `TCRoofCore/TankDesign.swift`, picked in D1 sub-step 2 (`เริ่มจากแบบมาตรฐาน กปภ.`, ranked by the measured size, turned when it fits a quarter turn), checked with the sub-step's own states, and the §6 difference list in the PDF and the counts on the Excel tank sheet (N19). Not yet: required photos, the `เทียบกับแบบ` view, the library (save, import, Drive, settings), roofs (§7).
+**Status:** Partly built (2026-10-17): the two sheets as `TCRoofCore/TankDesign.swift`, picked in D1 sub-step 2 (`เริ่มจากแบบมาตรฐาน กปภ.`, ranked by the measured size, turned when it fits a quarter turn), checked with the sub-step's own states, and the §6 difference list in the PDF and the counts on the Excel tank sheet (N19). `ยืนยันที่เหลือ n จุดว่าตรงแบบ` (printed as ยืนยันแบบรวม). Not yet: required photos, the `เทียบกับแบบ` view, the library (save, import, Drive, settings), roofs (§7).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same screens work on iPhone in compact layout.
 **Where:**
 - **D1 ถังน้ำใส:** a **"เริ่มจากแบบมาตรฐาน"** button at the top of the tank plan group.
@@ -228,6 +228,9 @@ No roof designs are seeded. The first station of each building type saves one.
 - [ ] A design saved on one iPad appears on another after Drive sync.
 
 ## 10. Open questions
+
+Answered 2026-10-17: (1) yes, the team will share more sheets; (2) no drawing number: a design is a template;
+(3) ±0.50 m / ±0.10 m are not right, values to come; (4) bulk confirm is allowed. (5) is still open.
 
 1. **More designs:** can the team send the other standard sheets they meet (tank sizes, pump buildings), so they can
    be seeded instead of saved from the first job?

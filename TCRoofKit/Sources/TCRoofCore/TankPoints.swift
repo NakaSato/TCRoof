@@ -140,7 +140,15 @@ public enum TankPoints {
     /// The points still to check, in list order (the chips and ‹ ›).
     public static func pending(_ v: Values) -> [Obstacle] { points(v).filter { $0.status.isEmpty } }
 
-    public static func setStatus(_ v: inout Values, _ id: UUID, _ status: String) { edit(&v, id) { $0.status = status } }
+    public static func setStatus(_ v: inout Values, _ id: UUID, _ status: String) { edit(&v, id) { $0.status = status; $0.bulk = false } }
+    /// `ยืนยันที่เหลือ n จุดว่าตรงแบบ`: every point not checked yet is marked `ok` together, kept apart as `bulk` so the
+    /// report shows which ones weren't checked one by one. Returns how many.
+    @discardableResult public static func confirmRest(_ v: inout Values) -> Int {
+        var list = points(v), n = 0
+        for i in list.indices where list[i].status.isEmpty { list[i].status = ok; list[i].bulk = true; n += 1 }
+        if n > 0 { write(&v, list) }
+        return n
+    }
 
     // MARK: moving
 
@@ -149,6 +157,7 @@ public enum TankPoints {
         guard let t = tankSize(v) else { return }
         edit(&v, id) { o in
             guard let r = rect(o) else { return }
+            o.bulk = false
             if let x { o.x = text(min(max(0, x), max(0, t.w - r.w))) }
             if let y { o.y = text(min(max(0, y), max(0, t.h - r.h))) }
             if o.w.isEmpty { o.w = fmt(r.w) }

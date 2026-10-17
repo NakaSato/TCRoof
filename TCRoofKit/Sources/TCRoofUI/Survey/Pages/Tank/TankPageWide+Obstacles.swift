@@ -66,6 +66,14 @@ extension TankPageWide {
         } message: {
             Text("แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่")
         }
+        .confirmationDialog("ยืนยัน \(TankPoints.pending(values).count) จุดที่เหลือว่าตรงแบบ?", isPresented: $bulkAsk, titleVisibility: .visible) {
+            Button("ยืนยันที่เหลือ") {
+                update { TankPoints.confirmRest(&$0) }
+            }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: {
+            Text("รายงานจะพิมพ์จุดเหล่านี้เป็น ยืนยันแบบรวม เพื่อให้ผู้ตรวจเห็นว่าไม่ได้ตรวจทีละจุด")
+        }
     }
 
     /// The standard design the points came from and how the site differs so far, with `เริ่มจากแบบมาตรฐาน กปภ.`
@@ -85,6 +93,17 @@ extension TankPageWide {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
             }
             .buttonStyle(.plain)
+            let left = TankPoints.pending(values).count
+            if left > 0 && TankPoints.checked(values).n > 0 {
+                Button { bulkAsk = true } label: {
+                    Text("ยืนยันที่เหลือ \(left) จุดว่าตรงแบบ")
+                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.35)))
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 

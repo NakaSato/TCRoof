@@ -129,4 +129,24 @@ final class TankDesignTests: XCTestCase {
         let old = try JSONDecoder().decode(Obstacle.self, from: Data(#"{"label":"V1","x":"1","y":"2"}"#.utf8))
         XCTAssertEqual(old.note, "")
     }
+
+    func testBulkConfirmIsCountedApartAndClearedByAHandCheck() {
+        var v = Values()
+        TankDesign.apply(&v, .pwa40x40)
+        var list = TankPoints.points(v)
+        TankPoints.setStatus(&v, list[0].id, TankPoints.ok)
+        TankPoints.setStatus(&v, list[1].id, TankPoints.absent)
+        XCTAssertEqual(TankPoints.confirmRest(&v), 19)
+        XCTAssertTrue(TankPoints.done(v))
+        var s = TankDesign.summary(v)!
+        XCTAssertEqual([s.matches, s.absent, s.bulk, s.open], [1, 1, 19, 0])
+        XCTAssertEqual(s.counts, "ตรงแบบ 1 · ย้าย 0 · ไม่มีจริง 1 · เพิ่มหน้างาน 0 · ยืนยันแบบรวม 19")
+        list = TankPoints.points(v)
+        XCTAssertFalse(list[0].bulk)
+        TankPoints.setStatus(&v, list[2].id, TankPoints.ok)
+        TankPoints.move(&v, list[3].id, x: 30, y: nil)
+        s = TankDesign.summary(v)!
+        XCTAssertEqual([s.matches, s.moved, s.bulk], [2, 1, 17])
+        XCTAssertEqual(TankPoints.confirmRest(&v), 0)
+    }
 }

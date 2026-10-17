@@ -77,6 +77,8 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var stdY = ""
     /// D1: what a point of a standard design is beyond its kind, e.g. a pipe's "ท่อน้ำใส Ø700 มม." (`TankDesign`).
     public var note = ""
+    /// D1: marked `ok` with `ยืนยันที่เหลือ n จุดว่าตรงแบบ`, not one by one (printed as ยืนยันแบบรวม).
+    public var bulk = false
     public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "", kind: String = "", canCover: Bool = false,
                 status: String = "", origin: String = "", stdX: String = "", stdY: String = "", note: String = "") {
         self.label = label; self.x = x; self.y = y; self.w = w; self.h = h; self.kind = kind; self.canCover = canCover
@@ -97,6 +99,7 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
         stdX = try c.decodeIfPresent(String.self, forKey: .stdX) ?? ""
         stdY = try c.decodeIfPresent(String.self, forKey: .stdY) ?? ""
         note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
+        bulk = try c.decodeIfPresent(Bool.self, forKey: .bulk) ?? false
     }
 }
 

@@ -143,11 +143,14 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
         /// "ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด)", or the generic layout's name.
         public var design: String
         public var matches = 0, moved = 0, absent = 0, added = 0, open = 0
+        /// Confirmed together (`TankPoints.confirmRest`), not one by one.
+        public var bulk = 0
         /// "V5 ย้าย 4.00 ม. (16.70, 18.70 → 12.70, 18.70)", "H3 ไม่มีจริง", "V13 เพิ่มหน้างาน (20.00, 21.70)"
         public var differences: [String] = []
-        /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยังไม่ตรวจ 12"
+        /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยืนยันแบบรวม 4 · ยังไม่ตรวจ 8"
         public var counts: String {
             var parts = ["ตรงแบบ \(matches)", "ย้าย \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
+            if bulk > 0 { parts.append("ยืนยันแบบรวม \(bulk)") }
             if open > 0 { parts.append("ยังไม่ตรวจ \(open)") }
             return parts.joined(separator: " · ")
         }
@@ -169,6 +172,8 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
                 s.added += 1; s.differences.append("\(name) เพิ่มหน้างาน (\(at(o.x, o.y)))")
             } else if o.status.isEmpty {
                 s.open += 1
+            } else if o.bulk {
+                s.bulk += 1
             } else if TankPoints.moved(o) {
                 s.moved += 1
                 let dx = (NumberInput.value(o.x) ?? 0) - (NumberInput.value(o.stdX) ?? 0)

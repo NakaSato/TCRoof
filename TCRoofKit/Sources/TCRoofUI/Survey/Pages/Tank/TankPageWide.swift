@@ -52,6 +52,8 @@ struct TankPageWide: View {
     @State var deleteAsk = false
     /// `เริ่มจากแบบมาตรฐาน กปภ.`: the designs, closest to the measured size first.
     @State var designAsk = false
+    /// `ยืนยันที่เหลือ n จุดว่าตรงแบบ`, asked first.
+    @State var bulkAsk = false
     /// iPhone sub-step 3: `แก้แผง` (else `เลื่อนผัง`), the plan full screen and its zoom, the question before a new
     /// layout, the max search running, the B1-C3 drawing.
     @State var layoutEditing = false

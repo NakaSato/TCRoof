@@ -13,6 +13,16 @@ final class MemberRole {
 
     private(set) var permissions = Permissions.team
 
+    init() {
+        #if DEBUG
+        // `-screen` skips sign-in, so `-role` applies here, to `-roleEmail` (default uitest@tcroof.test): the UI tests
+        // open a screen as each role (RoleUITests)
+        if UserDefaults.standard.string(forKey: "screen") != nil, let role = Self.override {
+            permissions = Permissions(role: role, email: UserDefaults.standard.string(forKey: "roleEmail") ?? "uitest@tcroof.test")
+        }
+        #endif
+    }
+
     private static func key(_ email: String) -> String { "member.role.\(email)" }
 
     /// The account's last known role, at once; then `refresh` reads the current one.

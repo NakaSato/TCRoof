@@ -10,6 +10,8 @@ struct LoginView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showsHelp = false
+    /// The iPhone sheet's height when collapsed, so the photo can end under its top corners.
+    @State private var sheetHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
@@ -28,10 +30,16 @@ struct LoginView: View {
                         hero(wide: false)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         panel(wide: false)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
+                                // the shortest sheet: the help or an error then covers the field, not moves the roof
+                                if sheetHeight == 0 || h < sheetHeight { sheetHeight = h }
+                            }
                     }
                 }
             }
-            .background { backdrop(coveredWidth: wide ? panelWidth : 0) }
+            .background {
+                backdrop(wide: wide, covered: wide ? panelWidth : sheetHeight + geo.safeAreaInsets.bottom)
+            }
         }
         #if DEBUG
         .onAppear(perform: debugState)
@@ -43,33 +51,38 @@ struct LoginView: View {
 
     // MARK: Photo and brand
 
-    /// The photo, shaded navy where the brand text sits. Beside the iPad's panel it fills only the uncovered part (and
-    /// the panel's rounded corners), cropped from the right so the solar roof stays in view.
-    private func backdrop(coveredWidth: CGFloat) -> some View {
+    /// The photo, shaded navy where the brand text sits. It fills only what the panel leaves (plus the panel's rounded
+    /// corners) and is cropped towards the bottom right, where the solar roof is: beside the iPad's column, and above the
+    /// iPhone's sheet.
+    private func backdrop(wide: Bool, covered: CGFloat) -> some View {
         GeometryReader { geo in
-            let width = coveredWidth > 0 ? geo.size.width - coveredWidth + 28 : geo.size.width
+            let width = wide ? geo.size.width - covered + 28 : geo.size.width
+            let height = wide ? geo.size.height : max(geo.size.height - covered + 28, geo.size.height / 2)
             Image("LoginBackground")
                 .resizable()
                 .scaledToFill()
-                .frame(width: width, height: geo.size.height, alignment: coveredWidth > 0 ? .trailing : .center)
+                .frame(width: width, height: height, alignment: .bottomTrailing)
                 .clipped()
-                .overlay {
-                    LinearGradient(
-                        stops: [
-                            .init(color: Theme.navySolid.opacity(0.15), location: 0),
-                            .init(color: Theme.navySolid.opacity(0.35), location: 0.35),
-                            .init(color: Theme.navySolid.opacity(0.85), location: 1),
-                        ],
-                        startPoint: .top, endPoint: .bottom)
-                }
+                .overlay { shade(wide: wide) }
         }
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
 
+    /// iPad: dark at the bottom, under the brand. iPhone: dark at the top, under the brand, clear over the roof.
+    private func shade(wide: Bool) -> some View {
+        let navy = Theme.navySolid
+        let stops: [Gradient.Stop] = wide
+            ? [.init(color: navy.opacity(0.15), location: 0), .init(color: navy.opacity(0.35), location: 0.35),
+               .init(color: navy.opacity(0.85), location: 1)]
+            : [.init(color: navy.opacity(0.8), location: 0), .init(color: navy.opacity(0.45), location: 0.4),
+               .init(color: navy.opacity(0.05), location: 0.75), .init(color: navy.opacity(0.2), location: 1)]
+        return LinearGradient(stops: stops, startPoint: .top, endPoint: .bottom)
+    }
+
     private func hero(wide: Bool) -> some View {
         VStack(alignment: .leading, spacing: wide ? Space.xl : Space.l) {
-            Spacer(minLength: 0)
+            if wide { Spacer(minLength: 0) }
             Image("AppLogo")
                 .resizable()
                 .scaledToFit()
@@ -95,12 +108,14 @@ struct LoginView: View {
                 }
                 .padding(.top, Space.s)
             }
+            if !wide { Spacer(minLength: 0) }
         }
         .foregroundStyle(Theme.onMedia)
         .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
         .frame(maxWidth: wide ? 520 : .infinity, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, wide ? 64 : 24)
+        .padding(.top, wide ? 0 : 32)
         .padding(.bottom, wide ? 72 : 28)
     }
 

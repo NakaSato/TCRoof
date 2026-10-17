@@ -1,0 +1,646 @@
+{
+  "schema": "tcroof.user-roles/1",
+  "title": "สิทธิ์ผู้ใช้ในแอป TCRoof: 3 บทบาท",
+  "status": "design · not enforced in the app yet (see findings[0])",
+  "checkedAgainst": "TCRoof main 593e3f0 · 2026-10-16",
+  "canvas": "https://claude.ai/artifact/1QHYLS1kovMUkLWdfW222y (board Roles.dc.html)",
+  "accessValues": {
+    "allow": "✓ ทำได้",
+    "view": "ดูได้อย่างเดียว",
+    "deny": "✕ ไม่ได้",
+    "conditional": "ทำได้แบบมีเงื่อนไข (note)",
+    "disabled": "ปิดใช้งาน: BOQ ไม่ใช้ในแอป ทุกบทบาท"
+  },
+  "roles": [
+    {
+      "id": "manager",
+      "label": "ผู้จัดการ",
+      "en": "Manager · Project Manager"
+    },
+    {
+      "id": "internal",
+      "label": "ทีมภายใน",
+      "en": "Internal Engineer · Admin Internal"
+    },
+    {
+      "id": "external",
+      "label": "วิศวกรภายนอก / ผู้รับเหมา",
+      "en": "External Engineer · Contractor"
+    }
+  ],
+  "groups": [
+    {
+      "id": "jobs_plan",
+      "label": "งานและแผนงาน",
+      "capabilities": [
+        {
+          "id": "job.list",
+          "label": "เห็นรายการงาน",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "เฉพาะงานที่ได้รับมอบหมาย"
+            }
+          }
+        },
+        {
+          "id": "job.edit",
+          "label": "สร้างงาน · แก้ลูกค้า ทีม วันสำรวจ / ติดตั้ง",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "job.delete",
+          "label": "ลบงาน",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "deny"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "job.assign_external",
+          "label": "มอบหมายงานให้วิศวกรภายนอก / ผู้รับเหมา",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "mp.setup",
+          "label": "ตั้งแผนงาน MP (วันที่ เกิน 200 kVA)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "mp.progress",
+          "label": "ใส่ % ความคืบหน้าในแผนงาน",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "survey.move_to_install",
+          "label": "ย้ายแบบสำรวจไปงานติดตั้ง",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "install.tracking",
+          "label": "หน้าติดตามงานติดตั้ง · สาเหตุล่าช้า",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ดูงานตัวเอง"
+            }
+          }
+        },
+        {
+          "id": "overview.reports",
+          "label": "ภาพรวมทุกสถานี · รายงานสัปดาห์ / เดือน",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "survey_design_price",
+      "label": "สำรวจ ออกแบบ และราคา",
+      "capabilities": [
+        {
+          "id": "survey.edit",
+          "label": "แบบสำรวจ · แบบไฟฟ้า · รายงานสำรวจ",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ดู (แก้ได้ถ้าได้รับมอบหมายงานออกแบบ)"
+            }
+          }
+        },
+        {
+          "id": "survey.sign_rev",
+          "label": "ลงนามแบบสำรวจ · ออก REV ใหม่",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "เฉพาะวิศวกรผู้ลงนาม"
+            }
+          }
+        },
+        {
+          "id": "boq.draft",
+          "label": "ร่าง BOQ · เห็นราคาและต้นทุน",
+          "roles": {
+            "manager": {
+              "access": "disabled"
+            },
+            "internal": {
+              "access": "disabled"
+            },
+            "external": {
+              "access": "disabled"
+            }
+          }
+        },
+        {
+          "id": "boq.approve",
+          "label": "อนุมัติ BOQ · ล็อกขนาดและราคาที่เสนอลูกค้า",
+          "roles": {
+            "manager": {
+              "access": "disabled"
+            },
+            "internal": {
+              "access": "disabled"
+            },
+            "external": {
+              "access": "disabled"
+            }
+          }
+        },
+        {
+          "id": "library.company_docs",
+          "label": "เอกสารกลางบริษัท (เอกสารวิศวกร สเปก ราคา)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "view"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "customer_docs_permits",
+      "label": "เอกสารลูกค้าและการขออนุญาต",
+      "capabilities": [
+        {
+          "id": "customer.personal_docs",
+          "label": "ข้อมูลส่วนตัวลูกค้า (บัตร ทะเบียนบ้าน บิล หนังสือมอบอำนาจ)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "permit.pea_ppim",
+          "label": "ฟอร์ม กฟภ. · ชุดยื่น PPIM · เลขคำขอและผล",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "engineer.certify",
+          "label": "เซ็นรับรองในฐานะวิศวกร",
+          "roles": {
+            "manager": {
+              "access": "conditional",
+              "note": "วิศวกรที่มีใบ กว."
+            },
+            "internal": {
+              "access": "conditional",
+              "note": "วิศวกรที่มีใบ กว."
+            },
+            "external": {
+              "access": "conditional",
+              "note": "เฉพาะงานที่เป็นวิศวกรผู้ลงนาม"
+            }
+          }
+        },
+        {
+          "id": "project.attach_files",
+          "label": "แนบไฟล์ใน “เอกสารโครงการ”",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "แนบได้ เห็นเฉพาะไฟล์หน้างาน"
+            }
+          }
+        },
+        {
+          "id": "drive.upload",
+          "label": "อัปโหลดขึ้น Google Drive",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "erc.flow_record",
+          "label": "ลำดับ กกพ.: บันทึกวันยื่นและผล",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "stationdocs.drafts",
+          "label": "ร่างหนังสือจากแอป (แจ้งดับไฟ) · เอกสาร PWA ทุกสถานี",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "site_contractor",
+      "label": "หน้างานและผู้รับเหมา",
+      "capabilities": [
+        {
+          "id": "site.work_order",
+          "label": "ออกใบสั่งงาน · บันทึกส่งของ",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "เซ็นรับ"
+            }
+          }
+        },
+        {
+          "id": "site.change_request",
+          "label": "ใบขอเปลี่ยนแปลง",
+          "roles": {
+            "manager": {
+              "access": "conditional",
+              "note": "อนุมัติ / ไม่อนุมัติ"
+            },
+            "internal": {
+              "access": "conditional",
+              "note": "สร้าง"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ยื่นขอ"
+            }
+          }
+        },
+        {
+          "id": "site.punch_list",
+          "label": "รายการที่ต้องแก้ (Punch list)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "conditional",
+              "note": "เปิด / ปิดรายการ"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "แก้ แนบรูป ขอปิด"
+            }
+          }
+        },
+        {
+          "id": "daily.fill",
+          "label": "รายงานประจำวัน: กรอก · รูป · สแกนเลขเครื่อง",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "หัวหน้างานกรอก งานตัวเอง"
+            }
+          }
+        },
+        {
+          "id": "daily.sign",
+          "label": "วิศวกรเซ็นรับทราบรายงาน (จึงนับเข้าแผน MP) · Inspector รับทราบ",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "conditional",
+              "note": "วิศวกรของเรา"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "iec.fill_submit",
+          "label": "ทดสอบ IEC 62446: วัดค่า กรอกผล ถ่ายรูป · ส่งผลให้ทีม",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ผู้รับเหมาทดสอบและส่งผล งานตัวเอง"
+            }
+          }
+        },
+        {
+          "id": "iec.close",
+          "label": "ทีมภายในปิดการทดสอบ IEC (จึงนับ 3.1 เข้าแผน MP) · ส่งกลับให้แก้",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "icl.checklist",
+          "label": "ใบตรวจรับงาน (ICL)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "view"
+            }
+          }
+        },
+        {
+          "id": "handover.final_signoff",
+          "label": "เซ็นตรวจรับงานขั้นสุดท้าย · ยอดค่าแรงและยอดหัก",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "view"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ดูยอดของตัวเอง"
+            }
+          }
+        },
+        {
+          "id": "feed.ack_fix",
+          "label": "ฟีดโครงการ: กด แก้แล้ว / รับทราบ",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "แก้แล้ว เฉพาะรายการของตัวเอง"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "users_system",
+      "label": "ผู้ใช้และระบบ",
+      "capabilities": [
+        {
+          "id": "users.manage",
+          "label": "เพิ่ม / ปิดบัญชีผู้ใช้ · ตั้งบทบาท",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "deny"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "settings.company_templates",
+          "label": "ตั้งค่าบริษัท · เทมเพลต Excel / PDF",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "deny"
+            },
+            "external": {
+              "access": "deny"
+            }
+          }
+        },
+        {
+          "id": "tools.register",
+          "label": "ทะเบียนเครื่องมือวัด",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "view"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "daily-report",
+      "text": "หัวหน้างานผู้รับเหมากรอกรายงานประจำวัน วิศวกรของเราเซ็นรับทราบ · แผน MP นับเฉพาะรายงานที่เซ็นแล้ว",
+      "branch": "fix/mp-signed-reports"
+    },
+    {
+      "id": "iec-test",
+      "text": "ผู้รับเหมาทดสอบ IEC เอง กรอกผลแล้วส่งให้ทีม ทีมภายในเป็นคนปิด · เฉพาะการปิดของทีมภายในที่นับ 3.1 เข้าแผน MP",
+      "branch": "feat/iec-submit-close"
+    },
+    {
+      "id": "boq",
+      "text": "ปิดใช้งานทุกอย่างที่เกี่ยวกับ BOQ ทุกบทบาท"
+    },
+    {
+      "id": "shared-ipad",
+      "text": "ข้อมูลบางส่วนอยู่ในเครื่องเดียว iPad ที่ใช้ร่วมกันต้องล็อกอินแยกคน บทบาทถึงจะมีผล"
+    }
+  ],
+  "findings": [
+    {
+      "title": "1. ยังไม่มีในแอป",
+      "text": "ไม่มีช่องบทบาท กฎคลาวด์เช็กแค่ว่าเป็นสมาชิก (members) ทุกบัญชีเห็นและแก้ได้ทุกงานเท่ากัน · เพิ่ม / ลบสมาชิกได้ทาง Firebase เท่านั้น"
+    },
+    {
+      "title": "2. รายงานประจำวัน ✓ แก้แล้ว",
+      "text": "ตัดสินแล้ว: หัวหน้างานผู้รับเหมากรอก วิศวกรของเราเซ็นรับทราบ · แก้โค้ดแล้วให้แผน MP นับเฉพาะรายงานที่เซ็นแล้ว ถอนลายเซ็นแล้ว % ของรายงานนั้นถูกเอาออก (branch fix/mp-signed-reports รอ build และ merge)"
+    },
+    {
+      "title": "3. ข้อมูลงานรวมเป็นเอกสารเดียว",
+      "text": "เอกสารงานบนคลาวด์ (jobs) มีชื่อ เบอร์ ที่อยู่ลูกค้า แผน MP เอกสารสถานี ผล กกพ. และผล IEC อยู่ด้วยกัน · กฎ Firestore กันได้ทีละเอกสาร ไม่ใช่ทีละช่อง ถ้าเปิดงานให้ผู้รับเหมาอ่าน เขาจะเห็นเบอร์และที่อยู่ลูกค้าด้วย → ต้องแยกข้อมูลติดต่อลูกค้าเป็นอีกเอกสาร"
+    },
+    {
+      "title": "4. ไม่มีล็อก REV แล้ว",
+      "text": "แบบที่ลงนามแล้วยังแก้ได้ และออก REV ใหม่ได้เลย · สิทธิ์ลงนามและออก REV จึงต้องคุมด้วยบทบาทแทนล็อก · REV ที่ออกแล้ว (pwaSurveyRevisions) สมาชิกทุกคนลบได้"
+    },
+    {
+      "title": "5. ปิดการทดสอบ IEC แก้แผนงาน",
+      "text": "ตัดสินแล้วและแก้ในแอปแล้ว (branch feat/iec-submit-close): ผู้รับเหมากรอกผลแล้วกด ส่งผลให้ทีม การทดสอบล็อก ทีมภายในกด ปิดการทดสอบ หรือ ส่งกลับให้แก้ · เฉพาะการปิดของทีมภายในที่ตั้ง 3.1 เป็น 100% ในแผนงาน ตามกติกาเดียวกับรายงานประจำวัน"
+    },
+    {
+      "title": "6. ข้อมูลที่อยู่ในเครื่องเดียว",
+      "text": "ยืนยันแล้ว: งานบ้าน คลังเอกสารกลาง กปภ. ทะเบียนเครื่องมือวัด อยู่ในเครื่องเดียว คนภายนอกไม่เห็น · iPad ที่ใช้ร่วมกันต้องล็อกอินแยกคน บทบาทถึงจะมีผล (ต้องเพิ่มการสลับบัญชีในแอป)"
+    },
+    {
+      "title": "ทำให้ใช้ได้จริง",
+      "text": "ช่อง role ในรายชื่อสมาชิก (บัญชีเดิมนับเป็น internal) · รายชื่อคนภายนอกต่องาน · กฎคลาวด์ให้คนภายนอกอ่าน / เขียนเฉพาะงานนั้นและข้อมูลลูก · แยกข้อมูลติดต่อลูกค้า · ซ่อนปุ่มในแอปตามบทบาท"
+    }
+  ],
+  "openQuestions": [
+    "1. วิศวกรภายนอกกับผู้รับเหมาใช้บทบาทเดียวกันพอไหม หรือแยกเป็น 2 บทบาท (วิศวกรภายนอกออกแบบและเซ็นแบบ ผู้รับเหมาติดตั้ง)",
+    "2. ใครเซ็นตรวจรับงานขั้นสุดท้ายได้บ้าง: ผู้จัดการเท่านั้น หรือวิศวกรภายในที่เป็นผู้ควบคุมงานด้วย"
+  ]
+}

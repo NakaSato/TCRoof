@@ -51,5 +51,10 @@ final class HandoverFoldersTests: XCTestCase {
         XCTAssertEqual(HandoverFolders.place("electric_bill", station: "x", ext: "JPG")?.name, "1. ใบแจ้งค่าไฟฟ้า.jpg")
         XCTAssertEqual(HandoverFolders.place("install_photo_report", station: "x")?.folder.count, 3, "the first of its two folders")
         XCTAssertNil(HandoverFolders.place("not_a_paper", station: "x"))
+        XCTAssertEqual(HandoverFolders.place("om_manual", station: "x", region: "เขต 2")?.name,
+                       "คู่มือการใช้งานและบำรุงรักษาระบบผลิตไฟฟ้าฯ พื้นที่เขต 2.pdf")
+        let both = HandoverFolders.places("install_photo_report", station: "สถานีโชคชัย")
+        XCTAssertEqual(both.map(\.name), ["รายงานติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ฯ สถานีโชคชัย.pdf", "4. ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า.pdf"])
+        XCTAssertEqual(both.last?.folder.last, "2. เอกสารยื่นขอเชื่อมต่อระบบผลิตไฟฟ้า (ขนานไฟ)")
     }
 }

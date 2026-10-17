@@ -97,9 +97,14 @@ enum ProjectDriveUpload {
             return id
         }
         for doc in docs {
-            let place = route.place(doc, in: job)
-            let file = DriveUpload(name: place.name, data: doc.data, mimeType: mimeType(for: doc.name))
-            doc.driveFileID = try await session.survey.driveUpload(file, to: try await target(place.folder))
+            // a paper in two hand-over folders goes into both; the record keeps the first copy's id
+            var first: String?
+            for place in route.places(doc, in: job) {
+                let file = DriveUpload(name: place.name, data: doc.data, mimeType: mimeType(for: doc.name))
+                let id = try await session.survey.driveUpload(file, to: try await target(place.folder))
+                if first == nil { first = id }
+            }
+            doc.driveFileID = first
             done += 1
             progress(done, total)
         }

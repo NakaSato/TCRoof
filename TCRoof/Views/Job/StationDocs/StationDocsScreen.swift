@@ -444,6 +444,12 @@ struct StationFactsSheet: View {
     var body: some View {
         NavigationStack {
             PadForm(maxWidth: 640) {
+                PadSection("สังกัด กปภ.") {
+                    LabeledContent("สาขา") { TextField("เช่น สาขาปากช่อง", text: $s.branch).multilineTextAlignment(.trailing) }
+                    LabeledContent("เขต / พื้นที่") { TextField("เช่น เขต 2", text: $s.region).multilineTextAlignment(.trailing) }
+                } footer: {
+                    Text("ใช้ตั้งชื่อไฟล์ส่งมอบใน Drive กลาง เช่น AS-Built <สถานี> <สาขา>")
+                }
                 PadSection("ใบอนุญาต พค.2") {
                     PadPicker("พค.2", selection: Binding(get: { s.over200kVA.map { $0 ? 1 : 0 } ?? -1 },
                                                      set: { s.over200kVA = $0 < 0 ? nil : $0 == 1 })) {
@@ -474,6 +480,8 @@ struct StationFactsSheet: View {
                         var station = job.stationDocs
                         station.over200kVA = s.over200kVA; station.buildingRoute = s.buildingRoute
                         station.requestType = s.requestType; station.srtProject = s.srtProject; station.sellsPower = s.sellsPower
+                        station.branch = s.branch.trimmingCharacters(in: .whitespaces)
+                        station.region = s.region.trimmingCharacters(in: .whitespaces)
                         job.stationDocs = station
                         dismiss()
                     }

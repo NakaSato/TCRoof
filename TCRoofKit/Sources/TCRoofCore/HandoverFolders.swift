@@ -68,7 +68,16 @@ public enum HandoverFolders {
     /// file's own extension (a paper attached as a picture stays one).
     public static func place(_ kindID: String, station: String, branch: String = "", region: String = "",
                              ext: String = "pdf") -> (folder: [String], name: String)? {
-        guard let slot = slots[kindID]?.first else { return nil }
+        places(kindID, station: station, branch: branch, region: region, ext: ext).first
+    }
+
+    /// Every slot of the paper (the install photo report is in two folders), filled in as `place`.
+    public static func places(_ kindID: String, station: String, branch: String = "", region: String = "",
+                              ext: String = "pdf") -> [(folder: [String], name: String)] {
+        (slots[kindID] ?? []).map { fill($0, station: station, branch: branch, region: region, ext: ext) }
+    }
+
+    private static func fill(_ slot: Slot, station: String, branch: String, region: String, ext: String) -> (folder: [String], name: String) {
         let filled = slot.name
             .replacingOccurrences(of: "{station_name}", with: station)
             .replacingOccurrences(of: "{branch}", with: branch)

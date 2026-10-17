@@ -268,6 +268,10 @@ public enum StationDocs {
         public var outageLetter: OutageLetter?
         /// Where the station stands in the ERC's exemption flow (200 kVA and over), once the team records it.
         public var erc: ERCFlow.Record?
+        /// The PWA branch (สาขา) and region (เขต) the station belongs to, for the hand-over file names
+        /// (`AS-Built {station_name} {branch}`, `คู่มือ… พื้นที่{region}`); empty until the team types them.
+        public var branch: String = ""
+        public var region: String = ""
 
         public init(over200kVA: Bool? = nil, buildingRoute: BuildingRoute = .unknown, requestType: RequestType = .new,
                     sellsPower: Bool = false, srtProject: Bool = true, docs: [String: DocState] = [:], dueDates: [String: String] = [:]) {
@@ -300,6 +304,8 @@ public enum StationDocs {
             dueDates = try c.decodeIfPresent([String: String].self, forKey: .dueDates) ?? [:]
             outageLetter = try? c.decodeIfPresent(OutageLetter.self, forKey: .outageLetter)
             erc = try? c.decodeIfPresent(ERCFlow.Record.self, forKey: .erc)
+            branch = try c.decodeIfPresent(String.self, forKey: .branch) ?? ""
+            region = try c.decodeIfPresent(String.self, forKey: .region) ?? ""
         }
 
         public static func decode(_ json: String?) -> Station {

@@ -75,14 +75,17 @@ struct DriveRoute {
         center == nil ? path : [HandoverFolders.construction] + path
     }
 
-    /// A document's folder below the job's folder and its name on Drive: on the center Drive a station paper takes
-    /// its hand-over folder and numbered name; anything else is a construction record in its own folder.
-    func place(_ doc: DocumentAsset, in job: Job) -> (folder: [String], name: String) {
-        if center != nil, let kind = job.stationDocs.docs.first(where: { $0.value.fileName == doc.name })?.key,
-           let p = HandoverFolders.place(kind, station: job.projectName, ext: (doc.name as NSString).pathExtension) {
-            return p
+    /// A document's folders below the job's folder and its name in each: on the center Drive a station paper takes
+    /// every hand-over folder that lists it, with its numbered name; anything else is a construction record in its
+    /// own folder.
+    func places(_ doc: DocumentAsset, in job: Job) -> [(folder: [String], name: String)] {
+        let station = job.stationDocs
+        if center != nil, let kind = station.docs.first(where: { $0.value.fileName == doc.name })?.key {
+            let all = HandoverFolders.places(kind, station: job.projectName, branch: station.branch, region: station.region,
+                                             ext: (doc.name as NSString).pathExtension)
+            if !all.isEmpty { return all }
         }
         let path = (doc.folderPath ?? "").split(separator: "/").map(String.init)
-        return (construction(path), doc.name)
+        return [(construction(path), doc.name)]
     }
 }

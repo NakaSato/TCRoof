@@ -314,9 +314,12 @@ final class CloudSync {
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
-        commitSeparately(photos, "photo upload")
         commitSeparately(contacts, "contact upload")
-        guard !changes.isEmpty else { return }
+        // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
+        // (the rules check that an external member's photo points at their own report). An external member's go one
+        // by one, so a refused photo doesn't hold back the rest.
+        let photoBatch = external == nil ? 400 : 1
+        guard !changes.isEmpty else { commitSeparately(photos, "photo upload", size: photoBatch); return }
 
         // Firestore takes at most 500 writes per batch. An external member's writes go one by one: the rules refuse
         // some (a record of a job just taken off them), and one refusal mustn't hold back the rest or stop the sync.
@@ -355,6 +358,7 @@ final class CloudSync {
                 }
             }
         }
+        commitSeparately(photos, "photo upload", size: photoBatch)
         saveKnown()
     }
 
@@ -381,11 +385,11 @@ final class CloudSync {
 
     /// Their own batches (REVs, photos): a refusal here (rules not deployed yet) must not hold back the jobs. Tried
     /// again on the next push.
-    private func commitSeparately(_ changes: [Change], _ label: String) {
-        for start in stride(from: 0, to: changes.count, by: 400) {
+    private func commitSeparately(_ changes: [Change], _ label: String, size: Int = 400) {
+        for start in stride(from: 0, to: changes.count, by: size) {
             let batch = db.batch()
             var previous: [String: String?] = [:]
-            for change in changes[start..<min(start + 400, changes.count)] {
+            for change in changes[start..<min(start + size, changes.count)] {
                 guard (try? change.write(batch)) != nil else { continue }
                 previous[change.key] = known[change.key]
                 known[change.key] = change.fingerprint

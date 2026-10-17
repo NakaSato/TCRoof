@@ -50,14 +50,9 @@ struct LoginView: View {
                 .overlay(RoundedRectangle(cornerRadius: logoSide / 4, style: .continuous).stroke(Theme.onPrimary.opacity(0.25), lineWidth: 1))
                 .shadow(color: .black.opacity(0.3), radius: 24, y: 12)
                 .accessibilityHidden(true)
-            VStack(spacing: Space.xs) {
-                Text("TCRoof")
-                    .font(.system(size: isPhone ? 34 : 40, weight: .heavy))
-                    .foregroundStyle(Theme.onPrimary)
-                Text("สำรวจ · ติดตั้ง · ส่งมอบงานโซลาร์")
-                    .font(.sarabun(16, relativeTo: .subheadline))
-                    .foregroundStyle(Theme.onPrimary.opacity(0.8))
-            }
+            Text("TCRoof")
+                .font(.system(size: isPhone ? 34 : 40, weight: .heavy))
+                .foregroundStyle(Theme.onPrimary)
         }
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 12)

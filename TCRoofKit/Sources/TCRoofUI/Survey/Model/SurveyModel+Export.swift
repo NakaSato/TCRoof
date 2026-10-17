@@ -62,13 +62,27 @@ extension SurveyModel {
     var reportHeader: ReportHeader { ReportHeader(company: settings.company, photoStamps: settings.printPhotoStamps) }
 
     public func pdfData(_ job: Job) -> Data {
+        let job = asPrinted(job)
         var header = reportHeader
         header.changes = revisionChanges(job)
         return PDFRenderer.render(job: job, header: header, photo: { [weak self] p in self?.image(p, in: job.id) })
     }
 
+    /// The job as a report prints it. Nothing locks an issued REV, so answers changed after REV nn was issued would
+    /// still read REV nn, with that REV's check code in รายการแก้ไข, and pass for the issued report: they print as
+    /// the next REV, not issued yet (`ยังไม่ออก`), with their changes listed. Issuing writes the REV first, so the
+    /// issued PDF itself is unchanged.
+    func asPrinted(_ job: Job) -> Job {
+        guard (job.revisions ?? []).contains(where: { $0.rev == job.rev }),
+              let issued = snapshot(job, rev: job.rev), issued != job.snapshot else { return job }
+        var j = job
+        j.values["rev"] = .text(job.nextIssueRev)
+        return j
+    }
+
     public func exportSummaryPDF(_ job: Job) throws -> ExportFile {
         flush(job.id)
+        let job = asPrinted(job)
         let url = tempURL("สรุป " + baseName(job) + ".pdf")
         try PDFRenderer.renderSummary(job: job, header: reportHeader, photo: { [weak self] p in self?.image(p, in: job.id) }).write(to: url, options: .atomic)
         return ExportFile(url: url, summary: "PDF สรุป 1 หน้า")

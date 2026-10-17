@@ -66,4 +66,42 @@ final class MPWorkbookUITests: XCTestCase {
         XCTAssertEqual(data.prefix(2), Data("PK".utf8), "an .xlsx package")
         XCTAssertNotEqual(data, original, "the progress should be written into the file")
     }
+
+    /// ตั้งค่าแผน on an imported plan: 2.3's weight goes from 10 to 12, the total shows it's off 100, and the plan and the
+    /// exported file take it (the test run reads E33 = 12 in the copied export).
+    func testEditOneImportedTask() throws {
+        try? FileManager.default.removeItem(at: exported)
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpWeek", "2024-11-03",
+                               "-mpImportFile", fixture.path, "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
+        app.launch()
+        let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
+        XCTAssertTrue(importButton.waitForExistence(timeout: slow))
+        importButton.tap()
+        app.alerts["นำเข้าแผนจากไฟล์ Excel"].buttons["นำเข้า"].tap()
+
+        let setup = app.buttons["ตั้งค่าแผน"].firstMatch
+        XCTAssertTrue(setup.waitForExistence(timeout: 10))
+        setup.tap()
+        let row = app.buttons["mpSetup.task.2.3"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "an imported plan's tasks should open their editor")
+        row.tap()
+        let weight = app.textFields["mpTask.weight"]
+        XCTAssertTrue(weight.waitForExistence(timeout: 5))
+        // a double tap selects the old value, the typing replaces it
+        weight.tap()
+        weight.doubleTap()
+        weight.typeText("12")
+        XCTAssertEqual(weight.value as? String, "12")
+        app.buttons["ตกลง"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "รวมน้ำหนัก 102%")).firstMatch.waitForExistence(timeout: 5),
+                      "the total should show the change")
+        app.buttons["บันทึก"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["12%"].firstMatch.waitForExistence(timeout: 10), "the plan should take the new weight")
+
+        app.buttons["ไฟล์ Excel"].firstMatch.tap()
+        app.buttons["ส่งออกไฟล์แผน (Excel)"].firstMatch.tap()
+        XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: exported.path))
+    }
 }

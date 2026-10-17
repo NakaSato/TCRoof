@@ -165,8 +165,13 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertEqual(MasterSchedule.plan(back.input), MasterSchedule.plan(input))
         let zip = try ZipArchive(out.data), sheet = zip.string("xl/worksheets/sheet1.xml")!
         XCTAssertTrue(sheet.contains(#"<c r="G33" s="57"><v>45616</v></c>"#), "2.3 starts 20 พ.ย. 2567, a value now")
-        // 1.3's start was a formula on 2.1's; it is a value now, so it can't move when Excel recalculates
-        XCTAssertFalse(sheet.contains("<f>G29</f>"))
+        // 2.3's end (G33 + Day) still works out, so it stays a formula; 1.3 = 2.1's start didn't move and stays too;
+        // 2.4 starts 5 days before 2.3 ends, which no longer matches the file's plan, so it becomes a value
+        XCTAssertTrue(sheet.contains("<f>G33+I33</f><v>45627</v>"), "2.3 ends 1 ธ.ค. 2567 by its own formula")
+        XCTAssertTrue(sheet.contains(#"<c r="I33" s="151"><v>11</v></c>"#) || sheet.contains("<c r=\"I33\""))
+        XCTAssertTrue(sheet.contains("<f>G29</f>"))
+        XCTAssertFalse(sheet.contains("<f>H33-5</f>"))
+        XCTAssertTrue(sheet.contains("<f>G35+I35</f>"), "2.4's end follows its start")
         XCTAssertFalse(zip.contains("xl/calcChain.xml"))
         XCTAssertFalse(zip.string("[Content_Types].xml")!.contains("calcChain"))
         XCTAssertFalse(zip.string("xl/_rels/workbook.xml.rels")!.contains("calcChain"))

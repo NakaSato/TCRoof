@@ -125,28 +125,55 @@ public enum MPWorkbook {
             changed += 1
         }
 
-        // the plan: when any task's dates or weight differ from the file, every task's dates are written as values,
-        // so a start the file derives from another task (1.3 = 2.1's start) can't move away from the app's plan
+        // the plan: the tasks that changed take their new values; a formula elsewhere is kept while it still works out
+        // to the app's plan, and becomes a value when it no longer would (1.3's start is 2.1's: moving 2.1 alone
+        // would drag 1.3 along in Excel)
         let plan = Dictionary(MasterSchedule.plan(input, calendar: cal).map { ($0.task, $0) }) { a, _ in a }
         func serial(_ d: Date?) -> Double? { d.map { Sheet.serial($0, cal) } }
-        let planDiffers = layout.rows.contains { row in
-            guard let p = plan[row.task] else { return false }
-            return !close(sheet.number(layout.weightCol, row.plan), p.weight)
-                || !close(sheet.number(layout.startCol, row.plan), serial(p.start))
-                || !close(sheet.number(layout.endCol, row.plan), serial(p.end))
+        func targets(_ row: Layout.Row, _ p: MasterSchedule.PlannedTask) -> [(col: Int, want: Double?)] {
+            [(layout.weightCol, p.weight), (layout.startCol, serial(p.start)), (layout.endCol, serial(p.end))]
         }
-        if planDiffers {
-            for row in layout.rows {
+        let changedRows = layout.rows.filter { row in
+            guard let p = plan[row.task] else { return false }
+            return targets(row, p).contains { !close(sheet.number($0.col, row.plan), $0.want) }
+        }
+        if !changedRows.isEmpty {
+            for row in changedRows {
                 guard let p = plan[row.task] else { continue }
-                let datesMoved = !close(sheet.number(layout.startCol, row.plan), serial(p.start))
-                    || !close(sheet.number(layout.endCol, row.plan), serial(p.end))
-                try put(layout.weightCol, row.plan, p.weight)
-                try put(layout.startCol, row.plan, serial(p.start), force: true)
-                try put(layout.endCol, row.plan, serial(p.end), force: true)
-                // Day: H − G as the file's rows count it, 1 for a one-day task
-                if datesMoved, let dayCol = layout.dayCol, let s = p.start, let e = p.end {
-                    try put(dayCol, row.plan, Double(max(cal.dateComponents([.day], from: s, to: e).day ?? 0, 1)), force: true)
+                for t in targets(row, p) where sheet.cell(Sheet.ref(t.col, row.plan))?.formula != true {
+                    try put(t.col, row.plan, t.want)
                 }
+                // Day: H − G as the file's rows count it, 1 for a one-day task
+                let moved = !close(sheet.number(layout.startCol, row.plan), serial(p.start))
+                    || !close(sheet.number(layout.endCol, row.plan), serial(p.end))
+                if moved, let dayCol = layout.dayCol, let s = p.start, let e = p.end,
+                   sheet.cell(Sheet.ref(dayCol, row.plan))?.formula != true {
+                    try put(dayCol, row.plan, Double(max(cal.dateComponents([.day], from: s, to: e).day ?? 0, 1)))
+                }
+            }
+            // one formula at a time, the changed tasks' own first, as freezing one can put others right (2.3's end is
+            // its start + Day) or move them
+            var formulas = sheet.formulas(cal)
+            for (p, v) in written { formulas.setInput(p, v) }
+            let order = changedRows + layout.rows.filter { r in !changedRows.contains { $0.plan == r.plan } }
+            let cells = order.flatMap { row -> [(pos: SheetFormulas.Pos, want: Double?)] in
+                guard let p = plan[row.task] else { return [] }
+                return targets(row, p).compactMap { t in
+                    sheet.cell(Sheet.ref(t.col, row.plan))?.formula == true ? (SheetFormulas.Pos(col: t.col, row: row.plan), t.want) : nil
+                }
+            }
+            var frozen = Set<SheetFormulas.Pos>()
+            while let next = cells.first(where: { c in
+                guard !frozen.contains(c.pos) else { return false }
+                switch formulas.value(c.pos) {
+                case .number(let n): return !close(n, c.want)
+                case .empty: return !close(nil, c.want)
+                default: return true
+                }
+            }) {
+                frozen.insert(next.pos)
+                try put(next.pos.col, next.pos.row, next.want, force: true)
+                formulas.setInput(next.pos, next.want.map { .number($0) } ?? .empty)
             }
         }
 

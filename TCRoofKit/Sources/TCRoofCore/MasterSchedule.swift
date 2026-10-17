@@ -154,6 +154,15 @@ public enum MasterSchedule {
         /// Inverter total over 200 kVA, from the station's inverter rating (kW at PF 1).
         public static func isOver200kVA(inverterKW: Double) -> Bool { inverterKW > 200 }
 
+        /// An imported plan's install window: from its site tasks' (parts 2 and 3) first start to their last end, so the
+        /// Plan calendar shows what the workbook plans.
+        public mutating func fitInstallWindow() {
+            guard let fixed else { return }
+            let site = Task.allCases.filter { $0.part != .permit }.compactMap { fixed[$0.rawValue] }
+            if let s = site.compactMap(\.start).min() { installStart = s }
+            if let e = site.compactMap(\.end).max() { installEnd = max(e, installStart) }
+        }
+
         /// The task's weight in this plan: the workbook's when imported, else the standard one.
         public func weight(_ task: Task) -> Double {
             guard let fixed else { return task.weight(over200kVA: over200kVA) }

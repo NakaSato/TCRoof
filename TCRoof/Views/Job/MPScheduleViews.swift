@@ -226,6 +226,8 @@ struct MPSetupSheet: View {
     @State private var input: MasterSchedule.Input
     @State private var mpNumber: Int?
     @State private var inverterKW: Double?
+    /// The imported task being edited.
+    @State private var editing: MasterSchedule.Task?
 
     init(job: Job) {
         self.job = job
@@ -294,10 +296,33 @@ struct MPSetupSheet: View {
                     }
                 }
                 PadSection(input.fixed == nil ? "ตัวอย่างแผน 18 งาน" : "แผน 18 งานตามไฟล์") {
-                    ForEach(plan) { p in MPPlanRow(task: p) }
+                    ForEach(plan) { p in
+                        if input.fixed != nil {
+                            Button { editing = p.task } label: {
+                                HStack { MPPlanRow(task: p); Image(systemName: "chevron.right").foregroundStyle(Theme.chevron) }
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("แก้วันและน้ำหนักของงานนี้")
+                            .accessibilityIdentifier("mpSetup.task.\(p.task.code)")
+                        } else {
+                            MPPlanRow(task: p)
+                        }
+                    }
+                } footer: {
+                    if input.fixed != nil {
+                        let total = plan.reduce(0) { $0 + $1.weight }
+                        Text("แตะงานเพื่อแก้วันหรือน้ำหนัก ส่งออกไฟล์แผนจะลงเฉพาะงานที่แก้ · รวมน้ำหนัก \(MPFormat.percent(total))"
+                             + (abs(total - 100) > 0.01 ? " (ควรเป็น 100%)" : ""))
+                    }
                 }
             }
             .environment(\.locale, ThaiFormat.locale)
+            .sheet(item: $editing) { task in
+                MPTaskEditSheet(task: task, value: input.fixed?[task.rawValue] ?? .init(start: nil, end: nil, weight: 0)) {
+                    input.fixed?[task.rawValue] = $0
+                }
+            }
             .navigationTitle(job.scheduleInput == nil ? "สร้างแผน MP" : "ตั้งค่าแผน MP")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -310,8 +335,70 @@ struct MPSetupSheet: View {
     private func save() {
         job.mpNumber = mpNumber
         job.inverterKW = inverterKW
+        var input = input
+        input.fitInstallWindow()
         job.scheduleInput = input
         dismiss()
+    }
+}
+
+/// One task of an imported plan: its dates (or none, as COP has) and its weight.
+struct MPTaskEditSheet: View {
+    let task: MasterSchedule.Task
+    let done: (MasterSchedule.FixedTask) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var dated: Bool
+    @State private var start: Date
+    @State private var end: Date
+    /// Typed text, read on ตกลง: a number field only takes its value when editing ends.
+    @State private var weight: String
+
+    init(task: MasterSchedule.Task, value: MasterSchedule.FixedTask, done: @escaping (MasterSchedule.FixedTask) -> Void) {
+        self.task = task; self.done = done
+        let cal = MasterSchedule.calendar, s = value.start ?? cal.startOfDay(for: .now)
+        _dated = State(initialValue: value.start != nil && value.end != nil)
+        _start = State(initialValue: s)
+        _end = State(initialValue: max(value.end ?? s, s))
+        _weight = State(initialValue: value.weight == value.weight.rounded() ? String(Int(value.weight)) : String(value.weight))
+    }
+
+    private var days: Int { (MasterSchedule.calendar.dateComponents([.day], from: start, to: end).day ?? 0) + 1 }
+
+    var body: some View {
+        NavigationStack {
+            PadForm(maxWidth: 560) {
+                PadSection("\(task.code) \(task.title)") {
+                    Toggle("มีกำหนดวัน", isOn: $dated)
+                    if dated {
+                        DatePicker("เริ่ม", selection: $start, displayedComponents: .date)
+                            .onChange(of: start) { _, s in if end < s { end = s } }
+                        DatePicker("เสร็จ", selection: $end, in: start..., displayedComponents: .date)
+                    }
+                    LabeledContent("น้ำหนัก (%)") {
+                        TextField("0", text: $weight)
+                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("mpTask.weight")
+                    }
+                } footer: {
+                    Text(dated ? "\(days) วัน · ส่งออกไฟล์แผนจะลงวันและน้ำหนักนี้ในแถวของงาน" : "งานที่ไม่มีกำหนดวันไม่อยู่ในแกนต์")
+                }
+            }
+            .environment(\.locale, ThaiFormat.locale)
+            .navigationTitle("แก้งาน \(task.code)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("ตกลง") {
+                        let cal = MasterSchedule.calendar
+                        done(.init(start: dated ? cal.startOfDay(for: start) : nil, end: dated ? cal.startOfDay(for: end) : nil,
+                                   weight: max(Double(weight.replacingOccurrences(of: ",", with: ".")) ?? 0, 0)))
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

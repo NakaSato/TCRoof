@@ -105,7 +105,7 @@ Drive, as today.
 | Man-days / tool-days | sum of counts over the reports in the range |
 | Rain | rain hours = R slots; rain days = days with ≥ 1 R |
 | Task % for MP | mean over the task's locations of each location's latest % (location not yet reported = 0) |
-| Feed MP | after each saved R2, for every linked task, `MasterSchedule.Actual.setPercent(task %, week)`; the MP Gantt and weekly/monthly MP report follow automatically |
+| Feed MP | after each saved, signed or unsigned R2, for every linked task, `MasterSchedule.Actual.setPercent(task %, week)` from the **signed** reports only (the contractor's foreman writes R2, our engineer signs it, so a draft must not move the plan; a report whose signature is taken off stops counting); the MP Gantt and weekly/monthly MP report follow automatically |
 | R1 draft | MP tasks planned in that week and not yet 100 %, plus yesterday's crew and tools |
 | Warnings before signing R2 | weather blank hours; no crew; crew not confirmed; a progress line went **down**; no progress line and no "หยุดงาน" reason |
 

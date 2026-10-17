@@ -115,6 +115,23 @@ final class RoutineReportTests: XCTestCase {
         XCTAssertEqual(a.done(.inverter, through: d(19)), 15, accuracy: 1e-9)
     }
 
+    func testOnlySignedReportsMoveTheMP() {
+        let all = [daily(7, lines: [(.inverter, "ห้องอินเวอร์เตอร์", 20)]),
+                   daily(9, lines: [(.inverter, "ห้องอินเวอร์เตอร์", 40)]),
+                   daily(15, lines: [(.inverter, "ห้องอินเวอร์เตอร์", 100)])]
+        var a = MasterSchedule.Actual()
+        // the foreman's draft of the 15th isn't signed yet: the plan stops at the 9th's 40 %
+        RoutineReport.feed(&a, reports: all, counted: Array(all.prefix(2)), settings: .init(), over200kVA: false)
+        XCTAssertEqual(a.points(.inverter, week: d(6)), 6, accuracy: 1e-9)
+        XCTAssertEqual(a.points(.inverter, week: d(13)), 0, accuracy: 1e-9)
+        // the 9th's signature is taken off: its week falls back to the 7th's 20 %
+        RoutineReport.feed(&a, reports: all, counted: [all[0]], settings: .init(), over200kVA: false)
+        XCTAssertEqual(a.done(.inverter, through: d(19)), 3, accuracy: 1e-9)
+        // nothing signed: nothing booked, even what an earlier feed had put in
+        RoutineReport.feed(&a, reports: all, counted: [], settings: .init(), over200kVA: false)
+        XCTAssertEqual(a.done(.inverter, through: d(19)), 0, accuracy: 1e-9)
+    }
+
     func testWarningsBeforeSigning() {
         let y = daily(1, lines: [(.structure, "หลังคา 1", 50)])
         var t = RoutineReport.nextDay(from: y, date: d(2), settings: .init())

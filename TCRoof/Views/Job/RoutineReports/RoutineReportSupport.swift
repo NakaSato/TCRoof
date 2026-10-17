@@ -39,11 +39,13 @@ extension Job {
         weeklyRequests = weeklyRequests.filter { $0.id != r.id } + [r]
     }
 
-    /// Books the daily reports' progress into the MP actual (§3 "Feed MP"); no-op without a plan.
+    /// Books the daily reports' progress into the MP actual (§3 "Feed MP"); no-op without a plan. Only reports our engineer
+    /// has signed count: the contractor's foreman writes them, so a draft must not move the plan.
     func feedMP() {
         guard let input = scheduleInput else { return }
         var a = scheduleActual
-        RoutineReport.feed(&a, reports: dailyReports, settings: routineSettings, over200kVA: input.over200kVA)
+        let signed = dailyLogs.filter { $0.engineerSignedAt != nil }.compactMap(\.report)
+        RoutineReport.feed(&a, reports: dailyReports, counted: signed, settings: routineSettings, over200kVA: input.over200kVA)
         if a != scheduleActual { scheduleActual = a }
     }
 

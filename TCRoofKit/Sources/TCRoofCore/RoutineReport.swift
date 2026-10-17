@@ -392,7 +392,12 @@ public enum RoutineReport {
 
     /// Books every task the reports link into the MP actual: for each week with a report, the task's % at the week's last
     /// report. The weeks with reports are rebuilt from scratch, so an edited old report corrects the plan too.
-    public static func feed(_ actual: inout MasterSchedule.Actual, reports: [Daily], settings: Settings, over200kVA: Bool) {
+    ///
+    /// Only `counted` reports give the % (the ones the team's engineer has signed; nil counts them all). The others still
+    /// clear their weeks, so a report whose signature was taken off no longer books what it said.
+    public static func feed(_ actual: inout MasterSchedule.Actual, reports: [Daily], counted: [Daily]? = nil,
+                            settings: Settings, over200kVA: Bool) {
+        let counted = counted ?? reports
         let tasks = Set(reports.flatMap { $0.progress.compactMap(\.task) })
         guard !tasks.isEmpty else { return }
         let weeks = Array(Set(reports.map { MasterSchedule.weekStart($0.date) })).sorted()
@@ -400,7 +405,7 @@ public enum RoutineReport {
             for w in weeks { actual.set(0, task: task, week: w, over200kVA: over200kVA) }
             for w in weeks {
                 let last = reports.filter { MasterSchedule.weekStart($0.date) == w }.map(\.date).max() ?? w
-                guard let pct = taskPercent(task, reports: reports, through: last, settings: settings) else { continue }
+                guard let pct = taskPercent(task, reports: counted, through: last, settings: settings) else { continue }
                 actual.setPercent(pct, task: task, week: w, over200kVA: over200kVA)
             }
         }

@@ -22,6 +22,22 @@ extension Job {
         }
         scheduleActual = a
     }
+
+    /// `-installLate YES`: the install window moved back (40 days ago to 6 days on), so 2.2 (DC) has passed its end
+    /// with nothing done. Its late cause is kept. It changes the job for good.
+    func seedLatePlan() {
+        seedMPDemo()
+        guard var input = scheduleInput else { return }
+        let cal = MasterSchedule.calendar, today = cal.startOfDay(for: .now)
+        input.installStart = cal.date(byAdding: .day, value: -40, to: today)!
+        input.installEnd = cal.date(byAdding: .day, value: 6, to: today)!
+        scheduleInput = input
+        var a = scheduleActual
+        a.points[MasterSchedule.Task.dcSide.rawValue] = nil
+        a.started[MasterSchedule.Task.dcSide.rawValue] = nil
+        a.finished[MasterSchedule.Task.dcSide.rawValue] = nil
+        scheduleActual = a
+    }
 }
 #endif
 

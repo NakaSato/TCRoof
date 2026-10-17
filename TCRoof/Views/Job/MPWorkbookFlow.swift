@@ -59,26 +59,32 @@ final class MPWorkbookFlow {
     }
 
     /// The plan from the file replaces the job's; the file's actual replaces the job's when it has any points, else the
-    /// job keeps what it has booked, each task keeping its % done under the file's weight. The file is kept on the job
-    /// and goes up to Drive on the next save (`PhotoSync`).
+    /// job keeps what it has booked (as the confirmation says), each task keeping its % done under the file's weight,
+    /// and takes the file's actual start and finish dates where it has them. The file is kept on the job and goes up to
+    /// Drive on the next save (`PhotoSync`).
     static func install(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) {
         let old = job.scheduleInput, new = imported.input
         job.scheduleInput = new
         let fileActual = imported.actual
-        if !fileActual.points.isEmpty || !fileActual.started.isEmpty || !fileActual.finished.isEmpty {
+        if !fileActual.points.isEmpty {
             var a = fileActual
             a.lateCauses = job.scheduleActual.lateCauses
             job.scheduleActual = a
-        } else if let old, !job.scheduleActual.points.isEmpty {
+        } else {
             var a = job.scheduleActual
-            for task in MasterSchedule.Task.allCases {
-                guard let byWeek = a.points[task.rawValue] else { continue }
-                let from = old.weight(task), to = new.weight(task)
-                let k = from > 0 ? to / from : 0
-                let scaled = byWeek.mapValues { $0 * k }.filter { $0.value > 0 }
-                a.points[task.rawValue] = scaled.isEmpty ? nil : scaled
+            if let old {
+                for task in MasterSchedule.Task.allCases {
+                    guard let byWeek = a.points[task.rawValue] else { continue }
+                    let from = old.weight(task), to = new.weight(task)
+                    let k = from > 0 ? to / from : 0
+                    let scaled = byWeek.mapValues { $0 * k }.filter { $0.value > 0 }
+                    a.points[task.rawValue] = scaled.isEmpty ? nil : scaled
+                }
             }
-            job.scheduleActual = a
+            // a file with dates and no points (actual starts typed, nothing booked yet) still gives its dates
+            for (task, d) in fileActual.started { a.started[task] = d }
+            for (task, d) in fileActual.finished { a.finished[task] = d }
+            if a != job.scheduleActual { job.scheduleActual = a }
         }
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name

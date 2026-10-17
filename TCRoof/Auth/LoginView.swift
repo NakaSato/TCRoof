@@ -1,8 +1,9 @@
 import SwiftUI
 import TCRoofUI
 
-/// Sign-in in the app's own design system (docs/ui/components): the light page, the company logo, and one card with
-/// the Google button (`TCButtonStyle` secondary), the error as a `TCWarningBanner`, then who may sign in and the version.
+/// Sign-in on a photo of a solar roof (`LoginBackground`, Pexels): the company logo over the sky, and at the bottom one
+/// design-system card (docs/ui/components) with the Google button (`TCButtonStyle` secondary), the error as a
+/// `TCWarningBanner`, who may sign in and the version.
 struct LoginView: View {
     @Environment(GoogleSession.self) private var session
     @State private var isLoading = false
@@ -10,20 +11,34 @@ struct LoginView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            brand.padding(.top, isPhone ? 40 : 96)
             Spacer(minLength: Space.xl)
-            brand
-            Spacer().frame(height: isPhone ? 32 : 40)
             card
-            footer.padding(.top, Space.l)
-            Spacer(minLength: Space.xl)
         }
         .frame(maxWidth: 420)
         .padding(.horizontal, isPhone ? Space.l : 32)
+        .padding(.bottom, isPhone ? Space.l : 64)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.pageGradient.ignoresSafeArea())
-        .background(Theme.background.ignoresSafeArea())
+        .background { backdrop }
         .environment(\.colorScheme, .light)
         .animation(.snappy, value: notice)
+    }
+
+    /// The photo, filling the screen; the sky behind the logo is lightened so the navy title and the status bar read.
+    private var backdrop: some View {
+        GeometryReader { geo in
+            Image("LoginBackground")
+                .resizable()
+                .scaledToFill()
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
+                .overlay(alignment: .top) {
+                    LinearGradient(colors: [Theme.surface.opacity(0.75), Theme.surface.opacity(0)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: geo.size.height * 0.45)
+                }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 
     private var brand: some View {
@@ -66,9 +81,11 @@ struct LoginView: View {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .page, fullWidth: true, working: isLoading))
             .disabled(isLoading || !session.hasValidClientID)
+            footer
         }
         .cardStyle(padding: isPhone ? 20 : 24)
         .overlay(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous).stroke(Theme.borderSubtle, lineWidth: 1))
+        .shadow(color: .black.opacity(0.18), radius: 24, y: 10)
     }
 
     private var footer: some View {

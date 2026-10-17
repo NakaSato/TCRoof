@@ -116,6 +116,8 @@ struct RootView: View {
                 return
             }
             #endif
+            // another account signed in: the previous one's records go before sync brings this one's
+            LocalData.wipeIfNeeded(context, survey: session.survey)
             SampleData.removeSamples(context)
             Job.keepKinds(context)
             CloudSync.shared.start(context: context, survey: session.survey)

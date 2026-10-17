@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import FirebaseAuth
 import TCRoofCore
 import TCRoofUI
 
@@ -9,6 +10,20 @@ import TCRoofUI
 final class GoogleSession {
     /// Signed-in account; nil shows the login page. Empty when Google didn't return an email.
     private(set) var email: String?
+    /// Why the app signed out by itself (removed from the member list), for the login page.
+    var notice: String?
+
+    /// Sign-in refused: only accounts the developer lists under `members/` in Firebase may use the app.
+    enum Denied: Error, LocalizedError {
+        case notMember(String), offline, noEmail
+        var errorDescription: String? {
+            switch self {
+            case .notMember(let email): return "\(email) ยังไม่ได้รับสิทธิ์ใช้แอปนี้ ติดต่อผู้ดูแลระบบให้เพิ่มบัญชีในรายชื่อสมาชิก"
+            case .offline: return "ต่ออินเทอร์เน็ตเพื่อตรวจสิทธิ์บัญชีในการเข้าสู่ระบบครั้งแรก"
+            case .noEmail: return "Google ไม่ได้ส่งอีเมลของบัญชีมา ลองเข้าสู่ระบบอีกครั้ง"
+            }
+        }
+    }
 
     var survey: SurveyModel { SurveyModel.shared }
 
@@ -26,8 +41,15 @@ final class GoogleSession {
         let google = SurveyModel.shared.google
         email = google.isSignedIn ? (google.email ?? "") : nil
         if google.isSignedIn { Self.fillUserName() }
+        if let email, !email.isEmpty { LocalData.adopt(Permissions.normalized(email)) }
         // the survey module's own sign-out buttons end the app session too
         SurveyModel.shared.signOutHandler = { [weak self] in self?.signOut() }
+        // taken off the member list in the Firebase console: out at the next sync
+        MemberRole.shared.onRemoved = { [weak self] in
+            guard let self, let email = self.email else { return }
+            self.signOut()
+            self.notice = Denied.notMember(email).localizedDescription
+        }
         #if DEBUG
         // `-screen <name>` skips sign-in for simulator checks; `-screen login` shows the login page.
         if let screen = UserDefaults.standard.string(forKey: "screen") {
@@ -51,11 +73,43 @@ final class GoogleSession {
 
     var hasValidClientID: Bool { clientID.hasSuffix(".apps.googleusercontent.com") }
 
+    /// Google sign-in, then the member list: an account the developer hasn't added is signed out again. Offline, only
+    /// an account this device has seen on the list gets in.
     func signIn() async throws {
+        notice = nil
         try await survey.google.signIn()
-        email = survey.google.email ?? ""
-        MemberRole.shared.signedIn(email ?? "")
+        let mail = Permissions.normalized(survey.google.email ?? "")
+        do {
+            guard !mail.isEmpty else { throw Denied.noEmail }
+            switch await Self.membership(of: mail, google: survey.google) {
+            case .member: break
+            case .notMember: throw Denied.notMember(mail)
+            case .unknown: guard MemberRole.wasConfirmed(mail) else { throw Denied.offline }
+            }
+        } catch {
+            survey.google.signOut()
+            try? Auth.auth().signOut()
+            throw error
+        }
+        LocalData.signedIn(mail)
+        email = mail
+        MemberRole.shared.signedIn(mail)
         Self.fillUserName()
+    }
+
+    private static func membership(of email: String, google: GoogleAuth) async -> MemberRole.Membership {
+        guard (try? await firebaseUser(google)) != nil else { return .unknown }
+        return await MemberRole.shared.membership(of: email)
+    }
+
+    /// Firebase account of the Google account signed in to the app; firestore.rules check its verified email.
+    static func firebaseUser(_ google: GoogleAuth) async throws -> User {
+        let email = google.email
+        if let user = Auth.auth().currentUser, email == nil || email == "" || user.email?.lowercased() == email?.lowercased() { return user }
+        let tokens = try await google.idAndAccessToken()
+        fillUserName() // the fresh token may carry the account's name
+        let credential = GoogleAuthProvider.credential(withIDToken: tokens.idToken, accessToken: tokens.accessToken)
+        return try await Auth.auth().signIn(with: credential).user
     }
 
     func signOut() {

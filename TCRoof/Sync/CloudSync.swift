@@ -160,13 +160,8 @@ final class CloudSync {
 
     /// Firebase account of the Google account signed in to the app.
     private func firebaseUser() async throws -> User {
-        let email = survey?.google.email
-        if let user = Auth.auth().currentUser, email == nil || email == "" || user.email == email { return user }
         guard let google = survey?.google else { throw CancellationError() }
-        let tokens = try await google.idAndAccessToken()
-        GoogleSession.fillUserName() // the fresh token may carry the account's name
-        let credential = GoogleAuthProvider.credential(withIDToken: tokens.idToken, accessToken: tokens.accessToken)
-        return try await Auth.auth().signIn(with: credential).user
+        return try await GoogleSession.firebaseUser(google)
     }
 
     private var knownKey: String { "cloudSync.known.\(uid ?? "")" }

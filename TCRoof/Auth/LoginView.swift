@@ -257,6 +257,7 @@ struct LoginView: View {
     /// The last sign-in failure, or why the button can't be used yet.
     private var notice: Notice? {
         if let errorMessage { return Notice(title: "เข้าสู่ระบบไม่สำเร็จ", message: errorMessage) }
+        if let removed = session.notice { return Notice(title: "ออกจากระบบแล้ว", message: removed) }
         return session.hasValidClientID ? nil : Notice(title: "ยังเข้าสู่ระบบไม่ได้", message: "ยังไม่ได้ตั้งค่า Google Client ID ของแอป")
     }
 

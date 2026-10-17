@@ -22,15 +22,53 @@ final class MemberRole {
         permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: email)
     }
 
-    /// Reads `members/<email>.role` once Firebase has signed in. A failure (offline) keeps the role already known.
+    /// Whether an account is on the member list, as far as this device can tell.
+    enum Membership { case member, notMember, unknown }
+
+    /// Called when the server says the signed-in account is no longer a member (removed in the Firebase console).
+    var onRemoved: (() -> Void)?
+
+    private static func confirmedKey(_ email: String) -> String { "member.confirmed.\(email)" }
+
+    /// The server once listed this account here, so it may open the app offline.
+    static func wasConfirmed(_ email: String) -> Bool {
+        UserDefaults.standard.bool(forKey: confirmedKey(Permissions.normalized(email)))
+    }
+
+    /// Reads `members/<email>` once Firebase has signed in, keeping its role. Only the server's answer says
+    /// `notMember`; offline, or a refused read, is `unknown`.
+    func membership(of email: String) async -> Membership {
+        let email = Permissions.normalized(email)
+        guard !email.isEmpty else { return .unknown }
+        guard let doc = try? await Firestore.firestore().document("members/\(email)").getDocument() else { return .unknown }
+        guard doc.exists else {
+            if doc.metadata.isFromCache { return .unknown }
+            UserDefaults.standard.removeObject(forKey: Self.confirmedKey(email))
+            UserDefaults.standard.removeObject(forKey: Self.key(email))
+            return .notMember
+        }
+        let field = doc.get("role") as? String
+        UserDefaults.standard.set(field, forKey: Self.key(email))
+        UserDefaults.standard.set(true, forKey: Self.confirmedKey(email))
+        return .member
+    }
+
+    /// Reads the signed-in account's role again; signs it out when the server no longer lists it. A failure
+    /// (offline) keeps the role already known.
     func refresh() async {
         let email = permissions.email
         guard !email.isEmpty else { return }
-        guard let doc = try? await Firestore.firestore().document("members/\(email)").getDocument(), doc.exists else { return }
-        let field = doc.get("role") as? String
-        UserDefaults.standard.set(field, forKey: Self.key(email))
-        guard permissions.email == email else { return }
-        permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email)
+        switch await membership(of: email) {
+        case .member:
+            guard permissions.email == email else { return }
+            let field = UserDefaults.standard.string(forKey: Self.key(email))
+            permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email)
+        case .notMember:
+            guard permissions.email == email else { return }
+            onRemoved?()
+        case .unknown:
+            break
+        }
     }
 
     func signedOut() { permissions = .team }

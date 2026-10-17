@@ -85,12 +85,25 @@ final class MPWorkbookFlow {
         job.scheduleWorkbookDriveID = nil
     }
 
-    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`Actual.merging`); the job keeps its plan, and
-    /// the file becomes the kept original. Returns how many task-weeks and dates changed.
+    /// The job's progress with a file's taken in (`Actual.merging`): only what was changed in the file since the app
+    /// exported it (the record the export keeps in the file), else since the app imported the file it keeps; a file with
+    /// neither adds its bookings. No task ends above its weight in the job's plan.
+    static func merged(_ imported: MPWorkbook.Imported, into job: Job) -> (actual: MasterSchedule.Actual, changed: Int) {
+        let base = imported.base ?? job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).actual }
+        var weights: [String: Double] = [:]
+        if let input = job.scheduleInput {
+            for task in MasterSchedule.Task.allCases { weights[task.rawValue] = input.weight(task) }
+        }
+        return job.scheduleActual.merging(imported.actual, base: base, covering: base == nil ? nil : imported.coverage,
+                                          weights: weights)
+    }
+
+    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`merged`); the job keeps its plan, and the
+    /// file becomes the kept original. Returns how many task-weeks and dates changed.
     @discardableResult
     static func takeProgress(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) -> Int {
-        let (a, changed) = job.scheduleActual.merging(imported.actual)
-        if changed > 0 { job.scheduleActual = a }
+        let (a, changed) = merged(imported, into: job)
+        if a != job.scheduleActual { job.scheduleActual = a }
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
@@ -101,8 +114,8 @@ final class MPWorkbookFlow {
         let n = Self.takeProgress(p.imported, data: p.data, name: p.name, on: job)
         try? context.save()
         message = Message(title: "รับความก้าวหน้าแล้ว",
-                          text: n == 0 ? "ความก้าวหน้าในไฟล์ตรงกับในแอปแล้ว แผนของสถานีคงเดิม"
-                                       : "ใช้ตามไฟล์ \(n) ช่องที่ต่างจากในแอป แผนของสถานีคงเดิม")
+                          text: n == 0 ? "ไม่มีช่องที่เปลี่ยนตามไฟล์ ความก้าวหน้าและแผนของสถานีคงเดิม"
+                                       : "ใช้ตามไฟล์ \(n) ช่อง แผนของสถานีคงเดิม")
     }
 
     /// What a file's formula check means for its previews; nil when the app works out every formula as Excel did.
@@ -130,8 +143,9 @@ final class MPWorkbookFlow {
         }
         if job.scheduleInput != nil {
             lines.append("นำเข้า: แทนแผน MP เดิมของสถานีนี้")
-            let n = job.scheduleActual.merging(r.actual).changed
-            lines.append("รับเฉพาะความก้าวหน้า: " + (n == 0 ? "ไม่มีช่องที่ต่างจากในแอป" : "ใช้ตามไฟล์ \(n) ช่องที่ต่างจากในแอป") + " แผนคงเดิม")
+            let n = Self.merged(r, into: job).changed
+            // only cells changed in the file since the app wrote or took it in; bookings made in the app since stay
+            lines.append("รับเฉพาะความก้าวหน้า: " + (n == 0 ? "ไม่มีช่องที่เปลี่ยนตามไฟล์" : "ใช้ตามไฟล์ \(n) ช่อง") + " แผนคงเดิม")
         }
         if let note = Self.formulaNote(r.formulas) { lines.append("⚠︎ " + note) }
         return lines.joined(separator: "\n")

@@ -43,6 +43,10 @@ public enum MPWorkbook {
         public var weeks: ClosedRange<Date>?
         /// Whether the app works out the file's formulas as Excel did.
         public var formulas: FormulaCheck
+        /// The Actual cells the file has: what taking its progress may change (`Actual.merging`).
+        public var coverage: MasterSchedule.Actual.Coverage
+        /// The progress the file held when the app last exported it (`Snapshot`); nil for a file the app never wrote.
+        public var base: MasterSchedule.Actual?
     }
 
     /// The plan sheet's formulas worked out on the untouched file and compared with the results Excel saved in it.
@@ -72,7 +76,8 @@ public enum MPWorkbook {
     /// What `export` wrote.
     public struct Export: Sendable {
         public var data: Data
-        /// Input cells replaced; 0 means `data` is the original file.
+        /// Input cells replaced. 0 with no change at all gives back the original file; 0 can also come with only the
+        /// file's kept progress record brought up to date (`Snapshot`).
         public var changedCells: Int
         /// Weeks with actual points the file has no column for (`yyyy-MM-dd`), left out.
         public var weeksOutside: [String]
@@ -84,19 +89,11 @@ public enum MPWorkbook {
         let book = try Book(data)
         let sheet = book.sheet, layout = book.layout
         var fixed: [String: MasterSchedule.FixedTask] = [:]
-        var actual = MasterSchedule.Actual()
         for row in layout.rows {
-            let t = row.task.rawValue
-            fixed[t] = .init(start: sheet.date(layout.startCol, row.plan, cal), end: sheet.date(layout.endCol, row.plan, cal),
-                             weight: sheet.number(layout.weightCol, row.plan) ?? 0)
-            guard let a = row.actual else { continue }
-            if let d = sheet.date(layout.startCol, a, cal) { actual.started[t] = d }
-            if let d = sheet.date(layout.endCol, a, cal) { actual.finished[t] = d }
-            for w in layout.weeks {
-                guard let v = sheet.number(w.col, a), v > 0 else { continue }
-                actual.points[t, default: [:]][w.key, default: 0] += v
-            }
+            fixed[row.task.rawValue] = .init(start: sheet.date(layout.startCol, row.plan, cal), end: sheet.date(layout.endCol, row.plan, cal),
+                                             weight: sheet.number(layout.weightCol, row.plan) ?? 0)
         }
+        let actual = progress(sheet, layout, cal)
 
         let plan = layout.rows.map { (task: $0.task, f: fixed[$0.task.rawValue]!) }
         func first(_ t: MasterSchedule.Task) -> Date? { fixed[t.rawValue]?.start }
@@ -125,7 +122,26 @@ public enum MPWorkbook {
         return Imported(input: input, actual: actual, project: layout.project, owner: layout.owner,
                         tasks: layout.rows.map(\.task),
                         weeks: weekDates.min().flatMap { a in weekDates.max().map { a...$0 } },
-                        formulas: check(sheet, cal))
+                        formulas: check(sheet, cal),
+                        coverage: .init(tasks: Set(layout.rows.filter { $0.actual != nil }.map(\.task.rawValue)),
+                                        weeks: Set(layout.weeks.map(\.key))),
+                        base: Snapshot.read(book.zip))
+    }
+
+    /// The Actual rows' start, finish and weekly points as the sheet holds them.
+    static func progress(_ sheet: Sheet, _ layout: Layout, _ cal: Calendar) -> MasterSchedule.Actual {
+        var actual = MasterSchedule.Actual()
+        for row in layout.rows {
+            guard let a = row.actual else { continue }
+            let t = row.task.rawValue
+            if let d = sheet.date(layout.startCol, a, cal) { actual.started[t] = d }
+            if let d = sheet.date(layout.endCol, a, cal) { actual.finished[t] = d }
+            for w in layout.weeks {
+                guard let v = sheet.number(w.col, a), v > 0 else { continue }
+                actual.points[t, default: [:]][w.key, default: 0] += v
+            }
+        }
+        return actual
     }
 
     // MARK: export
@@ -217,8 +233,15 @@ public enum MPWorkbook {
             for (k, v) in points where v > 0 && columns[k] == nil { outside.insert(k) }
         }
 
-        guard changed > 0 else { return Export(data: original, changedCells: 0, weeksOutside: outside.sorted()) }
+        // the progress as the file now holds it, kept in the file so a later import can tell what was changed in Excel;
+        // an unchanged file with no record, or an up-to-date one, comes back as it was
+        let held = progress(Sheet(sheet.cells.xml, shared: []), layout, cal)
+        let kept = Snapshot.read(book.zip)
+        guard changed > 0 || (kept != nil && kept != held) else {
+            return Export(data: original, changedCells: 0, weeksOutside: outside.sorted())
+        }
         var zip = book.zip
+        Snapshot.write(held, into: &zip)
 
         // the formulas' results from the new values, so a viewer that doesn't recalculate shows them too; not when the
         // app works out the untouched file differently from Excel, as it would write wrong numbers

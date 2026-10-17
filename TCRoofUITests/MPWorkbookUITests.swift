@@ -107,8 +107,8 @@ final class MPWorkbookUITests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: exported.path))
     }
 
-    /// A file updated elsewhere comes back: the export of a week booked at 20%, after the app booked 20% more, gives back
-    /// its own figure with รับเฉพาะความก้าวหน้า, and the plan stays.
+    /// The app's own export comes back unedited after the app booked 20% more: รับเฉพาะความก้าวหน้า finds nothing changed
+    /// in the file since the export (the record it keeps), so the later booking stays, and the plan stays.
     func testReimportTakesOnlyTheProgress() throws {
         try? FileManager.default.removeItem(at: exported)
         let app = XCUIApplication()
@@ -151,19 +151,20 @@ final class MPWorkbookUITests: XCTestCase {
         book()
         let moved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", exportedFigure), object: done)
         XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 5), .completed, "the second booking should move the figure")
+        let appFigure = done.label
 
         app.buttons["ไฟล์ Excel"].firstMatch.tap()
         app.buttons["นำเข้าไฟล์แผน (Excel)…"].firstMatch.tap()
         let confirm = app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 10))
-        XCTAssertTrue(confirm.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "ใช้ตามไฟล์ 1 ช่อง")).firstMatch.exists,
-                      "the confirmation should say how much differs")
+        XCTAssertTrue(confirm.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "ไม่มีช่องที่เปลี่ยนตามไฟล์")).firstMatch.exists,
+                      "the confirmation should say the file wasn't changed since the export")
         confirm.buttons["รับเฉพาะความก้าวหน้า"].tap()
         let report = app.alerts["รับความก้าวหน้าแล้ว"]
         XCTAssertTrue(report.waitForExistence(timeout: 10))
         report.buttons["ตกลง"].tap()
-        let back = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", exportedFigure), object: done)
-        XCTAssertEqual(XCTWaiter().wait(for: [back], timeout: 5), .completed, "the file's figure should be back")
+        let kept = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", appFigure), object: done)
+        XCTAssertEqual(XCTWaiter().wait(for: [kept], timeout: 5), .completed, "the booking made after the export should stay")
         XCTAssertTrue(app.staticTexts["7.5%"].firstMatch.exists, "the plan's weights stay")
     }
 }

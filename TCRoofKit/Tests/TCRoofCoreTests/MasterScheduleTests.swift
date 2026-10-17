@@ -209,4 +209,55 @@ extension MasterScheduleTests {
         XCTAssertEqual(changed, 3)
         XCTAssertEqual(merged.merging(file).changed, 0, "taking the same file again changes nothing")
     }
+
+    /// With the progress the file held when the app wrote it, a booking moved or cleared in Excel moves or goes here too,
+    /// and one booked in the app since stays.
+    func testMergingWithABaseTakesOnlyWhatTheFileChanged() {
+        let cal = MasterSchedule.calendar
+        func week(_ d: Int) -> Date { cal.date(from: DateComponents(year: 2024, month: 11, day: d))! }
+        let key = { (d: Int) in MasterSchedule.Actual.key(week(d)) }
+        let s = MasterSchedule.Task.structure.rawValue, p = MasterSchedule.Task.panels.rawValue
+        var exported = MasterSchedule.Actual()
+        exported.set(2, task: .structure, week: week(3), weight: 10)
+        exported.set(1, task: .panels, week: week(3), weight: 10)
+        exported.started[s] = week(3)
+        // since the export: the app books week 17; Excel moves 3 Nov's structure to 10 Nov and clears the panels
+        var app = exported
+        app.set(3, task: .structure, week: week(17), weight: 10)
+        var file = MasterSchedule.Actual()
+        file.set(2, task: .structure, week: week(10), weight: 10)
+        file.started[s] = week(3)
+        let covering = MasterSchedule.Actual.Coverage(tasks: [s, p], weeks: Set([3, 10, 17].map(key)))
+        let (merged, changed) = app.merging(file, base: exported, covering: covering)
+        XCTAssertEqual(merged.points(.structure, week: week(3)), 0, "moved in Excel")
+        XCTAssertEqual(merged.points(.structure, week: week(10)), 2)
+        XCTAssertEqual(merged.points(.structure, week: week(17)), 3, "booked in the app since the export")
+        XCTAssertEqual(merged.points(.panels, week: week(3)), 0, "cleared in Excel")
+        XCTAssertEqual(merged.started[s], week(3))
+        XCTAssertEqual(changed, 3)
+
+        // a date cleared in Excel goes; a week the file has no column for is left alone
+        var cleared = file
+        cleared.started[s] = nil
+        let narrow = MasterSchedule.Actual.Coverage(tasks: [s], weeks: [key(10)])
+        let (m2, _) = app.merging(cleared, base: exported, covering: narrow)
+        XCTAssertNil(m2.started[s])
+        XCTAssertEqual(m2.points(.structure, week: week(3)), 2, "not a week the file covers")
+        XCTAssertEqual(m2.points(.structure, week: week(10)), 2)
+    }
+
+    /// No task ends above its weight: its latest weeks give way.
+    func testMergingCapsEachTaskAtItsWeight() {
+        let cal = MasterSchedule.calendar
+        func week(_ d: Int) -> Date { cal.date(from: DateComponents(year: 2024, month: 11, day: d))! }
+        let s = MasterSchedule.Task.structure.rawValue
+        var app = MasterSchedule.Actual(), file = MasterSchedule.Actual()
+        app.set(6, task: .structure, week: week(3), weight: 10)
+        file.set(4, task: .structure, week: week(10), weight: 10)
+        file.set(3, task: .structure, week: week(17), weight: 10)
+        let (merged, _) = app.merging(file, weights: [s: 10])
+        XCTAssertEqual(merged.points(.structure, week: week(3)), 6)
+        XCTAssertEqual(merged.points(.structure, week: week(10)), 4)
+        XCTAssertEqual(merged.points(.structure, week: week(17)), 0)
+    }
 }

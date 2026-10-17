@@ -159,14 +159,17 @@ struct DailyReportEditor: View {
     }
 
     private var canSign: Bool { permissions.can(.dailySign, on: job.access) }
+    /// Who signs, for the line a member who can't sees: our engineers for a contractor, and for a team member not on
+    /// a job that names its people (`Permissions.signsDaily`), that job's team, its supervisor or a manager.
+    private var signers: String { permissions.role == .external ? "วิศวกรของเรา" : "ทีมงานของงานนี้ ผู้ควบคุมงาน หรือผู้จัดการ" }
 
     private func requestSign() {
-        if canSign { showSign = true } else { withAnimation { toast = "วิศวกรของเราเป็นผู้ลงนามรายงาน" } }
+        if canSign { showSign = true } else { withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
     }
 
     /// The inspector acknowledges a signed report only.
     private func requestAck() {
-        guard canSign else { return withAnimation { toast = "วิศวกรของเราเป็นผู้บันทึก Inspector รับทราบ" } }
+        guard canSign else { return withAnimation { toast = "\(signers)เป็นผู้บันทึก Inspector รับทราบ" } }
         if log?.engineerSignedAt != nil, !dirty { showAck = true } else { withAnimation { toast = "ผู้รายงานต้องเซ็นก่อน" } }
     }
 
@@ -187,7 +190,7 @@ struct DailyReportEditor: View {
     /// The daily PDF of what is on screen: saved as a draft first (a signed report asks before losing its signature).
     private func previewPDF() {
         if dirty, log?.engineerSignedAt != nil {
-            guard canSign else { return withAnimation { toast = Self.signedForContractor } }
+            guard canSign else { return withAnimation { toast = signedForOthers } }
             askUnsign = true; return
         }
         let target = dirty || log == nil ? write() : log!
@@ -280,6 +283,7 @@ struct DailyReportEditor: View {
                 Text("ตรวจ & ลงนาม").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.primary, size: .card))
+            .accessibilityIdentifier("dailySign")
         }
         .padding(.horizontal, isPhone ? 16 : 24).padding(.vertical, 10)
         .frame(maxWidth: 700)
@@ -354,14 +358,14 @@ struct DailyReportEditor: View {
     /// A signed report that was edited loses its signatures on save, so ask first.
     private func requestSaveDraft() {
         if dirty, log?.engineerSignedAt != nil {
-            if canSign { askUnsign = true } else { withAnimation { toast = Self.signedForContractor } }
+            if canSign { askUnsign = true } else { withAnimation { toast = signedForOthers } }
         } else {
             saveDraft()
         }
     }
 
     /// Only our engineer takes a signature off (firestore.rules refuses a contractor's change to `engineerSignedAt`).
-    private static let signedForContractor = "รายงานนี้ลงนามแล้ว · แก้ได้เฉพาะวิศวกรของเรา"
+    private var signedForOthers: String { "รายงานนี้ลงนามแล้ว · แก้ได้เฉพาะ\(signers)" }
 
     private func saveDraft() {
         write()

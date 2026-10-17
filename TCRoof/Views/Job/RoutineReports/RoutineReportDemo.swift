@@ -78,7 +78,16 @@ struct RoutineDebugScreen: View {
                 }
             }
         }
-        .onAppear { job.seedRoutineDemo(context); seeded = true }
+        .onAppear {
+            job.seedRoutineDemo(context)
+            // `-jobTeam a@x,b@y` names the job's team members (no supervisor), `none` clears both; for good
+            if let team = UserDefaults.standard.string(forKey: "jobTeam") {
+                job.teamMembers = team == "none" ? [] : team.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+                job.supervisorEmail = nil
+                try? context.save()
+            }
+            seeded = true
+        }
     }
 }
 #endif

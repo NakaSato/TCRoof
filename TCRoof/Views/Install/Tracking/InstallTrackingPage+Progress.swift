@@ -162,7 +162,7 @@ extension InstallTrackingPage {
                 }
                 ForEach(axis.labelled, id: \.self) { d in
                     let today = axis.unit == .day ? Calendar.current.isDate(d, inSameDayAs: axis.today) : axis.contains(axis.today, week: d)
-                    let sunday = axis.unit == .day && InstallPlanData.isSunday(d)
+                    let sunday = axis.unit == .day && InstallPlan.isSunday(d)
                     Text(axis.label(d)).font(.sarabunFixed(12, today ? .bold : .regular))
                         .foregroundStyle(today ? Theme.onPrimary : sunday ? Theme.survey : Theme.inkMuted)
                         .padding(.horizontal, today ? 7 : 0).frame(height: 16)
@@ -332,7 +332,7 @@ struct InstallColumns: View {
                     let cw = axis.columnWidth(width)
                     if nonWorking.contains(d) {
                         InstallHatch(ink: Theme.installWait, line: 6).frame(width: cw, height: height).offset(x: x + axis.x(d, width))
-                    } else if InstallPlanData.isSunday(d) {
+                    } else if InstallPlan.isSunday(d) {
                         Theme.installSunday.frame(width: cw, height: height).offset(x: x + axis.x(d, width))
                     }
                 }
@@ -567,7 +567,7 @@ struct InstallCurveChart: View {
                     while x < r.maxX { p.move(to: CGPoint(x: x, y: r.maxY)); p.addLine(to: CGPoint(x: x + r.height, y: r.minY)); x += 12 }
                     l.stroke(p, with: .color(Theme.installWait), lineWidth: 6)
                 }
-            } else if InstallPlanData.isSunday(d) {
+            } else if InstallPlan.isSunday(d) {
                 ctx.fill(Path(r), with: .color(Theme.installSunday))
             }
         }
@@ -668,7 +668,7 @@ struct InstallCurveChart: View {
         for (i, d) in axis.enumerated() where i % step == 0 || i == ti {
             let isToday = i == ti
             let text = "\(cal.component(.day, from: d)) " + Self.weekday.string(from: d)
-            ctx.draw(label(text, isToday ? Theme.dangerText : InstallPlanData.isSunday(d) ? Theme.survey : Theme.inkMuted, size: 13, bold: isToday),
+            ctx.draw(label(text, isToday ? Theme.dangerText : InstallPlan.isSunday(d) ? Theme.survey : Theme.inkMuted, size: 13, bold: isToday),
                      at: CGPoint(x: xs(i) + cw / 2, y: bottom + 16), anchor: .center)
         }
     }

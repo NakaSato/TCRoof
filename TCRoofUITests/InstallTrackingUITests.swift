@@ -8,6 +8,18 @@ final class InstallTrackingUITests: XCTestCase {
 
     override func setUp() { continueAfterFailure = false }
 
+    /// The first launch after an install can take longer than `slow`; one launch before the tests takes it, so a
+    /// test's own wait measures the page, not the cold start.
+    override class func setUp() {
+        super.setUp()
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
+                               "-noNotificationPrompt", "YES"]
+        app.launch()
+        _ = app.buttons["กลับหน้ารายการงาน"].waitForExistence(timeout: 300)
+        app.terminate()
+    }
+
     func launch(_ extra: [String] = ["-installScrollEnd", "YES"], demo: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", demo ? "YES" : "NO",
@@ -133,11 +145,11 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(sheet.waitForExistence(timeout: 30), "PDF รวม should open the share sheet")
     }
 
-    /// A late task's sheet keeps the picked cause in the job (MP 192's 2.2 is past its end with nothing done): it is
-    /// still picked after a relaunch, and tapping it again clears it.
+    /// A late task's sheet keeps the picked cause in the job (`-installLate YES` moves the station's plan back so 2.2 is
+    /// past its end with nothing done): it is still picked after a relaunch, and tapping it again clears it.
     func testLateCauseIsKept() {
         func open() -> XCUIApplication {
-            let app = launch(["-installStage", "2"], demo: false)
+            let app = launch(["-installStage", "2", "-installLate", "YES"], demo: false)
             XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
             return app
         }
@@ -191,9 +203,16 @@ final class InstallTrackingUITests: XCTestCase {
         card.tap()
         let clear = app.buttons["ล้างค่า"]
         XCTAssertTrue(clear.waitForExistence(timeout: 15), "the photo, then the dialog")
-        clear.tap()
-        for c in "612.5" { app.buttons[c == "." ? "จุด" : String(c)].tap() }
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "บันทึก")).firstMatch.tap()
+        // a key tapped while the dialog still moves can land on its neighbour: check the field, and type again once
+        let typed = app.descendants(matching: .any).matching(NSPredicate(format: "value == %@", "612.5 V")).firstMatch
+        for _ in 0..<2 where !typed.exists {
+            clear.tap()
+            for c in "612.5" { app.buttons[c == "." ? "จุด" : String(c)].tap() }
+            _ = typed.waitForExistence(timeout: 3)
+        }
+        XCTAssertTrue(typed.exists, "the pad should type 612.5")
+        // the dialog's `บันทึก ไป …`, not the page's `บันทึกร่างตอนนี้` under it
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "บันทึก ")).firstMatch.tap()
         // on to the clamp's dialog; closed there
         XCTAssertTrue(app.buttons["ปิด"].firstMatch.waitForExistence(timeout: 15))
         app.buttons["ปิด"].firstMatch.tap()

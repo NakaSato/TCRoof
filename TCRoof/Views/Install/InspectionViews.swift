@@ -2,12 +2,15 @@ import SwiftUI
 import TCRoofUI
 import SwiftData
 
-/// Step-by-step installation checklist (ICL), ending with customer sign-off.
+/// Step-by-step installation checklist (ICL), ending with customer sign-off. The team fills and signs it; a member who
+/// may only view it (`icl.checklist`: an external member) sees the submitted report, never a form: their device
+/// doesn't send the ICL (`CloudSync`), so anything typed there would be lost.
 struct InspectionView: View {
     let job: Job
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
     @AppStorage("userName") private var userName = ""
 
     @State private var inspection: Inspection?
@@ -19,7 +22,9 @@ struct InspectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            if let inspection {
+            if !canEdit {
+                readOnly
+            } else if let inspection {
                 if inspection.submittedAt != nil {
                     InspectionReportScreen(inspection: inspection) {
                         inspection.submittedAt = nil
@@ -134,8 +139,22 @@ struct InspectionView: View {
         .disabled(disabled)
     }
 
+    private var canEdit: Bool { permissions.can(.iclChecklist, on: job.access) }
+
+    /// View only: the submitted report without its edit button, or a line that there is none yet.
+    @ViewBuilder private var readOnly: some View {
+        if let done = job.inspection, done.submittedAt != nil {
+            InspectionReportScreen(inspection: done, reopen: nil)
+        } else {
+            Spacer()
+            TCEmptyState("ยังไม่มีใบตรวจรับที่ส่งแล้ว", systemImage: "checkmark.seal",
+                         description: Text("ใบตรวจรับงาน (ICL) กรอกและลงนามโดยทีมภายใน · ดูได้เมื่อทีมส่งแล้ว"))
+            Spacer()
+        }
+    }
+
     private func load() {
-        guard inspection == nil else { return }
+        guard inspection == nil, canEdit else { return }
         if let existing = job.inspection {
             inspection = existing
             step = min(existing.currentStep, steps.count)
@@ -355,7 +374,8 @@ private struct StepSummaryRow: View {
 
 private struct InspectionReportScreen: View {
     let inspection: Inspection
-    let reopen: () -> Void
+    /// `แก้ไขใบตรวจรับ`; nil for a member who may only view it.
+    let reopen: (() -> Void)?
 
     @State private var pdfURL: URL?
 
@@ -370,11 +390,13 @@ private struct InspectionReportScreen: View {
                     .frame(maxWidth: .infinity)
             }
             HStack(spacing: 16) {
-                Button(action: reopen) {
-                    Label("แก้ไขใบตรวจรับ", systemImage: "pencil")
-                        .frame(maxWidth: .infinity, minHeight: 50)
+                if let reopen {
+                    Button(action: reopen) {
+                        Label("แก้ไขใบตรวจรับ", systemImage: "pencil")
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                    }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 if let pdfURL {
                     ShareLink(item: pdfURL) {
                         Label("ส่งออก PDF", systemImage: "square.and.arrow.up")

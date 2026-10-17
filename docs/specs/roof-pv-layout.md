@@ -1,9 +1,9 @@
 # Auto PV layout on the roof (วางแผงบนหลังคาอัตโนมัติ)
 
-**Status:** Ready for development, 2026-09-29
+**Status:** Partly built (checked 2026-10-17): `TCRoofCore/RoofPV.swift` lays the modules face by face from the eave with tables, gaps and blocked slots under skylights, obstacles and keep-out zones (§3.1–3.3), drawn by `RoofPlan` on C1. Not built: shade from obstacles (§3.4), L-feet (§3.5), the best-layout search (§3.6), yield (§3.7), quantities (§3.8), the `แผงบนหลังคา` tab of §5 and the report rows of §7.
 **Section:** C1 หลังคา (station roofs); C2/C3 reuse it once their spans are known (§9)
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (roof geometry, pitch, purlins), [`tank-mounting-layout.md`](tank-mounting-layout.md)
-(the no-collision rule, the energy model), [`mount-interaction-dev.md`](mount-interaction-dev.md) (the editor pattern)
+(the no-collision rule, the energy model), [`tank-mounting-layout.md`](tank-mounting-layout.md) (the editor pattern)
 **Prototypes:**
 - Python: `img/roof_pv.py` writes `roof_pv_plan.png` and `roof_pv_section.png`.
 - Interactive: `prototype/roof-layout.html`.
@@ -223,7 +223,7 @@ Sample: 216 modules, 129.6 kWp, 191 MWh/yr, 502 m rail, 80 splices, 496 L-feet, 
 
 ## 5. Interaction (a tab **แผงบนหลังคา** in the C1 editor)
 
-This follows [`mount-interaction-dev.md`](mount-interaction-dev.md): inspect and remove modes, undo, deltas,
+This follows [`tank-mounting-layout.md`](tank-mounting-layout.md): inspect and remove modes, undo, deltas,
 iPad left column, iPhone sheet.
 
 ### 5.1 State

@@ -1,6 +1,6 @@
 # Hardware assist: using the iPad's hardware in the survey (iPad Swift dev spec)
 
-**Status:** Ready for development, 2026-09-29
+**Status:** Mostly built (checked 2026-10-17): §1 `DeviceCaps` (Settings › เครื่องนี้), H1 Live Text and the nameplate parser (`LiveTextScanner`, `TCRoofCore/Hardware/NameplateParser`), H2 position, H3 roof angle and facing (`RoofSensor`, `Orientation`), H4 camera checks, wide rooms and stamp (`CheckedCamera`, `WideCamera`, `ImageQuality`, `PanoramaGuide`), H6 card / USB import (`CardImportSheet`, `CardImport`), H8 power (`PowerMonitor`, `PowerAdvice`). Not built: H5 Pencil tools, H6 external display, H7 laser meter and LiDAR measuring. Files live in `TCRoofUI/Survey/Hardware/` and `TCRoofCore/Hardware/` (§5 still names the old `SurveyUI` module).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+).
 **Target device:** iPad Air (M-series), plus anything better.
 **Rule:** every feature checks the hardware **at runtime** and falls back cleanly. The same build runs on iPad Air

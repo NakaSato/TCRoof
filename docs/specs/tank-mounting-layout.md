@@ -1,15 +1,29 @@
 # Auto mounting layout from the tank (ผังโครงสร้างแผงบนหลังคาถัง)
 
-**Status:** Draft for development, 2026-09-29
-**Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-interaction-dev.md`](tank-interaction-dev.md)),
-types in [`auto-drawing-swift.md`](auto-drawing-swift.md) §8
-**Interaction dev spec:** [`mount-interaction-dev.md`](mount-interaction-dev.md) · **Interactive prototype:** `prototype/mount-layout.html` · **Prototype:** `img/tank_mount.py` (run from `img/`) → `tank_mount_plan.png`, `tank_mount_section.png`, `tank_mount_front.png`
+**Status:** Partly built (2026-10). Built: the layout, its quantities and three checks in
+`TCRoofKit/Sources/TCRoofCore/TankLayout.swift` (tests `TankLayoutTests.swift`); D1 sub-step 3 `จัดแผง` on iPhone and
+iPad in `TCRoofUI/Survey/Pages/Tank/TankPageWide+Layout.swift` and `TankLayoutPlan.swift`
+([`docs/ui/survey-d1-layout-iphone`](../ui/survey-d1-layout-iphone/CLAUDE_CODE_TASK.md)); the layout's PV layers in the
+D1 DXF (`TCRoofCore/TankDXF.swift`). Not built: the energy model and energy search (§3a), the side section and front
+elevation drawings and the B1-C3 sheet (§5), a structure standard editable in settings, the inspect mode, sliders,
+undo and deltas of the prototype (§4.3), and the report / Excel BOQ.
+**Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-drawing-swift.md`](tank-drawing-swift.md)),
+types in [`auto-drawing.md`](auto-drawing.md) §8
+**Interactive prototype:** `prototype/mount-layout.html` (open in a browser) · **Demo:** `img/mount_demo.mp4` (22 steps),
+regenerated with `NODE_PATH=<global node_modules> node prototype/mount-demo.js <outDir>` (Playwright) ·
+**Prototype:** `img/tank_mount.py` (run from `img/`) → `tank_mount_plan.png`, `tank_mount_section.png`, `tank_mount_front.png`
 **Reference sheets (team standard):** `img/ref_mount_section.png`, `img/ref_mount_front.png`, `img/ref_mount_plan.png`
 
 The surveyor already enters the tank (bays, vents, hatches, ladders). This feature places the PV mounting structure
 on that roof automatically, using the team's tank-roof structure standard: rows of tables, posts, footings,
-rails and clamps, avoiding openings. It then draws the plan, the side section and the front elevation, and counts the
-materials. The surveyor enters nothing new except, where needed, the vent height and the plan's north.
+rails and clamps, avoiding openings. It counts the materials and checks the result; the prototype also draws the plan,
+the side section and the front elevation. The surveyor enters nothing new except, where needed, the vent height and
+the tank's azimuth.
+
+The layout is **computed**, never drawn by hand. The user moves the whole layout and may **switch panels off**;
+everything else (tables, posts, rails, clamps, quantities) follows. There is no dragging of single tables or posts.
+**Rows follow the tank walls**, and **no leg ever stands on an obstacle**: where no clear spot exists for a post pair,
+the module column there is cut and shown as a red outline.
 
 ![](img/tank_mount_plan.png)
 
@@ -19,27 +33,30 @@ materials. The surveyor enters nothing new except, where needed, the vent height
 
 ---
 
-## 1. The structure standard (one set, editable in settings)
+## 1. The structure standard
 
-Taken from the reference sheets. Every value is printed under the drawing as มาตรฐาน / ค่าสมมติ.
+Taken from the reference sheets. In the app it is one fixed set, `TankLayout.Params`; it is not editable yet (open
+question 7). The prototype prints every value under the drawing as มาตรฐาน / ค่าสมมติ.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `moduleL × moduleW` | 2.28 × 1.13 m, 600 W | module, portrait along the slope |
-| `nSlope` | 2 | modules along the slope (slope length 4.58 m with a 0.02 m gap) |
+| `moduleL × moduleW` | the catalogue's default module (`RoofPlan.Module.catalogDefault`: 2.278 × 1.134 m, 550 W) | module, portrait along the slope |
+| `nSlope` | 2 | modules along the slope (slope length 4.576 m with a 0.02 m gap) |
 | `hFront`, `hBack` | 1.00, 2.00 m | top of front / back post above the roof |
 | `postDY` | 2.80 m | front post → back post (plan) ⇒ tilt = atan(1.00 / 2.80) = **19.7°** |
 | `rowGap` | 2.70 m | back post of a row → front post of the next ⇒ row pitch **5.50 m** |
-| `postDX` | ≤ 2.70 m | post spacing along the row (equal spacing per table) |
+| `postDX` | ≤ 2.70 m | post pair spacing along the row |
 | `endOver` | 0.40 m | rail overhang past the end posts |
-| `frontOver` | 0.46 m (slope) | front post → lower panel edge; the back overhang follows (1.15 m) |
+| `frontOver` | 0.46 m (slope) | front post → lower panel edge (0.43 m on plan); the back overhang follows (1.15 m) |
 | `rails` | 4 per table | rail clamps where each rail crosses a rafter |
 | `footing` | 300 × 300 × 150 mm concrete, anchored to the slab | one per post |
-| `edge`, `openClear` | 1.0 m, 0.5 m | same setbacks as the usable-area rule |
+| `clearance`, `openClear` | 1.0 m, 0.5 m | same setbacks as the usable-area rule |
+| `legClear` | 0.30 m | footing edge → opening |
 | `ventH`, `underClear` | 1.00 m, 0.10 m | vent height above the roof (0.40 + 0.60 on the sheet), clearance under the panels |
+| `maxCantilever`, `minPairGap` | 1.00 m, 0.60 m | end pair → table end, least spacing between pairs (§3 step 6) |
 | `bracing` | X in every post bay, front and back lines | |
 
-Derived: table plan depth = 4.58 × cos 19.7° = **4.31 m**; panel underside height at plan distance d north of the
+Derived: table plan depth = 4.576 × cos 19.7° = **4.31 m**; panel underside height at plan distance d north of the
 front post = 1.00 + d · tan 19.7°.
 
 ## 2. Inputs
@@ -47,74 +64,87 @@ front post = 1.00 + d · tan 19.7°.
 | Input | Source | New? |
 |---|---|---|
 | tank outline, bays | D1 `spansX`, `spansY` | no |
-| vents, hatches, ladders, pipes | D1 `obst` (typed) | no |
-| north of the tank plan | D1 `planNorth` (ด้านบน / ขวา / ล่าง / ซ้าย), default ด้านบน | **yes**, one choice describing the site |
-| vent height | D1 `ventHeight` (ม.), default 1.00 (ค่าสมมติ) | **yes**, optional measurement |
-| structure standard | settings (§1) | settings only |
+| vents, hatches, ladders, pipes | D1 sub-step 2 points (`TankPoints`), those marked absent ignored | no |
+| azimuth of the tank's top wall | D1 sub-step 1 `Tank.azimuth` (compass or typed, ° from north) | **yes**, one measurement describing the site |
+| vent height | D1 `ventHeight` (ม.), one value for the tank, typed on a vent's card in sub-step 2 (`ความสูงปล่อง`, `ไม่วัดใช้ 1.00 ม.`) | **yes**, optional measurement |
+| structure standard | §1 | fixed in code |
 
-Panels face the equator (south); rows run east–west. With north not at the top, the layout is computed in a rotated
-frame and drawn back in the tank's frame.
+Panels face the wall nearest to south (`TankLayout.turn`): the four walls face the azimuth + 0 / 90 / 180 / 270°, and the
+layout is computed in a frame turned by quarter turns so that wall is the south (+y) side, then drawn back in the
+tank's frame. Without an azimuth the bottom wall faces south. The plan stays in the tank's frame; a slope tag in its
+corner (`↓ ลาดลงใต้`, the arrow turned to the facing wall) shows the direction.
 
 ## 3. Layout algorithm
 
-All in metres, tank frame rotated so south is +y.
+All in metres, in the turned frame (south is +y). `TankLayout.init`.
 
-1. **Region:** roof inset by `edge`.
-2. **Columns:** `n = ⌊(W − 2·edge + gap) / (moduleW + gap)⌋`, centred across the tank. Every row uses the same columns,
-   so tables line up north–south.
-3. **Rows** from the south edge: row k has its lower panel edge at `TH − edge − k·5.50`, front posts 0.43 m north of it,
-   back posts 2.80 m further, upper panel edge 1.08 m beyond. Stop when the upper edge passes the north setback.
+1. **Region:** roof inset by `clearance`.
+2. **Columns:** `n = ⌊(W − 2·clearance + gap) / (moduleW + gap)⌋`, starting at the west setback plus the column
+   offset `offX` (0 … the width left over). Every row uses the same columns, so tables line up north–south.
+3. **Rows** from the south setback: row k has its lower panel edge at `H − clearance − offY − k·5.50`, front posts
+   0.43 m north of it, back posts 2.80 m further. Stop when the upper edge passes the north setback.
+   `offY` runs 0 … the depth left over modulo the pitch.
 4. **Openings per row** (each opening grown by `openClear`):
-   - **hatch** overlapping the row → the module columns over it are removed (keep access).
-   - **vent** overlapping the row → if the lowest panel point above it is at least `ventH + underClear`, the vent stays
-     under the panels (counted as "อยู่ใต้แผงได้"); otherwise the columns over it are removed.
-   - pipes and ladders are outside the roof and do not block.
+   - **hatch**, or any other obstacle that is not a vent, overlapping the row → the module columns over it are removed
+     (keep access).
+   - **vent** overlapping the row → if the panel underside above the vent's south edge is at least `ventH + underClear`,
+     the vent stays under the panels (counted as "อยู่ใต้แผงได้"); otherwise the columns over it are removed. A vent
+     only inside the grown margin does not remove a column.
+   - pipes and ladders stand on the walls (`TankPoints.onWall`) and do not block.
 5. **Tables:** each run of at least 2 free columns is one table.
-6. **Posts — legs never touch an obstacle (hard rule).** Every footing must be inside the tank and at least 0.30 m
-   clear of every opening (vent, hatch). Front and back posts share a rafter, so they are placed **as a pair**.
-   Per table: try the standard equal spacing (`nPost = ⌈(length − 2·endOver) / postDX⌉ + 1`); if any pair is not
-   free, place the pairs greedily from the west end on a 0.05 m grid — first pair within 1.00 m of the table end
-   (`maxCantilever`), each next pair at most `postDX` further and at least 0.60 m away, last pair within 1.00 m of the
-   east end. If no free spot exists, the **module column where it fails is removed** (the table is shortened or split)
-   and the parts are posted again. Removed columns are drawn as red outlines with the reason
-   "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง". There are no flagged posts: every drawn leg is clear.
-7. **Quantities** (per table, summed): modules, kWp, posts = footings, rafters, rail length (4 × table length),
-   rail clamps (rails × rafters), mid clamps (2 per module joint per module row), end clamps (2 per end per module row),
-   X braces (2 per bay), ground lugs (1 per table).
+6. **Posts: legs never touch an obstacle (hard rule).** Every footing centre must be inside the tank (half a footing
+   from the wall) and its footing at least `legClear` (0.30 m) clear of every opening, so the centre is at least 0.45 m
+   away. Front and back posts share a rafter, so they are placed **as a pair**. Per table: try the standard equal
+   spacing (`nPost = ⌈(length − 2·endOver) / postDX⌉ + 1`, from `endOver` to `endOver`); if any pair is not free, place
+   the pairs greedily from the west end on a 0.05 m grid: the first pair within `maxCantilever` of the table end
+   (nearest `endOver`), each next pair at most `postDX` further and at least `minPairGap` away (the furthest free spot),
+   the last pair within `maxCantilever` of the east end. If no free spot exists, the **module column where it fails is
+   cut** (the table is shortened or split) and the parts are posted again. Cut columns are drawn as red dashed
+   outlines ("ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง" in the prototype). There are no flagged posts: every drawn leg is clear.
+7. **Quantities** (`TableBOM` per table with a panel on, summed in `BOM`): modules, kWp, posts = footings, rafters =
+   pairs, rail length (4 × table length), rail clamps (4 × pairs), mid clamps (2 per module joint per module row),
+   end clamps (2 per end per module row), X braces (2 per bay), ground lugs (1 per table).
+8. **Checks** (`Checks`, the sub-step's three before going on): the least headroom over a vent under the panels
+   ≥ `underClear`; tank edge to the nearest panel ≥ `clearance`; every built table has at least 2 pairs and every
+   footing clears every opening. The sub-step is done when a layout is stored and all three pass (`TankLayout.done`).
 
-Prototype result on the กปภ. 40 × 40 tank (first version, before the no-collision rule): 7 rows, 13 tables, 394 modules,
-236.4 kWp; 8 vents stay under the panels. With the rule, the columns next to the corner vents are cut instead of flagged
-(see §3a for the final numbers).
+The automatic layout (`TankLayout.auto`) centres the columns (`offX` half the leftover, snapped to 5 cm) and starts the
+rows on the south setback (`offY` 0).
 
+Results on the D1 40 × 40 preset with the standard points (`TankLayoutTests`, 550 W module, automatic layout): 7 rows,
+13 tables, 410 modules, 6 vents under the panels, 2 columns cut. Without obstacles: 7 tables of 32 columns, 448 modules.
+The Python prototype (600 W, 2.28 × 1.13 m module) gave 7 rows, 13 tables, 394 modules and 236.4 kWp before the
+no-collision rule, with 8 vents under the panels.
 
-## 3a. Accurate layout: panels face south, best energy per year
+### Best layout (`หาผังแผงมากสุด`, `TankLayout.best`)
 
-The first version filled the roof with as many modules as fit, rows parallel to the tank walls. The accurate version
-(`img/tank_mount_opt.py`) makes the panels face **true south** and chooses the layout by **annual energy**, because the
-tank is rarely square to the compass and closer rows shade each other.
+Every `offX` and `offY` in their ranges on the 0.05 m grid. Stage 1 counts modules without posts (fast); stage 2 lays
+out the ten best with posts, because a cut column can change the order. The most modules wins; ties go to the first
+found (the smaller `offY`, then `offX`). It runs off the main thread with a spinner in the button; the result is never
+fewer modules than any offset tried, including the automatic one. The prototype's version stepped the row offset by
+0.10 m over a whole pitch and the column offset by 0.05 m over a module width (≈ 1,300 layouts) and broke ties by fewer
+cut columns; on its 40 × 40 fixture it went from 386 modules at offsets 0 / 0 to **408 modules (244.8 kWp)** at row
+offset 0.30 m, column offset 0.05 m, with 0 legs on obstacles.
 
-**Two more site inputs (measurements, not design choices):**
+## 3a. Accurate layout: best energy per year (not built)
 
-| Field | Source | Default |
-|---|---|---|
-| `tankBearing` — the direction the plan's top wall faces, ° from true north | compass on site (the iPhone/iPad compass can fill it) | 0° (= `planNorth` ด้านบน) |
-| latitude | the survey GPS (`gps`, A1) | — (required for the energy model) |
+The app maximises the module count. The accurate version (`img/tank_mount_opt.py`) also scores layouts by **annual
+energy**, because the tank is rarely square to the compass and closer rows shade each other.
 
-`planNorth` (4 directions) stays as a quick fallback; the bearing replaces it when entered.
+**Site inputs:** the tank's azimuth (above; the D1 compass fills it) and the latitude from the survey GPS (`gps`, A1),
+required for the energy model.
 
 **Method**
 
-1. **Orientation — the team rule: rows follow the tank (ขนานผนังถัง).** Panels face the wall side nearest to south;
-   the panel azimuth is the bearing's offset (≤ 45°) and is used in the energy model. True-south rows are still computed
+1. **Orientation: the team rule, rows follow the tank (ขนานผนังถัง).** Panels face the wall side nearest to south;
+   the panel azimuth is the wall's offset from south (≤ 45°) and is used in the energy model. True-south rows are computed
    for the comparison chart only:
-   - **หันทิศใต้จริง** — rows run exactly east–west (panel azimuth 0°). The tank, its setbacks and openings are rotated
+   - **หันทิศใต้จริง**: rows run exactly east–west (panel azimuth 0°). The tank, its setbacks and openings are rotated
      into that frame, so tables sit at an angle to the walls.
-   - **ขนานผนังถัง** — rows parallel to the wall that faces closest to south; panel azimuth = the bearing's offset
-     (≤ 45°).
+   - **ขนานผนังถัง**: rows parallel to the wall that faces closest to south.
 2. **Geometry in any rotation:** module slots, footings and grown openings are polygons; a slot is valid when all its
    corners are inside the inset tank and it does not intersect a grown hatch or a too-low vent (separating axis test);
-   footings must be inside the tank and 0.30 m clear of every opening; posts follow §3 step 6 (no leg on an obstacle,
-   cut a column when needed).
+   footings follow §3 step 6.
 3. **Sun model, whole year, 15-minute steps (every 3rd day):** NOAA-style sun position from latitude, clear-sky GHI
    (Haurwitz) scaled by 0.72 for Thai haze and clouds, Erbs diffuse split, isotropic sky, albedo 0.20, PR 0.80. It gives
    about 1,450–1,480 kWh/kWp·yr at 17° N, in line with Thai PV yields; the absolute value is ประมาณ, the comparison is what
@@ -124,12 +154,11 @@ tank is rarely square to the compass and closer rows shade each other.
    bottom 4 % of the slope drops the whole bottom module's beam (its three bypass substrings all lose their bottom cells);
    past 54 % the top module goes too. The south-most row is unshaded.
 5. **Search:** row gap from the standard 2.70 m up to 4.70 m (0.20 m steps) × row offset (0.20 m) × column offset
-   (0.10 m). Stage 1 counts modules without posts (fast); stage 2 re-runs the ten best with post placement, because a
-   cut column can change the order. For each gap the layout with the most modules is kept; then the gap with the highest
-   **MWh/yr** wins. Row gaps below the standard are never tried (maintenance access and bracing). About 16 s in Python
-   for both orientations; well under a second in Swift.
+   (0.10 m), in the two stages of the best layout above. For each gap the layout with the most modules is kept; then
+   the gap with the highest **MWh/yr** wins. Row gaps below the standard are never tried (maintenance access and
+   bracing). About 16 s in Python for both orientations.
 
-**Result, กปภ. 40 × 40 tank, 17.0° N, top wall facing 12°:**
+**Result (prototype), กปภ. 40 × 40 tank, 17.0° N, top wall facing 12°:**
 
 | Orientation | Row gap | Modules | kWp | kWh/kWp·yr | Row shading | MWh/yr |
 |---|---|---|---|---|---|---|
@@ -143,7 +172,8 @@ Legs on obstacles in the chosen layout: **0** (198 posts, all footings ≥ 0.30 
 What this says:
 
 - Turning the rows 12° to face true south gains only about 0.2 % per kWp but loses 48 modules to the rotated fit, so the
-  wall-parallel layout makes about **10 % more energy** — which supports the team's rule to follow the tank.
+  wall-parallel layout makes about **10 % more energy**, which supports the team's rule to follow the tank (the rule
+  the app builds).
 - The team's 2.70 m row gap costs about 1.9 % to shading at 17° N; wider gaps shade less but remove whole rows. The
   standard gap is the best choice for this tank.
 
@@ -151,48 +181,185 @@ What this says:
 |---|---|---|
 | ![](img/tank_mount_opt_plan.png) | ![](img/tank_mount_opt_south.png) | ![](img/tank_mount_opt_compare.png) |
 
-UI (adds to [`mount-interaction-dev.md`](mount-interaction-dev.md)): rows always follow the tank; the bearing field with
-a **วัดด้วยเข็มทิศ** button (CoreLocation heading, true north, the device held along the top wall) sets the panel azimuth
-for the energy numbers; energy tiles (MWh/yr, kWh/kWp, row shading %) sit next to the module count, and
-"หาผังที่ได้แผงมากที่สุด" becomes **หาผังที่ได้พลังงานมากที่สุด**.
+UI when built: energy tiles (MWh/yr, kWh/kWp, row shading %) next to the module count, and `หาผังแผงมากสุด` becomes
+**หาผังที่ได้พลังงานมากที่สุด**. Swift: a pure `SunModel` (sun position, clear-sky, POA, row shading), unit-tested against
+the Python numbers above, and the gap search in `TankLayout.best`.
 
-Swift: `TCRoofCore/Mounting/SunModel.swift` (sun position, clear-sky, POA, row shading; pure functions, unit-tested
-against the Python numbers above), `MountLayout` gains `orientation`, polygon geometry (`Polygon.sat`, `contains`), and
-`MountOptimizer` runs the search off the main thread.
+## 4. Interaction
 
-## 4. Drawings
+| Auto layout on open | Tap a vent: fits under | Tap a vent: too low | Best layout found |
+|---|---|---|---|
+| ![](img/mount_demo_000.png) | ![](img/mount_demo_001.png) | ![](img/mount_demo_002.png) | ![](img/mount_demo_010.png) |
 
-| Sheet | Content |
+| Column cut so no leg hits a vent | Tap a table | Section of that row | North on the right |
+|---|---|---|---|
+| ![](img/mount_demo_003.png) | ![](img/mount_demo_011.png) | ![](img/mount_demo_012.png) | ![](img/mount_demo_020.png) |
+
+The pictures are the prototype (`prototype/mount-layout.html`). The app builds part of it as D1 sub-step 3 `จัดแผง`
+(after `ขนาดถัง` and `สิ่งกีดขวาง`, before `ภาพถ่าย`), from the board in `docs/ui/survey-d1-layout-iphone`.
+
+### 4.1 Built: D1 `จัดแผง`
+
+**Open the sub-step.** The first time for a tank, the automatic layout (§3) is computed and stored. Later opens recompute
+from the stored offsets and write `panelsBefore` again, since sub-step 2 may have changed.
+
+**Card 1 `การวางผังแผง`** (aside `ตามแบบ B1-C3 · เอียง 19.7°`):
+- segment `เลื่อนผัง` / `แก้แผง`;
+- the plan (`TankLayoutPlan`, on `TankPlan.compact`): obstacles faint (vents solid, others dashed), panels on in blue,
+  panels off as blue dashed outlines, cut columns as red dashed outlines, a teal guide along each table, posts as dots,
+  the slope tag; a button opens it full screen (zoom 1–4× by pinch or − / +, the count under it);
+- caption `แผงโมโน 550 W · แตะแผงเพื่อแก้` (the module's watts);
+- `จัดแผงใหม่` (the automatic layout) and `หาผังแผงมากสุด` (§3 best layout). When panels were switched off by hand both
+  ask first: `ล้างการแก้แผงที่ทำไว้?`, `แผงที่ปิดหรือโต๊ะที่เอาออกจะกลับมาตามผังอัตโนมัติ`.
+
+**`เลื่อนผัง`:** drag the whole layout. The offset follows the finger, snapped to 5 cm and kept within the setback
+range; the plan relayouts only when the snapped offset changes, and the layout is stored on release.
+
+**`แก้แผง`:** tap a panel (or the nearest within 10 pt) to switch that one module off or on; a long press (0.5 s, with a
+haptic) switches off every panel of its table. Switched-off panels leave the quantities; a table with none on is not
+built.
+
+**Card 2 `สรุป · วัสดุโครงสร้าง`:** chip `n แผง · x kWp`; rows `แผง 550 W`, `กำลังรวม`, `แถว · โต๊ะแผง`, `เสา + โครงหน้า`,
+`ฐานราก`, `ราง (4 เส้น)`, `Mid / End clamp`, `Rail clamp`, `ค้ำยันไขว้` from `BOM`.
+
+**Card 3 `ตรวจสอบก่อนไปต่อ`:** chip `✓ 3/3` or orange `n/3`; the three checks of §3 step 8:
+`ใต้คานเหนือปล่อง (แผงทับได้)` (headroom, or `ไม่มีปล่องใต้แผง`), `ขอบถังถึงขอบแผง ≥ 1.00 ม.`,
+`ขาโครงสร้างไม่ชนสิ่งกีดขวาง` (`เสา n ต้น · ตัดแผง m คอลัมน์`); then `ดูแบบ B1-C3 · ภาพตัดโต๊ะแผง · ฐานเสา`, which opens
+a placeholder (`ยังไม่มีไฟล์แบบในแอป`).
+
+**Stored** on the tank module (optional, hidden fields, `TankLayout.Key`): `tankPvOrient` (`portrait`, set once a layout
+exists), `tankPvOffX`, `tankPvOffY`, and `tankPvOff`, the switched-off panels as `row.table.column.panel` keys. The
+layout itself is always recomputed; `panelsBefore` = the panel count, so completion and exports keep working.
+
+| | iPad | iPhone |
+|---|---|---|
+| Layout | plan card on the left (≤ 680 pt), cards 2 and 3 and `ถัดไป · ภาพถ่าย ›` in a 360 pt column on the right; one column in portrait | one column of cards under the sub-step tabs |
+| Zoom | full screen: pinch or − / + | the same |
+
+### 4.2 The prototype's controls (state)
+
+The prototype's editor model, for the parts not built yet:
+
+```swift
+@Observable final class MountEditorModel {
+    var rowOffset: Double = 0          // m, rows move north (built: offY)
+    var colOffset: Double = 0          // m, columns move east (built: offX)
+    var ventHeight: Double = 1.00      // D1 ventHeight (built)
+    var standard: MountStandard        // edits here are per job (not built)
+    var removed: Set<SlotRef> = []     // (row, column) removed by the user (built per panel: tankPvOff)
+    var mode: MountMode = .inspect     // .inspect, .remove
+    var view: MountView = .plan        // .plan, .rowSection
+    var selection: MountSelection?     // .table(row, firstColumn) | .vent(index) | .post(row, x, line)
+    private(set) var layout: MountLayout
+    private(set) var previous: MountQuantities?   // for the deltas
+    let undo: UndoManager
+}
+```
+
+**`removed` is cleared** whenever the grid it refers to changes: an offset, the azimuth, the standard, or the tank
+spans/openings; the info line says so once ("ผังเปลี่ยน จึงล้างแผงที่เอาออกเอง"), and undo brings it back. In the app,
+`tankPvOff` is cleared only by `จัดแผงใหม่` and `หาผังแผงมากสุด` (after the question); a drag or a change in sub-step 1 or 2
+keeps the keys, which then name the panel at the same row, table and column index (open question 8).
+
+### 4.3 Not built: the prototype's richer editor
+
+| Part | Content |
 |---|---|
-| **Plan** (A3) | tank outline and bays (light), openings, modules as blue dashed rectangles (projected), rails, rafters, posts with footings, rail clamps (green), ground lug per table (red), north arrow, legend, quantities, notes |
-| **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, post heights 1.00 / 2.00, braces, the two modules, a vent under the panels with the clearance note |
-| **Front elevation** | one table: posts and spacing, X bracing, 4 rails, modules, footing note |
+| Controls (left column 320 pt on iPad, a sheet `ปรับผัง` on iPhone with medium / large detents) | vent height, row offset slider, column offset slider (each value in metres, 0.00, the layout updating while dragging at one compute per frame, the undo step at touch-down), best layout, the structure standard (collapsed) with **คืนค่ามาตรฐาน** |
+| Tool strip | mode: **ดูรายละเอียด** / **เอาแผงออก / ใส่คืน** · undo · view: **แปลน** / **รูปตัดแถวที่เลือก** |
+| Info line (above the drawing on iPad; a two-line bottom bar on iPhone, tap to expand) | what was tapped and why (pills: green = OK, red = problem); or the mode hint |
+| Quantities (tiles under the drawing on iPad; a tab `ปริมาณ` in the iPhone sheet) | as card 2 plus columns cut and legs on obstacles (always 0); each with a **delta** (green +, red −, hidden when it rounds to 0) against the state before the last change |
+| Notes | one line per cut column ("แถว 1: ตัดแผง 1 ช่องที่ x 1.00–2.13 ม. …") |
 
-Footer on all: "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง".
+**ดูรายละเอียด (inspect)**, tap targets in this order (hit-testing by coordinates, not drawn shapes):
 
-## 5. Swift
+| Tap on | Info line | Drawing |
+|---|---|---|
+| a post (8 pt) | row, x (m), footing type; green "ห่างสิ่งกีดขวางอย่างน้อย 0.30 ม." | orange ring |
+| a vent (box + 3 pt) | the row above it, the lowest panel height over it, the required height (vent + 0.10); green "วางแผงคร่อมได้" or red "ต่ำไป จึงเว้นแผงเหนือช่องนี้"; no row over it: "ไม่มีแผงเหนือช่องนี้" | orange outline |
+| a module slot in a table | modules (kWp), length, post pairs and max spacing, green "ขาไม่ชนสิ่งกีดขวาง", "จัดระยะเสาใหม่เพื่อหลบ" when the greedy placement was used, button **ดูรูปตัดแถวนี้** | table tinted |
+| an empty slot | red pill with the reason: "ช่องลงถัง: เว้นให้เข้าถึงได้", "ช่องระบาย: ใต้แผงสูง 0.85 ม. ต่ำกว่า 1.10 ม.", "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง", "เอาออกเอง" | — |
+| empty paper | clear the selection | — |
+
+**เอาแผงออก / ใส่คืน:** a tap toggles a slot (both modules along the slope together); removed slots show as red dashed
+outlines in this mode only; a slot blocked by the rules cannot be toggled and shows its reason; one undo step per tap.
+Typical use (demo steps 15–18): a walkway through all rows by removing one column in every row.
+
+**Standard fields** (module L, W, front / back post heights, front–back distance, row gap, max post spacing): commit on
+end-editing, invalid (≤ 0) reverts; derived tilt, pitch and table depth shown under them.
+
+**Row section:** the selected row (default row 1): posts with heights, rafter, modules, braces, the front–back and
+row-gap dimensions, and the first vent under that row drawn green (fits) or red (does not) with its clearance.
+Read-only; switching view keeps the selection.
+
+**Undo:** `UndoManager` with snapshots of the inputs (offsets, vent height, standard, removed); best layout is one step.
+
+## 5. Drawings
+
+| Sheet | Content | Built |
+|---|---|---|
+| **Plan** | tank outline and bays, openings, panels, cut columns, row guides, posts, slope tag (§4.1) | on screen |
+| **Plan** (A3, prototype) | as above plus rails, rafters, footings, rail clamps (green), ground lug per table (red), north arrow, legend, quantities, notes | no |
+| **DXF** | D1's `ส่งออก DXF` adds the layout: layer `PV` (each panel on), `PV_GROUP` (each table's outline and a footing circle per post) | yes, `TankDXF` |
+| **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, post heights 1.00 / 2.00, braces, the two modules, a vent under the panels with the clearance note | no |
+| **Front elevation** | one table: posts and spacing, X bracing, 4 rails, modules, footing note | no |
+
+Footer on all printed sheets: "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง".
+
+## 6. Swift
 
 | File | Contents |
 |---|---|
-| `TCRoofCore/Mounting/MountStandard.swift` | the §1 values (`Codable`, in `SurveySettings`), derived tilt, depth, pitch |
-| `TCRoofCore/Mounting/MountLayout.swift` | `MountLayout.compute(tank: TankGeometry, std: MountStandard, north: PlanNorth) -> MountLayout` with `rows`, `tables`, `posts`, `notes`, `ventsUnder` |
-| `TCRoofCore/Mounting/MountQuantities.swift` | the §3.7 counts; also feeds the report and Excel BOQ |
-| `TCRoofCore/Mounting/MountDrawings.swift` | `plan`, `section`, `front` → `Sketch` (same `DrawingKit` as the tank) |
-| `SurveyUI/Tank/MountLayoutView.swift` | a third tab next to แปลน / รูปตัด in the tank editor: **โครงสร้าง**; toggles for layers; quantities panel; tap a red post to see why |
+| `TCRoofCore/TankLayout.swift` (built) | `Params` (§1, derived tilt, depth, pitch), `TankLayout(values, params:, off:)` with `tables`, `cuts`, `rows`, `bom`, `checks`; `turn`, `auto`, `best`, `offsetRange`; stored answers (`save`, `toggle`, `removeTable`, `current`, `done`) |
+| `TCRoofUI/Survey/Pages/Tank/TankPageWide+Layout.swift` (built) | the three cards, the full-screen plan, the questions, iPad and iPhone layouts |
+| `TCRoofUI/Survey/Pages/Tank/TankLayoutPlan.swift` (built) | the plan drawing and its drag, tap and long press |
+| `TCRoofCore/TankDXF.swift` (built) | the PV layers |
+| not built | the standard in `SurveySettings`, `SunModel`, the section and front sheets as `Sketch`, the report and Excel BOQ from `BOM` |
 
-Performance: the 40 × 40 layout is a few hundred boxes; compute with the tank geometry off the main thread.
+Performance: the 40 × 40 layout is a few hundred boxes and computes on the main thread; `current` keeps its last answer,
+since one render asks for it from several cards. Only `หาผังแผงมากสุด` runs detached.
 
-Tests: the §3 numbers for the 40 × 40 fixture; a hatch removes exactly the columns it covers; a vent under the
-back half stays, one under the front edge removes columns; post pairs never sit on an opening; bay spacing never
-exceeds `postDX` unless flagged; snapshot SVGs of the three sheets.
+## 7. Tests
 
-## 6. Open questions
+Built (`TankLayoutTests`): the standard's geometry (tilt 19.65°, depth 4.31, pitch 5.50, front 0.433); the empty and
+seeded 40 × 40 numbers of §3; the clearance at every offset; a hatch removes exactly the columns it covers; a vent under
+the back half stays, one under the front edge removes columns; post pairs never within 0.45 m of an opening, spacing
+≤ `postDX` and end pairs within `maxCantilever` on every preset; the per-table BOM rules and their sum; best layout never
+fewer modules than other offsets, on the 5 cm grid; the measured vent height; rows facing the wall nearest south;
+`current` after every change; save, toggle, remove table and completion; completion counts as before.
+
+To add with the rest of §4.3, an XCUITest that mirrors the demo (prototype numbers):
+
+1. Open the 40 × 40 fixture's layout. Expect 408 modules after best layout and **0 legs on obstacles**.
+2. Tap each vent; at least one shows "วางแผงคร่อมได้" and one "ต่ำไป".
+3. Tap a red outline: "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง". Tap any post: "ห่างสิ่งกีดขวางอย่างน้อย 0.30 ม.".
+4. Set row offset 0.0; expect 386 modules and a red delta.
+5. Best layout; expect 408 again and the note with the tried count.
+6. Tap a table in row 3; **ดูรูปตัดแถวนี้** shows "รูปตัดแถวที่ 3".
+7. Remove mode; tap column 16 in rows 1–4; expect 8 modules fewer (4 slots × 2); undo restores the last slot.
+8. Row gap 3.20; expect fewer rows. Reset the standard.
+9. Top wall facing east; modules are recomputed, rows run north–south.
+
+Done when:
+
+- [ ] Every step above passes on iPad and iPhone simulators.
+- [x] No state in which a module sits over a hatch or a too-low vent, or any footing is within 0.30 m of an opening or outside the tank.
+- [x] Best layout never returns fewer modules than the current layout.
+- [ ] Switched-off panels never survive a grid change silently.
+- [ ] Quantities in the app equal the report / Excel BOQ.
+
+## 8. Open questions
 
 1. Accept the energy model assumptions (clear-sky × 0.72, PR 0.80, portrait-2 shading rule) or supply a measured TMY / PVsyst yield to calibrate?
-
 2. Must posts land on the tank's columns or beams (4.00 m grid) rather than anywhere on the slab? If so, the post
    spacing along the row should snap to the bay grid instead of ≤ 2.70 m.
 3. Is the row gap (2.70 m) fixed, or should it follow a shading rule (e.g. no shade at 9:00–15:00 on 21 December)?
 4. Walkways: does the team need a maintenance path to every hatch and between tables (width?), beyond the 0.5 m clearance?
-5. Vent heights: one value per tank, or per vent (box vents vs mushroom vents)?
-6. Grounding: one lug per table as drawn, plus ground plates at the tank edge (detail H) — how many and where?
+5. Vent heights: one value per tank (as built), or per vent (box vents vs mushroom vents)?
+6. Grounding: one lug per table as drawn, plus ground plates at the tank edge (detail H): how many and where?
+7. Should the structure standard be editable (in settings, or per job as in the prototype), and which module: the
+   catalogue's default or B1's chosen one?
+8. Should a drag, or a change of the tank or its points, clear the switched-off panels (as the prototype does) instead of
+   keeping their index keys?
+9. The board's tilt (15°) and table types (full 6 × 2, short 3–5 columns) differ from the reference sheets' 19.7° and
+   one table per free run, which the app follows. Which is the team standard?

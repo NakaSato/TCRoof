@@ -178,9 +178,10 @@ final class InstallTrackingUITests: XCTestCase {
     }
 
     /// `ทดสอบ IEC 62446` opens the IEC test (seeded with the แพรกหนามแดง sample); the after band opens step 4's page, and
-    /// a Vmp typed for String 1 (photo first, from the stub camera) is kept after going back and in again.
+    /// a Vmp typed for String 1 (photo first, from the stub camera) is kept after going back and in again. It starts
+    /// from a fresh sample (`reset`): readings the other IEC tests left on the station would change the step's flow.
     func testIECTabTypesAReading() {
-        let app = launch(["-iecDemo", "YES", "-iecCameraStub", "YES"], demo: false)
+        let app = launch(["-iecDemo", "reset", "-iecCameraStub", "YES"], demo: false)
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["ทดสอบระบบ IEC 62446"].waitForExistence(timeout: 10), "the tab should open the IEC test")

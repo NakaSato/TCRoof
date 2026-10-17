@@ -81,13 +81,17 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Jobs: the team reads and writes them; an external member reads their jobs and changes only the IEC test.
+    // Jobs: the team reads and writes them; an external member reads their jobs and changes only the IEC test, while
+    // it is open (`iecState`, written by the app beside the test). They may send it (`sent`), never close it: once
+    // sent or closed, only the team sends it back or reopens it. Team devices drop a close the state doesn't record.
     match /jobs/{doc} {
       allow read: if isTeam() || readsMine();
       allow create, delete: if isTeam();
       allow update: if isTeam()
         || (isExternal() && listsMe(resource.data)
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['iecReport']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['iecReport', 'iecState'])
+            && resource.data.get('iecState', 'open') == 'open'
+            && request.resource.data.get('iecState', null) in ['open', 'sent']);
     }
 
     // The customers' phones and addresses, one document per job: the team's only.

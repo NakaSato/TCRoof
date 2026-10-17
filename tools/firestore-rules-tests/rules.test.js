@@ -70,12 +70,29 @@ test('an external member never reads contacts, REVs or another job', async () =>
 
 test('an external member changes only the IEC test of their job', async () => {
   const d = db(CON);
-  await assertSucceeds(setDoc(doc(d, 'jobs', 'mine'), { iecReport: '{"x":1}' }, { merge: true }));
+  await assertSucceeds(setDoc(doc(d, 'jobs', 'mine'), { iecReport: '{"x":1}', iecState: 'open' }, { merge: true }));
   await assertFails(updateDoc(doc(d, 'jobs', 'mine'), { status: 'completed' }));
   await assertFails(updateDoc(doc(d, 'jobs', 'mine'), { externals: [CON, OTHER] }));
-  await assertFails(setDoc(doc(d, 'jobs', 'theirs'), { iecReport: '{}' }, { merge: true }));
+  await assertFails(setDoc(doc(d, 'jobs', 'theirs'), { iecReport: '{}', iecState: 'open' }, { merge: true }));
   await assertFails(setDoc(doc(d, 'jobs', 'new'), { code: 'TC-9', externals: [CON] }));
   await assertFails(deleteDoc(doc(d, 'jobs', 'mine')));
+});
+
+test('an external member edits and sends the IEC test while it is open, never closes or reopens it', async () => {
+  const d = db(CON);
+  const job = doc(d, 'jobs', 'mine');
+  // an older app's write, without the state, is refused
+  await assertFails(setDoc(job, { iecReport: '{"x":1}' }, { merge: true }));
+  await assertFails(setDoc(job, { iecReport: '{"x":1}', iecState: 'closed' }, { merge: true }));
+  await assertSucceeds(setDoc(job, { iecReport: '{"x":2}', iecState: 'sent' }, { merge: true }));
+  // sent: no more edits, no taking it back
+  await assertFails(setDoc(job, { iecReport: '{"x":3}', iecState: 'sent' }, { merge: true }));
+  await assertFails(setDoc(job, { iecReport: '{"x":3}', iecState: 'open' }, { merge: true }));
+  // the team closes it: still locked; the team reopens it: open to the contractor again
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { iecReport: '{"x":2,"result":{}}', iecState: 'closed' }, { merge: true }));
+  await assertFails(setDoc(job, { iecReport: '{"x":4}', iecState: 'open' }, { merge: true }));
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { iecReport: '{"x":2}', iecState: 'open' }, { merge: true }));
+  await assertSucceeds(setDoc(job, { iecReport: '{"x":5}', iecState: 'open' }, { merge: true }));
 });
 
 test('an external member fills daily reports but never signs them', async () => {

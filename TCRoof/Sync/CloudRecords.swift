@@ -74,6 +74,9 @@ extension Job: CloudSynced {
         var stationDocs: String?
         var kind: String?
         var iecReport: String?
+        /// The IEC test's hand-over state (`IECReport.LockState`), derived from `iecReport` and checked by the rules;
+        /// nil from app versions without it.
+        var iecState: String?
         /// Assigned external people and the supervising engineer (roles); nil from app versions without roles.
         var externals: [String]?
         var supervisor: String?
@@ -98,7 +101,8 @@ extension Job: CloudSynced {
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
                scheduleWorkbookDriveID: scheduleWorkbookDriveID, scheduleWorkbookName: scheduleWorkbookDriveID == nil ? nil : scheduleWorkbookName,
                routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue,
-               iecReport: iecReportJSON, externals: externals, supervisor: supervisorEmail ?? "")
+               iecReport: iecReportJSON, iecState: iecReport?.lockState.rawValue, externals: externals,
+               supervisor: supervisorEmail ?? "")
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -124,7 +128,12 @@ extension Job: CloudSynced {
         if let v = r.routineSettings { routineSettingsJSON = v }
         if let v = r.weeklyRequests { weeklyRequestsJSON = v }
         if let v = r.stationDocs { stationDocsJSON = v }
-        if let v = r.iecReport { iecReportJSON = v }
+        if let v = r.iecReport {
+            iecReportJSON = v
+            // only the team can close a test: a result the document's state doesn't confirm is a contractor's
+            let state = r.iecState.flatMap(IECReport.LockState.init(rawValue:))
+            if let report = iecReport, report.trusting(state) != report { iecReport = report.trusting(state) }
+        }
         if let v = r.externals { externals = v }
         if let v = r.supervisor { supervisorEmail = v.isEmpty ? nil : v }
         // a record with no kind is from an app version that took a job with PWA data for a PWA job

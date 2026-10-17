@@ -426,7 +426,9 @@ final class CloudSync {
             if upload == .iecOnly {
                 guard let job = model as? Job else { continue }
                 let iec: Any = job.iecReportJSON ?? NSNull()
-                changes.append(Change(key: key, write: { $0.setData(["iecReport": iec], forDocument: ref, merge: true) }, fingerprint: print))
+                let state: Any = job.iecReport?.lockState.rawValue ?? NSNull()
+                changes.append(Change(key: key, write: { $0.setData(["iecReport": iec, "iecState": state], forDocument: ref, merge: true) },
+                                      fingerprint: print))
             } else {
                 changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))
             }

@@ -1,5 +1,5 @@
 // firestore.rules for the three roles (docs/reference/roles/user-roles.json).
-// Needs Java for the emulator: `npm install && npm test` in this folder.
+// `npm install && npm test` in this folder; the emulator needs Java (Homebrew: PATH=/opt/homebrew/opt/openjdk/bin:$PATH).
 import { readFileSync } from 'node:fs';
 import { test, before, after, beforeEach } from 'node:test';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';

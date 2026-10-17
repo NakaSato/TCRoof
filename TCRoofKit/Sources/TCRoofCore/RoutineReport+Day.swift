@@ -19,10 +19,16 @@ extension RoutineReport {
     /// task's location count. A line with no MP task adds nothing.
     public static func stationGain(_ line: ProgressLine, on d: Daily, previous: [Daily], settings: Settings,
                                    over200kVA: Bool) -> Double {
+        stationGain(line, on: d, previous: previous, settings: settings, weight: { $0.weight(over200kVA: over200kVA) })
+    }
+
+    /// `stationGain` against the plan's own weights (`MasterSchedule.Input.weight`).
+    public static func stationGain(_ line: ProgressLine, on d: Daily, previous: [Daily], settings: Settings,
+                                   weight: (MasterSchedule.Task) -> Double) -> Double {
         guard let task = line.task else { return 0 }
         let today = todayDelta(line, on: d.date, in: previous)
         let n = locationCount(task, reports: previous + [d], settings: settings)
-        return today * task.weight(over200kVA: over200kVA) / Double(n) / 100
+        return today * weight(task) / Double(n) / 100
     }
 
     /// Σ of `stationGain` over the day's lines.

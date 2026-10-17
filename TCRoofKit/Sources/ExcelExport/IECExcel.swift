@@ -414,6 +414,8 @@ struct SheetCells {
     }
 
     func element(_ ref: String) -> String? { ranges[ref].map { String(source[$0]) } }
+    /// Every cell the sheet has.
+    var refs: Dictionary<String, Range<String.Index>>.Keys { ranges.keys }
 
     private func style(_ el: String) -> String? {
         guard let r = el.range(of: #" s="\d+""#, options: .regularExpression) else { return nil }

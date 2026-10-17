@@ -32,6 +32,9 @@ struct InstallTrackingPage: View {
     /// `ทุกรายงาน`'s segment: all, to do, with a problem.
     @State var dailyFilter = 0
     @State var shared: Shared?
+    /// `แผนก่อสร้าง`'s plan file: import and export of the station's own workbook.
+    @State var workbook = MPWorkbookFlow()
+    @Environment(\.permissions) var permissions
     /// The debug flags apply once: `.task` runs again each time the page reappears (back from a pushed screen).
     @State private var debugApplied = false
     /// `-installDemo YES` keeps its picked late causes here instead of in a job.
@@ -80,6 +83,7 @@ struct InstallTrackingPage: View {
         .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
         .overlay { if let s = sheet { pageSheet(s, data) } }
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+        .mpWorkbook(workbook, job: job)
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {

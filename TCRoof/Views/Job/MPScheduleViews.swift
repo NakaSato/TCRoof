@@ -46,6 +46,7 @@ extension Job {
 struct MPScheduleCard: View {
     @Bindable var job: Job
     @State private var showSetup = false
+    @State private var workbook = MPWorkbookFlow()
     @Environment(\.permissions) private var permissions
 
     var body: some View {
@@ -68,12 +69,18 @@ struct MPScheduleCard: View {
                             .font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
                     }
                     .buttonStyle(TCButtonStyle(.primary, size: .card))
+                    Button { workbook.startImport() } label: {
+                        Label("นำเข้าไฟล์แผน (Excel)", systemImage: "square.and.arrow.down")
+                            .font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
+                    }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
+        .mpWorkbook(workbook, job: job)
         #if DEBUG
         .task { debugSeed() }
         #endif
@@ -259,6 +266,16 @@ struct MPSetupSheet: View {
                     }
                     .onChange(of: inverterKW) { _, kw in if let kw { input.over200kVA = MasterSchedule.Input.isOver200kVA(inverterKW: kw) } }
                 }
+                if input.fixed != nil {
+                    PadSection("แผนจากไฟล์ Excel") {
+                        Text("วันและน้ำหนักของแต่ละงานมาจากไฟล์" + (job.scheduleWorkbookName.map { " \($0)" } ?? "")
+                             + " ช่วงติดตั้งและวันขออนุญาตด้านล่างไม่เปลี่ยนแผนจนกว่าจะคำนวณใหม่")
+                            .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                        Button("คำนวณวันใหม่ตามสูตร MP", role: .destructive) { input.fixed = nil }
+                    } footer: {
+                        Text("ส่งออกไฟล์แผนหลังคำนวณใหม่ จะลงวันและน้ำหนักใหม่ทุกงานในไฟล์เดิม")
+                    }
+                }
                 PadSection("ช่วงติดตั้ง") {
                     DatePicker("วันเริ่มติดตั้ง", selection: $input.installStart, displayedComponents: .date)
                     DatePicker("วันจบติดตั้ง", selection: $input.installEnd, in: input.installStart..., displayedComponents: .date)
@@ -276,7 +293,7 @@ struct MPSetupSheet: View {
                         Stepper("ขนานไฟ \(input.gridConnectionDays) วัน", value: $input.gridConnectionDays, in: 1...60)
                     }
                 }
-                PadSection("ตัวอย่างแผน 18 งาน") {
+                PadSection(input.fixed == nil ? "ตัวอย่างแผน 18 งาน" : "แผน 18 งานตามไฟล์") {
                     ForEach(plan) { p in MPPlanRow(task: p) }
                 }
             }

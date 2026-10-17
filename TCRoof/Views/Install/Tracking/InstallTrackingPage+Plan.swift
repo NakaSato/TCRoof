@@ -37,8 +37,14 @@ extension InstallTrackingPage {
                 }
             }
         } else {
-            TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP ของงาน"))
-                .frame(maxWidth: .infinity, minHeight: 320)
+            VStack(spacing: 16) {
+                TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP ของงาน หรือนำเข้าไฟล์แผนของสถานี"))
+                if permissions.can(.mpSetup) {
+                    Button { workbook.startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)", systemImage: "square.and.arrow.down") }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 320)
         }
     }
 
@@ -82,6 +88,11 @@ extension InstallTrackingPage {
                 .accessibilityLabel("มุมมองแผน")
             Button("แก้ไขแผน") { route = .plan }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
+                Label("Excel", systemImage: "tablecells").font(.sarabunFixed(17, .semibold)).frame(minHeight: touchMin)
+            }
+            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            .accessibilityLabel("ไฟล์แผน Excel")
             Button("ส่งออก PDF", action: exportPlanPDF)
                 .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
                 .disabled(job.scheduleInput == nil)

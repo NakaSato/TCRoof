@@ -37,7 +37,8 @@ struct DailyOnePage: View {
     @Environment(\.dismiss) private var dismiss
 
     var settings: RoutineReport.Settings { job.routineSettings }
-    var over200: Bool { job.scheduleInput?.over200kVA ?? false }
+    /// The task's weight in this station's plan (an imported workbook has its own).
+    func weight(_ task: MasterSchedule.Task) -> Double { job.scheduleInput?.weight(task) ?? task.weight(over200kVA: false) }
     var plan: [MasterSchedule.PlannedTask] { job.scheduleInput.map { MasterSchedule.plan($0) } ?? [] }
     /// Earlier reports only, for "วันนี้".
     var previous: [RoutineReport.Daily] { others.filter { $0.date < date } }

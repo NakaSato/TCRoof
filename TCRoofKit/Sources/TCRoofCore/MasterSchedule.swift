@@ -136,6 +136,10 @@ public enum MasterSchedule {
         public var buildingPermitDays = 21
         public var pk2Days = 21
         public var gridConnectionDays = 7
+        /// Task raw value → the dates and weight the station's own plan workbook gives it (`MPWorkbook` import). `plan`
+        /// uses them in place of the formulas; nil for a plan made in the app. A task the workbook lacks has no dates
+        /// and no weight.
+        public var fixed: [String: FixedTask]?
 
         public init(installStart: Date, installEnd: Date, kickoff: Date, engineeringStart: Date, siteHandover: Date,
                     over200kVA: Bool) {
@@ -149,6 +153,23 @@ public enum MasterSchedule {
 
         /// Inverter total over 200 kVA, from the station's inverter rating (kW at PF 1).
         public static func isOver200kVA(inverterKW: Double) -> Bool { inverterKW > 200 }
+
+        /// The task's weight in this plan: the workbook's when imported, else the standard one.
+        public func weight(_ task: Task) -> Double {
+            guard let fixed else { return task.weight(over200kVA: over200kVA) }
+            return fixed[task.rawValue]?.weight ?? 0
+        }
+    }
+
+    /// One task as an imported workbook plans it.
+    public struct FixedTask: Codable, Equatable, Sendable {
+        public var start: Date?
+        public var end: Date?
+        public var weight: Double
+
+        public init(start: Date?, end: Date?, weight: Double) {
+            self.start = start; self.end = end; self.weight = weight
+        }
     }
 
     public struct PlannedTask: Equatable, Sendable, Identifiable {
@@ -222,6 +243,10 @@ public enum MasterSchedule {
             .preCommissioning: (preStart, preEnd), .training: (trainingStart, trainingEnd),
         ]
         return Task.allCases.map { t in
+            if let fixed = input.fixed {
+                let f = fixed[t.rawValue]
+                return PlannedTask(task: t, weight: f?.weight ?? 0, start: f?.start.map(day), end: f?.end.map(day))
+            }
             let d = dates[t] ?? (nil, nil)
             return PlannedTask(task: t, weight: t.weight(over200kVA: big), start: d.0, end: d.1)
         }
@@ -308,10 +333,16 @@ public enum MasterSchedule {
         /// Sets the points for one week, capped so the task's total never passes its weight.
         public mutating func set(_ value: Double, task: Task, week: Date, over200kVA: Bool,
                                  calendar cal: Calendar = MasterSchedule.calendar) {
+            set(value, task: task, week: week, weight: task.weight(over200kVA: over200kVA), calendar: cal)
+        }
+
+        /// `set` against the task's weight in the plan (`Input.weight`).
+        public mutating func set(_ value: Double, task: Task, week: Date, weight: Double,
+                                 calendar cal: Calendar = MasterSchedule.calendar) {
             let k = Self.key(week, calendar: cal)
             var byWeek = points[task.rawValue] ?? [:]
             let others = byWeek.filter { $0.key != k }.values.reduce(0, +)
-            let v = min(max(value, 0), max(task.weight(over200kVA: over200kVA) - others, 0))
+            let v = min(max(value, 0), max(weight - others, 0))
             byWeek[k] = v > 0 ? v : nil
             points[task.rawValue] = byWeek.isEmpty ? nil : byWeek
         }
@@ -319,11 +350,16 @@ public enum MasterSchedule {
         /// Sets the task's total done as a percent of its weight, booking the change in `week`.
         public mutating func setPercent(_ percent: Double, task: Task, week: Date, over200kVA: Bool,
                                         calendar cal: Calendar = MasterSchedule.calendar) {
-            let w = task.weight(over200kVA: over200kVA)
+            setPercent(percent, task: task, week: week, weight: task.weight(over200kVA: over200kVA), calendar: cal)
+        }
+
+        /// `setPercent` against the task's weight in the plan (`Input.weight`).
+        public mutating func setPercent(_ percent: Double, task: Task, week: Date, weight w: Double,
+                                        calendar cal: Calendar = MasterSchedule.calendar) {
             let target = w * min(max(percent, 0), 100) / 100
             let k = Self.key(week, calendar: cal)
             let others = (points[task.rawValue] ?? [:]).filter { $0.key != k }.values.reduce(0, +)
-            set(target - others, task: task, week: week, over200kVA: over200kVA, calendar: cal)
+            set(target - others, task: task, week: week, weight: w, calendar: cal)
         }
 
         /// Points done up to and including the week of `date`.

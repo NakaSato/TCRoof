@@ -461,7 +461,7 @@ struct IECTestScreen: View {
         job.updateIEC(context, evenWhenLocked: true) { _ = $0.complete(by: job.iecActor) }
         guard let r = job.iecReport, let result = r.result, r.sampleName == nil, let input = job.scheduleInput else { return }
         var a = job.scheduleActual
-        a.setPercent(100, task: .preCommissioning, week: result.completedAt, over200kVA: input.over200kVA)
+        a.setPercent(100, task: .preCommissioning, week: result.completedAt, weight: input.weight(.preCommissioning))
         if a.finished[MasterSchedule.Task.preCommissioning.rawValue] == nil { a.finished[MasterSchedule.Task.preCommissioning.rawValue] = result.completedAt }
         job.scheduleActual = a
         try? context.save()

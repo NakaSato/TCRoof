@@ -153,7 +153,7 @@ struct DailyLinePanel: View {
     /// `MP 2.1 · โครงสร้าง… · 20% · ใช้ สว่านไฟฟ้า`
     private var taskLine: String {
         guard let task = line.task else { return "งานอื่น · ไม่นับในแผน MP" }
-        let w = task.weight(over200kVA: page.over200)
+        let w = page.weight(task)
         var parts = ["MP \(task.code)", task.title, RoutineReport.percent(w)]
         let tools = RoutineReport.suggestedTools(task)
         if !tools.isEmpty { parts.append("ใช้ " + tools.joined(separator: ", ")) }
@@ -250,7 +250,7 @@ struct DailyLinePanel: View {
     // MARK: standing
 
     private var standingRow: some View {
-        let gain = RoutineReport.stationGain(line, on: page.report, previous: page.previous, settings: page.settings, over200kVA: page.over200)
+        let gain = RoutineReport.stationGain(line, on: page.report, previous: page.previous, settings: page.settings, weight: page.weight)
         return HStack(spacing: 10) {
             (Text(RoutineReport.percent(before) + " → ") + Text(RoutineReport.percent(line.percent)).bold()
              + Text(" · สถานี " + (gain >= 0 ? "+" : "") + String(format: "%.1f%%", gain)))

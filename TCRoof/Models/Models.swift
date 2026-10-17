@@ -147,6 +147,11 @@ final class Job {
     /// Encoded `MasterSchedule.Input` and `MasterSchedule.Actual`.
     var scheduleInputJSON: String?
     var scheduleActualJSON: String?
+    /// The station's own plan workbook as imported (`MPWorkbook`), kept whole so export writes into it; it stays on the
+    /// device that imported it (the plan it gave travels in `scheduleInputJSON`).
+    @Attribute(.externalStorage) var scheduleWorkbook: Data?
+    /// Its file name, which the export keeps.
+    var scheduleWorkbookName: String?
     // Routine reports (docs/specs/routine-reports-swift.md §2.2–2.3); optional for the same reason.
     /// Encoded `RoutineReport.Settings`.
     var routineSettingsJSON: String?

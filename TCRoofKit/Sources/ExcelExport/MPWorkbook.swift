@@ -1,0 +1,427 @@
+import Foundation
+import TCRoofCore
+
+/// A station's own plan workbook (`Master Plan Weekly PWA <station>.xlsx`, sheet `Weekly PLAN`): the 18 MP tasks, each a
+/// Plan row (weight, start, finish, the weekly plan by formula) over an Actual row (actual start and finish, and weight
+/// points typed per week), with the week columns dated in the header row.
+///
+/// `read` takes the plan, its weights and the actual points into the app. `export` writes the app's plan and actual back
+/// into the same file: only the input cells whose value changed are replaced, in place, keeping their style, so every
+/// other part (formulas, conditional formats, the S-curve chart, print set-up) stays as the file came. A plan with no
+/// change gives back the very same bytes.
+///
+/// The layout is found from the header texts (`Status`, `Start`, `Finished`, `Weight`, `Description`), not fixed cells,
+/// so the station copies with more or fewer rows and weeks read the same.
+public enum MPWorkbook {
+    public enum Failure: Error, Equatable {
+        case notWorkbook
+        case noPlanSheet
+        case noTasks
+        /// A cell to write holds the formula other cells share; replacing it would break them.
+        case sharedFormula(String)
+
+        public var message: String {
+            switch self {
+            case .notWorkbook: "ไฟล์นี้ไม่ใช่ Excel (.xlsx)"
+            case .noPlanSheet: "ไม่พบชีตแผนงาน (หัวตาราง Status / Start / Finished)"
+            case .noTasks: "ไม่พบงาน 1.1–3.2 ในไฟล์"
+            case .sharedFormula(let ref): "เซลล์ \(ref) เป็นสูตรที่เซลล์อื่นใช้ร่วม เขียนทับไม่ได้"
+            }
+        }
+    }
+
+    /// What `read` found.
+    public struct Imported: Sendable {
+        public var input: MasterSchedule.Input
+        public var actual: MasterSchedule.Actual
+        /// The file's `PROJECT` and `OWNER` lines, without the leading ": ".
+        public var project: String?
+        public var owner: String?
+        /// The tasks found, in the file's order.
+        public var tasks: [MasterSchedule.Task]
+        /// The first and last week column.
+        public var weeks: ClosedRange<Date>?
+    }
+
+    /// What `export` wrote.
+    public struct Export: Sendable {
+        public var data: Data
+        /// Input cells replaced; 0 means `data` is the original file.
+        public var changedCells: Int
+        /// Weeks with actual points the file has no column for (`yyyy-MM-dd`), left out.
+        public var weeksOutside: [String]
+    }
+
+    // MARK: read
+
+    public static func read(_ data: Data, calendar cal: Calendar = MasterSchedule.calendar) throws -> Imported {
+        let book = try Book(data)
+        let sheet = book.sheet, layout = book.layout
+        var fixed: [String: MasterSchedule.FixedTask] = [:]
+        var actual = MasterSchedule.Actual()
+        for row in layout.rows {
+            let t = row.task.rawValue
+            fixed[t] = .init(start: sheet.date(layout.startCol, row.plan, cal), end: sheet.date(layout.endCol, row.plan, cal),
+                             weight: sheet.number(layout.weightCol, row.plan) ?? 0)
+            guard let a = row.actual else { continue }
+            if let d = sheet.date(layout.startCol, a, cal) { actual.started[t] = d }
+            if let d = sheet.date(layout.endCol, a, cal) { actual.finished[t] = d }
+            for w in layout.weeks {
+                guard let v = sheet.number(w.col, a), v > 0 else { continue }
+                actual.points[t, default: [:]][w.key, default: 0] += v
+            }
+        }
+
+        let plan = layout.rows.map { (task: $0.task, f: fixed[$0.task.rawValue]!) }
+        func first(_ t: MasterSchedule.Task) -> Date? { fixed[t.rawValue]?.start }
+        let site = plan.filter { $0.task.part != .permit }
+        let starts = site.compactMap(\.f.start), ends = site.compactMap(\.f.end)
+        let anyStart = plan.compactMap(\.f.start).min() ?? cal.startOfDay(for: .now)
+        let installStart = starts.min() ?? anyStart
+        let installEnd = max(ends.max() ?? installStart, installStart)
+        let kickoff = first(.kickoff) ?? anyStart
+        var input = MasterSchedule.Input(installStart: installStart, installEnd: installEnd, kickoff: kickoff,
+                                         engineeringStart: first(.engineering) ?? kickoff,
+                                         siteHandover: first(.siteHandover) ?? installStart,
+                                         over200kVA: (fixed[MasterSchedule.Task.pk2.rawValue]?.weight ?? 0) > 0)
+        func days(_ t: MasterSchedule.Task) -> Int? {
+            guard let f = fixed[t.rawValue], let s = f.start, let e = f.end else { return nil }
+            let n = cal.dateComponents([.day], from: s, to: e).day ?? 0
+            return n > 0 ? n : nil
+        }
+        input.engineeringDays = days(.engineering) ?? input.engineeringDays
+        input.buildingPermitDays = days(.buildingPermit) ?? input.buildingPermitDays
+        input.pk2Days = days(.pk2) ?? input.pk2Days
+        input.gridConnectionDays = days(.gridConnection) ?? input.gridConnectionDays
+        input.fixed = fixed
+
+        let weekDates = layout.weeks.map(\.date)
+        return Imported(input: input, actual: actual, project: layout.project, owner: layout.owner,
+                        tasks: layout.rows.map(\.task),
+                        weeks: weekDates.min().flatMap { a in weekDates.max().map { a...$0 } })
+    }
+
+    // MARK: export
+
+    public static func export(_ original: Data, input: MasterSchedule.Input, actual: MasterSchedule.Actual,
+                              calendar cal: Calendar = MasterSchedule.calendar) throws -> Export {
+        let book = try Book(original)
+        let layout = book.layout
+        var sheet = book.sheet
+        var changed = 0, frozeFormula = false
+
+        func put(_ col: Int, _ row: Int, _ value: Double?, force: Bool = false) throws {
+            let ref = Sheet.ref(col, row)
+            let cell = sheet.cell(ref)
+            let now = cell?.number
+            let same = value.map { v in now.map { abs($0 - v) < 1e-9 } ?? false } ?? (now == nil || now == 0)
+            if same && !(force && cell?.formula == true) { return }
+            guard cell != nil else { return }
+            if cell?.sharedMaster == true { throw Failure.sharedFormula(ref) }
+            if cell?.formula == true { frozeFormula = true }
+            sheet.cells.set(ref, value.map { .number($0) } ?? .empty)
+            changed += 1
+        }
+
+        // the plan: when any task's dates or weight differ from the file, every task's dates are written as values,
+        // so a start the file derives from another task (1.3 = 2.1's start) can't move away from the app's plan
+        let plan = Dictionary(MasterSchedule.plan(input, calendar: cal).map { ($0.task, $0) }) { a, _ in a }
+        func serial(_ d: Date?) -> Double? { d.map { Sheet.serial($0, cal) } }
+        let planDiffers = layout.rows.contains { row in
+            guard let p = plan[row.task] else { return false }
+            return !close(sheet.number(layout.weightCol, row.plan), p.weight)
+                || !close(sheet.number(layout.startCol, row.plan), serial(p.start))
+                || !close(sheet.number(layout.endCol, row.plan), serial(p.end))
+        }
+        if planDiffers {
+            for row in layout.rows {
+                guard let p = plan[row.task] else { continue }
+                let datesMoved = !close(sheet.number(layout.startCol, row.plan), serial(p.start))
+                    || !close(sheet.number(layout.endCol, row.plan), serial(p.end))
+                try put(layout.weightCol, row.plan, p.weight)
+                try put(layout.startCol, row.plan, serial(p.start), force: true)
+                try put(layout.endCol, row.plan, serial(p.end), force: true)
+                // Day: H − G as the file's rows count it, 1 for a one-day task
+                if datesMoved, let dayCol = layout.dayCol, let s = p.start, let e = p.end {
+                    try put(dayCol, row.plan, Double(max(cal.dateComponents([.day], from: s, to: e).day ?? 0, 1)), force: true)
+                }
+            }
+        }
+
+        // the actual: start, finish and the points per week
+        var outside = Set<String>()
+        let columns = Dictionary(layout.weeks.map { ($0.key, $0.col) }) { a, _ in a }
+        for row in layout.rows {
+            guard let a = row.actual else { continue }
+            let t = row.task.rawValue
+            try put(layout.startCol, a, serial(actual.started[t]))
+            try put(layout.endCol, a, serial(actual.finished[t]))
+            let points = actual.points[t] ?? [:]
+            for w in layout.weeks { try put(w.col, a, points[w.key].flatMap { $0 > 0 ? $0 : nil }) }
+            for (k, v) in points where v > 0 && columns[k] == nil { outside.insert(k) }
+        }
+
+        guard changed > 0 else { return Export(data: original, changedCells: 0, weeksOutside: outside.sorted()) }
+        var zip = book.zip
+        zip.set(book.sheetPath, sheet.cells.xml)
+        // the formulas recalculate when the file opens; a cell that lost its formula leaves the calc chain stale, and
+        // Excel rebuilds a missing one
+        if frozeFormula { removeCalcChain(&zip) }
+        if var wb = zip.string("xl/workbook.xml") { wb = fullCalcOnLoad(wb); zip.set("xl/workbook.xml", wb) }
+        return Export(data: try zip.write(), changedCells: changed, weeksOutside: outside.sorted())
+    }
+
+    /// `MP 37 แผนงาน 2026-10-17.xlsx`-style name kept from the imported file: the original name, unchanged, so the
+    /// team's folders still match.
+    public static func fileName(original: String?, fallback: String) -> String {
+        let name = (original ?? "").trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return fallback.replacingOccurrences(of: "/", with: "-") + ".xlsx" }
+        return name.lowercased().hasSuffix(".xlsx") ? name : name + ".xlsx"
+    }
+
+    static func close(_ a: Double?, _ b: Double?) -> Bool {
+        switch (a, b) {
+        case (nil, nil): true
+        case let (x?, y?): abs(x - y) < 1e-9
+        case let (x?, nil), let (nil, x?): x == 0
+        }
+    }
+
+    static func removeCalcChain(_ zip: inout ZipArchive) {
+        guard zip.contains("xl/calcChain.xml") else { return }
+        zip.remove("xl/calcChain.xml")
+        if var rels = zip.string("xl/_rels/workbook.xml.rels"),
+           let r = rels.range(of: #"<Relationship [^>]*Target="(/xl/)?calcChain\.xml"[^>]*/>"#, options: .regularExpression) {
+            rels.removeSubrange(r)
+            zip.set("xl/_rels/workbook.xml.rels", rels)
+        }
+        if var ct = zip.string("[Content_Types].xml"),
+           let r = ct.range(of: #"<Override PartName="/xl/calcChain\.xml"[^>]*/>"#, options: .regularExpression) {
+            ct.removeSubrange(r)
+            zip.set("[Content_Types].xml", ct)
+        }
+    }
+
+    /// `<calcPr … fullCalcOnLoad="1"/>`, so Excel works out the weekly plan, the sums and the S-curve again on opening.
+    static func fullCalcOnLoad(_ wb: String) -> String {
+        var wb = wb
+        if let r = wb.range(of: #"<calcPr\b[^>]*?/?>"#, options: .regularExpression) {
+            let tag = String(wb[r])
+            guard !tag.contains("fullCalcOnLoad") else { return wb }
+            let at = tag.hasSuffix("/>") ? tag.index(tag.endIndex, offsetBy: -2) : tag.index(before: tag.endIndex)
+            wb.replaceSubrange(r, with: tag[..<at] + #" fullCalcOnLoad="1""# + tag[at...])
+            return wb
+        }
+        // calcPr comes after definedNames and before the rest of the workbook's tail
+        for next in ["<oleSize", "<customWorkbookViews", "<pivotCaches", "<smartTagPr", "<smartTagTypes", "<webPublishing",
+                     "<fileRecoveryPr", "<webPublishObjects", "<extLst", "</workbook>"] {
+            if let r = wb.range(of: next) {
+                wb.insert(contentsOf: #"<calcPr fullCalcOnLoad="1"/>"#, at: r.lowerBound)
+                break
+            }
+        }
+        return wb
+    }
+
+    // MARK: the workbook
+
+    /// The package, its plan sheet and the sheet's layout.
+    struct Book {
+        let zip: ZipArchive
+        let sheetPath: String
+        let sheet: Sheet
+        let layout: Layout
+
+        init(_ data: Data) throws {
+            guard let zip = try? ZipArchive(data), let wb = zip.string("xl/workbook.xml") else { throw Failure.notWorkbook }
+            self.zip = zip
+            let shared = Sheet.sharedStrings(zip.string("xl/sharedStrings.xml") ?? "")
+            let rels = zip.string("xl/_rels/workbook.xml.rels") ?? ""
+            var noTasks = false
+            for id in Self.sheetIDs(wb) {
+                guard let path = Self.target(id, rels), let xml = zip.string(path) else { continue }
+                let sheet = Sheet(xml, shared: shared)
+                guard let layout = Layout(sheet) else { continue }
+                if layout.rows.isEmpty { noTasks = true; continue }
+                sheetPath = path; self.sheet = sheet; self.layout = layout
+                return
+            }
+            throw noTasks ? Failure.noTasks : Failure.noPlanSheet
+        }
+
+        /// The sheets' relationship ids in tab order.
+        static func sheetIDs(_ wb: String) -> [String] {
+            var out: [String] = [], at = wb.startIndex
+            while let r = wb.range(of: "<sheet ", range: at..<wb.endIndex), let end = wb.range(of: ">", range: r.upperBound..<wb.endIndex) {
+                let tag = String(wb[r.lowerBound..<end.upperBound])
+                if let id = SheetXML.between(tag, "r:id=\"", "\"") { out.append(id) }
+                at = end.upperBound
+            }
+            return out
+        }
+
+        static func target(_ id: String, _ rels: String) -> String? {
+            guard let r = rels.range(of: "Id=\"\(id)\"") else { return nil }
+            let start = rels[..<r.lowerBound].range(of: "<Relationship", options: .backwards)?.lowerBound ?? r.lowerBound
+            guard let end = rels.range(of: ">", range: r.upperBound..<rels.endIndex) else { return nil }
+            guard let t = SheetXML.between(String(rels[start..<end.upperBound]), "Target=\"", "\"") else { return nil }
+            return t.hasPrefix("/") ? String(t.dropFirst()) : "xl/" + t
+        }
+    }
+
+    /// Where the plan sits on the sheet.
+    struct Layout {
+        struct Row { let task: MasterSchedule.Task; let plan: Int; let actual: Int? }
+        struct Week { let col: Int; let date: Date; let key: String }
+
+        let weightCol: Int, startCol: Int, endCol: Int, dayCol: Int?
+        let rows: [Row]
+        let weeks: [Week]
+        let project: String?, owner: String?
+
+        /// Nil when the sheet has no `Status` / `Start` / `Finished` header.
+        init?(_ s: Sheet, calendar cal: Calendar = MasterSchedule.calendar) {
+            func find(_ text: String, row: Int? = nil) -> (col: Int, row: Int)? {
+                s.texts.filter { $0.text.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare(text) == .orderedSame && (row == nil || $0.row == row) }
+                    .min { ($0.row, $0.col) < ($1.row, $1.col) }.map { ($0.col, $0.row) }
+            }
+            guard let status = find("Status"), let start = find("Start", row: status.row) ?? find("Start"),
+                  let end = find("Finished", row: start.row) ?? find("Finish", row: start.row),
+                  let weight = find("Weight") ?? find("%", row: status.row) else { return nil }
+            let desc = find("Description")?.col ?? 1
+            weightCol = weight.col; startCol = start.col; endCol = end.col
+            dayCol = find("Day", row: start.row)?.col
+
+            // week columns: the dated cells of the header row right of the dates
+            let firstWeekCol = max(start.col, end.col, dayCol ?? 0) + 1
+            var weeks: [Week] = [], seen = Set<String>()
+            for (col, v) in s.numbers(row: start.row) where col >= firstWeekCol && (36_526...73_051).contains(v) {
+                let d = Sheet.date(v, cal), key = MasterSchedule.Actual.key(d, calendar: cal)
+                guard seen.insert(key).inserted else { continue }
+                weeks.append(Week(col: col, date: MasterSchedule.weekStart(d, calendar: cal), key: key))
+            }
+            self.weeks = weeks
+
+            // task rows: "2.1 ติดตั้ง…" with Status Plan, its Actual row under it
+            var rows: [Row] = [], used = Set<MasterSchedule.Task>()
+            for (r, text) in s.texts(col: desc) where r > status.row {
+                guard s.text(status.col, r)?.trimmingCharacters(in: .whitespaces).lowercased() == "plan",
+                      let task = Self.task(text, taken: used) else { continue }
+                used.insert(task)
+                let isActual = s.text(status.col, r + 1)?.trimmingCharacters(in: .whitespaces).lowercased() == "actual"
+                rows.append(Row(task: task, plan: r, actual: isActual ? r + 1 : nil))
+            }
+            self.rows = rows
+
+            func line(_ label: String) -> String? {
+                guard let at = find(label), at.row < status.row else { return nil }
+                let t = s.texts.filter { $0.row == at.row && $0.col > at.col }.min { $0.col < $1.col }?.text
+                return t.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: ": ").union(.whitespaces)) }.flatMap { $0.isEmpty ? nil : $0 }
+            }
+            project = line("PROJECT"); owner = line("OWNER")
+        }
+
+        /// The task a row's description names: by its number, or by its words when the number is taken (some copies
+        /// number grid connection 1.6 a second time).
+        static func task(_ text: String, taken: Set<MasterSchedule.Task>) -> MasterSchedule.Task? {
+            let t = text.trimmingCharacters(in: .whitespaces)
+            guard let r = t.range(of: #"^\d+\.\d+"#, options: .regularExpression) else { return nil }
+            let code = String(t[r])
+            if let task = MasterSchedule.Task.allCases.first(where: { $0.code == code }), !taken.contains(task),
+               !(task == .cop && t.contains("ขนานไฟ")) {
+                return task
+            }
+            let byWords: [(String, MasterSchedule.Task)] = [("ขนานไฟ", .gridConnection), ("COP", .cop), ("พค.2", .pk2)]
+            return byWords.first { t.contains($0.0) && !taken.contains($0.1) }?.1
+        }
+    }
+
+    /// A sheet's cells, read once.
+    struct Sheet {
+        struct Cell { var number: Double?; var text: String?; var formula: Bool; var sharedMaster: Bool }
+
+        var cells: SheetCells
+        private var byRef: [String: Cell] = [:]
+        /// Every text cell.
+        let texts: [(col: Int, row: Int, text: String)]
+
+        init(_ xml: String, shared: [String]) {
+            cells = SheetCells(xml)
+            var texts: [(Int, Int, String)] = []
+            for ref in cells.refs {
+                guard let el = cells.element(ref), let (col, row) = Self.split(ref) else { continue }
+                let c = Self.parse(el, shared: shared)
+                byRef[ref] = c
+                if let t = c.text, !t.isEmpty { texts.append((col, row, t)) }
+            }
+            self.texts = texts.map { (col: $0.0, row: $0.1, text: $0.2) }
+        }
+
+        func cell(_ ref: String) -> Cell? { byRef[ref] }
+        func number(_ col: Int, _ row: Int) -> Double? { byRef[Self.ref(col, row)]?.number }
+        func text(_ col: Int, _ row: Int) -> String? { byRef[Self.ref(col, row)]?.text }
+        /// A date cell's day; nil when empty or 0 (Excel's blank date).
+        func date(_ col: Int, _ row: Int, _ cal: Calendar) -> Date? {
+            guard let v = number(col, row), v >= 1 else { return nil }
+            return Self.date(v, cal)
+        }
+
+        func numbers(row: Int) -> [(col: Int, value: Double)] {
+            byRef.compactMap { ref, c in
+                guard let v = c.number, let (col, r) = Self.split(ref), r == row else { return nil }
+                return (col, v)
+            }.sorted { $0.col < $1.col }
+        }
+
+        func texts(col: Int) -> [(row: Int, text: String)] {
+            texts.filter { $0.col == col }.map { ($0.row, $0.text) }.sorted { $0.row < $1.row }
+        }
+
+        static func parse(_ el: String, shared: [String]) -> Cell {
+            let head = el.prefix { $0 != ">" }
+            let type = SheetXML.between(String(head), " t=\"", "\"")
+            let v = SheetXML.between(el, "<v>", "</v>")
+            let hasF = el.contains("<f>") || el.contains("<f ")
+            var master = false
+            if let f = el.range(of: "<f ") {
+                let tag = el[f.lowerBound...].prefix { $0 != ">" }
+                master = tag.contains("t=\"shared\"") && tag.contains("ref=\"")
+            }
+            switch type {
+            case "s": return Cell(number: nil, text: v.flatMap(Int.init).flatMap { shared.indices.contains($0) ? shared[$0] : nil }, formula: hasF, sharedMaster: master)
+            case "str", "e": return Cell(number: nil, text: v.map(SharedStrings.unescape), formula: hasF, sharedMaster: master)
+            case "inlineStr": return Cell(number: nil, text: XML.runsText(el), formula: hasF, sharedMaster: master)
+            case "b": return Cell(number: v.flatMap(Double.init), text: nil, formula: hasF, sharedMaster: master)
+            default: return Cell(number: v.flatMap(Double.init), text: nil, formula: hasF, sharedMaster: master)
+            }
+        }
+
+        static func sharedStrings(_ xml: String) -> [String] {
+            xml.components(separatedBy: "<si>").dropFirst().map { XML.runsText($0.components(separatedBy: "</si>").first ?? "") }
+        }
+
+        /// "BX29" → (75, 29), columns 0-based.
+        static func split(_ ref: String) -> (Int, Int)? {
+            var col = 0, letters = 0
+            for ch in ref.unicodeScalars {
+                guard ch.value >= 65 && ch.value <= 90 else { break }
+                col = col * 26 + Int(ch.value - 64); letters += 1
+            }
+            guard letters > 0, let row = Int(ref.dropFirst(letters)) else { return nil }
+            return (col - 1, row)
+        }
+
+        static func ref(_ col: Int, _ row: Int) -> String { IECExcel.column(col) + String(row) }
+
+        /// Excel's day serial (1900 system) of a day in `cal`'s time zone.
+        static func serial(_ d: Date, _ cal: Calendar) -> Double {
+            Double(cal.dateComponents([.day], from: epoch(cal), to: cal.startOfDay(for: d)).day ?? 0)
+        }
+
+        static func date(_ serial: Double, _ cal: Calendar) -> Date {
+            cal.date(byAdding: .day, value: Int(serial.rounded(.down)), to: epoch(cal))!
+        }
+
+        static func epoch(_ cal: Calendar) -> Date { cal.date(from: DateComponents(year: 1899, month: 12, day: 30))! }
+    }
+}

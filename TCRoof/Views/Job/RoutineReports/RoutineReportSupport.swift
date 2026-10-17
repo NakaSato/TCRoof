@@ -45,7 +45,7 @@ extension Job {
         guard let input = scheduleInput else { return }
         var a = scheduleActual
         let signed = dailyLogs.filter { $0.engineerSignedAt != nil }.compactMap(\.report)
-        RoutineReport.feed(&a, reports: dailyReports, counted: signed, settings: routineSettings, over200kVA: input.over200kVA)
+        RoutineReport.feed(&a, reports: dailyReports, counted: signed, settings: routineSettings, weight: input.weight)
         if a != scheduleActual { scheduleActual = a }
     }
 

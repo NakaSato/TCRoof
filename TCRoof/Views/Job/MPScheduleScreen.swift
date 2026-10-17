@@ -2,6 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 import PDFReport
+import ExcelExport
 
 /// แผนงาน MP full screen (docs/specs/master-schedule-swift.md §3.3): a week picker with plan / actual / variance, the
 /// Gantt of the 18 tasks, and the workbook's Weekly or Monthly Update for the chosen week. iPad wide: Gantt left,
@@ -10,6 +11,7 @@ struct MPScheduleScreen: View {
     @Bindable var job: Job
     /// Only the team sets up the plan (`mp.setup`) and books progress by hand (`mp.progress`).
     @Environment(\.permissions) private var permissions
+    @Environment(\.modelContext) private var context
     @State private var week = MasterSchedule.weekStart(.now)
     @State private var monthly = false
     @State private var showProgress = false
@@ -18,6 +20,7 @@ struct MPScheduleScreen: View {
     @State private var pdf: SharedFile?
     struct SharedFile: Identifiable { let id = UUID(); let url: URL }
     @State private var exportError: String?
+    @State private var workbook = MPWorkbookFlow()
 
     var body: some View {
         GeometryReader { g in
@@ -25,7 +28,14 @@ struct MPScheduleScreen: View {
                 let model = MPModel(input: input, actual: job.scheduleActual, week: week)
                 content(model, wide: !isPhone && g.size.width >= 1000)
             } else {
-                TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP"))
+                VStack(spacing: 16) {
+                    TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP หรือนำเข้าไฟล์แผนของสถานี"))
+                    if permissions.can(.mpSetup) {
+                        Button { workbook.startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)", systemImage: "square.and.arrow.down") }
+                            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
@@ -40,10 +50,19 @@ struct MPScheduleScreen: View {
             if permissions.can(.mpSetup) {
                 ToolbarItem(placement: .primaryAction) { Button("ตั้งค่าแผน") { showSetup = true } }
             }
+            ToolbarItem(placement: .primaryAction) {
+                Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
+                    Label("ไฟล์ Excel", systemImage: "tablecells")
+                }
+            }
         }
         .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
             HStack(spacing: 12) {
                 if permissions.can(.mpSetup) { TCButton("ตั้งค่าแผน", kind: .secondary) { showSetup = true } }
+                Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
+                    Label("ไฟล์ Excel", systemImage: "tablecells").font(.sarabun(17, .semibold, relativeTo: .body)).frame(minHeight: touchMin)
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 TCButton("PDF ประชุม", systemImage: "square.and.arrow.up", kind: .secondary, action: exportPDF)
                     .disabled(job.scheduleInput == nil)
                     .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์ที่เลือก หนึ่งหน้า A3")
@@ -51,6 +70,7 @@ struct MPScheduleScreen: View {
         }
         .sheet(isPresented: $showProgress) { MPProgressSheet(job: job, week: week) }
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
+        .mpWorkbook(workbook, job: job)
         .sheet(item: $pdf) { f in ActivitySheet(items: [f.url]).presentationDetents([.medium, .large]) }
         .alert("สร้าง PDF ไม่สำเร็จ", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
             Button("ตกลง", role: .cancel) {}
@@ -67,6 +87,18 @@ struct MPScheduleScreen: View {
                     try? PDFRenderer.pdf(s, title: "MP").write(to: docs.appendingPathComponent("mp.pdf"))
                 }
             default: break
+            }
+            // `-mpWorkbook import` takes Documents/mp-import.xlsx as the plan; `-mpWorkbook export` writes the kept file
+            // with the plan and progress to Documents/mp-export.xlsx
+            guard let mode = UserDefaults.standard.string(forKey: "mpWorkbook"),
+                  let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            if mode == "import", let data = try? Data(contentsOf: docs.appendingPathComponent("mp-import.xlsx")),
+               let imported = try? MPWorkbook.read(data) {
+                workbook.apply(.init(data: data, name: "mp-import.xlsx", imported: imported), to: job, context: context)
+            }
+            if mode == "export", let original = job.scheduleWorkbook, let input = job.scheduleInput,
+               let out = try? MPWorkbook.export(original, input: input, actual: job.scheduleActual) {
+                try? out.data.write(to: docs.appendingPathComponent("mp-export.xlsx"))
             }
         }
         #endif
@@ -414,7 +446,6 @@ struct MPProgressSheet: View {
     @State private var percent: [MasterSchedule.Task: Double] = [:]
     private let tasks: [MasterSchedule.PlannedTask]
     private let start: [MasterSchedule.Task: Double]
-    private let big: Bool
 
     init(job: Job, week: Date) {
         self.job = job; self.week = week
@@ -432,7 +463,6 @@ struct MPProgressSheet: View {
         }
         self.tasks = tasks
         start = Dictionary(uniqueKeysWithValues: tasks.map { ($0.task, total($0)) })
-        big = input?.over200kVA ?? false
         _percent = State(initialValue: start)
     }
 
@@ -478,7 +508,7 @@ struct MPProgressSheet: View {
         var a = job.scheduleActual
         for t in tasks {
             guard let p = percent[t.task], abs(p - (start[t.task] ?? 0)) > 0.01 else { continue }
-            a.setPercent(p, task: t.task, week: week, over200kVA: big)
+            a.setPercent(p, task: t.task, week: week, weight: t.weight)
         }
         job.scheduleActual = a
         dismiss()

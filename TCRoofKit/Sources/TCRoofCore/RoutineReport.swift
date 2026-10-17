@@ -397,16 +397,22 @@ public enum RoutineReport {
     /// clear their weeks, so a report whose signature was taken off no longer books what it said.
     public static func feed(_ actual: inout MasterSchedule.Actual, reports: [Daily], counted: [Daily]? = nil,
                             settings: Settings, over200kVA: Bool) {
+        feed(&actual, reports: reports, counted: counted, settings: settings, weight: { $0.weight(over200kVA: over200kVA) })
+    }
+
+    /// `feed` against the plan's own weights (`MasterSchedule.Input.weight`).
+    public static func feed(_ actual: inout MasterSchedule.Actual, reports: [Daily], counted: [Daily]? = nil,
+                            settings: Settings, weight: (MasterSchedule.Task) -> Double) {
         let counted = counted ?? reports
         let tasks = Set(reports.flatMap { $0.progress.compactMap(\.task) })
         guard !tasks.isEmpty else { return }
         let weeks = Array(Set(reports.map { MasterSchedule.weekStart($0.date) })).sorted()
         for task in MasterSchedule.Task.allCases where tasks.contains(task) {
-            for w in weeks { actual.set(0, task: task, week: w, over200kVA: over200kVA) }
+            for w in weeks { actual.set(0, task: task, week: w, weight: weight(task)) }
             for w in weeks {
                 let last = reports.filter { MasterSchedule.weekStart($0.date) == w }.map(\.date).max() ?? w
                 guard let pct = taskPercent(task, reports: counted, through: last, settings: settings) else { continue }
-                actual.setPercent(pct, task: task, week: w, over200kVA: over200kVA)
+                actual.setPercent(pct, task: task, week: w, weight: weight(task))
             }
         }
     }

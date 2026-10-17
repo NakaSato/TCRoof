@@ -23,7 +23,7 @@ struct JobEditorView: View {
     @State var collapsed: Set<SectionCategory> = []
     @State var pendingExport: PendingExport?
     struct PendingExport: Identifiable { let id = UUID(); let gaps: [String]; let target: MissingGroup.Target?; var photos = false; let go: () -> Void }
-    // review (docs/specs/review-lock-revisions-swift.md)
+    // review
     @State var showIssueSheet = false
     @State var photoFilter = PhotoReviewPage.Filter.all
     /// The REV the comparison page starts from.

@@ -1,7 +1,7 @@
 import XCTest
 @testable import TCRoofCore
 
-/// docs/specs/review-lock-revisions-swift.md §6: photo slots, REV diff, hash, revisions on disk and the lock.
+/// Photo slots, REV diff, hash, revisions on disk and the lock.
 final class ReviewTests: XCTestCase {
     func tmpStore() -> JobStore {
         JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("rl-" + UUID().uuidString))

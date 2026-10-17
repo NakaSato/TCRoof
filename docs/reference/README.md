@@ -60,7 +60,6 @@
 
 - `docs/specs/routine-reports-swift.md` รายงานประจำวัน / สัปดาห์ / เดือน (ทำแล้ว)
 - `docs/specs/master-schedule-swift.md` แผนงาน MP (ทำแล้ว)
-- `docs/specs/review-lock-revisions-swift.md` ล็อกแบบและ REV (ทำแล้ว)
 
 ## ข้อมูลส่วนบุคคล
 

@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// REV และรายการแก้ไข (docs/specs/review-lock-revisions-swift.md §3.3): the issued REVs with their PDFs, and what changed
+/// REV และรายการแก้ไข: the issued REVs with their PDFs, and what changed
 /// between any two of them or the current draft.
 struct RevisionsPage: View {
     enum Filter: String, CaseIterable { case all = "ทั้งหมด", text = "ข้อความ", photos = "รูป" }

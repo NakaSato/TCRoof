@@ -49,7 +49,7 @@ final class CloudSync {
     @ObservationIgnored private var external: String?
 
     private static let surveyCollection = "pwaSurveys"
-    /// One document per issued REV of a survey report (docs/specs/review-lock-revisions-swift.md), written once.
+    /// One document per issued REV of a survey report, written once.
     private static let revisionCollection = "pwaSurveyRevisions"
     /// One document per feed post: the emails of the members who acknowledged it (`รับทราบ`).
     private static let ackCollection = "feedAcks"

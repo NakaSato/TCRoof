@@ -3,7 +3,7 @@ import Foundation
 import CryptoKit
 #endif
 
-/// The check code of an issued REV (docs/specs/review-lock-revisions-swift.md §4.2, without the lock): SHA-256 over the snapshot encoded with
+/// The check code of an issued REV: SHA-256 over the snapshot encoded with
 /// `JobStore.encoder` (sorted keys), then the SHA-256 of every referenced photo file in `Photo.id` order, signatures included.
 public enum FormHash {
     /// Hex digest; nil when a referenced photo file isn't on this device (taken on another iPad and not downloaded yet),

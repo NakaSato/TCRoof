@@ -74,7 +74,7 @@ public final class JobStore: @unchecked Sendable {
         try data.write(to: url(of: photo, in: job), options: .atomic)
     }
 
-    // MARK: issued REVs (docs/specs/review-lock-revisions-swift.md §3.1)
+    // MARK: issued REVs
 
     public enum RevisionError: Error { case exists }
     public func revisionsFolder(_ job: UUID) -> URL { folder(job).appendingPathComponent("revisions") }

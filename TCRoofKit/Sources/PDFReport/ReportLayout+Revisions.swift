@@ -1,7 +1,7 @@
 import Foundation
 import TCRoofCore
 
-/// รายการแก้ไข after the cover from REV 01 on (docs/specs/review-lock-revisions-swift.md §3.5).
+/// รายการแก้ไข after the cover from REV 01 on.
 extension ReportLayout {
     /// One row of the revision table: every issued REV, then the current draft when it isn't issued yet.
     struct RevisionRow { let rev, date, by, reason, code: String }

@@ -1,6 +1,6 @@
 import XCTest
 
-/// ตรวจรูปทั้งหมด and signing (docs/specs/review-lock-revisions-swift.md §6, without the lock), on an iPad simulator:
+/// ตรวจรูปทั้งหมด and signing (without the lock), on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/ReviewLockUITests -derivedDataPath <scratch>`.
 /// Each test starts on a new job (`-surveyFreshJob YES`); signatures come from `-surveyReview sign`, as the pad can't be drawn on here.
 final class ReviewLockUITests: XCTestCase {

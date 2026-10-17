@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// ตรวจรูปทั้งหมด and REV และรายการแก้ไข in the editor (docs/specs/review-lock-revisions-swift.md).
+/// ตรวจรูปทั้งหมด and REV และรายการแก้ไข in the editor.
 extension JobEditorView {
     /// Every edit passes here before it is saved.
     func jobChanged(_ old: Job, _ new: Job) {

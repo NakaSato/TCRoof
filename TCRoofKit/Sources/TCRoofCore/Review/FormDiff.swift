@@ -1,6 +1,6 @@
 import Foundation
 
-/// One row of เทียบ REV (docs/specs/review-lock-revisions-swift.md §3.2).
+/// One row of เทียบ REV.
 public struct FieldChange: Hashable, Identifiable, Sendable {
     public enum Kind: Sendable { case changed, added, removed }
     /// scope|field|sub

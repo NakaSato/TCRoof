@@ -5,7 +5,7 @@ public enum SlotScope: Hashable, Sendable {
     case cover, module(UUID)
 }
 
-/// One place a photo goes, for ตรวจรูปทั้งหมด (docs/specs/review-lock-revisions-swift.md §2.1).
+/// One place a photo goes, for ตรวจรูปทั้งหมด.
 public struct ReviewSlot: Identifiable, Hashable, Sendable {
     public enum Kind: Sendable { case photo, photosItem, photosAdd, signature, leftover }
     public var id: String {

@@ -5,7 +5,7 @@ import TCRoofCore
 import PDFReport
 import DriveSync
 
-/// Issued REVs: issuing, their snapshots, changes, PDFs and sync (docs/specs/review-lock-revisions-swift.md, without the lock).
+/// Issued REVs: issuing, their snapshots, changes, PDFs and sync.
 extension SurveyModel {
     /// The snapshot `rev` of a job, as issued.
     func snapshot(_ job: Job, rev: String) -> FormSnapshot? { store.loadRevision(rev: rev, job: job.id) }

@@ -110,7 +110,7 @@ extension JobEditorView {
         }
     }
 
-    /// `-surveyReview sign`: signs both on the demo job (docs/specs/review-lock-revisions-swift.md), the second after a moment.
+    /// `-surveyReview sign`: signs both on the demo job, the second after a moment.
     func seedReview() {
         guard let state = UserDefaults.standard.string(forKey: "surveyReview") else { return }
         func picture(_ text: String, _ size: CGSize, png: Bool) -> Photo? {

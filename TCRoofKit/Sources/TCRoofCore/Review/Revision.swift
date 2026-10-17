@@ -1,7 +1,7 @@
 import Foundation
 
-/// The answers exactly as issued: what the PDF was made from and what was signed
-/// (docs/specs/review-lock-revisions-swift.md §3.1). Written once to `revisions/REVnn.json`.
+/// The answers exactly as issued: what the PDF was made from and what was signed.
+/// Written once to `revisions/REVnn.json`.
 public struct FormSnapshot: Codable, Hashable, Sendable {
     public var values: Values
     public var modules: [SurveyModule]

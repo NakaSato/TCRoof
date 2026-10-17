@@ -436,7 +436,7 @@ public struct Job: Codable, Hashable, Identifiable, Sendable {
     public var stage: JobStage = .survey
     /// Installation progress, set when the survey moves to `.install`.
     public var install: InstallInfo?
-    /// Issued REVs, oldest first (docs/specs/review-lock-revisions-swift.md §3). nil for a job never issued.
+    /// Issued REVs, oldest first. nil for a job never issued.
     public var revisions: [Revision]?
     public init(id: UUID = UUID(), created: Date = Date(), updated: Date = Date(), values: Values = Values(), modules: [SurveyModule] = [],
                 drive: DriveLink? = nil, jobSyncID: String? = nil, stage: JobStage = .survey, install: InstallInfo? = nil) {

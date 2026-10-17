@@ -4,7 +4,7 @@ import UIKit
 import ImageIO
 import TCRoofCore
 
-/// ตรวจรูปทั้งหมด (docs/specs/review-lock-revisions-swift.md §2.2–2.3): every photo slot of the job on one grid, grouped
+/// ตรวจรูปทั้งหมด: every photo slot of the job on one grid, grouped
 /// like the Drive folders; a missing required photo is a red frame that opens the camera straight into its field.
 struct PhotoReviewPage: View {
     enum Filter: String, CaseIterable { case all = "ทั้งหมด", missing = "ขาด", filled = "มีแล้ว" }

@@ -198,7 +198,7 @@ This spec builds on all of these.
     a map with a known scale (`MapImage` centre + zoom). For example, a photo taken within 15 m of the transformer
     symbol is proposed for the transformer's photos.
   - Everything else goes to a tray, and the surveyor drags items onto slots of the photo-check page
-    ([`review-lock-revisions-swift.md`](review-lock-revisions-swift.md) §2).
+    (`ตรวจรูปทั้งหมด`).
 - Imports are copied, never moved. The originals stay on the card.
 
 **External display (USB-C / AirPlay, Stage Manager on M1+):**
@@ -245,7 +245,7 @@ public var rotation: Double?
 
 - **Where `fillSource` shows:**
   - a small chip on the field
-  - the REV diff ([`review-lock-revisions-swift.md`](review-lock-revisions-swift.md)), for example "แก้เอง จากค่าที่อ่านจากป้าย"
+  - the REV diff, for example "แก้เอง จากค่าที่อ่านจากป้าย"
   - optionally, a footnote in the report
 - **Typing** over a proposed value resets the source to `.typed`.
 

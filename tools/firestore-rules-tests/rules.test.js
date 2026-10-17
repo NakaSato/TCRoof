@@ -123,3 +123,30 @@ test('photos of their records', async () => {
   await assertFails(setDoc(doc(d, 'photos', 'p3'), { tag: 'x', drive: 'id', iecJob: 'theirs', externals: [CON] }));
   await assertFails(setDoc(doc(d, 'photos', 'p4'), { tag: 'x', drive: 'id', log: 'log2' }));
 });
+
+test('a manager invites, changes the role of and removes members, never themselves', async () => {
+  const d = db(BOSS);
+  await assertSucceeds(getDocs(collection(d, 'members')));
+  await assertSucceeds(setDoc(doc(d, 'members', 'new@gmail.com'), { role: 'external', invitedBy: BOSS, invitedAt: new Date() }));
+  await assertSucceeds(updateDoc(doc(d, 'members', 'new@gmail.com'), { role: 'internal' }));
+  await assertSucceeds(deleteDoc(doc(d, 'members', 'new@gmail.com')));
+  await assertFails(setDoc(doc(d, 'members', 'Upper@gmail.com'), { role: 'internal', invitedBy: BOSS }));
+  await assertFails(setDoc(doc(d, 'members', 'x@gmail.com'), { role: 'admin', invitedBy: BOSS }));
+  await assertFails(setDoc(doc(d, 'members', 'y@gmail.com'), { role: 'internal', invitedBy: TEAM }));
+  await assertFails(setDoc(doc(d, 'members', 'z@gmail.com'), { role: 'internal', invitedBy: BOSS, note: 'x' }));
+  await assertFails(updateDoc(doc(d, 'members', BOSS), { role: 'internal' }));
+  await assertFails(deleteDoc(doc(d, 'members', BOSS)));
+  await assertFails(updateDoc(doc(d, 'members', TEAM), { invitedBy: BOSS }));
+});
+
+test('only a manager reads the member list or changes it', async () => {
+  for (const who of [TEAM, CON, 'stranger@gmail.com']) {
+    const d = db(who);
+    await assertFails(getDocs(collection(d, 'members')));
+    await assertFails(setDoc(doc(d, 'members', 'new@gmail.com'), { role: 'manager', invitedBy: who }));
+    await assertFails(updateDoc(doc(d, 'members', who === TEAM ? TEAM : CON), { role: 'manager' }));
+    await assertFails(deleteDoc(doc(d, 'members', OTHER)));
+  }
+  await assertSucceeds(getDoc(doc(db(TEAM), 'members', TEAM)));
+  await assertSucceeds(getDoc(doc(db('stranger@gmail.com'), 'members', 'stranger@gmail.com')));
+});

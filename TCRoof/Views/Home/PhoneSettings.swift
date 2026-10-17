@@ -55,6 +55,13 @@ struct PhoneSettingsList: View {
                             .buttonStyle(.plain)
                     }
                 }
+                if permissions.can(.usersManage) {
+                    // only these accounts sign in (firestore.rules members/)
+                    section("ทีม") {
+                        NavigationLink { MembersView() } label: { row("สมาชิกทีม", "เชิญ · บทบาท ›") }
+                            .buttonStyle(.plain)
+                    }
+                }
                 notificationsSection
                 section("เครื่องมือ") {
                     // the tools tab's screens, kept reachable until the owner decides where they live
@@ -81,7 +88,7 @@ struct PhoneSettingsList: View {
                 section("GOOGLE DRIVE") {
                     row("บัญชี Google", session.email.flatMap { $0.isEmpty ? nil : $0 } ?? "เชื่อมต่อแล้ว")
                     divider
-                    // from members/<email>.role; set in the Firebase console
+                    // from members/<email>.role; set by a manager in สมาชิกทีม or in the Firebase console
                     row("บทบาท", permissions.role.label)
                     divider
                     Button {

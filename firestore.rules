@@ -2,7 +2,7 @@ rules_version = '2';
 
 // TCRoof team data. Only team members can read or write, and only the collections the app syncs.
 // A member is a Google account with a document at members/<email, lowercase> — add or remove people
-// in the Firebase console (Firestore → members). The app can't edit this list.
+// in the Firebase console (Firestore → members), or as a manager in the app's สมาชิก screen.
 //
 // Roles (docs/reference/roles/user-roles.json): members/<email>.role is "manager", "internal" or "external";
 // none is the internal team. An external engineer or contractor reads only the documents that list their email in
@@ -24,6 +24,9 @@ service cloud.firestore {
     }
     function isTeam() {
       return isMember() && role() != 'external';
+    }
+    function isManager() {
+      return isMember() && role() == 'manager';
     }
     function isExternal() {
       return isMember() && role() == 'external';
@@ -52,10 +55,19 @@ service cloud.firestore {
       return request.resource.data.get(field, null) == (resource == null ? null : resource.data.get(field, null));
     }
 
-    // Each person may check their own membership and role (the app reads it after sign-in).
+    // Each person may check their own membership and role (the app reads it after sign-in). A manager lists the
+    // members, invites people, changes their role and removes them, never their own document, so no manager can
+    // lock themselves out or leave the team without one by mistake.
     match /members/{email} {
-      allow read: if request.auth != null && signedInEmail() == email;
-      allow write: if false;
+      allow read: if request.auth != null && (signedInEmail() == email || isManager());
+      allow create: if isManager() && email != signedInEmail() && email == email.lower()
+        && request.resource.data.keys().hasOnly(['role', 'invitedBy', 'invitedAt'])
+        && request.resource.data.get('role', 'internal') in ['manager', 'internal', 'external']
+        && request.resource.data.invitedBy == signedInEmail();
+      allow update: if isManager() && email != signedInEmail()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+        && request.resource.data.role in ['manager', 'internal', 'external'];
+      allow delete: if isManager() && email != signedInEmail();
     }
 
     // Switches set in the Firebase console (contactsSplit).

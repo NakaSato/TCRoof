@@ -21,7 +21,7 @@ The role is the member's, across the app. Each job also names people, in the job
 
 | List | Field | Set by | What it does |
 |---|---|---|---|
-| ทีมงานของเรา | `Job.teamMembers` (`teamMembers` in Firestore) | `job.assign_team`: manager, internal | Our team members working on the job. Opens nothing (the team sees every job): the job is in their `งานของฉัน` filter on the PWA home, and its news is announced to them. |
+| ทีมงานของเรา | `Job.teamMembers` (`teamMembers` in Firestore) | `job.assign_team`: manager, internal | Our team members working on the job, picked from the team directory (`TeamDirectory`) or typed. Opens nothing (the team sees every job): the job is in their `งานของฉัน` filter on the PWA home, and its news is announced to them. An address not in the directory is flagged `ไม่อยู่ในรายชื่อทีม`. |
 | ผู้รับเหมา / วิศวกรภายนอก | `Job.externals` | `job.assign_external`: manager, internal | The only jobs an external member sees and works on. |
 | ผู้ควบคุมงาน | `Job.supervisorEmail` | `job.assign_external` | May sign final acceptance (`handover.final_signoff`). |
 
@@ -112,6 +112,7 @@ function readsMine() { return isExternal() && signedInEmail() in resource.data.e
 - **`photos/{doc}`**: An external member's photo must point at a daily report of their own job or at their job's IEC test; never at an ICL.
 - **`inspections/{doc}`** (ICL): External members read theirs, never write.
 - **`pwaSurveyRevisions/{doc}`** (issued REVs): The team's only; written once, deleted by a team member only once its survey is gone, or by a manager.
+- **`directory/{email}`** (team directory): names and emails of the team and managers, no roles, for picking a job's team members. The team reads it, external members never. Each team member writes their own entry (at sync start, with the name in settings), a manager any team member's (on invite and role change); only listed team members or managers can be in it; a manager deletes entries (on removal or a change to external).
 - **`feedAcks/{doc}`**: Any member adds or removes only their own email.
 - **`config/{doc}`**: Read by every member, written only in the Firebase console.
 

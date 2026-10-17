@@ -104,6 +104,7 @@ final class CloudSync {
         survey?.cloudPush = nil
         survey?.cloudPending = nil
         FeedAcks.shared.send = nil
+        TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
         unconfirmed = [:]
@@ -141,6 +142,7 @@ final class CloudSync {
             listenRevisions()
             listenFeedAcks()
             listenContacts()
+            listenDirectory()
             listenConfig()
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -612,6 +614,27 @@ final class CloudSync {
                     guard let post = data["post"] as? String else { continue }
                     acks.receive(post, change.type == .removed ? [] : Set(data["members"] as? [String] ?? []))
                 }
+            }
+        }
+        listeners.append(registration)
+    }
+
+    /// The team's names and emails (team only, `TeamDirectory`): this member's own entry goes up first, with the name in
+    /// settings, so the people invited before the directory existed are listed too.
+    private func listenDirectory() {
+        guard external == nil else { return TeamDirectory.shared.clear() }
+        let me = MemberRole.shared.permissions.email
+        if !me.isEmpty {
+            let name = UserDefaults.standard.string(forKey: GoogleSession.userNameKey)
+            db.document("\(TeamDirectory.collection)/\(me)").setData(TeamDirectory.entry(email: me, name: name), merge: true) { error in
+                if let error { print("CloudSync: directory entry refused: \(error.localizedDescription)") }
+            }
+        }
+        let registration = db.collection(TeamDirectory.collection).addSnapshotListener { snapshot, error in
+            MainActor.assumeIsolated {
+                // never fail the whole sync over the directory (rule not deployed yet): the jobs still sync
+                if let error { return print("CloudSync: directory listener: \(error.localizedDescription)") }
+                TeamDirectory.shared.receive(snapshot?.documents ?? [])
             }
         }
         listeners.append(registration)

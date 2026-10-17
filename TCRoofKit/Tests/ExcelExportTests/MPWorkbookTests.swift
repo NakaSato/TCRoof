@@ -46,6 +46,49 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertEqual(r.weeks?.upperBound, day(2025, 12, 28))
     }
 
+    /// Every formula of the untouched file works out to the result Excel saved in it.
+    func testFormulasMatchExcelsResults() throws {
+        let book = try MPWorkbook.Book(original())
+        var f = book.sheet.formulas(cal)
+        var checked = 0, unknown: [String] = [], wrong: [String] = []
+        for p in f.formulas.keys.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) {
+            let ref = MPWorkbook.Sheet.ref(p.col, p.row)
+            let v = f.value(p), saved = book.sheet.cell(ref)!.cached
+            if v == .unknown { unknown.append(ref); continue }
+            checked += 1
+            if !MPWorkbook.Sheet.same(saved, v) { wrong.append("\(ref) \(saved) ≠ \(v)") }
+        }
+        XCTAssertEqual(wrong, [], "\(wrong.count) of \(checked)")
+        XCTAssertEqual(unknown, [])
+        XCTAssertGreaterThan(checked, 3000)
+    }
+
+    /// Booked progress moves the Part sums, the cumulative actual (row 56) and the S-curve chart's saved series.
+    func testExportWorksOutTheResults() throws {
+        let data = try original()
+        let r = try MPWorkbook.read(data)
+        var a = r.actual
+        a.set(4, task: .structure, week: day(2024, 10, 27), weight: 10)       // BC30
+        a.set(2.5, task: .structure, week: day(2024, 11, 3), weight: 10)      // BD30
+        let out = try MPWorkbook.export(data, input: r.input, actual: a)
+        let zip = try ZipArchive(out.data), sheet = zip.string("xl/worksheets/sheet1.xml")!
+        let cells = MPWorkbook.Sheet(sheet, shared: [])
+        XCTAssertEqual(cells.number(MPWorkbook.Sheet.split("BC28")!.0, 28), 4, "Part ติดตั้ง Actual")
+        XCTAssertEqual(cells.number(MPWorkbook.Sheet.split("BC55")!.0, 55), 4)
+        XCTAssertEqual(cells.number(MPWorkbook.Sheet.split("BC56")!.0, 56), 4, "cumulative actual")
+        XCTAssertEqual(cells.number(MPWorkbook.Sheet.split("BD56")!.0, 56), 6.5)
+        XCTAssertEqual(cells.number(MPWorkbook.Sheet.split("DL56")!.0, 56), 6.5)
+        XCTAssertEqual(cells.number(MPWorkbook.Sheet.split("BC54")!.0, 54), 19, "the plan's cumulative stays")
+        // the chart's actual series (AD56:DL56): BC is point 25
+        let chart = zip.string("xl/charts/chart1.xml")!
+        XCTAssertTrue(chart.contains(#"<c:pt idx="25"><c:v>4</c:v></c:pt><c:pt idx="26"><c:v>6.5</c:v></c:pt>"#))
+        XCTAssertTrue(chart.contains(#"<c:ptCount val="87"/>"#))
+        // and the untouched parts of the original stay
+        let before = try ZipArchive(data)
+        XCTAssertEqual(zip.data("xl/charts/chart2.xml"), before.data("xl/charts/chart2.xml"))
+        XCTAssertEqual(zip.data("xl/styles.xml"), before.data("xl/styles.xml"))
+    }
+
     func testUnchangedPlanGivesTheSameBytes() throws {
         let data = try original()
         let r = try MPWorkbook.read(data)
@@ -72,10 +115,10 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertEqual(back.actual, a)
         XCTAssertEqual(MasterSchedule.plan(back.input), MasterSchedule.plan(r.input))
 
-        // only the sheet's input cells and the recalc flag changed; every other part is the original's
+        // only the sheet's cells, the S-curve's saved series and the recalc flag changed; every other part is the original's
         let before = try ZipArchive(data), after = try ZipArchive(out.data)
         XCTAssertEqual(before.paths, after.paths)
-        for p in before.paths where p != "xl/worksheets/sheet1.xml" && p != "xl/workbook.xml" {
+        for p in before.paths where !["xl/worksheets/sheet1.xml", "xl/workbook.xml", "xl/charts/chart1.xml"].contains(p) {
             XCTAssertEqual(before.data(p), after.data(p), p)
         }
         XCTAssertEqual(after.string("xl/workbook.xml"),
@@ -88,8 +131,22 @@ final class MPWorkbookTests: XCTestCase {
         XCTAssertTrue(sheetAfter.contains(#"<c r="AJ14" s="57"><v>2</v></c>"#), "1.1 Actual, week of 16 มิ.ย. 2567 (AJ8)")
         XCTAssertTrue(sheetAfter.contains(#"<c r="G30" s="57"><v>45590</v></c>"#), "actual start 25 ต.ค. 2567")
         XCTAssertTrue(sheetAfter.contains(#"<c r="H14" s="150"><v>45463</v></c>"#))
-        XCTAssertEqual(sheetAfter.count - sheetBefore.count, [#"<v>4</v></c>"#, #"<v>2.5</v></c>"#, #"<v>2</v></c>"#,
-                                                               #"<v>45590</v></c>"#, #"<v>45463</v></c>"#].reduce(0) { $0 + $1.count - 1 })
+        // besides the five inputs, only formula results changed: every formula and style is the original's
+        let cellsBefore = SheetCells(sheetBefore), cellsAfter = SheetCells(sheetAfter)
+        XCTAssertEqual(Set(cellsBefore.refs), Set(cellsAfter.refs))
+        let inputs: Set = ["BC30", "BD30", "AJ14", "G30", "H14"]
+        func formula(_ el: String) -> String { el.replacingOccurrences(of: #"<v>[^<]*</v>|\s t="[a-z]+""#, with: "", options: .regularExpression) }
+        var results = 0
+        for ref in cellsBefore.refs where !inputs.contains(ref) {
+            let a = cellsBefore.element(ref)!, b = cellsAfter.element(ref)!
+            guard a != b else { continue }
+            XCTAssertTrue(a.contains("<f"), "\(ref) isn't a formula")
+            XCTAssertEqual(formula(a), formula(b), ref)
+            results += 1
+        }
+        XCTAssertGreaterThan(results, 50, "the Part sums and cumulative rows move")
+        XCTAssertEqual(sheetAfter.components(separatedBy: "</sheetData>").last, sheetBefore.components(separatedBy: "</sheetData>").last,
+                       "merges, conditional formats and print set-up stay")
 
         // clearing the points again gives back the original sheet
         let cleared = try MPWorkbook.export(out.data, input: r.input, actual: r.actual)

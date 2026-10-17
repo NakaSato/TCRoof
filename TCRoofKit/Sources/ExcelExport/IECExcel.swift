@@ -414,6 +414,12 @@ struct SheetCells {
     }
 
     func element(_ ref: String) -> String? { ranges[ref].map { String(source[$0]) } }
+    /// Replaces a cell's whole element (a formula cell with a new cached result).
+    mutating func replace(_ ref: String, _ element: String) {
+        guard ranges[ref] != nil else { return }
+        changes[ref] = element
+    }
+
     /// Every cell the sheet has.
     var refs: Dictionary<String, Range<String.Index>>.Keys { ranges.keys }
 

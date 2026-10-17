@@ -109,6 +109,7 @@ public enum MPWorkbook {
         let layout = book.layout
         var sheet = book.sheet
         var changed = 0, frozeFormula = false
+        var written: [SheetFormulas.Pos: SheetFormulas.Value] = [:]
 
         func put(_ col: Int, _ row: Int, _ value: Double?, force: Bool = false) throws {
             let ref = Sheet.ref(col, row)
@@ -120,6 +121,7 @@ public enum MPWorkbook {
             if cell?.sharedMaster == true { throw Failure.sharedFormula(ref) }
             if cell?.formula == true { frozeFormula = true }
             sheet.cells.set(ref, value.map { .number($0) } ?? .empty)
+            written[SheetFormulas.Pos(col: col, row: row)] = value.map { .number($0) } ?? .empty
             changed += 1
         }
 
@@ -163,6 +165,19 @@ public enum MPWorkbook {
 
         guard changed > 0 else { return Export(data: original, changedCells: 0, weeksOutside: outside.sorted()) }
         var zip = book.zip
+
+        // the formulas' results from the new values, so a viewer that doesn't recalculate shows them too
+        var formulas = sheet.formulas(cal)
+        for (p, v) in written { formulas.setInput(p, v) }
+        for p in Array(formulas.formulas.keys) {
+            let ref = Sheet.ref(p.col, p.row)
+            guard let cell = sheet.cell(ref), let el = sheet.cells.element(ref) else { continue }
+            let v = formulas.value(p)
+            guard v != .unknown, !Sheet.same(cell.cached, v), let new = Sheet.cached(el, v) else { continue }
+            sheet.cells.replace(ref, new)
+        }
+        refreshCharts(&zip, sheet: book.sheetName, formulas: &formulas)
+
         zip.set(book.sheetPath, sheet.cells.xml)
         // the formulas recalculate when the file opens; a cell that lost its formula leaves the calc chain stale, and
         // Excel rebuilds a missing one
@@ -185,6 +200,51 @@ public enum MPWorkbook {
         case let (x?, y?): abs(x - y) < 1e-9
         case let (x?, nil), let (nil, x?): x == 0
         }
+    }
+
+    /// The charts' saved series (the S-curve's cumulative plan and actual) from the sheet's new values.
+    static func refreshCharts(_ zip: inout ZipArchive, sheet name: String, formulas: inout SheetFormulas) {
+        for path in zip.paths where path.hasPrefix("xl/charts/chart") && path.hasSuffix(".xml") {
+            guard var xml = zip.string(path) else { continue }
+            var out = "", at = xml.startIndex, touched = false
+            while let open = xml.range(of: "<c:numRef>", range: at..<xml.endIndex),
+                  let close = xml.range(of: "</c:numRef>", range: open.upperBound..<xml.endIndex) {
+                out += xml[at..<open.upperBound]
+                let inner = String(xml[open.upperBound..<close.lowerBound])
+                let fresh = chartSeries(inner, sheet: name, formulas: &formulas)
+                if let fresh, fresh != inner { touched = true }
+                out += fresh ?? inner
+                at = close.lowerBound
+            }
+            out += xml[at...]
+            if touched { xml = out; zip.set(path, xml) }
+        }
+    }
+
+    /// One `<c:numRef>`'s inside with its cache worked out, or nil when it reads another sheet or something unknown.
+    static func chartSeries(_ inner: String, sheet name: String, formulas: inout SheetFormulas) -> String? {
+        guard let f = SheetXML.between(inner, "<c:f>", "</c:f>"),
+              let cacheOpen = inner.range(of: "<c:numCache>"), let cacheClose = inner.range(of: "</c:numCache>") else { return nil }
+        let ref = SharedStrings.unescape(f)
+        guard let bang = ref.lastIndex(of: "!") else { return nil }
+        var sheet = String(ref[..<bang])
+        if sheet.hasPrefix("'") && sheet.hasSuffix("'") { sheet = String(sheet.dropFirst().dropLast()).replacingOccurrences(of: "''", with: "'") }
+        let parts = ref[ref.index(after: bang)...].replacingOccurrences(of: "$", with: "").split(separator: ":").map(String.init)
+        guard sheet == name, (1...2).contains(parts.count), let a = Sheet.split(parts[0]), let b = Sheet.split(parts.last!) else { return nil }
+        var points = ""
+        var i = 0
+        for row in min(a.1, b.1)...max(a.1, b.1) {
+            for col in min(a.0, b.0)...max(a.0, b.0) {
+                let v = formulas.value(SheetFormulas.Pos(col: col, row: row))
+                if v == .unknown { return nil }
+                if case .number(let n) = v { points += "<c:pt idx=\"\(i)\"><c:v>\(IECExcel.number(n))</c:v></c:pt>" }
+                i += 1
+            }
+        }
+        let cache = String(inner[cacheOpen.upperBound..<cacheClose.lowerBound])
+        let format = cache.range(of: "<c:formatCode>").flatMap { s in cache.range(of: "</c:formatCode>").map { String(cache[s.lowerBound..<$0.upperBound]) } } ?? ""
+        let body = format + "<c:ptCount val=\"\(i)\"/>" + points
+        return String(inner[..<cacheOpen.upperBound]) + body + String(inner[cacheClose.lowerBound...])
     }
 
     static func removeCalcChain(_ zip: inout ZipArchive) {
@@ -229,6 +289,7 @@ public enum MPWorkbook {
     struct Book {
         let zip: ZipArchive
         let sheetPath: String
+        let sheetName: String
         let sheet: Sheet
         let layout: Layout
 
@@ -238,23 +299,25 @@ public enum MPWorkbook {
             let shared = Sheet.sharedStrings(zip.string("xl/sharedStrings.xml") ?? "")
             let rels = zip.string("xl/_rels/workbook.xml.rels") ?? ""
             var noTasks = false
-            for id in Self.sheetIDs(wb) {
+            for (name, id) in Self.sheetIDs(wb) {
                 guard let path = Self.target(id, rels), let xml = zip.string(path) else { continue }
                 let sheet = Sheet(xml, shared: shared)
                 guard let layout = Layout(sheet) else { continue }
                 if layout.rows.isEmpty { noTasks = true; continue }
-                sheetPath = path; self.sheet = sheet; self.layout = layout
+                sheetPath = path; sheetName = name; self.sheet = sheet; self.layout = layout
                 return
             }
             throw noTasks ? Failure.noTasks : Failure.noPlanSheet
         }
 
-        /// The sheets' relationship ids in tab order.
-        static func sheetIDs(_ wb: String) -> [String] {
-            var out: [String] = [], at = wb.startIndex
+        /// The sheets' names and relationship ids in tab order.
+        static func sheetIDs(_ wb: String) -> [(name: String, id: String)] {
+            var out: [(String, String)] = [], at = wb.startIndex
             while let r = wb.range(of: "<sheet ", range: at..<wb.endIndex), let end = wb.range(of: ">", range: r.upperBound..<wb.endIndex) {
                 let tag = String(wb[r.lowerBound..<end.upperBound])
-                if let id = SheetXML.between(tag, "r:id=\"", "\"") { out.append(id) }
+                if let id = SheetXML.between(tag, "r:id=\"", "\"") {
+                    out.append((SharedStrings.unescape(SheetXML.between(tag, "name=\"", "\"") ?? ""), id))
+                }
                 at = end.upperBound
             }
             return out
@@ -338,7 +401,23 @@ public enum MPWorkbook {
 
     /// A sheet's cells, read once.
     struct Sheet {
-        struct Cell { var number: Double?; var text: String?; var formula: Bool; var sharedMaster: Bool }
+        struct Cell {
+            var number: Double?; var text: String?; var formula: Bool; var sharedMaster: Bool
+            /// The formula as written (nil for a cell sharing another's), its shared index, and the cell's type attribute.
+            var formulaText: String? = nil
+            var sharedIndex: String? = nil
+            var type: String? = nil
+
+            /// The saved result of a formula cell, as the evaluator gives it.
+            var cached: SheetFormulas.Value {
+                switch type {
+                case "str": return .text(text ?? "")
+                case "e": return .error(text ?? "")
+                case "b": return .bool((number ?? 0) != 0)
+                default: return number.map { .number($0) } ?? .empty
+                }
+            }
+        }
 
         var cells: SheetCells
         private var byRef: [String: Cell] = [:]
@@ -382,18 +461,81 @@ public enum MPWorkbook {
             let type = SheetXML.between(String(head), " t=\"", "\"")
             let v = SheetXML.between(el, "<v>", "</v>")
             let hasF = el.contains("<f>") || el.contains("<f ")
-            var master = false
-            if let f = el.range(of: "<f ") {
-                let tag = el[f.lowerBound...].prefix { $0 != ">" }
+            var master = false, fText: String?, si: String?
+            if let f = el.range(of: "<f") {
+                let tag = String(el[f.lowerBound...].prefix { $0 != ">" })
                 master = tag.contains("t=\"shared\"") && tag.contains("ref=\"")
+                if tag.contains("t=\"shared\"") { si = SheetXML.between(tag, "si=\"", "\"") }
+                if !tag.hasSuffix("/"), let body = SheetXML.between(String(el[f.lowerBound...]), ">", "</f>") {
+                    fText = SharedStrings.unescape(body)
+                }
             }
+            var c: Cell
             switch type {
-            case "s": return Cell(number: nil, text: v.flatMap(Int.init).flatMap { shared.indices.contains($0) ? shared[$0] : nil }, formula: hasF, sharedMaster: master)
-            case "str", "e": return Cell(number: nil, text: v.map(SharedStrings.unescape), formula: hasF, sharedMaster: master)
-            case "inlineStr": return Cell(number: nil, text: XML.runsText(el), formula: hasF, sharedMaster: master)
-            case "b": return Cell(number: v.flatMap(Double.init), text: nil, formula: hasF, sharedMaster: master)
-            default: return Cell(number: v.flatMap(Double.init), text: nil, formula: hasF, sharedMaster: master)
+            case "s": c = Cell(number: nil, text: v.flatMap(Int.init).flatMap { shared.indices.contains($0) ? shared[$0] : nil }, formula: hasF, sharedMaster: master)
+            case "str", "e": c = Cell(number: nil, text: v.map(SharedStrings.unescape), formula: hasF, sharedMaster: master)
+            case "inlineStr": c = Cell(number: nil, text: XML.runsText(el), formula: hasF, sharedMaster: master)
+            default: c = Cell(number: v.flatMap(Double.init), text: nil, formula: hasF, sharedMaster: master)
             }
+            c.formulaText = fText; c.sharedIndex = si; c.type = type
+            return c
+        }
+
+        /// The sheet's formulas and values, ready to work out.
+        func formulas(_ cal: Calendar) -> SheetFormulas {
+            var f = SheetFormulas(calendar: cal)
+            var masters: [String: SheetFormulas.Pos] = [:], sharing: [(SheetFormulas.Pos, String)] = []
+            for (ref, c) in byRef {
+                guard let (col, row) = Self.split(ref) else { continue }
+                let p = SheetFormulas.Pos(col: col, row: row)
+                if c.formula {
+                    if let text = c.formulaText {
+                        f.setFormula(p, text: text, master: p)
+                        if let si = c.sharedIndex { masters[si] = p }
+                    } else if let si = c.sharedIndex {
+                        sharing.append((p, si))
+                    }
+                } else if let n = c.number {
+                    f.setInput(p, c.type == "b" ? .bool(n != 0) : .number(n))
+                } else if let t = c.text {
+                    f.setInput(p, c.type == "e" ? .error(t) : .text(t))
+                }
+            }
+            for (p, si) in sharing {
+                if let m = masters[si] { f.share(p, from: m) }
+            }
+            return f
+        }
+
+        static func same(_ a: SheetFormulas.Value, _ b: SheetFormulas.Value) -> Bool {
+            if case .number(let x) = a, case .number(let y) = b { return abs(x - y) <= 1e-9 * max(1, abs(x)) }
+            return a == b
+        }
+
+        /// A formula cell's element with `v` as its saved result; the formula and style stay.
+        static func cached(_ el: String, _ v: SheetFormulas.Value) -> String? {
+            guard let gt = el.firstIndex(of: ">"), el.hasSuffix("</c>"), el[el.index(before: gt)] != "/" else { return nil }
+            var open = String(el[...gt])
+            if let r = open.range(of: #" t="[^"]*""#, options: .regularExpression) { open.removeSubrange(r) }
+            var body = String(el[el.index(after: gt)..<el.index(el.endIndex, offsetBy: -4)])
+            if let a = body.range(of: "<v>"), let b = body.range(of: "</v>", range: a.upperBound..<body.endIndex) {
+                body.removeSubrange(a.lowerBound..<b.upperBound)
+            }
+            let type: String?, text: String
+            switch v {
+            case .number(let n): type = nil; text = IECExcel.number(n)
+            case .text(let t): type = "str"; text = SharedStrings.escape(t)
+            case .bool(let b): type = "b"; text = b ? "1" : "0"
+            case .error(let e): type = "e"; text = e
+            case .empty: type = "str"; text = ""
+            case .unknown: return nil
+            }
+            if let type { open.insert(contentsOf: #" t="\#(type)""#, at: open.index(before: open.endIndex)) }
+            // the result follows the formula
+            let fEnd = body.range(of: "</f>")?.upperBound
+                ?? body.range(of: "<f").flatMap { f in body.range(of: "/>", range: f.upperBound..<body.endIndex)?.upperBound }
+                ?? body.startIndex
+            return open + body[..<fEnd] + "<v>\(text)</v>" + body[fEnd...] + "</c>"
         }
 
         static func sharedStrings(_ xml: String) -> [String] {

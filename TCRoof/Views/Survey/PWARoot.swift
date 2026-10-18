@@ -12,6 +12,8 @@ struct PWARoot: View {
     @State private var station: Job?
     /// The station whose daily report list the install overview's strip opened.
     @State private var dailies: Job?
+    /// Handed-over station opened for maintenance details (reference/PhonePwaStation.dc.html).
+    @State private var maintenanceStation: MaintenanceStationSummary?
     @State private var showPlan = false
     @State private var showSettings = false
     @State private var showNotifications = false
@@ -31,6 +33,9 @@ struct PWARoot: View {
                 if sizeClass != .compact, jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
             }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
+            .navigationDestination(item: $maintenanceStation) { s in
+                PWAMaintenanceStationView(station: s)
+            }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
             .navigationDestination(isPresented: $showSettings) { PWASettingsPage() }
             .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
@@ -79,7 +84,7 @@ struct PWARoot: View {
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
             maintenanceStations: stations.filter { $0.status == .completed }.map(\.maintenanceSummary),
-            openMaintenanceStation: { s in station = stations.first { $0.overviewID == s.id } ?? demoStation(stations) },
+            openMaintenanceStation: { s in maintenanceStation = s },
             handOver: { id in stations.first { $0.overviewID == id }?.status = .completed },
             returnToInstall: { id in stations.first { $0.overviewID == id }?.status = .installing },
             openPlan: { showPlan = true },

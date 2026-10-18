@@ -85,6 +85,8 @@ struct SurveyHomeView: View {
     @State var contractor: String?
     /// Row filter of the maintenance overview; nil until picked, then `มีปัญหา` when any station has a problem.
     @State var maintenanceFilter: MaintenanceOverview.RowFilter?
+    /// Handed-over station opened in standalone mode
+    @State var selectedMaintenanceStation: MaintenanceStationSummary?
 
     /// A job to open, optionally at the step "continue" points to.
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
@@ -152,6 +154,9 @@ struct SurveyHomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $open) { o in
             if let j = model.job(o.id) { JobEditorView(job: j, start: o.start).environment(model) }
+        }
+        .navigationDestination(item: $selectedMaintenanceStation) { s in
+            PWAMaintenanceStationView(station: s)
         }
         #if DEBUG
         // `-surveyDemo YES` opens a job right away for simulator checks; add `-surveyDemoSection YES` to open its first section.

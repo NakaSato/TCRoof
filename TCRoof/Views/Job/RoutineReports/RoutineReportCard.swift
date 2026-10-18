@@ -94,7 +94,8 @@ struct DailyReportListView: View {
         let today = cal.startOfDay(for: .now)
         let start = cal.startOfDay(for: min(job.dailyLogs.first?.date ?? job.installStart, job.installStart))
         let end = min(today, max(cal.startOfDay(for: job.installEnd), job.dailyLogs.last.map { cal.startOfDay(for: $0.date) } ?? start))
-        let worked = start <= end ? RoutineReport.workingDays(settings: job.routineSettings, from: start, to: end) : []
+        // a station with no install dates yet lists only its reports, not every day since 1970
+        let worked = job.isScheduled && start <= end ? RoutineReport.workingDays(settings: job.routineSettings, from: start, to: end) : []
         let reported = job.dailyLogs.map { cal.startOfDay(for: $0.date) }
         return Array(Set(worked + reported)).sorted(by: >)
     }

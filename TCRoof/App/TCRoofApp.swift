@@ -139,8 +139,8 @@ struct RootView: View {
 #if DEBUG
 /// Opens one screen directly for simulator checks: `simctl launch <device> com.tcroof.internal -screen plan`.
 struct DebugScreen: View {
-    static let requested = UserDefaults.standard.string(forKey: "screen")
-    static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
+    static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
+    static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
                               "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
@@ -184,6 +184,18 @@ struct DebugScreen: View {
                 for (i, j) in jobs.prefix(4).enumerated() { j.seedMPDemo(mp: 189 + i, shift: [0, -14, 10, -30][i], pace: [1, 1.6, 0.6, 2.2][i]) }
             }
         case "pwa": SolarSurveyEntryView()
+        case "station":
+            let tabStr = UserDefaults.standard.string(forKey: "stationTab") ?? "overview"
+            let tab: PWAMaintenanceStationView.Tab = tabStr == "repairs" ? .repairs : tabStr == "pm" ? .pm : tabStr == "equipment" ? .equipment : .overview
+            PWAMaintenanceStationView(
+                station: MaintenanceStationSummary(
+                    id: "demo-25", mpNumber: 25, name: "สถานีผลิตน้ำนครชัยศรี", kWp: 220,
+                    energy: 410, expected: 790, pr: 63, status: .alarm, openRepairs: 1,
+                    nextPM: Calendar.current.date(byAdding: .day, value: 21, to: .now),
+                    note: "INV 2 fault · 2 วัน"
+                ),
+                initialTab: tab
+            )
         case "permits": if let job { PermitFormsView(job: job) }
         case "poa": if let job { PowerOfAttorneyView(job: job) }
         case "selfcert": if let job { SelfCertificationView(job: job) }

@@ -375,14 +375,14 @@ extension SurveyHomeView {
         .buttonStyle(.plain)
     }
 
-    /// The host's screen for the station when it has it, else the station's survey job here.
+    /// The host's screen for the station when it has it, else the station's survey job here, or the detail view.
     private func openMaintenanceStation(_ s: MaintenanceStationSummary) {
-        if let open = host.openMaintenanceStation, host.maintenanceStations.contains(where: { $0.id == s.id }) {
+        if let open = host.openMaintenanceStation {
             open(s)
         } else if let j = model.jobs(in: .maintenance).first(where: { $0.id.uuidString == s.id || $0.jobSyncID == s.id }) {
             go(j)
         } else {
-            host.openMaintenanceStation?(s)
+            selectedMaintenanceStation = s
         }
     }
 

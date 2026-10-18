@@ -40,7 +40,8 @@ struct PlanListView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var grouped: [(month: Date, jobs: [Job])] {
-        let filtered = jobs.filter { $0.matches(search) }
+        // stations imported without install dates (`Job.unscheduled`) have no month here; their dates come with the MP plan
+        let filtered = jobs.filter { $0.isScheduled && $0.matches(search) }
         let dict = Dictionary(grouping: filtered) { $0.installStart.startOfMonth }
         return dict.keys.sorted().map { ($0, dict[$0]!) }
     }

@@ -53,7 +53,7 @@ final class GoogleSession {
         #if DEBUG
         // `-screen <name>` skips sign-in for simulator checks; `-screen login` shows the login page.
         if let screen = UserDefaults.standard.string(forKey: "screen") {
-            email = screen == "login" ? nil : "demo@survey.co.th"
+            email = screen == "login" ? nil : (UserDefaults.standard.string(forKey: "roleEmail") ?? (MemberRole.override != nil ? "uitest@tcroof.test" : "demo@survey.co.th"))
         }
         #endif
         if let email { MemberRole.shared.signedIn(email) }

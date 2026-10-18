@@ -29,7 +29,14 @@ final class MemberRole {
     func signedIn(_ email: String) {
         let email = Permissions.normalized(email)
         let saved = UserDefaults.standard.string(forKey: Self.key(email))
+        #if DEBUG
+        let activeEmail = (UserDefaults.standard.string(forKey: "screen") != nil && Self.override != nil)
+            ? (UserDefaults.standard.string(forKey: "roleEmail") ?? "uitest@tcroof.test")
+            : email
+        permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: activeEmail)
+        #else
         permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: email)
+        #endif
     }
 
     /// The role this device last read for an account.
@@ -89,7 +96,7 @@ final class MemberRole {
     func signedOut() { permissions = .team }
 
     /// `-role manager|internal|external` (DEBUG) tries a role on the simulator.
-    private static var override: UserRole? {
+    static var override: UserRole? {
         #if DEBUG
         UserDefaults.standard.string(forKey: "role").flatMap(UserRole.init(rawValue:))
         #else

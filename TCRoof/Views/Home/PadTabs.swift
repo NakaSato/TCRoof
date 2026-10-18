@@ -14,7 +14,7 @@ enum PadTab: String, CaseIterable {
     var module: AppModule? { AppModule(rawValue: rawValue) }
 
     /// The page colour its content fades into behind the dock.
-    var fade: Color { self == .home || self == .pwa || self == .tools ? Theme.phonePage : Theme.background }
+    var fade: Color { self == .home || self == .pwa || self == .tools || self == .docs ? Theme.phonePage : Theme.background }
 }
 
 /// The dock's state, for the screens under it: the home sends `ดูทั้งหมด` to the `งานบ้าน` tab, and it and the PWA home
@@ -77,8 +77,9 @@ struct PadTabs<HomeRoot: View>: View {
                 switch t {
                 // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-ipad-v3 §2)
                 case .pwa: PWARoot()
-                // the residential document library, as on the iPhone dock
-                case .docs: HomeLibraryView()
+                // every PWA station's papers (docs/ui/pwa-docs-ipad); the residential library is the settings sheet's
+                // `เอกสารงานบ้าน` row, as on the iPhone
+                case .docs: PWADocsPadView()
                 // the plan calendar and the install records left the dock: they are rows over the register for now
                 // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
                 case .tools: ToolsView(modules: [.plan, .install])

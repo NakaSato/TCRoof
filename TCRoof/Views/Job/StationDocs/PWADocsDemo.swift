@@ -27,7 +27,9 @@ enum PWADocsDemo {
 
     private static let order: [StationDocs.Package] = [.building, .gridConnection, .pk2, .handover]
 
-    static func stations(today: Date) -> [PWAPlan.Station] {
+    /// `recent`: some papers carry the time they changed and one waiting paper two reminders (the iPad page's
+    /// `ความเคลื่อนไหว` and history).
+    static func stations(today: Date, recent: Bool = false) -> [PWAPlan.Station] {
         let cal = MasterSchedule.calendar
         func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: cal.startOfDay(for: today)) ?? today }
         return rows.map { r in
@@ -44,6 +46,18 @@ enum PWADocsDemo {
                 }
             }
             if !r.next.isEmpty { docs.docs[r.next] = StationDocs.DocState(status: r.status) }
+            if recent {
+                // the current package's papers changed over the last days, the next paper an hour ago
+                for (j, kind) in StationDocs.papers(in: r.current, ctx).enumerated() where docs.docs[kind.id] != nil {
+                    docs.docs[kind.id]?.updatedAt = cal.date(byAdding: .hour, value: -(j + 1) * 20, to: today)
+                }
+                if !r.next.isEmpty {
+                    docs.docs[r.next]?.updatedAt = cal.date(byAdding: .hour, value: -1, to: today)
+                    if r.status == .requested {
+                        docs.docs[r.next]?.reminders = [day(-3), cal.date(byAdding: .hour, value: -2, to: today) ?? today]
+                    }
+                }
+            }
             docs.setDue(day(r.due), for: r.current)
             let input = MasterSchedule.Input(installStart: day(r.handover - 60), installEnd: day(r.handover),
                                              kickoff: day(r.handover - 90), engineeringStart: day(r.handover - 80),

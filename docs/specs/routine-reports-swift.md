@@ -4,7 +4,7 @@
 (§4.1), R2 daily report with signing, Excel and key plan (§4.2), R1 weekly request (§4.3), R3 and R4 (§4.4–4.5), A4 PDFs
 filed to the Drive report folders and daily photos to `5. ภาพถ่ายประจำวัน` (§4.6), and the 17:00 / Friday 15:00
 reminders (§5). R1 is stored as JSON on the job (`Job.weeklyRequestsJSON`), so it syncs with `jobs` and needed no new
-Firestore collection (§2.4). R3 also exports as PowerPoint for the meeting (2026-10-17, `ExcelExport/WeeklySlides.swift`, open question 2).
+Firestore collection (§2.4). R3 also exports as PowerPoint for the meeting (2026-10-17, `ExcelExport/WeeklySlides.swift`, open question 2). Contractors fill and send R1 (2026-10-18, `weekly.request`, docs/ui/user-admin-iphone): `sentAt` / `sentBy`, the team sends it back or approves it, and team devices drop a contractor's change to a sent or approved week (`WeeklyRequest.trusting`; the job document's `weeklyRequestsBy`).
 **Platform:** TCRoof host app (SwiftUI, SwiftData, iPadOS 17+, also iPhone). Pure logic in `TCRoofCore`
 (`RoutineReport.swift`, testable with `swift test`); PDF through `PDFReport`; Excel through `ExcelExport`.
 **Depends on:** `docs/specs/master-schedule-swift.md` (แผน MP). The daily report feeds the MP actual.

@@ -73,6 +73,8 @@ final class RoleTableTests: XCTestCase {
         let other = Permissions(role: .external, email: "someone@example.com")
         XCTAssertTrue(me.can(.dailyFill, on: job))
         XCTAssertTrue(me.can(.iecFillSubmit, on: job))
+        XCTAssertTrue(me.can(.weeklyRequest, on: job), "a contractor sends the weekly request of their own job")
+        XCTAssertFalse(other.can(.weeklyRequest, on: job))
         XCTAssertFalse(other.can(.dailyFill, on: job))
         XCTAssertFalse(me.can(.dailyFill), "no job, nothing to be assigned to")
         XCTAssertFalse(me.can(.iecClose, on: job))

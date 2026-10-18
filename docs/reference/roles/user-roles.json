@@ -525,7 +525,7 @@
         },
         {
           "id": "daily.fill",
-          "label": "รายงานประจำวัน: กรอก · รูป · สแกนเลขเครื่อง",
+          "label": "รายงานประจำวัน: กรอก · รูป · สแกนเลขเครื่อง · ส่ง",
           "roles": {
             "manager": {
               "access": "allow"
@@ -535,7 +535,27 @@
             },
             "external": {
               "access": "conditional",
-              "note": "หัวหน้างานกรอก งานตัวเอง (ก่อนวิศวกรเซ็น)"
+              "note": "ต้องส่งทุกวันที่เข้างาน · งานตัวเอง"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
+          "id": "weekly.request",
+          "label": "คำขอรายสัปดาห์ (R1): คน เครื่องมือ แผน ความเสี่ยง · ส่งขออนุมัติ",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "conditional",
+              "note": "อนุมัติ / ส่งกลับ"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ต้องส่งทุกสัปดาห์ · งานตัวเอง"
             },
             "maintainer": {
               "access": "allow"
@@ -573,7 +593,7 @@
             },
             "external": {
               "access": "conditional",
-              "note": "ผู้รับเหมาทดสอบและส่งผล งานตัวเอง"
+              "note": "ต้องทดสอบและส่งผล ก่อน / หลังขนาน · งานตัวเอง"
             },
             "maintainer": {
               "access": "allow"

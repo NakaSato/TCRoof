@@ -4,6 +4,7 @@ import XCTest
 /// the board's). iPad:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<udid>' -only-testing:TCRoofUITests/UserAdminUITests -derivedDataPath <dir>`.
 /// With `TEST_RUNNER_USERADMIN_SHOTS=<folder>` the settings entry is saved there as `00-settings-entry.png`.
+/// `testIPhone…` runs on an iPhone simulator (docs/ui/user-admin-iphone) and is skipped on iPad; `testIPad…` the reverse.
 final class UserAdminUITests: XCTestCase {
     let slow: TimeInterval = 90
     let aree = "aree@contractor-a.example"
@@ -100,8 +101,10 @@ final class UserAdminUITests: XCTestCase {
     func testAMatrixCellChangesOnlyInEditMode() {
         let app = launch(["-userAdminUnlocked", "YES", "-userAdminTab", "roles"])
         let cell = app.buttons["userAdmin.cell.internal|tools.register"]
-        XCTAssertTrue(cell.waitForExistence(timeout: slow))
-        if !cell.isHittable { app.swipeUp(); app.swipeUp() }
+        XCTAssertTrue(app.buttons["userAdmin.matrixEdit"].waitForExistence(timeout: slow))
+        // the last row of a lazy list: made once it is scrolled near
+        for _ in 0..<8 where !(cell.exists && cell.isHittable) { app.swipeUp() }
+        XCTAssertTrue(cell.waitForExistence(timeout: 5))
         XCTAssertTrue(cell.label.contains("ทำได้"))
         // out of edit mode a tap asks for the key and changes nothing
         cell.tap()
@@ -141,5 +144,88 @@ final class UserAdminUITests: XCTestCase {
         row.tap()
         // it opens on the lock screen; off the demo the pad waits for config/devKey, which the simulator can't read
         XCTAssertTrue(text(dev, "ใส่คีย์นักพัฒนา 6 หลัก").waitForExistence(timeout: 10), "it opens on the lock screen")
+    }
+    // MARK: contractor duties (docs/ui/user-admin-iphone)
+
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+
+    private func duty(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        app.descendants(matching: .any)["userAdmin.duty.\(id)"].firstMatch
+    }
+
+    private func wait(_ e: XCUIElement, contains s: String, _ timeout: TimeInterval = 5) {
+        let ok = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", s), object: e)
+        XCTAssertEqual(XCTWaiter.wait(for: [ok], timeout: timeout), .completed, e.label)
+    }
+
+    /// Until it is on screen and in the upper part of it, clear of the pending bar.
+    private func scrollTo(_ app: XCUIApplication, _ e: XCUIElement, up: Bool = true) {
+        let clear = { e.exists && e.isHittable && (!up || e.frame.maxY < app.frame.height * 0.6) }
+        for _ in 0..<14 where !clear() {
+            if up { app.swipeUp(velocity: .slow) } else { app.swipeDown(velocity: .slow) }
+        }
+    }
+
+    /// Unlock, open a contractor: three ต้องส่ง; turn the external weekly.request to ✕ in the matrix: R1 reads ปิดอยู่;
+    /// discard: back to ต้องส่ง.
+    func testIPhoneDutyCardFollowsTheMatrix() throws {
+        try XCTSkipUnless(isPhone, "the iPhone layout")
+        let app = launch(["-userAdminWrongKey", "0"])
+        XCTAssertTrue(app.buttons["devKey.1"].waitForExistence(timeout: slow))
+        type(app, "246810")
+        waitGone(app.buttons["devKey.1"])
+
+        let row = app.buttons["userAdmin.row.\(aree)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        scrollTo(app, row)
+        row.tap()
+        let weekly = duty(app, "weekly.request")
+        XCTAssertTrue(weekly.waitForExistence(timeout: 5))
+        for id in ["daily.fill", "weekly.request", "iec.fill_submit"] {
+            XCTAssertTrue(duty(app, id).label.contains("ต้องส่ง"), "\(id): \(duty(app, id).label)")
+        }
+
+        // back to the list, then the roles tab, one role at a time
+        app.buttons["userAdmin.back"].tap()
+        let rolesTab = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'สิทธิ์'")).firstMatch
+        XCTAssertTrue(rolesTab.waitForExistence(timeout: 5))
+        rolesTab.tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS 'External'")).firstMatch.tap()
+        app.buttons["userAdmin.matrixEdit"].tap()
+        XCTAssertTrue(text(app, "ยืนยันคีย์เพื่อแก้สิทธิ์และกฎ").waitForExistence(timeout: 5))
+        type(app, "246810")
+        let cell = app.buttons["userAdmin.cell.external|weekly.request"]
+        XCTAssertTrue(cell.waitForExistence(timeout: 5))
+        scrollTo(app, cell)
+        XCTAssertTrue(cell.label.contains("มีเงื่อนไข"), cell.label)
+        cell.tap()
+        wait(cell, contains: "ดูอย่างเดียว")
+        cell.tap()
+        wait(cell, contains: "✕")
+        XCTAssertTrue(app.staticTexts["userAdmin.pending"].label.contains("แก้ไข 1 รายการ"))
+
+        // the contractor's card now reads ปิดอยู่ for R1
+        let usersTab = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'ผู้ใช้'")).firstMatch
+        scrollTo(app, usersTab, up: false)
+        usersTab.tap()
+        scrollTo(app, row)
+        row.tap()
+        XCTAssertTrue(weekly.waitForExistence(timeout: 5))
+        XCTAssertTrue(weekly.label.contains("ปิดอยู่"), weekly.label)
+        XCTAssertTrue(duty(app, "daily.fill").label.contains("ต้องส่ง"), "daily.fill is enforced in the rules: always due")
+
+        app.buttons["ยกเลิกทั้งหมด"].tap()
+        waitGone(app.staticTexts["userAdmin.pending"])
+        XCTAssertTrue(weekly.label.contains("ต้องส่ง"), weekly.label)
+    }
+
+    /// iPad state 10: the duty card in the detail beside the list, only for an external member.
+    func testIPadDutyCardOnlyForContractors() throws {
+        try XCTSkipIf(isPhone, "the iPad layout")
+        let app = launch(["-userAdminUnlocked", "YES", "-userAdminUser", aree])
+        XCTAssertTrue(duty(app, "weekly.request").waitForExistence(timeout: slow))
+        XCTAssertTrue(duty(app, "weekly.request").label.contains("ต้องส่ง"))
+        app.buttons["userAdmin.row.somchai@tcroof.example"].tap()
+        waitGone(duty(app, "weekly.request"), 5)
     }
 }

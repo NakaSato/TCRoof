@@ -73,6 +73,10 @@ service cloud.firestore {
         && ((team.size() == 0 && (supervisor == '' || supervisor == null))
             || signedInEmail() in team || supervisor == signedInEmail());
     }
+    // The fields an update changes.
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
     // A daily report's engineer signature and inspector acknowledgement are as they were, or cleared.
     function signaturesKeptOrCleared() {
       return (unchanged('engineerSignedAt') || request.resource.data.get('engineerSignedAt', null) == null)
@@ -171,11 +175,18 @@ service cloud.firestore {
       allow create: if isTeam();
       // ลบงาน (job.delete) is the manager's only
       allow delete: if isManager();
+      // A contractor changes only the IEC test (while it is open, and never closes it) and the weekly requests R1
+      // (weekly.request), signing the latter with their own email in `weeklyRequestsBy`: a rule can't read inside the
+      // JSON, so team devices drop a contractor's change to a week already sent or approved
+      // (RoutineReport.WeeklyRequest.trusting).
       allow update: if isTeam()
         || (isExternal() && listsMe(resource.data)
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['iecReport', 'iecState'])
-            && resource.data.get('iecState', 'open') == 'open'
-            && request.resource.data.get('iecState', null) in ['open', 'sent']);
+            && changedKeys().hasOnly(['iecReport', 'iecState', 'weeklyRequests', 'weeklyRequestsBy'])
+            && (!changedKeys().hasAny(['iecReport', 'iecState'])
+                || (resource.data.get('iecState', 'open') == 'open'
+                    && request.resource.data.get('iecState', null) in ['open', 'sent']))
+            && (!changedKeys().hasAny(['weeklyRequests', 'weeklyRequestsBy'])
+                || request.resource.data.get('weeklyRequestsBy', null) == signedInEmail()));
     }
 
     // The customers' phones and addresses, one document per job: the team's only.

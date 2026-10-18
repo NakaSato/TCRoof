@@ -51,6 +51,11 @@ struct TCRoofApp: App {
                 }
             }
             .animation(.easeInOut, value: session.isSignedIn)
+            // `tcroof://job/<syncID>` (a survey appointment in Calendar) opens the job as a notification tap does; before
+            // sign-in it waits for the home
+            .onOpenURL { url in
+                if let link = DeepLink(url: url) { NotificationService.shared.link = link }
+            }
             .environment(session)
             // light everywhere, the login page included (it's on the design system's light page)
             .preferredColorScheme(.light)

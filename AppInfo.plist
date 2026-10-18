@@ -7,5 +7,17 @@
 	<string>$(GISTDA_API_KEY)</string>
 	<key>MapboxAccessToken</key>
 	<string>$(MAPBOX_ACCESS_TOKEN)</string>
+	<!-- tcroof://job/<syncID> opens the job, e.g. from a survey appointment in Calendar -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.tcroof.internal</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tcroof</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

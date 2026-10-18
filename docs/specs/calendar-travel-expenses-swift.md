@@ -1,6 +1,9 @@
 # Survey appointments in the iPad Calendar, and the travel and expense log (iPad Swift dev spec)
 
-**Status:** Ready for development, 2026-09-29
+**Status:** Part A's manual mode built (2026-10-17): `TCRoofCore/SurveyEvent.swift` (§A2 content, the `tcroof://` links),
+`TCRoof/Calendar/AddToCalendar.swift` (`เพิ่มลงปฏิทิน` on the job's แผนงาน card, team only), the `tcroof` URL scheme and
+`.onOpenURL` (§A4, routed as a notification tap). The pure logic went into `TCRoofCore`, not a new `FieldOps` target. Not
+built: automatic sync (§A1), reminders (§A3), the Plan row's buttons and "not synced yet" message (§A4–A5), and part B.
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.
 **App target:** the host app `TCRoof` (jobs, plan, Firebase sync). Pure logic goes in a new, dependency-free target
 `TCRoofKit/Sources/FieldOps`, testable with `swift test`.

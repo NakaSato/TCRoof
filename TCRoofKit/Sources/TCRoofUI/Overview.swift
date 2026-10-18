@@ -127,6 +127,7 @@ public struct TCPhoneSearchHeader: View {
     let large: Bool
     let wide: Bool
     let bell: Bell?
+    let settings: (() -> Void)?
     @Binding var search: String
     @Binding var isOpen: Bool
     var prompt: String
@@ -134,9 +135,9 @@ public struct TCPhoneSearchHeader: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(title: String, subtitle: String?, search: Binding<String>, isOpen: Binding<Bool>, prompt: String = "ค้นหาเลขที่ ชื่อโครงการ",
-                showsSearch: Bool = true, large: Bool = false, wide: Bool = false, bell: Bell? = nil, onBack: (() -> Void)? = nil) {
+                showsSearch: Bool = true, large: Bool = false, wide: Bool = false, bell: Bell? = nil, settings: (() -> Void)? = nil, onBack: (() -> Void)? = nil) {
         self.title = title; self.subtitle = subtitle; self._search = search; self._isOpen = isOpen; self.prompt = prompt
-        self.showsSearch = showsSearch; self.large = large; self.wide = wide; self.bell = bell; self.onBack = onBack
+        self.showsSearch = showsSearch; self.large = large; self.wide = wide; self.bell = bell; self.settings = settings; self.onBack = onBack
     }
 
     private var corner: CGFloat { large ? 22 : 12 }
@@ -154,6 +155,7 @@ public struct TCPhoneSearchHeader: View {
             Spacer(minLength: 0)
             if showsSearch { searchBox }
             if let bell { bellButton(bell) }
+            if let settings, !isOpen || wide { settingsButton(settings).transition(titleTransition) }
         }
         .frame(height: 44)
         .foregroundStyle(Theme.onPrimary)
@@ -218,6 +220,19 @@ public struct TCPhoneSearchHeader: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(bell.unread > 0 ? "การแจ้งเตือน · ยังไม่อ่าน \(bell.unread)" : "การแจ้งเตือน")
+    }
+
+    private func settingsButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "gearshape").font(.system(size: 18, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .background(Theme.onPrimary.opacity(0.18), in: Circle())
+                .overlay(Circle().strokeBorder(Theme.onPrimary.opacity(0.4)))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("ตั้งค่าโครงการ")
+        .accessibilityIdentifier("pwaHome.settings")
     }
 
     private func shape(open: Bool) -> some View {

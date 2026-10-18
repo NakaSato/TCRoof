@@ -192,12 +192,12 @@ struct JobCard: View {
         }
     }
 
-    /// `แผน p% · จริง a%`, `ส่งมอบ d/m` and the contractor.
+    /// `แผน p% · จริง a%`, `ส่งมอบ dd/mm` and the contractor.
     private func phaseChips(_ s: InstallStationSummary) -> some View {
         let actual = "จริง \(Int(s.actual.rounded()))%"
         let due = s.dueDate.map { d -> String in
             let c = Calendar.current.dateComponents([.day, .month], from: d)
-            return "ส่งมอบ \(c.day ?? 0)/\(c.month ?? 0)"
+            return String(format: "ส่งมอบ %02d/%02d", c.day ?? 0, c.month ?? 0)
         }
         return FlowLayout(spacing: 4, lineSpacing: 4) {
             phaseChip(s.plan.map { "แผน \(Int($0.rounded()))% · " + actual } ?? actual, ink: Theme.navy)

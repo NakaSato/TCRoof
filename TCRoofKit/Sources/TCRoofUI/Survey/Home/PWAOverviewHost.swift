@@ -28,6 +28,8 @@ public struct PWAOverviewHost {
     /// The header's bell: the unread count and the notifications screen. nil leaves the bell out.
     public var unread = 0
     public var openNotifications: (() -> Void)?
+    /// Opens the PWA project settings page (`ตั้งค่าโครงการ PWA`). nil leaves the shortcut out.
+    public var openSettings: (() -> Void)?
     /// `งานของฉัน`: the app jobs (`Job.jobSyncID`) that name the signed-in member, on their team, as supervisor or as an
     /// assigned external. nil leaves the filter out.
     public var mine: Set<String>?
@@ -37,13 +39,14 @@ public struct PWAOverviewHost {
                 maintenanceTasks: [MaintenanceTask] = [], openMaintenanceStation: ((MaintenanceStationSummary) -> Void)? = nil,
                 handOver: ((String) -> Void)? = nil, returnToInstall: ((String) -> Void)? = nil,
                 openPlan: (() -> Void)? = nil, planBody: ((String) -> AnyView)? = nil, unread: Int = 0,
-                openNotifications: (() -> Void)? = nil, mine: Set<String>? = nil) {
+                openNotifications: (() -> Void)? = nil, openSettings: (() -> Void)? = nil, mine: Set<String>? = nil) {
         self.planBody = planBody
         self.handOver = handOver; self.returnToInstall = returnToInstall
         self.installStations = installStations; self.openStation = openStation; self.openDailyReports = openDailyReports
         self.maintenanceStations = maintenanceStations; self.maintenanceTasks = maintenanceTasks
         self.openMaintenanceStation = openMaintenanceStation; self.openPlan = openPlan
         self.unread = unread; self.openNotifications = openNotifications
+        self.openSettings = openSettings
         self.mine = mine
     }
 }

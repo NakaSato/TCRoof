@@ -72,6 +72,7 @@ extension SurveyHomeView {
         } else {
             TCPhoneSearchHeader(title: title, subtitle: nil, search: $search, isOpen: $searchOpen, large: true, wide: !compact,
                                 bell: host.openNotifications.map { .init(unread: host.unread, action: $0) },
+                                settings: host.openSettings,
                                 onBack: isPushed ? { dismiss() } : nil)
         }
     }
@@ -206,6 +207,25 @@ extension SurveyHomeView {
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
+            }
+            if let openSettings = host.openSettings {
+                Button {
+                    showFilter = false
+                    openSettings()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "gearshape").font(.system(size: 14, weight: .semibold))
+                        Text("ตั้งค่าโครงการ PWA").font(.sarabunFixed(13, .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.inkMuted)
+                    }
+                    .foregroundStyle(Theme.navy)
+                    .padding(.horizontal, 12).frame(height: 40)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderSubtle))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("pwaHome.filterSettings")
             }
         }
         .padding(12)

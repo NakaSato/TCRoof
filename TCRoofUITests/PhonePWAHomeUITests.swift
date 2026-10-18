@@ -97,4 +97,17 @@ final class PhonePWAHomeUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(app.staticTexts["PWA Setting"].waitForExistence(timeout: 8))
     }
+
+    /// The header's gear button pushes PWA Setting and the back button returns to PWA home.
+    func testHeaderSettingsShortcut() {
+        let app = launch()
+        let gear = app.buttons["pwaHome.settings"]
+        XCTAssertTrue(gear.waitForExistence(timeout: slow))
+        gear.tap()
+        XCTAssertTrue(app.staticTexts["PWA Setting"].waitForExistence(timeout: 8))
+        let back = app.buttons["ย้อนกลับ"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 8))
+        back.tap()
+        XCTAssertTrue(gear.waitForExistence(timeout: 8))
+    }
 }

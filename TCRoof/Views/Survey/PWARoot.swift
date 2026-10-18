@@ -13,6 +13,7 @@ struct PWARoot: View {
     /// The station whose daily report list the install overview's strip opened.
     @State private var dailies: Job?
     @State private var showPlan = false
+    @State private var showSettings = false
     @State private var showNotifications = false
     private var bell = PWABell()
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -31,6 +32,7 @@ struct PWARoot: View {
             }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
+            .navigationDestination(isPresented: $showSettings) { PWASettingsPage() }
             .fullScreenCover(isPresented: Binding(get: { sizeClass == .compact && showNotifications }, set: { showNotifications = $0 })) {
                 bell.view().environment(\.homeInk, .outdoor)
             }
@@ -84,6 +86,7 @@ struct PWARoot: View {
             planBody: { search in AnyView(PWAPlanPhoneView(padSearch: search)) },
             unread: bell.unread,
             openNotifications: { showNotifications.toggle() },
+            openSettings: { showSettings = true },
             mine: jobs.mine(permissions))
     }
 

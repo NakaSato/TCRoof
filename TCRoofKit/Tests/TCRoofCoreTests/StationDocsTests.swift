@@ -148,4 +148,23 @@ final class StationDocsTests: XCTestCase {
         let partial = S.Station.decode(#"{"outageLetter":{"to":"ผู้จัดการ"}}"#).outageLetter
         XCTAssertEqual(partial, S.OutageLetter(to: "ผู้จัดการ"))
     }
+
+    func testRemindersDecodeFromOldJSONAndRoundTrip() throws {
+        let old = #"{"status":"requested","note":"ส่งแล้ว"}"#
+        let state = try JSONDecoder().decode(S.DocState.self, from: Data(old.utf8))
+        XCTAssertEqual(state.reminders, [])
+        XCTAssertEqual(state.status, .requested)
+        // a paper never chased is written as before
+        let plain = String(decoding: try JSONEncoder().encode(state), as: UTF8.self)
+        XCTAssertFalse(plain.contains("reminders"))
+
+        var chased = state
+        chased.reminders = [Date(timeIntervalSince1970: 1_800_000_000), Date(timeIntervalSince1970: 1_800_086_400)]
+        let back = try JSONDecoder().decode(S.DocState.self, from: JSONEncoder().encode(chased))
+        XCTAssertEqual(back, chased)
+
+        var station = S.Station()
+        station.docs["poa_letter"] = chased
+        XCTAssertEqual(S.Station.decode(station.json).docs["poa_letter"]?.reminders.count, 2)
+    }
 }

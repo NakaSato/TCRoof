@@ -234,12 +234,17 @@ public enum StationDocs {
         public var expiresAt: Date?
         public var note: String
         public var updatedAt: Date?
+        /// Each time the team chased the paper (`ทวง`), oldest first. The app sends nothing itself: it opens the share
+        /// sheet with a message.
+        public var reminders: [Date]
 
         public init(status: Status = .missing, fileName: String? = nil, expiresAt: Date? = nil, note: String = "",
-                    updatedAt: Date? = nil) {
+                    updatedAt: Date? = nil, reminders: [Date] = []) {
             self.status = status; self.fileName = fileName; self.expiresAt = expiresAt; self.note = note
-            self.updatedAt = updatedAt
+            self.updatedAt = updatedAt; self.reminders = reminders
         }
+
+        private enum CodingKeys: String, CodingKey { case status, fileName, expiresAt, note, updatedAt, reminders }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -248,6 +253,18 @@ public enum StationDocs {
             expiresAt = try c.decodeIfPresent(Date.self, forKey: .expiresAt)
             note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
             updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt)
+            reminders = (try? c.decodeIfPresent([Date].self, forKey: .reminders)) ?? []
+        }
+
+        /// As before for a paper never chased: `reminders` is left out while empty.
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(status, forKey: .status)
+            try c.encodeIfPresent(fileName, forKey: .fileName)
+            try c.encodeIfPresent(expiresAt, forKey: .expiresAt)
+            try c.encode(note, forKey: .note)
+            try c.encodeIfPresent(updatedAt, forKey: .updatedAt)
+            if !reminders.isEmpty { try c.encode(reminders, forKey: .reminders) }
         }
     }
 

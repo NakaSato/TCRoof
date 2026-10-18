@@ -169,4 +169,84 @@ final class PWADocsTests: XCTestCase {
         XCTAssertEqual(D.nearestExpiry(rows)?.kind.id, "pwa_poa_order")
         XCTAssertNil(D.nearestExpiry(D.library(.init(), today: today)))
     }
+
+    // MARK: iPad
+
+    func testDueNowCountsLateAndToday() {
+        let late = station("late", ["building_exempt_notice": .draft], due: [.building: day(-2)])
+        let today = station("today", ["building_exempt_notice": .draft], due: [.building: day(0)])
+        let later = station("later", ["building_exempt_notice": .draft], due: [.building: day(3)])
+        let groups = D.todo([late, today, later], library: S.Library())
+        let open = groups.flatMap(\.items).filter { $0.due != nil }
+        let lateOrToday = open.filter { ($0.days(today: self.today) ?? 1) <= 0 }.count
+        XCTAssertEqual(D.dueNow(groups, today: self.today), lateOrToday)
+        XCTAssertGreaterThan(lateOrToday, 0)
+        // undated items (the library's) never count
+        XCTAssertEqual(D.dueNow(D.todo([], library: S.Library()), today: self.today), 0)
+    }
+
+    func testStationOpenCountIncludesSharedAndSkipsReadyAndNotNeeded() {
+        let all = D.stationPapers(S.Context(S.Station(buildingRoute: .notify), inverterKW: 100))
+        let st = station("a", ["site_map": .approved, "outage_letter": .notNeeded])
+        XCTAssertEqual(D.open(st, library: S.Library()).count, all.count - 2)
+        let lib = S.Library(docs: Dictionary(uniqueKeysWithValues: D.libraryKinds.map { ($0.id, S.DocState(status: .approved)) }))
+        XCTAssertEqual(D.open(st, library: lib).count, all.count - 2 - all.filter(\.scope.isShared).count)
+    }
+
+    func testUsedInCountsStationsNeedingTheKind() {
+        let small = station("small", kW: 100), big = station("big", kW: 250)
+        XCTAssertEqual(D.usedIn(S.kind("pwa_act")!, [small, big]).count, 2)
+        // only for พค.2: under 200 kVA the station doesn't need it
+        XCTAssertEqual(D.usedIn(S.kind("contract_mou")!, [small, big]).map(\.id), ["big"])
+    }
+
+    func testContractorsAndSort() {
+        var a = station("a"), b = station("b"), c = station("c")
+        a.contractor = "B"; b.contractor = "A"; c.contractor = ""
+        XCTAssertEqual(D.contractors([a, b, c]), ["A", "B"])
+        let full = station("full", all(.approved))
+        let rows = D.rows([full, a], library: S.Library(), today: today)
+        XCTAssertEqual(D.sorted(rows, by: .missing, library: S.Library()).first?.id, "a")
+    }
+
+    func testFlowSteps() {
+        XCTAssertEqual(D.flow(.signoff, .requested), D.Flow(labels: ["ยังไม่มี", "ร่าง", "รอลงนาม", "ยื่นแล้ว", "อนุมัติ"], done: 2, current: 2))
+        XCTAssertNil(D.flow(.signoff, .approved).current)
+        XCTAssertEqual(D.flow(.external, .requested).labels, ["ยังไม่มี", "ขอแล้ว", "ได้รับแล้ว"])
+        XCTAssertEqual(D.flow(.external, .signed).done, 3)
+    }
+
+    func testStatusAfterUpload() {
+        let sign = S.kind("poa_letter")!, ours = S.kind("asbuilt")!, outside = S.kind("land_deed")!
+        XCTAssertEqual(D.statusAfterUpload(sign, .requested), .submitted)
+        XCTAssertEqual(D.statusAfterUpload(sign, .missing), .draft)
+        XCTAssertEqual(D.statusAfterUpload(ours, .draft), .submitted)
+        XCTAssertEqual(D.statusAfterUpload(outside, .requested), .approved)
+        XCTAssertEqual(D.statusAfterUpload(sign, .approved), .approved)
+    }
+
+    func testPK2TitleAndLetterNumber() {
+        let item = D.Item(kind: S.kind("layout_plan")!, status: .draft, station: nil, package: .pk2, due: nil)
+        XCTAssertEqual(D.title(item), "พค.2 ข้อ 8 · " + S.kind("layout_plan")!.name)
+        XCTAssertEqual(D.letterNumber("ส่งแล้ว เลขที่ TC-PML-001/2569 รอ"), "TC-PML-001/2569")
+        XCTAssertNil(D.letterNumber("รอลงนาม"))
+    }
+
+    func testExpiryMarksWithinAYear() {
+        let lib = S.Library(docs: ["engineer_license": S.DocState(status: .approved, expiresAt: day(49)),
+                                   "pwa_poa_order": S.DocState(status: .approved, expiresAt: day(400))])
+        let marks = D.expiryMarks(D.library(lib, today: today), today: today)
+        XCTAssertEqual(marks.map(\.kind.id), ["engineer_license"])
+        XCTAssertEqual(marks.first?.days, 49)
+    }
+
+    func testSearchFindsStationsPapersByNoteAndLibrary() {
+        var st = station("a", ["poa_letter": .draft])
+        st.mpNumber = 189
+        st.docs.docs["poa_letter"]?.note = "เลขที่ กปภ.123/2569"
+        let hits = D.search("123/2569", stations: [st], library: S.Library())
+        XCTAssertEqual(hits.map(\.type), [.paper])
+        XCTAssertEqual(D.search("MP 189", stations: [st], library: S.Library()).first?.type, .station)
+        XCTAssertTrue(D.search("พ.ร.บ.", stations: [st], library: S.Library()).contains { $0.type == .library })
+    }
 }

@@ -280,6 +280,8 @@ extension PWADocsHomeView {
 /// later a grey outline, not required a dashed `–` over `ไม่ต้องยื่น`. The line is green up to the current step.
 struct PWADocsStepper: View {
     let steps: [PWADocs.Step]
+    /// The count line under each label (`8/9`, `ครบ`); the iPad table leaves it out (docs/ui/pwa-docs-ipad).
+    var showsValues = true
 
     private var current: Int? { steps.firstIndex { $0.state == .current } }
 
@@ -305,9 +307,11 @@ struct PWADocsStepper: View {
             .frame(height: 29)
             Text(s.title).font(.sarabunFixed(12, s.state == .current ? .heavy : .semibold)).lineLimit(1)
                 .foregroundStyle(s.state == .current ? Theme.primary : s.state == .done ? Theme.navy : Theme.muted)
-            Text(value(s)).font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
+            if showsValues {
+                Text(value(s)).font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+        .frame(maxWidth: .infinity, minHeight: showsValues ? 48 : 0, alignment: .top)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(s.title + " · " + (s.state == .skip ? "ไม่ต้องยื่น" : s.state == .done ? "ครบ"
                                                : "เอกสาร \(s.progress.ready) จาก \(s.progress.total)"))

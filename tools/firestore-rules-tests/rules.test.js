@@ -121,6 +121,9 @@ test('an external member never takes our engineer\'s signature off', async () =>
   const d = db(CON);
   await assertFails(setDoc(doc(d, 'installLogs', 'signed'), { jobID: 'mine', externals: [CON], report: '{"edited":1}' }));
   await assertFails(updateDoc(doc(d, 'installLogs', 'signed'), { inspectorAckAt: null }));
+  // nor changes what was signed: the MP plan counts signed reports
+  await assertFails(updateDoc(doc(d, 'installLogs', 'signed'), { report: '{"edited":1}' }));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'signed'), { report: '{"fixed":1}' }));
   await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'signed'), { engineerSignedAt: null, inspectorAckAt: null }));
 });
 

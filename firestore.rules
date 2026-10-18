@@ -139,8 +139,11 @@ service cloud.firestore {
       allow create, update: if isTeam() && (isManager() || signaturesKeptOrCleared()
         || signsFor(request.resource.data.get('jobID', null)));
       allow delete: if isTeam();
+      // a contractor changes a report only while it is unsigned: the MP plan counts signed reports, so a signed one
+      // stays as our engineer signed it (the team may still edit it, keeping or clearing the signature)
       allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID)
-        && unchanged('engineerSignedAt') && unchanged('inspectorAckAt');
+        && unchanged('engineerSignedAt') && unchanged('inspectorAckAt')
+        && (resource == null || resource.data.get('engineerSignedAt', null) == null);
     }
 
     // Device scans and survey forms of their jobs; photos of their records.

@@ -4,7 +4,7 @@ import TCRoofUI
 import TCRoofCore
 
 /// `เอกสาร` on iPad (docs/ui/pwa-docs-ipad): the iPhone page's three views laid out for regular width. The large blue
-/// header with its search and bell, the view switch and the sync chip, the summary with three origin tiles, then the
+/// header with its search and bell, the view switch, the summary with three origin tiles, then the
 /// selected view: stations with the selected one's panel, the to-do columns, or the library. Papers open the document
 /// sheet, which edits the same `StationDocs.DocState` as `StationDocSheet`. The iPad dock's `เอกสาร` tab is its root.
 struct PWADocsPadView: View {
@@ -124,7 +124,7 @@ struct PWADocsPadView: View {
             }
     }
 
-    /// The page under the header: switch and sync, summary and tiles, then the view, ending 116 pt above the bottom
+    /// The page under the header: the switch, summary and tiles, then the view, ending 116 pt above the bottom
     /// (the dock is the bottom inset, 100 pt).
     private func page(_ data: PageData) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -205,10 +205,10 @@ struct PWADocsPadView: View {
         return stationJobs.first { $0.overviewID == stationID }
     }
 
-    // MARK: switch, sync and summary
+    // MARK: switch and summary
 
     private func topRow(_ data: PageData) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 0) {
             TCCountSegments([.init("ตามสถานี", count: data.rows.count, unit: "สถานี"),
                              .init("ต้องทำ", count: data.dueNow, alert: data.dueNow > 0, unit: "รายการเลยหรือครบกำหนดวันนี้"),
                              .init("คลังกลาง", count: data.libraryRows.count, unit: "ฉบับ")],
@@ -216,28 +216,7 @@ struct PWADocsPadView: View {
                             fontSize: 14, countSize: 12)
                 .frame(width: 520)
                 .accessibilityIdentifier("pwaDocs.switch")
-            Spacer(minLength: 8)
-            syncChip
-        }
-    }
-
-    /// `ซิงก์ล่าสุด HH:mm` with a green dot, or amber `ออฟไลน์ · แสดงข้อมูลในเครื่อง`. Nothing before the first sync.
-    @ViewBuilder private var syncChip: some View {
-        if isOffline {
-            HStack(spacing: 6) {
-                Image(systemName: "wifi.slash").font(.system(size: 11, weight: .semibold))
-                Text("ออฟไลน์ · แสดงข้อมูลในเครื่อง").font(.sarabunFixed(13, .semibold))
-            }
-            .foregroundStyle(Theme.warningText)
-            .padding(.horizontal, 12).frame(height: 30)
-            .background(Theme.warningSoft, in: Capsule())
-            .accessibilityElement(children: .combine)
-        } else if let last = lastSync {
-            HStack(spacing: 6) {
-                Circle().fill(Theme.success).frame(width: 8, height: 8)
-                Text("ซิงก์ล่าสุด " + ThaiFormat.time.string(from: last)).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy)
-            }
-            .accessibilityElement(children: .combine)
+            Spacer(minLength: 0)
         }
     }
 
@@ -247,13 +226,6 @@ struct PWADocsPadView: View {
         #endif
         if case .failed = sync.state { return true }
         return sync.refreshFailed
-    }
-
-    private var lastSync: Date? {
-        #if DEBUG
-        if Debug.demo { return sync.lastSync ?? today }
-        #endif
-        return sync.lastSync
     }
 
     private func summaryRow(_ data: PageData) -> some View {

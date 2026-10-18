@@ -13,7 +13,10 @@ public enum AppCompat {
     /// What this build writes. 1: the roles (per-job daily signing, the IEC hand-over, `jobContacts`, the team directory).
     /// 2: the Maintainer, suspended accounts (signed out at the next sync) and the role overrides (`config/roleOverrides`),
     /// which builds before it read as the internal team, keep signed in, and ignore.
-    public static let syncVersion = 2
+    /// 3: contractors send the weekly request R1 (`weeklyRequests` signed `weeklyRequestsBy`, `WeeklyRequest.sentAt`).
+    /// Builds before it drop `sentAt` when they save a request and take a contractor's change to a sent or approved
+    /// week as it comes (`WeeklyRequest.trusting`).
+    public static let syncVersion = 3
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

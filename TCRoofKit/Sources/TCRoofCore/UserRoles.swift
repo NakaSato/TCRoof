@@ -89,6 +89,8 @@ public enum Capability: String, CaseIterable, Sendable {
     case changeRequest = "site.change_request"
     case punchList = "site.punch_list"
     case dailyFill = "daily.fill"
+    /// The weekly request R1: the contractor fills and sends it, the team approves or sends it back.
+    case weeklyRequest = "weekly.request"
     case dailySign = "daily.sign"
     case iecFillSubmit = "iec.fill_submit"
     case iecClose = "iec.close"
@@ -152,6 +154,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .changeRequest: (.conditional, .conditional, .conditional),
         .punchList: (.allow, .conditional, .conditional),
         .dailyFill: (.allow, .allow, .conditional),
+        .weeklyRequest: (.allow, .conditional, .conditional),
         .dailySign: (.allow, .conditional, .deny),
         .iecFillSubmit: (.allow, .allow, .conditional),
         .iecClose: (.allow, .allow, .deny),

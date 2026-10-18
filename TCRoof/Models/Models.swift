@@ -159,6 +159,9 @@ final class Job {
     var routineSettingsJSON: String?
     /// Encoded `[RoutineReport.WeeklyRequest]`, one per week.
     var weeklyRequestsJSON: String?
+    /// A contractor changed the weekly requests here and Firestore hasn't echoed them back yet: their device pushes
+    /// them (signed `weeklyRequestsBy`) and keeps them over an older copy arriving meanwhile. Device only.
+    var weeklyRequestsUnsent = false
     /// Encoded `StationDocs.Station`: the station's papers for a PWA job (เอกสารสถานี กปภ.); optional for the same reason.
     var stationDocsJSON: String?
     /// `JobKind`; nil on jobs made before the kind was kept, which `kind` reads from their data.

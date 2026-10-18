@@ -6,6 +6,8 @@ import TCRoofUI
 /// row; `บันทึกและซิงก์` writes `members/<email>`. The board's `ทีม` chips are left out: a member has no team field.
 struct InviteSheet: View {
     let store: UserAdminStore
+    /// iPhone: a large sheet with ยกเลิก / เพิ่มผู้ใช้ / เพิ่ม in its bar (docs/ui/user-admin-iphone state 04).
+    var compact = false
     /// The email added, or nil when cancelled.
     var done: (String?) -> Void
 
@@ -34,6 +36,75 @@ struct InviteSheet: View {
     private var ok: Bool { valid != nil && !duplicate }
 
     var body: some View {
+        if compact { phoneBody } else { padBody }
+    }
+
+    private var phoneBody: some View {
+        ZStack(alignment: .bottom) {
+            Theme.navySolid.opacity(0.45).ignoresSafeArea().onTapGesture { done(nil) }
+            VStack(spacing: 0) {
+                phoneBar
+                Rectangle().fill(Theme.hairline).frame(height: 1)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        phoneIntro
+                        emailField
+                        if role != .external { nameField }
+                        roleField
+                        if role == .external { jobsField }
+                        note
+                        Button("เพิ่มในรายชื่อ", action: add)
+                            .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true))
+                            .disabled(!ok)
+                    }
+                    .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 30)
+                }
+                .scrollDismissesKeyboard(.interactively)
+            }
+            .background {
+                UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
+                    .fill(Theme.surface).ignoresSafeArea(edges: .bottom)
+            }
+            .padding(.top, 50)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("เพิ่มผู้ใช้ด้วยอีเมล")
+            .transition(.move(edge: .bottom))
+        }
+    }
+
+    private var phoneBar: some View {
+        HStack {
+            Button("ยกเลิก") { done(nil) }
+                .font(.sarabun(17)).foregroundStyle(Theme.primary).frame(minWidth: 60, minHeight: 44, alignment: .leading)
+            Spacer()
+            Text("เพิ่มผู้ใช้").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+            Spacer()
+            Button("เพิ่ม", action: add)
+                .font(.sarabun(17, .bold)).foregroundStyle(ok ? Theme.primary : Theme.borderOutdoor)
+                .frame(minWidth: 60, minHeight: 44, alignment: .trailing)
+                .disabled(!ok)
+                .accessibilityIdentifier("userAdmin.inviteAdd")
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16).padding(.vertical, 6)
+    }
+
+    private var phoneIntro: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "envelope").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.primary)
+                .frame(width: 40, height: 40).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
+            Text("สร้าง members/<email> · เข้าแอปด้วย Google ของอีเมลนี้เท่านั้น").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+        }
+    }
+
+    private func add() {
+        guard let valid, ok else { return }
+        store.add(.init(email: valid, name: role == .external ? "" : name.trimmingCharacters(in: .whitespaces),
+                        role: role, jobs: role == .external ? jobs : []))
+        done(valid)
+    }
+
+    private var padBody: some View {
         ZStack {
             Theme.navySolid.opacity(0.45).ignoresSafeArea().onTapGesture { done(nil) }
             VStack(spacing: 0) {
@@ -172,12 +243,7 @@ struct InviteSheet: View {
         HStack(spacing: 10) {
             Spacer()
             Button("ยกเลิก") { done(nil) }.buttonStyle(TCButtonStyle(.secondary))
-            Button("เพิ่มในรายชื่อ") {
-                guard let valid, ok else { return }
-                store.add(.init(email: valid, name: role == .external ? "" : name.trimmingCharacters(in: .whitespaces),
-                                role: role, jobs: role == .external ? jobs : []))
-                done(valid)
-            }
+            Button("เพิ่มในรายชื่อ", action: add)
             .buttonStyle(TCButtonStyle(.primary))
             .disabled(!ok)
             .accessibilityIdentifier("userAdmin.inviteAdd")

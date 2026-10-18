@@ -274,11 +274,15 @@ public enum RoutineReport {
         public var engineerSignedAt: Date?
         public var approvedAt: Date?
         public var approvedBy = ""
+        /// When it was sent for approval (`ส่งขออนุมัติ`) and by whom (an email): a contractor's request waits here for
+        /// the team. Nil: a draft, or sent back.
+        public var sentAt: Date?
+        public var sentBy = ""
 
         public var id: String { MasterSchedule.Actual.key(weekStart) }
         public init(weekStart: Date) { self.weekStart = MasterSchedule.weekStart(weekStart) }
 
-        enum CodingKeys: String, CodingKey { case weekStart, crew, tools, work, risks, engineerSignedAt, approvedAt, approvedBy }
+        enum CodingKeys: String, CodingKey { case weekStart, crew, tools, work, risks, engineerSignedAt, approvedAt, approvedBy, sentAt, sentBy }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -290,10 +294,73 @@ public enum RoutineReport {
             engineerSignedAt = try c.decodeIfPresent(Date.self, forKey: .engineerSignedAt)
             approvedAt = try c.decodeIfPresent(Date.self, forKey: .approvedAt)
             approvedBy = try c.decodeIfPresent(String.self, forKey: .approvedBy) ?? ""
+            sentAt = try c.decodeIfPresent(Date.self, forKey: .sentAt)
+            sentBy = try c.decodeIfPresent(String.self, forKey: .sentBy) ?? ""
         }
 
         public enum Status: Sendable { case draft, sent, approved }
-        public var status: Status { approvedAt != nil ? .approved : engineerSignedAt != nil ? .sent : .draft }
+        /// Approved, sent (by the contractor, or signed by our engineer as before `sentAt`), or a draft.
+        public var status: Status { approvedAt != nil ? .approved : (sentAt != nil || engineerSignedAt != nil) ? .sent : .draft }
+
+        /// `ส่งขออนุมัติ`. Our engineer's sending also signs it, as before; a contractor's waits for the team.
+        public mutating func send(by email: String, signs: Bool, at date: Date = .now) {
+            sentAt = date
+            sentBy = email
+            if signs { engineerSignedAt = date }
+        }
+
+        /// `ส่งกลับให้แก้`: back to a draft the contractor can change.
+        public mutating func sendBack() {
+            sentAt = nil
+            sentBy = ""
+            engineerSignedAt = nil
+        }
+
+        /// `บันทึกอนุมัติแล้ว`.
+        public mutating func approve(by name: String, at date: Date) {
+            approvedBy = name
+            approvedAt = date
+            if sentAt == nil { sentAt = date }
+        }
+
+        /// `เปิดแก้อีกครั้ง` on an approved request: back to sent, for the team to change and approve again.
+        public mutating func reopen() {
+            approvedAt = nil
+            approvedBy = ""
+        }
+
+        /// Whether this member may change it: the team until it is approved (then they reopen it first), a contractor
+        /// only while it is a draft.
+        public func isEditable(external: Bool) -> Bool {
+            switch status {
+            case .approved: false
+            case .sent: !external
+            case .draft: true
+            }
+        }
+
+        /// The requests as they arrive from Firestore. A contractor's write (`weeklyRequestsBy` is one of the job's
+        /// externals) may only change drafts: a week this device holds as sent or approved stays as it is, and a
+        /// contractor can't approve, sign or keep a week deleted that was sent. The rules can't see inside the JSON, so
+        /// team devices check it here, as `IECReport.trusting` drops a close the team didn't make.
+        public static func trusting(_ incoming: [WeeklyRequest], local: [WeeklyRequest], byContractor: Bool) -> [WeeklyRequest] {
+            guard byContractor else { return incoming }
+            let held = Dictionary(local.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            var out: [WeeklyRequest] = incoming.map { r in
+                guard let mine = held[r.id] else {
+                    var r = r
+                    r.approvedAt = nil; r.approvedBy = ""; r.engineerSignedAt = nil
+                    return r
+                }
+                if mine.status != .draft { return mine }
+                var r = r
+                r.approvedAt = mine.approvedAt; r.approvedBy = mine.approvedBy; r.engineerSignedAt = mine.engineerSignedAt
+                return r
+            }
+            let came = Set(incoming.map(\.id))
+            out += local.filter { !came.contains($0.id) && $0.status != .draft }
+            return out.sorted { $0.weekStart < $1.weekStart }
+        }
     }
 
     // MARK: Rules (§3)

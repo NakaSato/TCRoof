@@ -189,6 +189,9 @@ public enum Theme {
     public static let outsideSoft = planInspectSoft
     /// Fill of a document chip and of an at-risk deadline, under `warningText`.
     public static let warningTint = Color(light: 0xFFF3E6, dark: 0x2E2213)
+    /// The contractor's duty card (`หน้าที่ต้องส่ง`, docs/ui/user-admin-iphone): its fill and border.
+    public static let dutyFill = Color(light: 0xFFF8F0, dark: 0x2A1F12)
+    public static let dutyLine = Color(light: 0xF3C99B, dark: 0x5A3D1E)
     /// Weekend days, the S-curve's plan line and axis labels, a filter chip with nothing to show.
     public static let inkFaint = Color(light: 0x9FB3CC, dark: 0x5E6E83)
     /// Track of a Gantt row.

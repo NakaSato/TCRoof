@@ -110,6 +110,27 @@ test('an external member edits and sends the IEC test while it is open, never cl
   await assertSucceeds(setDoc(job, { iecReport: '{"x":5}', iecState: 'open' }, { merge: true }));
 });
 
+test('an external member sends the weekly request of their own job, signed with their email', async () => {
+  const d = db(CON);
+  const job = doc(d, 'jobs', 'mine');
+  await assertSucceeds(setDoc(job, { weeklyRequests: '[{"w":1}]', weeklyRequestsBy: CON }, { merge: true }));
+  // with the IEC test in the same write, as the app sends them
+  await assertSucceeds(setDoc(job, { iecReport: '{"x":1}', iecState: 'open', weeklyRequests: '[{"w":2}]', weeklyRequestsBy: CON }, { merge: true }));
+  // someone else's name, or none
+  await assertFails(setDoc(job, { weeklyRequests: '[{"w":3}]', weeklyRequestsBy: TEAM }, { merge: true }));
+  await assertFails(setDoc(job, { weeklyRequests: '[{"w":3}]', weeklyRequestsBy: null }, { merge: true }));
+  // another job, or other keys alongside
+  await assertFails(setDoc(doc(d, 'jobs', 'theirs'), { weeklyRequests: '[]', weeklyRequestsBy: CON }, { merge: true }));
+  await assertFails(setDoc(job, { weeklyRequests: '[{"w":4}]', weeklyRequestsBy: CON, status: 'completed' }, { merge: true }));
+  await assertFails(setDoc(job, { weeklyRequests: '[{"w":4}]', weeklyRequestsBy: CON, routineSettings: '{}' }, { merge: true }));
+  // a sent IEC test doesn't stop the weekly request, nor does the request reopen the test
+  await assertSucceeds(setDoc(job, { iecReport: '{"x":2}', iecState: 'sent' }, { merge: true }));
+  await assertSucceeds(setDoc(job, { weeklyRequests: '[{"w":5}]', weeklyRequestsBy: CON }, { merge: true }));
+  await assertFails(setDoc(job, { iecReport: '{"x":3}', iecState: 'open', weeklyRequests: '[{"w":6}]', weeklyRequestsBy: CON }, { merge: true }));
+  // the team writes the requests under any name
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { weeklyRequests: '[]', weeklyRequestsBy: TEAM }, { merge: true }));
+});
+
 test('an external member fills daily reports but never signs them', async () => {
   const d = db(CON);
   await assertSucceeds(setDoc(doc(d, 'installLogs', 'log3'), { jobID: 'mine', externals: [CON], report: '{}' }));

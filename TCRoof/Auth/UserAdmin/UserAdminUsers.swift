@@ -167,10 +167,12 @@ extension UserAdminView {
     }
 }
 
-/// The detail panel of the selected member.
+/// The detail panel of the selected member: beside the list on iPad, a pushed page on iPhone (`compact`,
+/// docs/ui/user-admin-iphone states 02, 03, 09).
 struct UserDetail: View {
     let view: UserAdminView
     let member: UserAdminStore.Member
+    var compact = false
 
     private var store: UserAdminStore { view.store }
     private var editing: Bool { view.roleEditing == member.email }
@@ -178,6 +180,10 @@ struct UserDetail: View {
     private var cells: [(Capability, RoleAccess)] { Capability.allCases.map { ($0, $0.access(member.role, overrides: store.overrides)) } }
 
     var body: some View {
+        if compact { phoneBody } else { padBody }
+    }
+
+    private var padBody: some View {
         AdminCard {
             VStack(spacing: 0) {
                 head
@@ -186,6 +192,7 @@ struct UserDetail: View {
                     VStack(alignment: .leading, spacing: 14) {
                         if isMaintainer { maintainerCard } else { roleSection }
                         scope
+                        duties
                         summary
                         groups
                     }
@@ -194,6 +201,56 @@ struct UserDetail: View {
                 Rectangle().fill(Theme.hairline).frame(height: 1)
                 footer
             }
+        }
+    }
+
+    @ViewBuilder
+    private var duties: some View {
+        if member.role == .external { DutyCard(jobs: view.jobs(member).count, overrides: store.overrides) }
+    }
+
+    private var phoneBody: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                AdminCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        phoneHead
+                        Rectangle().fill(Theme.hairline).frame(height: 1)
+                        if isMaintainer { maintainerCard } else { roleSection }
+                        Rectangle().fill(Theme.hairline).frame(height: 1)
+                        scope
+                    }
+                    .padding(16)
+                }
+                duties
+                AdminCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        summary
+                        groups
+                    }
+                    .padding(16)
+                }
+                footerButton
+            }
+            .padding(.horizontal, 16).padding(.top, 14)
+            .padding(.bottom, store.pendingCount > 0 ? 160 : 28)
+        }
+        .accessibilityIdentifier("userAdmin.detail")
+    }
+
+    private var phoneHead: some View {
+        let (st, color) = view.status(member)
+        return HStack(spacing: 14) {
+            UserAvatar(name: member.name ?? member.email, color: view.avatarColor(member), size: 52)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(member.label).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                if member.name?.isEmpty == false {
+                    Text(member.email).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                }
+                Text(st + " · " + view.since(member)).font(.sarabun(12.5, .bold)).foregroundStyle(color)
+            }
+            .lineLimit(1)
+            Spacer(minLength: 0)
         }
     }
 
@@ -242,8 +299,16 @@ struct UserDetail: View {
     }
 
     private var roleSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("บทบาท").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
+        VStack(alignment: .leading, spacing: compact ? 10 : 6) {
+            if compact {
+                HStack {
+                    Text("บทบาท").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                    Spacer()
+                    editButton
+                }
+            } else {
+                Text("บทบาท").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
+            }
             if editing {
                 AdminSegments(items: UserRole.allCases.map {
                     .init(id: $0, title: $0 == .external ? "ภายนอก" : $0.label, detail: $0.english, tint: UserAdminStyle.ink($0))
@@ -252,11 +317,13 @@ struct UserDetail: View {
                 }
                 .accessibilityIdentifier("userAdmin.roleControl")
             } else {
-                HStack(spacing: 10) {
+                let line = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
+                line {
                     RolePill(role: member.role, size: 13)
                     Text("\(member.role.english) · แก้ได้หลังยืนยันคีย์").font(.sarabun(12)).foregroundStyle(Theme.muted)
                 }
-                .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                .padding(.horizontal, 14).padding(.vertical, compact ? 12 : 0)
+                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
                 .background(Theme.stripFill, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.track))
             }
@@ -397,6 +464,10 @@ struct UserDetail: View {
     }
 
     private var footer: some View {
+        footerButton.padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private var footerButton: some View {
         // `ออกจากระบบทุกเครื่อง` is left out: the app has no remote sign-out (docs/ui/user-admin-ipad "No source")
         let suspended = member.suspended
         let title = isMaintainer ? "ปิดบัญชีไม่ได้"
@@ -409,7 +480,6 @@ struct UserDetail: View {
         .buttonStyle(TCButtonStyle(isMaintainer ? .secondary : .destructive, size: .card, fullWidth: true))
         .opacity(isMaintainer ? 0.5 : 1)
         .accessibilityIdentifier("userAdmin.suspend")
-        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 }
 

@@ -288,7 +288,7 @@ final class CloudSync {
         guard let context, let survey, uid != nil, !AppGate.shared.outdated else { return }
         var changes: [Change] = []
         var present = Set<String>()
-        // an external member changes only a job's IEC test (`iec.fill_submit`) and only reads the ICL (`icl.checklist`)
+        // an external member changes only a job's IEC test (`iec.fill_submit`) and weekly requests (`weekly.request`), and only reads the ICL (`icl.checklist`)
         collect(Job.self, context, &changes, &present, external == nil ? .full : .iecOnly)
         collect(SurveyForm.self, context, &changes, &present)
         collect(ScannedDevice.self, context, &changes, &present)
@@ -410,6 +410,7 @@ final class CloudSync {
 
     /// What a push may send of a collection: everything, nothing (still kept, never deleted), or a job's IEC test.
     private enum Upload { case full, readOnly, iecOnly }
+    // iecOnly: a job's IEC test, and the weekly requests its contractor changed
 
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
                                          _ upload: Upload = .full) {
@@ -428,9 +429,14 @@ final class CloudSync {
             let ref = db.document(key)
             if upload == .iecOnly {
                 guard let job = model as? Job else { continue }
-                let iec: Any = job.iecReportJSON ?? NSNull()
-                let state: Any = job.iecReport?.lockState.rawValue ?? NSNull()
-                changes.append(Change(key: key, write: { $0.setData(["iecReport": iec, "iecState": state], forDocument: ref, merge: true) },
+                var fields: [String: Any] = ["iecReport": job.iecReportJSON ?? NSNull(),
+                                             "iecState": job.iecReport?.lockState.rawValue ?? NSNull()]
+                // the weekly requests the contractor changed (`weekly.request`), signed with their email for the rules
+                if job.weeklyRequestsUnsent, let external {
+                    fields["weeklyRequests"] = job.weeklyRequestsJSON ?? NSNull()
+                    fields["weeklyRequestsBy"] = external
+                }
+                changes.append(Change(key: key, write: { [fields] in $0.setData(fields, forDocument: ref, merge: true) },
                                       fingerprint: print))
             } else {
                 changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))

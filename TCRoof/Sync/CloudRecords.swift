@@ -72,6 +72,9 @@ extension Job: CloudSynced {
         /// The plan workbook on Drive (`Job.scheduleWorkbook`); the file itself goes through Drive, not Firestore.
         var scheduleWorkbookDriveID, scheduleWorkbookName: String?
         var routineSettings, weeklyRequests: String?
+        /// The external member who last wrote `weeklyRequests` (the rules check it is their own email); nil when the
+        /// team wrote them, since a team device writes the whole document without it.
+        var weeklyRequestsBy: String?
         var stationDocs: String?
         var kind: String?
         var iecReport: String?
@@ -132,7 +135,22 @@ extension Job: CloudSynced {
             scheduleWorkbook = nil
         }
         if let v = r.routineSettings { routineSettingsJSON = v }
-        if let v = r.weeklyRequests { weeklyRequestsJSON = v }
+        if let v = r.weeklyRequests {
+            if weeklyRequestsUnsent {
+                // this contractor's own change, until Firestore has it
+                if v == weeklyRequestsJSON { weeklyRequestsUnsent = false }
+            } else if v != weeklyRequestsJSON {
+                // a contractor may change only drafts: a team device keeps the weeks it holds as sent or approved
+                let all = r.externals ?? externals
+                let byContractor = r.weeklyRequestsBy.map { by in all.contains { Permissions.normalized($0) == Permissions.normalized(by) } } ?? false
+                let incoming = (try? JSONDecoder().decode([RoutineReport.WeeklyRequest].self, from: Data(v.utf8))) ?? []
+                if byContractor {
+                    weeklyRequests = RoutineReport.WeeklyRequest.trusting(incoming, local: weeklyRequests, byContractor: true)
+                } else {
+                    weeklyRequestsJSON = v
+                }
+            }
+        }
         if let v = r.stationDocs { stationDocsJSON = v }
         if let v = r.iecReport {
             iecReportJSON = v

@@ -39,6 +39,17 @@ enum UserAdminStyle {
         }
     }
 
+    /// An audit entry's kind pill: ink and fill.
+    static func kind(_ k: AuditKind) -> (Color, Color) {
+        switch k {
+        case .role: (Theme.primary, Theme.primarySoft)
+        case .perm: (Theme.warningText, Theme.warningSoft)
+        case .user: (Theme.successText, Theme.successSoft)
+        case .key: (Theme.planInspect, Theme.planInspectSoft)
+        case .sus: (Theme.dangerText, Theme.dangerSoft)
+        }
+    }
+
     static func cellInk(_ a: RoleAccess) -> Color {
         switch a {
         case .allow: Theme.onPrimary

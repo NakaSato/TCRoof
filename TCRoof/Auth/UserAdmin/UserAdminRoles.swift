@@ -168,14 +168,14 @@ extension UserAdminView {
 
     /// The rules that are facts of the system, shown locked on. `ปิดบัญชีเมื่อไม่ใช้งาน 30 วัน` is left out: nothing
     /// in the app does it (docs/ui/user-admin-ipad "No source").
-    private static let rules: [(String, String)] = [
+    static let rules: [(String, String)] = [
         ("ปิด / ระงับบัญชีได้เฉพาะ Maintainer", "ผู้จัดการตั้งบทบาทและเพิ่มสมาชิกได้ แต่ปิดบัญชีไม่ได้ · ล็อกไว้"),
         ("เข้าได้เฉพาะอีเมลในรายชื่อสมาชิก", "members/<email> · บัญชีอื่นถูกล้างข้อมูลในเครื่อง"),
         ("คนภายนอกเห็นเฉพาะงานที่ได้รับมอบหมาย", "บังคับใน firestore.rules · ข้อมูลติดต่อลูกค้าแยกใน jobContacts"),
         ("iPad ใช้ร่วมกันต้องล็อกอินแยกคน", "บทบาทมีผลตามบัญชีที่ล็อกอิน"),
     ]
 
-    private var rulesCard: some View {
+    var rulesCard: some View {
         AdminCard {
             VStack(alignment: .leading, spacing: 0) {
                 Text("กฎการใช้งาน").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).padding(.bottom, 8)
@@ -216,17 +216,18 @@ extension UserAdminView {
     }
 
     /// The board's `ข้อตกลง` (`v.dec`), static.
-    private static let decisions = [
+    static let decisions = [
         "รายงานประจำวัน: หัวหน้างานผู้รับเหมากรอก วิศวกรของเราเซ็นรับทราบ · แผน MP นับเฉพาะที่เซ็นแล้ว",
         "IEC 62446: ผู้รับเหมาทดสอบและส่งผล ทีมภายในปิด · นับ 3.1 เข้าแผน MP เมื่อทีมภายในปิด",
         "วิศวกรภายนอกกับผู้รับเหมาใช้บทบาทเดียวกัน (external)",
+        "ผู้รับเหมาต้องส่ง: รายงานประจำวันทุกวันที่เข้างาน · คำขอรายสัปดาห์ทุกสัปดาห์ · ผล IEC 62446 ก่อนและหลังขนาน (เฉพาะงานที่ได้รับมอบหมาย)",
         "เซ็นตรวจรับขั้นสุดท้าย: ผู้จัดการ หรือวิศวกรภายในผู้ควบคุมงานของงานนั้น",
         "Drive: ทีมอัปโหลดเข้า Drive กลาง · ผู้รับเหมาเข้า Drive ของตัวเอง แชร์ให้ทีมอ่าน",
         "BOQ ปิดใช้งานทุกบทบาท",
         "ปิด / ระงับบัญชีผู้ใช้: เฉพาะ Maintainer (ผู้จัดการตั้งบทบาทได้ แต่ปิดบัญชีไม่ได้)",
     ]
 
-    private var decisionsCard: some View {
+    var decisionsCard: some View {
         AdminCard {
             VStack(alignment: .leading, spacing: 8) {
                 Text("ข้อตกลง").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
@@ -261,13 +262,7 @@ extension UserAdminView {
 
     private func logRow(_ e: UserAdminStore.AuditEntry) -> some View {
         let who = store.shown.first { $0.email == e.by }
-        let (ink, fill): (Color, Color) = switch e.kind {
-        case .role: (Theme.primary, Theme.primarySoft)
-        case .perm: (Theme.warningText, Theme.warningSoft)
-        case .user: (Theme.successText, Theme.successSoft)
-        case .key: (Theme.planInspect, Theme.planInspectSoft)
-        case .sus: (Theme.dangerText, Theme.dangerSoft)
-        }
+        let (ink, fill) = UserAdminStyle.kind(e.kind)
         return HStack(spacing: 12) {
             Text(e.at.map { ThaiFormat.dayMonthTime.string(from: $0) } ?? "รอเวลาจากเซิร์ฟเวอร์")
                 .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).frame(width: 140, alignment: .leading)

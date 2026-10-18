@@ -105,6 +105,8 @@ private struct ShakeEffect: GeometryEffect {
 struct DevKeyLockScreen: View {
     let store: UserAdminStore
     var onBack: () -> Void
+    /// iPhone: 76 pt keys and 16 pt margins (docs/ui/user-admin-iphone state 00).
+    var compact = false
     @State private var pin = ""
     @State private var error: String?
     @State private var shake = 0
@@ -136,7 +138,7 @@ struct DevKeyLockScreen: View {
             Text("ตั้งค่า › นักพัฒนา").font(.sarabun(15)).foregroundStyle(Theme.onPrimary.opacity(0.8))
             Spacer()
         }
-        .padding(.horizontal, 40).padding(.top, 24)
+        .padding(.horizontal, compact ? 16 : 40).padding(.top, compact ? 8 : 24)
     }
 
     private var center: some View {
@@ -161,7 +163,7 @@ struct DevKeyLockScreen: View {
         case .loading:
             ProgressView().tint(Theme.onPrimary).padding(40)
         case .ready:
-            DevKeyPad(pin: $pin, error: error, shake: shake, disabled: store.padLocked, keySize: 84, dotSize: 16, onComplete: submit)
+            DevKeyPad(pin: $pin, error: error, shake: shake, disabled: store.padLocked, keySize: compact ? 76 : 84, dotSize: 16, onComplete: submit)
         case .missing, .expired, .unreadable:
             VStack(spacing: 12) {
                 Text(unavailableText).font(.sarabun(15, .bold)).foregroundStyle(Theme.keyError)
@@ -216,14 +218,55 @@ struct DevKeySheet: View {
     let store: UserAdminStore
     let purpose: DevKeyPurpose
     let subject: String
+    /// iPhone: a bottom sheet the width of the screen (docs/ui/user-admin-iphone state 05).
+    var compact = false
     var onDone: (Bool) -> Void
     @State private var pin = ""
     @State private var error: String?
     @State private var shake = 0
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: compact ? .bottom : .center) {
             Theme.navySolid.opacity(0.55).ignoresSafeArea().onTapGesture { onDone(false) }
+            if compact { phoneSheet } else { padSheet }
+        }
+        .onAppear { if store.padLocked { error = "ล็อก 10 นาที · ติดต่อผู้ดูแลระบบ" } }
+    }
+
+    private var phoneSheet: some View {
+        VStack(spacing: 12) {
+            Capsule().fill(Theme.onPrimary.opacity(0.35)).frame(width: 40, height: 5).padding(.bottom, 4)
+            sheetContent
+        }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
+        .frame(maxWidth: .infinity)
+        .background {
+            UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
+                .fill(Theme.devLockGradient).ignoresSafeArea(edges: .bottom)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("ยืนยันคีย์")
+        .transition(.move(edge: .bottom))
+    }
+
+    @ViewBuilder
+    private var sheetContent: some View {
+        Image(systemName: "lock").font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.onPrimary)
+            .frame(width: 52, height: 52)
+            .background(Theme.onPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.onPrimary.opacity(0.25)))
+        Text(title).font(.sarabun(20, .bold)).foregroundStyle(Theme.onPrimary)
+        Text(subtitle).font(.sarabun(13)).foregroundStyle(Theme.onPrimary.opacity(0.78))
+        DevKeyPad(pin: $pin, error: error, shake: shake, disabled: store.padLocked, keySize: 72, dotSize: 14, onComplete: submit)
+        Button { onDone(false) } label: {
+            Text("ยกเลิก").font(.sarabun(15, .bold)).foregroundStyle(Theme.onPrimary.opacity(0.85))
+                .frame(minWidth: 88, minHeight: 44)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var padSheet: some View {
             VStack(spacing: 12) {
                 Image(systemName: "lock").font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 56, height: 56)
@@ -245,8 +288,6 @@ struct DevKeySheet: View {
             .shadow(color: Theme.navySolid.opacity(0.45), radius: 30, y: 12)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("ยืนยันคีย์")
-        }
-        .onAppear { if store.padLocked { error = "ล็อก 10 นาที · ติดต่อผู้ดูแลระบบ" } }
     }
 
     private var title: String {

@@ -3,8 +3,8 @@ import SwiftData
 import TCRoofCore
 import TCRoofUI
 
-/// Settings › นักพัฒนา › จัดการผู้ใช้และสิทธิ์ (docs/ui/user-admin-ipad, iPad regular width; iPhone gets the same view
-/// pushed). A Maintainer's page (`users.admin`) behind the developer key: the member list with roles and suspension,
+/// Settings › นักพัฒนา › จัดการผู้ใช้และสิทธิ์ (docs/ui/user-admin-ipad in regular width; docs/ui/user-admin-iphone in
+/// compact width, `UserAdminPhone.swift`). A Maintainer's page (`users.admin`) behind the developer key: the member list with roles and suspension,
 /// the role overrides and the audit log. Every change waits in the pending bar until `บันทึกและซิงก์`.
 struct UserAdminView: View {
     enum Tab: String { case users, roles, log }
@@ -12,6 +12,7 @@ struct UserAdminView: View {
     @Environment(\.permissions) var permissions
     @Environment(\.dismiss) var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.modelContext) var context
     @Query(sort: \Job.installStart) var jobs: [Job]
 
@@ -32,6 +33,10 @@ struct UserAdminView: View {
     /// Invites just saved, offered the share sheet.
     @State var sent: [UserAdminStore.Invite] = []
     @State var now = Date.now
+    /// iPhone: the member whose detail is pushed over the list.
+    @State var phoneDetail: String?
+    /// iPhone: the role the สิทธิ์ tab shows.
+    @State var phoneRole: UserRole = .internalTeam
 
     init(demo: Bool = UserAdminView.demoFlag) {
         _store = State(initialValue: UserAdminStore(demo: demo))
@@ -48,9 +53,11 @@ struct UserAdminView: View {
     /// The signed-in account; the demo's own row is the board's Maintainer.
     var me: String { store.demo ? "wit.chanthawat@gmail.com" : permissions.email }
 
+    var compact: Bool { sizeClass == .compact }
+
     var body: some View {
         Group {
-            if permissions.can(.usersAdmin) || store.demo { page } else { noAccess }
+            if !(permissions.can(.usersAdmin) || store.demo) { noAccess } else if compact { phonePage } else { page }
         }
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
@@ -167,7 +174,7 @@ struct UserAdminView: View {
         .padding(.horizontal, 40).padding(.top, 16)
     }
 
-    private var syncLine: String {
+    var syncLine: String {
         guard let at = store.lastSync else { return store.offline ? "ออฟไลน์ · ข้อมูลในเครื่อง" : "กำลังซิงก์…" }
         return (store.offline ? "ออฟไลน์ · " : "") + "ซิงก์ล่าสุด " + ThaiFormat.numericDate.string(from: at) + " " + ThaiFormat.time.string(from: at)
     }
@@ -223,9 +230,9 @@ struct UserAdminView: View {
 
     // MARK: key sheet, invites sent
 
-    private func keySheet(_ purpose: DevKeyPurpose) -> some View {
+    func keySheet(_ purpose: DevKeyPurpose) -> some View {
         let subject: String = if case .role(let email) = purpose { store.shown.first { $0.email == email }?.label ?? email } else { "" }
-        return DevKeySheet(store: store, purpose: purpose, subject: subject) { ok in
+        return DevKeySheet(store: store, purpose: purpose, subject: subject, compact: compact) { ok in
             keyAsk = nil
             guard ok else { return }
             switch purpose {
@@ -236,7 +243,7 @@ struct UserAdminView: View {
         }
     }
 
-    private var sentSheet: some View {
+    var sentSheet: some View {
         ZStack {
             Theme.navySolid.opacity(0.45).ignoresSafeArea()
             VStack(alignment: .leading, spacing: 12) {
@@ -251,7 +258,8 @@ struct UserAdminView: View {
                 Button("เสร็จ") { sent = [] }.buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true))
             }
             .padding(22)
-            .frame(width: 460)
+            .frame(maxWidth: 460)
+            .padding(.horizontal, 16)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
     }
@@ -263,27 +271,29 @@ struct UserAdminView: View {
     func lock() {
         store.lock()
         roleEditing = nil
+        phoneDetail = nil
         matrixEditing = false
         keyAsk = nil
         inviting = false
     }
 
-    private func leave() {
+    func leave() {
         if store.pendingCount > 0 { confirmLeave = true } else { close() }
     }
 
-    private func close() {
+    func close() {
         lock()
         dismiss()
     }
 
-    private func added(_ email: String) {
+    func added(_ email: String) {
         roleFilter = nil
         selected = email
+        if compact { tab = .users; phoneDetail = email }
         toast = "เพิ่ม \(email) แล้ว · กดบันทึกและซิงก์เพื่อส่งคำเชิญ"
     }
 
-    private func save() {
+    func save() {
         let n = store.pendingCount
         roleEditing = nil
         guard let saved = store.save(by: me, assign: assign) else { return }
@@ -322,11 +332,16 @@ struct UserAdminView: View {
     }
 
     #if DEBUG
-    /// `-userAdminTab`, `-userAdminUser`, `-userAdminSheet`, `-userAdminEdit`, `-userAdminStage` (CLAUDE.md).
+    /// `-userAdminTab`, `-userAdminUser`, `-userAdminRole`, `-userAdminSheet`, `-userAdminEdit`, `-userAdminStage`
+    /// (CLAUDE.md).
     private func applyDebugFlags() {
         let d = UserDefaults.standard
         if let t = d.string(forKey: "userAdminTab").flatMap(Tab.init) { tab = t }
-        if let u = d.string(forKey: "userAdminUser") { selected = u }
+        if let u = d.string(forKey: "userAdminUser") {
+            selected = u
+            if compact { tab = .users; phoneDetail = u }
+        }
+        if let r = d.string(forKey: "userAdminRole").flatMap(UserRole.init(rawValue:)), r != .maintainer { phoneRole = r }
         switch d.string(forKey: "userAdminEdit") {
         case "role": roleEditing = selectedMember?.email
         case "matrix": matrixEditing = true; tab = .roles
@@ -348,6 +363,9 @@ struct UserAdminView: View {
         case "cell":
             tab = .roles; matrixEditing = true
             store.cycle(.internalTeam, .toolsRegister); store.cycle(.external, .feedAckFix)
+        case "weeklyOff":
+            // state 09: the contractor's weekly request turned off in the matrix, not saved
+            store.overrides[.external, .weeklyRequest] = .deny
         default: break
         }
     }

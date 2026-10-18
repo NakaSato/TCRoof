@@ -14,7 +14,7 @@ public extension Capability {
         CapabilityGroup(id: "jobs_plan", label: "งานและแผนงาน", capabilities: [.jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall, .installTracking, .overviewReports]),
         CapabilityGroup(id: "survey_design_price", label: "สำรวจ ออกแบบ และราคา", capabilities: [.surveyEdit, .surveySignRev, .boqDraft, .boqApprove, .companyDocs]),
         CapabilityGroup(id: "customer_docs_permits", label: "เอกสารลูกค้าและการขออนุญาต", capabilities: [.customerPersonalDocs, .permitPPIM, .engineerCertify, .attachFiles, .driveUpload, .ercFlow, .stationDocsDrafts]),
-        CapabilityGroup(id: "site_contractor", label: "หน้างานและผู้รับเหมา", capabilities: [.workOrder, .changeRequest, .punchList, .dailyFill, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .finalSignoff, .feedAckFix]),
+        CapabilityGroup(id: "site_contractor", label: "หน้างานและผู้รับเหมา", capabilities: [.workOrder, .changeRequest, .punchList, .dailyFill, .weeklyRequest, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .finalSignoff, .feedAckFix]),
         CapabilityGroup(id: "users_system", label: "ผู้ใช้และระบบ", capabilities: [.usersManage, .usersSuspend, .usersPermissions, .usersAdmin, .companyTemplates, .toolsRegister]),
     ]
 
@@ -45,7 +45,8 @@ public extension Capability {
         case .workOrder: "ออกใบสั่งงาน · บันทึกส่งของ"
         case .changeRequest: "ใบขอเปลี่ยนแปลง"
         case .punchList: "รายการที่ต้องแก้ (Punch list)"
-        case .dailyFill: "รายงานประจำวัน: กรอก · รูป · สแกนเลขเครื่อง"
+        case .dailyFill: "รายงานประจำวัน: กรอก · รูป · สแกนเลขเครื่อง · ส่ง"
+        case .weeklyRequest: "คำขอรายสัปดาห์ (R1): คน เครื่องมือ แผน ความเสี่ยง · ส่งขออนุมัติ"
         case .dailySign: "วิศวกรเซ็นรับทราบรายงาน (จึงนับเข้าแผน MP) · Inspector รับทราบ"
         case .iecFillSubmit: "ทดสอบ IEC 62446: วัดค่า กรอกผล ถ่ายรูป · ส่งผลให้ทีม"
         case .iecClose: "ทีมภายในปิดการทดสอบ IEC (จึงนับ 3.1 เข้าแผน MP) · ส่งกลับให้แก้"
@@ -79,9 +80,11 @@ public extension Capability {
         case (.changeRequest, .external): "ยื่นขอ"
         case (.punchList, .internalTeam): "เปิด / ปิดรายการ"
         case (.punchList, .external): "แก้ แนบรูป ขอปิด"
-        case (.dailyFill, .external): "หัวหน้างานกรอก งานตัวเอง (ก่อนวิศวกรเซ็น)"
+        case (.dailyFill, .external): "ต้องส่งทุกวันที่เข้างาน · งานตัวเอง"
+        case (.weeklyRequest, .internalTeam): "อนุมัติ / ส่งกลับ"
+        case (.weeklyRequest, .external): "ต้องส่งทุกสัปดาห์ · งานตัวเอง"
         case (.dailySign, .internalTeam): "ทีมงานของงานนั้นหรือผู้ควบคุมงาน (งานที่ยังไม่มีชื่อใครของเรา: ทีมภายในทุกคน)"
-        case (.iecFillSubmit, .external): "ผู้รับเหมาทดสอบและส่งผล งานตัวเอง"
+        case (.iecFillSubmit, .external): "ต้องทดสอบและส่งผล ก่อน / หลังขนาน · งานตัวเอง"
         case (.finalSignoff, .internalTeam): "เฉพาะวิศวกรผู้ควบคุมงานของงานนั้น"
         case (.finalSignoff, .external): "ดูยอดของตัวเอง"
         case (.feedAckFix, .external): "แก้แล้ว เฉพาะรายการของตัวเอง"

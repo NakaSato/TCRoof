@@ -133,6 +133,26 @@ enum RoutineReportFiles {
                      folder: RoutineReport.folder(.weekly, date: ws), title: RoutineReport.Kind.weekly.title)
     }
 
+    /// R3 as PowerPoint (`WeeklySlides`), written to a temporary file to share.
+    static func weeklySlides(_ job: Job, week: Date) throws -> URL {
+        let (entries, images) = entries(job)
+        let ws = MasterSchedule.weekStart(week)
+        let st = job.reportStation
+        let days = entries.map { e in
+            WeeklySlides.Day(report: e.report, photos: e.photos.map {
+                WeeklySlides.DayPhoto(id: $0.photo.id, width: $0.photo.width, height: $0.photo.height, caption: $0.caption)
+            })
+        }
+        let input = WeeklySlides.Input(stationName: st.name, mpNumber: st.mpNumber, capacityKWp: st.capacityKWp, settings: st.settings,
+                                       week: ws, days: days, all: job.dailyReports,
+                                       schedule: job.reportSchedule.map { (input: $0.input, actual: $0.actual) },
+                                       nextRequest: job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws)!),
+                                       installStart: job.installStart)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(WeeklySlides.fileName(week: ws, station: job.stationName))
+        try WeeklySlides.export(input, images: images).write(to: url, options: .atomic)
+        return url
+    }
+
     static func monthly(_ job: Job, month: Date) -> Built {
         let (entries, images) = entries(job)
         let first = RoutineReport.month(of: month).lowerBound

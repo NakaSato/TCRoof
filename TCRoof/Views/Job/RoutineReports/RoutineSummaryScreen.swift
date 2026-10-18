@@ -5,7 +5,7 @@ import TCRoofUI
 import TCRoofCore
 
 /// รายงานประจำสัปดาห์ R3 / รายงานประจำเดือน R4 (§4.4–4.5): read-only, built from the daily reports and the MP plan;
-/// the page shown is the PDF itself, so what is checked on screen is what gets sent.
+/// the page shown is the PDF itself, so what is checked on screen is what gets sent. R3 also exports as PowerPoint.
 struct RoutineSummaryScreen: View {
     enum Period { case week, month }
 
@@ -16,6 +16,7 @@ struct RoutineSummaryScreen: View {
     @State private var pdf: Data?
     @State private var share: ReportShare?
     @State private var filed = false
+    @State private var slidesError: String?
 
     init(job: Job, period: Period, anchor: Date = .now) {
         self.job = job; self.period = period
@@ -65,14 +66,26 @@ struct RoutineSummaryScreen: View {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: exportPDF) { Label("PDF", systemImage: "square.and.arrow.up") }.disabled(pdf == nil)
             }
+            if period == .week {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: exportSlides) { Label("PowerPoint", systemImage: "rectangle.on.rectangle") }
+                        .accessibilityIdentifier("weeklySlides")
+                }
+            }
         }
         .tcPadNavBar(period == .week ? "รายงานประจำสัปดาห์" : "รายงานประจำเดือน", trail: ["หน้าหลัก", job.code]) {
             HStack(spacing: 12) {
                 TCButton(filed ? "เก็บแล้ว" : "เก็บในเอกสาร", systemImage: filed ? "checkmark" : "tray.and.arrow.down", kind: .secondary, action: fileIt)
                     .disabled(pdf == nil || filed)
                 TCButton("PDF", systemImage: "square.and.arrow.up", kind: .secondary, action: exportPDF).disabled(pdf == nil)
+                if period == .week {
+                    TCButton("PowerPoint", systemImage: "rectangle.on.rectangle", kind: .secondary, action: exportSlides)
+                }
             }
         }
+        .alert("สร้าง PowerPoint ไม่สำเร็จ", isPresented: Binding(get: { slidesError != nil }, set: { if !$0 { slidesError = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        } message: { Text(slidesError ?? "") }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
         .task(id: anchor) { pdf = built.data; filed = false }
     }
@@ -90,6 +103,12 @@ struct RoutineSummaryScreen: View {
 
     private func exportPDF() {
         if let url = try? RoutineReportFiles.temporaryURL(built, data: pdf) { share = ReportShare(url: url) }
+    }
+
+    /// The week as PowerPoint for the meeting (`WeeklySlides`): the same content as the PDF, every text editable.
+    private func exportSlides() {
+        do { share = ReportShare(url: try RoutineReportFiles.weeklySlides(job, week: anchor)) }
+        catch { slidesError = error.localizedDescription }
     }
 }
 

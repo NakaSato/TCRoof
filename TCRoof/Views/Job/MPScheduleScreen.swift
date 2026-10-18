@@ -472,14 +472,22 @@ struct MPReportRow: View {
 
 /// บันทึกความก้าวหน้า (§3.4): for the chosen week, each task planned in it or started and unfinished, as % done of the
 /// task. The change from what is booked is written into that week (`Actual.setPercent`), capped at the task's weight.
+/// Each task also takes its วันเริ่มจริง / วันเสร็จจริง (`Actual.setDates`), which the install page's Gantt and the
+/// plan file's actual columns use; reaching 100% offers the end of this week (today at most) as the finish.
 struct MPProgressSheet: View {
     @Bindable var job: Job
     let week: Date
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @State private var percent: [MasterSchedule.Task: Double] = [:]
+    @State private var started: [MasterSchedule.Task: Date] = [:]
+    @State private var finished: [MasterSchedule.Task: Date] = [:]
+    /// Finishes this sheet filled in at 100%, taken off again if the task drops below it.
+    @State private var autoFinished: Set<MasterSchedule.Task> = []
     private let tasks: [MasterSchedule.PlannedTask]
     private let start: [MasterSchedule.Task: Double]
+    private let startDates: [MasterSchedule.Task: Date]
+    private let finishDates: [MasterSchedule.Task: Date]
 
     init(job: Job, week: Date) {
         self.job = job; self.week = week
@@ -492,12 +500,17 @@ struct MPProgressSheet: View {
         let tasks = plan.filter { t in
             guard t.weight > 0 else { return false }
             let planned = t.start.map { $0 <= weekEnd } == true && t.end.map { $0 >= week } == true
-            let open = total(t) > 0 && total(t) < 99.95
+            // a task with a typed start and nothing booked yet is open too
+            let open = (total(t) > 0 || actual.started[t.task.rawValue] != nil) && total(t) < 99.95
             return planned || open
         }
         self.tasks = tasks
         start = Dictionary(uniqueKeysWithValues: tasks.map { ($0.task, total($0)) })
+        startDates = Dictionary(uniqueKeysWithValues: tasks.compactMap { t in actual.started[t.task.rawValue].map { (t.task, $0) } })
+        finishDates = Dictionary(uniqueKeysWithValues: tasks.compactMap { t in actual.finished[t.task.rawValue].map { (t.task, $0) } })
         _percent = State(initialValue: start)
+        _started = State(initialValue: startDates)
+        _finished = State(initialValue: finishDates)
     }
 
     var body: some View {
@@ -507,7 +520,7 @@ struct MPProgressSheet: View {
                     if tasks.isEmpty { Text("ไม่มีงานตามแผนหรืองานค้างในสัปดาห์นี้").foregroundStyle(Theme.muted) }
                     ForEach(tasks) { t in row(t) }
                 } footer: {
-                    Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้")
+                    Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้ · วันเริ่มจริงและวันเสร็จจริงใส่หรือไม่ใส่ก็ได้")
                 }
             }
             .navigationTitle("บันทึกความก้าวหน้า")
@@ -520,7 +533,7 @@ struct MPProgressSheet: View {
     }
 
     private func row(_ t: MasterSchedule.PlannedTask) -> some View {
-        let p = Binding(get: { percent[t.task] ?? 0 }, set: { percent[t.task] = ($0 / 5).rounded() * 5 })
+        let p = Binding(get: { percent[t.task] ?? 0 }, set: { setPercent(($0 / 5).rounded() * 5, t) })
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(t.task.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.primary)
@@ -534,19 +547,95 @@ struct MPProgressSheet: View {
             if let s = t.start, let e = t.end {
                 Text("แผน \(s.thaiShort) – \(e.thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
+            dates(t)
         }
         .padding(.vertical, 4)
     }
 
+    /// วันเริ่มจริง and วันเสร็จจริง side by side, each a button until it has a date.
+    private func dates(_ t: MasterSchedule.PlannedTask) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) { startField(t); finishField(t) }
+            VStack(alignment: .leading, spacing: 4) { startField(t); finishField(t) }
+        }
+    }
+
+    private func startField(_ t: MasterSchedule.PlannedTask) -> some View {
+        let latest = min(finished[t.task] ?? .now, .now)
+        return MPActualDateField(title: "วันเริ่มจริง", date: Binding(get: { started[t.task] }, set: { started[t.task] = $0 }),
+                                 range: Date.distantPast...max(latest, Date.distantPast),
+                                 suggested: { min(max(week, t.start ?? week), latest) })
+    }
+
+    private func finishField(_ t: MasterSchedule.PlannedTask) -> some View {
+        let earliest = started[t.task] ?? .distantPast
+        return MPActualDateField(title: "วันเสร็จจริง",
+                                 date: Binding(get: { finished[t.task] }, set: { finished[t.task] = $0; autoFinished.remove(t.task) }),
+                                 range: earliest...max(Date.now, earliest),
+                                 suggested: { suggestedFinish(t) })
+    }
+
+    /// The end of this week, today at most, never before the start.
+    private func suggestedFinish(_ t: MasterSchedule.PlannedTask) -> Date {
+        let weekEnd = MasterSchedule.calendar.date(byAdding: .day, value: 6, to: week)!
+        return max(min(weekEnd, .now), started[t.task] ?? .distantPast)
+    }
+
+    private func setPercent(_ value: Double, _ t: MasterSchedule.PlannedTask) {
+        percent[t.task] = value
+        if value >= 100, finished[t.task] == nil {
+            finished[t.task] = suggestedFinish(t); autoFinished.insert(t.task)
+        } else if value < 100, autoFinished.contains(t.task) {
+            finished[t.task] = nil; autoFinished.remove(t.task)
+        }
+    }
+
     private func save() {
         var a = job.scheduleActual
+        let cal = MasterSchedule.calendar
+        func same(_ x: Date?, _ y: Date?) -> Bool { x.map { cal.startOfDay(for: $0) } == y.map { cal.startOfDay(for: $0) } }
         for t in tasks {
-            guard let p = percent[t.task], abs(p - (start[t.task] ?? 0)) > 0.01 else { continue }
-            a.setPercent(p, task: t.task, week: week, weight: t.weight)
+            if let p = percent[t.task], abs(p - (start[t.task] ?? 0)) > 0.01 {
+                a.setPercent(p, task: t.task, week: week, weight: t.weight)
+            }
+            if !same(started[t.task], startDates[t.task]) || !same(finished[t.task], finishDates[t.task]) {
+                a.setDates(t.task, started: started[t.task], finished: finished[t.task])
+            }
         }
         job.scheduleActual = a
         // saved now, not at the next autosave: a booking made just before the app closes stays
         try? context.save()
         dismiss()
+    }
+}
+
+/// One optional actual date: `+ title` until it has one, then a compact picker and a button that clears it.
+struct MPActualDateField: View {
+    let title: String
+    @Binding var date: Date?
+    let range: ClosedRange<Date>
+    let suggested: () -> Date
+
+    var body: some View {
+        if let d = date {
+            HStack(spacing: 4) {
+                DatePicker(title, selection: Binding(get: { d }, set: { date = $0 }), in: range, displayedComponents: .date)
+                    .font(.sarabun(14, relativeTo: .subheadline)).fixedSize()
+                Button { date = nil } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 18)).foregroundStyle(Theme.groupFooter)
+                        .frame(width: touchMin, height: touchMin)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ล้าง\(title)")
+            }
+        } else {
+            Button { date = suggested() } label: {
+                Label(title, systemImage: "plus.circle").font(.sarabun(14, .semibold, relativeTo: .subheadline))
+                    .frame(minHeight: touchMin)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.primary)
+            .accessibilityIdentifier("mpDate-\(title)")
+        }
     }
 }

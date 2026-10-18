@@ -7,7 +7,7 @@ the Plan tab header) 2026-10-08, and §4's weekly-meeting PDF (`MasterScheduleSh
 `Master Plan Weekly` workbook imports and exports (2026-10-17, `ExcelExport/MPWorkbook.swift`, `MPWorkbookFlow`: its
 dates and weights become `Input.fixed`, the file is kept on the job, and export writes the plan and actual into it in
 place); the tracking workbook's station list imports (2026-10-17, `ExcelExport/StationList.swift`, `StationListImportSheet`, §4); the MP 189 workbook import is not built yet (no copy of that file to build it against). The overview averages plan and actual over the stations' kWp. The progress sheet
-does not take วันเริ่มจริง / วันเสร็จจริง yet.
+takes each task's วันเริ่มจริง / วันเสร็จจริง (2026-10-17, `Actual.setDates`).
 **Source:** the company's per-station workbook `MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx` (one sheet,
 5,605 formulas). Every PWA station of โครงการประปา ระยะที่ 3–4 (102 stations) has one copy of it.
 **Goal:** replace the 102 workbook copies with one screen per job: the plan is generated from three dates and one
@@ -91,7 +91,10 @@ actual points are kept.
 ### 3.4 บันทึกความก้าวหน้า (sheet, from a Gantt row or "อัปเดตสัปดาห์นี้")
 For the chosen week, one row per task active or unfinished: a stepper/slider of **% สะสมของงานนี้** (0…100).
 `Actual.setPercent` books the difference into that week and caps at the task's weight. Optional: วันเริ่มจริง /
-วันเสร็จจริง. Save writes `scheduleActualJSON`.
+วันเสร็จจริง (`Actual.setDates`: days, a finish before the start moves to it). Reaching 100% fills วันเสร็จจริง with
+the end of the week (today at most), taken off again if the task drops below 100% before saving. A task with a start
+and nothing booked stays in the list. The dates feed the install page's Gantt (actual bar, overrun) and the plan
+file's actual start and finish columns. Save writes `scheduleActualJSON`.
 
 ### 3.5 ภาพรวมทุกสถานี (Home or Plan tab)
 One row per job with an MP plan: MP no., station, plan %, actual %, variance chip, current task. Sort by

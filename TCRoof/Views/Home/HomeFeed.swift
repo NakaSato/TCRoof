@@ -122,6 +122,10 @@ struct HomeFeed: View {
     @State private var days = FeedBuilder.windowDays
     /// A punch that can't be closed yet: it needs a photo of the fix.
     @State private var needsPhoto: FeedPost?
+    /// A contractor's `แก้แล้ว` on a problem of a signed daily report: only the team changes a signed report
+    /// (firestore.rules refuse it, which would leave their sync stuck).
+    @State private var signedReport = false
+    @Environment(\.permissions) private var permissions
     #if DEBUG
     // `-homeFeedIssue fixed`: the demo's issue fixed and its summary acknowledged; the demo keeps neither
     @State private var demoFixed: Set<String> = UserDefaults.standard.string(forKey: "homeFeedIssue") == "fixed" ? ["demo-issue"] : []
@@ -188,6 +192,11 @@ struct HomeFeed: View {
             Button("ยกเลิก", role: .cancel) {}
         } message: { _ in
             Text("ต้องมีรูปหลังแก้ก่อนปิดรายการ")
+        }
+        .alert("รายงานนี้ลงนามแล้ว", isPresented: $signedReport) {
+            Button("ตกลง", role: .cancel) {}
+        } message: {
+            Text("ปัญหาในรายงานที่ลงนามแล้ว ทีมของเราเป็นผู้ปิดหรือเปิดอีกครั้ง")
         }
     }
 
@@ -408,7 +417,9 @@ struct HomeFeed: View {
             let logs = job.dailyLogs
             var reports = logs.compactMap(\.report)
             guard reports.count == logs.count, FeedBuilder.setProblem(id, fixed: fixed, in: &reports) else { return }
-            for (log, report) in zip(logs, reports) where log.report != report { log.report = report }
+            let changed = zip(logs, reports).filter { $0.0.report != $0.1 }
+            if permissions.role == .external, changed.contains(where: { $0.0.engineerSignedAt != nil }) { signedReport = true; return }
+            for (log, report) in changed { log.report = report }
         case .punch(let key, let id):
             guard let job = job(key) else { return }
             let store = PermitStore(job: job)

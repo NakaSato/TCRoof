@@ -5,7 +5,9 @@ rules_version = '2';
 // in the Firebase console (Firestore → members), or as a manager in the app's สมาชิก screen.
 //
 // Roles (docs/reference/roles/user-roles.json): members/<email>.role is "manager", "internal" or "external";
-// none is the internal team. An external engineer or contractor reads only the documents that list their email in
+// none is the internal team. "maintainer" (the app's developer) can do everything a manager can, and alone suspends
+// accounts, reads the developer key and edits the role overrides; it is set in the Firebase console only. A suspended
+// member (`suspended: true`) is no member at all until a Maintainer reactivates them. An external engineer or contractor reads only the documents that list their email in
 // `externals` (a job's assigned people, copied onto its records by the app) and writes only what their role lets
 // them: a job's IEC test, its daily reports (unsigned), device scans, photos and surveys. The customers' phones and
 // addresses are in jobContacts, which they never read.
@@ -17,7 +19,8 @@ service cloud.firestore {
     function isMember() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && exists(/databases/$(database)/documents/members/$(signedInEmail()));
+        && exists(/databases/$(database)/documents/members/$(signedInEmail()))
+        && get(/databases/$(database)/documents/members/$(signedInEmail())).data.get('suspended', false) != true;
     }
     function role() {
       return get(/databases/$(database)/documents/members/$(signedInEmail())).data.get('role', 'internal');
@@ -25,8 +28,12 @@ service cloud.firestore {
     function isTeam() {
       return isMember() && role() != 'external';
     }
+    // A Maintainer is a manager too.
     function isManager() {
-      return isMember() && role() == 'manager';
+      return isMember() && role() in ['manager', 'maintainer'];
+    }
+    function isMaintainer() {
+      return isMember() && role() == 'maintainer';
     }
     function isExternal() {
       return isMember() && role() == 'external';
@@ -75,19 +82,48 @@ service cloud.firestore {
       return request.resource.data.get(field, null) == (resource == null ? null : resource.data.get(field, null));
     }
 
-    // Each person may check their own membership and role (the app reads it after sign-in). A manager lists the
-    // members, invites people, changes their role and removes them, never their own document, so no manager can
-    // lock themselves out or leave the team without one by mistake.
+    // Each person may check their own membership and role (the app reads it after sign-in, suspended or not). A
+    // manager lists the members, invites people, changes their role and removes them, never their own document, so no
+    // manager can lock themselves out or leave the team without one by mistake. A Maintainer's document is the
+    // console's only: no one makes, changes or removes one from the app. Only a Maintainer suspends or reactivates an
+    // account (`suspended`, `suspendedBy`, `suspendedAt`), never their own; a manager can't remove a suspended one
+    // either, which would let it be invited back.
     match /members/{email} {
+      function target() {
+        return resource.data.get('role', 'internal');
+      }
+      function suspension() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['suspended', 'suspendedBy', 'suspendedAt'])
+          && ((request.resource.data.get('suspended', null) == true
+               && request.resource.data.get('suspendedBy', null) == signedInEmail()
+               && request.resource.data.get('suspendedAt', null) == request.time)
+            || !request.resource.data.keys().hasAny(['suspended', 'suspendedBy', 'suspendedAt']));
+      }
       allow read: if request.auth != null && (signedInEmail() == email || isManager());
       allow create: if isManager() && email != signedInEmail() && email == email.lower()
         && request.resource.data.keys().hasOnly(['role', 'invitedBy', 'invitedAt'])
         && request.resource.data.get('role', 'internal') in ['manager', 'internal', 'external']
         && request.resource.data.invitedBy == signedInEmail();
-      allow update: if isManager() && email != signedInEmail()
+      allow update: if isManager() && email != signedInEmail() && target() != 'maintainer'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
         && request.resource.data.role in ['manager', 'internal', 'external'];
-      allow delete: if isManager() && email != signedInEmail();
+      allow update: if isMaintainer() && email != signedInEmail() && target() != 'maintainer' && suspension();
+      allow delete: if isManager() && email != signedInEmail() && target() != 'maintainer'
+        && (resource.data.get('suspended', false) != true || isMaintainer());
+    }
+
+    // Who changed members, roles and permissions (จัดการผู้ใช้และสิทธิ์): written once by a manager or Maintainer as
+    // themselves, read by a Maintainer, never changed or removed.
+    match /auditLog/{id} {
+      allow read: if isMaintainer();
+      allow create: if isManager()
+        && request.resource.data.keys().hasOnly(['at', 'by', 'kind', 'title', 'detail'])
+        && request.resource.data.by == signedInEmail()
+        && request.resource.data.at == request.time
+        && request.resource.data.kind in ['role', 'perm', 'user', 'key', 'sus']
+        && request.resource.data.title is string && request.resource.data.title.size() <= 300
+        && request.resource.data.get('detail', '') is string && request.resource.data.get('detail', '').size() <= 500;
+      allow update, delete: if false;
     }
 
     // The team's names and emails (TeamDirectory), to pick a job's team members from: the team reads it, an external
@@ -107,8 +143,24 @@ service cloud.firestore {
 
     // Switches set in the Firebase console (contactsSplit).
     match /config/{doc} {
-      allow read: if isMember();
+      allow read: if isMember() && !(doc in ['devKey']);
       allow write: if false;
+    }
+    // The developer key that opens จัดการผู้ใช้และสิทธิ์: a PBKDF2 hash and its salt, never the digits. A Maintainer's
+    // only, to read or to set. The key only gates the page: these rules decide what its changes may do.
+    match /config/devKey {
+      allow read: if isMaintainer();
+      allow write: if isMaintainer()
+        && request.resource.data.keys().hasOnly(['hash', 'salt', 'iterations', 'expiresAt', 'setBy', 'setAt'])
+        && request.resource.data.hash is string && request.resource.data.salt is string
+        && request.resource.data.iterations is int && request.resource.data.iterations >= 10000
+        && request.resource.data.setBy == signedInEmail();
+    }
+    // Overrides of the role table (`{ "<role>|<capability>": "<access>" }`, `Permissions`): every member reads them, a
+    // Maintainer writes them. They change what the app shows, never what these rules allow.
+    match /config/roleOverrides {
+      allow read: if isMember();
+      allow write: if isMaintainer();
     }
 
     // Jobs: the team reads and writes them; an external member reads their jobs and changes only the IEC test, while

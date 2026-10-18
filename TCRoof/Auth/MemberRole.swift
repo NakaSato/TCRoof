@@ -24,6 +24,9 @@ final class MemberRole {
     }
 
     private static func key(_ email: String) -> String { "member.role.\(email)" }
+    /// The role overrides last read (`config/roleOverrides`), so the app opens offline with them.
+    private static let overridesKey = "member.roleOverrides"
+    private static var savedOverrides: RoleOverrides { RoleOverrides(json: UserDefaults.standard.string(forKey: overridesKey)) }
 
     /// The account's last known role, at once; then `refresh` reads the current one.
     func signedIn(_ email: String) {
@@ -33,9 +36,9 @@ final class MemberRole {
         let activeEmail = (UserDefaults.standard.string(forKey: "screen") != nil && Self.override != nil)
             ? (UserDefaults.standard.string(forKey: "roleEmail") ?? "uitest@tcroof.test")
             : email
-        permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: activeEmail)
+        permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: activeEmail, overrides: Self.savedOverrides)
         #else
-        permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: email)
+        permissions = Permissions(role: Self.override ?? UserRole(field: saved), email: email, overrides: Self.savedOverrides)
         #endif
     }
 
@@ -45,10 +48,11 @@ final class MemberRole {
     }
 
     /// Whether an account is on the member list, as far as this device can tell.
-    enum Membership { case member, notMember, unknown }
+    enum Membership { case member, notMember, suspended, unknown }
 
-    /// Called when the server says the signed-in account is no longer a member (removed in the Firebase console).
-    var onRemoved: (() -> Void)?
+    /// Called when the server says the signed-in account is no longer a member (removed in the Firebase console or
+    /// สมาชิกทีม), or was suspended by a Maintainer (`true`).
+    var onRemoved: ((_ suspended: Bool) -> Void)?
 
     private static func confirmedKey(_ email: String) -> String { "member.confirmed.\(email)" }
 
@@ -69,6 +73,11 @@ final class MemberRole {
             UserDefaults.standard.removeObject(forKey: Self.key(email))
             return .notMember
         }
+        // suspended by a Maintainer: firestore.rules treat it as no member; it can't open the app offline either
+        if doc.get("suspended") as? Bool == true, !doc.metadata.isFromCache {
+            UserDefaults.standard.removeObject(forKey: Self.confirmedKey(email))
+            return .suspended
+        }
         let field = doc.get("role") as? String
         UserDefaults.standard.set(field, forKey: Self.key(email))
         UserDefaults.standard.set(true, forKey: Self.confirmedKey(email))
@@ -83,19 +92,38 @@ final class MemberRole {
         switch await membership(of: email) {
         case .member:
             guard permissions.email == email else { return }
+            let overrides = await Self.readOverrides()
+            guard permissions.email == email else { return }
             let field = UserDefaults.standard.string(forKey: Self.key(email))
-            permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email)
+            permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email, overrides: overrides)
         case .notMember:
             guard permissions.email == email else { return }
-            onRemoved?()
+            onRemoved?(false)
+        case .suspended:
+            guard permissions.email == email else { return }
+            onRemoved?(true)
         case .unknown:
             break
         }
     }
 
+    /// `config/roleOverrides`, kept for offline; the last read when it can't be read now.
+    private static func readOverrides() async -> RoleOverrides {
+        guard let doc = try? await Firestore.firestore().document("config/roleOverrides").getDocument() else { return savedOverrides }
+        let overrides = RoleOverrides(document: doc.data() ?? [:])
+        UserDefaults.standard.set(overrides.json, forKey: overridesKey)
+        return overrides
+    }
+
+    /// The overrides just saved in จัดการผู้ใช้และสิทธิ์, applied at once.
+    func apply(_ overrides: RoleOverrides) {
+        UserDefaults.standard.set(overrides.json, forKey: Self.overridesKey)
+        permissions.overrides = overrides
+    }
+
     func signedOut() { permissions = .team }
 
-    /// `-role manager|internal|external` (DEBUG) tries a role on the simulator.
+    /// `-role manager|internal|external|maintainer` (DEBUG) tries a role on the simulator.
     static var override: UserRole? {
         #if DEBUG
         UserDefaults.standard.string(forKey: "role").flatMap(UserRole.init(rawValue:))

@@ -1,12 +1,13 @@
-// firestore.rules for the three roles (docs/reference/roles/user-roles.json).
+// firestore.rules for the three roles and the Maintainer (docs/reference/roles/user-roles.json).
 // `npm install && npm test` in this folder; the emulator needs Java (Homebrew: PATH=/opt/homebrew/opt/openjdk/bin:$PATH).
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { test, before, after, beforeEach } from 'node:test';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp, deleteField, writeBatch } from 'firebase/firestore';
 
 const TEAM = 'team@tcroof.co', BOSS = 'boss@tcroof.co', CON = 'foreman@contractor.co', OTHER = 'other@contractor.co';
+const DEV = 'dev@tcroof.co', DEV2 = 'dev2@tcroof.co';
 let env;
 
 const db = (email) => env.authenticatedContext(email.replace(/\W/g, '_'), { email, email_verified: true }).firestore();
@@ -27,6 +28,11 @@ beforeEach(async () => {
     await setDoc(doc(d, 'members', BOSS), { role: 'manager' });
     await setDoc(doc(d, 'members', CON), { role: 'external' });
     await setDoc(doc(d, 'members', OTHER), { role: 'external' });
+    await setDoc(doc(d, 'members', DEV), { role: 'maintainer' });
+    await setDoc(doc(d, 'members', DEV2), { role: 'maintainer' });
+    await setDoc(doc(d, 'config', 'app'), { installLink: 'x' });
+    await setDoc(doc(d, 'config', 'devKey'), { hash: 'h', salt: 's', iterations: 100000 });
+    await setDoc(doc(d, 'config', 'roleOverrides'), {});
     await setDoc(doc(d, 'jobs', 'mine'), { code: 'TC-1', externals: [CON], iecReport: null, status: 'installing' });
     await setDoc(doc(d, 'jobs', 'theirs'), { code: 'TC-2', externals: [OTHER] });
     await setDoc(doc(d, 'jobContacts', 'mine'), { phone: '081', address: 'x' });
@@ -309,4 +315,115 @@ test('an issued REV goes only with its survey, or by a manager', async () => {
   await assertFails(deleteDoc(doc(db(CON), 'pwaSurveyRevisions', 'S8_REV 00')));
   await assertSucceeds(deleteDoc(doc(db(TEAM), 'pwaSurveyRevisions', 'S8_REV 00')));
   await assertSucceeds(deleteDoc(doc(db(BOSS), 'pwaSurveyRevisions', 'S9_REV 00')));
+});
+
+// ── the Maintainer, suspension, the developer key, role overrides and the audit log (จัดการผู้ใช้และสิทธิ์)
+
+const suspend = (by) => ({ suspended: true, suspendedBy: by, suspendedAt: serverTimestamp() });
+const reactivate = { suspended: deleteField(), suspendedBy: deleteField(), suspendedAt: deleteField() };
+
+test('a Maintainer does what a manager does', async () => {
+  const d = db(DEV);
+  await assertSucceeds(getDocs(collection(d, 'members')));
+  await assertSucceeds(deleteDoc(doc(d, 'jobs', 'theirs')));
+  await assertSucceeds(setDoc(doc(d, 'members', NEW), { role: 'external', invitedBy: DEV, invitedAt: new Date() }));
+  await assertSucceeds(updateDoc(doc(d, 'members', NEW), { role: 'internal' }));
+  await assertSucceeds(updateDoc(doc(d, 'members', BOSS), { role: 'internal' }));
+});
+
+test('the maintainer role is never written from the app', async () => {
+  for (const who of [BOSS, DEV]) {
+    const d = db(who);
+    await assertFails(setDoc(doc(d, 'members', 'x@gmail.com'), { role: 'maintainer', invitedBy: who }));
+    await assertFails(updateDoc(doc(d, 'members', TEAM), { role: 'maintainer' }));
+    // a Maintainer's document: no role change, no removal, by a manager or another Maintainer
+    await assertFails(updateDoc(doc(d, 'members', who === DEV ? DEV2 : DEV), { role: 'manager' }));
+    await assertFails(deleteDoc(doc(d, 'members', who === DEV ? DEV2 : DEV)));
+  }
+  await assertFails(updateDoc(doc(db(DEV), 'members', DEV), { role: 'manager' }));
+});
+
+test('only a Maintainer suspends and reactivates, never themselves or another Maintainer', async () => {
+  await assertFails(updateDoc(doc(db(BOSS), 'members', TEAM), suspend(BOSS)));
+  await assertFails(updateDoc(doc(db(TEAM), 'members', TEAM), suspend(TEAM)));
+  await assertFails(updateDoc(doc(db(DEV), 'members', DEV), suspend(DEV)));
+  await assertFails(updateDoc(doc(db(DEV), 'members', DEV2), suspend(DEV)));
+  // as themselves, at the server's time
+  await assertFails(updateDoc(doc(db(DEV), 'members', TEAM), suspend(BOSS)));
+  await assertFails(updateDoc(doc(db(DEV), 'members', TEAM), { suspended: true, suspendedBy: DEV, suspendedAt: new Date(0) }));
+  // the suspension alone, not a role change with it
+  await assertFails(updateDoc(doc(db(DEV), 'members', TEAM), { ...suspend(DEV), role: 'manager' }));
+  await assertSucceeds(updateDoc(doc(db(DEV), 'members', TEAM), suspend(DEV)));
+  // a manager can't reactivate, or remove the account to invite it back
+  await assertFails(updateDoc(doc(db(BOSS), 'members', TEAM), reactivate));
+  await assertFails(deleteDoc(doc(db(BOSS), 'members', TEAM)));
+  // reactivating takes the three keys away, nothing else
+  await assertFails(updateDoc(doc(db(DEV2), 'members', TEAM), { suspended: false }));
+  await assertSucceeds(updateDoc(doc(db(DEV2), 'members', TEAM), reactivate));
+  await assertSucceeds(updateDoc(doc(db(DEV), 'members', CON), suspend(DEV)));
+  await assertSucceeds(deleteDoc(doc(db(DEV), 'members', CON)));
+  // a manager is suspended like anyone else
+  await assertSucceeds(updateDoc(doc(db(DEV), 'members', BOSS), suspend(DEV)));
+});
+
+test('a suspended member reads nothing but their own membership', async () => {
+  await assertSucceeds(updateDoc(doc(db(DEV), 'members', TEAM), suspend(DEV)));
+  await assertFails(getDocs(collection(db(TEAM), 'jobs')));
+  await assertFails(setDoc(doc(db(TEAM), 'jobs', 'new'), { code: 'x' }));
+  await assertFails(getDoc(doc(db(TEAM), 'config', 'app')));
+  const me = await assertSucceeds(getDoc(doc(db(TEAM), 'members', TEAM)));
+  assert.equal(me.data().suspended, true);
+  await assertSucceeds(updateDoc(doc(db(DEV), 'members', TEAM), reactivate));
+  await assertSucceeds(getDocs(collection(db(TEAM), 'jobs')));
+  // a suspended manager manages nothing
+  await assertSucceeds(updateDoc(doc(db(DEV), 'members', BOSS), suspend(DEV)));
+  await assertFails(getDocs(collection(db(BOSS), 'members')));
+  await assertFails(deleteDoc(doc(db(BOSS), 'jobs', 'mine')));
+});
+
+test('the developer key: a Maintainer reads and sets it, as a hash', async () => {
+  for (const who of [TEAM, BOSS, CON]) {
+    await assertFails(getDoc(doc(db(who), 'config', 'devKey')));
+    await assertFails(setDoc(doc(db(who), 'config', 'devKey'), { hash: 'h', salt: 's', iterations: 100000, setBy: who }));
+  }
+  await assertSucceeds(getDoc(doc(db(TEAM), 'config', 'app')));
+  await assertSucceeds(getDoc(doc(db(DEV), 'config', 'devKey')));
+  await assertSucceeds(setDoc(doc(db(DEV), 'config', 'devKey'), { hash: 'h2', salt: 's2', iterations: 100000, expiresAt: new Date(), setBy: DEV, setAt: new Date() }));
+  await assertFails(setDoc(doc(db(DEV), 'config', 'devKey'), { hash: 'h', salt: 's', iterations: 100000, setBy: DEV, digits: '123456' }));
+  await assertFails(setDoc(doc(db(DEV), 'config', 'devKey'), { hash: 'h', salt: 's', iterations: 10, setBy: DEV }));
+  await assertFails(setDoc(doc(db(DEV), 'config', 'devKey'), { hash: 'h', salt: 's', iterations: 100000, setBy: DEV2 }));
+  await assertFails(setDoc(doc(db(DEV), 'config', 'app'), { installLink: 'y' }));
+});
+
+test('role overrides: every member reads them, a Maintainer writes them', async () => {
+  for (const who of [TEAM, CON, BOSS, DEV]) await assertSucceeds(getDoc(doc(db(who), 'config', 'roleOverrides')));
+  for (const who of [TEAM, CON, BOSS]) await assertFails(setDoc(doc(db(who), 'config', 'roleOverrides'), { 'internal|tools.register': 'view' }));
+  await assertSucceeds(setDoc(doc(db(DEV), 'config', 'roleOverrides'), { 'internal|tools.register': 'view' }));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'config', 'roleOverrides')));
+});
+
+const entry = (by, kind = 'role') => ({ at: serverTimestamp(), by, kind, title: 'เปลี่ยนบทบาท', detail: '' });
+
+test('the audit log: written once as yourself by a manager or Maintainer, read by a Maintainer', async () => {
+  await assertSucceeds(setDoc(doc(db(DEV), 'auditLog', 'a1'), entry(DEV)));
+  await assertSucceeds(setDoc(doc(db(BOSS), 'auditLog', 'a2'), entry(BOSS, 'user')));
+  await assertFails(setDoc(doc(db(TEAM), 'auditLog', 'a3'), entry(TEAM)));
+  await assertFails(setDoc(doc(db(BOSS), 'auditLog', 'a4'), entry(DEV)));
+  await assertFails(setDoc(doc(db(DEV), 'auditLog', 'a5'), { ...entry(DEV), at: new Date(0) }));
+  await assertFails(setDoc(doc(db(DEV), 'auditLog', 'a6'), entry(DEV, 'other')));
+  await assertFails(setDoc(doc(db(DEV), 'auditLog', 'a7'), { ...entry(DEV), extra: 1 }));
+  await assertSucceeds(getDocs(collection(db(DEV), 'auditLog')));
+  await assertFails(getDocs(collection(db(BOSS), 'auditLog')));
+  await assertFails(updateDoc(doc(db(DEV), 'auditLog', 'a1'), { title: 'x' }));
+  await assertFails(deleteDoc(doc(db(DEV), 'auditLog', 'a1')));
+});
+
+test('one save of the page: role, suspension, invite, overrides and their audit entries in a batch', async () => {
+  const d = db(DEV), b = writeBatch(d);
+  b.update(doc(d, 'members', TEAM), { role: 'manager' });
+  b.update(doc(d, 'members', CON), suspend(DEV));
+  b.set(doc(d, 'members', NEW), { role: 'external', invitedBy: DEV, invitedAt: serverTimestamp() });
+  b.set(doc(d, 'config', 'roleOverrides'), { 'internal|tools.register': 'view' });
+  for (let i = 0; i < 4; i++) b.set(doc(d, 'auditLog', 'b' + i), entry(DEV));
+  await assertSucceeds(b.commit());
 });

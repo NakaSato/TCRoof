@@ -316,6 +316,18 @@ public enum Theme {
     /// Sign-in page, top to bottom.
     public static let loginGradient = LinearGradient(colors: [Color(hex: 0x0E2344), navy, primary], startPoint: .top, endPoint: .bottom)
     public static let pageGradient = LinearGradient(colors: [Color(light: 0xDCE8F2, dark: 0x0E141C), background], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
+    /// The developer key's lock screen and key sheet, 160° (จัดการผู้ใช้และสิทธิ์).
+    public static let devLockGradient = LinearGradient(colors: [Color(hex: 0x0E1E38), Color(hex: 0x16325C), Color(hex: 0x1F4F86)],
+                                                       startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// The Maintainer's pill and card, navy → purple.
+    public static let maintainerGradient = LinearGradient(colors: [Color(hex: 0x16325C), Color(hex: 0x6B4FBB)], startPoint: .leading, endPoint: .trailing)
+    /// A changed cell's ring and the unsaved bar's dot and save button.
+    public static let pendingYellow = Color(hex: 0xFFD400)
+    /// The wrong key's line on the dark lock screen.
+    public static let keyError = Color(hex: 0xFFB4AB)
+    /// The disabled matrix cell's stripes.
+    public static let stripeLight = Color(light: 0xF1F4F8, dark: 0x1C2734)
+    public static let stripeDark = Color(light: 0xE6ECF3, dark: 0x243142)
 }
 
 /// Spacing scale 4 / 8 / 12 / 16 / 24.

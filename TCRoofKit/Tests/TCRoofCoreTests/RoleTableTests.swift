@@ -4,23 +4,44 @@ import XCTest
 /// The roles table in `Capability` is docs/reference/roles/user-roles.json, cell for cell.
 final class RoleTableTests: XCTestCase {
     private struct File: Decodable {
-        struct Group: Decodable { var capabilities: [Cap] }
-        struct Cap: Decodable { var id: String; var roles: [String: Cell] }
-        struct Cell: Decodable { var access: String }
+        struct Role: Decodable { var id: String }
+        struct Group: Decodable { var id: String; var label: String; var capabilities: [Cap] }
+        struct Cap: Decodable { var id: String; var label: String; var roles: [String: Cell] }
+        struct Cell: Decodable { var access: String; var note: String? }
+        var roles: [Role]
         var groups: [Group]
     }
 
-    func testTableMatchesTheReference() throws {
+    private func file() throws -> File {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .appendingPathComponent("../../../docs/reference/roles/user-roles.json")
-        let file = try JSONDecoder().decode(File.self, from: Data(contentsOf: url))
+        return try JSONDecoder().decode(File.self, from: Data(contentsOf: url))
+    }
+
+    /// The four roles (the Maintainer included), cell for cell.
+    func testTableMatchesTheReference() throws {
+        let file = try file()
+        XCTAssertEqual(file.roles.map(\.id), UserRole.every.map(\.rawValue))
         let caps = file.groups.flatMap(\.capabilities)
         XCTAssertEqual(Set(caps.map(\.id)), Set(Capability.allCases.map(\.rawValue)))
         for cap in caps {
             let c = try XCTUnwrap(Capability(rawValue: cap.id))
-            for role in UserRole.allCases {
+            for role in UserRole.every {
                 XCTAssertEqual(c.access(role).rawValue, cap.roles[role.rawValue]?.access, "\(cap.id) · \(role.rawValue)")
             }
+        }
+    }
+
+    /// The matrix's groups, labels and conditions are the reference's.
+    func testLabelsMatchTheReference() throws {
+        let file = try file()
+        XCTAssertEqual(file.groups.map(\.id), Capability.groups.map(\.id))
+        XCTAssertEqual(file.groups.map(\.label), Capability.groups.map(\.label))
+        XCTAssertEqual(file.groups.map { $0.capabilities.map(\.id) }, Capability.groups.map { $0.capabilities.map(\.rawValue) })
+        for cap in file.groups.flatMap(\.capabilities) {
+            let c = try XCTUnwrap(Capability(rawValue: cap.id))
+            XCTAssertEqual(c.label, cap.label, cap.id)
+            for role in UserRole.allCases { XCTAssertEqual(c.note(role), cap.roles[role.rawValue]?.note, "\(cap.id) · \(role.rawValue)") }
         }
     }
 
@@ -29,6 +50,20 @@ final class RoleTableTests: XCTestCase {
         XCTAssertEqual(UserRole(field: "boss"), .internalTeam)
         XCTAssertEqual(UserRole(field: "external"), .external)
         XCTAssertEqual(UserRole(field: "manager"), .manager)
+        XCTAssertEqual(UserRole(field: "maintainer"), .maintainer)
+        // the Maintainer isn't one of the roles a manager sets
+        XCTAssertEqual(UserRole.allCases, [.manager, .internalTeam, .external])
+    }
+
+    func testTheMaintainerDoesEverythingButBOQ() {
+        let dev = Permissions(role: .maintainer, email: "dev@tcroof.co")
+        for c in Capability.allCases where c != .boqDraft && c != .boqApprove { XCTAssertTrue(dev.can(c), c.rawValue) }
+        XCTAssertFalse(dev.can(.boqDraft))
+        for role in UserRole.allCases {
+            for c in Capability.maintainerOnly { XCTAssertFalse(Permissions(role: role, email: "a@b.c").can(c), "\(role) · \(c)") }
+        }
+        // a Maintainer hears every job's news, as a manager does
+        XCTAssertTrue(dev.hearsNews(JobAccess(teamMembers: ["eng@tcroof.co"])))
     }
 
     private let job = JobAccess(externals: ["Contractor@Example.com"], supervisor: "eng@tcroof.co")

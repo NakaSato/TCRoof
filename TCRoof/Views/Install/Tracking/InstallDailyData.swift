@@ -75,7 +75,8 @@ struct InstallDailyData {
         let logs = job.dailyLogs
         let start = cal.startOfDay(for: min(logs.first?.date ?? job.installStart, job.installStart))
         let end = min(day, max(cal.startOfDay(for: job.installEnd), logs.last.map { cal.startOfDay(for: $0.date) } ?? start))
-        let worked = start <= end ? RoutineReport.workingDays(settings: settings, from: start, to: end) : []
+        // a station with no install dates yet lists only its reports, not every day since 1970
+        let worked = job.isScheduled && start <= end ? RoutineReport.workingDays(settings: settings, from: start, to: end) : []
         let days = Array(Set(worked + logs.map { cal.startOfDay(for: $0.date) })).sorted(by: >)
         let all = job.dailyReports
         // looked up once: `job.dailyLog(on:)` fetches and sorts every log on each call

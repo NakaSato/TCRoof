@@ -235,14 +235,23 @@ struct StationListImportSheet: View {
         return byIndex + stations.filter { !ids.contains($0.persistentModelID) }.sorted { $0.stationName < $1.stationName }
     }
 
+    /// A job code no job here has: 102 random 5-digit codes at once would clash about one time in eighteen.
+    private func newCode(_ taken: inout Set<String>) -> String {
+        var code = SampleData.newJobCode()
+        while taken.contains(code) { code = SampleData.newJobCode() }
+        taken.insert(code)
+        return code
+    }
+
     private func apply() {
         var created = 0, filled = 0
+        var codes = Set((try? context.fetch(FetchDescriptor<Job>()))?.map(\.code) ?? [])
         for it in items {
             let s = it.row.station
             switch it.choice {
             case .skip: continue
             case .create:
-                let job = Job(code: SampleData.newJobCode(), projectName: s.name, customerName: s.branch.isEmpty ? s.name : s.branch,
+                let job = Job(code: newCode(&codes), projectName: s.name, customerName: s.branch.isEmpty ? s.name : s.branch,
                               address: s.address, province: s.province, capacityKW: s.kWp ?? 0, team: .t1, status: .interested,
                               surveyDate: Job.unscheduled, installStart: Job.unscheduled, installDays: 1)
                 job.kind = .pwa
@@ -270,7 +279,14 @@ extension Job {
     static let unscheduled = Date(timeIntervalSince1970: 0)
 
     /// The date as shown, or `none` for the placeholder of a station with no date yet.
-    func shown(_ date: Date, none: String) -> String { date > Job.unscheduled.addingTimeInterval(86_400 * 2) ? date.thaiLong : none }
+    func shown(_ date: Date, none: String) -> String { Self.isDate(date) ? date.thaiLong : none }
+
+    /// A real date, not the placeholder (two days of slack for time zones).
+    static func isDate(_ date: Date) -> Bool { date > unscheduled.addingTimeInterval(86_400 * 2) }
+
+    /// The job has install dates. Without them a day range from `installStart` would run from 1970 to today, so the
+    /// daily report lists show only the days that have a report (`DailyReportListView`, `InstallDailyData`).
+    var isScheduled: Bool { Self.isDate(installStart) }
 
     /// This job for `StationList`: a branch that is only the station's name again counts as empty.
     var stationListEntry: StationList.Existing {

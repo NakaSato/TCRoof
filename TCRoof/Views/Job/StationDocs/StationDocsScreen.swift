@@ -22,8 +22,11 @@ struct StationDocsScreen: View {
     /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).
     @Environment(\.permissions) private var permissions
 
+    /// A contractor views their station's papers: nothing changes here (firestore.rules refuse their job edits).
+    private var readOnly: Bool { !permissions.can(.stationDocsDrafts, on: job.access) }
+
     var body: some View {
-        if permissions.can(.stationDocsDrafts) {
+        if permissions.canView(.stationDocsDrafts, on: job.access) {
             content
         } else {
             TCEmptyState("เอกสารสำหรับทีมภายใน", systemImage: "lock.doc",
@@ -40,13 +43,15 @@ struct StationDocsScreen: View {
             switch tab {
             case .package(let p): packageRows(p)
             case .checklist: checklistRows
-            case .erc: ERCFlowRows(job: job, library: library) { tab = .package($0) }
+            case .erc: ERCFlowRows(job: job, library: library) { tab = .package($0) }.disabled(readOnly)
             }
         }
         .navigationTitle("เอกสารสถานี กปภ.")
         .navigationBarTitleDisplayMode(.inline)
         .tcPadNavBar("เอกสารสถานี กปภ.", trail: ["หน้าหลัก", job.code]) {
-            TCButton("แก้ข้อมูลสถานี", systemImage: "slider.horizontal.3", kind: .secondary) { showStation = true }
+            if !readOnly {
+                TCButton("แก้ข้อมูลสถานี", systemImage: "slider.horizontal.3", kind: .secondary) { showStation = true }
+            }
         }
         .sheet(item: $editing) { kind in
             StationDocSheet(job: job, kind: kind, library: $library)
@@ -121,7 +126,7 @@ struct StationDocsScreen: View {
             }
             Spacer()
             // iPad: in the nav bar
-            if sizeClass == .compact { Button("แก้ข้อมูลสถานี") { showStation = true }.frame(minHeight: touchMin) }
+            if sizeClass == .compact, !readOnly { Button("แก้ข้อมูลสถานี") { showStation = true }.frame(minHeight: touchMin) }
         }
     }
 
@@ -183,10 +188,12 @@ struct StationDocsScreen: View {
             } footer: {
                 Text("แสดงในกำหนดส่งของหน้าแผนงาน PWA")
             }
+            .disabled(readOnly)
         }
     }
 
     private func setDue(_ date: Date?, _ p: StationDocs.Package) {
+        guard !readOnly else { return }
         var s = job.stationDocs
         s.setDue(date, for: p)
         job.stationDocs = s
@@ -294,6 +301,10 @@ struct StationDocSheet: View {
     let kind: StationDocs.Kind
     @Binding var library: StationDocs.Library
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.permissions) private var permissions
+
+    /// A contractor sees the paper and opens its file; nothing is kept (firestore.rules refuse their job edits).
+    private var readOnly: Bool { !permissions.can(.stationDocsDrafts, on: job.access) }
 
     @State private var state = StationDocs.DocState()
     @State private var importing = false
@@ -313,46 +324,18 @@ struct StationDocSheet: View {
                     if let o = kind.obtainFrom { LabeledContent("ขอจาก", value: o) }
                     LabeledContent("ใช้ในชุด", value: kind.packages.map(\.title).joined(separator: " · "))
                 }
-                PadSection("สถานะ") {
-                    PadPicker("สถานะ", selection: $state.status) {
-                        ForEach(StationDocs.Status.choices(for: kind.origin), id: \.self) { Text($0.title).tag($0) }
-                    }
-                    if kind.expires {
-                        Toggle("มีวันหมดอายุ", isOn: Binding(get: { state.expiresAt != nil },
-                                                             set: { state.expiresAt = $0 ? (state.expiresAt ?? .now) : nil }))
-                        if let d = state.expiresAt {
-                            DatePicker("หมดอายุ", selection: Binding(get: { d }, set: { state.expiresAt = $0 }), displayedComponents: .date)
-                        }
-                    }
-                    TextField("หมายเหตุ เช่น ส่งให้ ผจก.สาขาแล้ว รอลงนาม", text: $state.note, axis: .vertical)
-                }
-                PadSection("ไฟล์") {
-                    if StationDocs.draft(for: kind) != nil {
-                        Button { if state.status.isReady, state.fileName != nil { askRedraft = true } else { drafting = true } } label: {
-                            Label("ร่างในแอป", systemImage: "square.and.pencil")
-                        }
-                        .frame(minHeight: touchMin)
-                    }
-                    if let name = state.fileName {
-                        Button { open(name) } label: { Label(name, systemImage: "doc.text.magnifyingglass") }
-                            .frame(minHeight: touchMin)
-                        Button("เปลี่ยนไฟล์") { importing = true }.frame(minHeight: touchMin)
-                        Button("เอาไฟล์ออก", role: .destructive) { removeFile() }.foregroundStyle(Theme.danger).frame(minHeight: touchMin)
-                    } else {
-                        Button { importing = true } label: { Label("แนบไฟล์", systemImage: "paperclip") }
-                            .frame(minHeight: touchMin)
-                    }
-                } footer: {
-                    Text(kind.scope.isShared
-                         ? "เก็บไว้ในเครื่องครั้งเดียว ใช้กับทุกสถานี ไม่อัปโหลดขึ้น Drive"
-                         : "เก็บในแฟ้มเอกสารของงาน และอัปโหลดขึ้น Drive พร้อมเอกสารอื่น")
-                }
+                statusSection
+                filesSection
             }
             .navigationTitle("เอกสาร")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("บันทึก") { save(); dismiss() } }
+                if readOnly {
+                    ToolbarItem(placement: .confirmationAction) { Button("ปิด") { dismiss() } }
+                } else {
+                    ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { Button("บันทึก") { save(); dismiss() } }
+                }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.pdf, .image, .spreadsheet, .data],
                           onCompletion: attach)
@@ -366,9 +349,55 @@ struct StationDocSheet: View {
             .onAppear {
                 state = StationDocs.state(kind, station: job.stationDocs, library: library)
                 #if DEBUG
-                if UserDefaults.standard.string(forKey: "stationDocsDraft") == "outage" { drafting = true }
+                if UserDefaults.standard.string(forKey: "stationDocsDraft") == "outage", !readOnly { drafting = true }
                 #endif
             }
+        }
+    }
+
+    private var statusSection: some View {
+        PadSection("สถานะ") {
+            PadPicker("สถานะ", selection: $state.status) {
+                ForEach(StationDocs.Status.choices(for: kind.origin), id: \.self) { Text($0.title).tag($0) }
+            }
+            if kind.expires {
+                Toggle("มีวันหมดอายุ", isOn: Binding(get: { state.expiresAt != nil },
+                                                     set: { state.expiresAt = $0 ? (state.expiresAt ?? .now) : nil }))
+                if let d = state.expiresAt {
+                    DatePicker("หมดอายุ", selection: Binding(get: { d }, set: { state.expiresAt = $0 }), displayedComponents: .date)
+                }
+            }
+            TextField("หมายเหตุ เช่น ส่งให้ ผจก.สาขาแล้ว รอลงนาม", text: $state.note, axis: .vertical)
+        }
+        .disabled(readOnly)
+    }
+
+    private var filesSection: some View {
+        PadSection("ไฟล์") {
+            if StationDocs.draft(for: kind) != nil, !readOnly {
+                Button { if state.status.isReady, state.fileName != nil { askRedraft = true } else { drafting = true } } label: {
+                    Label("ร่างในแอป", systemImage: "square.and.pencil")
+                }
+                .frame(minHeight: touchMin)
+            }
+            if let name = state.fileName {
+                Button { open(name) } label: { Label(name, systemImage: "doc.text.magnifyingglass") }
+                    .frame(minHeight: touchMin)
+                if !readOnly {
+                    Button("เปลี่ยนไฟล์") { importing = true }.frame(minHeight: touchMin)
+                    Button("เอาไฟล์ออก", role: .destructive) { removeFile() }.foregroundStyle(Theme.danger).frame(minHeight: touchMin)
+                }
+            } else if readOnly {
+                Text("ยังไม่มีไฟล์").foregroundStyle(Theme.inkMuted).frame(minHeight: touchMin)
+            } else {
+                Button { importing = true } label: { Label("แนบไฟล์", systemImage: "paperclip") }
+                    .frame(minHeight: touchMin)
+            }
+        } footer: {
+            Text(readOnly ? "ดูอย่างเดียว · ทีมภายในเป็นผู้แก้และอัปโหลดเอกสาร"
+                 : kind.scope.isShared
+                 ? "เก็บไว้ในเครื่องครั้งเดียว ใช้กับทุกสถานี ไม่อัปโหลดขึ้น Drive"
+                 : "เก็บในแฟ้มเอกสารของงาน และอัปโหลดขึ้น Drive พร้อมเอกสารอื่น")
         }
     }
 
@@ -422,6 +451,7 @@ struct StationDocSheet: View {
     }
 
     private func save() {
+        guard !readOnly else { return }
         var s = state
         s.updatedAt = .now
         if kind.scope.isShared {

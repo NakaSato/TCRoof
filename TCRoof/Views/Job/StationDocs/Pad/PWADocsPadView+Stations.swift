@@ -343,10 +343,12 @@ struct PWADocsStationPanel: View {
             Button("รวมชุดเอกสาร PDF") { page.mergePDF(st, data: data) }
                 .buttonStyle(TCButtonStyle(.primary, size: .bar, fullWidth: true))
                 .accessibilityIdentifier("pwaDocs.mergePDF")
-            Button("อัปโหลด") { page.upload = .init(stationID: st.id, package: drilled, kindID: nil) }
-                .buttonStyle(TCButtonStyle(.secondary, size: .bar))
-                .fixedSize()
-                .accessibilityIdentifier("pwaDocs.upload")
+            if !page.readOnly {
+                Button("อัปโหลด") { page.upload = .init(stationID: st.id, package: drilled, kindID: nil) }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .bar))
+                    .fixedSize()
+                    .accessibilityIdentifier("pwaDocs.upload")
+            }
         }
         .padding(16)
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
@@ -373,7 +375,8 @@ struct PWADocsPackagePapers: View {
             .accessibilityIdentifier("pwaDocs.allPackages")
             titleBlock
             if package == .pk2 {
-                ercLink
+                // the ERC flow is the team's to record (`erc.flow_record`)
+                if !page.readOnly { ercLink }
                 list(StationDocs.pk2Checklist.map { AnyView(checkRow($0)) })
             } else {
                 list(StationDocs.papers(in: package, ctx).map { AnyView(PWADocsPaperRow(kind: $0, state: state($0), package: package) {

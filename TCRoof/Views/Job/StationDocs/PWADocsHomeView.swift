@@ -32,7 +32,8 @@ struct PWADocsHomeView: View {
     /// The PWA stations, the installing ones first.
     private var stationJobs: [Job] {
         let all = jobs.pwaStations, installing = jobs.pwaInstalling
-        return installing + all.filter { !installing.contains($0) }
+        // a contractor's, only those assigned to them
+        return (installing + all.filter { !installing.contains($0) }).filter { permissions.canView(.stationDocsDrafts, on: $0.access) }
     }
 
     var today: Date { .now }
@@ -40,8 +41,11 @@ struct PWADocsHomeView: View {
     /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).
     @Environment(\.permissions) private var permissions
 
+    /// A contractor: their stations only, no library, read only (as `PWADocsPadView.readOnly`).
+    private var readOnly: Bool { !permissions.can(.stationDocsDrafts) }
+
     var body: some View {
-        if permissions.can(.stationDocsDrafts) {
+        if permissions.canView(.stationDocsDrafts) {
             content
         } else {
             TCEmptyState("เอกสารสำหรับทีมภายใน", systemImage: "lock.doc",
@@ -87,7 +91,7 @@ struct PWADocsHomeView: View {
         switch pane {
         case .st: AnyView(stations(data.rows))
         case .todo: AnyView(todo(data.groups))
-        case .lib: AnyView(libraryList(data.library))
+        case .lib: readOnly ? AnyView(stations(data.rows)) : AnyView(libraryList(data.library))
         }
     }
 
@@ -129,7 +133,7 @@ struct PWADocsHomeView: View {
         #if DEBUG
         if Debug.demo { return (PWADocsDemo.stations(today: today), PWADocsDemo.library(today: today)) }
         #endif
-        return (stationJobs.map(\.planStation), library)
+        return (stationJobs.map(\.planStation), readOnly ? StationDocs.Library() : library)
     }
 
     // MARK: navigation
@@ -149,8 +153,8 @@ struct PWADocsHomeView: View {
 
     private func paneSwitch(_ data: Data) -> some View {
         TCCountSegments([.init("ตามสถานี", count: data.allRows.count, unit: "สถานี"),
-                         .init("ต้องทำ", count: data.ours, alert: data.ours > 0, unit: "รายการ"),
-                         .init("คลังกลาง", count: data.library.count, unit: "ฉบับ")],
+                         .init("ต้องทำ", count: data.ours, alert: data.ours > 0, unit: "รายการ")]
+                        + (readOnly ? [] : [.init("คลังกลาง", count: data.library.count, unit: "ฉบับ")]),
                         selection: Binding(get: { Pane.allCases.firstIndex(of: pane) ?? 0 }, set: { select(Pane.allCases[$0]) }))
             .padding(.horizontal, 16).padding(.top, 12)
     }

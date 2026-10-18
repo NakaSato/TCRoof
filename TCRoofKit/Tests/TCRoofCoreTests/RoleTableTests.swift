@@ -131,6 +131,16 @@ final class RoleTableTests: XCTestCase {
         XCTAssertFalse(team.can(.companyDocs))
     }
 
+    /// เอกสาร PWA: a contractor views their own stations' papers and changes nothing.
+    func testAContractorViewsTheirStationsPapersOnly() {
+        let me = Permissions(role: .external, email: "contractor@example.com")
+        XCTAssertTrue(me.canView(.stationDocsDrafts), "the tab opens")
+        XCTAssertTrue(me.canView(.stationDocsDrafts, on: job), "their station")
+        XCTAssertFalse(me.canView(.stationDocsDrafts, on: JobAccess(externals: ["someone@example.com"])), "not another's")
+        XCTAssertFalse(me.can(.stationDocsDrafts, on: job), "read only")
+        XCTAssertTrue(Permissions.team.can(.stationDocsDrafts))
+    }
+
     func testFinalSignoffIsTheManagerOrTheSupervisor() {
         XCTAssertTrue(Permissions(role: .manager, email: "m@tcroof.co").can(.finalSignoff, on: job))
         XCTAssertTrue(Permissions(role: .internalTeam, email: "ENG@tcroof.co").can(.finalSignoff, on: job))

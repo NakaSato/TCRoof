@@ -270,6 +270,11 @@ struct PWADocSheetPad: View {
     }
 
     private var actions: [Action] {
+        // a contractor views the paper; only its approved file can be opened
+        if page.readOnly {
+            guard state.status == .approved else { return [] }
+            return [Action(title: "ดาวน์โหลด", id: "download") { if let url { shareFile = SharedLink(url: url) } }]
+        }
         let s = state.status
         let draftable = StationDocs.draft(for: kind) != nil && job != nil
         var out: [Action] = []
@@ -315,7 +320,7 @@ struct PWADocSheetPad: View {
     private var footer: some View {
         let actions = self.actions
         return HStack(spacing: 10) {
-            moreMenu
+            if !page.readOnly { moreMenu }
             Spacer(minLength: 8)
             ForEach(Array(actions.enumerated()), id: \.element.id) { i, a in
                 Button(a.title, action: a.run)

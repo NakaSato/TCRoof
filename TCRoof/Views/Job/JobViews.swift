@@ -31,7 +31,7 @@ struct JobDetailView: View {
                 if job.kind == .pwa {
                     MPScheduleCard(job: job)
                     RoutineReportCard(job: job)
-                    if permissions.can(.stationDocsDrafts) { StationDocsCard(job: job) }
+                    if permissions.canView(.stationDocsDrafts, on: job.access) { StationDocsCard(job: job) }
                 }
                 actionsGrid
                 JobAccessCard(job: job)

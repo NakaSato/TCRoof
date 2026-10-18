@@ -85,6 +85,7 @@ public extension Capability {
         case (.finalSignoff, .internalTeam): "เฉพาะวิศวกรผู้ควบคุมงานของงานนั้น"
         case (.finalSignoff, .external): "ดูยอดของตัวเอง"
         case (.feedAckFix, .external): "แก้แล้ว เฉพาะรายการของตัวเอง"
+        case (.stationDocsDrafts, .external): "ดูเอกสารของสถานีที่ได้รับมอบหมาย · แก้ / อัปโหลดไม่ได้"
         default: nil
         }
     }

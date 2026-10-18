@@ -293,6 +293,7 @@ private extension UserRole {
         case .manager: "ผู้จัดการ"
         case .internalTeam: "ทีมภายใน"
         case .external: "ภายนอก"
+        case .maintainer: "Maintainer"
         }
     }
 
@@ -301,6 +302,7 @@ private extension UserRole {
         case .manager: "ทำได้ทุกอย่าง รวมทั้งเชิญและลบสมาชิก"
         case .internalTeam: "วิศวกรและแอดมินของบริษัท เห็นทุกงาน"
         case .external: "วิศวกรภายนอก / ผู้รับเหมา เห็นเฉพาะงานที่ได้รับมอบหมาย"
+        case .maintainer: "นักพัฒนาแอป ทำได้ทุกอย่าง · ตั้งจาก Firebase console เท่านั้น"
         }
     }
 }

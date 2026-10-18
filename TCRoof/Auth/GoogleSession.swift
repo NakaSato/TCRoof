@@ -15,10 +15,11 @@ final class GoogleSession {
 
     /// Sign-in refused: only accounts the developer lists under `members/` in Firebase may use the app.
     enum Denied: Error, LocalizedError {
-        case notMember(String), offline, noEmail
+        case notMember(String), suspended, offline, noEmail
         var errorDescription: String? {
             switch self {
             case .notMember(let email): return "\(email) ยังไม่ได้รับสิทธิ์ใช้แอปนี้ ติดต่อผู้ดูแลระบบให้เพิ่มบัญชีในรายชื่อสมาชิก"
+            case .suspended: return "บัญชีนี้ถูกระงับ · ติดต่อผู้ดูแลระบบ"
             case .offline: return "ต่ออินเทอร์เน็ตเพื่อตรวจสิทธิ์บัญชีในการเข้าสู่ระบบครั้งแรก"
             case .noEmail: return "Google ไม่ได้ส่งอีเมลของบัญชีมา ลองเข้าสู่ระบบอีกครั้ง"
             }
@@ -44,11 +45,11 @@ final class GoogleSession {
         if let email, !email.isEmpty { LocalData.adopt(Permissions.normalized(email)) }
         // the survey module's own sign-out buttons end the app session too
         SurveyModel.shared.signOutHandler = { [weak self] in self?.signOut() }
-        // taken off the member list in the Firebase console: out at the next sync
-        MemberRole.shared.onRemoved = { [weak self] in
+        // taken off the member list, or suspended by a Maintainer: out at the next sync
+        MemberRole.shared.onRemoved = { [weak self] suspended in
             guard let self, let email = self.email else { return }
             self.signOut()
-            self.notice = Denied.notMember(email).localizedDescription
+            self.notice = (suspended ? Denied.suspended : Denied.notMember(email)).localizedDescription
         }
         #if DEBUG
         // `-screen <name>` skips sign-in for simulator checks; `-screen login` shows the login page.
@@ -84,6 +85,7 @@ final class GoogleSession {
             switch await Self.membership(of: mail, google: survey.google) {
             case .member: break
             case .notMember: throw Denied.notMember(mail)
+            case .suspended: throw Denied.suspended
             case .unknown: guard MemberRole.wasConfirmed(mail) else { throw Denied.offline }
             }
         } catch {

@@ -6,14 +6,36 @@ public enum UserRole: String, Codable, CaseIterable, Sendable {
     case manager
     case internalTeam = "internal"
     case external
+    /// The app's developer: everything a role can do, plus suspending accounts and the role overrides. Set in the
+    /// Firebase console only (firestore.rules never lets the app write it), and not a column of the roles table.
+    case maintainer
+
+    /// The roles of the table, which a manager sets from the app. The Maintainer isn't one of them.
+    public static var allCases: [UserRole] { [.manager, .internalTeam, .external] }
+    /// The table's roles and the Maintainer.
+    public static var every: [UserRole] { allCases + [.maintainer] }
 
     public var label: String {
         switch self {
         case .manager: "ผู้จัดการ"
         case .internalTeam: "ทีมภายใน"
         case .external: "วิศวกรภายนอก / ผู้รับเหมา"
+        case .maintainer: "Maintainer"
         }
     }
+
+    /// The role's English name (user-roles.json `en`, short).
+    public var english: String {
+        switch self {
+        case .manager: "Manager"
+        case .internalTeam: "Internal"
+        case .external: "External"
+        case .maintainer: "Maintainer"
+        }
+    }
+
+    /// A manager or the Maintainer: firestore.rules `isManager()`.
+    public var managesTeam: Bool { self == .manager || self == .maintainer }
 
     /// The `role` field as written in Firestore; nil or unknown reads as the internal team.
     public init(field: String?) {
@@ -22,7 +44,7 @@ public enum UserRole: String, Codable, CaseIterable, Sendable {
 }
 
 /// One cell of the roles table.
-public enum RoleAccess: String, Sendable {
+public enum RoleAccess: String, Codable, Sendable {
     /// ✓ ทำได้
     case allow
     /// ดูได้อย่างเดียว
@@ -35,7 +57,7 @@ public enum RoleAccess: String, Sendable {
     case disabled
 }
 
-/// The 34 things a role may or may not do, by the ids of user-roles.json.
+/// The things a role may or may not do, by the ids of user-roles.json.
 public enum Capability: String, CaseIterable, Sendable {
     // งานและแผนงาน
     case jobList = "job.list"
@@ -75,6 +97,12 @@ public enum Capability: String, CaseIterable, Sendable {
     case feedAckFix = "feed.ack_fix"
     // ผู้ใช้และระบบ
     case usersManage = "users.manage"
+    /// Suspend or reactivate an account: the Maintainer's only.
+    case usersSuspend = "users.suspend"
+    /// Edit the roles table (`RoleOverrides`) and the rules list: the Maintainer's only.
+    case usersPermissions = "users.permissions"
+    /// Open จัดการผู้ใช้และสิทธิ์ (behind the developer key): the Maintainer's only.
+    case usersAdmin = "users.admin"
     case companyTemplates = "settings.company_templates"
     case toolsRegister = "tools.register"
 
@@ -85,7 +113,15 @@ public enum Capability: String, CaseIterable, Sendable {
         case .manager: return m
         case .internalTeam: return i
         case .external: return e
+        // everything, except what is off for every role (BOQ)
+        case .maintainer: return m == .disabled && i == .disabled && e == .disabled ? .disabled : .allow
         }
+    }
+
+    /// The cell with the role overrides applied (`config/roleOverrides`). A locked cell keeps the table's value.
+    public func access(_ role: UserRole, overrides: RoleOverrides) -> RoleAccess {
+        guard !isLocked(for: role), let o = overrides[role, self] else { return access(role) }
+        return o
     }
 
     private typealias Row = (manager: RoleAccess, internalTeam: RoleAccess, external: RoleAccess)
@@ -123,6 +159,9 @@ public enum Capability: String, CaseIterable, Sendable {
         .finalSignoff: (.allow, .conditional, .conditional),
         .feedAckFix: (.allow, .allow, .conditional),
         .usersManage: (.allow, .deny, .deny),
+        .usersSuspend: (.deny, .deny, .deny),
+        .usersPermissions: (.deny, .deny, .deny),
+        .usersAdmin: (.deny, .deny, .deny),
         .companyTemplates: (.allow, .deny, .deny),
         .toolsRegister: (.allow, .allow, .view),
     ]
@@ -153,11 +192,17 @@ public struct Permissions: Equatable, Sendable {
     public var role: UserRole
     /// The signed-in Google account, lowercased; empty before sign-in.
     public var email: String
+    /// The Maintainer's changes to the table (`config/roleOverrides`).
+    public var overrides: RoleOverrides
 
-    public init(role: UserRole, email: String) {
+    public init(role: UserRole, email: String, overrides: RoleOverrides = RoleOverrides()) {
         self.role = role
         self.email = Self.normalized(email)
+        self.overrides = overrides
     }
+
+    /// The cell that applies to this member.
+    public func access(_ capability: Capability) -> RoleAccess { capability.access(role, overrides: overrides) }
 
     /// Before roles were read, everyone could do everything a team member can.
     public static let team = Permissions(role: .internalTeam, email: "")
@@ -191,7 +236,7 @@ public struct Permissions: Equatable, Sendable {
     /// Whether a job's news (a daily report sent, a test result, an issue) is announced on this member's device: a
     /// manager hears every job's; the others hear a job's when it names them, or when it names none of ours.
     public func hearsNews(_ job: JobAccess?) -> Bool {
-        guard role != .manager, let job, job.hasOwners else { return true }
+        guard !role.managesTeam, let job, job.hasOwners else { return true }
         return isNamed(job)
     }
 
@@ -209,7 +254,7 @@ public struct Permissions: Equatable, Sendable {
     /// - the team's other conditions (an engineer with a licence certifies, change requests and punch-list steps) are
     ///   left to the person: the app doesn't know licences.
     public func can(_ capability: Capability, on job: JobAccess? = nil) -> Bool {
-        switch capability.access(role) {
+        switch access(capability) {
         case .allow: return true
         case .view, .deny, .disabled: return false
         case .conditional:
@@ -223,7 +268,7 @@ public struct Permissions: Equatable, Sendable {
     /// May open it, even read only: a view or conditional cell shows the team everything and an external member
     /// their own jobs (or the things that aren't a job's, such as the tools register).
     public func canView(_ capability: Capability, on job: JobAccess? = nil) -> Bool {
-        switch capability.access(role) {
+        switch access(capability) {
         case .allow: return true
         case .deny, .disabled: return false
         case .view, .conditional: return role != .external || job == nil || isAssigned(job)

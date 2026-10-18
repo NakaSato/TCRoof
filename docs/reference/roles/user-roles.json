@@ -1,7 +1,7 @@
 {
   "schema": "tcroof.user-roles/1",
-  "title": "สิทธิ์ผู้ใช้ในแอป TCRoof: 3 บทบาท",
-  "status": "built · roles in the app (TCRoofCore/UserRoles.swift) and firestore.rules (tools/firestore-rules-tests); members invited in the app; สลับบัญชี for shared iPads",
+  "title": "สิทธิ์ผู้ใช้ในแอป TCRoof: 3 บทบาท + Maintainer",
+  "status": "built · roles in the app (TCRoofCore/UserRoles.swift) and firestore.rules (tools/firestore-rules-tests); members invited in the app; สลับบัญชี for shared iPads · Maintainer, suspend, role overrides and the audit log in จัดการผู้ใช้และสิทธิ์ (feat/user-admin-ipad)",
   "checkedAgainst": "TCRoof main b39d5c7 · 2026-10-18",
   "canvas": "https://claude.ai/artifact/1QHYLS1kovMUkLWdfW222y (board Roles.dc.html)",
   "accessValues": {
@@ -26,6 +26,12 @@
       "id": "external",
       "label": "วิศวกรภายนอก / ผู้รับเหมา",
       "en": "External Engineer · Contractor"
+    },
+    {
+      "id": "maintainer",
+      "label": "Maintainer",
+      "en": "Maintainer · ทำได้ทุกอย่าง",
+      "note": "set in the Firebase console only; every capability except those disabled for all roles; not a column of the matrix"
     }
   ],
   "groups": [
@@ -46,6 +52,9 @@
             "external": {
               "access": "conditional",
               "note": "เฉพาะงานที่ได้รับมอบหมาย"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -61,6 +70,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -76,6 +88,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -91,6 +106,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -106,6 +124,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -121,6 +142,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -136,6 +160,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -151,6 +178,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -167,6 +197,9 @@
             "external": {
               "access": "conditional",
               "note": "ดูงานตัวเอง"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -182,6 +215,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         }
@@ -204,6 +240,9 @@
             "external": {
               "access": "conditional",
               "note": "ดู (แก้ได้ถ้าได้รับมอบหมายงานออกแบบ)"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -220,6 +259,9 @@
             "external": {
               "access": "conditional",
               "note": "เฉพาะวิศวกรผู้ลงนาม"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -234,6 +276,9 @@
               "access": "disabled"
             },
             "external": {
+              "access": "disabled"
+            },
+            "maintainer": {
               "access": "disabled"
             }
           }
@@ -250,6 +295,9 @@
             },
             "external": {
               "access": "disabled"
+            },
+            "maintainer": {
+              "access": "disabled"
             }
           }
         },
@@ -265,6 +313,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         }
@@ -286,6 +337,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -301,6 +355,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -319,6 +376,9 @@
             "external": {
               "access": "conditional",
               "note": "เฉพาะงานที่เป็นวิศวกรผู้ลงนาม"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -335,6 +395,9 @@
             "external": {
               "access": "conditional",
               "note": "แนบได้ เห็นเฉพาะไฟล์หน้างาน"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -351,6 +414,9 @@
             "external": {
               "access": "conditional",
               "note": "Drive ของตัวเอง เฉพาะงานที่ได้รับมอบหมาย แชร์ให้ทีมอ่าน"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -366,6 +432,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -381,6 +450,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         }
@@ -403,6 +475,9 @@
             "external": {
               "access": "conditional",
               "note": "เซ็นรับ"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -421,6 +496,9 @@
             "external": {
               "access": "conditional",
               "note": "ยื่นขอ"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -438,6 +516,9 @@
             "external": {
               "access": "conditional",
               "note": "แก้ แนบรูป ขอปิด"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -454,6 +535,9 @@
             "external": {
               "access": "conditional",
               "note": "หัวหน้างานกรอก งานตัวเอง (ก่อนวิศวกรเซ็น)"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -470,6 +554,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -486,6 +573,9 @@
             "external": {
               "access": "conditional",
               "note": "ผู้รับเหมาทดสอบและส่งผล งานตัวเอง"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -501,6 +591,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -516,6 +609,9 @@
             },
             "external": {
               "access": "view"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -533,6 +629,9 @@
             "external": {
               "access": "conditional",
               "note": "ดูยอดของตัวเอง"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -549,6 +648,9 @@
             "external": {
               "access": "conditional",
               "note": "แก้แล้ว เฉพาะรายการของตัวเอง"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         }
@@ -560,7 +662,7 @@
       "capabilities": [
         {
           "id": "users.manage",
-          "label": "เพิ่ม / ปิดบัญชีผู้ใช้ · ตั้งบทบาท",
+          "label": "เพิ่มสมาชิก · ตั้งบทบาท",
           "roles": {
             "manager": {
               "access": "allow"
@@ -570,6 +672,63 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
+          "id": "users.suspend",
+          "label": "ปิด / ระงับบัญชีผู้ใช้ · เปิดใช้งานอีกครั้ง",
+          "roles": {
+            "manager": {
+              "access": "deny"
+            },
+            "internal": {
+              "access": "deny"
+            },
+            "external": {
+              "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
+          "id": "users.permissions",
+          "label": "แก้ตารางสิทธิ์และกฎการใช้งาน",
+          "roles": {
+            "manager": {
+              "access": "deny"
+            },
+            "internal": {
+              "access": "deny"
+            },
+            "external": {
+              "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
+          "id": "users.admin",
+          "label": "เปิดหน้าจัดการผู้ใช้และสิทธิ์ (ต้องใช้คีย์นักพัฒนา)",
+          "roles": {
+            "manager": {
+              "access": "deny"
+            },
+            "internal": {
+              "access": "deny"
+            },
+            "external": {
+              "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -585,6 +744,9 @@
             },
             "external": {
               "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         },
@@ -600,6 +762,9 @@
             },
             "external": {
               "access": "view"
+            },
+            "maintainer": {
+              "access": "allow"
             }
           }
         }
@@ -648,6 +813,11 @@
     {
       "id": "daily-sign-per-job",
       "text": "เซ็นรับทราบรายงานประจำวัน: ทีมงานของงานนั้น ผู้ควบคุมงาน และผู้จัดการ · งานที่ยังไม่มีชื่อใครของเรา ทีมภายในทุกคนเซ็นได้ · ทีมภายในทุกคนยังแก้รายงานได้ (การแก้ล้างลายเซ็น ต้องเซ็นใหม่)"
+    },
+    {
+      "id": "maintainer",
+      "text": "Maintainer (นักพัฒนาแอป) ทำได้ทุกอย่าง · ตั้งได้จาก Firebase console เท่านั้น · ปิด / ระงับบัญชีได้เฉพาะ Maintainer ผู้จัดการตั้งบทบาทและเพิ่มสมาชิกได้แต่ปิดบัญชีไม่ได้ · ไม่มีใครปิดบัญชี Maintainer หรือบัญชีของตัวเอง",
+      "branch": "feat/user-admin-ipad"
     }
   ],
   "findings": [

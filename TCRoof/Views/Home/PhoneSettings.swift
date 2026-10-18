@@ -18,6 +18,9 @@ struct PhoneSettingsList: View {
     @State private var notifications = NotificationService.shared
     @Environment(\.openURL) private var openURL
     @Environment(\.homeInk) private var ink
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// จัดการผู้ใช้และสิทธิ์, full screen on iPad as on its board (docs/ui/user-admin-ipad).
+    @State private var showUserAdmin = false
     #if DEBUG
     @State private var showGallery = false
     #endif
@@ -132,17 +135,15 @@ struct PhoneSettingsList: View {
                     divider
                     row("เวอร์ชัน", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                 }
-                #if DEBUG
-                section("นักพัฒนา") {
-                    Button { showGallery = true } label: { row("คอมโพเนนต์", "ดูทุกสถานะ ›") }
-                        .buttonStyle(.plain)
-                }
-                #endif
+                developerSection
             }
             .padding(.horizontal, 16).padding(.bottom, 30)
         }
         .font(.sarabun(16))
         .background(Theme.phonePage)
+        .fullScreenCover(isPresented: $showUserAdmin) {
+            NavigationStack { UserAdminView() }
+        }
         #if DEBUG
         .fullScreenCover(isPresented: $showGallery) {
             NavigationStack {
@@ -151,6 +152,43 @@ struct PhoneSettingsList: View {
             }
         }
         #endif
+    }
+
+    /// `นักพัฒนา`: จัดการผู้ใช้และสิทธิ์ for a Maintainer (`users.admin`), and the component gallery in DEBUG builds.
+    @ViewBuilder
+    private var developerSection: some View {
+        let admin = permissions.can(.usersAdmin)
+        #if DEBUG
+        let shown = true
+        #else
+        let shown = admin
+        #endif
+        if shown {
+            section("นักพัฒนา") {
+                if admin {
+                    adminRow
+                    #if DEBUG
+                    divider
+                    #endif
+                }
+                #if DEBUG
+                Button { showGallery = true } label: { row("คอมโพเนนต์", "ดูทุกสถานะ ›") }
+                    .buttonStyle(.plain)
+                #endif
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var adminRow: some View {
+        let label = row("จัดการผู้ใช้และสิทธิ์", "🔒 ต้องใช้คีย์ ›")
+        if sizeClass == .compact {
+            NavigationLink { UserAdminView() } label: { label }.buttonStyle(.plain)
+                .accessibilityIdentifier("settings.userAdmin")
+        } else {
+            Button { showUserAdmin = true } label: { label }.buttonStyle(.plain)
+                .accessibilityIdentifier("settings.userAdmin")
+        }
     }
 
     /// One switch per notification group, and a way back in when iOS has them turned off.

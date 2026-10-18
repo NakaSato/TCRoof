@@ -101,4 +101,12 @@ final class PadPWADocsUITests: XCTestCase {
         hit.tap()
         XCTAssertTrue(element(app, "pwaDocs.sheet.close").waitForExistence(timeout: 8), "a paper result opens its sheet")
     }
+
+    /// A contractor (`-role external`) gets only the locked state: no summary, no stations.
+    func testContractorSeesOnlyTheLock() {
+        let app = launch(["-role", "external"])
+        XCTAssertTrue(element(app, "pwaDocs.locked").waitForExistence(timeout: slow), "a contractor should see the lock")
+        XCTAssertFalse(element(app, "pwaDocs.switch").exists, "no view switch")
+        XCTAssertFalse(element(app, "pwaDocs.station.189").exists, "no station is listed")
+    }
 }

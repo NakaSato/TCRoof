@@ -64,11 +64,38 @@ struct PWADocsPadView: View {
         if permissions.can(.stationDocsDrafts) {
             content
         } else {
-            TCEmptyState("เอกสารสำหรับทีมภายใน", systemImage: "lock.doc",
-                         description: Text("เอกสาร PWA ร่างและยื่นโดยทีมภายใน"))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.pageGradient.ignoresSafeArea())
+            locked
         }
+    }
+
+    /// Contractors have no access (decided 18 ต.ค., `states/10`): the header and the lock, nothing loaded. Their site
+    /// work (daily reports, the IEC test) is on each station's own page.
+    private var locked: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "lock.doc").font(.system(size: 30, weight: .medium)).foregroundStyle(Theme.inkMuted)
+                .frame(width: 88, height: 88).background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .accessibilityHidden(true)
+            Text("เอกสารสำหรับทีมภายใน").font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy)
+                .accessibilityAddTraits(.isHeader)
+            Text("เอกสาร PWA ร่างและยื่นโดยทีมภายใน · ผู้รับเหมาไม่มีสิทธิ์เข้าถึงหน้านี้")
+                .font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
+            Text("งานที่ต้องส่งจากหน้างาน เช่น รายงานประจำวันและผลทดสอบ IEC ทำได้ในหน้างานของแต่ละสถานี")
+                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+        }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 63)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("pwaDocs.locked")
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TCPhoneSearchHeader(title: "เอกสาร", subtitle: nil, search: .constant(""), isOpen: .constant(false),
+                                showsSearch: false, large: true, wide: true,
+                                bell: .init(unread: bell.unread) { withAnimation(.easeOut(duration: 0.2)) { showNotifications.toggle() } })
+        }
+        .overlay(alignment: .topTrailing) { if showNotifications { bellPanel } }
+        .background(Theme.phonePage.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: dock?.tab) { showNotifications = false }
     }
 
     private var content: some View {

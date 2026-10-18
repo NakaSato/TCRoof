@@ -6,7 +6,7 @@
 the Plan tab header) 2026-10-08, and §4's weekly-meeting PDF (`MasterScheduleSheet`, one A3 page). The station's own
 `Master Plan Weekly` workbook imports and exports (2026-10-17, `ExcelExport/MPWorkbook.swift`, `MPWorkbookFlow`: its
 dates and weights become `Input.fixed`, the file is kept on the job, and export writes the plan and actual into it in
-place); the MP 189 workbook and tracking workbook imports of §4 are not built yet. The overview averages plan and actual over the stations' kWp. The progress sheet
+place); the tracking workbook's station list imports (2026-10-17, `ExcelExport/StationList.swift`, `StationListImportSheet`, §4); the MP 189 workbook import is not built yet (no copy of that file to build it against). The overview averages plan and actual over the stations' kWp. The progress sheet
 takes each task's วันเริ่มจริง / วันเสร็จจริง (2026-10-17, `Actual.setDates`).
 **Source:** the company's per-station workbook `MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx` (one sheet,
 5,605 formulas). Every PWA station of โครงการประปา ระยะที่ 3–4 (102 stations) has one copy of it.
@@ -108,8 +108,14 @@ variance (most behind first). Totals: number of stations behind, weighted averag
   E12/E14/E16, and every numeric cell in actual rows 13…51 × J…BJ (week index in row 9 → Sunday
   = 28 ธ.ค. 2025 + 7 × (index − 53)). This moves the existing 102 stations without retyping. Use the existing
   `ExcelExport` zip/XML reader.
-- **Import the tracking workbook** (`สรุปสถานะโครงการประปา ระยะที่ 3`): MP no., station, branch, kWp, inverter kW,
-  lat/long, address → create or update jobs.
+- **Import the tracking workbook** (`สรุปสถานะโครงการประปา ระยะที่ 3`): station, branch, kWp, inverter kW,
+  lat/long, address → create or update jobs. Built: `StationList.read` finds the sheet and its columns by their header
+  texts; the file has no MP number (`ลำดับ` starts again in each phase), so `StationList.rows` matches a row to a PWA
+  station by name (`MPWorkbook.stationKey`), branch and kWp, and no station goes to two rows. In แผน MP ทุกสถานี
+  (`นำเข้ารายชื่อสถานี`, `job.edit`) the team checks each row: a clear match fills only the station's empty fields and
+  shows where it differs from the sheet (the app's value stays), a row with no station becomes a new งาน PWA job (survey
+  and install dates `Job.unscheduled` until its MP plan is set up), a row with only near matches is skipped until a
+  station is picked. The position is the job's `latitude` / `longitude`, synced on the job record.
 - **Export:** the Weekly Update and Gantt as one PDF page (`PDFReport` `DrawOp`s), for the weekly meeting.
 
 ---

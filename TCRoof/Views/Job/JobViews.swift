@@ -164,9 +164,9 @@ struct JobDetailView: View {
                     Button("แก้ไข") { showSchedule = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline))
                 }
             }
-            InfoRow(title: "วันที่สำรวจ", value: job.surveyDate.thaiLong)
-            InfoRow(title: "เริ่มติดตั้ง", value: job.installStart.thaiLong)
-            InfoRow(title: "ติดตั้งเสร็จ", value: job.installEnd.thaiLong)
+            InfoRow(title: "วันที่สำรวจ", value: job.shown(job.surveyDate, none: "ยังไม่นัด"))
+            InfoRow(title: "เริ่มติดตั้ง", value: job.shown(job.installStart, none: "ยังไม่กำหนด (ตั้งในแผน MP)"))
+            InfoRow(title: "ติดตั้งเสร็จ", value: job.shown(job.installEnd, none: "ยังไม่กำหนด"))
             InfoRow(title: "ระยะเวลา", value: "\(job.installDays) วัน · ทีม \(job.team.rawValue)")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

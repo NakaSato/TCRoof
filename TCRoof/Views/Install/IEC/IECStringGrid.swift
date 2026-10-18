@@ -20,7 +20,7 @@ struct IECStringGrid: View {
     @Environment(\.modelContext) private var context
 
     /// What the side list shows: an inverter's table or its performance, or the station's conditions or photos.
-    enum Page: Hashable { case table, performance, conditions, photos }
+    enum Page: Hashable { case table, performance, conditions, photos, install }
 
     struct EntryTarget: Identifiable { let slot: Int; var id: Int { slot } }
 
@@ -75,6 +75,7 @@ struct IECStringGrid: View {
                                 case .performance: IECPerformancePage(job: job, inverter: index)
                                 case .conditions: IECConditionsPage(job: job)
                                 case .photos: IECStationPhotosPage(job: job)
+                                case .install: IECInstallPhotosPage(job: job)
                                 }
                             }
                             // a closed test is read only; the side list still switches pages
@@ -87,7 +88,7 @@ struct IECStringGrid: View {
                 switch page {
                 case .table: bottomBar(inv, index).disabled(report.isLocked)
                 case .performance: performanceBar(report, index)
-                case .conditions, .photos: EmptyView()
+                case .conditions, .photos, .install: EmptyView()
                 }
             }
         }
@@ -120,6 +121,8 @@ struct IECStringGrid: View {
             IECHeader(title: "สภาพการทดสอบและเครื่องมือ", subtitle: r.stationLine) { EmptyView() }
         case .photos:
             IECHeader(title: "ความเข้มแสงและภาพความร้อน", subtitle: r.stationLine) { EmptyView() }
+        case .install:
+            IECHeader(title: "9 ภาพถ่ายติดตั้งระบบ", subtitle: "รายงานภาพถ่ายติดตั้งระบบผลิตไฟฟ้า · " + job.stationName) { EmptyView() }
         }
     }
 
@@ -165,6 +168,7 @@ struct IECStringGrid: View {
                 stationItem(.conditions, "สภาพ", "สภาพการทดสอบ เครื่องมือ", done: conditionsDone(r), total: 7)
                 stationItem(.photos, "รูป", "ความเข้มแสง ภาพความร้อน",
                             done: (r.irradiancePhoto == nil ? 0 : 1) + (r.thermalPhotos.isEmpty ? 0 : 1), total: 2)
+                stationItem(.install, "9", "ภาพถ่ายติดตั้งระบบ", done: r.installTally.done, total: r.installTally.total)
             }
             .padding(12)
         }

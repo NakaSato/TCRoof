@@ -563,7 +563,11 @@ struct IECTestScreen: View {
     /// The photo appendix (`IECWord`): every photo the test uses, shrunk to 1600 px off the main thread first.
     private func exportWord() {
         guard let r = job.iecReport else { return }
-        let originals = Dictionary(uniqueKeysWithValues: r.photoFileNames().keys.compactMap { id in job.iecPhoto(id).map { (id, $0.data) } })
+        // the installation photos have their own report (9, `IECInstallPhotosPage`)
+        let install = Set(r.installPhotoFileNames().keys)
+        let originals = Dictionary(uniqueKeysWithValues: r.photoFileNames().keys.filter { !install.contains($0) }.compactMap { id in
+            job.iecPhoto(id).map { (id, $0.data) }
+        })
         let name = IECWord.fileName(station: r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName, date: r.testDate ?? .now)
         makingWord = true
         Task {
@@ -619,6 +623,7 @@ struct IECTestScreen: View {
         case "performance": .performance
         case "conditions": .conditions
         case "photos": .photos
+        case "install": .install
         default: .table
         }
         static let entry = UserDefaults.standard.bool(forKey: "iecEntry")

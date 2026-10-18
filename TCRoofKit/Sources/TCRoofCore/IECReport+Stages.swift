@@ -288,6 +288,7 @@ public extension IECReport {
         for (n, id) in thermalPhotos.enumerated() {
             out[id] = "ความร้อน \(n + 1)" + (thermalPlaces[id].map { " " + $0 } ?? "") + ".jpg"
         }
+        out.merge(installPhotoFileNames()) { a, _ in a }
         return out
     }
 }

@@ -212,6 +212,8 @@ public struct IECReport: Codable, Equatable, Sendable {
     public var result: TestResult?
     /// The single line diagram attached in step 1 (the file is a job document; this says which and which version).
     public var sld: SLDRef?
+    /// 9 ภาพถ่ายติดตั้งระบบ: the roofs and the photos of the installation report (`IECReport+Install`).
+    public var installPhotos: InstallPhotos = .init()
 
     public init(stationLine: String = "", module: Module = .init(), inverters: [Inverter] = [], before: Conditions = .init(),
                 after: Conditions = .init(), yrKWhM2Day: Double? = nil, arrayTempC: Double? = nil, testDate: Date? = nil,
@@ -223,7 +225,7 @@ public struct IECReport: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case stationLine, module, inverters, before, after, yrKWhM2Day, arrayTempC, testDate, tester, instruments, irradiancePhoto, thermalPhotos
-        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, submission, sentBack, result, sld
+        case sampleName, gridOnAt, thermalPlaces, stageRecords, exports, submission, sentBack, result, sld, installPhotos
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -248,6 +250,7 @@ public struct IECReport: Codable, Equatable, Sendable {
         sentBack = try c.decodeIfPresent(SendBack.self, forKey: .sentBack)
         result = try c.decodeIfPresent(TestResult.self, forKey: .result)
         sld = try c.decodeIfPresent(SLDRef.self, forKey: .sld)
+        installPhotos = try c.decodeIfPresent(InstallPhotos.self, forKey: .installPhotos) ?? .init()
     }
 
     /// The sheet's station line doesn't name this job's station (`stationName`): the job was renamed after the test

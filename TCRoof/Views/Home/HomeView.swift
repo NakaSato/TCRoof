@@ -97,6 +97,9 @@ struct HomeView: View {
     @State private var shareURL: SharedLink?
     /// A record opened from a post of the project feed.
     @State private var feedLink: FeedLink?
+    /// A `tcroof://` link to a job not on this device yet: opened once sync brings it (spec §A4).
+    @State private var waitingLink: DeepLink?
+    @State private var linkNotice: String?
     @Environment(\.openURL) private var openURL
 
     private var todaysJobs: [Job] {
@@ -140,6 +143,12 @@ struct HomeView: View {
             open(link)
         }
         .onChange(of: unreadCount, initial: true) { _, n in notificationService.setBadge(n) }
+        .onChange(of: jobs.count) {
+            guard let link = waitingLink, let key = Self.jobKey(link), job(key) != nil else { return }
+            waitingLink = nil
+            open(link)
+        }
+        .tcToast($linkNotice, duration: 4)
         // the dock closes the bell's panel
         .onChange(of: dock?.tab) { showNotifications = false }
         .onChange(of: dock?.showSettings) { showNotifications = false }
@@ -321,6 +330,11 @@ struct HomeView: View {
     private func open(_ link: DeepLink) {
         showNotifications = false
         showSettings = false
+        if let key = Self.jobKey(link), job(key) == nil {
+            waitingLink = link
+            linkNotice = "งานนี้ยังไม่ซิงก์มาที่เครื่องนี้ · จะเปิดให้เมื่อซิงก์เสร็จ"
+            return
+        }
         switch link {
         case .survey(let key):
             guard let a = appointment(key: key) else { return }
@@ -347,6 +361,14 @@ struct HomeView: View {
         case .driveFolder(let url): openURL(url)
         case .share(let url): shareURL = SharedLink(url: url)
         case .remindLater, .home: break
+        }
+    }
+
+    /// The job a link opens (a `tcroof://job/…` link from Calendar, or a notification about one), else nil.
+    private static func jobKey(_ link: DeepLink) -> String? {
+        switch link {
+        case .job(let key), .survey(let key): key
+        default: nil
         }
     }
 

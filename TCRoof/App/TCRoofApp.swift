@@ -96,6 +96,8 @@ struct RootView: View {
             #endif
         }
         .systemNotifications(survey: session.survey)
+        // ซิงก์นัดอัตโนมัติ, when turned on in Settings › ปฏิทิน
+        .calendarSync()
         // what the signed-in member's role lets them do, for every screen
         .environment(\.permissions, MemberRole.shared.permissions)
         .task {

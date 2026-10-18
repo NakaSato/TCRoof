@@ -166,7 +166,7 @@ struct JobDetailView: View {
             }
             InfoRow(title: "วันที่สำรวจ", value: job.shown(job.surveyDate, none: "ยังไม่นัด"))
             // the event carries the customer's phone and address: the team's only, as the contact card
-            if permissions.can(.jobEdit), job.hasSurveyAppointment { AddToCalendarButton(job: job) }
+            if permissions.can(.jobEdit), job.hasSurveyAppointment { AppointmentCalendarControl(job: job) }
             InfoRow(title: "เริ่มติดตั้ง", value: job.shown(job.installStart, none: "ยังไม่กำหนด (ตั้งในแผน MP)"))
             InfoRow(title: "ติดตั้งเสร็จ", value: job.shown(job.installEnd, none: "ยังไม่กำหนด"))
             InfoRow(title: "ระยะเวลา", value: "\(job.installDays) วัน · ทีม \(job.team.rawValue)")

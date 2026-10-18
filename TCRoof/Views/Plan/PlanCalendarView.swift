@@ -16,6 +16,7 @@ struct PlanCalendarView: View {
     @State var phoneMode = PlanPhoneMode.month
     @State var teamMenuOpen = false
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.permissions) private var permissions
 
     private static let weekdays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
 
@@ -275,11 +276,15 @@ struct PlanCalendarView: View {
             if !daySurveys.appointments.isEmpty || !daySurveys.reports.isEmpty {
                 sectionCaption("งานสำรวจ")
                 ForEach(daySurveys.appointments) { job in
-                    NavigationLink { JobDetailView(job: job) } label: {
-                        PlanSurveyRow(title: job.linkLabel, detail: appointmentDetail(job),
-                                      isReport: job.syncID.map { !surveyModel.jobs(linkedTo: $0).isEmpty } ?? false)
+                    VStack(spacing: 0) {
+                        NavigationLink { JobDetailView(job: job) } label: {
+                            PlanSurveyRow(title: job.linkLabel, detail: appointmentDetail(job),
+                                          isReport: job.syncID.map { !surveyModel.jobs(linkedTo: $0).isEmpty } ?? false)
+                        }
+                        .buttonStyle(.plain)
+                        // นำทาง · โทร · ปฏิทิน: the customer's phone and address are the team's
+                        if permissions.can(.jobEdit), job.hasSurveyAppointment { AppointmentActions(job: job) }
                     }
-                    .buttonStyle(.plain)
                 }
                 ForEach(daySurveys.reports) { report in
                     NavigationLink { SurveyReportEditor(jobID: report.id) } label: {

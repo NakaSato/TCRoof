@@ -60,7 +60,7 @@
 | `states/07-library-sheet.png` | Library paper sheet: zone choice (two conflicting orders), versions, stations using it |
 | `states/08-search.png` | Search results grouped `สถานี` / `เอกสาร` / `คลังกลาง` |
 | `states/09-filter-empty.png` | Contractor filter with no match: empty state + `ดูทุกสถานี` |
-| `states/10-external-contractor.png` | Board-only preview of a contractor's view (open question 2; don't build) |
+| `states/10-contractor-locked.png` | A contractor (external role) opens `เอกสาร`: the page is locked (§1) |
 | `states/11-offline-upload.png` | Offline: header chip + the upload sheet's queue note |
 | `iPadPwaDocs.dc.html` + `grf.css` | Design source. Read it as text: `renderVals()` holds every size, colour and rule. The v2 part starts at the comment `v2: one document model` |
 | `screenshots/` | Empty: put your simulator screenshots here |
@@ -73,7 +73,11 @@ The board uses Sarabun (the app's `Font.sarabun`); its font `url(/_blob/…)` li
 
 - `PadTabs` `.docs` shows the new iPad page (`PWADocsHomeView` in regular width, or a sibling `PWADocsPadView`, whichever reads cleaner).
 - Move `HomeLibraryView` on iPad to a row `เอกสารงานบ้าน` in the iPad settings, the same as the iPhone settings sheet.
-- Keep the permission gate: without `.stationDocsDrafts` the page is the existing locked empty state.
+- **Contractors have no access** (decided 18 ต.ค.). Keep the permission gate: without `.stationDocsDrafts` (the external role) the page is only the locked state, as on iPhone (`states/10`):
+  - centred icon, `เอกสารสำหรับทีมภายใน`
+  - `เอกสาร PWA ร่างและยื่นโดยทีมภายใน · ผู้รับเหมาไม่มีสิทธิ์เข้าถึงหน้านี้`
+  - `งานที่ต้องส่งจากหน้างาน เช่น รายงานประจำวันและผลทดสอบ IEC ทำได้ในหน้างานของแต่ละสถานี`
+  - No summary, list, search results or sheets are built for them, and no paper data is loaded.
 
 ### 2. Frame (`states/01`)
 
@@ -285,16 +289,16 @@ The board uses Sarabun (the app's `Font.sarabun`); its font `url(/_blob/…)` li
   - [ ] A paper opens §4, and `ทวง` raises the count.
   - [ ] Upload on an ID paper stays disabled until the three checks are ticked.
   - [ ] Search opens a paper.
+- [ ] With `-role external`, the `เอกสาร` tab shows only the locked state (add it to `PadPWADocsUITests`, or to `RoleUITests`).
 - [ ] Run it, plus `HomeNavbarUITests` (the dock's `เอกสาร` route changed).
 - [ ] iPad Pro 13" simulator, `-screen home -homeTab docs -homeBoard YES -pwaDocsDemo YES` plus the flags:
-  - Save `screenshots/01`–`09` and `11` with the same names as `states/`.
+  - Save `screenshots/01`–`11` with the same names as `states/`.
   - Compare them with the states.
 - [ ] Regression: iPhone `-screen home -homeTab docs -pwaDocsDemo YES` looks as before (`docs/ui/pwa-docs-iphone-v2/states`).
 
 ## Open questions (report)
 
 1. Is moving the residential library to iPad settings (`เอกสารงานบ้าน`) OK, now that the iPad dock's `เอกสาร` is the PWA page as on iPhone?
-2. Should an external contractor see this page, limited to their own stations (`states/10`)? Today `.stationDocsDrafts` locks it for them.
-3. Should library papers keep earlier versions (a version list on `Library`)?
-4. The two conflicting `คำสั่ง กปภ.` (POA orders): keep one kind per zone, or one kind with a zone choice?
-5. Is a letter number worth its own optional field on `DocState`?
+2. Should library papers keep earlier versions (a version list on `Library`)?
+3. The two conflicting `คำสั่ง กปภ.` (POA orders): keep one kind per zone, or one kind with a zone choice?
+4. Is a letter number worth its own optional field on `DocState`?

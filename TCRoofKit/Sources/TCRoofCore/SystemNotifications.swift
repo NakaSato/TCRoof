@@ -198,13 +198,14 @@ public struct NotificationPlan: Equatable, Sendable {
 // MARK: - Survey · sync · Drive
 
 public extension NotificationPlan {
-    static let surveyLead: TimeInterval = 30 * 60
+    /// The reminder before an appointment (docs/specs/calendar-travel-expenses-swift.md §A3: 1 hour).
+    static let surveyLead: TimeInterval = 60 * 60
     static let syncPendingID = "sync-pending"
 
     /// Id of a survey appointment, the same as the bell's: `survey-<jobKey>-<yyyy-MM-dd>`.
     static func surveyID(jobKey: String, appointment: Date) -> String { "survey-\(jobKey)-\(ISODate.string(appointment))" }
 
-    /// `นัดสำรวจในอีก 30 นาที` at `fireAt` (appointment − 30 min, or later after `เตือนอีก 10 นาที`).
+    /// `นัดสำรวจในอีก 1 ชั่วโมง` at `fireAt` (appointment − 1 h, or later after `เตือนอีก 10 นาที`).
     static func survey(jobKey: String, name: String, area: String, appointment: Date, fireAt: Date? = nil) -> NotificationPlan {
         let at = fireAt ?? appointment.addingTimeInterval(-surveyLead)
         return NotificationPlan(id: surveyID(jobKey: jobKey, appointment: appointment), type: .survey,
@@ -213,7 +214,29 @@ public extension NotificationPlan {
                                 fire: .at(at), info: [NotificationInfo.job: jobKey, NotificationInfo.appointment: ISO.string(appointment)])
     }
 
-    static func surveyTitle(minutes: Int) -> String { minutes > 0 ? "นัดสำรวจในอีก \(minutes) นาที" : "ถึงเวลานัดสำรวจ" }
+    static func surveyTitle(minutes: Int) -> String {
+        if minutes <= 0 { return "ถึงเวลานัดสำรวจ" }
+        if minutes % 60 == 0 { return "นัดสำรวจในอีก \(minutes / 60) ชั่วโมง" }
+        return "นัดสำรวจในอีก \(minutes) นาที"
+    }
+
+    /// The evening before an appointment, 17:00 (§A3): `พรุ่งนี้ 09:00 นัดสำรวจ`, or `พรุ่งนี้ นัดสำรวจ` for a day with no
+    /// time. Its own id (`…-eve`), in the bell as the appointment.
+    static func surveyEve(jobKey: String, name: String, area: String, appointment: Date, calendar cal: Calendar = .current) -> NotificationPlan {
+        let day = cal.startOfDay(for: appointment)
+        let eve = cal.date(bySettingHour: 17, minute: 0, second: 0, of: cal.date(byAdding: .day, value: -1, to: day)!)!
+        let id = surveyID(jobKey: jobKey, appointment: appointment)
+        let time = isAllDay(appointment, calendar: cal) ? "" : " " + ThaiDate.time(appointment)
+        return NotificationPlan(id: id + "-eve", type: .survey, title: "พรุ่งนี้\(time) นัดสำรวจ", body: name, sub: area,
+                                fire: .at(eve), info: [NotificationInfo.job: jobKey, NotificationInfo.appointment: ISO.string(appointment),
+                                                       NotificationInfo.bell: id])
+    }
+
+    /// An appointment at 00:00 is a day with no time: no reminder an hour before it.
+    static func isAllDay(_ appointment: Date, calendar cal: Calendar = .current) -> Bool {
+        let t = cal.dateComponents([.hour, .minute], from: appointment)
+        return (t.hour ?? 0) == 0 && (t.minute ?? 0) == 0
+    }
 
     /// The one `รอซิงก์ n งาน`: two hours after the oldest change; once that has passed and been shown, 20:00.
     /// `names` are "NO.224"-style labels of the waiting reports.

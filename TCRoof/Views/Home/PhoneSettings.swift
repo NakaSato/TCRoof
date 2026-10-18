@@ -21,6 +21,7 @@ struct PhoneSettingsList: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// จัดการผู้ใช้และสิทธิ์, full screen on iPad as on its board (docs/ui/user-admin-ipad).
     @State private var showUserAdmin = false
+    @State private var calendar = CalendarService.shared
     #if DEBUG
     @State private var showGallery = false
     #endif
@@ -67,6 +68,8 @@ struct PhoneSettingsList: View {
                     }
                 }
                 notificationsSection
+                // the events carry customers' phones and addresses: the team's, as เพิ่มลงปฏิทิน on the job
+                if permissions.can(.jobEdit) { calendarSection }
                 section("เครื่องมือ") {
                     // the tools tab's screens, kept reachable until the owner decides where they live
                     // (docs/ui/tcroof-home-iphone-v4, open question 1)
@@ -152,6 +155,78 @@ struct PhoneSettingsList: View {
             }
         }
         #endif
+    }
+
+    /// `ปฏิทิน`: ซิงก์นัดอัตโนมัติ (docs/specs/calendar-travel-expenses-swift.md §A1), its team, calendar and length.
+    private var calendarSection: some View {
+        section("ปฏิทิน") {
+            Toggle(isOn: Binding(get: { calendar.isOn }, set: { on in
+                if on { Task { _ = await calendar.enable() } } else { calendar.isOn = false }
+            })) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("ซิงก์นัดสำรวจลงปฏิทิน").foregroundStyle(Theme.navy)
+                    Text("ย้ายหรือลบนัดให้เองเมื่องานเปลี่ยน · ต้องให้สิทธิ์ปฏิทินแบบเต็ม")
+                        .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
+                }
+            }
+            .tint(Theme.primary)
+            .rowFrame()
+            .accessibilityIdentifier("settings.calendarSync")
+            if calendar.denied {
+                divider
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                } label: {
+                    Text("ไม่ได้รับสิทธิ์ปฏิทินแบบเต็ม · เปิดในการตั้งค่าของเครื่อง ›").font(.sarabun(14, .semibold))
+                        .foregroundStyle(Theme.danger).frame(maxWidth: .infinity, alignment: .leading).rowFrame()
+                }
+                .buttonStyle(.plain)
+            }
+            if calendar.isOn, calendar.authorized { calendarOptions }
+        }
+    }
+
+    @ViewBuilder
+    private var calendarOptions: some View {
+        divider
+        HStack(spacing: 12) {
+            Text("นัดของ").foregroundStyle(ink.muted)
+            Spacer(minLength: 8)
+            Picker("นัดของ", selection: Binding(get: { calendar.team }, set: { calendar.team = $0 })) {
+                Text("ทุกทีม").tag("")
+                ForEach(Team.allCases) { Text($0.rawValue).tag($0.rawValue) }
+            }
+            .labelsHidden().tint(Theme.navy)
+        }
+        .rowFrame()
+        divider
+        HStack(spacing: 12) {
+            Text("ปฏิทิน").foregroundStyle(ink.muted)
+            Spacer(minLength: 8)
+            Picker("ปฏิทิน", selection: Binding(get: { calendar.calendar()?.calendarIdentifier ?? "" }, set: { calendar.calendarID = $0 })) {
+                ForEach(calendar.calendars, id: \.calendarIdentifier) { Text($0.title).tag($0.calendarIdentifier) }
+            }
+            .labelsHidden().tint(Theme.navy)
+        }
+        .rowFrame()
+        divider
+        Stepper(value: Binding(get: { calendar.hours }, set: { calendar.hours = $0 }), in: CalendarSync.hoursRange, step: 1) {
+            HStack {
+                Text("ระยะเวลานัด").foregroundStyle(ink.muted)
+                Spacer(minLength: 8)
+                Text("\(Int(calendar.hours)) ชม.").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+            }
+        }
+        .rowFrame()
+        if calendar.mayBeShared {
+            divider
+            Text("ปฏิทินที่เลือกอาจแชร์กับผู้อื่นอยู่ เบอร์และที่อยู่ลูกค้าในนัดจะเห็นได้")
+                .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.warningText).rowFrame()
+        }
+        if let error = calendar.lastError {
+            divider
+            Text(error).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.danger).rowFrame()
+        }
     }
 
     /// `นักพัฒนา`: จัดการผู้ใช้และสิทธิ์ for a Maintainer (`users.admin`), and the component gallery in DEBUG builds.

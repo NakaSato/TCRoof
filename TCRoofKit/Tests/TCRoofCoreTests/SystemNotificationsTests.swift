@@ -14,8 +14,8 @@ final class SystemNotificationsTests: XCTestCase {
         let plan = NotificationPlan.survey(jobKey: "abc", name: "NO.224 สถานีผลิตน้ำ 1", area: "ต.หนองบัว อ.เมือง", appointment: at)
         XCTAssertEqual(plan.id, "survey-abc-2026-10-04")
         XCTAssertEqual(plan.bellID, plan.id)
-        XCTAssertEqual(plan.fire, .at(date(2026, 10, 4, 10, 0)))
-        XCTAssertEqual(plan.title, "นัดสำรวจในอีก 30 นาที")
+        XCTAssertEqual(plan.fire, .at(date(2026, 10, 4, 9, 30)))
+        XCTAssertEqual(plan.title, "นัดสำรวจในอีก 1 ชั่วโมง")
         XCTAssertEqual(plan.text, "NO.224 สถานีผลิตน้ำ 1\nต.หนองบัว อ.เมือง · 10:30")
         XCTAssertEqual(plan.info[NotificationInfo.job], "abc")
     }
@@ -27,6 +27,20 @@ final class SystemNotificationsTests: XCTestCase {
         XCTAssertEqual(plan.title, "นัดสำรวจในอีก 20 นาที")
         XCTAssertEqual(plan.sub, "10:30")
         XCTAssertEqual(NotificationPlan.surveyTitle(minutes: 0), "ถึงเวลานัดสำรวจ")
+    }
+
+    /// 17:00 the evening before (spec §A3), in the bell as the appointment.
+    func testSurveyEveTheDayBefore() {
+        let cal = Calendar(identifier: .gregorian)
+        let plan = NotificationPlan.surveyEve(jobKey: "abc", name: "n", area: "ต.หนองบัว", appointment: date(2026, 10, 4, 9, 0), calendar: cal)
+        XCTAssertEqual(plan.id, "survey-abc-2026-10-04-eve")
+        XCTAssertEqual(plan.bellID, "survey-abc-2026-10-04")
+        XCTAssertEqual(plan.fire, .at(date(2026, 10, 3, 17, 0)))
+        XCTAssertEqual(plan.title, "พรุ่งนี้ 09:00 นัดสำรวจ")
+        let day = NotificationPlan.surveyEve(jobKey: "abc", name: "n", area: "", appointment: date(2026, 10, 4), calendar: cal)
+        XCTAssertEqual(day.title, "พรุ่งนี้ นัดสำรวจ")
+        XCTAssertTrue(NotificationPlan.isAllDay(date(2026, 10, 4), calendar: cal))
+        XCTAssertFalse(NotificationPlan.isAllDay(date(2026, 10, 4, 9, 0), calendar: cal))
     }
 
     func testSavedIDMatchesTheBell() {

@@ -1,9 +1,15 @@
 # Survey appointments in the iPad Calendar, and the travel and expense log (iPad Swift dev spec)
 
-**Status:** Part A's manual mode built (2026-10-17): `TCRoofCore/SurveyEvent.swift` (§A2 content, the `tcroof://` links),
-`TCRoof/Calendar/AddToCalendar.swift` (`เพิ่มลงปฏิทิน` on the job's แผนงาน card, team only), the `tcroof` URL scheme and
-`.onOpenURL` (§A4, routed as a notification tap). The pure logic went into `TCRoofCore`, not a new `FieldOps` target. Not
-built: automatic sync (§A1), reminders (§A3), the Plan row's buttons and "not synced yet" message (§A4–A5), and part B.
+**Status:** Part A built. The manual mode (2026-10-17): `TCRoofCore/SurveyEvent.swift` (§A2 content, the `tcroof://`
+links), `TCRoof/Calendar/AddToCalendar.swift` (`เพิ่มลงปฏิทิน`, team only), the `tcroof` URL scheme and `.onOpenURL` (§A4).
+Automatic sync and the rest (2026-10-18): `TCRoofCore/CalendarSync.swift` decides what to create, move or remove
+(`CalendarSyncTests`), `TCRoof/Calendar/CalendarService.swift` applies it with EventKit, with the links in the device's
+`calendar-links.json` (not SwiftData) and Settings › ปฏิทิน (switch, team, calendar, length, the shared-calendar warning);
+the reminders are 17:00 the evening before and 1 hour before (`NotificationPlan.surveyEve`, `surveyLead`), scheduled as
+system notifications; the job card shows `ซิงก์ลงปฏิทินแล้ว ✓` or `นัดถูกลบจากปฏิทิน · เพิ่มอีกครั้ง`; the plan's
+appointment rows have `นำทาง · โทร · ปฏิทิน`; a link to a job not on the device yet shows `งานนี้ยังไม่ซิงก์มาที่เครื่องนี้`
+and opens it after sync. Answers: 3 h events, the reminders above, a dedicated `TCRoof นัดสำรวจ` calendar. The pure logic
+went into `TCRoofCore`, not a new `FieldOps` target. Not built: part B.
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.
 **App target:** the host app `TCRoof` (jobs, plan, Firebase sync). Pure logic goes in a new, dependency-free target
 `TCRoofKit/Sources/FieldOps`, testable with `swift test`.

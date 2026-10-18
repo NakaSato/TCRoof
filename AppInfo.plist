@@ -7,6 +7,9 @@
 	<string>$(GISTDA_API_KEY)</string>
 	<key>MapboxAccessToken</key>
 	<string>$(MAPBOX_ACCESS_TOKEN)</string>
+	<!-- ซิงก์นัดอัตโนมัติ (Settings › ปฏิทิน): full access, since the app updates and removes its own events -->
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>ใช้ซิงก์นัดสำรวจลงปฏิทินของเครื่อง และย้ายหรือลบนัดเมื่องานเปลี่ยน</string>
 	<!-- tcroof://job/<syncID> opens the job, e.g. from a survey appointment in Calendar -->
 	<key>CFBundleURLTypes</key>
 	<array>

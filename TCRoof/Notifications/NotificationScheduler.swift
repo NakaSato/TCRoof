@@ -26,7 +26,7 @@ extension View {
     }
 }
 
-/// Survey reminders 30 min before today's and tomorrow's appointments, the one `รอซิงก์`, `บันทึกขึ้น Drive แล้ว`, the
+/// Survey reminders 17:00 the evening before and 1 hour before the next appointments, the one `รอซิงก์`, `บันทึกขึ้น Drive แล้ว`, the
 /// routine-report and calibration reminders, install days, the MP plan and the project feed's events; rescheduled when
 /// jobs, reports, tools, the toggles or the minute change.
 private struct NotificationScheduler: ViewModifier {
@@ -88,16 +88,23 @@ private struct NotificationScheduler: ViewModifier {
             }
     }
 
-    /// Appointments from now to the end of tomorrow whose reminder is still ahead and whose report isn't finished.
+    /// The appointments of the next three days whose report isn't finished: 17:00 the evening before and 1 hour before
+    /// (docs/specs/calendar-travel-expenses-swift.md §A3), each while still ahead. A day with no time gets the evening one.
     private func surveyPlans(_: Int) -> [NotificationPlan] {
         guard surveyOn else { return [] }
-        let end = Calendar.current.startOfDay(for: .now.adding(days: 2))
-        return jobs.compactMap { job in
-            guard job.surveyDate.addingTimeInterval(-NotificationPlan.surveyLead) > .now, job.surveyDate < end else { return nil }
+        let now = Date.now, end = Calendar.current.startOfDay(for: now.adding(days: 3))
+        return jobs.flatMap { job -> [NotificationPlan] in
+            guard job.hasSurveyAppointment, job.surveyDate > now, job.surveyDate < end else { return [] }
             let report = job.syncID.flatMap { survey.jobs(linkedTo: $0).max { $0.updated < $1.updated } }
-            if report?.completion.isComplete == true { return nil }
-            let a = TodayAppointment(job: job, report: report)
-            return .survey(jobKey: job.syncID ?? job.code, name: a.name, area: a.area, appointment: job.surveyDate)
+            if report?.completion.isComplete == true { return [] }
+            let a = TodayAppointment(job: job, report: report), key = job.syncID ?? job.code
+            var plans: [NotificationPlan] = []
+            let eve = NotificationPlan.surveyEve(jobKey: key, name: a.name, area: a.area, appointment: job.surveyDate)
+            if eve.fireDate(now: now) > now { plans.append(eve) }
+            if !NotificationPlan.isAllDay(job.surveyDate), job.surveyDate.addingTimeInterval(-NotificationPlan.surveyLead) > now {
+                plans.append(.survey(jobKey: key, name: a.name, area: a.area, appointment: job.surveyDate))
+            }
+            return plans
         }
         .sorted { $0.id < $1.id }
     }
@@ -190,7 +197,7 @@ private struct NotificationScheduler: ViewModifier {
     private func debugDemo(_ service: NotificationService) async {
         try? await Task.sleep(for: .seconds(1))   // sample data is seeded by RootView meanwhile
         if NotificationService.demo == "survey", let job = jobs.sorted(by: { $0.code < $1.code }).first {
-            job.surveyDate = Date.now.addingTimeInterval(31 * 60)
+            job.surveyDate = Date.now.addingTimeInterval(61 * 60)
             UserDefaults.standard.set(job.syncID ?? job.code, forKey: "notifJob")
         }
         if NotificationService.demo == "all" { service.postBoardExamples() }

@@ -262,7 +262,7 @@ extension NotificationService {
                              sub: "NO.224 · NO.221 · จะซิงก์เองเมื่อมีสัญญาณ", fire: soon(3)),
             ToolNotification.calibration(toolID: "fluke1587", tool: "Fluke 1587 FC", kind: "เครื่องวัดฉนวน",
                                          due: now.adding(days: 30), at: now.addingTimeInterval(4)),
-            NotificationPlan(id: "demo-survey", type: .survey, title: "นัดสำรวจในอีก 30 นาที", body: "NO.224 กปภ. สาขาตัวอย่าง สถานีผลิตน้ำ 1",
+            NotificationPlan(id: "demo-survey", type: .survey, title: "นัดสำรวจในอีก 1 ชั่วโมง", body: "NO.224 กปภ. สาขาตัวอย่าง สถานีผลิตน้ำ 1",
                              sub: "ต.หนองบัว อ.เมือง · 10:30", fire: soon(5)),
             ToolNotification.notifyQueueReached(toolID: "mavic3t", tool: "DJI Mavic 3T", from: "สมชาย", place: "ห้องเก็บเครื่องมือ",
                                                 job: "NO.230", until: now.adding(days: 5)),

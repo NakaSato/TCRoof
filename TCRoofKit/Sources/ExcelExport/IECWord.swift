@@ -39,7 +39,7 @@ public enum IECWord {
     }
 
     /// The PWA and PEA logos of `iec62446_template.xlsx` (`xl/media/image1.jpeg`, `image2.png`).
-    static func formLogos() throws -> [Data] {
+    public static func formLogos() throws -> [Data] {
         let zip = try ZipArchive(IECExcel.template())
         return ["xl/media/image1.jpeg", "xl/media/image2.png"].compactMap { zip.data($0) }
     }

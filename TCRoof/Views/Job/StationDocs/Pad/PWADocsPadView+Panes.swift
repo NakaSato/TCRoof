@@ -229,7 +229,8 @@ extension PWADocsPadView {
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .shadow(color: Theme.navy.opacity(0.22), radius: 20, y: 12)
-        .padding(.top, 10).padding(.trailing, 63)
+        // under the 88 pt header, as the bell's panel
+        .padding(.top, 88 + 10).padding(.trailing, 63)
     }
 
     private func searchHint(_ data: PageData) -> some View {

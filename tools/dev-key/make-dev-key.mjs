@@ -14,7 +14,7 @@ import { createInterface } from 'node:readline';
 const args = process.argv.slice(2);
 const setBy = (args.find((a) => a.includes('@')) || '').trim().toLowerCase();
 const write = args.includes('--write');
-const projectArg = args[args.indexOf('--project') + 1];
+const projectArg = args.includes('--project') ? args[args.indexOf('--project') + 1] : undefined;
 if (!setBy) {
   console.error('usage: node make-dev-key.mjs <maintainer email> [--write] [--project <id>]');
   process.exit(1);

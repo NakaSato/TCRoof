@@ -85,6 +85,30 @@ final class PhonePWAHomeUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: slow))
         row.tap()
         waitGone(button(app, "กปภ."), "the row should push the station's screen over the dock")
+
+        // Station Detail Page (reference/PhonePwaStation.dc.html)
+        let back = app.buttons["stationDetail.back"]
+        XCTAssertTrue(back.waitForExistence(timeout: 8), "the station detail back button should appear")
+        XCTAssertTrue(app.buttons["stationDetail.tab.overview"].exists)
+        XCTAssertTrue(app.buttons["stationDetail.tab.repairs"].exists)
+        XCTAssertTrue(app.buttons["stationDetail.tab.pm"].exists)
+        XCTAssertTrue(app.buttons["stationDetail.tab.equipment"].exists)
+
+        // Switch to repairs tab
+        app.buttons["stationDetail.tab.repairs"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "TK-")).firstMatch.waitForExistence(timeout: 8))
+
+        // Switch to PM tab
+        app.buttons["stationDetail.tab.pm"].tap()
+        XCTAssertTrue(app.staticTexts["ประวัติ"].waitForExistence(timeout: 8))
+
+        // Switch to equipment tab
+        app.buttons["stationDetail.tab.equipment"].tap()
+        XCTAssertTrue(app.staticTexts["แผง"].waitForExistence(timeout: 8))
+
+        // Back button returns to overview and restores the dock
+        back.tap()
+        XCTAssertTrue(button(app, "กปภ.").waitForExistence(timeout: 8))
     }
 
     func testSettingsRow() {

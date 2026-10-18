@@ -103,10 +103,24 @@ final class PadPWADocsUITests: XCTestCase {
     }
 
     /// A contractor (`-role external`) gets only the locked state: no summary, no stations.
-    func testContractorSeesOnlyTheLock() {
+    /// A contractor views the papers read only (decided 18 ต.ค., after the lock of `states/10`): the stations and
+    /// `ต้องทำ`, no library, no upload, and a paper's sheet without its actions.
+    func testContractorViewsReadOnly() {
         let app = launch(["-role", "external"])
-        XCTAssertTrue(element(app, "pwaDocs.locked").waitForExistence(timeout: slow), "a contractor should see the lock")
-        XCTAssertFalse(element(app, "pwaDocs.switch").exists, "no view switch")
-        XCTAssertFalse(element(app, "pwaDocs.station.189").exists, "no station is listed")
+        XCTAssertTrue(element(app, "pwaDocs.switch").waitForExistence(timeout: slow), "a contractor gets the page")
+        XCTAssertFalse(element(app, "pwaDocs.locked").exists, "no lock")
+        XCTAssertFalse(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'คลังกลาง'")).firstMatch.exists,
+                       "no library")
+        element(app, "pwaDocs.station.189").tap()
+        XCTAssertTrue(element(app, "pwaDocs.mergePDF").waitForExistence(timeout: 8))
+        XCTAssertFalse(element(app, "pwaDocs.upload").exists, "no upload")
+        app.terminate()
+
+        let todo = launch(["-role", "external", "-pwaDocsView", "todo"])
+        let card = element(todo, "pwaDocs.todo.120.owner_signoff")
+        XCTAssertTrue(card.waitForExistence(timeout: slow), "ต้องทำ lists the papers")
+        card.tap()
+        XCTAssertTrue(element(todo, "pwaDocs.sheet.close").waitForExistence(timeout: 8), "the paper's sheet opens")
+        XCTAssertFalse(element(todo, "pwaDocs.sheet.remind").exists, "a contractor doesn't ทวง")
     }
 }

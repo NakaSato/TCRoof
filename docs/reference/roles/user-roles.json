@@ -449,7 +449,8 @@
               "access": "allow"
             },
             "external": {
-              "access": "deny"
+              "access": "view",
+              "note": "ดูเอกสารของสถานีที่ได้รับมอบหมาย · แก้ / อัปโหลดไม่ได้"
             },
             "maintainer": {
               "access": "allow"
@@ -818,6 +819,11 @@
       "id": "maintainer",
       "text": "Maintainer (นักพัฒนาแอป) ทำได้ทุกอย่าง · ตั้งได้จาก Firebase console เท่านั้น · ปิด / ระงับบัญชีได้เฉพาะ Maintainer ผู้จัดการตั้งบทบาทและเพิ่มสมาชิกได้แต่ปิดบัญชีไม่ได้ · ไม่มีใครปิดบัญชี Maintainer หรือบัญชีของตัวเอง",
       "branch": "feat/user-admin-ipad"
+    },
+    {
+      "id": "contractor-docs-view",
+      "text": "ผู้รับเหมาเปิดแท็บ เอกสาร ได้แบบดูอย่างเดียว เฉพาะสถานีที่ได้รับมอบหมาย · ไม่เห็นคลังกลาง · แก้ อัปโหลด ทวง ร่าง และลำดับ กกพ. ไม่ได้ (เขียนงานไม่ได้ตาม firestore.rules)",
+      "branch": "feat/contractor-docs-view"
     }
   ],
   "findings": [

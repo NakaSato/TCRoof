@@ -57,19 +57,24 @@ struct PWADocsPadView: View {
 
     var today: Date { .now }
 
-    /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).
-    @Environment(\.permissions) private var permissions
+    /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`); a contractor
+    /// views their own stations' papers, read only (`readOnly`).
+    @Environment(\.permissions) var permissions
+
+    /// A contractor: their stations only, no library, and nothing changes (firestore.rules refuse their job edits, so
+    /// one would leave their sync stuck).
+    var readOnly: Bool { !permissions.can(.stationDocsDrafts) }
 
     var body: some View {
-        if permissions.can(.stationDocsDrafts) {
+        if permissions.canView(.stationDocsDrafts) {
             content
         } else {
             locked
         }
     }
 
-    /// Contractors have no access (decided 18 ต.ค., `states/10`): the header and the lock, nothing loaded. Their site
-    /// work (daily reports, the IEC test) is on each station's own page.
+    /// No view of the papers at all (a role override): the header and the lock, nothing loaded. Contractors view
+    /// their stations read only since 18 ต.ค.; their site work (daily reports, the IEC test) is on each station's page.
     private var locked: some View {
         VStack(spacing: 12) {
             Image(systemName: "lock.doc").font(.system(size: 30, weight: .medium)).foregroundStyle(Theme.inkMuted)
@@ -140,7 +145,7 @@ struct PWADocsPadView: View {
         switch pane {
         case .st: AnyView(stationsPane(data))
         case .todo: AnyView(todoPane(data))
-        case .lib: AnyView(libraryPane(data))
+        case .lib: readOnly ? AnyView(stationsPane(data)) : AnyView(libraryPane(data))
         }
     }
 
@@ -171,10 +176,10 @@ struct PWADocsPadView: View {
                         dueNow: PWADocs.dueNow(groups, today: today))
     }
 
-    /// The PWA stations, the installing ones first.
+    /// The PWA stations, the installing ones first; a contractor's, only those assigned to them.
     var stationJobs: [Job] {
         let all = jobs.pwaStations, installing = jobs.pwaInstalling
-        return installing + all.filter { !installing.contains($0) }
+        return (installing + all.filter { !installing.contains($0) }).filter { permissions.canView(.stationDocsDrafts, on: $0.access) }
     }
 
     var isDemo: Bool {
@@ -197,7 +202,8 @@ struct PWADocsPadView: View {
             return (stations, demoLibrary ?? PWADocsDemo.library(today: today))
         }
         #endif
-        return (stationJobs.map(\.planStation), library)
+        // the library is the company's papers (`library.company_docs`), not a contractor's
+        return (stationJobs.map(\.planStation), readOnly ? StationDocs.Library() : library)
     }
 
     func job(_ stationID: String?) -> Job? {
@@ -210,8 +216,8 @@ struct PWADocsPadView: View {
     private func topRow(_ data: PageData) -> some View {
         HStack(spacing: 0) {
             TCCountSegments([.init("ตามสถานี", count: data.rows.count, unit: "สถานี"),
-                             .init("ต้องทำ", count: data.dueNow, alert: data.dueNow > 0, unit: "รายการเลยหรือครบกำหนดวันนี้"),
-                             .init("คลังกลาง", count: data.libraryRows.count, unit: "ฉบับ")],
+                             .init("ต้องทำ", count: data.dueNow, alert: data.dueNow > 0, unit: "รายการเลยหรือครบกำหนดวันนี้")]
+                            + (readOnly ? [] : [.init("คลังกลาง", count: data.libraryRows.count, unit: "ฉบับ")]),
                             selection: Binding(get: { Pane.allCases.firstIndex(of: pane) ?? 0 }, set: { select(Pane.allCases[$0]) }),
                             fontSize: 14, countSize: 12)
                 .frame(width: 520)

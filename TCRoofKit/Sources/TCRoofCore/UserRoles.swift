@@ -147,7 +147,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .attachFiles: (.allow, .allow, .conditional),
         .driveUpload: (.allow, .allow, .conditional),
         .ercFlow: (.allow, .allow, .deny),
-        .stationDocsDrafts: (.allow, .allow, .deny),
+        .stationDocsDrafts: (.allow, .allow, .view),
         .workOrder: (.allow, .allow, .conditional),
         .changeRequest: (.conditional, .conditional, .conditional),
         .punchList: (.allow, .conditional, .conditional),

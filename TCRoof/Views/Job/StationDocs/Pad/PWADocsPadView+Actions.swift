@@ -15,8 +15,9 @@ extension PWADocsPadView {
         StationDocs.state(kind, station: data.station(stationID)?.docs ?? .init(), library: data.library)
     }
 
-    /// Changes one paper and stamps it updated.
+    /// Changes one paper and stamps it updated. Never for a contractor (`readOnly`).
     func update(_ kind: StationDocs.Kind, stationID: String?, _ change: (inout StationDocs.DocState) -> Void) {
+        guard !readOnly else { return }
         let data = self.data
         var s = state(kind, stationID: stationID, data)
         change(&s)
@@ -46,6 +47,7 @@ extension PWADocsPadView {
     /// Keeps an uploaded file as the paper's, in place of the one before, and moves the paper on
     /// (`PWADocs.statusAfterUpload`). Nothing is kept for the example.
     func attach(_ file: Data, ext: String, kind: StationDocs.Kind, stationID: String?) {
+        guard !readOnly else { return }
         let data = self.data
         let old = state(kind, stationID: stationID, data).fileName
         let ext = ext.isEmpty ? "pdf" : ext.lowercased()
@@ -67,6 +69,7 @@ extension PWADocsPadView {
 
     /// A drafted paper (the outage letter) becomes the paper's file, as `StationDocSheet.keepDraft`.
     func keepDraft(_ file: Data, kind: StationDocs.Kind, stationID: String?) {
+        guard !readOnly else { return }
         let old = state(kind, stationID: stationID, data).fileName
         guard let job = job(stationID) else { return }
         let name = HomeArchive.name("\(job.code) \(kind.name)", ext: "pdf")

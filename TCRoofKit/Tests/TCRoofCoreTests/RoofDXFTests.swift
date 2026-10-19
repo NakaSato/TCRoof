@@ -44,7 +44,8 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(lines(m.data).contains("19"))
         let pv = RoofDXF.build(roof(), parts: [.pv])
         XCTAssertEqual(pv.layers.first, "PV")
-        XCTAssertTrue(pv.layers.contains("PV_GROUP"))
+        XCTAssertTrue(pv.layers.contains("PV_RAIL"))
+        XCTAssertTrue(pv.layers.contains("PV_FOOT"))
     }
 
     func testThaiIsTIS620() {

@@ -79,6 +79,8 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var note = ""
     /// D1: marked `ok` with `ยืนยันที่เหลือ n จุดว่าตรงแบบ`, not one by one (printed as ยืนยันแบบรวม).
     public var bulk = false
+    /// C1: height above the roof (m) of a turbine, stack, pipe or other obstacle, for its shade; "" = the kind's default.
+    public var height = ""
     public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "", kind: String = "", canCover: Bool = false,
                 status: String = "", origin: String = "", stdX: String = "", stdY: String = "", note: String = "") {
         self.label = label; self.x = x; self.y = y; self.w = w; self.h = h; self.kind = kind; self.canCover = canCover
@@ -100,6 +102,7 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
         stdY = try c.decodeIfPresent(String.self, forKey: .stdY) ?? ""
         note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
         bulk = try c.decodeIfPresent(Bool.self, forKey: .bulk) ?? false
+        height = try c.decodeIfPresent(String.self, forKey: .height) ?? ""
     }
 }
 

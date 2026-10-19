@@ -16,14 +16,14 @@ public enum RoofDXF {
 
     /// AutoCAD colour index per layer (the design's `LY`).
     public static let colors: [String: Int] = ["GRID": 8, "OUTLINE": 7, "RIDGE": 1, "TRUSS": 5, "POST": 7, "PURLIN": 30, "SKYLIGHT": 4,
-                                               "OBSTACLE": 1, "SECTION_MARK": 1, "DIM": 3, "TEXT": 7, "PV": 150, "PV_GROUP": 170,
+                                               "OBSTACLE": 1, "SECTION_MARK": 1, "DIM": 3, "TEXT": 7, "PV": 150, "PV_RAIL": 8, "PV_FOOT": 250, "PV_CUT": 1,
                                                "KEEPOUT": 1, "SECTION": 7, "TABLE": 7]
     /// The plan's path keys (`RoofPlan.tags`) → layers.
     static let planLayers: [String: String] = ["grid": "GRID", "bub": "GRID", "out": "OUTLINE", "ridge": "RIDGE", "tbd": "TRUSS",
                                                "truss": "TRUSS", "t2": "TRUSS", "raft": "TRUSS", "eave": "TRUSS", "post": "POST",
                                                "purl": "PURLIN", "sky": "SKYLIGHT", "obst": "OBSTACLE", "sec": "SECTION_MARK", "dim": "DIM",
                                                "txt": "TEXT", "dimtxt": "DIM"]
-    static let pvLayers: [String: String] = ["pv": "PV", "tbl": "PV_GROUP", "kz": "KEEPOUT"]
+    static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
     /// "GRID · POST · TRUSS · PURLIN · SECTION · DIM · TEXT · TABLE", the sheet's layer line.
     public static func layerSummary(_ parts: Set<Part>) -> String {
@@ -31,7 +31,8 @@ public enum RoofDXF {
          parts.isEmpty ? "" : "DIM · TEXT", parts.contains(.table) ? "TABLE" : ""].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
-    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, module: RoofPlan.Module = .catalogDefault) -> Output {
+    /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`.
+    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, latitude: Double? = nil) -> Output {
         var o = SketchDXF.Options(); o.millimetres = millimetres
         var dxf = SketchDXF(options: o)
         func layer(_ name: String) -> SketchDXF.Layer { .init(name, aci: colors[name] ?? 7) }
@@ -44,7 +45,7 @@ public enum RoofDXF {
             dxf.add([op], layer: { _, _ in layer(l) }, transform: tf, pointsPerMetre: scale)
         }
 
-        let plan = RoofPlan(v, mode: .structure, module: module)
+        let plan = RoofPlan(v, mode: .structure)
         let L = plan.layout, th = 0.3
         let tp: (Pt) -> (Double, Double) = { p in ((p.x - L.origin.x) / L.k, L.ly - (p.y - L.origin.y) / L.k) }
         let f = Roof.frame(v), xs = Roof.spans(v, .x), ys = Roof.spans(v, .y)
@@ -57,7 +58,7 @@ public enum RoofDXF {
                  + " ม. · แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }
         if parts.contains(.pv) {
-            let pv = RoofPlan(v, mode: .pv, module: module)
+            let pv = RoofPlan(v, mode: .pv, mount: RoofMount.layout(v, latitude: latitude).layout)
             for (op, tag) in zip(pv.sketch.ops, pv.tags) {
                 guard let tag, let l = pvLayers[tag] else { continue }
                 write(op, l, tp, L.k, text: th)

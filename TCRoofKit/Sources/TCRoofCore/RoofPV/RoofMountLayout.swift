@@ -26,7 +26,7 @@ public struct RoofMountLayout: Sendable {
     }
 
     /// Where one face's rows and columns start.
-    public struct Placement: Sendable, Equatable {
+    public struct Placement: Sendable, Equatable, Codable {
         public var columnOffset: Double, rowShift: Double, centred: Bool
         public init(columnOffset: Double, rowShift: Double, centred: Bool) {
             self.columnOffset = columnOffset; self.rowShift = rowShift; self.centred = centred
@@ -234,7 +234,7 @@ public struct RoofMountLayout: Sendable {
             let l = standard.moduleLength, w = standard.moduleWidth
             let rect = [Pt(u, v), Pt(u + w, v), Pt(u + w, v + l), Pt(u, v + l)]
             if !face.contains(rect) { return RoofMountLayout.outside }
-            for ob in obstacles {
+            for ob in obstacles where !ob.obstacle.coverable {
                 let m = ob.obstacle.kind.moduleClearance, b = ob.box
                 if u < b.u1 + m && b.u0 - m < u + w && v < b.v1 + m && b.v0 - m < v + l {
                     return "\(ob.obstacle.title): เว้นระยะ \(String(format: "%.2f", m)) ม."
@@ -251,7 +251,7 @@ public struct RoofMountLayout: Sendable {
         func forbidden(_ v: Double) -> [(Double, Double)] {
             if let hit = forbiddenCache[v] { return hit }
             let out: [(Double, Double)] = obstacles.compactMap { ob in
-                let m = ob.obstacle.kind.footClearance, b = ob.box
+                let m = ob.obstacle.footClearance, b = ob.box
                 return b.v0 - m <= v && v <= b.v1 + m ? (b.u0 - m, b.u1 + m) : nil
             }
             forbiddenCache[v] = out

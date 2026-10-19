@@ -187,13 +187,15 @@ public enum Roof {
         public var kind: String
         public var canCover: Bool
         public var label: String
+        /// Height above the roof (m), typed; nil = the kind's default.
+        public var height: Double? = nil
     }
     /// Every entry of `obst` with a usable rectangle (metres from the plan's top-left).
     public static func areas(_ v: Values) -> [Area] {
         v.obstacles(Key.obstacles).enumerated().compactMap { i, o in
             guard let x = NumberInput.value(o.x), let y = NumberInput.value(o.y), let w = NumberInput.value(o.w), let h = NumberInput.value(o.h),
                   w > 0, h > 0 else { return nil }
-            return Area(index: i, x: x, y: y, w: w, h: h, kind: o.kind, canCover: o.canCover, label: o.label)
+            return Area(index: i, x: x, y: y, w: w, h: h, kind: o.kind, canCover: o.canCover, label: o.label, height: NumberInput.value(o.height))
         }
     }
     /// Adds a skylight or keep-out zone; rounded to 0.1 m, at least 0.3 × 0.3 m. Returns false when too small.
@@ -203,7 +205,8 @@ public enum Roof {
         let x = r(min(x1, x2)), y = r(min(y1, y2)), w = r(abs(x2 - x1)), h = r(abs(y2 - y1))
         guard w >= 0.3, h >= 0.3 else { return false }
         var list = v.obstacles(Key.obstacles)
-        list.append(Obstacle(label: kind == skylightKind ? "แผ่นใส" : "เขตห้ามติด", x: fmt(x), y: fmt(y), w: fmt(w), h: fmt(h), kind: kind))
+        let label = kind == skylightKind ? "แผ่นใส" : kind == keepOutKind ? "เขตห้ามติด" : RoofObstacleKind(rawValue: kind)?.title ?? "สิ่งกีดขวาง"
+        list.append(Obstacle(label: label, x: fmt(x), y: fmt(y), w: fmt(w), h: fmt(h), kind: kind))
         v[Key.obstacles] = .obstacles(list)
         return true
     }

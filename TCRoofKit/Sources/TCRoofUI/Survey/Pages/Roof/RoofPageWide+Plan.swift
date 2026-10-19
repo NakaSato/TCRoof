@@ -59,7 +59,8 @@ extension RoofPageWide {
     var planHint: String {
         if tool == .keepOut { return "ลากเพื่อวาดเขตห้ามติด" }
         if tool == .skylight { return "ลากเพื่อวาดแผ่นใส · แตะ × เพื่อลบ" }
-        if mode == .pv { return "จัดอัตโนมัติ · หลบแผ่นใสและเขตห้ามติด" }
+        if case .obstacle(let k)? = tool { return "ลากเพื่อวาด" + k.title }
+        if mode == .pv { return mountTool == .remove ? "แตะแผงเพื่อเอาออก / ใส่คืน" : "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด" }
         if editPosts { return "แตะจุดตัดกริด เพิ่ม/ลบเสา" }
         if values.photo("planPhoto") != nil { return "รายงานใช้แบบร่างที่ถ่ายไว้" }
         if values.text(Roof.Key.spansX).isEmpty || values.text(Roof.Key.spansY).isEmpty { return "ระยะตัวอย่าง · แตะเลขสีฟ้าเพื่อแก้" }
@@ -73,7 +74,7 @@ extension RoofPageWide {
                 planCaption.lineLimit(2)
                 RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
                 HStack(spacing: 8) {
-                    if mode == .structure { structureButtons } else { pvButtons }
+                    if mode == .structure { structureButtons } else { mountButtons }
                     Spacer(minLength: 0)
                     cadButton
                 }
@@ -84,7 +85,7 @@ extension RoofPageWide {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
                     .frame(minWidth: 120, maxWidth: 150)
-                if mode == .structure { structureButtons } else { pvButtons }
+                if mode == .structure { structureButtons } else { mountButtons }
                 cadButton
             }
         }
@@ -153,9 +154,8 @@ extension RoofPageWide {
 
     var legendItems: [(LegendGlyph.Kind, String)] {
         if mode == .pv {
-            let tables = Roof.pvRows(values) > 0 || Roof.pvPerTable(values) > 0
-            return [(.pv, "แผงโซลาร์")] + (tables ? [(.table, "ชุดแผง (โต๊ะ)"), (.gap, "ระยะห่างระหว่างชุด")] : [])
-                + [(.blocked, "ช่องที่วางไม่ได้"), (.keepOut, "เขตห้ามติด"), (.skyOK, "แผ่นใส"), (.ridge, "สันหลังคา")]
+            return [(.pv, "แผงโซลาร์"), (.blocked, "ด้านที่ไม่วาง / ตัดแผง"), (.keepOut, "เขตห้ามติด"), (.skyOK, "แผ่นใส"),
+                    (.gap, "เงาสิ่งกีดขวาง"), (.purlin, "แป · ราง · L-foot"), (.ridge, "สันหลังคา")]
         }
         let f = Roof.frame(values), pp = "แป @" + String(format: "%.2f", Roof.purlinSpacing(values))
         let two: [(LegendGlyph.Kind, String)] = f.isRafter ? [(.heavy, "อเส"), (.thin, "จันทัน @1.00")]
@@ -207,23 +207,17 @@ extension RoofPageWide {
         }
     }
 
-    @ViewBuilder var pvButtons: some View {
-        let zones = Roof.areas(values).filter { $0.kind == Roof.keepOutKind }.count
-        footerButton(tool == .keepOut ? "เสร็จ · เขตห้าม \(zones)" : "วาดเขตห้ามติด" + (zones > 0 ? " (\(zones))" : ""),
-                     on: tool == .keepOut, tint: Self.red) {
-            tool = tool == .keepOut ? nil : .keepOut
-        }
-    }
-
     // MARK: plan stage
 
     var planStage: some View {
         GeometryReader { geo in
-            let plan = RoofPlan(values, mode: mode, chips: true, dragging: drag, highlight: member)
+            let plan = RoofPlan(values, mode: mode, chips: true, dragging: drag, highlight: member,
+                                mount: mode == .pv ? shownMount : nil, selected: selectedSlots)
             let fit = SketchFit(RoofPlan.width, RoofPlan.height, in: geo.size)
             ZStack(alignment: .topLeading) {
                 SketchCanvas(ops: plan.sketch.ops, fit: fit)
                     .accessibilityLabel(String(format: "แปลนโครงหลังคา %.2f คูณ %.2f เมตร", plan.layout.lx, plan.layout.ly))
+                if mode == .pv && tool == nil { mountTap(plan.layout, fit) }
                 if tool != nil { drawSurface(plan.layout, fit) }
                 areaButtons(plan.layout, fit)
                 spanChips(plan.layout, fit)
@@ -316,14 +310,15 @@ extension RoofPageWide {
                     .accessibilityLabel(a.canCover ? "แผ่นใส วางทับได้ · แตะเพื่อสลับ" : "แผ่นใส ห้ามวางทับ · แตะเพื่อสลับ")
                     .position(x: r.midX, y: r.midY)
                 }
-                if (a.kind == Roof.keepOutKind && mode == .pv) || (a.kind == Roof.skylightKind && tool == .skylight) {
+                let drawn = a.kind == Roof.keepOutKind || RoofObstacleKind(rawValue: a.kind) != nil
+                if (drawn && mode == .pv) || (a.kind == Roof.skylightKind && tool == .skylight) {
                     Button { update { Roof.removeArea(&$0, index: a.index) } } label: {
                         Text("×").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
                             .frame(width: 20, height: 20).background(Self.red, in: Circle())
                             .frame(width: 44, height: 44).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(a.kind == Roof.keepOutKind ? "ลบเขตห้ามติด" : "ลบแผ่นใส")
+                    .accessibilityLabel(a.kind == Roof.keepOutKind ? "ลบเขตห้ามติด" : a.kind == Roof.skylightKind ? "ลบแผ่นใส" : "ลบ" + a.label)
                     .position(x: r.maxX, y: r.minY)
                 }
             }
@@ -332,15 +327,20 @@ extension RoofPageWide {
 
     func drawSurface(_ L: RoofPlan.Layout, _ fit: SketchFit) -> some View {
         Color.clear.contentShape(Rectangle())
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(tool == .keepOut ? Self.red : Theme.primary, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(tool == .skylight ? Theme.primary : Self.red, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
             .gesture(DragGesture(minimumDistance: 2).onChanged { g in
                 let a = L.metres(fit.sketch(g.startLocation)), b = L.metres(fit.sketch(g.location))
                 drag = (a.x, a.y, b.x, b.y)
             }.onEnded { _ in
-                if let d = drag { update { Roof.addArea(&$0, kind: tool == .keepOut ? Roof.keepOutKind : Roof.skylightKind, x1: d.0, y1: d.1, x2: d.2, y2: d.3) } }
+                let kind: String = switch tool {
+                case .keepOut?: Roof.keepOutKind
+                case .obstacle(let k)?: k.rawValue
+                default: Roof.skylightKind
+                }
+                if let d = drag { update { Roof.addArea(&$0, kind: kind, x1: d.0, y1: d.1, x2: d.2, y2: d.3) } }
                 drag = nil
             })
-            .accessibilityLabel(tool == .keepOut ? "ลากเพื่อวาดเขตห้ามติดตั้ง" : "ลากเพื่อวาดแผ่นใส")
+            .accessibilityLabel(planHint)
     }
 
     var skylightTool: some View {

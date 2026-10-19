@@ -25,6 +25,8 @@ public struct RGBA: Hashable, Sendable {
     public static let ink2 = RGBA(hex: 0x555555), rule = RGBA(hex: 0x9a9a9a), faint = RGBA(hex: 0x999999)
     public static let red = RGBA(hex: 0xE0433A), dark = RGBA(hex: 0x333333), tag = RGBA(hex: 0xC00000)
     public static let tick = RGBA(hex: 0x70AD47), band = RGBA(hex: 0xE2EFDA), blue = RGBA(hex: 0x1F4E79)
+    /// The same colour at opacity `a`.
+    public func withAlpha(_ a: Double) -> RGBA { RGBA(r, g, b, a) }
 }
 public enum TextAlign: Sendable { case left, center, right }
 

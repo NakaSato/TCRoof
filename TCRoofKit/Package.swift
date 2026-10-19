@@ -11,6 +11,11 @@ let package = Package(
         .library(name: "PDFReport", targets: ["PDFReport"]),
         .library(name: "DriveSync", targets: ["DriveSync"]),
         .library(name: "TCRoofUI", targets: ["TCRoofUI"]),
+        .library(name: "TCRoofMCP", targets: ["TCRoofMCP"]),
+    ],
+    dependencies: [
+        // Model Context Protocol (https://github.com/modelcontextprotocol/swift-sdk), only for TCRoofMCP
+        .package(url: "https://github.com/modelcontextprotocol/swift-sdk.git", from: "0.12.1"),
     ],
     targets: [
         // raw deflate / inflate / crc32 from the system zlib (iOS SDK and Linux both ship it)
@@ -20,6 +25,8 @@ let package = Package(
         .target(name: "PDFReport", dependencies: ["TCRoofCore"], resources: [.process("Resources")]),
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),
         .target(name: "TCRoofUI", dependencies: ["TCRoofCore", "ExcelExport", "PDFReport", "DriveSync"], resources: [.process("Resources")]),
+        // MCP kept apart from the survey modules: only this target depends on the SDK
+        .target(name: "TCRoofMCP", dependencies: ["TCRoofCore", .product(name: "MCP", package: "swift-sdk")]),
         .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"], resources: [.copy("Fixtures")]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),
         .testTarget(name: "DriveSyncTests", dependencies: ["DriveSync", "TCRoofCore"]),

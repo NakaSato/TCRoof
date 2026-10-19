@@ -91,7 +91,7 @@ struct TankPageWide: View {
                 VStack(spacing: 14) {
                     PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
                     HStack(spacing: 8) {
-                        tabBar
+                        tabBar.frame(maxWidth: .infinity)
                         undoButtons()
                     }
                     switch tab {
@@ -139,43 +139,88 @@ struct TankPageWide: View {
         ]
     }
 
-    var tabBar: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: narrow ? 2 : 4), spacing: 4) {
-            ForEach(Array(steps.enumerated()), id: \.offset) { i, s in tabSegment(i + 1, s) }
+    /// The sub-steps (docs/ui/survey-d1-stepper-ipad): in regular width a stepper on a white card, each step hugging its
+    /// content and joined by lines that take the free width (green after a done step); narrow keeps the 2 × 2 grid.
+    @ViewBuilder var tabBar: some View {
+        if narrow { tabGrid } else { stepperRow }
+    }
+
+    var stepperRow: some View {
+        let s = steps
+        return HStack(spacing: 10) {
+            ForEach(Array(s.enumerated()), id: \.offset) { i, step in
+                if i > 0 { stepLine(after: s[i - 1]) }
+                tabSegment(i + 1, step, grid: false)
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle, lineWidth: 1))
+    }
+
+    /// Narrow widths keep the 2 × 2 grid of segments on the grey track: four don't fit in a row.
+    var tabGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 2), spacing: 4) {
+            ForEach(Array(steps.enumerated()), id: \.offset) { i, s in tabSegment(i + 1, s, grid: true) }
         }
         .padding(4)
         .background(Self.track, in: RoundedRectangle(cornerRadius: 14))
     }
 
-    func tabSegment(_ n: Int, _ s: Step) -> some View {
+    /// The line between two steps: green once the step before it is done. It shrinks first, so the steps keep their width.
+    func stepLine(after s: Step) -> some View {
+        Capsule().fill(s.done ? Theme.success : Theme.hairline)
+            .frame(minWidth: 16, maxWidth: .infinity).frame(height: 2)
+            .layoutPriority(-1)
+            .accessibilityHidden(true)
+    }
+
+    /// One step: its circle, title and status; the current one a light-blue pill with a blue inset stroke.
+    func tabSegment(_ n: Int, _ s: Step, grid: Bool) -> some View {
         let on = tab == n
         return Button { withAnimation(.easeOut(duration: 0.15)) { tab = n; span = nil } } label: {
             HStack(spacing: 10) {
                 stepCircle(n, done: s.done, current: on)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(s.title).font(.sarabunFixed(15, .bold)).foregroundStyle(on ? Theme.navy : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(s.status).font(.sarabunFixed(12, .semibold)).foregroundStyle(s.statusOK ? Theme.success : Theme.pending).lineLimit(1).minimumScaleFactor(0.7)
-                }
-                Spacer(minLength: 0)
+                stepTexts(s, on: on)
+                if grid { Spacer(minLength: 0) }
             }
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background {
-                if on { RoundedRectangle(cornerRadius: 10).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
-            }
-            .contentShape(Rectangle())
+            .padding(.leading, 12).padding(.trailing, on && !grid ? 16 : 12)
+            .frame(maxWidth: grid ? .infinity : nil, minHeight: grid ? 50 : 48)
+            .background { if grid { gridSegment(on) } else { stepPill(on) } }
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .fixedSize(horizontal: !grid, vertical: false)
         .accessibilityLabel("ขั้นที่ \(n) \(s.title) \(s.status)")
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
+    func stepTexts(_ s: Step, on: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(s.title).font(.sarabunFixed(15, .bold)).foregroundStyle(on ? Theme.navy : Theme.inkMuted).lineLimit(1)
+            Text(s.status).font(.sarabunFixed(12, .semibold)).foregroundStyle(s.statusOK ? Theme.success : Theme.pending)
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+    }
+
+    /// The grid's raised white segment, as before.
+    @ViewBuilder func gridSegment(_ on: Bool) -> some View {
+        if on { RoundedRectangle(cornerRadius: 10).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+    }
+
+    @ViewBuilder func stepPill(_ on: Bool) -> some View {
+        if on {
+            RoundedRectangle(cornerRadius: 12).fill(Theme.primarySoft)
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.primary, lineWidth: 1.5))
+        }
+    }
+
     @ViewBuilder func stepCircle(_ n: Int, done: Bool, current: Bool) -> some View {
         if done {
-            A2Icon(name: "d1-step-done", fallback: "checkmark.circle.fill", size: 24).foregroundStyle(Theme.success)
+            A2Icon(name: "d1-step-done", fallback: "checkmark.circle.fill", size: 26).foregroundStyle(Theme.success)
         } else {
             Text("\(n)").font(.sarabunFixed(13, .bold)).foregroundStyle(current ? Theme.onPrimary : Theme.inkMuted)
-                .frame(width: 24, height: 24)
+                .frame(width: 26, height: 26)
                 .background(Circle().fill(current ? Theme.primary : Theme.surface))
                 .overlay(Circle().stroke(current ? Color.clear : Theme.navy.opacity(0.25)))
         }

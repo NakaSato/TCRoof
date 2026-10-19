@@ -3,6 +3,15 @@
 > How to use: open Claude Code in the `TCRoof` repo and type
 > `Follow docs/ui/survey-d1-photo-ipad/CLAUDE_CODE_TASK.md`
 
+## Base
+This branch sits on `feat/tank-photo-details`. That branch adds:
+- `Photo.note` / `Photo.tag` / `Photo.caption`
+- `PhotoDetailSheet` (ภาพที่เลือก: map, note, opening tag, retake / delete)
+- `TankPoints.tagOptions` / `tag(_:in:)`
+- the `-surveyD1 photos|photodetails` flags
+
+Build on top of those; don't redo them. If `feat/tank-photo-details` is merged into main first, nothing changes for you.
+
 ## Goal
 D1 sub-step 4 (`TankPageWide`, `tab == 4`, `formStep`) is still a scroll of generic `PaperBox` + `FieldView` groups. Replace it on iPad (regular width, not `stacked`, not `phone`) with the designed page: a **photo gallery** on the left and an **inspector** for the selected photo on the right.
 
@@ -75,8 +84,10 @@ Tiles come from the existing fields of the D1 `ภาพถ่าย` group (`Sc
 
 - The `วิธีถ่าย` tips are the board's `SHOT[i][4]` strings. Keep them in one table next to the tiles.
 - Taking or uploading a photo, retaking and deleting all use the existing photo pipeline that `FieldView` uses for `.photo` / `.photos` (`SurveyModel` photos, `PhotoAsset`, Drive upload). Don't write a second one.
-- **หมายเหตุ:** use the photo's own caption or note if the photo model has one. If it doesn't, leave the field out and report it. Don't add a new stored field for it.
-- **Shot point:** from the photo's GPS relative to the station GPS (`job.values.text("gps")`) and the tank's spans. Hide the mini plan when either is missing.
+- **หมายเหตุ:** `Photo.note`, edited inline in the inspector, the same way `PhotoDetailSheet` saves it.
+- **Obstacle tag:** obstacle tiles are named after `Photo.tag` (V9, H1, บันได, V1–V10) when set. The inspector offers the tag the way the sheet does (`PhotoDetailsContext`, `TankPoints.tagOptions`).
+- **Reuse, don't duplicate:** move the map, note and tag parts of `PhotoDetailSheet` into small shared views, and use them both in the sheet (iPhone, stacked) and in the inspector (iPad).
+- **Shot point:** the same source as `PhotoDetailSheet`'s map: the photo's own location. Hide it when the photo has none.
 
 ## Change list
 1. **`TankPageWide+Photos.swift` (new):** `padPhotoStep` with `photoGallery`, `photoTile(_:)`, `photoInspector`, `photoRing` and `addObstacleBar`, all as separate computed properties or functions (the Debug SIGSEGV note in CLAUDE.md). Add a small model with tile id, field id, slot index, name, subtitle, tip and required, built from the schema.
@@ -102,4 +113,3 @@ Tiles come from the existing fields of the D1 `ภาพถ่าย` group (`Sc
 ## Open questions (report them)
 1. The board marks 5 photos required (aerial, wall, roof overview, roof surface, cable route). Only aerial, side and obstacle photos are required in the schema today. Should roof and cable become required? That would change `Progress` and old jobs' completion.
 2. The board has one wall photo "from a corner, showing 2 sides", while the schema keeps 4 side photos. Keep 4 slots, or ask for 2 corner shots?
-3. Is there a stored per-photo note? If not, should we add one?

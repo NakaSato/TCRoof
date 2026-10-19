@@ -8,6 +8,7 @@ git fetch origin && git switch -c feat/survey-d1-photo-ipad origin/design/survey
 Follow docs/ui/survey-d1-photo-ipad/CLAUDE_CODE_TASK.md.
 
 FIRST check that these exist. If any is missing, STOP and report.
+- Photo.note / Photo.tag and PhotoDetailSheet (from feat/tank-photo-details, which this branch is based on)
 - TCRoofKit/Sources/TCRoofUI/Survey/Pages/Tank/TankPageWide.swift with formStep and the tab switch
 - Schema.swift .tank group "ภาพถ่าย" with aerialPhoto, sidePhotos, roofPhotos, shadePhoto, cablePhoto, obstPhotos
 - Tank.photoCompletion in TCRoofCore/Tank.swift
@@ -21,6 +22,7 @@ Do ONLY this:
 - Keep formStep for iPhone and stacked.
 - Do NOT touch the sub-step tab bar (another branch, design/survey-d1-stepper-ipad, changes it).
 - No schema change. "Required" comes from the FieldSpec. Reuse the existing photo pipeline.
+- Reuse PhotoDetailSheet's map, note and tag parts (factor them out). Don't write a second details UI.
 
 Change list:
 1. TankPageWide+Photos.swift (new): padPhotoStep, split into small computed properties, and the tile model built from the schema.

@@ -107,7 +107,8 @@ struct ClaimExport {
 
     /// ถอนการยื่น: unlocks the month for edits; the files on Drive stay as the record of what was sent.
     func withdraw(reason: String) {
-        guard let c = claim else { return }
+        // an approved month stays as approved; a manager sends it back first
+        guard let c = claim, !ClaimReviews.shared.status(month: month, submittedAt: c.submittedAt).isApproved else { return }
         c.submittedAt = nil
         c.addLog("ถอนการยื่น \(Self.stamp(.now))" + (reason.isEmpty ? "" : " · \(reason)"))
         try? context.save()
@@ -145,6 +146,8 @@ struct ClaimExport {
             DriveUpload(name: fileStem + ".xlsx", data: try excel(), mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             to: sub)
         c.driveFolderURL = "https://drive.google.com/drive/folders/\(sub)"
+        // the managers who approve claims read the month's receipts (`config/app.claimShareWith`)
+        await survey.shareJobFolder(sub, with: DriveConfig.claimShareWith)
         try? context.save()
     }
 

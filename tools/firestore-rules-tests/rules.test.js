@@ -513,3 +513,32 @@ test('the travel log is personal: its owner and managers read it, only the owner
   await assertFails(setDoc(doc(db(CON), 'expenses', 'e9'), { ownerEmail: CON, amount: 1 }));
   await assertSucceeds(deleteDoc(doc(me, 'expenses', 'e1')));
 });
+
+test('a claim decision: managers write it, never on their own, and the claimant reads theirs', async () => {
+  const MATE = 'mate@tcroof.co';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'members', MATE), {});
+  });
+  const r = (o) => ({ ownerEmail: TEAM, month: '2026-10', submittedAt: 1000, decision: 'approved', note: '', total: 500,
+                      reviewedBy: BOSS, reviewerName: '', reviewedAt: 2000, ...o });
+  const id = `${TEAM}_2026-10`;
+  await assertSucceeds(setDoc(doc(db(BOSS), 'claimReviews', id), r()));
+  await assertSucceeds(setDoc(doc(db(BOSS), 'claimReviews', id), r({ decision: 'returned', note: 'ใบเสร็จไม่ชัด' })));
+  // signed as someone else, a wrong id, an unknown decision or a text time
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', id), r({ reviewedBy: 'x@tcroof.co' })));
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', `${MATE}_2026-10`), r()));
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', id), r({ decision: 'paid' })));
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', id), r({ submittedAt: '1000' })));
+  // a manager's own claim
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', `${BOSS}_2026-10`), r({ ownerEmail: BOSS })));
+  // the claimant and the rest of the team don't write it
+  await assertFails(setDoc(doc(db(TEAM), 'claimReviews', id), r({ reviewedBy: TEAM })));
+  await assertFails(updateDoc(doc(db(TEAM), 'claimReviews', id), { decision: 'approved' }));
+  await assertFails(setDoc(doc(db(MATE), 'claimReviews', id), r({ reviewedBy: MATE })));
+  // the claimant reads theirs with the app's query, the others don't, managers read all
+  await assertSucceeds(getDocs(query(collection(db(TEAM), 'claimReviews'), where('ownerEmail', '==', TEAM))));
+  await assertFails(getDoc(doc(db(MATE), 'claimReviews', id)));
+  await assertFails(getDoc(doc(db(CON), 'claimReviews', id)));
+  await assertSucceeds(getDocs(collection(db(BOSS), 'claimReviews')));
+  await assertFails(deleteDoc(doc(db(BOSS), 'claimReviews', id)));
+});

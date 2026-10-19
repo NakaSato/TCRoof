@@ -42,11 +42,15 @@ struct ClaimScreen: View {
     private var expenses: [Expense] { allExpenses.filter { $0.ownerEmail == me && $0.monthKey == month } }
     private var claim: ClaimMonth? { allClaims.first { $0.ownerEmail == me && $0.month == month } }
     private var locked: Bool { claim?.isSubmitted ?? false }
+    /// The manager's decision on this submission, if any (`ClaimReviews`).
+    private var status: TravelClaim.Status { ClaimReviews.shared.status(month: month, submittedAt: claim?.submittedAt) }
+    private var managesTeam: Bool { MemberRole.shared.permissions.role.managesTeam }
     private var summary: TravelClaim.Summary { TravelClaim.Summary(days: trips.map(\.day), items: expenses.map(\.item)) }
     private var isThisMonth: Bool { month == TravelClaim.monthKey(.now) }
 
     var body: some View {
         PadForm(maxWidth: 820) {
+            if managesTeam { reviewLink }
             monthBar
             if locked { submittedBanner }
             if isThisMonth, !locked { todayCard }
@@ -121,8 +125,8 @@ struct ClaimScreen: View {
             VStack(spacing: 2) {
                 Text(TravelClaim.monthStart(month).map(RoutineReport.thaiMonth) ?? month)
                     .font(.sarabun(20, .bold, relativeTo: .title3)).foregroundStyle(Theme.navy)
-                Text(locked ? "ยื่นเบิกแล้ว" : "ยังไม่ยื่นเบิก").font(.sarabun(13, relativeTo: .caption))
-                    .foregroundStyle(locked ? Theme.successText : Theme.muted)
+                Text(status.title).font(.sarabun(13, relativeTo: .caption))
+                    .foregroundStyle(statusInk)
             }
             .frame(maxWidth: .infinity)
             Button { shift(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
@@ -135,17 +139,56 @@ struct ClaimScreen: View {
         .tcCard()
     }
 
+    private var statusInk: Color {
+        switch status {
+        case .open: Theme.muted
+        case .submitted, .approved: Theme.successText
+        case .returned: Theme.pending
+        }
+    }
+
     private var submittedBanner: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("ยื่นเบิกแล้ว · แก้ไม่ได้จนกว่าจะถอนการยื่น", systemImage: "lock.fill")
-                .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.successText)
+            switch status {
+            case .approved(let r):
+                Label("อนุมัติแล้ว · \(r.who) · \(ClaimExport.stamp(Date(millis: r.reviewedAt)))", systemImage: "checkmark.seal.fill")
+                    .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.successText)
+                if !r.note.isEmpty { Text(r.note).font(.sarabun(14, relativeTo: .subheadline)) }
+            case .returned(let r):
+                Label("ส่งกลับให้แก้ · \(r.who) · \(ClaimExport.stamp(Date(millis: r.reviewedAt)))", systemImage: "arrow.uturn.backward.circle.fill")
+                    .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
+                Text(r.note).font(.sarabun(14, relativeTo: .subheadline)).fixedSize(horizontal: false, vertical: true)
+                Text("ถอนการยื่นเพื่อแก้ไข แล้วยื่นเบิกอีกครั้ง").font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted)
+            default:
+                Label("ยื่นเบิกแล้ว · รออนุมัติ · แก้ไม่ได้จนกว่าจะถอนการยื่น", systemImage: "lock.fill")
+                    .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.successText)
+            }
             if let log = claim?.log, !log.isEmpty {
                 Text(log).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Theme.successSoft, in: RoundedRectangle(cornerRadius: Radius.md))
+        .background(status == .submitted || status.isApproved ? Theme.successSoft : Theme.pendingSoft, in: RoundedRectangle(cornerRadius: Radius.md))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("claim.status")
+    }
+
+    /// Managers: the team's submitted months.
+    private var reviewLink: some View {
+        NavigationLink { ClaimReviewScreen() } label: {
+            HStack {
+                Label("ตรวจใบเบิกของทีม", systemImage: "checkmark.rectangle.stack")
+                    .font(.sarabun(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                Spacer()
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.chevron)
+            }
+            .frame(minHeight: 44)
+            .padding(.horizontal, 14).padding(.vertical, 6)
+            .tcCard()
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("claim.reviewLink")
     }
 
     /// Today's appointments and install days, with ถึง / ออก, and the stops already stamped.
@@ -365,7 +408,12 @@ struct ClaimScreen: View {
                     Link(destination: url) { Label("เปิดโฟลเดอร์ใบเบิกใน Drive", systemImage: "folder") }
                         .buttonStyle(TCButtonStyle(.text, fullWidth: true))
                 }
-                Button("ถอนการยื่น") { showWithdraw = true }.buttonStyle(TCButtonStyle(.destructive, fullWidth: true))
+                if status.isApproved {
+                    Text("อนุมัติแล้ว จึงถอนการยื่นไม่ได้ · ถ้าต้องแก้ ให้ผู้จัดการส่งกลับก่อน")
+                        .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted).multilineTextAlignment(.center)
+                } else {
+                    Button("ถอนการยื่น") { showWithdraw = true }.buttonStyle(TCButtonStyle(.destructive, fullWidth: true))
+                }
             } else {
                 Button { showSubmit = true } label: { Label("ยื่นเบิก", systemImage: "paperplane.fill") }
                     .buttonStyle(TCButtonStyle(.primary, fullWidth: true))

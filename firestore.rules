@@ -295,6 +295,20 @@ service cloud.firestore {
       allow create, update: if keepsOwner();
       allow delete: if ownsTravel();
     }
+    // A manager's decision on a submitted month (approved / returned), kept apart from the claim so its owner can't
+    // approve it: managers write it, never on their own claim, signed with their own email, one document per person
+    // and month (`<owner>_<month>`). The claimant reads theirs with the app's query.
+    match /claimReviews/{doc} {
+      allow read: if isManager() || (isTeam() && resource.data.ownerEmail == signedInEmail());
+      allow create, update: if isManager()
+        && request.resource.data.reviewedBy == signedInEmail()
+        && request.resource.data.ownerEmail is string
+        && request.resource.data.ownerEmail != signedInEmail()
+        && request.resource.data.decision in ['approved', 'returned']
+        && request.resource.data.submittedAt is int
+        && doc == request.resource.data.ownerEmail + '_' + request.resource.data.month;
+      allow delete: if false;
+    }
 
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
     // A member adds or removes only their own email.

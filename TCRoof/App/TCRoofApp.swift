@@ -152,7 +152,7 @@ struct RootView: View {
 struct DebugScreen: View {
     static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
     static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant", "travel"]
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant", "travel", "claimreview"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -215,6 +215,9 @@ struct DebugScreen: View {
         case "members": MembersView()
         // `-travelDemo YES` seeds a month (for good), `-travelMonth 2026-09` opens that month, `-travelSubmit YES` the sign sheet
         case "travel": ClaimScreen()
+        // `-claimReviewDemo YES` lists three team members' months and the manager's own (decisions in memory),
+        // `-claimReviewFilter ส่งกลับ|อนุมัติแล้ว` picks the tab; run with `-role manager`
+        case "claimreview": ClaimReviewScreen()
         case "useradmin": UserAdminView().debugBoard()
         // `-assistantDemo YES` answers from a stand-in for Qwen; `-assistantFocus YES` opens it on the first job
         case "assistant":

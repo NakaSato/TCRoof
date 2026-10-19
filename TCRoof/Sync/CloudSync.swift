@@ -147,6 +147,7 @@ final class CloudSync {
                 listen(Trip.self, optional: true, owner: me.email)
                 listen(Expense.self, optional: true, owner: me.email)
                 listen(ClaimMonth.self, optional: true, owner: me.email)
+                listenClaimReviews(owner: me.email)
             }
             listenSurveys()
             listenRevisions()
@@ -714,6 +715,19 @@ final class CloudSync {
 
     /// The team's names and emails (team only, `TeamDirectory`): this member's own entry goes up first, with the name in
     /// settings, so the people invited before the directory existed are listed too.
+    /// Managers' decisions on this person's submitted months (`ClaimReviews`); refused until the rule is deployed.
+    private func listenClaimReviews(owner email: String) {
+        ClaimReviews.shared.start(owner: email)
+        let q = db.collection(ClaimReviews.collection).whereField("ownerEmail", isEqualTo: Permissions.normalized(email))
+        let registration = q.addSnapshotListener { snapshot, error in
+            MainActor.assumeIsolated {
+                if let error { return print("CloudSync: claimReviews listener: \(error.localizedDescription)") }
+                if let snapshot { ClaimReviews.shared.receive(snapshot.documents) }
+            }
+        }
+        listeners.append(registration)
+    }
+
     private func listenDirectory() {
         guard external == nil else { return TeamDirectory.shared.clear() }
         let me = MemberRole.shared.permissions.email
@@ -762,7 +776,7 @@ final class CloudSync {
         listeners.append(registration)
     }
 
-    /// `config/app`, set in the Firebase console: `centerDriveFolder` and `driveShareWith` (`DriveConfig`),
+    /// `config/app`, set in the Firebase console: `centerDriveFolder`, `driveShareWith` and `claimShareWith` (`DriveConfig`),
     /// `minSyncVersion` and `installLink` (`AppGate`: an older build stops sending), and `contactsSplit`, switched on
     /// once every device runs this version: the jobs are then sent again without their phone and address.
     private func listenConfig() {
@@ -772,7 +786,8 @@ final class CloudSync {
                 if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
                 // the center Drive (a folder id or link) and the team emails a contractor's job folder is shared with
                 DriveConfig.set(center: snapshot?.get("centerDriveFolder") as? String,
-                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [])
+                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [],
+                                claimShareWith: snapshot?.get("claimShareWith") as? [String] ?? [])
                 // a build the console has let through again sends what waited
                 if AppGate.shared.update(minimum: (snapshot?.get("minSyncVersion") as? NSNumber)?.intValue,
                                          installLink: snapshot?.get("installLink") as? String) {

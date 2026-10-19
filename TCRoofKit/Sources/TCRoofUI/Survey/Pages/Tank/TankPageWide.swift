@@ -68,6 +68,14 @@ struct TankPageWide: View {
     @State var shadeMoment = 4
     /// `↶ เลิกทำ` (TankPageWide+Undo).
     @StateObject var undo = TankUndo()
+    /// Sub-step 4 on iPad (TankPageWide+Photos): the selected tile, the filter, the wall shown, and where the next
+    /// photo from the camera or the library goes.
+    @State var photoSel: String?
+    @State var photoFilter: TankPhotos.Filter = .all
+    @State var photoWall = 0
+    @State var photoTarget: PhotoTarget?
+    @State var photoPicker = false
+    @State var photoCamera = false
     /// DEBUG `photos` / `photodetails`: scroll sub-step 4 to the obstacle photos.
     @State var photoScroll = false
     /// DEBUG `layoutshade`: scroll the one-column layout to the shade card.
@@ -100,7 +108,7 @@ struct TankPageWide: View {
                     case 1: sizeStep
                     case 2: padObstacleStep
                     case 3: padLayoutStep
-                    default: formStep
+                    default: if stacked { formStep } else { padPhotoStep }
                     }
                 }
             }
@@ -345,6 +353,28 @@ extension TankPageWide {
             case "obstdelete": addPoint(TankPoints.vent); try? await Task.sleep(nanoseconds: 300_000_000); deleteAsk = true
             default: break
             }
+        case "photo", "photomiss", "photofilter", "photodone":
+            // docs/ui/survey-d1-photo-ipad states 01–04: aerial, two walls, the roof overview and the shade taken (placeholder
+            // pictures, around A1's position when it has one); the surface, cable route and obstacles missing
+            let site = GPS.parse(job.values.text("gps"))
+            func picture(_ hue: CGFloat, _ dx: Double, _ dy: Double) -> Photo? {
+                let img = UIGraphicsImageRenderer(size: CGSize(width: 800, height: 600)).image { c in
+                    UIColor(hue: hue, saturation: 0.25, brightness: 0.62, alpha: 1).setFill(); c.fill(CGRect(x: 0, y: 0, width: 800, height: 600))
+                }
+                guard var p = model.addPhoto(img, to: job.id) else { return nil }
+                if let site { p.lat = site.lat + dy / 110_540; p.lon = site.lon + dx / 111_320 }
+                return p
+            }
+            update { v in
+                for k in ["aerialPhoto", "sidePhotos", Tank.Key.roofPhotos, Tank.Key.cablePhoto, Tank.Key.shadePhoto, "obstPhotos"] { v[k] = nil }
+                v["aerialPhoto"] = picture(0.28, 0, 0).map { .photo($0) }
+                v["sidePhotos"] = .photos([picture(0.12, 0, 26), picture(0.14, 26, 0)].compactMap { $0 })
+                if var r = picture(0.6, -14, 14) { r.tag = TankPhotos.roofOverview; v[Tank.Key.roofPhotos] = .photos([r]) }
+                v[Tank.Key.shadePhoto] = picture(0.33, 0, -3).map { .photo($0) }
+            }
+            tab = 4
+            photoSel = state == "photomiss" ? TankPhotos.nextMissing(values, after: nil)?.id : "aerial"
+            photoFilter = state == "photofilter" ? .missing : state == "photodone" ? .done : .all
         case "photos", "photodetails":
             // sub-step 4 with two drawn obstacle photos, the first tied to V3 with a note (photodetails opens it)
             update { v in

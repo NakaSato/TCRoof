@@ -144,6 +144,15 @@ struct JobEditorView: View {
         return detailSize.width > detailSize.height ? 2 : 1
     }
 
+    /// DEBUG `-surveyWideA1 YES`: the two-column D1 too, below its 1100 pt (the simulator can't be turned).
+    var debugWide: Bool {
+        #if DEBUG
+        return UserDefaults.standard.bool(forKey: "surveyWideA1")
+        #else
+        return false
+        #endif
+    }
+
     static let sidebarWidth: CGFloat = 310
 
     var body: some View {
@@ -284,7 +293,7 @@ struct JobEditorView: View {
         } else if let m = cardTank {
             VStack(spacing: 12) {
                 TankPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
-                             stacked: compact || infoColumns != 2 || detailSize.width < 1100, tab: $tankTab)
+                             stacked: compact || infoColumns != 2 || (detailSize.width < 1100 && !debugWide), tab: $tankTab)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)

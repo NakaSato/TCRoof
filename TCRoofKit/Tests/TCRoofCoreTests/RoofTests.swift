@@ -218,6 +218,25 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(RoofMount.choice(Values()), RoofMount.Choice())
     }
 
+    func testAShedRoofDrawsItsRidgeOnTheHighEdge() {
+        var v = Self.designRoof()
+        func ridgeY(_ v: Values) -> [Double] {
+            let p = RoofPlan(v)
+            return zip(p.sketch.ops, p.tags).compactMap { op, t in
+                guard t == "ridge", case let .line(a, b, _, _, _) = op else { return nil }
+                return (a.y + b.y) / 2
+            }
+        }
+        let gable = ridgeY(v)
+        v[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        let top = ridgeY(v)
+        RoofMount.setShedLowAtStart(&v, true)
+        let bottom = ridgeY(v)
+        XCTAssertEqual(gable.count, 1); XCTAssertEqual(top.count, 1); XCTAssertEqual(bottom.count, 1)
+        XCTAssertLessThan(top[0], gable[0])      // low eave at the bottom: the ridge on the top edge
+        XCTAssertGreaterThan(bottom[0], gable[0])
+    }
+
     func testTileShedAndWalkwayReachTheLayout() {
         var v = Self.designRoof()
         let before = RoofMount.layout(v, latitude: 15).layout

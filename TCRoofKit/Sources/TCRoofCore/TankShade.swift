@@ -172,6 +172,27 @@ public struct TankShade: Sendable {
         }
     }
 
+    // MARK: the last answer
+
+    /// The simulation for these values, kept for the next call with the same values and latitude (E1 asks on every render).
+    public static func current(_ v: Values, latitude: Double) -> TankShade? {
+        if let hit = cache.get(v, latitude) { return hit.shade }
+        let s = TankShade(v, latitude: latitude)
+        cache.set(v, latitude, s)
+        return s
+    }
+    private static let cache = Last()
+    private final class Last: @unchecked Sendable {
+        private let lock = NSLock()
+        struct Entry { var values: Values; var latitude: Double; var shade: TankShade? }
+        private var entry: Entry?
+        func get(_ v: Values, _ lat: Double) -> Entry? {
+            lock.lock(); defer { lock.unlock() }
+            return entry?.values == v && entry?.latitude == lat ? entry : nil
+        }
+        func set(_ v: Values, _ lat: Double, _ s: TankShade?) { lock.lock(); entry = Entry(values: v, latitude: lat, shade: s); lock.unlock() }
+    }
+
     // MARK: report
 
     /// `เงาแถวหน้า 1.7% · เงาสิ่งบัง 0.4% · สูญเสียรวม 2.1% · เสียจากสิ่งบัง 1.2 MWh/ปี`

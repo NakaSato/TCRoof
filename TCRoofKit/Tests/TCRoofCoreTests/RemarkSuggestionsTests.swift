@@ -37,6 +37,22 @@ final class RemarkSuggestionsTests: XCTestCase {
         XCTAssertEqual(RemarkSuggestions.make(job: j)[1].text, "ตัดแต่งต้นไม้ ถังน้ำใส 2 ก่อนติดตั้ง")
     }
 
+    /// With a stored layout and the object's height, D1's simulation decides: quoted from 1 %, left out below.
+    func testShadeQuotesTheSimulation() throws {
+        var j = Job()
+        var m = tank(dirs: ["S"])
+        Tank.apply(&m.values, Tank.presets[0])
+        TankLayout.save(&m.values, TankLayout.auto(m.values), off: [])
+        m.values[TankShade.Key.height] = .text("16"); m.values[TankShade.Key.distance] = .text("1")
+        j.modules = [m]
+        let s = try XCTUnwrap(RemarkSuggestions.make(job: j).first)
+        XCTAssertTrue(s.text.hasPrefix("ตัดแต่งต้นไม้ด้านใต้ ถังน้ำใส 1"), s.text)
+        XCTAssertTrue(s.text.contains("(เงาทำให้เสีย "), s.text)
+        // trees lower than the panels cost nothing: no line
+        j.modules[0].values[TankShade.Key.height] = .text("2")
+        XCTAssertTrue(RemarkSuggestions.make(job: j).isEmpty)
+    }
+
     func testFlood() {
         var j = Job()
         j.values["floodHistory"] = .choice("ไม่เคย", other: "")

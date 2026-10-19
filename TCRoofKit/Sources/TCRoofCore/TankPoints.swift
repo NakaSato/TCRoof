@@ -291,3 +291,28 @@ extension Obstacle {
     /// Marked `ไม่มีจริง` on site: kept in the data, left out of the drawings.
     public var isAbsent: Bool { status == TankPoints.absent }
 }
+
+extension TankPoints {
+    // MARK: photo tags (sub-step 4)
+
+    /// What an obstacle photo can be tied to: each point there (not marked absent) by its label, `บันได` when the tank
+    /// has a ladder, in plan order.
+    public static func tagOptions(_ v: Values) -> [String] {
+        let here = points(v).filter { !$0.isAbsent }
+        var out = here.filter { $0.kind != ladder }.map(\.label).filter { !$0.isEmpty }
+        if here.contains(where: { $0.kind == ladder }) { out.append("บันได") }
+        return out
+    }
+
+    /// A tag as typed: one label, `บันได`, or a range of one kind (`V1–V10`, also with `-`), normalised to an en dash;
+    /// nil when it names no point of the tank.
+    public static func tag(_ text: String, in v: Values) -> String? {
+        let t = text.trimmingCharacters(in: .whitespaces).uppercased().replacingOccurrences(of: "-", with: "–")
+        let options = tagOptions(v)
+        if let hit = options.first(where: { $0.uppercased() == t }) { return hit }
+        let ends = t.split(separator: "–").map(String.init)
+        guard ends.count == 2, let a = options.first(where: { $0.uppercased() == ends[0] }), let b = options.first(where: { $0.uppercased() == ends[1] }),
+              a.first == b.first, a != b else { return nil }
+        return a + "–" + b
+    }
+}

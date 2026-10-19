@@ -23,6 +23,9 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
     public var pitch: Double?
     /// Model identifier, e.g. "iPad14,8".
     public var device: String?
+    /// The surveyor's note, and what it shows (D1: an opening "V9", a range "V1–V10" or "บันได"), printed under it.
+    public var note: String?
+    public var tag: String?
     public init(id: UUID = UUID(), fileName: String, width: Int, height: Int, takenAt: Date = Date()) {
         self.id = id; self.fileName = fileName; self.width = width; self.height = height; self.takenAt = takenAt
     }
@@ -31,6 +34,12 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
     /// The capture fields of `stamp`, kept on this photo.
     public mutating func apply(_ stamp: PhotoStamp) {
         lat = stamp.lat; lon = stamp.lon; accuracy = stamp.accuracy; heading = stamp.heading; pitch = stamp.pitch; device = stamp.device
+    }
+
+    /// `V9 · ฝาปล่องแตก`: the tag and the note for a caption; nil when neither is set.
+    public var caption: String? {
+        let parts = [tag, note].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// "17.0062, 99.8235 · หันทิศ 195° · 29/9/2569 10:42" under the photo in the report; nil without a position or direction.

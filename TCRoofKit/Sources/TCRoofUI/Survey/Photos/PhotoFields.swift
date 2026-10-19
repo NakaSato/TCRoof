@@ -14,6 +14,7 @@ struct PhotoField: View {
     /// When set, offers "แผนที่ดาวเทียม" to fill the frame with a satellite picture of this location.
     var mapGPS: String? = nil
     @Environment(SurveyModel.self) private var model
+    @Environment(\.photoDetails) private var details
     @State private var fetchingMap = false
     @State private var mapError: String?
     @State private var showPicker = false
@@ -63,10 +64,30 @@ struct PhotoField: View {
         }
         .photoSources(picker: $showPicker, camera: $showCamera) { img in photo = model.addPhoto(img, to: jobID) }
         .sheet(isPresented: $showFull) {
-            if let p = photo, let img = model.image(p, in: jobID) { PhotoViewer(image: img, title: label) }
+            if let p = photo, let img = model.image(p, in: jobID) {
+                if let details {
+                    PhotoDetailSheet(photo: $photo, image: img, title: label, context: details) {
+                        Task { @MainActor in try? await Task.sleep(nanoseconds: 400_000_000); retake() }
+                    }
+                } else {
+                    PhotoViewer(image: img, title: label)
+                }
+            }
         }
         .errorAlert($mapError)
+        #if DEBUG
+        .task {
+            // `-surveyD1 photodetails`: the first photo with details opens them, once
+            guard details != nil, photo != nil, UserDefaults.standard.bool(forKey: "debug.openPhotoDetails") else { return }
+            UserDefaults.standard.set(false, forKey: "debug.openPhotoDetails")
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            showFull = true
+        }
+        #endif
     }
+
+    /// The camera when there is one, else the library.
+    func retake() { if UIImagePickerController.isSourceTypeAvailable(.camera) { showCamera = true } else { showPicker = true } }
 
     @ViewBuilder var mapButton: some View {
         if mapGPS != nil {
@@ -97,6 +118,12 @@ struct PhotosField: View {
                 }), jobID: jobID, height: 180)
                 .overlay(alignment: .topLeading) {
                     Text("\(i + 1)").font(.sarabun(12, .bold, relativeTo: .caption)).padding(6).background(.thinMaterial, in: Circle()).padding(6)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    if let c = p.caption {
+                        Text(c).font(.sarabun(12, .bold, relativeTo: .caption)).lineLimit(1).padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(.thinMaterial, in: Capsule()).padding(6)
+                    }
                 }
             }
             if photos.count < max {

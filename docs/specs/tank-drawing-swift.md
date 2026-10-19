@@ -1,6 +1,6 @@
 # D1 ถังน้ำใส — tank drawing and survey flow, Swift feature spec (iPad + iPhone)
 
-**Status:** Mostly built (2026-10-19). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions with the object's height and distance), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังแผงมากสุด`, panel edits, three checks, the shade simulation `TankShade`), sub-step 4's designed photo groups (the new ones optional), undo (`↶` / `↷`, ⌘Z), the tank sections and the row section (`TankDrawings`, also in the B1-C3 sheet), the layout, shade and sections in the PDF, the layout lines in Excel, and `ส่งออก DXF`. Not built: the photo selection panel (`ภาพที่เลือก`, tags with an opening ID, the GPS map), iPhone shake to undo, the recommendation carried to E1, and the interaction draft's tool modes (§4.3).
+**Status:** Mostly built (2026-10-19). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions with the object's height and distance), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังแผงมากสุด`, panel edits, three checks, the shade simulation `TankShade`), sub-step 4's designed photo groups (the new ones optional), undo (`↶` / `↷`, ⌘Z), the tank sections and the row section (`TankDrawings`, also in the B1-C3 sheet), the layout, shade and sections in the PDF, the layout lines in Excel, and `ส่งออก DXF`. Not built: `บันทึกจาก GPS`, iPhone shake to undo, and the interaction draft's tool modes (§4.3). Decided 2026-10-19: the new photo slots stay optional; the shade recommendation goes to E1 when objects cost 1 % or more.
 **Design:** the TCRoof canvas D1 pages (`iPadD1` ขนาดถัง, `iPadD1Obs` สิ่งกีดขวาง, `iPadD1Layout` จัดแผง, `iPadD1Shade` เงาบัง, `iPadD1Photo` ภาพถ่าย) and the folders [`docs/ui/survey-d1-size`](../ui/survey-d1-size) (iPad), [`survey-d1-size-iphone`](../ui/survey-d1-size-iphone), [`survey-d1-obstacles-iphone`](../ui/survey-d1-obstacles-iphone), [`survey-d1-layout-iphone`](../ui/survey-d1-layout-iphone). The app follows the folders where they differ from the canvas.
 **Design rules and drawing standard:** [`auto-drawing.md`](auto-drawing.md) §5–§7
 **Types and code detail of the first draft:** [`auto-drawing.md`](auto-drawing.md) §8 Tank, §9 UI, §10 PDF, §11 tests (the app did not build those types; see §2)
@@ -137,7 +137,7 @@ The sub-step places the PV structure on the roof automatically (`TankLayout`). T
 
 Built: the form's `ภาพถ่าย` group: `obstPhotos` (max 5; the first goes in the report's size frame), `aerialPhoto`, `sidePhotos` (max 3). All three are required, so the tab reads `บังคับ {k}/3`.
 
-Built 2026-10-19: the groups below in this order, each titled with บังคับ / ไม่บังคับ; `sidePhotos` takes 4; the three new fields are optional, so the tab still reads `บังคับ {k}/3` (`{k}/9` once the team makes them required); the PDF prints them after the side photos. Not built: the selection panel and the opening tags.
+Built 2026-10-19: the groups below in this order, each titled with บังคับ / ไม่บังคับ; `sidePhotos` takes 4; the three new fields are optional, so the tab still reads `บังคับ {k}/3` (`{k}/9` once the team makes them required); the PDF prints them after the side photos. A tap on a photo opens `ภาพที่เลือก` (`PhotoDetailSheet`, through the `photoDetails` environment): when, where (with a small map) and the camera's facing, `หมายเหตุ`, `ถ่ายใหม่`, `ลบภาพ`, and for obstacle photos `ผูกกับจุด` (the tank's points not marked absent, `บันได`, or a typed range of one kind such as `V1–V10`: `TankPoints.tag`). The tag and note (`Photo.tag`, `Photo.note`, optional) show on the photo and under it in the PDF.
 
 | Group | Slots | Field |
 |---|---|---|
@@ -164,6 +164,8 @@ on the plan (21 มี.ค. / มิ.ย. / ธ.ค. at 09:00 and 15:00, the sha
 recommendation is not yet carried to E1. The design below is the reference.
 
 **Left: `จำลองเงาบัง`.** Shadow snapshots on the plan for 21 มี.ค., 21 มิ.ย. and 21 ธ.ค. at two times each, and a heat map `สัดส่วนแผงที่โดนเงา รายเดือน × รายชั่วโมง` (legend ไม่มีเงา / เงา 25% / ≥ 50% / กลางคืน).
+
+**E1 (built 2026-10-19):** `RemarkSuggestions.shade` quotes the simulation (`ตัดแต่งต้นไม้ด้านใต้ ถังน้ำใส 1 ให้สูงไม่เกิน 6 ม. (เงาทำให้เสีย 3.2%, 4.1 MWh/ปี)`) when a layout and the object's height are there and the objects cost 1 % or more, and leaves the line out below that; without them it keeps the older line.
 
 **Right: `สิ่งที่บังแดด`.** The existing `shade`, `shadeFrom`, `shadeDir`, plus new `shadeHeight` and `shadeDistance` (`ห่างผนังถัง (ม.) *`) when shaded. Results: `เงาแถวหน้า %`, `เงาต้นไม้ %`, `สูญเสียรวม %`, `MWh/ปี ที่เสียจากต้นไม้`, and one recommendation line recorded as a proposal for E1. `shadeNote` stays; old jobs show their note until height and distance are entered.
 

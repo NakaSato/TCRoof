@@ -35,9 +35,9 @@ public enum FormImage: String, CaseIterable, Sendable {
 /// materials; page 2 key plan, progress and problems; page 3 four photos and the signatures; then six photos per page.
 /// Each page is drawn in the board's own pixels (816 × 1056, 96 dpi) and scaled once onto `dailyFormPage`.
 extension RoutineReportPages {
-    /// The form's paper: US Letter, as the board (open question 1 of the task). The board page scales to its width and
-    /// centres vertically, so A4 (595.28 × 841.89) fits too.
-    public static let dailyFormPage = (w: 612.0, h: 792.0)
+    /// The form's paper: A4, as our other reports (the board is US Letter). The board's page scales to the width and
+    /// centres down the page.
+    public static let dailyFormPage = (w: ReportLayout.pageW, h: ReportLayout.pageH)
 
     // the board's page, frame and body, in px
     static let boardW = 816.0, boardH = 1056.0

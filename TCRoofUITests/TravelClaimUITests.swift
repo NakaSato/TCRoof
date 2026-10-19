@@ -59,8 +59,10 @@ final class TravelClaimUITests: XCTestCase {
         let submit = app.buttons["claim.submit"]
         XCTAssertTrue(submit.isEnabled, "a signature enables ยื่นเบิก")
         submit.tap()
-        let locked = app.staticTexts["ยื่นเบิกแล้ว · แก้ไม่ได้จนกว่าจะถอนการยื่น"]
+        // the banner reads ยื่นเบิกแล้ว · รออนุมัติ until a manager decides (`ClaimReviewUITests`)
+        let locked = app.descendants(matching: .any)["claim.status"]
         XCTAssertTrue(locked.waitForExistence(timeout: 15))
+        XCTAssertTrue(locked.label.contains("รออนุมัติ"), locked.label)
         XCTAssertFalse(app.buttons["claim.add"].exists, "a submitted month takes no new expense")
 
         let withdraw = app.buttons["ถอนการยื่น"].firstMatch

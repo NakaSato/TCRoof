@@ -21,7 +21,15 @@ the approvers are the managers (no `approvers` list); receipts upload to Drive w
 §5 questions 3–6 (the user said "use sensible defaults", 2026-10-19): 5 บาท/กม. for a private car, odometer photos
 optional; the company's own A4 layout, managers approve; per diem and lodging by receipt (typed amounts allowed); every
 day starts from the office and returns there (a switch in ตั้งค่าการเบิก, and the day's start place can be edited).
-Not built: the suggested arrival and departure by region monitoring (§B2, optional) and an approver's view in the app.
+Approval built 2026-10-20: `ตรวจใบเบิกของทีม` (`ClaimReviewScreen`, a row at the top of the claim screen for managers)
+lists the submitted months (`รออนุมัติ`, `ส่งกลับ`, `อนุมัติแล้ว`), reads each month's trips and expenses from Firestore
+without keeping them, and approves it or sends it back with a reason. The decision is a Firestore `claimReviews`
+document (`TravelClaim.Review`, one per person and month, `<owner>_<month>`) that only managers write, signed with their
+own email and never on their own claim; it counts only for the submission it was made on, so a withdrawn and
+resubmitted month waits again. The claimant sees it on the claim screen (`ClaimReviews`), can't withdraw an approved
+month, and withdraws a returned one to edit it. A submitted month's Drive folder is shared read only with
+`config/app.claimShareWith` (the approvers' emails), so their review opens the receipts. Not built: the suggested
+arrival and departure by region monitoring (§B2, optional), and a notification to the claimant on a decision.
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.
 **App target:** the host app `TCRoof` (jobs, plan, Firebase sync). Pure logic goes in a new, dependency-free target
 `TCRoofKit/Sources/FieldOps`, testable with `swift test`.

@@ -6,14 +6,18 @@ import TCRoofCore
 /// the company account's folder shared (Editor) with each TC engineer, and the emails a contractor's job folder is
 /// shared with so the team's devices can download its photos.
 enum DriveConfig {
-    private static let centerKey = "drive.centerFolder", shareKey = "drive.shareWith"
+    private static let centerKey = "drive.centerFolder", shareKey = "drive.shareWith", claimKey = "drive.claimShareWith"
 
     static var centerFolderID: String? { UserDefaults.standard.string(forKey: centerKey) }
     static var shareWith: [String] { UserDefaults.standard.stringArray(forKey: shareKey) ?? [] }
 
-    static func set(center: String?, shareWith: [String]) {
+    /// Who reads a submitted month's claim folder (the managers who approve claims): `config/app.claimShareWith`.
+    static var claimShareWith: [String] { UserDefaults.standard.stringArray(forKey: claimKey) ?? [] }
+
+    static func set(center: String?, shareWith: [String], claimShareWith: [String] = []) {
         UserDefaults.standard.set(center.flatMap(folderID(from:)), forKey: centerKey)
         UserDefaults.standard.set(shareWith.map(Permissions.normalized).filter { $0.contains("@") }, forKey: shareKey)
+        UserDefaults.standard.set(claimShareWith.map(Permissions.normalized).filter { $0.contains("@") }, forKey: claimKey)
     }
 
     /// A folder id, or the id in a `drive.google.com/drive/folders/<id>` link.

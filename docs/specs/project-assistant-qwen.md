@@ -52,7 +52,7 @@ App (team / manager / Maintainer; assistant.use)
   message not the model's), `cleanReply` (drops fields such as reasoning text; a call to an unknown tool becomes words).
 - `src/index.ts`: the callable. Counts the request before calling Qwen (a failed call still counts), stores token
   counts only, never the text. `temperature` 0.2, `max_tokens` 1,500, 80 s timeout.
-- Parameters: `QWEN_MODEL` (default `qwen-plus`), `QWEN_BASE_URL` (default `https://maas.qwencloudapi.com/compatible-mode/v1`),
+- Parameters: `QWEN_MODEL` (default `qwen3.8-max`, on Model Studio's free quota only: "Free quota only" on in the console, so calls are refused, never billed, once it is used up), `QWEN_BASE_URL` (default `https://maas.qwencloudapi.com/compatible-mode/v1`),
   `ASSISTANT_DAILY_LIMIT` (50); secret `QWEN_API_KEY`.
 - `npm test` builds and runs the guard tests; `tools/firestore-rules-tests` checks no client touches `assistantUsage`.
 

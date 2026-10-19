@@ -7,7 +7,9 @@ public extension Assistant {
     /// call to a tool the app doesn't have becomes words.
     enum OpenAI {
         public static let defaultBaseURL = "https://maas.qwencloudapi.com/compatible-mode/v1"
-        public static let defaultModel = "qwen-plus"
+        /// The model (the user, 2026-10-19), on Model Studio's free quota only: the console's "Free quota only" switch
+        /// refuses a call once the free quota is used up instead of billing it (`Failure.freeQuotaUsed`).
+        public static let defaultModel = "qwen3.8-max"
         public static let maxTokens = 1_500
         /// Requests a device may send per Bangkok day.
         public static let dailyLimit = 50
@@ -19,6 +21,8 @@ public extension Assistant {
             case busy
             case server(Int, String)
             case badReply
+            /// Model Studio refused: the free quota is used up and "Free quota only" is on (never billed).
+            case freeQuotaUsed
 
             public var errorDescription: String? {
                 switch self {
@@ -28,6 +32,7 @@ public extension Assistant {
                 case .busy: "ผู้ช่วยมีคนใช้มาก ลองอีกครั้งในอีกสักครู่"
                 case .server(let status, let message): "ผู้ช่วยขัดข้อง (\(status))" + (message.isEmpty ? "" : ": \(message)")
                 case .badReply: "ผู้ช่วยไม่ได้ตอบ ลองอีกครั้ง"
+                case .freeQuotaUsed: "โควตาฟรีของ Qwen หมดแล้ว (ตั้งให้ใช้เฉพาะโควตาฟรี จึงไม่เสียเงิน) · ใช้ได้อีกเมื่อมีโควตาฟรีใหม่"
                 }
             }
         }
@@ -60,6 +65,9 @@ public extension Assistant {
             let json = JSONValue.parse(String(decoding: data, as: UTF8.self))
             guard (200..<300).contains(status) else {
                 let message = String((json?["error"]?["message"]?.string ?? "").prefix(200))
+                let code = json?["error"]?["code"]?.string ?? ""
+                // "Free quota only" in the console: AllocationQuota.FreeTierOnly once the free quota is used up
+                if code.contains("FreeTierOnly") || message.lowercased().contains("free tier") { throw Failure.freeQuotaUsed }
                 switch status {
                 case 401, 403: throw Failure.badKey
                 case 429: throw Failure.busy

@@ -51,6 +51,11 @@ final class AssistantOpenAITests: XCTestCase {
 
     func testFailures() {
         XCTAssertThrowsError(try O.reply(data(#"{"error":{"message":"Invalid API-key"}}"#), status: 401)) { XCTAssertEqual($0 as? O.Failure, .badKey) }
+        // "Free quota only" in the Model Studio console: refused once the free quota is used up, never billed
+        XCTAssertThrowsError(try O.reply(data(#"{"error":{"code":"AllocationQuota.FreeTierOnly","message":"The free tier of the model has been exhausted."}}"#), status: 403)) {
+            XCTAssertEqual($0 as? O.Failure, .freeQuotaUsed)
+        }
+        XCTAssertEqual(O.defaultModel, "qwen3.8-max")
         XCTAssertThrowsError(try O.reply(data("{}"), status: 429)) { XCTAssertEqual($0 as? O.Failure, .busy) }
         XCTAssertThrowsError(try O.reply(data(#"{"error":{"message":"model not found"}}"#), status: 404)) {
             XCTAssertEqual($0 as? O.Failure, .server(404, "model not found"))

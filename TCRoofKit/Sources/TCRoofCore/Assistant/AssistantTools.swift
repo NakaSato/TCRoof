@@ -94,13 +94,13 @@ public extension Assistant {
         public var isReplan: Bool { if case .replan = change { true } else { false } }
 
         /// The plan after a re-plan: the tasks' dates become fixed (as an imported plan's), the changed ones moved, and
-        /// the install window fitted to the site tasks. Nil for the other changes.
+        /// the install window fitted to the site tasks. The first re-plan keeps the plan it replaces as the baseline;
+        /// later ones keep that first one. Nil for the other changes.
         public func replanned(_ input: MasterSchedule.Input, calendar cal: Calendar = MasterSchedule.calendar) -> MasterSchedule.Input? {
             guard case .replan(let tasks, _) = change else { return nil }
             var i = input
-            var fixed = i.fixed ?? Dictionary(uniqueKeysWithValues: MasterSchedule.plan(input, calendar: cal).map {
-                ($0.task.rawValue, MasterSchedule.FixedTask(start: $0.start, end: $0.end, weight: $0.weight))
-            })
+            var fixed = input.fixedTasks(calendar: cal)
+            if i.baseline == nil { i.baseline = fixed }
             for t in tasks {
                 guard let s = MasterSchedule.date(fromKey: t.start, calendar: cal),
                       let e = MasterSchedule.date(fromKey: t.end, calendar: cal) else { continue }
@@ -109,6 +109,11 @@ public extension Assistant {
             i.fixed = fixed
             i.fitInstallWindow()
             return i
+        }
+
+        /// The audit line for this card once `by` (an email) confirmed it.
+        public func confirmation(by: String, at: Date = .now) -> MasterSchedule.Actual.Confirmation {
+            .init(task: task.rawValue, by: by, at: at, before: before, after: after, replan: isReplan)
         }
 
         public func apply(to actual: MasterSchedule.Actual, input: MasterSchedule.Input,

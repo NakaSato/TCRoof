@@ -33,16 +33,18 @@ extension ModelContext {
             .filter { $0.scheduleInput != nil }
     }
 
-    /// Saves a change the person confirmed on the assistant's card, as บันทึกความก้าวหน้า does. False when the station
-    /// or its plan is gone.
-    func applyAssistant(_ action: Assistant.PendingAction) -> Bool {
+    /// Saves a change the person confirmed on the assistant's card, as บันทึกความก้าวหน้า does, and lists it as
+    /// confirmed through the assistant by `email`. False when the station or its plan is gone.
+    func applyAssistant(_ action: Assistant.PendingAction, by email: String) -> Bool {
         guard let job = assistantStations().first(where: { $0.overviewID == action.jobID }), let input = job.scheduleInput else { return false }
+        var a = job.scheduleActual
         if let replanned = action.replanned(input) {
             job.scheduleInput = replanned
         } else {
-            let a = action.apply(to: job.scheduleActual, input: input)
-            if a != job.scheduleActual { job.scheduleActual = a }
+            a = action.apply(to: a, input: input)
         }
+        a.confirmations.append(action.confirmation(by: email))
+        job.scheduleActual = a
         try? save()
         return true
     }

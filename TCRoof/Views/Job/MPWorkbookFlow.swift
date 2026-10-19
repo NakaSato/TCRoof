@@ -69,6 +69,7 @@ final class MPWorkbookFlow {
         if !fileActual.points.isEmpty {
             var a = fileActual
             a.lateCauses = job.scheduleActual.lateCauses
+            a.confirmations = job.scheduleActual.confirmations
             job.scheduleActual = a
         } else {
             var a = job.scheduleActual

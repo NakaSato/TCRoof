@@ -132,7 +132,8 @@ struct InstallTrackingPage: View {
                 .onTapGesture { stage = nil }
                 .accessibilityHidden(true)
             InstallStageSheet(row: row, count: g.rows.count, index: (g.rows.firstIndex { $0.id == row.id } ?? 0) + 1,
-                              photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) }, close: { stage = nil },
+                              photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) },
+                              confirmation: job.scheduleActual.confirmations.last { $0.task == row.id }, close: { stage = nil },
                               openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) })
         }
         .transition(.opacity)

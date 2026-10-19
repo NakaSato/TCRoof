@@ -427,3 +427,23 @@ struct MPPlanRow: View {
         .opacity(task.weight > 0 ? 1 : 0.5)
     }
 }
+
+/// `ผ่านผู้ช่วย · 60% · สมชาย · 19/10/69`: the latest change to a task confirmed on the project assistant's card, and who
+/// confirmed it (`MasterSchedule.Actual.confirmations`), named from the team directory when listed there.
+struct MPAssistantMark: View {
+    let confirmation: MasterSchedule.Actual.Confirmation
+
+    var body: some View {
+        let who = TeamDirectory.shared.person(confirmation.by)?.label ?? confirmation.by
+        let what = confirmation.replan ? "ปรับแผน" : confirmation.after
+        Label {
+            Text(["ผ่านผู้ช่วย", what, who, ThaiFormat.numericDate.string(from: confirmation.at)].filter { !$0.isEmpty }.joined(separator: " · "))
+                .lineLimit(2)
+        } icon: {
+            Image(systemName: "sparkles")
+        }
+        .font(.sarabun(12, relativeTo: .caption))
+        .foregroundStyle(Theme.inkMuted)
+        .accessibilityIdentifier("mpAssistantMark")
+    }
+}

@@ -110,9 +110,13 @@ directly (`AssistantRouter`: the key on this device, else the function).
 
 1. Which model ids the Qwen account offers on that endpoint; try Thai answers on two before picking (`QWEN_MODEL`).
 2. Is the Firebase project on Blaze?
-3. Should progress confirmed through the assistant be marked (who confirmed, `ผ่านผู้ช่วย`) in an audit trail?
-   `MasterSchedule.Actual` has no author field today.
-4. Is 50 requests per person per day right?
+3. ~~Should progress confirmed through the assistant be marked in an audit trail?~~ Yes (19/10/2569): each confirmed
+   card adds a line to `MasterSchedule.Actual.confirmations` (task, the confirmer's email, time, the card's before and
+   after); the progress sheet and the install page's task sheet show the latest as `ผ่านผู้ช่วย · 60% · name · date`.
+   Changes typed in by hand are not listed.
+4. ~~Is 50 requests per person per day right?~~ Yes, kept at 50 (19/10/2569).
 5. App Check is not enforced (the app has no App Check yet); the member check is the gate.
-6. A confirmed re-plan replaces the plan's dates, so planned % is measured against the new plan. Should the original
-   baseline be kept for reports (planned vs re-planned)?
+6. ~~Should the original baseline be kept for reports?~~ Yes (19/10/2569): the first confirmed re-plan keeps the plan
+   it replaces in `MasterSchedule.Input.baseline` (later re-plans keep that first one; an imported workbook starts
+   without one). Planned % stays against the new plan; the MP screen and its PDF add `แผนเดิม x%` and a thin grey bar
+   per moved task, and the assistant's brief has `originalInstallEnd` / `originalPlannedPercent`.

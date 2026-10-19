@@ -52,6 +52,9 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     public var installEnd: String
     public var plannedPercent: Double
     public var actualPercent: Double
+    /// After a re-plan: the original plan's install end and its planned % today (the plan above is the new one).
+    public var originalInstallEnd: String?
+    public var originalPlannedPercent: Double?
     /// Actual minus planned; negative is behind.
     public var variance: Double
     /// The handover the install tracking page shows (`คาดส่งมอบ`): the install period stretched by the SPI (actual over
@@ -89,6 +92,11 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
         plannedPercent = Self.round(status.planned)
         actualPercent = Self.round(status.actual)
         variance = Self.round(status.variance)
+        if let original = input.original {
+            let p = MasterSchedule.plan(original, calendar: cal)
+            originalInstallEnd = p.filter { $0.task.part != .permit }.compactMap(\.end).max().map(day)
+            originalPlannedPercent = Self.round(MasterSchedule.status(plan: p, actual: actual, through: today, calendar: cal).planned)
+        }
         parts = MasterSchedule.Part.allCases.map {
             PartLine(part: $0.reportTitle, plannedPercent: Self.round(status.plannedByPart[$0] ?? 0),
                      actualPercent: Self.round(status.actualByPart[$0] ?? 0))

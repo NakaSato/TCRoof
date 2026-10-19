@@ -221,7 +221,7 @@ struct AssistantChatView: View {
     }
 
     private func resolve(_ action: Assistant.PendingAction, _ confirmed: Bool) {
-        if confirmed, !context.applyAssistant(action) {
+        if confirmed, !context.applyAssistant(action, by: permissions.email) {
             failure = "บันทึกไม่ได้ ไม่พบแผนของ \(action.station)"
             session.resolve(action.id, confirmed: false)
             return

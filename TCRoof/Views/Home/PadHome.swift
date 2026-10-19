@@ -23,7 +23,7 @@ struct PadHome<Popover: View>: View {
     let showSurveys: () -> Void
     /// The bar's search field.
     let openSearch: () -> Void
-    let newSurvey: () -> Void
+    let newSurvey: (() -> Void)?
     @ViewBuilder let notifications: () -> Popover
 
     @State private var page = 0

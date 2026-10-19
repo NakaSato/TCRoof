@@ -318,7 +318,8 @@ struct AppointmentHero: View {
     let appointments: [HeroItem]
     @Binding var page: Int
     let open: (TodayAppointment, MissingGroup.Target?) -> Void
-    let newSurvey: () -> Void
+    /// nil hides `งานสำรวจใหม่` (a contractor can't create jobs: `job.edit`).
+    let newSurvey: (() -> Void)?
 
     @State private var calling: TodayAppointment?
     @Environment(\.openURL) private var openURL
@@ -335,7 +336,7 @@ struct AppointmentHero: View {
                 actions(a)
             } else {
                 Text(emptyTitle).font(.sarabun(size.isPad ? 21 : 17, .bold, relativeTo: .headline))
-                Button(action: newSurvey) { primaryLabel("งานสำรวจใหม่ ›") }.buttonStyle(.plain)
+                if let newSurvey { Button(action: newSurvey) { primaryLabel("งานสำรวจใหม่ ›") }.buttonStyle(.plain) }
             }
         }
         .foregroundStyle(Theme.onPrimary)

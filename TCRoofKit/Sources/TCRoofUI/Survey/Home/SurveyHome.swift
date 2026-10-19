@@ -358,7 +358,7 @@ struct SurveyHomeView: View {
         TCEmptyState(model.jobs.isEmpty ? "ยังไม่มีงานสำรวจ" : "ไม่พบงาน", systemImage: "list.clipboard",
                      description: Text(model.jobs.isEmpty ? "เริ่มงานใหม่ หรือเปิดงานที่บันทึกไว้จาก Google Drive / ไฟล์สำรอง"
                                        : search.isEmpty ? "ไม่มีงานในกลุ่ม \"\(filter.title)\"" : "ลองคำค้นอื่น")) {
-            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(TCButtonStyle(.primary, size: .card)) }
+            if model.jobs.isEmpty && permissions.can(.jobEdit) { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(TCButtonStyle(.primary, size: .card)) }
         }
         .padding(.top, 40)
     }

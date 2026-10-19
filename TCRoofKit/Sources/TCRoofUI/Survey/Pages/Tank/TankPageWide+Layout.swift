@@ -22,6 +22,7 @@ extension TankPageWide {
         if let l = TankLayout.current(values) {
             layoutSummaryCard(l)
             layoutChecksCard(l)
+            shadeCard(l)
         }
         dxfButton
     }
@@ -30,16 +31,19 @@ extension TankPageWide {
     @ViewBuilder var padLayoutStep: some View {
         let next = nextButton("ถัดไป · ภาพถ่าย ›") { withAnimation { tab = 4 } }
         if stacked {
-            layoutSheets(ScrollView {
-                VStack(spacing: 14) {
-                    layoutPlanCard.frame(maxWidth: 640)
-                    layoutSideCards.frame(maxWidth: 640)
-                    next.frame(maxWidth: 640)
+            layoutSheets(ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 14) {
+                        layoutPlanCard.frame(maxWidth: 640)
+                        layoutSideCards.frame(maxWidth: 640)
+                        next.frame(maxWidth: 640)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 8)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 8)
-            }
-            .scrollIndicators(.hidden))
+                .scrollIndicators(.hidden)
+                .onChange(of: shadeScroll) { _, on in if on { withAnimation { proxy.scrollTo("shadeCard", anchor: .top) }; shadeScroll = false } }
+            })
         } else {
             layoutSheets(HStack(alignment: .top, spacing: gap) {
                 ScrollView { layoutPlanCard.frame(maxWidth: 680).frame(maxWidth: .infinity) }.scrollIndicators(.hidden)
@@ -305,22 +309,104 @@ extension TankPageWide {
         .accessibilityValue(ok ? "ผ่าน" : "ไม่ผ่าน")
     }
 
-    /// The standard drawing B1-C3: not in the app yet.
+    // MARK: card 4 · shade
+
+    /// What the simulation depends on, so it runs again when any of it changes.
+    var shadeKey: String {
+        let l = TankLayout.current(values)
+        return [String(l?.count ?? 0), values.text(TankLayout.Key.offX), values.text(TankLayout.Key.offY), values.text(TankLayout.Key.off),
+                values.choice("shade") ?? "", values.multi("shadeDir").joined(), values.text(TankShade.Key.height),
+                values.text(TankShade.Key.distance), values.text(Tank.Key.azimuth), String(Tank.exposed(values) ?? 0), job.values.text("gps")]
+            .joined(separator: "|")
+    }
+
+    func refreshShade() async {
+        let v = values, lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude
+        shadeBusy = true
+        let r = await Task.detached(priority: .userInitiated) { TankShade(v, latitude: lat) }.value
+        guard !Task.isCancelled else { return }
+        shadeResult = r
+        shadeBusy = false
+    }
+
+    /// `เงาบัง`: the year's losses, the recommendation, a moment's shaded panels and the month × hour map.
+    func shadeCard(_ l: TankLayout) -> some View {
+        let s = shadeResult
+        let chip = shadeBusy ? ("กำลังคำนวณ…", Theme.inkMuted, Theme.hairline)
+            : s.map { (String(format: "เสีย %.1f%%", $0.totalLoss * 100), $0.objectLoss >= 0.01 ? Theme.pending : Theme.okTick,
+                       $0.objectLoss >= 0.01 ? Theme.pendingSoft : Theme.okSoft) } ?? ("-", Theme.inkMuted, Theme.hairline)
+        return phoneCard(4, "เงาบัง · จำลองทั้งปี", chip: chip) {
+            if let s {
+                let tiles: [(String, String)] = [("เงาแถวหน้า", String(format: "%.1f%%", s.rowLoss * 100)),
+                                                 ("เงาสิ่งบัง", String(format: "%.1f%%", s.objectLoss * 100)),
+                                                 ("สูญเสียรวม", String(format: "%.1f%%", s.totalLoss * 100)),
+                                                 ("เสียจากสิ่งบัง", String(format: "%.1f MWh/ปี", s.objectMWh))]
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                    ForEach(Array(tiles.enumerated()), id: \.offset) { _, t in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(t.1).font(.sarabunFixed(16, .bold)).monospacedDigit()
+                            Text(t.0).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Self.track, in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                Text(s.recommendation(values)).font(.sarabunFixed(13.5)).foregroundStyle(s.objectLoss >= 0.01 ? Theme.dangerText : Theme.navy)
+                    .fixedSize(horizontal: false, vertical: true)
+                shadeMoments(s, l)
+                let map = TankDrawings.heatMap(s)
+                GeometryReader { g in SketchCanvas(ops: map.ops, fit: SketchFit(map.width, map.height, in: g.size)) }
+                    .aspectRatio(map.width / map.height, contentMode: .fit)
+                    .accessibilityLabel("แผนที่สัดส่วนแผงที่โดนเงา รายเดือนและรายชั่วโมง")
+            } else if !shadeBusy {
+                Text("ยังไม่มีผังแผง").font(.sarabunFixed(13.5)).foregroundStyle(Theme.inkMuted)
+            }
+        }
+        .task(id: shadeKey) { await refreshShade() }
+        .id("shadeCard")
+    }
+
+    /// A moment of the year on the plan: the panels without direct sun in orange.
+    @ViewBuilder func shadeMoments(_ s: TankShade, _ l: TankLayout) -> some View {
+        if s.snapshots.indices.contains(shadeMoment), let plan = TankDrawings.layoutPlan(values, l, shaded: s.snapshots[shadeMoment].shaded) {
+            Menu {
+                ForEach(Array(s.snapshots.enumerated()), id: \.offset) { i, m in
+                    Button(m.title + " · \(m.shaded.count) แผง") { shadeMoment = i }
+                }
+            } label: {
+                Label(s.snapshots[shadeMoment].title + " · เงาบนแผง \(s.snapshots[shadeMoment].shaded.count) แผง", systemImage: "sun.max")
+                    .font(.sarabunFixed(14, .bold)).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }
+            GeometryReader { g in SketchCanvas(ops: plan.ops, fit: SketchFit(plan.width, plan.height, in: g.size)) }
+                .aspectRatio(plan.width / plan.height, contentMode: .fit)
+                .background(Theme.paper)
+                .accessibilityLabel("ผังแผง แผงที่โดนเงาเป็นสีส้ม")
+        }
+    }
+
+    /// The standard drawings: the row section and the tank sections (`TankDrawings`).
     var drawingSheet: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                Image(systemName: "doc.text.magnifyingglass").font(.system(size: 40)).foregroundStyle(Theme.disabledText)
-                Text("แบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.sarabunFixed(16, .bold))
-                Text("ยังไม่มีไฟล์แบบในแอป").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            ScrollView {
+                VStack(spacing: 16) {
+                    let sketches = [TankLayout.current(values).map { TankDrawings.tableSection($0.params) } ?? TankDrawings.tableSection(TankLayout.defaults(values))]
+                        + [false, true].compactMap { TankDrawings.section(values, across: $0) }
+                    ForEach(Array(sketches.enumerated()), id: \.offset) { _, sk in
+                        GeometryReader { g in SketchCanvas(ops: sk.ops, fit: SketchFit(sk.width, sk.height, in: g.size)) }
+                            .aspectRatio(sk.width / sk.height, contentMode: .fit)
+                            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .padding(16)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(24)
-            .navigationTitle("แบบ \(Self.drawingRef)")
+            .navigationTitle("แบบ \(Self.drawingRef) · รูปตัด")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { drawingOpen = false } } }
         }
         .foregroundStyle(Theme.navy)
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
     }
 }
 #endif

@@ -68,6 +68,8 @@ struct TankPageWide: View {
     @State var shadeMoment = 4
     /// `↶ เลิกทำ` (TankPageWide+Undo).
     @StateObject var undo = TankUndo()
+    /// DEBUG `photos` / `photodetails`: scroll sub-step 4 to the obstacle photos.
+    @State var photoScroll = false
     /// DEBUG `layoutshade`: scroll the one-column layout to the shade card.
     @State var shadeScroll = false
     @State var dxfShare: DXFShare?
@@ -91,7 +93,7 @@ struct TankPageWide: View {
                 VStack(spacing: 14) {
                     PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
                     HStack(spacing: 8) {
-                        tabBar
+                        tabBar.frame(maxWidth: .infinity)
                         undoButtons()
                     }
                     switch tab {
@@ -230,6 +232,7 @@ struct TankPageWide: View {
     @ViewBuilder var formStep: some View {
         if let i = index {
             let fields = Schema.spec(.tank).fields
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(formFields, id: \.title) { g in
@@ -237,9 +240,11 @@ struct TankPageWide: View {
                             ForEach(g.ids.compactMap { id in fields.first { $0.id == id } }) { f in
                                 if f.isVisible(job.modules[i].values) {
                                     FieldView(spec: f, values: $job.modules[i].values, jobID: job.id, moduleType: .tank, gps: job.values.text("gps"))
+                                        .environment(\.photoDetails, photoDetails(f.id))
                                 }
                             }
                         }
+                        .id(g.ids.first ?? g.title)
                     }
                 }
                 .frame(maxWidth: 980)
@@ -247,7 +252,16 @@ struct TankPageWide: View {
                 .padding(.bottom, 8)
             }
             .scrollIndicators(.hidden)
+            .onChange(of: photoScroll) { _, on in if on { proxy.scrollTo("obstPhotos", anchor: .top); photoScroll = false } }
+            }
         }
+    }
+
+    /// `ภาพที่เลือก` on every photo of the step; obstacle photos can be tied to the tank's openings.
+    func photoDetails(_ id: String) -> PhotoDetailsContext {
+        guard id == "obstPhotos" else { return PhotoDetailsContext() }
+        let v = values
+        return PhotoDetailsContext(tags: TankPoints.tagOptions(v), normalise: { TankPoints.tag($0, in: v) })
     }
 
     func nextButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -331,6 +345,30 @@ extension TankPageWide {
             case "obstdelete": addPoint(TankPoints.vent); try? await Task.sleep(nanoseconds: 300_000_000); deleteAsk = true
             default: break
             }
+        case "photos", "photodetails":
+            // sub-step 4 with two drawn obstacle photos, the first tied to V3 with a note (photodetails opens it)
+            update { v in
+                v[Roof.Key.obstacles] = nil
+                TankPoints.seed(&v)
+                for o in TankPoints.points(v) { TankPoints.setStatus(&v, o.id, TankPoints.ok) }
+            }
+            let drawn = ["V3", "H1"].compactMap { name -> Photo? in
+                let img = UIGraphicsImageRenderer(size: CGSize(width: 800, height: 600)).image { ctx in
+                    UIColor(white: 0.55, alpha: 1).setFill(); ctx.fill(CGRect(x: 0, y: 0, width: 800, height: 600))
+                    UIColor(white: 0.35, alpha: 1).setFill(); ctx.fill(CGRect(x: 300, y: 200, width: 200, height: 200))
+                    (name as NSString).draw(at: CGPoint(x: 360, y: 270), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 48), .foregroundColor: UIColor.white])
+                }
+                return model.addPhoto(img, to: job.id)
+            }
+            update { v in
+                var list = drawn
+                if !list.isEmpty { list[0].tag = "V3"; list[0].note = "ฝาปล่องแตก" }
+                v["obstPhotos"] = .photos(list)
+            }
+            if state == "photodetails" { UserDefaults.standard.set(true, forKey: "debug.openPhotoDetails") }
+            tab = 4
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            photoScroll = true
         case "layout", "layoutbottom", "layoutedit", "layoutfull", "layoutask", "layoutmax", "layoutdrawing", "layoutshade":
             // docs/ui/survey-d1-layout-iphone: the standard points of 2/4 all checked, sub-step 3 with its automatic layout
             update { v in

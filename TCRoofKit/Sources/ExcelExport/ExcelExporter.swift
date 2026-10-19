@@ -241,6 +241,15 @@ struct Fill {
         a.radio(d.choice("roofShape"), Options.roofShape, ["F30", "K30", "Q30", "F32", "K32", "Q32"])
         a.radio(d.choice("roofMaterial"), Options.roofMaterial, ["F34", "K34", "Q34", "U34"])
         a.radio(d.choice("roofStructure"), Options.structure, ["F36", "K36"])
+        // NO.224 has no cells for the roof PV layout (docs/specs/roof-pv-layout.md §7): its figures and BOQ go into the
+        // blank rows 38–39 under the roof's options, as the tank sheet does with its extras
+        if RoofMount.printable(d) {
+            let layout = RoofMount.layout(d, latitude: RoofMount.latitude(gps: job.values.text("gps"))).layout
+            if layout.quantities.modules > 0 {
+                a.raw("A38", RoofMount.summaryLine(layout))
+                a.raw("A39", RoofMount.boqLine(layout.quantities))
+            }
+        }
         let top = [d.photo("aerialPhoto")] + d.photos("generalPhotos").map { Optional($0) }, st = d.photos("structPhotos")
         for (i, q) in ["A41:M47", "N41:Z47", "A48:M54", "N48:Z54"].enumerated() { a.pic(q, img(top[safe: i] ?? nil)) }
         for (i, q) in ["A56:M62", "N56:Z62", "A63:M69", "N63:Z69"].enumerated() { a.pic(q, img(st[safe: i])) }

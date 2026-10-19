@@ -146,6 +146,27 @@ public enum RoofMount {
         return cleared
     }
 
+    // MARK: - Report lines (docs/specs/roof-pv-layout.md §7)
+
+    /// `ผังแผงอัตโนมัติ 216 แผง · 129.6 kWp · 191.1 MWh/ปี · ลาด 15° · แป @1.20 ม. · 4 แถว`
+    public static func summaryLine(_ m: RoofMountLayout) -> String {
+        let q = m.quantities, rows = m.faces.filter(\.used).map(\.rows.count).max() ?? 0
+        let fixing = m.options.ribClamp ? "จับสันลอน" : String(format: "แป @%.2f ม.", m.purlins.count > 1 ? m.purlins[1] - m.purlins[0] : 0)
+        return "ผังแผงอัตโนมัติ \(q.modules) แผง · " + String(format: "%.1f kWp · %.1f MWh/ปี · ลาด %.0f° · ", q.kWp, q.energy, m.roof.tilt * 180 / .pi)
+            + fixing + " · \(rows) แถว"
+    }
+
+    /// `BOQ: ราง 502.2 ม. · ต่อราง 80 · L-foot 496 · ตัวจับกลาง 364 · ตัวจับปลาย 136 · 34 ชุดราง`
+    public static func boqLine(_ q: RoofMountQuantities) -> String {
+        String(format: "BOQ: ราง %.1f ม. · ต่อราง %d · L-foot %d · ตัวจับกลาง %d · ตัวจับปลาย %d · %d ชุดราง", q.railLength, q.splices, q.feet,
+               q.midClamps, q.endClamps, q.runs) + (q.cuts > 0 ? " · ตัดแผง \(q.cuts)" : "")
+    }
+
+    /// Whether the job has a roof PV layout to print: a supported shape and spans.
+    public static func printable(_ v: Values) -> Bool {
+        shape(v) != nil && !v.text(Roof.Key.spansX).isEmpty && !v.text(Roof.Key.spansY).isEmpty
+    }
+
     /// What the layout assumed (ค่าสมมติ), for the line under the plan and the report.
     public static func assumptions(_ v: Values, latitude: Double?) -> [String] {
         var out: [String] = []

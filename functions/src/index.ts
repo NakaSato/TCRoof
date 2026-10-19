@@ -15,7 +15,8 @@ import { bangkokDay, checkMember, checkRequest, cleanReply, LIMITS } from './gua
 initializeApp();
 
 const QWEN_API_KEY = defineSecret('QWEN_API_KEY');
-const QWEN_MODEL = defineString('QWEN_MODEL', { default: 'qwen-plus', description: 'Qwen model id' });
+// free quota only: turn on "Free quota only" for this model in the Model Studio console (calls are refused, never billed)
+const QWEN_MODEL = defineString('QWEN_MODEL', { default: 'qwen3.8-max', description: 'Qwen model id' });
 const QWEN_BASE_URL = defineString('QWEN_BASE_URL', {
   default: 'https://maas.qwencloudapi.com/compatible-mode/v1',
   description: 'OpenAI-compatible base URL of the Qwen service',

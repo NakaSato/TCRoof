@@ -82,14 +82,15 @@ final class RoutineReportPagesTests: XCTestCase {
         r.weather = RoutineReport.weatherHours.map { $0 >= 14 && $0 <= 17 ? .rain : $0 == 8 ? .cloudy : $0 == 20 ? nil : .fine }
         let page = pages.daily(entry(r), all: [r])[0]
         let items = placed(page)
-        for (h, want) in [(6, "F"), (8, "F"), (13, "F"), (14, "R"), (17, "R"), (18, "F")] {
+        for (h, want) in [(6, "F"), (8, "C"), (13, "F"), (14, "R"), (17, "R"), (18, "F")] {
             let x = items.first { $0.0 == String(format: "%02d:00", h) }!.1
             XCTAssertTrue(items.contains { $0.0 == want && abs($0.1 - x) < 0.01 }, "\(h):00 should be \(want)")
         }
         let x20 = items.first { $0.0 == "20:00" }!.1
-        XCTAssertFalse(items.contains { ($0.0 == "F" || $0.0 == "R") && abs($0.1 - x20) < 0.01 })   // not filled
+        XCTAssertFalse(items.contains { ["F", "C", "R"].contains($0.0) && abs($0.1 - x20) < 0.01 })   // not filled
         let rain = page.ops.filter { if case let .rect(_, _, f?, _) = $0 { f == RoutineReportPages.rainFill } else { false } }
         XCTAssertEqual(rain.count, 4 + 1)   // four hours and the legend
+        XCTAssertTrue(texts([page]).contains(": Cloudy เมฆครึ้ม"))
     }
 
     func testHeaderReadsTheDateInEnglishAndTheStation() {
@@ -102,6 +103,10 @@ final class RoutineReportPagesTests: XCTestCase {
         XCTAssertTrue(t.contains("บริษัท ทีซี รีนิวอะเบิ้ล เอ็นเนอร์ยี่ จำกัด"))
         XCTAssertTrue(t.contains("Total Man-Day"))
         XCTAssertEqual(RoutineReportPages.formDate(d(23, 12)), "23-Dec-2025")
+        var st = RoutineReportPages.Station(name: "สถานีผลิตน้ำโชคชัย", code: "", mpNumber: nil, capacityKWp: 0, settings: .init(), branch: "สาขาโชคชัย")
+        XCTAssertEqual(st.projectLine, "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย")
+        st.branch = "โชคชัย"
+        XCTAssertEqual(st.projectLine, "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย")
     }
 
     func testProgressShowsTodayAndAccumulated() {

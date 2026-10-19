@@ -23,7 +23,8 @@ extension Job {
     var stationName: String { projectName.isEmpty ? customerName : projectName }
 
     var reportStation: RoutineReportPages.Station {
-        .init(name: stationName, code: code, mpNumber: mpNumber, capacityKWp: capacityKW, settings: routineSettings)
+        .init(name: stationName, code: code, mpNumber: mpNumber, capacityKWp: capacityKW, settings: routineSettings,
+              branch: stationDocs.branch)
     }
 
     var reportSchedule: RoutineReportPages.Schedule? {

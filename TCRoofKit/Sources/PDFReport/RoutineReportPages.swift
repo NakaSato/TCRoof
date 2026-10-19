@@ -11,8 +11,18 @@ public struct RoutineReportPages {
         public var mpNumber: Int?
         public var capacityKWp: Double
         public var settings: RoutineReport.Settings
-        public init(name: String, code: String, mpNumber: Int?, capacityKWp: Double, settings: RoutineReport.Settings) {
+        /// The PWA branch (`สาขาโชคชัย`), from เอกสารสถานี's station facts; empty when not typed.
+        public var branch: String
+        public init(name: String, code: String, mpNumber: Int?, capacityKWp: Double, settings: RoutineReport.Settings, branch: String = "") {
             self.name = name; self.code = code; self.mpNumber = mpNumber; self.capacityKWp = capacityKWp; self.settings = settings
+            self.branch = branch
+        }
+
+        /// `สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย`, the DAILY REPORT's ชื่อโครงการ; the name alone without a branch.
+        public var projectLine: String {
+            let b = branch.trimmingCharacters(in: .whitespaces)
+            guard !b.isEmpty else { return name }
+            return name + " การประปาส่วนภูมิภาค" + (b.hasPrefix("สาขา") ? b : "สาขา" + b)
         }
     }
 

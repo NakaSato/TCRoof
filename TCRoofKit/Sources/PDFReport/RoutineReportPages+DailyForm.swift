@@ -46,7 +46,8 @@ extension RoutineReportPages {
     /// Crew and tool rows, materials, progress and problems per page, as on the form.
     static let formRows = (crew: 17, materials: 8, progress: 6, problems: 5, firstPhotos: 4, morePhotos: 6)
 
-    static let fineFill = RGBA(hex: 0xB7DEE8), rainFill = RGBA(hex: 0xFF0000), hint = RGBA(hex: 0x767676)
+    static let fineFill = RGBA(hex: 0xB7DEE8), cloudFill = RGBA(hex: 0xD9D9D9), rainFill = RGBA(hex: 0xFF0000)
+    static let hint = RGBA(hex: 0x767676)
 
     /// What the header prints; nil fields draw the blank form's dotted lines.
     struct FormHeader {
@@ -66,7 +67,7 @@ extension RoutineReportPages {
         let r = e.report, s = station.settings
         let header = FormHeader(contract: Self.contractText(s), kWp: String(format: "%.2f", station.capacityKWp),
                                 date: Self.formDate(r.date), workingTime: Self.workingTime(r.workStart, r.workEnd),
-                                from: s.contractor, to: s.employer, station: station.name)
+                                from: s.contractor, to: s.employer, station: station.projectLine)
 
         // page 1, repeated while crew, tools or materials remain
         let crew = r.crew.filter { $0.count > 0 }, tools = r.tools.filter { $0.count > 0 }
@@ -315,7 +316,8 @@ extension RoutineReportPages {
                                   TextRun("สภาพอากาศ", size: 11, bold: true, underline: true)], at: Pt(x, y + 10))]
         // legend, from the right edge
         var right = x + w
-        for (mark, fill, en, th) in [("R", Self.rainFill, ": Raining ", "ฝนตก"), ("F", Self.fineFill, ": Fine ", "ท้องฟ้าโปร่ง")] {
+        for (mark, fill, en, th) in [("R", Self.rainFill, ": Raining ", "ฝนตก"), ("C", Self.cloudFill, ": Cloudy ", "เมฆครึ้ม"),
+                                     ("F", Self.fineFill, ": Fine ", "ท้องฟ้าโปร่ง")] {
             let runs = [TextRun(en, size: 10, face: .helvetica), TextRun(th, size: 11)]
             let tw = measure.width(runs)
             o.append(.runs(runs, at: Pt(right, y + 10), align: .right))
@@ -330,8 +332,9 @@ extension RoutineReportPages {
             o.append(Self.latin(String(format: "%02d:00", h), 10.5, at: Pt(cx, top + 10), align: .center))
             let mark: (String, RGBA)? = switch weather[safe: i] ?? nil {
             case .rain?: ("R", Self.rainFill)
-            // the form has no cloudy mark: a cloudy hour prints as fine (open question 3)
-            case .fine?, .cloudy?: ("F", Self.fineFill)
+            // the customer's form has F and R only; C is ours, grey, with its own legend entry
+            case .cloudy?: ("C", Self.cloudFill)
+            case .fine?: ("F", Self.fineFill)
             case nil: nil
             }
             if let mark {

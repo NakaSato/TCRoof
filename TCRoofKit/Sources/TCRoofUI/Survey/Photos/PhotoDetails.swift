@@ -27,9 +27,6 @@ struct PhotoDetailSheet: View {
     let context: PhotoDetailsContext
     let retake: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var note = ""
-    @State private var typed = ""
-    @State private var typedBad = false
     @State private var zoom = false
 
     var body: some View {
@@ -43,14 +40,20 @@ struct PhotoDetailSheet: View {
                     if let p = photo { info(p) }
                     VStack(alignment: .leading, spacing: 6) {
                         Text("หมายเหตุ").font(.sarabunFixed(14, .bold))
-                        TextField("เช่น ฝาปล่องแตก", text: $note, axis: .vertical)
-                            .font(.sarabunFixed(15)).lineLimit(1...4)
-                            .padding(10).background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
-                            .onChange(of: note) { _, t in edit { $0.note = t.isEmpty ? nil : t } }
+                        PhotoNoteField(note: photo?.note) { t in edit { $0.note = t } }
                     }
-                    if !context.tags.isEmpty { tagPicker }
-                    if let p = photo, let lat = p.lat, let lon = p.lon { where_(lat, lon) }
+                    if !context.tags.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("ผูกกับจุด").font(.sarabunFixed(14, .bold))
+                            PhotoTagPicker(tag: photo?.tag, context: context) { t in edit { $0.tag = t } }
+                        }
+                    }
+                    if let p = photo, let lat = p.lat, let lon = p.lon {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("จุดถ่ายภาพ").font(.sarabunFixed(14, .bold))
+                            PhotoShotMap(lat: lat, lon: lon).frame(height: 160)
+                        }
+                    }
                     HStack(spacing: 10) {
                         Button { dismiss(); retake() } label: { Label("ถ่ายใหม่", systemImage: "camera").frame(maxWidth: .infinity, minHeight: 44) }
                             .buttonStyle(TCButtonStyle(.secondary, size: .card))
@@ -67,7 +70,6 @@ struct PhotoDetailSheet: View {
             .sheet(isPresented: $zoom) { PhotoViewer(image: image, title: title) }
         }
         .foregroundStyle(Theme.navy)
-        .onAppear { note = photo?.note ?? "" }
     }
 
     func edit(_ f: (inout Photo) -> Void) {
@@ -96,44 +98,70 @@ struct PhotoDetailSheet: View {
         }
     }
 
-    /// The opening the photo shows: a menu of the tank's points, or a range typed (`V1–V10`).
-    var tagPicker: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("ผูกกับจุด").font(.sarabunFixed(14, .bold))
+}
+
+/// A photo's note, saved as it is typed (empty clears it).
+struct PhotoNoteField: View {
+    let note: String?
+    let save: (String?) -> Void
+    @State private var text = ""
+    var body: some View {
+        TextField("เพิ่มหมายเหตุ…", text: $text, axis: .vertical)
+            .font(.sarabunFixed(15)).lineLimit(1...4)
+            .padding(.horizontal, 12).padding(.vertical, 10).frame(minHeight: 44)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl))
+            .onAppear { text = note ?? "" }
+            .onChange(of: note) { _, n in if (n ?? "") != text { text = n ?? "" } }
+            .onChange(of: text) { _, t in if t != (note ?? "") { save(t.isEmpty ? nil : t) } }
+            .accessibilityLabel("หมายเหตุ")
+    }
+}
+
+/// The opening a photo shows: a menu of the page's tags, or a range typed (`V1–V10`) checked by the context.
+struct PhotoTagPicker: View {
+    let tag: String?
+    let context: PhotoDetailsContext
+    let save: (String?) -> Void
+    @State private var typed = ""
+    @State private var typedBad = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Menu {
-                    Button("ไม่ผูก") { edit { $0.tag = nil } }
-                    ForEach(context.tags, id: \.self) { t in Button(t) { edit { $0.tag = t } } }
+                    Button("ไม่ผูก") { save(nil) }
+                    ForEach(context.tags, id: \.self) { t in Button(t) { save(t) } }
                 } label: {
-                    Label(photo?.tag ?? "เลือกจุด", systemImage: "chevron.down").font(.sarabunFixed(15, .bold))
-                        .frame(minWidth: 110, minHeight: 44)
+                    Label(tag ?? "เลือกจุด", systemImage: "chevron.down").font(.sarabunFixed(15, .bold))
+                        .frame(minWidth: 100, minHeight: 44)
                         .padding(.horizontal, 10).background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderControl))
                 }
+                .accessibilityLabel("ผูกกับจุด " + (tag ?? "ยังไม่ผูก"))
                 TextField("หรือพิมพ์ช่วง เช่น V1–V10", text: $typed)
                     .font(.sarabunFixed(15)).textInputAutocapitalization(.characters).autocorrectionDisabled()
                     .padding(10).frame(minHeight: 44).background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(typedBad ? Theme.danger : Theme.borderControl))
                     .onSubmit {
-                        if let t = context.normalise(typed) { edit { $0.tag = t }; typed = ""; typedBad = false } else { typedBad = true }
+                        if let t = context.normalise(typed) { save(t); typed = ""; typedBad = false } else { typedBad = true }
                     }
             }
             if typedBad { Text("ไม่พบจุดนี้บนถัง").font(.sarabunFixed(12.5)).foregroundStyle(Theme.dangerText) }
         }
     }
+}
 
-    /// `จุดถ่ายภาพ`: where the camera stood.
-    func where_(_ lat: Double, _ lon: Double) -> some View {
+/// `จุดถ่ายภาพ`: where the camera stood, on a small map.
+struct PhotoShotMap: View {
+    let lat: Double, lon: Double
+    var body: some View {
         let c = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("จุดถ่ายภาพ").font(.sarabunFixed(14, .bold))
-            Map(initialPosition: .region(MKCoordinateRegion(center: c, latitudinalMeters: 250, longitudinalMeters: 250))) {
-                Marker("ถ่ายที่นี่", coordinate: c)
-            }
-            .frame(height: 160)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .allowsHitTesting(false)
+        Map(initialPosition: .region(MKCoordinateRegion(center: c, latitudinalMeters: 250, longitudinalMeters: 250))) {
+            Marker("ถ่ายที่นี่", coordinate: c)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .allowsHitTesting(false)
+        .accessibilityLabel(String(format: "จุดถ่ายภาพ %.5f, %.5f", lat, lon))
     }
 }
 #endif

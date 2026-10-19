@@ -16,7 +16,9 @@ public enum AppCompat {
     /// 3: contractors send the weekly request R1 (`weeklyRequests` signed `weeklyRequestsBy`, `WeeklyRequest.sentAt`).
     /// Builds before it drop `sentAt` when they save a request and take a contractor's change to a sent or approved
     /// week as it comes (`WeeklyRequest.trusting`).
-    public static let syncVersion = 3
+    /// 4: the project assistant's records on the MP plan: who confirmed each card (`Actual.confirmations`) and the plan
+    /// before the first re-plan (`Input.baseline`). Builds before it drop both when they save that plan.
+    public static let syncVersion = 4
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

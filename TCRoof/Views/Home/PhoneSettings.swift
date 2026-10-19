@@ -67,6 +67,16 @@ struct PhoneSettingsList: View {
                             .buttonStyle(.plain)
                     }
                 }
+                if permissions.can(.assistantUse) {
+                    // the Qwen key lives in this device's Keychain (docs/specs/project-assistant-qwen.md §7)
+                    section("ผู้ช่วยโครงการ (AI)") {
+                        NavigationLink { AssistantSettingsPage() } label: {
+                            row("คีย์ Qwen", AssistantKey.hasKey ? "ตั้งค่าแล้ว ›" : "ยังไม่ได้ใส่ ›")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("assistantSettingsRow")
+                    }
+                }
                 notificationsSection
                 // the events carry customers' phones and addresses: the team's, as เพิ่มลงปฏิทิน on the job
                 if permissions.can(.jobEdit) { calendarSection }

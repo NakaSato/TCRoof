@@ -14,12 +14,15 @@ struct InstallStageSheet: View {
     /// The picked late cause, kept in the MP actual (`MasterSchedule.Actual.lateCauses`); tapping it again clears it.
     let cause: MasterSchedule.LateCause?
     let setCause: (MasterSchedule.LateCause?) -> Void
+    /// The latest change to this task confirmed through the project assistant.
+    var confirmation: MasterSchedule.Actual.Confirmation? = nil
     let close: () -> Void
     let openDaily: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             head
+            if let confirmation { MPAssistantMark(confirmation: confirmation) }
             if row.overrunDays > 0 && row.status != .done { lateBox }
             if !row.subs.isEmpty { checklist }
             footer

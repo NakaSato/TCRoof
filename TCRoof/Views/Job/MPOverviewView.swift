@@ -14,6 +14,7 @@ struct MPOverviewView: View {
     @State private var importing = false
     @State private var batch: Batch?
     @State private var importedCount: Int?
+    @State private var assistant = false
     struct Batch: Identifiable { let id = UUID(); let items: [MPBulkImportSheet.Item] }
     /// นำเข้ารายชื่อสถานี: the PWA tracking workbook (`StationListImportSheet`). One file picker serves both imports.
     @State private var pickingList = false
@@ -86,6 +87,11 @@ struct MPOverviewView: View {
         .navigationTitle("แผน MP ทุกสถานี")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if permissions.can(.assistantUse) {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { assistant = true } label: { Label("ผู้ช่วย", systemImage: "sparkles") }
+                }
+            }
             if permissions.can(.mpSetup) || permissions.can(.jobEdit) {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -100,6 +106,9 @@ struct MPOverviewView: View {
             }
         }
         .tcPadNavBar("แผน MP ทุกสถานี", trail: ["หน้าหลัก", "แผนก่อสร้างและเอกสาร"]) {
+            if permissions.can(.assistantUse) {
+                TCButton("ผู้ช่วย", systemImage: "sparkles", kind: .secondary) { assistant = true }
+            }
             if permissions.can(.jobEdit) {
                 TCButton("นำเข้ารายชื่อสถานี", systemImage: "list.bullet.rectangle", kind: .secondary) { pick(list: true) }
             }
@@ -107,6 +116,7 @@ struct MPOverviewView: View {
                 TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary) { pick(list: false) }
             }
         }
+        .sheet(isPresented: $assistant) { AssistantChatView() }
         .fileImporter(isPresented: $importing, allowedContentTypes: MPWorkbookFlow.types, allowsMultipleSelection: !pickingList) { result in
             guard case .success(let urls) = result, let first = urls.first else { return }
             if pickingList { openList(first) } else { open(urls) }

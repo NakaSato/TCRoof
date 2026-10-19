@@ -140,6 +140,9 @@ public enum MasterSchedule {
         /// uses them in place of the formulas; nil for a plan made in the app. A task the workbook lacks has no dates
         /// and no weight.
         public var fixed: [String: FixedTask]?
+        /// The plan as it was before its first confirmed re-plan (task raw value → dates and weight), kept so reports can
+        /// show the original plan beside the new one. Nil until a re-plan; an imported workbook is a new plan without one.
+        public var baseline: [String: FixedTask]?
 
         public init(installStart: Date, installEnd: Date, kickoff: Date, engineeringStart: Date, siteHandover: Date,
                     over200kVA: Bool) {
@@ -161,6 +164,22 @@ public enum MasterSchedule {
             let site = Task.allCases.filter { $0.part != .permit }.compactMap { fixed[$0.rawValue] }
             if let s = site.compactMap(\.start).min() { installStart = s }
             if let e = site.compactMap(\.end).max() { installEnd = max(e, installStart) }
+        }
+
+        /// The plan before its first re-plan, with dates; nil when it was never re-planned.
+        public var original: Input? {
+            guard let baseline else { return nil }
+            var i = self
+            i.fixed = baseline
+            i.baseline = nil
+            return i
+        }
+
+        /// This plan's tasks as fixed dates and weights, the form a re-plan keeps (an imported plan's `fixed` as it is).
+        public func fixedTasks(calendar cal: Calendar = MasterSchedule.calendar) -> [String: FixedTask] {
+            fixed ?? Dictionary(uniqueKeysWithValues: MasterSchedule.plan(self, calendar: cal).map {
+                ($0.task.rawValue, FixedTask(start: $0.start, end: $0.end, weight: $0.weight))
+            })
         }
 
         /// The task's weight in this plan: the workbook's when imported, else the standard one.
@@ -315,10 +334,35 @@ public enum MasterSchedule {
         public var finished: [String: Date] = [:]
         /// Task raw value → why it runs late; optional in older plans.
         public var lateCauses: [String: LateCause] = [:]
+        /// Changes confirmed on the project assistant's cards, oldest first: who confirmed what and when. Changes typed
+        /// in by hand are not listed. Optional in older plans.
+        public var confirmations: [Confirmation] = []
 
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses }
+        /// One assistant card someone confirmed (ผ่านผู้ช่วย).
+        public struct Confirmation: Codable, Equatable, Sendable {
+            /// Task raw value; a re-plan names its first task.
+            public var task: String
+            /// The email of the person who tapped ยืนยัน.
+            public var by: String
+            public var at: Date
+            /// The card's before and after, as it read.
+            public var before: String
+            public var after: String
+            public var replan: Bool
+
+            public init(task: String, by: String, at: Date, before: String, after: String, replan: Bool = false) {
+                self.task = task; self.by = by; self.at = at; self.before = before; self.after = after; self.replan = replan
+            }
+        }
+
+        /// The latest assistant confirmation for a task.
+        public func lastConfirmation(_ task: Task) -> Confirmation? {
+            confirmations.last { $0.task == task.rawValue }
+        }
+
+        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -328,6 +372,17 @@ public enum MasterSchedule {
             // a cause this build doesn't know is dropped, not a failed plan
             let raw = (try? c.decodeIfPresent([String: String].self, forKey: .lateCauses)) ?? nil
             lateCauses = (raw ?? [:]).compactMapValues(LateCause.init(rawValue:))
+            confirmations = (try? c.decodeIfPresent([Confirmation].self, forKey: .confirmations)) ?? []
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(points, forKey: .points)
+            try c.encode(started, forKey: .started)
+            try c.encode(finished, forKey: .finished)
+            try c.encode(lateCauses, forKey: .lateCauses)
+            // left out when empty, so a plan without any reads as before
+            if !confirmations.isEmpty { try c.encode(confirmations, forKey: .confirmations) }
         }
 
         public static func key(_ week: Date, calendar cal: Calendar = MasterSchedule.calendar) -> String {

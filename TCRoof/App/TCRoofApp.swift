@@ -148,7 +148,7 @@ struct RootView: View {
 struct DebugScreen: View {
     static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
     static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin"]
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -210,6 +210,11 @@ struct DebugScreen: View {
         case "stationdocs": if let job { StationDocsScreen(job: job) }
         case "members": MembersView()
         case "useradmin": UserAdminView().debugBoard()
+        // `-assistantDemo YES` answers from a stand-in for Qwen; `-assistantFocus YES` opens it on the first job
+        case "assistant":
+            AssistantChatView(focus: UserDefaults.standard.bool(forKey: "assistantFocus") ? jobs.first : nil).onAppear {
+                for (i, j) in jobs.prefix(4).enumerated() { j.seedMPDemo(mp: 189 + i, shift: [0, -14, 10, -30][i], pace: [1, 1.6, 0.6, 2.2][i]) }
+            }
         case "daily", "dailies", "request", "weekly", "monthly", "routine":
             if let job { RoutineDebugScreen(job: job, screen: Self.requested ?? "") }
         case "components": ComponentGallery(only: Optional(UserDefaults.standard.integer(forKey: "gallerySection")).flatMap { $0 == 0 ? nil : $0 })

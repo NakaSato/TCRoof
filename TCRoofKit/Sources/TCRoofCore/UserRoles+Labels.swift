@@ -11,7 +11,7 @@ public struct CapabilityGroup: Identifiable, Sendable {
 public extension Capability {
     /// The table's groups, in its order.
     static let groups: [CapabilityGroup] = [
-        CapabilityGroup(id: "jobs_plan", label: "งานและแผนงาน", capabilities: [.jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall, .installTracking, .overviewReports]),
+        CapabilityGroup(id: "jobs_plan", label: "งานและแผนงาน", capabilities: [.jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall, .installTracking, .overviewReports, .assistantUse]),
         CapabilityGroup(id: "survey_design_price", label: "สำรวจ ออกแบบ และราคา", capabilities: [.surveyEdit, .surveySignRev, .boqDraft, .boqApprove, .companyDocs]),
         CapabilityGroup(id: "customer_docs_permits", label: "เอกสารลูกค้าและการขออนุญาต", capabilities: [.customerPersonalDocs, .permitPPIM, .engineerCertify, .attachFiles, .driveUpload, .ercFlow, .stationDocsDrafts]),
         CapabilityGroup(id: "site_contractor", label: "หน้างานและผู้รับเหมา", capabilities: [.workOrder, .changeRequest, .punchList, .dailyFill, .weeklyRequest, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .finalSignoff, .feedAckFix]),
@@ -30,6 +30,7 @@ public extension Capability {
         case .moveToInstall: "ย้ายแบบสำรวจไปงานติดตั้ง"
         case .installTracking: "หน้าติดตามงานติดตั้ง · สาเหตุล่าช้า"
         case .overviewReports: "ภาพรวมทุกสถานี · รายงานสัปดาห์ / เดือน"
+        case .assistantUse: "ผู้ช่วยโครงการ (AI): ถามแผนงาน MP · เสนอบันทึกความก้าวหน้า"
         case .surveyEdit: "แบบสำรวจ · แบบไฟฟ้า · รายงานสำรวจ"
         case .surveySignRev: "ลงนามแบบสำรวจ · ออก REV ใหม่"
         case .boqDraft: "ร่าง BOQ · เห็นราคาและต้นทุน"

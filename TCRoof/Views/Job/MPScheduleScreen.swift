@@ -21,6 +21,7 @@ struct MPScheduleScreen: View {
     struct SharedFile: Identifiable { let id = UUID(); let url: URL }
     @State private var exportError: String?
     @State private var workbook = MPWorkbookFlow()
+    @State private var assistant = false
 
     var body: some View {
         GeometryReader { g in
@@ -42,6 +43,11 @@ struct MPScheduleScreen: View {
         .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if permissions.can(.assistantUse), job.scheduleInput != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { assistant = true } label: { Label("ผู้ช่วย", systemImage: "sparkles") }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button(action: exportPDF) { Label("PDF ประชุม", systemImage: "square.and.arrow.up") }
                     .disabled(job.scheduleInput == nil)
@@ -58,6 +64,9 @@ struct MPScheduleScreen: View {
         }
         .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
             HStack(spacing: 12) {
+                if permissions.can(.assistantUse), job.scheduleInput != nil {
+                    TCButton("ผู้ช่วย", systemImage: "sparkles", kind: .secondary) { assistant = true }
+                }
                 if permissions.can(.mpSetup) { TCButton("ตั้งค่าแผน", kind: .secondary) { showSetup = true } }
                 Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
                     Label("ไฟล์ Excel", systemImage: "tablecells").font(.sarabun(17, .semibold, relativeTo: .body)).frame(minHeight: touchMin)
@@ -72,6 +81,7 @@ struct MPScheduleScreen: View {
         .onChange(of: job.scheduleInputJSON) { _, _ in openOnPlan() }
         .sheet(isPresented: $showProgress) { MPProgressSheet(job: job, week: week) }
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
+        .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
         .mpWorkbook(workbook, job: job)
         .sheet(item: $pdf) { f in ActivitySheet(items: [f.url]).presentationDetents([.medium, .large]) }
         .alert("สร้าง PDF ไม่สำเร็จ", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
@@ -166,6 +176,11 @@ struct MPScheduleScreen: View {
     private func figures(_ m: MPModel) -> some View {
         HStack(spacing: 12) {
             Text("แผน \(MPFormat.percent(m.status.planned))").font(.sarabun(15, relativeTo: .subheadline).monospacedDigit())
+            if let o = m.originalStatus {
+                Text("แผนเดิม \(MPFormat.percent(o.planned))").font(.sarabun(15, relativeTo: .subheadline).monospacedDigit())
+                    .foregroundStyle(Theme.inkMuted)
+                    .accessibilityLabel("แผนเดิมก่อนปรับแผน \(MPFormat.percent(o.planned))")
+            }
             Text("ทำได้ \(MPFormat.percent(m.status.actual))").font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit())
             MPVarianceChip(variance: m.status.variance)
         }
@@ -217,6 +232,9 @@ struct MPModel {
     let week: Date
     let plan: [MasterSchedule.PlannedTask]
     let status: MasterSchedule.Status
+    /// The plan before its first re-plan, and its status at the chosen week; nil when never re-planned.
+    let original: [MasterSchedule.PlannedTask]?
+    let originalStatus: MasterSchedule.Status?
     /// Every week from the earliest planned start (or booked point) to the latest end, and the chosen week.
     let weeks: [Date]
 
@@ -224,8 +242,11 @@ struct MPModel {
         self.input = input; self.actual = actual; self.week = week
         plan = MasterSchedule.plan(input)
         status = MasterSchedule.status(plan: plan, actual: actual, through: week)
+        let original = input.original.map { MasterSchedule.plan($0) }
+        self.original = original
+        originalStatus = original.map { MasterSchedule.status(plan: $0, actual: actual, through: week) }
         let booked = actual.points.values.flatMap(\.keys).compactMap(MPModel.date(fromKey:))
-        let dates = plan.compactMap(\.start) + plan.compactMap(\.end) + booked + [week]
+        let dates = (plan + (original ?? [])).compactMap(\.start) + (plan + (original ?? [])).compactMap(\.end) + booked + [week]
         weeks = MasterSchedule.weeks(from: dates.min() ?? week, to: dates.max() ?? week)
     }
 
@@ -355,7 +376,8 @@ struct MPGantt: View {
         let w = CGFloat(weeks.count) * Self.cellW, h = CGFloat(rows.count) * Self.rowH
         let first = weeks.first ?? model.week, cal = MasterSchedule.calendar
         let primary = Theme.primary, navy = Theme.navy, line = Theme.borderSubtle, soft = Theme.primarySoft, danger = Theme.danger
-        let actual = model.actual
+        let actual = model.actual, muted = Theme.inkMuted
+        let original = Dictionary(uniqueKeysWithValues: (model.original ?? []).map { ($0.task, $0) })
         func x(_ d: Date) -> CGFloat {
             CGFloat(cal.dateComponents([.day], from: first, to: cal.startOfDay(for: d)).day ?? 0) / 7 * Self.cellW
         }
@@ -379,6 +401,12 @@ struct MPGantt: View {
                     let x0 = x(s), x1 = max(x(e) + Self.cellW / 7, x0 + 4)
                     ctx.fill(Path(roundedRect: CGRect(x: x0, y: y + 8, width: x1 - x0, height: 12), cornerRadius: 3),
                              with: .color(t.weight > 0 ? navy.opacity(0.75) : navy.opacity(0.25)))
+                }
+                // the original plan's bar, above the new one, where a re-plan moved it
+                if let o = original[t.task], let s = o.start, let e = o.end, o.start != t.start || o.end != t.end {
+                    let x0 = x(s), x1 = max(x(e) + Self.cellW / 7, x0 + 4)
+                    ctx.fill(Path(roundedRect: CGRect(x: x0, y: y + 2, width: x1 - x0, height: 4), cornerRadius: 2),
+                             with: .color(muted.opacity(0.6)))
                 }
                 guard t.weight > 0 else { continue }
                 for (k, pts) in actual.points[t.task.rawValue] ?? [:] where pts > 0 {
@@ -547,6 +575,7 @@ struct MPProgressSheet: View {
             if let s = t.start, let e = t.end {
                 Text("แผน \(s.thaiShort) – \(e.thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
+            if let c = job.scheduleActual.lastConfirmation(t.task) { MPAssistantMark(confirmation: c) }
             dates(t)
         }
         .padding(.vertical, 4)

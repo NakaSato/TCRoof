@@ -448,3 +448,11 @@ test('one save of the page: role, suspension, invite, overrides and their audit 
   for (let i = 0; i < 4; i++) b.set(doc(d, 'auditLog', 'b' + i), entry(DEV));
   await assertSucceeds(b.commit());
 });
+
+test('assistantUsage is the assistant function\'s only: no client reads or writes it', async () => {
+  for (const who of [TEAM, BOSS, CON, DEV]) {
+    const ref = doc(db(who), 'assistantUsage', `${who}_2026-10-19`);
+    await assertFails(getDoc(ref));
+    await assertFails(setDoc(ref, { count: 0 }));
+  }
+});

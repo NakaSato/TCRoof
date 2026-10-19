@@ -24,19 +24,23 @@ public enum MasterScheduleSheet {
     public static func page(input: MasterSchedule.Input, actual: MasterSchedule.Actual, week: Date, title: String) -> Sketch {
         let cal = MasterSchedule.calendar, wk = MasterSchedule.weekStart(week)
         let plan = MasterSchedule.plan(input), st = MasterSchedule.status(plan: plan, actual: actual, through: wk)
+        // the plan before its first re-plan, drawn beside the new one
+        let original = input.original.map { MasterSchedule.plan($0) }
         let booked = actual.points.values.flatMap(\.keys).compactMap { MasterSchedule.date(fromKey: $0, calendar: cal) }
-        let dates = plan.compactMap(\.start) + plan.compactMap(\.end) + booked + [wk]
+        let all = plan + (original ?? [])
+        let dates = all.compactMap(\.start) + all.compactMap(\.end) + booked + [wk]
         let weeks = MasterSchedule.weeks(from: dates.min() ?? wk, to: dates.max() ?? wk)
         var o: [DrawOp] = []
 
         // header
         o.append(.text("แผนงาน MP · " + title, at: Pt(margin, margin + 10), size: 16, bold: true, color: navy))
         let idx = weeks.firstIndex(of: wk).map { " · W\($0)" } ?? ""
-        o.append(.text("ถึงสัปดาห์ \(short(wk))\(idx)   แผน \(pct(st.planned))   ทำได้ \(pct(st.actual))   " + variance(st.variance),
+        let was = original.map { "   แผนเดิม \(pct(MasterSchedule.status(plan: $0, actual: actual, through: wk).planned))" } ?? ""
+        o.append(.text("ถึงสัปดาห์ \(short(wk))\(idx)   แผน \(pct(st.planned))\(was)   ทำได้ \(pct(st.actual))   " + variance(st.variance),
                        at: Pt(width - margin, margin + 10), size: 11, bold: true, color: st.variance < -0.05 ? red : navy, align: .right))
         let top = margin + 32
 
-        o += gantt(plan: plan, actual: actual, weeks: weeks, chosen: wk,
+        o += gantt(plan: plan, original: original, actual: actual, weeks: weeks, chosen: wk,
                    in: Box(margin, top, width - 2 * margin - panelW - gap, height - top - margin - 18))
         o += weekly(st, plan: plan, in: Box(width - margin - panelW, top, panelW, 0))
         let monday = cal.date(byAdding: .day, value: 1, to: wk) ?? wk, mc = cal.dateComponents([.year, .month], from: monday)
@@ -52,6 +56,10 @@ public enum MasterScheduleSheet {
         o.append(.text("ทำจริง (เข้มตามสัดส่วนของน้ำหนักงาน)", at: Pt(margin + 84, ly - 6), size: 8, color: navy))
         o.append(.line(Pt(margin + 260, ly - 12), Pt(margin + 260, ly), width: 1.5, color: red))
         o.append(.text("วันนี้", at: Pt(margin + 266, ly - 6), size: 8, color: navy))
+        if original != nil {
+            o.append(.rect(Box(margin + 310, ly - 8, 18, 3), stroke: nil, fill: muted))
+            o.append(.text("แผนเดิม (ก่อนปรับแผน)", at: Pt(margin + 334, ly - 6), size: 8, color: navy))
+        }
         o.append(.text("สร้างจาก TCRoof · \(short(Date()))", at: Pt(width - margin, ly - 6), size: 8, color: muted, align: .right))
         return Sketch(width: width, height: height, ops: o)
     }
@@ -62,8 +70,10 @@ public enum MasterScheduleSheet {
 
     // MARK: Gantt
 
-    static func gantt(plan: [MasterSchedule.PlannedTask], actual: MasterSchedule.Actual, weeks: [Date], chosen: Date, in b: Box) -> [DrawOp] {
+    static func gantt(plan: [MasterSchedule.PlannedTask], original: [MasterSchedule.PlannedTask]? = nil, actual: MasterSchedule.Actual,
+                      weeks: [Date], chosen: Date, in b: Box) -> [DrawOp] {
         let cal = MasterSchedule.calendar
+        let was = Dictionary(uniqueKeysWithValues: (original ?? []).map { ($0.task, $0) })
         let rows: [(MasterSchedule.Part?, MasterSchedule.PlannedTask?)] = MasterSchedule.Part.allCases.flatMap { p in
             [(p, nil)] + plan.filter { $0.task.part == p }.map { (nil, $0) }
         }
@@ -102,6 +112,10 @@ public enum MasterScheduleSheet {
             if let s = t.start, let e = t.end {
                 let x0 = x(s), x1 = max(x(e) + cw / 7, x0 + 2)
                 o.append(.rect(Box(x0, y + rowH * 0.18, x1 - x0, rowH * 0.28), stroke: nil, fill: faded ? line : navy))
+            }
+            if let w = was[t.task], let s = w.start, let e = w.end, w.start != t.start || w.end != t.end {
+                let x0 = x(s), x1 = max(x(e) + cw / 7, x0 + 2)
+                o.append(.rect(Box(x0, y + rowH * 0.04, x1 - x0, rowH * 0.1), stroke: nil, fill: muted))
             }
             guard !faded else { continue }
             for (k, pts) in actual.points[t.task.rawValue] ?? [:] where pts > 0 {

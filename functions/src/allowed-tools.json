@@ -1,0 +1,13 @@
+[
+  "list_stations",
+  "get_schedule",
+  "get_week_tasks",
+  "propose_progress",
+  "propose_dates",
+  "propose_late_cause",
+  "what_if",
+  "station_priorities",
+  "look_ahead",
+  "suggest_replan",
+  "propose_replan"
+]

@@ -37,6 +37,8 @@ struct InstallTrackingPage: View {
     @Environment(\.permissions) var permissions
     /// The debug flags apply once: `.task` runs again each time the page reappears (back from a pushed screen).
     @State private var debugApplied = false
+    /// ผู้ช่วยโครงการ, opened on this station.
+    @State private var assistant = false
     /// `-installDemo YES` keeps its picked late causes here instead of in a job.
     @State private var demoCauses: [String: MasterSchedule.LateCause] = [:]
     @State private var survey = SurveyModel.shared
@@ -83,6 +85,7 @@ struct InstallTrackingPage: View {
         .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
         .overlay { if let s = sheet { pageSheet(s, data) } }
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+        .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
         .mpWorkbook(workbook, job: job)
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
@@ -129,7 +132,8 @@ struct InstallTrackingPage: View {
                 .onTapGesture { stage = nil }
                 .accessibilityHidden(true)
             InstallStageSheet(row: row, count: g.rows.count, index: (g.rows.firstIndex { $0.id == row.id } ?? 0) + 1,
-                              photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) }, close: { stage = nil },
+                              photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) },
+                              confirmation: job.scheduleActual.confirmations.last { $0.task == row.id }, close: { stage = nil },
                               openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) })
         }
         .transition(.opacity)
@@ -184,6 +188,9 @@ struct InstallTrackingPage: View {
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             // the job's own screen: customer, schedule, scans, install logs, ICL, R4, survey link, documents and Drive
+            if permissions.can(.assistantUse), job.scheduleInput != nil {
+                headerButton("ผู้ช่วย", "sparkles") { assistant = true }
+            }
             headerButton("รายละเอียดงาน", "info.circle") { route = .detail }
             if let id = data.surveyReport {
                 headerButton("รายงานสำรวจ (ดูอย่างเดียว)", "lock") { route = .survey(id) }

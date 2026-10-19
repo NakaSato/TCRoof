@@ -64,6 +64,13 @@ extension TankPageWide {
             i == 1 ? TankPoints.done(values) : i == 2 ? TankLayout.done(values) : s[safe: i]?.done ?? false
         }
         return HStack(spacing: 0) {
+            phoneTabRow(done)
+            undoButtons(compact: true)
+        }
+    }
+
+    func phoneTabRow(_ done: [Bool]) -> some View {
+        HStack(spacing: 0) {
             ForEach(Array(Self.phoneTitles.enumerated()), id: \.offset) { i, title in
                 // a connector is green from a finished sub-step to one that is finished or open
                 let reached = { (k: Int) in done[k] || tab == k + 1 }

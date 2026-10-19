@@ -277,6 +277,10 @@ extension ReportLayout {
             if let a = d.photo("aerialPhoto") { U += grid(title, [(a, nil)], cellH: 330, columns: 1) }
             U += grid("สิ่งกีดขวาง", ob.dropFirst().map { ($0, nil) })
             U += grid(title + " — รูปข้างถัง / รูปเพิ่มเติม", d.photos("sidePhotos").map { ($0, nil) })
+            // sub-step 4's optional groups
+            let extra: [(Photo?, String?)] = d.photos(Tank.Key.roofPhotos).map { ($0, "หลังคาถัง") }
+                + [d.photo(Tank.Key.shadePhoto).map { (Optional($0), "เงาบัง (จากกลางหลังคา)") }, d.photo(Tank.Key.cablePhoto).map { (Optional($0), "ทางเดินสายไฟ") }].compactMap { $0 }
+            U += grid(title + " — หลังคา · เงาบัง · ทางเดินสายไฟ", extra)
         }
         return U
     }

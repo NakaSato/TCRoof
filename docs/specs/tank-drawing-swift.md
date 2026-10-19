@@ -1,6 +1,6 @@
 # D1 ถังน้ำใส — tank drawing and survey flow, Swift feature spec (iPad + iPhone)
 
-**Status:** Partly built (2026-10-17). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังแผงมากสุด`, panel edits, three checks), the plan in the PDF and the Excel plan frame, and `ส่งออก DXF`. Not built: the shade simulation (old step 4), the designed photo step (sub-step 4 still shows the form's photo group), undo, the tank sections (รูปตัด), the layout and table section in the PDF, and the interaction draft's tool modes (§4.3).
+**Status:** Mostly built (2026-10-19). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions with the object's height and distance), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังแผงมากสุด`, panel edits, three checks, the shade simulation `TankShade`), sub-step 4's designed photo groups (the new ones optional), undo (`↶` / `↷`, ⌘Z), the tank sections and the row section (`TankDrawings`, also in the B1-C3 sheet), the layout, shade and sections in the PDF, the layout lines in Excel, and `ส่งออก DXF`. Not built: the photo selection panel (`ภาพที่เลือก`, tags with an opening ID, the GPS map), iPhone shake to undo, the recommendation carried to E1, and the interaction draft's tool modes (§4.3).
 **Design:** the TCRoof canvas D1 pages (`iPadD1` ขนาดถัง, `iPadD1Obs` สิ่งกีดขวาง, `iPadD1Layout` จัดแผง, `iPadD1Shade` เงาบัง, `iPadD1Photo` ภาพถ่าย) and the folders [`docs/ui/survey-d1-size`](../ui/survey-d1-size) (iPad), [`survey-d1-size-iphone`](../ui/survey-d1-size-iphone), [`survey-d1-obstacles-iphone`](../ui/survey-d1-obstacles-iphone), [`survey-d1-layout-iphone`](../ui/survey-d1-layout-iphone). The app follows the folders where they differ from the canvas.
 **Design rules and drawing standard:** [`auto-drawing.md`](auto-drawing.md) §5–§7
 **Types and code detail of the first draft:** [`auto-drawing.md`](auto-drawing.md) §8 Tank, §9 UI, §10 PDF, §11 tests (the app did not build those types; see §2)
@@ -137,7 +137,7 @@ The sub-step places the PV structure on the roof automatically (`TankLayout`). T
 
 Built: the form's `ภาพถ่าย` group: `obstPhotos` (max 5; the first goes in the report's size frame), `aerialPhoto`, `sidePhotos` (max 3). All three are required, so the tab reads `บังคับ {k}/3`.
 
-Designed, not built: the photo groups below, with `บังคับ {k}/9` and a red frame on an empty required slot.
+Built 2026-10-19: the groups below in this order, each titled with บังคับ / ไม่บังคับ; `sidePhotos` takes 4; the three new fields are optional, so the tab still reads `บังคับ {k}/3` (`{k}/9` once the team makes them required); the PDF prints them after the side photos. Not built: the selection panel and the opening tags.
 
 | Group | Slots | Field |
 |---|---|---|
@@ -259,13 +259,13 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 
 - [x] Picking `40 × 40 ม.` draws the plan with V1–V10 and H1–H5 unchecked, and the N arrow follows `tankAzimuth`.
 - [x] Every point can be confirmed, marked absent, dragged (0.05 m snap) or moved by distance.
-- [ ] Every change can be undone; a drag is one undo step.
+- [x] Every change can be undone; a drag is one undo step (changes under 0.8 s apart are one step; `TankUndoUITests`).
 - [x] Sub-step 3 never puts a footing on an opening, and columns that cannot be saved are cut.
 - [x] `หาผังแผงมากสุด` never returns fewer panels than the automatic layout.
 - [ ] Sub-step 4 counts `บังคับ {k}/9`, and the bottom bar lists what is missing.
 - [x] Old tank jobs open unchanged.
 - [ ] The web backup keeps the new keys.
-- [ ] The PDF shows plan, section, layout and shade with the summary and the ค่าสมมติ line.
+- [x] The PDF shows plan, section, layout and shade with the summary and the ค่าสมมติ line.
 
 ## 9. Open questions
 

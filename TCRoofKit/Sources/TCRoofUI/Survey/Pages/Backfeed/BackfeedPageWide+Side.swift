@@ -23,7 +23,8 @@ extension BackfeedPageWide {
     // MARK: SLD
 
     func sldCard(_ sl: SingleLine) -> some View {
-        let drawing = SingleLineLayout.draw(sl)
+        // the crop is drawn off the main thread after typing stops (SingleLineRender)
+        let drawing = sldRender.current(job).drawing
         return card {
             HStack(alignment: .firstTextBaseline) {
                 title("ส่วนที่เปลี่ยนใน SLD", sub: hv ? "CT/VT + รีเลย์หลังมิเตอร์ กฟภ." : "CT + รีเลย์ที่ตู้ \(ZeroExport.boardName(sl))")

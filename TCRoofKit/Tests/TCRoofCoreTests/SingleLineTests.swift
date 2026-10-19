@@ -245,4 +245,45 @@ final class SingleLineTests: XCTestCase {
         }
         return out + "</svg>\n"
     }
+
+    // MARK: decided 2026-10-19
+
+    func testHVProtectionSymbols() {
+        func texts(_ ops: [DrawOp]) -> [String] { ops.compactMap { if case let .text(t, _, _, _, _, _, _) = $0 { return t }; return nil } }
+        func polygons(_ ops: [DrawOp]) -> Int { ops.filter { if case .polygon = $0 { return true }; return false }.count }
+        XCTAssertTrue(texts(SLSymbols.hvDevice("VCB", x: 0, y: 0)).contains("VCB"))
+        XCTAssertEqual(polygons(SLSymbols.hvDevice("DO fuse", x: 0, y: 0)), 1)
+        XCTAssertEqual(polygons(SLSymbols.hvDevice("Drop Out Fuse", x: 0, y: 0)), 1)
+        XCTAssertEqual(SLSymbols.hvDevice("DS", x: 0, y: 0).count, SLSymbols.openSwitch(x: 0, y: 0).count)
+        // each transformer draws its own; the tap draws the one they share
+        var job = Self.fixture()
+        var trs = job.values.transformers("trafos")
+        for i in trs.indices { trs[i].hvProtection = "VCB" }
+        job.values["trafos"] = .transformers(trs)
+        let sl = SingleLine.build(job)
+        XCTAssertEqual(sl.protectionKind, "VCB")
+        XCTAssertTrue(sl.transformers.allSatisfy { $0.protection == "VCB" })
+        let ops = SingleLineLayout.draw(sl).sketch.ops
+        // each transformer's symbol, the tap's symbol and the tap's protection label
+        XCTAssertEqual(texts(ops).filter { $0 == "VCB" }.count, sl.transformers.count + 2)
+    }
+
+    func testFTSOnlyWithB5() {
+        var job = Self.fixture()
+        job.modules.removeAll { $0.type == .fts }
+        let without = SingleLineLayout.draw(SingleLine.build(job))
+        XCTAssertNil(without.ftsBox)
+        let texts = without.sketch.ops.compactMap { op -> String? in if case let .text(t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertFalse(texts.contains("ปุ่ม Emergency"))
+        XCTAssertFalse(texts.contains { $0.contains("FTS") })
+        job.modules.append(SurveyModule(type: .fts))
+        XCTAssertNotNil(SingleLineLayout.draw(SingleLine.build(job)).ftsBox)
+    }
+
+    func testTheBreakerRuleIsNotAnAssumption() {
+        let sl = SingleLine.build(Self.fixture())
+        XCTAssertFalse(sl.assumptions.contains { $0.text.hasPrefix("เบรกเกอร์ = I × 1.25") })
+        XCTAssertEqual(SLConstants.breakerFactor, 1.25)
+    }
 }
+

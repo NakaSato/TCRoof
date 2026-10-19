@@ -159,10 +159,13 @@ private struct Builder {
         let protection = protections.count == 1 ? SLText(protections.first!) : SLText("Drop Out Fuse / Disconnecting Switch")
 
         let pn = t(v.text("projectName")), doc = t(v.text("docNo"))
-        return SingleLine(sourceLabel: sourceLabel, meter: meter, protection: protection, zeroExportHV: hv, hasB4: b4 != nil, pole: pole,
-                          transformers: sl, connection: (connT, connB), pv: pv, isc: isc, iscAssumedZ: zAssumed, checks: checks,
-                          missing: missing, assumptions: assumptions, flood: flood, conditionCounts: (bad, fair),
-                          projectLine: [pn, doc.isEmpty ? nil : "NO.\(doc)"].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " "))
+        var out = SingleLine(sourceLabel: sourceLabel, meter: meter, protection: protection, zeroExportHV: hv, hasB4: b4 != nil, pole: pole,
+                             transformers: sl, connection: (connT, connB), pv: pv, isc: isc, iscAssumedZ: zAssumed, checks: checks,
+                             missing: missing, assumptions: assumptions, flood: flood, conditionCounts: (bad, fair),
+                             projectLine: [pn, doc.isEmpty ? nil : "NO.\(doc)"].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " "))
+        out.protectionKind = protections.count == 1 ? protections.first! : ""
+        out.hasB5 = job.modules.contains { $0.type == .fts }
+        return out
     }
 
     // MARK: transformer
@@ -220,7 +223,7 @@ private struct Builder {
         let z = num(tr.impedance)
         // nameplate gaps: %Z is blocking (handled with the boards), the rest are not
         return SLTransformer(id: tr.id, index: i, lines: lines, collapsed: collapsed, hasLA: tr.hasLA, cable: SLText("สาย ? (A3)", .missing),
-                             boards: boards, kva: kva, zPercent: z)
+                             boards: boards, kva: kva, zPercent: z, protection: t(tr.hvProtection))
     }
 
     mutating func collectBoardMissing(_ trafos: [SLTransformer], connection: (Int, Int)) {
@@ -318,7 +321,7 @@ private struct Builder {
             pv.totalCableM = pv.cableRuns * SLConstants.cableRunM
             if let isc { pv.requiredIC = SingleLine.requiredIC(isc: isc) }
             assumptions.append(SLAssumption(id: "invKW", text: "กำลังอินเวอร์เตอร์ \(SingleLine.fmt(kw)) kW/เครื่อง = A1 ÷ B2 ปัดเป็นขนาดมาตรฐาน (B2 ยังไม่มีช่อง kW)"))
-            assumptions.append(SLAssumption(id: "sizes", text: "เบรกเกอร์ = I × 1.25 ปัดเป็นเฟรมมาตรฐาน · สาย/ราง ตามตาราง CV 0.6/1 kV ร้อยท่อ"))
+            assumptions.append(SLAssumption(id: "sizes", text: "สาย/ราง ตามตาราง CV 0.6/1 kV ร้อยท่อ (เบรกเกอร์ = I × 1.25 ตามเกณฑ์ทีม)"))
             assumptions.append(SLAssumption(id: "length", text: "ระยะสาย AC \(SLConstants.cableRunM) ม./เส้น × \(pv.cableRuns) เส้น = \(pv.totalCableM) ม. (ไม่มีข้อมูลระยะจริง)"))
             let icText = pv.requiredIC.map { " · IC ≥ \($0) kA" } ?? " · IC ≥ ? kA"
             rows += [SLRow(label: "อินเวอร์เตอร์", value: SLText("\(n) × \(SingleLine.fmt(kw)) kW", .new)),

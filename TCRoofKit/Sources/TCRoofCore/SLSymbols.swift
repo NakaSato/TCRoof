@@ -44,9 +44,41 @@ public enum SLSymbols {
          line(x, y + 30, x, y + 40)]
     }
 
-    /// sld-hv-switch: junction dot on the HV bus and the switch below it; (x, y) is the bus.
-    public static func hvSwitch(x: Double, y: Double) -> [DrawOp] {
-        [.circle(Pt(x, y), r: 3.5, stroke: nil, fill: ink)] + openSwitch(x: x, y: y)
+    /// Drop out fuse: the switch blade drawn as a fuse (a slim box with the element through it), (x, y) → (x, y + 40).
+    public static func dropOutFuse(x: Double, y: Double) -> [DrawOp] {
+        // the blade from (x, y + 12) to (x + 10, y + 28), 6 wide
+        let a = Pt(x, y + 12), b = Pt(x + 10, y + 28), dx = b.x - a.x, dy = b.y - a.y, len = hypot(dx, dy)
+        let nx = -dy / len * 3, ny = dx / len * 3
+        return [line(x, y, x, y + 8),
+                .circle(Pt(x, y + 10), r: 3, stroke: ink, fill: .white, width: 1.5),
+                .polygon([Pt(a.x + nx, a.y + ny), Pt(b.x + nx, b.y + ny), Pt(b.x - nx, b.y - ny), Pt(a.x - nx, a.y - ny)],
+                         stroke: ink, fill: .white, width: 1.5),
+                line(a.x, a.y, b.x, b.y, ink, 1),
+                .circle(Pt(x + 10, y + 30), r: 3, stroke: ink, fill: .white, width: 1.5),
+                line(x, y + 30, x, y + 40)]
+    }
+
+    /// Vacuum circuit breaker: a square with the breaker cross, `VCB` beside it, (x, y) → (x, y + 40).
+    public static func vcb(x: Double, y: Double) -> [DrawOp] {
+        [line(x, y, x, y + 10),
+         .rect(Box(x - 10, y + 10, 20, 20), stroke: ink, fill: .white, width: 1.8),
+         line(x - 5, y + 15, x + 5, y + 25, ink, 1.8), line(x + 5, y + 15, x - 5, y + 25, ink, 1.8),
+         line(x, y + 30, x, y + 40),
+         text("VCB", x + 14, y + 20, size: 9, bold: true, ink)]
+    }
+
+    /// The device on an HV tap by the A3 answer: `DO fuse` (also an older "Drop Out Fuse"), `VCB`, else the open
+    /// switch (DS, or not answered).
+    public static func hvDevice(_ kind: String, x: Double, y: Double) -> [DrawOp] {
+        let k = kind.lowercased()
+        if k.contains("vcb") { return vcb(x: x, y: y) }
+        if k.contains("fuse") { return dropOutFuse(x: x, y: y) }
+        return openSwitch(x: x, y: y)
+    }
+
+    /// sld-hv-switch: junction dot on the HV bus and the device below it (by `kind`); (x, y) is the bus.
+    public static func hvSwitch(x: Double, y: Double, kind: String = "") -> [DrawOp] {
+        [.circle(Pt(x, y), r: 3.5, stroke: nil, fill: ink)] + hvDevice(kind, x: x, y: y)
     }
 
     /// sld-pea-meter: kWh circle centred at (x, y), leads 28 above and below.

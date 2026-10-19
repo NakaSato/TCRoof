@@ -116,6 +116,8 @@ public struct SLTransformer: Hashable, Sendable, Identifiable {
     public var boards: [SLBoard]
     public var kva: Double?
     public var zPercent: Double?
+    /// A3's HV protection: `DO fuse`, `DS`, `VCB` or "" (drawn as its own symbol).
+    public var protection = ""
     public var target: SLTarget { SLTarget(.electrical, trafo: index) }
 }
 
@@ -192,6 +194,10 @@ public struct SingleLine: Sendable {
     public var sourceLabel: String
     public var meter: [SLText]
     public var protection: SLText
+    /// The one HV protection every transformer has (its symbol on the tap), "" when they differ or none is answered.
+    public var protectionKind = ""
+    /// The job has a B5 section: the FTS cut and the emergency button are drawn (decided 2026-10-19).
+    public var hasB5 = true
     /// B4 "กันย้อนที่แรงสูง"
     public var zeroExportHV: Bool
     /// The job has a B4 section, so the toggle edits it; otherwise it only previews.
@@ -221,7 +227,7 @@ public struct SingleLine: Sendable {
 public enum SLConstants {
     /// Line voltage of the LV side (V).
     public static let lineVoltage = 400.0
-    /// Breaker rating over inverter current.
+    /// Breaker rating over inverter current: the team's rule (confirmed 2026-10-19), not an assumption.
     public static let breakerFactor = 1.25
     /// IC must be at least this much above the prospective Isc to count as enough.
     public static let icMargin = 1.25

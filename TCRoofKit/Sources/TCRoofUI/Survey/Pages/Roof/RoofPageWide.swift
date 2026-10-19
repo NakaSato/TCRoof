@@ -429,7 +429,7 @@ extension RoofPageWide {
         case "span": span = SpanRef(axis: .x, index: 2)
         case "spany": span = SpanRef(axis: .y, index: 1)
         case "posts": editPosts = true
-        case "pv": mode = .pv
+        case "pv": set(Roof.Key.shape, .choice("หลังคาทรงจั่ว", other: "")); mode = .pv
         case "keepout":
             update { v in
                 Roof.addArea(&v, kind: Roof.keepOutKind, x1: 2.4, y1: 9.2, x2: 6.6, y2: 12.2)

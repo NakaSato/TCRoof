@@ -70,6 +70,27 @@ final class PDFReportTests: XCTestCase {
     }
 
     /// B3's water point is drawn on the A2 picture in the water section, named by the water mode; no pin, no extra block.
+    /// C1 with spans and a frame prints the roof PV layout after section A-A, with its detail A.
+    func testRoofPVLayoutInReport() {
+        var job = Job.new(template: JobTemplate.all[2])
+        var roof = SurveyModule(type: .roof)
+        roof.values["spansX"] = .text("1.5,4,4,4,4,1.5"); roof.values["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&roof.values, .h); Roof.setFrame(&roof.values, .pratt)
+        job.modules.append(roof)
+        let units = ReportLayout(job: job, header: ReportHeader()).planSection(roof)
+        let texts = units.flatMap(\.ops).compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertTrue(texts.contains("แปลนวางแผงบนหลังคา (หน่วย ม.)"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("ผังแผงอัตโนมัติ ") })
+        XCTAssertTrue(texts.contains { $0.hasPrefix("BOQ: ราง ") })
+        XCTAssertTrue(texts.contains("รายละเอียด A · รูปตัดแถวแผงตามแนวลาด (หน่วย ม.)"))
+        // a flat roof has no layout
+        var flat = roof
+        flat.values[Roof.Key.shape] = .choice("หลังคาคอนกรีต (ดาดฟ้า)", other: "")
+        let none = ReportLayout(job: job, header: ReportHeader()).planSection(flat).flatMap(\.ops)
+            .compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertFalse(none.contains("แปลนวางแผงบนหลังคา (หน่วย ม.)"))
+    }
+
     func testWaterPointInReport() throws {
         let fx = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../ExcelExportTests/Fixtures/job215.json")
         let store = JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("pdf-" + UUID().uuidString))

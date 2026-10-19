@@ -79,6 +79,23 @@ final class ExcelExportTests: XCTestCase {
     }
 }
 
+extension ExcelExportTests {
+    /// The roof PV layout's figures and BOQ go into the roof sheet's blank rows 38–39.
+    func testRoofPVLayoutRows() throws {
+        var (job, store) = try importFixture()
+        guard let i = job.modules.firstIndex(where: { $0.type == .roof }) else { return XCTFail("the fixture has a roof") }
+        job.modules[i].values["spansX"] = .text("1.5,4,4,4,4,1.5"); job.modules[i].values["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        job.modules[i].values[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "")
+        Roof.setFrame(&job.modules[i].values, .pratt)
+        let result = try ExcelExporter().export(job, photoData: { store.data(of: $0, in: job.id) })
+        let z = try ZipArchive(result.data)
+        let sheets = z.paths.filter { $0.hasPrefix("xl/worksheets/sheet") }.compactMap { z.string($0) }
+        let roof = try XCTUnwrap(sheets.first { $0.contains("ผังแผงอัตโนมัติ") })
+        XCTAssertTrue(roof.contains(#"r="A38""#))
+        XCTAssertTrue(roof.contains("BOQ: ราง "))
+    }
+}
+
 /// The BOQ workbook: both sheets rebuilt from the template's row styles, formulas with cached values.
 final class BOQExcelTests: XCTestCase {
     func testBOQWorkbook() throws {

@@ -39,6 +39,9 @@ extension RoofPageWide {
         }
         mount = result.layout
         mountBusy = false
+        // จำนวนแผงก่อนเข้าสำรวจ starts from the layout; the surveyor may still type another count
+        let n = result.layout.quantities.modules
+        if n > 0, values.text(Roof.Key.panels).trimmingCharacters(in: .whitespaces).isEmpty { set(Roof.Key.panels, .text(String(n))) }
     }
 
     /// Changes the tab's choices, with an undo step.

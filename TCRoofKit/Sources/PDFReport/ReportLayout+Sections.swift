@@ -129,6 +129,44 @@ extension ReportLayout {
         return Unit(h: h, ops: o)
     }
 
+    /// แปลนวางแผงบนหลังคา (docs/specs/roof-pv-layout.md §7): the automatic layout on the C1 plan with its summary, the
+    /// faces, the BOQ and the assumptions, then the first row's section as detail A.
+    func roofPVUnits(_ d: Values) -> [Unit] {
+        guard RoofMount.printable(d) else { return [] }
+        let lat = RoofMount.latitude(gps: j.text("gps"))
+        let m = RoofMount.layout(d, latitude: lat).layout, q = m.quantities
+        guard q.modules > 0 else { return [] }
+        let W = Self.cw, plan = RoofPlan(d, mode: .pv, mount: m).sketch, k = (W - 16) / plan.width
+        let used = m.faces
+        let lineH = 11.0, faceRows = Double(used.count)
+        let assumed = RoofMount.assumptions(d, latitude: lat)
+        let textH = 10 + lineH * (2 + faceRows) + (assumed.isEmpty ? 0 : lineH) + lineH + 6
+        let h = Self.band + 6 + plan.height * k + textH
+        var o = box("แปลนวางแผงบนหลังคา (หน่วย ม.)", height: h)
+        o += plan.translated(8, Self.band + 6, scale: k)
+        var y = Self.band + 6 + plan.height * k + 10
+        o.append(.text(RoofMount.summaryLine(m), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
+        for f in used {
+            let face = f.face
+            let t = "ด้าน\(RoofFace.direction(face.azimuth)) \(Int(face.azimuth.rounded()))° · ลาด " + String(format: "%.0f°", face.tilt * 180 / .pi)
+                + " · \(Int(f.yield.rounded())) kWh/kWp · \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)") + (f.cuts > 0 ? " · ตัด \(f.cuts)" : "")
+            o.append(.text(t, at: Pt(14, y), size: 8, color: f.used ? .black : .tag)); y += lineH
+        }
+        o.append(.text(RoofMount.boqLine(q), at: Pt(8, y), size: 8)); y += lineH
+        if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " · "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
+        o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบรรทุกของโครงหลังคากับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))
+        var out = [Unit(h: h, ops: o)]
+        // detail A: the first row of the first face in use, along the slope
+        if let fi = m.faces.firstIndex(where: { $0.used && !$0.rows.isEmpty }) {
+            let sec = RoofMountDrawings.rowSection(m, face: fi, row: 0), ks = (W - 16) / sec.width
+            let sh = Self.band + 6 + sec.height * ks + 4
+            var s = box("รายละเอียด A · รูปตัดแถวแผงตามแนวลาด (หน่วย ม.)", height: sh)
+            s += sec.translated(8, Self.band + 6, scale: ks)
+            out.append(Unit(h: sh, ops: s))
+        }
+        return out
+    }
+
     func planSection(_ mod: SurveyModule) -> [Unit] {
         let d = mod.values, tank = mod.type == .tank, W = Self.cw
         let title = mod.spec.reportTitle + (mod.name.isEmpty ? "" : " " + mod.name)
@@ -164,6 +202,7 @@ extension ReportLayout {
         if !tank && Roof.hasFrame(d) {
             U.append(roofSectionUnit(d))
         }
+        if !tank { U += roofPVUnits(d) }
         if !tank {
             // structure: truss + component table + option rows (a C1 frame type names the rows and draws section A-A above)
             let framed = Roof.hasFrame(d), names = framed ? Roof.frame(d).members.map(\.name) : Options.components

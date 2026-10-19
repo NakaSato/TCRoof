@@ -8,7 +8,10 @@ public final class DesignLibrary: @unchecked Sendable {
 
     private let lock = NSLock()
     private var saved: [TankDesign] = []
+    private var savedRoofs: [RoofDesign] = []
     private var url: URL?
+    /// Called with each roof design saved, renamed, archived or imported here.
+    public var onRoofChange: ((RoofDesign) -> Void)?
     /// Called with each design saved, renamed, archived or imported here (not with ones received).
     public var onChange: ((TankDesign) -> Void)?
 
@@ -21,6 +24,45 @@ public final class DesignLibrary: @unchecked Sendable {
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
         saved = (try? Data(contentsOf: url)).flatMap { try? dec.decode([TankDesign].self, from: $0) } ?? []
+        savedRoofs = (try? Data(contentsOf: roofURL(url))).flatMap { try? dec.decode([RoofDesign].self, from: $0) } ?? []
+    }
+    func roofURL(_ url: URL) -> URL { url.deletingLastPathComponent().appendingPathComponent("standard-roof-designs.json") }
+
+    // MARK: roofs (§7)
+
+    /// Every saved roof design, archived ones too.
+    public var roofs: [RoofDesign] { lock.lock(); defer { lock.unlock() }; return savedRoofs }
+
+    public func saveRoof(_ design: RoofDesign) {
+        var d = design
+        lock.lock()
+        if let i = savedRoofs.firstIndex(where: { $0.id == d.id }) { d.revision = savedRoofs[i].revision + 1; savedRoofs[i] = d }
+        else { savedRoofs.append(d) }
+        persist()
+        lock.unlock()
+        onRoofChange?(d)
+    }
+    public func renameRoof(_ id: String, to name: String) { editRoof(id) { $0.name = name } }
+    public func archiveRoof(_ id: String, _ on: Bool = true) { editRoof(id) { $0.archived = on } }
+    func editRoof(_ id: String, _ f: (inout RoofDesign) -> Void) {
+        guard var d = roofs.first(where: { $0.id == id }) else { return }
+        f(&d)
+        d.savedAt = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down))
+        saveRoof(d)
+    }
+    /// A roof design from another device or a file: kept when new or of a higher revision (the same: the later save).
+    @discardableResult
+    public func receiveRoof(_ d: RoofDesign) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        if let i = savedRoofs.firstIndex(where: { $0.id == d.id }) {
+            let old = savedRoofs[i]
+            guard d.revision > old.revision || (d.revision == old.revision && (d.savedAt ?? .distantPast) > (old.savedAt ?? .distantPast)) else { return false }
+            savedRoofs[i] = d
+        } else {
+            savedRoofs.append(d)
+        }
+        persist()
+        return true
     }
 
     /// Every saved tank design, archived ones too (settings lists them).
@@ -78,6 +120,16 @@ public final class DesignLibrary: @unchecked Sendable {
         return d
     }
 
+    /// Imports a `.tcdesign` file of either kind; the design's name.
+    @discardableResult
+    public func importAny(_ data: Data) throws -> String {
+        if let roof = try? RoofDesign.imported(data), roof.id.hasPrefix("roof-") {
+            if receiveRoof(roof) { onRoofChange?(roof) }
+            return roof.name
+        }
+        return try importFile(data).name
+    }
+
     // MARK: the scanned sheet (§3.4)
 
     /// Where a design's sheet pages are kept: next to the library file.
@@ -99,7 +151,7 @@ public final class DesignLibrary: @unchecked Sendable {
     }
 
     /// Empties the library (tests, sign-out).
-    public func reset() { lock.lock(); saved = []; persist(); lock.unlock() }
+    public func reset() { lock.lock(); saved = []; savedRoofs = []; persist(); lock.unlock() }
 
     private func persist() {
         guard let url else { return }
@@ -107,5 +159,6 @@ public final class DesignLibrary: @unchecked Sendable {
         e.dateEncodingStrategy = .iso8601
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? e.encode(saved).write(to: url, options: .atomic)
+        try? e.encode(savedRoofs).write(to: roofURL(url), options: .atomic)
     }
 }

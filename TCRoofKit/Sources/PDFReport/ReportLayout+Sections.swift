@@ -203,6 +203,7 @@ extension ReportLayout {
         if !tank && Roof.hasFrame(d) {
             U.append(roofSectionUnit(d))
         }
+        if !tank, let sum = RoofDesign.summary(d) { U.append(designUnit(sum)) }
         if !tank { U += roofPVUnits(d) }
         if !tank {
             // structure: truss + component table + option rows (a C1 frame type names the rows and draws section A-A above)
@@ -357,7 +358,7 @@ extension ReportLayout {
                 s.append(.photoFill(p, Box(14, y, thumbH * 4 / 3, thumbH)))
                 s.append(.text("• " + t, at: Pt(20 + thumbH * 4 / 3, y + thumbH / 2), size: 7.5))
             } else {
-                s.append(.text("• " + t + " (ไม่มีรูป)", at: Pt(14, y + lineH / 2), size: 7.5))
+                s.append(.text("• " + t + (sum.photosExpected ? " (ไม่มีรูป)" : ""), at: Pt(14, y + lineH / 2), size: 7.5))
             }
             y += rowH[i]
         }

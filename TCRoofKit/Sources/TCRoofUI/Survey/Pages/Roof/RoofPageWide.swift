@@ -57,6 +57,12 @@ struct RoofPageWide: View {
     @State var mountSelection: MountSelection?
     @State var mountTool: MountTool = .inspect
     @State var mountUndo: [RoofMount.Choice] = []
+    /// The standard building roof (RoofPageWide+Design): the picker, the save question, its name and the name saved.
+    @State var roofDesignPick = false
+    @State var roofDesignSave = false
+    @State var roofDesignName = ""
+    @State var roofDesignSaved: String?
+    @Environment(\.permissions) var roofPermissions
     @State var mountNote: String?
     @State var mountFace = "S"
     @State var showStandard = false
@@ -218,7 +224,7 @@ struct RoofPageWide: View {
             RoofSegments(options: ["หลังคา *", "แผงบนหลังคา"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
                 setMode(i == 1 ? .pv : .structure)
             }
-            if mode == .structure { roofTab } else { mountTab }
+            if mode == .structure { roofTab; roofDesignSection } else { mountTab }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -471,6 +477,17 @@ extension RoofPageWide {
             }
             // the hip roof and the obstacles keep the plan in view
             if !["pvhip", "pvobst", "pvshed"].contains(state) { scrollTarget = "info" }
+        case "design":
+            // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
+            update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }
+            let d = RoofDesign.from(values, name: "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size, job: "DEMO", by: nil)
+            DesignLibrary.shared.saveRoof(d)
+            update { v in
+                RoofDesign.apply(&v, d)
+                Roof.setPurlinSpacing(&v, 1.2)
+                RoofDesign.toggle(&v, "size"); RoofDesign.toggle(&v, "frame")
+            }
+            scrollTarget = "info"
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
         case "frame-w": update { Roof.setFrame(&$0, .warren) }

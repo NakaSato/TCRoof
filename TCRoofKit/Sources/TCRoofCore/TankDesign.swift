@@ -269,13 +269,17 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
         public var matches = 0, moved = 0, absent = 0, added = 0, open = 0
         /// Confirmed together (`TankPoints.confirmRest`), not one by one.
         public var bulk = 0
+        /// What `moved` counts: a point moved on a tank, an answer changed on a roof (`RoofDesign`).
+        public var movedLabel = "ย้าย"
+        /// A difference is expected to have a photo (a tank's points; a roof's items have none).
+        public var photosExpected = true
         /// "V5 ย้าย 4.00 ม. (16.70, 18.70 → 12.70, 18.70)", "H3 ไม่มีจริง", "V13 เพิ่มหน้างาน (20.00, 21.70)"
         public var differences: [String] = []
         /// Each difference's photo, in the same order (nil when it has none).
         public var photos: [Photo?] = []
         /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยืนยันแบบรวม 4 · ยังไม่ตรวจ 8"
         public var counts: String {
-            var parts = ["ตรงแบบ \(matches)", "ย้าย \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
+            var parts = ["ตรงแบบ \(matches)", "\(movedLabel) \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
             if bulk > 0 { parts.append("ยืนยันแบบรวม \(bulk)") }
             if open > 0 { parts.append("ยังไม่ตรวจ \(open)") }
             return parts.joined(separator: " · ")

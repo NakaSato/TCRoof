@@ -12,6 +12,7 @@ struct DesignLibraryView: View {
     /// Bumped after each change, as the library isn't observable.
     @State private var version = 0
     @State private var renaming: TankDesign?
+    @State private var renamingRoof: RoofDesign?
     @State private var newName = ""
     @State private var importing = false
     /// `แนบแบบ`: the design a picked PDF / image goes to; the sheet opened.
@@ -35,7 +36,18 @@ struct DesignLibraryView: View {
                     }
                     ForEach(saved) { d in row(d) }
                 } header: {
-                    Text("แบบที่ทีมบันทึก")
+                    Text("แบบถังที่ทีมบันทึก")
+                } footer: {
+                    Text("")
+                }
+                Section {
+                    let roofs = DesignLibrary.shared.roofs
+                    if roofs.isEmpty {
+                        Text("ยังไม่มีแบบหลังคา · ตรวจหลังคา C1 แล้วกด บันทึกเป็นแบบมาตรฐาน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    }
+                    ForEach(roofs) { d in roofRow(d) }
+                } header: {
+                    Text("แบบหลังคาอาคาร (C1)")
                 } footer: {
                     Text(canEdit ? "งานที่ใช้แบบไปแล้วเก็บสำเนาของแบบไว้ แก้แบบในคลังไม่กระทบงานเดิม"
                                  : "ผู้รับเหมาใช้แบบได้ แต่บันทึก แก้ไข หรือนำเข้าแบบไม่ได้").font(.sarabunFixed(12))
@@ -57,7 +69,7 @@ struct DesignLibraryView: View {
                     let url = try result.get()
                     let ok = url.startAccessingSecurityScopedResource()
                     defer { if ok { url.stopAccessingSecurityScopedResource() } }
-                    try DesignLibrary.shared.importFile(Data(contentsOf: url))
+                    try DesignLibrary.shared.importAny(Data(contentsOf: url))
                     version += 1
                 } catch { self.error = "นำเข้าไม่ได้: " + error.localizedDescription }
             }
@@ -76,13 +88,15 @@ struct DesignLibraryView: View {
                 } catch { self.error = "แนบไม่ได้: " + error.localizedDescription }
             }
             .sheet(item: $viewing) { d in DesignSheetViewer(design: d) }
-            .alert("แก้ชื่อแบบ", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            .alert("แก้ชื่อแบบ", isPresented: Binding(get: { renaming != nil || renamingRoof != nil }, set: { if !$0 { renaming = nil; renamingRoof = nil } })) {
                 TextField("ชื่อแบบ", text: $newName)
                 Button("บันทึก") {
-                    if let d = renaming, !newName.trimmingCharacters(in: .whitespaces).isEmpty { DesignLibrary.shared.rename(d.id, to: newName); version += 1 }
-                    renaming = nil
+                    let name = newName.trimmingCharacters(in: .whitespaces)
+                    if let d = renaming, !name.isEmpty { DesignLibrary.shared.rename(d.id, to: name); version += 1 }
+                    if let r = renamingRoof, !name.isEmpty { DesignLibrary.shared.renameRoof(r.id, to: name); version += 1 }
+                    renaming = nil; renamingRoof = nil
                 }
-                Button("ยกเลิก", role: .cancel) { renaming = nil }
+                Button("ยกเลิก", role: .cancel) { renaming = nil; renamingRoof = nil }
             }
             .sheet(item: Binding(get: { share.map(SharedFile.init) }, set: { share = $0?.url })) { f in
                 ShareSheet(items: [f.url]).presentationDetents([.medium, .large])
@@ -128,6 +142,43 @@ struct DesignLibraryView: View {
             .accessibilityLabel("ตัวเลือกของ \(d.name)")
         }
         .opacity(d.archived ? 0.6 : 1)
+    }
+
+    func roofRow(_ d: RoofDesign) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(d.name).font(.sarabunFixed(15, .bold))
+                    if d.archived {
+                        Text("เก็บเข้าคลัง").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.inkMuted)
+                            .padding(.horizontal, 6).padding(.vertical, 1).background(Theme.hairline, in: Capsule())
+                    }
+                }
+                let n = d.values.obstacles(Roof.Key.obstacles).count
+                Text(d.size + " · ระยะแป " + fmt(Roof.purlinSpacing(d.values)) + " ม." + (n > 0 ? " · สิ่งกีดขวาง \(n)" : ""))
+                    .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                Text("rev \(d.revision) · " + d.source).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            }
+            Spacer(minLength: 6)
+            Menu {
+                Button { save(d.exported(), d.name) } label: { Label("ส่งออก .tcdesign", systemImage: "square.and.arrow.up") }
+                if canEdit {
+                    Button { newName = d.name; renamingRoof = d } label: { Label("แก้ชื่อ", systemImage: "pencil") }
+                    Button { DesignLibrary.shared.archiveRoof(d.id, !d.archived); version += 1 } label: {
+                        Label(d.archived ? "นำกลับมาใช้" : "เก็บเข้าคลัง", systemImage: d.archived ? "tray.and.arrow.up" : "archivebox")
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle").font(.system(size: 20)).frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("ตัวเลือกของ \(d.name)")
+        }
+        .opacity(d.archived ? 0.6 : 1)
+    }
+
+    func save(_ data: Data, _ name: String) {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name.replacingOccurrences(of: "/", with: "-") + ".tcdesign")
+        do { try data.write(to: url, options: .atomic); share = url } catch { self.error = error.localizedDescription }
     }
 
     func export(_ d: TankDesign) {

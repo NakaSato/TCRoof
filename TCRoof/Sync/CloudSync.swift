@@ -105,6 +105,7 @@ final class CloudSync {
         survey?.cloudPending = nil
         FeedAcks.shared.send = nil
         DesignLibrary.shared.onChange = nil
+        DesignLibrary.shared.onRoofChange = nil
         TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
@@ -623,13 +624,25 @@ final class CloudSync {
                     }
             }
         }
+        // building roofs (C1, §7) share the collection, marked `kind: roof`
+        DesignLibrary.shared.onRoofChange = { [weak self] d in
+            guard let self, self.external == nil else { return }
+            collection.document(d.id).setData(["json": String(decoding: d.exported(), as: UTF8.self), "kind": "roof", "revision": d.revision,
+                                               "savedBy": d.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: roof design upload: \(error.localizedDescription)") }
+            }
+        }
         let registration = collection.addSnapshotListener { snapshot, error in
             // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
             if let error { return print("CloudSync: design listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
-                guard let json = change.document.data()["json"] as? String,
-                      let d = try? TankDesign.imported(Data(json.utf8)) else { continue }
-                DesignLibrary.shared.receive(d)
+                let data = change.document.data()
+                guard let json = data["json"] as? String else { continue }
+                if data["kind"] as? String == "roof" {
+                    if let r = try? RoofDesign.imported(Data(json.utf8)) { DesignLibrary.shared.receiveRoof(r) }
+                } else if let d = try? TankDesign.imported(Data(json.utf8)) {
+                    DesignLibrary.shared.receive(d)
+                }
             }
         }
         listeners.append(registration)

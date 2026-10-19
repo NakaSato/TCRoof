@@ -1,6 +1,6 @@
 # Auto PV layout on the roof (วางแผงบนหลังคาอัตโนมัติ)
 
-**Status:** Partly built (checked 2026-10-17): `TCRoofCore/RoofPV.swift` lays the modules face by face from the eave with tables, gaps and blocked slots under skylights, obstacles and keep-out zones (§3.1–3.3), drawn by `RoofPlan` on C1. Not built: shade from obstacles (§3.4), L-feet (§3.5), the best-layout search (§3.6), yield (§3.7), quantities (§3.8), the `แผงบนหลังคา` tab of §5 and the report rows of §7.
+**Status:** Engine built (2026-10-19): `TCRoofCore/RoofPV/` (`RoofFaces`, `RoofMountStandard`, `SolarModel`, `RoofMountLayout`, `RoofMountQuantities`) does §3.1–3.8 (gable, hip and shed faces, rows on purlins or rib clamps, shade hulls, L-feet with column cutting, the best-layout search, yield, face use and quantities), and `RoofMountLayoutTests` matches `img/roof_pv.py` on the three samples (gable 216, hip 105, shed 76). Hips take the verge setback (`setVerge`), as the HTML prototype and §5.3. Not built yet: the C1 inputs of §2 (heights, obstacle kind and height, bearing), the `แผงบนหลังคา` tab of §5 with the drawings of §4 (it replaces the table layout of `TCRoofCore/RoofPV.swift`), and the report and export of §7.
 **Section:** C1 หลังคา (station roofs); C2/C3 reuse it once their spans are known (§9)
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (roof geometry, pitch, purlins), [`tank-mounting-layout.md`](tank-mounting-layout.md)
 (the no-collision rule, the energy model), [`tank-mounting-layout.md`](tank-mounting-layout.md) (the editor pattern)

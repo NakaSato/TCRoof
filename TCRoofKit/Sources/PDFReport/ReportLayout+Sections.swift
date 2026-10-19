@@ -273,11 +273,45 @@ extension ReportLayout {
             s.append(.text("รูปภาพเพิ่มเติม: *รูปมุมสูง/รูปโดรน  *รูปสิ่งกีดขวาง  *รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", at: Pt(0, h2 + 9), size: 8))
             U.append(Unit(h: h2 + 16, ops: s))
             if TankDesign.current(d) != nil, let sum = TankDesign.summary(d) { U.append(designUnit(sum)) }
+            U += tankLayoutUnits(d)
             if let a = d.photo("aerialPhoto") { U += grid(title, [(a, nil)], cellH: 330, columns: 1) }
             U += grid("สิ่งกีดขวาง", ob.dropFirst().map { ($0, nil) })
             U += grid(title + " — รูปข้างถัง / รูปเพิ่มเติม", d.photos("sidePhotos").map { ($0, nil) })
         }
         return U
+    }
+
+    /// D1's stored panel layout (docs/specs/tank-drawing-swift.md §5): the layout on the plan with its figures, BOQ,
+    /// checks and assumptions, the standard row section, then the tank sections 1–1 and 2–2.
+    func tankLayoutUnits(_ d: Values) -> [Unit] {
+        let W = Self.cw, lat = RoofMount.latitude(gps: j.text("gps"))
+        var out: [Unit] = []
+        if let l = TankLayout.current(d), l.count > 0, let plan = TankDrawings.layoutPlan(d, l) {
+            let k = (W - 16) / plan.width, lineH = 11.0
+            let assumed = TankLayout.assumptions(d, latitude: lat)
+            let h = Self.band + 6 + plan.height * k + 10 + lineH * (assumed.isEmpty ? 4 : 5) + 6
+            var o = box("ผังจัดแผงบนหลังคาถัง (หน่วย ม.)", height: h)
+            o += plan.translated(8, Self.band + 6, scale: k)
+            var y = Self.band + 6 + plan.height * k + 10
+            o.append(.text(l.summaryLine(latitude: lat ?? RoofMount.defaultLatitude, facing: TankLayout.facing(d)), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
+            o.append(.text(l.boqLine, at: Pt(8, y), size: 8)); y += lineH
+            o.append(.text(l.checksLine, at: Pt(8, y), size: 8, color: l.checks.allOK ? .black : .tag)); y += lineH
+            if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " · "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
+            o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))
+            out.append(Unit(h: h, ops: o))
+            let sec = TankDrawings.tableSection(l.params), ks = (W - 16) / sec.width, sh = Self.band + 6 + sec.height * ks + 4
+            var s = box("ภาพตัดโต๊ะแผง", height: sh)
+            s += sec.translated(8, Self.band + 6, scale: ks)
+            out.append(Unit(h: sh, ops: s))
+        }
+        for across in [false, true] {
+            guard let sec = TankDrawings.section(d, across: across) else { continue }
+            let ks = (W - 16) / sec.width, sh = Self.band + 6 + sec.height * ks + 4
+            var s = box(across ? "รูปตัดถัง 2–2" : "รูปตัดถัง 1–1", height: sh)
+            s += sec.translated(8, Self.band + 6, scale: ks)
+            out.append(Unit(h: sh, ops: s))
+        }
+        return out
     }
 
     /// D1 from a standard design (docs/specs/standard-designs.md §6): the design, the counts and where the site differs.

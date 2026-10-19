@@ -114,6 +114,13 @@ extension JobEditorView {
                     if let v = job.modules.first(where: { $0.id == id })?.values, let out = TankDXF.build(v) { writeDebugFile("tank.dxf", out.data) }
                 }
             }
+            // `-surveyTankPDF YES` writes the report (with the tank layout and section pages) to Documents/survey.pdf
+            if UserDefaults.standard.bool(forKey: "surveyTankPDF") {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    writeDebugFile("survey.pdf", model.pdfData(job))
+                }
+            }
         default: break
         }
     }

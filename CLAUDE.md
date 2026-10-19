@@ -92,7 +92,7 @@ xcrun simctl launch <udid> com.tcroof.internal -screen pwa -surveyDemo YES -surv
 - `-screen homework -homeworkSheet weight|pack|entry|archive` opens น้ำหนักบนหลังคา, ชุดไฟล์ PPIM, ข้อมูลกรอก PPIM or แฟ้มเอกสาร over งานบ้าน.
 - `-surveySLDDXF YES` (with `-surveyPage sld`) writes the single line diagram's DXF to `Documents/sld.dxf`.
 - `-surveySiteDXF YES` (with `-surveyPage site`) writes the A2 site plan's DXF to `Documents/site.dxf`.
-- `-surveyTankDXF YES` (with `-surveyPage tank`) writes D1's DXF to `Documents/tank.dxf`, 2.5 s after opening so `-surveyD1` has seeded the tank.
+- `-surveyTankDXF YES` (with `-surveyPage tank`) writes D1's DXF to `Documents/tank.dxf`, 2.5 s after opening so `-surveyD1` has seeded the tank. `-surveyTankPDF YES` writes the report, with the tank's layout, row section and tank sections (`TankDrawings`), to `Documents/survey.pdf` 4 s after opening (use `-surveyD1 layout` for a stored layout).
 - `-surveyCardImport YES` opens นำเข้ารูปจากการ์ด / USB with three generated photos (a drone shot 92 m up and two ground shots), skipping the file picker.
 - `-surveyPlatePhoto YES` (with `-surveyPage electrical`) clears TX 1's nameplate fields and gives it a rendered nameplate photo, so A3 offers `พบในรูปป้าย` from the photo text reader.
 - `-surveySettings YES` (with `-screen pwa`) opens the survey settings; its `เครื่องนี้` section lists the hardware the device has (`DeviceCaps`).

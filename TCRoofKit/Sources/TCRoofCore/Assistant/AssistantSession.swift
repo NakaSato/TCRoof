@@ -50,7 +50,7 @@ public extension Assistant {
                 for call in calls {
                     let outcome = box.run(call.function.name, arguments: call.function.arguments)
                     if case .proposal(let a, _) = outcome {
-                        proposals.removeAll { $0.jobID == a.jobID && $0.task == a.task && Self.sameKind($0.change, a.change) }
+                        proposals.removeAll { $0.jobID == a.jobID && ($0.task == a.task || a.isReplan) && Self.sameKind($0.change, a.change) }
                         proposals.append(a)
                     }
                     messages.append(.tool(call.id, outcome.text))
@@ -92,7 +92,7 @@ public extension Assistant {
 
         private static func sameKind(_ a: PendingAction.Change, _ b: PendingAction.Change) -> Bool {
             switch (a, b) {
-            case (.progress, .progress), (.dates, .dates), (.lateCause, .lateCause): true
+            case (.progress, .progress), (.dates, .dates), (.lateCause, .lateCause), (.replan, .replan): true
             default: false
             }
         }
@@ -113,6 +113,15 @@ public extension Assistant {
             - การบันทึกทุกอย่างทำผ่านเครื่องมือ propose_* เท่านั้น ซึ่งยังไม่บันทึกจนกว่าผู้ใช้จะกดยืนยันในการ์ด
               ห้ามบอกว่าบันทึกแล้วจนกว่าจะได้ข้อความ [ระบบ] ว่าผู้ใช้ยืนยัน
             - เสนอบันทึกเฉพาะเมื่อผู้ใช้ขอ หรือเมื่อรายงานประจำวันระบุ % ชัดเจน และบอกที่มาของตัวเลข
+
+            การวางกลยุทธ์ (ตัวเลขมาจากเครื่องมือเสมอ คุณเป็นผู้อธิบายและแนะนำ):
+            - สถานีช้า ให้ใช้ what_if เทียบทางเลือก (เพิ่มคน เพิ่มวันทำงาน เริ่มงานคู่ขนาน) แล้วแนะนำทางที่ได้วันคืนมากที่สุดต่อแรงที่เพิ่ม
+              บอก toFinishOnTime (คน/วันทำงานที่ต้องใช้ และงานคอขวด) และบอกข้อสมมติใน note
+            - ภาพรวมหลายสถานี ให้ใช้ station_priorities เรียงตาม riskScore ชี้สัปดาห์ที่ overloaded และเสนอย้ายคนตาม moves
+            - แผนล่วงหน้าหรือเตรียมประชุม ให้ใช้ look_ahead ระบุงานที่รองานก่อนหน้า (waitingFor) นัดตรวจ กำหนดส่งเอกสาร และความเสี่ยงฝน
+            - ถ้าเร่งแล้วยังไม่ทัน ให้ใช้ suggest_replan แล้วเสนอ propose_replan ด้วยวันที่จากผลนั้นเท่านั้น
+              และบอกว่าแผนเดิมจะถูกแทนที่ ต้องให้ผู้มีสิทธิ์ตั้งค่าแผนยืนยัน
+            - คำแนะนำแต่ละข้อให้ระบุ ทำอะไร ที่สถานีไหน ภายในวันไหน และได้ผลกี่วัน
             """
             if let focus {
                 s += "\n\nผู้ใช้เปิดผู้ช่วยจากสถานี \(focus.station) (job: \(focus.id)"

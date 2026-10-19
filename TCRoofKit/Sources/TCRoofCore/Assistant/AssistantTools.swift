@@ -14,17 +14,46 @@ public extension Assistant {
         public var dailies: [RoutineReport.Daily]
         /// The person may book progress, dates and late causes on it (`mp.progress`).
         public var canEdit: Bool
+        /// The person may replace its plan's dates (`mp.setup`).
+        public var canReplan: Bool
+        /// Who builds it: the subcontractor's name, else our team (`TCR01`); empty when no record says.
+        public var contractor: String
+        public var team: String
+        /// `Calendar` weekdays the site works (1 = Sunday).
+        public var workingWeekdays: Set<Int>
+        /// The PWA representative's inspection appointments.
+        public var inspections: [RoutineReport.Inspection]
+        /// Open paper and hand-over deadlines (`PWAPlan.deadlines`), for the look-ahead.
+        public var deadlines: [Deadline]
 
         public init(id: String, station: String, mpNumber: Int? = nil, kWp: Double? = nil, input: MasterSchedule.Input?,
-                    actual: MasterSchedule.Actual = .init(), dailies: [RoutineReport.Daily] = [], canEdit: Bool) {
+                    actual: MasterSchedule.Actual = .init(), dailies: [RoutineReport.Daily] = [], canEdit: Bool,
+                    canReplan: Bool = false, contractor: String = "", team: String = "",
+                    workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], inspections: [RoutineReport.Inspection] = [],
+                    deadlines: [Deadline] = []) {
             self.id = id; self.station = station; self.mpNumber = mpNumber; self.kWp = kWp
             self.input = input; self.actual = actual; self.dailies = dailies; self.canEdit = canEdit
+            self.canReplan = canReplan; self.contractor = contractor; self.team = team
+            self.workingWeekdays = workingWeekdays; self.inspections = inspections; self.deadlines = deadlines
+        }
+
+        /// The crew group the station draws on, for the all-station loads.
+        public var crewGroup: String {
+            let c = contractor.trimmingCharacters(in: .whitespaces), t = team.trimmingCharacters(in: .whitespaces)
+            return !c.isEmpty ? "ผู้รับเหมา \(c)" : !t.isEmpty ? "ทีม \(t)" : "ไม่ระบุ"
         }
 
         public func brief(today: Date) -> ScheduleBrief? {
             input.map { ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
                                       actual: actual, dailies: dailies, today: today) }
         }
+    }
+
+    /// A dated paper or hand-over deadline of one station.
+    struct Deadline: Codable, Equatable, Sendable {
+        public var date: Date
+        public var title: String
+        public init(date: Date, title: String) { self.date = date; self.title = title }
     }
 
     /// A change the model proposed. Nothing is saved until the person confirms it; `apply` then runs on the job's
@@ -35,6 +64,15 @@ public extension Assistant {
             /// The dates the task ends up with (nil: none).
             case dates(task: MasterSchedule.Task, started: String?, finished: String?)
             case lateCause(task: MasterSchedule.Task, cause: MasterSchedule.LateCause?)
+            /// New planned dates (`yyyy-MM-dd`) for some tasks; the plan's other tasks keep theirs.
+            case replan(tasks: [TaskDates], reason: String)
+        }
+
+        public struct TaskDates: Codable, Equatable, Sendable {
+            public var task: MasterSchedule.Task
+            public var start: String
+            public var end: String
+            public init(task: MasterSchedule.Task, start: String, end: String) { self.task = task; self.start = start; self.end = end }
         }
 
         public var id: String
@@ -49,7 +87,28 @@ public extension Assistant {
         public var task: MasterSchedule.Task {
             switch change {
             case .progress(let t, _, _), .dates(let t, _, _), .lateCause(let t, _): t
+            case .replan(let tasks, _): tasks.first?.task ?? .kickoff
             }
+        }
+
+        public var isReplan: Bool { if case .replan = change { true } else { false } }
+
+        /// The plan after a re-plan: the tasks' dates become fixed (as an imported plan's), the changed ones moved, and
+        /// the install window fitted to the site tasks. Nil for the other changes.
+        public func replanned(_ input: MasterSchedule.Input, calendar cal: Calendar = MasterSchedule.calendar) -> MasterSchedule.Input? {
+            guard case .replan(let tasks, _) = change else { return nil }
+            var i = input
+            var fixed = i.fixed ?? Dictionary(uniqueKeysWithValues: MasterSchedule.plan(input, calendar: cal).map {
+                ($0.task.rawValue, MasterSchedule.FixedTask(start: $0.start, end: $0.end, weight: $0.weight))
+            })
+            for t in tasks {
+                guard let s = MasterSchedule.date(fromKey: t.start, calendar: cal),
+                      let e = MasterSchedule.date(fromKey: t.end, calendar: cal) else { continue }
+                fixed[t.task.rawValue] = .init(start: s, end: e, weight: fixed[t.task.rawValue]?.weight ?? input.weight(t.task))
+            }
+            i.fixed = fixed
+            i.fitInstallWindow()
+            return i
         }
 
         public func apply(to actual: MasterSchedule.Actual, input: MasterSchedule.Input,
@@ -64,6 +123,8 @@ public extension Assistant {
                            finished: finished.flatMap { MasterSchedule.date(fromKey: $0, calendar: cal) }, calendar: cal)
             case let .lateCause(task, cause):
                 a.lateCauses[task.rawValue] = cause
+            case .replan:
+                break
             }
             return a
         }
@@ -95,7 +156,8 @@ public extension Assistant {
         }
 
         public static let names = ["list_stations", "get_schedule", "get_week_tasks",
-                                   "propose_progress", "propose_dates", "propose_late_cause"]
+                                   "propose_progress", "propose_dates", "propose_late_cause",
+                                   "what_if", "station_priorities", "look_ahead", "suggest_replan", "propose_replan"]
 
         public func run(_ name: String, arguments: String) -> Outcome {
             let args = JSONValue.parse(arguments.isEmpty ? "{}" : arguments) ?? .object([:])
@@ -106,6 +168,12 @@ public extension Assistant {
             case "propose_progress": return proposeProgress(args)
             case "propose_dates": return proposeDates(args)
             case "propose_late_cause": return proposeCause(args)
+            case "what_if": return withJob(args) { job, _, _ in whatIf(job, args) }
+            case "station_priorities": return .result(Strategy.priorities(jobs, today: today, calendar: calendar).json)
+            case "look_ahead": return withJob(args) { job, _, _ in lookAhead(job, args) }
+            case "suggest_replan": return withJob(args) { job, input, _ in
+                .result(Strategy.replan(job, input: input, today: today, calendar: calendar).json) }
+            case "propose_replan": return proposeReplan(args)
             default: return error("ไม่มีเครื่องมือ \(name)")
             }
         }
@@ -197,10 +265,10 @@ public extension Assistant {
             }
         }
 
-        private func propose(_ job: Job, _ task: MasterSchedule.Task, _ change: PendingAction.Change,
-                             before: String, after: String) -> Outcome {
+        func propose(_ job: Job, _ task: MasterSchedule.Task, _ change: PendingAction.Change,
+                             before: String, after: String, title: String? = nil) -> Outcome {
             let a = PendingAction(id: makeID(), jobID: job.id, station: job.station, change: change,
-                                  title: "\(task.code) \(task.title)", before: before, after: after)
+                                  title: title ?? "\(task.code) \(task.title)", before: before, after: after)
             let text = Self.encode(.object([
                 "proposalID": .string(a.id), "status": .string("waiting_for_user_confirmation"),
                 "station": .string(job.station), "task": .string(a.title), "before": .string(before), "after": .string(after),
@@ -211,7 +279,7 @@ public extension Assistant {
 
         // MARK: Lookup
 
-        private func withJob(_ args: JSONValue,
+        func withJob(_ args: JSONValue,
                              _ body: (Job, MasterSchedule.Input, [MasterSchedule.PlannedTask]) -> Outcome) -> Outcome {
             let ref = args["job"]?.string ?? ""
             let found = find(ref)
@@ -223,7 +291,7 @@ public extension Assistant {
             return body(job, input, MasterSchedule.plan(input, calendar: calendar))
         }
 
-        private func withEditable(_ args: JSONValue,
+        func withEditable(_ args: JSONValue,
                                   _ body: (Job, MasterSchedule.Input, MasterSchedule.Task) -> Outcome) -> Outcome {
             withJob(args) { job, input, _ in
                 guard job.canEdit else { return error("ผู้ใช้นี้ไม่มีสิทธิ์บันทึกความก้าวหน้าของ \(job.station)") }
@@ -249,12 +317,12 @@ public extension Assistant {
         }
 
         /// A week from `yyyy-MM-dd` (any day in it); this week when missing.
-        private func week(_ v: JSONValue?) -> Date? {
+        func week(_ v: JSONValue?) -> Date? {
             guard let s = v?.string, !s.isEmpty else { return MasterSchedule.weekStart(today, calendar: calendar) }
             return MasterSchedule.date(fromKey: s, calendar: calendar).map { MasterSchedule.weekStart($0, calendar: calendar) }
         }
 
-        private func error(_ message: String) -> Outcome { .result(Self.encode(.object(["error": .string(message)]))) }
+        func error(_ message: String) -> Outcome { .result(Self.encode(.object(["error": .string(message)]))) }
 
         static func total(_ a: MasterSchedule.Actual, _ t: MasterSchedule.Task) -> Double {
             (a.points[t.rawValue] ?? [:]).values.reduce(0, +)
@@ -308,7 +376,7 @@ public extension Assistant {
                     "cause": p("string", "weather สภาพอากาศ, material วัสดุ, owner เจ้าของงาน, contractor ผู้รับเหมา, none ไม่ระบุ",
                                enum: ["weather", "material", "owner", "contractor", "none"])],
                    required: ["job", "task", "cause"]),
-            ]
+            ] + strategyDefinitions
         }()
     }
 }

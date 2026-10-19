@@ -11,11 +11,18 @@ extension Job {
         return mpNumber.map { "MP \($0)" } ?? code
     }
 
-    /// This station as the assistant sees it: its MP plan, progress and daily reports, no customer details.
-    func assistantJob(_ permissions: Permissions) -> Assistant.Job {
-        Assistant.Job(id: overviewID, station: assistantStation, mpNumber: mpNumber, kWp: capacityKW > 0 ? capacityKW : nil,
-                      input: scheduleInput, actual: scheduleActual, dailies: dailyReports,
-                      canEdit: permissions.can(.mpProgress, on: access))
+    /// This station as the assistant sees it: its MP plan, progress, daily reports, crew, inspections and paper
+    /// deadlines; no customer details. `library` is the PWA paper library, read once for all stations.
+    func assistantJob(_ permissions: Permissions, library: StationDocs.Library? = nil) -> Assistant.Job {
+        let settings = routineSettings
+        let deadlines = library.map { lib in
+            PWAPlan.deadlines([planStation], library: lib, today: .now).map { Assistant.Deadline(date: $0.date, title: $0.title) }
+        } ?? []
+        return Assistant.Job(id: overviewID, station: assistantStation, mpNumber: mpNumber, kWp: capacityKW > 0 ? capacityKW : nil,
+                             input: scheduleInput, actual: scheduleActual, dailies: dailyReports,
+                             canEdit: permissions.can(.mpProgress, on: access), canReplan: permissions.can(.mpSetup, on: access),
+                             contractor: settings.subcontractor.trimmingCharacters(in: .whitespaces), team: team.rawValue,
+                             workingWeekdays: settings.workingWeekdays, inspections: settings.inspections, deadlines: deadlines)
     }
 }
 
@@ -30,8 +37,12 @@ extension ModelContext {
     /// or its plan is gone.
     func applyAssistant(_ action: Assistant.PendingAction) -> Bool {
         guard let job = assistantStations().first(where: { $0.overviewID == action.jobID }), let input = job.scheduleInput else { return false }
-        let a = action.apply(to: job.scheduleActual, input: input)
-        if a != job.scheduleActual { job.scheduleActual = a }
+        if let replanned = action.replanned(input) {
+            job.scheduleInput = replanned
+        } else {
+            let a = action.apply(to: job.scheduleActual, input: input)
+            if a != job.scheduleActual { job.scheduleActual = a }
+        }
         try? save()
         return true
     }

@@ -57,4 +57,38 @@ final class AssistantUITests: XCTestCase {
         XCTAssertFalse(confirm.exists)
         shot("05-saved")
     }
+
+    /// The strategy chips: priorities, a recovery what-if, the look-ahead, and a re-plan card, dismissed so the demo
+    /// station keeps its plan.
+    func testStrategyChips() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "assistant", "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        func ask(_ chip: String, expect: String, shot name: String) {
+            let b = app.buttons[chip]
+            XCTAssertTrue(b.waitForExistence(timeout: slow), "\(chip) should show")
+            b.tap()
+            let answer = app.staticTexts.matching(NSPredicate(format: "identifier == 'assistantAnswer' AND label CONTAINS %@", expect)).firstMatch
+            XCTAssertTrue(answer.waitForExistence(timeout: 15), "\(chip) should answer with \(expect)")
+            shot(name)
+            app.buttons["เริ่มใหม่"].tap()
+        }
+        ask("จัดลำดับความสำคัญทุกสถานี", expect: "ลำดับความเสี่ยง", shot: "06-priorities")
+        ask("วางแผนเร่งงานให้ทันกำหนด", expect: "อัตราเดิม", shot: "07-whatif")
+        ask("แผนล่วงหน้า 3 สัปดาห์", expect: "แผนล่วงหน้า", shot: "08-lookahead")
+
+        let replan = app.buttons["เสนอแผนใหม่ที่ทำได้จริง"]
+        XCTAssertTrue(replan.waitForExistence(timeout: 5))
+        replan.tap()
+        let confirm = app.buttons["assistantConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 15), "the re-plan should come as a card")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ยืนยันแล้ววันตามแผนเดิม'")).firstMatch.exists)
+        let thinking = app.descendants(matching: .any)["assistantThinking"]
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: thinking)
+        waitForExpectations(timeout: 15)
+        shot("09-replan")
+        app.buttons["ยกเลิก"].firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["assistantDismissed"].firstMatch.waitForExistence(timeout: 5))
+    }
 }

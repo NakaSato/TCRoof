@@ -23,6 +23,9 @@ struct AssistantDemoTransport: Assistant.Transport {
             Assistant.Reply(message: .init(role: .assistant, content: text), remainingToday: left)
         }
 
+        if let plan = Self.strategy(question, results, focus: Self.mpNumber(question) ?? Self.focusID(r.messages.first?.content),
+                                    call: call, say: say) { return plan }
+
         let update = question.contains("อัปเดต") || question.contains("บันทึก")
         let draft = question.contains("ร่าง") || question.contains("สรุป")
         switch results.count {
@@ -63,6 +66,68 @@ struct AssistantDemoTransport: Assistant.Transport {
             let p = JSONValue.parse(results[results.count - 1])
             if let e = p?["error"]?.string { return say(e) }
             return say("เสนอบันทึก \(p?["task"]?.string ?? "") เป็น \(p?["after"]?.string ?? "") ยังไม่ได้บันทึก กดยืนยันในการ์ดด้านล่าง")
+        }
+    }
+
+    /// The strategy chips: priorities, a recovery what-if, the look-ahead and a re-plan, answered from their tools.
+    private static func strategy(_ q: String, _ results: [String], focus: String?,
+                                 call: (String, String) -> Assistant.Reply, say: (String) -> Assistant.Reply) -> Assistant.Reply? {
+        typealias S = Assistant.Strategy
+        func decode<T: Decodable>(_ t: T.Type, _ i: Int) -> T? { try? JSONDecoder().decode(t, from: Data(results[i].utf8)) }
+        func err(_ i: Int) -> Assistant.Reply { say(JSONValue.parse(results[i])?["error"]?.string ?? "อ่านผลไม่ได้") }
+
+        if q.contains("จัดลำดับ") {
+            guard results.count == 1 else { return call("station_priorities", "{}") }
+            guard let p = decode(S.Priorities.self, 0) else { return err(0) }
+            var out = ["**ลำดับความเสี่ยง**"] + p.stations.prefix(4).enumerated().map { i, s in
+                "\(i + 1). \(s.station) · ช้า \(s.projectedSlipDays ?? 0) วัน · คะแนนเสี่ยง \(num(s.riskScore))"
+                    + (s.crewNeeded.map { " · ต้องใช้ \($0) คน (มี \(num(s.crewAverage ?? 0)))" } ?? "")
+            }
+            let over = p.loads.filter(\.overloaded)
+            if !over.isEmpty { out += ["", "**สัปดาห์ที่คนไม่พอ**"] + over.prefix(3).map { "- \($0.week) \($0.crewGroup): ต้องใช้ \($0.crewNeeded) คน มี \(num($0.crewNow))" } }
+            if !p.moves.isEmpty { out += ["", "**ย้ายคนได้**"] + p.moves.map { "- \($0.crewGroup): \($0.from) → \($0.to) \($0.crew) คน" } }
+            return say(out.joined(separator: "\n"))
+        }
+        let kind = q.contains("เร่งงานให้ทัน") ? "what_if" : q.contains("ล่วงหน้า") ? "look_ahead" : q.contains("แผนใหม่") ? "suggest_replan" : nil
+        guard let kind else { return nil }
+        if results.isEmpty { return call("list_stations", #"{"filter":"all","limit":10}"#) }
+        if results.count == 1 {
+            let stations = array(JSONValue.parse(results[0])?["stations"])
+            guard let id = focus ?? stations.first?["jobID"]?.string else { return say("ยังไม่มีสถานีที่มีแผน MP") }
+            return call(kind, kind == "what_if" ? #"{"job":"\#(id)","crew_change":4,"extra_days":1}"# : #"{"job":"\#(id)"}"#)
+        }
+        switch kind {
+        case "what_if":
+            guard let w = decode(S.WhatIf.self, 1) else { return err(1) }
+            var out = ["**\(w.station)** วันจบติดตั้งตามแผน \(w.installEnd)",
+                       "- อัตราเดิม: เสร็จ \(w.base.stationFinish ?? "–") (ช้า \(w.base.slipDays ?? 0) วัน)"]
+            if let s = w.scenario { out.append("- \(s.name): เสร็จ \(s.stationFinish ?? "–") (ช้า \(s.slipDays ?? 0) วัน)") }
+            if let t = w.toFinishOnTime {
+                out.append("- ให้ทันแผน: เร็วขึ้น \(num(t.paceFactor)) เท่า คอขวด \(t.bottleneck)"
+                           + (t.crew.map { " · ใช้ \($0) คน" } ?? "") + (t.workingDaysPerWeek.map { " หรือทำงาน \($0) วัน/สัปดาห์" } ?? ""))
+            }
+            return say(out.joined(separator: "\n") + "\n\n_\(w.note)_")
+        case "look_ahead":
+            guard let l = decode(S.LookAhead.self, 1) else { return err(1) }
+            var out = ["**แผนล่วงหน้า · \(l.station)**"]
+            for w in l.weeks {
+                out.append("สัปดาห์ \(w.week): " + (w.tasks.isEmpty ? "ไม่มีงานตามแผน" : w.tasks.map { t in
+                    t.code + (t.waitingFor.isEmpty ? "" : " (รอ " + t.waitingFor.map { "\($0.code) \(num($0.actualPercent))%" }.joined(separator: ", ") + ")")
+                }.joined(separator: ", ")) + (w.inspections.isEmpty ? "" : " · ตรวจ " + w.inspections.joined(separator: ", "))
+                    + (w.deadlines.isEmpty ? "" : " · ส่ง " + w.deadlines.joined(separator: ", ")))
+            }
+            out.append("ฝน 14 วัน: \(l.weather.rainDays) วัน \(l.weather.rainHours) ชม.")
+            return say(out.joined(separator: "\n"))
+        default:
+            if results.count == 2 {
+                guard let r = decode(S.Replan.self, 1) else { return err(1) }
+                guard !r.tasks.isEmpty else { return say("\(r.station) ไม่ต้องเลื่อนแผน") }
+                let tasks = r.tasks.map { #"{"task":"\#($0.code)","start":"\#($0.newStart)","end":"\#($0.newEnd)"}"# }.joined(separator: ",")
+                return call("propose_replan", #"{"job":"\#(r.jobID)","reason":"ตามอัตราที่ทำได้จริง","tasks":[\#(tasks)]}"#)
+            }
+            let p = JSONValue.parse(results[2])
+            if let e = p?["error"]?.string { return say(e) }
+            return say("เสนอ\(p?["task"]?.string ?? "แผนใหม่"): \(p?["after"]?.string ?? "") ยังไม่ได้บันทึก ผู้มีสิทธิ์ตั้งค่าแผนกดยืนยันในการ์ด")
         }
     }
 

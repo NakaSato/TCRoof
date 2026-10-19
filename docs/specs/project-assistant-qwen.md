@@ -75,6 +75,19 @@ App (team / manager / Maintainer; assistant.use)
 - `ยืนยัน` saves through the same path as บันทึกความก้าวหน้า (so sync, the plan file and the Gantt follow).
 - DEBUG `-screen assistant -assistantDemo YES` with a stub transport, and `AssistantUITests`.
 
+## 6. Strategy (`AssistantStrategy.swift`, `AssistantStrategyTests`)
+
+Swift works out every figure; the model compares, explains and recommends. All of them assume a task's pace scales
+with its crew and working days, and a task with no progress yet runs at the plan's rate; the results say so.
+
+| Tool | What it gives |
+|---|---|
+| `what_if` | Each open task's finish at today's pace, and with `crew_change`, `extra_days` or `start_now` tasks; the pace, crew or working days needed for every task to end on time, and the bottleneck task. Crew is the 14-day average of the daily reports. |
+| `station_priorities` | Stations by risk (days late × kWp / 100 + points behind), each crew group's (subcontractor, else team) stations and needed crew for four weeks with the overloaded weeks, and spare crew of stations ahead offered to the riskiest of the same group. |
+| `look_ahead` | 1–6 weeks: each week's tasks, the predecessors not yet done (`Strategy.predecessors`), inspections and paper deadlines; overdue tasks; 14 days of rain and stops; open problems. |
+| `suggest_replan` | A plan from today: a task under way ends when its pace finishes it (never earlier), a task not started moves by as much as its predecessors' ends moved (keeping the plan's overlaps), finished tasks stay. |
+| `propose_replan` | A card (`mp.setup` only) with the new dates; `ยืนยัน` turns the plan's dates into fixed ones (as an imported plan's), moves the tasks and fits the install window. Progress is untouched. |
+
 ## 5. Open questions
 
 1. Which model ids the Qwen account offers on that endpoint; try Thai answers on two before picking (`QWEN_MODEL`).
@@ -83,3 +96,5 @@ App (team / manager / Maintainer; assistant.use)
    `MasterSchedule.Actual` has no author field today.
 4. Is 50 requests per person per day right?
 5. App Check is not enforced (the app has no App Check yet); the member check is the gate.
+6. A confirmed re-plan replaces the plan's dates, so planned % is measured against the new plan. Should the original
+   baseline be kept for reports (planned vs re-planned)?

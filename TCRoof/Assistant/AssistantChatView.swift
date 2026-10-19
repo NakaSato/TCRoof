@@ -77,7 +77,10 @@ struct AssistantChatView: View {
         }
         .onAppear {
             let context = self.context, permissions = self.permissions
-            source.read = { context.assistantStations().map { $0.assistantJob(permissions) } }
+            source.read = {
+                let library = StationDocsStore.loadLibrary()
+                return context.assistantStations().map { $0.assistantJob(permissions, library: library) }
+            }
         }
     }
 
@@ -144,8 +147,10 @@ struct AssistantChatView: View {
     }
 
     private var prompts: [String] {
-        var p = ["สถานีไหนช้ากว่าแผน", "ต้องเร่งงานอะไรสัปดาห์นี้", "ร่างสรุปประชุมประจำสัปดาห์"]
+        var p = ["สถานีไหนช้ากว่าแผน", "จัดลำดับความสำคัญทุกสถานี", "วางแผนเร่งงานให้ทันกำหนด",
+                 "แผนล่วงหน้า 3 สัปดาห์", "ร่างสรุปประชุมประจำสัปดาห์"]
         if permissions.can(.mpProgress, on: focus?.access) { p.append("อัปเดตความก้าวหน้าจากรายงานประจำวัน") }
+        if permissions.can(.mpSetup, on: focus?.access) { p.append("เสนอแผนใหม่ที่ทำได้จริง") }
         return p
     }
 
@@ -274,6 +279,7 @@ struct AssistantProposalCard: View {
         case .progress: "บันทึกความก้าวหน้า"
         case .dates: "วันที่จริง"
         case .lateCause: "สาเหตุล่าช้า"
+        case .replan: "แผนใหม่"
         }
     }
 
@@ -287,13 +293,19 @@ struct AssistantProposalCard: View {
             }
             Text(action.station).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
             Text(action.title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-            HStack(spacing: 8) {
+            // a re-plan lists one task a line under the old install end
+            let layout = action.isReplan ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+            layout {
                 Text(action.before).foregroundStyle(Theme.inkMuted).strikethrough(action.before != action.after)
-                Image(systemName: "arrow.right").foregroundStyle(Theme.inkMuted)
-                Text(action.after).fontWeight(.semibold).foregroundStyle(Theme.navy)
+                Image(systemName: action.isReplan ? "arrow.down" : "arrow.right").foregroundStyle(Theme.inkMuted)
+                Text(action.after).fontWeight(.semibold).foregroundStyle(Theme.navy).monospacedDigit()
             }
             .font(.sarabun(16, relativeTo: .body))
             .accessibilityElement(children: .combine)
+            if action.isReplan {
+                Label("ยืนยันแล้ววันตามแผนเดิมของงานเหล่านี้จะถูกแทนที่ เปอร์เซ็นต์ตามแผนจะคิดจากแผนใหม่", systemImage: "exclamationmark.triangle")
+                    .font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.warningText)
+            }
             HStack(spacing: 10) {
                 TCButton("ยกเลิก", kind: .secondary, size: .card, action: dismiss)
                 TCButton("ยืนยัน", systemImage: "checkmark", size: .card, action: confirm)

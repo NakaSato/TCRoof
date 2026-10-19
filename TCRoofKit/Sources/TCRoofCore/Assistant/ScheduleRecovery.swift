@@ -20,8 +20,8 @@ public extension MasterSchedule {
 
         public let task: Task
         public let weight: Double
-        public let plannedStart: Date?
-        public let plannedEnd: Date?
+        public let plannedStart: Date
+        public let plannedEnd: Date
         /// Points booked through this week.
         public let done: Double
         public var remaining: Double { max(weight - done, 0) }

@@ -12,8 +12,8 @@ extension TankPageWide {
     var phoneObstacleCards: some View {
         obstacleSheets(VStack(spacing: 12) {
             phoneTabs
-            obstaclePlanCard
-            if !obsShade { pointCard }
+            AnyView(obstaclePlanCard)
+            if !obsShade { AnyView(pointCard) }
         })
     }
 
@@ -23,8 +23,8 @@ extension TankPageWide {
         if stacked {
             obstacleSheets(ScrollView {
                 VStack(spacing: 14) {
-                    obstaclePlanCard.frame(maxWidth: 640)
-                    if !obsShade { pointCard.frame(maxWidth: 640) }
+                    AnyView(obstaclePlanCard).frame(maxWidth: 640)
+                    if !obsShade { AnyView(pointCard).frame(maxWidth: 640) }
                     next.frame(maxWidth: 640)
                 }
                 .frame(maxWidth: .infinity)
@@ -33,10 +33,10 @@ extension TankPageWide {
             .scrollIndicators(.hidden))
         } else {
             obstacleSheets(HStack(alignment: .top, spacing: gap) {
-                ScrollView { obstaclePlanCard.frame(maxWidth: 680).frame(maxWidth: .infinity) }.scrollIndicators(.hidden)
+                ScrollView { AnyView(obstaclePlanCard).frame(maxWidth: 680).frame(maxWidth: .infinity) }.scrollIndicators(.hidden)
                 ScrollView {
                     VStack(spacing: 12) {
-                        if !obsShade { pointCard }
+                        if !obsShade { AnyView(pointCard) }
                         next
                     }
                 }
@@ -370,19 +370,21 @@ extension TankPageWide {
             let moved = TankPoints.moved(p)
             let chip = !TankPoints.isStandard(p) ? ("เพิ่มหน้างาน", Theme.inkMuted, Theme.primarySoft)
                 : moved ? ("ย้ายแล้ว", Theme.okTick, Theme.okSoft) : ("ตามแบบ", Theme.inkMuted, Theme.primarySoft)
+            // each row erased, as the info card: the card's full concrete type overflows the main thread's stack on
+            // the iPad when the runtime resolves it (SIGSEGV in swift_getTypeByMangledName under pointActions)
             phoneCard(2, "จุด \(p.label) · " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note), chip: chip) {
-                pointPicker(p)
-                field("สถานะ", required: true) { statusChoice(p) }
-                pointDistances(p)
-                pointPhoto(p)
-                if p.kind == TankPoints.vent { ventHeightField }
-                pointInfo(p)
-                field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(p) }
+                AnyView(pointPicker(p))
+                AnyView(field("สถานะ", required: true) { statusChoice(p) })
+                AnyView(pointDistances(p))
+                AnyView(pointPhoto(p))
+                if p.kind == TankPoints.vent { AnyView(ventHeightField) }
+                AnyView(pointInfo(p))
+                AnyView(field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(p) })
             }
         } else if Tank.hasSize(values) {
             phoneCard(2, "จุดสิ่งกีดขวาง", chip: ("ไม่มีจุด", Theme.inkMuted, Theme.primarySoft)) {
                 Text("ยังไม่มีจุดบนแปลน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(nil) }
+                AnyView(field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(nil) })
             }
         }
     }
@@ -504,20 +506,21 @@ extension TankPageWide {
     }
 
     /// `+ ช่องระบาย` `+ ช่องลงถัง` / `ทำซ้ำเป็นแถว` `ลบจุดนี้` (only points added on site).
-    func pointActions(_ p: Obstacle?) -> some View {
+    func pointActions(_ p: Obstacle?) -> AnyView {
         let canDelete = p.map(TankPoints.canDelete) ?? false
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-            actionButton("+ ช่องระบาย", ink: Theme.primary, border: Theme.primary) { addPoint(TankPoints.vent) }
-            actionButton("+ ช่องลงถัง", ink: Theme.primary, border: Theme.primary) { addPoint(TankPoints.hatch) }
-            actionButton("ทำซ้ำเป็นแถว", ink: Theme.navy, border: Theme.navy.opacity(0.35)) {
+        // the buttons erased too (the grid's content type is where the stack ran out)
+        let grid = LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            AnyView(actionButton("+ ช่องระบาย", ink: Theme.primary, border: Theme.primary) { addPoint(TankPoints.vent) })
+            AnyView(actionButton("+ ช่องลงถัง", ink: Theme.primary, border: Theme.primary) { addPoint(TankPoints.hatch) })
+            AnyView(actionButton("ทำซ้ำเป็นแถว", ink: Theme.navy, border: Theme.navy.opacity(0.35)) {
                 rowCount = 3; rowSpacing = TankPoints.rowSpacing(values); rowAsk = true
             }
-            .disabled(p == nil).opacity(p == nil ? 0.45 : 1)
-            actionButton("ลบจุดนี้", ink: Theme.dangerText, border: Theme.danger.opacity(0.45)) { deleteAsk = true }
+            .disabled(p == nil).opacity(p == nil ? 0.45 : 1))
+            AnyView(actionButton("ลบจุดนี้", ink: Theme.dangerText, border: Theme.danger.opacity(0.45)) { deleteAsk = true }
                 .disabled(!canDelete).opacity(canDelete ? 1 : 0.45)
-                .accessibilityHint(canDelete ? "" : "จุดตามแบบใช้ ไม่มีจริง แทนการลบ")
+                .accessibilityHint(canDelete ? "" : "จุดตามแบบใช้ ไม่มีจริง แทนการลบ"))
         }
-        .disabled(!Tank.hasSize(values))
+        return AnyView(grid.disabled(!Tank.hasSize(values)))
     }
 
     func actionButton(_ title: String, ink: Color, border: Color, action: @escaping () -> Void) -> some View {

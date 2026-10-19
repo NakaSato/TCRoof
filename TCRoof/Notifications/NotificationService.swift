@@ -179,18 +179,24 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     // MARK: delegate
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
-        -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+    // The completion-handler forms, each handler called on the main thread: with the async forms the system's
+    // completion ran on a background thread after a tap, and UIKit aborted the app on its main-thread check
+    // (`_performBlockAfterCATransactionCommitSynchronizes`).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                            withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+        DispatchQueue.main.async { completionHandler([.banner, .list, .sound]) }
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let request = response.notification.request
         let info = request.content.userInfo.compactMapValues { $0 as? String }.reduce(into: [String: String]()) { $0[String(describing: $1.key)] = $1.value }
-        let action = response.actionIdentifier
-        let category = request.content.categoryIdentifier
-        let content = request.content
-        await MainActor.run { handle(id: request.identifier, category: category, action: action, info: info, content: content) }
+        let action = response.actionIdentifier, category = request.content.categoryIdentifier, id = request.identifier
+        nonisolated(unsafe) let content = request.content
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated { self.handle(id: id, category: category, action: action, info: info, content: content) }
+            completionHandler()
+        }
     }
 
     private func handle(id: String, category: String, action: String, info: [String: String], content: UNNotificationContent) {

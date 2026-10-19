@@ -25,9 +25,9 @@ struct AssistantChatView: View {
     init(focus: Job? = nil) {
         self.focus = focus
         #if DEBUG
-        let t: Assistant.Transport = UserDefaults.standard.bool(forKey: "assistantDemo") ? AssistantDemoTransport() : AssistantClient()
+        let t: Assistant.Transport = UserDefaults.standard.bool(forKey: "assistantDemo") ? AssistantDemoTransport() : AssistantRouter()
         #else
-        let t: Assistant.Transport = AssistantClient()
+        let t: Assistant.Transport = AssistantRouter()
         #endif
         transport = t
         let source = Source()

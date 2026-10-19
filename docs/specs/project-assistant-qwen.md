@@ -88,6 +88,21 @@ with its crew and working days, and a task with no progress yet runs at the plan
 | `suggest_replan` | A plan from today: a task under way ends when its pace finishes it (never earlier), a task not started moves by as much as its predecessors' ends moved (keeping the plan's overlaps), finished tasks stay. |
 | `propose_replan` | A card (`mp.setup` only) with the new dates; `ยืนยัน` turns the plan's dates into fixed ones (as an imported plan's), moves the tasks and fits the install window. Progress is untouched. |
 
+## 7. The key on the device (no Blaze plan)
+
+The project is on the Spark plan, which can't host functions or Secret Manager, so the app can also call Qwen
+directly (`AssistantRouter`: the key on this device, else the function).
+
+- A manager enters the key in ตั้งค่า › ผู้ช่วยโครงการ (AI) (`AssistantSettingsPage`), with the model and endpoint
+  (https only), and `ทดสอบ` sends one short request. The team sees whether the device has a key and today's use.
+- `AssistantKey`: Keychain, `AfterFirstUnlockThisDeviceOnly` (not synced, not in backups); model and endpoint in
+  defaults; 50 requests a day per device (`Assistant.OpenAI.dailyLimit`), counted before each call.
+- `Assistant.OpenAI` builds the request and checks the reply as `functions/src/guard.ts` does (only the app's tools;
+  an unknown tool call becomes words); `AssistantOpenAITests`.
+- Trade-off: a key on a device can be extracted by someone with that device and tools, and the limit is per device,
+  not per person. Use a key with a spending cap in the Qwen console, and rotate it if a device is lost. Moving to
+  the Cloud Function later only needs the Blaze plan and the deploy; a device without a key then uses it.
+
 ## 5. Open questions
 
 1. Which model ids the Qwen account offers on that endpoint; try Thai answers on two before picking (`QWEN_MODEL`).

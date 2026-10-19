@@ -38,6 +38,15 @@ public enum Assistant {
             self.role = role; self.content = content; self.toolCalls = toolCalls; self.toolCallID = toolCallID
         }
 
+        /// `content` is always written (null with only tool calls), as OpenAI-style endpoints expect.
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(role, forKey: .role)
+            try c.encode(content, forKey: .content)
+            try c.encodeIfPresent(toolCalls, forKey: .toolCalls)
+            try c.encodeIfPresent(toolCallID, forKey: .toolCallID)
+        }
+
         public static func system(_ text: String) -> Message { Message(role: .system, content: text) }
         public static func user(_ text: String) -> Message { Message(role: .user, content: text) }
         public static func tool(_ id: String, _ text: String) -> Message { Message(role: .tool, content: text, toolCallID: id) }

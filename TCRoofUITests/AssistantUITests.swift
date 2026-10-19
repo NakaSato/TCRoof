@@ -91,4 +91,44 @@ final class AssistantUITests: XCTestCase {
         app.buttons["ยกเลิก"].firstMatch.tap()
         XCTAssertTrue(app.descendants(matching: .any)["assistantDismissed"].firstMatch.waitForExistence(timeout: 5))
     }
+
+    /// ตั้งค่า › ผู้ช่วยโครงการ (AI) as a manager: a key saved into this device's Keychain, tested against Qwen (a fake
+    /// key is refused), then removed. Without a key the chat says where to put one.
+    func testKeyOnTheDevice() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeSettings", "YES", "-role", "manager", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let row = app.buttons["assistantSettingsRow"]
+        XCTAssertTrue(row.waitForExistence(timeout: slow), "settings should list the assistant")
+        var swipes = 0
+        while !row.isHittable && swipes < 8 { app.swipeUp(); swipes += 1 }
+        row.tap()
+        let status = app.staticTexts["assistantKeyStatus"]
+        XCTAssertTrue(status.waitForExistence(timeout: 10))
+        if app.buttons["assistantKeyRemove"].exists {                  // left from an earlier run
+            app.buttons["assistantKeyRemove"].tap(); app.buttons["ลบคีย์"].tap()
+        }
+        expectation(for: NSPredicate(format: "label BEGINSWITH 'ยังไม่ได้ใส่คีย์'"), evaluatedWith: status)
+        waitForExpectations(timeout: 5)
+        shot("10-key-empty")
+
+        let field = app.secureTextFields["assistantKeyField"]
+        field.tap(); field.typeText("sk-uitest-not-a-real-key")
+        app.buttons["ทดสอบ"].tap()
+        let result = app.descendants(matching: .any)["assistantKeyResult"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 60), "the test should answer")
+        shot("11-key-tested")
+
+        app.buttons["assistantKeySave"].tap()
+        let saved = NSPredicate(format: "label BEGINSWITH 'ใช้คีย์ในเครื่องนี้'")
+        expectation(for: saved, evaluatedWith: status)
+        waitForExpectations(timeout: 5)
+        shot("12-key-saved")
+
+        app.buttons["assistantKeyRemove"].tap()
+        app.buttons["ลบคีย์"].tap()
+        expectation(for: NSPredicate(format: "label BEGINSWITH 'ยังไม่ได้ใส่คีย์'"), evaluatedWith: status)
+        waitForExpectations(timeout: 5)
+    }
 }

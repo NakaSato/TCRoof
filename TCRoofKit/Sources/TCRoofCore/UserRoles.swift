@@ -70,6 +70,8 @@ public enum Capability: String, CaseIterable, Sendable {
     case moveToInstall = "survey.move_to_install"
     case installTracking = "install.tracking"
     case overviewReports = "overview.reports"
+    /// The project assistant (Qwen through the `assistant` Cloud Function, which checks the role itself).
+    case assistantUse = "assistant.use"
     // สำรวจ ออกแบบ และราคา
     case surveyEdit = "survey.edit"
     case surveySignRev = "survey.sign_rev"
@@ -138,6 +140,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .moveToInstall: (.allow, .allow, .deny),
         .installTracking: (.allow, .allow, .conditional),
         .overviewReports: (.allow, .allow, .deny),
+        .assistantUse: (.allow, .allow, .deny),
         .surveyEdit: (.allow, .allow, .conditional),
         .surveySignRev: (.allow, .allow, .conditional),
         .boqDraft: (.disabled, .disabled, .disabled),

@@ -220,6 +220,24 @@
               "access": "allow"
             }
           }
+        },
+        {
+          "id": "assistant.use",
+          "label": "ผู้ช่วยโครงการ (AI): ถามแผนงาน MP · เสนอบันทึกความก้าวหน้า",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
         }
       ]
     },

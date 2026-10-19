@@ -1,0 +1,299 @@
+import XCTest
+@testable import TCRoofCore
+
+/// The project assistant's numbers, tools and conversation loop (no network: the transport is stubbed).
+final class AssistantTests: XCTestCase {
+    private let cal = MasterSchedule.calendar
+
+    private func d(_ y: Int, _ m: Int, _ day: Int) -> Date { cal.date(from: DateComponents(year: y, month: m, day: day))! }
+
+    /// Four tasks on an imported plan, seen on Monday 16 มี.ค. 2569 (week of Sunday 15 มี.ค.):
+    /// 2.1 half way and slow, 2.2 past its end, 2.3 not started, 2.5 done.
+    private func input() -> MasterSchedule.Input {
+        var i = MasterSchedule.Input(installStart: d(2026, 2, 1), installEnd: d(2026, 4, 18),
+                                     kickoff: d(2026, 1, 5), engineeringStart: d(2026, 1, 5), siteHandover: d(2026, 1, 12),
+                                     over200kVA: false)
+        i.fixed = [
+            "structure": .init(start: d(2026, 3, 1), end: d(2026, 3, 28), weight: 20),
+            "dcSide": .init(start: d(2026, 2, 1), end: d(2026, 2, 28), weight: 10),
+            "panels": .init(start: d(2026, 4, 1), end: d(2026, 4, 18), weight: 20),
+            "inverter": .init(start: d(2026, 3, 1), end: d(2026, 3, 14), weight: 15),
+        ]
+        return i
+    }
+
+    private func actual() -> MasterSchedule.Actual {
+        var a = MasterSchedule.Actual()
+        a.points = ["structure": ["2026-03-01": 2, "2026-03-08": 2], "dcSide": ["2026-02-08": 5],
+                    "inverter": ["2026-03-08": 15]]
+        a.lateCauses["dcSide"] = .material
+        return a
+    }
+
+    private var today: Date { d(2026, 3, 16) }
+
+    private func job(id: String = "job-1", station: String = "สถานีผลิตน้ำทุ่งน้อย", mp: Int = 189, canEdit: Bool = true) -> Assistant.Job {
+        var day = RoutineReport.Daily(date: d(2026, 3, 14))
+        day.crew = [.init(name: "ช่าง", count: 6)]
+        day.weather[3] = .rain; day.weather[4] = .rain
+        day.problems = [.init(description: "รางเคเบิลยังไม่มา", since: d(2026, 3, 12))]
+        let old = RoutineReport.Daily(date: d(2026, 2, 20))
+        return Assistant.Job(id: id, station: station, mpNumber: mp, kWp: 92.34, input: input(), actual: actual(),
+                             dailies: [day, old], canEdit: canEdit)
+    }
+
+    // MARK: Recovery
+
+    func testRecoveryNumbers() throws {
+        let r = MasterSchedule.recovery(plan: MasterSchedule.plan(input()), actual: actual(), today: today)
+        XCTAssertEqual(r.map(\.task), [.structure, .dcSide, .panels, .inverter])
+
+        let s = try XCTUnwrap(r.first { $0.task == .structure })
+        XCTAssertEqual(s.done, 4)
+        XCTAssertEqual(s.remaining, 16)
+        XCTAssertEqual(s.weeksLeft, 2)                       // weeks of 15 and 22 มี.ค.
+        XCTAssertEqual(s.neededPerWeek, 8)
+        XCTAssertEqual(try XCTUnwrap(s.pacePerWeek), 4.0 / 3, accuracy: 1e-9)   // 3 weeks since 1 มี.ค.
+        XCTAssertEqual(s.projectedFinish, d(2026, 6, 6))     // 12 weeks from 15 มี.ค., the Saturday
+        XCTAssertEqual(s.slipDays, 70)
+        XCTAssertEqual(s.state, .atRisk)
+
+        XCTAssertEqual(r.first { $0.task == .dcSide }?.state, .overdue)
+        XCTAssertEqual(r.first { $0.task == .dcSide }?.neededPerWeek, nil)
+        XCTAssertEqual(r.first { $0.task == .panels }?.state, .upcoming)
+        XCTAssertEqual(r.first { $0.task == .panels }?.pacePerWeek, nil)
+        XCTAssertEqual(r.first { $0.task == .inverter }?.state, .done)
+    }
+
+    func testOnTrackWhenThePaceFinishesInTime() {
+        var a = actual()
+        a.points["structure"] = ["2026-03-01": 5, "2026-03-08": 5, "2026-03-15": 5]
+        let s = MasterSchedule.recovery(plan: MasterSchedule.plan(input()), actual: a, today: today).first { $0.task == .structure }!
+        XCTAssertEqual(s.pacePerWeek, 5)
+        XCTAssertEqual(s.projectedFinish, d(2026, 3, 21))
+        XCTAssertEqual(s.slipDays, -7)
+        XCTAssertEqual(s.state, .onTrack)
+    }
+
+    // MARK: Brief
+
+    func testBriefCarriesThePlanAndRecentDays() throws {
+        let b = try XCTUnwrap(job().brief(today: today))
+        XCTAssertEqual(b.today, "2026-03-16")
+        XCTAssertEqual(b.tasks.map(\.code), ["2.1", "2.2", "2.3", "2.5"])
+        let s = try XCTUnwrap(b.tasks.first { $0.code == "2.1" })
+        XCTAssertEqual(s.neededPointsPerWeek, 8)
+        XCTAssertEqual(s.pacePointsPerWeek, 1.3)
+        XCTAssertEqual(s.slipDays, 70)
+        XCTAssertEqual(b.tasks.first { $0.code == "2.2" }?.lateCause, "วัสดุ")
+        XCTAssertEqual(b.thisWeek, ["2.1"])
+        XCTAssertEqual(b.nextTwoWeeks, ["2.1", "2.3"])
+        XCTAssertEqual(b.projectedFinish, "2026-06-06")
+        XCTAssertEqual(b.projectedSlipDays, 49)              // after the install end of 18 เม.ย.
+        // only the last 14 days of reports
+        XCTAssertEqual(b.recentDays.map(\.date), ["2026-03-14"])
+        XCTAssertEqual(b.recentDays.first?.crew, 6)
+        XCTAssertEqual(b.recentDays.first?.rainHours, 2)
+        XCTAssertEqual(b.recentDays.first?.openProblems, ["รางเคเบิลยังไม่มา"])
+        XCTAssertTrue(b.variance < 0)
+        XCTAssertNotNil(JSONValue.parse(b.json()))
+    }
+
+    // MARK: Tools
+
+    private func box(_ jobs: [Assistant.Job]? = nil) -> Assistant.Toolbox {
+        Assistant.Toolbox(jobs: jobs ?? [job(), job(id: "job-2", station: "สถานีบ้านไผ่", mp: 190)], today: today, makeID: { "p1" })
+    }
+
+    private func object(_ outcome: Assistant.Toolbox.Outcome) -> JSONValue { JSONValue.parse(outcome.text) ?? .null }
+
+    func testFindsAJobByIdNumberOrName() {
+        let b = box()
+        XCTAssertEqual(b.find("job-2").map(\.id), ["job-2"])
+        XCTAssertEqual(b.find("189").map(\.id), ["job-1"])
+        XCTAssertEqual(b.find("MP 190").map(\.id), ["job-2"])
+        XCTAssertEqual(b.find("บ้านไผ่").map(\.id), ["job-2"])
+        XCTAssertEqual(b.find("สถานี").count, 2)
+        XCTAssertTrue(b.find("").isEmpty)
+    }
+
+    func testListStationsSortsTheMostBehindFirst() {
+        var ahead = job(id: "job-3", station: "สถานีเร็ว", mp: 191)
+        ahead.actual.points["structure"] = ["2026-03-01": 20]
+        ahead.actual.points["dcSide"] = ["2026-02-08": 10]
+        ahead.actual.points["panels"] = ["2026-03-15": 20]
+        let out = object(box([ahead, job()]).run("list_stations", arguments: "{}"))
+        guard case .array(let rows)? = out["stations"] else { return XCTFail("no stations") }
+        XCTAssertEqual(rows.map { $0["jobID"]?.string }, ["job-1"])
+        let all = object(box([ahead, job()]).run("list_stations", arguments: #"{"filter":"all"}"#))
+        guard case .array(let both)? = all["stations"] else { return XCTFail("no stations") }
+        XCTAssertEqual(both.map { $0["jobID"]?.string }, ["job-1", "job-3"])
+    }
+
+    func testGetScheduleNeedsOneStation() {
+        XCTAssertEqual(object(box().run("get_schedule", arguments: #"{"job":"189"}"#))["jobID"]?.string, "job-1")
+        XCTAssertNotNil(object(box().run("get_schedule", arguments: #"{"job":"สถานี"}"#))["error"])
+        XCTAssertNotNil(object(box().run("get_schedule", arguments: #"{"job":"999"}"#))["error"])
+        XCTAssertNotNil(object(box().run("no_such_tool", arguments: "{}"))["error"])
+        XCTAssertNotNil(object(box().run("get_schedule", arguments: "not json"))["error"])
+    }
+
+    func testWeekTasks() {
+        let out = object(box().run("get_week_tasks", arguments: #"{"job":"189","week":"2026-03-10"}"#))
+        XCTAssertEqual(out["week"]?.string, "2026-03-08")
+        guard case .array(let rows)? = out["tasks"] else { return XCTFail("no tasks") }
+        let s = rows.first { $0["code"]?.string == "2.1" }
+        XCTAssertEqual(s?["plannedPoints"]?.number, 5)
+        XCTAssertEqual(s?["actualPoints"]?.number, 2)
+    }
+
+    func testProposeProgressSavesNothingAndAppliesOnConfirm() throws {
+        let j = job()
+        let outcome = box([j]).run("propose_progress", arguments: #"{"job":"189","task":"2.1","percent":"45%"}"#)
+        guard case .proposal(let a, _) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertEqual(a.change, .progress(task: .structure, week: "2026-03-15", percent: 45))
+        XCTAssertEqual(a.before, "20%")
+        XCTAssertEqual(a.after, "45% (สัปดาห์ 2026-03-15)")
+        XCTAssertEqual(object(outcome)["status"]?.string, "waiting_for_user_confirmation")
+
+        let saved = a.apply(to: j.actual, input: j.input!)
+        XCTAssertEqual(saved.points["structure"]?["2026-03-15"], 5)   // 45% of 20 = 9, 4 booked before
+        XCTAssertEqual(j.actual.points["structure"]?["2026-03-15"], nil)
+    }
+
+    func testProposalsAreChecked() {
+        let b = box()
+        XCTAssertNotNil(object(b.run("propose_progress", arguments: #"{"job":"189","task":"9.9","percent":10}"#))["error"])
+        XCTAssertNotNil(object(b.run("propose_progress", arguments: #"{"job":"189","task":"2.1","percent":120}"#))["error"])
+        XCTAssertNotNil(object(b.run("propose_progress", arguments: #"{"job":"189","task":"2.1","percent":50,"week":"2026-03-22"}"#))["error"])
+        XCTAssertNotNil(object(b.run("propose_progress", arguments: #"{"job":"189","task":"1.1","percent":50}"#))["error"])   // no weight here
+        let viewer = box([job(canEdit: false)])
+        XCTAssertNotNil(object(viewer.run("propose_progress", arguments: #"{"job":"189","task":"2.1","percent":50}"#))["error"])
+    }
+
+    func testProposeDatesKeepsWhatIsLeftOut() {
+        var j = job()
+        j.actual.started["structure"] = d(2026, 3, 2)
+        let b = box([j])
+        guard case .proposal(let a, _) = b.run("propose_dates", arguments: #"{"job":"189","task":"2.1","finished":"2026-03-14"}"#) else {
+            return XCTFail()
+        }
+        XCTAssertEqual(a.change, .dates(task: .structure, started: "2026-03-02", finished: "2026-03-14"))
+        guard case .proposal(let c, _) = b.run("propose_dates", arguments: #"{"job":"189","task":"2.1","started":""}"#) else {
+            return XCTFail()
+        }
+        XCTAssertEqual(c.change, .dates(task: .structure, started: nil, finished: nil))
+        XCTAssertNotNil(object(b.run("propose_dates", arguments: #"{"job":"189","task":"2.1","finished":"2026-04-01"}"#))["error"])
+        let applied = a.apply(to: j.actual, input: j.input!)
+        XCTAssertEqual(applied.finished["structure"], d(2026, 3, 14))
+    }
+
+    func testProposeLateCause() {
+        let j = job()
+        guard case .proposal(let a, _) = box([j]).run("propose_late_cause", arguments: #"{"job":"189","task":"2.2","cause":"none"}"#) else {
+            return XCTFail()
+        }
+        XCTAssertEqual(a.before, "วัสดุ")
+        XCTAssertNil(a.apply(to: j.actual, input: j.input!).lateCauses["dcSide"])
+        XCTAssertNotNil(object(box([j]).run("propose_late_cause", arguments: #"{"job":"189","task":"2.2","cause":"rain"}"#))["error"])
+    }
+
+    /// The function refuses tools not in functions/src/allowed-tools.json.
+    func testToolNamesMatchTheFunctionsAllowList() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../../functions/src/allowed-tools.json")
+        let names = try JSONDecoder().decode([String].self, from: Data(contentsOf: url))
+        XCTAssertEqual(Set(names), Set(Assistant.Toolbox.names))
+        let defined = Assistant.Toolbox.definitions.compactMap { $0["function"]?["name"]?.string }
+        XCTAssertEqual(defined, Assistant.Toolbox.names)
+    }
+
+    // MARK: Session
+
+    private actor Stub: Assistant.Transport {
+        var replies: [Assistant.Message]
+        var requests: [Assistant.Request] = []
+        init(_ replies: [Assistant.Message]) { self.replies = replies }
+        func push(_ more: [Assistant.Message]) { replies += more }
+        func complete(_ request: Assistant.Request) async throws -> Assistant.Reply {
+            requests.append(request)
+            guard !replies.isEmpty else { throw Assistant.Failure.emptyReply }
+            return Assistant.Reply(message: replies.removeFirst(), remainingToday: 49 - requests.count + 1)
+        }
+    }
+
+    private func calls(_ list: [(String, String)]) -> Assistant.Message {
+        Assistant.Message(role: .assistant, content: nil,
+                          toolCalls: list.enumerated().map { .init(id: "c\($0.offset)", name: $0.element.0, arguments: $0.element.1) })
+    }
+
+    @MainActor
+    func testSessionRunsToolsAndCollectsProposals() async throws {
+        let stub = Stub([
+            calls([("get_schedule", #"{"job":"189"}"#)]),
+            calls([("propose_progress", #"{"job":"189","task":"2.1","percent":45}"#)]),
+            .init(role: .assistant, content: "เสนอบันทึก 2.1 เป็น 45% รอยืนยัน"),
+        ])
+        let j = job()
+        let s = Assistant.Session(transport: stub, focus: j, jobs: { [j] }, now: { self.today })
+        let reply = try await s.send("อัปเดต 2.1 เป็น 45%")
+        XCTAssertEqual(reply.content, "เสนอบันทึก 2.1 เป็น 45% รอยืนยัน")
+        XCTAssertEqual(s.proposals.count, 1)
+        XCTAssertEqual(s.remainingToday, 47)
+        XCTAssertEqual(s.messages.map(\.role), [.system, .user, .assistant, .tool, .assistant, .tool, .assistant])
+        XCTAssertEqual(s.messages[3].toolCallID, "c0")
+        XCTAssertTrue(s.messages[0].content!.contains("2026-03-16"))
+        XCTAssertTrue(s.messages[0].content!.contains("MP 189"))
+        let sent = await stub.requests
+        XCTAssertEqual(sent.count, 3)
+        XCTAssertEqual(sent[0].tools.count, Assistant.Toolbox.names.count)
+
+        s.resolve(s.proposals[0].id, confirmed: true)
+        XCTAssertTrue(s.proposals.isEmpty)
+        XCTAssertTrue(s.messages.last!.content!.contains("ผู้ใช้ยืนยันและบันทึกแล้ว"))
+    }
+
+    @MainActor
+    func testANewerProposalForTheSameTaskReplacesTheOlder() async throws {
+        let stub = Stub([
+            calls([("propose_progress", #"{"job":"189","task":"2.1","percent":30}"#),
+                   ("propose_progress", #"{"job":"189","task":"2.1","percent":40}"#),
+                   ("propose_late_cause", #"{"job":"189","task":"2.1","cause":"weather"}"#)]),
+            .init(role: .assistant, content: "ok"),
+        ])
+        let j = job()
+        let s = Assistant.Session(transport: stub, jobs: { [j] }, now: { self.today })
+        try await s.send("x")
+        XCTAssertEqual(s.proposals.map(\.after), ["40% (สัปดาห์ 2026-03-15)", "สภาพอากาศ"])
+    }
+
+    @MainActor
+    func testSessionStopsAfterTheRoundLimit() async {
+        let stub = Stub(Array(repeating: calls([("list_stations", "{}")]), count: 6))
+        let s = Assistant.Session(transport: stub, jobs: { [] }, now: { self.today })
+        do { try await s.send("x"); XCTFail("no error") }
+        catch { XCTAssertEqual(error as? Assistant.Failure, .tooManyRounds) }
+    }
+
+    @MainActor
+    func testHistoryIsTrimmedAtAPersonsMessage() async throws {
+        let stub = Stub([])
+        let s = Assistant.Session(transport: stub, jobs: { [] }, now: { self.today })
+        s.historyLimit = 4
+        for i in 0..<3 {
+            await stub.push([calls([("list_stations", "{}")]), .init(role: .assistant, content: "a\(i)")])
+            try await s.send("q\(i)")
+        }
+        let t = s.trimmed()
+        XCTAssertEqual(t.first?.role, .system)
+        XCTAssertEqual(t[1].role, .user)
+        XCTAssertEqual(t[1].content, "q2")
+        XCTAssertLessThanOrEqual(t.count - 1, 4)
+
+        s.historyLimit = 30
+        s.charLimit = 10
+        XCTAssertEqual(s.trimmed()[1].content, "q2")      // the latest turn stays, however long
+        s.charLimit = 60_000
+        XCTAssertEqual(s.trimmed().count, s.messages.count)
+    }
+}

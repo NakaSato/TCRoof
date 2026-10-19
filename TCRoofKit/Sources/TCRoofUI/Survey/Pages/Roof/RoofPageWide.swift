@@ -439,9 +439,17 @@ extension RoofPageWide {
         case "landscape": mode = .pv
         // แผงบนหลังคา: the tab in view, a module's or an obstacle's details, remove mode, the standard, a hip roof
         case "pvtab": mode = .pv; scrollTarget = "info"
-        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip":
-            // the demo job keeps its answers: each state sets its own shape
-            set(Roof.Key.shape, .choice(state == "pvhip" ? "หลังคาทรงปั้นหยา" : "หลังคาทรงจั่ว", other: ""))
+        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile":
+            // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
+            let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"
+            update { v in
+                v[Roof.Key.shape] = .choice(shape, other: "")
+                v[Roof.Key.material] = .choice(state == "pvtile" ? "กระเบื้องซีแพค" : "เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, state == "pvshed")
+                var c = RoofMount.choice(v)
+                c.walkwayEvery = state == "pvtile" ? 6 : 0
+                RoofMount.setChoice(&v, c)
+            }
             if state == "pvobst" {
                 update { v in
                     Roof.addArea(&v, kind: RoofObstacleKind.stack.rawValue, x1: 15.2, y1: 2.0, x2: 15.8, y2: 2.6)
@@ -462,7 +470,7 @@ extension RoofPageWide {
             default: break
             }
             // the hip roof and the obstacles keep the plan in view
-            if state != "pvhip" && state != "pvobst" { scrollTarget = "info" }
+            if !["pvhip", "pvobst", "pvshed"].contains(state) { scrollTarget = "info" }
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
         case "frame-w": update { Roof.setFrame(&$0, .warren) }

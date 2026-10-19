@@ -20,6 +20,12 @@ public struct RoofMountQuantities: Equatable, Sendable {
     public var moved = 0
     /// Always 0: feet are never placed on an obstacle.
     public var feetOnObstacles = 0
+    /// The feet are tile hooks (a tile roof).
+    public var hooks = false
+    /// Added dead load: modules, rails and fixings over the modules' area (kg/m²), and the standard's limit.
+    public var load = 0.0
+    public var loadLimit = 0.0
+    public var overLoad: Bool { load > loadLimit + 1e-9 }
 
     public init(_ layout: RoofMountLayout) {
         let s = layout.standard
@@ -41,6 +47,10 @@ public struct RoofMountQuantities: Equatable, Sendable {
             }
         }
         kWp = Double(modules) * s.moduleKW
+        hooks = layout.options.tileHooks
+        loadLimit = s.loadLimit
+        let area = Double(modules) * s.moduleLength * s.moduleWidth
+        if area > 0 { load = (Double(modules) * s.moduleKg + railLength * s.railKgPerM + Double(feet) * s.footKg) / area }
     }
 }
 

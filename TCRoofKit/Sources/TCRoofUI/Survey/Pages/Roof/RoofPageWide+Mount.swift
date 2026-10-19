@@ -79,6 +79,7 @@ extension RoofPageWide {
         Color.clear.contentShape(Rectangle())
             .onTapGesture(coordinateSpace: .local) { p in
                 let s = fit.sketch(p)
+                if let arrow = L.shedArrow, arrow.contains(s) { turnShed(); return }
                 if mountTool == .inspect, let a = L.areas.first(where: { $0.box.inset(-4).contains(s) }) {
                     mountSelection = mountSelection == .area(a.area.index) ? nil : .area(a.area.index)
                     return
@@ -92,6 +93,13 @@ extension RoofPageWide {
                 }
             }
             .accessibilityLabel(mountTool == .remove ? "แตะแผงเพื่อเอาออกหรือใส่คืน" : "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด")
+    }
+
+    /// Turns a shed roof's low side to the opposite edge.
+    func turnShed() {
+        let on = RoofMount.shedLowAtStart(values)
+        update { RoofMount.setShedLowAtStart(&$0, !on) }
+        mountSelection = nil
     }
 
     func toggleRemoved(_ ref: RoofMountLayout.SlotRef, module: Bool) {
@@ -136,6 +144,8 @@ extension RoofPageWide {
         }
         mountInfo
         mountFixing
+        mountShedSide
+        mountWalkway
         mountFaces
         mountAlign
         mountBearing
@@ -235,12 +245,13 @@ extension RoofPageWide {
             let k = run.columns.count
             let bay = run.feet.flatMap { feet in zip(feet, feet.dropFirst()).map { $1 - $0 } }.max() ?? 0
             var pills: [(String, Bool)] = [("ขาไม่ชนสิ่งกีดขวาง", true)]
-            pills.append((m.options.ribClamp ? "จับสันลอน ¼ และ ¾ ของแผง" : "รางตกแปทั้ง 2 เส้น",
+            pills.append((m.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน" : m.options.ribClamp ? "จับสันลอน ¼ และ ¾ ของแผง" : "รางตกแปทั้ง 2 เส้น",
                           RoofMountDrawings.rowPasses(row, in: m)))
-            if run.moved { pills.append(("จัดระยะ L-foot ใหม่เพื่อหลบสิ่งกีดขวาง", true)) }
+            if run.moved { pills.append((m.options.tileHooks ? "ข้ามจันทันที่ชนสิ่งกีดขวาง" : "จัดระยะ L-foot ใหม่เพื่อหลบสิ่งกีดขวาง", true)) }
             return InfoText(title: "แผง · " + place,
                             lines: [String(format: "ชุดราง %d แผง (%.2f kWp) · รางยาว %.2f ม.", k, Double(k) * s.moduleKW, run.railLength),
-                                    "L-foot \(run.feet.map(\.count).map(String.init).joined(separator: " / ")) ตัวต่อราง · ห่างมากสุด "
+                                    (m.options.tileHooks ? "ขอเกี่ยว " : "L-foot ")
+                                    + "\(run.feet.map(\.count).map(String.init).joined(separator: " / ")) ตัวต่อราง · ห่างมากสุด "
                                     + String(format: "%.2f ม.", bay)],
                             pills: pills)
         }
@@ -284,15 +295,56 @@ extension RoofPageWide {
 
     var mountFixing: some View {
         let c = mountChoice, metal = (values.choice(Roof.Key.material) ?? values.text(Roof.Key.material)).contains("เมทัลชีท")
+        let tile = RoofMount.tileRoof(values)
         return VStack(alignment: .leading, spacing: 6) {
             A3Label(text: "วิธียึด")
-            RoofSegments(options: metal ? ["ยึดเข้าแป", "จับสันลอน"] : ["ยึดเข้าแป"], selected: c.ribClamp && metal ? 1 : 0, minSegment: 90) { i in
-                changeChoice { $0.ribClamp = i == 1 }
+            if tile {
+                RoofSegments(options: ["ขอเกี่ยวกระเบื้องยึดจันทัน"], selected: 0, minSegment: 90) { _ in }
+                standardStepper("จันทันห่าง (ม.)", \.rafterSpacing, step: 0.05)
+            } else {
+                RoofSegments(options: metal ? ["ยึดเข้าแป", "จับสันลอน"] : ["ยึดเข้าแป"], selected: c.ribClamp && metal ? 1 : 0, minSegment: 90) { i in
+                    changeChoice { $0.ribClamp = i == 1 }
+                }
             }
             Toggle(isOn: Binding(get: { c.avoidShade }, set: { on in changeChoice { $0.avoidShade = on } })) {
                 Text("เว้นเงาสิ่งกีดขวาง 09:00–15:00 ทั้งปี").font(.sarabunFixed(14))
             }
             .tint(Theme.primary).frame(minHeight: 44)
+        }
+    }
+
+    /// A shed roof's low side, also turned by a tap on the plan's arrow.
+    @ViewBuilder var mountShedSide: some View {
+        if RoofMount.shape(values) == .shed {
+            let alongX = Roof.ridge(values) == .h, start = RoofMount.shedLowAtStart(values)
+            VStack(alignment: .leading, spacing: 6) {
+                A3Label(text: "ด้านต่ำของหลังคาเพิง (ชายคา)")
+                RoofSegments(options: alongX ? ["ขอบล่างแปลน", "ขอบบนแปลน"] : ["ขอบขวาแปลน", "ขอบซ้ายแปลน"], selected: start ? 1 : 0,
+                             minSegment: 90) { i in
+                    if (i == 1) != start { turnShed() }
+                }
+                Text("แตะลูกศร ด้านต่ำ บนแปลนเพื่อสลับได้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
+        }
+    }
+
+    /// A walkway one module wide after every n columns, for cleaning (off by default).
+    var mountWalkway: some View {
+        let n = mountChoice.walkwayEvery
+        return VStack(alignment: .leading, spacing: 2) {
+            Toggle(isOn: Binding(get: { n > 0 }, set: { on in changeChoice { $0.walkwayEvery = on ? 8 : 0 } })) {
+                Text("เว้นทางเดินล้างแผง").font(.sarabunFixed(14))
+            }
+            .tint(Theme.primary).frame(minHeight: 44)
+            if n > 0 {
+                HStack(spacing: 6) {
+                    Text("ทางเดินกว้าง 1 แผง ทุก").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Spacer(minLength: 4)
+                    stepButton("minus", enabled: n > 2) { changeChoice { $0.walkwayEvery = max(2, n - 1) } }
+                    Text("\(n) แผง").font(.sarabunFixed(14, .bold)).monospacedDigit().frame(minWidth: 56)
+                    stepButton("plus", enabled: n < 40) { changeChoice { $0.walkwayEvery = min(40, n + 1) } }
+                }
+            }
         }
     }
 
@@ -393,7 +445,8 @@ extension RoofPageWide {
     var mountQuantities: some View {
         let q = shownMount?.quantities
         let cells: [(String, String)] = [
-            ("ราง", String(format: "%.1f ม.", q?.railLength ?? 0)), ("ต่อราง", "\(q?.splices ?? 0)"), ("L-foot", "\(q?.feet ?? 0)"),
+            ("ราง", String(format: "%.1f ม.", q?.railLength ?? 0)), ("ต่อราง", "\(q?.splices ?? 0)"),
+            (q.map(RoofMount.footName) ?? "L-foot", "\(q?.feet ?? 0)"),
             ("ตัวจับกลาง", "\(q?.midClamps ?? 0)"), ("ตัวจับปลาย", "\(q?.endClamps ?? 0)"), ("ชุดราง", "\(q?.runs ?? 0)"),
             ("ตัดแผง", "\(q?.cuts ?? 0)"), ("ขาชนสิ่งกีดขวาง", "0"),
         ]
@@ -411,31 +464,49 @@ extension RoofPageWide {
                     .accessibilityElement(children: .combine)
                 }
             }
+            if let q, q.modules > 0 {
+                let over = q.overLoad
+                Label(RoofMount.loadLine(q), systemImage: over ? "exclamationmark.triangle.fill" : "scalemass")
+                    .font(.sarabunFixed(12.5, over ? .bold : .regular)).foregroundStyle(over ? Theme.dangerText : Theme.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// One value of the job's standard with − and + buttons.
+    func standardStepper(_ title: String, _ kp: WritableKeyPath<RoofMountStandard, Double>, step: Double, fmt f: String = "%.2f") -> some View {
+        let s = mountChoice.standardOrDefault
+        return HStack(spacing: 6) {
+            Text(title).font(.sarabunFixed(13)).lineLimit(1).minimumScaleFactor(0.8)
+            Spacer(minLength: 4)
+            stepButton("minus", enabled: s[keyPath: kp] - step > 0) { setStandard { $0[keyPath: kp] = max(step, $0[keyPath: kp] - step) } }
+            Text(String(format: f, s[keyPath: kp])).font(.sarabunFixed(14, .bold)).monospacedDigit().frame(minWidth: 48)
+            stepButton("plus", enabled: true) { setStandard { $0[keyPath: kp] += step } }
         }
     }
 
     var mountStandard: some View {
         let s = mountChoice.standardOrDefault
         func field(_ title: String, _ kp: WritableKeyPath<RoofMountStandard, Double>, step: Double, fmt f: String = "%.2f") -> some View {
-            HStack(spacing: 6) {
-                Text(title).font(.sarabunFixed(13)).lineLimit(1).minimumScaleFactor(0.8)
-                Spacer(minLength: 4)
-                stepButton("minus", enabled: s[keyPath: kp] - step > 0) { setStandard { $0[keyPath: kp] = max(step, $0[keyPath: kp] - step) } }
-                Text(String(format: f, s[keyPath: kp])).font(.sarabunFixed(14, .bold)).monospacedDigit().frame(minWidth: 48)
-                stepButton("plus", enabled: true) { setStandard { $0[keyPath: kp] += step } }
-            }
+            standardStepper(title, kp, step: step, fmt: f)
         }
         return DisclosureGroup(isExpanded: $showStandard) {
             VStack(spacing: 2) {
                 field("แผงยาว (ม.)", \.moduleLength, step: 0.01)
                 field("แผงกว้าง (ม.)", \.moduleWidth, step: 0.01)
                 field("กำลังแผง (W)", \.moduleWp, step: 5, fmt: "%.0f")
+                field("น้ำหนักแผง (กก.)", \.moduleKg, step: 0.5, fmt: "%.1f")
                 field("ช่วงจับจากปลาย ต่ำสุด", \.clampMin, step: 0.01)
                 field("ช่วงจับจากปลาย สูงสุด", \.clampMax, step: 0.01)
+                if s.clampFollowsModule {
+                    Text("ช่วงจับคิดจากความยาวแผง (15–30%) · แก้เองได้").font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 field("L-foot ห่างไม่เกิน", \.footSpacing, step: 0.05)
                 field("ร่นชายคา", \.setEave, step: 0.05)
                 field("ร่นสัน", \.setRidge, step: 0.05)
                 field("ร่นขอบจั่ว / ตะเข้", \.setVerge, step: 0.05)
+                field("เกณฑ์น้ำหนัก (กก./ม²)", \.loadLimit, step: 1, fmt: "%.0f")
                 Button("คืนค่ามาตรฐาน") { changeChoice { $0.standard = nil } }
                     .font(.sarabunFixed(14, .bold)).frame(maxWidth: .infinity, minHeight: 44)
                     .disabled(mountChoice.standard == nil)
@@ -447,10 +518,13 @@ extension RoofPageWide {
         .tint(Theme.navy)
     }
 
+    /// Edits the job's standard; the clamping zone follows a new module length until it was edited itself.
     func setStandard(_ f: (inout RoofMountStandard) -> Void) {
         changeChoice { c in
             var s = c.standardOrDefault
+            let follows = s.clampFollowsModule, length = s.moduleLength
             f(&s)
+            if follows && abs(s.moduleLength - length) > 1e-9 { (s.clampMin, s.clampMax) = s.clampFromModule }
             c.standard = s
         }
     }

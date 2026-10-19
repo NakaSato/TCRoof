@@ -14,9 +14,17 @@ public struct RoofMountLayout: Sendable {
         public var faceUse: [String: Bool] = [:]
         /// Slots the user removed (a walkway).
         public var removed: Set<SlotRef> = []
-        public init(ribClamp: Bool = false, avoidShade: Bool = true, faceUse: [String: Bool] = [:], removed: Set<SlotRef> = []) {
+        /// A tile roof: rails at ¼ and ¾ of the module on tile hooks screwed into the rafters, instead of L-feet on purlins.
+        public var tileHooks = false
+        /// A walkway one module wide after every n columns, for cleaning; 0 = none.
+        public var walkwayEvery = 0
+        public init(ribClamp: Bool = false, avoidShade: Bool = true, faceUse: [String: Bool] = [:], removed: Set<SlotRef> = [],
+                    tileHooks: Bool = false, walkwayEvery: Int = 0) {
             self.ribClamp = ribClamp; self.avoidShade = avoidShade; self.faceUse = faceUse; self.removed = removed
+            self.tileHooks = tileHooks; self.walkwayEvery = walkwayEvery
         }
+        /// Rows don't depend on the purlins: rib clamps or tile hooks hold the rails at ¼ and ¾ of the module.
+        public var freeRows: Bool { ribClamp || tileHooks }
     }
 
     /// A module slot: the face, the row up the slope and the column along it.
@@ -101,6 +109,7 @@ public struct RoofMountLayout: Sendable {
     public static let shaded = "เงาสิ่งกีดขวาง 09:00–15:00"
     public static let cutForFeet = "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง"
     public static let removedByUser = "เอาออกเอง"
+    public static let walkway = "ทางเดินสำหรับล้างแผง"
 
     /// Sun positions for the shade: 09:00–15:00 every 30 minutes on 21 Dec, 21 Jun and 21 Mar.
     static let shadeTimes: [(day: Int, time: Double)] = [355, 172, 80].flatMap { d in (18...30).map { (d, Double($0) / 2) } }
@@ -267,7 +276,7 @@ public struct RoofMountLayout: Sendable {
             var out: [(v: Double, a: Double, b: Double)] = []
             var v = vmin + shift
             while v + l <= vmax + 1e-9 {
-                if options.ribClamp {
+                if options.freeRows {
                     out.append((v, v + l / 4, v + 3 * l / 4)); v += l + g; continue
                 }
                 var found: (v: Double, a: Double, b: Double)?
@@ -296,6 +305,7 @@ public struct RoofMountLayout: Sendable {
         /// 5 cm grid taking the furthest allowed point. Nil (with where it failed) when neither works.
         func feet(_ xa: Double, _ xb: Double, avoiding bad: [(Double, Double)]) -> (feet: [Double]?, failedAt: Double, moved: Bool) {
             func ok(_ x: Double) -> Bool { bad.allSatisfy { !($0.0 < x && x < $0.1) } }
+            if options.tileHooks { return hooks(xa, xb, ok: ok) }
             let dx = standard.footSpacing, c = standard.footCantilever, mn = standard.footMinBay
             let lr = xb - xa
             let m = max(1, Int(((lr - 0.4) / dx).rounded(.up)))
@@ -316,6 +326,22 @@ public struct RoofMountLayout: Sendable {
             return (out, 0, true)
         }
 
+        /// Tile hooks along a rail from `xa` to `xb`: one on every rafter under it (rafters every `rafterSpacing` from the
+        /// face's start), none on an obstacle. Nil when a rafter had to be skipped (a gap of two spacings), the rail
+        /// overhangs its end hook by more than one spacing, or it has no hook at all.
+        func hooks(_ xa: Double, _ xb: Double, ok: (Double) -> Bool) -> (feet: [Double]?, failedAt: Double, moved: Bool) {
+            let r = standard.rafterSpacing, u0 = face.polygon.map(\.x).min() ?? 0
+            let first = ((xa + 0.05 - u0) / r).rounded(.up), last = ((xb - 0.05 - u0) / r).rounded(.down)
+            guard first <= last else { return (nil, (xa + xb) / 2, false) }
+            let rafters = stride(from: first, through: last, by: 1).map { u0 + $0 * r }
+            let out = rafters.filter(ok)
+            guard let lo = out.first, let hi = out.last else { return (nil, (xa + xb) / 2, false) }
+            if lo - xa > r + 1e-9 { return (nil, xa + r / 2, true) }
+            if xb - hi > r + 1e-9 { return (nil, xb - r / 2, true) }
+            for (a, b) in zip(out, out.dropFirst()) where b - a > r + 1e-9 { return (nil, (a + b) / 2, true) }
+            return (out, 0, out.count != rafters.count)
+        }
+
         /// The face laid out with a placement (§3.3–3.5).
         func layout(_ p: Placement) -> Face {
             let w = standard.moduleWidth, pitch = w + standard.moduleGap
@@ -325,8 +351,10 @@ public struct RoofMountLayout: Sendable {
                 var slots: [Slot] = []
                 var u = umin + standard.setVerge + p.columnOffset
                 while u + w <= umax + 1e-9 {
-                    let removed = options.removed.contains(SlotRef(face: face.id, row: r, column: slots.count))
-                    slots.append(Slot(u: u, blocked: removed ? RoofMountLayout.removedByUser : blocked(u, row.v)))
+                    let column = slots.count, n = options.walkwayEvery
+                    let walk = n > 0 && column % (n + 1) == n
+                    let removed = options.removed.contains(SlotRef(face: face.id, row: r, column: column))
+                    slots.append(Slot(u: u, blocked: walk ? RoofMountLayout.walkway : removed ? RoofMountLayout.removedByUser : blocked(u, row.v)))
                     u += pitch
                 }
                 rows.append(Row(v: row.v, rails: (row.a, row.b), slots: slots))
@@ -370,7 +398,7 @@ public struct RoofMountLayout: Sendable {
         /// The most modules over every column offset (5 cm steps), row shift (10 cm steps up to one row pitch) and
         /// centred or packed rows; then fewer cut columns, then centred (§3.6).
         func best() -> Face {
-            let rowPitch = standard.moduleLength + standard.moduleGap + (options.ribClamp ? 0 : purlinSpacing)
+            let rowPitch = standard.moduleLength + standard.moduleGap + (options.freeRows ? 0 : purlinSpacing)
             var best: Face?, tried = 0
             for j in 0...Int(rowPitch / 0.10) {
                 for k in 0...Int((standard.moduleWidth + standard.moduleGap) / 0.05) {

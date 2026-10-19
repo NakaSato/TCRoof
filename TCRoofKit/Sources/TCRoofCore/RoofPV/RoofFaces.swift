@@ -38,12 +38,17 @@ public struct RoofMountInput: Sendable {
     /// Compass bearing of the plan's top edge, degrees.
     public var bearing: Double
     public var obstacles: [Obstacle]
+    /// A shed roof's low eave is at the plan's top (ridge along x) or left (ridge along y), instead of bottom or right.
+    public var shedLowAtStart: Bool
+    /// Concrete tiles (กระเบื้องซีแพค): the rails go on tile hooks screwed into the rafters.
+    public var tileRoof = false
 
     public init(spansX: [Double], spansY: [Double], ridgeAlongX: Bool = true, shape: Shape = .gable, eaveHeight: Double,
-                ridgeHeight: Double, purlinSpacing: Double, latitude: Double, bearing: Double = 0, obstacles: [Obstacle] = []) {
+                ridgeHeight: Double, purlinSpacing: Double, latitude: Double, bearing: Double = 0, obstacles: [Obstacle] = [],
+                shedLowAtStart: Bool = false) {
         self.spansX = spansX; self.spansY = spansY; self.ridgeAlongX = ridgeAlongX; self.shape = shape
         self.eaveHeight = eaveHeight; self.ridgeHeight = ridgeHeight; self.purlinSpacing = purlinSpacing
-        self.latitude = latitude; self.bearing = bearing; self.obstacles = obstacles
+        self.latitude = latitude; self.bearing = bearing; self.obstacles = obstacles; self.shedLowAtStart = shedLowAtStart
     }
 
     public var lengthX: Double { spansX.reduce(0, +) }
@@ -201,8 +206,12 @@ public struct RoofFaces: Sendable {
         let rect = [Pt(0, 0), Pt(a, 0), Pt(a, ls), Pt(0, ls)], gableEdges: [RoofFace.Edge] = [.eave, .verge, .ridge, .verge]
         switch input.shape {
         case .shed:
-            // the low eave at the plan bottom (open question 6)
-            add("S", rect, gableEdges, { u, v in Pt(u, b - v * c) }, Pt(0, 1))
+            // the low eave at the plan's bottom (or right), or at its top (or left) when the survey turned it
+            if input.shedLowAtStart {
+                add("N", rect, gableEdges, { u, v in Pt(a - u, v * c) }, Pt(0, -1))
+            } else {
+                add("S", rect, gableEdges, { u, v in Pt(u, b - v * c) }, Pt(0, 1))
+            }
         case .hip:
             let rl = max(0, a - b)
             let trap = [Pt(0, 0), Pt(a, 0), Pt(a - (a - rl) / 2, ls), Pt((a - rl) / 2, ls)], hipEdges: [RoofFace.Edge] = [.eave, .hip, .ridge, .hip]

@@ -10,9 +10,9 @@ public enum RoofMountDrawings {
     public static func rowPasses(_ row: RoofMountLayout.Row, in layout: RoofMountLayout) -> Bool {
         let s = layout.standard, l = s.moduleLength
         let zone = (s.clampMin - 1e-6)...(s.clampMax + 1e-6)
-        let onPurlins = layout.options.ribClamp
-            || (layout.purlins.contains { abs($0 - row.rails.0) < 1e-6 } && layout.purlins.contains { abs($0 - row.rails.1) < 1e-6 })
-        return onPurlins && (layout.options.ribClamp || (zone.contains(row.rails.0 - row.v) && zone.contains(row.v + l - row.rails.1)))
+        if layout.options.freeRows { return true }
+        let onPurlins = layout.purlins.contains { abs($0 - row.rails.0) < 1e-6 } && layout.purlins.contains { abs($0 - row.rails.1) < 1e-6 }
+        return onPurlins && zone.contains(row.rails.0 - row.v) && zone.contains(row.v + l - row.rails.1)
     }
 
     /// One row along the slope (§5.4): the sheet, purlins, L-feet, rails and module, with the module length, both
@@ -54,7 +54,7 @@ public enum RoofMountDrawings {
         dimension(row.rails.1, row.v + l, modY - 4, m(row.v + l - row.rails.1))
         dimension(row.rails.0, row.rails.1, sheetY + 40, "รางห่าง " + m(row.rails.1 - row.rails.0))
         let ps = layout.purlins.filter { $0 >= from && $0 <= to }
-        if !layout.options.ribClamp, ps.count >= 2 {
+        if !layout.options.freeRows, ps.count >= 2 {
             dimension(ps[0], ps[1], sheetY + 64, "แป @" + m(ps[1] - ps[0]))
         }
 
@@ -63,7 +63,8 @@ public enum RoofMountDrawings {
         o.append(.text("รูปตัดแถว \(r + 1) · ด้าน\(RoofFace.direction(face0.azimuth)) · ตามแนวลาด (หน่วย ม.)", at: Pt(40, 18), size: 13,
                        bold: true, color: ink))
         let pass = rowPasses(row, in: layout)
-        let how = layout.options.ribClamp ? "จับสันลอนที่ ¼ และ ¾ ของแผง"
+        let how = layout.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน @" + m(s.rafterSpacing) + " · รางที่ ¼ และ ¾ ของแผง"
+            : layout.options.ribClamp ? "จับสันลอนที่ ¼ และ ¾ ของแผง"
             : "รางตกแปทั้ง 2 เส้น · ช่วงจับ \(m(s.clampMin))–\(m(s.clampMax)) ม. จากปลายแผง"
         o.append(.text((pass ? "ถูกต้องตามมาตรฐาน · " : "ไม่ผ่าน · ") + how, at: Pt(40, height - 18), size: 12.5, bold: true,
                        color: pass ? ok : bad))

@@ -270,6 +270,32 @@ service cloud.firestore {
       allow create, update: if isTeam() && request.resource.data.design is string && request.resource.data.data is string;
     }
 
+    // The travel and expense log (docs/specs/calendar-travel-expenses-swift.md §B6): trips, expenses and monthly claims
+    // are personal. A team member reads and writes only their own (`ownerEmail` is their signed-in email, and can't be
+    // handed to someone else); a manager may read everyone's, to approve claims. External members have none.
+    function ownsTravel() {
+      return isTeam() && resource.data.ownerEmail == signedInEmail();
+    }
+    function keepsOwner() {
+      return isTeam() && request.resource.data.ownerEmail == signedInEmail()
+        && (resource == null || resource.data.ownerEmail == signedInEmail());
+    }
+    match /trips/{doc} {
+      allow read: if ownsTravel() || isManager();
+      allow create, update: if keepsOwner();
+      allow delete: if ownsTravel();
+    }
+    match /expenses/{doc} {
+      allow read: if ownsTravel() || isManager();
+      allow create, update: if keepsOwner() && request.resource.data.amount is int;
+      allow delete: if ownsTravel();
+    }
+    match /claims/{doc} {
+      allow read: if ownsTravel() || isManager();
+      allow create, update: if keepsOwner();
+      allow delete: if ownsTravel();
+    }
+
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
     // A member adds or removes only their own email.
     match /feedAcks/{doc} {

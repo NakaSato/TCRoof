@@ -9,7 +9,19 @@ the reminders are 17:00 the evening before and 1 hour before (`NotificationPlan.
 system notifications; the job card shows `ซิงก์ลงปฏิทินแล้ว ✓` or `นัดถูกลบจากปฏิทิน · เพิ่มอีกครั้ง`; the plan's
 appointment rows have `นำทาง · โทร · ปฏิทิน`; a link to a job not on the device yet shows `งานนี้ยังไม่ซิงก์มาที่เครื่องนี้`
 and opens it after sync. Answers: 3 h events, the reminders above, a dedicated `TCRoof นัดสำรวจ` calendar. The pure logic
-went into `TCRoofCore`, not a new `FieldOps` target. Not built: part B.
+went into `TCRoofCore`, not a new `FieldOps` target.
+Part B built (2026-10-19): `TCRoofCore/TravelClaim.swift` (stamps with the 2-minute undo, legs, mileage, the fuel split,
+duplicates, warnings, the month summary and per-job cost) and `ReceiptParser.swift` (`TravelClaimTests`);
+`PDFReport/ClaimPages.swift` and `ExcelExport/ClaimExcel.swift` (`ClaimPagesTests`, `ClaimExcelTests`); the app's
+`TCRoof/Travel/` (`Trip`, `Expense`, `ClaimMonth` synced to `trips`, `expenses`, `claims`; `TravelStore`, `ClaimScreen`,
+`TripEditor`, `ExpenseEditor`, `TravelJobCard`, `ClaimExport`). Differences from the draft below: a trip's stops are
+encoded on the trip (no `tripStops` collection); the submit state is a `ClaimMonth` per person and month, not a field on
+each expense; mileage is worked out from the trips (km × the trip's rate), not stored as an expense; money is in satang;
+the approvers are the managers (no `approvers` list); receipts upload to Drive when the month is submitted. Defaults for
+§5 questions 3–6 (the user said "use sensible defaults", 2026-10-19): 5 บาท/กม. for a private car, odometer photos
+optional; the company's own A4 layout, managers approve; per diem and lodging by receipt (typed amounts allowed); every
+day starts from the office and returns there (a switch in ตั้งค่าการเบิก, and the day's start place can be edited).
+Not built: the suggested arrival and departure by region monitoring (§B2, optional) and an approver's view in the app.
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.
 **App target:** the host app `TCRoof` (jobs, plan, Firebase sync). Pure logic goes in a new, dependency-free target
 `TCRoofKit/Sources/FieldOps`, testable with `swift test`.

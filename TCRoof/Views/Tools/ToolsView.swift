@@ -59,6 +59,7 @@ struct ToolsView: View {
     var modules: [AppModule] = []
 
     @State private var store = InstrumentStore.shared
+    @Environment(\.permissions) private var permissions
     @State private var editing: Instrument?
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
@@ -69,7 +70,8 @@ struct ToolsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(modules) { module in
+                // the travel log is the team's own; contractors claim elsewhere
+                ForEach(modules.filter { $0 != .travel || permissions.role != .external }) { module in
                     NavigationLink { module.destination } label: {
                         ModuleRow(size: .phone, module: module, chip: module.chip(surveyToday: 0, installDay: installChip))
                     }

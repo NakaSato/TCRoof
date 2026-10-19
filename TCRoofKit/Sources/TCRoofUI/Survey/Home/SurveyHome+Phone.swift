@@ -35,7 +35,8 @@ extension SurveyHomeView {
         }
         .overlay(alignment: .bottomTrailing) {
             // iPad: 116 pt above the screen's edge, over the dock's 98
-            if page == .project && tab == .survey && !showsPlan { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
+            // a contractor can't create jobs (`job.edit`)
+            if page == .project && tab == .survey && !showsPlan && permissions.can(.jobEdit) { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
         }
     }
 

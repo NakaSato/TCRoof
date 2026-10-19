@@ -35,6 +35,19 @@ final class RoleUITests: XCTestCase {
         XCTAssertFalse(text(team, "ยังไม่มีใบตรวจรับที่ส่งแล้ว").waitForExistence(timeout: 15), "the team gets the form")
     }
 
+    /// `job.edit`: a contractor can't create jobs, so the survey home has no `เพิ่มลูกค้าใหม่` (iPhone dock, iPad button);
+    /// the team has it.
+    func testOnlyTheTeamAddsJobs() {
+        let team = launch("survey", role: "internal")
+        XCTAssertTrue(team.buttons["เพิ่มลูกค้าใหม่"].firstMatch.waitForExistence(timeout: slow), "the team adds customers")
+        team.terminate()
+
+        let contractor = launch("survey", role: "external")
+        XCTAssertTrue(contractor.staticTexts.firstMatch.waitForExistence(timeout: slow))
+        sleep(3)
+        XCTAssertFalse(contractor.buttons["เพิ่มลูกค้าใหม่"].exists, "a contractor never creates a job")
+    }
+
     /// `job.assign_team` and `job.assign_external`: the job's access card is the team's, never a contractor's.
     func testAccessCardIsTheTeams() {
         let team = launch("job", role: "internal")

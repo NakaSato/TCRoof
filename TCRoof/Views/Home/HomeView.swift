@@ -84,6 +84,7 @@ struct HomeView: View {
     /// Appointment whose job has no report yet: pick a template, then open the new report at A1.
     @State private var startReport: Job?
     @State private var showNewJob = false
+    @Environment(\.permissions) private var permissions
     @State private var openedJob: Job?
     /// The iPad bar's search field: the survey list over every date, its search field focused.
     @State private var showSearch = false
@@ -234,7 +235,7 @@ struct HomeView: View {
                        openFeed: { feedLink = $0 },
                        showSurveys: { dock?.select(.survey) },
                        openSearch: { showNotifications = false; showSearch = true },
-                       newSurvey: { showNewJob = true }) {
+                       newSurvey: permissions.can(.jobEdit) ? { showNewJob = true } : nil) {
             notificationsView(large: true) { showNotifications = false }
         }
     }

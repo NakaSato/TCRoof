@@ -11,6 +11,7 @@ struct SurveyListView: View {
     @State private var window: DateWindow
     @State private var search = ""
     @State private var showNewJob = false
+    @Environment(\.permissions) private var permissions
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(startSearching: Bool = false) {
@@ -65,8 +66,11 @@ struct SurveyListView: View {
         }
         .background(Theme.pageGradient.ignoresSafeArea())
         .overlay(alignment: .bottomTrailing) {
-            TCFab("person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่", gradient: Theme.tealGradient) { showNewJob = true }
-                .tcFabPlacement(compact: isPhone)
+            // a contractor can't create jobs (`job.edit`)
+            if permissions.can(.jobEdit) {
+                TCFab("person.badge.plus", accessibilityLabel: "เพิ่มลูกค้าใหม่", gradient: Theme.tealGradient) { showNewJob = true }
+                    .tcFabPlacement(compact: isPhone)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showNewJob) { NewJobView() }

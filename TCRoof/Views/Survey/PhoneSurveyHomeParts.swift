@@ -355,13 +355,14 @@ struct SurveyHomeDock: View {
     let next: Job?
     let now: Date
     let open: (Job) -> Void
-    let add: () -> Void
+    /// nil hides `เพิ่มลูกค้าใหม่` (a contractor can't create jobs: `job.edit`).
+    let add: (() -> Void)?
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
         HStack(spacing: 8) {
             if let next { primary(next) }
-            addButton
+            if let add { addButton(add) }
         }
         .padding(8)
         .background(.ultraThinMaterial, in: shape)
@@ -389,7 +390,7 @@ struct SurveyHomeDock: View {
         .accessibilityLabel("\(title) \(job.projectName)")
     }
 
-    private var addButton: some View {
+    private func addButton(_ add: @escaping () -> Void) -> some View {
         Button(action: add) {
             Image(systemName: "person.badge.plus").font(.system(size: 23, weight: .medium)).foregroundStyle(Theme.dockTeal)
                 .frame(width: 52, height: 52)

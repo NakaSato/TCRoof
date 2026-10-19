@@ -50,9 +50,6 @@ public extension Assistant {
             return (r.weight / Double(weeks), true)
         }
 
-        /// Whole weeks to book `points` at `rate`; a hair over a whole number (3.0000001) is that number.
-        static func weeksFor(_ points: Double, _ rate: Double) -> Int { Int((points / rate - 1e-9).rounded(.up)) }
-
         static func day(_ d: Date, _ cal: Calendar) -> String { ScheduleBrief.day(d, calendar: cal) }
         static func days(_ a: Date, _ b: Date, _ cal: Calendar) -> Int {
             cal.dateComponents([.day], from: cal.startOfDay(for: a), to: cal.startOfDay(for: b)).day ?? 0
@@ -101,6 +98,9 @@ public extension Assistant {
             public var station: String
             public var today: String
             public var installEnd: String
+            /// The install tracking page's `คาดส่งมอบ` (SPI), quoted for the station; the scenarios compare task by task.
+            public var handoverForecast: String
+            public var handoverSlipDays: Int
             public var crewAverage: Double?
             public var workingDaysPerWeek: Int
             public var base: Scenario
@@ -111,23 +111,66 @@ public extension Assistant {
             public var json: String { Strategy.text(self) }
         }
 
-        /// The finishes if every open task runs at `factor` times its rate, the tasks of `startNow` starting this week.
-        static func scenario(_ name: String, _ recovery: [MasterSchedule.Recovery], input: MasterSchedule.Input,
-                             factor: Double, startNow: Set<MasterSchedule.Task> = [], today: Date, calendar cal: Calendar) -> Scenario {
+        /// One task's dates in a forecast.
+        struct Dated { var start: Date; var end: Date; var why: String; var assumed: Bool }
+
+        /// Every task's dates from today at `factor` times its rate, in the plan's order of work: a task under way ends
+        /// when its rate finishes it, a task not started keeps its length (shortened by `factor`) and moves by as much as
+        /// its predecessors' ends moved later, unless it is in `startNow` (it starts this week). Finished tasks stay.
+        /// `keepPlannedEnds` never ends a task before its plan (a re-plan); a what-if may.
+        static func forecast(plan: [MasterSchedule.PlannedTask], actual: MasterSchedule.Actual, factor: Double,
+                             startNow: Set<MasterSchedule.Task> = [], keepPlannedEnds: Bool, today: Date,
+                             calendar cal: Calendar) -> [MasterSchedule.Task: Dated] {
+            let byTask = Dictionary(uniqueKeysWithValues: plan.map { ($0.task, $0) })
+            let recovery = Dictionary(uniqueKeysWithValues: MasterSchedule.recovery(plan: plan, actual: actual, today: today, calendar: cal).map { ($0.task, $0) })
             let thisWeek = MasterSchedule.weekStart(today, calendar: cal)
-            var tasks: [TaskFinish] = []
-            for r in recovery where r.state != .done {
-                let (rate, assumed) = Self.rate(r, calendar: cal)
-                let begin = r.state == .upcoming && !startNow.contains(r.task)
-                    ? MasterSchedule.weekStart(r.plannedStart, calendar: cal) : thisWeek
-                let n = weeksFor(r.remaining, max(rate * factor, 1e-9))
-                let finish = cal.date(byAdding: .day, value: 7 * max(n, 1) - 1, to: begin)!
-                tasks.append(TaskFinish(code: r.task.code, title: r.task.title, plannedEnd: day(r.plannedEnd, cal),
-                                        finish: day(finish, cal), slipDays: days(r.plannedEnd, finish, cal), assumedRate: assumed))
+            let f = max(factor, 0.1)
+            var out: [MasterSchedule.Task: Dated] = [:]
+            for t in order {
+                guard let p = byTask[t], p.weight > 0, let s = p.start, let e = p.end, let r = recovery[t] else { continue }
+                let push = (predecessors[t] ?? []).compactMap { q -> (Int, MasterSchedule.Task)? in
+                    guard let moved = out[q], let old = byTask[q]?.end else { return nil }
+                    return (days(old, moved.end, cal), q)
+                }.max { $0.0 < $1.0 }
+                let late = max(push?.0 ?? 0, 0)
+                func add(_ d: Date, _ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: d)! }
+                switch r.state {
+                case .done:
+                    out[t] = Dated(start: s, end: e, why: "", assumed: false)
+                case .upcoming:
+                    let length = Int((Double(days(s, e, cal) + 1) / f - 1e-6).rounded(.up))
+                    let begin = startNow.contains(t) ? max(thisWeek, cal.startOfDay(for: today)) : add(s, late)
+                    let why = startNow.contains(t) ? "เริ่มสัปดาห์นี้" : late > 0 ? "เลื่อนตาม \(push!.1.code)" : ""
+                    out[t] = Dated(start: begin, end: add(begin, max(length, 1) - 1), why: why, assumed: true)
+                default:
+                    let (rate, assumed) = Self.rate(r, calendar: cal)
+                    let n = Int((7 * r.remaining / (rate * f) - 1e-6).rounded(.up))
+                    let paced = add(thisWeek, max(n, 1) - 1)
+                    let pushed = add(e, late)
+                    var end = late > 0 ? max(paced, pushed) : paced
+                    if keepPlannedEnds { end = max(end, e) }
+                    let why = end == e ? "" : late > 0 && pushed >= paced ? "เลื่อนตาม \(push!.1.code)"
+                        : assumed ? "ยังไม่มีความก้าวหน้า ใช้อัตราตามแผนนับจากสัปดาห์นี้" : "ตามอัตราที่ทำได้จริง"
+                    out[t] = Dated(start: s, end: end, why: why, assumed: assumed)
+                }
             }
-            let last = tasks.map(\.finish).max()
-            return Scenario(name: name, paceFactor: ScheduleBrief.round(factor), stationFinish: last,
-                            slipDays: last.flatMap { MasterSchedule.date(fromKey: $0, calendar: cal) }.map { days(input.installEnd, $0, cal) },
+            return out
+        }
+
+        /// The finishes if every open task runs at `factor` times its rate, the tasks of `startNow` starting this week.
+        static func scenario(_ name: String, plan: [MasterSchedule.PlannedTask], actual: MasterSchedule.Actual,
+                             input: MasterSchedule.Input, factor: Double, startNow: Set<MasterSchedule.Task> = [],
+                             today: Date, calendar cal: Calendar) -> Scenario {
+            let done = Set(MasterSchedule.recovery(plan: plan, actual: actual, today: today, calendar: cal).filter { $0.state == .done }.map(\.task))
+            let dated = forecast(plan: plan, actual: actual, factor: factor, startNow: startNow, keepPlannedEnds: false, today: today, calendar: cal)
+            let tasks = plan.compactMap { p -> TaskFinish? in
+                guard let d = dated[p.task], let e = p.end, !done.contains(p.task) else { return nil }
+                return TaskFinish(code: p.task.code, title: p.task.title, plannedEnd: day(e, cal), finish: day(d.end, cal),
+                                  slipDays: days(e, d.end, cal), assumedRate: d.assumed)
+            }
+            let last = dated.values.map(\.end).max()
+            return Scenario(name: name, paceFactor: ScheduleBrief.round(factor), stationFinish: last.map { day($0, cal) },
+                            slipDays: last.map { days(input.installEnd, $0, cal) },
                             tasks: tasks.sorted { $0.slipDays > $1.slipDays })
         }
 
@@ -172,12 +215,14 @@ public extension Assistant {
                     parts.append("ทำงาน \(d) วัน/สัปดาห์")
                 }
                 if !startNow.isEmpty { parts.append("เริ่ม " + startNow.map(\.code).sorted().joined(separator: ", ") + " สัปดาห์นี้") }
-                s = scenario(parts.joined(separator: " · "), recovery, input: input, factor: max(f, 0.1),
+                s = scenario(parts.joined(separator: " · "), plan: plan, actual: job.actual, input: input, factor: max(f, 0.1),
                              startNow: startNow, today: today, calendar: cal)
             }
+            let brief = ScheduleBrief(jobID: job.id, station: job.station, input: input, actual: job.actual, today: today, calendar: cal)
             return WhatIf(jobID: job.id, station: job.station, today: day(today, cal), installEnd: day(input.installEnd, cal),
+                          handoverForecast: brief.handoverForecast, handoverSlipDays: brief.handoverSlipDays,
                           crewAverage: crew.map(ScheduleBrief.round), workingDaysPerWeek: workdays,
-                          base: scenario("อัตราเดิม", recovery, input: input, factor: 1, today: today, calendar: cal),
+                          base: scenario("อัตราเดิม", plan: plan, actual: job.actual, input: input, factor: 1, today: today, calendar: cal),
                           scenario: s,
                           toFinishOnTime: requirement(recovery, input: input, crew: crew, workdays: workdays, today: today, calendar: cal),
                           note: notes.joined(separator: " · "))
@@ -388,41 +433,15 @@ public extension Assistant {
         /// overlaps. Finished tasks stay.
         public static func replan(_ job: Job, input: MasterSchedule.Input, today: Date,
                                   calendar cal: Calendar = MasterSchedule.calendar) -> Replan {
-            let plan = Dictionary(uniqueKeysWithValues: MasterSchedule.plan(input, calendar: cal).map { ($0.task, $0) })
-            let recovery = Dictionary(uniqueKeysWithValues: MasterSchedule.recovery(plan: Array(plan.values), actual: job.actual, today: today, calendar: cal).map { ($0.task, $0) })
-            let thisWeek = MasterSchedule.weekStart(today, calendar: cal)
-            var dates: [MasterSchedule.Task: (Date, Date)] = [:]
-            var shifts: [Shift] = []
-            for t in order {
-                guard let p = plan[t], p.weight > 0, let s = p.start, let e = p.end, let r = recovery[t] else { continue }
-                let push = (predecessors[t] ?? []).compactMap { q -> (Int, MasterSchedule.Task)? in
-                    guard let moved = dates[q], let old = plan[q]?.end else { return nil }
-                    return (days(old, moved.1, cal), q)
-                }.max { $0.0 < $1.0 }
-                var ns = s, ne = e, why = ""
-                if r.state == .done {
-                    // finished: as planned
-                } else if r.state == .upcoming {
-                    if let (d, q) = push, d > 0 {
-                        ns = cal.date(byAdding: .day, value: d, to: s)!; ne = cal.date(byAdding: .day, value: d, to: e)!
-                        why = "เลื่อนตาม \(q.code)"
-                    }
-                } else {
-                    let (rate, assumed) = Self.rate(r, calendar: cal)
-                    let n = weeksFor(r.remaining, rate)
-                    let paced = cal.date(byAdding: .day, value: 7 * max(n, 1) - 1, to: thisWeek)!
-                    let pushed = push.map { cal.date(byAdding: .day, value: max($0.0, 0), to: e)! } ?? e
-                    ne = max(e, paced, pushed)
-                    why = ne == e ? "" : paced >= pushed ? (assumed ? "ยังไม่มีความก้าวหน้า ใช้อัตราตามแผนนับจากสัปดาห์นี้" : "ตามอัตราที่ทำได้จริง")
-                        : "เลื่อนตาม \(push!.1.code)"
-                }
-                dates[t] = (ns, ne)
-                if ns != s || ne != e {
-                    shifts.append(Shift(code: t.code, title: t.title, plannedStart: day(s, cal), plannedEnd: day(e, cal),
-                                        newStart: day(ns, cal), newEnd: day(ne, cal), shiftDays: days(e, ne, cal), why: why))
-                }
+            let plan = MasterSchedule.plan(input, calendar: cal)
+            let dated = forecast(plan: plan, actual: job.actual, factor: 1, keepPlannedEnds: true, today: today, calendar: cal)
+            let shifts = order.compactMap { t -> Shift? in
+                guard let p = plan.first(where: { $0.task == t }), let s = p.start, let e = p.end, let d = dated[t],
+                      d.start != s || d.end != e else { return nil }
+                return Shift(code: t.code, title: t.title, plannedStart: day(s, cal), plannedEnd: day(e, cal),
+                             newStart: day(d.start, cal), newEnd: day(d.end, cal), shiftDays: days(e, d.end, cal), why: d.why)
             }
-            let siteEnd = dates.filter { $0.key.part != .permit }.map(\.value.1).max() ?? input.installEnd
+            let siteEnd = dated.filter { $0.key.part != .permit }.map(\.value.end).max() ?? input.installEnd
             let newEnd = max(siteEnd, input.installEnd)
             return Replan(jobID: job.id, station: job.station, installEnd: day(input.installEnd, cal), newInstallEnd: day(newEnd, cal),
                           slipDays: days(input.installEnd, newEnd, cal), tasks: shifts,

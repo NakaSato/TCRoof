@@ -90,8 +90,18 @@ final class AssistantTests: XCTestCase {
         XCTAssertEqual(b.tasks.first { $0.code == "2.2" }?.lateCause, "วัสดุ")
         XCTAssertEqual(b.thisWeek, ["2.1"])
         XCTAssertEqual(b.nextTwoWeeks, ["2.1", "2.3"])
-        XCTAssertEqual(b.projectedFinish, "2026-06-06")
-        XCTAssertEqual(b.projectedSlipDays, 49)              // after the install end of 18 เม.ย.
+        // task by task: 2.1 ends 6 มิ.ย., 2.3 after it
+        XCTAssertEqual(b.projectedFinish, "2026-06-27")
+        XCTAssertEqual(b.projectedSlipDays, 70)              // after the install end of 18 เม.ย.
+        // the install tracking page's figure: the period stretched by the SPI
+        let spi = try XCTUnwrap(b.spi)
+        XCTAssertEqual(spi, (b.actualPercent / b.plannedPercent * 100).rounded() / 100, accuracy: 0.011)
+        let t = InstallTracking(actual: MasterSchedule.status(plan: MasterSchedule.plan(job().input!), actual: job().actual, through: today).actual,
+                                planned: MasterSchedule.status(plan: MasterSchedule.plan(job().input!), actual: job().actual, through: today).planned,
+                                start: d(2026, 2, 1), due: d(2026, 4, 18), today: today)
+        XCTAssertEqual(b.handoverForecast, ScheduleBrief.day(t.forecastEnd(calendar: cal), calendar: cal))
+        XCTAssertEqual(b.handoverSlipDays, -t.slackDays(calendar: cal))
+        XCTAssertTrue(b.handoverSlipDays > 0)
         // only the last 14 days of reports
         XCTAssertEqual(b.recentDays.map(\.date), ["2026-03-14"])
         XCTAssertEqual(b.recentDays.first?.crew, 6)

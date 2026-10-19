@@ -99,9 +99,12 @@ struct AssistantDemoTransport: Assistant.Transport {
         switch kind {
         case "what_if":
             guard let w = decode(S.WhatIf.self, 1) else { return err(1) }
-            var out = ["**\(w.station)** วันจบติดตั้งตามแผน \(w.installEnd)",
+            var out = ["**\(w.station)** ส่งมอบตามแผน \(w.installEnd) · คาดส่งมอบ \(w.handoverForecast) (ช้า \(w.handoverSlipDays) วัน ตามหน้าติดตามงาน)",
+                       "", "ประมาณรายงาน:",
                        "- อัตราเดิม: เสร็จ \(w.base.stationFinish ?? "–") (ช้า \(w.base.slipDays ?? 0) วัน)"]
-            if let s = w.scenario { out.append("- \(s.name): เสร็จ \(s.stationFinish ?? "–") (ช้า \(s.slipDays ?? 0) วัน)") }
+            if let s = w.scenario, let a = w.base.slipDays, let b = s.slipDays {
+                out.append("- \(s.name): เสร็จ \(s.stationFinish ?? "–") (ช้า \(b) วัน · ได้คืน \(a - b) วัน)")
+            }
             if let t = w.toFinishOnTime {
                 out.append("- ให้ทันแผน: เร็วขึ้น \(num(t.paceFactor)) เท่า คอขวด \(t.bottleneck)"
                            + (t.crew.map { " · ใช้ \($0) คน" } ?? "") + (t.workingDaysPerWeek.map { " หรือทำงาน \($0) วัน/สัปดาห์" } ?? ""))

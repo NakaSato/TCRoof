@@ -194,6 +194,8 @@ public extension Assistant {
                 ]
                 if let mp = j.mpNumber { r["mpNumber"] = .number(Double(mp)) }
                 if let s = b.projectedSlipDays { r["projectedSlipDays"] = .number(Double(s)) }
+                r["handoverForecast"] = .string(b.handoverForecast)
+                r["handoverSlipDays"] = .number(Double(b.handoverSlipDays))
                 return r
             }
             .sorted { ($0["variance"]?.number ?? 0) < ($1["variance"]?.number ?? 0) }

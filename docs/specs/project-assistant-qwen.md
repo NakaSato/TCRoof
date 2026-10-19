@@ -77,7 +77,10 @@ App (team / manager / Maintainer; assistant.use)
 
 ## 6. Strategy (`AssistantStrategy.swift`, `AssistantStrategyTests`)
 
-Swift works out every figure; the model compares, explains and recommends. All of them assume a task's pace scales
+Swift works out every figure; the model compares, explains and recommends. For the station's handover the model
+quotes `handoverForecast` / `handoverSlipDays`, the install tracking page's `คาดส่งมอบ` (the period stretched by the
+SPI), so the chat and the page agree. The scenarios and the re-plan share one task-by-task forecast
+(`Strategy.forecast`), in whole days, in the plan's order of work (a late task pushes the tasks after it). All of them assume a task's pace scales
 with its crew and working days, and a task with no progress yet runs at the plan's rate; the results say so.
 
 | Tool | What it gives |

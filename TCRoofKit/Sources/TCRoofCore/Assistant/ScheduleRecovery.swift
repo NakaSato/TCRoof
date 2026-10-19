@@ -31,7 +31,7 @@ public extension MasterSchedule {
         public let neededPerWeek: Double?
         /// Points per week booked so far, over the weeks since the task started (planned or first booking); nil before it starts.
         public let pacePerWeek: Double?
-        /// The last day of the week the task finishes in at `pacePerWeek`; nil without a pace.
+        /// The day the task finishes at `pacePerWeek`, counted from this week's Sunday; nil without a pace.
         public let projectedFinish: Date?
         /// Days `projectedFinish` falls after the planned end (negative: early); nil when either is unknown.
         public let slipDays: Int?
@@ -59,8 +59,9 @@ public extension MasterSchedule {
             if remaining <= 1e-9 {
                 finish = actual.finished[p.task.rawValue]
             } else if let pace, pace > 1e-9 {
-                let n = Int((remaining / pace).rounded(.up))
-                finish = cal.date(byAdding: .day, value: 7 * n - 1, to: thisWeek)
+                // whole days, so a small change of pace shows
+                let n = Int((7 * remaining / pace - 1e-6).rounded(.up))
+                finish = cal.date(byAdding: .day, value: max(n, 1) - 1, to: thisWeek)
             } else {
                 finish = nil
             }

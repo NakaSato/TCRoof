@@ -54,7 +54,13 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     public var actualPercent: Double
     /// Actual minus planned; negative is behind.
     public var variance: Double
-    /// The latest projected finish of the unfinished tasks, and its days past the install end.
+    /// The handover the install tracking page shows (`คาดส่งมอบ`): the install period stretched by the SPI (actual over
+    /// planned), and its days past the install end. Quote this one for the station.
+    public var spi: Double?
+    public var handoverForecast: String
+    public var handoverSlipDays: Int
+    /// The task by task forecast (each task's pace, the plan's order of work): the last task's end and its days past
+    /// the install end. `what_if` starts from it.
     public var projectedFinish: String?
     public var projectedSlipDays: Int?
     public var parts: [PartLine]
@@ -101,8 +107,14 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
                             pacePointsPerWeek: r?.pacePerWeek.map(Self.round),
                             projectedFinish: r?.projectedFinish.map(day), slipDays: r?.slipDays)
         }
-        let open = recovery.values.filter { $0.state != .done }
-        let latest = open.compactMap(\.projectedFinish).max()
+        let tracking = InstallTracking(actual: status.actual, planned: status.planned, start: input.installStart,
+                                       due: input.installEnd, today: today)
+        spi = tracking.spi.map { (($0 * 100).rounded()) / 100 }
+        handoverForecast = day(tracking.forecastEnd(calendar: cal))
+        handoverSlipDays = -tracking.slackDays(calendar: cal)
+        let open = recovery.values.contains { $0.state != .done }
+        let latest = open ? Assistant.Strategy.forecast(plan: plan, actual: actual, factor: 1, keepPlannedEnds: false,
+                                                        today: today, calendar: cal).values.map(\.end).max() : nil
         projectedFinish = latest.map(day)
         projectedSlipDays = latest.map { cal.dateComponents([.day], from: cal.startOfDay(for: input.installEnd), to: $0).day ?? 0 }
 

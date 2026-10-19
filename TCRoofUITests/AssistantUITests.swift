@@ -131,4 +131,34 @@ final class AssistantUITests: XCTestCase {
         expectation(for: NSPredicate(format: "label BEGINSWITH 'ยังไม่ได้ใส่คีย์'"), evaluatedWith: status)
         waitForExpectations(timeout: 5)
     }
+
+    /// From a station's install tracking page (iPad): the header's ผู้ช่วย opens the chat on that station, and the
+    /// what-if and priorities chips answer.
+    func testFromTheInstallPage() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("the install tracking page is the iPad's") }
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES",
+                               "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let open = app.buttons["ผู้ช่วย"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย")
+        shot("13-install-page")
+        open.tap()
+        let intro = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ผู้ช่วยดูแผนของ'")).firstMatch
+        XCTAssertTrue(intro.waitForExistence(timeout: 10))
+        XCTAssertFalse(intro.label.hasPrefix("ผู้ช่วยดูแผนของทุกสถานี"), "it should name the station it was opened from")
+
+        func ask(_ chip: String, expect: String, shot name: String) {
+            let b = app.buttons[chip]
+            XCTAssertTrue(b.waitForExistence(timeout: 10), "\(chip) should show")
+            b.tap()
+            let answer = app.staticTexts.matching(NSPredicate(format: "identifier == 'assistantAnswer' AND label CONTAINS %@", expect)).firstMatch
+            XCTAssertTrue(answer.waitForExistence(timeout: 15), "\(chip) should answer")
+            shot(name)
+        }
+        ask("วางแผนเร่งงานให้ทันกำหนด", expect: "อัตราเดิม", shot: "14-install-whatif")
+        app.buttons["เริ่มใหม่"].tap()
+        ask("จัดลำดับความสำคัญทุกสถานี", expect: "ลำดับความเสี่ยง", shot: "15-install-priorities")
+    }
 }

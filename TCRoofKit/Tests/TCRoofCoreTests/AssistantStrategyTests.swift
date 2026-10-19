@@ -57,9 +57,12 @@ final class AssistantStrategyTests: XCTestCase {
         let w = Assistant.Strategy.whatIf(job(), input: input(), today: today)
         XCTAssertEqual(w.crewAverage, 6)
         XCTAssertEqual(w.workingDaysPerWeek, 6)
-        XCTAssertEqual(w.base.stationFinish, "2026-06-06")        // 2.1: 16 left at 4/3 a week = 12 weeks
-        XCTAssertEqual(w.base.slipDays, 49)
-        XCTAssertEqual(w.base.tasks.first { $0.code == "2.3" }?.finish, "2026-04-18")   // not started: the plan's rate
+        XCTAssertEqual(w.base.tasks.first { $0.code == "2.1" }?.finish, "2026-06-06")   // 16 left at 4/3 a week = 84 days
+        // 2.3 waits for 2.1: 70 days later, same 18 days
+        XCTAssertEqual(w.base.tasks.first { $0.code == "2.3" }?.finish, "2026-06-27")
+        XCTAssertEqual(w.base.stationFinish, "2026-06-27")
+        XCTAssertEqual(w.base.slipDays, 70)
+        XCTAssertEqual(w.base.stationFinish, job().brief(today: today)?.projectedFinish)   // the brief starts from it
         XCTAssertEqual(w.base.tasks.first { $0.code == "2.3" }?.assumedRate, true)
         XCTAssertNil(w.scenario)
     }
@@ -69,16 +72,19 @@ final class AssistantStrategyTests: XCTestCase {
         let s = try XCTUnwrap(w.scenario)
         XCTAssertEqual(s.paceFactor, 2)
         XCTAssertEqual(s.tasks.first { $0.code == "2.1" }?.finish, "2026-04-25")   // 6 weeks
-        XCTAssertEqual(s.stationFinish, "2026-04-25")
-        XCTAssertEqual(s.slipDays, 7)
+        // 2.1 ends 28 days late, so 2.3 starts 29 เม.ย. and takes 9 days at twice the pace
+        XCTAssertEqual(s.stationFinish, "2026-05-07")
+        XCTAssertEqual(s.slipDays, 19)
     }
 
     func testWhatIfExtraDayAndStartingAhead() throws {
         let w = Assistant.Strategy.whatIf(job(), input: input(), extraDays: 1, startNow: [.panels], today: today)
         let s = try XCTUnwrap(w.scenario)
-        XCTAssertEqual(s.paceFactor, 1.2)                        // 7 days over 6
-        // 2.3 from this week at 20/3 × 1.2 = 8 a week: 3 weeks
-        XCTAssertEqual(s.tasks.first { $0.code == "2.3" }?.finish, "2026-04-04")
+        XCTAssertEqual(s.paceFactor, 1.2)                        // 7 days over 6, shown rounded
+        // 2.3 from today, its 18 days at 7/6 the pace: 16 days
+        XCTAssertEqual(s.tasks.first { $0.code == "2.3" }?.finish, "2026-03-31")
+        // a sixth more pace is days, not weeks, earlier
+        XCTAssertEqual(s.tasks.first { $0.code == "2.1" }?.finish, "2026-05-25")   // 16 at 4/3 × 7/6 a week: 72 days
         XCTAssertTrue(s.name.contains("2.3"))
     }
 
@@ -106,7 +112,7 @@ final class AssistantStrategyTests: XCTestCase {
         let p = Assistant.Strategy.priorities([aheadJob(), job()], today: today)
         XCTAssertEqual(p.stations.map(\.jobID), ["job-1", "job-2"])
         let behind = try XCTUnwrap(p.stations.first)
-        XCTAssertEqual(behind.projectedSlipDays, 49)
+        XCTAssertEqual(behind.projectedSlipDays, 70)
         XCTAssertEqual(behind.crewNeeded, 36)
         XCTAssertNil(behind.spareCrew)
         // 2.1 needs 1 a week of its 14/3: about a fifth of its six

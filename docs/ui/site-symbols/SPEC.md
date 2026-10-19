@@ -2,7 +2,7 @@
 
 **Feature:** ภาพสถานที่ติดตั้ง (A1 · `siteMap` + `siteMarks`) — change the symbols placed on the site picture from IEC line symbols to the style used on the company's site drawings.
 **Platform:** iPad app (TCRoofKit, Swift). The web app is no longer used, so §9 does not apply.
-**Status:** Not built. The uncompiled draft from branch `feature/site-symbols` (2026-09-29) is kept as `draft-sitemarks.patch`; it targets the old `SolarSurveyKit` paths · moved here 2026-10-04
+**Status:** Replaced (checked 2026-10-19): A2's redesign (`SitePageWide`, `TCRoofCore/SiteMarks.swift`) has the company-style symbols, `zeroExport` (กันย้อน), numbered TR / MDB and the symbols feeding A3 and B4; keep this file for the reference drawing and the open questions. Was: Not built. The uncompiled draft from branch `feature/site-symbols` (2026-09-29) is kept as `draft-sitemarks.patch`; it targets the old `SolarSurveyKit` paths · moved here 2026-10-04
 
 ![Reference drawing](site-symbols-reference.png)
 

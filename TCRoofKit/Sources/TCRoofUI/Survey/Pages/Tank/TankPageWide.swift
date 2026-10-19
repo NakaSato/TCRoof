@@ -66,6 +66,8 @@ struct TankPageWide: View {
     @State var shadeResult: TankShade?
     @State var shadeBusy = false
     @State var shadeMoment = 4
+    /// `↶ เลิกทำ` (TankPageWide+Undo).
+    @StateObject var undo = TankUndo()
     /// DEBUG `layoutshade`: scroll the one-column layout to the shade card.
     @State var shadeScroll = false
     @State var dxfShare: DXFShare?
@@ -88,7 +90,10 @@ struct TankPageWide: View {
             } else {
                 VStack(spacing: 14) {
                     PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
-                    tabBar
+                    HStack(spacing: 8) {
+                        tabBar
+                        undoButtons()
+                    }
                     switch tab {
                     case 1: sizeStep
                     case 2: padObstacleStep
@@ -98,6 +103,7 @@ struct TankPageWide: View {
                 }
             }
         }
+        .onChange(of: values) { old, _ in recordUndo(old) }
         .fullScreenCover(isPresented: $obsFull) { obstacleFullScreen }
         .fullScreenCover(isPresented: $layoutFull) { layoutFullScreen }
         .sheet(item: $dxfShare) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
@@ -209,9 +215,17 @@ struct TankPageWide: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
-    // MARK: sub-step 4 (the section's generic group until its design arrives)
+    // MARK: sub-step 4 · ภาพถ่าย (docs/specs/tank-drawing-swift.md, the designed groups)
 
-    var formFields: [(title: String, ids: [String])] { [("ภาพถ่าย", ["obstPhotos", "aerialPhoto", "sidePhotos"])] }
+    /// The designed photo groups; the roof, shade and cable photos are optional until the team makes them required.
+    var formFields: [(title: String, ids: [String])] {
+        [("ภาพมุมสูง (โดรน หรือ Google Maps) · บังคับ", ["aerialPhoto"]),
+         ("ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) · บังคับ · เรียง เหนือ ใต้ ตะวันออก ตะวันตก", ["sidePhotos"]),
+         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) · ไม่บังคับ", [Tank.Key.roofPhotos]),
+         ("เงาบัง (ถ่ายจากกลางหลังคา) · ไม่บังคับ", [Tank.Key.shadePhoto]),
+         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) · ไม่บังคับ", [Tank.Key.cablePhoto]),
+         ("สิ่งกีดขวาง · บังคับ · ภาพแรกลงกรอบใหญ่ในรายงาน", ["obstPhotos"])]
+    }
 
     @ViewBuilder var formStep: some View {
         if let i = index {

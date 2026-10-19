@@ -336,7 +336,11 @@ public enum Schema {
                                N(TankShade.Key.distance, "ห่างผนังถัง", "M", optional: true, when: shaded),
                                T("shadeNote", "รายละเอียด (ระยะห่าง / ความสูงโดยประมาณ)", "เช่น ต้นไม้สูง ~8 ม. ห่าง 5 ม.", optional: true, when: shaded)]),
             GroupSpec("ภาพถ่าย", [FieldSpec("obstPhotos", "ภาพสิ่งกีดขวาง (ภาพแรกลงกรอบใหญ่ \"สำหรับวาดขนาดของสิ่งกีดขวาง\")", .photos(max: 5)),
-                                P("aerialPhoto", "รูปมุมสูง / รูปโดรน"), FieldSpec("sidePhotos", "รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", .photos(max: 3))])]),
+                                P("aerialPhoto", "รูปมุมสูง / รูปโดรน"), FieldSpec("sidePhotos", "รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", .photos(max: 4)),
+                                // D1 sub-step 4's designed groups (docs/specs/tank-drawing-swift.md); optional until the team makes them required
+                                FieldSpec(Tank.Key.roofPhotos, "หลังคาถัง (ภาพรวม + ผิวหลังคา)", .photos(max: 2), optional: true),
+                                P(Tank.Key.shadePhoto, "เงาบัง (ถ่ายจากกลางหลังคา)", optional: true),
+                                P(Tank.Key.cablePhoto, "ทางเดินสายไฟ (จากถังถึงห้อง Inverter)", optional: true)])]),
         .sed: ModuleSpec(type: .sed, sheet: "บ่อตกตะกอน", label: "บ่อตกตะกอน", short: "บ่อตกตะกอน", reportTitle: "บ่อตกตะกอน", namePlaceholder: "เช่น บ่อ 1", groups: [
             GroupSpec("ภาพบ่อตกตะกอน (Google Earth/Google Map)", [FieldSpec("sitePhotos", "ภาพบ่อตกตะกอน", .photos(max: 6))]),
             GroupSpec("โครงสร้างบ่อตกตะกอน", [P("drawing", "*เขียนแบบบ่อพอสังเขป (ระบุจุด A–K)")] + Options.sedDims.map { N("dist\($0.0)", "\($0.0) — \($0.1)", "ซม.", optional: $0.0 > "F") }),

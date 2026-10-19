@@ -139,7 +139,8 @@ final class TankTests: XCTestCase {
         XCTAssertTrue(Tank.sizeDone(old.values))
         XCTAssertNil(Tank.azimuth(old.values))
         let before = old.completion
-        XCTAssertEqual(before.total, 11)
+        // 11, plus the roof and cable photos required since 2026-10-19
+        XCTAssertEqual(before.total, 13)
         // the new fields are optional and hidden: filling them changes nothing in the count
         var m = old
         Tank.syncExposed(&m.values)
@@ -221,10 +222,16 @@ final class TankTests: XCTestCase {
 
     func testPhotoStatus() {
         var v = Values()
-        XCTAssertEqual(Tank.photoCompletion(v), Completion(filled: 0, total: 3))
-        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 3 ภาพ")
+        // aerial, walls, roof (both photos), cable route, obstacles
+        XCTAssertEqual(Tank.photoCompletion(v), Completion(filled: 0, total: 5))
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 5 ภาพ")
         v["aerialPhoto"] = .photo(Photo(fileName: "a.jpg", width: 4, height: 3))
-        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 2 ภาพ")
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 4 ภาพ")
+        // the roof needs its overview and its surface
+        v[Tank.Key.roofPhotos] = .photos([Photo(fileName: "r.jpg", width: 4, height: 3)])
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 4 ภาพ")
+        v[Tank.Key.roofPhotos] = .photos([Photo(fileName: "r.jpg", width: 4, height: 3), Photo(fileName: "s.jpg", width: 4, height: 3)])
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 3 ภาพ")
     }
 
     // MARK: compass lock (states/08)

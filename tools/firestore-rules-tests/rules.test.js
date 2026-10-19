@@ -478,3 +478,38 @@ test('a standard design\'s sheet pages: every member reads, the team writes', as
   await assertFails(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p3'), { width: 1 }));
   await assertFails(deleteDoc(doc(db(BOSS), 'standardDesignSheets', 'p1')));
 });
+
+test('the travel log is personal: its owner and managers read it, only the owner writes it', async () => {
+  const MATE = 'mate@tcroof.co';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const d = ctx.firestore();
+    await setDoc(doc(d, 'members', MATE), {});
+    await setDoc(doc(d, 'expenses', 'e1'), { ownerEmail: TEAM, amount: 5000 });
+    await setDoc(doc(d, 'trips', 't1'), { ownerEmail: TEAM, stops: '[]' });
+    await setDoc(doc(d, 'claims', 'c1'), { ownerEmail: TEAM, month: '2026-10' });
+  });
+  const me = db(TEAM), mate = db(MATE);
+  // the owner lists theirs with the app's query, writes and deletes them
+  await assertSucceeds(getDocs(query(collection(me, 'expenses'), where('ownerEmail', '==', TEAM))));
+  await assertSucceeds(getDocs(query(collection(me, 'trips'), where('ownerEmail', '==', TEAM))));
+  await assertSucceeds(getDocs(query(collection(me, 'claims'), where('ownerEmail', '==', TEAM))));
+  await assertSucceeds(updateDoc(doc(me, 'expenses', 'e1'), { amount: 6000 }));
+  await assertSucceeds(setDoc(doc(me, 'expenses', 'e2'), { ownerEmail: TEAM, amount: 100 }));
+  await assertFails(setDoc(doc(me, 'expenses', 'e3'), { ownerEmail: TEAM, amount: '100' }));
+  // nobody makes a record in someone else's name, or hands theirs over
+  await assertFails(setDoc(doc(me, 'expenses', 'e4'), { ownerEmail: MATE, amount: 100 }));
+  await assertFails(updateDoc(doc(me, 'trips', 't1'), { ownerEmail: MATE }));
+  // another team member neither reads nor changes them
+  await assertFails(getDoc(doc(mate, 'expenses', 'e1')));
+  await assertFails(getDocs(collection(mate, 'expenses')));
+  await assertFails(updateDoc(doc(mate, 'expenses', 'e1'), { amount: 1 }));
+  await assertFails(deleteDoc(doc(mate, 'trips', 't1')));
+  // a manager reads everyone's, but doesn't write them
+  await assertSucceeds(getDocs(collection(db(BOSS), 'expenses')));
+  await assertSucceeds(getDoc(doc(db(BOSS), 'claims', 'c1')));
+  await assertFails(updateDoc(doc(db(BOSS), 'expenses', 'e1'), { amount: 1 }));
+  // contractors have no travel log here
+  await assertFails(getDoc(doc(db(CON), 'expenses', 'e1')));
+  await assertFails(setDoc(doc(db(CON), 'expenses', 'e9'), { ownerEmail: CON, amount: 1 }));
+  await assertSucceeds(deleteDoc(doc(me, 'expenses', 'e1')));
+});

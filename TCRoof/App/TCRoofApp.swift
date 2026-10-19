@@ -19,6 +19,7 @@ struct TCRoofApp: App {
         let schema = Schema([
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
             Inspection.self, PhotoAsset.self, DocumentAsset.self,
+            Trip.self, Expense.self, ClaimMonth.self,
         ])
         do {
             return try ModelContainer(for: schema)
@@ -151,7 +152,7 @@ struct RootView: View {
 struct DebugScreen: View {
     static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
     static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant"]
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant", "travel"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -212,6 +213,8 @@ struct DebugScreen: View {
         case "homework": if let job { HomeWorkView(job: job) }
         case "stationdocs": if let job { StationDocsScreen(job: job) }
         case "members": MembersView()
+        // `-travelDemo YES` seeds a month (for good), `-travelMonth 2026-09` opens that month, `-travelSubmit YES` the sign sheet
+        case "travel": ClaimScreen()
         case "useradmin": UserAdminView().debugBoard()
         // `-assistantDemo YES` answers from a stand-in for Qwen; `-assistantFocus YES` opens it on the first job
         case "assistant":

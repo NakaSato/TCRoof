@@ -82,7 +82,7 @@ struct PadTabs<HomeRoot: View>: View {
                 case .docs: PWADocsPadView()
                 // the plan calendar and the install records left the dock: they are rows over the register for now
                 // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
-                case .tools: ToolsView(modules: [.plan, .install])
+                case .tools: ToolsView(modules: [.plan, .install, .travel])
                 default: if let module = t.module { module.destination } else { home() }
                 }
             }

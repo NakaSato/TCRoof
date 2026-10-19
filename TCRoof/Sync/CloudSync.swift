@@ -55,6 +55,8 @@ final class CloudSync {
     private static let ackCollection = "feedAcks"
     /// One document per job: the customer's phone and address, for the team only (`JobContactRecord`).
     private static let contactCollection = "jobContacts"
+    /// Each person's travel log (`Trip`, `Expense`, `ClaimMonth`).
+    private static let travelCollections = [Trip.collection, Expense.collection, ClaimMonth.collection]
     /// `config/app`: switches set in the Firebase console (`contactsSplit`).
     private static let configDocument = "config/app"
     private static let contactsSplitKey = "cloudSync.contactsSplit"
@@ -140,6 +142,12 @@ final class CloudSync {
             listen(InstallLog.self)
             listen(Inspection.self)
             listen(PhotoAsset.self, optional: true)
+            // the travel log: each person's own (docs/specs/calendar-travel-expenses-swift.md §B6)
+            if external == nil, !me.email.isEmpty {
+                listen(Trip.self, optional: true, owner: me.email)
+                listen(Expense.self, optional: true, owner: me.email)
+                listen(ClaimMonth.self, optional: true, owner: me.email)
+            }
             listenSurveys()
             listenRevisions()
             listenFeedAcks()
@@ -299,6 +307,13 @@ final class CloudSync {
         collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly)
         var photos: [Change] = []
         collect(PhotoAsset.self, context, &photos, &present)
+        // the travel log goes in its own batches: a refusal (rules not deployed yet) mustn't hold back the jobs
+        var travel: [Change] = []
+        if external == nil {
+            collect(Trip.self, context, &travel, &present)
+            collect(Expense.self, context, &travel, &present)
+            collect(ClaimMonth.self, context, &travel, &present)
+        }
         var contacts = external == nil ? contactChanges(context, &present) : []
         for job in survey.jobs {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
@@ -315,12 +330,14 @@ final class CloudSync {
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
             else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
+            else if Self.travelCollections.contains(where: { key.hasPrefix("\($0)/") }) { travel.append(change) }
             else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
         commitSeparately(contacts, "contact upload")
+        commitSeparately(travel, "travel upload")
         // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
         // (the rules check that an external member's photo points at their own report). An external member's go one
         // by one, so a refused photo doesn't hold back the rest.
@@ -418,12 +435,15 @@ final class CloudSync {
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
                                          _ upload: Upload = .full) {
         guard let models = try? context.fetch(FetchDescriptor<M>()) else { return }
+        let me = MemberRole.shared.permissions.email
         for model in models {
             if model.syncID == nil { model.syncID = UUID().uuidString }
             guard model.syncs else { continue }
             let key = "\(M.collection)/\(model.syncID!)"
             present.insert(key)
             guard upload != .readOnly else { continue }
+            // someone else's travel log left on a shared iPad: theirs to send, and the rules would refuse it
+            if let owned = model as? OwnedRecord, Permissions.normalized(owned.ownerEmail) != me { continue }
             // an external member's record outside their jobs stays on the device: the rules would refuse it
             if let external, model.ownerJob?.externals.contains(external) != true { continue }
             let record = model.record
@@ -470,8 +490,10 @@ final class CloudSync {
     /// The listeners take metadata changes too: when the cache already matches the server, the only event
     /// after the first (cached) snapshot is `isFromCache` turning false, and without it the state stays `.connecting`.
     /// `optional`: a refused listener (its rule not deployed yet) is logged and the rest still syncs.
-    private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false) {
-        let registration = query(M.collection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+    /// `owner`: only the documents of that person (`ownerEmail`), the one query the rules allow for the travel log.
+    private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false, owner: String? = nil) {
+        let q = owner.map { db.collection(M.collection).whereField("ownerEmail", isEqualTo: $0) } ?? query(M.collection)
+        let registration = q.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error {

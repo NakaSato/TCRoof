@@ -4,7 +4,7 @@ import SwiftData
 import TCRoofCore
 
 enum AppModule: String, CaseIterable, Identifiable {
-    case survey, plan, scan, install, pwa, tools
+    case survey, plan, scan, install, pwa, tools, travel
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน"
         case .pwa: "การประปา\nส่วนภูมิภาค"
         case .tools: "เครื่องมือวัด"
+        case .travel: "เดินทางและ\nเบิกค่าใช้จ่าย"
         }
     }
 
@@ -27,6 +28,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: "บันทึกประจำวันและใบตรวจรับ (ICL)"
         case .pwa: "Excel / PDF / Drive"
         case .tools: "โดรน กล้องถ่ายภาพความร้อน แคลมป์มิเตอร์"
+        case .travel: "เวลาถึง/ออก ระยะทาง ใบเสร็จ และใบเบิกรายเดือน"
         }
     }
 
@@ -56,6 +58,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: "folder.fill"
         case .pwa: "drop.fill"
         case .tools: "briefcase.fill"
+        case .travel: "car.fill"
         }
     }
 
@@ -67,6 +70,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: InstallRecordsView()
         case .pwa: SolarSurveyEntryView()
         case .tools: ToolsView()
+        case .travel: ClaimScreen()
         }
     }
 }

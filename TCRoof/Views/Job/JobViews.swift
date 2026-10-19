@@ -28,6 +28,8 @@ struct JobDetailView: View {
                     customerCard
                     scheduleCard
                 }
+                // ถึง / ออก and the travel cost (docs/specs/calendar-travel-expenses-swift.md §B2): the team's own log
+                if permissions.role != .external { TravelJobCard(job: job) }
                 if job.kind == .pwa {
                     MPScheduleCard(job: job)
                     RoutineReportCard(job: job)

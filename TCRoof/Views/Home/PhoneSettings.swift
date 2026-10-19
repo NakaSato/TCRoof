@@ -83,7 +83,7 @@ struct PhoneSettingsList: View {
                 section("เครื่องมือ") {
                     // the tools tab's screens, kept reachable until the owner decides where they live
                     // (docs/ui/tcroof-home-iphone-v4, open question 1)
-                    NavigationLink { ToolsView(modules: [.plan, .scan, .install]) } label: {
+                    NavigationLink { ToolsView(modules: [.plan, .scan, .install, .travel]) } label: {
                         row("เครื่องมือวัด", toolsValue)
                     }
                     .buttonStyle(.plain)

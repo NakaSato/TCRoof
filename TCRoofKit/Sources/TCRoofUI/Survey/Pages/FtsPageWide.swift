@@ -15,6 +15,7 @@ struct FtsPageWide: View {
     let width: CGFloat
     var openSite: () -> Void = {}
     var openDiagram: () -> Void = {}
+    @StateObject var sldRender = SingleLineRender()
     /// Portrait and iPhone: the button card, the A2 picture and the SLD crop one under another, the page scrolling.
     var stacked = false
     @Environment(SurveyModel.self) var model
@@ -38,6 +39,8 @@ struct FtsPageWide: View {
             if stacked { stackedColumn } else { sideBySide }
         }
         .foregroundStyle(Theme.navy)
+        .onAppear { sldRender.update(job, now: true) }
+        .onChange(of: job) { _, j in sldRender.update(j) }
         .alert("ตำแหน่งปุ่ม Emergency", isPresented: $editingPlace) {
             TextField("เช่น ผนังข้างประตู Site Office", text: $placeText)
             Button("ตกลง") {
@@ -211,7 +214,8 @@ struct FtsPageWide: View {
                 .buttonStyle(.plain)
             }
             .padding(.vertical, -10)
-            let drawing = SingleLineLayout.draw(SingleLine.build(job))
+            // drawn off the main thread after typing stops (SingleLineRender)
+            let drawing = sldRender.current(job).drawing
             Group {
                 if drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)

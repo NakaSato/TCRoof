@@ -114,7 +114,7 @@ private struct Drawer {
         for x in [110.0, 1080.0, 1470.0] { o.append(SLSymbols.pole(x: x, y: 60)) }
         for x in [260.0, 560.0, 1240.0] { add(SLSymbols.lineBreak(x: x)) }
         text(m.sourceLabel, 430, 48, size: 13, bold: true, align: .center)
-        add(SLSymbols.openSwitch(x: mid, y: 60))
+        add(SLSymbols.hvDevice(m.protectionKind, x: mid, y: 60))
         text(m.protection, mid + 18, 95)
         o.append(SLSymbols.pole(x: mid, y: 107))
         add(SLSymbols.meter(x: mid, y: 140))
@@ -146,7 +146,7 @@ private struct Drawer {
         var maxRows = 0
         for tx in m.transformers {
             let x = cx(tx.index)
-            add(SLSymbols.hvSwitch(x: x, y: busY))
+            add(SLSymbols.hvSwitch(x: x, y: busY, kind: tx.protection))
             line(x, busY + 40, x, 318)
             // lightning arrester: drawn when present, `LA ?` when not answered
             if tx.hasLA != false {
@@ -312,7 +312,8 @@ private struct Drawer {
         text(pv.inverterCable ?? "CV ?", invX0 - 28, smdbY + 66, size: 10, L.blue, align: .right)
         let invLabel = pv.inverterCount == nil ? "อินเวอร์เตอร์ ? (B2)" : "อินเวอร์เตอร์ \(pv.inverterSummary) (B2)"
         text(invLabel, invX0 - 60, smdbY + 84, size: 12, pv.inverterCount == nil ? L.red : L.blue, align: .right)
-        text("ตู้ FTS ตัดวงจร DC (B5)", invX0 - 60, smdbY + 140, size: 12, L.blue, align: .right)
+        // the FTS DC cut and the emergency button only when the job has B5 (decided 2026-10-19)
+        if m.hasB5 { text("ตู้ FTS ตัดวงจร DC (B5)", invX0 - 60, smdbY + 140, size: 12, L.blue, align: .right) }
         let kwp = pv.capacityKWp.map { SingleLine.fmt($0) } ?? "?"
         text("แผง PV รวม \(kwp) kWp (A1)", invX0 - 60, smdbY + 168, size: 12, pv.capacityKWp == nil ? L.red : L.blue, align: .right)
         text("สั่งควบคุมกำลังผลิต", invX0 - 44, smdbY + 106, size: 11, L.blue, align: .right)
@@ -331,6 +332,7 @@ private struct Drawer {
         } else {
             control([(relayX + 200, C + 62), (ctrlX, C + 62), (ctrlX, ctrlY)])
         }
+        guard m.hasB5 else { return }
         let ey = smdbY + 192
         control([(lastX + 10, smdbY + 124), (emgX, smdbY + 124), (emgX, ey - 12)])
         add(SLSymbols.emergency(x: emgX, y: ey))

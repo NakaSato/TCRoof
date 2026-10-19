@@ -1,6 +1,6 @@
 # Auto Single Line Diagram (SLD)
 
-**Status:** Level 1 is built (checked against the code 2026-10-17). Model and rules: `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLine+Build.swift`; drawing: `SingleLineLayout.swift`, `SLSymbols.swift`; DXF: `SingleLineDXF.swift`; page: `TCRoofUI/Survey/Pages/Electrical/SingleLinePage.swift`, `SingleLinePage+Panel.swift`; PDF: `PDFReport/SingleLinePage.swift`. Not built: level 2 (feeder detail), the SLD in Excel, a separate VCB / DO fuse symbol, and a debounced off-main rebuild.
+**Status:** Level 1 is built (checked against the code 2026-10-17). Model and rules: `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLine+Build.swift`; drawing: `SingleLineLayout.swift`, `SLSymbols.swift`; DXF: `SingleLineDXF.swift`; page: `TCRoofUI/Survey/Pages/Electrical/SingleLinePage.swift`, `SingleLinePage+Panel.swift`; PDF: `PDFReport/SingleLinePage.swift`. Built 2026-10-19: VCB and DO fuse symbols (`SLSymbols.vcb`, `dropOutFuse`, `hvDevice`: each transformer's tap draws its A3 `hvProtection`, the PEA tap the one they share; DS keeps the open switch), the FTS cut and emergency button only with a B5 section, and a debounced off-main rebuild (`SingleLineRender`, 250 ms, on the SLD page and the B4 / B5 crops). The 1.25 × breaker factor is the team's rule (no longer a ค่าสมมติ). Not built: level 2 (feeder detail), the SLD in Excel.
 **Page design and task:** `docs/ui/survey-sld/CLAUDE_CODE_TASK.md`, `preview.png`, `preview-hv.png`, `diagram-lv.svg`, `diagram-hv.svg`
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline and drawing rules). DXF export: `docs/specs/cad-export-dxf/` (phase 2).
 **Targets:** `TCRoofKit` (iOS 17+, macOS 14 for tests) inside the TCRoof app. **New dependencies:** none. Layout is written by hand, because the SLD topology is fixed.
@@ -357,11 +357,11 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
 None of them block v1.
 
 1. ~~Do PV and B1 panels always connect at TR1's main board?~~ Answered: the SLD page has `เชื่อมต่อ PV ที่ตู้นี้` (`sldTransformer` / `sldBoard`); the default is TR1's main board.
-2. Is 1.25 × rated current the team's breaker rule for inverters and the PV incomer? (used now, marked in code)
+2. ~~Is 1.25 × rated current the team's breaker rule?~~ Yes (2026-10-19).
 3. Cable size table and 20 m run length are assumptions. Does the team have a standard table to replace them?
 4. For กันย้อนแรงสูง, which equipment and ratings does กฟภ. expect on the SLD (recloser / LBS, relay 32R, CT/VT ratios)?
 5. Should the SLD image also go on the Excel electrical sheet? (not in v1)
 6. Large stations: v1 fits one A3 page with zoom in the app. Split the PDF per transformer when the scale gets too small?
 7. Should DOF / DS / VCB, LA and grounding also get a condition field?
 8. Keep the Thai breaker symbol (arc) everywhere, or allow the IEC symbol as a setting?
-9. Should VCB and DO fuse / DS get their own symbols, and should the FTS and emergency button be left out when the job has no B5 section?
+9. ~~VCB / DO fuse symbols; FTS without B5?~~ Own symbols; FTS and the emergency button left out without B5 (2026-10-19).

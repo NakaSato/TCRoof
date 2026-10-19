@@ -28,6 +28,8 @@ struct SingleLinePage: View {
     @State var shared: ShareItem?
     @State var error: String?
     @State var stamp = Date()
+    /// The diagram, rebuilt off the main thread after edits (`SingleLineRender`).
+    @StateObject var render = SingleLineRender()
 
     enum ListKind: String, Identifiable { case others, conditions, assumptions; var id: String { rawValue } }
     struct ShareItem: Identifiable { let id = UUID(); let url: URL }
@@ -40,8 +42,8 @@ struct SingleLinePage: View {
     var twoPane: Bool { viewport.width >= 900 }
 
     var body: some View {
-        let sl = line
-        let drawing = SingleLineLayout.draw(sl)
+        let made = render.current(job, hv: hasB4 ? nil : hvPreview)
+        let sl = made.line, drawing = made.drawing
         VStack(spacing: 0) {
             header
             GeometryReader { geo in
@@ -56,7 +58,9 @@ struct SingleLinePage: View {
         .sheet(item: $listSheet) { k in listView(k, sl) }
         .sheet(item: $shared) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
         .errorAlert($error)
-        .onAppear { stamp = Date() }
+        .onAppear { stamp = Date(); render.update(job, hv: hasB4 ? nil : hvPreview, now: true) }
+        .onChange(of: job) { _, j in render.update(j, hv: hasB4 ? nil : hvPreview) }
+        .onChange(of: hvPreview) { _, v in render.update(job, hv: hasB4 ? nil : v, now: true) }
         #if DEBUG
         // `-surveySLDPanel YES` opens the iPhone's ข้อมูลฝั่ง PV sheet for simulator checks
         .task { if UserDefaults.standard.bool(forKey: "surveySLDPanel") { try? await Task.sleep(nanoseconds: 600_000_000); showPanel = true } }

@@ -104,9 +104,31 @@ enum RoutineReportFiles {
         return (entries, images)
     }
 
-    static func daily(_ job: Job, log: InstallLog) -> Built? {
+    /// The DAILY REPORT form blank, for filling in by hand.
+    static func blankForm(_ job: Job) -> Built {
+        Built(pages: RoutineReportPages.dailyBlankForm(settings: job.routineSettings, measure: PDFRenderer.Measure()), images: [:],
+              name: "แบบฟอร์มรายงานประจำวัน (เปล่า).pdf", folder: [], title: RoutineReport.Kind.daily.title)
+    }
+
+    static func daily(_ job: Job, log: InstallLog, samplePhotos: Int = 0) -> Built? {
         guard let r = log.report else { return nil }
         var (photos, images) = log.dayPhotos(r)
+        #if DEBUG
+        // `-routineDemo pdf` on a day without photos: drawn ones, to see page 3 and a continuation page
+        if photos.isEmpty, samplePhotos > 0 {
+            for i in 0..<samplePhotos {
+                let data = UIGraphicsImageRenderer(size: CGSize(width: 400, height: 300)).jpegData(withCompressionQuality: 0.8) { c in
+                    UIColor(hue: CGFloat(i) / CGFloat(samplePhotos), saturation: 0.35, brightness: 0.85, alpha: 1).setFill()
+                    c.fill(CGRect(x: 0, y: 0, width: 400, height: 300))
+                    UIColor.white.setFill()
+                    c.fill(CGRect(x: 60, y: 120, width: 280, height: 60))
+                }
+                let p = Photo(fileName: "sample\(i).jpg", width: 400, height: 300)
+                images[p.id] = data
+                photos.append(.init(photo: p, date: r.date, caption: "ตัวอย่างรูป \(i + 1) (หลังคา \(i % 3 + 1))"))
+            }
+        }
+        #endif
         let key = job.reportKeyPlan()
         if let key { images[key.plan.photo.id] = key.image }
         let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure())

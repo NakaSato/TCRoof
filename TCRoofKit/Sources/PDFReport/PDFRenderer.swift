@@ -6,7 +6,7 @@ import TCRoofCore
 /// Draws the NO.215 report into a PDF with the bundled Sarabun font.
 public enum PDFRenderer {
     private static let registered: Bool = {
-        for name in ["Sarabun-Regular", "Sarabun-Bold"] {
+        for name in ["Sarabun-Regular", "Sarabun-Bold", "THSarabun"] {
             let url = Bundle.module.url(forResource: name, withExtension: "ttf")
                 ?? Bundle.module.url(forResource: name, withExtension: "ttf", subdirectory: "Resources")
             if let url { CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil) }
@@ -20,6 +20,38 @@ public enum PDFRenderer {
             ?? (bold ? UIFont.boldSystemFont(ofSize: CGFloat(size)) : UIFont.systemFont(ofSize: CGFloat(size)))
     }
 
+    /// The font of a run: Sarabun, Helvetica, or TH Sarabun PSK (bundled, regular only).
+    static func font(_ size: Double, bold: Bool, face: FontFace) -> UIFont {
+        _ = registered
+        switch face {
+        case .sarabun: return font(size, bold: bold)
+        case .helvetica:
+            return UIFont(name: bold ? "Helvetica-Bold" : "Helvetica", size: CGFloat(size)) ?? font(size, bold: bold)
+        case .thSarabun:
+            return UIFont(name: "THSarabunPSK", size: CGFloat(size)) ?? font(size, bold: bold)
+        }
+    }
+
+    static func attributed(_ runs: [TextRun], color: RGBA) -> NSAttributedString {
+        let out = NSMutableAttributedString()
+        for r in runs {
+            var a: [NSAttributedString.Key: Any] = [.font: font(r.size, bold: r.bold, face: r.face), .foregroundColor: uiColor(color)]
+            if r.underline { a[.underlineStyle] = NSUnderlineStyle.single.rawValue }
+            out.append(NSAttributedString(string: r.text, attributes: a))
+        }
+        return out
+    }
+
+    /// A bundled picture a page names by its file (`FormImage`), when the caller's photos don't have it.
+    static func bundled(_ p: Photo) -> UIImage? {
+        guard let name = FormImage.resource(p) else { return nil }
+        let parts = name.split(separator: ".", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return nil }
+        let url = Bundle.module.url(forResource: parts[0], withExtension: parts[1])
+            ?? Bundle.module.url(forResource: parts[0], withExtension: parts[1], subdirectory: "Resources")
+        return url.flatMap { UIImage(contentsOfFile: $0.path) }
+    }
+
     /// Real font metrics for the layout.
     public struct Measure: TextMeasuring {
         public init() {}
@@ -31,6 +63,7 @@ public enum PDFRenderer {
                                                  attributes: PDFRenderer.attributes(size, bold: bold, color: .black, align: .left), context: nil)
             return Double(ceil(r.height))
         }
+        public func width(_ runs: [TextRun]) -> Double { Double(PDFRenderer.attributed(runs, color: .black).size().width) }
     }
 
     static func attributes(_ size: Double, bold: Bool, color: RGBA, align: TextAlign, wrap: Bool = true) -> [NSAttributedString.Key: Any] {
@@ -126,8 +159,23 @@ public enum PDFRenderer {
                 (s as NSString).draw(with: cg(r), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
                                      attributes: attributes(size, bold: bold, color: col, align: al), context: nil)
                 UIGraphicsPopContext()
+            case let .photoFill(p, r):
+                guard let img = photo(p) ?? bundled(p), img.size.width > 0, img.size.height > 0 else { break }
+                let k = max(r.w / Double(img.size.width), r.h / Double(img.size.height))
+                let w = Double(img.size.width) * k, h = Double(img.size.height) * k
+                c.clip(to: cg(r))
+                UIGraphicsPushContext(c)
+                img.draw(in: CGRect(x: r.x + (r.w - w) / 2, y: r.y + (r.h - h) / 2, width: w, height: h))
+                UIGraphicsPopContext()
+            case let .runs(rs, at, col, al):
+                let str = attributed(rs, color: col)
+                let sz = str.size()
+                let x: CGFloat = al == .left ? 0 : al == .center ? -sz.width / 2 : -sz.width
+                UIGraphicsPushContext(c)
+                str.draw(at: CGPoint(x: CGFloat(at.x) + x, y: CGFloat(at.y) - sz.height / 2))
+                UIGraphicsPopContext()
             case let .photo(p, r):
-                guard let img = photo(p) else { break }
+                guard let img = photo(p) ?? bundled(p) else { break }
                 let f = r.fit(Double(img.size.width), Double(img.size.height))
                 UIGraphicsPushContext(c)
                 img.draw(in: cg(f))
@@ -164,10 +212,15 @@ public enum PDFRenderer {
     public static func pdf(pages: [ReportLayout.Page], title: String, photo: @escaping (Photo) -> UIImage?) -> Data {
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = [kCGPDFContextTitle as String: title]
-        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: ReportLayout.pageW, height: ReportLayout.pageH), format: format)
+        let first = pages.first.map { CGRect(x: 0, y: 0, width: $0.width, height: $0.height) }
+            ?? CGRect(x: 0, y: 0, width: ReportLayout.pageW, height: ReportLayout.pageH)
+        let renderer = UIGraphicsPDFRenderer(bounds: first, format: format)
         return renderer.pdfData { ctx in
             for page in pages {
-                ctx.beginPage(withBounds: CGRect(x: 0, y: 0, width: page.width, height: page.height), pageInfo: [:])
+                // the bounds alone don't reach the file: each page names its own media box (Letter forms beside A4 reports)
+                var box = CGRect(x: 0, y: 0, width: page.width, height: page.height)
+                let info = [kCGPDFContextMediaBox as String: Data(bytes: &box, count: MemoryLayout<CGRect>.size)]
+                ctx.beginPage(withBounds: box, pageInfo: info)
                 draw(page.ops, in: ctx.cgContext, photo: photo)
             }
         }

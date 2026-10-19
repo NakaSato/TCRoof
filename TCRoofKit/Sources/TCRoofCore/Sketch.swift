@@ -28,6 +28,22 @@ public struct RGBA: Hashable, Sendable {
 }
 public enum TextAlign: Sendable { case left, center, right }
 
+/// A font for `DrawOp.runs`: Sarabun (our reports' font), Helvetica (Latin text on the customer's forms) and TH Sarabun
+/// (their page numbers).
+public enum FontFace: String, Sendable { case sarabun, helvetica, thSarabun }
+
+/// One piece of a line set in its own font.
+public struct TextRun: Hashable, Sendable {
+    public var text: String
+    public var size: Double
+    public var bold: Bool
+    public var face: FontFace
+    public var underline: Bool
+    public init(_ text: String, size: Double, bold: Bool = false, face: FontFace = .sarabun, underline: Bool = false) {
+        self.text = text; self.size = size; self.bold = bold; self.face = face; self.underline = underline
+    }
+}
+
 public enum DrawOp: Sendable {
     case line(Pt, Pt, width: Double, color: RGBA, dash: [Double] = [])
     case rect(Box, stroke: RGBA?, fill: RGBA?, width: Double = 1)
@@ -43,6 +59,10 @@ public enum DrawOp: Sendable {
     case textBox(String, Box, size: Double, bold: Bool = false, color: RGBA = .black, align: TextAlign = .left)
     /// A stored photo scaled to fit (aspect kept) and centred in the box.
     case photo(Photo, Box)
+    /// A stored photo scaled to cover the box, centred and cropped to it.
+    case photoFill(Photo, Box)
+    /// One line of text in several fonts, not wrapped; `at` is the anchor at the vertical centre, as for `text`.
+    case runs([TextRun], at: Pt, color: RGBA = .black, align: TextAlign = .left)
     case checkbox(Box, on: Bool)
 }
 
@@ -67,6 +87,9 @@ public struct Sketch: Sendable {
             case let .text(t, at, sz, bold, col, al, ang): return .text(t, at: p(at), size: sz * k, bold: bold, color: col, align: al, angle: ang)
             case let .textBox(t, r, sz, bold, col, al): return .textBox(t, b(r), size: sz * k, bold: bold, color: col, align: al)
             case let .photo(ph, r): return .photo(ph, b(r))
+            case let .photoFill(ph, r): return .photoFill(ph, b(r))
+            case let .runs(rs, at, col, al):
+                return .runs(rs.map { var x = $0; x.size *= k; return x }, at: p(at), color: col, align: al)
             case let .checkbox(r, on): return .checkbox(b(r), on: on)
             }
         }

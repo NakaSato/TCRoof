@@ -412,7 +412,8 @@ struct DailyReportEditor: View {
     }
 
     #if DEBUG
-    /// `-routineDemo sign|ack` opens the sign or acknowledge sheet once the screen is up; `pdf` writes PDFs to Documents.
+    /// `-routineDemo sign|ack` opens the sign or acknowledge sheet once the screen is up; `pdf` writes PDFs to Documents,
+    /// `blank` the blank DAILY REPORT form to Documents/daily-blank.pdf.
     private func debugState() {
         switch UserDefaults.standard.string(forKey: "routineDemo") {
         case "sign"?: showSign = true
@@ -420,10 +421,13 @@ struct DailyReportEditor: View {
         // the latest daily report's PDF to Documents/daily.pdf, and this month's R4 to monthly.pdf
         case "pdf"?:
             guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { break }
-            if let last = job.dailyLogs.last, let built = RoutineReportFiles.daily(job, log: last) {
+            if let last = job.dailyLogs.last, let built = RoutineReportFiles.daily(job, log: last, samplePhotos: 5) {
                 try? built.data.write(to: docs.appendingPathComponent("daily.pdf"))
             }
             try? RoutineReportFiles.monthly(job, month: date).data.write(to: docs.appendingPathComponent("monthly.pdf"))
+        case "blank"?:
+            guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { break }
+            try? RoutineReportFiles.blankForm(job).data.write(to: docs.appendingPathComponent("daily-blank.pdf"))
         default: break
         }
     }

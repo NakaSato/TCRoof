@@ -237,23 +237,6 @@ public struct RoutineReportPages {
         f.place(66, o)
     }
 
-    /// The picture with a marker per placed location: filled for today's, outlined for the others.
-    static func keyPlanHeight(_ k: KeyPlan) -> Double { min(cw / max(k.aspect, 0.1), 320) }
-
-    func keyPlan(_ f: inout Flow, _ k: KeyPlan, today: Set<String>) {
-        let h = Self.keyPlanHeight(k), w = h * k.aspect, x0 = Self.margin + (Self.cw - w) / 2
-        var o: [DrawOp] = [.rect(Box(x0, 0, w, h), stroke: Self.line, fill: nil, width: 0.5), .photo(k.photo, Box(x0, 0, w, h))]
-        for p in k.points {
-            let c = Pt(x0 + p.x * w, p.y * h), on = today.contains(p.name)
-            o.append(.circle(c, r: on ? 7 : 5, stroke: on ? .white : Self.navy, fill: on ? Self.red : .white, width: 1.5))
-            o.append(.rect(Box(c.x + 9, c.y - 7, measure.width(p.name, size: 8, bold: on) + 6, 14), stroke: nil,
-                           fill: RGBA(1, 1, 1, 0.85)))
-            o.append(.text(p.name, at: Pt(c.x + 12, c.y), size: 8, bold: on, color: on ? Self.red : Self.navy))
-        }
-        f.place(h + 8, o)
-        note(&f, "● สีแดง = ตำแหน่งที่มีงานวันนี้")
-    }
-
     var stationLine: String {
         [station.mpNumber.map { "MP \($0)" }, station.name, station.capacityKWp > 0 ? String(format: "%.2f kWp", station.capacityKWp) : nil]
             .compactMap { $0 }.joined(separator: " · ")
@@ -275,73 +258,10 @@ public struct RoutineReportPages {
 
     // MARK: - R2 daily
 
-    /// รายงานประจำวัน. `all` holds every report of the station, for the "วันนี้" column.
+    /// รายงานประจำวัน in the customer's DAILY REPORT form (`dailyForm`). `all` holds every report of the station, for the
+    /// Today column.
     public func daily(_ e: DailyEntry, all: [RoutineReport.Daily], keyPlan: KeyPlan? = nil) -> [ReportLayout.Page] {
-        let r = e.report
-        var f = Flow(title: "รายงานประจำวัน (Daily Report)", subtitle: stationLine + " · " + RoutineReport.thaiDate(r.date))
-        projectFacts(&f)
-        facts(&f, [("วันที่", RoutineReport.thaiDate(r.date)), ("เวลาทำงาน", "\(r.workStart) – \(r.workEnd) น.")])
-
-        heading(&f, "1. สภาพอากาศ")
-        weather(&f, [(RoutineReport.thaiDate(r.date), r.weather)])
-
-        heading(&f, "2. กำลังคน")
-        let crew = Self.counts(r.crew)
-        if crew.isEmpty { note(&f, "ไม่มี") } else {
-            table(&f, [Column(title: "ตำแหน่ง", width: 4), Column(title: "จำนวน (คน)", width: 1.4, align: .center)],
-                  crew + [["รวม", "\(r.crewTotal)"]], bold: [crew.count])
-        }
-        if !r.crewConfirmed, r.crewTotal > 0 { note(&f, "* กำลังคนยังไม่ได้ยืนยัน (ใช้ค่าจากรายงานก่อนหน้า)", color: Self.red) }
-
-        heading(&f, "3. เครื่องมือ / เครื่องจักร")
-        let tools = Self.counts(r.tools)
-        if tools.isEmpty { note(&f, "ไม่มี") } else {
-            table(&f, [Column(title: "รายการ", width: 4), Column(title: "จำนวน", width: 1.4, align: .center)], tools)
-        }
-
-        heading(&f, "4. วัสดุเข้าหน้างาน")
-        if r.materials.isEmpty { note(&f, "ไม่มี") } else {
-            table(&f, [Column(title: "รายการ", width: 3), Column(title: "ตำแหน่ง", width: 2), Column(title: "จำนวน", width: 1, align: .right),
-                       Column(title: "หน่วย", width: 1, align: .center), Column(title: "หมายเหตุ", width: 2)],
-                  r.materials.map { [$0.name, $0.location, Self.num($0.qty), $0.unit, $0.remark] })
-        }
-
-        heading(&f, "5. ความก้าวหน้างาน")
-        if r.progress.isEmpty {
-            note(&f, r.stopReason.isEmpty ? "ไม่มี" : "หยุดงาน: " + r.stopReason)
-        } else {
-            table(&f, [Column(title: "งาน MP", width: 0.9, align: .center), Column(title: "รายละเอียด", width: 3.6), Column(title: "ตำแหน่ง", width: 1.8),
-                       Column(title: "วันนี้", width: 0.9, align: .right), Column(title: "สะสม", width: 0.9, align: .right)],
-                  r.progress.map { l in
-                      let delta = RoutineReport.todayDelta(l, on: r.date, in: all)
-                      return [l.task?.code ?? "อื่น", l.description.isEmpty ? (l.task?.title ?? "") : l.description, l.location,
-                              (delta > 0 ? "+" : "") + RoutineReport.percent(delta), RoutineReport.percent(l.percent)]
-                  })
-        }
-
-        if let keyPlan, !keyPlan.points.isEmpty {
-            f.need(Self.keyPlanHeight(keyPlan) + 50)   // keep the heading with the picture
-            heading(&f, "ผังตำแหน่งงานวันนี้ (Key plan)")
-            self.keyPlan(&f, keyPlan, today: Set(r.progress.map(\.location)))
-        }
-
-        heading(&f, "6. ปัญหา / อุปสรรค")
-        let problems = r.problems.filter { !$0.description.isEmpty }
-        if problems.isEmpty { note(&f, "ไม่มี") } else {
-            table(&f, [Column(title: "ปัญหา", width: 3), Column(title: "แนวทางแก้ไข", width: 3), Column(title: "สถานะ", width: 1, align: .center),
-                       Column(title: "ตั้งแต่", width: 1.2, align: .center)],
-                  problems.map { [$0.description, $0.solution, $0.closed ? "ปิดแล้ว" : "ยังเปิด", RoutineReport.thaiDate($0.since)] })
-        }
-
-        if !e.photos.isEmpty {
-            heading(&f, "ภาพถ่ายประจำวัน")
-            photos(&f, e.photos)
-        }
-
-        let s = station.settings
-        signatures(&f, [("Site Engineer", s.siteEngineer, e.engineerSignedAt, "ลงนาม"),
-                        ("Inspector รับทราบ", s.inspector, e.inspectorAckAt, "รับทราบ")])
-        return f.finish()
+        dailyForm(e, all: all, keyPlan: keyPlan)
     }
 
     // MARK: - R1 weekly request
@@ -596,6 +516,8 @@ extension DrawOp {
         case let .text(t, at, sz, bold, col, al, ang): return .text(t, at: p(at), size: sz, bold: bold, color: col, align: al, angle: ang)
         case let .textBox(t, r, sz, bold, col, al): return .textBox(t, b(r), size: sz, bold: bold, color: col, align: al)
         case let .photo(ph, r): return .photo(ph, b(r))
+        case let .photoFill(ph, r): return .photoFill(ph, b(r))
+        case let .runs(rs, at, col, al): return .runs(rs, at: p(at), color: col, align: al)
         case let .checkbox(r, on): return .checkbox(b(r), on: on)
         }
     }

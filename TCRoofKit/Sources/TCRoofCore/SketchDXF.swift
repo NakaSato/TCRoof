@@ -155,6 +155,11 @@ public struct SketchDXF: Sendable {
         case let .photo(p, r):
             guard options.outlineBoxes else { return }
             outline(l, corners(r.fit(Double(p.width), Double(p.height))), tf, [])
+        case let .photoFill(_, r):
+            guard options.outlineBoxes else { return }
+            outline(l, corners(r), tf, [])
+        case let .runs(rs, at, color, align):
+            write(.text(rs.map(\.text).joined(), at: at, size: rs.map(\.size).max() ?? 10, color: color, align: align), l, tf, ppm)
         case let .checkbox(r, on):
             guard options.outlineBoxes else { return }
             outline(l, corners(r), tf, [])

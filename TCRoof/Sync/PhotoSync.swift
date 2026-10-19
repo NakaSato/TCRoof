@@ -61,10 +61,27 @@ final class PhotoSync {
             do { try await self?.download(context, survey) } catch { failed = true; print("PhotoSync: download: \(error.localizedDescription)") }
             do { try await self?.upload(context, survey) } catch { failed = true; print("PhotoSync: upload: \(error.localizedDescription)") }
             do { try await self?.workbooks(context, survey) } catch { failed = true; print("PhotoSync: workbooks: \(error.localizedDescription)") }
+            await self?.shareFolders(context, survey)
             guard let self else { return }
             self.running = nil
             // offline or a Drive hiccup: try again in a minute
             if self.again || failed { self.again = false; self.schedule(after: failed ? 60 : 1) }
+        }
+    }
+
+    /// Every job folder this device knows is shared with everyone who can open the job (the user, 2026-10-19): a
+    /// contractor assigned later, or a folder made before this, gets access without waiting for a new photo. Each
+    /// address is sent once per folder (`shareJobFolder` remembers), so an up-to-date pass makes no request; a folder
+    /// this account doesn't own is refused by Drive and tried again on a later pass.
+    private func shareFolders(_ context: ModelContext, _ survey: SurveyModel) async {
+        let jobs = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.driveFolderURL != nil }))) ?? []
+        for job in jobs where paused == 0 {
+            guard let url = job.driveFolderURL, let id = DriveConfig.folderID(from: url) else { continue }
+            await survey.shareJobFolder(id, with: DriveReaders.team() + job.externals + (job.supervisorEmail.map { [$0] } ?? []))
+        }
+        for report in survey.jobs where paused == 0 {
+            guard let id = report.drive?.folderID, let readers = survey.driveReaders?(report) else { continue }
+            await survey.shareJobFolder(id, with: readers)
         }
     }
 

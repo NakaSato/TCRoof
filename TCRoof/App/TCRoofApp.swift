@@ -109,6 +109,9 @@ struct RootView: View {
             session.survey.linkedJobAccess = { id in
                 (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first?.access
             }
+            // a survey's photos on Drive are read by everyone who can open it
+            let surveyModel = session.survey
+            session.survey.driveReaders = { job in DriveReaders.survey(surveyModel.access(job)) }
             // a survey moved to installation puts its job into construction, as its first install log does, and in the
             // PWA module, whose install overview and install tracking page list it
             session.survey.onMovedToInstall = { id in

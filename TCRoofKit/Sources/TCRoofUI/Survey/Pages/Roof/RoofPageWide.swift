@@ -21,7 +21,7 @@ struct RoofPageWide: View {
     @Environment(SurveyModel.self) var model
 
     struct SpanRef: Hashable { var axis: Roof.Axis; var index: Int }
-    enum Tool { case keepOut, skylight }
+    enum Tool: Equatable { case keepOut, skylight, obstacle(RoofObstacleKind) }
 
     /// โครงสร้าง / จัดแผง: the plan's mode and the right card's tab (หลังคา / การจัดแผง) are one choice.
     @State var mode: RoofPlan.Mode = Self.startMode
@@ -51,6 +51,19 @@ struct RoofPageWide: View {
     @State var scrollTarget: String?
     /// Roofs the team saved (`RoofStandards`).
     @State var saved: [Roof.Standard] = RoofStandards.load()
+    // แผงบนหลังคา (RoofPageWide+Mount)
+    @State var mount: RoofMountLayout?
+    @State var mountBusy = false
+    @State var mountSelection: MountSelection?
+    @State var mountTool: MountTool = .inspect
+    @State var mountUndo: [RoofMount.Choice] = []
+    @State var mountNote: String?
+    @State var mountFace = "S"
+    @State var showStandard = false
+    /// Layouts the last search tried, and its best count.
+    @State var mountTried: (tried: Int, best: Int)?
+    /// The row the section card shows (face index, row).
+    @State var sectionRow: (face: Int, row: Int) = (0, 0)
 
     /// จัดแผง for the `-surveyC1 pv` checks (also the offscreen render), else โครงสร้าง.
     static var startMode: RoofPlan.Mode {
@@ -89,6 +102,7 @@ struct RoofPageWide: View {
         .task { await openDebugState() }
         #endif
         .onChange(of: request.wrappedValue) { _, k in if let k { open(gap: k); request.wrappedValue = nil } }
+        .task(id: mountKey) { await refreshMount() }
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -201,10 +215,10 @@ struct RoofPageWide: View {
 
     var roofCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            RoofSegments(options: ["หลังคา *", "การจัดแผง"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
+            RoofSegments(options: ["หลังคา *", "แผงบนหลังคา"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
                 setMode(i == 1 ? .pv : .structure)
             }
-            if mode == .structure { roofTab } else { pvTab }
+            if mode == .structure { roofTab } else { mountTab }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,7 +227,7 @@ struct RoofPageWide: View {
     }
 
     func setMode(_ m: RoofPlan.Mode) {
-        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil
+        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil; mountSelection = nil; mountTool = .inspect
     }
 
     @ViewBuilder var roofTab: some View {
@@ -362,67 +376,7 @@ struct RoofPageWide: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: การจัดแผง tab
-
-    var pvTab: some View {
-        let portrait = Roof.pvPortrait(values), rows = Roof.pvRows(values), per = Roof.pvPerTable(values)
-        let pv = RoofPV(values), tables = rows > 0 || per > 0
-        let watts = Int((RoofPlan.Module.catalogDefault.kW * 1000).rounded())
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(pv.count)").font(.sarabunFixed(26, .bold)).monospacedDigit()
-                        Text("แผง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                        Text(String(format: "%.1f", pv.kWp)).font(.sarabunFixed(26, .bold)).monospacedDigit().padding(.leading, 8)
-                        Text("kWp").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                    }
-                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                }
-                .accessibilityElement(children: .combine)
-                Spacer(minLength: 6)
-                panelsField(pv.count)
-            }
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
-            let pair = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .top, spacing: 10))
-            pair {
-                VStack(alignment: .leading, spacing: 3) {
-                    A3Label(text: "แนวแผง")
-                    RoofSegments(options: ["แนวตั้ง", "แนวนอน"], selected: portrait ? 0 : 1, minSegment: 60) { i in
-                        set(Roof.Key.pvOrientation, i == 1 ? .text("l") : nil)
-                    }
-                }
-                .frame(maxWidth: narrow ? .infinity : 170)
-                VStack(alignment: .leading, spacing: 3) {
-                    A3Label(text: "แถวต่อชุด (ตามแนวลาด)")
-                    RoofSegments(options: ["ต่อเนื่อง", "1", "2", "3", "4"], selected: rows, minSegment: 40) { i in update { Roof.setPV(&$0, rows: i) } }
-                }
-            }
-            let perRow = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 3)) : AnyLayout(HStackLayout(spacing: 10))
-            perRow {
-                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize()
-                RoofSegments(options: ["ต่อเนื่อง", "ทุก 2 แผง", "ทุก 4 แผง", "ทุก 6 แผง"], selected: [0, 2, 4, 6].firstIndex(of: per), minSegment: 64) { i in
-                    update { Roof.setPV(&$0, perTable: [0, 2, 4, 6][i]) }
-                }
-            }
-            if tables { gapRow }
-        }
-    }
-
-    var gapRow: some View {
-        let g = Roof.pvGap(values)
-        return HStack(spacing: 8) {
-            Text("ระยะห่างระหว่างชุด").font(.sarabunFixed(14))
-            Spacer(minLength: 6)
-            stepButton("minus", enabled: g > 0) { update { Roof.setPV(&$0, gap: g - 0.05) } }
-            (Text(String(format: "%.2f", g)).font(.sarabunFixed(20, .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
-                .monospacedDigit().frame(minWidth: 70)
-            stepButton("plus", enabled: g < 2) { update { Roof.setPV(&$0, gap: g + 0.05) } }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("ระยะห่างระหว่างชุด " + String(format: "%.2f", g) + " เมตร")
-    }
+    // MARK: panels field
 
     /// จำนวนแผงก่อนเข้าสำรวจ (required, the report's count): typed, or taken from the layout.
     func panelsField(_ count: Int) -> some View {
@@ -482,7 +436,33 @@ extension RoofPageWide {
                 Roof.addArea(&v, kind: Roof.keepOutKind, x1: 13, y1: 2.2, x2: 15.4, y2: 4.4)
             }
             mode = .pv; tool = .keepOut
-        case "landscape": set(Roof.Key.pvOrientation, .text("l")); mode = .pv
+        case "landscape": mode = .pv
+        // แผงบนหลังคา: the tab in view, a module's or an obstacle's details, remove mode, the standard, a hip roof
+        case "pvtab": mode = .pv; scrollTarget = "info"
+        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip":
+            // the demo job keeps its answers: each state sets its own shape
+            set(Roof.Key.shape, .choice(state == "pvhip" ? "หลังคาทรงปั้นหยา" : "หลังคาทรงจั่ว", other: ""))
+            if state == "pvobst" {
+                update { v in
+                    Roof.addArea(&v, kind: RoofObstacleKind.stack.rawValue, x1: 15.2, y1: 2.0, x2: 15.8, y2: 2.6)
+                    Roof.addArea(&v, kind: RoofObstacleKind.turbine.rawValue, x1: 4.0, y1: 10.8, x2: 4.6, y2: 11.4)
+                }
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            switch state {
+            case "pvinfo":
+                if let f = mount?.faces.first, let r = f.rows.indices.first,
+                   let c = f.rows[r].slots.firstIndex(where: \.isModule) {
+                    mountSelection = .slot(.init(face: f.face.id, row: r, column: c))
+                }
+            case "pvobst": mountSelection = Roof.areas(values).last.map { .area($0.index) }
+            case "pvremove": mountTool = .remove
+            case "pvstd": showStandard = true
+            default: break
+            }
+            // the hip roof and the obstacles keep the plan in view
+            if state != "pvhip" && state != "pvobst" { scrollTarget = "info" }
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
         case "frame-w": update { Roof.setFrame(&$0, .warren) }

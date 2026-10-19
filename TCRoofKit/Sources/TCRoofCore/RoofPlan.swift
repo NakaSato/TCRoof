@@ -17,6 +17,8 @@ public struct RoofPlan: Sendable {
         public var nodes: [(i: Int, j: Int, at: Pt, post: Bool)] = []
         /// Skylights and obstacles / keep-out zones on the sketch, with their `obst` index.
         public var areas: [(area: Roof.Area, box: Box)] = []
+        /// The PV layout's slots on the sketch (outline, and whether a module is there), for taps.
+        public var slots: [(ref: RoofMountLayout.SlotRef, outline: [Pt], module: Bool)] = []
         /// Metres → sketch point, and back.
         public var origin = Pt(0, 0), k = 1.0, lx = 0.0, ly = 0.0
         public func point(x: Double, y: Double) -> Pt { Pt(origin.x + x * k, origin.y + y * k) }
@@ -28,9 +30,6 @@ public struct RoofPlan: Sendable {
     public struct PV: Sendable {
         public var count = 0
         public var kWp = 0.0
-        /// Tables (ชุด) holding at least one module; 0 when the field is continuous.
-        public var tables = 0
-        public var placed: [Box] = [], blocked: [Box] = []
     }
 
     /// Module size (m) and power (kW) for the layout: the catalogue's default module.
@@ -75,8 +74,10 @@ public struct RoofPlan: Sendable {
     ///   - chips: false draws the span values as text (report, CAD); true leaves them to the page's buttons.
     ///   - dragging: an unfinished skylight / keep-out zone being dragged (metres, two corners).
     ///   - highlight: member row 1…7 whose lines are redrawn in red.
-    public init(_ v: Values, mode: Mode = .structure, portrait: Bool? = nil, module: Module = .catalogDefault,
-                chips: Bool = false, dragging: (Double, Double, Double, Double)? = nil, highlight: Int? = nil) {
+    ///   - mount: the PV layout drawn in the PV mode (`RoofMount.layout`); nil draws none yet.
+    ///   - selected: slots drawn highlighted (a run of modules, or one slot).
+    public init(_ v: Values, mode: Mode = .structure, chips: Bool = false, dragging: (Double, Double, Double, Double)? = nil,
+                highlight: Int? = nil, mount: RoofMountLayout? = nil, selected: Set<RoofMountLayout.SlotRef> = []) {
         var d = Drawer(v, pv: mode == .pv)
         d.background()
         if !d.pvMode { d.purlins() }
@@ -89,7 +90,7 @@ public struct RoofPlan: Sendable {
         if !d.pvMode { d.purlinCallout(); d.slopeArrows() }
         d.areas()
         if d.pvMode {
-            d.pvLayout(RoofPV(v, portrait: portrait, module: module))
+            if let mount { d.pvMount(mount, selected: selected) }
             if let r = dragging { d.dragged(r, fill: RGBA(0.851, 0.271, 0.231, 0.12), line: Self.red, width: 1.4) }
             d.keepOutLabels()
         } else if let r = dragging {
@@ -106,10 +107,6 @@ public struct RoofPlan: Sendable {
         pv = d.pv
     }
 
-    /// The PV preview count alone (tests, hints).
-    public static func pvCount(_ v: Values, portrait: Bool = true, module: Module = .catalogDefault) -> Int {
-        RoofPV(v, portrait: portrait, module: module).count
-    }
 }
 
 // MARK: - drawing
@@ -327,38 +324,71 @@ private struct Drawer {
     }
 
     /// The modules, dropped modules, table outlines and the gaps between tables.
-    mutating func pvLayout(_ lay: RoofPV) {
-        pv.placed = lay.placed.map(sketchBox); pv.blocked = lay.blocked.map(sketchBox)
-        for b in pv.placed { add(.rect(b, stroke: RoofPlan.pvLine, fill: RGBA(0.122, 0.31, 0.561, 0.85), width: 0.6), "pv") }
-        for b in pv.blocked { dashedBox(b, RoofPlan.pvFill, 0.6, [3, 2]) }
-        pv.count = pv.placed.count
-        pv.kWp = lay.kWp
-        pv.tables = lay.tables
-        for b in lay.outlines { add(.rect(sketchBox(b), stroke: RoofPlan.navy, fill: nil, width: 1.6), "tbl") }
-        // the gap between tables, dimensioned once each way
-        let gl = "ห่าง " + String(format: "%.2f", Roof.pvGap(v))
-        if let g = lay.alongGap {
-            if hor {
-                let xa = x0 + g.a1 * k, xb = x0 + g.a2 * k, yd = y0 + g.c * k
-                line(xa - 8, yd, xb + 8, yd, 1, RoofPlan.amber); tick(xa, yd, 1, RoofPlan.amber); tick(xb, yd, 1, RoofPlan.amber)
-                text(gl, (xa + xb) / 2 + 30, yd + 1, 12, bold: true, color: RoofPlan.amber, bg: true, align: .left)
-            } else {
-                let ya = y0 + g.a1 * k, yb = y0 + g.a2 * k, xd = x0 + g.c * k
-                line(xd, ya - 8, xd, yb + 8, 1, RoofPlan.amber); tick(xd, ya, 1, RoofPlan.amber); tick(xd, yb, 1, RoofPlan.amber)
-                text(gl, xd + 6, (ya + yb) / 2 + 26, 12, bold: true, color: RoofPlan.amber, bg: true, align: .left)
+    /// The roof PV layout (docs/specs/roof-pv-layout.md §4): each face's usable area, purlins and shade, the modules
+    /// (dashed red on a face switched off), cut slots in red, removed slots dashed, rails and L-feet, and a label per face.
+    mutating func pvMount(_ m: RoofMountLayout, selected: Set<RoofMountLayout.SlotRef>) {
+        let s = m.standard
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        let green = RGBA(hex: 0x2EAD4B), shadeFill = RGBA(hex: 0xFBE3C8), cutRed = RGBA(hex: 0xE0433A), railInk = RGBA(hex: 0x334155)
+        for f in m.faces {
+            let face = f.face
+            add(.polygon(face.usableArea.map { P(face, $0.x, $0.y) }, stroke: green.withAlpha(0.8), fill: green.withAlpha(0.05), width: 0.8), "usable")
+            for v in m.purlins {
+                guard let (u0, u1) = face.span(atV: v) else { continue }
+                let a = P(face, u0, v), b = P(face, u1, v)
+                add(.line(a, b, width: 0.4, color: RoofPlan.purlC.withAlpha(0.45), dash: []), "purl")
+            }
+            if m.options.avoidShade {
+                for h in f.shade {
+                    let clipped = Polygon.clip(h, to: face.polygon)
+                    guard clipped.count >= 3 else { continue }
+                    add(.polygon(clipped.map { P(face, $0.x, $0.y) }, stroke: nil, fill: shadeFill.withAlpha(0.55)), "shade")
+                }
             }
         }
-        if let g = lay.acrossGap {
-            if hor {
-                let xd = x0 + g.a * k, ya = y0 + g.c2 * k, yb = y0 + g.c1 * k
-                line(xd, ya, xd, yb, 1, RoofPlan.amber); tick(xd, ya, 1, RoofPlan.amber); tick(xd, yb, 1, RoofPlan.amber)
-                text(gl, xd + 6, (ya + yb) / 2, 12, bold: true, color: RoofPlan.amber, bg: true, align: .left)
-            } else {
-                let yd = y0 + g.a * k, xa = x0 + g.c2 * k, xb = x0 + g.c1 * k
-                line(xa, yd, xb, yd, 1, RoofPlan.amber); tick(xa, yd, 1, RoofPlan.amber); tick(xb, yd, 1, RoofPlan.amber)
-                text(gl, (xa + xb) / 2, yd + 12, 12, bold: true, color: RoofPlan.amber, bg: true)
+        for f in m.faces {
+            let face = f.face
+            for (r, row) in f.rows.enumerated() {
+                for (c, slot) in row.slots.enumerated() {
+                    let ref = RoofMountLayout.SlotRef(face: face.id, row: r, column: c)
+                    let poly = [P(face, slot.u, row.v), P(face, slot.u + s.moduleWidth, row.v),
+                                P(face, slot.u + s.moduleWidth, row.v + s.moduleLength), P(face, slot.u, row.v + s.moduleLength)]
+                    let on = selected.contains(ref)
+                    if slot.isModule {
+                        if f.used {
+                            add(.polygon(poly, stroke: RoofPlan.pvLine, fill: on ? RGBA(hex: 0xF6C26B) : RGBA(0.122, 0.31, 0.561, 0.85), width: 0.5), "pv")
+                        } else {
+                            add(.polyline(poly + [poly[0]], width: 0.8, color: cutRed, dash: [3, 2]), "pvoff")
+                        }
+                        L.slots.append((ref, poly, true))
+                    } else if slot.cut {
+                        add(.polygon(poly, stroke: cutRed, fill: on ? cutRed.withAlpha(0.15) : nil, width: 1.2), "cut")
+                        L.slots.append((ref, poly, false))
+                    } else if slot.blocked == RoofMountLayout.removedByUser {
+                        add(.polyline(poly + [poly[0]], width: 0.8, color: on ? cutRed : RoofPlan.gridC, dash: [3, 2]), "removed")
+                        L.slots.append((ref, poly, false))
+                    } else {
+                        L.slots.append((ref, poly, false))
+                    }
+                }
+                guard f.used else { continue }
+                for run in row.runs {
+                    for (rail, feet) in zip([row.rails.0, row.rails.1], run.feet) {
+                        add(.line(P(face, run.start, rail), P(face, run.end, rail), width: 0.6, color: railInk, dash: []), "rail")
+                        for x in feet { add(.circle(P(face, x, rail), r: 1.1, stroke: nil, fill: railInk), "foot") }
+                    }
+                }
             }
+            // ใต้ · 105 แผง, kept on the plan (the tab lists each face's yield)
+            let c = P(face, face.centre.x, face.centre.y)
+            let label = RoofFace.direction(face.azimuth) + " · \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
+            let half = Double(label.count) * 2.6 + 6
+            let cx = min(max(c.x, L.origin.x + half), L.origin.x + L.lx * k - half)
+            text(label, cx, c.y, 10.5, bold: true, color: f.used ? RoofPlan.navy : cutRed, bg: true)
         }
+        let q = m.quantities
+        pv.count = q.modules
+        pv.kWp = q.kWp
     }
 
     /// An unfinished skylight / keep-out zone being dragged (metres, two corners).

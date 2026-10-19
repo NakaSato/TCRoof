@@ -5,7 +5,7 @@ import XCTest
 /// the drawing code can't change what it draws. Run with `ROOF_GOLDEN_RECORD=1` to print new fingerprints after an
 /// intended change to the drawing.
 final class RoofPlanGoldenTests: XCTestCase {
-    struct Case { let name: String; let values: Values; let mode: RoofPlan.Mode; var portrait: Bool? = nil
+    struct Case { let name: String; let values: Values; let mode: RoofPlan.Mode
         var chips = false; var dragging: (Double, Double, Double, Double)? = nil; var highlight: Int? = nil }
 
     static func roof(_ f: RoofFrame, _ r: Roof.Ridge, areas: Bool, tables: Bool) -> Values {
@@ -18,7 +18,6 @@ final class RoofPlanGoldenTests: XCTestCase {
                                     Obstacle(label: "ถังน้ำ", x: "2", y: "2", w: "1.2", h: "1.2")])
             Roof.addArea(&v, kind: Roof.keepOutKind, x1: 14, y1: 9, x2: 18, y2: 12)
         }
-        if tables { Roof.setPV(&v, rows: 2, perTable: 3, gap: 0.8) }
         return v
     }
 
@@ -35,16 +34,16 @@ final class RoofPlanGoldenTests: XCTestCase {
                 out.append(Case(name: "\(tag)-pv", values: plain, mode: .pv))
                 out.append(Case(name: "\(tag)-pv-full", values: full, mode: .pv))
                 out.append(Case(name: "\(tag)-pv-full-drag", values: full, mode: .pv, dragging: (3, 3, 6, 5)))
-                var land = plain; Roof.setPV(&land, perTable: 0)
-                out.append(Case(name: "\(tag)-pv-land", values: land, mode: .pv, portrait: false))
             }
         }
         return out
     }
 
     static func dump(_ c: Case) -> String {
-        let p = RoofPlan(c.values, mode: c.mode, portrait: c.portrait, module: RoofPlan.Module(length: 2.278, width: 1.134, kW: 0.57),
-                         chips: c.chips, dragging: c.dragging, highlight: c.highlight)
+        // the PV layout with the old golden module, at 15° N
+        var std = RoofMountStandard(); std.moduleLength = 2.278; std.moduleWidth = 1.134; std.moduleWp = 570
+        let mount = c.mode == .pv ? RoofMountLayout.best(RoofMount.input(c.values, latitude: 15), standard: std) : nil
+        let p = RoofPlan(c.values, mode: c.mode, chips: c.chips, dragging: c.dragging, highlight: c.highlight, mount: mount)
         var s = "\(p.sketch.width)x\(p.sketch.height)\n"
         for (op, t) in zip(p.sketch.ops, p.tags) { s += "\(t ?? "-") \(op)\n" }
         let l = p.layout
@@ -52,7 +51,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         s += "nodes \(l.nodes.map { "\($0.i),\($0.j) \($0.at) \($0.post)" })\n"
         s += "areas \(l.areas.map { "\($0.area) \($0.box)" })\n"
         s += "add \(l.addX) \(l.addY) origin \(l.origin) k \(l.k) \(l.lx) \(l.ly)\n"
-        s += "pv \(p.pv.count) \(p.pv.kWp) \(p.pv.tables) \(p.pv.placed) \(p.pv.blocked)\n"
+        if c.mode == .pv {
+            s += "pv \(p.pv.count) \(p.pv.kWp) \(l.slots.map { "\($0.ref.face)\($0.ref.row).\($0.ref.column) \($0.module) \($0.outline)" })\n"
+        } else {
+            s += "pv 0 0.0 0 [] []\n"
+        }
         return s
     }
 
@@ -71,7 +74,8 @@ final class RoofPlanGoldenTests: XCTestCase {
         for (name, h) in got.sorted(by: { $0.key < $1.key }) { XCTAssertEqual(h, Self.expected[name], name) }
     }
 
-    /// Recorded from the drawing before RoofPlan.init was split (4/10/2569).
+    /// Recorded from the drawing before RoofPlan.init was split (4/10/2569); the PV cases again with the roof PV engine
+    /// (19/10/2569), and the cases with areas after `Roof.Area` gained `height` (the dump prints it; the drawing is unchanged).
     static let expected: [String: UInt64] = [
         "c-h-hl1": 0x8fdab8eee450deab,
         "c-h-hl2": 0x12622933c3ec6131,
@@ -81,12 +85,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "c-h-hl6": 0x6e26c5868a1d74d2,
         "c-h-hl7": 0x5da85243d10956b7,
         "c-h-plan": 0xe297348bcc1cf2ef,
-        "c-h-plan-areas-chips": 0x16bbadb58114d873,
+        "c-h-plan-areas-chips": 0x92aebff338122b0b,
         "c-h-plan-drag": 0xc33e05d3681b1f76,
-        "c-h-pv": 0x3ac521a2d174d9ac,
-        "c-h-pv-full": 0xd1990af4d014022b,
-        "c-h-pv-full-drag": 0x47eedd3635a98d,
-        "c-h-pv-land": 0xd23ca3b66e50a0be,
+        "c-h-pv": 0xaf7c8f2c64fa6abe,
+        "c-h-pv-full": 0xf4d2a340b3626911,
+        "c-h-pv-full-drag": 0xeb6882b754070b,
         "c-v-hl1": 0x98775f22b77115d7,
         "c-v-hl2": 0xc57af26c8ac43e05,
         "c-v-hl3": 0x49672cbd449528b1,
@@ -95,12 +98,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "c-v-hl6": 0xf610f161c24ea510,
         "c-v-hl7": 0x5b1b1c1f6c940fb3,
         "c-v-plan": 0x49672cbd449528b1,
-        "c-v-plan-areas-chips": 0x54616a2170e763c7,
+        "c-v-plan-areas-chips": 0xa947627c28796fe7,
         "c-v-plan-drag": 0x5100dd3cb495cd94,
-        "c-v-pv": 0xe74085c91cf964f2,
-        "c-v-pv-full": 0x4720d414b87310e6,
-        "c-v-pv-full-drag": 0xfb30a9809b217ad4,
-        "c-v-pv-land": 0xeb6f9385dec9ab7e,
+        "c-v-pv": 0xc0b205730f120e2f,
+        "c-v-pv-full": 0x8f452fd5a6dec7b0,
+        "c-v-pv-full-drag": 0x48c057b3e92cc2ba,
         "k-h-hl1": 0x9612d043883f1153,
         "k-h-hl2": 0xee5a84bb5b23e2cb,
         "k-h-hl3": 0x3104e8d67ac44ea1,
@@ -109,12 +111,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "k-h-hl6": 0x945743437606a2ec,
         "k-h-hl7": 0x97ecd1d608497509,
         "k-h-plan": 0x3104e8d67ac44ea1,
-        "k-h-plan-areas-chips": 0x9c3ae087a04b5f5d,
+        "k-h-plan-areas-chips": 0x4e3fa51ec12b086d,
         "k-h-plan-drag": 0xebf3e107bbb33304,
-        "k-h-pv": 0x737f5d20f5963d7b,
-        "k-h-pv-full": 0xf67f2b0feebf7f94,
-        "k-h-pv-full-drag": 0xd4da10189594fe16,
-        "k-h-pv-land": 0xa265245dfe082541,
+        "k-h-pv": 0x2fea568307b91b25,
+        "k-h-pv-full": 0x72ce3d31b9e130f5,
+        "k-h-pv-full-drag": 0x3d7e6788c66e0487,
         "k-v-hl1": 0xbbabb31e13ec8426,
         "k-v-hl2": 0x6f910bd83984ee2,
         "k-v-hl3": 0x9d73cf22ef06a2ae,
@@ -123,12 +124,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "k-v-hl6": 0x328420066015215d,
         "k-v-hl7": 0xaadff1c65753b360,
         "k-v-plan": 0x9d73cf22ef06a2ae,
-        "k-v-plan-areas-chips": 0x3922e36a53c10f20,
+        "k-v-plan-areas-chips": 0xa193862aef374a12,
         "k-v-plan-drag": 0x9226f7eb52ee97c3,
-        "k-v-pv": 0x5b0679d68dd90a9e,
-        "k-v-pv-full": 0xcd72dd87e967125e,
-        "k-v-pv-full-drag": 0xf10f00e92414fd50,
-        "k-v-pv-land": 0x820a77ea868f162a,
+        "k-v-pv": 0xd8890880c4688efc,
+        "k-v-pv-full": 0xb23d46f23d2673a7,
+        "k-v-pv-full-drag": 0x1e4639c8e359a29d,
         "n-h-hl1": 0xa9bae10368a4f888,
         "n-h-hl2": 0xb9093ff05ef15b92,
         "n-h-hl3": 0xb9093ff05ef15b92,
@@ -137,12 +137,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "n-h-hl6": 0xa1309f658c7467c9,
         "n-h-hl7": 0x118a817c7dd1f40e,
         "n-h-plan": 0x74bc650e28d420ce,
-        "n-h-plan-areas-chips": 0x189b54a9f473c52c,
+        "n-h-plan-areas-chips": 0x227907e1d6ea8296,
         "n-h-plan-drag": 0x845ce39e06c04587,
-        "n-h-pv": 0x4761fe58cd7741c9,
-        "n-h-pv-full": 0x138062221f74f1be,
-        "n-h-pv-full-drag": 0xe996ff8788e01c90,
-        "n-h-pv-land": 0xb903bf6f907d22eb,
+        "n-h-pv": 0xf6c9e08bf92c177,
+        "n-h-pv-full": 0x88ffecca20618b73,
+        "n-h-pv-full-drag": 0xefd0da173fd752a5,
         "n-v-hl1": 0xbf3fd02a88770fcb,
         "n-v-hl2": 0x96fbdae7b55ee59,
         "n-v-hl3": 0x96fbdae7b55ee59,
@@ -151,12 +150,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "n-v-hl6": 0x36503bb84893438e,
         "n-v-hl7": 0xaf789bb4eb8b279b,
         "n-v-plan": 0x351fa1819b94f42f,
-        "n-v-plan-areas-chips": 0x9ec6f71cbf72cfd,
+        "n-v-plan-areas-chips": 0xba483ea392fffe0d,
         "n-v-plan-drag": 0x86b0ae56992c9efa,
-        "n-v-pv": 0x6bf76ae95b02fdb0,
-        "n-v-pv-full": 0xb06be413b5f34990,
-        "n-v-pv-full-drag": 0xe6b048bcc34076e2,
-        "n-v-pv-land": 0x84109d01bde75d10,
+        "n-v-pv": 0x50f43246939a8b36,
+        "n-v-pv-full": 0x18896f2dcbdcd0bd,
+        "n-v-pv-full-drag": 0x9972d3ea40d461e3,
         "p-h-hl1": 0xa9bae10368a4f888,
         "p-h-hl2": 0xb9093ff05ef15b92,
         "p-h-hl3": 0xb9093ff05ef15b92,
@@ -165,12 +163,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "p-h-hl6": 0xa1309f658c7467c9,
         "p-h-hl7": 0x118a817c7dd1f40e,
         "p-h-plan": 0x74bc650e28d420ce,
-        "p-h-plan-areas-chips": 0x189b54a9f473c52c,
+        "p-h-plan-areas-chips": 0x227907e1d6ea8296,
         "p-h-plan-drag": 0x845ce39e06c04587,
-        "p-h-pv": 0x4761fe58cd7741c9,
-        "p-h-pv-full": 0x138062221f74f1be,
-        "p-h-pv-full-drag": 0xe996ff8788e01c90,
-        "p-h-pv-land": 0xb903bf6f907d22eb,
+        "p-h-pv": 0xf6c9e08bf92c177,
+        "p-h-pv-full": 0x88ffecca20618b73,
+        "p-h-pv-full-drag": 0xefd0da173fd752a5,
         "p-v-hl1": 0xbf3fd02a88770fcb,
         "p-v-hl2": 0x96fbdae7b55ee59,
         "p-v-hl3": 0x96fbdae7b55ee59,
@@ -179,12 +176,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "p-v-hl6": 0x36503bb84893438e,
         "p-v-hl7": 0xaf789bb4eb8b279b,
         "p-v-plan": 0x351fa1819b94f42f,
-        "p-v-plan-areas-chips": 0x9ec6f71cbf72cfd,
+        "p-v-plan-areas-chips": 0xba483ea392fffe0d,
         "p-v-plan-drag": 0x86b0ae56992c9efa,
-        "p-v-pv": 0x6bf76ae95b02fdb0,
-        "p-v-pv-full": 0xb06be413b5f34990,
-        "p-v-pv-full-drag": 0xe6b048bcc34076e2,
-        "p-v-pv-land": 0x84109d01bde75d10,
+        "p-v-pv": 0x50f43246939a8b36,
+        "p-v-pv-full": 0x18896f2dcbdcd0bd,
+        "p-v-pv-full-drag": 0x9972d3ea40d461e3,
         "r-h-hl1": 0xc8129c547677ca9b,
         "r-h-hl2": 0x675437508d41cc87,
         "r-h-hl3": 0x675437508d41cc87,
@@ -193,12 +189,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "r-h-hl6": 0x86f1ea44cf24a124,
         "r-h-hl7": 0xd1a6c4f092b95501,
         "r-h-plan": 0x5d4ae8f077e6b949,
-        "r-h-plan-areas-chips": 0x67ad2a3d7baec82d,
+        "r-h-plan-areas-chips": 0xab3601e60e0b97dd,
         "r-h-plan-drag": 0x453bbb99d588d028,
-        "r-h-pv": 0x7c8b078516c9cd75,
-        "r-h-pv-full": 0x146173f873ae2172,
-        "r-h-pv-full-drag": 0xf38f464103d729ec,
-        "r-h-pv-land": 0xf4a420ae3ff5ee5f,
+        "r-h-pv": 0xdc1889d7e6ac44b3,
+        "r-h-pv-full": 0xa2ea8d589103c0b7,
+        "r-h-pv-full-drag": 0x9c3c9878aace061,
         "r-v-hl1": 0x7377780f1e0666a0,
         "r-v-hl2": 0xc316ffc525da69bc,
         "r-v-hl3": 0xc316ffc525da69bc,
@@ -207,12 +202,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "r-v-hl6": 0xcc04a2a448200ffb,
         "r-v-hl7": 0xdb424c8276397c64,
         "r-v-plan": 0xb1e0a2f28e77368,
-        "r-v-plan-areas-chips": 0xed00293f8c9dd7da,
+        "r-v-plan-areas-chips": 0x2caef051d137efdc,
         "r-v-plan-drag": 0x745f01669fdc2fed,
-        "r-v-pv": 0x56f898ad5606b280,
-        "r-v-pv-full": 0x89cd39433ecd60ac,
-        "r-v-pv-full-drag": 0x12f314c8cad6b5de,
-        "r-v-pv-land": 0x66b59e6f405018c4,
+        "r-v-pv": 0xe272439afe640bea,
+        "r-v-pv-full": 0xa4eb69fb7811c21d,
+        "r-v-pv-full-drag": 0x1d25e557fa875fd3,
         "w-h-hl1": 0xa9bae10368a4f888,
         "w-h-hl2": 0xb9093ff05ef15b92,
         "w-h-hl3": 0xb9093ff05ef15b92,
@@ -221,12 +215,11 @@ final class RoofPlanGoldenTests: XCTestCase {
         "w-h-hl6": 0xa1309f658c7467c9,
         "w-h-hl7": 0x118a817c7dd1f40e,
         "w-h-plan": 0x74bc650e28d420ce,
-        "w-h-plan-areas-chips": 0x189b54a9f473c52c,
+        "w-h-plan-areas-chips": 0x227907e1d6ea8296,
         "w-h-plan-drag": 0x845ce39e06c04587,
-        "w-h-pv": 0x4761fe58cd7741c9,
-        "w-h-pv-full": 0x138062221f74f1be,
-        "w-h-pv-full-drag": 0xe996ff8788e01c90,
-        "w-h-pv-land": 0xb903bf6f907d22eb,
+        "w-h-pv": 0xf6c9e08bf92c177,
+        "w-h-pv-full": 0x88ffecca20618b73,
+        "w-h-pv-full-drag": 0xefd0da173fd752a5,
         "w-v-hl1": 0xbf3fd02a88770fcb,
         "w-v-hl2": 0x96fbdae7b55ee59,
         "w-v-hl3": 0x96fbdae7b55ee59,
@@ -235,11 +228,10 @@ final class RoofPlanGoldenTests: XCTestCase {
         "w-v-hl6": 0x36503bb84893438e,
         "w-v-hl7": 0xaf789bb4eb8b279b,
         "w-v-plan": 0x351fa1819b94f42f,
-        "w-v-plan-areas-chips": 0x9ec6f71cbf72cfd,
+        "w-v-plan-areas-chips": 0xba483ea392fffe0d,
         "w-v-plan-drag": 0x86b0ae56992c9efa,
-        "w-v-pv": 0x6bf76ae95b02fdb0,
-        "w-v-pv-full": 0xb06be413b5f34990,
-        "w-v-pv-full-drag": 0xe6b048bcc34076e2,
-        "w-v-pv-land": 0x84109d01bde75d10,
+        "w-v-pv": 0x50f43246939a8b36,
+        "w-v-pv-full": 0x18896f2dcbdcd0bd,
+        "w-v-pv-full-drag": 0x9972d3ea40d461e3,
     ]
 }

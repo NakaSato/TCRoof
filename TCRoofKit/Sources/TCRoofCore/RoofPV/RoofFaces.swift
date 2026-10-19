@@ -11,10 +11,18 @@ public struct RoofMountInput: Sendable {
         /// Height above the roof; nil takes the kind's default.
         public var height: Double?
         public var label: String?
-        public init(kind: RoofObstacleKind, x: Double, y: Double, w: Double, h: Double, height: Double? = nil, label: String? = nil) {
+        /// Modules may cover it (a skylight marked วางทับได้); its L-foot clearance still holds.
+        public var coverable = false
+        public init(kind: RoofObstacleKind, x: Double, y: Double, w: Double, h: Double, height: Double? = nil, label: String? = nil,
+                    coverable: Bool = false) {
             self.kind = kind; self.x = x; self.y = y; self.w = w; self.h = h; self.height = height; self.label = label
+            self.coverable = coverable
         }
         public var heightOrDefault: Double { height ?? kind.defaultHeight }
+        /// L-feet keep this far from it. A skylight panels may cover is bridged by the rails, so only its lap (0.20 m)
+        /// is kept clear: with the full 0.50 m the stretch without feet would pass the foot spacing and cut every column.
+        public var footClearance: Double { coverable ? min(kind.footClearance, Self.coveredLap) : kind.footClearance }
+        public static let coveredLap = 0.20
         public var title: String { label.flatMap { $0.isEmpty ? nil : $0 } ?? kind.title }
     }
 
@@ -131,6 +139,30 @@ public struct RoofFace: Sendable, Identifiable {
         return out
     }
 
+    /// Where the line at `v` up the slope crosses the face (u from, to), or nil when it misses.
+    public func span(atV v: Double) -> (Double, Double)? {
+        var us: [Double] = []
+        for i in polygon.indices {
+            let a = polygon[i], b = polygon[(i + 1) % polygon.count]
+            guard (a.y - v) * (b.y - v) <= 0, a.y != b.y || a.y == v else { continue }
+            if a.y == b.y { us += [a.x, b.x] } else { us.append(a.x + (v - a.y) / (b.y - a.y) * (b.x - a.x)) }
+        }
+        guard let lo = us.min(), let hi = us.max(), hi > lo else { return nil }
+        return (lo, hi)
+    }
+
+    /// The face's middle, for its label.
+    public var centre: Pt {
+        Pt(polygon.map(\.x).reduce(0, +) / Double(polygon.count), polygon.map(\.y).reduce(0, +) / Double(polygon.count))
+    }
+
+    /// `ใต้` … for a compass azimuth.
+    public static func direction(_ az: Double) -> String {
+        let names = ["เหนือ", "ตะวันออกเฉียงเหนือ", "ตะวันออก", "ตะวันออกเฉียงใต้", "ใต้", "ตะวันตกเฉียงใต้", "ตะวันตก", "ตะวันตกเฉียงเหนือ"]
+        let a = (az.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
+        return names[Int((a + 22.5) / 45) % 8]
+    }
+
     /// The lowest v a module may start at: the eave setback.
     var vMin: Double { usable.filter { $0.n.y > 0.99 }.map(\.d).max() ?? 0 }
     /// The highest v a module may reach: the ridge setback.
@@ -237,6 +269,36 @@ enum Polygon {
             return false
         }
         return !separated(a) && !separated(b)
+    }
+
+    /// `subject` clipped to the convex, counter-clockwise polygon `clip` (Sutherland–Hodgman).
+    static func clip(_ subject: [Pt], to clip: [Pt]) -> [Pt] {
+        var out = subject
+        for i in clip.indices {
+            let a = clip[i], b = clip[(i + 1) % clip.count]
+            func inside(_ p: Pt) -> Bool { (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x) >= 0 }
+            func cross(_ p: Pt, _ q: Pt) -> Pt {
+                let d1 = Pt(q.x - p.x, q.y - p.y), d2 = Pt(b.x - a.x, b.y - a.y)
+                let den = d1.x * d2.y - d1.y * d2.x
+                guard abs(den) > 1e-12 else { return p }
+                let t = ((a.x - p.x) * d2.y - (a.y - p.y) * d2.x) / den
+                return Pt(p.x + t * d1.x, p.y + t * d1.y)
+            }
+            let input = out
+            out = []
+            guard !input.isEmpty else { break }
+            var prev = input[input.count - 1]
+            for p in input {
+                if inside(p) {
+                    if !inside(prev) { out.append(cross(prev, p)) }
+                    out.append(p)
+                } else if inside(prev) {
+                    out.append(cross(prev, p))
+                }
+                prev = p
+            }
+        }
+        return out
     }
 
     static func bounds(_ p: [Pt]) -> (x0: Double, y0: Double, x1: Double, y1: Double) {

@@ -58,6 +58,8 @@ public struct RoofMountStandard: Codable, Equatable, Sendable {
 /// What stands on the roof, by kind: how far modules and L-feet keep from it, and its default height (§3.3).
 public enum RoofObstacleKind: String, Codable, CaseIterable, Sendable {
     case skylight, turbine, stack, pipe, other
+    /// A zone drawn on C1 where no module may go (เขตห้ามติด).
+    case keepOut
 
     public var title: String {
         switch self {
@@ -66,20 +68,21 @@ public enum RoofObstacleKind: String, Codable, CaseIterable, Sendable {
         case .stack: "ปล่อง / ท่อไอเสีย"
         case .pipe: "ท่อระบาย"
         case .other: "สิ่งกีดขวางอื่น"
+        case .keepOut: "เขตห้ามติด"
         }
     }
 
     /// Modules keep this far from it (m).
-    public var moduleClearance: Double { self == .skylight ? 0.10 : 0.30 }
+    public var moduleClearance: Double { self == .skylight ? 0.10 : self == .keepOut ? 0 : 0.30 }
     /// L-feet keep this far from it (m): never fixed into a skylight or its lap.
-    public var footClearance: Double { self == .skylight ? 0.50 : 0.30 }
+    public var footClearance: Double { self == .skylight ? 0.50 : self == .keepOut ? 0 : 0.30 }
     /// Height above the roof when the survey has none (m).
     public var defaultHeight: Double {
         switch self {
         case .turbine: 0.60
         case .stack: 2.00
         case .pipe: 0.50
-        case .skylight, .other: 0
+        case .skylight, .other, .keepOut: 0
         }
     }
 }

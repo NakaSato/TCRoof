@@ -135,7 +135,7 @@ final class RoofMountLayoutTests: XCTestCase {
                         for (rail, feet) in zip([row.rails.0, row.rails.1], run.feet) {
                             for x in feet {
                                 for ob in f.obstacles {
-                                    let b = ob.box, m = ob.obstacle.kind.footClearance
+                                    let b = ob.box, m = ob.obstacle.footClearance
                                     if b.v0 - m <= rail && rail <= b.v1 + m { XCTAssertFalse(b.u0 - m < x && x < b.u1 + m, "foot on an obstacle") }
                                 }
                             }

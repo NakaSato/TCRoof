@@ -8,7 +8,21 @@ import PDFReport
 extension RoofPageWide {
     // MARK: section card
 
-    var sectionCard: some View {
+    @ViewBuilder var sectionCard: some View {
+        if mode == .pv { rowSectionCard } else { frameSectionCard }
+    }
+
+    /// แผงบนหลังคา: the selected row along the slope (§5.4).
+    var rowSectionCard: some View {
+        card {
+            rowSectionStage.frame(maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+            (Text("รูปตัดแถวที่เลือก").bold().underline() + Text(" · แตะแผงบนแปลนเพื่อเปลี่ยนแถว · หน่วย ม.").foregroundColor(Theme.inkMuted))
+                .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6)
+        }
+    }
+
+    var frameSectionCard: some View {
         let f = Roof.frame(values)
         return card {
             sectionStage(big: false).frame(maxWidth: .infinity, maxHeight: .infinity)

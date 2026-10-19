@@ -31,7 +31,7 @@ extension Job {
         s.reports = dailyLogs.compactMap { log in
             log.report.map {
                 FeedBuilder.Report($0, signedAt: log.engineerSignedAt, inspectorAckAt: log.inspectorAckAt, recorder: log.recorder,
-                                   photos: log.photos.indices.map(String.init))
+                                   photos: log.sortedPhotos.indices.map(String.init))
             }
         }
         s.tests = inspections.compactMap { i in

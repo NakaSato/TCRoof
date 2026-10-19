@@ -104,6 +104,31 @@ enum RoutineReportFiles {
         return (entries, images)
     }
 
+    #if DEBUG
+    /// Two drawn squiggles standing in for signatures in `-routineDemo pdf`.
+    static func sampleSignatures(into images: inout [UUID: Data]) -> [String: Photo] {
+        var out: [String: Photo] = [:]
+        for (i, tag) in [InstallLog.engineerSignatureTag, InstallLog.inspectorSignatureTag].enumerated() {
+            let data = UIGraphicsImageRenderer(size: CGSize(width: 400, height: 90)).pngData { c in
+                let path = UIBezierPath()
+                path.move(to: CGPoint(x: 20, y: 60))
+                for k in 0..<7 {
+                    let x = 40 + CGFloat(k) * 48
+                    path.addCurve(to: CGPoint(x: x + 24, y: 60 - CGFloat((k + i) % 3) * 12),
+                                  controlPoint1: CGPoint(x: x - 10, y: 10), controlPoint2: CGPoint(x: x + 10, y: 85))
+                }
+                UIColor(red: 0.09, green: 0.2, blue: 0.36, alpha: 1).setStroke()
+                path.lineWidth = 4
+                path.stroke()
+            }
+            let p = Photo(fileName: "signature.png", width: 400, height: 90)
+            images[p.id] = data
+            out[tag] = p
+        }
+        return out
+    }
+    #endif
+
     /// The DAILY REPORT form blank, for filling in by hand.
     static func blankForm(_ job: Job) -> Built {
         Built(pages: RoutineReportPages.dailyBlankForm(settings: job.routineSettings, measure: PDFRenderer.Measure()), images: [:],
@@ -131,8 +156,21 @@ enum RoutineReportFiles {
         #endif
         let key = job.reportKeyPlan()
         if let key { images[key.plan.photo.id] = key.image }
+        // the drawn signatures, by their own ids
+        var signatures: [String: Photo] = [:]
+        for tag in [InstallLog.engineerSignatureTag, InstallLog.inspectorSignatureTag] {
+            guard let asset = log.signature(tag), !asset.data.isEmpty else { continue }
+            let p = Photo(fileName: "signature.png", width: 0, height: 0)
+            images[p.id] = asset.data
+            signatures[tag] = p
+        }
+        #if DEBUG
+        if samplePhotos > 0, signatures.isEmpty { signatures = Self.sampleSignatures(into: &images) }
+        #endif
         let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure())
-            .daily(.init(report: r, photos: photos, engineerSignedAt: log.engineerSignedAt, inspectorAckAt: log.inspectorAckAt),
+            .daily(.init(report: r, photos: photos, engineerSignedAt: log.engineerSignedAt, inspectorAckAt: log.inspectorAckAt,
+                         engineerSignature: signatures[InstallLog.engineerSignatureTag],
+                         inspectorSignature: signatures[InstallLog.inspectorSignatureTag]),
                    all: job.dailyReports, keyPlan: key?.plan)
         return Built(pages: pages, images: images, name: RoutineReport.fileName(.daily, date: r.date, station: job.stationName),
                      folder: RoutineReport.folder(.daily, date: r.date), title: RoutineReport.Kind.daily.title)

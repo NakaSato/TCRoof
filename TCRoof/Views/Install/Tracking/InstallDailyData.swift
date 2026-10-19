@@ -114,7 +114,7 @@ struct InstallDailyData {
             default: r.map { $0.progress.isEmpty ? "ไม่มีงานที่บันทึก" : $0.progress.map(\.title).joined(separator: " · ") } ?? ""
             }
             return Row(date: d, state: state, weather: weather, rainHours: r?.rainHours ?? 0, crew: r.flatMap { $0.crewTotal > 0 ? $0.crewTotal : nil },
-                       work: work, actual: status?.actual, planned: status?.planned, photos: log?.photos.count ?? 0,
+                       work: work, actual: status?.actual, planned: status?.planned, photos: log?.sortedPhotos.count ?? 0,
                        signedAt: log?.engineerSignedAt, ackAt: log?.inspectorAckAt, problem: problem)
         }
 
@@ -146,7 +146,7 @@ struct InstallDailyData {
         for log in logs {
             guard let r = log.report else { continue }
             let lineTask = Dictionary(r.progress.compactMap { l in l.task.map { (l.id.uuidString, $0) } }) { a, _ in a }
-            for p in log.photos { if let t = lineTask[p.tag] { counts[t, default: 0] += 1 } }
+            for p in log.sortedPhotos { if let t = lineTask[p.tag] { counts[t, default: 0] += 1 } }
         }
         photosByTask = MasterSchedule.Task.allCases.filter { $0.part != .permit && (counts[$0] ?? 0) > 0 }
             .map { ($0.code, $0.title, counts[$0] ?? 0) }

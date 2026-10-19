@@ -30,8 +30,13 @@ public struct RoutineReportPages {
         public var photos: [DayPhoto]
         public var engineerSignedAt: Date?
         public var inspectorAckAt: Date?
-        public init(report: RoutineReport.Daily, photos: [DayPhoto], engineerSignedAt: Date?, inspectorAckAt: Date?) {
+        /// The drawn signatures, printed above their lines on the form's page 3 while the report is signed.
+        public var engineerSignature: Photo?
+        public var inspectorSignature: Photo?
+        public init(report: RoutineReport.Daily, photos: [DayPhoto], engineerSignedAt: Date?, inspectorAckAt: Date?,
+                    engineerSignature: Photo? = nil, inspectorSignature: Photo? = nil) {
             self.report = report; self.photos = photos; self.engineerSignedAt = engineerSignedAt; self.inspectorAckAt = inspectorAckAt
+            self.engineerSignature = engineerSignature; self.inspectorSignature = inspectorSignature
         }
     }
 

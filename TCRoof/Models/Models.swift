@@ -447,7 +447,24 @@ final class InstallLog {
         details.split(whereSeparator: \.isNewline).map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
     }
 
-    var sortedPhotos: [PhotoAsset] { photos.sorted { $0.createdAt < $1.createdAt } }
+    /// The day's photos, oldest first; the signatures, stored beside them, are not among them.
+    var sortedPhotos: [PhotoAsset] { photos.filter { !Self.isSignature($0.tag) }.sorted { $0.createdAt < $1.createdAt } }
+
+    // The daily report's drawn signatures (page 3 of the DAILY REPORT form): kept as photos of the log, so `PhotoSync`
+    // carries them to the other devices through Drive like the day's photos.
+    static let engineerSignatureTag = "signature.engineer", inspectorSignatureTag = "signature.inspector"
+    static func isSignature(_ tag: String) -> Bool { tag.hasPrefix("signature.") }
+
+    func signature(_ tag: String) -> PhotoAsset? { photos.first { $0.tag == tag } }
+
+    /// Replaces the signature under `tag` with `png`, or removes it when nil.
+    func setSignature(_ png: Data?, tag: String, context: ModelContext) {
+        for old in photos where old.tag == tag { context.delete(old) }
+        guard let png, !png.isEmpty else { return }
+        let asset = PhotoAsset(data: png, tag: tag)
+        context.insert(asset)
+        asset.log = self
+    }
 
     /// The structured daily report; setting it also rewrites `details` as its readable summary.
     var report: RoutineReport.Daily? {

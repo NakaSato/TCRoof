@@ -85,13 +85,14 @@ struct DailyReportEditor: View {
             }
         }
         .sheet(isPresented: $showSign) {
-            DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), engineer: job.routineSettings.siteEngineer) { name in
-                sign(engineer: name)
+            DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), engineer: job.routineSettings.siteEngineer) { name, drawn in
+                sign(engineer: name, signature: drawn)
             }
         }
         .sheet(isPresented: $showAck) {
-            InspectorAckSheet(title: "Inspector รับทราบ", name: job.routineSettings.inspector, date: log?.inspectorAckAt ?? .now) { name, when in
-                acknowledge(name: name, at: when)
+            InspectorAckSheet(title: "Inspector รับทราบ", name: job.routineSettings.inspector, date: log?.inspectorAckAt ?? .now,
+                              signs: true) { name, when, drawn in
+                acknowledge(name: name, at: when, signature: drawn)
             }
         }
         .sheet(isPresented: $showSettings) { RoutineSettingsSheet(job: job) }
@@ -177,6 +178,8 @@ struct DailyReportEditor: View {
         guard let log, canSign else { return }
         log.engineerSignedAt = nil
         log.inspectorAckAt = nil
+        log.setSignature(nil, tag: InstallLog.engineerSignatureTag, context: context)
+        log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         job.feedMP()
         try? context.save()
     }
@@ -184,6 +187,7 @@ struct DailyReportEditor: View {
     private func clearAck() {
         guard canSign else { return }
         log?.inspectorAckAt = nil
+        log?.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         try? context.save()
     }
 
@@ -326,7 +330,12 @@ struct DailyReportEditor: View {
         let target: InstallLog
         if let log {
             target = log
-            if dirty, log.engineerSignedAt != nil { log.engineerSignedAt = nil; log.inspectorAckAt = nil }
+            if dirty, log.engineerSignedAt != nil {
+                // an edited report is signed again, so its drawn signatures go with the old ones
+                log.engineerSignedAt = nil; log.inspectorAckAt = nil
+                log.setSignature(nil, tag: InstallLog.engineerSignatureTag, context: context)
+                log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
+            }
         } else {
             target = InstallLog(date: date, recorder: userName, details: "")
             context.insert(target)
@@ -337,7 +346,7 @@ struct DailyReportEditor: View {
         target.report = report
         if saved?.1 != photos {
             let kept = Dictionary(uniqueKeysWithValues: photos.compactMap { p in p.asset.map { ($0, p) } })
-            for asset in target.photos {
+            for asset in target.photos where !InstallLog.isSignature(asset.tag) {
                 if let p = kept[asset.persistentModelID] { asset.tag = p.tag } else { context.delete(asset) }
             }
             for (i, p) in photos.enumerated() where p.asset == nil {
@@ -372,12 +381,13 @@ struct DailyReportEditor: View {
         withAnimation { toast = "บันทึกร่างแล้ว" }
     }
 
-    private func sign(engineer: String) {
+    private func sign(engineer: String, signature: Data?) {
         if job.routineSettings.siteEngineer != engineer {
             var s = job.routineSettings; s.siteEngineer = engineer; job.routineSettings = s
         }
         let target = write()
         target.engineerSignedAt = .now
+        target.setSignature(signature, tag: InstallLog.engineerSignatureTag, context: context)
         job.feedMP()   // write() booked it as a draft, which doesn't count
         if let built = RoutineReportFiles.daily(job, log: target) {
             let data = RoutineReportFiles.file(built, job: job, context: context)
@@ -388,12 +398,13 @@ struct DailyReportEditor: View {
         withAnimation { toast = "ลงนามแล้ว · เก็บ PDF ในเอกสารโครงการ" }
     }
 
-    private func acknowledge(name: String, at when: Date) {
+    private func acknowledge(name: String, at when: Date, signature: Data?) {
         guard let target = log else { return }
         if job.routineSettings.inspector != name {
             var s = job.routineSettings; s.inspector = name; job.routineSettings = s
         }
         target.inspectorAckAt = when
+        target.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
         if let built = RoutineReportFiles.daily(job, log: target) { RoutineReportFiles.file(built, job: job, context: context) }
         if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()

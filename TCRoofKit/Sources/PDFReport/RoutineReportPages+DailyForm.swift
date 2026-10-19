@@ -106,7 +106,8 @@ extension RoutineReportPages {
         let signed = (engineer: e.engineerSignedAt.map(Self.signDate), inspector: e.inspectorAckAt.map(Self.signDate))
         // page 3 keeps its four frames when the day has fewer photos
         let firstFour = (0..<n.firstPhotos).map { i in captioned[safe: i] ?? (i + 1, nil) }
-        bodies.append(pageThree(photos: firstFour, names: (s.siteEngineer, s.inspector), signed: signed, hints: false))
+        let drawn = (engineer: e.engineerSignedAt == nil ? nil : e.engineerSignature, inspector: e.inspectorAckAt == nil ? nil : e.inspectorSignature)
+        bodies.append(pageThree(photos: firstFour, names: (s.siteEngineer, s.inspector), signed: signed, drawn: drawn, hints: false))
         var rest = Array(captioned.dropFirst(n.firstPhotos))
         while !rest.isEmpty {
             bodies.append(photoPage(Array(rest.prefix(n.morePhotos))))
@@ -192,7 +193,8 @@ extension RoutineReportPages {
 
     /// Page 3's body: four photos (nil = an empty slot) and the signature band.
     func pageThree(photos: [(Int, DayPhoto?)], names: (engineer: String, inspector: String),
-                   signed: (engineer: String?, inspector: String?), hints: Bool = true) -> [DrawOp] {
+                   signed: (engineer: String?, inspector: String?), drawn: (engineer: Photo?, inspector: Photo?) = (nil, nil),
+                   hints: Bool = true) -> [DrawOp] {
         let band = Self.frameBottom - 144
         var o = photoGrid(photos, columns: 2, rows: 2, x: Self.frameX0 + 20, y: Self.bodyTop + 16,
                           w: Self.frameX1 - Self.frameX0 - 40, h: band - 16 - Self.bodyTop - 16, gap: (16, 20), hints: hints)
@@ -200,9 +202,9 @@ extension RoutineReportPages {
         let mid = (Self.frameX0 + Self.frameX1) / 2
         o.append(.line(Pt(mid, band + 1.5), Pt(mid, Self.frameBottom), width: 1, color: .black))
         o += signature(("Please be informed accordingly / ", "จึงเรียนมาเพื่อทราบ"), name: names.engineer, date: signed.engineer,
-                       role: "Site Engineer", x: Self.frameX0, w: mid - Self.frameX0, top: band)
-        o += signature(("Acknowledge / ", "รับทราบ"), name: names.inspector, date: signed.inspector, role: "Inspector",
-                       x: mid, w: Self.frameX1 - mid, top: band)
+                       drawn: drawn.engineer, role: "Site Engineer", x: Self.frameX0, w: mid - Self.frameX0, top: band)
+        o += signature(("Acknowledge / ", "รับทราบ"), name: names.inspector, date: signed.inspector, drawn: drawn.inspector,
+                       role: "Inspector", x: mid, w: Self.frameX1 - mid, top: band)
         return o
     }
 
@@ -475,10 +477,13 @@ extension RoutineReportPages {
         return o
     }
 
-    /// One half of the signature band: the line, "( name )", the date and the role.
-    func signature(_ label: (String, String), name: String, date: String?, role: String, x: Double, w: Double, top: Double) -> [DrawOp] {
+    /// One half of the signature band: the drawn signature over the line, "( name )", the date and the role.
+    func signature(_ label: (String, String), name: String, date: String?, drawn: Photo? = nil, role: String, x: Double, w: Double,
+                   top: Double) -> [DrawOp] {
         let cx = x + w / 2
-        return [
+        // the 200 × 46 space above the line
+        let sign: [DrawOp] = drawn.map { [.photo($0, Box(cx - 100, top + 33, 200, 44))] } ?? []
+        return sign + [
             .runs([TextRun(label.0, size: 10, bold: true, face: .helvetica), TextRun(label.1, size: 11, bold: true)], at: Pt(x + 12, top + 22)),
             .line(Pt(cx - 100, top + 79), Pt(cx + 100, top + 79), width: 1, color: .black),
             .text("(", at: Pt(cx - 100, top + 90), size: 11),

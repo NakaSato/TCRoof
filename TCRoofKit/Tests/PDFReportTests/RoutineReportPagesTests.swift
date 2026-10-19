@@ -127,6 +127,19 @@ final class RoutineReportPagesTests: XCTestCase {
         XCTAssertEqual(unsigned.filter { $0 == "Date : ......../......../........" }.count, 2)
     }
 
+    func testDrawnSignaturesPrintOnlyWhileSigned() {
+        let r = report(2, 45)
+        let eng = Photo(fileName: "eng.png", width: 400, height: 90), insp = Photo(fileName: "insp.png", width: 400, height: 90)
+        func drawn(_ e: RoutineReportPages.DailyEntry) -> [String] {
+            pages.daily(e, all: [r])[2].ops.compactMap { if case let .photo(p, _) = $0, p.fileName.hasSuffix(".png") { p.fileName } else { nil } }
+        }
+        let both = RoutineReportPages.DailyEntry(report: r, photos: [], engineerSignedAt: d(2), inspectorAckAt: d(3),
+                                                 engineerSignature: eng, inspectorSignature: insp)
+        XCTAssertEqual(drawn(both).filter { $0 != "pdfreport-form:form-logo-tc.png" && $0 != "pdfreport-form:form-logo-pea.png" }, ["eng.png", "insp.png"])
+        var unacked = both; unacked.inspectorAckAt = nil
+        XCTAssertFalse(drawn(unacked).contains("insp.png"))   // a signature whose acknowledgement was taken off
+    }
+
     func testKeyPlanMarksTodaysLocations() {
         let r = report(1, 20)   // หลังคา 1
         let k = RoutineReportPages.KeyPlan(photo: Photo(fileName: "site.jpg", width: 1600, height: 900), aspect: 16 / 9,

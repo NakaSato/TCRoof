@@ -127,6 +127,8 @@ private struct Drawer {
     let hor: Bool
     /// Roof slope (°).
     let ang: Double
+    /// A shed roof: one face, its ridge on the high edge. `lowAtStart`: the low eave at the plan's top (or left).
+    let shed: Bool, lowAtStart: Bool
     let Lx: Double, Ly: Double, k: Double, W: Double, H: Double, x0: Double, y0: Double
     /// Grid lines along x and y (design units).
     let gx: [Double], gy: [Double]
@@ -140,6 +142,7 @@ private struct Drawer {
         self.v = v; pvMode = pv
         xs = Roof.spans(v, .x); ys = Roof.spans(v, .y); frame = Roof.frame(v)
         hor = Roof.ridge(v) == .h; ang = frame.slope
+        shed = RoofMount.shape(v) == .shed; lowAtStart = RoofMount.shedLowAtStart(v)
         Lx = xs.reduce(0, +); Ly = ys.reduce(0, +)
         k = min(380 / Lx, 320 / Ly); W = Lx * k; H = Ly * k; x0 = 400 - W / 2; y0 = 252 - H / 2
         var gx = [x0]; for s in xs { gx.append(gx.last! + s * k) }
@@ -234,8 +237,22 @@ private struct Drawer {
     mutating func outlineAndRidge() {
         add(.rect(rect(x0, y0, W, H), stroke: RoofPlan.ink, fill: nil, width: 1.5), "out")
         let rdash: [Double] = [18, 4, 3, 4]
+        if shed {
+            // the ridge is the high edge, opposite the low eave
+            let c = ridgeAcross
+            if hor { line(x0 - 10, c, x0 + W + 10, c, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
+            else { line(c, y0 - 10, c, y0 + H + 10, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
+            return
+        }
         if hor { line(x0 - 10, y0 + H / 2, x0 + W + 10, y0 + H / 2, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
         else { line(x0 + W / 2, y0 - 10, x0 + W / 2, y0 + H + 10, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
+    }
+
+    /// Where the ridge runs across the plan (design units): the middle, or a shed roof's high edge.
+    var ridgeAcross: Double {
+        let start = hor ? y0 : x0, size = hor ? H : W
+        guard shed else { return start + size / 2 }
+        return lowAtStart ? start + size : start
     }
 
     /// Grid bubbles A, B, C… along x and 1, 2, 3… along y.
@@ -293,6 +310,24 @@ private struct Drawer {
             return .polygon([tip, Pt(b.x + n.x, b.y + n.y), Pt(b.x - n.x, b.y - n.y)], stroke: nil, fill: RoofPlan.navy)
         }
         let slope = "ลาด \(fmt(ang))°"
+        if shed {
+            // one face: arrows from the high edge to the low eave
+            let s = lowAtStart ? -1.0 : 1.0
+            if hor {
+                let from = lowAtStart ? y0 + H - 30 : y0 + 30, to = lowAtStart ? y0 + 30 : y0 + H - 30
+                for (n, x) in [x0 + W * 0.18, x0 + W * 0.82].enumerated() {
+                    line(x, from, x, to, 1.2, RoofPlan.navy); add(head(P(x, to + s * 8), 0, s), nil)
+                    if n == 0 { notes.append((slope, x, y0 + H / 2)) }
+                }
+            } else {
+                let from = lowAtStart ? x0 + W - 30 : x0 + 30, to = lowAtStart ? x0 + 30 : x0 + W - 30
+                for (n, y) in [y0 + H * 0.2, y0 + H * 0.8].enumerated() {
+                    line(from, y, to, y, 1.2, RoofPlan.navy); add(head(P(to + s * 8, y), s, 0), nil)
+                    if n == 0 { notes.append((slope, x0 + W / 2, y - 12)) }
+                }
+            }
+            return
+        }
         if hor {
             for (n, x) in [x0 + W * 0.18, x0 + W * 0.82].enumerated() {
                 let m = y0 + H / 2
@@ -477,7 +512,13 @@ private struct Drawer {
         if !pvMode {
             for (t, x, y) in notes { let s = t.hasPrefix("ลาด"); text(t, x, y, s ? 13 : 11, bold: !s, bg: true) }
         }
-        text("สันหลังคา", hor ? x0 + W + 34 : x0 + W / 2, hor ? y0 + H / 2 : y0 - 30, 13, bold: true, bg: true)
+        let c = ridgeAcross
+        if shed && hor {
+            // outside the high edge, clear of the chips at the right
+            text("สันหลังคา (ด้านสูง)", x0 + W * 0.78, c + (lowAtStart ? 15 : -15), 13, bold: true, bg: true)
+        } else {
+            text(shed ? "สันหลังคา (ด้านสูง)" : "สันหลังคา", hor ? x0 + W + 34 : c, hor ? c : y0 - 30, 13, bold: true, bg: true)
+        }
     }
 
     /// The chosen member's lines redrawn in red, over everything.

@@ -69,6 +69,8 @@ struct TankPageWide: View {
     @State var layoutZoom: CGFloat = 1
     @State var layoutAsk: LayoutRun?
     @State var layoutSearching = false
+    /// The last `หาผังที่ได้พลังงานมากที่สุด`: the gaps tried and the one picked.
+    @State var energySearch: TankLayout.EnergySearch?
     @State var drawingOpen = false
     /// Sub-step 3's shade card: the simulation (worked out off the main thread) and the moment shown on its plan.
     @State var shadeResult: TankShade?
@@ -345,7 +347,7 @@ extension TankPageWide {
     /// (obstbottom scrolled to the end, obstshade the shading view, obstrow the row question, obstfull the plan full screen, obstadded a hatch added
     /// on site, obstdelete the delete question). layout opens sub-step 3 as docs/ui/survey-d1-layout-iphone with every point of
     /// 2/4 checked and the automatic layout (layoutbottom scrolled to the end, layoutedit แก้แผง with a panel off and a table
-    /// removed, layoutask the question before จัดแผงใหม่, layoutfull the plan full screen, layoutmax หาผังแผงมากสุด,
+    /// removed, layoutask the question before จัดแผงใหม่, layoutfull the plan full screen, layoutmax หาผังที่ได้พลังงานมากที่สุด,
     /// layoutdrawing the B1-C3 sheet).
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyD1") else { return }

@@ -216,6 +216,77 @@ public enum TankDrawings {
     }
 }
 
+// MARK: - Front elevation
+
+extension TankDrawings {
+    /// The front elevation of one table (docs/specs/tank-mounting-layout.md §5), seen from the low side: the slab,
+    /// footings, front posts with the back posts behind, X bracing in every bay, the 4 rails, the modules (those
+    /// switched off as outlines), the bay spacings, the cantilevers and the length. The longest built table; nil
+    /// without one.
+    public static func tableFront(_ l: TankLayout, width W: Double = 760) -> Sketch? {
+        let p = l.params
+        guard let t = l.builtTables.max(by: { $0.columns < $1.columns }) else { return nil }
+        let fr = TankLayout.Frame(q: l.turn, W: l.size.w, H: l.size.h)
+        func along(_ x: Double, _ y: Double) -> Double { fr.to(x, y).0 }
+        // the table's west end in the layout frame, and its posts' places along it
+        let ends = t.panels.flatMap { [along($0.x, $0.y), along($0.x + $0.w, $0.y + $0.h)] }
+        let a = ends.min() ?? 0, L = p.width(t.columns)
+        let xs = stride(from: 0, to: t.posts.count, by: 2).map { along(t.posts[$0].x, t.posts[$0].y) - a }.sorted()
+        let ya = p.hFront - p.frontIn * p.tanT, yb = ya + p.depth * p.tanT
+        let k = min((W - 80) / L, 120 / (p.hBack + 0.3))
+        let x0 = (W - L * k) / 2, roofY = 44 + (yb + 0.2) * k
+        let h0 = roofY + 78
+        func X(_ m: Double) -> Double { x0 + m * k }
+        func Y(_ m: Double) -> Double { roofY - m * k }
+        var o: [DrawOp] = [.rect(Box(0, 0, W, h0), stroke: nil, fill: .white)]
+        o.append(.text("รูปด้านหน้าโต๊ะแผง แถว \(t.row + 1) · \(t.columns) คอลัมน์ × 2 แผง · หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
+        // slab
+        o.append(.rect(Box(X(-0.6), roofY, (L + 1.2) * k, 7), stroke: ink, fill: concrete, width: 0.8))
+        // posts: the back one behind, lighter; footings
+        let fw = max(3, p.footing * k)
+        for x in xs {
+            o.append(.rect(Box(X(x) - fw / 2, roofY - max(2, 0.15 * k), fw, max(2, 0.15 * k)), stroke: ink, fill: concrete, width: 0.6))
+            o.append(.line(Pt(X(x), roofY), Pt(X(x), Y(p.hBack)), width: 1.2, color: post.withAlpha(0.45)))
+            o.append(.line(Pt(X(x), roofY), Pt(X(x), Y(p.hFront)), width: 2, color: post))
+        }
+        // X bracing in every bay
+        for (x1, x2) in zip(xs, xs.dropFirst()) {
+            o.append(.line(Pt(X(x1), Y(0.15)), Pt(X(x2), Y(p.hFront - 0.1)), width: 0.7, color: post, dash: [4, 2]))
+            o.append(.line(Pt(X(x1), Y(p.hFront - 0.1)), Pt(X(x2), Y(0.15)), width: 0.7, color: post, dash: [4, 2]))
+        }
+        // modules: lower and upper, seen from the front; off panels as outlines
+        let on = Set(t.panels.filter(\.on).map(\.key)), mid = ya + (p.cellH + p.moduleGap * p.cosT / 2) * p.tanT
+        for c in 0..<t.columns {
+            let cx = Double(c) * (p.cellW + p.moduleGap)
+            for (k2, lo, hi) in [(1, ya, mid), (0, mid, yb)] {
+                let key = "\(t.row).\(t.index).\(c).\(k2)", lit = on.contains(key)
+                o.append(.rect(Box(X(cx), Y(hi), p.cellW * k, (hi - lo) * k), stroke: lit ? .white : panel,
+                               fill: lit ? panel : nil, width: lit ? 0.6 : 0.8))
+            }
+        }
+        // the 4 rails, two under each module, the length of the table
+        for f in [0.125, 0.375, 0.625, 0.875] {
+            let y = ya + f * p.depth * p.tanT
+            o.append(.line(Pt(X(0), Y(y)), Pt(X(L), Y(y)), width: 0.9, color: RGBA(hex: 0x94A3B8)))
+        }
+        // dimensions: the cantilevers and bays, then the length
+        func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
+            o.append(.line(Pt(X(a), y), Pt(X(b), y), width: 0.8, color: dim))
+            for x in [a, b] { o.append(.line(Pt(X(x), y - 4), Pt(X(x), y + 4), width: 0.8, color: dim)) }
+            if (b - a) * k >= 18 { o.append(.text(label, at: Pt((X(a) + X(b)) / 2, y + 9), size: 8.5, bold: true, color: dim, align: .center)) }
+        }
+        let marks = [0.0] + xs + [L]
+        for (u, w) in zip(marks, marks.dropFirst()) where w - u > 1e-6 { dimH(u, w, roofY + 26, String(format: "%.2f", w - u)) }
+        dimH(0, L, roofY + 48, String(format: "ยาว %.2f", L))
+        o.append(.text(String(format: "%.2f", p.hFront), at: Pt(X(0) - 6, Y(p.hFront / 2)), size: 9, bold: true, color: dim, align: .right))
+        let bays = zip(xs, xs.dropFirst()).map { $1 - $0 }
+        o.append(.text(String(format: "เสา %d คู่ (หน้า %.2f / หลัง %.2f ม.) · ช่วงเสามากสุด %.2f ม. · ค้ำ X ทุกช่วงเสา แนวหน้าและแนวหลัง · ราง 4 เส้น · ฐานราก %.0f×%.0f×150 มม. ทุกเสา",
+                              xs.count, p.hFront, p.hBack, bays.max() ?? 0, p.footing * 1000, p.footing * 1000),
+                       at: Pt(16, h0 - 10), size: 8.5, color: muted))
+        return Sketch(width: W, height: h0, ops: o)
+    }
+}
+
 // MARK: - Energy and report lines
 
 extension TankLayout {
@@ -238,6 +309,7 @@ extension TankLayout {
         let e = kWp * yield(latitude: latitude, facing: facing) / 1000
         return "ผังแผงอัตโนมัติ \(count) แผง · " + String(format: "%.1f kWp · %.1f MWh/ปี · ", kWp, e)
             + "\(builtTables.count) โต๊ะ · \(rows) แถว · " + String(format: "เอียง %.1f°", params.tilt)
+            + (params.rowGap > Params().rowGap + 1e-6 ? String(format: " · แถวห่าง %.2f ม.", params.rowGap) : "")
     }
 
     /// `BOQ: เสา 198 · ฐานราก 198 · ราง 1,234.5 ม. · ตัวยึดราง 396 · ตัวจับกลาง … · ค้ำ X … · กราวด์ 13`

@@ -223,3 +223,17 @@ final class PhotoStampReportTests: XCTestCase {
         XCTAssertGreaterThan(long.filter { $0 == "เดิม" }.count, 1)
     }
 }
+
+final class TankLayoutPDFTests: XCTestCase {
+    /// D1's layout prints the side section and the front elevation of a table (tank-mounting-layout.md §5).
+    func testTheTankLayoutPrintsTheSectionAndTheFrontElevation() {
+        var v = Values()
+        Tank.apply(&v, Tank.presets[0]); TankPoints.seed(&v)
+        TankLayout.save(&v, TankLayout.auto(v), off: [])
+        let units = ReportLayout(job: Job.new(template: JobTemplate.all[2]), header: ReportHeader()).tankLayoutUnits(v)
+        let texts = units.flatMap(\.ops).compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertTrue(texts.contains("ภาพตัดโต๊ะแผง"))
+        XCTAssertTrue(texts.contains("รูปด้านหน้าโต๊ะแผง"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("รูปด้านหน้าโต๊ะแผง แถว ") })
+    }
+}

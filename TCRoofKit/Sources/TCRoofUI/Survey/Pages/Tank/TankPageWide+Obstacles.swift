@@ -58,6 +58,13 @@ extension TankPageWide {
             Text("ลบได้เฉพาะจุดที่เพิ่มหน้างาน")
         }
         .sheet(isPresented: $rowAsk) { rowSheet }
+        .alert("บันทึกเป็นแบบมาตรฐาน", isPresented: $saveDesignAsk) {
+            TextField("ชื่อแบบ", text: $designName)
+            Button("บันทึก") { saveDesign() }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: {
+            Text("เก็บผลตรวจของถังนี้ (ช่วงเสา จุดที่มีจริง ตำแหน่งหน้างาน) เป็นแบบในคลัง งานถัดไปเริ่มจากแบบนี้ได้")
+        }
         .confirmationDialog("เริ่มจากแบบมาตรฐาน กปภ.", isPresented: $designAsk, titleVisibility: .visible) {
             ForEach(TankDesign.ranked(values)) { m in
                 Button(m.design.name + (m.line.map { " · " + $0 } ?? "")) { useDesign(m) }
@@ -93,6 +100,20 @@ extension TankPageWide {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
             }
             .buttonStyle(.plain)
+            // a fully checked tank can become a design of the library (the team's only: `design.library`)
+            if TankPoints.done(values) && permissions.can(.designLibrary) {
+                Button { designName = TankDesign.current(values).map { $0.design.name + " · " + job.projectName } ?? job.projectName; saveDesignAsk = true } label: {
+                    Label("บันทึกเป็นแบบมาตรฐาน", systemImage: "square.and.arrow.down.on.square")
+                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
+                }
+                .buttonStyle(.plain)
+            }
+            if let saved = designSaved {
+                Text("บันทึกลงคลังแล้ว: " + saved).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.okText)
+            }
             let left = TankPoints.pending(values).count
             if left > 0 && TankPoints.checked(values).n > 0 {
                 Button { bulkAsk = true } label: {
@@ -105,6 +126,14 @@ extension TankPageWide {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    func saveDesign() {
+        let name = designName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, let d = TankDesign.from(values, name: name, job: job.docNo.isEmpty ? job.projectName : job.docNo,
+                                                      by: permissions.email.isEmpty ? nil : permissions.email) else { return }
+        DesignLibrary.shared.save(d)
+        designSaved = d.name
     }
 
     func useDesign(_ m: TankDesign.Match) {

@@ -256,6 +256,15 @@ service cloud.firestore {
       allow update: if isTeam() && request.resource.data.json == resource.data.json;
     }
 
+    // The standard design library (docs/specs/standard-designs.md §2, `design.library`): every member reads the
+    // designs, only the team saves them, and an edit never goes back to an older revision. Never deleted (archived).
+    match /standardDesigns/{doc} {
+      allow read: if isMember();
+      allow create: if isTeam() && request.resource.data.revision is int;
+      allow update: if isTeam() && request.resource.data.revision is int
+        && request.resource.data.revision >= resource.data.revision;
+    }
+
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
     // A member adds or removes only their own email.
     match /feedAcks/{doc} {

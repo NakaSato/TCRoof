@@ -4,20 +4,27 @@ import Foundation
 /// as docs/specs/img/tank_plan.py draws them. Picking one in D1 sub-step 2 writes the tank's bays and the design's
 /// vents, hatches, ladders and pipes as standard points (`TankPoints`), in place of the generic layout; the surveyor then
 /// checks each one on site as before, and `summary` lists where the site differs from the design.
-public struct TankDesign: Hashable, Sendable, Identifiable {
+public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
     /// A vent in the middle of a bay: row from the top, column from the left.
-    public struct Cell: Hashable, Sendable {
+    public struct Cell: Hashable, Sendable, Codable {
         public let row, col: Int
+        public init(row: Int, col: Int) { self.row = row; self.col = col }
     }
     /// A hatch, ladder or pipe on a wall, `along` metres from the wall's start (top-left corner).
-    public struct OnWall: Hashable, Sendable {
+    public struct OnWall: Hashable, Sendable, Codable {
         public let wall: TankPoints.Wall
         public let along: Double
         public var note = ""
+        public init(wall: TankPoints.Wall, along: Double, note: String = "") { self.wall = wall; self.along = along; self.note = note }
+        public init(from d: Decoder) throws {
+            let c = try d.container(keyedBy: CodingKeys.self)
+            wall = try c.decode(TankPoints.Wall.self, forKey: .wall); along = try c.decode(Double.self, forKey: .along)
+            note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
+        }
     }
 
     public let id: String
-    public let name: String
+    public var name: String
     public let source: String
     public let nx, ny: Int
     public let span: Double
@@ -25,9 +32,25 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
     public let ventStyle: String
     public let vents: [Cell]
     public let hatches, ladders, pipes: [OnWall]
+    /// Bays that aren't all `span` (a design saved from a job); nil = `nx` / `ny` bays of `span`.
+    public var spansX: [Double]? = nil
+    public var spansY: [Double]? = nil
+    /// The library's bookkeeping (docs/specs/standard-designs.md §2): raised on every edit; the design it was saved
+    /// from; who saved it and when; archived designs stay in the library but aren't offered.
+    public var revision = 1
+    public var basedOn: String? = nil
+    public var savedBy: String? = nil
+    public var savedAt: Date? = nil
+    public var archived = false
+    /// The scanned drawing's pages (docs/specs/standard-designs.md §3.4).
+    public var sheet: [Photo] = []
 
-    public var width: Double { Double(nx) * span }
-    public var height: Double { Double(ny) * span }
+    /// One of the sheets the team supplied (built in, never edited).
+    public var isSeed: Bool { Self.seeds.contains { $0.id == id } }
+    public var xs: [Double] { spansX ?? Array(repeating: span, count: nx) }
+    public var ys: [Double] { spansY ?? Array(repeating: span, count: ny) }
+    public var width: Double { xs.reduce(0, +) }
+    public var height: Double { ys.reduce(0, +) }
     /// "64 × 40 ม."
     public var size: String { "\(fmt(width)) × \(fmt(height)) ม." }
 
@@ -60,7 +83,38 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
         ladders: [OnWall(wall: .left, along: 6.4), OnWall(wall: .left, along: 33.4), OnWall(wall: .right, along: 33.4)],
         pipes: [])
 
-    public static let all = [pwa64x40, pwa40x40]
+    /// The two sheets the team supplied.
+    public static let seeds = [pwa64x40, pwa40x40]
+    /// The designs offered: the sheets and the library's saved designs not archived.
+    public static var all: [TankDesign] { seeds + DesignLibrary.shared.tanks.filter { !$0.archived } }
+
+    public init(id: String, name: String, source: String, nx: Int, ny: Int, span: Double, ventStyle: String, vents: [Cell],
+                hatches: [OnWall], ladders: [OnWall], pipes: [OnWall]) {
+        self.id = id; self.name = name; self.source = source; self.nx = nx; self.ny = ny; self.span = span
+        self.ventStyle = ventStyle; self.vents = vents; self.hatches = hatches; self.ladders = ladders; self.pipes = pipes
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, source, nx, ny, span, ventStyle, vents, hatches, ladders, pipes, spansX, spansY, revision, basedOn, savedBy, savedAt
+        case archived, sheet
+    }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id); name = try c.decode(String.self, forKey: .name)
+        source = try c.decodeIfPresent(String.self, forKey: .source) ?? ""
+        nx = try c.decode(Int.self, forKey: .nx); ny = try c.decode(Int.self, forKey: .ny); span = try c.decode(Double.self, forKey: .span)
+        ventStyle = try c.decodeIfPresent(String.self, forKey: .ventStyle) ?? "box"
+        vents = try c.decodeIfPresent([Cell].self, forKey: .vents) ?? []
+        hatches = try c.decodeIfPresent([OnWall].self, forKey: .hatches) ?? []
+        ladders = try c.decodeIfPresent([OnWall].self, forKey: .ladders) ?? []
+        pipes = try c.decodeIfPresent([OnWall].self, forKey: .pipes) ?? []
+        spansX = try c.decodeIfPresent([Double].self, forKey: .spansX); spansY = try c.decodeIfPresent([Double].self, forKey: .spansY)
+        revision = try c.decodeIfPresent(Int.self, forKey: .revision) ?? 1
+        basedOn = try c.decodeIfPresent(String.self, forKey: .basedOn)
+        savedBy = try c.decodeIfPresent(String.self, forKey: .savedBy); savedAt = try c.decodeIfPresent(Date.self, forKey: .savedAt)
+        archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
+        sheet = try c.decodeIfPresent([Photo].self, forKey: .sheet) ?? []
+    }
 
     // MARK: matching the measured size
 
@@ -81,6 +135,7 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
 
     /// Every design, the closest to the tank's size first.
     public static func ranked(_ v: Values) -> [Match] {
+        let all = Self.all
         guard let t = TankPoints.tankSize(v) else { return all.map { Match(design: $0, turned: false, difference: nil) } }
         return all.map { d in
             let straight = abs(t.w - d.width) + abs(t.h - d.height), turned = abs(t.w - d.height) + abs(t.h - d.width)
@@ -114,7 +169,10 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
             case .right: return (W - inset - s / 2, p.along)
             }
         }
-        for c in vents { put(TankPoints.vent, cx: (Double(c.col) + 0.5) * span, cy: (Double(c.row) + 0.5) * span) }
+        // bay centres from the bays (a saved design's may differ)
+        let gx = xs, gy = ys
+        func mid(_ s: [Double], _ i: Int) -> Double { s.prefix(max(0, i)).reduce(0, +) + (s[safe: i] ?? span) / 2 }
+        for c in vents { put(TankPoints.vent, cx: mid(gx, c.col), cy: mid(gy, c.row)) }
         for h in hatches { let c = centre(h, size: TankPoints.hatchSize, inset: Self.hatchInset); put(TankPoints.hatch, cx: c.0, cy: c.1) }
         for l in ladders { let c = centre(l, size: TankPoints.size(TankPoints.ladder), inset: 0); put(TankPoints.ladder, cx: c.0, cy: c.1) }
         for p in pipes { let c = centre(p, size: TankPoints.size(TankPoints.pipe), inset: 0); put(TankPoints.pipe, cx: c.0, cy: c.1, note: p.note) }
@@ -122,20 +180,84 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
     }
 
     /// Replaces the tank's bays and points with the design's (every check starts again) and remembers the design.
+    /// Replaces the tank's bays and points with the design's (every check starts again), remembers the design and
+    /// keeps a snapshot of it, so a later edit of the library never changes this job (§2).
     public static func apply(_ v: inout Values, _ d: TankDesign, turned: Bool = false) {
-        let sx = Array(repeating: d.span, count: turned ? d.ny : d.nx), sy = Array(repeating: d.span, count: turned ? d.nx : d.ny)
+        // turned a quarter clockwise: the design's rows become columns, read from the bottom
+        let sx = turned ? Array(d.ys.reversed()) : d.xs, sy = turned ? d.xs : d.ys
         Roof.setSpans(&v, .x, sx)
         Roof.setSpans(&v, .y, sy)
         TankPoints.write(&v, d.points(turned: turned))
         v[Tank.Key.design] = .text(d.id + (turned ? "@r" : ""))
+        var snapshot = d
+        snapshot.sheet = []
+        v[Tank.Key.designSnapshot] = (try? JSONEncoder().encode(snapshot)).map { .text(String(decoding: $0, as: UTF8.self)) }
     }
 
-    /// The design the tank's points came from.
+    /// The design the tank's points came from: the job's snapshot, else (older jobs) the library's design by id.
     public static func current(_ v: Values) -> (design: TankDesign, turned: Bool)? {
         let key = v.text(Tank.Key.design)
         guard !key.isEmpty else { return nil }
         let turned = key.hasSuffix("@r"), id = turned ? String(key.dropLast(2)) : key
-        return all.first { $0.id == id }.map { ($0, turned) }
+        let snap = v.text(Tank.Key.designSnapshot)
+        if !snap.isEmpty, let d = try? JSONDecoder().decode(TankDesign.self, from: Data(snap.utf8)), d.id == id { return (d, turned) }
+        return (seeds + DesignLibrary.shared.tanks).first { $0.id == id }.map { ($0, turned) }
+    }
+
+    // MARK: saving a checked tank as a design (§2)
+
+    /// The checked tank as a new design: its bays, its vents by bay, its hatches, ladders and pipes along their walls
+    /// (points marked absent left out), based on the design it started from.
+    public static func from(_ v: Values, name: String, job: String, by email: String?, now: Date = Date()) -> TankDesign? {
+        let s = Tank.spans(v)
+        guard !s.x.isEmpty, !s.y.isEmpty, let t = TankPoints.tankSize(v) else { return nil }
+        func index(_ spans: [Double], _ at: Double) -> Int {
+            var edge = 0.0
+            for (i, w) in spans.enumerated() { edge += w; if at < edge { return i } }
+            return spans.count - 1
+        }
+        var vents: [Cell] = [], hatches: [OnWall] = [], ladders: [OnWall] = [], pipes: [OnWall] = []
+        for o in TankPoints.points(v) where !o.isAbsent {
+            guard let r = TankPoints.rect(o) else { continue }
+            if o.kind == TankPoints.vent {
+                vents.append(Cell(row: index(s.y, r.cy), col: index(s.x, r.cx)))
+                continue
+            }
+            let wall = TankPoints.wall(r, w: t.w, h: t.h)
+            let along = ((wall == .top || wall == .bottom ? r.cx : r.cy) * 100).rounded() / 100
+            let w = OnWall(wall: wall, along: along, note: o.note)
+            switch o.kind {
+            case TankPoints.hatch: hatches.append(w)
+            case TankPoints.ladder: ladders.append(w)
+            case TankPoints.pipe: pipes.append(w)
+            default: continue
+            }
+        }
+        let base = current(v)
+        let uniformX = Set(s.x).count == 1, uniformY = Set(s.y).count == 1, span = s.x.first ?? 4
+        var d = TankDesign(id: "team-" + UUID().uuidString.lowercased(), name: name, source: "บันทึกจากงาน \(job)" + (base.map { " อ้างอิง " + $0.design.name } ?? ""),
+                           nx: s.x.count, ny: s.y.count, span: span, ventStyle: base?.design.ventStyle ?? "box", vents: vents,
+                           hatches: hatches, ladders: ladders, pipes: pipes)
+        if !(uniformX && uniformY && s.x.first == s.y.first) { d.spansX = s.x; d.spansY = s.y }
+        d.basedOn = base?.design.id
+        d.savedBy = email
+        d.savedAt = Date(timeIntervalSince1970: now.timeIntervalSince1970.rounded(.down))   // whole seconds, as files keep them
+        return d
+    }
+
+    /// `.tcdesign`: one design as JSON, to send by LINE or e-mail and import on another iPad.
+    public func exported() -> Data {
+        let e = JSONEncoder()
+        e.outputFormatting = [.prettyPrinted, .sortedKeys]
+        e.dateEncodingStrategy = .iso8601
+        var d = self
+        d.sheet = []
+        return (try? e.encode(d)) ?? Data()
+    }
+    public static func imported(_ data: Data) throws -> TankDesign {
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        return try dec.decode(TankDesign.self, from: data)
     }
 
     // MARK: where the site differs (§6)

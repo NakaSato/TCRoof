@@ -58,7 +58,7 @@ public enum TankPoints {
     }
     public static func onWall(_ kind: String) -> Bool { kind == ladder || kind == pipe }
 
-    public enum Wall: String, Sendable { case top, bottom, left, right }
+    public enum Wall: String, Codable, Sendable { case top, bottom, left, right }
     /// The wall nearest a rectangle in a tank of this size.
     public static func wall(_ r: Rect, w W: Double, h H: Double) -> Wall {
         let d: [(Wall, Double)] = [(.top, r.y), (.bottom, H - r.y - r.h), (.left, r.x), (.right, W - r.x - r.w)]

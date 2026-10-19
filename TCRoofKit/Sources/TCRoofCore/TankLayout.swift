@@ -239,47 +239,15 @@ public struct TankLayout: Sendable {
                     && !keep.contains { x > $0.x + 1e-9 && x < $0.x + $0.w - 1e-9 && y > $0.y + 1e-9 && y < $0.y + $0.h - 1e-9 }
             }
         }
-        func grid(_ lo: Double, _ hi: Double) -> [Double] {
-            guard hi >= lo - 1e-9 else { return [] }
-            return (0...Int(((hi - lo) / TankPoints.grid + 1e-9).rounded(.down))).map { lo + Double($0) * TankPoints.grid }
-        }
-        /// Post pairs for a table from `a` to `b` (frame x): the equal spacing, else greedy from the west end (§3 step 6);
-        /// nil and where it failed when no pair fits.
-        func pairs(_ a: Double, _ b: Double, _ ys: [Double]) -> (xs: [Double]?, fail: Double) {
-            let len = b - a, k = max(1, Int(((len - 2 * p.endOver) / p.postDX).rounded(.up))) + 1
-            let even = (0..<k).map { a + p.endOver + (len - 2 * p.endOver) * Double($0) / Double(k - 1) }
-            if len > 2 * p.endOver, even.allSatisfy({ free($0, ys) }) { return (even, 0) }
-            guard var x = grid(a, a + p.maxCantilever).filter({ free($0, ys) }).min(by: { abs($0 - a - p.endOver) < abs($1 - a - p.endOver) })
-            else { return (nil, a + p.cellW / 2) }
-            var xs = [x]
-            while b - x > p.maxCantilever + 1e-9 {
-                let reach = grid(x + p.minPairGap, min(b, x + p.postDX)).filter { free($0, ys) }
-                if let last = reach.filter({ b - $0 <= p.maxCantilever + 1e-9 }).min(by: { abs(b - p.endOver - $0) < abs(b - p.endOver - $1) }) {
-                    xs.append(last); return (xs, 0)
-                }
-                guard let next = reach.max() else { return (nil, min(b, x + p.postDX)) }
-                x = next; xs.append(x)
-            }
-            return (xs, 0)
-        }
-
         var list: [Table] = [], cutList: [Cut] = []
         var under = Set<Int>(), headroom: Double?
         for (r, row) in Self.rows(fr, open, p).enumerated() {
             under.formUnion(row.ventsUnder)
             if let h = row.headroom { headroom = min(headroom ?? h, h) }
             let upper = row.upper, yF = upper + p.depth - p.frontIn, ys = [yF, yF - p.postDY]
-            var queue = Self.runs(row.free).filter { $0.count >= 2 }, done: [([Int], [Double])] = [], guardN = 0
-            while !queue.isEmpty && guardN < 500 {
-                let run = queue.removeFirst(); guardN += 1
-                let res = pairs(colX(run.first!), colX(run.last!) + p.cellW, ys)
-                if let xs = res.xs { done.append((run, xs)); continue }
-                // cut the column where it failed and post the parts again
-                let c = run.min { abs(colX($0) + p.cellW / 2 - res.fail) < abs(colX($1) + p.cellW / 2 - res.fail) }!
-                cutList.append(Cut(x: colX(c), y: upper, w: p.cellW, h: p.depth))
-                queue.insert(contentsOf: [run.filter { $0 < c }, run.filter { $0 > c }].filter { $0.count >= 2 }, at: 0)
-            }
-            for (index, (run, xs)) in done.sorted(by: { $0.0.first! < $1.0.first! }).enumerated() {
+            let posted = Self.post(row.free, colX: colX, ys: ys, p, free: free)
+            cutList += posted.cut.map { Cut(x: colX($0), y: upper, w: p.cellW, h: p.depth) }
+            for (index, (run, xs)) in posted.tables.enumerated() {
                 var panels: [Panel] = []
                 for (ci, c) in run.enumerated() {
                     for k in 0..<2 {
@@ -328,6 +296,49 @@ public struct TankLayout: Sendable {
             }
         }
         checks = ck
+    }
+
+    // MARK: posts (§3 step 6)
+
+    static func grid(_ lo: Double, _ hi: Double) -> [Double] {
+        guard hi >= lo - 1e-9 else { return [] }
+        return (0...Int(((hi - lo) / TankPoints.grid + 1e-9).rounded(.down))).map { lo + Double($0) * TankPoints.grid }
+    }
+
+    /// Post pairs for a table from `a` to `b` along the row: the equal spacing, else greedy from the west end;
+    /// nil and where it failed when no pair fits. `free` says whether a pair at x with its footings at `ys` is clear.
+    static func pairs(_ a: Double, _ b: Double, _ ys: [Double], _ p: Params, free: (Double, [Double]) -> Bool) -> (xs: [Double]?, fail: Double) {
+        let len = b - a, k = max(1, Int(((len - 2 * p.endOver) / p.postDX).rounded(.up))) + 1
+        let even = (0..<k).map { a + p.endOver + (len - 2 * p.endOver) * Double($0) / Double(k - 1) }
+        if len > 2 * p.endOver, even.allSatisfy({ free($0, ys) }) { return (even, 0) }
+        guard var x = grid(a, a + p.maxCantilever).filter({ free($0, ys) }).min(by: { abs($0 - a - p.endOver) < abs($1 - a - p.endOver) })
+        else { return (nil, a + p.cellW / 2) }
+        var xs = [x]
+        while b - x > p.maxCantilever + 1e-9 {
+            let reach = grid(x + p.minPairGap, min(b, x + p.postDX)).filter { free($0, ys) }
+            if let last = reach.filter({ b - $0 <= p.maxCantilever + 1e-9 }).min(by: { abs(b - p.endOver - $0) < abs(b - p.endOver - $1) }) {
+                xs.append(last); return (xs, 0)
+            }
+            guard let next = reach.max() else { return (nil, min(b, x + p.postDX)) }
+            x = next; xs.append(x)
+        }
+        return (xs, 0)
+    }
+
+    /// One row's tables: each run of ≥ 2 free columns posted, a column cut where no pair fits and the parts posted
+    /// again. The tables west to east with their pair positions, and the columns cut.
+    static func post(_ freeColumns: [Int], colX: (Int) -> Double, ys: [Double], _ p: Params,
+                     free: (Double, [Double]) -> Bool) -> (tables: [([Int], [Double])], cut: [Int]) {
+        var queue = runs(freeColumns).filter { $0.count >= 2 }, done: [([Int], [Double])] = [], cut: [Int] = [], guardN = 0
+        while !queue.isEmpty && guardN < 500 {
+            let run = queue.removeFirst(); guardN += 1
+            let res = pairs(colX(run.first!), colX(run.last!) + p.cellW, ys, p, free: free)
+            if let xs = res.xs { done.append((run, xs)); continue }
+            let c = run.min { abs(colX($0) + p.cellW / 2 - res.fail) < abs(colX($1) + p.cellW / 2 - res.fail) }!
+            cut.append(c)
+            queue.insert(contentsOf: [run.filter { $0 < c }, run.filter { $0 > c }].filter { $0.count >= 2 }, at: 0)
+        }
+        return (done.sorted { $0.0.first! < $1.0.first! }, cut)
     }
 
     // MARK: offsets and the max search

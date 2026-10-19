@@ -74,6 +74,7 @@ extension TankPageWide {
             Text("แผงที่ปิดหรือโต๊ะที่เอาออกจะกลับมาตามผังอัตโนมัติ")
         }
         .sheet(isPresented: $drawingOpen) { drawingSheet }
+        .sheet(isPresented: $southOpen) { southSheet }
     }
 
     /// First open: the automatic layout; later opens write `panelsBefore` again, as sub-step 2 may have changed.
@@ -96,7 +97,7 @@ extension TankPageWide {
         layoutAsk = nil
         switch a {
         case .auto:
-            energySearch = nil
+            energySearch = nil; southCompare = nil
             update { TankLayout.save(&$0, TankLayout.auto($0), off: []) }
         case .max:
             // the row gaps from the standard's up, scored by the year's energy after shade (tank-mounting-layout.md §3a)
@@ -106,7 +107,9 @@ extension TankPageWide {
                 let s = await Task.detached(priority: .userInitiated) { TankLayout.bestEnergy(v, latitude: lat) }.value
                 if let s { update { TankLayout.save(&$0, s.params, off: []) } }
                 energySearch = s
+                southCompare = nil
                 layoutSearching = false
+                if let s { compareSouth(v, latitude: lat, wall: s) }
             }
         }
     }
@@ -147,6 +150,7 @@ extension TankPageWide {
             .disabled(!Tank.hasSize(values))
             if let s = energySearch, let p = TankLayout.params(values), abs(p.rowGap - s.chosen.gap) < 1e-6 {
                 Text(s.line).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                southRow
             }
         }
     }

@@ -7,8 +7,8 @@ iPad in `TCRoofUI/Survey/Pages/Tank/TankPageWide+Layout.swift` and `TankLayoutPl
 D1 DXF (`TCRoofCore/TankDXF.swift`); the row shade (`TankShade`, §3a step 4); the energy search (§3a,
 `TankLayout+Energy.swift`, tests `TankEnergyTests`: `หาผังที่ได้พลังงานมากที่สุด`, gaps 2.70–4.70 m kept as
 `tankPvGap`, energy tiles on card 2); the side section and the front elevation (`TankDrawings.tableSection`,
-`tableFront`) in the B1-C3 sheet and the PDF. Not built: the true-south comparison of §3a (comparison only), a structure
-standard editable in settings, the inspect mode, sliders, undo and deltas of the prototype (§4.3).
+`tableFront`) in the B1-C3 sheet and the PDF; the true-south comparison (§3a, `TankLayout+TrueSouth.swift`, tests
+`TankTrueSouthTests`). Not built: a structure standard editable in settings, the inspect mode, sliders, undo and deltas of the prototype (§4.3).
 **Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-drawing-swift.md`](tank-drawing-swift.md)),
 types in [`auto-drawing.md`](auto-drawing.md) §8
 **Interactive prototype:** `prototype/mount-layout.html` (open in a browser) · **Demo:** `img/mount_demo.mp4` (22 steps),
@@ -191,7 +191,16 @@ is stored as `tankPvGap` only when wider than the standard; `จัดแผง�
 kWh/kWp·ปี and the row shade from card 4's simulation, and a line under the buttons lists the gaps tried. Swift results
 on the 40 × 40 fixture with the standard points, 17° N, top wall facing 12°, 570 W module: 2.70 m 418 modules 346.3
 MWh/yr (row shade 1.7 %), 3.10 m 382 modules 319.6, 4.70 m 320 modules 269.4; the standard gap wins, as in the
-prototype. The true-south comparison is not built.
+prototype.
+
+Built (2026-10-20): the true-south comparison (`TankLayout.trueSouth`, `compareSouth`). The tank, its setback and its
+openings are turned into a frame whose rows run east–west; a module is placed when its four corners are inside the
+setback and it misses every grown hatch and every too-low vent (separating axes), and its posts use the same pair
+placement as the wall layout (`TankLayout.post`). Unturned, it gives the wall layout's modules and posts exactly. It is
+searched over the same gaps (offsets 0.10 / 0.20 m, the winner again on 5 cm) and scored with the same shade model
+facing south. It runs after `หาผังที่ได้พลังงานมากที่สุด` when the walls are 1° or more off south; card 1 shows one
+line and `ดูผังเทียบ` opens the turned plan and both layouts' numbers. Nothing is stored. Swift result on the 40 × 40
+fixture (17° N, 12°, 570 W): 382 modules, 317.0 MWh/yr, 8.5 % less than the wall layout's 418 / 346.3.
 
 ## 4. Interaction
 

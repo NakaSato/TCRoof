@@ -71,6 +71,10 @@ struct TankPageWide: View {
     @State var layoutSearching = false
     /// The last `หาผังที่ได้พลังงานมากที่สุด`: the gaps tried and the one picked.
     @State var energySearch: TankLayout.EnergySearch?
+    /// The true-south comparison worked out after the search (TankPageWide+South), its spinner and its sheet.
+    @State var southCompare: TankLayout.SouthComparison?
+    @State var southBusy = false
+    @State var southOpen = false
     @State var drawingOpen = false
     /// Sub-step 3's shade card: the simulation (worked out off the main thread) and the moment shown on its plan.
     @State var shadeResult: TankShade?
@@ -348,7 +352,7 @@ extension TankPageWide {
     /// on site, obstdelete the delete question). layout opens sub-step 3 as docs/ui/survey-d1-layout-iphone with every point of
     /// 2/4 checked and the automatic layout (layoutbottom scrolled to the end, layoutedit แก้แผง with a panel off and a table
     /// removed, layoutask the question before จัดแผงใหม่, layoutfull the plan full screen, layoutmax หาผังที่ได้พลังงานมากที่สุด,
-    /// layoutdrawing the B1-C3 sheet).
+    /// layoutdrawing the B1-C3 sheet, layoutsouth the top wall at 12°, the search and the true-south comparison's sheet).
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyD1") else { return }
         update { v in
@@ -461,7 +465,7 @@ extension TankPageWide {
             tab = 4
             try? await Task.sleep(nanoseconds: 700_000_000)
             photoScroll = true
-        case "layout", "layoutbottom", "layoutedit", "layoutfull", "layoutask", "layoutmax", "layoutdrawing", "layoutshade":
+        case "layout", "layoutbottom", "layoutedit", "layoutfull", "layoutask", "layoutmax", "layoutdrawing", "layoutshade", "layoutsouth":
             // docs/ui/survey-d1-layout-iphone: the standard points of 2/4 all checked, sub-step 3 with its automatic layout
             update { v in
                 v[Roof.Key.obstacles] = nil
@@ -476,6 +480,7 @@ extension TankPageWide {
                 v["shadeDir"] = shade ? .multi(["S"]) : nil
                 v[TankShade.Key.height] = shade ? .text("12") : nil
                 v[TankShade.Key.distance] = shade ? .text("3") : nil
+                v[Tank.Key.azimuth] = state == "layoutsouth" ? .text("12") : v[Tank.Key.azimuth]
             }
             tab = 3
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -491,6 +496,10 @@ extension TankPageWide {
                 if state == "layoutask" { askLayout(.auto) }
             case "layoutfull": layoutFull = true
             case "layoutmax": askLayout(.max)
+            case "layoutsouth":
+                askLayout(.max)
+                for _ in 0..<240 where southCompare == nil { try? await Task.sleep(nanoseconds: 500_000_000) }
+                southOpen = southCompare != nil
             case "layoutdrawing": drawingOpen = true
             case "layoutshade": try? await Task.sleep(nanoseconds: 2_500_000_000); shadeScroll = true
             default: break

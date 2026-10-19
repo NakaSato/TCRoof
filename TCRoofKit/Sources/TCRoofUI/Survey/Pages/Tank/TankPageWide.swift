@@ -46,6 +46,8 @@ struct TankPageWide: View {
     @State var obsShade = false
     @State var obsFull = false
     @State var obsZoom: CGFloat = 1
+    /// `เทียบกับแบบ` on the obstacle plan (standard designs).
+    @State var obsCompare = false
     @State var rowAsk = false
     @State var rowCount = 3
     @State var rowSpacing = 4.0
@@ -140,6 +142,8 @@ struct TankPageWide: View {
             Step(title: "ขนาดถัง", status: status(Tank.sizeDone(v), size), done: Tank.sizeDone(v), statusOK: Tank.sizeDone(v)),
             // every standard point checked and the shading answered
             Step(title: "สิ่งกีดขวาง · เงาบัง", status: points ? "\(checked.total) จุด · เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
+                    : checked.total > 0 && checked.n == checked.total && !TankPoints.missingPhotos(v).isEmpty
+                        ? "ยังขาดรูป \(TankPoints.missingPhotos(v).count) จุด"
                     : checked.total > 0 ? "ตรวจแล้ว \(checked.n)/\(checked.total)" : "ยังไม่เสร็จ",
                  done: points, statusOK: points),
             // a layout whose checks all pass

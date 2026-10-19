@@ -31,8 +31,10 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
     /// "64 × 40 ม."
     public var size: String { "\(fmt(width)) × \(fmt(height)) ม." }
 
-    /// The measured size matches a design within this, |ΔW| + |ΔL| in metres (§3.1).
-    public static let tolerance = 0.5
+    /// The measured size matches a design within this, |ΔW| + |ΔL| in metres (§3.1; decided 2026-10-19).
+    public static let tolerance = 1.0
+    /// A point within this of its design position still matches the design (m; decided 2026-10-19).
+    public static let pointTolerance = 0.2
     /// A hatch's distance in from its wall (m), as on the sheets.
     static let hatchInset = 0.15
 
@@ -147,6 +149,8 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
         public var bulk = 0
         /// "V5 ย้าย 4.00 ม. (16.70, 18.70 → 12.70, 18.70)", "H3 ไม่มีจริง", "V13 เพิ่มหน้างาน (20.00, 21.70)"
         public var differences: [String] = []
+        /// Each difference's photo, in the same order (nil when it has none).
+        public var photos: [Photo?] = []
         /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยืนยันแบบรวม 4 · ยังไม่ตรวจ 8"
         public var counts: String {
             var parts = ["ตรงแบบ \(matches)", "ย้าย \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
@@ -167,9 +171,9 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
         for o in list {
             let name = o.label + (o.note.isEmpty ? "" : " " + o.note)
             if o.isAbsent {
-                s.absent += 1; s.differences.append("\(name) ไม่มีจริง")
+                s.absent += 1; s.differences.append("\(name) ไม่มีจริง"); s.photos.append(o.photo)
             } else if !TankPoints.isStandard(o) {
-                s.added += 1; s.differences.append("\(name) เพิ่มหน้างาน (\(at(o.x, o.y)))")
+                s.added += 1; s.differences.append("\(name) เพิ่มหน้างาน (\(at(o.x, o.y)))"); s.photos.append(o.photo)
             } else if o.status.isEmpty {
                 s.open += 1
             } else if o.bulk {
@@ -179,6 +183,7 @@ public struct TankDesign: Hashable, Sendable, Identifiable {
                 let dx = (NumberInput.value(o.x) ?? 0) - (NumberInput.value(o.stdX) ?? 0)
                 let dy = (NumberInput.value(o.y) ?? 0) - (NumberInput.value(o.stdY) ?? 0)
                 s.differences.append(String(format: "%@ ย้าย %.2f ม. (%@ → %@)", name, hypot(dx, dy), at(o.stdX, o.stdY), at(o.x, o.y)))
+                s.photos.append(o.photo)
             } else {
                 s.matches += 1
             }

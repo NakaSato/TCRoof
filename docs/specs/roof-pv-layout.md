@@ -325,17 +325,21 @@ Shows the selected row (default: row 1 of the south face) along the slope:
 - [ ] The best layout is never worse than the current one.
 - [ ] The quantities in the app equal the BOQ in the PDF and Excel.
 
-## 9. Open questions
+## 9. Decided questions
 
-1. **Fixing method:** is ยึดเข้าแป (rails on purlins, L-foot through the rib crest) the team's default on metal
-   sheet? Or is จับสันลอน (rib clamp) used on newer sheets? And what does the team use on กระเบื้อง?
-2. **Clamping zone:** 0.34–0.68 m is taken from typical 2.28 m module manuals. Should it come from the module chosen
-   for the job instead?
-3. **Portrait only?** Landscape needs a second rail layer (rails up the slope on the purlins). Is that ever used?
-4. **Shade rule:** is 09:00–15:00 all year right, or should it be winter-solstice only? Or should the modules be
-   derated instead of removed?
-5. **Walkways:** the default has none, except the ridge setback. Should there be an automatic walkway every n columns
-   for cleaning?
-6. **Shed low side:** it is assumed to be at the plan bottom. Should it come from `sheetDir` plus an arrow?
-7. **Curved roofs:** follow the arc (rows on purlins spaced by arc length) or leave them out of v1?
-8. **Roof capacity:** should the layout warn above a dead-load limit per m² when the purlin size is known?
+Decided 2026-10-19:
+
+1. **Fixing method:** ยึดเข้าแป stays the default on metal sheet; จับสันลอน is the tab's switch. On กระเบื้องซีแพค the
+   rails go on tile hooks screwed into the rafters (`RoofMountStandard.rafterSpacing`, 1.00 m by default): rows don't
+   depend on the purlins (rails at ¼ and ¾ of the module), a hook goes on every rafter under a rail and none on an
+   obstacle, and a rail that would skip a rafter cuts the column. กระเบื้องลอนคู่ sits on purlins like metal sheet.
+2. **Clamping zone:** worked out from the module length (0.34 / 2.28 and 0.68 / 2.28 of it, to the cm) until the job
+   edits it.
+3. **Portrait only.**
+4. **Shade rule:** 09:00–15:00 all year, unchanged.
+5. **Walkways:** optional and off by default: one module wide after every n columns (8 when switched on).
+6. **Shed low side:** the plan's bottom (or right) by default; the tab and the plan's `ด้านต่ำ` arrow turn it to the
+   top (or left), kept in the hidden field `shedLow`.
+7. **Curved roofs:** left out of v1.
+8. **Roof load:** the modules, rails and fixings over the modules' area in kg/m², with a warning above the standard's
+   `loadLimit` (15 kg/m²), on the tab, the PDF page and the Excel row A39.

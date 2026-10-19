@@ -247,7 +247,7 @@ struct Fill {
             let layout = RoofMount.layout(d, latitude: RoofMount.latitude(gps: job.values.text("gps"))).layout
             if layout.quantities.modules > 0 {
                 a.raw("A38", RoofMount.summaryLine(layout))
-                a.raw("A39", RoofMount.boqLine(layout.quantities))
+                a.raw("A39", RoofMount.boqLine(layout.quantities) + " · " + RoofMount.loadLine(layout.quantities))
             }
         }
         let top = [d.photo("aerialPhoto")] + d.photos("generalPhotos").map { Optional($0) }, st = d.photos("structPhotos")

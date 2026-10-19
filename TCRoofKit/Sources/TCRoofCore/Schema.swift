@@ -313,7 +313,7 @@ public enum Schema {
                                     + [("frameType", "ชนิดโครงหลังคา"), ("ridgeDir", "แนวสันหลังคา"), ("trussBays", "ช่องโครงถักต่อข้าง"), ("postGrid", "เสาที่แก้ในแปลน"),
                                        ("pvOrientation", "แนวแผงในแปลนจัดแผง"), ("roofShots", "มุมภาพหลังคา"), ("eaveOverhang", "ชายคา (ม.)"), ("clearHeight", "ความสูงใต้ขื่อ (ม.)"),
                                        ("purlinSpacing", "ระยะแป (ม.)"), ("roofStd", "หลังคามาตรฐาน"), ("pvRows", "แถวต่อชุด"), ("pvPerTable", "แผงต่อชุด"),
-                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)"), ("planBearing", "ทิศของขอบบนแปลน (°)"), ("pvMount", "ผังแผงบนหลังคา")]
+                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)"), ("planBearing", "ทิศของขอบบนแปลน (°)"), ("pvMount", "ผังแผงบนหลังคา"), ("shedLow", "ด้านต่ำของหลังคาเพิง")]
                                         .map { T($0.0, $0.1, optional: true, when: { _ in false }) }),
             GroupSpec("รูปแบบหลังคา", [C("roofShape", "**1. รูปแบบหลังคา", Options.roofShape, other: true), C("roofMaterial", "**2. วัสดุมุงหลังคา", Options.roofMaterial, other: true),
                                      C("roofStructure", "**3. ชนิดโครงสร้างหลังคา", Options.structure)]),

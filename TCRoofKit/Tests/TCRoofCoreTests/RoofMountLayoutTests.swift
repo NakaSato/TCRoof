@@ -172,6 +172,87 @@ final class RoofMountLayoutTests: XCTestCase {
         XCTAssertFalse(off.faces.flatMap(\.rows).flatMap(\.slots).contains { $0.blocked == RoofMountLayout.shaded })
     }
 
+    // MARK: open questions decided (§9)
+
+    func testTileHooksSitOnRaftersAndRowsIgnoreThePurlins() {
+        let s = RoofMountStandard.standard
+        let l = RoofMountLayout.best(Self.gable(), options: .init(tileHooks: true))
+        XCTAssertTrue(l.quantities.hooks)
+        XCTAssertGreaterThan(l.quantities.modules, 0)
+        for f in l.faces {
+            let u0 = f.face.polygon.map(\.x).min() ?? 0
+            for row in f.rows {
+                XCTAssertEqual(row.rails.0 - row.v, s.moduleLength / 4, accuracy: 1e-9)
+                XCTAssertTrue(RoofMountDrawings.rowPasses(row, in: l))
+                for run in row.runs {
+                    for hooks in run.feet {
+                        XCTAssertFalse(hooks.isEmpty)
+                        for x in hooks {
+                            let k = (x - u0) / s.rafterSpacing
+                            XCTAssertEqual(k, k.rounded(), accuracy: 1e-6, "a hook off a rafter")
+                        }
+                        XCTAssertTrue(zip(hooks, hooks.dropFirst()).allSatisfy { $1 - $0 <= s.rafterSpacing + 1e-9 })
+                    }
+                }
+            }
+        }
+        XCTAssertTrue(RoofMount.boqLine(l.quantities).contains("ขอเกี่ยวกระเบื้อง"))
+        XCTAssertTrue(RoofMountDrawings.rowSection(l, face: 0, row: 0).ops.contains {
+            if case .text(let t, _, _, _, _, _, _) = $0 { return t.contains("ขอเกี่ยวกระเบื้อง") } else { return false }
+        })
+    }
+
+    func testAWalkwayEveryNColumns() {
+        let l = RoofMountLayout.best(Self.gable(), options: .init(walkwayEvery: 6))
+        for f in l.faces {
+            for row in f.rows {
+                for (c, slot) in row.slots.enumerated() where c % 7 == 6 { XCTAssertEqual(slot.blocked, RoofMountLayout.walkway) }
+                // no run spans a walkway
+                for run in row.runs { XCTAssertFalse(run.columns.contains { $0 % 7 == 6 }) }
+            }
+        }
+        XCTAssertLessThan(l.quantities.modules, 216)
+    }
+
+    func testTheShedTurnsToItsLowSide() {
+        var flipped = Self.shed
+        flipped.shedLowAtStart = true
+        let a = RoofMountLayout.best(Self.shed).faces[0].face, b = RoofMountLayout.best(flipped).faces[0].face
+        XCTAssertEqual(a.id, "S")
+        XCTAssertEqual(b.id, "N")
+        XCTAssertEqual((b.azimuth - a.azimuth + 360).truncatingRemainder(dividingBy: 360), 180, accuracy: 1e-6)
+        // the low eave (v = 0) is at the plan's top
+        XCTAssertEqual(b.plan(1, 0).y, 0, accuracy: 1e-9)
+        XCTAssertEqual(a.plan(1, 0).y, Self.shed.lengthY, accuracy: 1e-9)
+    }
+
+    func testTheClampingZoneFollowsTheModule() {
+        var s = RoofMountStandard()
+        XCTAssertTrue(s.clampFollowsModule)
+        XCTAssertEqual(s.clampFromModule.min, 0.34); XCTAssertEqual(s.clampFromModule.max, 0.68)
+        s.moduleLength = 2.38
+        XCTAssertEqual(s.clampFromModule.min, 0.35); XCTAssertEqual(s.clampFromModule.max, 0.71)
+        s.moduleLength = 1.72
+        XCTAssertEqual(s.clampFromModule.min, 0.26); XCTAssertEqual(s.clampFromModule.max, 0.51)
+        s.clampMin = 0.40
+        XCTAssertFalse(s.clampFollowsModule)
+        let d = RoofMount.defaultStandard
+        XCTAssertEqual(d.clampMin, d.clampFromModule.min); XCTAssertEqual(d.clampMax, d.clampFromModule.max)
+    }
+
+    func testTheRoofLoadWarnsAboveTheLimit() {
+        var s = RoofMountStandard.standard
+        let q = RoofMountLayout.best(Self.gable(), standard: s).quantities
+        let expected = (Double(q.modules) * s.moduleKg + q.railLength * s.railKgPerM + Double(q.feet) * s.footKg)
+            / (Double(q.modules) * s.moduleLength * s.moduleWidth)
+        XCTAssertEqual(q.load, expected, accuracy: 1e-9)
+        XCTAssertFalse(q.overLoad)
+        s.loadLimit = 10
+        let over = RoofMountLayout.best(Self.gable(), standard: s).quantities
+        XCTAssertTrue(over.overLoad)
+        XCTAssertTrue(RoofMount.loadLine(over).contains("เกินเกณฑ์"))
+    }
+
     func testTheStandardDecodesWithMissingFields() throws {
         let s = try JSONDecoder().decode(RoofMountStandard.self, from: Data(#"{"moduleWp":550,"setVerge":0.6}"#.utf8))
         XCTAssertEqual(s.moduleWp, 550)

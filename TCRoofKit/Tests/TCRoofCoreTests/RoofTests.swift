@@ -218,6 +218,37 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(RoofMount.choice(Values()), RoofMount.Choice())
     }
 
+    func testTileShedAndWalkwayReachTheLayout() {
+        var v = Self.designRoof()
+        let before = RoofMount.layout(v, latitude: 15).layout
+        RoofMount.remember(before, in: &v, latitude: 15)
+        // an older job's choices (no walkway) keep their digest
+        XCTAssertFalse(RoofMount.layout(v, latitude: 15).fresh)
+        XCTAssertFalse(v.text(RoofMount.Key.choice).contains("walkwayEvery"))
+        var c = RoofMount.choice(v)
+        c.walkwayEvery = 8
+        RoofMount.setChoice(&v, c)
+        XCTAssertEqual(RoofMount.choice(v).walkwayEvery, 8)
+        XCTAssertTrue(RoofMount.layout(v, latitude: 15).fresh)
+        XCTAssertEqual(RoofMount.layout(v, latitude: 15).layout.options.walkwayEvery, 8)
+
+        v[Roof.Key.material] = .choice("กระเบื้องซีแพค", other: "")
+        XCTAssertTrue(RoofMount.input(v, latitude: 15).tileRoof)
+        XCTAssertTrue(RoofMount.layout(v, latitude: 15).layout.options.tileHooks)
+        v[Roof.Key.material] = .choice("กระเบื้องลอนคู่/เดี่ยว", other: "")
+        XCTAssertFalse(RoofMount.input(v, latitude: 15).tileRoof)
+
+        // the low side only turns a shed roof
+        RoofMount.setShedLowAtStart(&v, true)
+        XCTAssertFalse(RoofMount.input(v, latitude: 15).shedLowAtStart)
+        v[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        XCTAssertEqual(RoofMount.shape(v), .shed)
+        XCTAssertTrue(RoofMount.input(v, latitude: 15).shedLowAtStart)
+        XCTAssertEqual(RoofMount.layout(v, latitude: 15).layout.faces.map(\.face.id), ["N"])
+        RoofMount.setShedLowAtStart(&v, false)
+        XCTAssertNil(v[RoofMount.Key.shedLow])
+    }
+
     func testThePVModeDrawsTheLayout() {
         var v = Self.designRoof()
         Roof.addArea(&v, kind: Roof.keepOutKind, x1: 14, y1: 9, x2: 18, y2: 12)

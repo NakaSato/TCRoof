@@ -19,6 +19,8 @@ public struct RoofPlan: Sendable {
         public var areas: [(area: Roof.Area, box: Box)] = []
         /// The PV layout's slots on the sketch (outline, and whether a module is there), for taps.
         public var slots: [(ref: RoofMountLayout.SlotRef, outline: [Pt], module: Bool)] = []
+        /// A shed roof's low-side arrow on the sketch, for a tap that turns it.
+        public var shedArrow: Box?
         /// Metres → sketch point, and back.
         public var origin = Pt(0, 0), k = 1.0, lx = 0.0, ly = 0.0
         public func point(x: Double, y: Double) -> Pt { Pt(origin.x + x * k, origin.y + y * k) }
@@ -35,10 +37,14 @@ public struct RoofPlan: Sendable {
     /// Module size (m) and power (kW) for the layout: the catalogue's default module.
     public struct Module: Sendable {
         public var length, width, kW: Double
-        public init(length: Double, width: Double, kW: Double) { self.length = length; self.width = width; self.kW = kW }
+        /// Weight (kg), for the roof load.
+        public var kg: Double
+        public init(length: Double, width: Double, kW: Double, kg: Double = 31.5) {
+            self.length = length; self.width = width; self.kW = kW; self.kg = kg
+        }
         public static var catalogDefault: Module {
             let c = EquipmentCatalog.bundled, m = c.pv.first { $0.def == true } ?? c.pv.first
-            return m.map { Module(length: Double($0.l) / 1000, width: Double($0.wd) / 1000, kW: Double($0.w) / 1000) }
+            return m.map { Module(length: Double($0.l) / 1000, width: Double($0.wd) / 1000, kW: Double($0.w) / 1000, kg: $0.kg) }
                 ?? Module(length: 2.279, width: 1.134, kW: 0.57)
         }
     }
@@ -388,10 +394,32 @@ private struct Drawer {
             let tw = ApproxText.width(label, size: 10.5, bold: true) + 6
             add(.rect(Box(cx - tw / 2, c.y - 7, tw, 14), stroke: nil, fill: .white), nil)
             add(.text(label, at: Pt(cx, c.y), size: 10.5, bold: true, color: f.used ? RoofPlan.navy : cutRed, align: .center), "facelabel")
+            if m.roof.faces.count == 1 {
+                let down = P(face, face.centre.x, face.centre.y - 1)
+                shedArrow(from: Pt(cx, c.y), towards: Pt(down.x - c.x, down.y - c.y))
+            }
         }
         let q = m.quantities
         pv.count = q.modules
         pv.kWp = q.kWp
+    }
+
+    /// A shed roof's arrow from its label towards the low eave, `ด้านต่ำ` at its head (a tap turns it).
+    mutating func shedArrow(from c: Pt, towards dir: Pt) {
+        let n = hypot(dir.x, dir.y)
+        guard n > 1e-9 else { return }
+        let d = Pt(dir.x / n, dir.y / n), ink = RoofPlan.amber
+        let s = Pt(c.x + d.x * 14, c.y + d.y * 14), e = Pt(c.x + d.x * 52, c.y + d.y * 52)
+        add(.line(s, e, width: 2, color: ink, dash: []), "shedarrow")
+        let side = Pt(-d.y, d.x)
+        add(.polygon([e, Pt(e.x - d.x * 8 + side.x * 5, e.y - d.y * 8 + side.y * 5), Pt(e.x - d.x * 8 - side.x * 5, e.y - d.y * 8 - side.y * 5)],
+                     stroke: nil, fill: ink), "shedarrow")
+        let t = Pt(e.x + d.x * 10, e.y + d.y * 10)
+        let tw = ApproxText.width("ด้านต่ำ", size: 9.5, bold: true) + 6
+        add(.rect(Box(t.x - tw / 2, t.y - 6.5, tw, 13), stroke: nil, fill: .white), nil)
+        add(.text("ด้านต่ำ", at: t, size: 9.5, bold: true, color: ink, align: .center), "shedarrow")
+        let xs = [s.x, e.x, t.x - tw / 2, t.x + tw / 2], ys = [s.y, e.y, t.y - 7, t.y + 7]
+        L.shedArrow = Box(xs.min()! - 10, ys.min()! - 10, xs.max()! - xs.min()! + 20, ys.max()! - ys.min()! + 20)
     }
 
     /// An unfinished skylight / keep-out zone being dragged (metres, two corners).

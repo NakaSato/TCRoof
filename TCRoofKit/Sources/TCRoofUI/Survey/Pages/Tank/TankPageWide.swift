@@ -276,9 +276,9 @@ struct TankPageWide: View {
     var formFields: [(title: String, ids: [String])] {
         [("ภาพมุมสูง (โดรน หรือ Google Maps) · บังคับ", ["aerialPhoto"]),
          ("ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) · บังคับ · เรียง เหนือ ใต้ ตะวันออก ตะวันตก", ["sidePhotos"]),
-         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) · ไม่บังคับ", [Tank.Key.roofPhotos]),
+         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) · บังคับ 2 ภาพ", [Tank.Key.roofPhotos]),
          ("เงาบัง (ถ่ายจากกลางหลังคา) · ไม่บังคับ", [Tank.Key.shadePhoto]),
-         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) · ไม่บังคับ", [Tank.Key.cablePhoto]),
+         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) · บังคับ", [Tank.Key.cablePhoto]),
          ("สิ่งกีดขวาง · บังคับ · ภาพแรกลงกรอบใหญ่ในรายงาน", ["obstPhotos"])]
     }
 

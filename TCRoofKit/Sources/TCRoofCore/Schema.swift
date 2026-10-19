@@ -40,8 +40,11 @@ public struct FieldSpec: Identifiable, Sendable {
     public let kind: FieldKind
     public let optional: Bool
     public let visibleWhen: (@Sendable (Values) -> Bool)?
-    public init(_ id: String, _ label: String, _ kind: FieldKind, optional: Bool = false, when: (@Sendable (Values) -> Bool)? = nil) {
-        self.id = id; self.label = label; self.kind = kind; self.optional = optional; self.visibleWhen = when
+    /// Photos a `.photos` field needs to count as filled (D1's two roof photos).
+    public let minPhotos: Int
+    public init(_ id: String, _ label: String, _ kind: FieldKind, optional: Bool = false, minPhotos: Int = 1,
+                when: (@Sendable (Values) -> Bool)? = nil) {
+        self.id = id; self.label = label; self.kind = kind; self.optional = optional; self.minPhotos = minPhotos; self.visibleWhen = when
     }
     public func isVisible(_ v: Values) -> Bool { visibleWhen?(v) ?? true }
     /// Counted in the progress of a section.
@@ -55,7 +58,7 @@ public struct FieldSpec: Identifiable, Sendable {
         case .choice(let s, _): return !s.isEmpty
         case .multi(let a): return !a.isEmpty
         case .photo: return true
-        case .photos(let a): return !a.isEmpty
+        case .photos(let a): return a.count >= max(1, minPhotos)
         case .obstacles(let a): return !a.isEmpty
         case .transformers(let a): return a.contains { !$0.kva.trimmingCharacters(in: .whitespaces).isEmpty }
         case .marks(let a): return !a.isEmpty
@@ -337,10 +340,11 @@ public enum Schema {
                                T("shadeNote", "รายละเอียด (ระยะห่าง / ความสูงโดยประมาณ)", "เช่น ต้นไม้สูง ~8 ม. ห่าง 5 ม.", optional: true, when: shaded)]),
             GroupSpec("ภาพถ่าย", [FieldSpec("obstPhotos", "ภาพสิ่งกีดขวาง (ภาพแรกลงกรอบใหญ่ \"สำหรับวาดขนาดของสิ่งกีดขวาง\")", .photos(max: 5)),
                                 P("aerialPhoto", "รูปมุมสูง / รูปโดรน"), FieldSpec("sidePhotos", "รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", .photos(max: 4)),
-                                // D1 sub-step 4's designed groups (docs/specs/tank-drawing-swift.md); optional until the team makes them required
-                                FieldSpec(Tank.Key.roofPhotos, "หลังคาถัง (ภาพรวม + ผิวหลังคา)", .photos(max: 2), optional: true),
+                                // D1 sub-step 4's designed groups (docs/specs/tank-drawing-swift.md): the roof's overview and surface
+                                // and the cable route required (decided 2026-10-19), the shade photo optional
+                                FieldSpec(Tank.Key.roofPhotos, "หลังคาถัง (ภาพรวม + ผิวหลังคา)", .photos(max: 2), minPhotos: 2),
                                 P(Tank.Key.shadePhoto, "เงาบัง (ถ่ายจากกลางหลังคา)", optional: true),
-                                P(Tank.Key.cablePhoto, "ทางเดินสายไฟ (จากถังถึงห้อง Inverter)", optional: true)])]),
+                                P(Tank.Key.cablePhoto, "ทางเดินสายไฟ (จากถังถึงห้อง Inverter)")])]),
         .sed: ModuleSpec(type: .sed, sheet: "บ่อตกตะกอน", label: "บ่อตกตะกอน", short: "บ่อตกตะกอน", reportTitle: "บ่อตกตะกอน", namePlaceholder: "เช่น บ่อ 1", groups: [
             GroupSpec("ภาพบ่อตกตะกอน (Google Earth/Google Map)", [FieldSpec("sitePhotos", "ภาพบ่อตกตะกอน", .photos(max: 6))]),
             GroupSpec("โครงสร้างบ่อตกตะกอน", [P("drawing", "*เขียนแบบบ่อพอสังเขป (ระบุจุด A–K)")] + Options.sedDims.map { N("dist\($0.0)", "\($0.0) — \($0.1)", "ซม.", optional: $0.0 > "F") }),

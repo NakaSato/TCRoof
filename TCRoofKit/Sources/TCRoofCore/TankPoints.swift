@@ -58,7 +58,7 @@ public enum TankPoints {
     }
     public static func onWall(_ kind: String) -> Bool { kind == ladder || kind == pipe }
 
-    public enum Wall: String, Sendable { case top, bottom, left, right }
+    public enum Wall: String, Codable, Sendable { case top, bottom, left, right }
     /// The wall nearest a rectangle in a tank of this size.
     public static func wall(_ r: Rect, w W: Double, h H: Double) -> Wall {
         let d: [(Wall, Double)] = [(.top, r.y), (.bottom, H - r.y - r.h), (.left, r.x), (.right, W - r.x - r.w)]
@@ -122,7 +122,7 @@ public enum TankPoints {
     public static func moved(_ o: Obstacle) -> Bool {
         guard isStandard(o), let x = NumberInput.value(o.x), let y = NumberInput.value(o.y),
               let sx = NumberInput.value(o.stdX), let sy = NumberInput.value(o.stdY) else { return false }
-        return abs(x - sx) > 0.001 || abs(y - sy) > 0.001
+        return hypot(x - sx, y - sy) > TankDesign.pointTolerance + 1e-9
     }
 
     // MARK: status and completion
@@ -132,11 +132,22 @@ public enum TankPoints {
         let list = points(v)
         return (list.filter { !$0.status.isEmpty }.count, list.count)
     }
-    /// The sub-step is done when the tank has standard points and every one of them has a status.
+    /// The sub-step is done when the tank has standard points, every one of them has a status, and (on a standard
+    /// design) every point that differs from it has its photo.
     public static func done(_ v: Values) -> Bool {
         let std = points(v).filter(isStandard)
-        return !std.isEmpty && std.allSatisfy { !$0.status.isEmpty }
+        return !std.isEmpty && std.allSatisfy { !$0.status.isEmpty } && missingPhotos(v).isEmpty
     }
+
+    /// On a standard design (`TankDesign.current`), a point marked missing, moved or added needs a photo for the
+    /// reviewer (docs/specs/standard-designs.md §3.2). The generic layout asks for none.
+    public static func needsPhoto(_ o: Obstacle, in v: Values) -> Bool {
+        guard TankDesign.current(v) != nil else { return false }
+        return o.isAbsent || !isStandard(o) || moved(o)
+    }
+    /// The points that need a photo and have none.
+    public static func missingPhotos(_ v: Values) -> [Obstacle] { points(v).filter { needsPhoto($0, in: v) && $0.photo == nil } }
+    public static func setPhoto(_ v: inout Values, _ id: UUID, _ p: Photo?) { edit(&v, id) { $0.photo = p } }
     /// The points still to check, in list order (the chips and ‹ ›).
     public static func pending(_ v: Values) -> [Obstacle] { points(v).filter { $0.status.isEmpty } }
 

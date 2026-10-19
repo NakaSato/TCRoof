@@ -56,6 +56,7 @@ struct SurveyHomeView: View {
     @AppStorage("solarSurvey.lastOpened") var lastOpened = ""
     @State var importing = false
     @State var showSettings = false
+    @State var showLibrary = false
     @State var showDriveOpen = false
     @State var share: SurveyModel.ExportFile?
     @State var toDelete: Job?
@@ -204,6 +205,7 @@ struct SurveyHomeView: View {
         .task { if UserDefaults.standard.bool(forKey: "surveyInstallPicker") { showInstallPicker = true } }
         #endif
         .sheet(isPresented: $showSettings) { SurveySettingsView().environment(model) }
+        .sheet(isPresented: $showLibrary) { DesignLibraryView() }
         .sheet(isPresented: $showDriveOpen) { DriveOpenView { j in showDriveOpen = false; go(j) }.environment(model) }
         .sheet(item: $share) { f in ShareSheet(items: [f.url]) }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json], allowsMultipleSelection: false) { r in

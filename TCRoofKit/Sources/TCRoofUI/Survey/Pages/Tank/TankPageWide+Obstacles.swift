@@ -58,6 +58,13 @@ extension TankPageWide {
             Text("ลบได้เฉพาะจุดที่เพิ่มหน้างาน")
         }
         .sheet(isPresented: $rowAsk) { rowSheet }
+        .alert("บันทึกเป็นแบบมาตรฐาน", isPresented: $saveDesignAsk) {
+            TextField("ชื่อแบบ", text: $designName)
+            Button("บันทึก") { saveDesign() }
+            Button("ยกเลิก", role: .cancel) {}
+        } message: {
+            Text("เก็บผลตรวจของถังนี้ (ช่วงเสา จุดที่มีจริง ตำแหน่งหน้างาน) เป็นแบบในคลัง งานถัดไปเริ่มจากแบบนี้ได้")
+        }
         .confirmationDialog("เริ่มจากแบบมาตรฐาน กปภ.", isPresented: $designAsk, titleVisibility: .visible) {
             ForEach(TankDesign.ranked(values)) { m in
                 Button(m.design.name + (m.line.map { " · " + $0 } ?? "")) { useDesign(m) }
@@ -82,7 +89,16 @@ extension TankPageWide {
         let s = TankDesign.summary(values), from = TankDesign.current(values) != nil
         return VStack(alignment: .leading, spacing: 6) {
             if let s, from {
-                Text("แบบ: " + s.design).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("แบบ: " + s.design).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                    Spacer(minLength: 6)
+                    // the original drawing, when the library has one for this design (§3.4)
+                    if let d = sheetDesign {
+                        Button { sheetOpen = true } label: { Label("ดูแบบ", systemImage: "doc.richtext").font(.sarabunFixed(13, .bold)) }
+                            .frame(minHeight: 44)
+                            .sheet(isPresented: $sheetOpen) { DesignSheetViewer(design: d) }
+                    }
+                }
                 Text(s.counts).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             Button { designAsk = true } label: {
@@ -93,6 +109,20 @@ extension TankPageWide {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
             }
             .buttonStyle(.plain)
+            // a fully checked tank can become a design of the library (the team's only: `design.library`)
+            if TankPoints.done(values) && permissions.can(.designLibrary) {
+                Button { designName = TankDesign.current(values).map { $0.design.name + " · " + job.projectName } ?? job.projectName; saveDesignAsk = true } label: {
+                    Label("บันทึกเป็นแบบมาตรฐาน", systemImage: "square.and.arrow.down.on.square")
+                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
+                }
+                .buttonStyle(.plain)
+            }
+            if let saved = designSaved {
+                Text("บันทึกลงคลังแล้ว: " + saved).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.okText)
+            }
             let left = TankPoints.pending(values).count
             if left > 0 && TankPoints.checked(values).n > 0 {
                 Button { bulkAsk = true } label: {
@@ -105,6 +135,20 @@ extension TankPageWide {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    /// The library's design this tank came from, when it has scanned sheet pages (the job's snapshot carries none).
+    var sheetDesign: TankDesign? {
+        guard let id = TankDesign.current(values)?.design.id else { return nil }
+        return DesignLibrary.shared.tanks.first { $0.id == id && !$0.sheet.isEmpty }
+    }
+
+    func saveDesign() {
+        let name = designName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, let d = TankDesign.from(values, name: name, job: job.docNo.isEmpty ? job.projectName : job.docNo,
+                                                      by: permissions.email.isEmpty ? nil : permissions.email) else { return }
+        DesignLibrary.shared.save(d)
+        designSaved = d.name
     }
 
     func useDesign(_ m: TankDesign.Match) {
@@ -128,8 +172,9 @@ extension TankPageWide {
         return phoneCard(1, "แปลนสิ่งกีดขวาง", chip: chip) {
             obstacleSegment
             if obsShade { shadeFields } else {
+                if TankDesign.current(values) != nil { compareSegment }
                 obstaclePlanFrame
-                obstacleLegend
+                if obsCompare && TankDesign.current(values) != nil { differenceList } else { obstacleLegend }
                 designRow
             }
         }
@@ -164,7 +209,8 @@ extension TankPageWide {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomTrailing) {
                 if Tank.hasSize(values) {
-                    TankPointsPlan(values: values, selected: $pointSel) { id, x, y in update { TankPoints.move(&$0, id, x: x, y: y) } }
+                    TankPointsPlan(values: values, selected: $pointSel, move: { id, x, y in update { TankPoints.move(&$0, id, x: x, y: y) } },
+                                   compare: obsCompare && TankDesign.current(values) != nil)
                 } else {
                     emptyPlan.frame(height: 260)
                 }
@@ -188,6 +234,62 @@ extension TankPageWide {
         .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
+    }
+
+    /// `หน้างาน` / `เทียบกับแบบ` (docs/specs/standard-designs.md §3.3), on a tank from a standard design.
+    var compareSegment: some View {
+        HStack(spacing: 3) {
+            ForEach([false, true], id: \.self) { on in
+                let sel = obsCompare == on
+                Button { withAnimation(.easeOut(duration: 0.15)) { obsCompare = on } } label: {
+                    Text(on ? "เทียบกับแบบ" : "หน้างาน").font(.sarabunFixed(14, sel ? .bold : .semibold))
+                        .foregroundStyle(sel ? Theme.navy : Theme.inkMuted)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background { if sel { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) } }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(sel ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// Where the site differs from the design, as the PDF prints it, with the points still missing a photo.
+    @ViewBuilder var differenceList: some View {
+        if let s = TankDesign.summary(values) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 10) {
+                    legendSwatch("ย้าย", Theme.warning, dashed: true)
+                    legendSwatch("ไม่มีจริง", Theme.danger, dashed: false)
+                    legendSwatch("เพิ่มหน้างาน", Theme.teamPurple, dashed: false)
+                }
+                Text(s.counts).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.navy)
+                if s.differences.isEmpty {
+                    Text("ไม่มีจุดที่ต่างจากแบบ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                }
+                ForEach(Array(s.differences.enumerated()), id: \.offset) { i, line in
+                    HStack(spacing: 6) {
+                        Image(systemName: s.photos[safe: i].flatMap { $0 } == nil ? "camera.badge.ellipsis" : "photo")
+                            .font(.system(size: 13)).foregroundStyle(s.photos[safe: i].flatMap { $0 } == nil ? Theme.dangerText : Theme.okTick)
+                        Text(line).font(.sarabunFixed(13)).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                let miss = TankPoints.missingPhotos(values)
+                if !miss.isEmpty {
+                    Text("ยังขาดรูป \(miss.count) จุด: " + miss.map(\.label).joined(separator: " ")).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.dangerText)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    func legendSwatch(_ t: String, _ c: Color, dashed: Bool) -> some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 2).strokeBorder(c, style: StrokeStyle(lineWidth: 1.5, dash: dashed ? [3, 2] : [])).frame(width: 12, height: 12)
+            Text(t).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        }
     }
 
     /// The legend draws "ยังไม่ยืนยัน" dashed as on the board; the plan draws it solid.
@@ -227,7 +329,8 @@ extension TankPageWide {
                 GeometryReader { g in
                     let w = g.size.width * obsZoom
                     ScrollView([.horizontal, .vertical]) {
-                        TankPointsPlan(values: values, selected: $pointSel) { id, x, y in update { TankPoints.move(&$0, id, x: x, y: y) } }
+                        TankPointsPlan(values: values, selected: $pointSel, move: { id, x, y in update { TankPoints.move(&$0, id, x: x, y: y) } },
+                                   compare: obsCompare && TankDesign.current(values) != nil)
                             .frame(width: w, height: w * 300 / 330)
                             .background(Theme.paper)
                     }
@@ -271,6 +374,7 @@ extension TankPageWide {
                 pointPicker(p)
                 field("สถานะ", required: true) { statusChoice(p) }
                 pointDistances(p)
+                pointPhoto(p)
                 if p.kind == TankPoints.vent { ventHeightField }
                 pointInfo(p)
                 field("เพิ่ม / แก้ไข", aside: "กรณีไม่มีในแบบ") { pointActions(p) }
@@ -361,6 +465,18 @@ extension TankPageWide {
             }
         }
         .id(p.id)
+    }
+
+    /// The point's photo: required on a standard design once it differs (missing, moved, added).
+    @ViewBuilder func pointPhoto(_ p: Obstacle) -> some View {
+        let need = TankPoints.needsPhoto(p, in: values)
+        if need || p.photo != nil {
+            field("รูปจุดนี้", aside: need ? "ต่างจากแบบ ต้องมีรูปให้ผู้ตรวจดู" : nil, required: need) {
+                PhotoField(photo: Binding(get: { p.photo }, set: { new in update { TankPoints.setPhoto(&$0, p.id, new) } }),
+                           jobID: job.id, label: "จุด \(p.label)", height: 150)
+                    .id(p.id)
+            }
+        }
     }
 
     /// The vents' height above the roof, one value for the tank: whether panels can pass over them in จัดแผง.

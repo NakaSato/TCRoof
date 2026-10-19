@@ -75,6 +75,7 @@ public enum Capability: String, CaseIterable, Sendable {
     // สำรวจ ออกแบบ และราคา
     case surveyEdit = "survey.edit"
     case surveySignRev = "survey.sign_rev"
+    case designLibrary = "design.library"
     case boqDraft = "boq.draft"
     case boqApprove = "boq.approve"
     case companyDocs = "library.company_docs"
@@ -143,6 +144,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .assistantUse: (.allow, .allow, .deny),
         .surveyEdit: (.allow, .allow, .conditional),
         .surveySignRev: (.allow, .allow, .conditional),
+        .designLibrary: (.allow, .allow, .deny),
         .boqDraft: (.disabled, .disabled, .disabled),
         .boqApprove: (.disabled, .disabled, .disabled),
         .companyDocs: (.allow, .view, .deny),

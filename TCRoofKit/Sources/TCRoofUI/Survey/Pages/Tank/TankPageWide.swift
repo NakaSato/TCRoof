@@ -46,6 +46,14 @@ struct TankPageWide: View {
     @State var obsShade = false
     @State var obsFull = false
     @State var obsZoom: CGFloat = 1
+    /// `เทียบกับแบบ` on the obstacle plan (standard designs).
+    @State var obsCompare = false
+    /// `บันทึกเป็นแบบมาตรฐาน`: its name question and the name saved.
+    @State var saveDesignAsk = false
+    @State var designName = ""
+    @State var designSaved: String?
+    @State var sheetOpen = false
+    @Environment(\.permissions) var permissions
     @State var rowAsk = false
     @State var rowCount = 3
     @State var rowSpacing = 4.0
@@ -140,6 +148,8 @@ struct TankPageWide: View {
             Step(title: "ขนาดถัง", status: status(Tank.sizeDone(v), size), done: Tank.sizeDone(v), statusOK: Tank.sizeDone(v)),
             // every standard point checked and the shading answered
             Step(title: "สิ่งกีดขวาง · เงาบัง", status: points ? "\(checked.total) จุด · เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
+                    : checked.total > 0 && checked.n == checked.total && !TankPoints.missingPhotos(v).isEmpty
+                        ? "ยังขาดรูป \(TankPoints.missingPhotos(v).count) จุด"
                     : checked.total > 0 ? "ตรวจแล้ว \(checked.n)/\(checked.total)" : "ยังไม่เสร็จ",
                  done: points, statusOK: points),
             // a layout whose checks all pass
@@ -365,10 +375,10 @@ extension TankPageWide {
             span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
         case "tab2": tab = 2
-        case "design", "design64":
+        case "design", "design64", "designcompare":
             // docs/specs/standard-designs.md: the 40 × 40 (or 64 × 40) sheet, two points checked, one moved, one absent
             update { v in
-                TankDesign.apply(&v, state == "design" ? .pwa40x40 : .pwa64x40)
+                TankDesign.apply(&v, state == "design64" ? .pwa64x40 : .pwa40x40)
                 let list = TankPoints.points(v)
                 TankPoints.setStatus(&v, list[0].id, TankPoints.ok)
                 TankPoints.setStatus(&v, list[1].id, TankPoints.absent)
@@ -377,6 +387,11 @@ extension TankPageWide {
             }
             pointSel = TankPoints.points(values)[safe: 2]?.id
             tab = 2
+            // designcompare: also a point added on site, and the เทียบกับแบบ view
+            if state == "designcompare" {
+                update { v in _ = TankPoints.add(&v, kind: TankPoints.vent) }
+                obsCompare = true
+            }
         case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete":
             // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
             update { v in

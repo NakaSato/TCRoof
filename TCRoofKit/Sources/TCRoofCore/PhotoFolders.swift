@@ -38,7 +38,16 @@ public extension Job {
         add("A2 ภาพสถานที่ติดตั้ง", collect(Schema.site.fields, values))
         add("A3 มิเตอร์ หม้อแปลง และตู้ MDB", collect(Schema.electrical.fields, values))
         add("A4 ประวัติน้ำท่วม", collect(Schema.flood.fields, values))
-        for s in sectionsByCategory.flatMap(\.sections) { add(s.title, collect(s.module.spec.fields, s.module.values)) }
+        for s in sectionsByCategory.flatMap(\.sections) {
+            var named = collect(s.module.spec.fields, s.module.values)
+            // D1: each point's photo (standard designs), named after the point
+            for o in s.module.values.obstacles(Roof.Key.obstacles) {
+                guard let p = o.photo, !placed.contains(p.id) else { continue }
+                placed.insert(p.id)
+                named.append(NamedPhoto(fileName: String(format: "%02d จุด ", named.count + 1) + o.label + (p.isPNG ? ".png" : ".jpg"), photo: p))
+            }
+            add(s.title, named)
+        }
         add("E1 สรุปผลและลงนาม", collect(Schema.final.fields, values))
         let rest = allPhotos.filter { !placed.contains($0.id) }
         add("อื่นๆ", rest.enumerated().map { i, p in NamedPhoto(fileName: String(format: "%02d รูป", i + 1) + (p.isPNG ? ".png" : ".jpg"), photo: p) })

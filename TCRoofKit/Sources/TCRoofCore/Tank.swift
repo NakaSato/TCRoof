@@ -13,6 +13,8 @@ public enum Tank {
         public static let ventHeight = "ventHeight"
         /// The standard design the points came from (`TankDesign.id`, "@r" when turned), nil for the generic layout.
         public static let design = "tankDesign"
+        /// The design as it was when picked (JSON), so a later edit of the library never changes this job.
+        public static let designSnapshot = "tankDesignSnapshot"
         /// Sub-step 4's designed photo groups beyond the form's three (optional).
         public static let roofPhotos = "roofPhotos", shadePhoto = "shadePhoto", cablePhoto = "cablePhoto"
     }

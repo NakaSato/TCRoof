@@ -456,3 +456,25 @@ test('assistantUsage is the assistant function\'s only: no client reads or write
     await assertFails(setDoc(ref, { count: 0 }));
   }
 });
+
+test('standard designs: every member reads them, only the team saves, never an older revision', async () => {
+  const design = { json: '{}', revision: 2, savedBy: TEAM };
+  await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), design));
+  await assertSucceeds(getDoc(doc(db(CON), 'standardDesigns', 'team-1')));
+  await assertSucceeds(getDocs(collection(db(CON), 'standardDesigns')));
+  await assertFails(setDoc(doc(db(CON), 'standardDesigns', 'team-2'), design));
+  await assertFails(updateDoc(doc(db(CON), 'standardDesigns', 'team-1'), { revision: 3 }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'standardDesigns', 'team-1'), { revision: 3, json: '{"a":1}' }));
+  await assertFails(updateDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), { revision: 2 }));
+  await assertFails(deleteDoc(doc(db(BOSS), 'standardDesigns', 'team-1')));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'standardDesigns', 'team-1')));
+});
+
+test('a standard design\'s sheet pages: every member reads, the team writes', async () => {
+  const page = { design: 'team-1', data: 'AAAA', width: 10, height: 10 };
+  await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p1'), page));
+  await assertSucceeds(getDoc(doc(db(CON), 'standardDesignSheets', 'p1')));
+  await assertFails(setDoc(doc(db(CON), 'standardDesignSheets', 'p2'), page));
+  await assertFails(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p3'), { width: 1 }));
+  await assertFails(deleteDoc(doc(db(BOSS), 'standardDesignSheets', 'p1')));
+});

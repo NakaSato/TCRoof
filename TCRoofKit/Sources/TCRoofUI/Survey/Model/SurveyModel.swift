@@ -55,6 +55,10 @@ public final class SurveyModel {
         self.settings = s
         self.google = GoogleAuth(clientID: s.googleClientID)
         reload()
+        // the standard design library (docs/specs/standard-designs.md §5), next to the app's other support files
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        DesignLibrary.shared.configure(url: support.appendingPathComponent("standard-designs.json"))
     }
 
     public func reload() {

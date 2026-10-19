@@ -104,6 +104,8 @@ final class CloudSync {
         survey?.cloudPush = nil
         survey?.cloudPending = nil
         FeedAcks.shared.send = nil
+        DesignLibrary.shared.onChange = nil
+        DesignLibrary.shared.onRoofChange = nil
         TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
@@ -141,6 +143,7 @@ final class CloudSync {
             listenSurveys()
             listenRevisions()
             listenFeedAcks()
+            listenDesigns()
             listenContacts()
             listenDirectory()
             listenConfig()
@@ -597,6 +600,67 @@ final class CloudSync {
     /// The home feed's acknowledgements, live. A toggle adds or removes only its own member (`arrayUnion` /
     /// `arrayRemove`), so two people acknowledging at once never overwrite each other; offline, Firestore keeps the
     /// write and sends it later. Acknowledgements made before they were synced are sent once.
+    /// The standard design library (docs/specs/standard-designs.md §2): every member takes the designs saved on other
+    /// devices (the higher revision wins); a design saved, renamed, archived or imported here is sent, by the team only
+    /// (`design.library`; firestore.rules refuses anyone else and an older revision).
+    private func listenDesigns() {
+        let collection = db.collection("standardDesigns")
+        DesignLibrary.shared.onChange = { [weak self] d in
+            guard let self, self.external == nil else { return }
+            let json = String(decoding: d.exported(), as: UTF8.self)
+            collection.document(d.id).setData(["json": json, "revision": d.revision, "savedBy": d.savedBy ?? "",
+                                               "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: design upload: \(error.localizedDescription)") }
+            }
+            // its scanned sheet: each page once, as a JPEG in its own document
+            let sent = Set(UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? [])
+            for p in d.sheet where !sent.contains(p.id.uuidString) {
+                guard let u = DesignLibrary.shared.sheetURL(p), let data = try? Data(contentsOf: u) else { continue }
+                self.db.collection("standardDesignSheets").document(p.id.uuidString)
+                    .setData(["design": d.id, "data": data.base64EncodedString(), "width": p.width, "height": p.height]) { error in
+                        if let error { return print("CloudSync: design sheet upload: \(error.localizedDescription)") }
+                        let done = (UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? []) + [p.id.uuidString]
+                        UserDefaults.standard.set(done, forKey: "cloudSync.designSheetsSent")
+                    }
+            }
+        }
+        // building roofs (C1, §7) share the collection, marked `kind: roof`
+        DesignLibrary.shared.onRoofChange = { [weak self] d in
+            guard let self, self.external == nil else { return }
+            collection.document(d.id).setData(["json": String(decoding: d.exported(), as: UTF8.self), "kind": "roof", "revision": d.revision,
+                                               "savedBy": d.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: roof design upload: \(error.localizedDescription)") }
+            }
+        }
+        let registration = collection.addSnapshotListener { snapshot, error in
+            // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
+            if let error { return print("CloudSync: design listener: \(error.localizedDescription)") }
+            for change in snapshot?.documentChanges ?? [] where change.type != .removed {
+                let data = change.document.data()
+                guard let json = data["json"] as? String else { continue }
+                if data["kind"] as? String == "roof" {
+                    if let r = try? RoofDesign.imported(Data(json.utf8)) { DesignLibrary.shared.receiveRoof(r) }
+                } else if let d = try? TankDesign.imported(Data(json.utf8)) {
+                    DesignLibrary.shared.receive(d)
+                }
+            }
+        }
+        listeners.append(registration)
+        // sheet pages taken on other devices
+        let pages = db.collection("standardDesignSheets").addSnapshotListener { snapshot, error in
+            if let error { return print("CloudSync: design sheet listener: \(error.localizedDescription)") }
+            for change in snapshot?.documentChanges ?? [] where change.type != .removed {
+                let data = change.document.data()
+                guard let id = UUID(uuidString: change.document.documentID), let b64 = data["data"] as? String,
+                      let jpeg = Data(base64Encoded: b64) else { continue }
+                let probe = Photo(id: id, fileName: id.uuidString + ".jpg", width: 0, height: 0)
+                if DesignLibrary.shared.hasSheetPage(probe) { continue }
+                DesignLibrary.shared.storeSheetPage(jpeg, width: data["width"] as? Int ?? 0, height: data["height"] as? Int ?? 0, id: id)
+            }
+        }
+        listeners.append(pages)
+    }
+
     private func listenFeedAcks() {
         let acks = FeedAcks.shared
         acks.send = { [weak self] post, member, on in

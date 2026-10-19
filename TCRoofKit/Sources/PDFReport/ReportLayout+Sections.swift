@@ -203,6 +203,7 @@ extension ReportLayout {
         if !tank && Roof.hasFrame(d) {
             U.append(roofSectionUnit(d))
         }
+        if !tank, let sum = RoofDesign.summary(d) { U.append(designUnit(sum)) }
         if !tank { U += roofPVUnits(d) }
         if !tank {
             // structure: truss + component table + option rows (a C1 frame type names the rows and draws section A-A above)
@@ -343,12 +344,24 @@ extension ReportLayout {
 
     /// D1 from a standard design (docs/specs/standard-designs.md §6): the design, the counts and where the site differs.
     func designUnit(_ sum: TankDesign.Summary) -> Unit {
-        let lineH = 11.0, h = Self.band + 34 + Double(max(1, sum.differences.count)) * lineH + 6
+        // a difference with a photo gets a thumbnail row (docs/specs/standard-designs.md §6)
+        let lineH = 11.0, thumbH = 46.0
+        let rowH = sum.differences.indices.map { (sum.photos[safe: $0] ?? nil) == nil ? lineH : thumbH + 4 }
+        let h = Self.band + 34 + max(lineH, rowH.reduce(0, +)) + 6
         var s = box("เทียบกับแบบมาตรฐาน", height: h)
         s.append(.text("เริ่มจากแบบมาตรฐาน: " + sum.design, at: Pt(8, Self.band + 9), size: 8.5, bold: true))
         s.append(.text(sum.counts, at: Pt(8, Self.band + 22), size: 8))
-        let lines = sum.differences.isEmpty ? ["ไม่มีจุดที่ต่างจากแบบ"] : sum.differences
-        for (i, t) in lines.enumerated() { s.append(.text("• " + t, at: Pt(14, Self.band + 36 + Double(i) * lineH), size: 7.5)) }
+        if sum.differences.isEmpty { s.append(.text("• ไม่มีจุดที่ต่างจากแบบ", at: Pt(14, Self.band + 36), size: 7.5)) }
+        var y = Self.band + 31
+        for (i, t) in sum.differences.enumerated() {
+            if let p = sum.photos[safe: i] ?? nil {
+                s.append(.photoFill(p, Box(14, y, thumbH * 4 / 3, thumbH)))
+                s.append(.text("• " + t, at: Pt(20 + thumbH * 4 / 3, y + thumbH / 2), size: 7.5))
+            } else {
+                s.append(.text("• " + t + (sum.photosExpected ? " (ไม่มีรูป)" : ""), at: Pt(14, y + lineH / 2), size: 7.5))
+            }
+            y += rowH[i]
+        }
         return Unit(h: h + 8, ops: s)
     }
 

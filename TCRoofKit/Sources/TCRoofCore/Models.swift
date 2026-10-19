@@ -90,6 +90,8 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var bulk = false
     /// C1: height above the roof (m) of a turbine, stack, pipe or other obstacle, for its shade; "" = the kind's default.
     public var height = ""
+    /// D1 from a standard design: the photo that shows a point missing, moved or added on site (docs/specs/standard-designs.md §3.2).
+    public var photo: Photo?
     public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "", kind: String = "", canCover: Bool = false,
                 status: String = "", origin: String = "", stdX: String = "", stdY: String = "", note: String = "") {
         self.label = label; self.x = x; self.y = y; self.w = w; self.h = h; self.kind = kind; self.canCover = canCover
@@ -112,6 +114,7 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
         note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
         bulk = try c.decodeIfPresent(Bool.self, forKey: .bulk) ?? false
         height = try c.decodeIfPresent(String.self, forKey: .height) ?? ""
+        photo = try c.decodeIfPresent(Photo.self, forKey: .photo)
     }
 }
 
@@ -369,6 +372,7 @@ public struct Values: Codable, Hashable, Sendable {
             case .photo(let p): return [p]
             case .photos(let a): return a
             case .transformers(let a): return a.flatMap { $0.boards.flatMap(\.photos) }
+            case .obstacles(let a): return a.compactMap(\.photo)
             default: return []
             }
         }

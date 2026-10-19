@@ -97,6 +97,7 @@ extension SurveyHomeView {
             action("สำรองข้อมูลทุกงาน", disabled: model.jobs.isEmpty) {
                 do { share = try model.exportBackup() } catch { self.error = error.localizedDescription }
             }
+            action("คลังแบบมาตรฐาน", detail: "แบบถังน้ำใส กปภ. · แบบที่ทีมบันทึก") { showLibrary = true }
             action("ตั้งค่าแอป", detail: "วิศวกร · แผนที่ · Google Drive · เครื่องนี้") { showSettings = true }
         }
     }

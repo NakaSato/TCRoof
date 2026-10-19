@@ -284,6 +284,24 @@
           }
         },
         {
+          "id": "design.library",
+          "label": "บันทึกแบบมาตรฐานลงคลัง · แก้ชื่อ เก็บเข้าคลัง นำเข้า",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
           "id": "boq.draft",
           "label": "ร่าง BOQ · เห็นราคาและต้นทุน",
           "roles": {
@@ -862,6 +880,10 @@
       "id": "contractor-docs-view",
       "text": "ผู้รับเหมาเปิดแท็บ เอกสาร ได้แบบดูอย่างเดียว เฉพาะสถานีที่ได้รับมอบหมาย · ไม่เห็นคลังกลาง · แก้ อัปโหลด ทวง ร่าง และลำดับ กกพ. ไม่ได้ (เขียนงานไม่ได้ตาม firestore.rules)",
       "branch": "feat/contractor-docs-view"
+    },
+    {
+      "id": "design-library",
+      "text": "บันทึกแบบมาตรฐานลงคลังได้เฉพาะทีม (ผู้จัดการและทีมภายใน) · ผู้รับเหมาใช้แบบได้แต่บันทึกไม่ได้ (2026-10-19)"
     }
   ],
   "findings": [

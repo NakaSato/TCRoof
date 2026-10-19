@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import Foundation
 import DriveSync
+import TCRoofCore
 
 /// A file the host app puts in one of its own project folders on Google Drive.
 public struct DriveUpload: Sendable {
@@ -34,6 +35,31 @@ public extension SurveyModel {
     func driveShare(_ folderID: String, with emails: [String]) async throws {
         let client = DriveClient(tokens: google)
         for email in emails { try await client.share(folderID, with: email) }
+    }
+
+    /// Shares Drive refused this run ("<folder> <email>").
+    @MainActor static var refusedShares: Set<String> = []
+
+    /// Lets everyone who can open a job read its Drive folder, so their devices download the photos its report prints:
+    /// each address once per folder (remembered on this device), never this account's own. An address Google refuses
+    /// is tried again next time; the others go on.
+    public func shareJobFolder(_ folderID: String, with emails: [String]) async {
+        let key = "drive.sharedTo.\(folderID)"
+        var done = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        let me = google.email.map(Permissions.normalized)
+        let todo = Set(emails.map(Permissions.normalized)).subtracting(done)
+            .filter { $0.contains("@") && $0 != me && !Self.refusedShares.contains(folderID + " " + $0) }
+        guard !todo.isEmpty else { return }
+        let client = DriveClient(tokens: google)
+        for email in todo.sorted() {
+            do { try await client.share(folderID, with: email); done.insert(email) }
+            catch {
+                // another account's folder, or an address Google doesn't know: not again until the app starts again
+                Self.refusedShares.insert(folderID + " " + email)
+                print("Drive: share \(folderID) with \(email): \(error.localizedDescription)")
+            }
+        }
+        UserDefaults.standard.set(done.sorted(), forKey: key)
     }
 
     /// Finds or creates the folders of `path` under a folder from `driveFolder`, one inside the next, and returns the last id.

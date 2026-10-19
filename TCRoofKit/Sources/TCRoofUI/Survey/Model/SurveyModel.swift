@@ -210,6 +210,9 @@ public final class SurveyModel {
     @ObservationIgnored public var linkedJobLabel: ((String) -> String?)?
     /// Host-supplied external people and supervising engineer of a linked job (by its syncID), for the role checks.
     @ObservationIgnored public var linkedJobAccess: ((String) -> JobAccess?)?
+    /// Host-supplied: everyone who should read a survey's photos on Drive (the team, and the linked job's contractors
+    /// and supervisor). Their folder is shared with them after each upload.
+    @ObservationIgnored public var driveReaders: ((Job) -> [String])?
 
     /// Who a survey's linked job is open to; nil for a survey with no linked job.
     public func access(_ job: Job) -> JobAccess? {

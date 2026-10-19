@@ -48,8 +48,11 @@ struct DriveRoute {
     /// Drive shared with the team.
     func jobFolder(_ job: Job) async throws -> (id: String, url: URL) {
         let name = DriveFolders.name(for: job)
+        // the job's contractors and supervisor read its photos too (the team reads the center folder already)
+        let assigned = job.externals + (job.supervisorEmail.map { [$0] } ?? [])
         if let center {
             let folder = try await survey.driveFolder(name, in: center)
+            await survey.shareJobFolder(folder.id, with: assigned)
             let key = "drive.laidOut.\(folder.id)"
             if !UserDefaults.standard.bool(forKey: key) {
                 for path in HandoverFolders.folders(over200kVA: job.stationContext.over200kVA) {
@@ -60,13 +63,8 @@ struct DriveRoute {
             return folder
         }
         let folder = try await survey.driveFolder(name, root: DriveFolders.root)
-        if MemberRole.shared.permissions.role == .external, !DriveConfig.shareWith.isEmpty {
-            let key = "drive.shared.\(folder.id)"
-            if !UserDefaults.standard.bool(forKey: key) {
-                // a refused share (an address Google doesn't know) mustn't stop the upload; tried again next time
-                if (try? await survey.driveShare(folder.id, with: DriveConfig.shareWith)) != nil { UserDefaults.standard.set(true, forKey: key) }
-            }
-        }
+        // on someone's own Drive (a contractor, or a TC engineer without the center folder): everyone on the job reads it
+        await survey.shareJobFolder(folder.id, with: DriveReaders.team() + assigned)
         return folder
     }
 
@@ -87,5 +85,20 @@ struct DriveRoute {
         }
         let path = (doc.folderPath ?? "").split(separator: "/").map(String.init)
         return [(construction(path), doc.name)]
+    }
+}
+
+/// Who should read a job's photos on Drive (the user, 2026-10-19: every photo in a report reaches everyone who can open
+/// the job): the team (the directory a team device reads, else `config/app.driveShareWith`) and the job's contractors
+/// and supervisor.
+@MainActor
+enum DriveReaders {
+    static func team() -> [String] {
+        let directory = TeamDirectory.shared.people.map(\.email)
+        return directory.isEmpty ? DriveConfig.shareWith : directory + DriveConfig.shareWith
+    }
+    /// A survey's readers: the team, and its linked job's contractors and supervisor.
+    static func survey(_ access: JobAccess?) -> [String] {
+        team() + (access?.externals ?? []) + (access?.supervisor.map { [$0] } ?? [])
     }
 }

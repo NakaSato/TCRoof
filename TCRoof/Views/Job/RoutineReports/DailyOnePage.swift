@@ -351,10 +351,12 @@ extension DailyOnePage {
             }
             HStack(alignment: .top, spacing: 10) {
                 signColumn(title: "ผู้รายงาน", role: "SITE ENGINEER", required: true,
-                           signedAt: dirty ? nil : log?.engineerSignedAt, name: nameBinding(\.siteEngineer),
+                           signedAt: dirty ? nil : log?.engineerSignedAt, drawn: log?.signature(InstallLog.engineerSignatureTag)?.data,
+                           name: nameBinding(\.siteEngineer),
                            placeholder: "ชื่อผู้รายงาน", tap: actions.sign, clear: actions.clearSignature)
                 signColumn(title: "ผู้ตรวจงาน", role: "INSPECTOR", required: false,
-                           signedAt: dirty ? nil : log?.inspectorAckAt, name: nameBinding(\.inspector),
+                           signedAt: dirty ? nil : log?.inspectorAckAt, drawn: log?.signature(InstallLog.inspectorSignatureTag)?.data,
+                           name: nameBinding(\.inspector),
                            placeholder: "ชื่อผู้ตรวจงาน", tap: actions.acknowledge, clear: actions.clearAck)
             }
         }
@@ -370,7 +372,7 @@ extension DailyOnePage {
         })
     }
 
-    private func signColumn(title: String, role: String, required: Bool, signedAt: Date?, name: Binding<String>,
+    private func signColumn(title: String, role: String, required: Bool, signedAt: Date?, drawn: Data?, name: Binding<String>,
                             placeholder: String, tap: @escaping () -> Void, clear: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 2) {
@@ -383,8 +385,14 @@ extension DailyOnePage {
                 if let at = signedAt {
                     ZStack(alignment: .topTrailing) {
                         VStack(spacing: 2) {
-                            Text(name.wrappedValue.isEmpty ? "ลงนามแล้ว" : name.wrappedValue)
-                                .font(.sarabunFixed(17, .bold)).italic().foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
+                            // the drawn signature when there is one, else the name
+                            if let drawn, let image = UIImage(data: drawn) {
+                                Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 44)
+                                    .accessibilityLabel("ลายเซ็น " + name.wrappedValue)
+                            } else {
+                                Text(name.wrappedValue.isEmpty ? "ลงนามแล้ว" : name.wrappedValue)
+                                    .font(.sarabunFixed(17, .bold)).italic().foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
+                            }
                             Text("ลงนาม " + ThaiFormat.time.string(from: at)).font(.sarabunFixed(11)).foregroundStyle(Theme.successText)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -318,7 +318,7 @@ struct InstallLogDetailView: View {
                             Text("\(index + 1). \(line)")
                         }
                         Text("รูปภาพงานติดตั้ง").font(.sarabun(17, .semibold, relativeTo: .headline)).padding(.top, 12)
-                        if log.photos.isEmpty {
+                        if log.sortedPhotos.isEmpty {
                             Text("ไม่มีรูปภาพ").foregroundStyle(Theme.muted)
                         } else {
                             PhotoGrid(images: log.sortedPhotos.map(\.data), minSize: 160)
@@ -382,7 +382,7 @@ struct InstallLogHistoryView: View {
                     PadLink { InstallLogDetailView(log: log) } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
-                            Text("\(log.date.thaiLong) · \(log.recorder) · \(log.photos.count) รูป")
+                            Text("\(log.date.thaiLong) · \(log.recorder) · \(log.sortedPhotos.count) รูป")
                                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                             Text(log.detailLines.joined(separator: " · ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
                         }

@@ -5,6 +5,13 @@ import TCRoofCore
 public protocol TextMeasuring: Sendable {
     func width(_ s: String, size: Double, bold: Bool) -> Double
     func height(_ s: String, width: Double, size: Double, bold: Bool) -> Double
+    /// The width of a mixed-font line (`DrawOp.runs`).
+    func width(_ runs: [TextRun]) -> Double
+}
+
+public extension TextMeasuring {
+    /// Each run as if it were Sarabun, when the measure has no other fonts.
+    func width(_ runs: [TextRun]) -> Double { runs.reduce(0) { $0 + width($1.text, size: $1.size, bold: $1.bold) } }
 }
 public struct ApproxMeasure: TextMeasuring {
     public init() {}

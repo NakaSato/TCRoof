@@ -69,7 +69,7 @@ struct WeeklyRequestScreen: View {
         }
         .sheet(isPresented: $showApprove) {
             InspectorAckSheet(title: "บันทึกอนุมัติแล้ว", name: request.approvedBy.isEmpty ? job.routineSettings.inspector : request.approvedBy,
-                              date: request.approvedAt ?? .now) { name, when in
+                              date: request.approvedAt ?? .now) { name, when, _ in
                 request.approve(by: name, at: when)
                 save(file: true)
             }

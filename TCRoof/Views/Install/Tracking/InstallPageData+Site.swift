@@ -98,7 +98,7 @@ extension InstallPageData {
         let dailyItems = logs.enumerated().reversed().compactMap { i, log -> DocItem? in
             guard let r = log.report else { return nil }
             return DocItem(id: "dr\(i)", code: String(format: "DR-%03d", i + 1), title: dailyTitle(r),
-                           detail: dailyDetail(r, photos: log.photos.count), chip: log.engineerSignedAt != nil ? "ส่งแล้ว" : "ร่าง",
+                           detail: dailyDetail(r, photos: log.sortedPhotos.count), chip: log.engineerSignedAt != nil ? "ส่งแล้ว" : "ร่าง",
                            tone: log.engineerSignedAt != nil ? .ok : .warn, target: .day(cal.startOfDay(for: r.date)))
         }
         if !logs.isEmpty || working {

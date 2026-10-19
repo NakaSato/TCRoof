@@ -117,7 +117,9 @@ final class PhotoSync {
                 let place = route.construction(p.folder)
                 let path = place.joined(separator: "/")
                 if subfolders[path] == nil { subfolders[path] = try await survey.driveSubfolder(place, under: folder.id) }
-                let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: "image/jpeg")
+                // signatures are PNG (they keep their transparent background); photos JPEG
+                let png = p.photo.data.starts(with: [0x89, 0x50, 0x4E, 0x47])
+                let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: png ? "image/png" : "image/jpeg")
                 let id = try await survey.driveUpload(file, to: subfolders[path] ?? folder.id)
                 // deleted while it uploaded: the Drive file stays, the record isn't made
                 guard !p.photo.isDeleted else { continue }

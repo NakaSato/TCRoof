@@ -20,11 +20,11 @@ public enum SingleLineDXF {
     static func layer(_ op: DrawOp) -> SketchDXF.Layer {
         let colour: RGBA?
         switch op {
-        case .text, .textBox: return textLayer
+        case .text, .textBox, .runs: return textLayer
         case let .line(_, _, _, c, _), let .polyline(_, _, c, _), let .hatch(_, c, _): colour = c
         // the pole marker is the only shape filled `pole` (its stroke is grey)
         case let .rect(_, s, f, _), let .polygon(_, s, f, _), let .circle(_, _, s, f, _): colour = f == SLSymbols.poleFill ? f : s ?? f
-        case .photo, .checkbox: colour = nil
+        case .photo, .photoFill, .checkbox: colour = nil
         }
         return colourLayers.first { $0.0 == colour }?.1 ?? otherLayer
     }

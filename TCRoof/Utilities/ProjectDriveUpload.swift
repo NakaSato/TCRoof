@@ -32,6 +32,12 @@ enum ProjectDriveUpload {
                 let line = lines.first { $0.id.uuidString == p.tag }
                 return (p, RoutineReport.photoFolder(date: log.date), RoutineReport.photoName(date: log.date, index: i + 1, line: line))
             }
+            // the drawn signatures, beside the day's photos
+            + [(InstallLog.engineerSignatureTag, "Site Engineer"), (InstallLog.inspectorSignatureTag, "Inspector")].compactMap { tag, role in
+                guard let p = log.signature(tag), p.driveFileID == nil else { return nil }
+                let day = RoutineReport.photoName(date: log.date, index: 0, line: nil).split(separator: " ").first.map(String.init) ?? ""
+                return (p, RoutineReport.photoFolder(date: log.date), "\(day) ลายเซ็น \(role).png")
+            }
         }
         return daily + pendingICLPhotos(job) + pendingIECPhotos(job)
     }

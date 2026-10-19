@@ -95,11 +95,13 @@ struct AddWorkSheet: View {
 
 struct DailySignSheet: View {
     let warnings: [RoutineReport.Warning]
-    let onSign: (String) -> Void
+    /// The name, and the drawn signature (PNG) when there is one.
+    let onSign: (String, Data?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var engineer: String
+    @State private var signature: Data?
 
-    init(warnings: [RoutineReport.Warning], engineer: String, onSign: @escaping (String) -> Void) {
+    init(warnings: [RoutineReport.Warning], engineer: String, onSign: @escaping (String, Data?) -> Void) {
         self.warnings = warnings; self.onSign = onSign
         _engineer = State(initialValue: engineer)
     }
@@ -120,6 +122,7 @@ struct DailySignSheet: View {
                 PadSection("Site Engineer") {
                     TextField("ชื่อผู้ลงนาม", text: $engineer)
                 }
+                SignatureField(signature: $signature)
                 PadSection {
                     Text("ลงนามแล้วระบบจะสร้าง PDF เก็บในเอกสารโครงการ (อัปโหลดขึ้น Drive ได้จากหน้างาน) และอัปเดตความก้าวหน้าในแผน MP")
                         .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
@@ -130,7 +133,7 @@ struct DailySignSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("ลงนาม") { onSign(engineer.trimmingCharacters(in: .whitespaces)); dismiss() }
+                    Button("ลงนาม") { onSign(engineer.trimmingCharacters(in: .whitespaces), signature); dismiss() }
                         .bold().disabled(engineer.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -141,16 +144,19 @@ struct DailySignSheet: View {
 
 // MARK: - Inspector
 
-/// The Inspector's acknowledgement (R2) or approval (R1), typed in after the paper or LINE reply.
+/// The Inspector's acknowledgement (R2) or approval (R1), typed in after the paper or LINE reply. With `signs`, the
+/// Inspector can also sign on the device (R2, for the DAILY REPORT form's page 3).
 struct InspectorAckSheet: View {
     let title: String
-    let onSave: (String, Date) -> Void
+    let signs: Bool
+    let onSave: (String, Date, Data?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var date: Date
+    @State private var signature: Data?
 
-    init(title: String, name: String, date: Date, onSave: @escaping (String, Date) -> Void) {
-        self.title = title; self.onSave = onSave
+    init(title: String, name: String, date: Date, signs: Bool = false, onSave: @escaping (String, Date, Data?) -> Void) {
+        self.title = title; self.signs = signs; self.onSave = onSave
         _name = State(initialValue: name); _date = State(initialValue: date)
     }
 
@@ -161,6 +167,7 @@ struct InspectorAckSheet: View {
                     TextField("ชื่อ Inspector", text: $name)
                     DatePicker("วันที่", selection: $date, displayedComponents: .date)
                 }
+                if signs { SignatureField(signature: $signature) }
             }
             .environment(\.locale, ThaiFormat.locale)
             .navigationTitle(title)
@@ -168,12 +175,36 @@ struct InspectorAckSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("บันทึก") { onSave(name.trimmingCharacters(in: .whitespaces), date); dismiss() }
+                    Button("บันทึก") { onSave(name.trimmingCharacters(in: .whitespaces), date, signature); dismiss() }
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents(signs ? [.medium, .large] : [.medium])
+    }
+}
+
+/// ลายมือชื่อ, optional: drawn with Apple Pencil or a finger; printed on the DAILY REPORT's page 3 when given.
+struct SignatureField: View {
+    @Binding var signature: Data?
+
+    var body: some View {
+        PadSection("ลายมือชื่อ (ไม่บังคับ)") {
+            SignaturePad(signature: $signature)
+                .frame(height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.45)))
+                .overlay(alignment: .bottomLeading) {
+                    if signature == nil {
+                        Text("เซ็นชื่อด้วย Apple Pencil หรือนิ้ว").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+                            .padding(12).allowsHitTesting(false)
+                    }
+                }
+                .accessibilityIdentifier("signaturePad")
+            Button("ล้างลายเซ็น") { signature = nil }.disabled(signature == nil).frame(minHeight: touchMin)
+        } footer: {
+            Text("พิมพ์ในหน้า 3 ของรายงาน · ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
+        }
     }
 }
 

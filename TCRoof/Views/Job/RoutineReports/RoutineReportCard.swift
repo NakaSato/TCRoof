@@ -88,6 +88,7 @@ struct RoutineReportCard: View {
 /// Every working day from the install start to today with its report state, missing days included, newest first.
 struct DailyReportListView: View {
     let job: Job
+    @State private var share: ReportShare?
 
     private var days: [Date] {
         let cal = RoutineReport.calendar
@@ -114,7 +115,26 @@ struct DailyReportListView: View {
         }
         .navigationTitle("รายงานประจำวัน")
         .navigationBarTitleDisplayMode(.inline)
-        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code])
+        .toolbar { ToolbarItem(placement: .primaryAction) { menu } }
+        .tcPadNavBar("รายงานประจำวัน", trail: ["หน้าหลัก", job.code]) {
+            menu.buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+        }
+        .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
+    }
+
+    private var menu: some View {
+        Menu {
+            Button { shareBlankForm() } label: { Label("พิมพ์แบบฟอร์มเปล่า", systemImage: "printer") }
+        } label: {
+            Label("เพิ่มเติม", systemImage: "ellipsis.circle").font(.sarabun(17, .semibold, relativeTo: .body)).frame(minHeight: touchMin)
+        }
+        .accessibilityIdentifier("dailyListMenu")
+    }
+
+    /// The DAILY REPORT form blank (4 pages), with this station's contractor and employer, to print and fill by hand.
+    private func shareBlankForm() {
+        let built = RoutineReportFiles.blankForm(job)
+        if let url = try? RoutineReportFiles.temporaryURL(built) { share = ReportShare(url: url) }
     }
 
     private func row(_ d: Date) -> some View {

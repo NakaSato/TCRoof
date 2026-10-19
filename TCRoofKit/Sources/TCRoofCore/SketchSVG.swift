@@ -44,6 +44,15 @@ public extension Sketch {
                 let f = r.fit(Double(p.width), Double(p.height))
                 if let href = photoHref(p) { s += "<image x=\"\(n(f.x))\" y=\"\(n(f.y))\" width=\"\(n(f.w))\" height=\"\(n(f.h))\" xlink:href=\"\(href)\" preserveAspectRatio=\"xMidYMid meet\"/>" }
                 else { s += "<rect x=\"\(n(f.x))\" y=\"\(n(f.y))\" width=\"\(n(f.w))\" height=\"\(n(f.h))\" fill=\"#cfd8dc\"/>" }
+            case let .photoFill(p, r):
+                if let href = photoHref(p) { s += "<image x=\"\(n(r.x))\" y=\"\(n(r.y))\" width=\"\(n(r.w))\" height=\"\(n(r.h))\" xlink:href=\"\(href)\" preserveAspectRatio=\"xMidYMid slice\"/>" }
+                else { s += "<rect x=\"\(n(r.x))\" y=\"\(n(r.y))\" width=\"\(n(r.w))\" height=\"\(n(r.h))\" fill=\"#cfd8dc\"/>" }
+            case let .runs(rs, at, col, al):
+                let anchor = al == .left ? "start" : al == .center ? "middle" : "end"
+                let size = rs.map(\.size).max() ?? 10
+                s += "<text x=\"\(n(at.x))\" y=\"\(n(at.y + size * 0.35))\" fill=\"\(c(col))\" text-anchor=\"\(anchor)\">"
+                    + rs.map { "<tspan font-size=\"\(n($0.size))\"\($0.bold ? " font-weight=\"bold\"" : "")\($0.underline ? " text-decoration=\"underline\"" : "")>\(e($0.text))</tspan>" }.joined()
+                    + "</text>"
             case let .checkbox(r, on):
                 s += "<rect x=\"\(n(r.x))\" y=\"\(n(r.y))\" width=\"\(n(r.w))\" height=\"\(n(r.h))\" fill=\"\(on ? c(.tick) : "#FFFFFF")\" stroke=\"#000000\" stroke-width=\"0.7\"/>"
                 if on { s += "<polyline points=\"\(n(r.x + r.w * 0.2)),\(n(r.y + r.h * 0.5)) \(n(r.x + r.w * 0.42)),\(n(r.y + r.h * 0.75)) \(n(r.x + r.w * 0.82)),\(n(r.y + r.h * 0.25))\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"1.3\"/>" }

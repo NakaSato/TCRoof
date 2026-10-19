@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แบบฟอร์มรายงานประจำวัน หน้า 1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>@font-face{font-family:"TH SarabunPSK";src:url("fonts/THSarabun.ttf") format("truetype");font-weight:400;font-style:normal}body{margin:0}</style>
+</helmet>
+<div style="position: relative; width: 816px; height: 1056px; box-sizing: border-box; padding: 40px; background: #FFFFFF; color: #000000; font-family: Arial, Helvetica, Sarabun, sans-serif">
+<div style="width: 736px; height: 976px; box-sizing: border-box; border: 1.5px solid #000000; display: flex; flex-direction: column">
+
+  <div style="height: 76px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1.5px solid #000000">
+    <img src="assets/daily-pdf/logo-tc.png" alt="TC Renewable" style="height: 40px; display: block">
+    <div style="text-align: center">
+      <div style="font-size: 14px; line-height: 18px; font-weight: 700; letter-spacing: 0.04em">DAILY REPORT</div>
+      <div style="font-family: Sarabun, sans-serif; font-size: 15px; line-height: 22px; font-weight: 700">รายงานการทำงานประจำวัน</div>
+    </div>
+    <span style="display: flex; align-items: center; gap: 8px"><img src="assets/iec/pwa-logo.jpg" alt="ตราการประปาส่วนภูมิภาค" style="height: 40px; display: block"><img src="assets/daily-pdf/logo-pea.png" alt="PEA" style="height: 36px; display: block"></span>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse; table-layout: fixed; flex-shrink: 0">
+    <tr style="height: 0"><td style="width: 92px; height: 0; padding: 0; border: 0"></td><td style="height: 0; padding: 0; border: 0"></td><td style="width: 72px; height: 0; padding: 0; border: 0"></td><td style="width: 232px; height: 0; padding: 0; border: 0"></td></tr>
+    <tr style="height: 60px">
+      <td style="border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: top; font-size: 10px; line-height: 17px; font-weight: 700">CONTRACT :<br>PROJECT :</td>
+      <td style="border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: top; font-family: Sarabun, sans-serif; font-size: 11px; line-height: 17px">โครงการจัดการพลังงานไฟฟ้าจากระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์<br>ที่ติดตั้งบนหลังคา (Solar Rooftop) การประปาส่วนภูมิภาค<br>กำลังการผลิตติดตั้ง <input aria-label="กำลังการผลิตติดตั้ง" style="width: 54px; border: 0; border-bottom: 1px dotted #767676; padding: 0; font: inherit; text-align: center; background: transparent"> กิโลวัตต์</td>
+      <td style="border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: top; font-size: 10px; line-height: 17px; font-weight: 700">DATE :<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">วันที่</span></td>
+      <td style="border-bottom: 1px solid #000000; padding: 4px 10px; vertical-align: top; font-size: 10px; line-height: 17px">
+        <input aria-label="วันที่" style="width: 140px; border: 0; border-bottom: 1px dotted #767676; padding: 0; font: inherit; font-size: 12px; font-weight: 700; background: transparent">
+        <div style="display: flex; gap: 6px; align-items: baseline">Working Time:<input aria-label="เวลาทำงาน" style="width: 120px; border: 0; border-bottom: 1px dotted #767676; padding: 0; font: inherit; background: transparent"></div>
+      </td>
+    </tr>
+    <tr style="height: 42px">
+      <td style="border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: middle; font-size: 10px; line-height: 16px; font-weight: 700">FROM :<br><span style="font-family: Sarabun, sans-serif; font-size: 11px; font-weight: 400">จาก</span></td>
+      <td style="border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: middle; font-family: Sarabun, sans-serif; font-size: 11px">บริษัท ทีซี รีนิวอะเบิ้ล เอ็นเนอร์ยี่ จำกัด</td>
+      <td style="border-right: 1px solid #000000; border-bottom: 1px solid #000000; padding: 4px 8px; vertical-align: middle; font-size: 10px; line-height: 16px; font-weight: 700">TO :<br><span style="font-family: Sarabun, sans-serif; font-size: 11px; font-weight: 400">ถึง</span></td>
+      <td style="border-bottom: 1px solid #000000; padding: 4px 10px; vertical-align: middle; font-family: Sarabun, sans-serif; font-size: 11px">การไฟฟ้าส่วนภูมิภาค</td>
+    </tr>
+    <tr style="height: 28px">
+      <td colspan="4" style="border-bottom: 1.5px solid #000000; padding: 0 8px; vertical-align: middle; font-family: Sarabun, sans-serif; font-size: 12px; font-weight: 700">ชื่อโครงการ : <input aria-label="ชื่อโครงการ (สถานี)" style="width: 560px; border: 0; border-bottom: 1px dotted #767676; padding: 0; font: inherit; background: transparent"></td>
+    </tr>
+  </table>
+
+  <div style="flex-grow: 1; padding: 12px; display: flex; flex-direction: column; justify-content: space-between">
+
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: center; justify-content: space-between; height: 20px">
+        <span style="font-size: 10px; font-weight: 700; text-decoration: underline">WEATHER REPORT <span style="font-family: Sarabun, sans-serif; font-size: 11px">สภาพอากาศ</span></span>
+        <span style="display: flex; align-items: center; gap: 18px; font-size: 10px">
+          <span style="display: flex; align-items: center; gap: 6px"><span style="width: 36px; height: 16px; box-sizing: border-box; border: 1px solid #000000; background: #B7DEE8; text-align: center; line-height: 14px; font-weight: 700">F</span>: Fine <span style="font-family: Sarabun, sans-serif; font-size: 11px">ท้องฟ้าโปร่ง</span></span>
+          <span style="display: flex; align-items: center; gap: 6px"><span style="width: 36px; height: 16px; box-sizing: border-box; border: 1px solid #000000; background: #FF0000; text-align: center; line-height: 14px; font-weight: 700">R</span>: Raining <span style="font-family: Sarabun, sans-serif; font-size: 11px">ฝนตก</span></span>
+        </span>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #000000; font-size: 10.5px">
+        <tr style="height: 20px">
+          <sc-for list="{{hours}}" as="h" hint-placeholder-count="15"><td style="border: 1px solid #000000; text-align: center; padding: 0; white-space: nowrap">{{h.t}}</td></sc-for>
+        </tr>
+        <tr style="height: 20px">
+          <sc-for list="{{hours}}" as="h" hint-placeholder-count="15"><td style="border: 1px solid #000000; padding: 0"><input aria-label="สภาพอากาศ {{h.t}} (F หรือ R)" maxlength="1" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0; font-size: 10.5px; font-weight: 700; text-align: center; text-transform: uppercase; background: transparent"></td></sc-for>
+        </tr>
+      </table>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="height: 18px; font-size: 10px; font-weight: 700; text-decoration: underline">MANPOWER REPORT <span style="font-family: Sarabun, sans-serif; font-size: 11px">กำลังคน</span></span>
+        <table style="width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #000000">
+          <tr style="height: 0"><td style="width: 52px; height: 0; padding: 0; border: 0"></td><td style="height: 0; padding: 0; border: 0"></td><td style="width: 58px; height: 0; padding: 0; border: 0"></td></tr>
+          <tr style="height: 36px">
+            <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Item<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">ลำดับที่</span></td>
+            <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Description<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">รายการ</span></td>
+            <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Qty.<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">จำนวน</span></td>
+          </tr>
+          <sc-for list="{{rows15}}" as="r" hint-placeholder-count="15">
+            <tr style="height: 20px">
+              <td style="border: 1px solid #000000; text-align: center; font-size: 10px; padding: 0">{{r.n}}</td>
+              <td style="border: 1px solid #000000; padding: 0"><input aria-label="กำลังคน แถว {{r.n}} รายการ" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0 8px; font-family: Sarabun, sans-serif; font-size: 11px; background: transparent"></td>
+              <td style="border: 1px solid #000000; padding: 0"><input aria-label="กำลังคน แถว {{r.n}} จำนวน" inputmode="numeric" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0; font-size: 10px; text-align: center; background: transparent"></td>
+            </tr>
+          </sc-for>
+          <tr style="height: 22px">
+            <td style="border: 1px solid #000000; border-top-width: 1.5px"></td>
+            <td style="border: 1px solid #000000; border-top-width: 1.5px; padding: 0 8px; text-align: right; font-size: 10px; font-weight: 700">Total Man-Day</td>
+            <td style="border: 1px solid #000000; border-top-width: 1.5px; padding: 0"><input aria-label="รวมกำลังคน" inputmode="numeric" style="width: 100%; height: 20px; box-sizing: border-box; border: 0; padding: 0; font-size: 10px; font-weight: 700; text-align: center; background: transparent"></td>
+          </tr>
+        </table>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="height: 18px; font-size: 10px; font-weight: 700; text-decoration: underline">TOOL &amp; MACHINERY REPORT <span style="font-family: Sarabun, sans-serif; font-size: 11px">เครื่องมือและเครื่องจักร</span></span>
+        <table style="width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #000000">
+          <tr style="height: 0"><td style="width: 52px; height: 0; padding: 0; border: 0"></td><td style="height: 0; padding: 0; border: 0"></td><td style="width: 58px; height: 0; padding: 0; border: 0"></td></tr>
+          <tr style="height: 36px">
+            <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Item<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">ลำดับที่</span></td>
+            <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Description<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">รายการ</span></td>
+            <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Used<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">ใช้งาน</span></td>
+          </tr>
+          <sc-for list="{{rows15}}" as="r" hint-placeholder-count="15">
+            <tr style="height: 20px">
+              <td style="border: 1px solid #000000; text-align: center; font-size: 10px; padding: 0">{{r.n}}</td>
+              <td style="border: 1px solid #000000; padding: 0"><input aria-label="เครื่องมือ แถว {{r.n}} รายการ" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0 8px; font-family: Sarabun, sans-serif; font-size: 11px; background: transparent"></td>
+              <td style="border: 1px solid #000000; padding: 0"><input aria-label="เครื่องมือ แถว {{r.n}} จำนวน" inputmode="numeric" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0; font-size: 10px; text-align: center; background: transparent"></td>
+            </tr>
+          </sc-for>
+          <tr style="height: 22px">
+            <td style="border: 1px solid #000000; border-top-width: 1.5px"></td>
+            <td style="border: 1px solid #000000; border-top-width: 1.5px; padding: 0 8px; text-align: right; font-size: 10px; font-weight: 700">Total Tool &amp; Machinery</td>
+            <td style="border: 1px solid #000000; border-top-width: 1.5px; padding: 0"><input aria-label="รวมเครื่องมือ" inputmode="numeric" style="width: 100%; height: 20px; box-sizing: border-box; border: 0; padding: 0; font-size: 10px; font-weight: 700; text-align: center; background: transparent"></td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 6px">
+      <span style="height: 18px; font-size: 10px; font-weight: 700; text-decoration: underline">MATERIAL ON SITE <span style="font-family: Sarabun, sans-serif; font-size: 11px">วัสดุเข้าหน้างาน</span></span>
+      <table style="width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #000000">
+        <tr style="height: 0"><td style="width: 52px; height: 0; padding: 0; border: 0"></td><td style="height: 0; padding: 0; border: 0"></td><td style="width: 140px; height: 0; padding: 0; border: 0"></td><td style="width: 66px; height: 0; padding: 0; border: 0"></td><td style="width: 66px; height: 0; padding: 0; border: 0"></td><td style="width: 96px; height: 0; padding: 0; border: 0"></td></tr>
+        <tr style="height: 36px">
+          <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Item<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">ลำดับที่</span></td>
+          <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Description<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">รายการ</span></td>
+          <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">For use at LOCAL/LINE<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">สถานที่</span></td>
+          <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Qty.<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">จำนวน</span></td>
+          <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Unit<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">หน่วย</span></td>
+          <td style="border: 1px solid #000000; border-bottom-width: 1.5px; text-align: center; font-size: 10px; line-height: 15px; font-weight: 700">Remark<br><span style="font-family: Sarabun, sans-serif; font-size: 11px">หมายเหตุ</span></td>
+        </tr>
+        <sc-for list="{{rows7}}" as="r" hint-placeholder-count="7">
+          <tr style="height: 20px">
+            <td style="border: 1px solid #000000; text-align: center; font-size: 10px; padding: 0">{{r.n}}</td>
+            <td style="border: 1px solid #000000; padding: 0"><input aria-label="วัสดุ แถว {{r.n}} รายการ" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0 8px; font-family: Sarabun, sans-serif; font-size: 11px; background: transparent"></td>
+            <td style="border: 1px solid #000000; padding: 0"><input aria-label="วัสดุ แถว {{r.n}} สถานที่" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0 6px; font-family: Sarabun, sans-serif; font-size: 11px; text-align: center; background: transparent"></td>
+            <td style="border: 1px solid #000000; padding: 0"><input aria-label="วัสดุ แถว {{r.n}} จำนวน" inputmode="numeric" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0; font-size: 10px; text-align: center; background: transparent"></td>
+            <td style="border: 1px solid #000000; padding: 0"><input aria-label="วัสดุ แถว {{r.n}} หน่วย" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0; font-family: Sarabun, sans-serif; font-size: 11px; text-align: center; background: transparent"></td>
+            <td style="border: 1px solid #000000; padding: 0"><input aria-label="วัสดุ แถว {{r.n}} หมายเหตุ" style="width: 100%; height: 18px; box-sizing: border-box; border: 0; padding: 0 6px; font-family: Sarabun, sans-serif; font-size: 11px; background: transparent"></td>
+          </tr>
+        </sc-for>
+      </table>
+    </section>
+  </div>
+</div>
+<div style="position: absolute; left: 40px; top: 1022px; width: 736px; text-align: center; font-family: 'TH SarabunPSK', Sarabun, sans-serif; font-size: 18.23px; line-height: 24px">1 / 4</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":816,"height":1056}}'>
+class Component extends DCLogic {
+renderVals() {
+const rows = (k) => Array.from({ length: k }, (_, i) => ({ n: i + 1 }));
+const hours = ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map((t) => ({ t }));
+return { hours, rows15: rows(15), rows7: rows(7) };
+}
+}
+</script>
+</body>
+</html>

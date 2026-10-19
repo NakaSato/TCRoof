@@ -62,6 +62,12 @@ struct TankPageWide: View {
     @State var layoutAsk: LayoutRun?
     @State var layoutSearching = false
     @State var drawingOpen = false
+    /// Sub-step 3's shade card: the simulation (worked out off the main thread) and the moment shown on its plan.
+    @State var shadeResult: TankShade?
+    @State var shadeBusy = false
+    @State var shadeMoment = 4
+    /// DEBUG `layoutshade`: scroll the one-column layout to the shade card.
+    @State var shadeScroll = false
     @State var dxfShare: DXFShare?
     @State var dxfError: String?
 
@@ -311,7 +317,7 @@ extension TankPageWide {
             case "obstdelete": addPoint(TankPoints.vent); try? await Task.sleep(nanoseconds: 300_000_000); deleteAsk = true
             default: break
             }
-        case "layout", "layoutbottom", "layoutedit", "layoutfull", "layoutask", "layoutmax", "layoutdrawing":
+        case "layout", "layoutbottom", "layoutedit", "layoutfull", "layoutask", "layoutmax", "layoutdrawing", "layoutshade":
             // docs/ui/survey-d1-layout-iphone: the standard points of 2/4 all checked, sub-step 3 with its automatic layout
             update { v in
                 v[Roof.Key.obstacles] = nil
@@ -319,6 +325,13 @@ extension TankPageWide {
                 for o in TankPoints.points(v) { TankPoints.setStatus(&v, o.id, TankPoints.ok) }
                 for k in [TankLayout.Key.orient, TankLayout.Key.offX, TankLayout.Key.offY, TankLayout.Key.off] { v[k] = nil }
                 TankLayout.save(&v, TankLayout.auto(v), off: [])
+                // layoutshade: trees 12 m high, 3 m south of the tank (the shade card); the others clear the answers
+                let shade = state == "layoutshade"
+                v["shade"] = shade ? .choice("มี", other: "") : nil
+                v["shadeFrom"] = shade ? .multi(["ต้นไม้"]) : nil
+                v["shadeDir"] = shade ? .multi(["S"]) : nil
+                v[TankShade.Key.height] = shade ? .text("12") : nil
+                v[TankShade.Key.distance] = shade ? .text("3") : nil
             }
             tab = 3
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -335,6 +348,7 @@ extension TankPageWide {
             case "layoutfull": layoutFull = true
             case "layoutmax": askLayout(.max)
             case "layoutdrawing": drawingOpen = true
+            case "layoutshade": try? await Task.sleep(nanoseconds: 2_500_000_000); shadeScroll = true
             default: break
             }
         default: break

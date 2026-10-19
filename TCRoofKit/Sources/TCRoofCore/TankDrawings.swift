@@ -6,7 +6,42 @@ import Foundation
 public enum TankDrawings {
     static let ink = RGBA(hex: 0x111111), muted = RGBA(hex: 0x6B7280), navy = RGBA(hex: 0x16325C), dim = RGBA(hex: 0x1D4ED8)
     static let concrete = RGBA(hex: 0xC9CED6), soil = RGBA(hex: 0x8B6F47), panel = RGBA(hex: 0x1F4F8F), cut = RGBA(hex: 0xE0433A)
-    static let post = RGBA(hex: 0x334155), vent = RGBA(hex: 0xB42318), ok = RGBA(hex: 0x2E7D32)
+    static let post = RGBA(hex: 0x334155), vent = RGBA(hex: 0xB42318), ok = RGBA(hex: 0x2E7D32), shade = RGBA(hex: 0xF59E0B)
+
+    // MARK: shade heat map
+
+    /// The heat map colours: no shade, up to 25 %, up to 50 %, 50 % and over, night.
+    public static let heatColours = [RGBA(hex: 0xDCFCE7), RGBA(hex: 0xFDE68A), RGBA(hex: 0xFB923C), RGBA(hex: 0xDC2626), RGBA(hex: 0x334155)]
+    public static func heatColour(_ share: Double?) -> RGBA {
+        guard let s = share else { return heatColours[4] }
+        return s < 0.005 ? heatColours[0] : s <= 0.25 ? heatColours[1] : s < 0.5 ? heatColours[2] : heatColours[3]
+    }
+    static let months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+
+    /// `สัดส่วนแผงที่โดนเงา รายเดือน × รายชั่วโมง`: months down, hours 06–18 across, with the legend.
+    public static func heatMap(_ s: TankShade, width W: Double = 760) -> Sketch {
+        let hours = Array(6...18), left = 46.0, top = 30.0, cellH = 13.0
+        let cellW = (W - left - 16) / Double(hours.count), h = top + 12 * cellH + 44
+        var o: [DrawOp] = [.rect(Box(0, 0, W, h), stroke: nil, fill: .white)]
+        o.append(.text("สัดส่วนแผงที่โดนเงา รายเดือน × รายชั่วโมง", at: Pt(16, 12), size: 11, bold: true, color: ink))
+        for (j, hr) in hours.enumerated() {
+            o.append(.text(String(format: "%02d", hr), at: Pt(left + (Double(j) + 0.5) * cellW, top - 7), size: 8, color: muted, align: .center))
+        }
+        for m in 0..<12 {
+            let y = top + Double(m) * cellH
+            o.append(.text(months[m], at: Pt(left - 6, y + cellH / 2), size: 8, color: muted, align: .right))
+            for (j, hr) in hours.enumerated() {
+                o.append(.rect(Box(left + Double(j) * cellW, y, cellW - 1, cellH - 1), stroke: nil, fill: heatColour(s.heat[m][hr])))
+            }
+        }
+        var x = left, ly = top + 12 * cellH + 16
+        for (i, t) in ["ไม่มีเงา", "เงา ≤ 25%", "เงา 25–50%", "เงา ≥ 50%", "กลางคืน"].enumerated() {
+            o.append(.rect(Box(x, ly - 5, 12, 10), stroke: RGBA(hex: 0xCBD5E1), fill: heatColours[i], width: 0.5))
+            o.append(.text(t, at: Pt(x + 16, ly), size: 8.5, color: ink)); x += 16 + ApproxText.width(t, size: 8.5) + 18
+        }
+        o.append(.text("แดดจัดเต็มท้องฟ้า (ค่าสมมติ) · แผงที่โดนเงาเสียแดดตรง เก็บแสงกระจาย", at: Pt(16, h - 8), size: 8, color: muted))
+        return Sketch(width: W, height: h, ops: o)
+    }
 
     /// Wall and slab thickness and the soil over a buried tank, assumed (ค่าสมมติ).
     public static let wall = 0.30, cover = 0.50, column = 0.40
@@ -14,8 +49,8 @@ public enum TankDrawings {
     // MARK: layout plan
 
     /// The full tank plan with the stored layout over it: panels (dashed when switched off), cut columns in red, the
-    /// post footings, and a slope tag towards the wall the panels face.
-    public static func layoutPlan(_ v: Values, _ l: TankLayout, width: Double = 690) -> Sketch? {
+    /// post footings, and a slope tag towards the wall the panels face. `shaded` panels (a shade snapshot) are orange.
+    public static func layoutPlan(_ v: Values, _ l: TankLayout, width: Double = 690, shaded: Set<String> = []) -> Sketch? {
         guard let plan = TankPlan(v, width: width) else { return nil }
         var o = plan.sketch.ops
         let f = plan.frame
@@ -23,7 +58,7 @@ public enum TankDrawings {
         for t in l.tables {
             for p in t.panels {
                 let b = box(p.x, p.y, p.w, p.h)
-                if p.on { o.append(.rect(b, stroke: .white, fill: panel.withAlpha(0.88), width: 0.4)) }
+                if p.on { o.append(.rect(b, stroke: .white, fill: shaded.contains(p.key) ? shade : panel.withAlpha(0.88), width: 0.4)) }
                 else { o.append(.polyline([Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY), Pt(b.x, b.y)], width: 0.6,
                                          color: panel.withAlpha(0.6), dash: [2, 1.5])) }
             }

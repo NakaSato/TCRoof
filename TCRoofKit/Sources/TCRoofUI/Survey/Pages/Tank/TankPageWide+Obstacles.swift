@@ -211,7 +211,7 @@ extension TankPageWide {
         if let i = index {
             let fields = Schema.spec(.tank).fields
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(["shade", "shadeFrom", "shadeDir", "shadeNote"].compactMap { id in fields.first { $0.id == id } }) { f in
+                ForEach(["shade", "shadeFrom", "shadeDir", TankShade.Key.height, TankShade.Key.distance, "shadeNote"].compactMap { id in fields.first { $0.id == id } }) { f in
                     if f.isVisible(job.modules[i].values) {
                         FieldView(spec: f, values: $job.modules[i].values, jobID: job.id, moduleType: .tank, gps: job.values.text("gps"))
                     }

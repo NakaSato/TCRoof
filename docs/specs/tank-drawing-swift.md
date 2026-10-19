@@ -151,7 +151,17 @@ Designed, not built: the photo groups below, with `บังคับ {k}/9` and
 - **Selecting a photo** shows `ภาพที่เลือก`: name, time and GPS, `หมายเหตุ`, `ถ่ายใหม่`, `ลบภาพ`, and `จุดถ่ายภาพ` (small map from the photo's GPS, `บันทึกจาก GPS`).
 - The new photo fields stay optional until the team agrees to make them required (open question 4).
 
-### Old step 4 — เงาบัง simulation (designed, not built)
+### Old step 4 — เงาบัง simulation (built 2026-10-19 in sub-step 3)
+
+Built as sub-step 3's card `เงาบัง · จำลองทั้งปี` and the PDF's `เงาบัง (จำลองทั้งปี)` (`TCRoofCore/TankShade.swift`,
+`TankDrawings.heatMap`): over `SolarModel`'s clear-sky year, a panel of the stored layout loses its direct sun (diffuse
+kept) to the row in front (tank-mounting-layout.md §3a step 4 with the portrait-2 rule; the front row never) or to the
+objects beside the tank: each direction in `shadeDir` is a long object (the whole side, ค่าสมมติ) `shadeHeight` above the
+ground (new, optional) and `shadeDistance` from the wall (new, optional), taken against each panel's centre height
+above the roof plus the tank's exposed part. The card shows `เงาแถวหน้า %`, `เงาสิ่งบัง %`, `สูญเสียรวม %` and
+`MWh/ปี` lost to the objects, one recommendation (the height to cut to for under 1 % loss, in 0.5 m steps), a moment
+on the plan (21 มี.ค. / มิ.ย. / ธ.ค. at 09:00 and 15:00, the shaded panels orange) and the month × hour map. The
+recommendation is not yet carried to E1. The design below is the reference.
 
 **Left: `จำลองเงาบัง`.** Shadow snapshots on the plan for 21 มี.ค., 21 มิ.ย. and 21 ธ.ค. at two times each, and a heat map `สัดส่วนแผงที่โดนเงา รายเดือน × รายชั่วโมง` (legend ไม่มีเงา / เงา 25% / ≥ 50% / กลางคืน).
 
@@ -219,7 +229,7 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 
 - **PDF (`ReportLayout.planSection`):** `แปลนหลังคาถังน้ำใส` from `TankPlan` (a hand sketch `planPhoto` replaces it), `จำนวนแผงก่อนเข้าสำรวจ` (`panelsBefore`) and `ที่ตัดออก`, the tank fields (height, surface, soil, type, position, shade), the obstacle table (`ไม่มีจริง` rows), the standard design's summary when the points came from one, then the aerial, obstacle and side photos. The drawing is scaled to the content width and never split across pages.
 - **Layout and sections (built 2026-10-19, `TankDrawings`, `ReportLayout.tankLayoutUnits`):** `ผังจัดแผงบนหลังคาถัง` (the plan with the stored layout: panels, switched-off panels dashed, cut columns red, footings, the slope tag), its summary line (panels, kWp, MWh/ปี from `SolarModel` at the panels' tilt and facing and A1's latitude, tables, rows, tilt), the BOQ line, the three checks, the ค่าสมมติ line and the footer; `ภาพตัดโต๊ะแผง` (the standard two-row side section); `รูปตัดถัง 1–1` and `2–2` (§4.3's rule: ground by position, walls and slabs 0.30 m and 0.50 m soil over a buried tank assumed, the external volume).
-- **Not in the PDF yet:** the shade heat map and losses.
+- **Shade (built 2026-10-19):** `เงาบัง (จำลองทั้งปี)` after the layout: the losses, the recommendation, the month × hour map and the plan on 21 ธ.ค. at 09:00 and 15:00.
 - **Excel (NO.224, sheet `บ่อน้ำใส`):** the plan image in `C3:X15` (or `planPhoto`), height, surface, soil, type and shade in the existing cells and the blank tail of rows 16/17, the standard design's counts in `N19`, the layout's summary and BOQ lines in the blank rows `A37` / `A38`, the photos.
 - **DXF (`ส่งออก DXF`, `TankDXF`):** the plan at real scale in mm from the top-left corner, Y up, layers GRID, OUTLINE, DIM, OBSTACLE, NORTH, TEXT, plus PV and PV_GROUP for the stored layout.
 

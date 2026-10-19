@@ -299,6 +299,7 @@ extension ReportLayout {
             if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " · "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
             o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))
             out.append(Unit(h: h, ops: o))
+            if let sh = TankShade(d, latitude: lat ?? RoofMount.defaultLatitude) { out.append(tankShadeUnit(d, l, sh)) }
             let sec = TankDrawings.tableSection(l.params), ks = (W - 16) / sec.width, sh = Self.band + 6 + sec.height * ks + 4
             var s = box("ภาพตัดโต๊ะแผง", height: sh)
             s += sec.translated(8, Self.band + 6, scale: ks)
@@ -312,6 +313,26 @@ extension ReportLayout {
             out.append(Unit(h: sh, ops: s))
         }
         return out
+    }
+
+    /// `เงาบัง`: the losses, the recommendation, the month × hour map and the plan on 21 ธ.ค. at 09:00 and 15:00.
+    func tankShadeUnit(_ d: Values, _ l: TankLayout, _ sh: TankShade) -> Unit {
+        let W = Self.cw, map = TankDrawings.heatMap(sh), km = (W - 16) / map.width
+        let snaps = sh.snapshots.filter { $0.title.hasPrefix("21 ธ.ค.") }
+        let plans = snaps.compactMap { s in TankDrawings.layoutPlan(d, l, shaded: s.shaded).map { (s.title, $0) } }
+        let pw = (W - 24) / 2, kp = plans.first.map { pw / $0.1.width } ?? 0, ph = plans.first.map { $0.1.height * kp } ?? 0
+        let h = Self.band + 8 + 24 + map.height * km + 8 + (plans.isEmpty ? 0 : ph + 16) + 6
+        var o = box("เงาบัง (จำลองทั้งปี)", height: h)
+        var y = Self.band + 10
+        o.append(.text(sh.summaryLine, at: Pt(8, y), size: 8.5, bold: true)); y += 12
+        o.append(.text(sh.recommendation(d), at: Pt(8, y), size: 8, color: sh.objectLoss >= 0.01 ? .tag : .black)); y += 12
+        o += map.translated(8, y, scale: km); y += map.height * km + 8
+        for (i, p) in plans.enumerated() {
+            let x = 8 + Double(i) * (pw + 8)
+            o.append(.text("เงาบนแผง " + p.0 + " (สีส้ม)", at: Pt(x, y + 4), size: 8, bold: true))
+            o += p.1.translated(x, y + 12, scale: kp)
+        }
+        return Unit(h: h, ops: o)
     }
 
     /// D1 from a standard design (docs/specs/standard-designs.md §6): the design, the counts and where the site differs.

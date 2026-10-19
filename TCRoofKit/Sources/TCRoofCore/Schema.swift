@@ -227,7 +227,8 @@ public enum Schema {
         case "มี"?:
             let from = v.multi("shadeFrom").joined(separator: ", "), dir = v.multi("shadeDir").joined(separator: ", ")
             let note = v.text("shadeNote").trimmingCharacters(in: .whitespaces)
-            return "เงาบัง" + (from.isEmpty ? "" : ": " + from) + (dir.isEmpty ? "" : " ทิศ " + dir) + (note.isEmpty ? "" : " (\(note))")
+            let h = v.number(TankShade.Key.height).map { " สูง \(fmt($0)) ม." } ?? "", d = v.number(TankShade.Key.distance).map { " ห่าง \(fmt($0)) ม." } ?? ""
+            return "เงาบัง" + (from.isEmpty ? "" : ": " + from) + (dir.isEmpty ? "" : " ทิศ " + dir) + h + d + (note.isEmpty ? "" : " (\(note))")
         default: return nil
         }
     }
@@ -330,6 +331,9 @@ public enum Schema {
             GroupSpec("เงาบัง", [C("shade", "มีเงาบังพื้นที่ติดตั้งหรือไม่", ["ไม่มี", "มี"]),
                                FieldSpec("shadeFrom", "สิ่งที่บัง", .checks(shadeSources), when: shaded),
                                FieldSpec("shadeDir", "ทิศที่เงาบัง", .checks(shadeDirs), when: shaded),
+                               // for the shade simulation (`TankShade`); optional, so completion counts as before
+                               N(TankShade.Key.height, "ความสูงสิ่งที่บัง (จากพื้นดิน)", "M", optional: true, when: shaded),
+                               N(TankShade.Key.distance, "ห่างผนังถัง", "M", optional: true, when: shaded),
                                T("shadeNote", "รายละเอียด (ระยะห่าง / ความสูงโดยประมาณ)", "เช่น ต้นไม้สูง ~8 ม. ห่าง 5 ม.", optional: true, when: shaded)]),
             GroupSpec("ภาพถ่าย", [FieldSpec("obstPhotos", "ภาพสิ่งกีดขวาง (ภาพแรกลงกรอบใหญ่ \"สำหรับวาดขนาดของสิ่งกีดขวาง\")", .photos(max: 5)),
                                 P("aerialPhoto", "รูปมุมสูง / รูปโดรน"), FieldSpec("sidePhotos", "รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", .photos(max: 3))])]),

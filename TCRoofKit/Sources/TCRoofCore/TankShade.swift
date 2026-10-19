@@ -94,14 +94,20 @@ public struct TankShade: Sendable {
         let az, facing, gp, beta, slope, pitch: Double
 
         init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double) {
-            let p = l.params
-            az = azimuth ?? 0
             // the panels face the wall they slope down to
-            facing = (az + [180.0, 90, 0, 270][l.turn]).truncatingRemainder(dividingBy: 360)
+            let facing = ((azimuth ?? 0) + [180.0, 90, 0, 270][l.turn]).truncatingRemainder(dividingBy: 360)
+            self.init(spots: TankShade.spots(l), facing: facing, params: l.params, size: l.size, objects: objects, azimuth: azimuth, exposed: exposed)
+        }
+
+        /// Any panels on the plan facing `facing` (compass), such as the true-south comparison's.
+        init(spots: [Spot], facing: Double, params p: TankLayout.Params, size: (w: Double, h: Double), objects: [Object],
+             azimuth: Double?, exposed: Double) {
+            az = azimuth ?? 0
+            self.facing = facing
             gp = (facing - 180 + 540).truncatingRemainder(dividingBy: 360) - 180
-            spots = TankShade.spots(l)
+            self.spots = spots
             beta = SolarModel.rad(p.tilt); slope = 2 * p.moduleL + p.moduleGap; pitch = p.rowPitch
-            let corners = [(0.0, 0.0), (l.size.w, 0), (0, l.size.h), (l.size.w, l.size.h)], a = az
+            let corners = [(0.0, 0.0), (size.w, 0), (0, size.h), (size.w, size.h)], a = az
             lines = objects.compactMap { o in
                 guard let b = TankShade.direction(o.direction) else { return nil }
                 let u = Sim.planVector(b, a), edge = corners.map { $0.0 * u.0 + $0.1 * u.1 }.max() ?? 0
@@ -230,13 +236,17 @@ public struct TankShade: Sendable {
             let behind = ahead.contains { let (c, d) = span($0); return c < b - 1e-6 && a < d - 1e-6 }
             for panel in t.panels where panel.on {
                 let lower = panel.key.hasSuffix(".1")
-                // centre heights: the lower module's middle and the upper's, along the tilt from the front post
-                let along = lower ? p.cellH / 2 - p.frontIn : p.cellH * 1.5 + p.moduleGap * p.cosT - p.frontIn
-                out.append(Spot(key: panel.key, x: panel.x + panel.w / 2, y: panel.y + panel.h / 2, z: p.hFront + along * p.tanT,
+                out.append(Spot(key: panel.key, x: panel.x + panel.w / 2, y: panel.y + panel.h / 2, z: height(p, lower: lower),
                                 lower: lower, behindRow: behind))
             }
         }
         return out
+    }
+
+    /// A module's centre above the roof: the lower module's middle or the upper's, along the tilt from the front post.
+    static func height(_ p: TankLayout.Params, lower: Bool) -> Double {
+        let along = lower ? p.cellH / 2 - p.frontIn : p.cellH * 1.5 + p.moduleGap * p.cosT - p.frontIn
+        return p.hFront + along * p.tanT
     }
 
     /// The month (0–11) of day `n` of the year.

@@ -218,8 +218,9 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 ## 5. Report and export
 
 - **PDF (`ReportLayout.planSection`):** `แปลนหลังคาถังน้ำใส` from `TankPlan` (a hand sketch `planPhoto` replaces it), `จำนวนแผงก่อนเข้าสำรวจ` (`panelsBefore`) and `ที่ตัดออก`, the tank fields (height, surface, soil, type, position, shade), the obstacle table (`ไม่มีจริง` rows), the standard design's summary when the points came from one, then the aerial, obstacle and side photos. The drawing is scaled to the content width and never split across pages.
-- **Not in the PDF yet:** `รูปตัดถัง`, `ผังจัดแผง` with its summary, `ภาพตัดโต๊ะแผง`, the shade heat map and losses, and the footer `สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง`.
-- **Excel (NO.224, sheet `บ่อน้ำใส`):** the plan image in `C3:X15` (or `planPhoto`), height, surface, soil, type and shade in the existing cells and the blank tail of rows 16/17, the standard design's counts in `N19`, the photos.
+- **Layout and sections (built 2026-10-19, `TankDrawings`, `ReportLayout.tankLayoutUnits`):** `ผังจัดแผงบนหลังคาถัง` (the plan with the stored layout: panels, switched-off panels dashed, cut columns red, footings, the slope tag), its summary line (panels, kWp, MWh/ปี from `SolarModel` at the panels' tilt and facing and A1's latitude, tables, rows, tilt), the BOQ line, the three checks, the ค่าสมมติ line and the footer; `ภาพตัดโต๊ะแผง` (the standard two-row side section); `รูปตัดถัง 1–1` and `2–2` (§4.3's rule: ground by position, walls and slabs 0.30 m and 0.50 m soil over a buried tank assumed, the external volume).
+- **Not in the PDF yet:** the shade heat map and losses.
+- **Excel (NO.224, sheet `บ่อน้ำใส`):** the plan image in `C3:X15` (or `planPhoto`), height, surface, soil, type and shade in the existing cells and the blank tail of rows 16/17, the standard design's counts in `N19`, the layout's summary and BOQ lines in the blank rows `A37` / `A38`, the photos.
 - **DXF (`ส่งออก DXF`, `TankDXF`):** the plan at real scale in mm from the top-left corner, Y up, layers GRID, OUTLINE, DIM, OBSTACLE, NORTH, TEXT, plus PV and PV_GROUP for the stored layout.
 
 ## 6. Data compatibility

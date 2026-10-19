@@ -7,13 +7,13 @@ final class InverterStationTests: XCTestCase {
     func testCatalogDecodes() {
         XCTAssertEqual(cat.version, "2026-09-30")
         XCTAssertEqual(cat.inverters.count, 4)
-        XCTAssertEqual(cat.pv.count, 3)
+        XCTAssertEqual(cat.pv.count, 4)
         XCTAssertEqual(cat.cabinets.ac.map(\.w), [900, 1000, 1200])
         XCTAssertEqual(cat.cabinets.dc.map(\.w), [600, 700, 800])
         XCTAssertEqual(cat.cabinets.meter.w, 630)
         XCTAssertEqual(cat.rules.cbFactor, 1.25)
         XCTAssertEqual(cat.inverterSizes, [40, 60, 80, 125])
-        XCTAssertEqual(cat.pv.first { $0.def == true }?.id, "p550")
+        XCTAssertEqual(cat.pv.first { $0.def == true }?.id, "p570")
     }
 
     func testLookupsAndGenericInverter() {

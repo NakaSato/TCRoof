@@ -66,7 +66,7 @@ extension TankPageWide {
         .onAppear(perform: openLayout)
         .confirmationDialog("ล้างการแก้แผงที่ทำไว้?", isPresented: Binding(get: { layoutAsk != nil }, set: { if !$0 { layoutAsk = nil } }),
                             titleVisibility: .visible) {
-            Button(layoutAsk == .max ? "หาผังแผงมากสุด" : "จัดแผงใหม่", role: .destructive) {
+            Button(layoutAsk == .max ? "หาผังที่ได้พลังงานมากที่สุด" : "จัดแผงใหม่", role: .destructive) {
                 if let a = layoutAsk { runLayout(a) }
             }
             Button("ยกเลิก", role: .cancel) {}
@@ -87,7 +87,7 @@ extension TankPageWide {
 
     enum LayoutRun { case auto, max }
 
-    /// `จัดแผงใหม่` / `หาผังแผงมากสุด`: asks first when panels were edited by hand.
+    /// `จัดแผงใหม่` / `หาผังที่ได้พลังงานมากที่สุด`: asks first when panels were edited by hand.
     func askLayout(_ a: LayoutRun) {
         if TankLayout.off(values).isEmpty { runLayout(a) } else { layoutAsk = a }
     }
@@ -95,13 +95,17 @@ extension TankPageWide {
     func runLayout(_ a: LayoutRun) {
         layoutAsk = nil
         switch a {
-        case .auto: update { TankLayout.save(&$0, TankLayout.auto($0), off: []) }
+        case .auto:
+            energySearch = nil
+            update { TankLayout.save(&$0, TankLayout.auto($0), off: []) }
         case .max:
-            let v = values
+            // the row gaps from the standard's up, scored by the year's energy after shade (tank-mounting-layout.md §3a)
+            let v = values, lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude
             layoutSearching = true
             Task { @MainActor in
-                let p = await Task.detached(priority: .userInitiated) { TankLayout.best(v) }.value
-                if let p { update { TankLayout.save(&$0, p, off: []) } }
+                let s = await Task.detached(priority: .userInitiated) { TankLayout.bestEnergy(v, latitude: lat) }.value
+                if let s { update { TankLayout.save(&$0, s.params, off: []) } }
+                energySearch = s
                 layoutSearching = false
             }
         }
@@ -127,9 +131,12 @@ extension TankPageWide {
                 .buttonStyle(.plain)
                 Button { askLayout(.max) } label: {
                     Group {
-                        if layoutSearching { ProgressView().tint(Theme.navy) } else { Text("หาผังแผงมากสุด") }
+                        if layoutSearching { ProgressView().tint(Theme.navy) } else {
+                            Text("หาผังที่ได้พลังงานมากที่สุด").multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.85)
+                        }
                     }
-                    .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                    .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(Theme.mint, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
@@ -138,6 +145,9 @@ extension TankPageWide {
                 .disabled(layoutSearching)
             }
             .disabled(!Tank.hasSize(values))
+            if let s = energySearch, let p = TankLayout.params(values), abs(p.rowGap - s.chosen.gap) < 1e-6 {
+                Text(s.line).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -244,6 +254,7 @@ extension TankPageWide {
             ("แผง \(w) W", "\(l.count)"),
             ("กำลังรวม", String(format: "%.1f kWp", l.kWp)),
             ("แถว · โต๊ะแผง", "\(l.rows) · \(l.builtTables.count)"),
+            ("ระยะห่างแถว", String(format: "%.2f ม.", l.params.rowGap) + (l.params.rowGap > TankLayout.Params().rowGap + 1e-6 ? "" : " (มาตรฐาน)")),
             ("เสา + โครงหน้า", "\(b.posts)"),
             ("ฐานราก", "\(b.footings) จุด"),
             ("ราง (4 เส้น)", "\(Int(b.railLength.rounded())) ม."),
@@ -253,6 +264,7 @@ extension TankPageWide {
         ]
         let chip = ("\(l.count) แผง · " + String(format: "%.1f kWp", l.kWp), Theme.okTick, Theme.okSoft)
         return phoneCard(2, "สรุป · วัสดุโครงสร้าง", chip: chip) {
+            AnyView(energyTiles(l))
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, r in
                     HStack(alignment: .firstTextBaseline) {
@@ -266,6 +278,30 @@ extension TankPageWide {
                 }
             }
         }
+    }
+
+    /// MWh a year, kWh per kWp and the row shade, after the shade simulation (card 4's, worked out off the main thread).
+    @ViewBuilder func energyTiles(_ l: TankLayout) -> some View {
+        let s = shadeResult
+        let tiles: [(String, String)] = [
+            ("MWh/ปี", s.map { String(format: "%.1f", $0.netMWh) } ?? "…"),
+            ("kWh/kWp·ปี", s.map { l.kWp > 0 ? String(format: "%.0f", $0.netMWh * 1000 / l.kWp) : "-" } ?? "…"),
+            ("เงาแถวหน้า", s.map { String(format: "%.1f%%", $0.rowLoss * 100) } ?? "…"),
+        ]
+        HStack(spacing: 6) {
+            ForEach(Array(tiles.enumerated()), id: \.offset) { _, t in
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(t.1).font(.sarabunFixed(16, .bold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                    Text(t.0).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Self.track, in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityElement(children: .combine)
+            }
+        }
+        Text("พลังงานโดยประมาณจากแบบจำลองท้องฟ้าแจ่มใส หักเงาแถวหน้าและสิ่งบังแล้ว").font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: card 3 · checks
@@ -391,7 +427,9 @@ extension TankPageWide {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    let sketches = [TankLayout.current(values).map { TankDrawings.tableSection($0.params) } ?? TankDrawings.tableSection(TankLayout.defaults(values))]
+                    let l = TankLayout.current(values)
+                    let sketches = [l.map { TankDrawings.tableSection($0.params) } ?? TankDrawings.tableSection(TankLayout.defaults(values))]
+                        + [l.flatMap { TankDrawings.tableFront($0) }].compactMap { $0 }
                         + [false, true].compactMap { TankDrawings.section(values, across: $0) }
                     ForEach(Array(sketches.enumerated()), id: \.offset) { _, sk in
                         GeometryReader { g in SketchCanvas(ops: sk.ops, fit: SketchFit(sk.width, sk.height, in: g.size)) }

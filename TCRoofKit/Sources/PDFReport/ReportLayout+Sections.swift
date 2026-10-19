@@ -311,6 +311,12 @@ extension ReportLayout {
             var s = box("ภาพตัดโต๊ะแผง", height: sh)
             s += sec.translated(8, Self.band + 6, scale: ks)
             out.append(Unit(h: sh, ops: s))
+            if let front = TankDrawings.tableFront(l) {
+                let kf = (W - 16) / front.width, fh = Self.band + 6 + front.height * kf + 4
+                var f = box("รูปด้านหน้าโต๊ะแผง", height: fh)
+                f += front.translated(8, Self.band + 6, scale: kf)
+                out.append(Unit(h: fh, ops: f))
+            }
         }
         for across in [false, true] {
             guard let sec = TankDrawings.section(d, across: across) else { continue }

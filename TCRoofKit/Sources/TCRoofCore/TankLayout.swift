@@ -11,6 +11,8 @@ import Foundation
 public struct TankLayout: Sendable {
     public enum Key {
         public static let orient = "tankPvOrient", offX = "tankPvOffX", offY = "tankPvOffY", off = "tankPvOff"
+        /// The row gap the energy search picked (m), when wider than the standard's; absent means the standard.
+        public static let gap = "tankPvGap"
     }
 
     // MARK: the structure standard (§1)
@@ -354,16 +356,17 @@ public struct TankLayout: Sendable {
 
     /// `หาผังแผงมากสุด`: every offset on the 5 cm grid; stage 1 counts modules without posts, stage 2 lays out the ten
     /// best with posts, as a cut column can change the order (§3a step 5). The most modules wins, then the smallest offset.
-    public static func best(_ v: Values, base: Params? = nil) -> Params? {
+    /// `stepX` / `stepY` (m, multiples of the 5 cm grid) make the energy search's coarser pass (§3a step 5).
+    public static func best(_ v: Values, base: Params? = nil, stepX: Double = TankPoints.grid, stepY: Double = TankPoints.grid) -> Params? {
         let base = base ?? defaults(v)
         guard let t = TankPoints.tankSize(v) else { return nil }
         let q = turn(v), open = openings(v), r = offsetRange(v, base)
-        let nx = Int((r.x / TankPoints.grid + 1e-9).rounded(.down)), ny = Int((r.y / TankPoints.grid + 1e-9).rounded(.down))
+        let nx = Int((r.x / stepX + 1e-9).rounded(.down)), ny = Int((r.y / stepY + 1e-9).rounded(.down))
         var found: [(n: Int, p: Params)] = []
         for j in 0...ny {
             for i in 0...nx {
                 var p = base
-                p.offX = snap(Double(i) * TankPoints.grid); p.offY = snap(Double(j) * TankPoints.grid)
+                p.offX = snap(Double(i) * stepX); p.offY = snap(Double(j) * stepY)
                 found.append((count(size: t, turn: q, openings: open, params: p), p))
             }
         }
@@ -394,6 +397,8 @@ public struct TankLayout: Sendable {
         guard !v.text(Key.orient).isEmpty else { return nil }
         var p = defaults(v)
         p.offX = v.number(Key.offX) ?? 0; p.offY = v.number(Key.offY) ?? 0
+        // never closer than the standard (maintenance access and bracing, §3a step 5)
+        if let g = v.number(Key.gap) { p.rowGap = max(p.rowGap, g) }
         return p
     }
     public static func off(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
@@ -421,6 +426,7 @@ public struct TankLayout: Sendable {
     public static func save(_ v: inout Values, _ p: Params, off: Set<String>) {
         v[Key.orient] = .text("portrait")
         v[Key.offX] = .text(fmt(snap(p.offX))); v[Key.offY] = .text(fmt(snap(p.offY)))
+        v[Key.gap] = p.rowGap > Params().rowGap + 1e-6 ? .text(fmt(p.rowGap)) : nil
         v[Key.off] = off.isEmpty ? nil : .text(off.sorted().joined(separator: " "))
         if let l = TankLayout(v, params: p, off: off) { v["panelsBefore"] = .text(String(l.count)) }
     }

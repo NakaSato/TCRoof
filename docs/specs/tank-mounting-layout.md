@@ -1,12 +1,14 @@
 # Auto mounting layout from the tank (ผังโครงสร้างแผงบนหลังคาถัง)
 
-**Status:** Partly built (2026-10). Built: the layout, its quantities and three checks in
+**Status:** Mostly built (2026-10-20). Built: the layout, its quantities and three checks in
 `TCRoofKit/Sources/TCRoofCore/TankLayout.swift` (tests `TankLayoutTests.swift`); D1 sub-step 3 `จัดแผง` on iPhone and
 iPad in `TCRoofUI/Survey/Pages/Tank/TankPageWide+Layout.swift` and `TankLayoutPlan.swift`
 ([`docs/ui/survey-d1-layout-iphone`](../ui/survey-d1-layout-iphone/CLAUDE_CODE_TASK.md)); the layout's PV layers in the
-D1 DXF (`TCRoofCore/TankDXF.swift`). Not built: the energy model and energy search (§3a), the side section and front
-elevation drawings and the B1-C3 sheet (§5), a structure standard editable in settings, the inspect mode, sliders,
-undo and deltas of the prototype (§4.3), and the report / Excel BOQ.
+D1 DXF (`TCRoofCore/TankDXF.swift`); the row shade (`TankShade`, §3a step 4); the energy search (§3a,
+`TankLayout+Energy.swift`, tests `TankEnergyTests`: `หาผังที่ได้พลังงานมากที่สุด`, gaps 2.70–4.70 m kept as
+`tankPvGap`, energy tiles on card 2); the side section and the front elevation (`TankDrawings.tableSection`,
+`tableFront`) in the B1-C3 sheet and the PDF. Not built: the true-south comparison of §3a (comparison only), a structure
+standard editable in settings, the inspect mode, sliders, undo and deltas of the prototype (§4.3).
 **Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-drawing-swift.md`](tank-drawing-swift.md)),
 types in [`auto-drawing.md`](auto-drawing.md) §8
 **Interactive prototype:** `prototype/mount-layout.html` (open in a browser) · **Demo:** `img/mount_demo.mp4` (22 steps),
@@ -126,7 +128,7 @@ fewer modules than any offset tried, including the automatic one. The prototype'
 cut columns; on its 40 × 40 fixture it went from 386 modules at offsets 0 / 0 to **408 modules (244.8 kWp)** at row
 offset 0.30 m, column offset 0.05 m, with 0 legs on obstacles.
 
-## 3a. Accurate layout: best energy per year (not built)
+## 3a. Accurate layout: best energy per year
 
 The app maximises the module count. The accurate version (`img/tank_mount_opt.py`) also scores layouts by **annual
 energy**, because the tank is rarely square to the compass and closer rows shade each other.
@@ -181,9 +183,15 @@ What this says:
 |---|---|---|
 | ![](img/tank_mount_opt_plan.png) | ![](img/tank_mount_opt_south.png) | ![](img/tank_mount_opt_compare.png) |
 
-UI when built: energy tiles (MWh/yr, kWh/kWp, row shading %) next to the module count, and `หาผังแผงมากสุด` becomes
-**หาผังที่ได้พลังงานมากที่สุด**. Swift: a pure `SunModel` (sun position, clear-sky, POA, row shading), unit-tested against
-the Python numbers above, and the gap search in `TankLayout.best`.
+Built (2026-10-20): `หาผังที่ได้พลังงานมากที่สุด` replaces `หาผังแผงมากสุด` (`TankLayout.bestEnergy`). The standard gap
+gets the full 5 cm offset search (so the module count never drops below the old button's), the wider gaps the coarser
+pass above, and a wider winner is searched again on the 5 cm grid; energy is net of the row shade and of the objects
+beside the tank (`TankShade`), on every 6th day at half hours. About 1.5 s on the 40 × 40 fixture (Mac, Debug). The gap
+is stored as `tankPvGap` only when wider than the standard; `จัดแผงใหม่` goes back to 2.70 m. Card 2 shows MWh/ปี,
+kWh/kWp·ปี and the row shade from card 4's simulation, and a line under the buttons lists the gaps tried. Swift results
+on the 40 × 40 fixture with the standard points, 17° N, top wall facing 12°, 570 W module: 2.70 m 418 modules 346.3
+MWh/yr (row shade 1.7 %), 3.10 m 382 modules 319.6, 4.70 m 320 modules 269.4; the standard gap wins, as in the
+prototype. The true-south comparison is not built.
 
 ## 4. Interaction
 
@@ -301,8 +309,8 @@ Read-only; switching view keeps the selection.
 | **Plan** | tank outline and bays, openings, panels, cut columns, row guides, posts, slope tag (§4.1) | on screen |
 | **Plan** (A3, prototype) | as above plus rails, rafters, footings, rail clamps (green), ground lug per table (red), north arrow, legend, quantities, notes | no |
 | **DXF** | D1's `ส่งออก DXF` adds the layout: layer `PV` (each panel on), `PV_GROUP` (each table's outline and a footing circle per post) | yes, `TankDXF` |
-| **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, post heights 1.00 / 2.00, braces, the two modules, a vent under the panels with the clearance note | no |
-| **Front elevation** | one table: posts and spacing, X bracing, 4 rails, modules, footing note | no |
+| **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, post heights 1.00 / 2.00, braces, the two modules, a vent under the panels with the clearance note | yes, `TankDrawings.tableSection` (B1-C3 sheet, PDF) |
+| **Front elevation** | one table: posts and spacing, X bracing, 4 rails, modules, footing note | yes, `TankDrawings.tableFront` (the longest table; B1-C3 sheet, PDF) |
 
 Footer on all printed sheets: "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง".
 
@@ -314,7 +322,8 @@ Footer on all printed sheets: "สร้างอัตโนมัติจา�
 | `TCRoofUI/Survey/Pages/Tank/TankPageWide+Layout.swift` (built) | the three cards, the full-screen plan, the questions, iPad and iPhone layouts |
 | `TCRoofUI/Survey/Pages/Tank/TankLayoutPlan.swift` (built) | the plan drawing and its drag, tap and long press |
 | `TCRoofCore/TankDXF.swift` (built) | the PV layers |
-| not built | the standard in `SurveySettings`, `SunModel`, the section and front sheets as `Sketch`, the report and Excel BOQ from `BOM` |
+| `TCRoofCore/TankLayout+Energy.swift` (built) | the energy search (§3a) over `SolarModel` and `TankShade` |
+| not built | the standard in `SurveySettings` |
 
 Performance: the 40 × 40 layout is a few hundred boxes and computes on the main thread; `current` keeps its last answer,
 since one render asks for it from several cards. Only `หาผังแผงมากสุด` runs detached.

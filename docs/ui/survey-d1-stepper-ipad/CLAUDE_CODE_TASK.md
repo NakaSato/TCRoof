@@ -47,6 +47,7 @@ Values in the boards are examples. Never hardcode them.
   - Status: 12 semibold. `Theme.success` when `statusOK`, else `Theme.pending`. Step 4's red "บังคับ n/m" stays as `steps` already gives it.
   - Current step: `Theme.primary.opacity(0.1)`-like light blue fill (use the closest `Theme` token, such as `Theme.primarySoft` if it exists; otherwise add a token rather than a hex) and an inset 1.5 pt `Theme.primary` stroke. No shadow.
 - **Lines.** `Theme.success` when the step before is `done`, else `Theme.hairline`.
+- **Undo buttons:** the tab bar shares its row with `undoButtons()` (`↶ เลิกทำ` / `ทำซ้ำ`, TankPageWide+Undo). The stepper takes the remaining width (`frame(maxWidth: .infinity)`, as `feat/tank-photo-details` already does), and the lines shrink first so the undo buttons are never squeezed.
 - **Narrow widths** (`narrow`, under 600 pt): keep today's 2 × 2 grid, since a row of four doesn't fit. The stepper is for regular width only.
 - **Accessibility:** keep the label "ขั้นที่ n ชื่อ สถานะ" and the `.isSelected` trait on the current step. Hide the lines from VoiceOver.
 
@@ -71,4 +72,5 @@ Values in the boards are examples. Never hardcode them.
 - [ ] The existing D1 UI tests still pass (`TankUndoUITests`, and any test that taps the tabs by their accessibility labels).
 
 ## Merge note
+`feat/tank-photo-details` (not merged yet) changes the same `HStack` line (`tabBar.frame(maxWidth: .infinity)`). Keep that modifier when you merge.
 `design/survey-d1-photo-ipad` also edits `TankPageWide.swift`, in the `tab == 4` switch and a new `+Photos` file. The two changes touch different parts of the file, so either branch can merge first.

@@ -27,7 +27,7 @@ public extension MasterSchedule {
         public var remaining: Double { max(weight - done, 0) }
         /// Weeks from this week to the week of the planned end, both included; 0 once that week is past.
         public let weeksLeft: Int
-        /// Points per week needed to finish by the planned end; nil when no week is left.
+        /// Points per week needed to finish by the planned end; once its week is past, everything left (this week); nil when done.
         public let neededPerWeek: Double?
         /// Points per week booked so far, over the weeks since the task started (planned or first booking); nil before it starts.
         public let pacePerWeek: Double?
@@ -74,7 +74,7 @@ public extension MasterSchedule {
             else { state = .atRisk }
 
             return Recovery(task: p.task, weight: p.weight, plannedStart: start, plannedEnd: end, done: done,
-                            weeksLeft: weeksLeft, neededPerWeek: weeksLeft > 0 && remaining > 1e-9 ? remaining / Double(weeksLeft) : nil,
+                            weeksLeft: weeksLeft, neededPerWeek: remaining > 1e-9 ? remaining / Double(max(weeksLeft, 1)) : nil,
                             pacePerWeek: pace, projectedFinish: finish,
                             slipDays: remaining <= 1e-9 && finish == nil ? nil : slip, state: state)
         }

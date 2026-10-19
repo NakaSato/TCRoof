@@ -1,8 +1,9 @@
 # ผู้ช่วยโครงการ (Project Assistant) on Qwen
 
-**Status:** phases 1–2 built 2026-10-19 (the `assistant` Cloud Function in `functions/`, not deployed yet; the core in
-`TCRoofKit/Sources/TCRoofCore/Assistant/`, tested by `AssistantTests`; the `assistant.use` capability). Phase 3 (the
-app's client and chat screen) is next.
+**Status:** built 2026-10-19: the `assistant` Cloud Function in `functions/` (not deployed yet), the core in
+`TCRoofKit/Sources/TCRoofCore/Assistant/` (`AssistantTests`), the `assistant.use` capability, and the app's chat in
+`TCRoof/Assistant/` (`AssistantUITests` on the demo stand-in). It calls the function over HTTPS with the account's ID
+token (`AssistantClient`), so the app needs no FirebaseFunctions SDK.
 **Goal:** a chat assistant that helps the team keep each PWA station's MP plan on schedule: which stations and tasks
 are behind, what pace each task needs, and booking progress, actual dates and late causes from the conversation.
 
@@ -62,7 +63,7 @@ App (team / manager / Maintainer; assistant.use)
 3. `firebase functions:secrets:set QWEN_API_KEY`
 4. `npm run deploy` (asks for the parameters, or put them in `functions/.env.tcroof-1564c`).
 
-## 4. Phase 3: the app (next)
+## 4. The app (built)
 
 - `AssistantClient` (`Assistant.Transport`) through `FirebaseFunctions` (add the product to the app target),
   `httpsCallable("assistant")` in `asia-southeast1`; errors in Thai (`resource-exhausted`: the day's limit).

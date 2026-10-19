@@ -59,7 +59,9 @@ final class AssistantTests: XCTestCase {
         XCTAssertEqual(s.state, .atRisk)
 
         XCTAssertEqual(r.first { $0.task == .dcSide }?.state, .overdue)
-        XCTAssertEqual(r.first { $0.task == .dcSide }?.neededPerWeek, nil)
+        // past its planned end: everything left is needed now
+        let dc = try XCTUnwrap(r.first { $0.task == .dcSide })
+        XCTAssertEqual(dc.neededPerWeek, dc.remaining)
         XCTAssertEqual(r.first { $0.task == .panels }?.state, .upcoming)
         XCTAssertEqual(r.first { $0.task == .panels }?.pacePerWeek, nil)
         XCTAssertEqual(r.first { $0.task == .inverter }?.state, .done)

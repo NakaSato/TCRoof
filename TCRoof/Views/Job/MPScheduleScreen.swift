@@ -21,6 +21,7 @@ struct MPScheduleScreen: View {
     struct SharedFile: Identifiable { let id = UUID(); let url: URL }
     @State private var exportError: String?
     @State private var workbook = MPWorkbookFlow()
+    @State private var assistant = false
 
     var body: some View {
         GeometryReader { g in
@@ -42,6 +43,11 @@ struct MPScheduleScreen: View {
         .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if permissions.can(.assistantUse), job.scheduleInput != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { assistant = true } label: { Label("ผู้ช่วย", systemImage: "sparkles") }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button(action: exportPDF) { Label("PDF ประชุม", systemImage: "square.and.arrow.up") }
                     .disabled(job.scheduleInput == nil)
@@ -58,6 +64,9 @@ struct MPScheduleScreen: View {
         }
         .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
             HStack(spacing: 12) {
+                if permissions.can(.assistantUse), job.scheduleInput != nil {
+                    TCButton("ผู้ช่วย", systemImage: "sparkles", kind: .secondary) { assistant = true }
+                }
                 if permissions.can(.mpSetup) { TCButton("ตั้งค่าแผน", kind: .secondary) { showSetup = true } }
                 Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
                     Label("ไฟล์ Excel", systemImage: "tablecells").font(.sarabun(17, .semibold, relativeTo: .body)).frame(minHeight: touchMin)
@@ -72,6 +81,7 @@ struct MPScheduleScreen: View {
         .onChange(of: job.scheduleInputJSON) { _, _ in openOnPlan() }
         .sheet(isPresented: $showProgress) { MPProgressSheet(job: job, week: week) }
         .sheet(isPresented: $showSetup) { MPSetupSheet(job: job) }
+        .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
         .mpWorkbook(workbook, job: job)
         .sheet(item: $pdf) { f in ActivitySheet(items: [f.url]).presentationDetents([.medium, .large]) }
         .alert("สร้าง PDF ไม่สำเร็จ", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {

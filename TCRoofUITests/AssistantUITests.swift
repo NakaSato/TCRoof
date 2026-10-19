@@ -1,0 +1,60 @@
+import XCTest
+
+/// ผู้ช่วยโครงการ with the demo stand-in for Qwen (`-screen assistant -assistantDemo YES`, any simulator):
+/// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<udid>' -only-testing:TCRoofUITests/AssistantUITests -derivedDataPath <scratch>`.
+/// A prompt chip answers from the seeded plans, a typed question about one station answers, and the update chip
+/// proposes a booking whose `ยืนยัน` saves it (the first demo jobs keep it). With `TEST_RUNNER_ASSISTANT_SHOTS=<folder>`
+/// each step is saved there as a PNG.
+final class AssistantUITests: XCTestCase {
+    let slow: TimeInterval = 90
+
+    override func setUp() { continueAfterFailure = false }
+
+    func shot(_ name: String) {
+        guard let dir = ProcessInfo.processInfo.environment["ASSISTANT_SHOTS"] else { return }
+        try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name + ".png"))
+    }
+
+    func testAskProposeAndConfirm() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "assistant", "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let behind = app.buttons["สถานีไหนช้ากว่าแผน"]
+        XCTAssertTrue(behind.waitForExistence(timeout: slow), "the prompt chips should show")
+        shot("01-start")
+
+        behind.tap()
+        let answer = app.staticTexts.matching(identifier: "assistantAnswer").firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 15), "the stand-in should answer")
+        XCTAssertTrue(answer.label.contains("สถานีที่ช้ากว่าแผน"))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "วันนี้ใช้ได้อีก")).firstMatch.exists, "the day's requests left")
+        shot("02-behind")
+
+        let input = app.textViews["assistantInput"].exists ? app.textViews["assistantInput"] : app.textFields["assistantInput"]
+        input.tap()
+        input.typeText("MP 190 ต้องเร่งงานอะไร")
+        app.buttons["ส่ง"].tap()
+        let second = app.staticTexts.matching(identifier: "assistantAnswer").element(boundBy: 1)
+        XCTAssertTrue(second.waitForExistence(timeout: 15))
+        XCTAssertTrue(second.label.contains("งานที่ต้องเร่ง") || second.label.contains("แผน"), "a station's schedule")
+        shot("03-station")
+
+        app.buttons["เริ่มใหม่"].tap()
+        let update = app.buttons["อัปเดตความก้าวหน้าจากรายงานประจำวัน"]
+        XCTAssertTrue(update.waitForExistence(timeout: 5), "a new chat shows the chips again")
+        update.tap()
+        let confirm = app.buttons["assistantConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 15), "the stand-in should propose a booking")
+        XCTAssertTrue(app.staticTexts["ยังไม่ได้บันทึก"].exists)
+        let thinking = app.descendants(matching: .any)["assistantThinking"]
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: thinking)
+        waitForExpectations(timeout: 15)
+        shot("04-proposal")
+
+        confirm.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["assistantSaved"].firstMatch.waitForExistence(timeout: 5), "ยืนยัน should save and say so")
+        XCTAssertFalse(confirm.exists)
+        shot("05-saved")
+    }
+}

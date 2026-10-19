@@ -1,24 +1,26 @@
 import Foundation
+import Observation
 
 public extension Assistant {
 
     /// One conversation: sends the person's message, runs the tools the model calls (at most `maxRounds` rounds), and
-    /// collects the changes it proposes. Kept on the device only.
+    /// collects the changes it proposes. Kept on the device only; observable, so the chat screen follows it.
     @MainActor
+    @Observable
     final class Session {
         public private(set) var messages: [Message]
         /// Proposed changes not yet confirmed or dismissed, oldest first.
         public private(set) var proposals: [PendingAction] = []
         public private(set) var remainingToday: Int?
 
-        private let transport: Transport
-        private let jobs: @MainActor () -> [Job]
-        private let now: () -> Date
-        public var maxRounds = 5
+        @ObservationIgnored private let transport: Transport
+        @ObservationIgnored private let jobs: @MainActor () -> [Job]
+        @ObservationIgnored private let now: () -> Date
+        @ObservationIgnored public var maxRounds = 5
         /// Messages kept after the system prompt; older turns are dropped whole.
-        public var historyLimit = 30
+        @ObservationIgnored public var historyLimit = 30
         /// Characters of the messages sent (the function refuses more than 80,000 with the tools); older turns go first.
-        public var charLimit = 60_000
+        @ObservationIgnored public var charLimit = 60_000
 
         /// - Parameters:
         ///   - focus: the job the chat was opened from, if any.
@@ -105,7 +107,7 @@ public extension Assistant {
             - ตอบเป็นภาษาไทย สั้น ตรงประเด็น ใช้รายการเมื่อมีหลายข้อ
             - ตัวเลขทุกตัว (%, คะแนน, วันที่, จำนวนวันที่ช้า) ต้องมาจากผลของเครื่องมือเท่านั้น ห้ามคำนวณหรือเดาเอง
             - ข้อมูลที่ไม่มีในเครื่องมือ ให้บอกว่าไม่มีข้อมูล
-            - งานแต่ละงานมีน้ำหนักเป็นคะแนน (รวมทั้งสถานี 100) neededPointsPerWeek คือคะแนนต่อสัปดาห์ที่ต้องทำเพื่อให้เสร็จตามแผน
+            - งานแต่ละงานมีน้ำหนักเป็นคะแนน (รวมทั้งสถานี 100) neededPointsPerWeek คือคะแนนต่อสัปดาห์ที่ต้องทำเพื่อให้เสร็จตามแผน (งานที่เลยกำหนดแล้วคือคะแนนที่เหลือทั้งหมด)
               pacePointsPerWeek คืออัตราที่ทำได้จริง slipDays คือจำนวนวันที่คาดว่าจะเสร็จช้ากว่าแผน
             - เมื่อแนะนำการเร่งงาน ให้เรียงตามงานที่กระทบวันจบมากที่สุด และอ้างรายงานประจำวัน (คน ฝน ปัญหา) ถ้ามี
             - การบันทึกทุกอย่างทำผ่านเครื่องมือ propose_* เท่านั้น ซึ่งยังไม่บันทึกจนกว่าผู้ใช้จะกดยืนยันในการ์ด

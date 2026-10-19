@@ -611,6 +611,17 @@ final class CloudSync {
                                                "updatedAt": FieldValue.serverTimestamp()]) { error in
                 if let error { print("CloudSync: design upload: \(error.localizedDescription)") }
             }
+            // its scanned sheet: each page once, as a JPEG in its own document
+            let sent = Set(UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? [])
+            for p in d.sheet where !sent.contains(p.id.uuidString) {
+                guard let u = DesignLibrary.shared.sheetURL(p), let data = try? Data(contentsOf: u) else { continue }
+                self.db.collection("standardDesignSheets").document(p.id.uuidString)
+                    .setData(["design": d.id, "data": data.base64EncodedString(), "width": p.width, "height": p.height]) { error in
+                        if let error { return print("CloudSync: design sheet upload: \(error.localizedDescription)") }
+                        let done = (UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? []) + [p.id.uuidString]
+                        UserDefaults.standard.set(done, forKey: "cloudSync.designSheetsSent")
+                    }
+            }
         }
         let registration = collection.addSnapshotListener { snapshot, error in
             // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
@@ -622,6 +633,19 @@ final class CloudSync {
             }
         }
         listeners.append(registration)
+        // sheet pages taken on other devices
+        let pages = db.collection("standardDesignSheets").addSnapshotListener { snapshot, error in
+            if let error { return print("CloudSync: design sheet listener: \(error.localizedDescription)") }
+            for change in snapshot?.documentChanges ?? [] where change.type != .removed {
+                let data = change.document.data()
+                guard let id = UUID(uuidString: change.document.documentID), let b64 = data["data"] as? String,
+                      let jpeg = Data(base64Encoded: b64) else { continue }
+                let probe = Photo(id: id, fileName: id.uuidString + ".jpg", width: 0, height: 0)
+                if DesignLibrary.shared.hasSheetPage(probe) { continue }
+                DesignLibrary.shared.storeSheetPage(jpeg, width: data["width"] as? Int ?? 0, height: data["height"] as? Int ?? 0, id: id)
+            }
+        }
+        listeners.append(pages)
     }
 
     private func listenFeedAcks() {

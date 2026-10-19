@@ -92,4 +92,22 @@ final class DesignLibraryTests: XCTestCase {
         TankDesign.apply(&v, d, turned: true)
         XCTAssertEqual(TankDesign.current(v)?.turned, true)
     }
+
+    func testSheetPagesAreKeptBesideTheLibraryAndRaiseTheRevision() throws {
+        let d = try XCTUnwrap(TankDesign.from(checked(), name: "A", job: "J", by: nil))
+        DesignLibrary.shared.save(d)
+        let page = try XCTUnwrap(DesignLibrary.shared.storeSheetPage(Data([0xFF, 0xD8, 0xFF]), width: 20, height: 10))
+        XCTAssertTrue(DesignLibrary.shared.hasSheetPage(page))
+        DesignLibrary.shared.setSheet(d.id, [page])
+        let kept = try XCTUnwrap(DesignLibrary.shared.tanks.first)
+        XCTAssertEqual(kept.sheet, [page])
+        XCTAssertEqual(kept.revision, 2)
+        // a job's snapshot carries no pages; the .tcdesign file neither
+        var v = Values()
+        TankDesign.apply(&v, kept)
+        XCTAssertTrue(try XCTUnwrap(TankDesign.current(v)).design.sheet.isEmpty)
+        XCTAssertTrue(try TankDesign.imported(kept.exported()).sheet.isEmpty)
+        try? FileManager.default.removeItem(at: try XCTUnwrap(DesignLibrary.shared.sheetFolder))
+    }
 }
+

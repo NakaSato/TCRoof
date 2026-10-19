@@ -14,6 +14,9 @@ struct DesignLibraryView: View {
     @State private var renaming: TankDesign?
     @State private var newName = ""
     @State private var importing = false
+    /// `แนบแบบ`: the design a picked PDF / image goes to; the sheet opened.
+    @State private var attaching: TankDesign?
+    @State private var viewing: TankDesign?
     @State private var share: URL?
     @State private var error: String?
 
@@ -58,6 +61,21 @@ struct DesignLibraryView: View {
                     version += 1
                 } catch { self.error = "นำเข้าไม่ได้: " + error.localizedDescription }
             }
+            .fileImporter(isPresented: Binding(get: { attaching != nil }, set: { if !$0 { attaching = nil } }),
+                          allowedContentTypes: [.pdf, .image]) { result in
+                guard let d = attaching else { return }
+                attaching = nil
+                do {
+                    let url = try result.get()
+                    let ok = url.startAccessingSecurityScopedResource()
+                    defer { if ok { url.stopAccessingSecurityScopedResource() } }
+                    let pages = DesignSheetViewer.pages(from: url).compactMap { DesignLibrary.shared.storeSheetPage($0.0, width: $0.1, height: $0.2) }
+                    guard !pages.isEmpty else { return error = "อ่านไฟล์แบบไม่ได้" }
+                    DesignLibrary.shared.setSheet(d.id, pages)
+                    version += 1
+                } catch { self.error = "แนบไม่ได้: " + error.localizedDescription }
+            }
+            .sheet(item: $viewing) { d in DesignSheetViewer(design: d) }
             .alert("แก้ชื่อแบบ", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("ชื่อแบบ", text: $newName)
                 Button("บันทึก") {
@@ -95,9 +113,11 @@ struct DesignLibraryView: View {
             }
             Spacer(minLength: 6)
             Menu {
+                if !d.sheet.isEmpty { Button { viewing = d } label: { Label("ดูแบบ (\(d.sheet.count) หน้า)", systemImage: "doc.richtext") } }
                 Button { export(d) } label: { Label("ส่งออก .tcdesign", systemImage: "square.and.arrow.up") }
                 if canEdit && !d.isSeed {
                     Button { newName = d.name; renaming = d } label: { Label("แก้ชื่อ", systemImage: "pencil") }
+                    Button { attaching = d } label: { Label(d.sheet.isEmpty ? "แนบแบบ (PDF / รูป)" : "แนบแบบใหม่แทนของเดิม", systemImage: "paperclip") }
                     Button { DesignLibrary.shared.archive(d.id, !d.archived); version += 1 } label: {
                         Label(d.archived ? "นำกลับมาใช้" : "เก็บเข้าคลัง", systemImage: d.archived ? "tray.and.arrow.up" : "archivebox")
                     }

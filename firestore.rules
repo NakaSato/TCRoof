@@ -264,6 +264,11 @@ service cloud.firestore {
       allow update: if isTeam() && request.resource.data.revision is int
         && request.resource.data.revision >= resource.data.revision;
     }
+    // A design's scanned sheet, one JPEG page per document (base64 `data`, the design's id in `design`).
+    match /standardDesignSheets/{page} {
+      allow read: if isMember();
+      allow create, update: if isTeam() && request.resource.data.design is string && request.resource.data.data is string;
+    }
 
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
     // A member adds or removes only their own email.

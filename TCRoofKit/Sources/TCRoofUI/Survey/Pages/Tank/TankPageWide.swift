@@ -52,6 +52,7 @@ struct TankPageWide: View {
     @State var saveDesignAsk = false
     @State var designName = ""
     @State var designSaved: String?
+    @State var sheetOpen = false
     @Environment(\.permissions) var permissions
     @State var rowAsk = false
     @State var rowCount = 3

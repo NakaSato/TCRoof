@@ -89,7 +89,16 @@ extension TankPageWide {
         let s = TankDesign.summary(values), from = TankDesign.current(values) != nil
         return VStack(alignment: .leading, spacing: 6) {
             if let s, from {
-                Text("แบบ: " + s.design).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("แบบ: " + s.design).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                    Spacer(minLength: 6)
+                    // the original drawing, when the library has one for this design (§3.4)
+                    if let d = sheetDesign {
+                        Button { sheetOpen = true } label: { Label("ดูแบบ", systemImage: "doc.richtext").font(.sarabunFixed(13, .bold)) }
+                            .frame(minHeight: 44)
+                            .sheet(isPresented: $sheetOpen) { DesignSheetViewer(design: d) }
+                    }
+                }
                 Text(s.counts).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             Button { designAsk = true } label: {
@@ -126,6 +135,12 @@ extension TankPageWide {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    /// The library's design this tank came from, when it has scanned sheet pages (the job's snapshot carries none).
+    var sheetDesign: TankDesign? {
+        guard let id = TankDesign.current(values)?.design.id else { return nil }
+        return DesignLibrary.shared.tanks.first { $0.id == id && !$0.sheet.isEmpty }
     }
 
     func saveDesign() {

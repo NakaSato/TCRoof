@@ -469,3 +469,12 @@ test('standard designs: every member reads them, only the team saves, never an o
   await assertFails(deleteDoc(doc(db(BOSS), 'standardDesigns', 'team-1')));
   await assertFails(getDoc(doc(db('stranger@gmail.com'), 'standardDesigns', 'team-1')));
 });
+
+test('a standard design\'s sheet pages: every member reads, the team writes', async () => {
+  const page = { design: 'team-1', data: 'AAAA', width: 10, height: 10 };
+  await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p1'), page));
+  await assertSucceeds(getDoc(doc(db(CON), 'standardDesignSheets', 'p1')));
+  await assertFails(setDoc(doc(db(CON), 'standardDesignSheets', 'p2'), page));
+  await assertFails(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p3'), { width: 1 }));
+  await assertFails(deleteDoc(doc(db(BOSS), 'standardDesignSheets', 'p1')));
+});

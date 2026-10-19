@@ -78,6 +78,26 @@ public final class DesignLibrary: @unchecked Sendable {
         return d
     }
 
+    // MARK: the scanned sheet (§3.4)
+
+    /// Where a design's sheet pages are kept: next to the library file.
+    public var sheetFolder: URL? {
+        lock.lock(); defer { lock.unlock() }
+        return url?.deletingLastPathComponent().appendingPathComponent("standard-design-sheets", isDirectory: true)
+    }
+    public func sheetURL(_ p: Photo) -> URL? { sheetFolder?.appendingPathComponent(p.fileName) }
+    public func hasSheetPage(_ p: Photo) -> Bool { sheetURL(p).map { FileManager.default.fileExists(atPath: $0.path) } ?? false }
+
+    /// Stores a page's JPEG (from the app, or received from another device) and returns it as a sheet photo.
+    @discardableResult
+    public func storeSheetPage(_ jpeg: Data, width: Int, height: Int, id: UUID = UUID()) -> Photo? {
+        let p = Photo(id: id, fileName: id.uuidString + ".jpg", width: width, height: height)
+        guard let dir = sheetFolder, let u = sheetURL(p) else { return nil }
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        guard (try? jpeg.write(to: u, options: .atomic)) != nil else { return nil }
+        return p
+    }
+
     /// Empties the library (tests, sign-out).
     public func reset() { lock.lock(); saved = []; persist(); lock.unlock() }
 

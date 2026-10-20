@@ -11,7 +11,7 @@ TCRoof provides role-based access control across 3 roles, plus the Maintainer:
 
 | Role | Enum | Description | Key Capabilities |
 |---|---|---|---|
-| **ผู้จัดการ** | `.manager` | Project Manager / Executive | Full system control, permanent deletion of jobs (`job.delete`), member invitation & role assignment (`users.manage`). |
+| **ผู้จัดการ** | `.manager` | Project Manager / Executive | Full system control, deletion of jobs (`job.delete`, shared with the team since 2026-10-20), member invitation & role assignment (`users.manage`). |
 | **ทีมภายใน** | `.internalTeam` (`internal`) | Internal Engineer / Admin | Full visibility over all residential & PWA stations, MP scheduling, customer contacts, signing daily logs (`daily.sign`), closing IEC tests (`iec.close`). |
 | **วิศวกรภายนอก / ผู้รับเหมา** | `.external` | External Engineer / Contractor | Sees **only assigned jobs** (`externals`). Fills daily logs, scans devices, performs IEC tests and submits results to the team (`iec.fill_submit`). Views their stations' PWA papers read only (`stationdocs.drafts` is `view`). Customer contacts hidden. |
 | **Maintainer** | `.maintainer` | The app's developer | Everything a role can do (except what is off for every role, BOQ), plus suspending accounts (`users.suspend`), the role overrides (`users.permissions`) and จัดการผู้ใช้และสิทธิ์ (`users.admin`). Set **only in the Firebase console**: the app never writes `maintainer`, and nobody changes or removes a Maintainer's document from the app. Not a column of the roles table. |
@@ -84,7 +84,7 @@ Every view queries `@Environment(\.permissions) private var permissions`:
 - **จัดการผู้ใช้และสิทธิ์**: `if permissions.can(.usersAdmin)` in `PhoneSettings.swift` (`นักพัฒนา`), and the page itself refuses anyone else.
 - **เอกสาร PWA**: `canView(.stationDocsDrafts, on: job.access)` opens the papers; `can` decides whether anything is editable, so a contractor sees their stations read only.
 - **Job Assignment**: `if permissions.can(.assignExternal, on: job.access)` in `JobAccessCard.swift`.
-- **Job Deletion**: manager only (`.jobDelete`). The survey home's `ลบงาน` checks `.jobDelete` and deletes the local survey job only; there is still no button that deletes a synced job (it must check `permissions.can(.jobDelete)` too). `firestore.rules` already refuses a delete from anyone but a manager.
+- **Job Deletion**: the team and managers (`.jobDelete`, internal allowed since 2026-10-20; never a contractor). The survey home's `ลบงาน` checks `.jobDelete` and deletes the local survey job only; there is still no button that deletes a synced job (it must check `permissions.can(.jobDelete)` too). `firestore.rules` already refuses a delete from anyone but a manager.
 - **Daily Report Sign-off**: Contractor fills (`.dailyFill`), internal engineer signs (`.dailySign`).
 - **IEC 62446**: Contractor submits to team (`.iecFillSubmit`), internal engineer closes (`.iecClose`).
 

@@ -84,7 +84,7 @@
               "access": "allow"
             },
             "internal": {
-              "access": "deny"
+              "access": "allow"
             },
             "external": {
               "access": "deny"

@@ -184,8 +184,8 @@ service cloud.firestore {
     match /jobs/{doc} {
       allow read: if isTeam() || readsMine();
       allow create: if isTeam();
-      // ลบงาน (job.delete) is the manager's only
-      allow delete: if isManager();
+      // ลบงาน (job.delete): the team and managers, never a contractor
+      allow delete: if isTeam();
       // A contractor changes only the IEC test (while it is open, and never closes it) and the weekly requests R1
       // (weekly.request), signing the latter with their own email in `weeklyRequestsBy`: a rule can't read inside the
       // JSON, so team devices drop a contractor's change to a week already sent or approved

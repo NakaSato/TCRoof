@@ -54,8 +54,8 @@ test('the team reads and writes everything, as before roles', async () => {
   await assertSucceeds(getDocs(collection(db(BOSS), 'jobs')));
 });
 
-test('only a manager deletes a job', async () => {
-  await assertFails(deleteDoc(doc(db(TEAM), 'jobs', 'mine')));
+test('the team deletes a job, a contractor never', async () => {
+  await assertSucceeds(deleteDoc(doc(db(TEAM), 'jobs', 'mine')));
   await assertFails(deleteDoc(doc(db(CON), 'jobs', 'mine')));
   await assertSucceeds(deleteDoc(doc(db(BOSS), 'jobs', 'mine')));
   // the team still creates them

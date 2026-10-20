@@ -352,6 +352,7 @@ final class CloudSync {
         let size = external == nil ? 400 : 1
         for start in stride(from: 0, to: changes.count, by: size) {
             let slice = changes[start..<min(start + size, changes.count)]
+            let sent = Array(slice)
             let batch = db.batch()
             var previous: [String: String?] = [:]
             for change in slice {
@@ -373,8 +374,14 @@ final class CloudSync {
                         // Put back what the server still has so the next push tries again.
                         for (key, old) in previous { self.known[key] = old }
                         self.saveKnown()
-                        if self.external != nil, (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue {
+                        let refused = (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue
+                        if self.external != nil, refused {
                             print("CloudSync: refused \(previous.keys.joined(separator: ", ")): \(error.localizedDescription)")
+                        } else if refused, sent.count > 1 {
+                            // One write the rules refuse fails the whole batch, and every later push with it: a delete
+                            // made here would never leave this device. Send the batch's writes one by one instead, so
+                            // only the refused one waits (and is named in the log).
+                            self.commitSeparately(sent, "refused write", size: 1)
                         } else {
                             self.failed(error)
                         }
@@ -425,7 +432,7 @@ final class CloudSync {
                     guard let self, let error else { return }
                     for (key, old) in previous { self.known[key] = old }
                     self.saveKnown()
-                    print("CloudSync: \(label) refused: \(error.localizedDescription)")
+                    print("CloudSync: \(label) refused \(previous.keys.sorted().joined(separator: ", ")): \(error.localizedDescription)")
                 }
             }
         }

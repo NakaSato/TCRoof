@@ -154,7 +154,8 @@ final class RoleTableTests: XCTestCase {
         let team = Permissions.team
         XCTAssertTrue(team.can(.iecClose))
         XCTAssertTrue(team.can(.dailySign))
-        XCTAssertFalse(team.can(.jobDelete))
+        XCTAssertTrue(team.can(.jobDelete))
+        XCTAssertFalse(Permissions(role: .external, email: "c@x.co").can(.jobDelete))
         XCTAssertFalse(team.can(.usersManage))
         XCTAssertTrue(Permissions(role: .manager, email: "m@tcroof.co").can(.jobDelete))
         for role in UserRole.allCases { XCTAssertFalse(Permissions(role: role, email: "a@b.c").can(.boqDraft)) }

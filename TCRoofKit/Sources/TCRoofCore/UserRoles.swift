@@ -135,7 +135,7 @@ public enum Capability: String, CaseIterable, Sendable {
     private static let table: [Capability: Row] = [
         .jobList: (.allow, .allow, .conditional),
         .jobEdit: (.allow, .allow, .deny),
-        .jobDelete: (.allow, .deny, .deny),
+        .jobDelete: (.allow, .allow, .deny),
         .assignExternal: (.allow, .allow, .deny),
         .assignTeam: (.allow, .allow, .deny),
         .mpSetup: (.allow, .allow, .deny),

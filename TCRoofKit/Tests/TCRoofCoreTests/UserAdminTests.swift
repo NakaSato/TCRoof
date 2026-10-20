@@ -15,9 +15,9 @@ final class UserAdminTests: XCTestCase {
     }
 
     func testALockedCapabilityIgnoresAnOverride() {
-        let o = RoleOverrides(document: ["internal|job.delete": "allow", "external|iec.close": "allow", "manager|users.manage": "deny",
+        let o = RoleOverrides(document: ["internal|job.delete": "deny", "external|iec.close": "allow", "manager|users.manage": "deny",
                                          "internal|users.suspend": "allow", "manager|boq.draft": "allow", "maintainer|job.list": "deny"])
-        XCTAssertFalse(Permissions(role: .internalTeam, email: "a@tcroof.co", overrides: o).can(.jobDelete), "firestore.rules decides")
+        XCTAssertTrue(Permissions(role: .internalTeam, email: "a@tcroof.co", overrides: o).can(.jobDelete), "firestore.rules decides")
         XCTAssertFalse(Permissions(role: .external, email: "c@x.co", overrides: o).can(.iecClose))
         XCTAssertTrue(Permissions(role: .manager, email: "m@tcroof.co", overrides: o).can(.usersManage))
         XCTAssertFalse(Permissions(role: .internalTeam, email: "a@tcroof.co", overrides: o).can(.usersSuspend))
@@ -45,7 +45,7 @@ final class UserAdminTests: XCTestCase {
         XCTAssertTrue(c.lost.isEmpty)
         let back = RoleChange(from: .internalTeam, to: .external)
         XCTAssertEqual(Set(back.lost), Set(c.gained))
-        XCTAssertTrue(RoleChange(from: .manager, to: .internalTeam).lost.contains(.jobDelete))
+        XCTAssertTrue(RoleChange(from: .manager, to: .internalTeam).lost.contains(.usersManage))
     }
 
     func testTheKeyHashMatchesNodesPBKDF2() throws {

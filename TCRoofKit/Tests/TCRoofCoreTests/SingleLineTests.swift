@@ -220,7 +220,18 @@ final class SingleLineTests: XCTestCase {
         for (name, hv) in [("lv", false), ("hv", true)] {
             let d = SingleLineLayout.draw(SingleLine.build(Self.fixture(), hvOverride: hv))
             try Self.svg(d.sketch).write(toFile: dir + "/\(name).svg", atomically: true, encoding: .utf8)
+            let l2 = SingleLineLayout.draw(SingleLine.build(Self.level2(), hvOverride: hv))
+            try Self.svg(l2.sketch).write(toFile: dir + "/level2-\(name).svg", atomically: true, encoding: .utf8)
         }
+        // 14 feeders (a continuation row) and one transformer with four sub-boards side by side
+        var wide = Self.level2()
+        var trs = wide.values.transformers("trafos")
+        var b = trs[0].boards
+        b[0].breakers += (0..<10).map { k in var br = Self.breaker(at: "63", af: "100", ic: "25", brand: "LS"); br.load = "LC\(k + 40)"; br.cable = "4x16,1x6-IEC01"; return br }
+        trs[0].setBoards(b + (2...4).map { Board(name: "SDB \($0)", at: "100") })
+        wide.values["trafos"] = .transformers(Array(trs.prefix(1)))
+        let w = SingleLineLayout.draw(SingleLine.build(wide))
+        try Self.svg(w.sketch).write(toFile: dir + "/level2-wrap.svg", atomically: true, encoding: .utf8)
     }
 
     static func svg(_ s: Sketch) -> String {
@@ -278,6 +289,178 @@ final class SingleLineTests: XCTestCase {
         XCTAssertFalse(texts.contains { $0.contains("FTS") })
         job.modules.append(SurveyModule(type: .fts))
         XCTAssertNotNil(SingleLineLayout.draw(SingleLine.build(job)).ftsBox)
+    }
+
+    // MARK: level 2 — detailed MDP
+
+    /// The fixture with the level 2 answers of `img/sld.py` on MDP-1: cables, conduits, loads, floors, a spare, busbar, ground.
+    static func level2() -> Job {
+        var job = fixture()
+        var trs = job.values.transformers("trafos")
+        var b = trs[0].boards
+        b[0].busbar = "4x300A. Cu. BUSBAR W/GROUND BUS"; b[0].ground = "1x35-IEC01 ø20 PVC."
+        b[0].breakers[0].cable = "4x50,1x10-IEC01"; b[0].breakers[0].conduit = "IN WIRE WAY"
+        b[0].breakers[0].load = "LC11"; b[0].breakers[0].floor = "1st FL."
+        b[0].breakers[1].cable = "4x50,1x10-IEC01"; b[0].breakers[1].conduit = "ø50mm. UPVC"; b[0].breakers[1].floor = "2nd FL."
+        var spare = breaker(at: "30", af: "100", ic: "25", brand: "LS"); spare.spare = true; spare.cable = "ignored"; spare.load = "ignored"
+        b[0].breakers.append(spare)
+        trs[0].setBoards(b)
+        job.values["trafos"] = .transformers(trs)
+        return job
+    }
+
+    static func texts(_ ops: [DrawOp]) -> [(String, Double)] {
+        ops.compactMap { if case let .text(t, _, _, _, _, _, angle) = $0 { return (t, angle) }; return nil }
+    }
+
+    func testLevel2FieldsDecodeFromOldJSON() throws {
+        let old = #"{"at":"100","af":"100","ic":"25","poles":"3P","brand":"LS","target":"x","condition":"ดี","count":2}"#
+        let br = try JSONDecoder().decode(Breaker.self, from: Data(old.utf8))
+        XCTAssertEqual([br.cable, br.conduit, br.load, br.floor], ["", "", "", ""])
+        XCTAssertFalse(br.spare)
+        XCTAssertEqual(br.count, 2)
+        let bd = try JSONDecoder().decode(Board.self, from: Data(#"{"name":"MDP","at":"800"}"#.utf8))
+        XCTAssertEqual([bd.busbar, bd.ground], ["", ""])
+        // and they round-trip
+        let job = Self.level2()
+        let back = try JSONDecoder().decode(Job.self, from: JSONEncoder().encode(job))
+        XCTAssertEqual(back.values.transformers("trafos"), job.values.transformers("trafos"))
+    }
+
+    func testLevel2FieldsLeaveCompletionAndMissingAlone() {
+        let a = Self.fixture(), b = Self.level2()
+        // the spare breaker added in level2() is a whole breaker; compare with the same breaker unmarked
+        var plain = a
+        var trs = plain.values.transformers("trafos")
+        var bd = trs[0].boards
+        bd[0].breakers.append(Self.breaker(at: "30", af: "100", ic: "25", brand: "LS"))
+        trs[0].setBoards(bd)
+        plain.values["trafos"] = .transformers(trs)
+        XCTAssertEqual(plain.completion.filled, b.completion.filled)
+        XCTAssertEqual(plain.completion.total, b.completion.total)
+        XCTAssertEqual(a.completion.total, b.completion.total)
+        let missA = Set(SingleLine.build(plain).missing.map(\.label)), missB = Set(SingleLine.build(b).missing.map(\.label))
+        // the only difference: a spare breaker has no load to look up in B1
+        XCTAssertTrue(missB.isSubset(of: missA))
+        XCTAssertEqual(Array(missA.subtracting(missB)), ["โหลด CB4  (B1)"])
+        XCTAssertEqual(SingleLine.build(b).blocking.map(\.label), SingleLine.build(plain).blocking.map(\.label))
+    }
+
+    func testLevel2Model() throws {
+        let m = SingleLine.build(Self.level2())
+        let cb = try XCTUnwrap(m.connectionBoard)
+        XCTAssertEqual(cb.busbar, "4x300A. Cu. BUSBAR W/GROUND BUS")
+        XCTAssertEqual(cb.ground, "1x35-IEC01 ø20 PVC.")
+        XCTAssertEqual(cb.breakers[0].feeder, "4x50,1x10-IEC01, IN WIRE WAY")
+        XCTAssertEqual(cb.breakers[0].destination.map(\.text).prefix(2), ["LC11", "(1st FL.)"])
+        XCTAssertTrue(cb.breakers[0].destination[0].bold)
+        // no load name: the level 1 lines, then the floor
+        XCTAssertEqual(cb.breakers[1].destination.map(\.text).prefix(3), ["ตู้ไฟฟ้า", "โรงกรอง", "(2nd FL.)"])
+        let spare = cb.breakers[3]
+        XCTAssertTrue(spare.spare)
+        XCTAssertEqual(spare.feeder, "")
+        XCTAssertTrue(spare.destination.isEmpty)
+        XCTAssertEqual(spare.name, "SPARE")
+    }
+
+    func testLevel2Drawing() {
+        let ops = SingleLineLayout.draw(SingleLine.build(Self.level2())).sketch.ops
+        let t = Self.texts(ops)
+        XCTAssertTrue(t.contains { $0.0 == "4x50,1x10-IEC01, IN WIRE WAY" && $0.1 == -90 })
+        XCTAssertTrue(t.contains { $0.0 == "4x50,1x10-IEC01, ø50mm. UPVC" && $0.1 == -90 })
+        XCTAssertTrue(t.contains { $0.0 == "1x35-IEC01 ø20 PVC." && $0.1 == -90 })
+        for s in ["SPARE", "LC11", "(1st FL.)", "4x300A. Cu. BUSBAR W/GROUND BUS", "GROUND ROD", "N", "G"] {
+            XCTAssertTrue(t.contains { $0.0 == s }, s)
+        }
+        XCTAssertFalse(t.contains { $0.0.contains("ignored") })
+        // three load blocks for three breakers in use; the spare has none
+        let loads = ops.filter { if case let .rect(b, nil, _, _) = $0 { return b.w == 36 && b.h == 18 }; return false }
+        XCTAssertEqual(loads.count, 3)
+        // level 1 draws none of it
+        let plain = Self.texts(SingleLineLayout.draw(SingleLine.build(Self.fixture())).sketch.ops)
+        XCTAssertFalse(plain.contains { $0.0 == "GROUND ROD" || $0.0 == "SPARE" })
+    }
+
+    func testLevel2Notes() throws {
+        let m = SingleLine.build(Self.level2())
+        func note(_ id: String) throws -> SLNote { try XCTUnwrap(m.notes.first { $0.id == id }, id) }
+        XCTAssertEqual(try note("flc").text, "กระแสพิกัดหม้อแปลง TX1 630 kVA ที่ 400 V = 909 A")
+        // 800 AT / 909 A = 0.88: inside 0.8–1.25
+        XCTAssertFalse(try note("mainFLC").flagged)
+        XCTAssertEqual(try note("feeders").text, "วงจรย่อย MDP-1 4 วงจร (ใช้งาน 3 · สำรอง 1)")
+        // CB3 has no AT? it has 100; no diversity: 400 + 250 + 100
+        XCTAssertEqual(try note("sumAT").text, "รวมพิกัดวงจรที่ใช้งาน 750 AT (ไม่คิด diversity)")
+        // 2 inverters of 60 kW from A1 ÷ B2 → 120 kW on 630 kVA
+        XCTAssertEqual(try note("pvShare").text, "กำลัง PV ต่อหม้อแปลง 120 kW ÷ 630 kVA = 19 %")
+        XCTAssertTrue(try note("pvBus").text.hasSuffix("(ตรวจพิกัดบัสบาร์กับวิศวกร)"))
+        XCTAssertTrue(try note("pvBus").text.contains("เมน 800 AT"))
+        XCTAssertFalse(m.notes.contains { $0.id.hasPrefix("af") })
+        // notes are drawn under the diagram and add no missing item
+        XCTAssertTrue(Self.texts(SingleLineLayout.draw(m).sketch.ops).contains { $0.0 == "• " + (try! note("flc")).text })
+
+        // AT over AF, the main far from the full-load current and PV over the transformer are flagged, never missing
+        var job = Self.level2()
+        var trs = job.values.transformers("trafos")
+        var b = trs[0].boards
+        b[0].at = "300"; b[0].af = "250"
+        b[0].breakers[0].af = "250"
+        trs[0].setBoards(b); trs[0].kva = "100"
+        job.values["trafos"] = .transformers(trs)
+        let f = SingleLine.build(job)
+        XCTAssertTrue(f.notes.first { $0.id == "mainFLC" }!.flagged)
+        XCTAssertTrue(f.notes.first { $0.id == "pvShare" }!.flagged)
+        XCTAssertEqual(f.notes.filter { $0.id.hasPrefix("af") && $0.flagged }.count, 2)
+        XCTAssertEqual(f.missing.count, m.missing.count)
+    }
+
+    func testFeedersWrapOrNarrow() {
+        func job(_ n: Int) -> Job {
+            var j = Self.fixture()
+            var trs = j.values.transformers("trafos")
+            var b = trs[0].boards
+            b[0].breakers = (0..<n).map { _ in Self.breaker(at: "100", af: "100", ic: "36", brand: "LS") }
+            trs[0].setBoards(b)
+            j.values["trafos"] = .transformers(trs)
+            return j
+        }
+        func feederXs(_ d: SingleLineDrawing) -> [Double] {
+            d.hits.filter { $0.target.breaker != nil && $0.box.h == 250 }.map { $0.box.x + 20 }
+        }
+        // 10 feeders: one row, at least 60 apart, all inside the page and clear of the PV breaker
+        let ten = SingleLineLayout.draw(SingleLine.build(job(10)))
+        let xs = feederXs(ten).sorted()
+        XCTAssertEqual(xs.count, 10)
+        XCTAssertEqual(Set(ten.hits.filter { $0.target.breaker != nil && $0.box.h == 250 }.map(\.box.y)).count, 1)
+        XCTAssertGreaterThanOrEqual(zip(xs, xs.dropFirst()).map { $1 - $0 }.min()!, 60 - 1e-9)
+        XCTAssertLessThan(xs.last!, 1330 - 116)
+        XCTAssertFalse(Self.texts(ten.sketch.ops).contains { $0.0.hasSuffix("…ต่อ") })
+        // 14 feeders: a continuation row, every breaker still drawn and tappable; the page grows
+        let fourteen = SingleLineLayout.draw(SingleLine.build(job(14)))
+        XCTAssertEqual(feederXs(fourteen).count, 14)
+        XCTAssertEqual(Set(fourteen.hits.filter { $0.target.breaker != nil && $0.box.h == 250 }.map(\.box.y)).count, 2)
+        XCTAssertTrue(Self.texts(fourteen.sketch.ops).contains { $0.0 == "MDP-1 …ต่อ" })
+        XCTAssertGreaterThan(fourteen.height, ten.height + 300)
+        XCTAssertTrue(fourteen.hits.allSatisfy { $0.box.maxX <= 1560 })
+    }
+
+    func testBoardsSideBySideOnOneTransformer() {
+        var job = Self.fixture()
+        var trs = job.values.transformers("trafos")
+        let main = trs[0].boards[0]
+        trs[0].setBoards([main] + (1...4).map { Board(name: "SDB \($0)", at: "100") })
+        job.values["trafos"] = .transformers(Array(trs.prefix(1)))
+        let d = SingleLineLayout.draw(SingleLine.build(job))
+        let frames = d.hits.filter { $0.target.trafo == 0 && $0.target.board != nil && $0.target.board! > 0 && $0.target.breaker == nil && $0.box.w == 180 }
+        XCTAssertEqual(frames.count, 4)
+        XCTAssertEqual(Set(frames.map(\.box.y)).count, 1, "one row on a common LV line")
+        XCTAssertTrue(frames.allSatisfy { $0.box.maxX <= 1500 })
+        // five transformers have no room: their boards still stack
+        var five = Self.fixture()
+        var t5 = five.values.transformers("trafos")
+        t5[1].setBoards([t5[1].boards[0], Board(name: "SDB A", at: "100"), Board(name: "SDB B", at: "100")])
+        five.values["trafos"] = .transformers(t5)
+        let f = SingleLineLayout.draw(SingleLine.build(five)).hits.filter { $0.target.trafo == 1 && $0.target.breaker == nil && $0.box.w == 180 }
+        XCTAssertEqual(Set(f.map(\.box.x)).count, 1)
     }
 
     func testTheBreakerRuleIsNotAnAssumption() {

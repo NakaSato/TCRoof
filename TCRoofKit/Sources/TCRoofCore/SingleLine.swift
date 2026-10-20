@@ -86,6 +86,10 @@ public struct SLBreaker: Hashable, Sendable, Identifiable {
     public var name = ""
     /// Load block under an outgoing breaker of the connection board.
     public var destination: [SLText] = []
+    /// Level 2: feeder cable and conduit, drawn rotated left of the feeder ("4x50,1x10-IEC01, ø50mm. UPVC"); "" when not entered.
+    public var feeder = ""
+    /// Level 2: a spare breaker, drawn with `SPARE` and no cable or load.
+    public var spare = false
     public var target: SLTarget { SLTarget(.electrical, trafo: trafo, board: board, breaker: id) }
     /// Text lines, in drawing order.
     public var lines: [SLText] { [type, at, af, ic, brand] + [condition, note].compactMap { $0 } }
@@ -100,6 +104,10 @@ public struct SLBoard: Hashable, Sendable, Identifiable {
     public var isMain: Bool
     public var main: SLBreaker
     public var breakers: [SLBreaker]
+    /// Level 2: label above the bus; "" when not entered.
+    public var busbar = ""
+    /// Level 2: ground conductor; the N/G bar and ground rod are drawn when it is given.
+    public var ground = ""
     public var target: SLTarget { SLTarget(.electrical, trafo: trafo, board: index) }
 }
 
@@ -126,6 +134,15 @@ public struct SLMissing: Hashable, Sendable, Identifiable {
     public var id: String
     public var label: String
     public var blocking: Bool
+    public var target: SLTarget
+}
+
+/// A level 2 check printed under the diagram ("ค่าที่คำนวณจากข้อมูลสำรวจ"). Never an error: `flagged` only colours it.
+public struct SLNote: Hashable, Sendable, Identifiable {
+    public var id: String
+    public var text: String
+    /// Outside its usual range (main AT against the full-load current, AT over AF, PV over the transformer).
+    public var flagged = false
     public var target: SLTarget
 }
 
@@ -212,6 +229,8 @@ public struct SingleLine: Sendable {
     public var checks: [SLCheck]
     public var missing: [SLMissing]
     public var assumptions: [SLAssumption]
+    /// Level 2 checks on the connection board and its transformer, printed under the diagram.
+    public var notes: [SLNote] = []
     public var flood: SLFlood?
     public var conditionCounts: (bad: Int, fair: Int)
     public var projectLine: String

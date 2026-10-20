@@ -29,6 +29,8 @@ struct ElectricalPageWide: View {
     @State var moreMeter = false
     @State var confirmRemove: Int?
     @State var editBreaker: BreakerEdit?
+    /// A board whose SLD busbar / ground is being edited (level 2, optional).
+    @State var editBoardSLD: BoardSLDEdit?
     /// The `ดึงจากภาพ A2` panel.
     @State var showA2 = false
     @State var a2Cache = A2SyncCache()
@@ -95,6 +97,9 @@ struct ElectricalPageWide: View {
             BreakerSheet(breaker: breakerBinding(e), isMain: e.board == 0,
                          onDelete: { removeBreaker(e); editBreaker = nil })
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(item: $editBoardSLD) { e in
+            BoardSLDSheet(board: boardSLDBinding(e)).presentationDetents([.medium])
         }
         .confirmationDialog("ลบหม้อแปลง TX \(( confirmRemove ?? 0) + 1)?", isPresented: Binding(get: { confirmRemove != nil }, set: { if !$0 { confirmRemove = nil } }),
                             titleVisibility: .visible) {

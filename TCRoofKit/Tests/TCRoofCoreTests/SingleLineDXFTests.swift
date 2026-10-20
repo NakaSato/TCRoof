@@ -40,6 +40,20 @@ final class SingleLineDXFTests: XCTestCase {
         XCTAssertNotEqual(hv.entities, lv.entities)
     }
 
+    /// Level 2 reaches the DXF through the shared layout: cable text, SPARE, busbar, the N/G bar and ground rod, the notes.
+    func testLevel2Detail() {
+        let plain = SingleLineDXF.build(SingleLineTests.fixture()), l2 = SingleLineDXF.build(SingleLineTests.level2())
+        let text = String(decoding: l2.data, as: UTF8.self)
+        for s in ["4x50,1x10-IEC01, IN WIRE WAY", "SPARE", "4x300A. Cu. BUSBAR W/GROUND BUS", "GROUND ROD", "1x35-IEC01"] {
+            XCTAssertTrue(text.contains(s), s)
+        }
+        XCTAssertFalse(String(decoding: plain.data, as: UTF8.self).contains("GROUND ROD"))
+        XCTAssertGreaterThan(l2.entities, plain.entities)
+        // the cable text is rotated (code 50 on a TEXT entity)
+        let cable = t.entities(l2.data).first { e in e.contains { $0.0 == "1" && $0.1 == "4x50,1x10-IEC01, IN WIRE WAY" } }
+        XCTAssertNotNil(cable.flatMap { t.value($0, "50") })
+    }
+
     func testLayerByColour() {
         XCTAssertEqual(SingleLineDXF.layer(.line(Pt(0, 0), Pt(1, 1), width: 1, color: SingleLineLayout.red)).name, "SLD_MISSING")
         XCTAssertEqual(SingleLineDXF.layer(.line(Pt(0, 0), Pt(1, 1), width: 1, color: SingleLineLayout.grey)).name, "SLD_ASSUMED")

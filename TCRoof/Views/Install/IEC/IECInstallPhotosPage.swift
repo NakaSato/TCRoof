@@ -11,6 +11,7 @@ import ExcelExport
 struct IECInstallPhotosPage: View {
     @Bindable var job: Job
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
     @State private var newRoof = ""
     @State private var making = false
     @State private var share: ReportShare?
@@ -183,6 +184,9 @@ struct IECInstallPhotosPage: View {
             doc.folderPath = "IEC 62446"
             context.insert(doc)
             doc.job = job
+            // a real station's report is its paper in เอกสารสถานี, so the Drive upload files it in the hand-over folders
+            // (the team's: a contractor's device never sends station papers)
+            if r.sampleName == nil, permissions.can(.stationDocsDrafts) { fileAsPaper(name) }
             try? context.save()
             do {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
@@ -192,6 +196,21 @@ struct IECInstallPhotosPage: View {
                 failure = error.localizedDescription
             }
         }
+    }
+
+    /// The station paper this report is (`StationDocs` `install_photo_report`: ขนานไฟ, พค.2 and ส่งมอบ, and พค.2 check
+    /// line 23). The paper takes the new file; one missing becomes `ร่างแล้ว`, one further along keeps its status. A file
+    /// attached there by hand stays in the job's documents.
+    static let paperID = "install_photo_report"
+
+    private func fileAsPaper(_ name: String) {
+        var station = job.stationDocs
+        var paper = station.docs[Self.paperID] ?? StationDocs.DocState()
+        paper.fileName = name
+        if paper.status == .missing { paper.status = .draft }
+        paper.updatedAt = .now
+        station.docs[Self.paperID] = paper
+        job.stationDocs = station
     }
 
     /// `ตุลาคม 2569`, the cover's foot.

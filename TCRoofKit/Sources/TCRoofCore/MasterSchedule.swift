@@ -130,7 +130,7 @@ public enum MasterSchedule {
         public var kickoff: Date
         public var engineeringStart: Date
         public var siteHandover: Date
-        /// Inverters total more than 200 kVA (the workbook's `เกิน 200 kVA` flag): adds พค.2.
+        /// Inverters total 200 kVA or more (the workbook's `เกิน 200 kVA` flag, `isOver200kVA`): adds พค.2.
         public var over200kVA: Bool
         public var engineeringDays = 7
         public var buildingPermitDays = 21
@@ -154,8 +154,8 @@ public enum MasterSchedule {
             self.over200kVA = over200kVA
         }
 
-        /// Inverter total over 200 kVA, from the station's inverter rating (kW at PF 1).
-        public static func isOver200kVA(inverterKW: Double) -> Bool { inverterKW > 200 }
+        /// Inverter total of 200 kVA or more (`ERCFlow.needsPK2`), from the station's inverter rating (kW at PF 1).
+        public static func isOver200kVA(inverterKW: Double) -> Bool { ERCFlow.needsPK2(kVA: inverterKW) }
 
         /// An imported plan's install window: from its site tasks' (parts 2 and 3) first start to their last end, so the
         /// Plan calendar shows what the workbook plans.

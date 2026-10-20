@@ -20,7 +20,7 @@ struct StationDocsCard: View {
                 if ctx.over200kVA { TCStatusChip("ต้องยื่น พค.2", fill: Theme.warningSoft, text: Theme.pending) }
             }
             packages(ctx, station)
-            if ctx.over200kVA, let record = station.erc {
+            if let record = station.erc {
                 Label("ลำดับ กกพ. · " + ERCFlow.headline(record, job.ercContext), systemImage: "arrow.triangle.branch")
                     .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 ForEach(ERCFlow.waits(record, job.ercContext).filter { $0.left <= ERCNotification.lead }, id: \.step) { wait in

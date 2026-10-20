@@ -155,12 +155,19 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(due[0].chip, "เกินกำหนด 2 วันทำการ")
         XCTAssertEqual(due[0].tone, .late)
 
-        // answered, or a station under 200 kVA: no row
+        // answered: no row
         s.docs.erc?.add(.designResult, day: "2026-10-20")
         XCTAssertTrue(PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }.isEmpty)
+
+        // a station under 200 kVA has its own flow, with the same limit on the design answer
         var small = station("t", start: day(2026, 10, 1), end: day(2026, 12, 20))
-        small.docs.erc = r
-        XCTAssertTrue(PWAPlan.deadlines([small], today: today).filter { $0.id.hasPrefix("erc-") }.isEmpty)
+        var rs = ERCFlow.Record(variant: .under200)
+        rs.add(.designRequest, day: "2026-10-01"); rs.add(.designResult, day: "2026-10-02"); rs.add(.install, day: "2026-10-05")
+        rs.add(.inspectionRequest, day: "2026-10-06")
+        small.docs.erc = rs
+        due = PWAPlan.deadlines([small], today: today).filter { $0.id.hasPrefix("erc-") }
+        XCTAssertEqual(due.map(\.id), ["erc-inspectionResult-t"])
+        XCTAssertTrue(due[0].subtitle.hasSuffix("ลำดับ กกพ. ข้อ 4"), due[0].subtitle)
     }
 
     func testSubmissionsComeFromThePlanAndClearWhenSubmitted() {

@@ -61,17 +61,24 @@ private struct Builder {
 
     /// The load block under an outgoing breaker: the B1 building linked to it (`a3Breaker`), else one whose name or number
     /// the breaker's target mentions (jobs from before the link).
-    func loadText(for target: String, breaker id: UUID? = nil) -> [SLText] {
+    /// Level 2: `load` ("LC11") replaces the "ตู้ไฟฟ้า / {name}" lines, and `floor` follows it in brackets.
+    func loadText(for target: String, breaker id: UUID? = nil, load: String = "", floor: String = "") -> [SLText] {
         let sections = job.sectionsByCategory.flatMap(\.sections).filter { $0.module.type == .panel }
-        let trimmed = t(target)
+        let trimmed = t(target).isEmpty ? t(load) : t(target)
         let linked = id.flatMap { id in sections.first { BuildingPanels.BreakerRef($0.module.values.text(BuildingPanels.Key.a3Breaker))?.breaker == id } }
         let match = linked ?? sections.first { s in
             let n = t(s.module.name)
             return (!n.isEmpty && trimmed.contains(n)) || (!trimmed.isEmpty && trimmed.contains("(\(s.number))"))
         }
         let name = linked.map { t($0.module.name).isEmpty ? $0.number : t($0.module.name) } ?? Self.targetName(trimmed)
-        var out = [SLText("ตู้ไฟฟ้า", bold: true)]
-        out.append(name.isEmpty ? SLText("?", .missing, bold: true) : SLText(name, bold: true))
+        var out: [SLText]
+        if !blank(load) {
+            out = [SLText(t(load), bold: true)]
+        } else {
+            out = [SLText("ตู้ไฟฟ้า", bold: true)]
+            out.append(name.isEmpty ? SLText("?", .missing, bold: true) : SLText(name, bold: true))
+        }
+        if !blank(floor) { out.append(SLText("(\(t(floor)))")) }
         if let m = match?.module {
             let kw = t(m.values.text("loadKW")), time = t(m.values.text("loadTime"))
             out.append(kw.isEmpty ? SLText("โหลด ? (B1)", .missing) : SLText("โหลด \(kw) kW" + (time.isEmpty ? "" : " @\(time)")))
@@ -163,6 +170,7 @@ private struct Builder {
                              transformers: sl, connection: (connT, connB), pv: pv, isc: isc, iscAssumedZ: zAssumed, checks: checks,
                              missing: missing, assumptions: assumptions, flood: flood, conditionCounts: (bad, fair),
                              projectLine: [pn, doc.isEmpty ? nil : "NO.\(doc)"].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " "))
+        out.notes = notes(trafos, sl, connection: (connT, connB), pv: pv)
         out.protectionKind = protections.count == 1 ? protections.first! : ""
         out.hasB5 = job.modules.contains { $0.type == .fts }
         return out
@@ -212,13 +220,22 @@ private struct Builder {
                                note: bd.conditionNote, id: bd.id, trafo: i, board: k, isMain: true, number: 0, name: name)
             var outs: [SLBreaker] = []
             for (j, br) in bd.breakers.enumerated() {
+                var label = BuildingPanels.panel(linkedTo: br.id, in: job).map { BuildingPanels.name($0, in: job) } ?? Self.targetName(t(br.target))
+                if label.isEmpty { label = br.spare ? "SPARE" : t(br.load) }
                 var o = breaker(type: "MCCB", poles: br.poles, at: br.at, af: br.af, ic: br.ic, brand: br.brand, condition: br.condition,
-                                note: "", id: br.id, trafo: i, board: k, isMain: false, number: j + 1,
-                                name: BuildingPanels.panel(linkedTo: br.id, in: job).map { BuildingPanels.name($0, in: job) } ?? Self.targetName(t(br.target)))
-                o.destination = (i == connection.0 && k == connection.1) ? loadText(for: br.target, breaker: br.id) : []
+                                note: "", id: br.id, trafo: i, board: k, isMain: false, number: j + 1, name: label)
+                o.spare = br.spare
+                if !br.spare {
+                    o.feeder = [br.cable, br.conduit].map(t).filter { !$0.isEmpty }.joined(separator: ", ")
+                    if i == connection.0 && k == connection.1 {
+                        o.destination = loadText(for: br.target, breaker: br.id, load: br.load, floor: br.floor)
+                    }
+                }
                 outs.append(o)
             }
-            boards.append(SLBoard(id: bd.id, trafo: i, index: k, name: name, location: loc, isMain: k == 0, main: main, breakers: outs))
+            var sb = SLBoard(id: bd.id, trafo: i, index: k, name: name, location: loc, isMain: k == 0, main: main, breakers: outs)
+            sb.busbar = t(bd.busbar); sb.ground = t(bd.ground)
+            boards.append(sb)
         }
         let z = num(tr.impedance)
         // nameplate gaps: %Z is blocking (handled with the boards), the rest are not
@@ -267,6 +284,67 @@ private struct Builder {
                 }
             }
         }
+    }
+
+    // MARK: level 2 checks
+
+    /// The checks printed under the diagram (spec: level 2). Notes only: none of them is a missing item or blocks anything.
+    func notes(_ raw: [Transformer], _ sl: [SLTransformer], connection: (Int, Int), pv: SLPV) -> [SLNote] {
+        var out: [SLNote] = []
+        let f = SingleLine.fmt
+        // AT ≤ AF on every breaker drawn
+        for tx in sl {
+            let boards = raw[safe: tx.index]?.resolvedBoards ?? []
+            for bd in tx.boards {
+                let r = boards[safe: bd.index]
+                if let at = num(r?.at ?? ""), let af = num(r?.af ?? ""), at > af {
+                    out.append(SLNote(id: "af\(bd.id)", text: "\(bd.name) เมน \(f(at)) AT เกินเฟรม \(f(af)) AF", flagged: true, target: bd.main.target))
+                }
+                for br in bd.breakers {
+                    guard let rb = r?.breakers.first(where: { $0.id == br.id }), let at = num(rb.at), let af = num(rb.af), at > af else { continue }
+                    out.append(SLNote(id: "af\(br.id)", text: "\(bd.name) CB\(br.number) \(f(at)) AT เกินเฟรม \(f(af)) AF", flagged: true, target: br.target))
+                }
+            }
+        }
+        guard let tx = sl[safe: connection.0], let cb = tx.boards[safe: connection.1] else { return out }
+        var head: [SLNote] = []
+        // transformer full-load current, and the main breaker against it
+        if let kva = tx.kva, kva > 0 {
+            let flc = kva * 1000 / (3.0.squareRoot() * SLConstants.lineVoltage)
+            head.append(SLNote(id: "flc", text: "กระแสพิกัดหม้อแปลง TX\(tx.index + 1) \(f(kva)) kVA ที่ 400 V = \(Int(flc.rounded())) A", target: tx.target))
+            if let at = cb.main.atAmps, at > 0 {
+                let r = at / flc
+                let off = r < 0.8 || r > 1.25
+                head.append(SLNote(id: "mainFLC", text: "เมน \(cb.name) \(f(at)) AT = \(String(format: "%.2f", r)) × กระแสพิกัด" + (off ? " · นอกช่วง 0.8–1.25 ×" : ""),
+                                   flagged: off, target: cb.main.target))
+            }
+        }
+        // outgoing breakers: in use / spare, and their AT summed without diversity
+        let rawCB = raw[safe: connection.0]?.resolvedBoards[safe: connection.1]?.breakers ?? []
+        if !rawCB.isEmpty {
+            let n = rawCB.reduce(0) { $0 + max($1.count, 1) }
+            let spare = rawCB.filter(\.spare).reduce(0) { $0 + max($1.count, 1) }
+            head.append(SLNote(id: "feeders", text: "วงจรย่อย \(cb.name) \(n) วงจร (ใช้งาน \(n - spare) · สำรอง \(spare))", target: cb.target))
+            let used = rawCB.filter { !$0.spare }
+            let sum = used.reduce(0.0) { $0 + (num($1.at) ?? 0) * Double(max($1.count, 1)) }
+            let unknown = used.filter { num($0.at) == nil }.reduce(0) { $0 + max($1.count, 1) }
+            if !used.isEmpty {
+                head.append(SLNote(id: "sumAT", text: "รวมพิกัดวงจรที่ใช้งาน \(f(sum)) AT (ไม่คิด diversity)" + (unknown > 0 ? " · ไม่รู้ AT \(unknown) วงจร" : ""),
+                                   target: cb.target))
+            }
+        }
+        // PV share of the transformer and the PV breaker on this bus
+        let pvKW = pv.inverterSizes.map { Double($0.reduce(0, +)) } ?? pv.inverterKW.flatMap { kw in pv.inverterCount.map { kw * Double($0) } } ?? pv.capacityKWp
+        if let kw = pvKW, let kva = tx.kva, kva > 0 {
+            let p = kw / kva * 100
+            head.append(SLNote(id: "pvShare", text: "กำลัง PV ต่อหม้อแปลง \(f(kw)) kW ÷ \(f(kva)) kVA = \(Int(p.rounded())) %" + (p > 100 ? " · เกิน 100 %" : ""),
+                               flagged: p > 100, target: tx.target))
+        }
+        if let at = pv.totalAT {
+            let main = cb.main.atAmps.map { f($0) } ?? "?"
+            head.append(SLNote(id: "pvBus", text: "เบรกเกอร์ PV \(at) AT ต่อเข้าบัส \(cb.name) ที่มีเมน \(main) AT (ตรวจพิกัดบัสบาร์กับวิศวกร)", target: cb.target))
+        }
+        return head + out
     }
 
     // MARK: PV

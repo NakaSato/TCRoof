@@ -461,6 +461,7 @@ extension ElectricalPageWide {
                             }
                         }
                         A3Input(label: "ยี่ห้อ / รุ่น", text: bText(i, 0, \.brand))
+                        boardSLDButton(i, 0)
                         breakerList(i, 0)
                     }
                     VStack(alignment: .leading, spacing: 8) {
@@ -530,6 +531,7 @@ extension ElectricalPageWide {
                 Text(line2).font(.sarabunFixed(12)).foregroundStyle(b.brand.isEmpty ? Theme.danger : Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 0)
+            if b.spare { a3Chip("SPARE", ok: true) }
             if !b.condition.isEmpty { a3Chip(b.condition, ok: b.condition != "ชำรุด") }
         }
         .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
@@ -568,6 +570,7 @@ extension ElectricalPageWide {
                 }
                 .buttonStyle(.plain)
                 A3Input(label: "ตำแหน่งตู้", text: bText(i, k, \.location))
+                boardSLDButton(i, k)
                 Spacer(minLength: 0)
                 A3PhotoTile(photo: Binding(get: { boards(i)[safe: k]?.photos.first },
                                            set: { p in editBoards(i) { if $0.indices.contains(k) { $0[k].photos = p.map { [$0] } ?? [] } } }),
@@ -638,6 +641,7 @@ struct BreakerSheet: View {
                         A3Label(text: "สภาพ")
                         A3Segments(options: ["ดี", "พอใช้", "ชำรุด"], selected: breaker.condition) { breaker.condition = $0 }
                     }
+                    BreakerSLDFields(breaker: $breaker)
                     if !phone {
                         Button(role: .destructive, action: onDelete) {
                             Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)

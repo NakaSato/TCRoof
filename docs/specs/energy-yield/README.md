@@ -32,7 +32,12 @@ Preliminary and PVsyst-equivalent energy yield for TCRoof: residential surveys a
 Done:
 - Hourly chain in `PVYield` for front-lit arrays: sun position (NREL SPA), the hour-effective sun and DNI fix, Perez, IAM, horizon and near shading, soiling, cell temperature, one-diode MPP, DC losses, MPPT current limit, inverter and clipping, AC losses, PR, monthly table, ageing, P50/P90. Tested against `Fixtures/golden`.
 
+- C1's แผงบนหลังคา tab shows `พลังงานต่อปี` from it (`TCRoofCore/RoofPV/RoofMountYield.swift`): P50 and P90 MWh/yr, kWh/kWp, PR, per face, the inverters and the source. It runs on the layout's faces in use (tilt from `Roof.slope`, compass azimuth from the plan's bearing), their module counts, the standard's module matched to the catalog (`p570` → Znshine ZXM7-UHLDD144-570) and B2's inverter sizes (Growatt MAX 60/80/125; with one roof section the roof takes all of them, else as many as keep DC/AC ≤ 1.3, said as ค่าสมมติ). It is computed off the main thread, 0.6 s after the layout settles, and never stored.
+- Weather: `PVYield/Resources/weather` ships the Bangkok PVGIS-ERA5 TMY (`BundledWeather`), used for sites within 100 km. Elsewhere, without A1's GPS, or with a module that has no model, the card shows `SolarModel`'s clear-sky estimate and says why.
+
 Next:
+- A weather year for every site: more bundled TMYs (one per region or a PVGIS grid), or a fetch-and-cache step. Needs a decision on the source and its licence (§4 of the dev spec).
 - Bifacial rear gain and row-to-row shading (pvlib infinite sheds; golden `*-bifacial-*` and `*-ground-*`).
-- Wire it to the survey's roof faces and layout (`RoofMount`).
-- A weather source per site (only the Bangkok TMY is in the repo; the engine takes any `HourlyWeather`).
+- Models for the catalog's other modules (`p550`, `p580`, `p620`: PAN files or datasheet temperature coefficients).
+- Near shading and the obstacles' shade from the layout into `ArrayFace.nearShadingLossFrac`.
+- Switch the layout's face choice, the report line (`RoofMount.summaryLine`) and the tank's energy search (`TankLayout+Energy`, `TankShade`) once every site has hourly weather; until then they stay on `SolarModel` so a job's numbers don't change with its location.

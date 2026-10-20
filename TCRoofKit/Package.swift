@@ -21,7 +21,7 @@ let package = Package(
     targets: [
         // raw deflate / inflate / crc32 from the system zlib (iOS SDK and Linux both ship it)
         .target(name: "CZlib", linkerSettings: [.linkedLibrary("z")]),
-        .target(name: "TCRoofCore", resources: [.process("Resources/equipment-catalog.json"), .copy("Resources/pv-modules"), .copy("Resources/PermitForms")]),
+        .target(name: "TCRoofCore", dependencies: ["PVYield"], resources: [.process("Resources/equipment-catalog.json"), .copy("Resources/pv-modules"), .copy("Resources/PermitForms")]),
         .target(name: "ExcelExport", dependencies: ["TCRoofCore", "CZlib"], resources: [.process("Resources")]),
         .target(name: "PDFReport", dependencies: ["TCRoofCore"], resources: [.process("Resources")]),
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),
@@ -29,7 +29,7 @@ let package = Package(
         // MCP kept apart from the survey modules: only this target depends on the SDK
         .target(name: "TCRoofMCP", dependencies: ["TCRoofCore", .product(name: "MCP", package: "swift-sdk")]),
         // PV module / inverter specs, PVsyst one-diode model, string sizing (docs/specs/energy-yield)
-        .target(name: "PVYield"),
+        .target(name: "PVYield", resources: [.copy("Resources/weather")]),
         .testTarget(name: "PVYieldTests", dependencies: ["PVYield"], resources: [.copy("Fixtures")]),
         .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"], resources: [.copy("Fixtures")]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),

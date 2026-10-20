@@ -59,6 +59,10 @@ struct RoofPageWide: View {
     @State var mountSelection: MountSelection?
     @State var mountTool: MountTool = .inspect
     @State var mountUndo: [RoofMount.Choice] = []
+    /// The layout's yearly energy from the hourly engine, or SolarModel's (RoofPageWide+Energy).
+    @State var mountYield: RoofMountYield.Estimate?
+    @State var mountYieldBusy = false
+    @State var mountYieldFor: RoofMountYield.Inputs?
     /// The standard building roof (RoofPageWide+Design): the picker, the save question, its name and the name saved.
     @State var roofDesignPick = false
     @State var roofDesignSave = false
@@ -111,6 +115,7 @@ struct RoofPageWide: View {
         #endif
         .onChange(of: request.wrappedValue) { _, k in if let k { open(gap: k); request.wrappedValue = nil } }
         .task(id: mountKey) { await refreshMount() }
+        .task(id: mountYieldInputs) { await refreshYield() }
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -420,7 +425,7 @@ struct RoofPageWide: View {
 extension RoofPageWide {
     /// `-surveyC1 <state>` seeds the design's example roof (19 × 16, Pratt, ridge นอน, two skylights) and opens one of the
     /// states in docs/ui/survey-c1: span, spany, posts, pv, keepout, landscape, ridgev, frame-n|w|c|r|k, picker, shape,
-    /// material, wood, bays12, std, save, purlin, zoom, cad, member.
+    /// material, wood, bays12, std, save, purlin, zoom, cad, member; pvyield / pvyieldfar set A1's GPS for the energy card.
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyC1") else { return }
         update { v in
@@ -448,6 +453,14 @@ extension RoofPageWide {
         case "landscape": mode = .pv
         // แผงบนหลังคา: the tab in view, a module's or an obstacle's details, remove mode, the standard, a hip roof
         case "pvtab": mode = .pv; scrollTarget = "info"
+        // the yearly energy card: A1's GPS in Bangkok (the hourly engine) or in Chiang Mai (no weather: SolarModel)
+        case "pvyield", "pvyieldfar":
+            job.values["gps"] = .text(state == "pvyield" ? "13.7563, 100.5018" : "18.7883, 98.9853")
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+            }
+            mode = .pv; scrollTarget = "info"
         case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile":
             // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
             let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"

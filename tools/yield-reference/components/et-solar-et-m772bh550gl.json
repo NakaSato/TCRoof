@@ -1,0 +1,79 @@
+{
+  "bifaciality" : 0.7,
+  "cells" : {
+    "bypassDiodes" : 3,
+    "cellsInParallel" : 2,
+    "cellsInSeries" : 72
+  },
+  "dimensions" : {
+    "depthM" : 0.035,
+    "heightM" : 2.278,
+    "widthM" : 1.134
+  },
+  "iamProfile" : [
+    {
+      "angleDeg" : 0,
+      "factor" : 1
+    },
+    {
+      "angleDeg" : 20,
+      "factor" : 1
+    },
+    {
+      "angleDeg" : 30,
+      "factor" : 1
+    },
+    {
+      "angleDeg" : 40,
+      "factor" : 0.99
+    },
+    {
+      "angleDeg" : 50,
+      "factor" : 0.98
+    },
+    {
+      "angleDeg" : 60,
+      "factor" : 0.96
+    },
+    {
+      "angleDeg" : 70,
+      "factor" : 0.89
+    },
+    {
+      "angleDeg" : 80,
+      "factor" : 0.66
+    },
+    {
+      "angleDeg" : 90,
+      "factor" : 0
+    }
+  ],
+  "id" : "et-solar-et-m772bh550gl",
+  "manufacturer" : "ET SOLAR",
+  "maxSystemVoltageV" : 1500,
+  "model" : "ET-M772BH550GL",
+  "oneDiode" : {
+    "gammaRef" : 0.98,
+    "muGammaPerK" : -0.0001,
+    "rSeriesOhm" : 0.203,
+    "rShunt0Ohm" : 2000,
+    "rShuntExp" : 5.5,
+    "rShuntRefOhm" : 300
+  },
+  "schemaVersion" : 1,
+  "source" : "pan",
+  "stc" : {
+    "impA" : 13.11,
+    "iscA" : 14,
+    "pNomW" : 550,
+    "tolerancePlusPercent" : 0.9,
+    "vmpV" : 41.96,
+    "vocV" : 49.9
+  },
+  "technology" : "monoSi",
+  "temperatureCoefficients" : {
+    "muIscAPerK" : 0.00728,
+    "muPmpPercentPerK" : -0.34,
+    "muVocVPerK" : -0.128
+  }
+}

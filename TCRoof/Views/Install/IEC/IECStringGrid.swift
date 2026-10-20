@@ -75,11 +75,11 @@ struct IECStringGrid: View {
                                 case .performance: IECPerformancePage(job: job, inverter: index)
                                 case .conditions: IECConditionsPage(job: job)
                                 case .photos: IECStationPhotosPage(job: job)
-                                case .install: IECInstallPhotosPage(job: job)
+                                case .install: IECInstallPhotosPage(job: job, readOnly: report.isLocked)
                                 }
                             }
-                            // a closed test is read only; the side list still switches pages
-                            .disabled(report.isLocked)
+                            // a closed test is read only; the side list still switches pages (and report 9 still makes its PDF)
+                            .disabled(report.isLocked && page != .install)
                         }
                         .padding(20)
                     }

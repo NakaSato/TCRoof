@@ -44,6 +44,8 @@ struct RoofPageWide: View {
     @State var savingStandard = false
     @State var showCAD = false
     @State var sectionBig = false
+    /// รายละเอียด A / B and the member schedule (`RoofTruss`).
+    @State var trussOpen = false
     /// A photo tile the bottom bar pointed at (pulses).
     @State var flashShot: Roof.Shot?
     @State var panelsFocused = false
@@ -124,6 +126,7 @@ struct RoofPageWide: View {
         }
         .sheet(isPresented: $savingStandard) { saveStandardSheet }
         .fullScreenCover(isPresented: $sectionBig) { sectionZoom.presentationBackground(.black.opacity(0.45)) }
+        .sheet(isPresented: $trussOpen) { trussSheet }
     }
 
     /// Opens what a bottom-bar gap names.
@@ -490,6 +493,8 @@ extension RoofPageWide {
             scrollTarget = "info"
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
+        case "frame-h": update { Roof.setFrame(&$0, .howe) }
+        case "truss": update { Roof.setFrame(&$0, .howe) }; try? await Task.sleep(nanoseconds: 500_000_000); trussOpen = true
         case "frame-w": update { Roof.setFrame(&$0, .warren) }
         case "frame-c": update { Roof.setFrame(&$0, .rafterTie) }
         case "frame-r": update { Roof.setFrame(&$0, .rafterTruss) }

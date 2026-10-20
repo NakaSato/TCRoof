@@ -446,17 +446,17 @@ public enum Roof {
 
 /// ชนิดโครงหลังคา, stored in `frameType`.
 public enum RoofFrame: String, CaseIterable, Sendable {
-    case normal = "n", pratt = "p", warren = "w", rafterTie = "c", rafterTruss = "r", eaveCeiling = "k"
+    case normal = "n", pratt = "p", howe = "h", warren = "w", rafterTie = "c", rafterTruss = "r", eaveCeiling = "k"
 
     /// The segmented control's label, in the design's order (ปกติ first).
-    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก", "k": "ชายคาฝ้า"][rawValue]! }
+    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "h": "ถัก Howe", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก", "k": "ชายคาฝ้า"][rawValue]! }
     public var title: String {
-        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2",
+        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "h": "โครงถัก Howe", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2",
          "k": "โครงจันทันพาดเสา · ชายคาฝ้า"][rawValue]!
     }
-    public static let ordered: [RoofFrame] = [.normal, .pratt, .warren, .rafterTie, .rafterTruss, .eaveCeiling]
-    /// Pratt, Warren and the normal frame are trusses with a bottom chord.
-    public var isTruss: Bool { self == .normal || self == .pratt || self == .warren }
+    public static let ordered: [RoofFrame] = [.normal, .pratt, .howe, .warren, .rafterTie, .rafterTruss, .eaveCeiling]
+    /// Pratt, Howe, Warren and the normal frame are trusses with a bottom chord.
+    public var isTruss: Bool { self == .normal || self == .pratt || self == .howe || self == .warren }
     /// Rafters on eaves beams (ขื่อรัด, ชายคาฝ้า): no truss panels, the plan draws rafters @1.00.
     public var isRafter: Bool { self == .rafterTie || self == .eaveCeiling }
     public var slope: Double { self == .rafterTie ? 30 : 15 }

@@ -75,8 +75,34 @@ final class RoofPlanGoldenTests: XCTestCase {
     }
 
     /// Recorded from the drawing before RoofPlan.init was split (4/10/2569); the PV cases again with the roof PV engine
-    /// (19/10/2569), and the cases with areas after `Roof.Area` gained `height` (the dump prints it; the drawing is unchanged).
+    /// (19/10/2569), and the cases with areas after `Roof.Area` gained `height` (the dump prints it; the drawing is unchanged); the Howe frame's cases added 20/10/2569.
     static let expected: [String: UInt64] = [
+        "h-h-hl1": 0xa9bae10368a4f888,
+        "h-h-hl2": 0xb9093ff05ef15b92,
+        "h-h-hl3": 0xb9093ff05ef15b92,
+        "h-h-hl4": 0xb9093ff05ef15b92,
+        "h-h-hl5": 0xb9093ff05ef15b92,
+        "h-h-hl6": 0xa1309f658c7467c9,
+        "h-h-hl7": 0x118a817c7dd1f40e,
+        "h-h-plan": 0x74bc650e28d420ce,
+        "h-h-plan-areas-chips": 0x227907e1d6ea8296,
+        "h-h-plan-drag": 0x845ce39e06c04587,
+        "h-h-pv": 0x9122661771e85409,
+        "h-h-pv-full": 0x18112d95adf7b61,
+        "h-h-pv-full-drag": 0x8c3e1d80a889801f,
+        "h-v-hl1": 0xbf3fd02a88770fcb,
+        "h-v-hl2": 0x96fbdae7b55ee59,
+        "h-v-hl3": 0x96fbdae7b55ee59,
+        "h-v-hl4": 0x96fbdae7b55ee59,
+        "h-v-hl5": 0x96fbdae7b55ee59,
+        "h-v-hl6": 0x36503bb84893438e,
+        "h-v-hl7": 0xaf789bb4eb8b279b,
+        "h-v-plan": 0x351fa1819b94f42f,
+        "h-v-plan-areas-chips": 0xba483ea392fffe0d,
+        "h-v-plan-drag": 0x86b0ae56992c9efa,
+        "h-v-pv": 0x66a5c9a4d6763701,
+        "h-v-pv-full": 0xf866e4389fb0624a,
+        "h-v-pv-full-drag": 0xd6b1b95010cb438,
         "c-h-hl1": 0x8fdab8eee450deab,
         "c-h-hl2": 0x12622933c3ec6131,
         "c-h-hl3": 0xe297348bcc1cf2ef,

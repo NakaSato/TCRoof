@@ -31,15 +31,18 @@ extension RoofPageWide {
                 .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6).truncationMode(.tail)
             let zoom = footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Theme.primary) { sectionBig = true }
                 .accessibilityLabel("ขยายรูปตัดเต็มจอ")
+            let parts = footerButton("ชิ้นส่วน", icon: "list.bullet.rectangle", tint: Theme.primary) { trussOpen = true }
+                .accessibilityLabel(f.isTruss ? "รายละเอียด A B และตารางชิ้นส่วน" : "ตารางชิ้นส่วน")
             pitchNote
             if narrow {
-                // iPhone: the caption and ขยาย on one line, the bays stepper under them
-                HStack(spacing: 8) { caption; Spacer(minLength: 8); zoom }
+                // iPhone: the caption, ชิ้นส่วน and ขยาย on one line, the bays stepper under them
+                HStack(spacing: 8) { caption; Spacer(minLength: 8); parts; zoom }
                 if !f.isRafter { baysStepper }
             } else {
                 HStack(spacing: 8) {
                     caption
                     Spacer(minLength: 8)
+                    parts
                     zoom
                     if !f.isRafter { baysStepper }
                 }

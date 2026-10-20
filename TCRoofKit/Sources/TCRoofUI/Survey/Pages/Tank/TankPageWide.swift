@@ -347,7 +347,8 @@ struct TankPageWide: View {
 extension TankPageWide {
     /// `-surveyD1 <state>` seeds the design's example tank (40 × 40, ค.ส.ล., กึ่งฝัง, 4.50 / 1.20, คอนกรีต, 12°) and
     /// opens a state of docs/ui/survey-d1-size/states: default, size, t64, t30, t20, above, buried, custom (typed azimuth
-    /// and surface), compass, span, empty; tab2 opens sub-step 2. obst opens sub-step 2 as docs/ui/survey-d1-obstacles-iphone
+    /// and surface), compass, span, empty; tab2 opens sub-step 2. round makes it a round tank Ø 30 m (roundobst opens its
+    /// standard points in sub-step 2, roundlayout checks them and opens the automatic layout in sub-step 3). obst opens sub-step 2 as docs/ui/survey-d1-obstacles-iphone
     /// (obstbottom scrolled to the end, obstshade the shading view, obstrow the row question, obstfull the plan full screen, obstadded a hatch added
     /// on site, obstdelete the delete question). layout opens sub-step 3 as docs/ui/survey-d1-layout-iphone with every point of
     /// 2/4 checked and the automatic layout (layoutbottom scrolled to the end, layoutedit แก้แผง with a panel off and a table
@@ -380,6 +381,22 @@ extension TankPageWide {
             if phone { planFull = true; try? await Task.sleep(nanoseconds: 700_000_000) }
             span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
+        case "round", "roundobst", "roundlayout":
+            // a round tank Ø 30 m: sub-step 1; roundobst its standard points (sub-step 2), roundlayout all checked and
+            // the automatic layout (sub-step 3)
+            update { v in
+                v[Roof.Key.obstacles] = nil
+                Tank.setShape(&v, .round)
+                Tank.setDiameter(&v, 30)
+                guard state != "round" else { return }
+                TankPoints.seed(&v)
+                for k in [TankLayout.Key.orient, TankLayout.Key.offX, TankLayout.Key.offY, TankLayout.Key.off, TankLayout.Key.gap, TankLayout.Key.standard] { v[k] = nil }
+                if state == "roundlayout" {
+                    for o in TankPoints.points(v) { TankPoints.setStatus(&v, o.id, TankPoints.ok) }
+                    TankLayout.save(&v, TankLayout.auto(v), off: [])
+                }
+            }
+            tab = state == "round" ? 1 : state == "roundobst" ? 2 : 3
         case "tab2": tab = 2
         case "design", "design64", "designcompare":
             // docs/specs/standard-designs.md: the 40 × 40 (or 64 × 40) sheet, two points checked, one moved, one absent

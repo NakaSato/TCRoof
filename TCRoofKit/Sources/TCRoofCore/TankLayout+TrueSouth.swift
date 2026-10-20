@@ -89,10 +89,12 @@ extension TankLayout {
         let lo: (u: Double, w: Double), hi: (u: Double, w: Double)
         let grown: [(quad: Quad, vent: Bool)], real: [Quad]
         let keep: [TankPoints.Rect]
+        /// A round tank's roof: the setback and the footings are taken from its rim.
+        let circle: TankPoints.Circle?
 
-        init(size t: (w: Double, h: Double), azimuth az: Double, openings open: [Opening], params p: Params) {
+        init(size t: (w: Double, h: Double), azimuth az: Double, openings open: [Opening], params p: Params, circle: TankPoints.Circle? = nil) {
             let fr = SouthFrame(azimuth: az)
-            self.fr = fr; size = t; self.p = p
+            self.fr = fr; size = t; self.p = p; self.circle = circle
             let c = [(0.0, 0.0), (t.w, 0), (t.w, t.h), (0, t.h)].map { fr.to($0.0, $0.1) }
             lo = (c.map(\.u).min()!, c.map(\.w).min()!); hi = (c.map(\.u).max()!, c.map(\.w).max()!)
             grown = open.map { o in
@@ -108,6 +110,7 @@ extension TankLayout {
 
         func insideSetback(_ u: Double, _ w: Double) -> Bool {
             let q = fr.from(u, w), e = p.clearance
+            if let circle { return circle.contains(q.x, q.y, margin: e) }
             return q.x >= e - 1e-9 && q.x <= size.w - e + 1e-9 && q.y >= e - 1e-9 && q.y <= size.h - e + 1e-9
         }
 
@@ -117,6 +120,7 @@ extension TankLayout {
             return ws.allSatisfy { w in
                 let q = fr.from(u, w)
                 return q.x >= f && q.x <= size.w - f && q.y >= f && q.y <= size.h - f
+                    && (circle?.contains(q.x, q.y, margin: f) ?? true)
                     && !keep.contains { q.x > $0.x + 1e-9 && q.x < $0.x + $0.w - 1e-9 && q.y > $0.y + 1e-9 && q.y < $0.y + $0.h - 1e-9 }
             }
         }
@@ -197,12 +201,12 @@ extension TankLayout {
     public static func trueSouth(_ v: Values, latitude: Double, base: Params? = nil) -> TrueSouth? {
         let base = base ?? defaults(v)
         guard let t = TankPoints.tankSize(v), let az = Tank.azimuth(v).map(Double.init), let off = wallOffset(v) else { return nil }
-        let open = openings(v), objects = TankShade.objects(v), exposed = Tank.exposed(v) ?? 0
+        let open = openings(v), objects = TankShade.objects(v), exposed = Tank.exposed(v) ?? 0, circle = TankPoints.circle(v)
         let yield = SolarModel.yield(lat: latitude, tilt: base.tilt, azimuthFromSouth: 0)
 
         func trial(_ gap: Double, step: (x: Double, y: Double)) -> TrueSouth {
             var p = base; p.rowGap = gap
-            let g = SouthGeometry(size: t, azimuth: az, openings: open, params: p)
+            let g = SouthGeometry(size: t, azimuth: az, openings: open, params: p, circle: circle)
             let nx = Int(((p.cellW + p.moduleGap) / step.x - 1e-9).rounded(.down)), ny = Int((p.rowPitch / step.y - 1e-9).rounded(.down))
             var found: [(n: Int, x: Double, y: Double)] = []
             for j in 0...ny { for i in 0...nx {
@@ -218,7 +222,7 @@ extension TankLayout {
             var (s, spots) = pick!
             s.yield = yield
             if !spots.isEmpty {
-                let sim = TankShade.Sim(spots: spots, facing: 180, params: p, size: t, objects: objects, azimuth: az, exposed: exposed)
+                let sim = TankShade.Sim(spots: spots, facing: 180, params: p, size: t, objects: objects, azimuth: az, exposed: exposed, circle: circle)
                 let r = sim.run(latitude: latitude, dayStep: 6, minutes: 30)
                 s.rowLoss = r.rowLoss; s.objectLoss = r.objectLoss
             }

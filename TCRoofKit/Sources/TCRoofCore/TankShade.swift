@@ -96,12 +96,14 @@ public struct TankShade: Sendable {
         init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double) {
             // the panels face the wall they slope down to
             let facing = ((azimuth ?? 0) + [180.0, 90, 0, 270][l.turn]).truncatingRemainder(dividingBy: 360)
-            self.init(spots: TankShade.spots(l), facing: facing, params: l.params, size: l.size, objects: objects, azimuth: azimuth, exposed: exposed)
+            self.init(spots: TankShade.spots(l), facing: facing, params: l.params, size: l.size, objects: objects, azimuth: azimuth, exposed: exposed,
+                      circle: l.circle)
         }
 
-        /// Any panels on the plan facing `facing` (compass), such as the true-south comparison's.
+        /// Any panels on the plan facing `facing` (compass), such as the true-south comparison's. A round tank's
+        /// objects stand beside its rim.
         init(spots: [Spot], facing: Double, params p: TankLayout.Params, size: (w: Double, h: Double), objects: [Object],
-             azimuth: Double?, exposed: Double) {
+             azimuth: Double?, exposed: Double, circle: TankPoints.Circle? = nil) {
             az = azimuth ?? 0
             self.facing = facing
             gp = (facing - 180 + 540).truncatingRemainder(dividingBy: 360) - 180
@@ -110,7 +112,8 @@ public struct TankShade: Sendable {
             let corners = [(0.0, 0.0), (size.w, 0), (0, size.h), (size.w, size.h)], a = az
             lines = objects.compactMap { o in
                 guard let b = TankShade.direction(o.direction) else { return nil }
-                let u = Sim.planVector(b, a), edge = corners.map { $0.0 * u.0 + $0.1 * u.1 }.max() ?? 0
+                let u = Sim.planVector(b, a)
+                let edge = circle.map { $0.cx * u.0 + $0.cy * u.1 + $0.r } ?? (corners.map { $0.0 * u.0 + $0.1 * u.1 }.max() ?? 0)
                 return Line(ux: u.0, uy: u.1, s0: edge + o.distance, h: o.height - exposed)
             }
         }

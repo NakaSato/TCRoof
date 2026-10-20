@@ -46,19 +46,15 @@ struct TankPointsPlan: View {
     }
 
     var marks: [Mark] {
-        let t = TankPoints.tankSize(values)
-        return TankPoints.points(values).compactMap { o in
+        TankPoints.points(values).compactMap { o in
             guard var r = TankPoints.rect(o) else { return nil }
             if let d = drag, d.id == o.id { r.x = d.drop.x; r.y = d.drop.y }
             let s: Look = o.id == selected ? .selected : o.isAbsent ? .absent : o.status.isEmpty ? .unconfirmed : .confirmed
             var m = Mark(id: o.id, point: o, rect: r, state: s)
-            if TankPoints.onWall(o.kind), let t {
-                switch TankPoints.wall(r, w: t.w, h: t.h) {
-                case .top: m.shift = CGSize(width: 0, height: -10)
-                case .bottom: m.shift = CGSize(width: 0, height: 10)
-                case .left: m.shift = CGSize(width: -10, height: 0)
-                case .right: m.shift = CGSize(width: 10, height: 0)
-                }
+            // out past the nearest wall, or past the rim of a round tank
+            if TankPoints.onWall(o.kind) {
+                let u = TankPoints.outward(r, in: values)
+                m.shift = CGSize(width: u.x * 10, height: u.y * 10)
             }
             return m
         }

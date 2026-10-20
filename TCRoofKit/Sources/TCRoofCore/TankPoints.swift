@@ -75,11 +75,109 @@ public enum TankPoints {
     public static func snap(_ d: Double) -> Double { ((d / grid).rounded() * grid * 1000).rounded() / 1000 }
     static func text(_ d: Double) -> String { fmt(snap(d), digits: 3) }
 
-    /// The tank's width and height (m), nil without spans.
+    /// The tank's width and height (m), nil without spans; a round tank's bounding square, D × D.
     public static func tankSize(_ v: Values) -> (w: Double, h: Double)? {
         let s = Tank.spans(v)
         guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
         return (s.x.reduce(0, +), s.y.reduce(0, +))
+    }
+
+    // MARK: round tanks
+
+    /// A round tank's roof in tank metres (the bounding square's top-left is the origin, y down).
+    public struct Circle: Hashable, Sendable {
+        public var cx, cy, r: Double
+        public init(cx: Double, cy: Double, r: Double) { self.cx = cx; self.cy = cy; self.r = r }
+        public init(diameter d: Double) { self.init(cx: d / 2, cy: d / 2, r: d / 2) }
+        /// The point is at least `margin` inside the rim.
+        public func contains(_ x: Double, _ y: Double, margin: Double = 0) -> Bool { hypot(x - cx, y - cy) <= r - margin + 1e-6 }
+        /// Every corner of the rectangle is at least `margin` inside the rim.
+        public func contains(_ b: Rect, margin: Double = 0) -> Bool {
+            [(b.x, b.y), (b.x + b.w, b.y), (b.x, b.y + b.h), (b.x + b.w, b.y + b.h)].allSatisfy { contains($0.0, $0.1, margin: margin) }
+        }
+        /// How far the rectangle's farthest corner is inside the rim (negative: outside).
+        public func clearance(_ b: Rect) -> Double {
+            r - [(b.x, b.y), (b.x + b.w, b.y), (b.x, b.y + b.h), (b.x + b.w, b.y + b.h)].map { hypot($0.0 - cx, $0.1 - cy) }.max()!
+        }
+        /// The largest t ≥ 0 for which the rectangle, its centre moved to the centre + t · (its offset), fits inside;
+        /// nil when it doesn't fit even at the centre. With the centre on the centre, it is measured straight up.
+        func reach(_ b: Rect) -> (t: Double, dx: Double, dy: Double)? {
+            var dx = b.cx - cx, dy = b.cy - cy
+            if hypot(dx, dy) < 1e-9 { dx = 0; dy = -1 }
+            let p = b.w / 2, q = b.h / 2, a = abs(dx), c = abs(dy)
+            let A = a * a + c * c, B = 2 * (a * p + c * q), C = p * p + q * q - r * r
+            guard C <= 1e-9 else { return nil }
+            return ((-B + (B * B - 4 * A * C).squareRoot()) / (2 * A), dx, dy)
+        }
+        /// The rectangle moved straight towards the centre until it is inside (unchanged when it is); its top-left.
+        public func clamp(_ b: Rect) -> (x: Double, y: Double) {
+            guard !contains(b), let m = reach(b) else { return contains(b) ? (b.x, b.y) : (cx - b.w / 2, cy - b.h / 2) }
+            let t = min(1, m.t)
+            return (cx + m.dx * t - b.w / 2, cy + m.dy * t - b.h / 2)
+        }
+        /// The rectangle moved along its radius to the rim, just inside it (a ladder or a pipe); its top-left.
+        public func rim(_ b: Rect) -> (x: Double, y: Double) {
+            guard let m = reach(b) else { return (cx - b.w / 2, cy - b.h / 2) }
+            return (cx + m.dx * m.t - b.w / 2, cy + m.dy * m.t - b.h / 2)
+        }
+        /// The unit vector from the centre through the rectangle's centre (straight up from the centre itself).
+        public func outward(_ b: Rect) -> (x: Double, y: Double) {
+            let dx = b.cx - cx, dy = b.cy - cy, d = hypot(dx, dy)
+            return d < 1e-9 ? (0, -1) : (dx / d, dy / d)
+        }
+    }
+    /// A round tank's circle, nil for a rectangle or without a diameter.
+    public static func circle(_ v: Values) -> Circle? { Tank.diameter(v).map { Circle(diameter: $0) } }
+
+    /// Snaps a top-left corner to 2.5 cm and keeps the rectangle inside the circle: a step of the grid towards the
+    /// centre at a time while the snapped corner pokes out.
+    static func snapInside(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ c: Circle) -> (x: Double, y: Double) {
+        var nx = snap(x), ny = snap(y), k = 0
+        while !c.contains(Rect(x: nx, y: ny, w: w, h: h)) && k < 8 {
+            let dx = c.cx - (nx + w / 2), dy = c.cy - (ny + h / 2)
+            if abs(dx) > grid / 2 { nx = snap(nx + (dx > 0 ? grid : -grid)) }
+            if abs(dy) > grid / 2 { ny = snap(ny + (dy > 0 ? grid : -grid)) }
+            k += 1
+        }
+        return (nx, ny)
+    }
+
+    /// Where a point of this kind may sit in a round tank: openings inside the circle, ladders and pipes on the rim.
+    static func place(_ r: Rect, kind: String, in c: Circle) -> (x: Double, y: Double) {
+        let p = onWall(kind) ? c.rim(r) : c.clamp(r)
+        return snapInside(p.x, p.y, r.w, r.h, c)
+    }
+
+    /// The round tank's standard points (polar, clockwise from the plan's top): V1 at the centre, V2–V7 on a ring at
+    /// 0.55 R every 60°, H1–H3 at 0.85 R at 30°, 150° and 270°, each pulled inside the circle on a small tank.
+    public static let roundLayout: [(kind: String, rho: Double, angle: Double)] = [
+        (vent, 0, 0), (vent, 0.55, 0), (vent, 0.55, 60), (vent, 0.55, 120), (vent, 0.55, 180), (vent, 0.55, 240), (vent, 0.55, 300),
+        (hatch, 0.85, 30), (hatch, 0.85, 150), (hatch, 0.85, 270),
+    ]
+    public static func standardPoints(diameter D: Double) -> [Obstacle] {
+        let c = Circle(diameter: D)
+        var n = [vent: 0, hatch: 0]
+        return roundLayout.map { s in
+            n[s.kind, default: 0] += 1
+            let d = size(s.kind), a = s.angle * .pi / 180, rho = s.rho * c.r
+            let p = place(Rect(x: c.cx + rho * sin(a) - d / 2, y: c.cy - rho * cos(a) - d / 2, w: d, h: d), kind: s.kind, in: c)
+            let x = text(p.x), y = text(p.y)
+            return Obstacle(label: prefix(s.kind) + "\(n[s.kind]!)", x: x, y: y, w: fmt(d), h: fmt(d), kind: s.kind,
+                            origin: standard, stdX: x, stdY: y)
+        }
+    }
+
+    /// The direction a ladder or a pipe stands out from the tank, for drawing it outside the wall: the nearest wall's
+    /// normal, or the radius of a round tank.
+    public static func outward(_ r: Rect, in v: Values) -> (x: Double, y: Double) {
+        if let c = circle(v) { return c.outward(r) }
+        guard let t = tankSize(v) else { return (0, -1) }
+        switch wall(r, w: t.w, h: t.h) {
+        case .top: return (0, -1)
+        case .bottom: return (0, 1)
+        case .left: return (-1, 0)
+        case .right: return (1, 0)
+        }
     }
 
     // MARK: points
@@ -120,7 +218,7 @@ public enum TankPoints {
     /// Writes the standard points when the tank has a size and no obstacle yet (the sub-step's first open).
     @discardableResult public static func seed(_ v: inout Values) -> Bool {
         guard points(v).isEmpty, let t = tankSize(v) else { return false }
-        write(&v, standardPoints(width: t.w, height: t.h))
+        write(&v, Tank.diameter(v).map { standardPoints(diameter: $0) } ?? standardPoints(width: t.w, height: t.h))
         v[Tank.Key.design] = nil
         return true
     }
@@ -171,14 +269,21 @@ public enum TankPoints {
 
     // MARK: moving
 
-    /// Moves a point's top-left corner to (x, y), snapped to 2.5 cm and kept inside the tank.
+    /// Moves a point's top-left corner to (x, y), snapped to 2.5 cm and kept inside the tank (a round tank: inside the
+    /// circle, a ladder or a pipe on its rim).
     public static func move(_ v: inout Values, _ id: UUID, x: Double?, y: Double?) {
         guard let t = tankSize(v) else { return }
+        let c = circle(v)
         edit(&v, id) { o in
             guard let r = rect(o) else { return }
             o.bulk = false
-            if let x { o.x = text(min(max(0, x), max(0, t.w - r.w))) }
-            if let y { o.y = text(min(max(0, y), max(0, t.h - r.h))) }
+            if let c {
+                let p = place(Rect(x: x ?? r.x, y: y ?? r.y, w: r.w, h: r.h), kind: o.kind, in: c)
+                o.x = text(p.x); o.y = text(p.y)
+            } else {
+                if let x { o.x = text(min(max(0, x), max(0, t.w - r.w))) }
+                if let y { o.y = text(min(max(0, y), max(0, t.h - r.h))) }
+            }
             if o.w.isEmpty { o.w = fmt(r.w) }
             if o.h.isEmpty { o.h = fmt(r.h) }
         }
@@ -195,6 +300,22 @@ public enum TankPoints {
         guard let t = tankSize(v), let me = list.first(where: { $0.id == id }), let r = rect(me) else { return nil }
         var nx = min(max(0, x), max(0, t.w - r.w)), ny = min(max(0, y), max(0, t.h - r.h))
         var gx: Double?, gy: Double?
+        if let c = circle(v) {
+            // a round tank: inside the circle, a ladder or a pipe slides along the rim (no magnet there)
+            let others = list.filter { $0.id != id && $0.status != absent }.compactMap(rect)
+            if !onWall(me.kind) {
+                if let o = others.min(by: { abs($0.cx - (nx + r.w / 2)) < abs($1.cx - (nx + r.w / 2)) }), abs(o.cx - (nx + r.w / 2)) <= magnet {
+                    nx = o.cx - r.w / 2; gx = o.cx
+                }
+                if let o = others.min(by: { abs($0.cy - (ny + r.h / 2)) < abs($1.cy - (ny + r.h / 2)) }), abs(o.cy - (ny + r.h / 2)) <= magnet {
+                    ny = o.cy - r.h / 2; gy = o.cy
+                }
+            }
+            let p = place(Rect(x: nx, y: ny, w: r.w, h: r.h), kind: me.kind, in: c)
+            // a guide only while the point still sits on it
+            let keepX = gx.map { abs($0 - (p.x + r.w / 2)) < 0.01 } ?? false, keepY = gy.map { abs($0 - (p.y + r.h / 2)) < 0.01 } ?? false
+            return Drop(x: p.x, y: p.y, guideX: keepX ? p.x + r.w / 2 : nil, guideY: keepY ? p.y + r.h / 2 : nil)
+        }
         // a ladder or a pipe slides along its wall
         let side = onWall(me.kind) ? wall(r, w: t.w, h: t.h) : nil
         switch side {
@@ -238,7 +359,8 @@ public enum TankPoints {
         let list = points(v)
         guard let me = list.first(where: { $0.id == id }), let r = rect(me) else { return nil }
         var c = Check()
-        if let t = tankSize(v) { c.outside = r.x < -1e-6 || r.y < -1e-6 || r.x + r.w > t.w + 1e-6 || r.y + r.h > t.h + 1e-6 }
+        if let circle = circle(v) { c.outside = !circle.contains(r) }
+        else if let t = tankSize(v) { c.outside = r.x < -1e-6 || r.y < -1e-6 || r.x + r.w > t.w + 1e-6 || r.y + r.h > t.h + 1e-6 }
         for o in list where o.id != id && o.status != absent {
             guard let q = rect(o) else { continue }
             if abs(q.cx - r.cx) < 0.01 || abs(q.cy - r.cy) < 0.01 { c.aligned.append(o.label) }
@@ -270,9 +392,12 @@ public enum TankPoints {
         var r = Rect(x: snap(t.w / 2 - d / 2), y: snap(t.h / 2 - d / 2), w: d, h: d)
         let taken = list.compactMap(rect)
         func crowded(_ r: Rect) -> Bool { taken.contains { abs($0.cx - r.cx) < t.w * 0.11 && abs($0.cy - r.cy) < t.h * 0.06 } }
+        let c = circle(v)
+        func fits(_ r: Rect) -> Bool { c.map { $0.contains(r) } ?? (r.y + d <= t.h) }
         var k = 0
-        while crowded(r) && k < 40 && r.y + 1 + d <= t.h { r.y += 1; k += 1 }
+        while crowded(r) && k < 40 && fits(Rect(x: r.x, y: r.y + 1, w: d, h: d)) { r.y += 1; k += 1 }
         if crowded(r) { r.y = snap(t.h / 2 - d / 2) }
+        if let c { let p = place(r, kind: kind, in: c); r.x = p.x; r.y = p.y }
         let o = Obstacle(label: nextLabel(list, kind: kind), x: text(r.x), y: text(r.y), w: fmt(d), h: fmt(d), kind: kind, status: ok, origin: added)
         list.append(o)
         write(&v, list)
@@ -286,7 +411,7 @@ public enum TankPoints {
         var ids: [UUID] = []
         for i in 1...count {
             let x = snap(r.x + Double(i) * spacing)
-            guard x + r.w <= t.w + 1e-6 else { break }
+            guard x + r.w <= t.w + 1e-6, circle(v)?.contains(Rect(x: x, y: r.y, w: r.w, h: r.h)) ?? true else { break }
             let o = Obstacle(label: nextLabel(list, kind: me.kind), x: text(x), y: text(r.y), w: fmt(r.w), h: fmt(r.h), kind: me.kind, status: ok, origin: added)
             list.append(o); ids.append(o.id)
         }

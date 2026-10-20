@@ -322,7 +322,7 @@ top-left corner in metres from the tank's top-left, y down. The fields added to 
 There is no `pending` or `moved` status, no `fromTemplate`, `photoTag`, `edge`, `along` or `diameter`: moved is derived
 from `stdX`/`stdY`, and ladders and pipes are boxes just inside their wall.
 
-- **Sizes drawn:** vent 0.60 m, hatch 0.80 m (`TankPoints.ventSize`, `hatchSize`), not the 1.45 / 1.15 m of the first draft.
+- **Sizes drawn:** vent 1.45 m, hatch 1.15 m, as the กปภ. sheets (`TankPoints.ventSize`, `hatchSize`; decided 2026-10-20). Ladders and pipes keep a 0.60 m mark (`wallSize`). Each point keeps the size it was made with, so tanks surveyed earlier keep 0.60 / 0.80 m. Positions snap to 2.5 cm, so the corner of a 1.45 m vent can put its centre on a whole 5 cm.
 - **Generic layout** (any size, seeded the first time step 2 opens): V1–V10 and H1–H5 at fixed fractions of the width
   and height (vents in the corners, the side walls' middles, two pairs in the middle and along the bottom wall; hatches
   at the quarter lines of the top and bottom walls and one on the left wall).
@@ -555,6 +555,6 @@ Items 7–8 touch only `TCRoofCore` and its tests. Item 9 needs an iOS build (`x
    presets, and each design's openings, against กปภ. drawings (`tank-drawing-swift.md` open questions 1–3).
 5. **C3 mapping:** confirm that `measA` = rafter spacing, `measC` = purlin spacing, and `measI1`/`measI2` = ground→ridge
    and ground→eave, as the labels suggest.
-6. **Opening sizes:** the plan draws vents 0.60 m and hatches 0.80 m; the กปภ. sheets give 1.45 m and 1.15 m. Which is right?
+6. ~~**Opening sizes:** the plan draws vents 0.60 m and hatches 0.80 m; the กปภ. sheets give 1.45 m and 1.15 m. Which is right?~~ The กปภ. sheets only: vents 1.45 m, hatches 1.15 m (2026-10-20).
 7. **Measured or chosen pitch:** C1 asks for a frame type and fixes the slope (15°, or 30° for ขื่อรัด), against the
    "sizes and distances only" rule. Should C1 also take `eaveHeight` / `ridgeHeight` and derive the pitch (§4.4)?

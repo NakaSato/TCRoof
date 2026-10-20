@@ -112,14 +112,14 @@ final class TankLayoutTests: XCTestCase {
     }
 
     func testStandardPointsOfFortyByForty() {
-        // the spec's prototype on its own 40 × 40 fixture: 7 rows, 13 tables, 394–404 modules
+        // the spec's prototype on its own 40 × 40 fixture: 7 rows, 13 tables, 394–404 modules (กปภ. vents 1.45 m)
         let v = tank(), l = TankLayout(v, params: TankLayout.auto(v))!
         XCTAssertEqual(l.rows, 7)
         XCTAssertEqual(l.builtTables.count, 13)
-        XCTAssertEqual(l.count, 410)
+        XCTAssertEqual(l.count, 398)
         XCTAssertEqual(l.checks.ventsUnder, 6)
-        XCTAssertEqual(l.checks.cutColumns, 2)
-        XCTAssertEqual(l.cuts.count, 2)
+        XCTAssertEqual(l.checks.cutColumns, 4)
+        XCTAssertEqual(l.cuts.count, 4)
     }
 
     func testBOMRulesPerTable() {

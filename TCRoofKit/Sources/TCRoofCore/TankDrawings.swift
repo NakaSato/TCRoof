@@ -207,7 +207,7 @@ public enum TankDrawings {
         o.append(.text(String(format: "%.2f", p.hBack), at: Pt(X(p.postDY) + 5, Y(p.hBack / 2)), size: 9.5, bold: true, color: dim))
         o.append(.text(String(format: "เอียง %.1f°", p.tilt), at: Pt(X(p.postDY / 2), Y(p.hBack) - 14), size: 9.5, bold: true, color: navy, align: .center))
         // a vent under the back half of the first row, with the clearance left above it
-        let vx = 0.55, vw = 0.6
+        let vx = 0.55, vw = TankPoints.ventSize
         let under = p.hFront + (vx + vw) * p.tanT, room = under - p.ventH
         o.append(.rect(Box(X(vx), Y(p.ventH), vw * k, p.ventH * k), stroke: vent, fill: vent.withAlpha(0.12), width: 1))
         o.append(.text(String(format: "ปล่อง %.2f", p.ventH), at: Pt(X(vx + vw) + 4, Y(p.ventH * 0.4)), size: 8.5, color: vent))

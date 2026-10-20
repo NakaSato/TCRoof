@@ -13,6 +13,9 @@ public struct TankLayout: Sendable {
         public static let orient = "tankPvOrient", offX = "tankPvOffX", offY = "tankPvOffY", off = "tankPvOff"
         /// The row gap the energy search picked (m), when wider than the standard's; absent means the standard.
         public static let gap = "tankPvGap"
+        /// The team standard the layout was made with (`TankStandard` JSON); absent on layouts made before it was
+        /// editable, which used the built-in one.
+        public static let standard = "tankPvStd"
     }
 
     // MARK: the structure standard (§1)
@@ -35,6 +38,9 @@ public struct TankLayout: Sendable {
         public var maxCantilever = 1.0, minPairGap = 0.6
         /// Module columns and rows moved from the west / south setback (m).
         public var offX = 0.0, offY = 0.0
+        /// The standard's row gap (`rowGap` may be wider, from the energy search) and the standard's revision.
+        public var standardGap = 2.7
+        public var standardRevision = 0
         public init() {}
 
         public var tilt: Double { atan((hBack - hFront) / postDY) * 180 / .pi }
@@ -391,12 +397,8 @@ public struct TankLayout: Sendable {
 
     // MARK: stored answers
 
-    /// The standard with the catalogue's default module.
-    public static func defaults() -> Params {
-        var p = Params(); let m = RoofPlan.Module.catalogDefault
-        p.moduleL = m.length; p.moduleW = m.width; p.moduleKW = m.kW
-        return p
-    }
+    /// The team's standard (`TankStandard.Store`): what a new layout is made with.
+    public static func defaults() -> Params { TankStandard.Store.shared.current.params }
     /// The standard for this tank: the measured vent height when there is one.
     public static func defaults(_ v: Values) -> Params {
         var p = defaults()
@@ -406,11 +408,21 @@ public struct TankLayout: Sendable {
     /// The stored layout's parameters, nil before the first layout.
     public static func params(_ v: Values) -> Params? {
         guard !v.text(Key.orient).isEmpty else { return nil }
-        var p = defaults(v)
+        var p = standard(v).params
+        if let h = Tank.ventHeight(v) { p.ventH = h }
         p.offX = v.number(Key.offX) ?? 0; p.offY = v.number(Key.offY) ?? 0
         // never closer than the standard (maintenance access and bracing, §3a step 5)
         if let g = v.number(Key.gap) { p.rowGap = max(p.rowGap, g) }
         return p
+    }
+    /// The standard the stored layout was made with: its copy, else the built-in one (layouts made before it was editable).
+    public static func standard(_ v: Values) -> TankStandard {
+        TankStandard.decode(v.text(Key.standard)) ?? .builtIn
+    }
+    /// The team's standard has changed since the stored layout was made (`จัดแผงใหม่` takes it).
+    public static func standardChanged(_ v: Values) -> Bool {
+        guard params(v) != nil else { return false }
+        return !standard(v).sameValues(TankStandard.Store.shared.current)
     }
     public static func off(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
     /// The stored layout, nil before the first layout or without a size.
@@ -437,7 +449,13 @@ public struct TankLayout: Sendable {
     public static func save(_ v: inout Values, _ p: Params, off: Set<String>) {
         v[Key.orient] = .text("portrait")
         v[Key.offX] = .text(fmt(snap(p.offX))); v[Key.offY] = .text(fmt(snap(p.offY)))
-        v[Key.gap] = p.rowGap > Params().rowGap + 1e-6 ? .text(fmt(p.rowGap)) : nil
+        v[Key.gap] = p.rowGap > p.standardGap + 1e-6 ? .text(fmt(p.rowGap)) : nil
+        var std = TankStandard(p)
+        if let kept = TankStandard.decode(v.text(Key.standard)), kept.sameValues(std) { std = kept } else {
+            let team = TankStandard.Store.shared.current
+            if team.sameValues(std) { std = team }
+        }
+        v[Key.standard] = .text(std.json)
         v[Key.off] = off.isEmpty ? nil : .text(off.sorted().joined(separator: " "))
         if let l = TankLayout(v, params: p, off: off) { v["panelsBefore"] = .text(String(l.count)) }
     }

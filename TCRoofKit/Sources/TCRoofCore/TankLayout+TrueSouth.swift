@@ -224,7 +224,7 @@ extension TankLayout {
             }
             return s
         }
-        let coarse = gapSteps(base.rowGap).map { trial($0, step: (0.1, 0.2)) }
+        let coarse = gapSteps(base.standardGap).map { trial($0, step: (0.1, 0.2)) }
         guard var best = coarse.first else { return nil }
         for s in coarse.dropFirst() where s.mwh > best.mwh + 1e-9 { best = s }
         let fine = trial(best.gap, step: (TankPoints.grid, TankPoints.grid))

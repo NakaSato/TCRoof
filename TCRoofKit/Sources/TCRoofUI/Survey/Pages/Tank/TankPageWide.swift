@@ -471,7 +471,7 @@ extension TankPageWide {
                 v[Roof.Key.obstacles] = nil
                 TankPoints.seed(&v)
                 for o in TankPoints.points(v) { TankPoints.setStatus(&v, o.id, TankPoints.ok) }
-                for k in [TankLayout.Key.orient, TankLayout.Key.offX, TankLayout.Key.offY, TankLayout.Key.off] { v[k] = nil }
+                for k in [TankLayout.Key.orient, TankLayout.Key.offX, TankLayout.Key.offY, TankLayout.Key.off, TankLayout.Key.gap, TankLayout.Key.standard] { v[k] = nil }
                 TankLayout.save(&v, TankLayout.auto(v), off: [])
                 // layoutshade: trees 12 m high, 3 m south of the tank (the shade card); the others clear the answers
                 let shade = state == "layoutshade"

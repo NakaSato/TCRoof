@@ -108,6 +108,7 @@ final class CloudSync {
         FeedAcks.shared.send = nil
         DesignLibrary.shared.onChange = nil
         DesignLibrary.shared.onRoofChange = nil
+        TankStandard.Store.shared.onChange = nil
         TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
@@ -153,6 +154,7 @@ final class CloudSync {
             listenRevisions()
             listenFeedAcks()
             listenDesigns()
+            listenTankStandard()
             listenContacts()
             listenDirectory()
             listenConfig()
@@ -682,6 +684,26 @@ final class CloudSync {
             }
         }
         listeners.append(pages)
+    }
+
+    /// The team's tank structure standard (`config/tankStandard`, docs/specs/tank-mounting-layout.md §1): every member
+    /// takes a newer revision; a manager's save here is sent (`tank.standard`; firestore.rules refuses anyone else and
+    /// an older revision).
+    private func listenTankStandard() {
+        let ref = db.document("config/tankStandard")
+        TankStandard.Store.shared.onChange = { s in
+            guard MemberRole.shared.permissions.can(.tankStandard) else { return }
+            ref.setData(["json": s.json, "revision": s.revision, "savedBy": s.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: tank standard refused: \(error.localizedDescription)") }
+            }
+        }
+        let registration = ref.addSnapshotListener { snapshot, error in
+            // never fail the whole sync over the standard (rules not deployed yet): the jobs still sync
+            if let error { return print("CloudSync: tank standard listener: \(error.localizedDescription)") }
+            guard let json = snapshot?.data()?["json"] as? String, let s = TankStandard.decode(json) else { return }
+            TankStandard.Store.shared.receive(s)
+        }
+        listeners.append(registration)
     }
 
     private func listenFeedAcks() {

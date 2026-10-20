@@ -59,6 +59,7 @@ public final class SurveyModel {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         DesignLibrary.shared.configure(url: support.appendingPathComponent("standard-designs.json"))
+        TankStandard.Store.shared.configure(url: support.appendingPathComponent("tank-standard.json"))
     }
 
     public func reload() {

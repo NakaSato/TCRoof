@@ -314,7 +314,7 @@ struct PhoneSettingsList: View {
                 .frame(width: 48, height: 48).background(Theme.primary, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
                 Text(userName.isEmpty ? (session.email ?? "—") : userName).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text("วิศวกรสำรวจ").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted).lineLimit(1)
+                Text(permissions.role.label).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted).lineLimit(1)
             }
             Spacer(minLength: 8)
             if sync.state == .synced {

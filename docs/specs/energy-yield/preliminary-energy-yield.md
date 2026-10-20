@@ -4,7 +4,7 @@
 |---|---|
 | **Feature** | Preliminary Energy Yield (on-site quick estimate) |
 | **App** | TCRoof (iOS / iPadOS, Swift) |
-| **Status** | Research complete, figures rechecked live 2026-10-20 — UI not started |
+| **Status** | Research complete, figures rechecked live 2026-10-20. Hourly PVsyst-style engine ported to `PVYield` (front-lit arrays, tested against the reference); UI not started |
 | **Date** | 2026-10-20 |
 
 ## 1. Summary

@@ -117,11 +117,12 @@ extension TankPageWide {
     // MARK: card 1 · plan
 
     var layoutAside: String {
-        "ตามแบบ \(Self.drawingRef) · เอียง " + String(format: "%.1f°", TankLayout.defaults().tilt)
+        "ตามแบบ \(Self.drawingRef) · เอียง " + String(format: "%.1f°", (TankLayout.params(values) ?? TankLayout.defaults()).tilt)
     }
 
     var layoutPlanCard: some View {
         phoneCard(1, "การวางผังแผง", chip: (layoutAside, Theme.inkMuted, Color.clear)) {
+            if TankLayout.standardChanged(values) { standardNote }
             layoutSegment
             layoutPlanFrame
             HStack(spacing: 8) {
@@ -153,6 +154,19 @@ extension TankPageWide {
                 southRow
             }
         }
+    }
+
+    /// The team's standard changed since this layout was made: it keeps its own until laid out again.
+    var standardNote: some View {
+        let team = TankStandard.Store.shared.current
+        return HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(Theme.primary)
+            Text("มาตรฐานโครงสร้างของทีมเปลี่ยนแล้ว (rev \(team.revision): \(team.summary)) · ผังนี้ยังใช้ค่าเดิม กด จัดแผงใหม่ เพื่อใช้ค่าใหม่")
+                .font(.sarabunFixed(13)).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.mint, in: RoundedRectangle(cornerRadius: 10))
     }
 
     /// `เลื่อนผัง` / `แก้แผง`
@@ -205,7 +219,7 @@ extension TankPageWide {
                 .accessibilityLabel("ขยายแปลนเต็มจอ")
                 .disabled(TankLayout.current(values) == nil)
             }
-            Text(Tank.hasSize(values) ? "แผงโมโน \(fmt(TankLayout.defaults().moduleKW * 1000)) W · แตะแผงเพื่อแก้" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
+            Text(Tank.hasSize(values) ? "แผงโมโน \(fmt((TankLayout.params(values) ?? TankLayout.defaults()).moduleKW * 1000)) W · แตะแผงเพื่อแก้" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
                 .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
@@ -258,7 +272,7 @@ extension TankPageWide {
             ("แผง \(w) W", "\(l.count)"),
             ("กำลังรวม", String(format: "%.1f kWp", l.kWp)),
             ("แถว · โต๊ะแผง", "\(l.rows) · \(l.builtTables.count)"),
-            ("ระยะห่างแถว", String(format: "%.2f ม.", l.params.rowGap) + (l.params.rowGap > TankLayout.Params().rowGap + 1e-6 ? "" : " (มาตรฐาน)")),
+            ("ระยะห่างแถว", String(format: "%.2f ม.", l.params.rowGap) + (l.params.rowGap > l.params.standardGap + 1e-6 ? "" : " (มาตรฐาน)")),
             ("เสา + โครงหน้า", "\(b.posts)"),
             ("ฐานราก", "\(b.footings) จุด"),
             ("ราง (4 เส้น)", "\(Int(b.railLength.rounded())) ม."),

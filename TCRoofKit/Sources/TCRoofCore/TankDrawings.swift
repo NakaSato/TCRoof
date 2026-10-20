@@ -309,7 +309,7 @@ extension TankLayout {
         let e = kWp * yield(latitude: latitude, facing: facing) / 1000
         return "ผังแผงอัตโนมัติ \(count) แผง · " + String(format: "%.1f kWp · %.1f MWh/ปี · ", kWp, e)
             + "\(builtTables.count) โต๊ะ · \(rows) แถว · " + String(format: "เอียง %.1f°", params.tilt)
-            + (params.rowGap > Params().rowGap + 1e-6 ? String(format: " · แถวห่าง %.2f ม.", params.rowGap) : "")
+            + (params.rowGap > params.standardGap + 1e-6 ? String(format: " · แถวห่าง %.2f ม.", params.rowGap) : "")
     }
 
     /// `BOQ: เสา 198 · ฐานราก 198 · ราง 1,234.5 ม. · ตัวยึดราง 396 · ตัวจับกลาง … · ค้ำ X … · กราวด์ 13`

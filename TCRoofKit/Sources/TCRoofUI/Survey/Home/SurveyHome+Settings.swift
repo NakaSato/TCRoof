@@ -98,6 +98,7 @@ extension SurveyHomeView {
                 do { share = try model.exportBackup() } catch { self.error = error.localizedDescription }
             }
             action("คลังแบบมาตรฐาน", detail: "แบบถังน้ำใส กปภ. · แบบที่ทีมบันทึก") { showLibrary = true }
+            action("มาตรฐานโครงสร้างแผงบนถัง", detail: TankStandard.Store.shared.current.summary) { showTankStandard = true }
             action("ตั้งค่าแอป", detail: "วิศวกร · แผนที่ · Google Drive · เครื่องนี้") { showSettings = true }
         }
     }

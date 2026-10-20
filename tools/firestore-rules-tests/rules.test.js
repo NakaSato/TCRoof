@@ -457,6 +457,22 @@ test('assistantUsage is the assistant function\'s only: no client reads or write
   }
 });
 
+test('tank standard: every member reads it, a manager saves a newer revision signed by themselves', async () => {
+  const ref = (who) => doc(db(who), 'config', 'tankStandard');
+  const std = (by, revision) => ({ json: '{"rowGap":3}', revision, savedBy: by, updatedAt: serverTimestamp() });
+  await assertFails(setDoc(ref(TEAM), std(TEAM, 1)));
+  await assertFails(setDoc(ref(CON), std(CON, 1)));
+  await assertFails(setDoc(ref(BOSS), std(TEAM, 1)));
+  await assertSucceeds(setDoc(ref(BOSS), std(BOSS, 1)));
+  for (const who of [TEAM, CON, BOSS]) await assertSucceeds(getDoc(ref(who)));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'config', 'tankStandard')));
+  await assertFails(setDoc(ref(BOSS), std(BOSS, 1)));
+  await assertFails(setDoc(ref(BOSS), { ...std(BOSS, 2), extra: 1 }));
+  await assertSucceeds(setDoc(ref(BOSS), std(BOSS, 2)));
+  await assertSucceeds(setDoc(ref(DEV), std(DEV, 3)));
+  await assertFails(deleteDoc(ref(BOSS)));
+});
+
 test('standard designs: every member reads them, only the team saves, never an older revision', async () => {
   const design = { json: '{}', revision: 2, savedBy: TEAM };
   await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), design));

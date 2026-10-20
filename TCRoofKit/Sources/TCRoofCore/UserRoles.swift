@@ -76,6 +76,8 @@ public enum Capability: String, CaseIterable, Sendable {
     case surveyEdit = "survey.edit"
     case surveySignRev = "survey.sign_rev"
     case designLibrary = "design.library"
+    /// The team's tank structure standard (`TankStandard`, `config/tankStandard`): managers change it, everyone reads it.
+    case tankStandard = "tank.standard"
     case boqDraft = "boq.draft"
     case boqApprove = "boq.approve"
     case companyDocs = "library.company_docs"
@@ -145,6 +147,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .surveyEdit: (.allow, .allow, .conditional),
         .surveySignRev: (.allow, .allow, .conditional),
         .designLibrary: (.allow, .allow, .deny),
+        .tankStandard: (.allow, .view, .view),
         .boqDraft: (.disabled, .disabled, .disabled),
         .boqApprove: (.disabled, .disabled, .disabled),
         .companyDocs: (.allow, .view, .deny),

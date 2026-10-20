@@ -26,12 +26,12 @@ extension TankLayout {
         /// `ลองระยะห่างแถว 11 แบบ · เลือก 2.70 ม. · 352.0 MWh/ปี`
         public var line: String {
             String(format: "ลองระยะห่างแถว %d แบบ · เลือก %.2f ม. · %.1f MWh/ปี", trials.count, chosen.gap, chosen.mwh)
-                + (chosen.gap > Params().rowGap + 1e-6 ? " (กว้างกว่ามาตรฐาน)" : "")
+                + (chosen.gap > chosen.params.standardGap + 1e-6 ? " (กว้างกว่ามาตรฐาน)" : "")
         }
     }
 
     /// The gaps tried: the standard, then 0.20 m wider each, up to 2.00 m wider.
-    public static func gapSteps(_ standard: Double = Params().rowGap) -> [Double] {
+    public static func gapSteps(_ standard: Double = 2.7) -> [Double] {
         (0...10).map { ((standard + Double($0) * 0.2) * 100).rounded() / 100 }
     }
 
@@ -54,7 +54,7 @@ extension TankLayout {
             yields[l.turn] = y
             return GapTrial(gap: g, params: p, modules: l.count, kWp: l.kWp, mwh: l.kWp * y / 1000 * (1 - r.rowLoss - r.objectLoss), rowLoss: r.rowLoss)
         }
-        var trials = gapSteps(base.rowGap).enumerated().compactMap { trial($0.element, fine: $0.offset == 0) }
+        var trials = gapSteps(base.standardGap).enumerated().compactMap { trial($0.element, fine: $0.offset == 0) }
         guard var at = trials.indices.first else { return nil }
         for i in trials.indices.dropFirst() where trials[i].mwh > trials[at].mwh + 1e-9 { at = i }
         if at > 0, let fine = trial(trials[at].gap, fine: true), fine.mwh > trials[at].mwh { trials[at] = fine }

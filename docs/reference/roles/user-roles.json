@@ -302,6 +302,24 @@
           }
         },
         {
+          "id": "tank.standard",
+          "label": "แก้มาตรฐานโครงสร้างแผงบนถัง (แผง เสา ระยะแถว ระยะเว้น)",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "view"
+            },
+            "external": {
+              "access": "view"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
           "id": "boq.draft",
           "label": "ร่าง BOQ · เห็นราคาและต้นทุน",
           "roles": {

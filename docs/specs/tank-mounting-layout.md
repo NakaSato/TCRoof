@@ -8,7 +8,7 @@ D1 DXF (`TCRoofCore/TankDXF.swift`); the row shade (`TankShade`, §3a step 4); t
 `TankLayout+Energy.swift`, tests `TankEnergyTests`: `หาผังที่ได้พลังงานมากที่สุด`, gaps 2.70–4.70 m kept as
 `tankPvGap`, energy tiles on card 2); the side section and the front elevation (`TankDrawings.tableSection`,
 `tableFront`) in the B1-C3 sheet and the PDF; the true-south comparison (§3a, `TankLayout+TrueSouth.swift`, tests
-`TankTrueSouthTests`). Not built: a structure standard editable in settings, the inspect mode, sliders, undo and deltas of the prototype (§4.3).
+`TankTrueSouthTests`); the team's structure standard, editable by managers (§1). Not built: the inspect mode, sliders, undo and deltas of the prototype (§4.3).
 **Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-drawing-swift.md`](tank-drawing-swift.md)),
 types in [`auto-drawing.md`](auto-drawing.md) §8
 **Interactive prototype:** `prototype/mount-layout.html` (open in a browser) · **Demo:** `img/mount_demo.mp4` (22 steps),
@@ -37,8 +37,13 @@ the module column there is cut and shown as a red outline.
 
 ## 1. The structure standard
 
-Taken from the reference sheets. In the app it is one fixed set, `TankLayout.Params`; it is not editable yet (open
-question 7). The prototype prints every value under the drawing as มาตรฐาน / ค่าสมมติ.
+Taken from the reference sheets. Since 2026-10-20 it is the team's standard (`TCRoofCore/TankStandard.swift`, open
+question 7 answered): one set for the team in Firestore `config/tankStandard`, the module included, changed by managers
+only (`tank.standard`; the team and contractors read it) in the PWA settings' `มาตรฐานโครงสร้างแผงบนถัง`
+(`TankStandardView`). These values are its built-in start (`TankStandard.builtIn`, `คืนค่าตามแบบ B1-C3`). Each tank
+layout keeps a copy of the standard it was made with (`TankLayout.Key.standard`), so a saved change reaches a job only
+when its layout is made again (`จัดแผงใหม่`, the energy search); D1 card 1 says when the team's standard differs from
+the job's. Layouts made before keep the built-in one. The vent height stays a measurement of the tank. The prototype prints every value under the drawing as มาตรฐาน / ค่าสมมติ.
 
 | Key | Value | Meaning |
 |---|---|---|
@@ -332,7 +337,8 @@ Footer on all printed sheets: "สร้างอัตโนมัติจา�
 | `TCRoofUI/Survey/Pages/Tank/TankLayoutPlan.swift` (built) | the plan drawing and its drag, tap and long press |
 | `TCRoofCore/TankDXF.swift` (built) | the PV layers |
 | `TCRoofCore/TankLayout+Energy.swift` (built) | the energy search (§3a) over `SolarModel` and `TankShade` |
-| not built | the standard in `SurveySettings` |
+| `TCRoofCore/TankStandard.swift` (built) | the team's standard: fields and limits, the job's copy, `Store` (synced by the app's `CloudSync` through `config/tankStandard`) |
+| `TCRoofUI/Survey/Designs/TankStandardView.swift` (built) | `มาตรฐานโครงสร้างแผงบนถัง`, the settings screen |
 
 Performance: the 40 × 40 layout is a few hundred boxes and computes on the main thread; `current` keeps its last answer,
 since one render asks for it from several cards. Only `หาผังแผงมากสุด` runs detached.
@@ -375,8 +381,8 @@ Done when:
 4. Walkways: does the team need a maintenance path to every hatch and between tables (width?), beyond the 0.5 m clearance?
 5. Vent heights: one value per tank (as built), or per vent (box vents vs mushroom vents)?
 6. Grounding: one lug per table as drawn, plus ground plates at the tank edge (detail H): how many and where?
-7. Should the structure standard be editable (in settings, or per job as in the prototype), and which module: the
-   catalogue's default or B1's chosen one?
+7. ~~Should the structure standard be editable, and which module?~~ Answered 2026-10-20: one team standard synced
+   through Firestore, managers only, each job keeping a copy; the module is part of the standard.
 8. Should a drag, or a change of the tank or its points, clear the switched-off panels (as the prototype does) instead of
    keeping their index keys?
 9. The board's tilt (15°) and table types (full 6 × 2, short 3–5 columns) differ from the reference sheets' 19.7° and

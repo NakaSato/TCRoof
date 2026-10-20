@@ -166,6 +166,17 @@ service cloud.firestore {
       allow read: if isMember();
       allow write: if isMaintainer();
     }
+    // The team's tank structure standard (`TankStandard`, tank.standard): every member reads it, a manager saves it,
+    // signed with their own email, and a save never goes back to an older revision. Never deleted.
+    match /config/tankStandard {
+      allow read: if isMember();
+      allow create, update: if isManager()
+        && request.resource.data.keys().hasOnly(['json', 'revision', 'savedBy', 'updatedAt'])
+        && request.resource.data.json is string && request.resource.data.json.size() < 20000
+        && request.resource.data.revision is int
+        && request.resource.data.savedBy == signedInEmail()
+        && (resource == null || request.resource.data.revision > resource.data.revision);
+    }
 
     // Jobs: the team reads and writes them; an external member reads their jobs and changes only the IEC test, while
     // it is open (`iecState`, written by the app beside the test). They may send it (`sent`), never close it: once

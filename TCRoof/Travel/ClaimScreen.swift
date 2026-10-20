@@ -523,7 +523,7 @@ struct ClaimSubmitSheet: View {
                 }
                 Text("ลงชื่อผู้เบิก").font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 // the canvas doesn't carry an identifier itself; its container does, for the UI test
-                ZStack { SignaturePad(signature: $signature) }
+                ZStack { AccountSignatureCanvas(signature: $signature) }
                     .frame(height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Theme.borderSubtle))
@@ -533,6 +533,7 @@ struct ClaimSubmitSheet: View {
                     Button("ล้าง") { signature = nil }.buttonStyle(TCButtonStyle(.text))
                     Spacer()
                 }
+                MySignatureActions(signature: $signature)
                 Text("เมื่อยื่นแล้ว รายการของเดือนนี้จะแก้ไม่ได้จนกว่าจะถอนการยื่น ใบเบิก PDF, Excel และรูปใบเสร็จจะส่งขึ้น Google Drive ของคุณ")
                     .font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 Spacer()

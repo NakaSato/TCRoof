@@ -87,7 +87,7 @@ extension FinalPageWide {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
         .shadow(color: Theme.navy.opacity(0.08), radius: 2, y: 1)
-        .signaturePad(isPresented: signing, who: who) { img in
+        .signaturePad(isPresented: signing, who: who, mine: field == "surveyorSign") { img in
             if let img, let p = model.addPhoto(img, to: job.id, maxSide: 900, png: true) { set(field, .photo(p)) }
         }
     }

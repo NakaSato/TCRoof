@@ -58,6 +58,7 @@ final class GoogleSession {
         }
         #endif
         if let email { MemberRole.shared.signedIn(email) }
+        MySignature.shared.account = email
     }
 
     var isSignedIn: Bool { email != nil }
@@ -95,6 +96,7 @@ final class GoogleSession {
         }
         LocalData.signedIn(mail, role: MemberRole.savedRole(mail))
         email = mail
+        MySignature.shared.account = mail
         MemberRole.shared.signedIn(mail)
         Self.fillUserName()
     }
@@ -118,6 +120,7 @@ final class GoogleSession {
         CloudSync.shared.stop()
         survey.google.signOut()
         email = nil
+        MySignature.shared.account = nil
         MemberRole.shared.signedOut()
         // the display name belongs to the account; the next person signs in with their own
         UserDefaults.standard.removeObject(forKey: Self.userNameKey)

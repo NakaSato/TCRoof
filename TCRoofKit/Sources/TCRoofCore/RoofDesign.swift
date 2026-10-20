@@ -23,7 +23,7 @@ public struct RoofDesign: Codable, Hashable, Sendable, Identifiable {
 
     /// The C1 answers a design carries.
     public static let keys: [String] = [Roof.Key.spansX, Roof.Key.spansY, Roof.Key.sheetDir, Roof.Key.ridge, Roof.Key.frame, Roof.Key.bays,
-                                        Roof.Key.posts, Roof.Key.overhang, Roof.Key.clearHeight, Roof.Key.purlin, Roof.Key.standard,
+                                        Roof.Key.posts, Roof.Key.overhang, Roof.Key.clearHeight, Roof.Key.ridgeHeight, Roof.Key.purlin, Roof.Key.standard,
                                         Roof.Key.shape, Roof.Key.material, Roof.Key.structure, Roof.Key.obstacles]
         + (1...7).map(Roof.Key.member)
 
@@ -106,7 +106,7 @@ public struct RoofDesign: Codable, Hashable, Sendable, Identifiable {
         ("frame", "รูปทรงและโครงหลังคา", [Roof.Key.shape, Roof.Key.material, Roof.Key.structure, Roof.Key.frame, Roof.Key.ridge,
                                           Roof.Key.sheetDir, Roof.Key.bays, Roof.Key.posts, Roof.Key.standard]),
         ("purlin", "ระยะแป", [Roof.Key.purlin]),
-        ("heights", "ชายคาและความสูงใต้โครง", [Roof.Key.overhang, Roof.Key.clearHeight]),
+        ("heights", "ชายคาและความสูงใต้โครง", [Roof.Key.overhang, Roof.Key.clearHeight, Roof.Key.ridgeHeight]),
         ("members", "ขนาดชิ้นส่วน 1–7", (1...7).map(Roof.Key.member)),
     ]
 

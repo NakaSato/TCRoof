@@ -141,7 +141,7 @@ private struct Drawer {
     init(_ v: Values, pv: Bool) {
         self.v = v; pvMode = pv
         xs = Roof.spans(v, .x); ys = Roof.spans(v, .y); frame = Roof.frame(v)
-        hor = Roof.ridge(v) == .h; ang = frame.slope
+        hor = Roof.ridge(v) == .h; ang = Roof.slope(v)
         shed = RoofMount.shape(v) == .shed; lowAtStart = RoofMount.shedLowAtStart(v)
         Lx = xs.reduce(0, +); Ly = ys.reduce(0, +)
         k = min(380 / Lx, 320 / Ly); W = Lx * k; H = Ly * k; x0 = 400 - W / 2; y0 = 252 - H / 2

@@ -73,7 +73,7 @@ public enum RoofDXF {
             }
             TEXT("DIM", ts(Pt(380, 226)), th, fmt(s.span), mid: true)
             TEXT("TEXT", (L.lx / 2 - s.span / 2, top - 252 / s.scale - 0.8), th * 1.4,
-                 "รูปตัด A-A · " + f.label + " · ช่วง " + fmt(s.span) + " ม. · ลาด " + fmt(f.slope) + "°", mid: false)
+                 "รูปตัด A-A · " + f.label + " · ช่วง " + fmt(s.span) + " ม. · ลาด " + Roof.slopeText(v), mid: false)
         }
         if parts.contains(.table) {
             let tx = L.lx + 4

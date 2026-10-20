@@ -21,6 +21,9 @@ public enum FieldKind: Sendable {
     case plan(tank: Bool)
     /// Roof-frame diagram with components 1–7.
     case diagram
+    /// The roof framing section drawn from the section's measured sizes and heights (C2, C3:
+    /// `MeasuredRoofSection`); nothing is stored.
+    case roofSection
     case note(String)
 }
 
@@ -49,7 +52,7 @@ public struct FieldSpec: Identifiable, Sendable {
     public func isVisible(_ v: Values) -> Bool { visibleWhen?(v) ?? true }
     /// Counted in the progress of a section.
     public var countable: Bool {
-        switch kind { case .plan, .diagram, .note: return false; default: return true }
+        switch kind { case .plan, .diagram, .roofSection, .note: return false; default: return true }
     }
     public func isFilled(_ v: Values) -> Bool {
         guard let val = v[id] else { return false }
@@ -317,7 +320,7 @@ public enum Schema {
                                     + [("frameType", "ชนิดโครงหลังคา"), ("ridgeDir", "แนวสันหลังคา"), ("trussBays", "ช่องโครงถักต่อข้าง"), ("postGrid", "เสาที่แก้ในแปลน"),
                                        ("pvOrientation", "แนวแผงในแปลนจัดแผง"), ("roofShots", "มุมภาพหลังคา"), ("eaveOverhang", "ชายคา (ม.)"), ("clearHeight", "ความสูงใต้ขื่อ (ม.)"),
                                        ("purlinSpacing", "ระยะแป (ม.)"), ("roofStd", "หลังคามาตรฐาน"), ("pvRows", "แถวต่อชุด"), ("pvPerTable", "แผงต่อชุด"),
-                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)"), ("planBearing", "ทิศของขอบบนแปลน (°)"), ("pvMount", "ผังแผงบนหลังคา"), ("shedLow", "ด้านต่ำของหลังคาเพิง")]
+                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)"), ("ridgeHeight", "ความสูงสันหลังคา (ม.)"), ("planBearing", "ทิศของขอบบนแปลน (°)"), ("pvMount", "ผังแผงบนหลังคา"), ("shedLow", "ด้านต่ำของหลังคาเพิง")]
                                         .map { T($0.0, $0.1, optional: true, when: { _ in false }) }),
             GroupSpec("รูปแบบหลังคา", [C("roofShape", "**1. รูปแบบหลังคา", Options.roofShape, other: true), C("roofMaterial", "**2. วัสดุมุงหลังคา", Options.roofMaterial, other: true),
                                      C("roofStructure", "**3. ชนิดโครงสร้างหลังคา", Options.structure)]),
@@ -380,7 +383,8 @@ public enum Schema {
                 N("steelPurlinG", "แปเหล็ก ยาว g", "ซม.", when: isSteel), N("steelPurlinH", "แปเหล็ก ความยาวปีก h", "ซม.", when: isSteel),
                 N("prefabRafterLength", "แปสำเร็จรูป — ความยาวจันทัน", "ซม.", optional: true),
                 N("measH", "8. h: ระยะแนวระนาบจากปลายจันทันถึงเสา", "ซม."), N("measI1", "10. i1: จากพื้นดินถึงสันหลังคา", "ซม."),
-                N("measI2", "11. i2: จากพื้นดินถึงเชิงชายหลังคา", "ซม."), N("roofAngle", "12. มุมเอียงของหลังคา", "องศา")]),
+                N("measI2", "11. i2: จากพื้นดินถึงเชิงชายหลังคา", "ซม."), N("roofAngle", "12. มุมเอียงของหลังคา", "องศา"),
+                FieldSpec("roofSection", "รูปตัดโครงหลังคา (สร้างอัตโนมัติ)", .roofSection)]),
             GroupSpec(no: "14", "ร่างแบบหลังคาบ้านและตำแหน่งการวางแผง", [P("sketchPhoto", "ภาพร่าง")]),
             GroupSpec(no: "15", "ภาพถ่ายใต้หลังคา (เปิดฝ้า) หรือแบบแปลนหลังคา", [P("underRoofPhoto", "ภาพใต้หลังคา")]),
             GroupSpec(no: "16", "ภาพถ่ายมุมสูง / ภาพถ่ายดาวเทียม", [P("aerialPhoto", "ภาพมุมสูง")]),
@@ -395,7 +399,10 @@ public enum Schema {
             GroupSpec(no: "23", "ภาพถ่ายบิลค่าไฟฟ้า", [T("userType", "ผู้ใช้ไฟประเภท"), T("caNo", "23.1 หมายเลขผู้ใช้ไฟฟ้า"), T("meterCode", "23.2 รหัสเครื่องวัด"), P("billPhoto", "ภาพบิลค่าไฟฟ้า")]),
             GroupSpec(no: "24", "ภาพถ่ายตำแหน่งกราวด์หลักดิน", [P("groundPhoto", "ภาพกราวด์หลักดิน (ถ้าถ่ายได้)", optional: true)])]),
         .roofForm: ModuleSpec(type: .roofForm, sheet: "หลังคาทั่วไป", label: "หลังคาอาคาร (แบบละเอียด)", short: "หลังคาอาคาร", reportTitle: "หลังคาอาคาร", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
-            GroupSpec("อาคาร", [N("floors", "อาคารสูง", "ชั้น"), N("buildingWidth", "ความกว้าง", "ซม."), N("buildingLength", "ความยาว", "ซม.")]),
+            GroupSpec("อาคาร", [N("floors", "อาคารสูง", "ชั้น"), N("buildingWidth", "ความกว้าง", "ซม."), N("buildingLength", "ความยาว", "ซม."),
+                                // optional, for the roof section (auto-drawing §4.4); completion is unchanged
+                                N("eaveHeight", "ความสูงชายคา (พื้น → ใต้ขื่อที่เสา)", "ม.", optional: true),
+                                N("ridgeHeight", "ความสูงสันหลังคา (พื้น → หลังคาที่สัน)", "ม.", optional: true)]),
             GroupSpec(no: "1", "รูปแบบหลังคา", [C("roofShape", "รูปแบบหลังคา", Options.roofShape, other: true)]),
             GroupSpec(no: "2", "วัสดุมุงหลังคา", [C("roofMaterial", "วัสดุมุงหลังคา", Options.roofMaterial, other: true)]),
             GroupSpec(no: "4", "ชนิดโครงสร้างหลังคา", [C("roofStructure", "ชนิดโครงสร้าง", Options.structure)]),
@@ -407,7 +414,8 @@ public enum Schema {
             GroupSpec("โครงสร้างหลังคา", [P("sketchPhoto", "*เขียนแบบโครงสร้างหลังคาพอสังเขป"), FieldSpec("diag", "แนะนำองค์ประกอบของหลังคา", .diagram)]
                       + Options.components.enumerated().flatMap { i, c in [FieldSpec("size\(i + 1)", "\(c) — ขนาด g x f x h (ซม.)", .pick(list: .roofSizeCm, unit: "ซม."), optional: true),
                                                                         FieldSpec("space\(i + 1)", "\(c) — ระยะห่าง", .pick(list: .spacingCm, unit: "ซม."), optional: true)] }
-                      + [C("structMaterial", "ลักษณะวัสดุโครงสร้างหลังคา", Options.structMaterial)]),
+                      + [C("structMaterial", "ลักษณะวัสดุโครงสร้างหลังคา", Options.structMaterial),
+                         FieldSpec("roofSection", "รูปตัดโครงหลังคา (สร้างอัตโนมัติ)", .roofSection)]),
             GroupSpec("ภาพถ่าย", [P("underRoofPhoto", "ภาพถ่ายใต้หลังคา (เปิดฝ้า)"), P("aerialPhoto", "ภาพถ่ายมุมสูง / ดาวเทียม"),
                                 P("photoFront", "ด้านหน้า"), P("photoBack", "ด้านหลัง"), P("photoLeft", "ด้านซ้าย"), P("photoRight", "ด้านขวา")])]),
     ]

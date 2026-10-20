@@ -225,6 +225,7 @@ extension TankPageWide {
             sizeField
             typeField
             phoneLevels
+            volumeLine
             field("ตำแหน่งถัง", required: true) { positionControl }
             phoneSurfaceRow
             azimuthField

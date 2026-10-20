@@ -167,6 +167,39 @@ public enum Tank {
         return (parts + [tail]).joined(separator: " · ")
     }
 
+    // MARK: size and volume summary
+
+    /// docs/specs/auto-drawing.md §5.5: the tank's size from the spans, its roof area `L·W` and gross volume `L·W·H`
+    /// (outside the walls' centre lines, nothing taken off for walls or columns). nil without spans; no volume without
+    /// a height.
+    public struct Summary: Equatable, Sendable {
+        public let width: Double, length: Double, height: Double?
+        public var roofArea: Double { width * length }
+        public var grossVolume: Double? { height.map { roofArea * $0 } }
+        /// "12.00 × 8.00 × 4.50 ม. · หลังคา 96 ม² · ปริมาตรภายนอกโดยประมาณ 432 ม³"
+        public var text: String {
+            let size = [width, length] + (height.map { [$0] } ?? [])
+            return size.map { String(format: "%.2f", $0) }.joined(separator: " × ") + " ม. · " + figures
+        }
+        /// "หลังคา 96 ม² · ปริมาตรภายนอกโดยประมาณ 432 ม³", or the area alone without a height.
+        public var figures: String {
+            "หลังคา " + Self.grouped(roofArea) + " ม²" + (grossVolume.map { " · ปริมาตรภายนอกโดยประมาณ " + Self.grouped($0) + " ม³" } ?? "")
+        }
+        /// Whole numbers with thousands separators ("1,600"), one decimal below 10.
+        static func grouped(_ x: Double) -> String {
+            if x < 10 && x != x.rounded() { return String(format: "%.1f", x) }
+            let n = Int(x.rounded()), s = String(abs(n))
+            var out = ""
+            for (i, c) in s.enumerated() { if i > 0 && (s.count - i) % 3 == 0 { out.append(",") }; out.append(c) }
+            return (n < 0 ? "-" : "") + out
+        }
+    }
+    public static func summary(_ v: Values) -> Summary? {
+        let s = spans(v)
+        guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
+        return Summary(width: s.x.reduce(0, +), length: s.y.reduce(0, +), height: height(v))
+    }
+
     // MARK: sub-steps and status
 
     /// Sub-step 1 is done with the spans, type, height, position and surface set; the azimuth is optional.

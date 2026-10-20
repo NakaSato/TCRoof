@@ -82,6 +82,7 @@ extension TankPageWide {
             AnyView(sizeField)
             AnyView(typeField)
             AnyView(heightRow)
+            AnyView(volumeLine)
             AnyView(positionRow)
             AnyView(surfaceRow)
             AnyView(azimuthField)
@@ -94,6 +95,15 @@ extension TankPageWide {
         HStack(alignment: .top, spacing: 10) {
             field("ความสูงถัง", unit: "(ม.)", required: true) { heightStepper }
             field("ส่วนพ้นดิน", unit: "(ม.)") { exposedStepper }
+        }
+    }
+
+    /// The size and volume summary under the heights (docs/specs/auto-drawing.md §5.5); nothing without a size.
+    @ViewBuilder var volumeLine: some View {
+        if let s = Tank.summary(values) {
+            Text(s.figures).font(.sarabunFixed(phone ? 13 : 14, .semibold)).foregroundStyle(Theme.inkMuted)
+                .lineLimit(2).minimumScaleFactor(0.8).frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel("ขนาดถัง " + s.text)
         }
     }
 

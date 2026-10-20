@@ -123,9 +123,15 @@ extension ReportLayout {
 
     /// C1 section A-A across the full width, titled with the frame type; replaces the generic truss diagram.
     func roofSectionUnit(_ d: Values) -> Unit {
-        let W = Self.cw, sec = RoofSection(d).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 4
+        let W = Self.cw, sec = RoofSection(d).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 16
         var o = box("รูปตัด A-A · " + Roof.frame(d).title + " (หน่วย ม.)", height: h)
         o += sec.translated(8, Self.band + 6, scale: k)
+        // where the pitch came from (auto-drawing §4.4), its check, and the note every drawing carries
+        let p = Roof.pitch(d)
+        let pitch = p.measured ? "มุม " + Roof.slopeText(d) + " จากความสูงสัน " + String(format: "%.2f", Roof.ridgeHeight(d)) + " ม."
+            : "มุม " + Roof.slopeText(d) + " ตามชนิดโครง"
+        o.append(.text(([pitch, p.warning].compactMap { $0 } + [TankDrawings.note]).joined(separator: " · "), at: Pt(8, h - 7), size: 7.5,
+                       color: p.warning == nil ? .faint : .tag))
         return Unit(h: h, ops: o)
     }
 
@@ -398,6 +404,20 @@ extension ReportLayout {
         return U
     }
 
+    /// C2 / C3's roof framing section (`MeasuredRoofSection`, auto-drawing §4.4) at full width, scaled down to fit a
+    /// page rather than split; without enough data, the line naming what it needs.
+    func measuredSectionUnit(_ mod: SurveyModule) -> Unit {
+        let W = Self.cw, title = "รูปตัดโครงหลังคา" + (mod.name.isEmpty ? "" : " — " + mod.name)
+        let r = MeasuredRoofSection.draw(mod)
+        guard let sk = r.sketch else {
+            return Unit(h: 14, ops: [.text("ข้อมูลไม่พอวาดรูปตัด: " + r.missing.joined(separator: ", "), at: Pt(0, 7), size: 8, color: .tag)])
+        }
+        let k = min((W - 16) / sk.width, 640 / sk.height), h = Self.band + 6 + sk.height * k + 4
+        var o = box(title, height: h)
+        o += sk.translated(8 + (W - 16 - sk.width * k) / 2, Self.band + 6, scale: k)
+        return Unit(h: h, ops: o)
+    }
+
     /// House / roof-form sections: numbered question tables like the paper form, then all photos.
     func formSection(_ mod: SurveyModule) -> [Unit] {
         let d = mod.values, W = Self.cw, labelW = 190.0, unitW = 44.0, valW = W - labelW - unitW
@@ -437,6 +457,7 @@ extension ReportLayout {
             }
             let title = (g.no.map { $0 + ". " } ?? "") + (g.title ?? "") + (mod.name.isEmpty ? "" : " — " + mod.name)
             U.append(Unit(h: y, ops: box(title, height: y, left: true) + o))
+            if g.fields.contains(where: { if case .roofSection = $0.kind { return true }; return false }) { U.append(measuredSectionUnit(mod)) }
         }
         if mod.type == .house, let n = d.number("inverterCount"), n > 0 {
             U.append(Unit(h: 12, ops: [.text("ข้อ 18: อินเวอร์เตอร์ \(fmt(n)) เครื่อง ต้องการพื้นที่ยาว \(String(format: "%.2f", 1.5 * n + 1.5)) ม. กว้าง 2.00 ม.", at: Pt(0, 6), size: 8, color: .tag)]))

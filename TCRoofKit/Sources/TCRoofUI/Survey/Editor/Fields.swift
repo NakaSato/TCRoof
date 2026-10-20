@@ -25,6 +25,8 @@ struct FieldView: View {
                 SketchView(sketch: Drawings.truss()).frame(maxWidth: 420)
             }
             .padding(14)
+        case .roofSection:
+            RoofSectionPreview(label: spec.label, module: SurveyModule(type: moduleType ?? .house, values: values))
         default:
             row
         }
@@ -198,6 +200,28 @@ struct FieldView: View {
 }
 
 /// Auto-drawn plan from the spans entered in the same section.
+/// C2 / C3's roof framing section from the measured sizes (`MeasuredRoofSection`), or what it still needs.
+struct RoofSectionPreview: View {
+    let label: String
+    let module: SurveyModule
+    var body: some View {
+        let r = MeasuredRoofSection.draw(module)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
+            if let sk = r.sketch {
+                SketchView(sketch: sk).frame(maxWidth: .infinity).padding(8)
+                    .background(Theme.paper).overlay(Rectangle().stroke(Theme.borderControl))
+                    .accessibilityLabel(label)
+            } else {
+                Text("ข้อมูลไม่พอวาดรูปตัด: " + r.missing.joined(separator: ", ")).font(.sarabun(15, relativeTo: .callout)).foregroundStyle(Theme.inkMuted)
+                    .frame(maxWidth: .infinity, minHeight: 60).padding(.horizontal, 12)
+                    .background(Theme.paper).overlay(Rectangle().stroke(Theme.borderControl))
+            }
+        }
+        .padding(14)
+    }
+}
+
 struct PlanPreview: View {
     let values: Values
     let tank: Bool

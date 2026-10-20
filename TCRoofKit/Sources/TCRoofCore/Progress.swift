@@ -192,7 +192,16 @@ public extension FieldSpec {
 
 /// "1.5,4,4" → [1.5, 4, 4]; "4ม., ๔" and "4 m" read too.
 public func parseSpans(_ s: String) -> [Double] {
-    s.split { ",/ \t".contains($0) }.compactMap { NumberInput.value(String($0)) }.filter { $0 > 0 }
+    // "n@d" (the กปภ. sheets' "16@4", sixteen 4 m bays) is read before the plain number: `NumberInput` would read
+    // "16@4" as 164. Spaces around the @ are allowed; n is a whole number 1…500.
+    let t = s.contains("@") ? s.replacingOccurrences(of: #"\s*@\s*"#, with: "@", options: .regularExpression) : s
+    return t.split { ",/ \t".contains($0) }.flatMap { tok -> [Double] in
+        let part = String(tok)
+        guard let at = part.firstIndex(of: "@") else { return NumberInput.value(part).map { [$0] } ?? [] }
+        guard let n = NumberInput.value(String(part[..<at])), n >= 1, n <= 500, n == n.rounded(),
+              let d = NumberInput.value(String(part[part.index(after: at)...])) else { return [] }
+        return Array(repeating: d, count: Int(n))
+    }.filter { $0 > 0 }
 }
 
 /// Number formatting as on the forms: no trailing ".0".

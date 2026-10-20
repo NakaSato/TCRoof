@@ -8,8 +8,8 @@ public struct RoofSection: Sendable {
 
     public var sketch: Sketch
     public var tags: [String?]
-    /// Where the eave overhang and clear-height labels sit (the page makes them tappable).
-    public var overhangLabel = Pt(0, 0), clearLabel = Pt(0, 0)
+    /// Where the eave overhang, clear-height and rise labels sit (the page makes them tappable).
+    public var overhangLabel = Pt(0, 0), clearLabel = Pt(0, 0), riseLabel = Pt(0, 0)
     /// The numbered callouts' bubble centres (rows a frame doesn't draw are missing).
     public var callouts: [Int: Pt] = [:]
     public let span, half, rise: Double
@@ -25,7 +25,7 @@ public struct RoofSection: Sendable {
     public init(_ v: Values, highlight: Int? = nil) {
         let f = Roof.frame(v), ridge = Roof.ridge(v)
         let span = Roof.span(v), half = span / 2, nH = Roof.bays(v)
-        let ang = f.slope, tn = tan(ang * .pi / 180), rise = half * tn
+        let ang = Roof.slope(v), tn = tan(ang * .pi / 180), rise = half * tn
         let isK = f == .eaveCeiling, isC = f.isRafter, isR = f == .rafterTruss, heelM = f.heel
         let sc = min(540 / span, 118 / (rise + heelM)), HW = half * sc, XL = 380 - HW, XR = 380 + HW, YB = 150.0
         let heel = heelM * sc, YE = YB - heel, YT = YE - rise * sc, pw = half / Double(nH)
@@ -232,7 +232,8 @@ public struct RoofSection: Sendable {
         tick(RX - 4, YT + 4); tick(RX - 4, YE + 4); if !isC { tick(RX - 4, 154) }
         text("R " + String(format: "%.2f", rise), RX + 6, (YT + YE) / 2 + 4)
         if !isC { text(String(format: "%.2f", heelM), RX + 6, (YE + YB) / 2 + 4) }
-        text(fmt(ang) + "°", XL + 44, YE - 4)
+        text(Roof.slopeText(v), XL + 44, YE - 4)
+        riseLabel = Pt(RX + 30, (YT + YE) / 2)
         var arc: [Pt] = []
         for s in 0...12 { let t = Double(s) / 12 * ang * .pi / 180; arc.append(pt(XL + 40 * cos(t), YE - 40 * sin(t))) }
         add(.polyline(arc, width: 0.8, color: Self.navy), "DIM")

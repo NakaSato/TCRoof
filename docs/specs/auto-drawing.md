@@ -102,8 +102,8 @@ The C1 wide page (`docs/ui/survey-c1`) stores its own answers as hidden optional
 | Spans | `spansX` / `spansY`, comma list in metres | The schema's placeholder `1.5,4,4,4,4,1.5` × `1.5,4.5,4,4.5,1.5`, so the plan is never empty |
 | Ridge direction | `ridgeDir` `h` (along x) or `v` (along y). Setting it writes `sheetDir` back (`h` → แนวตั้ง, `v` → แนวนอน) so the old plan, PDF and Excel agree | From `sheetDir`: แนวตั้ง → along x; แนวนอน or empty → along y |
 | Span `B` | Σ of the spans across the ridge | — |
-| Frame type | `frameType`, one of six (table below) | ถัก Pratt |
-| Slope | Fixed by the frame type: 30° for ขื่อรัด, 15° for every other | — |
+| Frame type | `frameType`, one of seven (table below) | ถัก Pratt |
+| Slope | The frame type's: 30° for ขื่อรัด, 15° for every other; from the measured `ridgeHeight` when entered (§4.4, `Roof.pitch`) | — |
 | Rise | `B/2 · tan(slope)` | — |
 | Heel depth | 0.5 m for trusses and จันทันถัก, 0 for the rafter frames | — |
 | Truss panels per half | `trussBays`, 2–20 | `max(2, round(B/2))`, about one per metre |
@@ -155,7 +155,7 @@ grid 0.6 dash-dot `[12,3,2,3]`. Colours are the design's hex values.
 - **structure:** grid lines and bubbles, dimension chains with 45° ticks and totals,
   the ridge, frame lines (trusses T1 across the ridge, T2 along it for จันทันถัก; rafters @1.00 for the rafter
   frames), purlin lines, posts, slope arrows, section mark A-A, skylights and obstacles, `แป @1.00` on one bay.
-- **pv:** the PV layout of [`roof-pv-layout.md`](roof-pv-layout.md): modules, dropped modules, tables, gaps and keep-out zones.
+- **pv:** the `RoofMount` layout of [`roof-pv-layout.md`](roof-pv-layout.md): rows on the purlins, cut slots, shade and keep-out zones.
 
 Purlin lines run parallel to the ridge: 0.15 m each side of it, then every `spacing · cos(slope)` down to the eaves
 (`Roof.purlinLines`). Each op carries the design's path key in `tags` (`grid`, `purl`, `tbd`, `post` …), which the DXF
@@ -350,10 +350,10 @@ from `stdX`/`stdY`, and ladders and pipes are boxes just inside their wall.
   | `pwa-64x40` ถังน้ำใส 64×40 (ช่องระบายแบบกล่อง) | 16 × 10 @ 4 | 20, box | 8 | 6 | 6 (ท่อเชื่อมถังน้ำใส Ø600, ท่อน้ำใส Ø700, ท่อน้ำล้น Ø500) |
   | `pwa-40x40` ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด) | 10 × 10 @ 4 | 12, cross | 6 | 3, apart from the hatches | — |
 
-  Designs are ranked by |ΔW| + |ΔL| against the measured size; within 0.5 m it matches. A tank turned a quarter takes the
+  Designs are ranked by |ΔW| + |ΔL| against the measured size; within 1.00 m it matches (`TankDesign.tolerance`). A tank turned a quarter takes the
   design turned (`@r`). Applying one replaces the spans and points and stores `tankDesign`.
 - **Checking:** each point gets `ok` or `absent`; only added points can be deleted, standard ones are marked absent. A drag
-  snaps to 0.05 m, stays inside the tank and takes another point's row or column within 0.30 m; ladders and pipes slide
+  snaps to 0.025 m (`TankPoints.grid`), stays inside the tank and takes another point's row or column within 0.30 m; ladders and pipes slide
   along their wall. `add` puts a new point (`ok`, `added`) at the centre, moved down 1 m at a time while crowded.
   `ทำซ้ำเป็นแถว` adds copies to the right at the first column span (else 4 m), skipping any that would leave the tank.
 - **Live check:** alignment with other points, overlaps (ladders and pipes overlap nothing), outside the tank.
@@ -366,7 +366,7 @@ from `stdX`/`stdY`, and ladders and pipes are boxes just inside their wall.
 - Span chains along the bottom and right with the totals, 2-decimal numbers. The D1 page takes the span numbers as
   tappable chips instead.
 - Level tags "ระดับหลังถัง +1.20" in the four quadrants when `tankExposed` is set.
-- Openings as hatched red boxes labelled "V1 0.6x0.6"; ladders and pipes as small boxes outside their wall, pipes with a
+- Openings as hatched red boxes labelled "V1 1.45x1.45"; ladders and pipes as small boxes outside their wall, pipes with a
   diagonal. Absent points are left out.
 - The N arrow turned by `tankAzimuth`, a note with the wall type, and the caption "แปลนหลังคาถังน้ำใส 40 × 40 ม." ·
   "หน่วย: เมตร".
@@ -394,8 +394,7 @@ built): on D1 step 1 under the heights, on each section, and under the printed p
   "12.00 × 8.00 × 4.50 ม. · หลังคา 96 ม² · ปริมาตร ≈ 432 ม³".
 - Section marks 1–1 and 2–2 at the centre lines of the plan; beams as a double dashed band 0.30 m wide (assumed) on
   every grid line, as on the sheets.
-- A cross-vent symbol (plus-shaped column head with flange ticks and a centre circle) for `ventStyle` `cross`. The plan
-  draws every vent the same today.
+- A cross-vent symbol (plus-shaped column head with flange ticks and a centre circle) for `ventStyle` `cross`.
 
 ## 6. Drawing standard
 
@@ -484,6 +483,9 @@ public enum TankDrawings {
     public static func summary(_ i: TankInput) -> (roofArea: Double, grossVolume: Double, text: String)
 }
 ```
+
+As built, there is no `TankInput`: the tank API is `TankDrawings.section(_ v: Values, across: Bool)` and
+`Tank.summary(v)`, both reading D1's values directly.
 
 ## 8. Integration
 

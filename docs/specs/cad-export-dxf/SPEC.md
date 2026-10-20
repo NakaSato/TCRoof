@@ -10,7 +10,7 @@ Every drawing TCRoof already makes as a `Sketch` (C1 roof plan, SLD, D1 tank lay
 
 | Option | DWG read | DWG write | DXF | Offline | Cost | Notes |
 |---|---|---|---|---|---|---|
-| **Own DXF writer (this spec)** | – | – | write R12 | yes | free | Already done for C1 in `TCRoofCore/RoofDXF.swift` |
+| **Own DXF writer (this spec)** | – | – | write R12 | yes | free | Built: `TCRoofCore/SketchDXF.swift`, used by C1, the SLD, D1 and A2 |
 | ODA File Converter (Mac/Windows desktop) | yes | yes | yes | yes | free | Converts DXF ↔ DWG in batches. Not an iOS library |
 | Autodesk Platform Services (Viewer + Model Derivative) | view only | – | view | no | free tier, then usage-billed | Shown in a `WKWebView`; needs an Autodesk account |
 | LibreDWG / libdxfrw / dxflib | partial | partial | yes | yes | free | **GPL**: cannot ship in a closed App Store app |
@@ -21,7 +21,7 @@ There is no official Autodesk SDK for iOS: RealDWG is desktop only (Windows/macO
 
 Decision: **write DXF R12 ourselves.** If someone needs a `.dwg`, they open the DXF in their CAD program, or run it through ODA File Converter, and save it as DWG. Look at the ODA SDK only if the app must *open and edit* customers' DWG files.
 
-## What already exists — `RoofDXF`
+## Before SketchDXF — `RoofDXF`
 
 - DXF R12 (`$ACADVER AC1009`), CRLF line endings, `HEADER` + `TABLES` (LTYPE `CONTINUOUS`, LAYER) + `ENTITIES`.
 - Entities: `LINE`, `CIRCLE`, `TEXT` (centred with group codes 72/73 when `mid`).
@@ -31,23 +31,31 @@ Decision: **write DXF R12 ourselves.** If someone needs a `.dwg`, they open the 
 - Y is flipped: sketch Y points down, DXF Y points up (`tp` / `ts` transforms).
 - UI: the ส่งออก CAD sheet in `RoofPageWide+Sheets.swift` (parts, units, then share the `.dxf` through AirDrop, Files or Mail).
 
-Gaps in the current `write(_:)`: `textBox`, `hatch`, `photo` and `checkbox` are skipped, and dashes and stroke colours are dropped.
+Gaps in `RoofDXF`'s own `write(_:)` then: `textBox`, `hatch`, `photo` and `checkbox` were skipped, and dashes and stroke colours were dropped.
+
+Now: `SketchDXF.Options` has `dashes` (a `DASHED` LTYPE, declared when used), `opColours` (group 62), `textBoxes`, `hatches`, `outlineBoxes` (photo / checkbox outlines) and `skipFillOnly`, plus `millimetres`, `fixedTextHeight` and `centreText`; the defaults write what `RoofDXF` always wrote. The remaining gaps are fills, bitmaps, bold and line widths.
 
 ## Plan
 
 ### 1. `SketchDXF` in `TCRoofCore`
 
-Move the generic parts of `RoofDXF` out into a shared writer:
+Move the generic parts of `RoofDXF` out into a shared writer. Built (`TCRoofCore/SketchDXF.swift`):
 
 ```swift
-public struct SketchDXF {
-    public struct Layer { var name: String; var aci: Int; var linetype: String = "CONTINUOUS" }
-    public init(units: Units = .millimetres, codepage: String = "ANSI_874")
-    /// Adds a sketch: `tags[i]` picks the layer of `ops[i]`; `transform` maps sketch points to metres (Y up).
-    public mutating func add(_ sketch: Sketch, tags: [String?], layers: [String: Layer],
-                             transform: (Pt) -> (Double, Double), pointsPerMetre: Double, textHeight: Double)
-    public mutating func text(_ layer: String, _ p: (Double, Double), height: Double, _ s: String, centred: Bool)
+public struct SketchDXF: Sendable {
+    public struct Layer { public var name: String; public var aci: Int; public init(_ name: String, aci: Int) }
+    public struct Options { millimetres, dashes, opColours, textBoxes, hatches, outlineBoxes, skipFillOnly,
+                            fixedTextHeight: Double?, centreText }
+    public init(options: Options = .init())
+    /// Writes `ops` mapped by `transform` (sketch point → metres, Y up); `layer` picks a layer per op (nil skips it).
+    public mutating func add(_ ops: [DrawOp], layer: (Int, DrawOp) -> Layer?, transform: (Pt) -> (Double, Double),
+                             pointsPerMetre: Double)
+    public mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double))
+    public mutating func circle(_ l: Layer, _ c: (Double, Double), r: Double)
+    public mutating func text(_ l: Layer, _ p: (Double, Double), height: Double, _ s: String,
+                              align: TextAlign = .left, middle: Bool = false, angle: Double = 0)
     public func data() -> Data   // R12, CRLF, TIS-620
+    public static func aci(_ c: RGBA) -> Int   // nearest AutoCAD colour index
 }
 ```
 
@@ -58,8 +66,8 @@ public struct SketchDXF {
 | DrawOp | DXF |
 |---|---|
 | `line` | `LINE` |
-| `polyline` | `POLYLINE` (70 = 0) + `VERTEX`… + `SEQEND`, or LINE segments as now |
-| `polygon`, `rect` | `POLYLINE` closed (70 = 1) |
+| `polyline` | one `LINE` per segment (as built) |
+| `polygon`, `rect` | one `LINE` per side (as built) |
 | `circle` | `CIRCLE` |
 | `text` | `TEXT`; `angle` → group 50; `align` → 72 (0/1/2) with 11/21 alignment point |
 | `textBox` | wrap into lines like the PDF renderer does, then one `TEXT` per line |
@@ -72,7 +80,7 @@ Fills are not written (R12 `SOLID` only takes 3–4 points; not worth it).
 
 ### 3. Exports to add
 
-1. **SLD (A3)**: layers by symbol kind (TX, BREAKER, CABLE, INVERTER, PV, METER, TEXT, FRAME). This one matters most: PEA permit packs ask for it.
+1. **SLD (A3)**: layers by colour, as built (see As built). This one matters most: PEA permit packs ask for it.
 2. **D1 tank layout**: tank outline, obstacles (hatch), PV tables, keep-out.
 3. **A2 site plan**: building models, symbols, cable route.
 
@@ -110,14 +118,14 @@ SLD layers, by the op's colour (`SingleLineDXF.colourLayers`; meanings from `Sin
 Condition colours (green, amber, and red for poor) only colour text, so lines in red always mean a missing value. The
 task's proposed `SLD_PV` and `SLD_NOTE` were renamed `SLD_NEW` and `SLD_ASSUMED` to match what the colours mean.
 
-D1 layers: `GRID 8, OUTLINE 7, DIM 3, OBSTACLE 1, NORTH 7, TEXT 7` from `TankPlan.tags`, and `PV 150` (panels switched
+D1 layers: `GRID 8, OUTLINE 7, DIM 3, OBSTACLE 1, NORTH 7, TEXT 7, BEAM 8, SECTION_MARK 5` from `TankPlan.tags`, and `PV 150` (panels switched
 on) / `PV_GROUP 170` (table outlines, footing circles) from `TankLayout.current`. The layout is drawn from
 `TankLayout`'s tank-metre data, not from a sketch (the page draws it in a SwiftUI `Canvas`). Cut columns are not written.
 
 A2 (`SiteDXF`, the picture menu's `ส่งออก DXF`): the site picture's frame in millimetres from its bottom-left corner,
 at real scale from `siteScale` (metres across the picture). Without a scale it is 400 mm wide, the title says so, and
 building models are left out (as on the report). Layers: `FRAME 8`, `PV_AREA 5` / `BUILDING 4` (building models),
-`PANEL_AREA 1`, `CABLE 5`, `MEASURE 3`, `CRANE 30`, `SHADE 30` (drawn shapes), `SYMBOL 7` (marks, their colours kept with
+`SHAPE 4` (boundary and PV point shapes), `PANEL_AREA 1`, `CABLE 5`, `MEASURE 3`, `CRANE 30`, `SHADE 30` (drawn shapes), `SYMBOL 7` (marks, their colours kept with
 group 62), `NORTH 7`, `TEXT 7` (title line). Symbol and tag sizes follow the picture's width as on the report, so they
 are not at a real size. Translucent tints (a model's area) are not written; the picture itself is not either.
 

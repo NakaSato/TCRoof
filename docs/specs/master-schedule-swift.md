@@ -1,13 +1,18 @@
 # แผนงาน MP (Master Project Schedule) per station (iPad Swift dev spec)
 
-**Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 10 tests). Storage (§2), the job card
+**Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 16 tests). Storage (§2), the job card
 (§3.1), ตั้งค่าแผน (§3.2), the full screen (§3.3) and บันทึกความก้าวหน้า (§3.4) built 2026-10-07
 (`TCRoof/Views/Job/MPScheduleViews.swift`, `MPScheduleScreen.swift`), and ภาพรวมทุกสถานี (§3.5, `MPOverviewView`, from
 the Plan tab header) 2026-10-08, and §4's weekly-meeting PDF (`MasterScheduleSheet`, one A3 page). The station's own
 `Master Plan Weekly` workbook imports and exports (2026-10-17, `ExcelExport/MPWorkbook.swift`, `MPWorkbookFlow`: its
 dates and weights become `Input.fixed`, the file is kept on the job, and export writes the plan and actual into it in
-place); the tracking workbook's station list imports (2026-10-17, `ExcelExport/StationList.swift`, `StationListImportSheet`, §4); the MP 189 workbook import is not built yet (no copy of that file to build it against). The overview averages plan and actual over the stations' kWp. The progress sheet
+place). Many station files import at once (`MPBulkImportSheet`, from แผน MP ทุกสถานี): each file is matched to a
+station by its PROJECT line, its kWp and an `MP n` file name (`ExcelExport/MPWorkbook+Match.swift`). A station that
+already has a plan can take only the file's progress (`รับเฉพาะความก้าวหน้า`), merged with `Actual.merging` against the
+snapshot the app writes into each exported file (`MPWorkbook+Snapshot.swift`). The tracking workbook's station list imports (2026-10-17, `ExcelExport/StationList.swift`, `StationListImportSheet`, §4); the MP 189 workbook import (§4's first bullet) is not built yet (no copy of that file to build it against). The overview averages plan and actual over the stations' kWp. The progress sheet
 takes each task's วันเริ่มจริง / วันเสร็จจริง (2026-10-17, `Actual.setDates`).
+Not built: the MP 189 import, permit progress from the document flow, photos required before 100 %, locking past
+weeks, contract dates / ระยะเวลาคงเหลือ.
 **Source:** the company's per-station workbook `MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx` (one sheet,
 5,605 formulas). Every PWA station of โครงการประปา ระยะที่ 3–4 (102 stations) has one copy of it.
 **Goal:** replace the 102 workbook copies with one screen per job: the plan is generated from three dates and one
@@ -120,12 +125,22 @@ variance (most behind first). Totals: number of stations behind, weighted averag
 
 ---
 
-## 5. Links to other modules (later)
+## 5. Links to other modules
 
+Built:
+- Signed daily reports feed the MP actual: each linked task's % at the week's last report is booked into that week
+  (`RoutineReport.feed`, `TCRoofCore/RoutineReport.swift`; the app calls it through `RoutineReportSupport.swift`).
+- Closing the IEC test (`ปิดการทดสอบ`) books `3.1 Pre-Commissioning Test` at 100 % that week and sets its finish date
+  (`IECTestScreen.swift`).
+- The assistant's update cards, once confirmed, write progress into the plan (`TCRoof/Assistant/AssistantJobs.swift`).
+
+Not built:
 - Permit tasks (1.4 อ.1, 1.5 พค.2, 1.7 ขนานไฟ) take their actual from the PWA document flow
   (`forms/pwa/` in the TCRoof Project): approved → 100 %.
 - Construction tasks 2.1…2.9 map to install photo slots; the progress sheet can require the slot's photos before
   100 %.
+
+Today the permit chips (install page, R4) read the MP plan's permit tasks instead.
 
 ---
 
@@ -133,7 +148,8 @@ variance (most behind first). Totals: number of stations behind, weighted averag
 
 1. Contract period: the workbook's 540 days from 3 ก.ค. 2567 is the same in every copy. Is there a real contract
    start/end per project (PEA(EMD)-03/2024, 05/2024) to show "ระยะเวลาคงเหลือ"?
-2. Who may enter actual points: Engineer only, or Admin too? Should past weeks lock after the weekly meeting?
+2. ~~Who may enter actual points: Engineer only, or Admin too?~~ Managers and the team (`mp.progress`); contractors
+   don't. Still open: should past weeks lock after the weekly meeting?
 3. COP (1.6) has weight 0 in every case. Keep it as an untracked row or drop it?
 4. The lower table in the workbook (rows 111–152) has other durations (โครงสร้าง 45 วัน, Inverter 60 วัน). Is it an
    older template, or a second plan type the app should offer?

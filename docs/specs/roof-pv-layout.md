@@ -1,6 +1,6 @@
 # Auto PV layout on the roof (วางแผงบนหลังคาอัตโนมัติ)
 
-**Status:** Built (2026-10-19). Engine: `TCRoofCore/RoofPV/` (§3.1–3.8), matching `img/roof_pv.py` on the three samples (`RoofMountLayoutTests`). C1: `RoofMount` maps C1's answers and keeps the tab's choices (`pvMount`); the แผงบนหลังคา tab (`RoofPageWide+Mount.swift`) replaces the table layout, `RoofPlan` draws the layout and the section card shows the selected row (`img/roof_pv_c1_*.png`). Report (§7): the PDF prints แปลนวางแผงบนหลังคา and detail A after section A-A (`img/roof_pv_report_page.png`); Excel writes the summary and BOQ into the roof sheet's blank rows A38–A39 (NO.224 has no cells for them); จำนวนแผงก่อนเข้าสำรวจ starts from the layout when empty. Decided (19/10/2569): hips take the verge setback; a skylight marked วางทับได้ keeps only its 0.20 m lap clear of L-feet; the pitch comes from the frame type's slope (no eave/ridge heights); portrait only (question 3). The other §9 questions stay open.
+**Status:** Built (2026-10-19). Engine: `TCRoofCore/RoofPV/` (§3.1–3.8), matching `img/roof_pv.py` on the three samples (`RoofMountLayoutTests`). C1: `RoofMount` maps C1's answers and keeps the tab's choices (`pvMount`); the แผงบนหลังคา tab (`RoofPageWide+Mount.swift`) replaces the table layout, `RoofPlan` draws the layout and the section card shows the selected row (`img/roof_pv_c1_*.png`). Report (§7): the PDF prints แปลนวางแผงบนหลังคา and detail A after section A-A (`img/roof_pv_report_page.png`); Excel writes the summary and BOQ into the roof sheet's blank rows A38–A39 (NO.224 has no cells for them); จำนวนแผงก่อนเข้าสำรวจ starts from the layout when empty. Decided (19/10/2569): hips take the verge setback; a skylight marked วางทับได้ keeps only its 0.20 m lap clear of L-feet; the pitch is C1's `Roof.slope`: the frame type's slope, or from the measured `ridgeHeight` minus `clearHeight` when entered; portrait only (question 3). The other §9 questions stay open.
 **Section:** C1 หลังคา (station roofs); C2/C3 reuse it once their spans are known (§9)
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (roof geometry, pitch, purlins), [`tank-mounting-layout.md`](tank-mounting-layout.md)
 (the no-collision rule, the energy model), [`tank-mounting-layout.md`](tank-mounting-layout.md) (the editor pattern)
@@ -48,9 +48,9 @@ reason. This is the same rule as on the tank. There is never a flagged leg that 
 |---|---|
 | `spansX`, `spansY` | roof outline `LX × LY`; grid lines on the plan |
 | `sheetDir` | ridge direction: sheets run down the slope, so vertical sheets mean the ridge runs along x |
-| `eaveHeight`, `ridgeHeight` (from auto-drawing §5.1) | rise → pitch `θ = atan(rise / (B/2))` (shed: `atan(rise / B)`) |
+| frame type, `ridgeHeight`, `clearHeight` | pitch `θ` = C1's `Roof.slope`: the frame type's slope, or, when `ridgeHeight` is entered, `atan(rise / (B/2))` (shed: `atan(rise / B)`) with rise = `ridgeHeight` − `clearHeight` − heel |
 | `roofShape` | faces: จั่ว 2, ปั้นหยา 4, เพิงหมาแหงน 1. คอนกรีต (ดาดฟ้า) → use the tank mounting layout. โค้ง → §9 |
-| `comp1` (แป) `"… @1.20M"` | purlin spacing `s` (`MemberSpec.parse`). Falls back to 1.00 m and prints ค่าสมมติ |
+| `purlinSpacing` (C1 `ระยะแป`) | purlin spacing `s` along the slope, 0.60–1.50 m (`Roof.purlinSpacing`); 1.00 m until set |
 | `obst` | obstacles (x, y, w, h) |
 | `roofMaterial` | เมทัลชีท / กระเบื้อง: default fixing method (§3.2) |
 
@@ -59,7 +59,7 @@ reason. This is the same rule as on the tank. There is never a flagged leg that 
 | Field | Kind | Default | Note |
 |---|---|---|---|
 | `obst[].kind` | choice per row: แผ่นโปร่งแสง, ลูกหมุนระบายอากาศ, ปล่อง/ท่อไอเสีย, ท่อระบาย, อื่นๆ | อื่นๆ (old rows) | Same `kind` key as the tank openings |
-| `obst[].hgt` | number, m above the roof | by kind (0, 0.60, 2.00, 0.50, 0) | Drives the shade (§3.4) |
+| `obst[].height` | number, m above the roof | by kind (0, 0.60, 2.00, 0.50, 0) | Drives the shade (§3.4) |
 | `planBearing` | number, ° | the job's value when there is one, else 0 | Compass bearing of the plan's top edge, read on site with the phone compass |
 
 Latitude comes from the survey GPS.
@@ -223,27 +223,29 @@ Sample: 216 modules, 129.6 kWp, 191 MWh/yr, 502 m rail, 80 splices, 496 L-feet, 
 
 ## 5. Interaction (a tab **แผงบนหลังคา** in the C1 editor)
 
-This follows [`tank-mounting-layout.md`](tank-mounting-layout.md): inspect and remove modes, undo, deltas,
-iPad left column, iPhone sheet.
+This follows [`tank-mounting-layout.md`](tank-mounting-layout.md): inspect and remove modes (`MountTool`), undo (the
+last 50 changes), iPad left column, iPhone sheet. Quantity deltas are not built.
 
 ### 5.1 State
 
+There is no `RoofPVEditorModel`. The tab's choices are `RoofMount.Choice` (`TCRoofCore/RoofPV/RoofMountC1.swift`),
+stored as JSON in the hidden C1 field `pvMount`:
+
 ```swift
-@Observable final class RoofPVEditorModel {
-    var fixing: RoofFixing = .purlin              // .purlin | .ribClamp
-    var avoidShade = true
-    var faceUse: [RoofFace.ID: Bool] = [:]        // nil = automatic (≥ 85 % of the best face)
-    var colOffset: [RoofFace.ID: Double] = [:]    // from best layout, or the slider for the chosen face
-    var rowShift: [RoofFace.ID: Double] = [:]
-    var centred: [RoofFace.ID: Bool] = [:]
-    var standard: RoofMountStandard               // settings; per-job edits stored on the module
-    var removed: Set<SlotRef> = []                // (face, row, column)
-    var mode: MountMode = .inspect
-    var view: RoofPVView = .plan                  // .plan | .rowSection
-    var selection: RoofPVSelection?               // .slot(face,row,col) | .foot(face,row,run,rail,i) | .obstacle(i)
-    private(set) var layout: RoofPVLayout
+public struct Choice: Codable, Equatable, Sendable {
+    public var ribClamp = false                          // fixing: purlin, or rib clamp
+    public var avoidShade = true
+    public var faceUse: [String: Bool] = [:]             // nil = automatic (≥ 85 % of the best face)
+    public var placements: [String: RoofMountLayout.Placement] = [:]   // per face: column offset, row shift, centred
+    public var removed: [RoofMountLayout.SlotRef] = []   // (face, row, column)
+    public var standard: RoofMountStandard?              // per-job standard; nil = the default
+    public var digest = ""                               // the inputs the placements belong to
+    public var walkwayEvery = 0                          // a walkway after every n columns
 }
 ```
+
+The view state (the tool, `MountTool` `.inspect` / `.remove`, and the selection) lives in
+`TCRoofUI/Survey/Pages/Roof/RoofPageWide+Mount.swift`.
 
 The **best layout** runs on first open and whenever any of these change: roof size, heights, purlin spacing,
 bearing, obstacles, the standard, the fixing method, or the shade switch. `removed` is cleared then, with the note
@@ -288,17 +290,17 @@ Shows the selected row (default: row 1 of the south face) along the slope:
 
 | File | Contents |
 |---|---|
-| `TCRoofCore/RoofPV/RoofFaces.swift` | faces from `RoofGeometry` (shape, `A`, `B`, pitch, ridge axis, bearing): polygon, edge kinds, half-planes, plan map, 3D basis, azimuth |
-| `TCRoofCore/RoofPV/RoofMountStandard.swift` | §3 values (`Codable`, in `SurveySettings`), obstacle kind table |
-| `TCRoofCore/RoofPV/ShadeHulls.swift` | sun positions (shared with `MountEnergy`), ray–plane projection, convex hull, SAT |
-| `TCRoofCore/RoofPV/RoofPVLayout.swift` | `compute(faces:purlins:obstacles:std:options:) -> RoofPVLayout` and `best(…)`: §3.2–3.6 |
-| `TCRoofCore/RoofPV/RoofPVQuantities.swift` | §3.8; feeds the report and the Excel BOQ |
-| `TCRoofCore/RoofPV/RoofPVDrawings.swift` | plan, section, detail A → `Sketch` |
-| `SurveyUI/Roof/RoofPVEditorView.swift` | §5 |
+| `TCRoofCore/RoofPV/RoofFaces.swift` | faces from C1 (shape, `A`, `B`, pitch, ridge axis, bearing): polygon, edge kinds, half-planes, plan map, 3D basis, azimuth |
+| `TCRoofCore/RoofPV/RoofMountStandard.swift` | §3 values (`Codable`), obstacle kind table |
+| `TCRoofCore/RoofPV/RoofMountLayout.swift` | `compute(…)` and `best(…)`: §3.2–3.6, with the shade hulls (§3.4) inside it |
+| `TCRoofCore/RoofPV/RoofMountQuantities.swift` | §3.8; feeds the report and the Excel BOQ |
+| `TCRoofCore/RoofPV/RoofMountDrawings.swift` | plan, section, detail A → `Sketch` |
+| `TCRoofCore/RoofPV/RoofMountC1.swift` | `RoofMount`: C1's answers → the layout input, and `Choice` (`pvMount`) |
+| `TCRoofCore/RoofPV/SolarModel.swift` | sun positions and the clear-sky yield |
+| `TCRoofUI/Survey/Pages/Roof/RoofPageWide+Mount.swift` | §5, the แผงบนหลังคา tab |
 
 **Shared with the tank:**
-- sun and yield: `MountEnergy`
-- foot and post placement with column cutting: `ClearPlacement.place(xa:xb:forbidden:maxSpacing:maxCantilever:minBay:)`
+- sun and yield: `SolarModel` (`MountEnergy` and `ClearPlacement` were not built; each layout places its own feet)
 - polygon helpers
 
 **Tests:**

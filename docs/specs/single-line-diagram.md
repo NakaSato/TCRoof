@@ -1,6 +1,7 @@
 # Auto Single Line Diagram (SLD)
 
-**Status:** Level 1 is built (checked against the code 2026-10-17). Model and rules: `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLine+Build.swift`; drawing: `SingleLineLayout.swift`, `SLSymbols.swift`; DXF: `SingleLineDXF.swift`; page: `TCRoofUI/Survey/Pages/Electrical/SingleLinePage.swift`, `SingleLinePage+Panel.swift`; PDF: `PDFReport/SingleLinePage.swift`. Built 2026-10-19: VCB and DO fuse symbols (`SLSymbols.vcb`, `dropOutFuse`, `hvDevice`: each transformer's tap draws its A3 `hvProtection`, the PEA tap the one they share; DS keeps the open switch), the FTS cut and emergency button only with a B5 section, and a debounced off-main rebuild (`SingleLineRender`, 250 ms, on the SLD page and the B4 / B5 crops). The 1.25 × breaker factor is the team's rule (no longer a ค่าสมมติ). Level 2 (detailed MDP) built 2026-10-20: the optional `Breaker` / `Board` fields, their drawing on the connection board, the notes under the diagram, the feeder wrap and boards side by side, and their entry on A3 (`ElectricalPageWide+SLD.swift`); details under Level 2 below. Not built: the SLD in Excel.
+**Status:** Level 1 is built (checked against the code 2026-10-17). Model and rules: `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLine+Build.swift`; drawing: `SingleLineLayout.swift`, `SLSymbols.swift`; DXF: `SingleLineDXF.swift`; page: `TCRoofUI/Survey/Pages/Electrical/SingleLinePage.swift`, `SingleLinePage+Panel.swift`; PDF: `PDFReport/SingleLinePage.swift`. Built 2026-10-19: VCB and DO fuse symbols (`SLSymbols.vcb`, `dropOutFuse`, `hvDevice`: each transformer's tap draws its A3 `hvProtection`, the PEA tap the one they share; DS keeps the open switch), the FTS cut and emergency button only with a B5 section, and a debounced off-main rebuild (`SingleLineRender`, 250 ms, on the SLD page and the B4 / B5 crops). The 1.25 × breaker factor is the team's rule (no longer a ค่าสมมติ). Level 2 (detailed MDP) built 2026-10-20: the optional `Breaker` / `Board` fields, their drawing on the connection board, the notes under the diagram, the feeder wrap and boards side by side, and their entry on A3 (`ElectricalPageWide+SLD.swift`); details under Level 2 below.
+**Not built:** the SLD in Excel.
 **Page design and task:** `docs/ui/survey-sld/CLAUDE_CODE_TASK.md`, `preview.png`, `preview-hv.png`, `diagram-lv.svg`, `diagram-hv.svg`
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline and drawing rules). DXF export: `docs/specs/cad-export-dxf/` (phase 2).
 **Targets:** `TCRoofKit` (iOS 17+, macOS 14 for tests) inside the TCRoof app. **New dependencies:** none. Layout is written by hand, because the SLD topology is fixed.
@@ -10,7 +11,7 @@ The SLD is generated from the survey. The surveyor never draws; every edit in A1
 | Level | Source | Reference |
 |---|---|---|
 | **1. From the survey as it is (v1)** | A1, A3 (meter, transformers, boards, breakers), A4, B1, B2, B4 | `docs/ui/survey-sld/diagram-lv.svg`, `diagram-hv.svg` (the older prototype `img/sld_form.py` is superseded) |
-| 2. Detailed MDP (later) | level 1 plus feeder cables, conduits and loads per breaker | `img/sld.py` |
+| 2. Detailed MDP (built 2026-10-20) | level 1 plus feeder cables, conduits and loads per breaker | `img/sld.py` |
 
 ## Goals and non-goals
 
@@ -24,7 +25,6 @@ The SLD is generated from the survey. The surveyor never draws; every edit in A1
 **Non-goals (v1)**
 - Editing the drawing by hand. Editing stays on the A3 wide page; the SLD page is read-only with links back.
 - Cable sizing or voltage drop from real lengths
-- Level 2 feeder detail
 - An Excel image
 - Required fields: nothing new blocks completion. A3 completion counts as before, and blanks show as red `?` plus the missing list.
 
@@ -34,7 +34,7 @@ The SLD is generated from the survey. The surveyor never draws; every edit in A1
   - HV line with `))` breaks and poles, labelled `ระบบจำหน่าย กฟภ. {meterKV} kV, 3Ø 3W, 50 Hz`
   - HV protection, then the PEA meter `kWh`, then the customer HV bus with one drop per transformer
   - Each drop: switch, LA branch, three cable terminations, Δ/Y transformer with grounded neutral
-- **HV protection follows A3 `hvProtection`** (DO fuse / DS / VCB). It is drawn with one switch symbol. The label is the answer when every transformer has the same one, otherwise `Drop Out Fuse / Disconnecting Switch`. The older rule "no VCB/52" is dropped because A3 asks for it.
+- **HV protection follows A3 `hvProtection`** (DO fuse / DS / VCB). Each device has its own symbol (DO fuse, DS as the open switch, VCB). Each transformer's tap shows its own A3 `hvProtection`, and the PEA tap the kind they share (`SLSymbols.hvDevice`). The label is the answer when every transformer has the same one, otherwise `Drop Out Fuse / Disconnecting Switch`. The older rule "no VCB/52" is dropped because A3 asks for it.
 - **LA:** drawn with `LA` when `hasLA == true`, left out when `false`. When it is not answered, the drawing shows red `LA ?`.
 - **Downstream (Thai MDP style):**
   - Boards: dashed boxes titled with the on-site name
@@ -99,7 +99,7 @@ Board k = 0 is the main board. Its name, location and front photo stay in `tr{i}
 | Zero export position | first B4 `.backfeed` module: `level` (`กันย้อนที่แรงต่ำ` / `กันย้อนที่แรงสูง`), `pole` (`เสาเดิม` / `เสาใหม่`, default `เสาใหม่`); `hasB4` = such a module exists |
 | Flood at the connection point | A4 `job.floodCheck`: `state`, `level`, `minCm`, plus `floodYear` |
 
-The FTS DC cut-out and the emergency button are always drawn on the PV side; the diagram does not check that a B5 section exists. Old jobs with only `kva` + `mdb[6]` build without crashing.
+The FTS DC cut-out and the emergency button are drawn on the PV side only when the job has a B5 section (`hasB5`). Old jobs with only `kva` + `mdb[6]` build without crashing.
 
 **New optional answers (written only by the SLD page):**
 - `sldAttach` = "1": add the SLD page to the survey PDF
@@ -115,10 +115,10 @@ The FTS DC cut-out and the emergency button are always drawn on the PV side; the
 | transformer with more than half its nameplate missing | collapsed to `{kva} kVA` + red `ป้ายพิกัดยังไม่ครบ` |
 | boards of a transformer | the main board plus sub-boards as branches (dashed boxes 180 × 200), each ending in `ปลายสาย TX{n} · {location}` |
 | connection board (`sldTransformer` / `sldBoard`) | drawn large and full width: draw-out main breaker, `MAIN BUS {at} A, 3Ø 4W, 400/230 V`, numbered outgoing breakers with load blocks `ตู้ไฟฟ้า / {target} / โหลด {loadKW} kW @{loadTime}` |
-| PV (A1 + B2) | blue PV breaker at the bus end → `SMDB-PV (ใหม่)` → one breaker per inverter (at most 3 columns drawn, then `… × {n}`) → inverter (=/~) `อินเวอร์เตอร์ {n} × {kW} kW (B2)` (or `60 + 60 + 80 kW` for mixed B2 sizes) → `ตู้ FTS ตัดวงจร DC (B5)` → `แผง PV รวม {kWp} kWp (A1)` |
+| PV (A1 + B2) | blue PV breaker at the bus end → `SMDB-PV (ใหม่)` → one breaker per inverter (at most 3 columns drawn, then `… × {n}`) → inverter (=/~) `อินเวอร์เตอร์ {n} × {kW} kW (B2)` (or `60 + 60 + 80 kW` for mixed B2 sizes) → `ตู้ FTS ตัดวงจร DC (B5)` (only with a B5 section) → `แผง PV รวม {kWp} kWp (A1)` |
 | B4 แรงต่ำ | `CT กันย้อน (ใหม่)` on the connection board incomer, box `รีเลย์กันย้อน แรงต่ำ / Zero export (B4)` |
 | B4 แรงสูง | `CT/VT แรงสูง (ใหม่)` under the PEA meter, box `รีเลย์กันย้อน แรงสูง / {pole} (B4)` |
-| emergency | `ปุ่ม Emergency`, dashed to the inverters |
+| emergency (only with a B5 section) | `ปุ่ม Emergency`, dashed to the inverters |
 
 **Zero export control:** in both modes the relay's dashed control line goes to the inverters (`สั่งควบคุมกำลังผลิต`), never to a breaker. The toggle on the SLD page writes B4 `level`. If the job has no B4 section, the toggle is a preview only (`hvOverride`).
 
@@ -235,6 +235,7 @@ TCRoofKit/Sources/
     Pages/Electrical/SingleLinePage+Panel.swift  side panel: PV data, IC check, blocking list, flood card, sheets
     Pages/Electrical/ElectricalPageWide.swift    A3 button "สร้าง Single Line Diagram →"
     Pages/Electrical/ElectricalPageWide+SLD.swift  level 2 entry: breaker sheet group, board busbar / ground sheet
+    Pages/Electrical/SingleLineRender.swift      debounced off-main rebuild (250 ms) for the page and the B4 / B5 crops
     Editor/JobEditor.swift, JobEditor+Actions.swift  full-screen cover and openFromDiagram(SLTarget)
     Model/SurveyModel+Export.swift               exportSingleLinePDF / exportSingleLineDXF
   PDFReport/
@@ -254,10 +255,11 @@ public enum SLCondition: String { case good, fair, bad }        // init from ด
 public struct SLTarget { enum Page { case info, electrical, flood, module(ModuleType) }; var page; var trafo, board: Int?; var breaker: UUID?; var linkLabel }
 public struct SLText { var text: String; var status: SLStatus; var bold: Bool }
 
-public struct SLBreaker   { id, trafo, board, number, isMain, isNew, type, at, af, ic, brand, condition?, note?, atAmps?, icKA?, name, destination }
-public struct SLBoard     { id, trafo, index, name, location, isMain, main: SLBreaker, breakers: [SLBreaker] }
-public struct SLTransformer { id, index, lines: [SLText], collapsed, hasLA: Bool?, cable, boards, kva?, zPercent? }
+public struct SLBreaker   { id, trafo, board, number, isMain, isNew, type, at, af, ic, brand, condition?, note?, atAmps?, icKA?, name, destination, feeder, spare }
+public struct SLBoard     { id, trafo, index, name, location, isMain, main: SLBreaker, breakers: [SLBreaker], busbar, ground }
+public struct SLTransformer { id, index, lines: [SLText], collapsed, hasLA: Bool?, cable, boards, kva?, zPercent?, protection }
 public struct SLMissing   { id, label, blocking: Bool, target: SLTarget }
+public struct SLNote      { id, text, flagged: Bool, target: SLTarget }   // level 2 checks printed under the diagram
 public struct SLAssumption{ id, text }
 public enum   SLCheckState{ case ok, marginal, insufficient, unknown }
 public struct SLCheck     { id, name, icKA?, state, target, value }
@@ -265,12 +267,12 @@ public struct SLFlood     { text, minCm, levelCm }
 public struct SLPV        { capacityKWp?, inverterCount?, inverterKW?, inverterSizes?, inverterAT?, totalAT?, requiredIC?, busbar?, inverterCable?, mainCable?, cableRuns, totalCableM, rows, inverterSummary }
 
 public struct SingleLine: Sendable {
-    sourceLabel, meter: [SLText], protection: SLText
-    zeroExportHV: Bool, hasB4: Bool, pole: String
+    sourceLabel, meter: [SLText], protection: SLText, protectionKind: String
+    zeroExportHV: Bool, hasB4: Bool, hasB5: Bool, pole: String
     transformers: [SLTransformer]
     connection: (trafo: Int, board: Int)
     pv: SLPV, isc: Double?, iscAssumedZ: Bool, checks: [SLCheck]
-    missing: [SLMissing], assumptions: [SLAssumption], flood: SLFlood?
+    missing: [SLMissing], assumptions: [SLAssumption], notes: [SLNote], flood: SLFlood?
     conditionCounts: (bad: Int, fair: Int), projectLine: String
     static func build(_ job: Job, hvOverride: Bool? = nil) -> SingleLine
 }
@@ -293,7 +295,7 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
   - Other boards stack under their transformer, 230 apart.
 - **Readability:** must hold with 1–5 transformers and up to 6 boards each.
 - **Symbols** (`SLSymbols`, `DrawOp` paths). Lines stop at a symbol and never pass through it.
-  - HV: pole, open switch, HV switch, LA with ground, three cable terminations, Δ/Y transformer
+  - HV: pole, open switch (DS), DO fuse (`dropOutFuse`), VCB (`vcb`), picked by `hvDevice`; LA with ground, three cable terminations, Δ/Y transformer
   - Meter: `kWh` meter
   - Breakers: fixed arc, draw-out arc with chevrons
   - Zero export: CT (also CT/VT on HV), relay box
@@ -321,7 +323,7 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
   - sheets for `ข้อมูลที่ขาดอื่นๆ`, `สภาพอุปกรณ์`, `ค่าสมมติ`
 - **Bottom bar (iPad):** notes `สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3` and `ข้อมูลล่าสุด {time} · ยังขาด {n} จุด`, then `‹ แก้ข้อมูลใน A3` · `ส่งออก DXF` · `ส่งออก PDF (A3)` · `แนบในรายงาน` (toggles `sldAttach`).
 - **Narrow iPad / iPhone:** the diagram takes the full width, the side panel becomes a sheet opened from the header's `ข้อมูล PV` button, and the zoom sits on the diagram. iPhone bottom bar: the notes, `ส่งออก DXF` and `แนบในรายงาน`, then `แก้ข้อมูลใน A3` / `ส่งออก PDF (A3)`.
-- **Rebuild:** the page builds and draws the diagram again on every change of `job`, on the main actor. Core types are `Sendable`, so a debounced background rebuild can be added if it gets slow.
+- **Rebuild:** the diagram is rebuilt off the main actor 250 ms after the last edit (`SingleLineRender`), and so are the B4 / B5 crops.
 - **Accessibility:**
   - The drawing has an accessibility summary (`แผนภาพเส้นเดียว หม้อแปลง {n} ลูก ยังขาด {n} จุด`).
   - Buttons are at least 44 pt.

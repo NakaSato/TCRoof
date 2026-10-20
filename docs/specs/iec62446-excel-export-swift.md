@@ -67,15 +67,15 @@ public struct Inverter: Codable, Equatable {
     public var ratedKW: Double                  // E5
     public var serial: String                   // O5
     public var slots: [Slot?]                   // exactly 20 (slot n → column E+n-1); nil = no string
+                                                // the Word sequence comes from `strings` (used slots in order)
     public var continuity: Check?               // E11
-    public var irSummary: Check?                // E14 (derived from slot IR values, §3.2)
+    // E14: `irSummary(inv)` on the report, derived from slot IR values (§3.2), not stored
     public var functionalBefore: Check?         // E20
     public var functionalAfter: Check?          // E21
     public var energy7dKWh: Double?             // E25
-    public var remark: String?                  // D31 on the หลัง sheet
+    public var remark: String                   // D31 on the หลัง sheet ("" = none)
 }
 public struct Slot: Codable, Equatable {
-    public var seq: Int                         // INVnSTseq label (Word appendix order)
     public var brand: String?                   // row 8
     public var modules: Int                     // row 9
     public var optimizers: Int?                 // row 10
@@ -170,7 +170,7 @@ Columns E…X = slot 1…20 (`MPPT k` = columns 2k−1, 2k). A slot with no stri
 | AA26 | INV 01-หลัง | `Array Temperature = {t} (ºC)`; ก่อน keeps `Array Temperature =   (ºC)` | text |
 | D31 | หลัง | `remark` (sample: `กำลังผลิตถูกหรี่โดยโหลด` on INV 01-หลัง) | text |
 | E27 | — | `เอกสารแนบ` constant | unchanged |
-| Y, Z (ผ่าน / ไม่ผ่าน) | — | empty in the original | unchanged (open question 3) |
+| Y, Z (ผ่าน / ไม่ผ่าน) | — | empty in the original | cleared, then `✓` in Y (pass) or Z (fail) on rows 11–13, 16–22 and 27 from the app's rules (`IECExcel.tickRows`) |
 
 Rows 17 and 19 stay empty on the ก่อน sheets. Rows 22–26 stay empty on the ก่อน sheets (AA24: "…ก่อนเชื่อมระบบเท่ากับ 0").
 The ก่อน sheet E21 is written when it is known, as the original does.
@@ -204,7 +204,8 @@ As built: INV k (k ≥ 3) uses parts `sheet{2k−1}` (ก่อน) and `sheet{2
 template's 85 / 91 / 97 / 98); `definedNames` and `TitlesOfParts` are rewritten whole, listed by sheet name. With 2
 inverters `workbook.xml`, `app.xml`, `calcChain.xml` and the content types stay as in §3.
 
-**More than 20 strings on one inverter:** export is refused with a message naming the inverter (open question 4).
+**More than 20 strings on one inverter:** can't happen. The set-up has 20 slots per inverter, so more than 20 can't
+be entered; the export has no error for it (open question 4).
 
 ---
 
@@ -236,24 +237,28 @@ override).
 
 ## 6. File name and delivery
 
-- Default name `IEC62446 {station short name} {yyyy-MM-dd}.xlsx` (open question 1 for `.XLS`).
-- Export from the IEC review screen (`ตรวจและส่งออก`, step 7) beside `ดูตัวอย่างแผ่น Excel`; the share sheet and
-  the Drive report folder use the same bytes.
+- Default name `IEC62446 {station short name} {yyyy-MM-dd}.XLS` (open question 1).
+- Export with `ส่งออก Excel IEC 62446` on the IEC overview, beside `ส่งออก Word ภาพถ่าย` (`IECTestScreen.swift`); the
+  share sheet and the job's documents folder `IEC 62446` keep the same bytes.
 
 ---
 
 ## 7. Open questions
 
-1. **Extension.** The customer's file is a 2007+ package named `.XLS`, and Excel warns about the mismatch when
+1. ~~**Extension.** The customer's file is a 2007+ package named `.XLS`, and Excel warns about the mismatch when
    opening it. If the linking workbooks refer to `1FORMI1.XLS` by name, the export should keep that name and
-   extension; otherwise `.xlsx` avoids the warning. Which do the PWA files use?
-2. **Rounding of Yf / PR.** The app computes Yf from kWp (INV1 3.13, PR 0.74), where the sample typed 2.93 / 0.69.
-   Confirm that the computed values replace hand-typed ones.
-3. **ผ่าน / ไม่ผ่าน (Y, Z).** Empty in the original. Leave empty (100 % original) or tick from the rules
-   (`✓` in Y or Z per row)?
-4. **More than 20 inputs on one inverter.** Refuse, or continue on a second sheet pair (`INV 01-ก่อน (2)`)?
-5. **Failure text.** `Abnormal` for E11, E14, E20, E21 when a check fails, or another word the PWA uses?
-6. **Author path.** `workbook.xml` keeps `x15ac:absPath` = `C:\Users\chawalwit.s\Desktop\คุมงานประปา\…` from the
-   original. Keep it (100 %) or remove it from the template?
-7. **Continuity and inverter functional checks** (E11, E20, E21) have no input on the iPad screens yet: put them
-   at the end of ก่อนออน · ฉนวน and หลังออน · แรงดัน / กระแส, or on the review screen?
+   extension; otherwise `.xlsx` avoids the warning. Which do the PWA files use?~~ `.XLS` kept (2026-10-15).
+2. ~~**Rounding of Yf / PR.** The app computes Yf from kWp (INV1 3.13, PR 0.74), where the sample typed 2.93 / 0.69.
+   Confirm that the computed values replace hand-typed ones.~~ The computed Yf / PR are written (2026-10-15).
+3. ~~**ผ่าน / ไม่ผ่าน (Y, Z).** Empty in the original. Leave empty (100 % original) or tick from the rules
+   (`✓` in Y or Z per row)?~~ Ticked from the app's rules (2026-10-15).
+4. ~~**More than 20 inputs on one inverter.** Refuse, or continue on a second sheet pair (`INV 01-ก่อน (2)`)?~~
+   Refused: the set-up has 20 slots, so more can't be entered (2026-10-15).
+5. ~~**Failure text.** `Abnormal` for E11, E14, E20, E21 when a check fails, or another word the PWA uses?~~
+   `Abnormal` (2026-10-15).
+6. ~~**Author path.** `workbook.xml` keeps `x15ac:absPath` = `C:\Users\chawalwit.s\Desktop\คุมงานประปา\…` from the
+   original. Keep it (100 %) or remove it from the template?~~ Kept (2026-10-15).
+7. ~~**Continuity and inverter functional checks** (E11, E20, E21) have no input on the iPad screens yet: put them
+   at the end of ก่อนออน · ฉนวน and หลังออน · แรงดัน / กระแส, or on the review screen?~~ The `Continuity` and
+   `Inverter testing` rows are in the string table (`IECStringGrid.swift`), and `Inverter testing` is on the
+   performance page (`IECPerformancePage.swift`).

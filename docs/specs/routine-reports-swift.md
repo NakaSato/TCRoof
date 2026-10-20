@@ -75,9 +75,10 @@ New optional fields on `InstallLog` (SwiftData, all with defaults):
 
 ### 2.2 Weekly request (R1)
 
-New SwiftData model `WeeklyRequest` (or JSON on `Job` if one per week is enough — decide in review):
+`RoutineReport.WeeklyRequest`, a list stored as JSON in `Job.weeklyRequestsJSON` (one per week):
 `weekStart` (Sunday, same weeks as MP), crew plan, tool plan, work plan `{mpTask?, description, location, qty, unit}`,
-risks `{description, level ต่ำ/กลาง/สูง, prevention}`, `engineerSignedAt`, `approvedAt`, `approvedBy`.
+risks `{description, level ต่ำ/กลาง/สูง, prevention}`, `engineerSignedAt`, `sentAt`, `sentBy`, `approvedAt`,
+`approvedBy`.
 
 ### 2.3 Station settings used by reports
 
@@ -87,9 +88,9 @@ Site Engineer and Inspector names.
 
 ### 2.4 Sync
 
-All new data is text (JSON strings, dates) on records that already sync (`installLogs`, `jobs`). A separate
-`WeeklyRequest` model needs a new Firestore collection **and a rule in `firestore.rules`**. Photos stay on device and
-Drive, as today.
+All new data is text (JSON strings, dates) on records that already sync (`installLogs`, `jobs`). R1 rides the `jobs`
+record; `firestore.rules` lets a contractor change only `weeklyRequests` / `weeklyRequestsBy` there (plus the IEC
+fields). Photos travel through Drive (`PhotoSync`).
 
 ---
 
@@ -109,8 +110,7 @@ Drive, as today.
 | R1 draft | MP tasks planned in that week and not yet 100 %, plus yesterday's crew and tools |
 | Warnings before signing R2 | weather blank hours; no crew; crew not confirmed; a progress line went **down**; no progress line and no "หยุดงาน" reason |
 
-A draft of this logic with tests against the ก.ค. 2568 files exists outside the repo (21 reports → 189 man-days,
-84 tool-days, 25 rain hours on 6 days, missing 12/17/24/28/29/31 ก.ค.). It goes in only after this spec is agreed.
+The logic is in `TCRoofCore/RoutineReport.swift`, tested in `RoutineReportTests` (17 tests).
 
 ---
 
@@ -156,7 +156,8 @@ report with up to 4 photos, long tables continued on another slide):
 
 ### 4.5 รายงานประจำเดือน (R4)
 Same idea at month scale, following the existing docx structure: ส่วนที่ 1 รายละเอียดโครงการ (static, from the
-project), ส่วนที่ 2 ความก้าวหน้า (MP table + สถานะการยื่นขออนุญาต from the document flow + photos), ส่วนที่ 3
+project), ส่วนที่ 2 ความก้าวหน้า (MP table + สถานะการยื่นขออนุญาต from the MP plan's permit tasks,
+`RoutineReport.permits(plan:actual:at:)` + photos), ส่วนที่ 3
 แผนเดือนถัดไป (MP tasks planned next month), ส่วนที่ 4 สรุปแรงงาน (man-days by role per week). When the MP actual
 reaches 100 %, the title becomes "ติดตั้งแล้วเสร็จ".
 
@@ -176,11 +177,14 @@ reaches 100 %, the title becomes "ติดตั้งแล้วเสร็�
 ---
 
 ## 6. Open questions
-1. Does the Inspector sign in the app (second iPad / link), or do we only record the date they signed on paper/LINE?
+1. ~~Does the Inspector sign in the app (second iPad / link), or do we only record the date they signed on paper/LINE?~~
+   In the app, on the engineer's device: `Inspector รับทราบ` with a drawn signature (`DailyReportScreen.swift`).
 2. ~~Weekly report output: PDF only, or must it stay PowerPoint for the meeting?~~ Both: the PDF to file, the .pptx for
    the meeting (2026-10-17).
-3. Who fills R2 on site — our engineer or the ผรม. foreman? (decides who may edit, and whether ผรม. needs app access)
+3. ~~Who fills R2 on site — our engineer or the ผรม. foreman? (decides who may edit, and whether ผรม. needs app access)~~
+   The contractor's foreman fills it (`daily.fill`), our engineer signs it (`daily.sign`).
 4. Role and tool lists: fixed company lists, or per project? The 2560 template had 24 roles / 30 tools; โชคชัย used 3 / 4.
 5. Working days: Mon–Sat everywhere? Public holidays list from where?
 6. Is one R1 per week enough, or are there mid-week revisions that need versions?
-7. "Key plan": draw from the survey A2 site picture, or attach the drawing the team uses now?
+7. ~~"Key plan": draw from the survey A2 site picture, or attach the drawing the team uses now?~~ The survey's A2 site
+   picture, with a point per location (`KeyPlanViews.swift`).

@@ -1,8 +1,8 @@
 # Auto 2D Drawings: Roof Structure & Tank Size
 
 **Status:** Partly built, by a different route than this spec first planned.
-- **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), C1's pitch from a measured ridge height (`Roof.pitch`, §4.4), the C2 and C3 sections from measured sizes (`RoofSectionMeasured.swift`, §4.4), the `n@d` span shorthand (`parseSpans`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank sections 1–1 / 2–2 and the size and volume summary (`TankDrawings.swift`, `Tank.summary`, §5.5), the printed tank plan's beams, section marks and cross vents (`TankPlan(details:)`), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel.
-- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), the Howe truss, truss details A/B and the member schedule, `MemberSpec` depth parsing, `uniformLabel`, `DrawOp.arc`, the round tank, the section in Excel (open question 3), the `autoDrawings` flag and the SVG snapshot tests.
+- **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), C1's pitch from a measured ridge height (`Roof.pitch`, §4.4), the C2 and C3 sections from measured sizes (`RoofSectionMeasured.swift`, §4.4), the `n@d` span shorthand (`parseSpans`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank sections 1–1 / 2–2 and the size and volume summary (`TankDrawings.swift`, `Tank.summary`, §5.5), the printed tank plan's beams, section marks and cross vents (`TankPlan(details:)`), the Howe truss as C1's seventh frame type, details A / B and the member schedule (`RoofTruss.swift`, built 2026-10-20), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel.
+- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), `MemberSpec` depth parsing, steel weights in the schedule, `uniformLabel`, `DrawOp.arc`, the round tank, the section in Excel (open question 3), the `autoDrawings` flag and the SVG snapshot tests.
 
 **Owner:** TCRoof · **Module:** `TCRoofKit` (TCRoofCore / TCRoofUI / PDFReport / ExcelExport)
 **Date:** 2026-09-29, tank parts updated 2026-10-01 to the D1 design, merged with the Swift implementation spec and checked against the code 2026-10-17 · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Standard tank designs:** [`standard-designs.md`](standard-designs.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
@@ -119,6 +119,7 @@ Frame types (`RoofFrame`):
 |---|---|---|---|
 | `n` | ปกติ | Truss: king post and two struts | แป, คอร์ดบน, คอร์ดล่าง, ตัวตั้ง, ตัวทแยง, เชิงชาย, เสากลาง |
 | `p` | ถัก Pratt | Truss: verticals at every node, diagonals sloping down toward the ridge | as `n` |
+| `h` | ถัก Howe | Truss: verticals at every node, diagonals rising from the bottom chord toward the ridge (Pratt's mirror; added 2026-10-20) | as `n` |
 | `w` | ถัก Warren | Truss: zig-zag diagonals plus a king post | as `n` |
 | `c` | ขื่อรัด | Rafter frame, 30° | แป, จันทัน, ขื่อรัด, อเส, ตัวค้ำ, เชิงชาย, เสากลาง |
 | `r` | จันทันถัก | Tube rafter truss on T2 beams, 4 posts | แป, คอร์ดบน, คอร์ดล่าง, ตัวทแยง, T2 รับจันทัน, เชิงชาย, เสา |
@@ -189,7 +190,23 @@ The draft derived the section from measured heights instead of a frame-type choi
   - C2: two new optional, visible fields in group "อาคาร", `eaveHeight` and `ridgeHeight` (ม.); purlins at `space1`;
     the members listed are `size1…7` with their `space`.
 
-The rest of this section is the draft's full plan (truss patterns, details and schedule), not built.
+**Details and schedule, as built (`RoofTruss.swift`):** `RoofTruss.geometry` gives C1's truss in metres, the same
+members section A-A draws (verticals with the heel ends, diagonals, the king post); the §9.3 numbers hold for Howe (17
+verticals with the king post, 16 diagonals, 34 nodes, king post 2.644).
+- **Schedule** (`RoofTruss.schedule`): trusses on the plan's T1 lines (grid lines inside, along the ridge; a one-bay
+  roof counts one, with a note), rafter frames per pair @1.00. Per row: purlins `Roof.purlinLines` × the length along
+  the ridge; top chords `2 · (half + overhang) / cos θ`; bottom chord `B`; verticals and diagonals counted with their
+  total length; fascia 2 × the length; king post `d + R`; gusset plates one per node. ขื่อรัด / ชายคาฝ้า: rafters,
+  the tie at half (0.55) the rise, the eaves beams, the posts × clear height; จันทันถัก: both tube chords, a diagonal and
+  a vertical per panel, T2 on the inside grid lines across the ridge, the posts. A row set to "-" is left out; an empty
+  one reads "ไม่ระบุขนาด". Centre-line lengths, no laps or waste; no steel weights yet.
+- **Details** (`RoofTruss.details`, trusses with a bottom chord only): A at the left support (column, cap plate and
+  anchors, heel gusset with bolts, the chords, the first web members, purlins with cleats, the sheet, the fascia) and B
+  at the ridge (ridge gusset, king post, the first diagonals and verticals, the ridge purlins, ridge cap, bottom-chord
+  splice), drawn from the geometry cut to a window around each joint, not to scale, labelled ①–⑦ with the entered sizes.
+- **Where:** C1's section card `ชิ้นส่วน` opens them in a sheet; the PDF prints both after section A-A.
+
+The rest of this section is the draft's plan for deriving the frame from member sizes (`MemberSpec`), not built.
 
 **New fields (sizes and distances only):**
 
@@ -537,7 +554,7 @@ All in `Tests/TCRoofCoreTests`, run with `swift test` on the Mac, no simulator.
 | 5 | PDF section A-A and design summary; Excel plan image | Pages match the page designs | Built |
 | 6 | DXF R12 (`SketchDXF`, `RoofDXF`, `TankDXF`) | Golden files pass | Built |
 | 7 | `Spans` `n@d`, `MemberSpec`, `RoofInput`, `RoofGeometry` + tests | Numbers in §9 pass; old plans unchanged | `n@d`, C1 pitch and the C2/C3 rafter geometry built (`RoofPitchTests`, `MeasuredRoofSectionTests`); `MemberSpec` not built |
-| 8 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails`, schedule + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` | Not built |
+| 8 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails`, schedule + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` | Howe, details A / B and the schedule built on C1's code (`RoofTruss`, `RoofTrussTests`); no `DrawingKit` or snapshots |
 | 9 | C2/C3 section fields and `.roofSection`; PDF `formSection` | Export lists drawing gaps ("ข้อมูลไม่พอวาดรูปตัด: …") | Built (the gap line is printed in place of the drawing; there is no `missingGroups`) |
 | 10 | Tank section and summary; cross-vent symbol; beams and section marks on the plan | Matches `img/tank.png`, `img/tank_40x40.png` | Built (`TankSummaryTests`) |
 

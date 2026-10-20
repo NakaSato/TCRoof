@@ -377,7 +377,7 @@ final class RoofTests: XCTestCase {
 
     func testEaveCeilingFrame() {
         let k = RoofFrame.eaveCeiling
-        XCTAssertEqual(RoofFrame.ordered.map(\.label), ["ปกติ", "ถัก Pratt", "ถัก Warren", "ขื่อรัด", "จันทันถัก", "ชายคาฝ้า"])
+        XCTAssertEqual(RoofFrame.ordered.map(\.label), ["ปกติ", "ถัก Pratt", "ถัก Howe", "ถัก Warren", "ขื่อรัด", "จันทันถัก", "ชายคาฝ้า"])
         XCTAssertEqual(k.members.map(\.name), ["แป", "จันทัน", "ขื่อรัด", "คานหัวเสา", "โครงฝ้า", "เชิงชาย", "เสา"])
         XCTAssertTrue(k.isRafter); XCTAssertFalse(k.isTruss)
         XCTAssertEqual(k.slope, 15); XCTAssertEqual(k.heel, 0)

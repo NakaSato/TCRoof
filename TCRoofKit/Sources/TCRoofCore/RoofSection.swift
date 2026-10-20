@@ -1,6 +1,6 @@
 import Foundation
 
-/// C1 section A-A (docs/ui/survey-c1 `renderVals`, `S.*`): a true-scale cut across the ridge for the six frame types,
+/// C1 section A-A (docs/ui/survey-c1 `renderVals`, `S.*`): a true-scale cut across the ridge for the seven frame types,
 /// with dimensions and the callouts ①–⑦ of the member rows. The sketch is the design's 760 × 250 viewBox.
 /// `tags` names each op's CAD layer (`SECTION`, `DIM`, `GRID`; nil for fills, labels and the light core strokes).
 public struct RoofSection: Sendable {
@@ -147,6 +147,13 @@ public struct RoofSection: Sendable {
                 webs.append([pt(380, YB), pt(380, YT)])
                 let q1 = XL + HW * 0.5, q2 = XR - HW * 0.5
                 webs += [[pt(q1, YB), pt(q1 + HW * 0.22, topY(q1 + HW * 0.22))], [pt(q2, YB), pt(q2 - HW * 0.22, topY(q2 - HW * 0.22))]]
+            case .howe:
+                // verticals at every node; diagonals rise from the bottom chord toward the ridge
+                for x in pts { webs.append([pt(x, YB), pt(x, topY(x))]) }
+                for i in 0..<(nodes.count - 1) {
+                    let a = nodes[i], b = nodes[i + 1]
+                    webs.append(i < nH ? [pt(a, YB), pt(b, topY(b))] : [pt(a, topY(a)), pt(b, YB)])
+                }
             case .warren:
                 for i in 0..<(nodes.count - 1) {
                     let a = nodes[i], b = nodes[i + 1]

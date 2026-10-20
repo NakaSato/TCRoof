@@ -135,6 +135,37 @@ extension ReportLayout {
         return Unit(h: h, ops: o)
     }
 
+    /// C1's details A / B (trusses only) and member schedule (`RoofTruss`, auto-drawing §4.4), after section A-A.
+    func roofTrussUnits(_ d: Values) -> [Unit] {
+        guard let s = RoofTruss.schedule(d) else { return [] }
+        let W = Self.cw
+        var out: [Unit] = []
+        if let det = RoofTruss.details(d) {
+            let k = (W - 16) / det.width, h = Self.band + 6 + det.height * k + 6
+            var o = box("รายละเอียด A / B · " + Roof.frame(d).title, height: h)
+            o += det.translated(8, Self.band + 6, scale: k)
+            out.append(Unit(h: h, ops: o))
+        }
+        let rowH = 14.0, cols: [(String, Double, TextAlign)] = [("", 18, .center), ("ชิ้นส่วน", 92, .left), ("ขนาด", W - 16 - 18 - 92 - 110 - 120, .left),
+                                                                 (Roof.frame(d).isRafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)", 110, .right), ("ทั้งหลังคา (ชิ้น · ม.)", 120, .right)]
+        let rows = [cols.map(\.0)] + s.rows.map { r in [r.row.map(String.init) ?? "", r.name, r.size, RoofTruss.perFrameText(r), RoofTruss.totalText(r)] }
+        let h = Self.band + 18 + rowH * Double(rows.count) + 22
+        var o = box("ตารางชิ้นส่วนโครงหลังคา", height: h)
+        o.append(.text(s.summary, at: Pt(8, Self.band + 9), size: 7.5, bold: true))
+        for (ri, row) in rows.enumerated() {
+            let y = Self.band + 16 + Double(ri) * rowH
+            var x = 8.0
+            for (ci, c) in cols.enumerated() {
+                o.append(.rect(Box(x, y, c.1, rowH), stroke: .black, fill: ri == 0 ? .band : nil, width: 0.5))
+                o.append(.textBox(row[ci], Box(x + 3, y + 2, c.1 - 6, rowH - 2), size: 7.5, bold: ri == 0, align: ri == 0 ? .center : c.2))
+                x += c.1
+            }
+        }
+        o.append(.text(s.note, at: Pt(8, h - 9), size: 7, color: .faint))
+        out.append(Unit(h: h, ops: o))
+        return out
+    }
+
     /// แปลนวางแผงบนหลังคา (docs/specs/roof-pv-layout.md §7): the automatic layout on the C1 plan with its summary, the
     /// faces, the BOQ and the assumptions, then the first row's section as detail A.
     func roofPVUnits(_ d: Values) -> [Unit] {
@@ -208,6 +239,7 @@ extension ReportLayout {
 
         if !tank && Roof.hasFrame(d) {
             U.append(roofSectionUnit(d))
+            U += roofTrussUnits(d)
         }
         if !tank, let sum = RoofDesign.summary(d) { U.append(designUnit(sum)) }
         if !tank { U += roofPVUnits(d) }

@@ -42,3 +42,4 @@ __pycache__/
 # GISTDA API key (see Secrets.example.xcconfig)
 Secrets.xcconfig
 **/Secrets.xcconfig
+.claude/worktrees/

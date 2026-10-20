@@ -16,6 +16,9 @@ struct AssistantChatView: View {
     @State private var sending = false
     @State private var failure: String?
     @FocusState private var typing: Bool
+    /// A confirmed card that books a construction task at 100 % without its install photos, held while the warning asks.
+    @State private var photoCheck: [MPMissingPhotos] = []
+    @State private var photoCheckAction: Assistant.PendingAction?
     private let focus: Job?
     private let transport: Assistant.Transport
 
@@ -48,7 +51,7 @@ struct AssistantChatView: View {
                             intro
                             ForEach(lines) { line in row(line) }
                             // confirmed only once the answer is done, so the note follows the model's words
-                            ForEach(session.proposals) { p in AssistantProposalCard(action: p, confirm: { resolve(p, true) },
+                            ForEach(session.proposals) { p in AssistantProposalCard(action: p, confirm: { confirm(p) },
                                                                                    dismiss: { resolve(p, false) }).disabled(sending) }
                             if sending { thinking }
                             if let failure { failureLine(failure) }
@@ -73,6 +76,10 @@ struct AssistantChatView: View {
                     Button { restart() } label: { Label("เริ่มใหม่", systemImage: "arrow.counterclockwise") }
                         .disabled(sending || lines.isEmpty)
                 }
+            }
+            .mpMissingPhotos($photoCheck) {
+                if let a = photoCheckAction { resolve(a, true) }
+                photoCheckAction = nil
             }
         }
         .onAppear {
@@ -218,6 +225,21 @@ struct AssistantChatView: View {
             defer { sending = false }
             do { try await session.send(t) } catch { failure = error.localizedDescription }
         }
+    }
+
+    /// `ยืนยัน`: as บันทึกความก้าวหน้า, a card bringing a construction task to 100 % while its install photos are missing
+    /// asks first (`บันทึกทั้งที่ยังไม่มีรูป`).
+    private func confirm(_ action: Assistant.PendingAction) {
+        if case let .progress(task, _, percent) = action.change, percent >= 99.95,
+           let job = context.assistantStations().first(where: { $0.overviewID == action.jobID }), let input = job.scheduleInput {
+            let weight = input.weight(task)
+            let done = (job.scheduleActual.points[task.rawValue] ?? [:]).values.reduce(0, +)
+            if weight > 0, done < weight - 1e-9 {
+                let list = MPMissingPhotos.list([task], job: job)
+                if !list.isEmpty { photoCheckAction = action; photoCheck = list; return }
+            }
+        }
+        resolve(action, true)
     }
 
     private func resolve(_ action: Assistant.PendingAction, _ confirmed: Bool) {

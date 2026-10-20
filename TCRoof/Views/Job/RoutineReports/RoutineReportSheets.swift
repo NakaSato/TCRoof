@@ -95,29 +95,43 @@ struct AddWorkSheet: View {
 
 struct DailySignSheet: View {
     let warnings: [RoutineReport.Warning]
+    /// Construction tasks the report brings to 100 % in the MP plan while their install photos are missing: listed, and
+    /// asked about again on ลงนาม (`บันทึกทั้งที่ยังไม่มีรูป`).
+    let photos: [MPMissingPhotos]
     /// The name, and the drawn signature (PNG) when there is one.
     let onSign: (String, Data?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var engineer: String
     @State private var signature: Data?
+    @State private var asking: [MPMissingPhotos] = []
 
-    init(warnings: [RoutineReport.Warning], engineer: String, onSign: @escaping (String, Data?) -> Void) {
-        self.warnings = warnings; self.onSign = onSign
+    init(warnings: [RoutineReport.Warning], photos: [MPMissingPhotos] = [], engineer: String,
+         onSign: @escaping (String, Data?) -> Void) {
+        self.warnings = warnings; self.photos = photos; self.onSign = onSign
         _engineer = State(initialValue: engineer)
+    }
+
+    private func sign() {
+        onSign(engineer.trimmingCharacters(in: .whitespaces), signature)
+        dismiss()
     }
 
     var body: some View {
         NavigationStack {
             PadForm(maxWidth: 640) {
                 PadSection("ตรวจก่อนลงนาม") {
-                    if warnings.isEmpty {
+                    if warnings.isEmpty && photos.isEmpty {
                         Label("ครบถ้วน พร้อมลงนาม", systemImage: "checkmark.circle.fill").foregroundStyle(Theme.okText)
                     }
                     ForEach(warnings, id: \.self) { w in
                         Label(w.text, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.dangerText)
                     }
+                    ForEach(photos) { m in
+                        Label("\(m.task.code) ครบ 100% แต่ยังไม่มีรูปติดตั้ง \(m.labels.count) รูป", systemImage: "camera.badge.ellipsis")
+                            .foregroundStyle(Theme.warningInk)
+                    }
                 } footer: {
-                    if !warnings.isEmpty { Text("ลงนามได้ แต่ควรแก้รายการด้านบนก่อน") }
+                    if !warnings.isEmpty || !photos.isEmpty { Text("ลงนามได้ แต่ควรแก้รายการด้านบนก่อน") }
                 }
                 PadSection("Site Engineer") {
                     TextField("ชื่อผู้ลงนาม", text: $engineer)
@@ -133,10 +147,11 @@ struct DailySignSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("ลงนาม") { onSign(engineer.trimmingCharacters(in: .whitespaces), signature); dismiss() }
+                    Button("ลงนาม") { if photos.isEmpty { sign() } else { asking = photos } }
                         .bold().disabled(engineer.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            .mpMissingPhotos($asking, onSave: sign)
         }
         .presentationDetents([.medium, .large])
     }

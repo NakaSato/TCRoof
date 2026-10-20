@@ -63,10 +63,10 @@ extension PanelsPageWide {
         return out
     }
 
-    /// " · โรงกรอง" when another building is linked to the breaker.
+    /// " | โรงกรอง" when another building is linked to the breaker.
     func takenBy(_ o: BuildingPanels.Option) -> String {
         guard let id = o.linkedTo, id != moduleID, let m = job.modules.first(where: { $0.id == id }) else { return "" }
-        return " · " + BuildingPanels.name(m, in: job)
+        return " | " + BuildingPanels.name(m, in: job)
     }
 
     var breakerATField: some View {

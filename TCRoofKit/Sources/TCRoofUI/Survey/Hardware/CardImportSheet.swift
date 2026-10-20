@@ -173,7 +173,7 @@ struct CardImportSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.shot.date.map { $0.formatted(.dateTime.day().month().year().hour().minute().locale(Locale(identifier: "th_TH"))) } ?? "ไม่มีวันที่")
                     .font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.navy)
-                Text([item.shot.camera, item.shot.lat == nil ? "ไม่มีพิกัด" : nil, detail].compactMap { $0 }.joined(separator: " · "))
+                Text([item.shot.camera, item.shot.lat == nil ? "ไม่มีพิกัด" : nil, detail].compactMap { $0 }.joined(separator: " | "))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
         }

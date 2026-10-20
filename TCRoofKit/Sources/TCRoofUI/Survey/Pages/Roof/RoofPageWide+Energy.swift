@@ -39,7 +39,7 @@ extension RoofPageWide {
         if let y = currentYield {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    A3Label(text: "พลังงานต่อปี · ประมาณการเบื้องต้น")
+                    A3Label(text: "พลังงานต่อปี | ประมาณการเบื้องต้น")
                     Spacer(minLength: 4)
                     if mountYieldBusy { ProgressView().controlSize(.small) }
                 }
@@ -96,7 +96,7 @@ extension RoofPageWide {
         return HStack(spacing: 8) {
             Text(name).font(.sarabunFixed(13.5)).lineLimit(1)
             Spacer(minLength: 4)
-            Text("\(f.modules) แผง · " + String(format: "%.1f MWh/ปี", f.mwh) + " · \(Int(f.kWhPerKWp.rounded()).formatted()) kWh/kWp")
+            Text("\(f.modules) แผง | " + String(format: "%.1f MWh/ปี", f.mwh) + " | \(Int(f.kWhPerKWp.rounded()).formatted()) kWh/kWp")
                 .font(.sarabunFixed(12.5).monospacedDigit()).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
         }
         .frame(minHeight: 28)
@@ -111,7 +111,7 @@ extension RoofPageWide {
         if case .hourly(_, _, _, let attribution) = y.source {
             Text("ข้อมูลอากาศ " + attribution).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted)
         }
-        Text("ไม่ใช่ค่ารับประกัน ผลจริงขึ้นกับอากาศ การล้างแผง และเงา · ยืนยันแบบสุดท้ายด้วย PVsyst")
+        Text("ไม่ใช่ค่ารับประกัน ผลจริงขึ้นกับอากาศ การล้างแผง และเงา | ยืนยันแบบสุดท้ายด้วย PVsyst")
             .font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
     }
 }

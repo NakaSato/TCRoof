@@ -132,8 +132,8 @@ struct PhotoReportView: View {
     private var sectionsCard: some View {
         let r = home.photoReport
         return PermitSection(title: "รูปตามหัวข้อ",
-                             subtitle: r.missing.isEmpty ? "ครบ 9 หัวข้อมาตรฐาน · \(r.pages.count) หน้า"
-                                                         : "ยังขาด \(r.missing.count) หัวข้อ · หัวข้อละไม่เกิน 2 รูป") {
+                             subtitle: r.missing.isEmpty ? "ครบ 9 หัวข้อมาตรฐาน | \(r.pages.count) หน้า"
+                                                         : "ยังขาด \(r.missing.count) หัวข้อ | หัวข้อละไม่เกิน 2 รูป") {
             ForEach(r.sections) { sectionRow($0) }
         }
     }

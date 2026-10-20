@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofCore
 import TCRoofUI
 
-/// `หน้าที่ต้องส่ง · ผู้รับเหมา` (docs/ui/user-admin-iphone states 02, 09, 10): what an external member must send on
+/// `หน้าที่ต้องส่ง | ผู้รับเหมา` (docs/ui/user-admin-iphone states 02, 09, 10): what an external member must send on
 /// the jobs assigned to them. Each row reads `ต้องส่ง` while the external cell of its capability (with the pending
 /// overrides) lets them do it, else `ปิดอยู่`.
 struct DutyCard: View {
@@ -11,9 +11,9 @@ struct DutyCard: View {
     let overrides: RoleOverrides
 
     static let duties: [(tag: String, title: String, detail: String, capability: Capability)] = [
-        ("รายวัน", "รายงานประจำวัน", "ทุกวันที่เข้างาน · ทีมของเราเซ็นรับทราบจึงนับเข้าแผน MP", .dailyFill),
-        ("R1", "คำขอรายสัปดาห์", "ทุกสัปดาห์ · คน เครื่องมือ แผน ความเสี่ยง · ทีมภายในอนุมัติ", .weeklyRequest),
-        ("IEC", "ทดสอบ IEC 62446", "ก่อนและหลังขนาน · ส่งผลให้ทีม ทีมภายในปิด", .iecFillSubmit),
+        ("รายวัน", "รายงานประจำวัน", "ทุกวันที่เข้างาน | ทีมของเราเซ็นรับทราบจึงนับเข้าแผน MP", .dailyFill),
+        ("R1", "คำขอรายสัปดาห์", "ทุกสัปดาห์ | คน เครื่องมือ แผน ความเสี่ยง | ทีมภายในอนุมัติ", .weeklyRequest),
+        ("IEC", "ทดสอบ IEC 62446", "ก่อนและหลังขนาน | ส่งผลให้ทีม ทีมภายในปิด", .iecFillSubmit),
     ]
 
     static func isDue(_ c: Capability, overrides: RoleOverrides) -> Bool {
@@ -22,7 +22,7 @@ struct DutyCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            (Text("หน้าที่ต้องส่ง · ผู้รับเหมา").font(.sarabun(14, .bold))
+            (Text("หน้าที่ต้องส่ง | ผู้รับเหมา").font(.sarabun(14, .bold))
              + Text("  " + (jobs > 0 ? "ใน \(jobs) งานที่ได้รับมอบหมาย" : "เริ่มเมื่อได้รับมอบหมายงาน")).font(.sarabun(12.5)))
                 .foregroundStyle(Theme.warningText)
             ForEach(Self.duties, id: \.tag) { d in row(d) }
@@ -53,7 +53,7 @@ struct DutyCard: View {
                 .fixedSize()
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(d.title) · \(due ? "ต้องส่ง" : "ปิดอยู่")")
+        .accessibilityLabel("\(d.title) | \(due ? "ต้องส่ง" : "ปิดอยู่")")
         .accessibilityIdentifier("userAdmin.duty.\(d.capability.rawValue)")
     }
 }

@@ -182,17 +182,17 @@ struct IECTestScreen: View {
         }
     }
 
-    /// `16 สตริง · 4 × 16 + 4 × 12 แผง`: strings grouped by their module count, in slot order.
+    /// `16 สตริง | 4 × 16 + 4 × 12 แผง`: strings grouped by their module count, in slot order.
     static func stringSummary(_ inv: IECReport.Inverter) -> String {
         var order: [Int] = [], count: [Int: Int] = [:]
         for s in inv.strings.map(\.value.modules) { if count[s] == nil { order.append(s) }; count[s, default: 0] += 1 }
-        return "\(inv.strings.count) สตริง · " + order.map { "\(count[$0] ?? 0) × \($0)" }.joined(separator: " + ") + " แผง"
+        return "\(inv.strings.count) สตริง | " + order.map { "\(count[$0] ?? 0) × \($0)" }.joined(separator: " + ") + " แผง"
     }
 
     private func inverterCard(_ r: IECReport, _ i: Int, _ inv: IECReport.Inverter) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Inverter \(i + 1) · \(IECFormat.kW(inv.ratedKW))").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("Inverter \(i + 1) | \(IECFormat.kW(inv.ratedKW))").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
                 if !inv.serial.isEmpty { Text("S/N " + inv.serial).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
                 Spacer(minLength: 6)
                 Text("\(IECFormat.number(r.installedKWp(inv))) kWp").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
@@ -343,11 +343,11 @@ struct IECTestScreen: View {
     private func stageRow(_ r: IECReport, _ stage: IECReport.Stage) -> some View {
         let missing = r.missing(stage), done = missing.isEmpty, confirmed = r.record(stage)
         let detail: String = if stage == .review {
-            done ? exportLine(r) : missing.joined(separator: " · ")
+            done ? exportLine(r) : missing.joined(separator: " | ")
         } else if let confirmed {
             "ยืนยันแล้ว " + Self.stamp(confirmed.confirmedAt, confirmed.by)
         } else {
-            done ? "ครบ · ยังไม่ได้ยืนยัน" : "ขาด " + missing.joined(separator: " · ")
+            done ? "ครบ | ยังไม่ได้ยืนยัน" : "ขาด " + missing.joined(separator: " | ")
         }
         let action = done ? nil : go(r, stage)
         return HStack(spacing: 12) {
@@ -383,9 +383,9 @@ struct IECTestScreen: View {
     private func exportLine(_ r: IECReport) -> String {
         let parts = [(IECReport.ExportRecord.Kind.excel, "Excel"), (.word, "Word")].map { kind, name -> String in
             guard let last = r.lastExport(kind) else { return "ยังไม่ได้ส่งออก \(name)" }
-            return "\(name) " + Self.stamp(last.record.at, "") + (last.current ? " ✓" : " · ข้อมูลเปลี่ยนแล้ว ควรส่งออกใหม่")
+            return "\(name) " + Self.stamp(last.record.at, "") + (last.current ? " ✓" : " | ข้อมูลเปลี่ยนแล้ว ควรส่งออกใหม่")
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     // MARK: bottom bar
@@ -397,7 +397,7 @@ struct IECTestScreen: View {
                     .foregroundStyle(result.passed ? Theme.successInk : Theme.dangerText)
                     .padding(.horizontal, 12).frame(height: 30).background(result.passed ? Theme.successSoft : Theme.dangerSoft, in: Capsule())
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ปิดการทดสอบแล้ว · แก้ไขไม่ได้").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("ปิดการทดสอบแล้ว | แก้ไขไม่ได้").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                     Text(Self.stamp(result.completedAt, result.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
@@ -409,7 +409,7 @@ struct IECTestScreen: View {
                 Text("รอปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk)
                     .padding(.horizontal, 12).frame(height: 30).background(Theme.pendingSoft, in: Capsule())
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ส่งผลให้ทีมแล้ว · รอทีมภายในปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("ส่งผลให้ทีมแล้ว | รอทีมภายในปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                     Text(Self.stamp(sent.submittedAt, sent.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
@@ -417,7 +417,7 @@ struct IECTestScreen: View {
                 IECRing(fraction: r.completion, size: 30)
                 VStack(alignment: .leading, spacing: 0) {
                     Text("บันทึกอัตโนมัติ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    Text("ครบ \(IECReport.Stage.allCases.filter { $0 != .review && r.isDone($0) }.count)/6 ขั้น · ความคืบหน้ารวม \(Int((r.completion * 100).rounded()))%")
+                    Text("ครบ \(IECReport.Stage.allCases.filter { $0 != .review && r.isDone($0) }.count)/6 ขั้น | ความคืบหน้ารวม \(Int((r.completion * 100).rounded()))%")
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
@@ -467,31 +467,31 @@ struct IECTestScreen: View {
         try? context.save()
     }
 
-    /// `15 ต.ค. 2569 14:20 · ทีมทดสอบ`.
+    /// `15 ต.ค. 2569 14:20 | ทีมทดสอบ`.
     static func stamp(_ at: Date, _ by: String) -> String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "th_TH"); f.calendar = Calendar(identifier: .buddhist); f.dateFormat = "d MMM yyyy HH:mm"
-        return f.string(from: at) + (by.isEmpty ? "" : " · " + by)
+        return f.string(from: at) + (by.isEmpty ? "" : " | " + by)
     }
 
     /// A closed test says so above everything; a result whose values changed since (a sync) says that too.
     @ViewBuilder private func resultNotice(_ r: IECReport) -> some View {
         if r.resultIsStale {
             notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
-                   "ข้อมูลเปลี่ยนหลังปิดการทดสอบ", "อาจมาจากเครื่องอื่น · กด แก้ไข แล้วส่งผลและปิดอีกครั้งเพื่อสรุปผลใหม่") { EmptyView() }
+                   "ข้อมูลเปลี่ยนหลังปิดการทดสอบ", "อาจมาจากเครื่องอื่น | กด แก้ไข แล้วส่งผลและปิดอีกครั้งเพื่อสรุปผลใหม่") { EmptyView() }
         } else if r.result != nil {
             notice("lock.fill", Theme.successInk, Theme.successSoft,
-                   "ปิดการทดสอบแล้ว", "ค่าทั้งหมดถูกล็อก · กด แก้ไข เพื่อเปิดให้แก้") { EmptyView() }
+                   "ปิดการทดสอบแล้ว", "ค่าทั้งหมดถูกล็อก | กด แก้ไข เพื่อเปิดให้แก้") { EmptyView() }
         } else if r.submissionIsStale {
             notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
-                   "ข้อมูลเปลี่ยนหลังส่งผล", "อาจมาจากเครื่องอื่น · ทีมภายในกด ส่งกลับให้แก้ แล้วให้ผู้รับเหมาส่งใหม่") { EmptyView() }
+                   "ข้อมูลเปลี่ยนหลังส่งผล", "อาจมาจากเครื่องอื่น | ทีมภายในกด ส่งกลับให้แก้ แล้วให้ผู้รับเหมาส่งใหม่") { EmptyView() }
         } else if r.isAwaitingClose {
             notice("paperplane.fill", Theme.primary, Theme.primarySoft,
-                   "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด", "ค่าทั้งหมดถูกล็อก · ทีมภายในตรวจแล้วกด ปิดการทดสอบ หรือ ส่งกลับให้แก้") { EmptyView() }
+                   "ส่งผลให้ทีมแล้ว | รอทีมภายในปิด", "ค่าทั้งหมดถูกล็อก | ทีมภายในตรวจแล้วกด ปิดการทดสอบ หรือ ส่งกลับให้แก้") { EmptyView() }
         } else if let back = r.sentBack {
             notice("arrow.uturn.backward.circle.fill", Theme.warningInk, Theme.pendingSoft,
                    "ทีมส่งกลับให้แก้" + (back.note.isEmpty ? "" : ": " + back.note),
-                   Self.stamp(back.at, back.by) + " · แก้แล้วกด ส่งผลให้ทีม อีกครั้ง") { EmptyView() }
+                   Self.stamp(back.at, back.by) + " | แก้แล้วกด ส่งผลให้ทีม อีกครั้ง") { EmptyView() }
         }
     }
 
@@ -504,7 +504,7 @@ struct IECTestScreen: View {
                    "ข้อมูลตัวอย่างจากสถานี\(sample) ไม่ใช่ผลทดสอบของงานนี้", "แฟ้มที่ส่งออกจะตั้งชื่อว่าตัวอย่าง") { EmptyView() }
         } else if r.namesAnotherStation(than: job.stationName) {
             notice("exclamationmark.triangle.fill", Theme.warningInk, Theme.pendingSoft,
-                   "บรรทัดสถานีในแผ่นงานไม่ตรงกับชื่องาน", "แผ่นงานเขียนว่า “\(r.stationLine)” · งานนี้คือ “\(job.stationName)”") {
+                   "บรรทัดสถานีในแผ่นงานไม่ตรงกับชื่องาน", "แผ่นงานเขียนว่า “\(r.stationLine)” | งานนี้คือ “\(job.stationName)”") {
                 Button("ใช้ชื่อของงาน", action: useJobName).buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
             }
         }

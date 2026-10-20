@@ -28,11 +28,11 @@ extension RoofPageWide {
             designButton(current == nil ? "เริ่มจากแบบมาตรฐาน" : "เปลี่ยนแบบมาตรฐาน", icon: "square.grid.3x3") { roofDesignPick = true }
                 .disabled(RoofDesign.ranked(values).isEmpty)
             if RoofDesign.ranked(values).isEmpty {
-                Text("ยังไม่มีแบบหลังคาในคลัง · งานแรกของอาคารแบบนี้บันทึกเป็นแบบได้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ยังไม่มีแบบหลังคาในคลัง | งานแรกของอาคารแบบนี้บันทึกเป็นแบบได้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             if roofPermissions.can(.designLibrary) && (current == nil || RoofDesign.done(values)) {
                 designButton("บันทึกเป็นแบบมาตรฐาน", icon: "square.and.arrow.down.on.square") {
-                    roofDesignName = (current.map { $0.name + " · " } ?? "") + job.projectName
+                    roofDesignName = (current.map { $0.name + " | " } ?? "") + job.projectName
                     roofDesignSave = true
                 }
             }
@@ -43,7 +43,7 @@ extension RoofPageWide {
         .padding(.top, 6)
         .confirmationDialog("เริ่มจากแบบมาตรฐาน", isPresented: $roofDesignPick, titleVisibility: .visible) {
             ForEach(RoofDesign.ranked(values), id: \.design.id) { m in
-                let line = m.difference.map { m.matches ? " · ตรงกับขนาดที่วัด" : " · ต่างจากที่วัด " + fmt(($0 * 100).rounded() / 100) + " ม." } ?? ""
+                let line = m.difference.map { m.matches ? " | ตรงกับขนาดที่วัด" : " | ต่างจากที่วัด " + fmt(($0 * 100).rounded() / 100) + " ม." } ?? ""
                 Button(m.design.name + " (" + m.design.size + ")" + line) { update { RoofDesign.apply(&$0, m.design) } }
             }
             Button("ยกเลิก", role: .cancel) {}

@@ -53,7 +53,7 @@ final class RoofDesignTests: XCTestCase {
         XCTAssertEqual(items.filter { $0.state == .added }.count, 1)
         XCTAssertTrue(RoofDesign.done(site))
         let s = try XCTUnwrap(RoofDesign.summary(site))
-        XCTAssertEqual(s.counts, "ตรงแบบ 5 · ต่างจากแบบ 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1")
+        XCTAssertEqual(s.counts, "ตรงแบบ 5 | ต่างจากแบบ 1 | ไม่มีจริง 1 | เพิ่มหน้างาน 1")
         XCTAssertTrue(s.differences.contains("ระยะแป ต่างจากแบบ"))
         // toggling a confirmation back opens it again
         RoofDesign.toggle(&site, "size")

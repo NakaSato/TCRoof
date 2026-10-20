@@ -8,7 +8,7 @@ final class PadA1UITests: XCTestCase {
 
     override func setUp() { continueAfterFailure = false }
 
-    /// The report frame (states/02): resizing it by a corner changes `ภาพในรายงาน · w × h ม.`; `รีเซ็ตกรอบ` brings the
+    /// The report frame (states/02): resizing it by a corner changes `ภาพในรายงาน | w × h ม.`; `รีเซ็ตกรอบ` brings the
     /// standard frame back.
     func testReportFrameResizeAndReset() {
         let app = XCUIApplication()
@@ -22,7 +22,7 @@ final class PadA1UITests: XCTestCase {
         gps.tap()
         gps.typeText("17.0062, 99.8235\n")
 
-        let frame = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ภาพในรายงาน ·")).firstMatch
+        let frame = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ภาพในรายงาน |")).firstMatch
         XCTAssertTrue(frame.waitForExistence(timeout: 15))
         let standard = frame.label
 
@@ -36,7 +36,7 @@ final class PadA1UITests: XCTestCase {
 
         let resized = NSPredicate(format: "label != %@", standard)
         wait(for: [XCTNSPredicateExpectation(predicate: resized, object: frame)], timeout: 10)
-        XCTAssertTrue(frame.label.hasPrefix("ภาพในรายงาน · "), frame.label)
+        XCTAssertTrue(frame.label.hasPrefix("ภาพในรายงาน | "), frame.label)
 
         app.buttons["รีเซ็ตกรอบ"].tap()
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", standard), object: frame)], timeout: 10)

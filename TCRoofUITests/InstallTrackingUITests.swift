@@ -127,7 +127,7 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(open.firstMatch.waitForExistence(timeout: 8), "the tab should list the reports")
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ต้องทำ")).firstMatch.tap()
         XCTAssertTrue(waitGone(open.firstMatch), "ต้องทำ should leave out the signed reports")
-        let draft = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำต่อ · ส่ง")).firstMatch
+        let draft = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำต่อ | ส่ง")).firstMatch
         XCTAssertTrue(draft.exists && app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำรายงานวันนี้")).firstMatch.exists)
         draft.tap()
         XCTAssertTrue(waitGone(pageBack(app)), "the button should open the daily report")

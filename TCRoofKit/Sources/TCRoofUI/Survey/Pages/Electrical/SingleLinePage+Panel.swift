@@ -14,9 +14,9 @@ extension SingleLinePage {
             if !sl.blocking.isEmpty { blockingCard(sl) }
             if let f = sl.flood { floodCard(f) }
             VStack(spacing: 0) {
-                disclosure("ข้อมูลที่ขาดอื่นๆ", "\(sl.others.count) จุด · ไม่กระทบแบบ", .others)
-                disclosure("สภาพอุปกรณ์", "ชำรุด \(sl.conditionCounts.bad) · พอใช้ \(sl.conditionCounts.fair)", .conditions)
-                disclosure("ค่าสมมติ", "\(sl.assumptions.count) ข้อ" + (sl.pv.totalCableM > 0 ? " · รวมระยะสาย \(sl.pv.totalCableM) ม." : ""), .assumptions)
+                disclosure("ข้อมูลที่ขาดอื่นๆ", "\(sl.others.count) จุด | ไม่กระทบแบบ", .others)
+                disclosure("สภาพอุปกรณ์", "ชำรุด \(sl.conditionCounts.bad) | พอใช้ \(sl.conditionCounts.fair)", .conditions)
+                disclosure("ค่าสมมติ", "\(sl.assumptions.count) ข้อ" + (sl.pv.totalCableM > 0 ? " | รวมระยะสาย \(sl.pv.totalCableM) ม." : ""), .assumptions)
             }
         }
         .padding(.bottom, 8)

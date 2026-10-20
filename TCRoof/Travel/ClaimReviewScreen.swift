@@ -71,7 +71,7 @@ struct ClaimReviewScreen: View {
                 Text(e.person + (Permissions.normalized(e.owner) == Permissions.normalized(MemberRole.shared.permissions.email) ? " (ของฉัน)" : ""))
                     .font(.sarabun(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Text((TravelClaim.monthStart(e.month).map(RoutineReport.thaiMonth) ?? e.month)
-                     + (e.submittedAt.map { " · ยื่น " + ClaimExport.stamp($0) } ?? ""))
+                     + (e.submittedAt.map { " | ยื่น " + ClaimExport.stamp($0) } ?? ""))
                     .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted)
                 if case .returned(let r) = e.status {
                     Text(r.note).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.pending).lineLimit(1)
@@ -171,7 +171,7 @@ struct ClaimReviewDetail: View {
     }
 
     private func decisionLine(_ r: TravelClaim.Review) -> some View {
-        Text("\(r.who) · \(ClaimExport.stamp(Date(millis: r.reviewedAt)))" + (r.note.isEmpty ? "" : " · \(r.note)"))
+        Text("\(r.who) | \(ClaimExport.stamp(Date(millis: r.reviewedAt)))" + (r.note.isEmpty ? "" : " | \(r.note)"))
             .font(.sarabun(14, relativeTo: .subheadline)).fixedSize(horizontal: false, vertical: true)
     }
 
@@ -208,7 +208,7 @@ struct ClaimReviewDetail: View {
                         Text(d.km.map { String(format: "%.1f กม.", $0) } ?? "ยังไม่มีระยะ").monospacedDigit()
                         if let m = d.mileage, m > 0 { Text(TravelClaim.baht(m)).monospacedDigit().foregroundStyle(Theme.primary) }
                     }
-                    Text(([d.startPlace] + d.stops.map(\.label)).filter { !$0.isEmpty }.joined(separator: " → ") + " · " + d.vehicle.title)
+                    Text(([d.startPlace] + d.stops.map(\.label)).filter { !$0.isEmpty }.joined(separator: " → ") + " | " + d.vehicle.title)
                         .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
                     if d.odometerDiffers, !d.odoReason.isEmpty {
                         Text("เลขไมล์ต่างจากระยะทาง: " + d.odoReason).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.pending)
@@ -229,8 +229,8 @@ struct ClaimReviewDetail: View {
                         Image(systemName: i.hasReceipt ? "doc.text.image" : "doc.badge.ellipsis")
                             .foregroundStyle(i.hasReceipt ? Theme.primary : Theme.muted).frame(width: 24)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(i.category.title + (i.vendor.isEmpty ? "" : " · \(i.vendor)")).font(.sarabun(15, relativeTo: .subheadline))
-                            Text(RoutineReport.thaiDate(i.date) + (jobLabel(i.jobID).map { " · \($0)" } ?? "") + (i.hasReceipt ? "" : " · ไม่มีใบเสร็จ"))
+                            Text(i.category.title + (i.vendor.isEmpty ? "" : " | \(i.vendor)")).font(.sarabun(15, relativeTo: .subheadline))
+                            Text(RoutineReport.thaiDate(i.date) + (jobLabel(i.jobID).map { " | \($0)" } ?? "") + (i.hasReceipt ? "" : " | ไม่มีใบเสร็จ"))
                                 .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted)
                         }
                         Spacer()
@@ -247,7 +247,7 @@ struct ClaimReviewDetail: View {
 
     @ViewBuilder private func actions(_ e: ClaimReviewModel.Entry, _ m: ClaimReviewModel.Month) -> some View {
         if Permissions.normalized(e.owner) == Permissions.normalized(me) {
-            Text("อนุมัติใบเบิกของตัวเองไม่ได้ · ให้ผู้จัดการคนอื่นตรวจ").font(.sarabun(14, relativeTo: .subheadline))
+            Text("อนุมัติใบเบิกของตัวเองไม่ได้ | ให้ผู้จัดการคนอื่นตรวจ").font(.sarabun(14, relativeTo: .subheadline))
                 .foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
         } else if e.submittedAt != nil {
             VStack(spacing: 10) {

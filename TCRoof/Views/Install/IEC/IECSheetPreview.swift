@@ -3,7 +3,7 @@ import TCRoofUI
 import TCRoofCore
 import ExcelExport
 
-/// `ชีต INV 01-ก่อน · ตามฟอร์ม 1FORMI1` (docs/ui/iec62446-sheet-before): the exported Excel sheet drawn as the form,
+/// `ชีต INV 01-ก่อน | ตามฟอร์ม 1FORMI1` (docs/ui/iec62446-sheet-before): the exported Excel sheet drawn as the form,
 /// read only. With `แสดงที่มา` each cell the app fills is tinted by the wizard step that fills it (a value still
 /// missing gets a dashed red border), and a tap on it opens that step. iPad only. The sheet is read from an export
 /// of the test, so it shows what the file holds. The after sheets `INV nn-หลัง` (board 5b) add steps 4 and 5.
@@ -37,7 +37,7 @@ struct IECSheetPreview: View {
     var body: some View {
         let r = report
         VStack(spacing: 0) {
-            IECHeader(title: "ชีต \(sheet) · ตามฟอร์ม 1FORMI1", subtitle: r.stationLine.isEmpty ? job.stationName : r.stationLine) {
+            IECHeader(title: "ชีต \(sheet) | ตามฟอร์ม 1FORMI1", subtitle: r.stationLine.isEmpty ? job.stationName : r.stationLine) {
                 sheetPicker(r)
                 IECHeaderButton(title: "PDF ชีตนี้", symbol: "doc.richtext") { printSheet(r) }
                     .disabled(layouts[sheet] == nil)
@@ -171,10 +171,10 @@ struct IECSheetPreview: View {
         .accessibilityLabel("เลือกชีต")
     }
 
-    /// `ค่าที่มาจากแอป iPad · IEC 62446` and the five steps; a swatch opens its step.
+    /// `ค่าที่มาจากแอป iPad | IEC 62446` and the five steps; a swatch opens its step.
     private var legend: some View {
         HStack(spacing: 14) {
-            Text("ค่าที่มาจากแอป iPad · IEC 62446").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+            Text("ค่าที่มาจากแอป iPad | IEC 62446").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
             ForEach(IECSheetCanvas.legendStages, id: \.self) { s in
                 Button { request(s, inverter, nil) } label: {
                     HStack(spacing: 6) {

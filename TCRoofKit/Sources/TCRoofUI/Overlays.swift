@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-/// Section 7 · Overlays (docs/ui/components/sections/07-overlays.png).
+/// Section 7 | Overlays (docs/ui/components/sections/07-overlays.png).
 
 /// `shadow` of floating cards: y 12, blur 32, navy 25 %.
 private extension View {

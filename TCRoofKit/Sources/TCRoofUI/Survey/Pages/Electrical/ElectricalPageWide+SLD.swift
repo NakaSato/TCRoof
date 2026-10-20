@@ -13,14 +13,14 @@ extension ElectricalPageWide {
         var id: String { "\(trafo)-\(board)" }
     }
 
-    /// "บัสบาร์ · สายดิน (SLD)" row on a board card; opens `BoardSLDSheet`.
+    /// "บัสบาร์ | สายดิน (SLD)" row on a board card; opens `BoardSLDSheet`.
     func boardSLDButton(_ i: Int, _ k: Int) -> some View {
         let b = boards(i)[safe: k] ?? Board()
-        let summary = [b.busbar, b.ground].map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " · ")
+        let summary = [b.busbar, b.ground].map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " | ")
         return Button { editBoardSLD = BoardSLDEdit(trafo: i, board: k) } label: {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("บัสบาร์ · สายดิน (SLD)").font(.sarabunFixed(13, .bold))
+                    Text("บัสบาร์ | สายดิน (SLD)").font(.sarabunFixed(13, .bold))
                     Text(summary.isEmpty ? "ไม่บังคับ" : summary).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -49,14 +49,14 @@ struct BoardSLDSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("ไม่บังคับ · แสดงบนแผนภาพเส้นเดียว เมื่อ PV ต่อที่ตู้นี้")
+                    Text("ไม่บังคับ | แสดงบนแผนภาพเส้นเดียว เมื่อ PV ต่อที่ตู้นี้")
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                     A3Input(label: "บัสบาร์ (เช่น 4x300A. Cu. BUSBAR W/GROUND BUS)", text: $board.busbar)
                     A3Input(label: "สายดิน (เช่น 1x35-IEC01 ø20 PVC.)", text: $board.ground)
                 }
                 .padding(20)
             }
-            .navigationTitle("บัสบาร์ · สายดิน").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("บัสบาร์ | สายดิน").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }
         }
     }
@@ -95,7 +95,7 @@ struct BreakerSLDFields: View {
     var summary: String {
         if breaker.spare { return "สำรอง (SPARE)" }
         let s = [breaker.cable, breaker.load, breaker.floor].map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-        return s.isEmpty ? "ไม่บังคับ · ขนาดสาย ท่อ ชื่อโหลด ชั้น" : s.joined(separator: " · ")
+        return s.isEmpty ? "ไม่บังคับ | ขนาดสาย ท่อ ชื่อโหลด ชั้น" : s.joined(separator: " | ")
     }
 
     var feederFields: some View {

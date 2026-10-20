@@ -25,7 +25,7 @@ final class CalendarSyncUITests: XCTestCase {
         XCTAssertTrue(add.exists, "sync off: the manual เพิ่มลงปฏิทิน")
         add.tap()
         // the system event editor, filled in (its title field holds the appointment)
-        XCTAssertTrue(text(app, "สำรวจ ·").waitForExistence(timeout: 15))
+        XCTAssertTrue(text(app, "สำรวจ |").waitForExistence(timeout: 15))
     }
 
     /// Settings › ปฏิทิน: the sync switch; its options show once it is on.

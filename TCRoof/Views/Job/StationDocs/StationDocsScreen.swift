@@ -126,9 +126,9 @@ struct StationDocsScreen: View {
         let s = job.stationDocs
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(ctx.over200kVA ? "อินเวอร์เตอร์ 200 kVA ขึ้นไป · ต้องยื่น พค.2" : "อินเวอร์เตอร์ต่ำกว่า 200 kVA · ไม่ต้องยื่น พค.2")
+                Text(ctx.over200kVA ? "อินเวอร์เตอร์ 200 kVA ขึ้นไป | ต้องยื่น พค.2" : "อินเวอร์เตอร์ต่ำกว่า 200 kVA | ไม่ต้องยื่น พค.2")
                     .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
-                Text("อาคาร: \(s.buildingRoute.title) · คำขอ พค.2: \(s.requestType.title)")
+                Text("อาคาร: \(s.buildingRoute.title) | คำขอ พค.2: \(s.requestType.title)")
                     .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
@@ -191,7 +191,7 @@ struct StationDocsScreen: View {
                     DatePicker("วันครบกำหนด", selection: Binding(get: { due }, set: { setDue($0, p) }), displayedComponents: .date)
                     Button("ใช้วันตามแผน MP") { setDue(nil, p) }
                 } else {
-                    LabeledContent("วันครบกำหนด", value: planned.map { "ตามแผน MP · " + RoutineReport.thaiDate($0) } ?? "ยังไม่มีแผน MP")
+                    LabeledContent("วันครบกำหนด", value: planned.map { "ตามแผน MP | " + RoutineReport.thaiDate($0) } ?? "ยังไม่มีแผน MP")
                     Button("กำหนดวันเอง") { setDue(planned ?? .now, p) }
                 }
             } footer: {
@@ -231,7 +231,7 @@ struct StationDocsScreen: View {
                 checkRow(item, StationDocs.check(item, station: job.stationDocs, library: library, ctx))
             }
         } footer: {
-            Text("ติ๊กให้เมื่อเอกสารทุกฉบับของข้อนั้นลงนาม ยื่น หรืออนุมัติแล้ว · ข้อที่ไม่มีเอกสารในแอป ให้ทีมติ๊กบนแบบฟอร์มเอง")
+            Text("ติ๊กให้เมื่อเอกสารทุกฉบับของข้อนั้นลงนาม ยื่น หรืออนุมัติแล้ว | ข้อที่ไม่มีเอกสารในแอป ให้ทีมติ๊กบนแบบฟอร์มเอง")
         }
     }
 
@@ -242,7 +242,7 @@ struct StationDocsScreen: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.text).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(state == .notApplicable ? Theme.inkMuted : Theme.navy)
                 if case .missing(let names) = state {
-                    Text("ยังขาด: " + names.joined(separator: " · ")).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
+                    Text("ยังขาด: " + names.joined(separator: " | ")).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
                 }
             }
             Spacer()
@@ -290,7 +290,7 @@ struct StationDocRow: View {
         if kind.scope.isShared { parts.append(kind.scope.title + " (คลังกลาง)") }
         if let s = kind.signBy { parts.append("ลงนาม: " + s) }
         if let o = kind.obtainFrom { parts.append("ขอจาก: " + o) }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     @ViewBuilder private var statusChip: some View {
@@ -331,7 +331,7 @@ struct StationDocSheet: View {
                     LabeledContent("ใช้ซ้ำ", value: kind.scope.title)
                     if let s = kind.signBy { LabeledContent("ผู้ลงนาม", value: s) }
                     if let o = kind.obtainFrom { LabeledContent("ขอจาก", value: o) }
-                    LabeledContent("ใช้ในชุด", value: kind.packages.map(\.title).joined(separator: " · "))
+                    LabeledContent("ใช้ในชุด", value: kind.packages.map(\.title).joined(separator: " | "))
                 }
                 statusSection
                 filesSection
@@ -403,7 +403,7 @@ struct StationDocSheet: View {
                     .frame(minHeight: touchMin)
             }
         } footer: {
-            Text(readOnly ? "ดูอย่างเดียว · ทีมภายในเป็นผู้แก้และอัปโหลดเอกสาร"
+            Text(readOnly ? "ดูอย่างเดียว | ทีมภายในเป็นผู้แก้และอัปโหลดเอกสาร"
                  : kind.scope.isShared
                  ? "เก็บไว้ในเครื่องครั้งเดียว ใช้กับทุกสถานี ไม่อัปโหลดขึ้น Drive"
                  : "เก็บในแฟ้มเอกสารของงาน และอัปโหลดขึ้น Drive พร้อมเอกสารอื่น")

@@ -69,7 +69,7 @@ final class IECWordTests: XCTestCase {
         let expected = (1...16).map { "INV1ST\($0)" } + (1...8).map { "INV2ST\($0)" }
         XCTAssertEqual(labels, expected + expected)
         XCTAssertTrue(doc.contains("Insulation Resistance testing INV2 ST8"))
-        XCTAssertTrue(doc.contains("ภาพถ่ายความร้อน 2 · ตู้ DC"))
+        XCTAssertTrue(doc.contains("ภาพถ่ายความร้อน 2 | ตู้ DC"))
         // pages: the after cover, 8 + 8 voltage pages (3 strings each), 4 IR pages (6 each), irradiance, thermal
         XCTAssertEqual(count(doc, "<w:pageBreakBefore/>"), 1 + 8 + 8 + 4 + 1 + 1)
         XCTAssertEqual(count(doc, "<w:cantSplit/>"), 8 * 3 * 2 - 0 + 4 * 3 + 1 + 1)

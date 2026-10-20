@@ -405,7 +405,7 @@ public extension IECReport {
             case .energy(let n): "พลังงาน 7 วัน \(n) inverter"
             case .conditions: "สภาพการทดสอบ (อุณหภูมิ แสง เวลา Yr)"
             case .moduleArea: "พื้นที่แผงต่อแผ่น (จาก datasheet)"
-            case .testRecord(let n): "วันที่ทดสอบ ผู้ทดสอบ serial เครื่องมือ · \(n) ช่อง"
+            case .testRecord(let n): "วันที่ทดสอบ ผู้ทดสอบ serial เครื่องมือ | \(n) ช่อง"
             }
         }
     }

@@ -203,7 +203,7 @@ struct DebugScreen: View {
                     id: "demo-25", mpNumber: 25, name: "สถานีผลิตน้ำนครชัยศรี", kWp: 220,
                     energy: 410, expected: 790, pr: 63, status: .alarm, openRepairs: 1,
                     nextPM: Calendar.current.date(byAdding: .day, value: 21, to: .now),
-                    note: "INV 2 fault · 2 วัน"
+                    note: "INV 2 fault | 2 วัน"
                 ),
                 initialTab: tab
             )

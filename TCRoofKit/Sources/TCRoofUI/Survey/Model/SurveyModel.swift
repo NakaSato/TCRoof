@@ -207,7 +207,7 @@ public final class SurveyModel {
         if let d = p.date { put("date", ISODate.string(d)) }
     }
 
-    /// Host-supplied name of a linked job ("TC-0012 · สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
+    /// Host-supplied name of a linked job ("TC-0012 | สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
     @ObservationIgnored public var linkedJobLabel: ((String) -> String?)?
     /// Host-supplied external people and supervising engineer of a linked job (by its syncID), for the role checks.
     @ObservationIgnored public var linkedJobAccess: ((String) -> JobAccess?)?

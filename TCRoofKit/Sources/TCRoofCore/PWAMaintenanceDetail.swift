@@ -107,24 +107,24 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
         let isAlarm = summary.status == .alarm
         let isOffline = summary.status == .offline
 
-        let issueTitle: String? = isAlarm ? "INV 2 fault · 2 วัน" : (isOffline ? "สถานีออฟไลน์ · 6 ชม." : nil)
-        let issueSub: String? = isAlarm ? "Error 31 · ผลิตได้ราวครึ่งเดียว" : (isOffline ? "ไม่มีสัญญาณสื่อสารจาก SmartLogger" : nil)
+        let issueTitle: String? = isAlarm ? "INV 2 fault | 2 วัน" : (isOffline ? "สถานีออฟไลน์ | 6 ชม." : nil)
+        let issueSub: String? = isAlarm ? "Error 31 | ผลิตได้ราวครึ่งเดียว" : (isOffline ? "ไม่มีสัญญาณสื่อสารจาก SmartLogger" : nil)
 
         let invs: [InverterItem]
         if isAlarm {
             invs = [
-                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL · SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false),
-                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL · SN …4452", power: "0 kW", statusText: "Error 31", isError: true),
+                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false),
+                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "0 kW", statusText: "Error 31", isError: true),
             ]
         } else if isOffline {
             invs = [
-                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL · SN …4417", power: "—", statusText: "ออฟไลน์", isError: true),
-                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL · SN …4452", power: "—", statusText: "ออฟไลน์", isError: true),
+                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "—", statusText: "ออฟไลน์", isError: true),
+                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "—", statusText: "ออฟไลน์", isError: true),
             ]
         } else {
             invs = [
-                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL · SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false),
-                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL · SN …4452", power: "57.8 kW", statusText: "ปกติ", isError: false),
+                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false),
+                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "57.8 kW", statusText: "ปกติ", isError: false),
             ]
         }
 
@@ -133,14 +133,14 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
             tickets = [
                 MaintenanceTicket(id: "TK-0412", status: "กำลังดำเนินการ", isClosed: false, dateText: "แจ้ง 11/10 09:20",
                                   title: isAlarm ? "INV 2 หยุดผลิต (Error 31)" : "ตรวจสอบอุปกรณ์สื่อสาร",
-                                  subtitle: "ผู้รับเหมา C · นัดเข้าหน้างาน 14/10 10:00", currentStep: 2),
+                                  subtitle: "ผู้รับเหมา C | นัดเข้าหน้างาน 14/10 10:00", currentStep: 2),
                 MaintenanceTicket(id: "TK-0388", status: "ปิดแล้ว", isClosed: true, dateText: "2/9 → 4/9",
-                                  title: "สาย DC string 7 หลวม", subtitle: "ผู้รับเหมา C · เปลี่ยนขั้วต่อ MC4 2 ชุด", currentStep: 4),
+                                  title: "สาย DC string 7 หลวม", subtitle: "ผู้รับเหมา C | เปลี่ยนขั้วต่อ MC4 2 ชุด", currentStep: 4),
             ]
         } else {
             tickets = [
                 MaintenanceTicket(id: "TK-0388", status: "ปิดแล้ว", isClosed: true, dateText: "2/9 → 4/9",
-                                  title: "ตรวจเช็กขั้วต่อและสายไฟ", subtitle: "ทีม TC · เรียบร้อยทุกจุด", currentStep: 4),
+                                  title: "ตรวจเช็กขั้วต่อและสายไฟ", subtitle: "ทีม TC | เรียบร้อยทุกจุด", currentStep: 4),
             ]
         }
 
@@ -151,28 +151,28 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
             let mName = (c.month ?? 0) < monthNames.count ? monthNames[c.month ?? 0] : ""
             let daysAhead = max(0, Calendar.current.dateComponents([.day], from: .now, to: pm).day ?? 21)
             nextPM = NextPMSummary(dayText: "\(c.day ?? 3)", monthText: mName.isEmpty ? "พ.ย." : mName,
-                                   countdownText: "PM ครั้งถัดไป · อีก \(daysAhead) วัน",
+                                   countdownText: "PM ครั้งถัดไป | อีก \(daysAhead) วัน",
                                    title: "PM รอบ 6 เดือน",
-                                   subtitle: "ทีม TC · ล้างแผง ตรวจขั้วต่อ IR scan")
+                                   subtitle: "ทีม TC | ล้างแผง ตรวจขั้วต่อ IR scan")
         } else {
-            nextPM = NextPMSummary(dayText: "3", monthText: "พ.ย.", countdownText: "PM ครั้งถัดไป · อีก 21 วัน",
-                                   title: "PM รอบ 6 เดือน", subtitle: "ทีม TC · ล้างแผง ตรวจขั้วต่อ IR scan")
+            nextPM = NextPMSummary(dayText: "3", monthText: "พ.ย.", countdownText: "PM ครั้งถัดไป | อีก 21 วัน",
+                                   title: "PM รอบ 6 เดือน", subtitle: "ทีม TC | ล้างแผง ตรวจขั้วต่อ IR scan")
         }
 
         let pmHist = [
-            PMHistoryItem(id: "pm1", title: "PM รอบ 6 เดือน", detail: "ทีม TC · ผ่าน 24/24 ข้อ", dateText: "3/5/2569"),
-            PMHistoryItem(id: "pm2", title: "ล้างแผง", detail: "ผู้รับเหมา C · ผลิตเพิ่ม 6%", dateText: "15/7/2569"),
-            PMHistoryItem(id: "pm3", title: "ตรวจรับหลังส่งมอบ", detail: "ทีม TC · IR scan ไม่พบจุดร้อน", dateText: "20/3/2569"),
+            PMHistoryItem(id: "pm1", title: "PM รอบ 6 เดือน", detail: "ทีม TC | ผ่าน 24/24 ข้อ", dateText: "3/5/2569"),
+            PMHistoryItem(id: "pm2", title: "ล้างแผง", detail: "ผู้รับเหมา C | ผลิตเพิ่ม 6%", dateText: "15/7/2569"),
+            PMHistoryItem(id: "pm3", title: "ตรวจรับหลังส่งมอบ", detail: "ทีม TC | IR scan ไม่พบจุดร้อน", dateText: "20/3/2569"),
         ]
 
         let eq = [
             EquipmentGroup(title: "แผง", rows: [
-                EquipmentRow(key: "Longi Hi-MO 6 · 550 W", value: "400 แผง"),
+                EquipmentRow(key: "Longi Hi-MO 6 | 550 W", value: "400 แผง"),
                 EquipmentRow(key: "String", value: "20 × 20"),
             ]),
             EquipmentGroup(title: "อินเวอร์เตอร์", rows: [
-                EquipmentRow(key: "INV 1 · SUN2000-110KTL", value: isOffline ? "ออฟไลน์" : "ปกติ"),
-                EquipmentRow(key: "INV 2 · SUN2000-110KTL", value: isAlarm ? "Error 31" : (isOffline ? "ออฟไลน์" : "ปกติ")),
+                EquipmentRow(key: "INV 1 | SUN2000-110KTL", value: isOffline ? "ออฟไลน์" : "ปกติ"),
+                EquipmentRow(key: "INV 2 | SUN2000-110KTL", value: isAlarm ? "Error 31" : (isOffline ? "ออฟไลน์" : "ปกติ")),
             ]),
             EquipmentGroup(title: "มิเตอร์และสื่อสาร", rows: [
                 EquipmentRow(key: "Smart meter DTSU666", value: isOffline ? "ขาดสัญญาณ" : "ออนไลน์"),

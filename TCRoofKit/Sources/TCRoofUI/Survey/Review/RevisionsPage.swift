@@ -52,7 +52,7 @@ struct RevisionsPage: View {
                     Text("REV \(r.rev)").font(.sarabun(15, .heavy, relativeTo: .subheadline)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 8).padding(.vertical, 4).background(Theme.navy, in: RoundedRectangle(cornerRadius: 6))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(ISODate.thai(ISODate.string(r.issuedAt))) · \(r.issuedBy.isEmpty ? "—" : r.issuedBy)").font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                        Text("\(ISODate.thai(ISODate.string(r.issuedAt))) | \(r.issuedBy.isEmpty ? "—" : r.issuedBy)").font(.sarabun(15, .semibold, relativeTo: .subheadline))
                         Text(r.reason.isEmpty ? "ออกครั้งแรก" : r.reason).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                         Label(r.shortCode, systemImage: "number").font(.caption.monospaced()).foregroundStyle(Theme.inkMuted)
                     }
@@ -71,7 +71,7 @@ struct RevisionsPage: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
             }
             if model.hasUnissuedChanges(job) {
-                Label("ฉบับปัจจุบันแก้แล้ว · ออกครั้งต่อไปเป็น REV \(job.nextIssueRev)", systemImage: "pencil")
+                Label("ฉบับปัจจุบันแก้แล้ว | ออกครั้งต่อไปเป็น REV \(job.nextIssueRev)", systemImage: "pencil")
                     .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
             }
         }

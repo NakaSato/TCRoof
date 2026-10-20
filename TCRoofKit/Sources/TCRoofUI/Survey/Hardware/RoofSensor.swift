@@ -40,7 +40,7 @@ struct RoofSensorSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 18) {
-                Text("วาง iPad ราบบนแผ่นหลังคา ให้ขอบด้านบนของจอชี้ขึ้นตามแนวลาด · บนหลังคาลอนให้วางขวางลอน")
+                Text("วาง iPad ราบบนแผ่นหลังคา ให้ขอบด้านบนของจอชี้ขึ้นตามแนวลาด | บนหลังคาลอนให้วางขวางลอน")
                     .font(.sarabun(16, relativeTo: .callout)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
                 VStack(spacing: 4) {
                     Text(String(format: "%.1f°", sensor.tilt)).font(.sarabunFixed(56, .bold).monospacedDigit())

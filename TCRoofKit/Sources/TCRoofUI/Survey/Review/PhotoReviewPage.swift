@@ -102,7 +102,7 @@ struct PhotoReviewPage: View {
         HStack(spacing: 8) {
             Text(g.title).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy).lineLimit(1)
             if g.requiredCount > 0 {
-                Text("· \(g.filledRequired)/\(g.requiredCount)").font(.sarabun(15, .semibold, relativeTo: .subheadline)).monospacedDigit()
+                Text("| \(g.filledRequired)/\(g.requiredCount)").font(.sarabun(15, .semibold, relativeTo: .subheadline)).monospacedDigit()
                     .foregroundStyle(g.missingRequired > 0 ? Theme.dangerText : Theme.okText)
             }
             Spacer(minLength: 0)

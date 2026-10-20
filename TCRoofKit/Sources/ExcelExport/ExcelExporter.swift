@@ -136,7 +136,7 @@ struct Fill {
             if InverterStation.isDesigned(d) {
                 // same cell, with the B2 page's catalog equipment and minimum room / wall
                 let s = InverterStation(d)
-                l.insert("อินเวอร์เตอร์ \(s.sizesText) · CB \(s.breakerSummary) · \(s.minimumText) · \(s.site.label)", at: 0)
+                l.insert("อินเวอร์เตอร์ \(s.sizesText) | CB \(s.breakerSummary) | \(s.minimumText) | \(s.site.label)", at: 0)
             } else if let n = d.number("inverterCount"), n > 0 { l.insert("อินเวอร์เตอร์ \(fmt(n)) เครื่อง ต้องการพื้นที่ \(String(format: "%.2f", 1.5 * n + 1.5)) x 2.00 ม.", at: 0) }
             detail("R\(h + 13)", "R\(h + 14)", l)
         }
@@ -247,7 +247,7 @@ struct Fill {
             let layout = RoofMount.layout(d, latitude: RoofMount.latitude(gps: job.values.text("gps"))).layout
             if layout.quantities.modules > 0 {
                 a.raw("A38", RoofMount.summaryLine(layout))
-                a.raw("A39", RoofMount.boqLine(layout.quantities) + " · " + RoofMount.loadLine(layout.quantities))
+                a.raw("A39", RoofMount.boqLine(layout.quantities) + " | " + RoofMount.loadLine(layout.quantities))
             }
         }
         let top = [d.photo("aerialPhoto")] + d.photos("generalPhotos").map { Optional($0) }, st = d.photos("structPhotos")
@@ -266,7 +266,7 @@ struct Fill {
         if let k = Schema.tankKind(d) { a.raw("R16", k) }
         if let sh = Schema.shadeText(d) { a.raw("R17", sh) }
         // and the standard design the points came from, beside the obstacle heading (docs/specs/standard-designs.md §6)
-        if let from = TankDesign.current(d), let sum = TankDesign.summary(d) { a.raw("N19", "แบบ กปภ. \(from.design.size) · " + sum.counts) }
+        if let from = TankDesign.current(d), let sum = TankDesign.summary(d) { a.raw("N19", "แบบ กปภ. \(from.design.size) | " + sum.counts) }
         // the stored panel layout in the blank rows 37–38 above the photo pages (docs/specs/tank-drawing-swift.md §5)
         if let l = TankLayout.current(d), l.count > 0 {
             let lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude

@@ -76,7 +76,7 @@ struct PWAPlanPhoneView: View {
             Button { onlyMine.toggle() } label: {
                 HStack(spacing: 6) {
                     Image(systemName: onlyMine ? "person.crop.circle.fill" : "person.crop.circle").font(.system(size: 17, weight: .semibold))
-                    if labelled { Text("งานของฉัน · \(n) สถานี").font(.sarabunFixed(13, .bold)) }
+                    if labelled { Text("งานของฉัน | \(n) สถานี").font(.sarabunFixed(13, .bold)) }
                 }
                 .foregroundStyle(onlyMine ? Theme.onPrimary : Theme.navySolid)
                 .padding(.horizontal, labelled ? 12 : 0)

@@ -64,7 +64,7 @@ public extension Assistant {
             guard let a = proposals.first(where: { $0.id == id }) else { return }
             proposals.removeAll { $0.id == id }
             let what = confirmed ? "ผู้ใช้ยืนยันและบันทึกแล้ว" : "ผู้ใช้ยกเลิก ไม่ได้บันทึก"
-            messages.append(.user("[ระบบ] \(a.station) · \(a.title): \(a.after) — \(what)"))
+            messages.append(.user("[ระบบ] \(a.station) | \(a.title): \(a.after) — \(what)"))
         }
 
         /// The system prompt and the latest `historyLimit` messages, starting at a person's message so a tool answer

@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// ขออนุญาต · กฟภ.: the five steps with PEA for the job's route (ผลิตใช้เอง / ขายไฟ), who acts at each, and PEA's time
+/// ขออนุญาต | กฟภ.: the five steps with PEA for the job's route (ผลิตใช้เอง / ขายไฟ), who acts at each, and PEA's time
 /// limits. A step is done when the documents that close it are in (`HomeJob.permitSteps`).
 struct HomePermitCard: View {
     let home: HomeJob
@@ -13,7 +13,7 @@ struct HomePermitCard: View {
         VStack(alignment: .leading, spacing: Space.m) {
             HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("ขออนุญาต · กฟภ. (PEA)").font(.sarabun(17, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                    Text("ขออนุญาต | กฟภ. (PEA)").font(.sarabun(17, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                     Text(home.mode == .sell ? "ขายไฟส่วนเกิน (ภาคประชาชน 2569)" : "ผลิตใช้เอง ไม่ขายไฟ")
                         .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
@@ -73,7 +73,7 @@ struct HomePermitCard: View {
     private func statusText(_ s: HomePermitStep) -> String {
         switch s.state {
         case .done: "เสร็จ"
-        case .current: s.limit.isEmpty ? "กำลังดำเนินการ" : "กำลังดำเนินการ · \(s.limit)"
+        case .current: s.limit.isEmpty ? "กำลังดำเนินการ" : "กำลังดำเนินการ | \(s.limit)"
         case .todo: s.limit.isEmpty ? "—" : s.limit
         }
     }

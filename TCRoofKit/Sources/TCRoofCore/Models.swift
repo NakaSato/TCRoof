@@ -36,13 +36,13 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
         lat = stamp.lat; lon = stamp.lon; accuracy = stamp.accuracy; heading = stamp.heading; pitch = stamp.pitch; device = stamp.device
     }
 
-    /// `V9 · ฝาปล่องแตก`: the tag and the note for a caption; nil when neither is set.
+    /// `V9 | ฝาปล่องแตก`: the tag and the note for a caption; nil when neither is set.
     public var caption: String? {
         let parts = [tag, note].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        return parts.isEmpty ? nil : parts.joined(separator: " | ")
     }
 
-    /// "17.0062, 99.8235 · หันทิศ 195° · 29/9/2569 10:42" under the photo in the report; nil without a position or direction.
+    /// "17.0062, 99.8235 | หันทิศ 195° | 29/9/2569 10:42" under the photo in the report; nil without a position or direction.
     public var stampLine: String? {
         var parts: [String] = []
         if let lat, let lon { parts.append(String(format: "%.4f, %.4f", lat, lon)) }
@@ -50,7 +50,7 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
         guard !parts.isEmpty else { return nil }
         let c = Calendar(identifier: .buddhist).dateComponents([.day, .month, .year, .hour, .minute], from: takenAt)
         parts.append(String(format: "%d/%d/%d %02d:%02d", c.day ?? 0, c.month ?? 0, c.year ?? 0, c.hour ?? 0, c.minute ?? 0))
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 }
 
@@ -565,8 +565,8 @@ public struct InstallInfo: Codable, Hashable, Sendable {
         self.doneSteps = doneSteps; self.currentFraction = currentFraction; self.team = team; self.dueDate = dueDate; self.movedAt = movedAt
     }
 
-    public static let steps = ["ส่งวัสดุเข้าหน้างาน", "ติดตั้งโครงสร้างราง", "ติดตั้งแผงโซลาร์", "เดินสาย DC · ตู้ DC",
-                               "ติดตั้งอินเวอร์เตอร์ · ตู้ AC", "ทดสอบระบบ", "ขนานไฟ · ส่งมอบ"]
+    public static let steps = ["ส่งวัสดุเข้าหน้างาน", "ติดตั้งโครงสร้างราง", "ติดตั้งแผงโซลาร์", "เดินสาย DC | ตู้ DC",
+                               "ติดตั้งอินเวอร์เตอร์ | ตู้ AC", "ทดสอบระบบ", "ขนานไฟ | ส่งมอบ"]
 
     public var isDone: Bool { doneSteps >= Self.steps.count }
     /// Step in progress; nil once handed over.

@@ -19,7 +19,7 @@ struct TransformerPhotosView: View {
         let mdbs = t.mdb.enumerated().filter { !$0.element.isEmpty }.map { "MDB\($0.offset + 1)" }
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("ภาพหม้อแปลง TR\(i + 1)" + (t.kva.isEmpty ? "" : " · \(t.kva) kVA")).font(.sarabun(17, .semibold, relativeTo: .headline))
+                Text("ภาพหม้อแปลง TR\(i + 1)" + (t.kva.isEmpty ? "" : " | \(t.kva) kVA")).font(.sarabun(17, .semibold, relativeTo: .headline))
                 Spacer()
                 if missing.isEmpty { Label("ครบทุกมุม", systemImage: "checkmark.seal.fill").foregroundStyle(Paper.tick).font(.sarabun(16, relativeTo: .callout)) }
                 else { Label("ขาด \(missing.count) ภาพ", systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.dangerText).font(.sarabun(16, relativeTo: .callout)) }

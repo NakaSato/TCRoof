@@ -29,7 +29,7 @@ extension TankPageWide {
 
     /// iPad: the plan card on the left, the materials and checks on the right; one column in portrait.
     @ViewBuilder var padLayoutStep: some View {
-        let next = nextButton("ถัดไป · ภาพถ่าย ›") { withAnimation { tab = 4 } }
+        let next = nextButton("ถัดไป | ภาพถ่าย ›") { withAnimation { tab = 4 } }
         if stacked {
             layoutSheets(ScrollViewReader { proxy in
                 ScrollView {
@@ -114,10 +114,10 @@ extension TankPageWide {
         }
     }
 
-    // MARK: card 1 · plan
+    // MARK: card 1 | plan
 
     var layoutAside: String {
-        "ตามแบบ \(Self.drawingRef) · เอียง " + String(format: "%.1f°", (TankLayout.params(values) ?? TankLayout.defaults()).tilt)
+        "ตามแบบ \(Self.drawingRef) | เอียง " + String(format: "%.1f°", (TankLayout.params(values) ?? TankLayout.defaults()).tilt)
     }
 
     var layoutPlanCard: some View {
@@ -161,7 +161,7 @@ extension TankPageWide {
         let team = TankStandard.Store.shared.current
         return HStack(alignment: .top, spacing: 8) {
             Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(Theme.primary)
-            Text("มาตรฐานโครงสร้างของทีมเปลี่ยนแล้ว (rev \(team.revision): \(team.summary)) · ผังนี้ยังใช้ค่าเดิม กด จัดแผงใหม่ เพื่อใช้ค่าใหม่")
+            Text("มาตรฐานโครงสร้างของทีมเปลี่ยนแล้ว (rev \(team.revision): \(team.summary)) | ผังนี้ยังใช้ค่าเดิม กด จัดแผงใหม่ เพื่อใช้ค่าใหม่")
                 .font(.sarabunFixed(13)).fixedSize(horizontal: false, vertical: true)
         }
         .padding(10)
@@ -219,7 +219,7 @@ extension TankPageWide {
                 .accessibilityLabel("ขยายแปลนเต็มจอ")
                 .disabled(TankLayout.current(values) == nil)
             }
-            Text(Tank.hasSize(values) ? "แผงโมโน \(fmt((TankLayout.params(values) ?? TankLayout.defaults()).moduleKW * 1000)) W · แตะแผงเพื่อแก้" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
+            Text(Tank.hasSize(values) ? "แผงโมโน \(fmt((TankLayout.params(values) ?? TankLayout.defaults()).moduleKW * 1000)) W | แตะแผงเพื่อแก้" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
                 .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
@@ -244,7 +244,7 @@ extension TankPageWide {
                     .simultaneousGesture(MagnifyGesture().onChanged { m in layoutZoom = min(4, max(1, layoutZoom * sqrt(m.magnification))) })
                 }
                 if let l = TankLayout.current(values) {
-                    Text("\(l.count) แผง · " + String(format: "%.1f kWp", l.kWp)).font(.sarabunFixed(15, .bold))
+                    Text("\(l.count) แผง | " + String(format: "%.1f kWp", l.kWp)).font(.sarabunFixed(15, .bold))
                 }
             }
             .padding(16)
@@ -264,14 +264,14 @@ extension TankPageWide {
         .foregroundStyle(Theme.navy)
     }
 
-    // MARK: card 2 · summary and materials
+    // MARK: card 2 | summary and materials
 
     func layoutSummaryCard(_ l: TankLayout) -> some View {
         let b = l.bom, w = fmt(l.params.moduleKW * 1000)
         let rows: [(String, String)] = [
             ("แผง \(w) W", "\(l.count)"),
             ("กำลังรวม", String(format: "%.1f kWp", l.kWp)),
-            ("แถว · โต๊ะแผง", "\(l.rows) · \(l.builtTables.count)"),
+            ("แถว | โต๊ะแผง", "\(l.rows) | \(l.builtTables.count)"),
             ("ระยะห่างแถว", String(format: "%.2f ม.", l.params.rowGap) + (l.params.rowGap > l.params.standardGap + 1e-6 ? "" : " (มาตรฐาน)")),
             ("เสา + โครงหน้า", "\(b.posts)"),
             ("ฐานราก", "\(b.footings) จุด"),
@@ -280,8 +280,8 @@ extension TankPageWide {
             ("Rail clamp", "\(b.railClamps)"),
             ("ค้ำยันไขว้", "\(b.braces) ชุด"),
         ]
-        let chip = ("\(l.count) แผง · " + String(format: "%.1f kWp", l.kWp), Theme.okTick, Theme.okSoft)
-        return phoneCard(2, "สรุป · วัสดุโครงสร้าง", chip: chip) {
+        let chip = ("\(l.count) แผง | " + String(format: "%.1f kWp", l.kWp), Theme.okTick, Theme.okSoft)
+        return phoneCard(2, "สรุป | วัสดุโครงสร้าง", chip: chip) {
             AnyView(energyTiles(l))
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, r in
@@ -303,7 +303,7 @@ extension TankPageWide {
         let s = shadeResult
         let tiles: [(String, String)] = [
             ("MWh/ปี", s.map { String(format: "%.1f", $0.netMWh) } ?? "…"),
-            ("kWh/kWp·ปี", s.map { l.kWp > 0 ? String(format: "%.0f", $0.netMWh * 1000 / l.kWp) : "-" } ?? "…"),
+            ("kWh/kWp/ปี", s.map { l.kWp > 0 ? String(format: "%.0f", $0.netMWh * 1000 / l.kWp) : "-" } ?? "…"),
             ("เงาแถวหน้า", s.map { String(format: "%.1f%%", $0.rowLoss * 100) } ?? "…"),
         ]
         HStack(spacing: 6) {
@@ -322,7 +322,7 @@ extension TankPageWide {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    // MARK: card 3 · checks
+    // MARK: card 3 | checks
 
     func layoutChecksCard(_ l: TankLayout) -> some View {
         let c = l.checks
@@ -332,10 +332,10 @@ extension TankPageWide {
                 // the panel underside above the vent, less the vent's height
                 checkRow("ใต้คานเหนือปล่อง (แผงทับได้)", c.ventHeadroom.map { String(format: "%.2f ม.", $0) } ?? "ไม่มีปล่องใต้แผง", ok: c.ventsOK, first: true)
                 checkRow("ขอบถังถึงขอบแผง ≥ " + String(format: "%.2f ม.", l.params.clearance), c.edge.map { String(format: "%.2f ม.", $0) } ?? "-", ok: c.edgeOK)
-                checkRow("ขาโครงสร้างไม่ชนสิ่งกีดขวาง", "เสา \(c.posts) ต้น · ตัดแผง \(c.cutColumns) คอลัมน์", ok: c.legsOK)
+                checkRow("ขาโครงสร้างไม่ชนสิ่งกีดขวาง", "เสา \(c.posts) ต้น | ตัดแผง \(c.cutColumns) คอลัมน์", ok: c.legsOK)
             }
             Button { drawingOpen = true } label: {
-                Text("ดูแบบ \(Self.drawingRef) · ภาพตัดโต๊ะแผง · ฐานเสา").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                Text("ดูแบบ \(Self.drawingRef) | ภาพตัดโต๊ะแผง | ฐานเสา").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -363,7 +363,7 @@ extension TankPageWide {
         .accessibilityValue(ok ? "ผ่าน" : "ไม่ผ่าน")
     }
 
-    // MARK: card 4 · shade
+    // MARK: card 4 | shade
 
     /// What the simulation depends on, so it runs again when any of it changes.
     var shadeKey: String {
@@ -389,7 +389,7 @@ extension TankPageWide {
         let chip = shadeBusy ? ("กำลังคำนวณ…", Theme.inkMuted, Theme.hairline)
             : s.map { (String(format: "เสีย %.1f%%", $0.totalLoss * 100), $0.objectLoss >= 0.01 ? Theme.pending : Theme.okTick,
                        $0.objectLoss >= 0.01 ? Theme.pendingSoft : Theme.okSoft) } ?? ("-", Theme.inkMuted, Theme.hairline)
-        return phoneCard(4, "เงาบัง · จำลองทั้งปี", chip: chip) {
+        return phoneCard(4, "เงาบัง | จำลองทั้งปี", chip: chip) {
             if let s {
                 let tiles: [(String, String)] = [("เงาแถวหน้า", String(format: "%.1f%%", s.rowLoss * 100)),
                                                  ("เงาสิ่งบัง", String(format: "%.1f%%", s.objectLoss * 100)),
@@ -427,10 +427,10 @@ extension TankPageWide {
         if s.snapshots.indices.contains(shadeMoment), let plan = TankDrawings.layoutPlan(values, l, shaded: s.snapshots[shadeMoment].shaded) {
             Menu {
                 ForEach(Array(s.snapshots.enumerated()), id: \.offset) { i, m in
-                    Button(m.title + " · \(m.shaded.count) แผง") { shadeMoment = i }
+                    Button(m.title + " | \(m.shaded.count) แผง") { shadeMoment = i }
                 }
             } label: {
-                Label(s.snapshots[shadeMoment].title + " · เงาบนแผง \(s.snapshots[shadeMoment].shaded.count) แผง", systemImage: "sun.max")
+                Label(s.snapshots[shadeMoment].title + " | เงาบนแผง \(s.snapshots[shadeMoment].shaded.count) แผง", systemImage: "sun.max")
                     .font(.sarabunFixed(14, .bold)).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }
             GeometryReader { g in SketchCanvas(ops: plan.ops, fit: SketchFit(plan.width, plan.height, in: g.size)) }
@@ -457,7 +457,7 @@ extension TankPageWide {
                 }
                 .padding(16)
             }
-            .navigationTitle("แบบ \(Self.drawingRef) · รูปตัด")
+            .navigationTitle("แบบ \(Self.drawingRef) | รูปตัด")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { drawingOpen = false } } }
         }

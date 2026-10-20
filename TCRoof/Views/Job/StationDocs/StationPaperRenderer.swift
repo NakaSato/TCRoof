@@ -35,7 +35,7 @@ enum StationPaperRenderer {
         var y: CGFloat = 44
         if !c.nameTH.isEmpty { BOQRenderer.text(c.nameTH, CGRect(x: left, y: y, width: width, height: 22), BOQRenderer.font(15, bold: true)); y += 21 }
         if !c.nameEN.isEmpty { BOQRenderer.text(c.nameEN, CGRect(x: left, y: y, width: width, height: 16), BOQRenderer.font(11, bold: true)); y += 16 }
-        let contact = [c.address, c.phone.isEmpty ? "" : "โทร. " + c.phone].filter { !$0.isEmpty }.joined(separator: " · ")
+        let contact = [c.address, c.phone.isEmpty ? "" : "โทร. " + c.phone].filter { !$0.isEmpty }.joined(separator: " | ")
         if !contact.isEmpty { BOQRenderer.text(contact, CGRect(x: left, y: y, width: width, height: 14), BOQRenderer.font(9)); y += 14 }
         if !c.isEmpty {
             ctx.setStrokeColor(BOQRenderer.ink.cgColor); ctx.setLineWidth(1)

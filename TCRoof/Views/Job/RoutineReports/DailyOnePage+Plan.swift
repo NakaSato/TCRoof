@@ -40,7 +40,7 @@ extension DailyOnePage {
     var fullPlan: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("ผังสถานี · งานวันนี้ · " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(18, .bold))
+                Text("ผังสถานี | งานวันนี้ | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(18, .bold))
                 Text("แตะหมุดเพื่อเลือกงาน แล้วปิดเพื่อกรอก").font(.sarabunFixed(14)).opacity(0.85)
                 Spacer()
                 Button { mapFull = false } label: {
@@ -154,7 +154,7 @@ extension DailyOnePage {
                     .frame(width: size, height: size).background(c, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.paper, lineWidth: 2.5))
                     .shadow(color: Theme.navySolid.opacity(0.3), radius: 3, y: 1)
-                Text(on ? "\(line.location) · \(RoutineReport.percent(line.percent))" : RoutineReport.percent(line.percent))
+                Text(on ? "\(line.location) | \(RoutineReport.percent(line.percent))" : RoutineReport.percent(line.percent))
                     .font(.sarabunFixed(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1).fixedSize()
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(on ? c : Theme.paper, in: RoundedRectangle(cornerRadius: 4))
@@ -185,7 +185,7 @@ extension DailyOnePage {
     /// No A2 picture on this device: the locations as chips, each with its pins and `+`.
     private var placeList: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ยังไม่มีภาพสถานที่ (A2) ในแบบสำรวจของงานนี้ · แสดงตำแหน่งเป็นรายการ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("ยังไม่มีภาพสถานที่ (A2) ในแบบสำรวจของงานนี้ | แสดงตำแหน่งเป็นรายการ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 10)], alignment: .leading, spacing: 10) {
                     ForEach(settings.locations, id: \.self) { place in

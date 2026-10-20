@@ -137,7 +137,7 @@ public struct TCIssueBox: View {
         let status = Text(fixed ? "แก้แล้ว ✓" : "ยังค้าง").bold().foregroundStyle(fixed ? Theme.successText : Theme.dangerText)
         guard let due else { return status.lineLimit(1) }
         return (Text("กำหนด ").foregroundStyle(Theme.inkMuted) + Text(due).bold().foregroundStyle(Theme.navy)
-                + Text(" · ").foregroundStyle(Theme.inkMuted) + status).lineLimit(1)
+                + Text(" | ").foregroundStyle(Theme.inkMuted) + status).lineLimit(1)
     }
 
     private var button: some View {
@@ -153,9 +153,9 @@ public struct TCIssueBox: View {
     }
 }
 
-/// One feed post: avatar, who, badge, `where · when`, text, then the record's photos or stat tiles (on iPad one
+/// One feed post: avatar, who, badge, `where | when`, text, then the record's photos or stat tiles (on iPad one
 /// summary strip, docs/ui/tcroof-home-ipad-v3), an issue box,
-/// the acknowledgement line and the action row (`รับทราบ` · the link to the source record). No comments.
+/// the acknowledgement line and the action row (`รับทราบ` | the link to the source record). No comments.
 /// A tap on the header, text, photo or tiles opens the record too, as the link does.
 public struct TCFeedPost<Photo: View>: View {
     public struct Stat: Identifiable {
@@ -216,7 +216,7 @@ public struct TCFeedPost<Photo: View>: View {
     private var inset: CGFloat { pad ? 16 : 12 }
     private var cardRadius: CGFloat { pad ? 20 : 18 }
 
-    /// `detail` is the `where · when` line. `photo` draws photo `n` of `photoCount`; it is cropped to 330 × 170
+    /// `detail` is the `where | when` line. `photo` draws photo `n` of `photoCount`; it is cropped to 330 × 170
     /// (iPad: the card's width × 250).
     public init(initials: String, avatar: Color, who: String, badge: String, tone: TCFeedTone, detail: String, text: String,
                 stats: [Stat] = [], photoCount: Int = 0, photoChips: [PhotoChip] = [], issue: Issue? = nil,

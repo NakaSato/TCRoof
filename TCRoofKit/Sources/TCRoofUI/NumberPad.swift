@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-// Section 9 · Number pad (docs/ui/components/sections/09-number-pad.png).
+// Section 9 | Number pad (docs/ui/components/sections/09-number-pad.png).
 
 /// Numbers shown with as many decimals as the step has (0.1 → `1.2`, 1 → `48`, 0.05 → `0.35`).
 public enum TCNumberFormat {

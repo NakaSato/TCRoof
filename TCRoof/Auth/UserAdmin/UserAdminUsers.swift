@@ -162,7 +162,7 @@ extension UserAdminView {
         switch m.role {
         case .external: return n == 0 ? "ไม่มีงาน" : "\(n) งาน"
         case .maintainer, .manager: return "ทุกโครงการ"
-        case .internalTeam: return n == 0 ? "ทุกโครงการ" : "ทุกโครงการ · ชื่ออยู่ใน \(n) งาน"
+        case .internalTeam: return n == 0 ? "ทุกโครงการ" : "ทุกโครงการ | ชื่ออยู่ใน \(n) งาน"
         }
     }
 }
@@ -247,7 +247,7 @@ struct UserDetail: View {
                 if member.name?.isEmpty == false {
                     Text(member.email).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
-                Text(st + " · " + view.since(member)).font(.sarabun(12.5, .bold)).foregroundStyle(color)
+                Text(st + " | " + view.since(member)).font(.sarabun(12.5, .bold)).foregroundStyle(color)
             }
             .lineLimit(1)
             Spacer(minLength: 0)
@@ -263,7 +263,7 @@ struct UserDetail: View {
                 if member.name?.isEmpty == false {
                     Text(member.email).font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
                 }
-                Text(st + " · " + view.since(member)).font(.sarabun(12, .bold)).foregroundStyle(color)
+                Text(st + " | " + view.since(member)).font(.sarabun(12, .bold)).foregroundStyle(color)
             }
             .lineLimit(1)
             Spacer(minLength: 4)
@@ -289,8 +289,8 @@ struct UserDetail: View {
 
     private var maintainerCard: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("Maintainer · ทำได้ทุกอย่าง").font(.sarabun(15, .bold))
-            Text("ทุกสิทธิ์ของ 3 บทบาท + ปิดบัญชี คีย์นักพัฒนา ตั้งค่าระบบ · เปลี่ยนหรือปิดบัญชีจากหน้านี้ไม่ได้").font(.sarabun(12)).opacity(0.9)
+            Text("Maintainer | ทำได้ทุกอย่าง").font(.sarabun(15, .bold))
+            Text("ทุกสิทธิ์ของ 3 บทบาท + ปิดบัญชี คีย์นักพัฒนา ตั้งค่าระบบ | เปลี่ยนหรือปิดบัญชีจากหน้านี้ไม่ได้").font(.sarabun(12)).opacity(0.9)
         }
         .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, 14).padding(.vertical, 12)
@@ -320,7 +320,7 @@ struct UserDetail: View {
                 let line = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
                 line {
                     RolePill(role: member.role, size: 13)
-                    Text("\(member.role.english) · แก้ได้หลังยืนยันคีย์").font(.sarabun(12)).foregroundStyle(Theme.muted)
+                    Text("\(member.role.english) | แก้ได้หลังยืนยันคีย์").font(.sarabun(12)).foregroundStyle(Theme.muted)
                 }
                 .padding(.horizontal, 14).padding(.vertical, compact ? 12 : 0)
                 .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
@@ -335,7 +335,7 @@ struct UserDetail: View {
 
     private func diffBox(_ c: RoleChange) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(c.from.label) → \(c.to.label) · ได้เพิ่ม \(c.gained.count) · เสีย \(c.lost.count)")
+            Text("\(c.from.label) → \(c.to.label) | ได้เพิ่ม \(c.gained.count) | เสีย \(c.lost.count)")
                 .font(.sarabun(13, .bold)).foregroundStyle(Theme.slotColumnInk)
                 .accessibilityIdentifier("userAdmin.diff")
             FlowChips(items: c.gained.prefix(4).map { ("+ " + $0.label, true) } + c.lost.prefix(4).map { ("− " + $0.label, false) })
@@ -353,7 +353,7 @@ struct UserDetail: View {
         let jobs = view.jobs(member)
         let external = member.role == .external
         let chips: [(String, Bool)] = external
-            ? (jobs.isEmpty ? [("ยังไม่มีงาน · มอบหมายจากหน้างาน", true)] : jobs.map { ($0, true) })
+            ? (jobs.isEmpty ? [("ยังไม่มีงาน | มอบหมายจากหน้างาน", true)] : jobs.map { ($0, true) })
             : [("ทุกโครงการ", true)] + jobs.map { ($0, false) }
         return VStack(alignment: .leading, spacing: 6) {
             Text(external ? "งานที่ได้รับมอบหมาย" : "ขอบเขต").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
@@ -373,7 +373,7 @@ struct UserDetail: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("สิทธิ์").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
-                Text("ทำได้ \(count(.allow)) · มีเงื่อนไข \(count(.conditional)) · ดู \(count(.view)) · ไม่ได้ \(count(.deny))")
+                Text("ทำได้ \(count(.allow)) | มีเงื่อนไข \(count(.conditional)) | ดู \(count(.view)) | ไม่ได้ \(count(.deny))")
                     .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             GeometryReader { geo in
@@ -472,7 +472,7 @@ struct UserDetail: View {
         let suspended = member.suspended
         let title = isMaintainer ? "ปิดบัญชีไม่ได้"
             : member.unsaved ? "เอาออกจากรายชื่อ"
-            : suspended ? "เปิดใช้งานอีกครั้ง · Maintainer" : "ปิดบัญชี · Maintainer"
+            : suspended ? "เปิดใช้งานอีกครั้ง | Maintainer" : "ปิดบัญชี | Maintainer"
         return Button(title) {
             if member.email == view.me || isMaintainer { view.toast = "ปิดบัญชีของตัวเองไม่ได้"; return }
             store.toggleSuspension(of: member.email)

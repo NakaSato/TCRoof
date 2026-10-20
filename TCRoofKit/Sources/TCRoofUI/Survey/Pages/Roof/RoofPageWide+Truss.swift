@@ -10,7 +10,7 @@ extension RoofPageWide {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let s = RoofTruss.schedule(values) {
-                        Text(Roof.frame(values).title + " · " + s.summary)
+                        Text(Roof.frame(values).title + " | " + s.summary)
                             .font(.sarabunFixed(15, .bold)).fixedSize(horizontal: false, vertical: true)
                         trussDetails
                         scheduleTable(s)
@@ -48,7 +48,7 @@ extension RoofPageWide {
 
     func scheduleTable(_ s: RoofTruss.Schedule) -> some View {
         VStack(spacing: 0) {
-            scheduleRow("", "ชิ้นส่วน", "ขนาด", Roof.frame(values).isRafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)", "ทั้งหลังคา", header: true)
+            scheduleRow("", "ชิ้นส่วน", "ขนาด", Roof.frame(values).isRafter ? "ต่อคู่ (ชิ้น | ม.)" : "ต่อโครง (ชิ้น | ม.)", "ทั้งหลังคา", header: true)
             ForEach(Array(s.rows.enumerated()), id: \.offset) { _, r in
                 Divider()
                 scheduleRow(r.row.map(String.init) ?? "", r.name, r.size, RoofTruss.perFrameText(r), RoofTruss.totalText(r), header: false)

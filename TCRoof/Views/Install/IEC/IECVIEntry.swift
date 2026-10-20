@@ -41,7 +41,7 @@ struct IECVIEntry: View {
         }
     }
 
-    /// `โหมดต่อเนื่อง · 13/16 สตริง`.
+    /// `โหมดต่อเนื่อง | 13/16 สตริง`.
     struct Continuous: Hashable { var done: Int; var total: Int }
 
     struct Target: Hashable, Identifiable {
@@ -132,14 +132,14 @@ struct IECVIEntry: View {
             Text(label).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 12).frame(height: 36).background(Theme.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
-                Text(target.kind.cardTitle + " · " + phaseName).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                Text("รูป \(target.kind == .voltage ? 1 : 2)/2 · \(slot.modules) แผง · เติม \(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase)) · INV \(String(format: "%02d", inverter + 1))-\(sheetSide) · รูปไปที่รายงาน \(phase == .before ? 6 : 7) หน้า \(report.reportPage(inverter: inverter, seq: seq, phase))")
+                Text(target.kind.cardTitle + " | " + phaseName).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("รูป \(target.kind == .voltage ? 1 : 2)/2 | \(slot.modules) แผง | เติม \(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase)) | INV \(String(format: "%02d", inverter + 1))-\(sheetSide) | รูปไปที่รายงาน \(phase == .before ? 6 : 7) หน้า \(report.reportPage(inverter: inverter, seq: seq, phase))")
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             if let c = target.continuous {
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("โหมดต่อเนื่อง · \(c.done)/\(c.total) สตริง").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+                    Text("โหมดต่อเนื่อง | \(c.done)/\(c.total) สตริง").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Theme.track)
@@ -186,12 +186,12 @@ struct IECVIEntry: View {
         }
     }
 
-    /// `ตำแหน่งในตู้ DC · MPPT 1 · ฟิวส์ F1 (+/−)` and the DC box's slots, this one yellow.
+    /// `ตำแหน่งในตู้ DC | MPPT 1 | ฟิวส์ F1 (+/−)` and the DC box's slots, this one yellow.
     private var locationStrip: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 0) {
                 Text("ตำแหน่งในตู้ DC").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text("MPPT \(IECReport.mppt(slot: target.slot)) · ฟิวส์ F\(target.slot) (+/−)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                Text("MPPT \(IECReport.mppt(slot: target.slot)) | ฟิวส์ F\(target.slot) (+/−)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
             }
             HStack(spacing: 3) {
                 ForEach(1...inv.mpptCount, id: \.self) { m in
@@ -240,7 +240,7 @@ struct IECVIEntry: View {
         if let reading, IECReport.differsFromReading(abs(v), abs(reading)) {
             return ("! ต่างจากค่าที่อ่านได้ในรูป " + target.kind.format(reading) + " " + target.kind.unit, .warn)
         }
-        if fromPhoto { return ("✓ อ่านจากรูปแล้ว · ตรวจแล้วกดบันทึก", .ok) }
+        if fromPhoto { return ("✓ อ่านจากรูปแล้ว | ตรวจแล้วกดบันทึก", .ok) }
         if target.kind == .current {
             // after the connection Imp is only recorded
             if phase == .after { return ("✓ บันทึกแล้ว", .ok) }
@@ -293,7 +293,7 @@ struct IECVIEntry: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("ขั้วสาย ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
                     + Text("\(IECReport.excelColumn(slot: target.slot))12").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text(slot.polarityByHand == true ? "ตั้งเองแล้ว · แตะเพื่อเปลี่ยน" : "อัตโนมัติจากเครื่องหมาย Voc (บวก = ถูกต้อง) · แตะเพื่อเปลี่ยน")
+                Text(slot.polarityByHand == true ? "ตั้งเองแล้ว | แตะเพื่อเปลี่ยน" : "อัตโนมัติจากเครื่องหมาย Voc (บวก = ถูกต้อง) | แตะเพื่อเปลี่ยน")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 6)
@@ -320,7 +320,7 @@ struct IECVIEntry: View {
         job.updateIEC(context) { $0.setPolarity(ok, inverter: i, slot: n) }
     }
 
-    /// `อ่านจากรูป Voc 755.0 V · ใช้ค่านี้`, hidden until the photo gives a reading.
+    /// `อ่านจากรูป Voc 755.0 V | ใช้ค่านี้`, hidden until the photo gives a reading.
     @ViewBuilder private var readingRow: some View {
         if let reading {
             Button { typed = target.kind.format(reading); fromPhoto = true } label: {

@@ -215,7 +215,7 @@ public extension Assistant {
                     parts.append("ทำงาน \(d) วัน/สัปดาห์")
                 }
                 if !startNow.isEmpty { parts.append("เริ่ม " + startNow.map(\.code).sorted().joined(separator: ", ") + " สัปดาห์นี้") }
-                s = scenario(parts.joined(separator: " · "), plan: plan, actual: job.actual, input: input, factor: max(f, 0.1),
+                s = scenario(parts.joined(separator: " | "), plan: plan, actual: job.actual, input: input, factor: max(f, 0.1),
                              startNow: startNow, today: today, calendar: cal)
             }
             let brief = ScheduleBrief(jobID: job.id, station: job.station, input: input, actual: job.actual, today: today, calendar: cal)
@@ -225,7 +225,7 @@ public extension Assistant {
                           base: scenario("อัตราเดิม", plan: plan, actual: job.actual, input: input, factor: 1, today: today, calendar: cal),
                           scenario: s,
                           toFinishOnTime: requirement(recovery, input: input, crew: crew, workdays: workdays, today: today, calendar: cal),
-                          note: notes.joined(separator: " · "))
+                          note: notes.joined(separator: " | "))
         }
 
         // MARK: Priorities
@@ -445,7 +445,7 @@ public extension Assistant {
             let newEnd = max(siteEnd, input.installEnd)
             return Replan(jobID: job.id, station: job.station, installEnd: day(input.installEnd, cal), newInstallEnd: day(newEnd, cal),
                           slipDays: days(input.installEnd, newEnd, cal), tasks: shifts,
-                          note: assumption + " · ยืนยันแล้วแผนเดิมจะถูกแทนที่ (ต้องมีสิทธิ์ตั้งค่าแผน)")
+                          note: assumption + " | ยืนยันแล้วแผนเดิมจะถูกแทนที่ (ต้องมีสิทธิ์ตั้งค่าแผน)")
         }
     }
 }
@@ -502,7 +502,7 @@ extension Assistant.Toolbox {
             }
             return propose(job, changes[0].task, .replan(tasks: changes, reason: reason),
                            before: "วันจบติดตั้ง \(old)", after: (["วันจบติดตั้ง \(new)"] + lines).joined(separator: "\n"),
-                           title: "แผนใหม่ \(changes.count) งาน" + (reason.isEmpty ? "" : " · \(reason)"))
+                           title: "แผนใหม่ \(changes.count) งาน" + (reason.isEmpty ? "" : " | \(reason)"))
         }
     }
 

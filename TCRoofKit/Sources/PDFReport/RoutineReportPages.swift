@@ -254,7 +254,7 @@ public struct RoutineReportPages {
 
     var stationLine: String {
         [station.mpNumber.map { "MP \($0)" }, station.name, station.capacityKWp > 0 ? String(format: "%.2f kWp", station.capacityKWp) : nil]
-            .compactMap { $0 }.joined(separator: " · ")
+            .compactMap { $0 }.joined(separator: " | ")
     }
 
     func projectFacts(_ f: inout Flow) {
@@ -284,7 +284,7 @@ public struct RoutineReportPages {
     public func request(_ r: RoutineReport.WeeklyRequest) -> [ReportLayout.Page] {
         let end = RoutineReport.calendar.date(byAdding: .day, value: 6, to: r.weekStart)!
         let range = "\(RoutineReport.thaiDate(r.weekStart)) – \(RoutineReport.thaiDate(end))"
-        var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " · " + range)
+        var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " | " + range)
         projectFacts(&f)
         facts(&f, [("สัปดาห์", range)])
 
@@ -332,9 +332,9 @@ public struct RoutineReportPages {
         if let schedule {
             let plan = MasterSchedule.plan(schedule.input)
             let first = plan.compactMap(\.start).min() ?? range.lowerBound
-            if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) · " }
+            if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) | " }
         }
-        var f = Flow(title: "รายงานประจำสัปดาห์ (Weekly Report)", subtitle: stationLine + " · " + weekNo + rangeText)
+        var f = Flow(title: "รายงานประจำสัปดาห์ (Weekly Report)", subtitle: stationLine + " | " + weekNo + rangeText)
         projectFacts(&f)
         facts(&f, [("สัปดาห์", weekNo + rangeText), ("รายงานประจำวัน", "\(reports.count) วัน")])
 
@@ -440,7 +440,7 @@ public struct RoutineReportPages {
         let plan = schedule.map { MasterSchedule.plan($0.input) }
         let done = schedule.flatMap { s in plan.map { MasterSchedule.status(plan: $0, actual: s.actual, through: range.upperBound).actual } } ?? 0
         let title = done >= 99.95 ? "รายงานผลการติดตั้งแล้วเสร็จ 100%" : "รายงานผลความก้าวหน้าประจำเดือน"
-        var f = Flow(title: title, subtitle: stationLine + " · ประจำเดือน " + RoutineReport.thaiMonth(range.lowerBound))
+        var f = Flow(title: title, subtitle: stationLine + " | ประจำเดือน " + RoutineReport.thaiMonth(range.lowerBound))
 
         heading(&f, "ส่วนที่ 1 รายละเอียดโครงการ")
         projectFacts(&f)
@@ -502,7 +502,7 @@ public struct RoutineReportPages {
             rows.append(["รวม"] + totals.map(String.init) + ["\(totals.reduce(0, +))"])
             table(&f, cols, rows, bold: [rows.count - 1], size: 8.5)
         }
-        note(&f, "รายงานประจำวัน \(reports.count) วัน · ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน")
+        note(&f, "รายงานประจำวัน \(reports.count) วัน | ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน")
         missing(&f, reports, from: max(range.lowerBound, installStart ?? range.lowerBound), to: min(range.upperBound, Date()))
         problemsBlock(&f, reports)
 

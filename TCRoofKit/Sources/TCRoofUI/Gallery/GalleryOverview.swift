@@ -10,7 +10,7 @@ struct GalleryOverview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            GalleryItem("สวิตช์มุมมอง + ตัวกรองแถว", note: "ราง 44 ช่อง 38 กว้างเท่ากัน ตัวเลขแดงเมื่อเตือน · ตัวกรองแถวสูง 40 พื้นที่แตะ 44") {
+            GalleryItem("สวิตช์มุมมอง + ตัวกรองแถว", note: "ราง 44 ช่อง 38 กว้างเท่ากัน ตัวเลขแดงเมื่อเตือน | ตัวกรองแถวสูง 40 พื้นที่แตะ 44") {
                 VStack(alignment: .leading, spacing: 8) {
                     TCCountSegments([.init("ตารางงาน", count: 7), .init("แผน MP", count: 12), .init("กำหนดส่ง", count: 9, alert: true)],
                                     selection: $stage)
@@ -24,7 +24,7 @@ struct GalleryOverview: View {
             }
             .frame(maxWidth: 390, alignment: .leading)
             GalleryGrid(columns: 3, phone: 1, minItem: 340) {
-                GalleryItem("วงแหวน 64 + ขีดแผน", note: "ส่วนโค้ง = ทำได้ · ขีดกรมท่า = แผน") {
+                GalleryItem("วงแหวน 64 + ขีดแผน", note: "ส่วนโค้ง = ทำได้ | ขีดกรมท่า = แผน") {
                     HStack(spacing: 16) {
                         TCPlanRing(actual: 0.47, plan: 0.48)
                         TCPlanRing(actual: 0.84, tint: Theme.success)
@@ -54,7 +54,7 @@ struct GalleryOverview: View {
                     }
                 }
             }
-            GalleryItem("กลุ่มตั้งค่า", note: "การ์ด r16 ขอบ 1 · แถว ≥ 50 · หัวกลุ่ม 12 หนา") {
+            GalleryItem("กลุ่มตั้งค่า", note: "การ์ด r16 ขอบ 1 | แถว ≥ 50 | หัวกลุ่ม 12 หนา") {
                 TCSettingsGroup("รายงานประจำวัน") {
                     TCSettingsRow("แจ้งเตือนก่อนหมดเวลาส่ง", detail: "ส่งภายใน 18:00") { Toggle("", isOn: $remind).labelsHidden().tint(Theme.success) }
                     TCSettingsRow("ผู้ตรวจงานเริ่มต้น", detail: "ของแต่ละสถานี")

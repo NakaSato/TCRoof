@@ -175,7 +175,7 @@ extension SitePageWide {
         case .shape(.panelArea)?: return ("พื้นที่แผง", "แตะมุมพื้นที่ทีละจุด แตะจุดแรกอีกครั้งเพื่อปิดรูป")
         case .shape(.cableRoute)?: return ("แนวสาย", "แตะจุดเริ่มจากแผง ลากผ่านแนวที่เดินสาย จบที่ห้องอินเวอร์เตอร์")
         case .shape(.measure)?: return ("วัดระยะ", "แตะจุดเริ่มและจุดสิ้นสุด ระยะอ้างอิงจากสเกลภาพ")
-        case .shape(.shade)?: return ("ร่มเงา", "แตะรอบสิ่งที่บังแดด · แตะจุดแรกเพื่อปิด")
+        case .shape(.shade)?: return ("ร่มเงา", "แตะรอบสิ่งที่บังแดด | แตะจุดแรกเพื่อปิด")
         case .shape(.craneEntry)?: return ("ทางเข้าเครน", "ลากจากถนนเข้าหาจุดติดตั้ง")
         case .mark(let k)?: return (k.paletteTitle, "แตะบนภาพเพื่อวาง")
         case .shape(.boundary)?, .shape(.pvPoint)?: return ("", "")

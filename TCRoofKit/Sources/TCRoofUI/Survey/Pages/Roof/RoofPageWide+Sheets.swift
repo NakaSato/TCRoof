@@ -115,8 +115,8 @@ extension RoofPageWide {
 
     var standardSummary: String {
         let xs = Roof.spans(values, .x), ys = Roof.spans(values, .y)
-        return fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +)) + " ม. · " + Roof.frame(values).label + " · แป @"
-            + String(format: "%.2f", Roof.purlinSpacing(values)) + " · กริด \(xs.count + 1) × \(ys.count + 1)"
+        return fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +)) + " ม. | " + Roof.frame(values).label + " | แป @"
+            + String(format: "%.2f", Roof.purlinSpacing(values)) + " | กริด \(xs.count + 1) × \(ys.count + 1)"
     }
 
     // MARK: ระยะแป
@@ -152,7 +152,7 @@ extension RoofPageWide {
                     .buttonStyle(.plain)
                 }
             }
-            Text(Roof.purlinNote(values) + " · 0.60–1.50 ม.").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+            Text(Roof.purlinNote(values) + " | 0.60–1.50 ม.").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
         }
         .foregroundStyle(Theme.navy)
         .padding(16)
@@ -166,8 +166,8 @@ extension RoofPageWide {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("รูปตัด A–A · " + f.title).font(.sarabunFixed(20, .bold))
-                    Text("หน่วย ม. · แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("รูปตัด A–A | " + f.title).font(.sarabunFixed(20, .bold))
+                    Text("หน่วย ม. | แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button { sectionBig = false } label: {
@@ -241,7 +241,7 @@ struct SaveRoofStandardSheet: View {
                 }
                 TextField("ชื่อแบบ", text: $name).font(.sarabunFixed(17)).inputBox(minHeight: 46)
                     .onChange(of: name) { _, t in if t.count > 40 { name = String(t.prefix(40)) } }
-                Text("ในวงเล็บคือชื่อสถานที่ (จาก A1) · ขนาดใส่ให้อัตโนมัติ · สูงสุด 40 ตัวอักษร · \(name.count)/40")
+                Text("ในวงเล็บคือชื่อสถานที่ (จาก A1) | ขนาดใส่ให้อัตโนมัติ | สูงสุด 40 ตัวอักษร | \(name.count)/40")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(alignment: .leading, spacing: 4) {
@@ -297,7 +297,7 @@ struct RoofCADSheet: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("ส่งออก CAD").font(.sarabunFixed(17, .bold))
-                    Text("DXF R12 · เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("DXF R12 | เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button(action: close) { Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 36) }
@@ -352,7 +352,7 @@ struct RoofCADSheet: View {
     func done(_ r: (url: URL, out: RoofDXF.Output)) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(r.url.lastPathComponent, systemImage: "checkmark.circle.fill").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.success)
-            Text("\(r.out.entities) วัตถุ · \(r.out.layers.count) เลเยอร์ · \(max(1, r.out.data.count / 1024)) KB · " + (mm ? "มม. 1:1" : "ม."))
+            Text("\(r.out.entities) วัตถุ | \(r.out.layers.count) เลเยอร์ | \(max(1, r.out.data.count / 1024)) KB | " + (mm ? "มม. 1:1" : "ม."))
                 .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 8) {
                 Button { result = nil } label: {

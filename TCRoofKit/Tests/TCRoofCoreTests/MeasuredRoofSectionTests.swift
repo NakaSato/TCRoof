@@ -32,7 +32,7 @@ final class MeasuredRoofSectionTests: XCTestCase {
         let s = MeasuredRoofSection.sketch(i)
         let tx = texts(s)
         XCTAssertTrue(tx.contains("รูปตัดโครงหลังคา — บ้าน / อาคาร"))
-        XCTAssertTrue(tx.contains("1 แป · — ไม่ได้ระบุ —"))
+        XCTAssertTrue(tx.contains("1 แป | — ไม่ได้ระบุ —"))
         XCTAssertTrue(tx.contains(TankDrawings.note))
         XCTAssertTrue(tx.contains("ช่วงกว้าง 8.00"))
     }

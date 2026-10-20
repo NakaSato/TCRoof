@@ -52,7 +52,7 @@ final class ClaimReviewUITests: XCTestCase {
         let own = app.buttons.matching(NSPredicate(format: "label CONTAINS '(ของฉัน)'")).firstMatch
         XCTAssertTrue(own.waitForExistence(timeout: 10))
         own.tap()
-        XCTAssertTrue(app.staticTexts["อนุมัติใบเบิกของตัวเองไม่ได้ · ให้ผู้จัดการคนอื่นตรวจ"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts["อนุมัติใบเบิกของตัวเองไม่ได้ | ให้ผู้จัดการคนอื่นตรวจ"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.buttons["review.approve"].exists)
         XCTAssertFalse(app.buttons["review.return"].exists)
     }

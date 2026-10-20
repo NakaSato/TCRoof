@@ -42,9 +42,9 @@ struct IECStringEntry: View {
             let inv = report.inverters[inverter]
             let seq = inv.strings.first { $0.slot == slot }?.seq ?? 0
             VStack(spacing: 0) {
-                IECHeader(title: "\(IECReport.label(inverter: inverter + 1, seq: seq)) · String \(slot) · MPPT \(IECReport.mppt(slot: slot))",
+                IECHeader(title: "\(IECReport.label(inverter: inverter + 1, seq: seq)) | String \(slot) | MPPT \(IECReport.mppt(slot: slot))",
                           subtitle: (phase == .before ? "ก่อนการเชื่อมต่อระบบ" : "หลังการเชื่อมต่อระบบ") +
-                            " · " + [s.brand ?? report.module.brand, "\(s.modules) แผง"].filter { !$0.isEmpty }.joined(separator: " ")) {
+                            " | " + [s.brand ?? report.module.brand, "\(s.modules) แผง"].filter { !$0.isEmpty }.joined(separator: " ")) {
                     IECPhaseSwitch(phase: Binding(get: { phase }, set: { commit(); phase = $0; field = .voltage; typed = nil }))
                 }
                 HStack(alignment: .top, spacing: 16) {
@@ -204,7 +204,7 @@ struct IECStringEntry: View {
         }
     }
 
-    /// `คาดไว้ 16 × 47.0 = 752 V · ต่าง +0.1%`: from the median Voc of the strings with as many modules.
+    /// `คาดไว้ 16 × 47.0 = 752 V | ต่าง +0.1%`: from the median Voc of the strings with as many modules.
     private func voltageHint(_ r: IECReport, _ inv: IECReport.Inverter, _ s: IECReport.Slot) -> String {
         guard phase == .before else { return "หลังเชื่อมต่อ: แรงดันขณะจ่ายไฟ (Vmp)" }
         let peers = inv.slots.compactMap { $0 }.filter { $0.modules == s.modules }.compactMap(\.vocV).sorted()
@@ -212,7 +212,7 @@ struct IECStringEntry: View {
         let median = peers.count % 2 == 1 ? peers[peers.count / 2] : (peers[peers.count / 2 - 1] + peers[peers.count / 2]) / 2
         let per = median / Double(s.modules)
         var line = "คาดไว้ \(s.modules) × \(IECFormat.number(per, digits: 1)) = \(IECFormat.number(median, digits: 0)) V"
-        if let d = r.vocDeviation(inv, slot: slot) { line += " · ต่าง " + (d >= 0 ? "+" : "") + IECFormat.number(d * 100, digits: 1) + "%" }
+        if let d = r.vocDeviation(inv, slot: slot) { line += " | ต่าง " + (d >= 0 ? "+" : "") + IECFormat.number(d * 100, digits: 1) + "%" }
         return line
     }
 
@@ -223,7 +223,7 @@ struct IECStringEntry: View {
     private func currentHint(_ s: IECReport.Slot) -> String {
         guard phase == .before else { return "สตริงใน MPPT เดียวกันควรใกล้เคียงกัน" }
         guard let a = s.iBeforeA else { return "ก่อนเชื่อมต่อวงจรเปิด ควรได้ 0 A" }
-        return a == 0 ? "ก่อนเชื่อมต่อวงจรเปิด ค่า 0 A ถูกต้อง" : "ก่อนเชื่อมต่อควรได้ 0 A · ตรวจวงจร"
+        return a == 0 ? "ก่อนเชื่อมต่อวงจรเปิด ค่า 0 A ถูกต้อง" : "ก่อนเชื่อมต่อควรได้ 0 A | ตรวจวงจร"
     }
 
     /// A reading's box: tapped, the pad types into it.
@@ -275,7 +275,7 @@ struct IECStringEntry: View {
                     fieldBox("Positive – Earth", "MΩ", s, .irPos)
                     fieldBox("Negative – Earth", "MΩ", s, .irNeg)
                 }
-                Text("ผ่านเมื่อทั้งสองค่า ≥ 1 MΩ ที่ 1000 V" + (s.polarityOK == true ? " · ขั้วถูกต้อง ✓" : ""))
+                Text("ผ่านเมื่อทั้งสองค่า ≥ 1 MΩ ที่ 1000 V" + (s.polarityOK == true ? " | ขั้วถูกต้อง ✓" : ""))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
         }
@@ -306,7 +306,7 @@ struct IECStringEntry: View {
                     Text(text(s, field).isEmpty ? "—" : text(s, field)).font(.sarabunFixed(34, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                     Text(unit(field)).font(.sarabunFixed(17)).foregroundStyle(Theme.inkMuted)
                 }
-                Text("\(fieldName(field)) · \(label)").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("\(fieldName(field)) | \(label)").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -339,7 +339,7 @@ struct IECStringEntry: View {
                 Button { go(n) } label: {
                     VStack(spacing: 0) {
                         Text(IECReport.label(inverter: inverter + 1, seq: st.seq) + " ›").font(.sarabunFixed(16, .bold))
-                        Text("String \(n) · MPPT \(IECReport.mppt(slot: n))").font(.sarabunFixed(12))
+                        Text("String \(n) | MPPT \(IECReport.mppt(slot: n))").font(.sarabunFixed(12))
                     }
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))

@@ -56,7 +56,7 @@ extension SurveyModel {
         let r = try excelData(job)
         let url = tempURL(baseName(job) + ".xlsx")
         try r.data.write(to: url, options: .atomic)
-        return ExportFile(url: url, summary: "Excel \(r.sheets.count) แผ่น · \(r.pictures) รูป")
+        return ExportFile(url: url, summary: "Excel \(r.sheets.count) แผ่น | \(r.pictures) รูป")
     }
 
     var reportHeader: ReportHeader { ReportHeader(company: settings.company, photoStamps: settings.printPhotoStamps) }

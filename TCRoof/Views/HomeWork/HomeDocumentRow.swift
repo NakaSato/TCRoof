@@ -77,7 +77,7 @@ struct HomeDocumentRow<Destination: View>: View {
         HStack(spacing: 6) {
             TCStatusChip(spec.provider.title, fill: providerColors.fill, text: providerColors.text)
             if let slot = spec.ppim {
-                TCStatusChip("PPIM ช่อง \(slot.number) · ≤ \(slot.maxMB) MB", fill: Theme.okSoft, text: Theme.okText)
+                TCStatusChip("PPIM ช่อง \(slot.number) | ≤ \(slot.maxMB) MB", fill: Theme.okSoft, text: Theme.okText)
             }
             if optional { TCStatusChip("ถ้ามี", fill: Theme.disabledFill, text: Theme.inkMuted) }
         }
@@ -166,7 +166,7 @@ struct HomeDocumentRow<Destination: View>: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "books.vertical")
-                Text(libraryItem.map { "จากคลัง: \($0.name) · \($0.files.count) ไฟล์" }
+                Text(libraryItem.map { "จากคลัง: \($0.name) | \($0.files.count) ไฟล์" }
                      ?? (libraryChoices.isEmpty ? "ยังไม่มีในคลังเอกสาร" : "เลือกจากคลังเอกสาร"))
                     .font(.sarabun(13.5, .semibold, relativeTo: .caption))
                 Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
@@ -184,7 +184,7 @@ struct HomeDocumentRow<Destination: View>: View {
             ForEach(Array(document.files.enumerated()), id: \.element) { i, name in
                 HStack {
                     Button { preview = store.url(name) } label: {
-                        Label("ไฟล์ \(i + 1) · \(name.hasSuffix("pdf") ? "PDF" : "รูป")", systemImage: name.hasSuffix("pdf") ? "doc.richtext" : "photo")
+                        Label("ไฟล์ \(i + 1) | \(name.hasSuffix("pdf") ? "PDF" : "รูป")", systemImage: name.hasSuffix("pdf") ? "doc.richtext" : "photo")
                             .font(.sarabun(13.5, relativeTo: .caption)).foregroundStyle(Theme.primary)
                     }
                     .buttonStyle(.plain)

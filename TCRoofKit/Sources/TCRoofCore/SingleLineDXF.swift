@@ -41,8 +41,8 @@ public enum SingleLineDXF {
                 pointsPerMetre: 1000 / s)
 
         let docNo = job.docNo.isEmpty ? "-" : job.docNo, site = job.projectName.isEmpty ? "-" : job.projectName
-        var title = "SINGLE LINE DIAGRAM · \(docNo) · \(site)"
-        if !job.values.text("date").isEmpty { title += " · " + ISODate.thai(job.values.text("date")) }
+        var title = "SINGLE LINE DIAGRAM | \(docNo) | \(site)"
+        if !job.values.text("date").isEmpty { title += " | " + ISODate.thai(job.values.text("date")) }
         dxf.text(textLayer, (0, -0.008), height: 0.0035, title)
         dxf.text(textLayer, (paperWidth / 1000, -0.008), height: 0.0035, "สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง", align: .right)
         return dxf.output

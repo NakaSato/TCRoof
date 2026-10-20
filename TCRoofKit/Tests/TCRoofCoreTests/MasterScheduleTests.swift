@@ -204,7 +204,7 @@ extension MasterScheduleTests {
         let texts = s.ops.compactMap { op -> String? in
             switch op { case let .text(t, _, _, _, _, _, _), let .textBox(t, _, _, _, _, _): return t; default: return nil }
         }
-        XCTAssertTrue(texts.contains("แผนงาน MP · MP 189 ทุ่งน้อย"))
+        XCTAssertTrue(texts.contains("แผนงาน MP | MP 189 ทุ่งน้อย"))
         XCTAssertTrue(texts.contains { $0.hasPrefix("ถึงสัปดาห์ 27/9/69") && $0.contains("แผน 100%") && $0.contains("ทำได้ 96%") && $0.hasSuffix("ช้ากว่า 4%") },
                       texts.filter { $0.hasPrefix("ถึง") }.joined())
         // every task has a row; COP and พค.2 (not over 200 kVA) read ไม่ใช้

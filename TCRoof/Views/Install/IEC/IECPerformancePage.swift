@@ -172,7 +172,7 @@ struct IECConditionsPage: View {
                 DatePicker("ออนระบบเมื่อ", selection: Binding(get: { at }, set: { d in job.updateIEC(context) { $0.gridOnAt = d } }))
                     .labelsHidden().environment(\.locale, Locale(identifier: "th_TH")).frame(minHeight: 50)
             } else {
-                Button { job.updateIEC(context) { $0.gridOnAt = .now } } label: { Label("ออนระบบแล้ว · บันทึกเวลานี้", systemImage: "bolt.fill") }
+                Button { job.updateIEC(context) { $0.gridOnAt = .now } } label: { Label("ออนระบบแล้ว | บันทึกเวลานี้", systemImage: "bolt.fill") }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).frame(minHeight: 50)
             }
         }
@@ -234,7 +234,7 @@ struct IECStationPhotosPage: View {
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             VStack(alignment: .leading, spacing: 12) {
-                Text("ภาพถ่ายความร้อน · \(r.thermalPhotos.count) รูป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("ภาพถ่ายความร้อน | \(r.thermalPhotos.count) รูป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                     ForEach(r.thermalPhotos, id: \.self) { id in
                         VStack(spacing: 6) {

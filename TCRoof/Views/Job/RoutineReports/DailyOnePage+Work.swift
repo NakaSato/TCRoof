@@ -71,7 +71,7 @@ extension DailyOnePage {
 
     private var emptyWork: some View {
         VStack(spacing: 8) {
-            Text("ยังไม่มีงานวันนี้ · แตะ + บนผัง หรือ + งาน").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("ยังไม่มีงานวันนี้ | แตะ + บนผัง หรือ + งาน").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
             TextField("ถ้าวันนี้หยุดงาน ระบุเหตุผล เช่น ฝนตกทั้งวัน", text: $report.stopReason)
                 .textFieldStyle(OutlinedFieldStyle()).frame(maxWidth: 480)
         }
@@ -130,7 +130,7 @@ struct DailyLinePanel: View {
             Text("\(page.number(line))").font(.sarabunFixed(14, .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 28, height: 28).background(c, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
-                (Text(DailyOnePage.what(line)).bold() + Text(line.location.isEmpty ? "" : " · " + line.location))
+                (Text(DailyOnePage.what(line)).bold() + Text(line.location.isEmpty ? "" : " | " + line.location))
                     .font(.sarabunFixed(16)).foregroundStyle(Theme.navy).lineLimit(1)
                 Text(taskLine).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
@@ -150,14 +150,14 @@ struct DailyLinePanel: View {
         }
     }
 
-    /// `MP 2.1 · โครงสร้าง… · 20% · ใช้ สว่านไฟฟ้า`
+    /// `MP 2.1 | โครงสร้าง… | 20% | ใช้ สว่านไฟฟ้า`
     private var taskLine: String {
-        guard let task = line.task else { return "งานอื่น · ไม่นับในแผน MP" }
+        guard let task = line.task else { return "งานอื่น | ไม่นับในแผน MP" }
         let w = page.weight(task)
         var parts = ["MP \(task.code)", task.title, RoutineReport.percent(w)]
         let tools = RoutineReport.suggestedTools(task)
         if !tools.isEmpty { parts.append("ใช้ " + tools.joined(separator: ", ")) }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     private var statusPill: some View {
@@ -253,7 +253,7 @@ struct DailyLinePanel: View {
         let gain = RoutineReport.stationGain(line, on: page.report, previous: page.previous, settings: page.settings, weight: page.weight)
         return HStack(spacing: 10) {
             (Text(RoutineReport.percent(before) + " → ") + Text(RoutineReport.percent(line.percent)).bold()
-             + Text(" · สถานี " + (gain >= 0 ? "+" : "") + String(format: "%.1f%%", gain)))
+             + Text(" | สถานี " + (gain >= 0 ? "+" : "") + String(format: "%.1f%%", gain)))
                 .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().fixedSize()
             GeometryReader { g in
                 Capsule().fill(Theme.segmentTrack)

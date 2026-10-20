@@ -19,7 +19,7 @@ extension PWAPlanPhoneView {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("แผน MP").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text("Master Plan · \(board.bars.count) สถานี").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                Text("Master Plan | \(board.bars.count) สถานี").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             }
             if board.bars.isEmpty {
                 TCEmptyState("ยังไม่มีสถานีที่มีแผน MP", systemImage: "chart.bar.xaxis", description: Text("สร้างแผนจากการ์ดแผนงาน MP ในหน้างาน"))
@@ -58,7 +58,7 @@ extension PWAPlanPhoneView {
             PWAPlanCurveChart(curve: curve, labelSize: pad ? 11 : 9)
                 .frame(height: curveHeight)
                 .accessibilityElement()
-                .accessibilityLabel("S-curve แผนเทียบจริง · จริง \(PWAPlanFormat.percent(curve.done)) แผน \(PWAPlanFormat.percent(curve.planned))")
+                .accessibilityLabel("S-curve แผนเทียบจริง | จริง \(PWAPlanFormat.percent(curve.done)) แผน \(PWAPlanFormat.percent(curve.planned))")
             curveLegend(today)
         }
         .lineLimit(1)
@@ -123,7 +123,7 @@ extension PWAPlanPhoneView {
             ForEach(listed) { ganttRow($0, axis: axis) }
             if listed.count < bars.count {
                 Button { ganttAll = true } label: {
-                    Text("อีก \(bars.count - listed.count) สถานี · เลื่อนดู").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                    Text("อีก \(bars.count - listed.count) สถานี | เลื่อนดู").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                         .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -143,7 +143,7 @@ extension PWAPlanPhoneView {
     private var curveHeight: CGFloat { pad ? 268 : 120 }
 
     private func ganttRow(_ bar: PWAPlan.Bar, axis: PWAPlanAxis) -> some View {
-        let who = [bar.ref, bar.contractor.isEmpty ? bar.team : PWAPlan.contractorTitle(bar.contractor)].filter { !$0.isEmpty }.joined(separator: " · ")
+        let who = [bar.ref, bar.contractor.isEmpty ? bar.team : PWAPlan.contractorTitle(bar.contractor)].filter { !$0.isEmpty }.joined(separator: " | ")
         let due = PWAPlanFormat.numeric.string(from: bar.due)
         return Button { open(.schedule, station: bar.id) } label: {
             HStack(spacing: 6) {
@@ -163,7 +163,7 @@ extension PWAPlanPhoneView {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(bar.fullName) · จริง \(PWAPlanFormat.percent(bar.actual)) แผน \(PWAPlanFormat.percent(bar.planned)) · ส่งมอบ \(due)")
+        .accessibilityLabel("\(bar.fullName) | จริง \(PWAPlanFormat.percent(bar.actual)) แผน \(PWAPlanFormat.percent(bar.planned)) | ส่งมอบ \(due)")
         .accessibilityAddTraits(.isButton)
     }
 }

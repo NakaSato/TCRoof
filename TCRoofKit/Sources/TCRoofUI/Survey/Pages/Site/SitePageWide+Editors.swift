@@ -70,7 +70,7 @@ extension SitePageWide {
         let value = markBinding(m.id, \.value)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("กันย้อน · ข้อความบนภาพ").font(.headline)
+                Text("กันย้อน | ข้อความบนภาพ").font(.headline)
                 Spacer()
                 if let title = SiteSync.linkTitle(job, mark: m) { linkChip(title) }
             }
@@ -94,7 +94,7 @@ extension SitePageWide {
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
-            Text("ส่งไป B4 กันย้อน: MV = \(ZeroExport.hv) · LV = \(ZeroExport.lv)")
+            Text("ส่งไป B4 กันย้อน: MV = \(ZeroExport.hv) | LV = \(ZeroExport.lv)")
                 .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             editorButtons { change { a, _ in a.removeAll { $0.id == m.id } }; editing = nil }
         }

@@ -111,14 +111,14 @@ final class TankTests: XCTestCase {
         XCTAssertNil(Tank.sourceLine(v))
         Tank.setAzimuth(&v, 372, source: .manual)
         XCTAssertEqual(Tank.azimuth(v), 12)
-        XCTAssertEqual(Tank.sourceLine(v), "ป้อนเอง · แปลนและลูกศร N หมุนตามค่านี้")
+        XCTAssertEqual(Tank.sourceLine(v), "ป้อนเอง | แปลนและลูกศร N หมุนตามค่านี้")
         var c = DateComponents(); c.year = 2026; c.month = 9; c.day = 30; c.hour = 16; c.minute = 55
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Asia/Bangkok")!
         Tank.setAzimuth(&v, 14, source: .compass, at: cal.date(from: c)!, accuracy: 3.4)
         XCTAssertEqual(v.text("tankAzimuthSrc"), "compass")
-        XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone), "วัดด้วยเข็มทิศ iPad · ±3° · 30/9 16:55 · แปลนและลูกศร N หมุนตามค่านี้")
+        XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone), "วัดด้วยเข็มทิศ iPad | ±3° | 30/9 16:55 | แปลนและลูกศร N หมุนตามค่านี้")
         XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone, device: "iPhone", tail: "แปลนหมุนตามค่านี้"),
-                       "วัดด้วยเข็มทิศ iPhone · ±3° · 30/9 16:55 · แปลนหมุนตามค่านี้")
+                       "วัดด้วยเข็มทิศ iPhone | ±3° | 30/9 16:55 | แปลนหมุนตามค่านี้")
         Tank.setAzimuth(&v, nil, source: .manual)
         XCTAssertNil(v["tankAzimuth"]); XCTAssertNil(v["tankAzimuthAt"]); XCTAssertNil(v["tankAzimuthSrc"])
     }
@@ -201,7 +201,7 @@ final class TankTests: XCTestCase {
         let plan = try XCTUnwrap(TankPlan(v, chips: true, hints: true))
         XCTAssertEqual(plan.chips.count, 26)
         XCTAssertFalse(texts(plan.sketch).contains("4.00"))
-        XCTAssertTrue(texts(plan.sketch).contains("ผนัง ค.ส.ล. · สิ่งกีดขวางระบุในขั้นที่ 2"))
+        XCTAssertTrue(texts(plan.sketch).contains("ผนัง ค.ส.ล. | สิ่งกีดขวางระบุในขั้นที่ 2"))
         XCTAssertNil(TankPlan(Values()))
     }
 

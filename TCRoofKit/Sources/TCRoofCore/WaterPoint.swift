@@ -20,13 +20,13 @@ public enum WaterPoint {
         /// The chip at the top-left of the picture.
         public var legend: String { self == .new ? "จุดวางถังพัก / ปั๊มใหม่" : "จุดต่อแยกจากท่อประปาเดิม" }
         public var hint: String {
-            self == .new ? "ถ่ายภาพจุดวางถัง/ปั๊ม · ระบุแหล่งน้ำในรายละเอียด"
-                : "ถ่ายภาพจุดที่ต่อแยกจากท่อเดิมให้เห็นขนาดท่อ · ระบุขนาดท่อและวาล์วในรายละเอียด"
+            self == .new ? "ถ่ายภาพจุดวางถัง/ปั๊ม | ระบุแหล่งน้ำในรายละเอียด"
+                : "ถ่ายภาพจุดที่ต่อแยกจากท่อเดิมให้เห็นขนาดท่อ | ระบุขนาดท่อและวาล์วในรายละเอียด"
         }
         public var areaCaption: String { self == .new ? "จุดวางถังพักน้ำ / ปั๊มใหม่" : "จุดต่อแยกจากท่อเดิม" }
         public var placeholder: String {
-            self == .new ? "ตัวอย่าง: วางถังพักน้ำ 1,000 ลิตร ข้างอาคาร · ใช้น้ำจากบ่อพักน้ำใส"
-                : "ตัวอย่าง: ต่อแยกจากท่อ PVC 1 นิ้ว ข้างห้องปั๊ม มีวาล์วเดิม · แรงดันพอขึ้นหลังคา"
+            self == .new ? "ตัวอย่าง: วางถังพักน้ำ 1,000 ลิตร ข้างอาคาร | ใช้น้ำจากบ่อพักน้ำใส"
+                : "ตัวอย่าง: ต่อแยกจากท่อ PVC 1 นิ้ว ข้างห้องปั๊ม มีวาล์วเดิม | แรงดันพอขึ้นหลังคา"
         }
     }
 
@@ -55,7 +55,7 @@ public enum WaterPoint {
     public static func statusLine(_ v: Values) -> String? {
         let k = missingPhotos(v)
         if k > 0 { return "ยังขาดภาพประกอบอีก \(k) ภาพ" }
-        return mode(v) != nil ? "ครบช่องบังคับแล้ว · จุดจ่ายน้ำแสดงบนภาพ A2 และรายงาน" : nil
+        return mode(v) != nil ? "ครบช่องบังคับแล้ว | จุดจ่ายน้ำแสดงบนภาพ A2 และรายงาน" : nil
     }
 
     // MARK: summary
@@ -73,11 +73,11 @@ public enum WaterPoint {
         })
     }
 
-    /// "416 แผง · 237.1 kWp", with the kWp from A1; "—" when neither is known.
+    /// "416 แผง | 237.1 kWp", with the kWp from A1; "—" when neither is known.
     public static func panelSummary(_ job: Job) -> String {
         let n = panelCount(job)
         let kw = job.values.number("capacity").flatMap { $0 > 0 ? $0 : nil }
         let parts = [n > 0 ? "\(n) แผง" : nil, kw.map { fmt($0) + " kWp" }].compactMap { $0 }
-        return parts.isEmpty ? "—" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "—" : parts.joined(separator: " | ")
     }
 }

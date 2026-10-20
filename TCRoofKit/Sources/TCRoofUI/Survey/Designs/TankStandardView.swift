@@ -24,7 +24,7 @@ struct TankStandardView: View {
                     LabeledContent("ฉบับ", value: revisionText)
                 } footer: {
                     Text(canEdit ? "งานที่จัดแผงไว้แล้วใช้ค่าเดิม จนกว่าจะกด จัดแผงใหม่ หรือ หาผังที่ได้พลังงานมากที่สุด ในงานนั้น"
-                                 : "แก้ได้เฉพาะผู้จัดการ · งานที่จัดแผงไว้แล้วใช้ค่าเดิมจนกว่าจะจัดแผงใหม่")
+                                 : "แก้ได้เฉพาะผู้จัดการ | งานที่จัดแผงไว้แล้วใช้ค่าเดิมจนกว่าจะจัดแผงใหม่")
                 }
                 ForEach(groups, id: \.self) { g in
                     PadSection(g) {
@@ -69,7 +69,7 @@ struct TankStandardView: View {
     var revisionText: String {
         guard saved.revision > 0 else { return "ค่าเริ่มต้นตามแบบ B1-C3" }
         let date = saved.savedAt.map { $0.formatted(.dateTime.day().month(.abbreviated).year()) } ?? ""
-        return ["rev \(saved.revision)", saved.savedBy ?? "", date].filter { !$0.isEmpty }.joined(separator: " · ")
+        return ["rev \(saved.revision)", saved.savedBy ?? "", date].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
     func keepRevision(_ f: () -> Void) {
@@ -87,7 +87,7 @@ struct TankStandardView: View {
     var catalogPicker: some View {
         Menu {
             ForEach(EquipmentCatalog.bundled.pv, id: \.id) { m in
-                Button("\(m.model) · \(m.w) W · \(m.l) × \(m.wd) มม.") {
+                Button("\(m.model) | \(m.w) W | \(m.l) × \(m.wd) มม.") {
                     draft.moduleL = Double(m.l) / 1000; draft.moduleW = Double(m.wd) / 1000; draft.moduleKW = Double(m.w) / 1000
                 }
             }

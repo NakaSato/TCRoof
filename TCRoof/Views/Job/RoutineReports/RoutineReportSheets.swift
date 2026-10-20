@@ -67,7 +67,7 @@ struct AddWorkSheet: View {
                         }
                     }
                 } footer: {
-                    Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง · ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
+                    Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง | ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
                 }
                 PadSection("รายละเอียด") {
                     TextField(task?.title ?? "รายละเอียดงาน", text: $description, axis: .vertical)
@@ -223,7 +223,7 @@ struct SignatureField: View {
             if mine { MySignatureActions(signature: $signature) }
             Button("ล้างลายเซ็น") { signature = nil }.disabled(signature == nil).frame(minHeight: touchMin)
         } footer: {
-            Text("พิมพ์ในหน้า 3 ของรายงาน · ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
+            Text("พิมพ์ในหน้า 3 ของรายงาน | ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
         }
     }
 }
@@ -291,7 +291,7 @@ struct RoutineSettingsSheet: View {
                     TextField("ชื่อสัญญา / โครงการ", text: $s.contractName, axis: .vertical)
                     TextField("ผู้ว่าจ้าง", text: $s.employer)
                     TextField("ผู้รับจ้าง", text: $s.contractor)
-                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) · เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
+                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) | เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
                     TextField("Site Engineer", text: $s.siteEngineer)
                     TextField("Inspector", text: $s.inspector)
                 }

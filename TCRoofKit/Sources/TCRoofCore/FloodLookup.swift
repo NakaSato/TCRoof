@@ -15,10 +15,10 @@ public struct FloodLookup: Sendable {
             switch self {
             case .noKey: return "ยังไม่ได้ตั้งค่า GISTDA API key"
             case .badCoordinates: return "พิกัด A1 ไม่ถูกต้อง"
-            case .offline: return "ไม่มีสัญญาณอินเทอร์เน็ต · ลองใหม่อีกครั้ง"
-            case .timeout: return "GISTDA ตอบช้าเกินไป · ลองใหม่อีกครั้ง"
-            case .http(let c): return "GISTDA ตอบกลับผิดพลาด (\(c)) · ลองใหม่อีกครั้ง"
-            case .badResponse: return "อ่านข้อมูลจาก GISTDA ไม่ได้ · ลองใหม่อีกครั้ง"
+            case .offline: return "ไม่มีสัญญาณอินเทอร์เน็ต | ลองใหม่อีกครั้ง"
+            case .timeout: return "GISTDA ตอบช้าเกินไป | ลองใหม่อีกครั้ง"
+            case .http(let c): return "GISTDA ตอบกลับผิดพลาด (\(c)) | ลองใหม่อีกครั้ง"
+            case .badResponse: return "อ่านข้อมูลจาก GISTDA ไม่ได้ | ลองใหม่อีกครั้ง"
             }
         }
     }

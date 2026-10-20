@@ -169,12 +169,12 @@ struct WeeklyRequestScreen: View {
 
     /// What the week bar says under the dates: who sent it and when, or that it is a draft.
     private var stateLine: String {
-        if let at = request.approvedAt { return "อนุมัติแล้ว \(RoutineReport.thaiDate(at))" + (request.approvedBy.isEmpty ? "" : " · \(request.approvedBy)") }
+        if let at = request.approvedAt { return "อนุมัติแล้ว \(RoutineReport.thaiDate(at))" + (request.approvedBy.isEmpty ? "" : " | \(request.approvedBy)") }
         if let at = request.sentAt ?? request.engineerSignedAt {
-            let by = request.sentBy.isEmpty ? "" : " · \(TeamDirectory.shared.person(request.sentBy)?.name ?? request.sentBy)"
-            return "ส่งขออนุมัติ \(RoutineReport.thaiDate(at))\(by)" + (external ? " · แก้ไม่ได้จนกว่าทีมส่งกลับ" : "")
+            let by = request.sentBy.isEmpty ? "" : " | \(TeamDirectory.shared.person(request.sentBy)?.name ?? request.sentBy)"
+            return "ส่งขออนุมัติ \(RoutineReport.thaiDate(at))\(by)" + (external ? " | แก้ไม่ได้จนกว่าทีมส่งกลับ" : "")
         }
-        return stored ? "บันทึกร่างแล้ว" : "ร่างจากแผน MP · ยังไม่บันทึก"
+        return stored ? "บันทึกร่างแล้ว" : "ร่างจากแผน MP | ยังไม่บันทึก"
     }
 
     private var bottomBar: some View {
@@ -198,7 +198,7 @@ struct WeeklyRequestScreen: View {
                     if !external { exportPDF() }
                 }
             case .sent where external:
-                barNote("ส่งแล้ว · รอทีมอนุมัติ")
+                barNote("ส่งแล้ว | รอทีมอนุมัติ")
             case .sent:
                 barButton("ส่งกลับให้แก้", .secondary, id: "weeklyRequest.sendBack") { request.sendBack(); save(file: false) }
                 barButton("บันทึกอนุมัติแล้ว", .primary, id: "weeklyRequest.approve") { showApprove = true }

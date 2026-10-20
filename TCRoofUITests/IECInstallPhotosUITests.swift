@@ -1,6 +1,6 @@
 import XCTest
 
-/// IEC 62446 · 9 ภาพถ่ายติดตั้งระบบ. On iPad (`testPadFillsASlotAndMakesThePDF`) the page opens in the string table
+/// IEC 62446 | 9 ภาพถ่ายติดตั้งระบบ. On iPad (`testPadFillsASlotAndMakesThePDF`) the page opens in the string table
 /// (`-iecPage install`) on the sample (`-iecDemo reset`, replaced each run): the stub camera fills ตู้ AC's inside slot
 /// and the count goes up by one, the photo is still there after a relaunch, a roof added gets its two pages and is
 /// removed again, and `PDF รายงาน 9` opens the share sheet. On iPhone (`testPhoneOpensFromTheJob`) the PWA job
@@ -34,7 +34,7 @@ final class IECInstallPhotosUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [x], timeout: 10), .completed, what)
     }
 
-    /// The summary's `ถ่ายแล้ว 3/19 รูป · เหลือ 16` (or `ครบ 19 รูปแล้ว`), as the photos taken.
+    /// The summary's `ถ่ายแล้ว 3/19 รูป | เหลือ 16` (or `ครบ 19 รูปแล้ว`), as the photos taken.
     func taken(_ app: XCUIApplication) -> Int? {
         let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", "ถ่ายแล้ว ", "ครบ ")).firstMatch
         guard line.waitForExistence(timeout: slow) else { return nil }

@@ -235,7 +235,7 @@ private struct SignaturePadPresenter: ViewModifier {
 /// Sign with Apple Pencil or a finger. On iPad it is a card inset 32 pt over a dimmed page; on iPhone it fills its sheet.
 /// The PNG is the drawing's bounds plus 12 pt, at scale 2, drawn in the light trait so the ink stays black.
 struct SignaturePad: View {
-    /// "วิศวกรผู้สำรวจ · <name>" under the title.
+    /// "วิศวกรผู้สำรวจ | <name>" under the title.
     var who: String? = nil
     /// The signed-in person signs: `ใช้ลายเซ็นของฉัน` and `จำลายเซ็นนี้ไว้ในเครื่อง` (`MySignature`).
     var mine = false

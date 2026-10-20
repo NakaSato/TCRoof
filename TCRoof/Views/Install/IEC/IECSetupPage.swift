@@ -37,7 +37,7 @@ struct IECSetupPage: View {
     var body: some View {
         let r = report
         VStack(spacing: 0) {
-            IECHeader(title: "IEC 62446 · ตั้งค่าระบบ", subtitle: r.stationLine.isEmpty ? job.stationName : r.stationLine) { EmptyView() }
+            IECHeader(title: "IEC 62446 | ตั้งค่าระบบ", subtitle: r.stationLine.isEmpty ? job.stationName : r.stationLine) { EmptyView() }
             IECStepProgress(current: .setup, report: r) { s in if s != .setup { openStage(s) } }
                 .padding(.horizontal, 24).padding(.top, 14)
             HStack(alignment: .top, spacing: 24) {
@@ -89,8 +89,8 @@ struct IECSetupPage: View {
         HStack(spacing: 12) {
             Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.warning, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text("ระบบยังไม่ออน · ตั้งค่าก่อนเริ่มวัด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningText)
-                Text("แนบแบบ SLD และตรวจรายการสตริง · เติม E5, O5, แถว 8–9").font(.sarabunFixed(12)).foregroundStyle(Theme.warningText)
+                Text("ระบบยังไม่ออน | ตั้งค่าก่อนเริ่มวัด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningText)
+                Text("แนบแบบ SLD และตรวจรายการสตริง | เติม E5, O5, แถว 8–9").font(.sarabunFixed(12)).foregroundStyle(Theme.warningText)
             }
             Spacer(minLength: 0)
         }
@@ -112,7 +112,7 @@ struct IECSetupPage: View {
                         .padding(.horizontal, 6).frame(height: 20).background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 4))
                     Text(doc.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).truncationMode(.middle)
                     Spacer(minLength: 4)
-                    Text("v\(versions) · " + IECTestScreen.stamp(doc.addedAt, "") + " น.").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text("v\(versions) | " + IECTestScreen.stamp(doc.addedAt, "") + " น.").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 if versions > 1 {
                     Button("ประวัติ \(versions) ครั้ง") { history = true }.font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 32)
@@ -137,14 +137,14 @@ struct IECSetupPage: View {
             if let doc, let img = SLDFile.preview(doc.data) {
                 Image(uiImage: img).resizable().scaledToFit().padding(8)
                 HStack(spacing: 6) {
-                    chip("หน้า 1/\(SLDFile.pageCount(doc.data)) · Inverter \(inverter + 1)", bold: true)
-                    chip("แตะเพื่อดูเต็มจอ · ซูมได้", bold: false)
+                    chip("หน้า 1/\(SLDFile.pageCount(doc.data)) | Inverter \(inverter + 1)", bold: true)
+                    chip("แตะเพื่อดูเต็มจอ | ซูมได้", bold: false)
                 }
                 .padding(8)
             } else {
                 VStack(spacing: 6) {
                     Image(systemName: "doc.badge.plus").font(.system(size: 28))
-                    Text("ยังไม่มีแบบ SLD · อัปโหลด PDF หรือรูป").font(.sarabunFixed(14))
+                    Text("ยังไม่มีแบบ SLD | อัปโหลด PDF หรือรูป").font(.sarabunFixed(14))
                 }
                 .foregroundStyle(Theme.warningInk).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -208,16 +208,16 @@ struct IECSetupPage: View {
             HStack {
                 Text("สภาพการทดสอบ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("ก่อนออน · INV 01 ลิงก์ไปทุกแผ่น").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ก่อนออน | INV 01 ลิงก์ไปทุกแผ่น").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 10) {
-                IECConditionTile(label: "อากาศ · E29", unit: "°C", text: r.before.ambientC.map { IECFormat.number($0, digits: 1) } ?? "", keyboard: .decimalPad) { t in
+                IECConditionTile(label: "อากาศ | E29", unit: "°C", text: r.before.ambientC.map { IECFormat.number($0, digits: 1) } ?? "", keyboard: .decimalPad) { t in
                     job.updateIEC(context) { $0.before.ambientC = Double(t) }
                 }
-                IECConditionTile(label: "แสง · E30", unit: "W/m²", text: r.before.irradianceWm2.map { IECFormat.number($0, digits: 0) } ?? "", keyboard: .numberPad) { t in
+                IECConditionTile(label: "แสง | E30", unit: "W/m²", text: r.before.irradianceWm2.map { IECFormat.number($0, digits: 0) } ?? "", keyboard: .numberPad) { t in
                     job.updateIEC(context) { $0.before.irradianceWm2 = Double(t) }
                 }
-                IECConditionTile(label: "เวลา · AA30", unit: "น.", text: r.before.time ?? "", keyboard: .numbersAndPunctuation) { t in
+                IECConditionTile(label: "เวลา | AA30", unit: "น.", text: r.before.time ?? "", keyboard: .numbersAndPunctuation) { t in
                     job.updateIEC(context) { $0.before.time = t.isEmpty ? nil : t }
                 }
             }
@@ -232,7 +232,7 @@ struct IECSetupPage: View {
             HStack {
                 Text("เครื่องมือวัด (S/N)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("ฟอร์มเดิมไม่มี · แนะนำให้เก็บ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ฟอร์มเดิมไม่มี | แนะนำให้เก็บ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { k, row in
@@ -260,7 +260,7 @@ struct IECSetupPage: View {
 
     // MARK: bottom bar
 
-    /// `แนบแบบ SLD และตั้งรายการสตริงแล้ว · ยังไม่ได้กรอกวันที่ ผู้ทดสอบ และ S/N เครื่องมือ`.
+    /// `แนบแบบ SLD และตั้งรายการสตริงแล้ว | ยังไม่ได้กรอกวันที่ ผู้ทดสอบ และ S/N เครื่องมือ`.
     func status(_ r: IECReport) -> (text: String, ok: Bool) {
         var done: [String] = [], missing = r.setupBlockers.filter { $0 != "แบบ SLD" && $0 != "สตริง" }
         if r.sld != nil { done.append("แนบแบบ SLD") }
@@ -268,9 +268,9 @@ struct IECSetupPage: View {
         if !r.instruments.isComplete { missing.append("S/N เครื่องมือ") }
         if r.sld == nil { return ("ยังไม่ได้แนบแบบ SLD", false) }
         let head = done.joined(separator: " และ") + "แล้ว"
-        if missing.isEmpty { return (head + " · ครบ ไปวัดก่อนออนได้", true) }
+        if missing.isEmpty { return (head + " | ครบ ไปวัดก่อนออนได้", true) }
         let list = missing.count > 1 ? missing.dropLast().joined(separator: " ") + " และ " + missing.last! : missing[0]
-        return (head + " · ยังไม่ได้กรอก" + list, r.setupBlockers.isEmpty)
+        return (head + " | ยังไม่ได้กรอก" + list, r.setupBlockers.isEmpty)
     }
 
     func bottomBar(_ r: IECReport) -> some View {

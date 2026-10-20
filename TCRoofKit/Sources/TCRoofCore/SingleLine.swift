@@ -159,13 +159,13 @@ public struct SLCheck: Hashable, Sendable, Identifiable {
     public var icKA: Double?
     public var state: SLCheckState
     public var target: SLTarget
-    /// "50 kA" / "25 kA · เผื่อน้อย" / "20 kA · ไม่พอ" / "ยังไม่รู้"
+    /// "50 kA" / "25 kA | เผื่อน้อย" / "20 kA | ไม่พอ" / "ยังไม่รู้"
     public var value: String {
         let ic = icKA.map { SingleLine.fmt($0) + " kA" } ?? ""
         switch state {
         case .ok: return ic
-        case .marginal: return ic + " · เผื่อน้อย"
-        case .insufficient: return ic + " · ไม่พอ"
+        case .marginal: return ic + " | เผื่อน้อย"
+        case .insufficient: return ic + " | ไม่พอ"
         case .unknown: return "ยังไม่รู้"
         }
     }

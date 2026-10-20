@@ -31,7 +31,7 @@ struct IECStepProgress: View {
     }
 }
 
-/// `ช่อง DC input · MPPT 1–10`: one column per MPPT with its two slots, done / to do / failed / empty.
+/// `ช่อง DC input | MPPT 1–10`: one column per MPPT with its two slots, done / to do / failed / empty.
 struct IECDCInputMap: View {
     let report: IECReport
     let inverter: Int
@@ -44,7 +44,7 @@ struct IECDCInputMap: View {
         let inv = report.inverters[inverter], mppts = inv.mpptCount
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("ช่อง DC input · MPPT 1–\(mppts)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("ช่อง DC input | MPPT 1–\(mppts)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 Button(inv.slots[selected - 1] == nil ? "+ มีสตริงในช่อง \(selected)" : "ตั้งช่อง \(selected) เป็นว่าง") { toggleEmpty(selected) }
                     .font(.sarabunFixed(13, .bold)).underline().foregroundStyle(Theme.primary).frame(minHeight: 44)
@@ -127,7 +127,7 @@ struct IECDCInputMap: View {
     }
 }
 
-/// `ตารางค่าวัด · INV1 ก่อนออนระบบ`: every slot of the inverter with its readings and result; a row selects its slot.
+/// `ตารางค่าวัด | INV1 ก่อนออนระบบ`: every slot of the inverter with its readings and result; a row selects its slot.
 struct IECVITable: View {
     let report: IECReport
     let inverter: Int
@@ -143,7 +143,7 @@ struct IECVITable: View {
         let statuses = (1...inv.slotsInUse).map { report.viStatus(inv, slot: $0, phase) }
         VStack(spacing: 0) {
             HStack {
-                Text("ตารางค่าวัด · INV\(inverter + 1) \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ")").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("ตารางค่าวัด | INV\(inverter + 1) \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ")").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 filterSwitch(slots: inv.slotsInUse, todo: statuses.filter { $0 == .todo }.count, failed: statuses.filter { $0 == .fail }.count)
             }
@@ -195,7 +195,7 @@ struct IECVITable: View {
     private var headerRow: some View {
         HStack(spacing: 0) {
             cell("สตริง", 0, .leading)
-            cell("MPPT · ช่อง", 1, .leading)
+            cell("MPPT | ช่อง", 1, .leading)
             cell("แผง", 2, .leading)
             Text(phase == .before ? "Voc (V)" : "Vmp (V)").frame(maxWidth: .infinity, alignment: .trailing)
             cell("ต่าง", 3, .trailing)
@@ -229,8 +229,8 @@ struct IECVITable: View {
 
     private func emptyRow(_ slot: Int) -> some View {
         HStack(spacing: 0) {
-            cell("ช่อง \(slot) · ว่าง", 0, .leading)
-            cell("\(IECReport.mppt(slot: slot)) · \(slot)", 1, .leading)
+            cell("ช่อง \(slot) | ว่าง", 0, .leading)
+            cell("\(IECReport.mppt(slot: slot)) | \(slot)", 1, .leading)
             Text("ไม่มีสตริงต่อเข้าช่องนี้").frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.sarabunFixed(14)).foregroundStyle(Theme.disabledText)
@@ -248,7 +248,7 @@ struct IECVITable: View {
             // the board's `String n` (the chip, the dialog and the map keep `INV1ST1` / `ST1`)
             Text("String \(seq)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 .frame(width: Self.widths[0], alignment: .leading)
-            cell("\(IECReport.mppt(slot: slot)) · \(slot)", 1, .leading)
+            cell("\(IECReport.mppt(slot: slot)) | \(slot)", 1, .leading)
             cell("\(s.modules)", 2, .leading)
             value(volts.map { IECFormat.number($0, digits: 1) }, bad: vocBad).frame(maxWidth: .infinity, alignment: .trailing)
             value(dev.map(IECReport.signedPercent), bad: vocBad).frame(width: Self.widths[3], alignment: .trailing)
@@ -282,14 +282,14 @@ struct IECVITable: View {
         return Text(t).font(.sarabunFixed(13, .bold)).foregroundStyle(ink).frame(width: 80, height: 22).background(fill, in: Capsule())
     }
 
-    /// `วัดแล้ว` · the median of each module-count group (or one median and V per module) · polarity.
-    /// Step 4's footer: measured · the Vmp median(s) · Σ Imp · the Excel rows.
+    /// `วัดแล้ว` | the median of each module-count group (or one median and V per module) | polarity.
+    /// Step 4's footer: measured | the Vmp median(s) | Σ Imp | the Excel rows.
     private func afterCells(_ inv: IECReport.Inverter, _ t: IECReport.BeforeVITally) -> [(String, String)] {
         let medians = report.vmpMedians(inv)
-        let median = medians.isEmpty ? "—" : medians.map { String(format: "%.1f V", $0.median) + (medians.count > 1 ? " (\($0.modules))" : "") }.joined(separator: " · ")
+        let median = medians.isEmpty ? "—" : medians.map { String(format: "%.1f V", $0.median) + (medians.count > 1 ? " (\($0.modules))" : "") }.joined(separator: " | ")
         let amps = inv.strings.compactMap(\.value.impA)
         return [("วัดแล้ว", "\(t.done) / \(t.total) สตริง"), ("มัธยฐาน Vmp", median),
-                ("กระแสรวม", amps.isEmpty ? "—" : String(format: "%.1f A", amps.reduce(0, +))), ("Excel", "แถว 17 · 19")]
+                ("กระแสรวม", amps.isEmpty ? "—" : String(format: "%.1f A", amps.reduce(0, +))), ("Excel", "แถว 17 | 19")]
     }
 
     private func footer(_ inv: IECReport.Inverter) -> some View {
@@ -378,7 +378,7 @@ struct IECValuePhotoCard: View {
                 Text(cell).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             valueLine
-            Text(asset == nil ? "ยังไม่มีรูป" : hint?.text ?? "ถ่ายแล้ว · ② ป้อนค่าจากรูป").font(.sarabunFixed(12))
+            Text(asset == nil ? "ยังไม่มีรูป" : hint?.text ?? "ถ่ายแล้ว | ② ป้อนค่าจากรูป").font(.sarabunFixed(12))
                 .foregroundStyle(hintColor).lineLimit(1)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)

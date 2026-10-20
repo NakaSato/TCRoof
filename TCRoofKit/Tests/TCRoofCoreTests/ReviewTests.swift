@@ -130,7 +130,7 @@ final class ReviewTests: XCTestCase {
         XCTAssertEqual(rows("structPhotos").map(\.kind), [.added, .added])
         XCTAssertEqual(rows("obst").map(\.old), ["1x1 ม. @1,2"])
         XCTAssertEqual(rows("obst").map(\.new), ["1x1 ม. @3,2"])
-        XCTAssertEqual(rows("trafos").map(\.field), ["หม้อแปลงไฟฟ้าและตู้ MDB (สูงสุด 5 × 6) · TR1"])
+        XCTAssertEqual(rows("trafos").map(\.field), ["หม้อแปลงไฟฟ้าและตู้ MDB (สูงสุด 5 × 6) | TR1"])
         XCTAssertEqual(rows("trafos").map(\.new), ["500 kVA"])
         XCTAssertTrue(rows("surveyorSign").isEmpty)
         XCTAssertTrue(rows("rev").isEmpty && rows("date").isEmpty)

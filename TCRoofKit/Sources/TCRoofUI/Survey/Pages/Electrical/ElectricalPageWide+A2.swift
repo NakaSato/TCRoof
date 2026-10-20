@@ -32,7 +32,7 @@ extension ElectricalPageWide {
     var a2Sync: SiteSync.Summary { a2Cache.summary(job) }
     var a2Badges: Set<SiteSync.Field> { a2Sync.badges }
 
-    /// `ดึงจากภาพ A2 · N รายการ`, orange `· ต่างกัน n` with conflicts; opens the panel (a sheet on iPhone).
+    /// `ดึงจากภาพ A2 | N รายการ`, orange `| ต่างกัน n` with conflicts; opens the panel (a sheet on iPhone).
     @ViewBuilder var a2Button: some View {
         let items = a2Sync.items
         if !items.isEmpty {
@@ -42,7 +42,7 @@ extension ElectricalPageWide {
             Button { showA2.toggle() } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "link").font(.system(size: 15, weight: .semibold))
-                    Text(conflicts > 0 ? "ดึงจากภาพ A2 · ต่างกัน \(conflicts)" : "ดึงจากภาพ A2 · \(linked) รายการ")
+                    Text(conflicts > 0 ? "ดึงจากภาพ A2 | ต่างกัน \(conflicts)" : "ดึงจากภาพ A2 | \(linked) รายการ")
                         .font(.sarabunFixed(narrow ? 14 : 16, .bold)).lineLimit(1)
                     Text("▾").font(.sarabunFixed(12))
                 }
@@ -74,7 +74,7 @@ extension ElectricalPageWide {
                 Divider().padding(.top, 4)
                 VStack(alignment: .leading, spacing: 2) {
                     (Text("ช่องที่มีป้าย ") + Text("A2").bold().foregroundColor(Theme.primary)
-                        + Text(" กรอกให้อัตโนมัติจากสัญลักษณ์บนภาพ A2 · วางหม้อแปลง / MDB ใหม่บน A2 จะสร้างการ์ดในผังนี้ให้ · แก้ที่หน้านี้แล้วป้ายบนภาพ A2 เปลี่ยนตาม · ช่องที่กรอกเองไว้แล้วจะไม่ถูกทับ ให้เลือกเอง"))
+                        + Text(" กรอกให้อัตโนมัติจากสัญลักษณ์บนภาพ A2 | วางหม้อแปลง / MDB ใหม่บน A2 จะสร้างการ์ดในผังนี้ให้ | แก้ที่หน้านี้แล้วป้ายบนภาพ A2 เปลี่ยนตาม | ช่องที่กรอกเองไว้แล้วจะไม่ถูกทับ ให้เลือกเอง"))
                     Text(SiteSync.notSent)
                 }
                 .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
@@ -107,7 +107,7 @@ extension ElectricalPageWide {
             }
             if let c = conflict {
                 HStack(spacing: 8) {
-                    Text("หน้านี้ \(c.a3) · A2 \(c.a2)" + (it.unit.map { " " + $0 } ?? ""))
+                    Text("หน้านี้ \(c.a3) | A2 \(c.a2)" + (it.unit.map { " " + $0 } ?? ""))
                         .font(.sarabunFixed(14)).foregroundStyle(Theme.pending).lineLimit(2)
                     Spacer(minLength: 4)
                     Button { SiteSync.useA2(&job, mark: it.id) } label: {

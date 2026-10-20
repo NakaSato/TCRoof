@@ -25,10 +25,10 @@ public enum TankPhotos {
     /// The board's tiles (`SHOT`), with their field: id, field, name, subtitle, tip.
     static let shots: [(id: String, field: String, name: String, subtitle: String, tip: String)] = [
         ("aerial", "aerialPhoto", "ภาพมุมสูง", "โดรน หรือ Google Maps", "ถ่ายตรงลงจากด้านบนให้เห็นถังทั้งใบและทางเข้า"),
-        ("walls", "sidePhotos", "ผนังถัง", "ใช้วางแนวรางสายไฟ · เหนือ ใต้ ตะวันออก ตะวันตก",
+        ("walls", "sidePhotos", "ผนังถัง", "ใช้วางแนวรางสายไฟ | เหนือ ใต้ ตะวันออก ตะวันตก",
          "ยืนห่างผนัง ~10 ม. ให้เห็นผนังทั้งด้าน ทั้งขอบบนและฐาน (ด้านที่จะเดินรางสายไฟ)"),
-        ("roof", Tank.Key.roofPhotos, "หลังคาถัง · ภาพรวม", "หลังคาถัง", "ถ่ายจากมุมหลังคาให้เห็นพื้นที่วางแผงทั้งหมด"),
-        ("surface", Tank.Key.roofPhotos, "ผิวหลังคาใกล้", "หลังคาถัง · สภาพผิว รอยร้าว น้ำขัง", "ถ่ายใกล้ ~1 ม. ให้เห็นผิวคอนกรีต รอยร้าว หรือคราบน้ำขัง"),
+        ("roof", Tank.Key.roofPhotos, "หลังคาถัง | ภาพรวม", "หลังคาถัง", "ถ่ายจากมุมหลังคาให้เห็นพื้นที่วางแผงทั้งหมด"),
+        ("surface", Tank.Key.roofPhotos, "ผิวหลังคาใกล้", "หลังคาถัง | สภาพผิว รอยร้าว น้ำขัง", "ถ่ายใกล้ ~1 ม. ให้เห็นผิวคอนกรีต รอยร้าว หรือคราบน้ำขัง"),
         ("cable", Tank.Key.cablePhoto, "แนวเดินสายไฟ", "จากถังถึงห้อง Inverter", "เดินตามแนวสายจากถังไปห้อง Inverter ถ่ายให้เห็นทางเดินสายทั้งแนว"),
         ("shade", Tank.Key.shadePhoto, "สิ่งบังแดด", "เฉพาะเมื่อมีต้นไม้ / อาคารบัง", "ยืนกลางหลังคา หันไปทางสิ่งที่บังแดด ให้เห็นความสูงเทียบกับขอบถัง"),
     ]
@@ -143,11 +143,11 @@ public enum TankPhotos {
         return order.first { $0.required && !taken(v, $0) && $0.id != current }
     }
 
-    /// `ภาพบังคับยังขาด 2 ภาพ · ไม่บังคับ 1 ภาพ`: the required count from `Tank.photoCompletion`, the optional tiles taken.
+    /// `ภาพบังคับยังขาด 2 ภาพ | ไม่บังคับ 1 ภาพ`: the required count from `Tank.photoCompletion`, the optional tiles taken.
     public static func summary(_ v: Values) -> String {
         let c = Tank.photoCompletion(v), left = c.total - c.filled
         let optional = tiles(v).filter { !$0.required && taken(v, $0) }.count
-        return (left > 0 ? "ภาพบังคับยังขาด \(left) ภาพ" : "ภาพบังคับครบแล้ว") + " · ไม่บังคับ \(optional) ภาพ"
+        return (left > 0 ? "ภาพบังคับยังขาด \(left) ภาพ" : "ภาพบังคับครบแล้ว") + " | ไม่บังคับ \(optional) ภาพ"
     }
 
     // MARK: the shot point
@@ -165,7 +165,7 @@ public enum TankPhotos {
 }
 
 extension TankPhotos {
-    /// The inspector's `จุดถ่าย · GPS` (230 × 230): the tank, its tables when laid out, and a numbered dot where each
+    /// The inspector's `จุดถ่าย | GPS` (230 × 230): the tank, its tables when laid out, and a numbered dot where each
     /// tile's photo was taken (the selected one filled, the others outlined); points off the drawing sit on its edge.
     /// nil when the selected photo has no position (or the site no GPS).
     public static func shotPlan(_ v: Values, site gps: String, selected: String?) -> Sketch? {

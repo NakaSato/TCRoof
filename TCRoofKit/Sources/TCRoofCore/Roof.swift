@@ -136,7 +136,7 @@ public enum Roof {
         v[Key.purlin] = p.map { .text(String(format: "%.2f", min(purlinRange.upperBound, max(purlinRange.lowerBound, ($0 * 100).rounded() / 100)))) }
     }
     /// Purlin lines across the ridge, metres from the plan's first grid line: 0.15 m each side of the ridge, then every
-    /// `spacing · cos(slope)` down to the eaves (the design's `PUR`).
+    /// `spacing | cos(slope)` down to the eaves (the design's `PUR`).
     public static func purlinLines(_ v: Values) -> [Double] {
         let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
         let step = purlinSpacing(v) * cos(slope(v) * .pi / 180)
@@ -301,11 +301,11 @@ public enum Roof {
         return "other"
     }
 
-    /// "ชุดมาตรฐาน · โครงถักเหล็ก 16 ม."
+    /// "ชุดมาตรฐาน | โครงถักเหล็ก 16 ม."
     public static func memberNote(_ v: Values) -> String {
         let f = frame(v), wood = v.choice(Key.structure) == "ไม้"
         let kind = f.isTruss ? "โครงถัก" : f == .rafterTie ? "โครงขื่อรัด" : f == .rafterTruss ? "โครงจันทันถัก" : "โครง"
-        return "ชุดมาตรฐาน · \(kind)\(wood ? "ไม้" : "เหล็ก") \(fmt(span(v))) ม."
+        return "ชุดมาตรฐาน | \(kind)\(wood ? "ไม้" : "เหล็ก") \(fmt(span(v))) ม."
     }
 
     // MARK: roof shape and material
@@ -316,12 +316,12 @@ public enum Roof {
         public let stored: String?
     }
     public static let shapes: [Option] = [
-        Option(name: "ทรงจั่ว", sub: "Gable · ลาด 2 ด้าน", stored: "หลังคาทรงจั่ว"),
-        Option(name: "ทรงปั้นหยา", sub: "Hip · ลาด 4 ด้าน", stored: "หลังคาทรงปั้นหยา"),
-        Option(name: "ทรงเพิงหมาแหงน", sub: "Shed · ลาดด้านเดียว", stored: "หลังคาเพิงหมาแหงน"),
-        Option(name: "ทรงฟันเลื่อย", sub: "Saw-tooth · โรงงาน", stored: nil),
+        Option(name: "ทรงจั่ว", sub: "Gable | ลาด 2 ด้าน", stored: "หลังคาทรงจั่ว"),
+        Option(name: "ทรงปั้นหยา", sub: "Hip | ลาด 4 ด้าน", stored: "หลังคาทรงปั้นหยา"),
+        Option(name: "ทรงเพิงหมาแหงน", sub: "Shed | ลาดด้านเดียว", stored: "หลังคาเพิงหมาแหงน"),
+        Option(name: "ทรงฟันเลื่อย", sub: "Saw-tooth | โรงงาน", stored: nil),
         Option(name: "ทรงโค้ง", sub: "Arch / Curved", stored: "หลังคาทรงโค้ง"),
-        Option(name: "หลังคาแบน / ดาดฟ้า", sub: "Flat · คอนกรีต", stored: "หลังคาคอนกรีต (ดาดฟ้า)"),
+        Option(name: "หลังคาแบน / ดาดฟ้า", sub: "Flat | คอนกรีต", stored: "หลังคาคอนกรีต (ดาดฟ้า)"),
     ]
     public static let materials: [Option] = [
         Option(name: "เมทัลชีท", sub: "ลอนสแน็ปล็อก / ลอนทั่วไป", stored: "เมทัลชีท"),
@@ -439,8 +439,8 @@ public enum Roof {
     public static func statusLine(_ v: Values) -> String {
         let g = gaps(v)
         if g.isEmpty { return "ครบช่องบังคับแล้ว" }
-        if g.allSatisfy({ $0.key.hasPrefix("shot-") }) { return "ยังขาดภาพหลังคา: " + g.map(\.title).joined(separator: " · ") }
-        return "ยังขาด: " + g.map { $0.key.hasPrefix("shot-") ? "ภาพ" + $0.title : $0.title }.joined(separator: " · ")
+        if g.allSatisfy({ $0.key.hasPrefix("shot-") }) { return "ยังขาดภาพหลังคา: " + g.map(\.title).joined(separator: " | ") }
+        return "ยังขาด: " + g.map { $0.key.hasPrefix("shot-") ? "ภาพ" + $0.title : $0.title }.joined(separator: " | ")
     }
 }
 
@@ -452,7 +452,7 @@ public enum RoofFrame: String, CaseIterable, Sendable {
     public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "h": "ถัก Howe", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก", "k": "ชายคาฝ้า"][rawValue]! }
     public var title: String {
         ["n": "โครงปกติ", "p": "โครงถัก Pratt", "h": "โครงถัก Howe", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2",
-         "k": "โครงจันทันพาดเสา · ชายคาฝ้า"][rawValue]!
+         "k": "โครงจันทันพาดเสา | ชายคาฝ้า"][rawValue]!
     }
     public static let ordered: [RoofFrame] = [.normal, .pratt, .howe, .warren, .rafterTie, .rafterTruss, .eaveCeiling]
     /// Pratt, Howe, Warren and the normal frame are trusses with a bottom chord.
@@ -545,13 +545,13 @@ public extension Roof {
             }
             return name + " " + size
         }
-        /// "ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด", or for a saved roof "ขื่อรัด · แป @0.90 · โดย วิชัย · 28 ก.ย. · ทั้งทีม".
+        /// "ถัก Pratt | ช่วงเสา 4 ม. | 7 × 6 กริด", or for a saved roof "ขื่อรัด | แป @0.90 | โดย วิชัย | 28 ก.ย. | ทั้งทีม".
         public var subtitle: String {
             if let by {
                 return [roofFrame.label, "แป @" + String(format: "%.2f", purlin ?? 1), "โดย " + by, date ?? "", scope ?? ""]
-                    .filter { !$0.isEmpty }.joined(separator: " · ")
+                    .filter { !$0.isEmpty }.joined(separator: " | ")
             }
-            return roofFrame.label + " · ช่วงเสา " + fmt(xs.max() ?? 0) + " ม. · \(xs.count + 1) × \(ys.count + 1) กริด"
+            return roofFrame.label + " | ช่วงเสา " + fmt(xs.max() ?? 0) + " ม. | \(xs.count + 1) × \(ys.count + 1) กริด"
         }
     }
 

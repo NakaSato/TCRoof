@@ -21,7 +21,7 @@ struct StationDocsCard: View {
             }
             packages(ctx, station)
             if let record = station.erc {
-                Label("ลำดับ กกพ. · " + ERCFlow.headline(record, job.ercContext), systemImage: "arrow.triangle.branch")
+                Label("ลำดับ กกพ. | " + ERCFlow.headline(record, job.ercContext), systemImage: "arrow.triangle.branch")
                     .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                 ForEach(ERCFlow.waits(record, job.ercContext).filter { $0.left <= ERCNotification.lead }, id: \.step) { wait in
                     Label("\(wait.title) \(wait.text)", systemImage: "clock.badge.exclamationmark")

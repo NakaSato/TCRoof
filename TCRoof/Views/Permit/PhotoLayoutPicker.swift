@@ -79,7 +79,7 @@ struct PhotoOrderStrip: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            TCFieldLabel("ลำดับในหน้า · แตะรูปเพื่อใส่คำบรรยายและกรอบแดง")
+            TCFieldLabel("ลำดับในหน้า | แตะรูปเพื่อใส่คำบรรยายและกรอบแดง")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.s) {
                     ForEach(images.indices, id: \.self) { item($0) }

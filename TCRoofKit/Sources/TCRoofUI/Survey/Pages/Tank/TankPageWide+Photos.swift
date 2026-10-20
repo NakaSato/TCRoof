@@ -133,7 +133,7 @@ extension TankPageWide {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(t.name) · " + (p != nil ? "ถ่ายแล้ว" : t.required ? "บังคับ" : "ไม่บังคับ"))
+        .accessibilityLabel("\(t.name) | " + (p != nil ? "ถ่ายแล้ว" : t.required ? "บังคับ" : "ไม่บังคับ"))
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
@@ -185,7 +185,7 @@ extension TankPageWide {
             HStack(spacing: 8) {
                 Text("+").font(.sarabunFixed(20, .bold))
                 Text("เพิ่มภาพสิ่งกีดขวาง").font(.sarabunFixed(14, .bold))
-                Text("V1–V10 · บันได · ช่องลงถัง").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                Text("V1–V10 | บันได | ช่องลงถัง").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
             }
             .foregroundStyle(Theme.primary)
             .frame(maxWidth: .infinity, minHeight: 48)
@@ -202,7 +202,7 @@ extension TankPageWide {
             let p = inspectedPhoto(t)
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Text(t.id == "walls" ? "ผนังถัง · " + TankPhotos.walls[photoWall] : t.name).font(.sarabunFixed(17, .bold)).lineLimit(1)
+                    Text(t.id == "walls" ? "ผนังถัง | " + TankPhotos.walls[photoWall] : t.name).font(.sarabunFixed(17, .bold)).lineLimit(1)
                     Spacer(minLength: 6)
                     photoPill(t, taken: TankPhotos.taken(values, t), compact: false)
                 }
@@ -350,12 +350,12 @@ extension TankPageWide {
         }
     }
 
-    /// `29/9/2569 10:42 · 13.7512, 100.5014`
+    /// `29/9/2569 10:42 | 13.7512, 100.5014`
     func photoMeta(_ p: Photo) -> String {
         let c = Calendar(identifier: .buddhist).dateComponents([.day, .month, .year, .hour, .minute], from: p.takenAt)
         let when = String(format: "%d/%d/%d %02d:%02d", c.day ?? 0, c.month ?? 0, c.year ?? 0, c.hour ?? 0, c.minute ?? 0)
         guard let lat = p.lat, let lon = p.lon else { return when }
-        return when + String(format: " · %.4f, %.4f", lat, lon)
+        return when + String(format: " | %.4f, %.4f", lat, lon)
     }
 
     // MARK: taking photos (the form's pipeline)

@@ -32,7 +32,7 @@ final class TankEnergyTests: XCTestCase {
         XCTAssertLessThanOrEqual(s.trials.last!.modules, s.trials[0].modules)
         // the prototype on the กปภ. 40 × 40 tank at 17° N: the standard 2.70 m wins
         XCTAssertEqual(s.chosen.gap, 2.7, accuracy: 1e-9)
-        XCTAssertTrue(s.line.hasPrefix("ลองระยะห่างแถว 11 แบบ · เลือก 2.70 ม."))
+        XCTAssertTrue(s.line.hasPrefix("ลองระยะห่างแถว 11 แบบ | เลือก 2.70 ม."))
     }
 
     func testAStoredGapRoundTripsAndNeverGoesUnderTheStandard() {

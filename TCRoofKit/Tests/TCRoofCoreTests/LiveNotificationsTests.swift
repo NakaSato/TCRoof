@@ -25,7 +25,7 @@ final class LiveNotificationsTests: XCTestCase {
         XCTAssertEqual(plans[0].fire, .at(d(12, 18)))
         XCTAssertEqual(plans[1].title, "ติดตั้ง Day 1/5")
         XCTAssertEqual(plans[1].fire, .at(d(13, 7, 30)))
-        XCTAssertEqual(plans[1].sub, "ทีม TCR01 · เริ่ม 08:00")
+        XCTAssertEqual(plans[1].sub, "ทีม TCR01 | เริ่ม 08:00")
         XCTAssertEqual(plans[1].bellID, "install-j-2026-10-13")
         XCTAssertEqual(plans.map(\.type), [.install, .install])
     }

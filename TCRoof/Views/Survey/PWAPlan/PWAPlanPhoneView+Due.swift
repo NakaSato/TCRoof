@@ -19,7 +19,7 @@ extension PWAPlanPhoneView {
         let sunday = cal.date(byAdding: .day, value: 6, to: due.thisStart) ?? due.thisStart
         let nextSunday = cal.date(byAdding: .day, value: 6, to: due.nextStart) ?? due.nextStart
         if !thisWeek.isEmpty {
-            dueGroup("สัปดาห์นี้", PWAPlanFormat.range(due.thisStart, sunday) + " · รวมที่เลยกำหนด", thisWeek)
+            dueGroup("สัปดาห์นี้", PWAPlanFormat.range(due.thisStart, sunday) + " | รวมที่เลยกำหนด", thisWeek)
         }
         if !nextWeek.isEmpty {
             dueGroup("สัปดาห์หน้า", PWAPlanFormat.range(due.nextStart, nextSunday), nextWeek)
@@ -101,7 +101,7 @@ extension PWAPlanPhoneView {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(PWAPlanFormat.dayMonth.string(from: d.date)) · \(d.title) · \(d.subtitle) · \(d.chip)")
+        .accessibilityLabel("\(PWAPlanFormat.dayMonth.string(from: d.date)) | \(d.title) | \(d.subtitle) | \(d.chip)")
         .accessibilityAddTraits(.isButton)
     }
 

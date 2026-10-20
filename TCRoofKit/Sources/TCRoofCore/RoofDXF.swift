@@ -25,10 +25,10 @@ public enum RoofDXF {
                                                "txt": "TEXT", "dimtxt": "DIM"]
     static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
-    /// "GRID · POST · TRUSS · PURLIN · SECTION · DIM · TEXT · TABLE", the sheet's layer line.
+    /// "GRID | POST | TRUSS | PURLIN | SECTION | DIM | TEXT | TABLE", the sheet's layer line.
     public static func layerSummary(_ parts: Set<Part>) -> String {
-        [parts.contains(.plan) ? "GRID · POST · TRUSS · PURLIN" : "", parts.contains(.section) ? "SECTION" : "", parts.contains(.pv) ? "PV" : "",
-         parts.isEmpty ? "" : "DIM · TEXT", parts.contains(.table) ? "TABLE" : ""].filter { !$0.isEmpty }.joined(separator: " · ")
+        [parts.contains(.plan) ? "GRID | POST | TRUSS | PURLIN" : "", parts.contains(.section) ? "SECTION" : "", parts.contains(.pv) ? "PV" : "",
+         parts.isEmpty ? "" : "DIM | TEXT", parts.contains(.table) ? "TABLE" : ""].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
     /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`.
@@ -54,8 +54,8 @@ public enum RoofDXF {
                 guard let tag, let l = planLayers[tag] else { continue }
                 write(op, l, tp, L.k, text: tag == "dimtxt" ? th * 0.8 : th)
             }
-            TEXT("TEXT", (0, -1.2), th * 1.4, "แปลนโครงหลังคา · " + f.label + " · " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
-                 + " ม. · แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
+            TEXT("TEXT", (0, -1.2), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
+                 + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }
         if parts.contains(.pv) {
             let pv = RoofPlan(v, mode: .pv, mount: RoofMount.layout(v, latitude: latitude).layout)
@@ -73,12 +73,12 @@ public enum RoofDXF {
             }
             TEXT("DIM", ts(Pt(380, 226)), th, fmt(s.span), mid: true)
             TEXT("TEXT", (L.lx / 2 - s.span / 2, top - 252 / s.scale - 0.8), th * 1.4,
-                 "รูปตัด A-A · " + f.label + " · ช่วง " + fmt(s.span) + " ม. · ลาด " + Roof.slopeText(v), mid: false)
+                 "รูปตัด A-A | " + f.label + " | ช่วง " + fmt(s.span) + " ม. | ลาด " + Roof.slopeText(v), mid: false)
         }
         if parts.contains(.table) {
             let tx = L.lx + 4
             var ty = L.ly
-            TEXT("TABLE", (tx, ty), th * 1.3, "ขนาดชิ้นส่วน 1–7 · " + f.label, mid: false); ty -= 0.8
+            TEXT("TABLE", (tx, ty), th * 1.3, "ขนาดชิ้นส่วน 1–7 | " + f.label, mid: false); ty -= 0.8
             for (i, m) in f.members.enumerated() {
                 let size = Roof.memberSize(v, i + 1)
                 TEXT("TABLE", (tx, ty), th, "\(i + 1)  " + m.name, mid: false)

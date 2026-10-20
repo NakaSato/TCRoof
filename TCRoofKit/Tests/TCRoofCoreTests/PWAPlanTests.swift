@@ -251,7 +251,7 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(installs.last?.status, .onPlan)
         XCTAssertEqual(installs.first?.ref, "MP 189")
         XCTAssertEqual(installs.first?.title.hasPrefix("2."), true)
-        XCTAssertEqual(installs.first?.subtitle.hasPrefix("a · ผู้รับเหมา A · TCR01"), true)
+        XCTAssertEqual(installs.first?.subtitle.hasPrefix("a | ผู้รับเหมา A | TCR01"), true)
     }
 
     func testAgendaRemindsOnlyTodayAboutUnsentReports() {
@@ -265,7 +265,7 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(notices.count, 1)
         XCTAssertEqual(notices[0].day, today)
         XCTAssertEqual(notices[0].start, 16 * 60)
-        XCTAssertEqual(notices[0].subtitle, "ยังไม่ส่ง 1 สถานี · a")
+        XCTAssertEqual(notices[0].subtitle, "ยังไม่ส่ง 1 สถานี | a")
         XCTAssertEqual(notices[0].opens, .dailies)
         XCTAssertEqual(notices[0].station, "a")
         // the timed reminder comes after the day's untimed rows
@@ -283,7 +283,7 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(items[1].ref, "TC-0012")
         XCTAssertEqual(items[1].opens, .survey)
         XCTAssertEqual(items[0].status, .mustSubmit)
-        XCTAssertEqual(items[0].subtitle, "1 · ครบกำหนดวันนี้")
+        XCTAssertEqual(items[0].subtitle, "1 | ครบกำหนดวันนี้")
     }
 
     func testTeamKeysAndFilter() {
@@ -298,7 +298,7 @@ final class PWAPlanTests: XCTestCase {
     }
 
     func testShortNameAndSearch() {
-        XCTAssertEqual(PWAPlan.shortName("สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล"), "ทุ่งน้อย")
+        XCTAssertEqual(PWAPlan.shortName("สถานีผลิตน้ำทุ่งน้อย | สาขาเมืองพล"), "ทุ่งน้อย")
         XCTAssertEqual(PWAPlan.shortName("การประปาวัดชัย"), "วัดชัย")
         XCTAssertEqual(PWAPlan.shortName("สถานี"), "สถานี")
         XCTAssertEqual(PWAPlan.clock(8 * 60 + 5), "08:05")

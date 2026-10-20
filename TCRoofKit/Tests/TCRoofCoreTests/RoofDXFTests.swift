@@ -53,6 +53,6 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertEqual(Array(d), [0xA1, 0x20, 0x78, 0x25, 0x25, 0x64])
         XCTAssertEqual(RoofDXF.num(1500), "1500")
         XCTAssertEqual(RoofDXF.num(0.25), "0.25")
-        XCTAssertEqual(RoofDXF.layerSummary([.plan, .section, .table]), "GRID · POST · TRUSS · PURLIN · SECTION · DIM · TEXT · TABLE")
+        XCTAssertEqual(RoofDXF.layerSummary([.plan, .section, .table]), "GRID | POST | TRUSS | PURLIN | SECTION | DIM | TEXT | TABLE")
     }
 }

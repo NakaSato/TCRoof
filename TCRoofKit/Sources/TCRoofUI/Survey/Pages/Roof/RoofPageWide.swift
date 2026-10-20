@@ -104,10 +104,16 @@ struct RoofPageWide: View {
     static let line = Theme.borderSubtle
     static let amber = Theme.pending
 
+    /// The page's view type is erased in a few places (`AnyView`): written out in full it nests so deep that a Debug
+    /// build on a device runs out of stack working it out (SIGSEGV in swift_getTypeByMangledName on opening C1).
     var body: some View {
+        presented(page)
+    }
+
+    private var page: some View {
         VStack(spacing: 16) {
             PageStepBar(job: job, here: .module(moduleID), title: "แปลนและโครงสร้างหลังคา")
-            if stacked { stackedLayout } else { wideLayout }
+            if stacked { AnyView(stackedLayout) } else { AnyView(wideLayout) }
         }
         .foregroundStyle(Theme.navy)
         #if DEBUG
@@ -116,6 +122,11 @@ struct RoofPageWide: View {
         .onChange(of: request.wrappedValue) { _, k in if let k { open(gap: k); request.wrappedValue = nil } }
         .task(id: mountKey) { await refreshMount() }
         .task(id: mountYieldInputs) { await refreshYield() }
+    }
+
+    /// The page's alerts and sheets.
+    private func presented<V: View>(_ page: V) -> some View {
+        page
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -157,8 +168,8 @@ struct RoofPageWide: View {
             // the section keeps the design's 297 pt on a tall screen and gives the plan room on a short one (11" landscape)
             GeometryReader { geo in
                 VStack(spacing: 12) {
-                    planCard.frame(maxHeight: .infinity)
-                    sectionCard.frame(height: min(297, max(200, geo.size.height * 0.375)))
+                    AnyView(planCard).frame(maxHeight: .infinity)
+                    AnyView(sectionCard).frame(height: min(297, max(200, geo.size.height * 0.375)))
                 }
             }
             .frame(width: leftWidth)
@@ -178,9 +189,9 @@ struct RoofPageWide: View {
 
     func cardsColumn(fill: Bool) -> some View {
         VStack(spacing: 12) {
-            roofCard
-            membersCard.frame(maxHeight: fill ? .infinity : nil)
-            photosCard
+            AnyView(roofCard)
+            AnyView(membersCard).frame(maxHeight: fill ? .infinity : nil)
+            AnyView(photosCard)
         }
     }
 
@@ -197,12 +208,12 @@ struct RoofPageWide: View {
     var stackedColumn: some View {
             VStack(spacing: 12) {
                 // iPhone: the legend and footer sit under the plan, so the plan gets the full width
-                planCard.frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
+                AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
-                sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
-                roofCard.id("info")
-                membersCard.id("members")
-                photosCard.id("photos")
+                AnyView(sectionCard).frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
+                AnyView(roofCard).id("info")
+                AnyView(membersCard).id("members")
+                AnyView(photosCard).id("photos")
             }
             .padding(.bottom, 4)
     }
@@ -232,7 +243,7 @@ struct RoofPageWide: View {
             RoofSegments(options: ["หลังคา *", "แผงบนหลังคา"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
                 setMode(i == 1 ? .pv : .structure)
             }
-            if mode == .structure { roofTab; roofDesignSection } else { mountTab }
+            if mode == .structure { AnyView(VStack(alignment: .leading, spacing: 10) { roofTab; roofDesignSection }) } else { AnyView(mountTab) }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)

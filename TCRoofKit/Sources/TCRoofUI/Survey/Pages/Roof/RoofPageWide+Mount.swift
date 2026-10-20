@@ -133,6 +133,7 @@ extension RoofPageWide {
                 .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)
         }
         mountSummary
+        mountEnergy
         if let note = mountNote {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.uturn.backward.circle").foregroundStyle(Theme.primary)
@@ -162,7 +163,7 @@ extension RoofPageWide {
                     Text("แผง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     Text(String(format: "%.1f", q?.kWp ?? 0)).font(.sarabunFixed(big, .bold)).monospacedDigit().padding(.leading, 6)
                     Text("kWp").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                    Text(String(format: "%.1f", q?.energy ?? 0)).font(.sarabunFixed(big, .bold)).monospacedDigit().padding(.leading, 6)
+                    Text(String(format: "%.1f", shownEnergy ?? q?.energy ?? 0)).font(.sarabunFixed(big, .bold)).monospacedDigit().padding(.leading, 6)
                     Text("MWh/ปี").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                 }
                 .lineLimit(1).minimumScaleFactor(0.7)

@@ -105,6 +105,7 @@ A port of `tools/yield-reference/reference_engine.py` (`sun_position`, `plane_of
 | `Irradiance.swift` | Spencer extraterrestrial, Kasten–Young airmass, AOI, Perez 1990 sky diffuse, ground reflection; ASHRAE IAM and Marion's diffuse integration; PVsyst cell temperature (`ThermalModel`). |
 | `YieldInputs.swift` | `YieldLosses`, `StringDesign`, `HorizonProfile`, `ArrayFace` (tilt, `azimuthDegTrueN`, near shading, horizon), `YieldUncertainty`, `YieldSystem` (module, inverter × count, faces). |
 | `YieldEngine.swift` | `run_array` per face and `run` over the inverters: one-diode MPP, quality/LID/mismatch, DC ohmic, MPPT current limit, inverter efficiency and clipping, AC ohmic, unavailability and night consumption. |
+| `BundledWeather.swift` | The weather years in `Resources/weather` (the Bangkok PVGIS-ERA5 TMY), the nearest one within 100 km of a site, and a small cache of their sun tracks. |
 | `YieldResult.swift` | Energies at every step (`YieldEnergies`, the golden's `energies_kWh` keys), PR, specific yield, monthly table, loss diagram, PVsyst ageing, P50/P90/P99, hour counts, per-face results, optional hourly trace. |
 
 ```swift

@@ -286,6 +286,18 @@ final class HourlyYieldTests: XCTestCase {
         XCTAssertEqual(HorizonProfile(pairs: [(0, 0)]).skyFactor(tilt: 15), 1, accuracy: 1e-12)
     }
 
+    func testBundledWeather() throws {
+        let near = try XCTUnwrap(BundledWeather.nearest(latitude: 13.90, longitude: 100.60))
+        XCTAssertEqual(near.dataset.id, "pvgis-era5-bangkok")
+        XCTAssertEqual(near.distanceKm, 19.8, accuracy: 0.5)
+        XCTAssertNil(BundledWeather.nearest(latitude: 18.79, longitude: 98.98))   // Chiang Mai
+        // the bundled copy is the reference's file
+        XCTAssertEqual(try BundledWeather.load(near.dataset), Self.weather)
+        let t = try BundledWeather.track(near.dataset, latitude: 13.75, longitude: 100.50)
+        XCTAssertEqual(t.hours.count, 8760)
+        XCTAssertEqual(t.hours[4].zenith, Self.track.hours[4].zenith, accuracy: 1e-12)
+    }
+
     func testScaledWeather() {
         let w = Self.weather.scaled(toAnnualGHI: 1794)
         XCTAssertEqual(w.annualGHI, 1794, accuracy: 1e-6)

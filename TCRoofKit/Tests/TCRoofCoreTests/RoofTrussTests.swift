@@ -76,6 +76,60 @@ final class RoofTrussTests: XCTestCase {
         XCTAssertEqual(RoofTruss.totalText(try row(3)), "3 · 48.00 ม.")
     }
 
+    func testSteelWeightsOfAHoweRoof() throws {
+        let v = roof(.howe), s = try XCTUnwrap(RoofTruss.schedule(v))
+        func row(_ n: Int) throws -> RoofTruss.Row { try XCTUnwrap(s.rows.first { $0.row == n }, "row \(n)") }
+        // purlins C-100x50x20x3.2 (5.50 kg/m in the tables), along the ridge: no per-truss weight
+        let purlin = try row(1)
+        XCTAssertEqual(purlin.size, "C-100x50x20x3.2")
+        XCTAssertEqual(try XCTUnwrap(purlin.kgPerMetre), 5.50, accuracy: 0.01)
+        XCTAssertNil(purlin.perFrameKg)
+        XCTAssertEqual(try XCTUnwrap(purlin.kg), purlin.kgPerMetre! * purlin.length, accuracy: 1e-9)
+        XCTAssertEqual(RoofTruss.kgPerMetreText(purlin), "5.50")
+        XCTAssertEqual(RoofTruss.perFrameKgText(purlin), "-")
+        // top chords 2C-150x50x20x3.2: per truss and three trusses
+        let chord = try row(2), k = try XCTUnwrap(chord.kgPerMetre)
+        XCTAssertEqual(k, 2 * 6.76, accuracy: 0.02)
+        XCTAssertEqual(try XCTUnwrap(chord.perFrameKg), k * chord.perFrameLength!, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(chord.kg), 3 * chord.perFrameKg!, accuracy: 1e-9)
+        // the fascia is wood and the plates are the engineer's: no weight, not in the total
+        XCTAssertEqual(try row(6).size, "ไม้ 1\"x8\"")
+        XCTAssertNil(try row(6).kgPerMetre)
+        XCTAssertEqual(RoofTruss.kgText(try row(6)), "-")
+        let plates = try XCTUnwrap(s.rows.first { $0.row == nil })
+        XCTAssertNil(plates.kg)
+        XCTAssertEqual(s.unweighed.map(\.row), [6])
+        XCTAssertTrue(RoofTruss.steelNote(s).contains("ไม่คิดน้ำหนัก: เชิงชาย"))
+        XCTAssertTrue(RoofTruss.steelNote(s).contains("ไม่รวมแผ่นประกับ"))
+        let total = s.rows.compactMap(\.kg).reduce(0, +)
+        XCTAssertEqual(s.steelKg, total, accuracy: 1e-9)
+        XCTAssertEqual(s.steelPerFrameKg, [2, 3, 4, 5, 7].compactMap { n in s.rows.first { $0.row == n }?.perFrameKg }.reduce(0, +), accuracy: 1e-9)
+        XCTAssertGreaterThan(s.steelKg, 1000)
+        XCTAssertEqual(RoofTruss.steelKgText(s), "≈ " + RoofTruss.kgFormat(total))
+        XCTAssertEqual(RoofTruss.kgFormat(1234.4), "1,234")
+        XCTAssertEqual(RoofTruss.kgFormat(999.6), "1,000")
+        XCTAssertEqual(RoofTruss.kgFormat(12), "12")
+    }
+
+    func testARafterTrussWeighsItsTubesButNotT2() throws {
+        let s = try XCTUnwrap(RoofTruss.schedule(roof(.rafterTruss)))
+        // tube chords ท่อกลม Ø1" หนา 1.6 (1.28 kg/m); T2 is a truss of its own, not a section
+        let chord = try XCTUnwrap(s.rows.first { $0.row == 2 })
+        XCTAssertEqual(try XCTUnwrap(chord.kgPerMetre), 1.28, accuracy: 0.01)
+        if let t2 = s.rows.first(where: { $0.row == 5 }) {
+            XCTAssertTrue(t2.size.hasPrefix("T2"))
+            XCTAssertNil(t2.kgPerMetre)
+        }
+    }
+
+    func testNoSteelSaysDash() throws {
+        var v = roof(.howe)
+        for n in 1...7 { Roof.setMember(&v, n, size: n == 6 ? "ไม้ 1\"x8\"" : "-") }
+        let s = try XCTUnwrap(RoofTruss.schedule(v))
+        XCTAssertEqual(RoofTruss.steelKgText(s), "-")
+        XCTAssertEqual(RoofTruss.steelPerFrameKgText(s), "-")
+    }
+
     func testRowsNotUsedAreLeftOutAndEmptyOnesSaySo() throws {
         var v = roof(.howe)
         Roof.setMember(&v, 5, size: "-")

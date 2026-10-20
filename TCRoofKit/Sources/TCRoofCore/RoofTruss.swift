@@ -94,9 +94,27 @@ public enum RoofTruss {
         public let length: Double
         public let perFrameCount: Int?
         public let perFrameLength: Double?
+        /// The size's mass per metre (`SteelSection`); nil for wood, concrete, T2, plates and sizes not read.
+        public let kgPerMetre: Double?
+
+        init(row: Int?, name: String, size: String, count: Int, length: Double, perFrameCount: Int?, perFrameLength: Double?) {
+            self.row = row; self.name = name; self.size = size; self.count = count; self.length = length
+            self.perFrameCount = perFrameCount; self.perFrameLength = perFrameLength
+            kgPerMetre = row == nil ? nil : SteelSection.parse(size)?.kgPerMetre
+        }
+        /// Steel in one truss (or pair of rafters), kg; nil for members along the ridge.
+        public var perFrameKg: Double? { kgPerMetre.flatMap { k in perFrameLength.map { k * $0 } } }
+        /// Steel on the whole roof, kg.
+        public var kg: Double? { kgPerMetre.map { $0 * length } }
     }
     public struct Schedule: Equatable, Sendable {
         public let rows: [Row]
+        /// Estimated steel of the rows with a weight, kg, for the whole roof and for one truss (the rows counted per
+        /// truss). The gusset plates are left out: their size is the engineer's, and the spec gives no weight for them.
+        public var steelKg: Double { rows.compactMap(\.kg).reduce(0, +) }
+        public var steelPerFrameKg: Double { rows.compactMap(\.perFrameKg).reduce(0, +) }
+        /// Member rows (not plates) without a weight: not steel, no size, or a size not read.
+        public var unweighed: [Row] { rows.filter { $0.row != nil && $0.kgPerMetre == nil } }
         /// Trusses (T1) or rafter pairs on the roof.
         public let frames: Int
         /// "โครง T1 3 ชุด · ช่วง 16.00 ม. · ยาวตามสัน 24.00 ม. · มุม 15°"
@@ -186,6 +204,31 @@ public enum RoofTruss {
     public static func perFrameText(_ r: Row) -> String {
         guard let c = r.perFrameCount else { return "-" }
         return r.perFrameLength.map { String(format: "%d · %.2f", c, $0) } ?? "\(c)"
+    }
+    /// "5.50" kg/m, "-" without a weight.
+    public static func kgPerMetreText(_ r: Row) -> String { r.kgPerMetre.map { String(format: "%.2f", $0) } ?? "-" }
+    /// "171.6" kg per truss, "-" for members along the ridge or without a weight.
+    public static func perFrameKgText(_ r: Row) -> String { r.perFrameKg.map { String(format: "%.1f", $0) } ?? "-" }
+    /// "1,234" kg for the roof, "-" without a weight.
+    public static func kgText(_ r: Row) -> String { r.kg.map(kgFormat) ?? "-" }
+    /// "≈ 1,234" kg of steel on the roof, "-" when no row has a weight.
+    public static func steelKgText(_ s: Schedule) -> String { s.rows.contains { $0.kg != nil } ? "≈ " + kgFormat(s.steelKg) : "-" }
+    /// "≈ 171.6" kg of steel in one truss, "-" when no per-truss row has a weight.
+    public static func steelPerFrameKgText(_ s: Schedule) -> String {
+        s.rows.contains { $0.perFrameKg != nil } ? "≈ " + String(format: "%.1f", s.steelPerFrameKg) : "-"
+    }
+    /// What the steel total is and leaves out, with the rows that have no weight.
+    public static func steelNote(_ s: Schedule) -> String {
+        var t = "น้ำหนักเหล็กประมาณ จากพื้นที่หน้าตัด × 7,850 กก./ลบ.ม. ไม่รวมแผ่นประกับ ระยะทาบ สลักเกลียวและเศษ"
+        let none = s.unweighed.map(\.name)
+        if !none.isEmpty { t += " · ไม่คิดน้ำหนัก: " + none.joined(separator: ", ") }
+        return t
+    }
+    /// "1,234": whole kilograms with a comma every three digits.
+    static func kgFormat(_ x: Double) -> String {
+        var digits = String(Int(x.rounded())), out = ""
+        while digits.count > 3 { out = "," + digits.suffix(3) + out; digits.removeLast(3) }
+        return digits + out
     }
     /// "36 · 93.60 ม." for the roof, or "36 แผ่น" for plates.
     public static func totalText(_ r: Row) -> String {

@@ -146,10 +146,16 @@ extension ReportLayout {
             o += det.translated(8, Self.band + 6, scale: k)
             out.append(Unit(h: h, ops: o))
         }
-        let rowH = 14.0, cols: [(String, Double, TextAlign)] = [("", 18, .center), ("ชิ้นส่วน", 92, .left), ("ขนาด", W - 16 - 18 - 92 - 110 - 120, .left),
-                                                                 (Roof.frame(d).isRafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)", 110, .right), ("ทั้งหลังคา (ชิ้น · ม.)", 120, .right)]
-        let rows = [cols.map(\.0)] + s.rows.map { r in [r.row.map(String.init) ?? "", r.name, r.size, RoofTruss.perFrameText(r), RoofTruss.totalText(r)] }
-        let h = Self.band + 18 + rowH * Double(rows.count) + 22
+        let rafter = Roof.frame(d).isRafter
+        let fixed = 14.0 + 72 + 72 + 80 + 34 + 46 + 50
+        let rowH = 14.0, cols: [(String, Double, TextAlign)] = [("", 14, .center), ("ชิ้นส่วน", 72, .left), ("ขนาด", W - 16 - fixed, .left),
+                                                                 (rafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)", 72, .right), ("ทั้งหลังคา (ชิ้น · ม.)", 80, .right),
+                                                                 ("กก./ม.", 34, .right), (rafter ? "กก./คู่" : "กก./โครง", 46, .right), ("กก. รวม", 50, .right)]
+        let rows = [cols.map(\.0)]
+            + s.rows.map { r in [r.row.map(String.init) ?? "", r.name, r.size, RoofTruss.perFrameText(r), RoofTruss.totalText(r),
+                                 RoofTruss.kgPerMetreText(r), RoofTruss.perFrameKgText(r), RoofTruss.kgText(r)] }
+            + [["", "รวมเหล็ก (ประมาณ)", "ไม่รวมแผ่นประกับ", "", "", "", RoofTruss.steelPerFrameKgText(s), RoofTruss.steelKgText(s)]]
+        let h = Self.band + 18 + rowH * Double(rows.count) + 32
         var o = box("ตารางชิ้นส่วนโครงหลังคา", height: h)
         o.append(.text(s.summary, at: Pt(8, Self.band + 9), size: 7.5, bold: true))
         for (ri, row) in rows.enumerated() {
@@ -157,10 +163,13 @@ extension ReportLayout {
             var x = 8.0
             for (ci, c) in cols.enumerated() {
                 o.append(.rect(Box(x, y, c.1, rowH), stroke: .black, fill: ri == 0 ? .band : nil, width: 0.5))
-                o.append(.textBox(row[ci], Box(x + 3, y + 2, c.1 - 6, rowH - 2), size: 7.5, bold: ri == 0, align: ri == 0 ? .center : c.2))
+                let head = ri == 0, total = ri == rows.count - 1
+                o.append(.textBox(row[ci], Box(x + 2, y + 2, c.1 - 4, rowH - 2), size: head && ci >= 3 ? 6.5 : 7.5, bold: head || (total && ci != 2),
+                                  align: head ? .center : c.2))
                 x += c.1
             }
         }
+        o.append(.text(RoofTruss.steelNote(s), at: Pt(8, h - 19), size: 7, color: .faint))
         o.append(.text(s.note, at: Pt(8, h - 9), size: 7, color: .faint))
         out.append(Unit(h: h, ops: o))
         return out

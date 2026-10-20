@@ -14,6 +14,7 @@ extension RoofPageWide {
                             .font(.sarabunFixed(15, .bold)).fixedSize(horizontal: false, vertical: true)
                         trussDetails
                         scheduleTable(s)
+                        Text(RoofTruss.steelNote(s)).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                         Text(s.note).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                     } else {
                         Text("ใส่ระยะช่วงในแปลนก่อน จึงคิดชิ้นส่วนได้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
@@ -47,35 +48,72 @@ extension RoofPageWide {
     }
 
     func scheduleTable(_ s: RoofTruss.Schedule) -> some View {
-        VStack(spacing: 0) {
-            scheduleRow("", "ชิ้นส่วน", "ขนาด", Roof.frame(values).isRafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)", "ทั้งหลังคา", header: true)
+        let rafter = Roof.frame(values).isRafter
+        return VStack(spacing: 0) {
+            scheduleRow(ScheduleLine(n: "", name: "ชิ้นส่วน", size: "ขนาด", per: rafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)",
+                                     total: "ทั้งหลังคา", kgm: "กก./ม.", perKg: rafter ? "กก./คู่" : "กก./โครง", kg: "กก. รวม"), header: true)
             ForEach(Array(s.rows.enumerated()), id: \.offset) { _, r in
                 Divider()
-                scheduleRow(r.row.map(String.init) ?? "", r.name, r.size, RoofTruss.perFrameText(r), RoofTruss.totalText(r), header: false)
+                scheduleRow(ScheduleLine(n: r.row.map(String.init) ?? "", name: r.name, size: r.size, per: RoofTruss.perFrameText(r),
+                                         total: RoofTruss.totalText(r), kgm: RoofTruss.kgPerMetreText(r),
+                                         perKg: RoofTruss.perFrameKgText(r), kg: RoofTruss.kgText(r)), header: false)
             }
+            Divider()
+            scheduleRow(ScheduleLine(n: "", name: "รวมเหล็ก (ประมาณ)", size: "ไม่รวมแผ่นประกับ", per: "", total: "", kgm: "",
+                                     perKg: RoofTruss.steelPerFrameKgText(s), kg: RoofTruss.steelKgText(s)), header: false, total: true)
         }
         .padding(.horizontal, 12).padding(.vertical, 4)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
     }
 
-    func scheduleRow(_ n: String, _ name: String, _ size: String, _ per: String, _ total: String, header: Bool) -> some View {
+    struct ScheduleLine {
+        let n, name, size, per, total, kgm, perKg, kg: String
+    }
+
+    func scheduleRow(_ l: ScheduleLine, header: Bool, total: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(n).frame(width: 18, alignment: .leading).foregroundStyle(Theme.inkMuted)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(.sarabunFixed(header ? 12.5 : 14, .bold))
-                // iPhone: the size under the name, no column of its own
-                if narrow && !header { Text(size).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted) }
+            Text(l.n).frame(width: 18, alignment: .leading).foregroundStyle(Theme.inkMuted)
+            scheduleName(l, header: header)
+            if !narrow {
+                Text(l.size).frame(maxWidth: .infinity, alignment: .leading)
+                Text(l.per).frame(width: 92, alignment: .trailing).monospacedDigit()
+                Text(l.total).frame(width: 108, alignment: .trailing).monospacedDigit()
+                Text(l.kgm).frame(width: 52, alignment: .trailing).monospacedDigit()
+                Text(l.perKg).frame(width: 70, alignment: .trailing).monospacedDigit()
+                Text(l.kg).frame(width: 70, alignment: .trailing).monospacedDigit()
+            } else {
+                // iPhone: the weights under the counts, in their columns
+                scheduleCell(l.per, l.perKg, header: header, total: total).frame(width: 74, alignment: .trailing)
+                scheduleCell(l.total, l.kg, header: header, total: total).frame(width: 104, alignment: .trailing)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            if !narrow { Text(size).frame(maxWidth: .infinity, alignment: .leading) }
-            Text(per).frame(width: narrow ? 74 : 130, alignment: .trailing).monospacedDigit()
-            Text(total).frame(width: narrow ? 104 : 140, alignment: .trailing).monospacedDigit()
         }
-        .font(.sarabunFixed(header ? 12.5 : 14, header ? .bold : .regular))
+        .font(.sarabunFixed(header ? 12.5 : 14, header || total ? .bold : .regular))
         .foregroundStyle(header ? Theme.inkMuted : Theme.navy)
         .lineLimit(2).minimumScaleFactor(0.8)
         .frame(minHeight: 40)
+    }
+
+    func scheduleName(_ l: ScheduleLine, header: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(l.name).font(.sarabunFixed(header ? 12.5 : 14, .bold))
+            // iPhone: the size and kg/m under the name, no columns of their own
+            if narrow {
+                let sub = header ? "ขนาด · กก./ม." : l.kgm.isEmpty || l.kgm == "-" ? l.size : l.size + " · " + l.kgm + " กก./ม."
+                Text(sub).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// iPhone: a count over its weight ("12 · 31.20" / "171.6 กก."); the weight alone on the total line.
+    func scheduleCell(_ count: String, _ kg: String, header: Bool, total: Bool) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            if !count.isEmpty { Text(count).monospacedDigit() }
+            if header { Text(kg).font(.sarabunFixed(12.5, .bold)) }
+            else if kg != "-" || total { Text(kg == "-" ? kg : kg + " กก.").font(.sarabunFixed(total ? 14 : 12.5, total ? .bold : .regular))
+                .foregroundStyle(total ? Theme.navy : Theme.inkMuted).monospacedDigit() }
+        }
     }
 }
 #endif

@@ -300,8 +300,13 @@ final class Job {
         }
     }
 
-    private func bookPermitsFromDocs(_ station: StationDocs.Station) {
+    /// Books what the papers approve into the MP plan (`PermitLink.book`). The setter above runs it after each change
+    /// to the papers; the screens that create or replace the plan (ตั้งค่าแผน, the workbook import, the assistant's
+    /// re-plan) run it after saving theirs, so papers approved before there was a plan, or a file whose progress
+    /// lacks the booking, still get it. Sync runs neither: the booking travels on the job record.
+    func bookPermitsFromDocs(_ station: StationDocs.Station? = nil) {
         guard let input = scheduleInput else { return }
+        let station = station ?? stationDocs
         let before = scheduleActual
         var a = before
         PermitLink.book(&a, input: input, station: station, stationContext)

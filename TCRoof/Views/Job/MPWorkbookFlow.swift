@@ -87,6 +87,9 @@ final class MPWorkbookFlow {
             for (task, d) in fileActual.finished { a.finished[task] = d }
             if a != job.scheduleActual { job.scheduleActual = a }
         }
+        // the file's progress replaced the job's, `fromDocuments` with it: the papers book their permits again (only
+        // where the file has them below 100 %), as they would for a plan made after the approval
+        job.bookPermitsFromDocs()
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil

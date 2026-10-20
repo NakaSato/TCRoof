@@ -152,8 +152,12 @@ Built:
   team changes afterwards stays. A task without weight in the plan (พค.2 under 200 kVA) is skipped. It runs in
   `Job.stationDocs`'s setter, which every writer of the papers and the ERC flow goes through, all behind
   `stationdocs.drafts` (team only): the booking happens on the device that records the approval and syncs with the
-  job record. Sync writes the JSON directly, so a received change books nothing. Stations whose papers were approved
-  before this build book at their next paper change. The progress sheet marks such a task `100% จากเอกสารอนุมัติ`.
+  job record. Sync writes the JSON directly, so a received change books nothing. The screens that create or replace
+  the plan run the same pass after saving it (`Job.bookPermitsFromDocs`): ตั้งค่าแผน (papers approved while there was
+  no plan yet, or พค.2 gaining weight when the station goes over 200 kVA), the workbook import (a file whose progress
+  replaced the job's carries no `fromDocuments`, so an approved permit below 100 % in the file is booked again) and
+  the assistant's re-plan. Stations whose papers were approved before this build book at their next paper change or
+  plan save. The progress sheet marks such a task `100% จากเอกสารอนุมัติ`.
 - **Construction tasks 2.1…2.9 map to the install photo report's slots** (`IECReport.installTask(page:slot:)`, from
   project.json's `photo_slots`; the source is `9 ภาพถ่ายติดตั้งระบบ`, the hand-over's `install_photo_report`, not the
   daily reports' photos, which aren't kept per slot):

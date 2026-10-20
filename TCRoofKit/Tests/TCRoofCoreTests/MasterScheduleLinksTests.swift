@@ -157,6 +157,36 @@ final class MasterScheduleLinksTests: XCTestCase {
         XCTAssertEqual(a.finished["pk2"], d(2026, 3, 20))
     }
 
+    /// The two passes the app runs besides a paper change (`Job.bookPermitsFromDocs`): a plan made after the approval,
+    /// and a workbook import whose progress replaced the job's (so it has no `fromDocuments`).
+    func testAPlanMadeLaterOrAnImportedProgressIsBookedOnTheNextPass() {
+        var s = StationDocs.Station(buildingRoute: .permit)
+        s.docs["building_permit_o1"] = approved(d(2026, 2, 4))
+        let i = input(over200kVA: false), c = ctx(s, over200kVA: false)
+
+        // approved while there was no plan: the first pass after the plan books it
+        var fresh = MasterSchedule.Actual()
+        XCTAssertEqual(PermitLink.book(&fresh, input: i, station: s, c), [.buildingPermit])
+        XCTAssertEqual(total(fresh, .buildingPermit), 1.5, accuracy: 1e-9)
+
+        // a file's progress: other tasks booked, the permit at 40 %, no record of the link
+        var file = MasterSchedule.Actual()
+        file.setPercent(40, task: .buildingPermit, week: d(2026, 1, 27), weight: 1.5)
+        file.setPercent(60, task: .structure, week: d(2026, 3, 1), weight: i.weight(.structure))
+        let structure = total(file, .structure)
+        XCTAssertEqual(PermitLink.book(&file, input: i, station: s, c), [.buildingPermit])
+        XCTAssertEqual(total(file, .buildingPermit), 1.5, accuracy: 1e-9, "brought to 100 % again")
+        XCTAssertEqual(file.fromDocuments["buildingPermit"], d(2026, 2, 4))
+        XCTAssertEqual(total(file, .structure), structure, accuracy: 1e-9, "the file's other tasks stay")
+
+        // a file already at 100 % is only remembered
+        var done = MasterSchedule.Actual()
+        done.setPercent(100, task: .buildingPermit, week: d(2026, 2, 10), weight: 1.5)
+        XCTAssertEqual(PermitLink.book(&done, input: i, station: s, c), [])
+        XCTAssertEqual(done.points(.buildingPermit, week: d(2026, 2, 10)), 1.5, accuracy: 1e-9)
+        XCTAssertEqual(done.fromDocuments["buildingPermit"], d(2026, 2, 4))
+    }
+
     func testFromDocumentsDecodesFromOlderPlansAndIsLeftOutWhenEmpty() throws {
         let old = #"{"points":{"kickoff":{"2026-01-04":0.5}},"started":{},"finished":{},"lateCauses":{}}"#
         let a = try JSONDecoder().decode(MasterSchedule.Actual.self, from: Data(old.utf8))

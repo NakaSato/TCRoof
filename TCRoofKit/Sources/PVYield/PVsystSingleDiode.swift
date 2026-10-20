@@ -109,6 +109,29 @@ public struct PVsystSingleDiodeModel: Sendable {
         return i
     }
 
+    /// V(I) on the implicit diode equation (pvlib `v_from_i`): the voltage where the module delivers current `i`.
+    /// Decreasing in V, so bracketed Newton between −I·Rs (the diode off) and Voc.
+    public static func voltage(atCurrent i: Double, _ p: OperatingParameters) -> Double {
+        func f(_ v: Double) -> Double {
+            let x = v + i * p.rs
+            return p.iL - p.i0 * (exp(x / p.a) - 1) - x / p.rsh - i
+        }
+        var lo = -i * p.rs - 1, hi = openCircuitVoltage(p) + 1
+        while f(lo) < 0 { lo -= 10 }
+        var v = 0.5 * (lo + hi)
+        for _ in 0..<100 {
+            let fv = f(v)
+            if abs(fv) < 1e-12 { break }
+            if fv > 0 { lo = v } else { hi = v }
+            let df = -p.i0 / p.a * exp((v + i * p.rs) / p.a) - 1 / p.rsh
+            var next = v - fv / df
+            if !(next > lo && next < hi) { next = 0.5 * (lo + hi) }
+            if abs(next - v) < 1e-12 { v = next; break }
+            v = next
+        }
+        return v
+    }
+
     public static func openCircuitVoltage(_ p: OperatingParameters) -> Double {
         func g(_ v: Double) -> Double { p.iL - p.i0 * (exp(v / p.a) - 1) - v / p.rsh }
         var lo = 0.0

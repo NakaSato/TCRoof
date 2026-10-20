@@ -14,12 +14,13 @@ Portable PV module and inverter specifications, PVsyst one-diode model, inverter
 | `InverterSpec.swift` | `Codable` inverter spec, three-term loss model (Schmidt–Sauer) fitted from max + European efficiency, AC output with clipping and night consumption. |
 | `GrowattCatalog.swift` | Growatt MAX 60KTL3 LV, MAX 80KTL3 LV, MAX 125KTL3-X LV from the datasheets. |
 | `StringSizing.swift` | Min/max modules per string and checks for max DC voltage, MPPT window, start voltage, Isc and Imp per MPPT, inputs available, DC/AC ratio. |
+| `Hourly/*.swift` | The hourly yield chain (§ Hourly engine). |
 | `tools/yield-reference/components/*.json` | Exported specs: ET Solar 550 W (from PAN), Znshine 570 W (fitted), the three Growatt inverters. |
 
 ## Usage
 
 ```swift
-import TCPVModule
+import PVYield
 
 // From a PVsyst PAN file (closest match to PVsyst)
 let spec = try PANParser.parse(data: panData)
@@ -76,7 +77,7 @@ The result reproduces η_max to within 0.01 pt and η_euro exactly. Swap in the 
 | MAX 80KTL3 LV | 97.11 % | 98.93 % | 98.96 % | 98.25 % |
 | MAX 125KTL3-X LV | 97.67 % | 98.76 % | 98.77 % | 98.35 % |
 
-## Verification (`swift test`, 14 tests)
+## Verification (`swift test`, 14 module and inverter tests)
 
 - **One-diode model vs pvlib 0.16.1:** tested on the ET-M772BH550GL PAN at 6 (G, T) points. Pmp agrees within 0.0001 %, Voc within 1 µV, Isc within 1 nA. The reference values are in `TCRoofKit/Tests/PVYieldTests/Fixtures/pvlib-reference-*.json`.
 - **PAN model at STC:** 550.6 W against 550 W nameplate.
@@ -89,8 +90,50 @@ The result reproduces η_max to within 0.01 pt and η_euro exactly. Swap in the 
 
 - **PAN over datasheet:** prefer the manufacturer's PAN file. That is what PVsyst uses, so it is the only way to match PVsyst exactly.
 - **Fixture licence:** `ET-M772BH550GL.PAN` comes from pvlib-python test data (BSD-3-Clause).
-- **Not modelled here:** bifacial rear gain, IAM application and cell temperature belong to the yield engine, not the module model.
+- **Not modelled in the module model:** bifacial rear gain, IAM and cell temperature belong to the yield engine (`Hourly/`).
 - **Toolchain used for testing:** Swift 6.1 on Linux. `Package.swift` targets iOS 16 / macOS 13.
+
+## Hourly engine (`Sources/PVYield/Hourly`)
+
+A port of `tools/yield-reference/reference_engine.py` (`sun_position`, `plane_of_array`, `effective_irradiance`, `run_array`, `run`) for front-lit arrays on one or more faces.
+
+| File | Reference step |
+|---|---|
+| `HourlyWeather.swift` | Hourly GHI/DNI/DHI, air temperature, wind (UTC hour starts). `pvgisTMY(csv:)` reads the PVGIS TMY as `tools/yield-reference/data` caches it; `scaled(toAnnualGHI:)` is `load_meteo`'s GSA scaling. Nothing fetches data: a site's weather is an input. |
+| `SolarPosition.swift`, `SolarPosition+Tables.swift` | NREL SPA, pvlib `spa_python` defaults (ΔT 67 s, 1013.25 hPa, 12 °C). Tables generated from pvlib's `spa.py`. |
+| `SunTrack.swift` | `sun_position`: the hour's effective zenith and azimuth over 5-minute samples, and the DNI fix. The slow SPA terms are worked out at each end of the hour and interpolated. One track serves every face at the site. |
+| `Irradiance.swift` | Spencer extraterrestrial, Kasten–Young airmass, AOI, Perez 1990 sky diffuse, ground reflection; ASHRAE IAM and Marion's diffuse integration; PVsyst cell temperature (`ThermalModel`). |
+| `YieldInputs.swift` | `YieldLosses`, `StringDesign`, `HorizonProfile`, `ArrayFace` (tilt, `azimuthDegTrueN`, near shading, horizon), `YieldUncertainty`, `YieldSystem` (module, inverter × count, faces). |
+| `YieldEngine.swift` | `run_array` per face and `run` over the inverters: one-diode MPP, quality/LID/mismatch, DC ohmic, MPPT current limit, inverter efficiency and clipping, AC ohmic, unavailability and night consumption. |
+| `YieldResult.swift` | Energies at every step (`YieldEnergies`, the golden's `energies_kWh` keys), PR, specific yield, monthly table, loss diagram, PVsyst ageing, P50/P90/P99, hour counts, per-face results, optional hourly trace. |
+
+```swift
+let weather = try HourlyWeather.pvgisTMY(csv: text, latitude: 13.75, longitude: 100.50)
+let track = SunTrack(weather: weather, site: .init(latitude: 13.75, longitude: 100.50))   // once per site
+let system = YieldSystem(module: try ZnshineZXM7UHLDD144.fit(570).spec, inverter: try GrowattCatalog.max60KTL3LV(),
+                         design: StringDesign(modulesPerString: 11, strings: 12),
+                         faces: [ArrayFace(id: "S", moduleCount: 132, tiltDeg: 10, azimuthDegTrueN: 180)])
+let r = YieldEngine.run(system, track: track)
+print(r.energies.eGrid, r.specificYield, r.performanceRatio, r.probability.p90OneYear)
+```
+
+Extensions beyond the reference: `inverterCount` (identical inverters sharing the array evenly; 1 reproduces the reference) and `design: nil` (no string design yet, so no MPPT current limit).
+
+**Accuracy** (`HourlyYieldTests`, pvlib 0.13 reproduces the committed golden files exactly):
+
+| Check | Tolerance in the test | Measured |
+|---|---|---|
+| SPA apparent zenith, azimuth (237 hours) | 1e-5° | within the fixture's 6 decimals |
+| Effective sun, DNI fix, airmass | 1e-4°, 1e-5 relative | passes |
+| Marion diffuse IAM, 9 tilts | 1e-9 | passes |
+| POA direct / sky / ground, south 10° and east 30° | 0.01 W/m² or 1e-5 | passes |
+| Hourly trace of 60kW-ERA5 (8,760 h): POA, G_eff, T_cell, P_module, P_DC, P_AC, P_grid | 1e-5–1e-4 relative | worst hour at 0.05 of the tolerance (fixture rounding) |
+| Annual energies, every step, 7 scenarios (60/80/125 kW × ERA5/GSA, two-face gable with horizon) | 0.01 % | E_grid within 0.0001 %, worst step 0.0003 % |
+| Monthly, ageing, lifetime, P50/P90/P99, hour counts | the golden's rounding | passes |
+
+**Runtime** (MacBook, `swift test -c release`): the sun track of a year 66 ms (once per site), one face for a year 29 ms. Debug builds are about 10× slower. Pure Swift on value types, so run it off the main thread.
+
+**Not ported yet:** the bifacial rear side (`rear_irradiance`) and row-to-row shading (`sheds`), both pvlib infinite sheds; their golden scenarios (`*-bifacial-*`, `*-ground-*`) are not tested yet.
 
 ## Reference engine (Python)
 

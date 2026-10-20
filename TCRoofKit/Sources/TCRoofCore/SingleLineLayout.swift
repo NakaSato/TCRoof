@@ -170,27 +170,50 @@ private struct Drawer {
             // LV side: cable, trunk down to the boards (the connection transformer also forks left to the PV board)
             let isConnT = tx.index == connT
             let others = tx.boards.filter { !(isConnT && $0.index == connB) }
-            maxRows = max(maxRows, others.count)
             // one board on its own takes the trunk straight down; several branch off it
             let direct = others.count == 1 && !isConnT
             let fx = direct ? x : x + (isConnT ? 80 : 40)
-            let lastStub = others.isEmpty ? forkY : frameTop + Double(others.count - 1) * pitch - 20
+            // several boards sit side by side on a common LV line when they fit before the next transformer, else they stack
+            let limit = tx.index + 1 < n ? cx(tx.index + 1) - 40 : 1500
+            let perRow = direct ? 1 : max(1, min(others.count, Int((limit - fx + 20) / Self.boardStep)))
+            let rows = others.isEmpty ? 0 : (others.count + perRow - 1) / perRow
+            maxRows = max(maxRows, rows)
+            let lastStub = others.isEmpty ? forkY : frameTop + Double(rows - 1) * pitch - 20
             line(x, 414, x, direct ? frameTop + 50 : max(forkY, lastStub))
             text(tx.cable.text, x - 12, 470, size: 11, L.color(tx.cable.status), align: .center, angle: -90)
             if isConnT && !others.isEmpty { line(x, forkY, fx, forkY, w: 3) }
-            for (j, bd) in others.enumerated() { board(bd, fx: fx, trunk: x, top: frameTop + Double(j) * pitch, direct: direct, tx: tx) }
+            for (j, bd) in others.enumerated() {
+                board(bd, fx: fx + Double(j % perRow) * Self.boardStep, trunk: x, top: frameTop + Double(j / perRow) * pitch, direct: direct, tx: tx)
+            }
         }
 
         // --- connection board
         let C = max(820.0, frameTop + 200 + Double(max(maxRows, 1) - 1) * pitch + 80)
-        connection(C: C, colX: cx(connT), forkY: forkY, hasOthers: maxRows > 0)
-
-        let h = C + 660
+        let bottom = max(C + 660, connection(C: C, colX: cx(connT), forkY: forkY, hasOthers: maxRows > 0))
+        let h = notes(top: bottom)
         o.insert(.rect(Box(0, 0, L.width, h), stroke: nil, fill: .white), at: 0)
         return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits, ftsBox: ftsBox, zeroExportBox: zeroExportBox)
     }
 
+    // MARK: level 2 notes
+
+    /// "ค่าที่คำนวณจากข้อมูลสำรวจ": the level 2 checks under the diagram; amber when outside the usual range. Returns the new bottom.
+    mutating func notes(top: Double) -> Double {
+        guard !m.notes.isEmpty else { return top }
+        line(20, top + 4, L.width - 20, top + 4, L.grey, w: 0.8)
+        text("ค่าที่คำนวณจากข้อมูลสำรวจ · หมายเหตุ ไม่ใช่ข้อผิดพลาด", 24, top + 26, size: 13, bold: true)
+        for (k, n) in m.notes.enumerated() {
+            let y = top + 50 + Double(k) * 20
+            text("• " + n.text, 32, y, size: 12, n.flagged ? L.amber : L.ink)
+            hit(24, y - 10, 900, 20, n.target)
+        }
+        return top + 50 + Double(m.notes.count) * 20 + 10
+    }
+
     // MARK: a board under a transformer
+
+    /// Column pitch of boards placed side by side (frame 180 + gap).
+    static let boardStep = 200.0
 
     /// Dashed frame 180 × 200; the feeder runs down at `fx` (frame.x + 20) to an arrow.
     mutating func board(_ bd: SLBoard, fx: Double, trunk: Double, top: Double, direct: Bool, tx: SLTransformer) {
@@ -208,17 +231,22 @@ private struct Drawer {
 
     // MARK: the PV connection board
 
-    mutating func connection(C: Double, colX: Double, forkY: Double, hasOthers: Bool) {
-        guard let cb = m.connectionBoard, let tx = m.transformers[safe: m.connection.trafo] else { return }
+    /// Draws the connection board and the PV side; returns the bottom of what it drew.
+    mutating func connection(C: Double, colX: Double, forkY: Double, hasOthers: Bool) -> Double {
+        guard let cb = m.connectionBoard, let tx = m.transformers[safe: m.connection.trafo] else { return C }
         let hv = m.zeroExportHV
         let inX = min(max(colX - 100, 200.0), 700.0)
         let outX0 = inX + 160
         let pvX = min(max(1180.0, outX0 + Double(cb.breakers.count) * 150 + 40), 1330)
-        let busY = C + 200
+        // level 2: the busbar label takes a line above the bus
+        let busY = C + 200 + (cb.busbar.isEmpty ? 0 : 26)
         let relayX = max(700.0, inX + 240)
+        let feeders = FeederGrid(count: cb.breakers.count, outX0: outX0, pvX: pvX)
+        let rowsH = Double(feeders.rows - 1) * FeederGrid.rowH
+        let smdbY = busY + 210 + rowsH
 
         // frame and title
-        dashedRect(Box(60, C, 1440, 360), L.ink)
+        dashedRect(Box(60, C, 1440, busY + 160 + rowsH - C), L.ink)
         text("\(cb.name) (TX\(tx.index + 1))" + (cb.location.isEmpty ? "" : " · " + cb.location), inX + 26, C + 20, size: 14, bold: true)
         text("LV 230/400 V · 3P 4W", 1484, C + 20, size: 12, L.grey, align: .right)
         hit(60, C, 600, 34, cb.target)
@@ -246,34 +274,38 @@ private struct Drawer {
         }
 
         // main bus
-        let n = cb.breakers.count
-        let space = n == 0 ? 160 : max(130, min(160, (pvX - 40 - outX0) / Double(n)))
         line(inX, busY, pvX, busY, w: 5)
         dot(inX, busY, r: 4)
         let at = cb.main.at.isMissing ? "?" : cb.main.at.text.replacingOccurrences(of: "AT", with: "")
-        let lastOut = n == 0 ? inX : outX0 + Double(n - 1) * space
-        text("MAIN BUS \(at) A, 3Ø 4W, 400/230 V", (lastOut + pvX) / 2 + 10, busY - 8, size: 11, bold: true, align: .center)
+        let lastOut = cb.breakers.isEmpty ? inX : feeders.x(min(cb.breakers.count, feeders.perRow) - 1)
+        let busLabel = "MAIN BUS \(at) A, 3Ø 4W, 400/230 V"
+        // a full bus leaves no gap before the PV breaker: the label goes up a line, right-aligned
+        if pvX - lastOut >= 260 {
+            text(busLabel, (lastOut + pvX) / 2 + 10, busY - 8, size: 11, bold: true, align: .center)
+        } else {
+            text(busLabel, pvX - 20, busY - 26, size: 11, bold: true, align: .right)
+        }
+        if !cb.busbar.isEmpty { text(clip(cb.busbar, 48), outX0 - 10, busY - 26, size: 12, bold: true) }
+        // continuation rows: the bus carries on below, down the incomer's column
+        for r in 1..<max(feeders.rows, 1) {
+            let ry = busY + Double(r) * FeederGrid.rowH
+            let last = feeders.x(min(cb.breakers.count - r * feeders.perRow, feeders.perRow) - 1)
+            line(inX, busY, inX, ry, w: 5)
+            line(inX, ry, last + 30, ry, w: 5)
+            text(clip(cb.name, 14) + " …ต่อ", inX - 10, ry - 8, size: 12, bold: true, align: .right)
+        }
+        if !cb.ground.isEmpty { groundBar(cb, busY: busY) }
 
         // outgoing breakers with their load blocks
         for (k, br) in cb.breakers.enumerated() {
-            let x = outX0 + Double(k) * space
-            dot(x, busY, r: 4)
-            text("\(k + 1)", x, busY - 8, size: 12, align: .center)
-            line(x, busY, x, busY + 14); line(x, busY + 50, x, busY + 220)
-            add(SLSymbols.breaker(x: x, y: busY + 14))
-            stack(br, x: x + 16, y: busY + 24)
-            o.append(SLSymbols.load(x: x, y: busY + 220))
-            for (i, t) in br.destination.enumerated() {
-                text(SLText(clip(t.text, 18), t.status, bold: t.bold), x, busY + 256 + [0.0, 16, 34][min(i, 2)], size: i == 2 ? 11 : 12, align: .center)
-            }
-            hit(x - 20, busY + 6, space - 4, 250, br.target)
+            feeder(br, k: k, x: feeders.x(k % feeders.perRow), busY: busY + Double(k / feeders.perRow) * FeederGrid.rowH, space: feeders.space)
         }
 
         // PV breaker at the end of the bus
         let pv = m.pv
         dot(pvX, busY, r: 4, L.blue)
         text("PV", pvX, busY - 8, size: 12, bold: true, L.blue, align: .center)
-        line(pvX, busY, pvX, busY + 14, L.blue); line(pvX, busY + 50, pvX, C + 410, L.blue)
+        line(pvX, busY, pvX, busY + 14, L.blue); line(pvX, busY + 50, pvX, smdbY, L.blue)
         add(SLSymbols.breaker(x: pvX, y: busY + 14, color: L.blue))
         let tot = pv.totalAT.map { "\($0)" } ?? "?"
         let pvc = pv.totalAT == nil ? L.red : L.blue
@@ -285,8 +317,7 @@ private struct Drawer {
         hit(pvX - 116, busY + 6, 130, 100, .module(.inverter))
 
         // SMDB-PV and one column per inverter (at most 3 drawn)
-        let smdbY = C + 410
-        text(pv.mainCable ?? "CV ?", pvX + 14, C + 332, size: 10, L.blue, align: .center, angle: -90)
+        text(pv.mainCable ?? "CV ?", pvX + 14, (busY + 50 + smdbY) / 2, size: 10, L.blue, align: .center, angle: -90)
         let cols = min(pv.inverterCount ?? 1, 3)
         let colStep = 90.0
         let invX0 = pvX - 40
@@ -332,7 +363,7 @@ private struct Drawer {
         } else {
             control([(relayX + 200, C + 62), (ctrlX, C + 62), (ctrlX, ctrlY)])
         }
-        guard m.hasB5 else { return }
+        guard m.hasB5 else { return smdbY + 230 }
         let ey = smdbY + 192
         control([(lastX + 10, smdbY + 124), (emgX, smdbY + 124), (emgX, ey - 12)])
         add(SLSymbols.emergency(x: emgX, y: ey))
@@ -340,5 +371,81 @@ private struct Drawer {
         hit(emgX - 40, ey - 16, 80, 56, .module(.fts))
         let left = invX0 - 250, right = max(ctrlX, emgX + 50) + 14
         ftsBox = Box(left, smdbY + 56, right - left, ey + 40 - (smdbY + 56))
+        return smdbY + 250
     }
+
+    /// One outgoing breaker of the connection board: number, breaker and its labels, then (level 2) the cable and conduit
+    /// rotated left of the feeder, the load block and its name and floor. A spare one stops at the breaker with `SPARE`.
+    mutating func feeder(_ br: SLBreaker, k: Int, x: Double, busY: Double, space: Double) {
+        let compact = space < FeederGrid.compactBelow
+        dot(x, busY, r: 4)
+        text("\(k + 1)", x, busY - 8, size: 12, align: .center)
+        line(x, busY, x, busY + 14)
+        add(SLSymbols.breaker(x: x, y: busY + 14))
+        if compact { compactStack(br, x: x + 12, y: busY + 24) } else { stack(br, x: x + 16, y: busY + 24) }
+        if br.spare {
+            text("SPARE", x + 6, busY + (compact ? 82 : 70), size: compact ? 11 : 12, bold: true, align: .right)
+            hit(x - 20, busY + 6, max(space - 4, 44), 90, br.target)
+            return
+        }
+        line(x, busY + 50, x, busY + 220)
+        if !br.feeder.isEmpty { text(clip(br.feeder, 30), x - 16, busY + 135, size: 10, align: .center, angle: -90) }
+        o.append(SLSymbols.load(x: x, y: busY + 220))
+        // the label width follows the column pitch
+        let chars = space >= 140 ? 18 : compact ? 8 : 14
+        for (i, t) in br.destination.prefix(4).enumerated() {
+            let small = t.text.hasPrefix("โหลด") || t.text.hasPrefix("(")
+            let size = compact ? 10.0 : small ? 11 : 12
+            text(SLText(clip(t.text, chars), t.status, bold: t.bold), x, busY + 256 + Double(i) * 16, size: size, align: .center)
+        }
+        hit(x - 20, busY + 6, max(space - 4, 44), 250, br.target)
+    }
+
+    /// Narrow columns (under 110 apart): AT (underlined), AF and IC only.
+    mutating func compactStack(_ b: SLBreaker, x: Double, y: Double) {
+        text(b.at, x, y + 4, size: 10)
+        line(x, y + 9, x + 38, y + 9, L.color(b.at.status), w: 1)
+        text(b.af, x, y + 20, size: 10)
+        text(SLText(b.ic.text.replacingOccurrences(of: "IC ", with: ""), b.ic.status), x, y + 36, size: 10)
+    }
+
+    /// Level 2: the N/G bar inside the board's frame, the ground conductor (its size rotated beside it) and the ground rod.
+    mutating func groundBar(_ cb: SLBoard, busY: Double) {
+        let gx = 110.0, gy = busY + 30
+        o.append(.rect(Box(gx - 15, gy - 4, 30, 8), stroke: L.ink, fill: L.ink, width: 1))
+        text("N", gx + 22, gy, size: 12)
+        o.append(.rect(Box(gx - 15, gy + 22, 30, 8), stroke: L.ink, fill: L.ink, width: 1))
+        text("G", gx + 22, gy + 26, size: 12)
+        line(gx - 10, gy + 4, gx - 10, gy + 22, w: 1.2)
+        line(gx, gy + 30, gx, busY + 240)
+        add(SLSymbols.ground(x: gx, y: busY + 240, widths: [12, 8, 4], step: 5, 1.5))
+        text("GROUND ROD", gx, busY + 270, size: 11, align: .center)
+        text(clip(cb.ground, 30), gx - 12, busY + 150, size: 10, align: .center, angle: -90)
+        hit(gx - 30, gy - 10, 70, 290, cb.target)
+    }
+}
+
+/// Columns of the connection board's outgoing breakers (spec, level 2 layout): one row while there are at most 10 and the
+/// columns stay at least 60 apart, else continuation rows (`…ต่อ`) of up to 10. The last column keeps clear of the PV
+/// breaker's labels.
+struct FeederGrid {
+    static let rowH = 330.0
+    static let minSpace = 60.0, maxSpace = 160.0, maxPerRow = 10
+    /// Below this column pitch the breaker labels shrink to AT / AF / IC.
+    static let compactBelow = 110.0
+    let outX0: Double
+    let perRow: Int
+    let rows: Int
+    let space: Double
+
+    init(count n: Int, outX0: Double, pvX: Double) {
+        self.outX0 = outX0
+        // room from the first column to the last one
+        let room = max(pvX - 190 - outX0, 0)
+        let per = max(1, min(n, Self.maxPerRow, Int(room / Self.minSpace) + 1))
+        perRow = per
+        rows = n == 0 ? 1 : (n + per - 1) / per
+        space = per <= 1 ? Self.maxSpace : min(Self.maxSpace, room / Double(per - 1))
+    }
+    func x(_ col: Int) -> Double { outX0 + Double(max(col, 0)) * space }
 }

@@ -131,6 +131,17 @@ public struct Breaker: Codable, Hashable, Identifiable, Sendable {
     /// ดี / พอใช้ / ชำรุด
     public var condition = ""
     public var count = 1
+    // SLD level 2 (optional, drawn on the single line diagram only)
+    /// Feeder cable as written on the drawing ("4x50,1x10-IEC01").
+    public var cable = ""
+    /// "ø50mm. UPVC" / "IN WIRE WAY"
+    public var conduit = ""
+    /// Load name under the load block ("LC11").
+    public var load = ""
+    /// Where the load is ("1st FL.").
+    public var floor = ""
+    /// A spare breaker: drawn with `SPARE`, no cable or load.
+    public var spare = false
     public init(at: String = "", af: String = "", ic: String = "", poles: String = "", brand: String = "", target: String = "", condition: String = "", count: Int = 1) {
         self.at = at; self.af = af; self.ic = ic; self.poles = poles; self.brand = brand; self.target = target; self.condition = condition; self.count = count
     }
@@ -145,6 +156,11 @@ public struct Breaker: Codable, Hashable, Identifiable, Sendable {
         target = try c.decodeIfPresent(String.self, forKey: .target) ?? ""
         condition = try c.decodeIfPresent(String.self, forKey: .condition) ?? ""
         count = try c.decodeIfPresent(Int.self, forKey: .count) ?? 1
+        cable = try c.decodeIfPresent(String.self, forKey: .cable) ?? ""
+        conduit = try c.decodeIfPresent(String.self, forKey: .conduit) ?? ""
+        load = try c.decodeIfPresent(String.self, forKey: .load) ?? ""
+        floor = try c.decodeIfPresent(String.self, forKey: .floor) ?? ""
+        spare = try c.decodeIfPresent(Bool.self, forKey: .spare) ?? false
     }
 }
 
@@ -169,6 +185,11 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
     public var location = ""
     /// Sub-boards: one optional photo. The main board's four photos are `tr{i}_feedPhoto`, `_mdbOpen`, `_mdbBreaker`, `_mdbSpace`.
     public var photos: [Photo] = []
+    // SLD level 2 (optional)
+    /// Label above the bus ("4x300A. Cu. BUSBAR W/GROUND BUS").
+    public var busbar = ""
+    /// Ground conductor to the rod ("1x35-IEC01 ø20 PVC."); drawn with the N/G bar when given.
+    public var ground = ""
     public init(name: String = "", isMain: Bool = false, at: String = "") { self.name = name; self.isMain = isMain; self.at = at }
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
@@ -186,6 +207,8 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
         conditionNote = try c.decodeIfPresent(String.self, forKey: .conditionNote) ?? ""
         location = try c.decodeIfPresent(String.self, forKey: .location) ?? ""
         photos = try c.decodeIfPresent([Photo].self, forKey: .photos) ?? []
+        busbar = try c.decodeIfPresent(String.self, forKey: .busbar) ?? ""
+        ground = try c.decodeIfPresent(String.self, forKey: .ground) ?? ""
     }
 }
 

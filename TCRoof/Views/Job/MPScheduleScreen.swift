@@ -123,7 +123,7 @@ struct MPScheduleScreen: View {
             VStack(spacing: 16) {
                 topBar(m)
                 HStack(alignment: .top, spacing: 16) {
-                    MPGantt(model: m, onRow: { showProgress = true }).cardStyle(padding: 0)
+                    MPGantt(model: m, onRow: { if permissions.can(.mpProgress, on: job.access) { showProgress = true } }).cardStyle(padding: 0)
                     ScrollView { report(m) }.frame(width: 380)
                 }
             }
@@ -133,7 +133,7 @@ struct MPScheduleScreen: View {
                 VStack(spacing: 16) {
                     topBar(m)
                     report(m)
-                    MPGantt(model: m, onRow: { showProgress = true }).frame(height: 760).cardStyle(padding: 0)
+                    MPGantt(model: m, onRow: { if permissions.can(.mpProgress, on: job.access) { showProgress = true } }).frame(height: 760).cardStyle(padding: 0)
                 }
                 .padding(16)
             }
@@ -507,7 +507,10 @@ struct MPProgressSheet: View {
     let week: Date
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
     @State private var percent: [MasterSchedule.Task: Double] = [:]
+    /// Construction tasks this save brings to 100 % without their install photos, asked about before saving.
+    @State private var missingPhotos: [MPMissingPhotos] = []
     @State private var started: [MasterSchedule.Task: Date] = [:]
     @State private var finished: [MasterSchedule.Task: Date] = [:]
     /// Finishes this sheet filled in at 100%, taken off again if the task drops below it.
@@ -555,8 +558,11 @@ struct MPProgressSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("บันทึก", action: save) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("บันทึก", action: trySave).disabled(!permissions.can(.mpProgress, on: job.access))
+                }
             }
+            .mpMissingPhotos($missingPhotos, onSave: save)
         }
     }
 
@@ -576,6 +582,7 @@ struct MPProgressSheet: View {
                 Text("แผน \(s.thaiShort) – \(e.thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
             if let c = job.scheduleActual.lastConfirmation(t.task) { MPAssistantMark(confirmation: c) }
+            if let day = job.scheduleActual.fromDocuments[t.task.rawValue] { MPDocumentsMark(day: day) }
             dates(t)
         }
         .padding(.vertical, 4)
@@ -619,7 +626,16 @@ struct MPProgressSheet: View {
         }
     }
 
+    /// Saves, unless a construction task reaches 100 % here while its install photos are missing: then the warning asks
+    /// first (`บันทึกทั้งที่ยังไม่มีรูป` saves anyway).
+    private func trySave() {
+        let raised = tasks.filter { (percent[$0.task] ?? 0) >= 99.95 && (start[$0.task] ?? 0) < 99.95 }.map(\.task)
+        missingPhotos = MPMissingPhotos.list(raised, job: job)
+        if missingPhotos.isEmpty { save() }
+    }
+
     private func save() {
+        guard permissions.can(.mpProgress, on: job.access) else { return }
         var a = job.scheduleActual
         let cal = MasterSchedule.calendar
         func same(_ x: Date?, _ y: Date?) -> Bool { x.map { cal.startOfDay(for: $0) } == y.map { cal.startOfDay(for: $0) } }

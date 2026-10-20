@@ -45,6 +45,8 @@ extension ModelContext {
         }
         a.confirmations.append(action.confirmation(by: email))
         job.scheduleActual = a
+        // a re-plan can give a permit task weight it had none of: book what its papers approved
+        job.bookPermitsFromDocs()
         try? save()
         return true
     }

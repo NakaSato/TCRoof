@@ -337,6 +337,10 @@ public enum MasterSchedule {
         /// Changes confirmed on the project assistant's cards, oldest first: who confirmed what and when. Changes typed
         /// in by hand are not listed. Optional in older plans.
         public var confirmations: [Confirmation] = []
+        /// Task raw value → the approval day the station's papers booked it at 100 % on (`PermitLink`). The link books a
+        /// task once: progress the team changes afterwards, or an approval taken back, is left to the team. Optional in
+        /// older plans.
+        public var fromDocuments: [String: Date] = [:]
 
         public init() {}
 
@@ -362,7 +366,7 @@ public enum MasterSchedule {
             confirmations.last { $0.task == task.rawValue }
         }
 
-        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations }
+        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations, fromDocuments }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -373,6 +377,7 @@ public enum MasterSchedule {
             let raw = (try? c.decodeIfPresent([String: String].self, forKey: .lateCauses)) ?? nil
             lateCauses = (raw ?? [:]).compactMapValues(LateCause.init(rawValue:))
             confirmations = (try? c.decodeIfPresent([Confirmation].self, forKey: .confirmations)) ?? []
+            fromDocuments = (try? c.decodeIfPresent([String: Date].self, forKey: .fromDocuments)) ?? [:]
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -383,6 +388,7 @@ public enum MasterSchedule {
             try c.encode(lateCauses, forKey: .lateCauses)
             // left out when empty, so a plan without any reads as before
             if !confirmations.isEmpty { try c.encode(confirmations, forKey: .confirmations) }
+            if !fromDocuments.isEmpty { try c.encode(fromDocuments, forKey: .fromDocuments) }
         }
 
         public static func key(_ week: Date, calendar cal: Calendar = MasterSchedule.calendar) -> String {

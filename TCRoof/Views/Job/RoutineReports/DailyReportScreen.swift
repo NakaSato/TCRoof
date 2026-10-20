@@ -74,6 +74,20 @@ struct DailyReportEditor: View {
     private var log: InstallLog? { job.dailyLog(on: date) }
     /// Reports of other days, for "วันนี้" and the carry-over.
     private var others: [RoutineReport.Daily] { job.dailyReports.filter { RoutineReport.dayKey($0.date) != RoutineReport.dayKey(date) } }
+
+    /// Construction tasks this report brings to 100 % while the MP plan has them below it, and whose install photos are
+    /// missing (`IECReport.missingPhotoLabels`): signing books them, so the sign sheet asks first.
+    private var photoWarnings: [MPMissingPhotos] {
+        guard let input = job.scheduleInput else { return [] }
+        let actual = job.scheduleActual, settings = job.routineSettings, reports = others + [report]
+        let tasks = MasterSchedule.Task.allCases.filter { t in
+            guard t.part == .construction, input.weight(t) > 0, report.progress.contains(where: { $0.task == t }),
+                  let pct = RoutineReport.taskPercent(t, reports: reports, through: report.date, settings: settings), pct >= 99.95
+            else { return false }
+            return (actual.points[t.rawValue] ?? [:]).values.reduce(0, +) < input.weight(t) - 1e-9
+        }
+        return MPMissingPhotos.list(tasks, job: job)
+    }
     private var dirty: Bool { saved.map { $0.0 != report || $0.1 != photos } ?? true }
 
     var body: some View {
@@ -85,7 +99,8 @@ struct DailyReportEditor: View {
             }
         }
         .sheet(isPresented: $showSign) {
-            DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), engineer: job.routineSettings.siteEngineer) { name, drawn in
+            DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), photos: photoWarnings,
+                           engineer: job.routineSettings.siteEngineer) { name, drawn in
                 sign(engineer: name, signature: drawn)
             }
         }

@@ -288,9 +288,29 @@ final class Job {
         get { routineSettingsJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Settings.self, from: Data($0.utf8)) } ?? .init() }
         set { routineSettingsJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
     }
+    /// Setting it also books the MP permit tasks its papers approve (`PermitLink`: 1.4, 1.5, 1.7 at 100 % on the
+    /// approval day, once each). Every writer is a team screen behind `stationdocs.drafts` (the ERC flow too), so the
+    /// booking happens on the device that records the approval, by someone who may; sync writes `stationDocsJSON`
+    /// itself, so a received change books nothing and the booking arrives with it on the same job record.
     var stationDocs: StationDocs.Station {
         get { StationDocs.Station.decode(stationDocsJSON) }
-        set { stationDocsJSON = newValue.json }
+        set {
+            stationDocsJSON = newValue.json
+            bookPermitsFromDocs(newValue)
+        }
+    }
+
+    /// Books what the papers approve into the MP plan (`PermitLink.book`). The setter above runs it after each change
+    /// to the papers; the screens that create or replace the plan (ตั้งค่าแผน, the workbook import, the assistant's
+    /// re-plan) run it after saving theirs, so papers approved before there was a plan, or a file whose progress
+    /// lacks the booking, still get it. Sync runs neither: the booking travels on the job record.
+    func bookPermitsFromDocs(_ station: StationDocs.Station? = nil) {
+        guard let input = scheduleInput else { return }
+        let station = station ?? stationDocs
+        let before = scheduleActual
+        var a = before
+        PermitLink.book(&a, input: input, station: station, stationContext)
+        if a != before { scheduleActual = a }
     }
     /// The IEC 62446 test; nil until the team sets up its inverters.
     var iecReport: IECReport? {

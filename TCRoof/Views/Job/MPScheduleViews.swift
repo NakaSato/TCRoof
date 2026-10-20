@@ -341,6 +341,8 @@ struct MPSetupSheet: View {
         var input = input
         input.fitInstallWindow()
         job.scheduleInput = input
+        // papers approved before the plan (or a permit task that gains weight, พค.2 over 200 kVA) are booked now
+        job.bookPermitsFromDocs()
         try? context.save()
         dismiss()
     }

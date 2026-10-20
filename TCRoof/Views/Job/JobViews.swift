@@ -186,6 +186,13 @@ struct JobDetailView: View {
             if job.kind == .home {
                 action("งานบ้าน ครบวงจร", "house", "สำรวจ · ขออนุญาต PEA · ติดตั้ง · ขนานไฟ") { HomeWorkView(job: job) }
             }
+            // IEC 62446 · 9: on iPhone the only way to it; the iPad also has it in the IEC string table's side list
+            if job.kind == .pwa, permissions.can(.iecFillSubmit, on: job.access) {
+                let t = (job.iecReport ?? job.newIECReport).installTally
+                action("ภาพถ่ายติดตั้งระบบ", "photo.on.rectangle.angled", "IEC 62446 · 9 · ถ่ายแล้ว \(t.done)/\(t.total) รูป") {
+                    IECInstallPhotosScreen(job: job)
+                }
+            }
         }
     }
 

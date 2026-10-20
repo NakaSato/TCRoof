@@ -1,18 +1,21 @@
 # ERC exemption flow per station, 200 to under 1,000 kVA (Swift dev spec)
 
-**Status:** §3 (`TCRoofCore/ERCFlow.swift`, 10 tests) and §4's tab, step sheet and history built 2026-10-13
+**Status:** §3 (`TCRoofCore/ERCFlow.swift`, 12 tests) and §4's tab, step sheet and history built 2026-10-13
 (`TCRoof/Views/Job/StationDocs/ERCFlowViews.swift`), with the line on the job's `StationDocsCard` and the links from
 steps 3 and 7 to their packages. §5 built the same day: a waiting step with a time limit is a `กำหนดส่ง` row of the
-PWA plan page (`PWAPlan.deadlines`, from `ERCFlow.waits`), and `ERCNotification` reminds 3 days before the limit and
-the day after it. The reminders are posted as MP plan notifications (`NotificationType.mp`), so a tap opens the job,
+PWA plan page (`PWAPlan.deadlines`, from `ERCFlow.waits`), and `ERCNotification` reminds at 08:00 3 days before the limit
+(working days where the limit counts them) and the day after it. The reminders are posted as MP plan notifications (`NotificationType.mp`), so a tap opens the job,
 not the tab; a plan-page row opens เอกสารสถานี กปภ. on its first tab. Written from the two diagrams in `docs/permit/`; the open questions (§7) were not
 answered, so the build took these defaults: stations under 200 kVA don't get the tab, working days are Monday–Friday
 less the site's own holidays (`RoutineReport.Settings.holidays`), step 10 is asked per station, and steps 4, 5 and 9
 can be recorded or passed over.
+Not built: steps 3 / 7 defaulting to the package's submission day, a flow for stations under 200 kVA, a bundled
+public-holiday list.
 **Source:** `docs/permit/กกพ. การไฟฟ้า 200–1,000 kVA.pdf` (swim lanes) and `docs/permit/ลำดับ กกพ. การไฟฟ้า 200–1,000 kVA.pdf`
 (the same flow as 12 numbered messages). Both redraw the ERC office's infographic for a system on a utility's
-network. The diagrams name three more sheets (utility / private network × under 200 kVA / 200–1,000 kVA) and a
-summary `forms/erc/exemption-flow.json` in the Project; none of those is in this repo.
+network. The diagrams name three more sheets (utility / private network × under 200 kVA / 200–1,000 kVA); the summary of
+all four is in `docs/reference/forms/erc/exemption-flow.json` (flows `utility_lt200`, `private_lt200`,
+`utility_200_1000`, `private_200_1000`).
 **Goal:** for a กปภ. station of 200 kVA or more, show where the station stands in the exemption flow, whose turn it
 is, and when the waiting party's time runs out, next to the papers the app already tracks.
 
@@ -63,12 +66,13 @@ other side has had it. That is the gap.
 
 ```swift
 public enum ERCFlow {
-    public enum Party { case operatorSide, utility, erc, dede }
+    public enum Party { case us, utility, erc, dede }
     public enum Step: String, Codable, CaseIterable {   // raw values are kept in job JSON: never rename
         case designRequest, designResult, install, pk2Request, ercToDede, dedeOpinion, pk2Signed,
              inspectionRequest, inspectionResult, utilityToERC, pk2ToUtility, cod, exemptionResult
     }
-    public struct Limit { let days: Int; let working: Bool; let startsAt: Step }   // 2: 15 wd from 1 · 5: 30 d from 4 · 8: 30 wd from 7
+    public struct Limit { let days: Int; let working: Bool }   // on Step.limit, counted from the step that asked:
+                                                                // 2: 15 wd from 1 · 5: 30 d from 4 · 8: 30 wd from 7
     public enum Result: String, Codable { case passed, failed }
 
     /// One thing that happened. A failed round is another event of the same step, so the history is kept.
@@ -85,16 +89,19 @@ public enum ERCFlow {
 - Kept on the station: `StationDocs.Station.erc: ERCFlow.Record?`, decoded with `decodeIfPresent`, so old jobs open
   and it syncs inside `stationDocsJSON` with no new Firestore field.
 - Derived, never stored:
-  - `state(_ record) -> [Step: StepState]` (`done(day)`, `waiting(on: Party, since:, due:)`, `open`, `blocked`,
-    `notNeeded`).
-  - `next(_ record) -> [Step]`: what the operator can do now (two at once while 3–6 and 7–8 run in parallel).
-  - `due(_ step, record, holidays:)`: the limit's last day, counting working days Monday–Friday less `holidays`,
-    restarted by the latest request after a failed round.
-  - `canConnect(record)`: 8 passed, and 6 done when `utilityWantsPK2 == true`.
+  - `states(_ record, _ ctx) -> [Step: State]` (`done(day:)`, `waiting(since:due:)` (the party is `step.party`),
+    `open`, `blocked`, `notNeeded`). `Context` carries the install day and the holidays.
+  - `current(_ record, _ ctx) -> [Step]`: the steps in play, ours or another party's (several at once while 3–6 and
+    7–8 run in parallel).
+  - `due(_ step, from: asked, _ ctx)`: the limit's last day, counting working days Monday–Friday less the context's
+    holidays, from the latest request (so a failed round restarts it).
+  - `canConnect(record, ctx)`: true when step 11 (COD) is waiting or done: 8 passed, and 10 done (so 6 too) when
+    `utilityWantsPK2 == true`.
   - `exemptionBasis(record)`: พค.2 (6) or the utility's letter (9), whichever is there.
-- Step `install` is not typed in: it reads done from the MP plan (`Actual.finished` of the last installation task).
-- Steps 3 and 7 offer the day their package was set to ยื่นแล้ว as the default day; the papers stay the source of
-  "is it ready to submit".
+- Step `install` is done when every construction task of the MP plan has a finish date (the day is the latest one),
+  or when the team records it by hand (`Job.ercContext`, `ERCFlowViews.swift`).
+- The record sheet's day defaults to today. ~~Steps 3 and 7 offer the day their package was set to ยื่นแล้ว as the
+  default day~~: not built.
 
 ## 4. Screen
 
@@ -103,22 +110,22 @@ A new chip `ลำดับ กกพ.` in `StationDocsScreen`'s tab row, shown 
 - A vertical step list in the diagram's four sections (ออกแบบและขอความเห็นแบบ · ติดตั้ง · พค.2 และตรวจระบบ · ขนานไฟ
   และผลแจ้งยกเว้น), each row: number, title, the party whose turn it is as a `TCStatusChip`, the day, and for a
   waiting step `เหลือ n วันทำการ` or `เกินกำหนด n วัน`.
-- Tapping a row the operator owns opens a small sheet: day, note, and for 2 and 8 ผ่าน / ไม่ผ่าน. ไม่ผ่าน adds the
+- Tapping any open or waiting row opens a small sheet: day, note, and for 2 and 8 ผ่าน / ไม่ผ่าน. ไม่ผ่าน adds the
   event and reopens 1 or 7.
-- Step 3 links to the พค.2 check list, step 7 to the ขนานไฟ package; a step whose package is not complete says how
-  many papers are missing instead of offering the day.
+- Step 3 links to the พค.2 papers, step 7 to the ขนานไฟ package (`ดูเอกสารชุด…`). A step whose package is not complete
+  shows its ready / total beside the tap-to-record prompt, and can still be recorded.
 - The job's `StationDocsCard` gets one line: the current step and whose turn it is.
 - Built from `TCRoofUI` components; no new colours. Party colours in the diagram are the diagram's, not `Theme`'s.
 
-Launch arguments, as the other screens: `-screen stationdocs -stationDocsERC wait|failed|parallel|done` seeds a
+Launch arguments, as the other screens: `-screen stationdocs -stationDocsERC wait|failed|ready|parallel|done` seeds a
 record in that state.
 
 ## 5. Elsewhere
 
 - `PWAPlan` `กำหนดส่ง`: a waiting step with a limit becomes a deadline row (`รอผลตรวจแบบ กฟภ.`), filtered with the
   submissions.
-- `SystemNotifications`: one `NotificationPlan` 3 working days before a limit ends and one the day after, with a
-  `DeepLink` to the station's papers.
+- Notifications (`ERCNotification`, `LiveNotifications.swift`): one at 08:00 3 days before a limit ends (working
+  days where the limit counts them) and one at 08:00 the day after, posted with type `.mp`, so a tap opens the job.
 - `MasterSchedule`: untouched. The flow reads the plan; it does not move weights or dates.
 - No PDF or Excel output in this spec.
 
@@ -131,12 +138,13 @@ record in that state.
 - `canConnect`: false with 8 passed and `utilityWantsPK2 == true` until 6 is done; true when it is `false`.
 - `exemptionBasis` with only 9, only 6, both.
 - Old station JSON without `erc` decodes; a record round-trips.
-- A station under 200 kVA: every step `notNeeded` and the chip is hidden.
+- ~~A station under 200 kVA: every step `notNeeded` and the chip is hidden.~~ No such test: under 200 kVA the tab is
+  hidden in the UI only (`StationDocsScreen`).
 
 ## 7. Open questions
 
-1. **Under 200 kVA.** Most กปภ. stations are smaller. Their flow is on another sheet of the infographic that is not
-   in the repo. Should the screen cover them too, and from which sheet?
+1. **Under 200 kVA.** Most กปภ. stations are smaller. Should the screen cover them too? Their flow is the
+   `utility_lt200` flow in `docs/reference/forms/erc/exemption-flow.json`; not built.
 2. **Holidays.** Working-day limits need the public holidays. The app has only each site's own holidays
    (`RoutineReport.Settings.holidays`). A bundled list by year, or one the team keeps in settings?
 3. **Step 10.** Does กฟภ. ask the กปภ. stations for พค.2 before connecting? If always the same, the per-station

@@ -1,6 +1,7 @@
 # Hardware assist: using the iPad's hardware in the survey (iPad Swift dev spec)
 
-**Status:** Mostly built (checked 2026-10-17): §1 `DeviceCaps` (Settings › เครื่องนี้), H1 Live Text and the nameplate parser (`LiveTextScanner`, `TCRoofCore/Hardware/NameplateParser`), H2 position, H3 roof angle and facing (`RoofSensor`, `Orientation`), H4 camera checks, wide rooms and stamp (`CheckedCamera`, `WideCamera`, `ImageQuality`, `PanoramaGuide`), H6 card / USB import (`CardImportSheet`, `CardImport`), H8 power (`PowerMonitor`, `PowerAdvice`). Not built: H5 Pencil tools, H6 external display, H7 laser meter and LiDAR measuring. Files live in `TCRoofUI/Survey/Hardware/` and `TCRoofCore/Hardware/` (§5 still names the old `SurveyUI` module).
+**Status:** Mostly built (checked 2026-10-17): §1 `DeviceCaps` (Settings › เครื่องนี้), H1 Live Text and the nameplate parser (`LiveTextScanner`, `TCRoofCore/Hardware/NameplateParser`), H2 position, H3 roof angle and facing (`RoofSensor`, `Orientation`), H4 camera checks, wide rooms and stamp (`CheckedCamera`, `WideCamera`, `ImageQuality`, `PanoramaGuide`), H6 card / USB import (`CardImportSheet`, `CardImport`), H8 power (`PowerMonitor`, `PowerAdvice`). Files live in `TCRoofUI/Survey/Hardware/` and `TCRoofCore/Hardware/` (§5).
+**Not built:** H5 Pencil tools; H6 external display; H7 laser meter and LiDAR / ARKit measuring (`FillSource` has `laser`, `lidar` and `arEstimate` cases, but nothing sets them).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+).
 **Target device:** iPad Air (M-series), plus anything better.
 **Rule:** every feature checks the hardware **at runtime** and falls back cleanly. The same build runs on iPad Air
@@ -10,7 +11,7 @@ Wi-Fi, iPad Air Cellular and iPad Pro, and does the best each device allows.
 **Already in the code:**
 - `DataScannerViewController` (VisionKit) is used for barcodes in `TCRoof/Views/Scan/ScanViews.swift`.
 - `LocationFetcher` (CoreLocation, one-shot) lives in `TCRoof/Utilities/LocationFetcher.swift`.
-- `PencilKit` is used for signatures (`SurveyUI/PhotoFields.swift`).
+- `PencilKit` is used for signatures (`TCRoofUI/Survey/Photos/PhotoFields.swift`).
 - `SurveyModel.addPhoto(_:to:maxSide:)` stores photos.
 
 This spec builds on all of these.
@@ -40,20 +41,16 @@ This spec builds on all of these.
   within about 2 m of a transformer or on a steel roof are marked "ตรวจทิศอีกครั้ง" (§H3).
 
 ```swift
-/// SurveyUI/Hardware/DeviceCaps.swift: computed once at launch, refreshed on scene activation.
+/// TCRoofUI/Survey/Hardware/DeviceCaps.swift: computed once at launch, refreshed on scene activation.
 @Observable final class DeviceCaps {
-    private(set) var liveText = false, lidar = false, ultraWide = false
-    private(set) var compass = false, motion = false, bluetooth = false
-    private(set) var pencilSqueeze = false, pencilRoll = false, pencilHover = false   // set when first seen
-    private(set) var gpsGrade: GPSGrade = .unknown            // .gps (≤ 20 m), .approximate, .none, after the first fix
-    private(set) var externalDisplay = false
-    var thermal: ProcessInfo.ThermalState { ProcessInfo.processInfo.thermalState }
+    private(set) var liveText = false, compass = false, motion = false
+    private(set) var lidar = false, ultraWide = false
+    private(set) var gpsGrade: GPSGrade = .unknown            // after the first fix; kept in the app's defaults
 }
 ```
 
 - `DeviceCaps` sits in the SwiftUI environment. Every feature below reads it to show, hide or downgrade its button.
-- **Settings › เครื่องนี้** lists what was detected, for example "ไม่มี LiDAR · GPS ประมาณการ (รุ่น Wi-Fi) · Pencil
-  Pro ✓". The team can then see why a button is missing.
+- **Settings › เครื่องนี้** lists what was detected, for example "ไม่มี LiDAR · GPS ประมาณการ (รุ่น Wi-Fi)". The team can then see why a button is missing.
 
 ---
 
@@ -100,7 +97,8 @@ This spec builds on all of these.
 ### H2. Position
 
 **`gps` field:**
-- A **"ตำแหน่งปัจจุบัน"** button, using `LocationFetcher` moved into `SurveyUI/Hardware`.
+- A **"ตำแหน่งปัจจุบัน"** button, using `LocationFetcher` (it stays in `TCRoof/Utilities`); the accuracy is graded
+  by `GPSGrade` (`TCRoofCore/Hardware/Position.swift`).
 - It waits up to 10 s for a fix with `horizontalAccuracy ≤ 20 m`, showing live accuracy ("± 8 ม.").
 - It writes `"17.00621, 99.82354"`, the format `MapImage.coordinate(from:)` already parses.
 
@@ -147,7 +145,7 @@ This spec builds on all of these.
    | Check | Test | Warning |
    |---|---|---|
    | blur | Laplacian variance of the 512 px luminance (Accelerate `vImage`) below a threshold, tuned on team photos | "ภาพไม่ชัด ถ่ายใหม่?" |
-   | too dark | mean luminance < 0.18 | "มืดเกินไป เปิดไฟฉาย?", which turns on `AVCaptureDevice.torchMode` |
+   | too dark | mean luminance < 0.18 | "มืดเกินไป ถ่ายใหม่โดยเปิดแฟลช?": the retake uses the flash (there is no torch) |
    | tilted | `deviceMotion.gravity` roll > 12° at capture, for fields marked "ตรง" (nameplates, panels) | "ภาพเอียง" |
 
    Each warning has **เก็บไว้** / **ถ่ายใหม่**. It never blocks.
@@ -162,12 +160,14 @@ This spec builds on all of these.
    - For "มุมกว้าง" fields (`photoWide`, `tr*_wide`, `underRoofPhoto`), the camera offers **ถ่ายต่อกัน 3 ภาพ**.
    - It shows an overlay guide with 30 % overlap (left → centre → right) and uses the gyroscope to say when to take
      the next shot.
-   - The three are stored as one `.photos` group in order, and the report prints them side by side.
+   - The three are joined side by side into one picture (`WideCamera`), so the field, the report and Excel take it as
+     before.
    - On devices with an ultra-wide camera, the camera opens at 0.5× instead, and no multi-shot is offered.
    - Stitching into one panorama (`VNHomographicImageRegistrationRequest`) is phase 2.
 
-4. **Performance:** capture keeps the 12 MP frame only until the checks finish, then stores `maxSide` 1600 (as
-   today). The quality check runs off the main thread in under 100 ms on M1.
+4. **Camera:** `CheckedCamera` wraps the existing `CameraPicker` and checks the photo after it is taken; only
+   `WideCamera` has its own capture session. Photos are stored at `maxSide` 1600 (as before). The quality check runs
+   off the main thread.
 
 ### H5. Apple Pencil (Pro)
 
@@ -253,10 +253,10 @@ public var rotation: Double?
 
 | Key | Status | Text |
 |---|---|---|
-| `NSCameraUsageDescription` | exists | extend: "…ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์" |
+| `NSCameraUsageDescription` | done | "…ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์" |
 | `NSLocationWhenInUseUsageDescription` | exists | keep |
-| `NSMotionUsageDescription` | **new** | "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง" |
-| `NSBluetoothAlwaysUsageDescription` | **new** | "ใช้รับค่าจากเครื่องวัดระยะเลเซอร์" |
+| `NSMotionUsageDescription` | done | "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง" |
+| `NSBluetoothAlwaysUsageDescription` | **not yet** (for H7) | "ใช้รับค่าจากเครื่องวัดระยะเลเซอร์" |
 
 Each permission is asked for only the first time its feature is used, never at launch.
 
@@ -264,22 +264,26 @@ Each permission is asked for only the first time its feature is used, never at l
 
 | File | Contents |
 |---|---|
-| `SurveyUI/Hardware/DeviceCaps.swift` | §1 detection, environment object, Settings › เครื่องนี้ |
+| `TCRoofUI/Survey/Hardware/DeviceCaps.swift` | §1 detection, environment object, Settings › เครื่องนี้ |
+| `TCRoofUI/Survey/Hardware/LiveTextScanner.swift` | VisionKit text scanner sheet, photo OCR task (§H1) |
+| `TCRoofUI/Survey/Hardware/RoofSensor.swift` | §H3 angle and facing |
+| `TCRoofUI/Survey/Hardware/CheckedCamera.swift` | `CameraPicker` plus the quality check after each shot (§H4) |
+| `TCRoofUI/Survey/Hardware/WideCamera.swift` | its own capture session: 0.5× or the three-shot guide, joined into one picture |
+| `TCRoofUI/Survey/Hardware/CaptureContext.swift`, `CameraRoll.swift` | the stamp's capture context, camera helpers |
+| `TCRoofUI/Survey/Hardware/CardImportSheet.swift` | `fileImporter`, placement proposals (§H6) |
+| `TCRoofUI/Survey/Hardware/PowerMonitor.swift` | §H8 |
 | `TCRoofCore/Hardware/NameplateParser.swift` | §H1 patterns (pure Swift) |
-| `SurveyUI/Hardware/LiveTextScanner.swift` | VisionKit text scanner sheet, photo OCR task |
-| `SurveyUI/Hardware/LocationService.swift` | `LocationFetcher` moved here, with accuracy, streaming, GNSS hint |
-| `SurveyUI/Hardware/InclinometerView.swift`, `CompassView.swift` | §H3 |
 | `TCRoofCore/Hardware/Orientation.swift` | tilt from gravity, heading → form choice (pure Swift) |
-| `SurveyUI/Hardware/SurveyCamera.swift` | AVFoundation camera: quality checks, torch, stamp, multi-shot guide, 0.5× |
-| `TCRoofCore/Hardware/ImageQuality.swift` | blur / brightness metrics on a luminance buffer (Accelerate on Apple, a plain loop on Linux for tests) |
-| `SurveyUI/Hardware/PencilTools.swift` | squeeze palette, roll rotation, hover preview, Pencil haptics |
-| `SurveyUI/Hardware/MediaImport.swift` | `fileImporter`, EXIF (ImageIO), placement proposals |
-| `SurveyUI/Hardware/LaserMeter.swift` | CoreBluetooth central, one adapter per brand |
-| `SurveyUI/Hardware/ARMeasure.swift` | LiDAR / ARKit two-point measure with an accuracy label |
-| `SurveyUI/Hardware/PowerMonitor.swift` | §H8 |
+| `TCRoofCore/Hardware/ImageQuality.swift` | blur / brightness metrics on a luminance buffer |
+| `TCRoofCore/Hardware/PanoramaGuide.swift` | the three-shot guide's angles |
+| `TCRoofCore/Hardware/CardImport.swift` | EXIF reading and placement rules |
+| `TCRoofCore/Hardware/Position.swift` | `GPSGrade` |
+| `TCRoofCore/Hardware/PowerAdvice.swift` | §H8 rules |
+| `PencilTools`, `LaserMeter`, `ARMeasure` | **not built** (H5, H7) |
 
-`PhotoField` and `SignatureField` switch from `CameraPicker` (UIImagePickerController) to `SurveyCamera` for fields
-that need the checks. The library picker stays.
+The photo slots (`Photos/PhotoSlot.swift`) use `CheckedCamera` (around the existing `CameraPicker`) for fields that
+need the checks. The library
+picker stays.
 
 ## 6. Tests
 

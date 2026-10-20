@@ -31,8 +31,11 @@ month, and withdraws a returned one to edit it. A submitted month's Drive folder
 `config/app.claimShareWith` (the approvers' emails), so their review opens the receipts. Not built: the suggested
 arrival and departure by region monitoring (§B2, optional), and a notification to the claimant on a decision.
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.
-**App target:** the host app `TCRoof` (jobs, plan, Firebase sync). Pure logic goes in a new, dependency-free target
-`TCRoofKit/Sources/FieldOps`, testable with `swift test`.
+**App target:** the host app `TCRoof` (jobs, plan, Firebase sync). The pure logic is in `TCRoofCore` (no new
+`FieldOps` target): `SurveyEvent`, `CalendarSync`, `TravelClaim`, `TravelClaim+Review` and `ReceiptParser`, testable with
+`swift test`.
+**Not built:** the suggested arrival and departure by region monitoring (§B2), and a notification to the claimant on a
+decision.
 **No new dependencies:** EventKit, EventKitUI, MapKit, CoreLocation, VisionKit, Vision, UserNotifications, and the
 existing `PDFReport` / `ExcelExport` / `DriveSync`.
 
@@ -51,7 +54,7 @@ existing `PDFReport` / `ExcelExport` / `DriveSync`.
 | NO.224 survey job linked by `jobSyncID`: `coordinator`, `phone`, `address`, `gps` | `TCRoofCore` cover fields | better coordinator, phone and location when present |
 | `PlanCalendarView` shows survey appointments (`surveys(on:)`) | `TCRoof/Views/Plan/PlanViews.swift` | buttons **นำทาง / โทร / เพิ่มลงปฏิทิน** on each appointment row |
 | `CloudSynced` protocol: text-only Firestore records per SwiftData model; photos stay on the device and Drive | `TCRoof/Sync/CloudRecords.swift`, `CloudSync.swift` | sync of trips and expenses (B) |
-| Firestore rules: members only; collections `jobs`, `surveyForms`, `devices`, `installLogs`, `inspections`, `pwaSurveys` | `firestore.rules` | two new collections (§B6) |
+| Firestore rules (before this feature): members only; collections `jobs`, `surveyForms`, `devices`, `installLogs`, `inspections`, `pwaSurveys` | `firestore.rules` | the new collections (§B6) |
 | `PhotoAsset` (`@Attribute(.externalStorage)`), `DocumentAsset` | `Models.swift` | receipt images |
 | `LocationFetcher` (one-shot, "while using") | `TCRoof/Utilities/LocationFetcher.swift` | arrival stamp |
 | `@AppStorage("userName")` | several views | claimant name |
@@ -77,8 +80,8 @@ explains this in one line before asking.
 - **Calendar:** a dedicated calendar **"TCRoof นัดสำรวจ"** is created in the default source (iCloud when available,
   else local). Its colour is the team colour, or navy for "ทุกทีม". The surveyor can pick an existing calendar
   instead.
-- **Job ↔ event link:** stored **per device** in a local SwiftData model `CalendarLink { jobSyncID, eventIdentifier,
-  lastFingerprint }`, which is not synced. Event identifiers are device-local, so each iPad manages its own events.
+- **Job ↔ event link:** stored **per device** in the app's `calendar-links.json` (`TCRoof/Calendar/CalendarService.swift`),
+  not in SwiftData, and not synced. Event identifiers are device-local, so each iPad manages its own events.
 - **Deleted events:** if the event was deleted in Calendar (lookup returns nil), the app does **not** recreate it,
   and the job shows "นัดถูกลบจากปฏิทิน · เพิ่มอีกครั้ง".
 - **Status change:** when a job becomes `completed`, or its survey date is cleared, its event is deleted. Past events
@@ -90,7 +93,7 @@ explains this in one line before asking.
 |---|---|
 | Title | `สำรวจ · <projectName> (<code>)`, e.g. "สำรวจ · สถานีผลิตน้ำ (TC-0412)" |
 | Start / end | `surveyDate` → + **3 h** (setting: 1–8 h). A date without a time (00:00) becomes an all-day event |
-| Location | `EKStructuredLocation`: title = address + province; `geoLocation` from the linked survey's `gps`, else geocoded from the address (`CLGeocoder`, cached) |
+| Location | `EKStructuredLocation`: title = address + province; `geoLocation` from the linked survey's `gps` only; there is no geocoding (`SurveyEvent.swift`) |
 | URL | `tcroof://job/<syncID>` (§A4) |
 | Notes | see below |
 | Alarms | **1 day before at 17:00** (absolute) and **1 hour before** (relative), both settings. With a geo-location, Calendar's own travel-time alert also works |
@@ -117,13 +120,13 @@ When the automatic mode is off, the app can still remind: **Settings › แจ�
 - **17:00 the day before:** "พรุ่งนี้ 09:00 สำรวจ <project> · <address>", with actions **นำทาง** and **โทร**.
 - **1 hour before.**
 
-Tapping a notification opens the job. The requests are rebuilt whenever jobs change: the 64 nearest are kept, which
-is the system limit.
+Tapping a notification opens the job. They cover the next three days' appointments whose report isn't finished
+(`NotificationScheduler.surveyPlans`), rebuilt as jobs change.
 
 ### A4. Opening the job from Calendar (URL scheme)
 
 - **Register the scheme:** `CFBundleURLTypes` gets `tcroof` in the target's Info settings.
-- **Handle it:** `RootView` gets `.onOpenURL`, which routes `tcroof://job/<syncID>` (and `tcroof://job/<syncID>/survey`
+- **Handle it:** `.onOpenURL` in `TCRoof/App/TCRoofApp.swift` which routes `tcroof://job/<syncID>` (and `tcroof://job/<syncID>/survey`
   for the NO.224 form) to the job screen through the existing navigation state.
 - **Unknown job:** if the id is not on this device yet (not synced), the app shows "งานนี้ยังไม่ซิงก์มาที่เครื่องนี้"
   and retries after sync.
@@ -148,6 +151,17 @@ is the system limit.
 ## B. Travel and expense log
 
 ### B1. Model (SwiftData, synced as text like other models)
+
+Built (`TCRoof/Travel/TravelModels.swift`):
+- **`Trip`:** one day of travel by one person: `date`, `ownerEmail`, `person`, `vehicleRaw`, `plate`, `startPlace`,
+  the stops as JSON (`stopsJSON`, `[TravelClaim.Stop]`), `backKm`, the trip's `rate`, `odoStart` / `odoEnd` /
+  `odoReason`, the odometer photos and their Drive ids, `syncID`.
+- **`Expense`:** `date`, `ownerEmail`, `person`, `categoryRaw`, `amount` (satang, `Int`), `vendor`, `taxID`, `note`,
+  `jobID`, `receipt` and `receiptDriveID`, `fillSource`, `createdAt`, `syncID`.
+- **`ClaimMonth`:** one per person and month: `ownerEmail`, `month`, `submittedAt`, `log`, `signature`, the PDF and
+  Excel Drive ids, `driveFolderURL`, `syncID`. Submitting locks the month.
+
+Original draft, superseded:
 
 ```swift
 @Model final class Trip {                 // one working day of travel by one person
@@ -190,16 +204,16 @@ is the system limit.
 
 - **Sync:** each model conforms to `CloudSynced`, with text and number fields only. Receipt and odometer images
   follow the app's rule: they stay on the device and upload to Drive (§B6).
-- **New Firestore collections:** `trips`, `tripStops`, `expenses` (§B6 covers the rules).
+- **Firestore collections (built):** `trips`, `expenses`, `claims` and `claimReviews`; no `tripStops` (§B6 covers the rules).
 
 ### B2. Arrival and departure
 
-- **Manual (always available):** the job's appointment card and the Plan row get **ถึงสถานีแล้ว** and
-  **ออกจากสถานี**.
+- **Manual (always available):** the job screen's `TravelJobCard` has **ถึงสถานีแล้ว** and **ออกจากสถานี** (the Plan
+  row doesn't).
   - Each tap stamps the time and the current location through `LocationFetcher` (accuracy kept).
-  - It creates today's `Trip` if none exists, and appends a `TripStop` for this job.
+  - It creates today's `Trip` if none exists, and appends a stop for this job to its `stopsJSON`.
   - A second tap within 2 minutes is treated as a mistake and undoes the stamp.
-- **Suggested (optional, Settings › ช่วยบันทึกเวลาถึง/ออก, default off):**
+- **Suggested (optional, Settings › ช่วยบันทึกเวลาถึง/ออก, default off; not built):**
   - The app monitors a `CLCircularRegion` of 300 m around each job with a survey appointment **today**.
     Core Location allows up to 20 regions, so only today's appointments are registered.
   - On entry or exit it posts a notification: "ถึง <project> แล้ว? บันทึกเวลา 09:12". Nothing is recorded without
@@ -217,9 +231,8 @@ is the system limit.
 
 **Each leg can be edited:** road closed, detour. Editing needs a note and is marked "แก้ระยะเอง" in the claim.
 
-**Mileage for a private vehicle:** `km × rate` (Settings › อัตราค่าเดินทาง รถส่วนตัว, บาท/กม., company value). It
-creates an `Expense(category: .mileage)` per trip automatically, updated when the distance changes until the claim is
-submitted.
+**Mileage for a private vehicle:** trip km × the trip's `rate` (Settings › อัตราค่าเดินทาง รถส่วนตัว, บาท/กม., default 5).
+It is worked out from the trips in the month summary, not stored as an expense.
 
 ### B4. Receipts
 
@@ -245,7 +258,8 @@ submitted.
 
 ### B5. Monthly claim
 
-**Screen:** `Plan › ค่าใช้จ่าย` (a new tab) has a month picker. It shows:
+**Screen:** เดินทางและเบิกค่าใช้จ่าย (`ClaimScreen`), a Home route (a row of the iPad `เครื่องมือ` tab and of the iPhone
+`เครื่องมือวัด`, and from the job's `TravelJobCard`), has a month picker. It shows:
 - **Days:** date, route (stations by code), km, time on site per station.
 - **Expenses:** grouped by category, with totals, receipt thumbnails, and warnings:
   - a receipt without an amount
@@ -254,8 +268,8 @@ submitted.
 - **Totals:** by category, per job, and the grand total.
 - **Actions:**
   - **ส่งออกใบเบิก:** PDF (`PDFReport`, A4) + Excel (`ExcelExport`).
-  - **ยื่นเบิก:** sets `claimStatus = .submitted` for that month's expenses and trips, which locks them (edits need
-    **ถอนการยื่น**, a logged undo).
+  - **ยื่นเบิก:** submits the month's `ClaimMonth` (`submittedAt`, signature), which locks its trips and expenses
+    (edits need **ถอนการยื่น**, a logged undo).
 
 **PDF pages:**
 1. Header: company, claimant, month, vehicle, plate.
@@ -270,8 +284,11 @@ submitted.
 
 ### B6. Storage, sync and privacy
 
-- **Firestore:** `trips`, `tripStops` and `expenses` carry text and numbers only.
-- **Rules:** the rules today let every member read every collection. Expenses are personal, so this spec proposes
+- **Firestore:** `trips`, `expenses` and `claims` carry text and numbers only.
+- **Rules (built, `firestore.rules`):** `trips`, `expenses` and `claims` are written by their owner and read by the owner
+  or `isManager()`. `claimReviews` are written by managers, never on their own claim. There is no `approvers`
+  collection and no `tripStops`.
+- **Rules (original draft, superseded):** the rules then let every member read every collection. Expenses are personal, so this spec proposes
   new rules that let a member read and write only **their own** trips and expenses, with a list of approvers who can
   read all. The claim owner is stored as the signed-in email (`request.auth.token.email`) in each record:
 
@@ -283,7 +300,7 @@ submitted.
   function isApprover() { return exists(/databases/$(database)/documents/approvers/$(signedInEmail())); }
   ```
 
-  The same pattern applies to `trips` and `tripStops`.
+  The same pattern was to apply to `trips` and `tripStops`.
 - **Drive:** receipt images and claim PDFs upload to `เบิกค่าใช้จ่าย/<ปี-เดือน>/<ชื่อ>/`, using the existing Drive
   session. Receipts are kept on the device until the month is submitted **and** uploaded.
 - **Location data:** stored only as the stamps at arrival and departure. There is no continuous tracking.
@@ -294,27 +311,29 @@ submitted.
 
 | File | Contents |
 |---|---|
-| `TCRoofKit/Sources/FieldOps/EventContent.swift` | builds title, notes, times and alarms from plain values (A2), pure Swift |
-| `TCRoofKit/Sources/FieldOps/ReceiptParser.swift` | §B4 rules |
-| `TCRoofKit/Sources/FieldOps/ClaimBuilder.swift` | month aggregation, per-job allocation, fuel split, duplicate detection |
-| `TCRoofKit/Package.swift` | target `FieldOps` (no dependencies) + tests |
-| `TCRoof/Calendar/CalendarService.swift` | EventKit: permission, calendar creation, create/update/delete, `CalendarLink` |
-| `TCRoof/Calendar/AddToCalendarButton.swift` | `EKEventEditViewController` wrapper (manual mode) |
-| `TCRoof/Calendar/AppointmentReminders.swift` | `UNUserNotificationCenter` scheduling (§A3) |
-| `TCRoof/App/DeepLinks.swift` | `tcroof://` parsing + `.onOpenURL` routing |
-| `TCRoof/Travel/TravelModels.swift` | `Trip`, `TripStop`, `Expense` + `CloudSynced` records |
-| `TCRoof/Travel/StopButtons.swift` | ถึง / ออก, region suggestions |
-| `TCRoof/Travel/RouteDistance.swift` | `MKDirections` per leg, caching |
-| `TCRoof/Travel/ReceiptCapture.swift` | VisionKit document camera + OCR + proposal chips |
-| `TCRoof/Travel/ClaimView.swift` | monthly screen, submit / withdraw |
-| `TCRoof/Travel/ClaimExport.swift` | PDF (`PDFReport` `Sketch` pages) and Excel (`ExcelExport`) |
+| `TCRoofKit/Sources/TCRoofCore/SurveyEvent.swift` | title, notes, times and alarms from plain values (A2), the `tcroof://` links |
+| `TCRoofKit/Sources/TCRoofCore/CalendarSync.swift` | what to create, move or remove |
+| `TCRoofKit/Sources/TCRoofCore/TravelClaim.swift`, `TravelClaim+Review.swift` | stamps, legs, mileage, fuel split, duplicates, warnings, month summary, per-job cost; the review |
+| `TCRoofKit/Sources/TCRoofCore/ReceiptParser.swift` | §B4 rules |
+| `TCRoofKit/Sources/PDFReport/ClaimPages.swift`, `ExcelExport/ClaimExcel.swift` | the claim PDF and Excel |
+| `TCRoof/Calendar/AddToCalendar.swift` | `EKEventEditViewController` wrapper (manual mode) |
+| `TCRoof/Calendar/CalendarService.swift` | EventKit: permission, calendar creation, create/update/delete, `calendar-links.json` |
+| `TCRoof/Notifications/NotificationScheduler.swift` | the appointment reminders (§A3) |
+| `TCRoof/App/TCRoofApp.swift` | `.onOpenURL` routing |
+| `TCRoof/Travel/TravelModels.swift` | `Trip`, `Expense`, `ClaimMonth` |
+| `TCRoof/Travel/TravelStore.swift` | stamps, route distance (`MKDirections` per leg) |
+| `TCRoof/Travel/TravelJobCard.swift` | ถึง / ออก on the job screen |
+| `TCRoof/Travel/ClaimScreen.swift`, `TripEditor.swift`, `ExpenseEditor.swift`, `ReceiptCapture.swift` | monthly screen, submit / withdraw, editors, receipt capture |
+| `TCRoof/Travel/ClaimExport.swift` | PDF, Excel, Drive upload on submit |
+| `TCRoof/Travel/ClaimReviewScreen.swift`, `ClaimReviews.swift` | `ตรวจใบเบิกของทีม`, the claimant's view of decisions |
 | `TCRoof/Sync/CloudRecords.swift`, `CloudSync.swift` | the new collections |
 | `firestore.rules` | §B6 |
-| Info settings | `NSCalendarsFullAccessUsageDescription`: "ใช้ซิงก์นัดสำรวจลงปฏิทินของ iPad"; `NSLocationAlwaysAndWhenInUseUsageDescription`: "ใช้แจ้งเตือนเมื่อถึงหรือออกจากสถานีที่นัดไว้ (เปิดเองในการตั้งค่า)"; `CFBundleURLTypes` `tcroof` |
+| Info settings (`AppInfo.plist`) | `NSCalendarsFullAccessUsageDescription`; `CFBundleURLTypes` `tcroof`. No Always-location key yet: it is needed only once region suggestions (§B2) are built |
 
 ## 3. Tests
 
-**Unit (`swift test`, `FieldOps`):**
+**Unit (`swift test`, `TCRoofCore`):** built as `SurveyEventTests`, `CalendarSyncTests`, `TravelClaimTests`,
+`TravelClaimReviewTests`, `ClaimPagesTests` and `ClaimExcelTests`. The draft's list:
 - `EventContent`:
   - title, notes and the source priority (form over job)
   - a date at 00:00 becomes an all-day event
@@ -336,21 +355,25 @@ submitted.
 
 ## 4. Done when
 
-- [ ] A survey appointment can be added to the iPad Calendar with no permission prompt, with address, map pin,
+- [x] A survey appointment can be added to the iPad Calendar with no permission prompt, with address, map pin,
       phone and a working "open in TCRoof" link.
-- [ ] With automatic sync on, changing the date on another iPad moves the event on this one after sync.
-- [ ] A day with 3 stations gives arrival/departure times, route km and the receipts in one place, with no typing
+- [x] With automatic sync on, changing the date on another iPad moves the event on this one after sync.
+- [x] A day with 3 stations gives arrival/departure times, route km and the receipts in one place, with no typing
       except to confirm the proposed values.
-- [ ] The monthly claim PDF and Excel match the screen totals, and include every receipt image.
-- [ ] No member can read another person's expenses unless they are listed as an approver.
+- [x] The monthly claim PDF and Excel match the screen totals, and include every receipt image.
+- [x] No member can read another person's expenses unless they are a manager.
 
 ## 5. Open questions
 
-1. **Event length and reminders:** is 3 hours right for a station survey? Are 17:00 the day before and 1 hour before
-   the right reminders?
-2. **Calendar:** a dedicated "TCRoof นัดสำรวจ" calendar, or the team's shared calendar?
-3. **Mileage:** what rate per km, and must private vehicles show odometer photos?
-4. **Claim form:** does the company have its own claim form layout that the PDF should copy? Who approves: a list of
-   approver emails in Firestore?
-5. **Per diem and lodging:** fixed amounts per day or night (settings), or receipts only?
-6. **Distance:** start from the office every day, or from the previous day's last place (overnight trips)?
+1. ~~**Event length and reminders:** is 3 hours right for a station survey? Are 17:00 the day before and 1 hour before
+   the right reminders?~~ Answered: 3 h events, both reminders.
+2. ~~**Calendar:** a dedicated "TCRoof นัดสำรวจ" calendar, or the team's shared calendar?~~ Answered: a dedicated
+   `TCRoof นัดสำรวจ` calendar.
+3. ~~**Mileage:** what rate per km, and must private vehicles show odometer photos?~~ Answered: 5 บาท/กม. for a private
+   car, odometer photos optional.
+4. ~~**Claim form:** does the company have its own claim form layout that the PDF should copy? Who approves: a list of
+   approver emails in Firestore?~~ Answered: the company's own A4 layout; managers approve (no approver list).
+5. ~~**Per diem and lodging:** fixed amounts per day or night (settings), or receipts only?~~ Answered: by receipt,
+   typed amounts allowed.
+6. ~~**Distance:** start from the office every day, or from the previous day's last place (overnight trips)?~~
+   Answered: from the office and back every day (a switch in ตั้งค่าการเบิก; the day's start place can be edited).

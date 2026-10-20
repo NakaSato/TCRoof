@@ -4,6 +4,7 @@
 `TCRoofKit/Sources/TCRoofCore/Assistant/` (`AssistantTests`), the `assistant.use` capability, and the app's chat in
 `TCRoof/Assistant/` (`AssistantUITests` on the demo stand-in). It calls the function over HTTPS with the account's ID
 token (`AssistantClient`), so the app needs no FirebaseFunctions SDK.
+Not built: the Cloud Function isn't deployed, and App Check isn't enforced.
 **Goal:** a chat assistant that helps the team keep each PWA station's MP plan on schedule: which stations and tasks
 are behind, what pace each task needs, and booking progress, actual dates and late causes from the conversation.
 
@@ -17,7 +18,9 @@ App (team / manager / Maintainer; assistant.use)
   ├─ Assistant.Toolbox: runs the model's tool calls on the device's jobs
   │     read: list_stations, get_schedule, get_week_tasks
   │     propose: propose_progress, propose_dates, propose_late_cause → PendingAction (nothing saved)
-  └─ Transport → Firebase callable `assistant` (asia-southeast1)
+  │     strategy: what_if, station_priorities, look_ahead, suggest_replan; propose_replan → PendingAction
+  └─ AssistantRouter: Qwen directly with this device's key when it has one (§6), else
+     Transport → Firebase callable `assistant` (asia-southeast1)
                    ├─ members/<email>: not external, not suspended
                    ├─ assistantUsage/<email>_<Bangkok day>: at most ASSISTANT_DAILY_LIMIT (50) a day
                    ├─ checks every message and tool against functions/src/allowed-tools.json
@@ -42,7 +45,9 @@ App (team / manager / Maintainer; assistant.use)
 | `ScheduleRecovery.swift` | `MasterSchedule.recovery(plan:actual:today:)`: per task with weight, points done and left, weeks left, needed points per week, pace so far, projected finish (the Saturday of the week it ends at that pace), slip days, and a state (`done`, `upcoming`, `onTrack`, `atRisk`, `overdue`) |
 | `ScheduleBrief.swift` | One station as JSON for the model: plan vs actual, per part, per task with its recovery numbers and late cause, this and the next two weeks' tasks, the projected station finish, and the last 14 days of daily reports (crew, rain hours, stop reason, progress lines, open problems) |
 | `AssistantChat.swift` | The OpenAI-compatible messages, `Request` / `Reply`, the `Transport` protocol, `JSONValue` |
-| `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the six tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
+| `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the eleven tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
+| `AssistantStrategy.swift` | `Assistant.Strategy`: the planning tools of §5 (`what_if`, `station_priorities`, `look_ahead`, `suggest_replan`, `propose_replan`) and the shared task-by-task forecast |
+| `AssistantOpenAI.swift` | `Assistant.OpenAI`: the request and reply checks for calling Qwen directly with the device's key (§6), and the daily limit per device |
 | `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message; the Thai system prompt |
 
 ## 3. Server (`functions/`)
@@ -65,8 +70,9 @@ App (team / manager / Maintainer; assistant.use)
 
 ## 4. The app (built)
 
-- `AssistantClient` (`Assistant.Transport`) through `FirebaseFunctions` (add the product to the app target),
-  `httpsCallable("assistant")` in `asia-southeast1`; errors in Thai (`resource-exhausted`: the day's limit).
+- `AssistantClient` (`Assistant.Transport`) POSTs the callable's JSON with the account's ID token to
+  `https://asia-southeast1-<project>.cloudfunctions.net/assistant` (no FirebaseFunctions SDK); errors in Thai
+  (`resource-exhausted`: the day's limit). `AssistantRouter` picks the device's key first (§6).
 - Jobs → `Assistant.Job`: only jobs with an MP plan, `canEdit = permissions.can(.mpProgress, on: job.access)`.
 - `AssistantChatView` from TC components: opened from the install tracking page header (focus on that station),
   แผน MP ทุกสถานี and `MPScheduleScreen`; prompt chips `สถานีไหนช้ากว่าแผน`, `ต้องเร่งงานอะไรสัปดาห์นี้`,
@@ -75,7 +81,7 @@ App (team / manager / Maintainer; assistant.use)
 - `ยืนยัน` saves through the same path as บันทึกความก้าวหน้า (so sync, the plan file and the Gantt follow).
 - DEBUG `-screen assistant -assistantDemo YES` with a stub transport, and `AssistantUITests`.
 
-## 6. Strategy (`AssistantStrategy.swift`, `AssistantStrategyTests`)
+## 5. Strategy (`AssistantStrategy.swift`, `AssistantStrategyTests`)
 
 Swift works out every figure; the model compares, explains and recommends. For the station's handover the model
 quotes `handoverForecast` / `handoverSlipDays`, the install tracking page's `คาดส่งมอบ` (the period stretched by the
@@ -91,7 +97,7 @@ with its crew and working days, and a task with no progress yet runs at the plan
 | `suggest_replan` | A plan from today: a task under way ends when its pace finishes it (never earlier), a task not started moves by as much as its predecessors' ends moved (keeping the plan's overlaps), finished tasks stay. |
 | `propose_replan` | A card (`mp.setup` only) with the new dates; `ยืนยัน` turns the plan's dates into fixed ones (as an imported plan's), moves the tasks and fits the install window. Progress is untouched. |
 
-## 7. The key on the device (no Blaze plan)
+## 6. The key on the device (no Blaze plan)
 
 The project is on the Spark plan, which can't host functions or Secret Manager, so the app can also call Qwen
 directly (`AssistantRouter`: the key on this device, else the function).
@@ -106,10 +112,10 @@ directly (`AssistantRouter`: the key on this device, else the function).
   not per person. Use a key with a spending cap in the Qwen console, and rotate it if a device is lost. Moving to
   the Cloud Function later only needs the Blaze plan and the deploy; a device without a key then uses it.
 
-## 5. Open questions
+## 7. Open questions
 
 1. Which model ids the Qwen account offers on that endpoint; try Thai answers on two before picking (`QWEN_MODEL`).
-2. Is the Firebase project on Blaze?
+2. ~~Is the Firebase project on Blaze?~~ No, it is on Spark (§6).
 3. ~~Should progress confirmed through the assistant be marked in an audit trail?~~ Yes (19/10/2569): each confirmed
    card adds a line to `MasterSchedule.Actual.confirmations` (task, the confirmer's email, time, the card's before and
    after); the progress sheet and the install page's task sheet show the latest as `ผ่านผู้ช่วย · 60% · name · date`.

@@ -1,12 +1,14 @@
 # Claude Code task: CAD export (DXF R12) for the SLD and D1, from one shared `Sketch` → DXF writer
 
+**Status:** done (C1, the SLD, D1, and A2 as well). The as-built layer tables are in `SPEC.md` (As built).
+
 > How to use: open Claude Code in the `TCRoof` repo and type
 > `Follow docs/specs/cad-export-dxf/CLAUDE_CODE_TASK.md`
 
 This document is in English. Thai strings in `backticks` are literal UI labels; English in brackets is only a gloss. Background, the SDK comparison and the open questions are in `SPEC.md` in this folder. Read it first.
 
 ## Goal
-TCRoof already writes the C1 roof as a DXF R12 file (`TCRoofCore/RoofDXF.swift`, sheet `ส่งออก CAD` in `SurveyUI/RoofPageWide+Sheets.swift`). It uses no library, costs nothing, and AutoCAD / BricsCAD / DraftSight / LibreCAD open it.
+TCRoof already writes the C1 roof as a DXF R12 file (`TCRoofCore/RoofDXF.swift`, sheet `ส่งออก CAD` in `TCRoofUI/Survey/Pages/Roof/RoofPageWide+Sheets.swift`). It uses no library, costs nothing, and AutoCAD / BricsCAD / DraftSight / LibreCAD open it.
 
 Do three things, in this order. Each phase ends green (`swift test` + an app build) before the next starts:
 1. **Phase 1:** pull the generic DXF writing out of `RoofDXF` into a shared `SketchDXF` that can write **any** `Sketch`. `RoofDXF` output must stay **byte-for-byte identical**.
@@ -129,11 +131,11 @@ public enum SingleLineDXF {
 | Colour constant | Layer | ACI |
 |---|---|---|
 | `ink` | `SLD_LINE` | 7 |
-| `blue` | `SLD_PV` | 5 |
+| `blue` | ~~`SLD_PV`~~ `SLD_NEW` (superseded) | 5 |
 | `green` | `SLD_OK` | 3 |
 | `amber` | `SLD_WARN` | 30 |
 | `red` | `SLD_MISSING` | 1 |
-| `grey` | `SLD_NOTE` | 8 |
+| `grey` | ~~`SLD_NOTE`~~ `SLD_ASSUMED` (superseded) | 8 |
 | `pole` | `SLD_POLE` | 8 |
 | any `text` / `textBox` op | `SLD_TEXT` (keep the op colour with group 62) | 7 |
 | anything else | `SLD_OTHER` | 7 |
@@ -162,7 +164,7 @@ public enum SingleLineDXF {
 `TCRoofCore/TankDXF.swift`, `TankDXF.build(_ v: Values) -> RoofDXF.Output?` (nil when `TankPlan` is nil):
 - **Real scale**, metres × 1000 (mm). `TankPlan.init` computes `k`, `ox`, `oy` locally. Expose them as a `public let frame: (ox: Double, oy: Double, k: Double)` (or a small struct) without changing the drawing. Then the transform is `((x − ox)/k, TH − (y − oy)/k)`, with `TH` the total depth in metres.
 - Tag ops by what they draw. `TankPlan` has no `tags` today. Add a parallel `tags: [String?]` like `RoofPlan.tags` / `RoofSection.tags`, filled where each op is appended: `grid`, `out`, `dim`, `dimtxt`, `obst`, `pv`, `kz`, `north`, `txt`, and `nil` for the background.
-- Layers: `GRID 8, OUTLINE 7, DIM 3, OBSTACLE 1, PV 150, KEEPOUT 1, NORTH 7, TEXT 7` (same colours as `RoofDXF.colors` where the name matches).
+- Layers: `GRID 8, OUTLINE 7, DIM 3, OBSTACLE 1, PV 150, ~~KEEPOUT 1~~, NORTH 7, TEXT 7` (same colours as `RoofDXF.colors` where the name matches). Superseded: there is no `KEEPOUT`; `TankDXF` writes `PV` / `PV_GROUP` from the layout plus `BEAM` / `SECTION_MARK`.
 - The sub-step 3 PV layout (`TankLayoutPlan` / layout values), if it lives in a separate sketch, goes on `PV` / `PV_GROUP` the same way. Read `TankPageWide+Layout` and include it only if it is a `Sketch` in `TCRoofCore`. Otherwise list it as an open question.
 - Options: `hatches` on (obstacles are hatched), `dashes` on, `textBoxes` on, `opColours` off (layer colours carry the meaning).
 

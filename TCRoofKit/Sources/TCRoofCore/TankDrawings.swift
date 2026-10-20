@@ -146,15 +146,18 @@ public enum TankDrawings {
         dimV(X(L) + t + 2 * k + 8, roofY, baseY, "สูง " + fmt(H), right: true)
         if partly { dimV(X(0) - t - 2 * k - 8, roofY, groundY, "พ้นดิน " + String(format: "%.2f", min(H, max(0, exposed))), right: false) }
         if buried { dimV(X(0) - t - 2 * k - 8, roofY - cover * k, roofY, "ดินถม " + String(format: "%.2f", cover), right: false) }
-        let vol = (L + 2 * wall) * (otherLength(s, across: across) + 2 * wall) * (H + 2 * wall)
-        o.append(.text(String(format: "ปริมาตรภายนอกโดยประมาณ %@ ม³ · ผนังและพื้น %.2f ม.", fmt((vol).rounded()), wall)
-                       + (buried ? String(format: " · ดินถมบนหลังคา %.2f ม.", cover) : "") + " (ค่าสมมติ)",
-                       at: Pt(16, baseY + t + 40), size: 8.5, color: muted))
-        let h = baseY + t + 52
+        // the size and volume summary (§5.5), the assumed thicknesses and the note every drawing sheet carries
+        if let sum = Tank.summary(v) {
+            o.append(.text(sum.text, at: Pt(16, baseY + t + 40), size: 9, bold: true, color: ink))
+        }
+        o.append(.text(String(format: "ผนังและพื้น %.2f ม.", wall) + (buried ? String(format: " · ดินถมบนหลังคา %.2f ม.", cover) : "") + " (ค่าสมมติ) · "
+                       + note, at: Pt(16, baseY + t + 53), size: 8, color: muted))
+        let h = baseY + t + 64
         return Sketch(width: W, height: h, ops: [.rect(Box(0, 0, W, h), stroke: nil, fill: .white)] + o)
     }
 
-    static func otherLength(_ s: (x: [Double], y: [Double]), across: Bool) -> Double { (across ? s.y : s.x).reduce(0, +) }
+    /// The note every drawing sheet carries (docs/specs/auto-drawing.md §1).
+    public static let note = "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง"
 
     // MARK: table rows
 
@@ -204,7 +207,7 @@ public enum TankDrawings {
         o.append(.text(String(format: "%.2f", p.hBack), at: Pt(X(p.postDY) + 5, Y(p.hBack / 2)), size: 9.5, bold: true, color: dim))
         o.append(.text(String(format: "เอียง %.1f°", p.tilt), at: Pt(X(p.postDY / 2), Y(p.hBack) - 14), size: 9.5, bold: true, color: navy, align: .center))
         // a vent under the back half of the first row, with the clearance left above it
-        let vx = 0.55, vw = 0.6
+        let vx = 0.55, vw = TankPoints.ventSize
         let under = p.hFront + (vx + vw) * p.tanT, room = under - p.ventH
         o.append(.rect(Box(X(vx), Y(p.ventH), vw * k, p.ventH * k), stroke: vent, fill: vent.withAlpha(0.12), width: 1))
         o.append(.text(String(format: "ปล่อง %.2f", p.ventH), at: Pt(X(vx + vw) + 4, Y(p.ventH * 0.4)), size: 8.5, color: vent))

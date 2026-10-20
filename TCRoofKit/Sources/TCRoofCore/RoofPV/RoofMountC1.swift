@@ -48,7 +48,7 @@ public enum RoofMount {
         let shape = shape(v) ?? .gable
         let across = alongX ? ys.reduce(0, +) : xs.reduce(0, +)
         let run = shape == .shed ? across : across / 2
-        let rise = tan(Roof.frame(v).slope * .pi / 180) * run
+        let rise = tan(Roof.slope(v) * .pi / 180) * run
         let obstacles: [RoofMountInput.Obstacle] = Roof.areas(v).map { a in
             let kind: RoofObstacleKind = a.kind == Roof.skylightKind ? .skylight : a.kind == Roof.keepOutKind ? .keepOut
                 : RoofObstacleKind(rawValue: a.kind) ?? .other

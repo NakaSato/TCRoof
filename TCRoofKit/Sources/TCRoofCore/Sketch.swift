@@ -107,7 +107,7 @@ public enum Drawings {
     public static func plan(_ v: Values, tank: Bool, width W: Double = 690) -> Sketch? {
         let sx = parseSpans(v.text("spansX")), sy = parseSpans(v.text("spansY"))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
-        if tank { return TankPlan(v, width: W)?.sketch }
+        if tank { return TankPlan(v, width: W, details: true)?.sketch }
         if Roof.hasFrame(v) {
             let p = RoofPlan(v).sketch, k = W / p.width
             return Sketch(width: W, height: p.height * k, ops: p.translated(0, 0, scale: k))

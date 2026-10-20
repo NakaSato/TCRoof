@@ -11,6 +11,8 @@ public enum Roof {
         public static let frame = "frameType", ridge = "ridgeDir", bays = "trussBays", posts = "postGrid"
         public static let pvOrientation = "pvOrientation", shots = "roofShots"
         public static let overhang = "eaveOverhang", clearHeight = "clearHeight"
+        /// Ground to the roof at the ridge (m), optional: with the clear height it gives the pitch (auto-drawing §4.4).
+        public static let ridgeHeight = "ridgeHeight"
         public static let purlin = "purlinSpacing", standard = "roofStd"
         public static let pvRows = "pvRows", pvPerTable = "pvPerTable", pvGap = "pvGap"
         public static let shape = "roofShape", material = "roofMaterial", structure = "roofStructure", panels = "panelsBefore"
@@ -85,6 +87,43 @@ public enum Roof {
         v[key] = m.map { .text(fmt(($0 * 100).rounded() / 100)) }
     }
 
+    // MARK: pitch
+
+    /// The section's pitch: the frame type's slope (15°, 30° for ขื่อรัด), or derived from the measured heights
+    /// (docs/specs/auto-drawing.md §4.4) once `ridgeHeight` is set: rise `R = ridgeHeight − clearHeight − heel`, pitch
+    /// `atan(R / run)` with the run half the span (the whole span for a shed). A ridge not above the eave, or a pitch
+    /// over 60°, keeps the frame's slope with the warning; under 3° or over 45° it is used, with a warning.
+    public struct Pitch: Equatable, Sendable {
+        /// Degrees.
+        public let degrees: Double
+        /// From the heights, not the frame type.
+        public let measured: Bool
+        public let warning: String?
+    }
+    public static func pitch(_ v: Values) -> Pitch {
+        let f = frame(v)
+        guard let ridge = v.number(Key.ridgeHeight) else { return Pitch(degrees: f.slope, measured: false, warning: nil) }
+        let rise = ridge - clearHeight(v) - f.heel
+        let run = RoofMount.shape(v) == .shed ? span(v) : span(v) / 2
+        guard rise >= 0.05, run > 0, rise.isFinite else {
+            return Pitch(degrees: f.slope, measured: false, warning: "ความสูงสันต้องมากกว่าชายคา")
+        }
+        let a = atan(rise / run) * 180 / .pi
+        let check = String(format: "ตรวจความสูงอีกครั้ง (มุมประมาณ %.1f°)", a)
+        guard a <= 60 else { return Pitch(degrees: f.slope, measured: false, warning: check) }
+        return Pitch(degrees: a, measured: true, warning: a < 3 || a > 45 ? check : nil)
+    }
+    /// The pitch in degrees, as every C1 drawing and the PV layout use it.
+    public static func slope(_ v: Values) -> Double { pitch(v).degrees }
+    /// "15°", or "14.9°" for a measured pitch.
+    public static func slopeText(_ v: Values) -> String { fmt((slope(v) * 10).rounded() / 10) + "°" }
+    /// The ridge height: measured, else what the frame's slope gives above the clear height.
+    public static func ridgeHeight(_ v: Values) -> Double {
+        if let r = v.number(Key.ridgeHeight) { return r }
+        let f = frame(v), run = RoofMount.shape(v) == .shed ? span(v) : span(v) / 2
+        return clearHeight(v) + f.heel + run * tan(f.slope * .pi / 180)
+    }
+
     // MARK: purlins
 
     /// ระยะแป measured along the slope (m), 0.60–1.50 in 0.05 steps; 1.00 until set.
@@ -100,7 +139,7 @@ public enum Roof {
     /// `spacing · cos(slope)` down to the eaves (the design's `PUR`).
     public static func purlinLines(_ v: Values) -> [Double] {
         let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
-        let step = purlinSpacing(v) * cos(frame(v).slope * .pi / 180)
+        let step = purlinSpacing(v) * cos(slope(v) * .pi / 180)
         var out: [Double] = [], d = 0.15
         while d < across / 2 - 0.05 { out += [across / 2 - d, across / 2 + d]; d += step }
         return out
@@ -108,7 +147,7 @@ public enum Roof {
     /// "ข้างละ 9 แนว"
     public static func purlinNote(_ v: Values) -> String {
         let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
-        let step = purlinSpacing(v) * cos(frame(v).slope * .pi / 180)
+        let step = purlinSpacing(v) * cos(slope(v) * .pi / 180)
         return "ข้างละ \(Int(((across / 2 - 0.15) / step).rounded(.up))) แนว"
     }
 

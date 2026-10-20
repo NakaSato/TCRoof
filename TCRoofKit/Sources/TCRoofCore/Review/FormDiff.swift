@@ -65,7 +65,7 @@ public enum FormDiff {
         for f in specs {
             if scope == nil && systemFields.contains(f.id) { continue }
             switch f.kind {
-            case .signature, .plan, .diagram, .note: continue
+            case .signature, .plan, .diagram, .roofSection, .note: continue
             default: break
             }
             let visA = f.isVisible(va), visB = f.isVisible(vb)

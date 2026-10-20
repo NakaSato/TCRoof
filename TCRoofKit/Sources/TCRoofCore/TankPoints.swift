@@ -8,10 +8,12 @@ public enum TankPoints {
     public static let vent = "vent", hatch = "hatch", ladder = "ladder", pipe = "pipe"
     public static let ok = "ok", absent = "absent"
     public static let standard = "standard", added = "added"
-    /// Side of the opening drawn on the plans (m).
-    public static let ventSize = 0.6, hatchSize = 0.8
-    /// Positions snap to 5 cm.
-    public static let grid = 0.05
+    /// Side of the opening (m), as the กปภ. standard sheets draw them. Points keep the size they were made with.
+    public static let ventSize = 1.45, hatchSize = 1.15
+    /// Side of a ladder or pipe's mark on the wall (m).
+    public static let wallSize = 0.6
+    /// Positions snap to 2.5 cm, so a 1.45 m vent's corner can put its centre on a whole 5 cm.
+    public static let grid = 0.025
     /// A dragged point within this of another point's row or column takes it (m).
     public static let magnet = 0.3
 
@@ -34,7 +36,13 @@ public enum TankPoints {
         Slot(kind: hatch, fx: 0.03, fy: 0.6),
     ]
 
-    public static func size(_ kind: String) -> Double { kind == hatch ? hatchSize : ventSize }
+    public static func size(_ kind: String) -> Double {
+        switch kind {
+        case hatch: return hatchSize
+        case ladder, pipe: return wallSize
+        default: return ventSize
+        }
+    }
     /// "ช่องระบายอากาศ" / "ช่องลงถัง" / "บันไดขึ้นถัง" / "ท่อ" / "สิ่งกีดขวาง"
     public static func kindName(_ kind: String) -> String {
         switch kind {
@@ -64,8 +72,8 @@ public enum TankPoints {
         let d: [(Wall, Double)] = [(.top, r.y), (.bottom, H - r.y - r.h), (.left, r.x), (.right, W - r.x - r.w)]
         return d.min { $0.1 < $1.1 }!.0
     }
-    public static func snap(_ d: Double) -> Double { ((d / grid).rounded() * grid * 100).rounded() / 100 }
-    static func text(_ d: Double) -> String { fmt(snap(d)) }
+    public static func snap(_ d: Double) -> Double { ((d / grid).rounded() * grid * 1000).rounded() / 1000 }
+    static func text(_ d: Double) -> String { fmt(snap(d), digits: 3) }
 
     /// The tank's width and height (m), nil without spans.
     public static func tankSize(_ v: Values) -> (w: Double, h: Double)? {
@@ -163,7 +171,7 @@ public enum TankPoints {
 
     // MARK: moving
 
-    /// Moves a point's top-left corner to (x, y), snapped to 5 cm and kept inside the tank.
+    /// Moves a point's top-left corner to (x, y), snapped to 2.5 cm and kept inside the tank.
     public static func move(_ v: inout Values, _ id: UUID, x: Double?, y: Double?) {
         guard let t = tankSize(v) else { return }
         edit(&v, id) { o in
@@ -176,7 +184,7 @@ public enum TankPoints {
         }
     }
 
-    /// Where a dragged point lands: (x, y) is its wanted top-left corner. It snaps to 5 cm, stays inside the tank and
+    /// Where a dragged point lands: (x, y) is its wanted top-left corner. It snaps to 2.5 cm, stays inside the tank and
     /// takes another point's column / row (centre line) within `magnet`; `guideX` / `guideY` are those centre lines.
     public struct Drop: Hashable, Sendable {
         public var x, y: Double

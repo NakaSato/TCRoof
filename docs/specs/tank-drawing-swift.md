@@ -93,7 +93,7 @@ The plan card switches between `บนหลังคา · {n} จุด` and `
 - **Seeding:** on first open, a tank with a size and no obstacles gets the generic standard layout scaled to its size: V1–V10 and H1–H5, unchecked (`TankPoints.layout`, `seed`).
 - **Standard designs:** `เริ่มจากแบบมาตรฐาน กปภ.` (or `เปลี่ยนแบบมาตรฐาน กปภ.`) lists the designs, closest to the measured size first, and replaces the spans and every point with the chosen sheet's vents, hatches, ladders and pipes (`แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่`). The card then shows `แบบ: {design}` and how the site differs. See [`standard-designs.md`](standard-designs.md).
 - **Status:** `""` ยังไม่ยืนยัน (drawn dashed blue), `ok` มีตรงแบบ, `absent` ไม่มีจริง (dashed red on the card's plan; left out of the drawings, the layout and the overlap check). `ย้ายแล้ว` is derived: a standard point away from its standard position.
-- **Sizes on the plans:** vent 0.60 m, hatch 0.80 m (`ventSize`, `hatchSize`; open question 3).
+- **Sizes on the plans:** vent 1.45 m, hatch 1.15 m, as the กปภ. sheets (`ventSize`, `hatchSize`; open question 3, answered 2026-10-20). Points keep the size they were made with.
 - **Legend:** ยังไม่ยืนยัน / ยืนยันแล้ว / ไม่มีจริง / จุดที่เลือก (orange 3 pt border).
 
 Card for the selected point (`จุด {label} · {kind}`, chip `ตามแบบ` / `ย้ายแล้ว` / `เพิ่มหน้างาน`):
@@ -273,7 +273,7 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 
 1. Confirm the 30 × 30 and 20 × 20 presets (size, column grid) against กปภ. drawings, and whether more sizes are needed.
 2. Opening positions: the 40 × 40 and 64 × 40 sheets are in `TankDesign`; other sizes get the generic layout scaled to the tank. Who supplies the sheets for 30 × 30 and 20 × 20?
-3. Opening sizes: the app draws vents 0.60 m and hatches 0.80 m; the design notes vents 1.45 m and hatches 1.15 m. Which, and fixed per design or measured per tank?
+3. ~~Opening sizes: the app draws vents 0.60 m and hatches 0.80 m; the design notes vents 1.45 m and hatches 1.15 m. Which, and fixed per design or measured per tank?~~ The กปภ. sheets only: vents 1.45 m, hatches 1.15 m, fixed (2026-10-20).
 4. Should the new photo slots (roof, shade, cable route, fourth wall) become required? This changes D1 completion for old jobs.
 5. Excel NO.224 has the plan in `C3:X15`: should the panel layout go there too, or somewhere else?
 6. Energy per kWp (1,452 kWh/kWp in the design): which source (PVGIS, the team's yield table)? Sub-step 3 shows no energy yet.

@@ -94,7 +94,7 @@ public enum ERCNotification {
         var out: [NotificationPlan] = []
         for wait in ERCFlow.waits(record, context, today: now) {
             let working = wait.step.limit?.working == true
-            let sub = "\(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.step.number ?? 0) · ครบกำหนด \(ERCFlow.date(wait.due).map(RoutineReport.thaiDate) ?? wait.due)"
+            let sub = "\(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.number ?? 0) · ครบกำหนด \(ERCFlow.date(wait.due).map(RoutineReport.thaiDate) ?? wait.due)"
             if let at = at8(ERCFlow.day(wait.due, before: lead, working: working, context)), at > now {
                 out.append(NotificationPlan(id: "erc-soon-\(jobKey)-\(wait.step.rawValue)-\(wait.due)", type: .mp,
                                             title: "\(wait.title) เหลือ \(lead) \(wait.unit)", body: station, sub: sub,

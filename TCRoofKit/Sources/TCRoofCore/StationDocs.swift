@@ -283,7 +283,7 @@ public enum StationDocs {
         public var dueDates: [String: String]
         /// The answers of หนังสือแจ้งดับไฟ, once the team has drafted it in the app.
         public var outageLetter: OutageLetter?
-        /// Where the station stands in the ERC's exemption flow (200 kVA and over), once the team records it.
+        /// Where the station stands in the ERC's exemption flow (either size, `ERCFlow.Variant`), once the team records it.
         public var erc: ERCFlow.Record?
         /// The PWA branch (สาขา) and region (เขต) the station belongs to, for the hand-over file names
         /// (`AS-Built {station_name} {branch}`, `คู่มือ… พื้นที่{region}`); empty until the team types them.
@@ -357,7 +357,7 @@ public enum StationDocs {
         public var srtProject: Bool
 
         public init(_ station: Station, inverterKW: Double?) {
-            over200kVA = station.over200kVA ?? ((inverterKW ?? 0) >= 200)
+            over200kVA = station.over200kVA ?? ERCFlow.needsPK2(kVA: inverterKW ?? 0)
             buildingRoute = station.buildingRoute
             requestType = station.requestType
             sellsPower = station.sellsPower

@@ -497,7 +497,7 @@ public enum PWAPlan {
     ///   planned start of MP 1.4, 1.5 and 1.7, until the task is booked as done or every paper of the package is
     ///   submitted;
     /// - the O&M training on the planned start of MP 3.2, until it is booked as done;
-    /// - for a station of 200 kVA and over, each step of the ERC flow that the utility or DEDE has, on the last day
+    /// - each step of the station's ERC flow (under 200 kVA or 200 and over) that the utility or DEDE has, on the last day
     ///   of its time limit (`ERCFlow.waits`).
     public static func deadlines(_ stations: [Station], library: StationDocs.Library = .init(), today: Date,
                                  threshold: Double = InstallOverview.defaultThreshold) -> [Deadline] {
@@ -539,11 +539,12 @@ public enum PWAPlan {
                                     chip: chip, tone: tone, station: s.id, opens: .docs))
             }
 
-            if s.docsContext.over200kVA, let record = s.docs.erc {
-                for wait in ERCFlow.waits(record, ERCFlow.Context(holidays: s.holidays), today: today) {
+            if let record = s.docs.erc {
+                let ctx = ERCFlow.Context(holidays: s.holidays, variant: .init(over200kVA: s.docsContext.over200kVA))
+                for wait in ERCFlow.waits(record, ctx, today: today) {
                     guard let date = ERCFlow.date(wait.due) else { continue }
                     out.append(Deadline(id: "erc-\(wait.step.rawValue)-\(s.id)", date: date, kind: .document, title: wait.title,
-                                        subtitle: "\(label) · \(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.step.number ?? 0)",
+                                        subtitle: "\(label) · \(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.number ?? 0)",
                                         chip: wait.text, tone: wait.left < 0 ? .late : wait.left <= 3 ? .risk : .ok,
                                         station: s.id, opens: .docs))
                 }

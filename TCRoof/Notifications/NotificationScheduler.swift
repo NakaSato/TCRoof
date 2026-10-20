@@ -162,9 +162,9 @@ private struct NotificationScheduler: ViewModifier {
         let now = Date.now
         return heard.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
             let key = job.syncID ?? job.code
-            let erc = job.stationContext.over200kVA ? job.stationDocs.erc.map {
+            let erc = job.stationDocs.erc.map {
                 ERCNotification.plans(jobKey: key, station: job.stationName, record: $0, context: job.ercContext, now: now)
-            } ?? [] : []
+            } ?? []
             guard let input = job.scheduleInput else { return erc }
             return erc + MPNotification.plans(jobKey: key, station: job.stationName, plan: MasterSchedule.plan(input),
                                               actual: job.scheduleActual, now: now)

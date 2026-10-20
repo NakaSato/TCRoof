@@ -82,11 +82,17 @@ struct StationDocsScreen: View {
     }
 
     /// `-stationDocsERC wait|failed|ready|parallel|done` sets the station to 200 kVA and over, writes that state of the
-    /// ERC flow dated back from today, and opens ลำดับ กกพ. It changes the job for good.
+    /// ERC flow dated back from today, and opens ลำดับ กกพ. It changes the job for good. `-stationDocsERCSize <kVA>`
+    /// sets the station's size instead (`150`: under 200 kVA, the `utility_lt200` flow, where `parallel` is the
+    /// inspection waiting and `done` leaves out the พค.2 steps); `-stationDocsERC small` is `wait` at 150 kVA.
     private func debugERC() {
-        guard let name = UserDefaults.standard.string(forKey: "stationDocsERC") else { return }
+        guard var name = UserDefaults.standard.string(forKey: "stationDocsERC") else { return }
+        var kVA = UserDefaults.standard.object(forKey: "stationDocsERCSize") != nil
+            ? UserDefaults.standard.double(forKey: "stationDocsERCSize") : ERCFlow.pk2ThresholdKVA
+        if name == "small" { name = "wait"; kVA = 150 }
+        let variant = ERCFlow.Variant(kVA: kVA), big = variant == .from200
         func ago(_ days: Int) -> String { ERCFlow.day(Calendar.current.date(byAdding: .day, value: -days, to: .now) ?? .now) }
-        var r = ERCFlow.Record()
+        var r = ERCFlow.Record(variant: variant)
         switch name {
         case "wait":
             r.add(.designRequest, day: ago(30))
@@ -96,17 +102,18 @@ struct StationDocsScreen: View {
             r.add(.designRequest, day: ago(60)); r.add(.designResult, day: ago(48)); r.add(.install, day: ago(2))
         case "parallel":
             r.add(.designRequest, day: ago(90)); r.add(.designResult, day: ago(78)); r.add(.install, day: ago(20))
-            r.add(.pk2Request, day: ago(15)); r.add(.ercToDede, day: ago(10)); r.add(.inspectionRequest, day: ago(12))
-            r.utilityWantsPK2 = true
+            if big { r.add(.pk2Request, day: ago(15)); r.add(.ercToDede, day: ago(10)); r.utilityWantsPK2 = true }
+            r.add(.inspectionRequest, day: ago(12))
         case "done":
             r.add(.designRequest, day: ago(120)); r.add(.designResult, day: ago(108)); r.add(.install, day: ago(60))
-            r.add(.pk2Request, day: ago(55)); r.add(.pk2Signed, day: ago(25)); r.add(.inspectionRequest, day: ago(50))
-            r.add(.inspectionResult, day: ago(30)); r.add(.cod, day: ago(15)); r.add(.exemptionResult, day: ago(5))
-            r.utilityWantsPK2 = false
+            if big { r.add(.pk2Request, day: ago(55)); r.add(.pk2Signed, day: ago(25)); r.utilityWantsPK2 = false }
+            r.add(.inspectionRequest, day: ago(50)); r.add(.inspectionResult, day: ago(30))
+            if !big { r.add(.utilityToERC, day: ago(20)) }
+            r.add(.cod, day: ago(15)); r.add(.exemptionResult, day: ago(5))
         default: return
         }
         var station = job.stationDocs
-        station.over200kVA = true
+        station.over200kVA = big
         station.erc = r
         job.stationDocs = station
         tab = .erc
@@ -130,13 +137,15 @@ struct StationDocsScreen: View {
         }
     }
 
-    /// The packages with their ready counts, then the พค.2 check list and the ERC flow of a station of 200 kVA and over.
+    /// The packages with their ready counts, the พค.2 check list of a station of 200 kVA and over, and the ERC flow of
+    /// every station (its size picks the flow: `Job.ercContext`).
     private var tabs: [(tab: Pane, title: String, count: String?)] {
         var out: [(Pane, String, String?)] = StationDocs.packages(ctx).map { p in
             let pr = StationDocs.progress(p, station: job.stationDocs, library: library, ctx)
             return (.package(p), p.title, "\(pr.ready)/\(pr.total)")
         }
-        if ctx.over200kVA { out += [(.checklist, "Check list พค.2", nil), (.erc, "ลำดับ กกพ.", nil)] }
+        if ctx.over200kVA { out.append((.checklist, "Check list พค.2", nil)) }
+        out.append((.erc, "ลำดับ กกพ.", nil))
         return out
     }
 
@@ -157,7 +166,7 @@ struct StationDocsScreen: View {
             }
         }
         .onChange(of: ctx.over200kVA) { _, over in
-            if !over, tab == .checklist || tab == .erc || tab == .package(.pk2) { tab = .package(.gridConnection) }
+            if !over, tab == .checklist || tab == .package(.pk2) { tab = .package(.gridConnection) }
         }
     }
 

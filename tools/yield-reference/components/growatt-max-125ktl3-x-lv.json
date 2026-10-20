@@ -1,0 +1,29 @@
+{
+  "acMaxApparentPowerVA" : 137500,
+  "acNominalPowerW" : 125000,
+  "euroEfficiency" : 0.985,
+  "id" : "growatt-max-125ktl3-x-lv",
+  "lossModel" : {
+    "l0" : 0.0020131413392982314,
+    "l1" : 0.0019342933035088527,
+    "l2" : 0.012582133370613946,
+    "pDC0W" : 127100.92335720146
+  },
+  "manufacturer" : "Growatt",
+  "maxDCVoltageV" : 1100,
+  "maxEfficiency" : 0.988,
+  "maxInputCurrentPerMpptA" : 32,
+  "maxShortCircuitCurrentPerMpptA" : 40,
+  "model" : "MAX 125KTL3-X LV",
+  "mpptCount" : 10,
+  "mpptEfficiency" : 0.999,
+  "mpptMaxV" : 1000,
+  "mpptMinV" : 180,
+  "nightConsumptionW" : 1,
+  "nominalACVoltageV" : 400,
+  "nominalDCVoltageV" : 600,
+  "schemaVersion" : 1,
+  "source" : "datasheetFit",
+  "startVoltageV" : 195,
+  "stringsPerMppt" : 2
+}

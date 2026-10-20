@@ -1,0 +1,30 @@
+{
+  "acMaxApparentPowerVA" : 66600,
+  "acNominalPowerW" : 60000,
+  "euroEfficiency" : 0.984,
+  "id" : "growatt-max-60ktl3-lv",
+  "lossModel" : {
+    "l0" : 0.0026841884523976034,
+    "l1" : -0.0014209422619880065,
+    "l2" : 0.016776177827485018,
+    "pDC0W" : 61102.24938510505
+  },
+  "manufacturer" : "Growatt",
+  "maxDCVoltageV" : 1100,
+  "maxEfficiency" : 0.988,
+  "maxInputCurrentPerMpptA" : 26,
+  "maxRecommendedPVPowerW" : 90000,
+  "maxShortCircuitCurrentPerMpptA" : 32,
+  "model" : "MAX 60KTL3 LV",
+  "mpptCount" : 6,
+  "mpptEfficiency" : 0.999,
+  "mpptMaxV" : 1000,
+  "mpptMinV" : 200,
+  "nightConsumptionW" : 1,
+  "nominalACVoltageV" : 400,
+  "nominalDCVoltageV" : 585,
+  "schemaVersion" : 1,
+  "source" : "datasheetFit",
+  "startVoltageV" : 250,
+  "stringsPerMppt" : 2
+}

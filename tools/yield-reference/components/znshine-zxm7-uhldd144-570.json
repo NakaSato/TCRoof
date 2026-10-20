@@ -1,0 +1,42 @@
+{
+  "bifaciality" : 0.8,
+  "cells" : {
+    "bypassDiodes" : 3,
+    "cellsInParallel" : 2,
+    "cellsInSeries" : 72
+  },
+  "dimensions" : {
+    "depthM" : 0.03,
+    "heightM" : 2.278,
+    "widthM" : 1.134
+  },
+  "id" : "znshine-zxm7-uhldd144-570",
+  "manufacturer" : "ZNSHINE SOLAR",
+  "maxSystemVoltageV" : 1500,
+  "model" : "ZXM7-UHLDD144-570",
+  "oneDiode" : {
+    "gammaRef" : 0.9801453172435277,
+    "muGammaPerK" : -0.00018894158934416926,
+    "rSeriesOhm" : 0.23018247055771596,
+    "rShunt0Ohm" : 1200,
+    "rShuntExp" : 5.5,
+    "rShuntRefOhm" : 300
+  },
+  "schemaVersion" : 1,
+  "source" : "datasheetFit",
+  "stc" : {
+    "impA" : 13.45,
+    "iscA" : 14.23,
+    "pNomW" : 570,
+    "toleranceMinusPercent" : 3,
+    "tolerancePlusPercent" : 3,
+    "vmpV" : 42.4,
+    "vocV" : 51.1
+  },
+  "technology" : "monoSi",
+  "temperatureCoefficients" : {
+    "muIscAPerK" : 0.0065458,
+    "muPmpPercentPerK" : -0.3,
+    "muVocVPerK" : -0.12775
+  }
+}

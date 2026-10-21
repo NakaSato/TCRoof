@@ -1,0 +1,33 @@
+{
+  "_note": "Example values from the board (iPadDaily.dc.html, 21 ต.ค. 2569). For screenshots only; never hard-code them.",
+  "station": "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย (ตัวอย่าง)",
+  "today": "2025-07-03",
+  "selectedDay": "2025-07-02",
+  "calendar": {
+    "month": "กรกฎาคม 2568",
+    "todayLabel": "วันนี้ 3 ก.ค.",
+    "days": [
+      { "day": 1, "status": "sent" },
+      { "day": 2, "status": "draft" },
+      { "day": 3, "status": "none", "isToday": true }
+    ],
+    "futureDays": "4–31 disabled",
+    "legend": ["ส่งแล้ว", "ร่าง", "ยังไม่มีรายงาน"],
+    "footnote": "เลือกได้ถึงวันนี้"
+  },
+  "workingTime": {
+    "presets": ["08:00–17:00", "08:00–18:00", "07:00–16:00"],
+    "start": "08:00", "startRange": "06:00–10:00",
+    "end": "18:00", "endRange": "15:00–20:00",
+    "step": "1 hour", "minimumHours": 4,
+    "summary": "ทำงาน 10 ชม. ใช้คำนวณ คน·ชม. และชั่วโมงฝนในเวลางาน"
+  },
+  "signCard": {
+    "title": "ลงนามผู้รายงาน *",
+    "rolePill": "SITE ENGINEER",
+    "box": { "height": 180, "idle": ["แตะเพื่อเซ็น", "เซ็นบนเส้นด้านล่าง"], "signedBadge": "✓ ลงนามแล้ว 17:40" },
+    "nameLabel": "ชื่อผู้ลงนาม",
+    "namePlaceholder": "ชื่อ Site Engineer ผู้รับเหมา",
+    "name": "นายสมชาย ใจดี"
+  }
+}

@@ -191,6 +191,8 @@ extension SurveyForm: CloudSynced {
         var utility, caNumber, meterSize, tariff, grounding: String?
         var monthlyKWh, latitude, longitude: Double?
         var externals: [String]?
+        /// The installation checks (JSON), when answered.
+        var installCheck: String?
     }
 
     static let collection = "surveyForms"
@@ -202,7 +204,7 @@ extension SurveyForm: CloudSynced {
                mainBreakerAmp: mainBreakerAmp, structureOK: structureOK, jobID: job?.syncID,
                isDraft: isDraft, utility: utility, caNumber: caNumber, meterSize: meterSize, tariff: tariff,
                grounding: grounding, monthlyKWh: monthlyKWh, latitude: latitude, longitude: longitude,
-               externals: externals(of: job))
+               externals: externals(of: job), installCheck: installCheckJSON.isEmpty ? nil : installCheckJSON)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -215,6 +217,8 @@ extension SurveyForm: CloudSynced {
         utility = r.utility ?? ""; caNumber = r.caNumber ?? ""; meterSize = r.meterSize ?? ""
         tariff = r.tariff ?? ""; grounding = r.grounding ?? ""; monthlyKWh = r.monthlyKWh ?? 0
         latitude = r.latitude; longitude = r.longitude
+        // a copy without the checks (written by an older build) keeps ours, and our next push puts them back
+        if let c = r.installCheck { installCheckJSON = c }
         if job !== owner { job = owner }
         return true
     }

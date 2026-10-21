@@ -6,12 +6,14 @@ import TCRoofCore
 /// on the left (2 : 1) and what is still missing on the right. Same fields and record as the iPhone form.
 extension SurveyEditor {
     var padForm: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             TCFractionColumns([2, 1], spacing: 20) {
                 VStack(spacing: 16) {
                     padJobCard
                     padRoofCard
                     padElectricalCard
+                    padInstallCard.id("install")
                     padPhotoCard
                     padNotesCard
                 }
@@ -28,7 +30,14 @@ extension SurveyEditor {
         #if DEBUG
         // `-surveyScrollEnd YES`: open scrolled to the end (the simulator can't be swiped here)
         .defaultScrollAnchor(UserDefaults.standard.bool(forKey: "surveyScrollEnd") ? .bottom : .top)
+        // `-installCheckDemo YES`: open at the installation checks card
+        .task {
+            guard UserDefaults.standard.bool(forKey: "installCheckDemo") else { return }
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            proxy.scrollTo("install", anchor: .top)
+        }
         #endif
+        }
     }
 
     // MARK: Cards

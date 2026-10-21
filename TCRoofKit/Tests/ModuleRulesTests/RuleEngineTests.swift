@@ -29,7 +29,21 @@ final class RuleEngineTests: XCTestCase {
         expect("ZN-77", pass: site { $0.roofFireproof = true }, fail: site { $0.roofFireproof = false })
         expect("ZN-81", pass: site { $0.plannedTiltDeg = 10 }, fail: site { $0.plannedTiltDeg = 9.9 })
         expect("ZN-82", pass: site { $0.latitude = 13.7; $0.plannedTiltDeg = 15 }, fail: site { $0.latitude = 13.7; $0.plannedTiltDeg = 10 })
+        expect("ZN-90", pass: site { $0.rearClearanceMm = 120 }, fail: site { $0.rearClearanceMm = 100 })
         XCTAssertTrue(site { _ in }.results.isEmpty, "nothing answered, nothing fires")
+    }
+
+    /// The survey's stored record: its input, notes, JSON round trip and an old or empty value.
+    func testTheSiteRecord() {
+        var c = SiteInstallCheck()
+        XCTAssertTrue(c.isEmpty)
+        c.altitudeM = 2100; c.highWind = true; c.plannedTiltDeg = 5; c.reasons = ["ZN-81": "หลังคาลาดน้อย"]
+        XCTAssertFalse(c.isEmpty)
+        XCTAssertEqual(Set(c.validation(latitude: 13.7).results.map(\.id)), ["ZN-70", "ZN-81", "ZN-82"])
+        XCTAssertEqual(c.notes.count, 1)
+        XCTAssertEqual(SiteInstallCheck.decode(c.json), c)
+        XCTAssertEqual(SiteInstallCheck.decode(""), SiteInstallCheck())
+        XCTAssertEqual(SiteInstallCheck.decode("{\"altitudeM\":10}").altitudeM, 10, "fields added later decode as nil")
     }
 
     // MARK: layout

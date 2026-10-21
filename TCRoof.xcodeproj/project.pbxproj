@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A1000000000000000000F004 /* TCRoofUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F005 /* TCRoofUI */; };
 		A1000000000000000000F006 /* TCRoofMCP in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F007 /* TCRoofMCP */; };
+		A1000000000000000000F008 /* ModuleRules in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F009 /* ModuleRules */; };
 		A1000000000000000000F101 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F103 /* FirebaseAuth */; };
 		A1000000000000000000F102 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F104 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
@@ -50,6 +51,7 @@
 			files = (
 				A1000000000000000000F004 /* TCRoofUI in Frameworks */,
 				A1000000000000000000F006 /* TCRoofMCP in Frameworks */,
+				A1000000000000000000F008 /* ModuleRules in Frameworks */,
 				A1000000000000000000F101 /* FirebaseAuth in Frameworks */,
 				A1000000000000000000F102 /* FirebaseFirestore in Frameworks */,
 			);
@@ -107,6 +109,7 @@
 			packageProductDependencies = (
 				A1000000000000000000F005 /* TCRoofUI */,
 				A1000000000000000000F007 /* TCRoofMCP */,
+				A1000000000000000000F009 /* ModuleRules */,
 				A1000000000000000000F103 /* FirebaseAuth */,
 				A1000000000000000000F104 /* FirebaseFirestore */,
 			);
@@ -446,6 +449,10 @@
 		A1000000000000000000F007 /* TCRoofMCP */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TCRoofMCP;
+		};
+		A1000000000000000000F009 /* ModuleRules */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ModuleRules;
 		};
 		A1000000000000000000F103 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;

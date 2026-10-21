@@ -255,6 +255,19 @@ public enum Roof {
         list.remove(at: index)
         v[Key.obstacles] = list.isEmpty ? nil : .obstacles(list)
     }
+    /// Moves an area to where it is on site: its top-left corner to (x, y) in metres, snapped to 5 cm and kept on a roof of
+    /// lx × ly. Its size and kind stay. False (and unchanged) when the index isn't an area or nothing moves.
+    @discardableResult
+    public static func moveArea(_ v: inout Values, index: Int, x: Double, y: Double, lx: Double, ly: Double) -> Bool {
+        var list = v.obstacles(Key.obstacles)
+        guard list.indices.contains(index), let w = NumberInput.value(list[index].w), let h = NumberInput.value(list[index].h) else { return false }
+        let snap = { (d: Double, room: Double) in (max(0, min(max(0, room), d)) * 20).rounded() / 20 }
+        let nx = fmt(snap(x, lx - w)), ny = fmt(snap(y, ly - h))
+        guard nx != list[index].x || ny != list[index].y else { return false }
+        list[index].x = nx; list[index].y = ny
+        v[Key.obstacles] = .obstacles(list)
+        return true
+    }
     public static func toggleCover(_ v: inout Values, index: Int) {
         var list = v.obstacles(Key.obstacles)
         guard list.indices.contains(index) else { return }

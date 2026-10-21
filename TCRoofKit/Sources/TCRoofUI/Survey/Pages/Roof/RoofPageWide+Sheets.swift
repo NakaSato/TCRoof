@@ -3,8 +3,8 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// Roofs saved with "บันทึกค่าปัจจุบันเป็นแบบใหม่". They are kept on this iPad only: the app has no shared store for
-/// them yet, so "ทั้งทีม" is recorded with the roof but not sent to the team.
+/// Roofs saved with "บันทึกค่าปัจจุบันเป็นแบบใหม่" as `เฉพาะฉัน`, kept on this iPad only. `ทั้งทีม` saves a
+/// `RoofDesign` to the synced `DesignLibrary` instead (older roofs saved here as ทั้งทีม stay on this iPad).
 enum RoofStandards {
     static let key = "c1.savedRoofs"
     static func load() -> [Roof.Standard] {
@@ -20,7 +20,9 @@ extension RoofPageWide {
     // MARK: หลังคามาตรฐาน
 
     var standardField: some View {
-        let label = Roof.standardLabel(values, in: Roof.standards + saved), open = dropdown == "std"
+        let label = RoofDesign.current(values).map { $0.name.contains($0.size) ? $0.name : $0.name + " " + $0.size }
+            ?? Roof.standardLabel(values, in: Roof.standards + saved)
+        let open = dropdown == "std"
         return VStack(alignment: .leading, spacing: 3) {
             A3Label(text: "หลังคามาตรฐาน")
             Button { dropdown = open ? nil : "std" } label: {
@@ -42,14 +44,21 @@ extension RoofPageWide {
     }
 
     var standardList: some View {
-        let hit = Roof.matchingStandard(values, in: Roof.standards + saved)
+        // a roof filled from a team design ticks that design only, not a กปภ. standard of the same spans
+        let hit = RoofDesign.current(values) == nil ? Roof.matchingStandard(values, in: Roof.standards + saved) : nil
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 listHeader("แบบมาตรฐาน กปภ.")
                 ForEach(Roof.standards) { s in standardRow(s, on: hit?.id == s.id) }
+                let designs = RoofDesign.ranked(values)
+                if !designs.isEmpty {
+                    Divider().padding(.vertical, 4)
+                    listHeader("แบบที่ทีมบันทึก | ตรวจทีละรายการ")
+                    ForEach(designs, id: \.design.id) { m in designRow(m.design, difference: m.difference, matches: m.matches) }
+                }
                 if !saved.isEmpty {
                     Divider().padding(.vertical, 4)
-                    listHeader("แบบที่ทีมบันทึก")
+                    listHeader("แบบในเครื่องนี้")
                     ForEach(saved) { s in
                         standardRow(s, on: hit?.id == s.id)
                             .contextMenu { Button("ลบแบบนี้", role: .destructive) { saved.removeAll { $0.id == s.id }; RoofStandards.save(saved) } }
@@ -74,6 +83,30 @@ extension RoofPageWide {
         Text(t).font(.sarabunFixed(12.5, .semibold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 2)
     }
 
+    /// A design from the team's library (`DesignLibrary`, synced): it fills every C1 answer it carries, and the card under
+    /// หลังคา then checks it item by item.
+    func designRow(_ d: RoofDesign, difference: Double?, matches: Bool) -> some View {
+        let on = RoofDesign.current(values)?.id == d.id
+        let line = d.size + (difference.map { matches ? " | ตรงกับขนาดที่วัด" : " | ต่างจากที่วัด " + fmt(($0 * 100).rounded() / 100) + " ม." } ?? "")
+        return Button { update { RoofDesign.apply(&$0, d) }; dropdown = nil; span = nil } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.grid.3x3").font(.system(size: 18)).foregroundStyle(Theme.navy).frame(width: 40, height: 24)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(d.name).font(.sarabunFixed(16, on ? .bold : .regular)).lineLimit(1)
+                    Text(line).font(.sarabunFixed(12)).foregroundStyle(matches ? Theme.okText : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                }
+                Spacer(minLength: 6)
+                if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.success) }
+            }
+            .padding(.horizontal, 12).frame(minHeight: 52)
+            .background(on ? Self.soft : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
     func standardRow(_ s: Roof.Standard, on: Bool) -> some View {
         Button { update { Roof.applyStandard(&$0, s) }; dropdown = nil; span = nil } label: {
             HStack(spacing: 12) {
@@ -96,11 +129,21 @@ extension RoofPageWide {
     }
 
     var saveStandardSheet: some View {
-        SaveRoofStandardSheet(defaultName: defaultStandardName, summary: standardSummary) { name, team in
+        let current = RoofDesign.current(values)
+        let teamOK = roofPermissions.can(.designLibrary) && (current == nil || RoofDesign.done(values))
+        return SaveRoofStandardSheet(defaultName: defaultStandardName, summary: standardSummary, teamAllowed: teamOK) { name, team in
+            if team {
+                // the team's library (synced): every C1 answer a design carries, checked item by item where it's used
+                let d = RoofDesign.from(values, name: name, job: job.docNo.isEmpty ? job.projectName : job.docNo,
+                                        by: roofPermissions.email.isEmpty ? nil : roofPermissions.email)
+                DesignLibrary.shared.saveRoof(d)
+                roofDesignSaved = d.name
+                return
+            }
             let f = DateFormatter(); f.locale = Locale(identifier: "th_TH"); f.dateFormat = "d MMM"
             let by = job.values.text("engineer").split(separator: " ").first.map(String.init) ?? "ฉัน"
             let s = Roof.standard(from: values, id: "t-" + UUID().uuidString, name: name, by: by.isEmpty ? "ฉัน" : by,
-                                  scope: team ? "ทั้งทีม" : "เฉพาะฉัน", date: f.string(from: Date()))
+                                  scope: "เฉพาะฉัน", date: f.string(from: Date()))
             saved.append(s); RoofStandards.save(saved)
             update { $0[Roof.Key.standard] = .text(s.id) }
         }
@@ -219,6 +262,9 @@ extension RoofPageWide {
 struct SaveRoofStandardSheet: View {
     let defaultName: String
     let summary: String
+    /// Team saves go to the synced library: team and managers only (`design.library`), and a roof filled from a
+    /// design only once every item is checked.
+    let teamAllowed: Bool
     let save: (String, Bool) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -246,8 +292,10 @@ struct SaveRoofStandardSheet: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 A3Label(text: "ใครใช้ได้")
-                RoofSegments(options: ["ทั้งทีม", "เฉพาะฉัน"], selected: team ? 0 : 1, minSegment: 90) { team = $0 == 0 }
-                Text(team ? "ทุกคนในทีมเห็นในรายการ \"แบบที่ทีมบันทึก\" และเลือกใช้ได้ทันที" : "เห็นเฉพาะในเครื่อง/บัญชีของคุณ")
+                if teamAllowed {
+                    RoofSegments(options: ["ทั้งทีม", "เฉพาะฉัน"], selected: team ? 0 : 1, minSegment: 90) { team = $0 == 0 }
+                }
+                Text(team && teamAllowed ? "ทุกคนในทีมเห็นในรายการ \"แบบที่ทีมบันทึก\" และเลือกใช้ได้ทันที" : "เห็นเฉพาะในเครื่องนี้")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 10) {
@@ -258,7 +306,7 @@ struct SaveRoofStandardSheet: View {
                 .buttonStyle(.plain)
                 Button {
                     let t = name.trimmingCharacters(in: .whitespaces)
-                    save(t.isEmpty ? defaultName : t, team); dismiss()
+                    save(t.isEmpty ? defaultName : t, team && teamAllowed); dismiss()
                 } label: {
                     Text("บันทึกแบบ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 46)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))

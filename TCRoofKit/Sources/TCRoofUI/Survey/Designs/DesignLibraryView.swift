@@ -43,7 +43,7 @@ struct DesignLibraryView: View {
                 Section {
                     let roofs = DesignLibrary.shared.roofs
                     if roofs.isEmpty {
-                        Text("ยังไม่มีแบบหลังคา | ตรวจหลังคา C1 แล้วกด บันทึกเป็นแบบมาตรฐาน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text("ยังไม่มีแบบหลังคา | ใน C1 เปิด หลังคามาตรฐาน แล้วกด บันทึกค่าปัจจุบันเป็นแบบใหม่ (ทั้งทีม)").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     }
                     ForEach(roofs) { d in roofRow(d) }
                 } header: {

@@ -64,37 +64,12 @@ extension SurveyEditor {
 
     // MARK: rule list
 
-    /// The rules the answers raise, most severe first; a warn carries the engineer's reason field.
-    @ViewBuilder var installRules: some View {
-        let v = installValidation
-        if v.results.isEmpty {
-            Label(installCheck.isEmpty ? "กรอกข้อมูลหน้างานเพื่อตรวจตามคู่มือติดตั้งแผง" : "ผ่านทุกข้อที่ตรวจได้",
-                  systemImage: installCheck.isEmpty ? "info.circle" : "checkmark.seal")
-                .font(.sarabun(14)).foregroundStyle(installCheck.isEmpty ? Theme.inkMuted : Theme.okText)
-        }
-        ForEach(v.results) { r in
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: r.severity == .block ? "xmark.octagon.fill" : r.severity == .warn ? "exclamationmark.triangle.fill" : "info.circle.fill")
-                        .foregroundStyle(color(r.severity))
-                    Text(r.id).font(.sarabun(13, .bold)).foregroundStyle(color(r.severity))
-                    Text(r.messageTH).font(.sarabun(14)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
-                }
-                if r.severity == .warn {
-                    TCTextField("เหตุผลที่ยังติดตั้งได้ (จำเป็น)", text: reason(r.id))
-                }
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(color(r.severity).opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.md))
-            .accessibilityElement(children: .contain)
-        }
-        ForEach(installCheck.notes, id: \.self) { n in
-            Label(n, systemImage: "note.text").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
-        }
+    /// The rules the answers raise (`ModuleRulesList`, shared with C1's layout checks).
+    var installRules: some View {
+        ModuleRulesList(installValidation, notes: installCheck.notes,
+                        empty: installCheck.isEmpty ? "กรอกข้อมูลหน้างานเพื่อตรวจตามคู่มือติดตั้งแผง" : "ผ่านทุกข้อที่ตรวจได้",
+                        reason: reason)
     }
-
-    func color(_ s: Severity) -> Color { s == .block ? Theme.dangerText : s == .warn ? Theme.pending : Theme.primary }
 
     /// Tilt that the manual recommends for the survey's latitude, or why there is none.
     var tiltHint: String {

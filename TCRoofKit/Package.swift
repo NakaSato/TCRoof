@@ -26,7 +26,7 @@ let package = Package(
         .target(name: "ExcelExport", dependencies: ["TCRoofCore", "CZlib"], resources: [.process("Resources")]),
         .target(name: "PDFReport", dependencies: ["TCRoofCore"], resources: [.process("Resources")]),
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),
-        .target(name: "TCRoofUI", dependencies: ["TCRoofCore", "ExcelExport", "PDFReport", "DriveSync"], resources: [.process("Resources")]),
+        .target(name: "TCRoofUI", dependencies: ["TCRoofCore", "ExcelExport", "PDFReport", "DriveSync", "ModuleRules"], resources: [.process("Resources")]),
         // MCP kept apart from the survey modules: only this target depends on the SDK
         .target(name: "TCRoofMCP", dependencies: ["TCRoofCore", .product(name: "MCP", package: "swift-sdk")]),
         // PV module / inverter specs, PVsyst one-diode model, string sizing (docs/specs/energy-yield)
@@ -35,7 +35,7 @@ let package = Package(
         .target(name: "ModuleRules", resources: [.process("Resources")]),
         .testTarget(name: "ModuleRulesTests", dependencies: ["ModuleRules"]),
         .testTarget(name: "PVYieldTests", dependencies: ["PVYield"], resources: [.copy("Fixtures")]),
-        .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"], resources: [.copy("Fixtures")]),
+        .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore", "ModuleRules"], resources: [.copy("Fixtures")]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),
         .testTarget(name: "DriveSyncTests", dependencies: ["DriveSync", "TCRoofCore"]),
         .testTarget(name: "ExcelExportTests", dependencies: ["ExcelExport", "TCRoofCore"], resources: [.copy("Fixtures")]),

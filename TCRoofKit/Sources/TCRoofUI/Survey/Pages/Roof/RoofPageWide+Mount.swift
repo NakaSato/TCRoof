@@ -155,6 +155,7 @@ extension RoofPageWide {
         mountAlign
         mountBearing
         mountQuantities
+        mountRules.id("rules")
         mountStandard
         mountFooter
     }

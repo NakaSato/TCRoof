@@ -280,6 +280,22 @@ final class RoofMountLayoutTests: XCTestCase {
         XCTAssertFalse(RoofMountLayout.Options(tileHooks: true, railsAcross: true).acrossPurlins)
     }
 
+    /// What the installation rules read off a layout: which side the clamps hold and the offsets A, inside the zone the
+    /// engine laid the rails in.
+    func testClampSideAndOffsets() {
+        let l = Self.gableBest, s = l.standard
+        XCTAssertTrue(l.clampsLongSide)
+        XCTAssertFalse(l.clampOffsetsMm.isEmpty)
+        for a in l.clampOffsetsMm { XCTAssertTrue((s.clampMin * 1000 - 1)...(s.clampMax * 1000 + 1) ~= a, "\(a)") }
+        XCTAssertEqual(l.usedFaceAngles.count, 2)
+        XCTAssertEqual(l.usedFaceAngles[0].tilt, l.roof.tilt * 180 / .pi, accuracy: 1e-9)
+        XCTAssertFalse(RoofMountLayout.best(Self.gable(), options: .init(railsAcross: true)).clampsLongSide, "portrait on rails up the slope")
+        let land = RoofMountLayout.best(Self.gable(), options: .init(landscape: true, railsAcross: true))
+        XCTAssertTrue(land.clampsLongSide)
+        // rails at ¼ and ¾ of the long side along the eave
+        XCTAssertEqual(land.clampOffsetsMm.first ?? 0, (s.moduleLength / 4 * 1000).rounded(), accuracy: 1)
+    }
+
     /// An older job's choice has no direction, and the default writes nothing new (its digest stays).
     func testTheDirectionDefaultsKeepOlderJobs() throws {
         let c = try JSONDecoder().decode(RoofMount.Choice.self, from: Data(#"{"ribClamp":false,"avoidShade":true}"#.utf8))

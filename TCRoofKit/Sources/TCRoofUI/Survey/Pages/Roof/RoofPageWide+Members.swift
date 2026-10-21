@@ -11,7 +11,9 @@ extension RoofPageWide {
             cardTitle("ขนาดชิ้นส่วน 1–7", trailing: Roof.memberNote(values))
             VStack(spacing: 0) {
                 ForEach(1...7, id: \.self) { n in
-                    memberRow(n)
+                    // erased, as the page's cards are (RoofPageWide.body): the row with its picker popover nested too deep
+                    // for a Debug build's stack on a device (SIGSEGV in swift_getTypeByMangledName on picking a size)
+                    AnyView(memberRow(n))
                     if n < 7 { Self.line.frame(height: 1) }
                 }
             }
@@ -47,14 +49,14 @@ extension RoofPageWide {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("เลือกขนาด \(n) \(m.name) " + (size.isEmpty ? "ยังไม่เลือก" : size))
-        .popover(isPresented: Binding(get: { member == n }, set: { if !$0 { member = nil } }), arrowEdge: n <= 4 ? .top : .bottom) {
-            memberPicker(n).presentationCompactAdaptation(.popover)
+        // no fixed arrow edge: the system opens it on the side it fits (a fixed one ran it off screen near the edge)
+        .popover(isPresented: Binding(get: { member == n }, set: { if !$0 { member = nil } })) {
+            AnyView(memberPicker(n).presentationCompactAdaptation(.popover))
         }
     }
 
     func memberPicker(_ n: Int) -> some View {
-        let m = Roof.frame(values).members[n - 1], cur = Roof.memberSize(values, n)
-        let spacing = StructureSizes.split(Roof.member(values, n)).spacing
+        let m = Roof.frame(values).members[n - 1]
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("\(n) \(m.name) | เลือกขนาด").font(.sarabunFixed(16, .bold))
@@ -65,6 +67,19 @@ extension RoofPageWide {
                 .buttonStyle(.plain).accessibilityLabel("ปิด")
             }
             .padding(.leading, 14)
+            AnyView(memberSizes(n))
+            Divider().padding(.vertical, 4)
+            AnyView(memberMore(n))
+        }
+        .foregroundStyle(Theme.navy)
+        .frame(width: 340)
+        .padding(.vertical, 6)
+    }
+
+    /// The frame type's sizes for row n, and the stored size when it isn't one of them.
+    func memberSizes(_ n: Int) -> some View {
+        let m = Roof.frame(values).members[n - 1], cur = Roof.memberSize(values, n)
+        return VStack(spacing: 0) {
             ForEach(m.sizes + (m.sizes.contains(cur) || cur.isEmpty ? [] : [cur]), id: \.self) { s in
                 let on = s == cur
                 Button { update { Roof.setMember(&$0, n, size: s) }; member = nil } label: {
@@ -81,33 +96,34 @@ extension RoofPageWide {
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
-            Divider().padding(.vertical, 4)
-            HStack(spacing: 8) {
-                Menu {
-                    ForEach(StructureSizes.sections, id: \.group) { g in
-                        Menu(g.group) {
-                            ForEach(g.items, id: \.self) { s in Button(s) { update { Roof.setMember(&$0, n, size: s) }; member = nil } }
-                        }
-                    }
-                    Button("พิมพ์เอง…") { memberText = cur == "-" ? "" : cur; member = nil; typingMember = n }
-                } label: {
-                    Text("ขนาดอื่น ›").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
-                }
-                Spacer()
-                Menu {
-                    Button("ไม่ระบุ") { update { Roof.setSpacing(&$0, n, spacing: "") } }
-                    ForEach(StructureSizes.spacings, id: \.self) { s in Button(s) { update { Roof.setSpacing(&$0, n, spacing: s) } } }
-                } label: {
-                    Text("ระยะห่าง " + (spacing.isEmpty ? "-" : spacing) + " ▾").font(.sarabunFixed(14, .bold))
-                        .foregroundStyle(cur.isEmpty || cur == "-" ? Theme.disabledText : Theme.primary).frame(minHeight: 44)
-                }
-                .disabled(cur.isEmpty || cur == "-")
-            }
-            .padding(.horizontal, 14)
         }
-        .foregroundStyle(Theme.navy)
-        .frame(width: 340)
-        .padding(.vertical, 6)
+    }
+
+    /// `ขนาดอื่น ›` (every section, or typed) and the spacing menu.
+    func memberMore(_ n: Int) -> some View {
+        let cur = Roof.memberSize(values, n), spacing = StructureSizes.split(Roof.member(values, n)).spacing
+        return HStack(spacing: 8) {
+            Menu {
+                ForEach(StructureSizes.sections, id: \.group) { g in
+                    Menu(g.group) {
+                        ForEach(g.items, id: \.self) { s in Button(s) { update { Roof.setMember(&$0, n, size: s) }; member = nil } }
+                    }
+                }
+                Button("พิมพ์เอง…") { memberText = cur == "-" ? "" : cur; member = nil; typingMember = n }
+            } label: {
+                Text("ขนาดอื่น ›").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
+            }
+            Spacer()
+            Menu {
+                Button("ไม่ระบุ") { update { Roof.setSpacing(&$0, n, spacing: "") } }
+                ForEach(StructureSizes.spacings, id: \.self) { s in Button(s) { update { Roof.setSpacing(&$0, n, spacing: s) } } }
+            } label: {
+                Text("ระยะห่าง " + (spacing.isEmpty ? "-" : spacing) + " ▾").font(.sarabunFixed(14, .bold))
+                    .foregroundStyle(cur.isEmpty || cur == "-" ? Theme.disabledText : Theme.primary).frame(minHeight: 44)
+            }
+            .disabled(cur.isEmpty || cur == "-")
+        }
+        .padding(.horizontal, 14)
     }
 
     // MARK: photos

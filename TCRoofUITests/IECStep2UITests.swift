@@ -61,7 +61,9 @@ final class IECStep2UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Voc 712.0 V ต่างจากมัธยฐาน −5.4%")).firstMatch
             .waitForExistence(timeout: slow))
         XCTAssertTrue(button(app, "วัดซ้ำ").exists)
-        XCTAssertTrue(app.staticTexts["มีค่าไม่ผ่าน 1 สตริง"].exists)
+        // ZN-110 (module rules phase 5) also fails String 6: MPPT 3's two strings are 38 V apart, over 10 V
+        XCTAssertTrue(app.staticTexts["มีค่าไม่ผ่าน 2 สตริง"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "MPPT 3")).firstMatch.exists, "the MPPT check says why")
     }
 
     func testAnEmptySlotTakesAString() {

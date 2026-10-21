@@ -37,6 +37,9 @@ public final class SurveyModel {
     /// Called with a survey's linked job once it has moved back to the survey stage. TCRoof takes that job out of
     /// `กำลังติดตั้ง` from here when nothing was planned or logged on it.
     @ObservationIgnored public var onMovedBackToSurvey: ((String) -> Void)?
+    /// Called with a survey just before it is deleted. TCRoof deletes the job `makeInstallJob` made for it from here,
+    /// when nothing was recorded on that job.
+    @ObservationIgnored public var onDeleted: ((Job) -> Void)?
     let cache = NSCache<NSString, UIImage>()
     /// Download progress per job of photos taken on another iPad.
     public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]
@@ -112,6 +115,7 @@ public final class SurveyModel {
     }
 
     public func delete(_ id: UUID) {
+        if let j = job(id) { onDeleted?(j) }
         pendingSave[id]?.cancel()
         try? store.delete(id)
         jobs.removeAll { $0.id == id }

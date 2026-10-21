@@ -129,6 +129,17 @@ struct RootView: View {
                 job.status = .confirmed
                 try? context.save()
             }
+            // a deleted survey takes the job made for it along (its syncID is the survey's id), unless work was recorded on it
+            session.survey.onDeleted = { survey in
+                let id = survey.id.uuidString
+                guard survey.jobSyncID == id,
+                      let job = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first,
+                      job.scheduleInputJSON == nil, job.iecReportJSON == nil, job.stationDocsJSON == nil,
+                      job.logs.isEmpty, job.surveys.isEmpty, job.devices.isEmpty, job.inspections.isEmpty, job.documents.isEmpty
+                else { return }
+                context.delete(job)
+                try? context.save()
+            }
             // a survey moved to installation with no TCRoof job gets one, so its card opens the install tracking page. Its
             // syncID is the survey's id: two devices making it for the same survey write the same record
             session.survey.makeInstallJob = { survey in

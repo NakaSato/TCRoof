@@ -10,7 +10,7 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 
 - **Package logic and tests (fast, macOS):** run from `TCRoofKit/`
   - `swift build`
-  - `swift test`
+  - `swift test` (or `swift test --parallel`: about half the time, one process per test, so a test can't lean on another's state)
   - `swift test --filter InverterStationTests` (one class) or `swift test --filter InverterStationTests/testOutdoorRoom` (one test)
 - **`TCRoofUI` and the app:** these are wrapped in `#if canImport(UIKit)`, so `swift build` on macOS does **not** compile them. Verify UI changes with xcodebuild:
   ```

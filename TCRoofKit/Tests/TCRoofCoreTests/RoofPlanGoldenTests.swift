@@ -6,7 +6,8 @@ import XCTest
 /// intended change to the drawing.
 final class RoofPlanGoldenTests: XCTestCase {
     struct Case { let name: String; let values: Values; let mode: RoofPlan.Mode
-        var chips = false; var dragging: (Double, Double, Double, Double)? = nil; var highlight: Int? = nil }
+        var chips = false; var dragging: (Double, Double, Double, Double)? = nil; var highlight: Int? = nil
+        var ridge = Roof.Ridge.h }
 
     static func roof(_ f: RoofFrame, _ r: Roof.Ridge, areas: Bool, tables: Bool) -> Values {
         var v = Values()
@@ -31,18 +32,21 @@ final class RoofPlanGoldenTests: XCTestCase {
                 out.append(Case(name: "\(tag)-plan-areas-chips", values: full, mode: .structure, chips: true))
                 out.append(Case(name: "\(tag)-plan-drag", values: plain, mode: .structure, dragging: (2, 2, 5, 4)))
                 for n in 1...7 { out.append(Case(name: "\(tag)-hl\(n)", values: plain, mode: .structure, highlight: n)) }
-                out.append(Case(name: "\(tag)-pv", values: plain, mode: .pv))
-                out.append(Case(name: "\(tag)-pv-full", values: full, mode: .pv))
-                out.append(Case(name: "\(tag)-pv-full-drag", values: full, mode: .pv, dragging: (3, 3, 6, 5)))
+                out.append(Case(name: "\(tag)-pv", values: plain, mode: .pv, ridge: r))
+                out.append(Case(name: "\(tag)-pv-full", values: full, mode: .pv, ridge: r))
+                out.append(Case(name: "\(tag)-pv-full-drag", values: full, mode: .pv, dragging: (3, 3, 6, 5), ridge: r))
             }
         }
         return out
     }
 
-    static func dump(_ c: Case) -> String {
-        // the PV layout with the old golden module, at 15° N
+    /// The PV layout with the old golden module, at 15° N.
+    static func mount(_ v: Values) -> RoofMountLayout {
         var std = RoofMountStandard(); std.moduleLength = 2.278; std.moduleWidth = 1.134; std.moduleWp = 570
-        let mount = c.mode == .pv ? RoofMountLayout.best(RoofMount.input(c.values, latitude: 15), standard: std) : nil
+        return RoofMountLayout.best(RoofMount.input(v, latitude: 15), standard: std)
+    }
+
+    static func dump(_ c: Case, mount: RoofMountLayout?) -> String {
         let p = RoofPlan(c.values, mode: c.mode, chips: c.chips, dragging: c.dragging, highlight: c.highlight, mount: mount)
         var s = "\(p.sketch.width)x\(p.sketch.height)\n"
         for (op, t) in zip(p.sketch.ops, p.tags) { s += "\(t ?? "-") \(op)\n" }
@@ -64,15 +68,36 @@ final class RoofPlanGoldenTests: XCTestCase {
         s.utf8.reduce(0xcbf2_9ce4_8422_2325 as UInt64) { ($0 ^ UInt64($1)) &* 0x100_0000_01b3 }
     }
 
-    func testRoofPlanOutputUnchanged() {
-        let got = Dictionary(uniqueKeysWithValues: Self.cases.map { ($0.name, Self.fnv(Self.dump($0))) })
+    /// The cases picked, each against its fingerprint. The PV layout is searched once per roof (a drag doesn't change it).
+    func check(_ pick: (Case) -> Bool) {
+        let cases = Self.cases.filter(pick)
+        var mounts: [String: RoofMountLayout] = [:]
+        let got = Dictionary(uniqueKeysWithValues: cases.map { c -> (String, UInt64) in
+            var m: RoofMountLayout?
+            if c.mode == .pv {
+                let key = c.name.replacingOccurrences(of: "-drag", with: "")
+                m = mounts[key] ?? Self.mount(c.values)
+                mounts[key] = m
+            }
+            return (c.name, Self.fnv(Self.dump(c, mount: m)))
+        })
         if ProcessInfo.processInfo.environment["ROOF_GOLDEN_RECORD"] != nil {
             print("ROOF_GOLDEN " + got.keys.sorted().map { "\"\($0)\": 0x\(String(got[$0]!, radix: 16))" }.joined(separator: ", "))
             return
         }
-        XCTAssertEqual(got.count, Self.expected.count)
+        XCTAssertFalse(got.isEmpty)
         for (name, h) in got.sorted(by: { $0.key < $1.key }) { XCTAssertEqual(h, Self.expected[name], name) }
     }
+
+    /// Every case has a fingerprint, and every fingerprint a case.
+    func testTheCasesAreTheRecordedOnes() {
+        XCTAssertEqual(Set(Self.cases.map(\.name)), Set(Self.expected.keys))
+    }
+
+    // split so `swift test --parallel` spreads the PV searches
+    func testStructurePlanUnchanged() { check { $0.mode == .structure } }
+    func testPVPlanUnchangedRidgeAlongX() { check { $0.mode == .pv && $0.ridge == .h } }
+    func testPVPlanUnchangedRidgeAlongY() { check { $0.mode == .pv && $0.ridge == .v } }
 
     /// Recorded from the drawing before RoofPlan.init was split (4/10/2569); the PV cases again with the roof PV engine
     /// (19/10/2569), and the cases with areas after `Roof.Area` gained `height` (the dump prints it; the drawing is unchanged); the Howe frame's cases added 20/10/2569; the cases with labels again after "·" became "|" (21/10/2569).

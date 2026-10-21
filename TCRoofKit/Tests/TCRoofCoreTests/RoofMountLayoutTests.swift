@@ -30,8 +30,14 @@ final class RoofMountLayoutTests: XCTestCase {
                                      eaveHeight: 5.0, ridgeHeight: 6.3, purlinSpacing: 1.1, latitude: 17, bearing: -20,
                                      obstacles: [sky(9.0, 1.0, 10), sky(19.5, 1.0, 10), .init(kind: .stack, x: 26.0, y: 3.0, w: 0.6, h: 0.6, height: 1.8)])
 
+    /// The three samples' default layouts, searched once per run and shared by the tests that only read them.
+    static let gableBest = RoofMountLayout.best(gable())
+    static let hipBest = RoofMountLayout.best(hip)
+    static let shedBest = RoofMountLayout.best(shed)
+    static var samples: [RoofMountLayout] { [gableBest, hipBest, shedBest] }
+
     func testGableMatchesThePrototype() {
-        let l = RoofMountLayout.best(Self.gable())
+        let l = Self.gableBest
         let q = l.quantities
         XCTAssertEqual(q.modules, 216)
         XCTAssertEqual(q.kWp, 129.6, accuracy: 1e-9)
@@ -76,7 +82,7 @@ final class RoofMountLayoutTests: XCTestCase {
     }
 
     func testHipMatchesThePrototype() {
-        let l = RoofMountLayout.best(Self.hip)
+        let l = Self.hipBest
         let q = l.quantities
         XCTAssertEqual(q.modules, 105)
         XCTAssertEqual(q.energy, 91.2, accuracy: 0.05)
@@ -92,7 +98,7 @@ final class RoofMountLayoutTests: XCTestCase {
     }
 
     func testShedMatchesThePrototype() {
-        let q = RoofMountLayout.best(Self.shed).quantities
+        let q = Self.shedBest.quantities
         XCTAssertEqual(q.modules, 76)
         XCTAssertEqual(q.energy, 68.0, accuracy: 0.05)
         XCTAssertEqual(q.railLength, 176.9, accuracy: 0.05)
@@ -104,8 +110,8 @@ final class RoofMountLayoutTests: XCTestCase {
     // MARK: rules that hold for every layout (§6 tests)
 
     func testRailsSitOnPurlinsInsideTheClampingZone() {
-        for input in [Self.gable(), Self.hip, Self.shed] {
-            let l = RoofMountLayout.best(input), s = l.standard
+        for l in Self.samples {
+            let s = l.standard
             for f in l.faces {
                 for row in f.rows {
                     XCTAssertTrue(l.purlins.contains { abs($0 - row.rails.0) < 1e-9 } && l.purlins.contains { abs($0 - row.rails.1) < 1e-9 })
@@ -117,8 +123,8 @@ final class RoofMountLayoutTests: XCTestCase {
     }
 
     func testNoModuleOverASkylightOrInShadeAndNoFootNearAnObstacle() {
-        for input in [Self.gable(), Self.hip, Self.shed] {
-            let l = RoofMountLayout.best(input), s = l.standard
+        for l in Self.samples {
+            let s = l.standard
             for f in l.faces {
                 for row in f.rows {
                     for slot in row.slots where slot.isModule {
@@ -156,7 +162,7 @@ final class RoofMountLayoutTests: XCTestCase {
     }
 
     func testRemovedSlotsAndAFixedPlacement() {
-        let best = RoofMountLayout.best(Self.gable())
+        let best = Self.gableBest
         var o = RoofMountLayout.Options()
         let first = best.faces[0].rows[0].slots.firstIndex(where: \.isModule)!
         o.removed = [.init(face: "S", row: 0, column: first)]
@@ -230,8 +236,11 @@ final class RoofMountLayoutTests: XCTestCase {
     }
 
     /// รางตัดแป: rails up the slope, a foot on each purlin they cross (none near an obstacle), every module on a run.
-    func testRailsAcrossThePurlins() {
-        for landscape in [false, true] {
+    func testRailsAcrossThePurlinsPortrait() { checkRailsAcross(landscape: false) }
+    func testRailsAcrossThePurlinsLandscape() { checkRailsAcross(landscape: true) }
+
+    func checkRailsAcross(landscape: Bool) {
+        do {
             for input in [Self.gable(), Self.hip, Self.shed] {
                 let l = RoofMountLayout.best(input, options: .init(landscape: landscape, railsAcross: true)), s = l.standard
                 let q = l.quantities
@@ -296,7 +305,7 @@ final class RoofMountLayoutTests: XCTestCase {
     func testTheShedTurnsToItsLowSide() {
         var flipped = Self.shed
         flipped.shedLowAtStart = true
-        let a = RoofMountLayout.best(Self.shed).faces[0].face, b = RoofMountLayout.best(flipped).faces[0].face
+        let a = Self.shedBest.faces[0].face, b = RoofMountLayout.best(flipped).faces[0].face
         XCTAssertEqual(a.id, "S")
         XCTAssertEqual(b.id, "N")
         XCTAssertEqual((b.azimuth - a.azimuth + 360).truncatingRemainder(dividingBy: 360), 180, accuracy: 1e-6)

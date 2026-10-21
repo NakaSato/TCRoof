@@ -381,7 +381,7 @@ extension TankPageWide {
             span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
         case "tab2": tab = 2
-        case "design", "design64", "designcompare":
+        case "design", "design64", "designcompare", "designlayout":
             // docs/specs/standard-designs.md: the 40 × 40 (or 64 × 40) sheet, two points checked, one moved, one absent
             update { v in
                 TankDesign.apply(&v, state == "design64" ? .pwa64x40 : .pwa40x40)
@@ -394,6 +394,8 @@ extension TankPageWide {
             pointSel = TankPoints.points(values)[safe: 2]?.id
             tab = 2
             // designcompare: also a point added on site, and the เทียบกับแบบ view
+            // designlayout: the layout step, with its ยังตรวจแบบไม่ครบ banner
+            if state == "designlayout" { tab = 3 }
             if state == "designcompare" {
                 update { v in _ = TankPoints.add(&v, kind: TankPoints.vent) }
                 obsCompare = true

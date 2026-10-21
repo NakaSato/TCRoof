@@ -49,7 +49,7 @@ extension InstallTrackingPage {
 
     // MARK: KPI row
 
-    private struct DailyKPI: Identifiable {
+    struct DailyKPI: Identifiable {
         var id: String { label }
         let label: String
         let value: String
@@ -57,7 +57,7 @@ extension InstallTrackingPage {
         let note: String
     }
 
-    private func kpis(_ d: InstallDailyData) -> [DailyKPI] {
+    func kpis(_ d: InstallDailyData) -> [DailyKPI] {
         var out: [DailyKPI] = []
         let n = d.workingThroughYesterday, x = d.sentThroughYesterday
         out.append(DailyKPI(label: "ส่งแล้ว", value: "\(x) / \(n) วัน", ink: x >= n ? Theme.successInk : Theme.warningInk, note: "นับถึงเมื่อวาน"))
@@ -280,7 +280,7 @@ extension InstallTrackingPage {
     }
 
     /// `PDF รวม`: every daily report's R2 pages in one file, to the share sheet.
-    private func shareAllDailies() {
+    func shareAllDailies() {
         let built = job.dailyLogs.compactMap { RoutineReportFiles.daily(job, log: $0) }
         guard !built.isEmpty else { return }
         let all = RoutineReportFiles.Built(pages: built.flatMap(\.pages), images: built.reduce(into: [:]) { $0.merge($1.images) { a, _ in a } },

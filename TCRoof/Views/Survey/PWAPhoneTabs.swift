@@ -67,7 +67,10 @@ struct PWAPhoneTabs: View {
         case .project, .home:
             SolarSurveyEntryView()
                 .environment(\.pwaOverview, overview)
-                .navigationDestination(item: $station) { JobDetailView(job: $0) }
+                // a station being installed opens its install tracking page (docs/ui/install-tracking-iphone)
+                .navigationDestination(item: $station) { job in
+                    if installing.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
+                }
                 .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
         case .plan:
             // iPad (and a wide split view) keeps the station list

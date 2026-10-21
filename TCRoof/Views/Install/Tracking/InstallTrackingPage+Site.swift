@@ -315,9 +315,11 @@ extension InstallTrackingPage {
             .frame(maxHeight: 640)
             .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(width: width)
+        // as wide as the board's sheet, or the phone's width less its margins
+        .frame(maxWidth: width)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
+        .padding(.horizontal, 12)
     }
 
     private func actionsSheet(_ actions: [InstallPageData.Action]) -> some View {

@@ -30,6 +30,9 @@ final class MPWorkbookFlow {
     var pending: Pending?
     var message: Message?
     var shared: SharedFile?
+    /// The confirmation is the iPhone install page's sheet (`MPImportSheet`) rather than the alert; a file that names
+    /// another station still asks in the alert.
+    var confirmsInSheet = false
 
     static let types: [UTType] = [UTType(filenameExtension: "xlsx"), .spreadsheet].compactMap { $0 }
 
@@ -226,13 +229,18 @@ private struct MPWorkbookModifier: ViewModifier {
         flow.pending.flatMap { flow.mismatch($0, job: job, stations: jobs.pwaStations) }
     }
 
+    private var inSheet: Bool { flow.confirmsInSheet && mismatch == nil }
+
     private func label(_ j: Job) -> String { [j.mpNumber.map { "MP \($0)" }, j.stationName].compactMap { $0 }.joined(separator: " | ") }
 
     func body(content: Content) -> some View {
         content
             .fileImporter(isPresented: $flow.importing, allowedContentTypes: MPWorkbookFlow.types) { flow.read($0) }
+            .sheet(item: Binding(get: { inSheet ? flow.pending : nil }, set: { if $0 == nil { flow.pending = nil } })) { p in
+                MPImportSheet(flow: flow, pending: p, job: job)
+            }
             .alert(mismatch == nil ? "นำเข้าแผนจากไฟล์ Excel" : "ไฟล์นี้อาจเป็นของสถานีอื่น",
-                   isPresented: Binding(get: { flow.pending != nil }, set: { if !$0 { flow.pending = nil } }),
+                   isPresented: Binding(get: { flow.pending != nil && !inSheet }, set: { if !$0 { flow.pending = nil } }),
                    presenting: flow.pending) { p in
                 let other = mismatch
                 if let fits = other?.fits {

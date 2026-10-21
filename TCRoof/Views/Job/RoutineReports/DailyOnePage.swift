@@ -252,7 +252,7 @@ extension DailyOnePage {
         VStack(spacing: 12) {
             AnyView(daySwitcher)
             AnyView(teamCard)
-            AnyView(DailyModuleCard(report: $report, compact: true).dailyCard())
+            AnyView(DailyModuleCard(report: $report, photos: $photos, compact: true).dailyCard())
             AnyView(signCard)
         }
     }

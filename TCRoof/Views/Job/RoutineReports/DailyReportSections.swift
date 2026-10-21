@@ -328,7 +328,7 @@ struct DailyPhotosCard: View {
 
     var body: some View {
         ReportCard("ภาพถ่ายประจำวัน", trailing: {
-            Text("\(photos.count) รูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+            Text("\(photos.filter { !ModuleEvidence.isEvidence($0.tag) }.count) รูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
         }) {
             HStack(spacing: 12) {
                 PhotosPicker(selection: $items, maxSelectionCount: 20, matching: .images) {
@@ -339,11 +339,12 @@ struct DailyPhotosCard: View {
                 }
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
-            if photos.isEmpty {
+            if !photos.contains(where: { !ModuleEvidence.isEvidence($0.tag) }) {
                 Text("ยังไม่มีรูป").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, minHeight: 80)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
-                ForEach($photos) { $p in tile($p) }
+                // the checklist's evidence photos are shown in the checklist (`ModuleEvidenceRow`)
+                ForEach($photos) { $p in if !ModuleEvidence.isEvidence(p.tag) { tile($p) } }
             }
         }
         .onChange(of: items) { _, picked in

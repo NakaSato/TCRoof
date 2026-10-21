@@ -1,8 +1,10 @@
 # Module installation rules (ZNSHINE), iPad / iPhone
 
-**Status:** Phase 1 in progress (2026-10-21): the `ModuleRules` target (catalog types, mounting profiles, the rule set,
-the rule engine and the four calculators, with unit tests). Phases 2–5 (survey checks, layout, daily report checklist,
-string test) not built.
+**Status:** Phase 1 (2026-10-21): the `ModuleRules` target (catalog types, mounting profiles, the rule set, the rule
+engine and the four calculators, with unit tests). Phase 2 (2026-10-21): the residential survey's
+`ตรวจตามคู่มือติดตั้งแผง` card / section (`SurveyFormView+Install.swift`, stored as `SurveyForm.installCheckJSON`,
+synced as `installCheck`; saving stops on a block or a warn without a reason; the altitude comes with the GPS fix;
+`img/module-install-survey-ipad.png`). Phases 3–5 (layout, daily report checklist, string test) not built.
 
 **Sources** (Claude Docs, the team's): *TCRoof Dev Spec — Module Installation Rules*
 (<https://claude.ai/artifact/PV7GXqcwu67rvmjmJR2a1B>) and its source *ZNSHINE Module Installation Spec — TCRoof*

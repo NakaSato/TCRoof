@@ -126,6 +126,7 @@
   {
    "id": "ZN-90",
    "stages": [
+    "survey",
     "layout",
     "install"
    ],

@@ -376,6 +376,9 @@ final class SurveyForm {
     var grounding: String = ""      // มี / ไม่มี / ไม่แน่ใจ
     var latitude: Double? = nil
     var longitude: Double? = nil
+    /// Added 2026-10: the installation checks of ZNSHINE's manual (`ModuleRules.SiteInstallCheck`, JSON; empty until
+    /// answered), docs/specs/module-install-rules.md §7.1.
+    var installCheckJSON: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.survey) var photos: [PhotoAsset] = []
 

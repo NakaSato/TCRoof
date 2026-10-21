@@ -14,10 +14,93 @@ public struct SiteInput: Codable, Sendable, Equatable {
     public var monthlyMinC: Double?, monthlyMaxC: Double?
     public var roofFireproof: Bool?
     public var plannedTiltDeg: Double?
+    /// Room behind the modules the roof allows, mm (ZN-90).
+    public var rearClearanceMm: Double?
     public init(latitude: Double? = nil, altitudeM: Double? = nil, seaDistance: SeaDistance? = nil, humidityPct: Double? = nil,
-                monthlyMinC: Double? = nil, monthlyMaxC: Double? = nil, roofFireproof: Bool? = nil, plannedTiltDeg: Double? = nil) {
+                monthlyMinC: Double? = nil, monthlyMaxC: Double? = nil, roofFireproof: Bool? = nil, plannedTiltDeg: Double? = nil,
+                rearClearanceMm: Double? = nil) {
         self.latitude = latitude; self.altitudeM = altitudeM; self.seaDistance = seaDistance; self.humidityPct = humidityPct
         self.monthlyMinC = monthlyMinC; self.monthlyMaxC = monthlyMaxC; self.roofFireproof = roofFireproof; self.plannedTiltDeg = plannedTiltDeg
+        self.rearClearanceMm = rearClearanceMm
+    }
+}
+
+/// The survey's installation checks as a job keeps them (§7.1): the answers, the site notes that raise no rule, the
+/// engineer's reason for each warn, and the rule set and catalog the survey was saved under.
+public struct SiteInstallCheck: Codable, Sendable, Equatable {
+    public var altitudeM: Double?
+    public var seaDistance: SeaDistance?
+    /// Farms and meadows: fine per IEC 62716 (ZN-74), noted only.
+    public var ammonia: Bool?
+    /// Strong wind or many lightning strikes: notes ZN-75 / ZN-76.
+    public var highWind: Bool?
+    public var lightning: Bool?
+    public var monthlyMinC: Double?, monthlyMaxC: Double?
+    /// The lowest site ambient, °C, for string sizing.
+    public var tMinC: Double?
+    public var humidityPct: Double?
+    public var roofFireproof: Bool?
+    public var rearClearanceMm: Double?
+    /// Roof edge to array edge, m (ZN-77).
+    public var edgeSafeZoneM: Double?
+    public var shadingSources: [String] = []
+    /// The modules' planned tilt, not the roof's slope.
+    public var plannedTiltDeg: Double?
+    /// Rule id → the engineer's reason for passing a warn.
+    public var reasons: [String: String] = [:]
+    /// The versions the survey was last saved under; nil until then.
+    public var ruleSetVersion: String?
+    public var catalogVersion: String?
+
+    public init() {}
+
+    enum CodingKeys: String, CodingKey {
+        case altitudeM, seaDistance, ammonia, highWind, lightning, monthlyMinC, monthlyMaxC, tMinC, humidityPct, roofFireproof,
+             rearClearanceMm, edgeSafeZoneM, shadingSources, plannedTiltDeg, reasons, ruleSetVersion, catalogVersion
+    }
+
+    /// Every field optional, so a record saved by an older version still opens.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func d<T: Decodable>(_ k: CodingKeys) -> T? { (try? c.decodeIfPresent(T.self, forKey: k)) ?? nil }
+        altitudeM = d(.altitudeM); seaDistance = d(.seaDistance); ammonia = d(.ammonia); highWind = d(.highWind)
+        lightning = d(.lightning); monthlyMinC = d(.monthlyMinC); monthlyMaxC = d(.monthlyMaxC); tMinC = d(.tMinC)
+        humidityPct = d(.humidityPct); roofFireproof = d(.roofFireproof); rearClearanceMm = d(.rearClearanceMm)
+        edgeSafeZoneM = d(.edgeSafeZoneM); shadingSources = d(.shadingSources) ?? []; plannedTiltDeg = d(.plannedTiltDeg)
+        reasons = d(.reasons) ?? [:]; ruleSetVersion = d(.ruleSetVersion); catalogVersion = d(.catalogVersion)
+    }
+
+    /// The engine's input, with the survey's latitude.
+    public func input(latitude: Double?) -> SiteInput {
+        SiteInput(latitude: latitude, altitudeM: altitudeM, seaDistance: seaDistance, humidityPct: humidityPct,
+                  monthlyMinC: monthlyMinC, monthlyMaxC: monthlyMaxC, roofFireproof: roofFireproof, plannedTiltDeg: plannedTiltDeg,
+                  rearClearanceMm: rearClearanceMm)
+    }
+
+    public func validation(latitude: Double?) -> Validation { RuleEngine.check(input(latitude: latitude)) }
+
+    /// Nothing answered yet.
+    public var isEmpty: Bool {
+        var blank = SiteInstallCheck(); blank.reasons = reasons; blank.ruleSetVersion = ruleSetVersion; blank.catalogVersion = catalogVersion
+        return self == blank
+    }
+
+    /// Notes for the site that raise no rule (ZN-74 / 75 / 76), Thai.
+    public var notes: [String] {
+        var out: [String] = []
+        if ammonia == true { out.append("ZN-74 พื้นที่มีแอมโมเนีย (ฟาร์ม ทุ่งหญ้า) ติดตั้งได้ตาม IEC 62716") }
+        if highWind == true { out.append("ZN-75 พื้นที่ลมแรง ต้องมีแนวกันลมหรือวิธีป้องกันลม") }
+        if lightning == true { out.append("ZN-76 พื้นที่ฟ้าผ่าบ่อย ระบบต้องมีการป้องกันฟ้าผ่า") }
+        return out
+    }
+
+    public static func decode(_ json: String) -> SiteInstallCheck {
+        guard !json.isEmpty, let d = json.data(using: .utf8), let c = try? JSONDecoder().decode(SiteInstallCheck.self, from: d) else { return SiteInstallCheck() }
+        return c
+    }
+    public var json: String {
+        let e = JSONEncoder(); e.outputFormatting = .sortedKeys
+        return (try? e.encode(self)).map { String(decoding: $0, as: UTF8.self) } ?? ""
     }
 }
 
@@ -145,6 +228,7 @@ public enum RuleEngine {
         if let lo = s.monthlyMinC, lo < -20 { out.append(fire("T5-1", rules: rules)) }
         else if let hi = s.monthlyMaxC, hi > 47 { out.append(fire("T5-1", rules: rules)) }
         if s.roofFireproof == false { out.append(fire("ZN-77", rules: rules)) }
+        if let c = s.rearClearanceMm, c < 115 { out.append(fire("ZN-90", rules: rules)) }
         out += tilt(s.plannedTiltDeg, latitude: s.latitude, rules: rules)
         return validation(out)
     }

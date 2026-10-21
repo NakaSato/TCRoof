@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ติดตามงานติดตั้ง · iPhone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/cce3275ea50e42de3cbe91576b63f24b) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/6981a627824e19ea636fd6eabaa19e55) format("truetype");font-weight:700}
+body{margin:0}
+.g *{box-sizing:border-box}
+.pi-ico{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.pi-scroll{scrollbar-width:none}.pi-scroll::-webkit-scrollbar{display:none}
+.pi-card{background:#fff;border:1px solid #DDE4ED;border-radius:16px;box-shadow:0 3px 8px rgba(22,50,92,0.08)}
+</style>
+</helmet>
+<div class="g" style="position:relative;width:390px;height:844px;display:flex;flex-direction:column;overflow:hidden;background:#F3F6FA;font-family:Sarabun,-apple-system,system-ui,sans-serif;color:#16325C">
+<header style="flex:none;color:#fff;background:linear-gradient(90deg,#1F6FB5,#2E8FDB);border-radius:0 0 15px 15px;padding:0 16px 12px">
+<div aria-hidden="true" style="height:44px;margin:0 -16px;padding:0 26px 0 32px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,'SF Pro Text',system-ui;font-size:15px;font-weight:700"><span>9:41</span><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 18 12" style="width:18px;height:12px;fill:#fff"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><svg viewBox="0 0 27 13" style="width:27px;height:13px"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".5"></rect><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"></rect><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"></rect></svg></span></div>
+<div style="display:flex;align-items:center;gap:10px">
+
+<div style="flex:1;min-width:0;line-height:20px"><b style="display:block;font-size:19px;line-height:25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{S.name}}</b><div style="font-size:13px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{S.kwp}} kWp · ทีม {{S.team}} · {{S.ct}}</div></div>
+<button aria-label="ผู้ช่วยโครงการ" style="width:44px;height:44px;flex:none;border-radius:22px;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);cursor:pointer"><svg viewBox="0 0 24 24" class="pi-ico" style="width:20px;height:20px"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></button>
+<button onClick="{{goPs}}" aria-pressed="{{psOn}}" aria-label="ตั้งค่าเฉพาะโครงการ" title="ตั้งค่าเฉพาะโครงการ" style="width:44px;height:44px;flex:none;border-radius:22px;display:grid;place-items:center;border:1px solid rgba(255,255,255,0.4);cursor:pointer;{{gearSt}}"><svg viewBox="0 0 24 24" class="pi-ico" style="width:20px;height:20px"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+</div>
+</header>
+<nav data-pi-nav="" aria-label="แท็บงานติดตั้ง" class="pi-scroll" style="position:relative;flex:none;margin-top:12px;padding:0 16px;overflow-x:auto;{{navHide}}"><div style="display:inline-flex;gap:4px;padding:4px;border-radius:14px;background:#E3EAF3"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="7"><button onClick="{{t.go}}" aria-pressed="{{t.on}}" style="flex:none;min-height:40px;padding:0 12px;border:0;border-radius:11px;display:flex;align-items:center;gap:6px;font-family:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;{{t.st}}"><svg viewBox="0 0 24 24" class="pi-ico" style="width:16px;height:16px"><path d="{{t.ic}}"></path></svg><span>{{t.t}}</span><i style="width:7px;height:7px;border-radius:50%;background:#F08C00;{{t.dot}}"></i></button></sc-for></div></nav>
+<main class="pi-scroll" style="flex:1;min-height:0;overflow-y:auto;padding:12px 16px 132px;display:flex;flex-direction:column;gap:12px">
+
+<sc-if value="{{isOv}}" hint-placeholder-val="{{true}}">
+<section aria-label="สรุป" class="pi-card" style="flex:none;padding:0;overflow:hidden">
+<div style="display:grid;grid-template-columns:1fr 1fr"><sc-for list="{{ovK}}" as="k" hint-placeholder-count="4"><div style="padding:10px 12px;display:flex;flex-direction:column;line-height:18px;{{k.bd}}"><span style="font-size:12px;color:#5B6B82">{{k.l}}</span><b style="font-size:20px;line-height:26px;font-variant-numeric:tabular-nums;{{k.ink}}">{{k.v}}</b><span style="font-size:12px;color:#5B6B82">{{k.n}}</span></div></sc-for></div>
+<button aria-label="ต้องดำเนินการ {{actN}} เรื่อง" style="width:100%;display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 12px;border:0;border-top:1px solid #EEF2F7;background:#fff;font-family:inherit;text-align:left;cursor:pointer;color:#16325C"><span style="display:flex;flex-direction:column;line-height:18px;flex:1;min-width:0"><span style="font-size:12px;color:#5B6B82">ต้องดำเนินการ</span><span style="display:flex;align-items:baseline;gap:8px;min-width:0"><b style="font-size:18px;color:#B45309;white-space:nowrap">{{actN}} เรื่อง</b><span style="font-size:12.5px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{actT}}</span></span></span><svg viewBox="0 0 24 24" class="pi-ico" style="width:15px;height:15px;color:#B45309;stroke-width:2.6"><path d="M9 5l7 7-7 7"></path></svg></button>
+</section>
+
+<section aria-label="ความคืบหน้าเทียบแผน" class="pi-card" style="flex:none;padding:0;overflow:hidden">
+<div style="padding:12px 14px 8px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:8px"><b style="flex:1;font-size:16px">ความคืบหน้าเทียบแผน</b><div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#E3EAF3"><sc-for list="{{ovViews}}" as="w" hint-placeholder-count="2"><button onClick="{{w.go}}" aria-pressed="{{w.on}}" style="min-height:32px;padding:0 10px;border:0;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;{{w.st}}">{{w.t}}</button></sc-for></div></div>
+
+
+</div>
+<sc-if value="{{ovGantt}}" hint-placeholder-val="{{true}}">
+<div data-pi-ov="" class="pi-scroll" data-today="{{cpTodayX}}" style="overflow-x:auto;border-top:1px solid #EEF2F7"><div style="position:relative;width:{{cpW}}px">
+<div aria-hidden="true" style="position:absolute;left:150px;top:0;bottom:0;display:flex"><sc-for list="{{cpShade}}" as="c" hint-placeholder-count="12"><i style="width:30px;{{c.st}}"></i></sc-for></div>
+<div aria-hidden="true" style="position:absolute;top:0;bottom:0;width:2px;background:#E0574A;left:{{ovTodayL}}px"></div>
+<div style="position:relative;display:flex;height:66px;border-bottom:1px solid #DDE4ED"><span style="position:sticky;left:0;z-index:2;width:150px;flex:none;background:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:0 0 6px 10px;font-size:11px;line-height:14px;color:#5B6B82;box-shadow:1px 0 0 #DDE4ED"><b>ขั้นตอน</b><span>พยากรณ์อากาศ · อัปเดต 06:00</span></span><sc-for list="{{ovDays}}" as="d" hint-placeholder-count="12"><span style="width:30px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10px;line-height:13px;{{d.st}}"><span>{{d.w}}</span><b style="font-size:11.5px;{{d.nSt}}">{{d.d}}</b><span style="font-size:11px;line-height:13px">{{d.xi}}</span><span style="font-size:9.5px;line-height:11px;white-space:nowrap;{{d.xSt}}">{{d.xp}}</span></span></sc-for></div>
+<sc-for list="{{ovRows}}" as="r" hint-placeholder-count="10"><div style="position:relative;display:flex;align-items:center;{{r.rowSt}}">
+<button onClick="{{r.tog}}" aria-expanded="{{r.ex}}" aria-label="{{r.aria}}" style="position:sticky;left:0;z-index:2;width:150px;flex:none;align-self:stretch;display:flex;align-items:center;gap:6px;padding:4px 6px 4px {{r.pad}};border:0;font-family:inherit;text-align:left;color:#16325C;cursor:{{r.cur}};box-shadow:1px 0 0 #DDE4ED;{{r.lblBg}}"><span style="width:20px;height:20px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;{{r.icSt}}">{{r.ic}}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:15px"><span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;{{r.nSt}}">{{r.n}}</span><span style="font-size:10.5px;color:#5B6B82;{{r.subSt}}">{{r.sub}}</span></span></button>
+<span style="position:relative;width:{{cpTw}}px;flex:none;align-self:stretch"><i style="position:absolute;top:50%;transform:translateY(-50%);{{r.ghost}}"></i><i style="position:absolute;top:50%;transform:translateY(-50%);{{r.fc}}"></i><i style="position:absolute;top:50%;transform:translateY(-50%);{{r.over}}"></i><i style="position:absolute;top:50%;transform:translateY(-50%);{{r.bar}}"></i><b style="position:absolute;top:50%;transform:translateY(-50%);font-size:10.5px;font-weight:700;border-radius:999px;padding:0 6px;background:#FDECEA;color:#C0392B;white-space:nowrap;{{r.oLbl}}">{{r.oT}}</b></span>
+</div></sc-for>
+<div style="position:relative;display:flex;align-items:stretch;height:44px;border-top:1px solid #DDE4ED"><span style="position:sticky;left:0;z-index:2;width:150px;flex:none;display:flex;align-items:center;padding-left:10px;background:#fff;font-size:12px;color:#5B6B82;box-shadow:1px 0 0 #DDE4ED">เหตุการณ์สำคัญ</span><span style="position:relative;width:{{cpTw}}px;flex:none"><sc-for list="{{ovMs}}" as="m" hint-placeholder-count="6"><span style="position:absolute;top:6px;width:60px;display:flex;flex-direction:column;align-items:center;gap:2px;{{m.pos}}"><i style="width:10px;height:10px;transform:rotate(45deg);{{m.dSt}}"></i><span style="font-size:10px;color:#16325C;white-space:nowrap">{{m.t}}</span></span></sc-for></span></div>
+<div style="position:relative;display:flex;align-items:stretch;height:52px;border-top:1px solid #EEF2F7"><span style="position:sticky;left:0;z-index:2;width:150px;flex:none;display:flex;align-items:center;padding-left:10px;background:#fff;font-size:12px;color:#5B6B82;box-shadow:1px 0 0 #DDE4ED">งวดเบิกเงิน (ตัวอย่าง)</span><span style="position:relative;width:{{cpTw}}px;flex:none"><sc-for list="{{ovPay}}" as="m" hint-placeholder-count="3"><span style="position:absolute;top:5px;width:60px;display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;font-size:9.5px;line-height:12px;{{m.pos}}"><b style="width:15px;height:15px;border-radius:50%;display:grid;place-items:center;font-size:9px;color:#fff;{{m.bSt}}">฿</b><span style="color:#16325C">{{m.t}}</span><span style="{{m.sSt}}">{{m.s}}</span></span></sc-for></span></div>
+</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 12px;border-top:1px solid #EEF2F7;font-size:11.5px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:8px;border-radius:4px;border:1.5px dashed #6C9BD2"></i>คาดการณ์</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:8px;border-radius:2px;background:repeating-linear-gradient(135deg,#E0574A 0 3px,#F7C3BD 3px 6px)"></i>เกินแผน</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:9px;height:9px;transform:rotate(45deg);background:#16325C"></i>เหตุการณ์สำคัญ</span><span>แตะขั้นเพื่อดูงานย่อย</span></div>
+</sc-if>
+<sc-if value="{{ovCurve}}" hint-placeholder-val="{{false}}">
+<div style="padding:4px 10px 10px;border-top:1px solid #EEF2F7">
+<div style="display:flex;flex-wrap:wrap;gap:4px 12px;padding:6px 4px;font-size:11.5px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:2px;background:#8FA3BC"></i>แผนสะสม</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:3px;background:#1F6FB5"></i>งานจริงสะสม</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;border-top:2px dashed #1F6FB5"></i>คาดการณ์</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:2px;height:10px;background:#E0574A"></i>วันนี้</span></div>
+<svg viewBox="0 0 338 240" role="img" aria-label="{{scA}}" style="display:block;width:100%;height:auto">
+<sc-for list="{{scShade}}" as="b" hint-placeholder-count="2"><rect x="{{b.x}}" y="10" width="{{b.w}}" height="190" fill="{{b.f}}"></rect></sc-for>
+<sc-for list="{{scGrid}}" as="g" hint-placeholder-count="5"><line x1="30" x2="334" y1="{{g.y}}" y2="{{g.y}}" stroke="#EEF2F7"></line><text x="26" y="{{g.ty}}" font-size="9" text-anchor="end" fill="#8FA3BC">{{g.t}}</text></sc-for>
+<sc-for list="{{scBars}}" as="b" hint-placeholder-count="12"><rect x="{{b.x}}" y="{{b.py}}" width="7" height="{{b.ph}}" fill="#D3DDEA"></rect><rect x="{{b.x2}}" y="{{b.ay}}" width="7" height="{{b.ah}}" fill="#7FAEE0"></rect></sc-for>
+<path d="{{scArea}}" fill="rgba(31,111,181,0.12)"></path>
+<path d="{{scPlan}}" fill="none" stroke="#8FA3BC" stroke-width="2"></path>
+<path d="{{scAct}}" fill="none" stroke="#1F6FB5" stroke-width="2.6" stroke-linejoin="round"></path>
+<path d="{{scFc}}" fill="none" stroke="#1F6FB5" stroke-width="2" stroke-dasharray="5 4"></path>
+<line x1="{{scTx}}" x2="{{scTx}}" y1="10" y2="200" stroke="#E0574A" stroke-width="1.5"></line>
+<rect x="{{scTagX}}" y="0" width="52" height="14" rx="3" fill="#C0392B"></rect><text x="{{scTx}}" y="10.5" font-size="9" font-weight="700" text-anchor="middle" fill="#fff">วันนี้ {{scTd}}</text>
+<circle cx="{{scTx}}" cy="{{scPy}}" r="3.5" fill="#fff" stroke="#8FA3BC" stroke-width="2"></circle><text x="{{scLx}}" y="{{scPly}}" font-size="9.5" font-weight="700" text-anchor="end" fill="#5B6B82">แผน {{S.p}}%</text>
+<circle cx="{{scTx}}" cy="{{scAy}}" r="3.5" fill="#fff" stroke="#1F6FB5" stroke-width="2"></circle><text x="{{scLx}}" y="{{scAly}}" font-size="9.5" font-weight="700" text-anchor="end" fill="#1F6FB5">จริง {{S.a}}%</text>
+<sc-for list="{{scX}}" as="x" hint-placeholder-count="12"><text x="{{x.x}}" y="214" font-size="9" text-anchor="middle" fill="{{x.f}}" font-weight="{{x.w}}">{{x.t}}</text></sc-for>
+<text x="334" y="232" font-size="9.5" font-weight="700" text-anchor="end" fill="#1F6FB5">{{scEnd}}</text>
+</svg>
+<span style="display:block;padding:2px 4px;font-size:11px;color:#5B6B82">แท่ง = งานต่อวัน (แผน · จริง) · เส้นแดงที่วันนี้ = ห่างจากแผน</span>
+</div>
+</sc-if>
+</section>
+
+<section aria-label="เอกสารโครงการ" class="pi-card" style="flex:none;padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:16px">เอกสารโครงการ</b><span style="font-size:12px;color:#5B6B82">แตะเพื่อดูรายละเอียด</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><sc-for list="{{ovDocs}}" as="d" hint-placeholder-count="13"><button onClick="{{d.go}}" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:56px;padding:7px 9px;border-radius:10px;border:1px solid #DDE4ED;background:#fff;font-family:inherit;text-align:left;cursor:pointer;color:#16325C"><span style="display:flex;align-items:center;gap:6px;width:100%"><i style="width:7px;height:7px;flex:none;border-radius:50%;{{d.dot}}"></i><b style="font-size:13px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.t}}</b></span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:0 7px;margin-left:13px;white-space:nowrap;{{d.chSt}}">{{d.ch}}</span></button></sc-for></div>
+</section>
+
+<section aria-label="หน้างาน" class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#E3EAF3"><sc-for list="{{spTabs}}" as="t" hint-placeholder-count="3"><button onClick="{{t.go}}" aria-pressed="{{t.on}}" style="flex:1;min-height:36px;border:0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;{{t.st}}">{{t.t}}</button></sc-for></div>
+<span style="font-size:11.5px;color:#5B6B82;text-align:right;margin-top:-4px">ณ 21/10/2569 · ข้อมูลตัวอย่าง</span>
+<sc-if value="{{spSite}}" hint-placeholder-val="{{true}}">
+<span style="font-size:12.5px;font-weight:700;color:#5B6B82">ปริมาณงานติดตั้งแล้ว</span>
+<sc-for list="{{spQty}}" as="q" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;font-size:13.5px"><span>{{q.t}}</span><b style="margin-left:auto;font-variant-numeric:tabular-nums">{{q.v}}</b></div><span style="height:6px;border-radius:3px;background:#EEF2F7;overflow:hidden"><i style="display:block;height:100%;{{q.bar}}"></i></span></div></sc-for>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"><sc-for list="{{spStat}}" as="k" hint-placeholder-count="4"><div style="padding:10px;border-radius:12px;background:#F3F6FA;display:flex;flex-direction:column;line-height:17px"><span style="font-size:11.5px;color:#5B6B82">{{k.l}}</span><b style="font-size:18px;line-height:24px;{{k.ink}}">{{k.v}}</b><span style="font-size:11px;color:#5B6B82">{{k.n}}</span></div></sc-for></div>
+</sc-if>
+<sc-if value="{{spRisk}}" hint-placeholder-val="{{false}}"><sc-for list="{{spRisks}}" as="r" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:#F3F6FA"><span style="flex:none;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;{{r.lvSt}}">{{r.lv}}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px">{{r.t}}</b><span style="font-size:12px;color:#5B6B82">รับมือ: {{r.m}}</span></span><span style="font-size:12px;color:#5B6B82;white-space:nowrap">{{r.o}}</span></div></sc-for></sc-if>
+<sc-if value="{{spLab}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;align-items:center;gap:10px;font-size:11.5px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:2px;background:#DCE5EF"></i>แผน</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:2px;background:#1F6FB5"></i>จริง</span><span style="margin-left:auto">{{labSum}}</span></div>
+<div style="display:flex;align-items:flex-end;gap:3px;height:120px"><sc-for list="{{labBars}}" as="b" hint-placeholder-count="12"><span style="position:relative;flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center"><i style="position:absolute;bottom:0;left:0;right:0;border-radius:3px 3px 0 0;background:#DCE5EF;{{b.ph}}"></i><i style="position:relative;width:62%;border-radius:3px 3px 0 0;background:#1F6FB5;{{b.ah}}"></i><b style="position:absolute;font-size:9.5px;color:#16325C;{{b.ty}}">{{b.t}}</b></span></sc-for></div>
+<div style="display:flex;gap:3px"><sc-for list="{{cpDays}}" as="d" hint-placeholder-count="12"><span style="flex:1;text-align:center;font-size:10px;{{d.st}}">{{d.d}}</span></sc-for></div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{isDaily}}" hint-placeholder-val="{{false}}">
+<section aria-label="สรุปรายงานประจำวัน" class="pi-card" style="flex:none;display:grid;grid-template-columns:1fr 1fr;overflow:hidden"><sc-for list="{{dKpi}}" as="k" hint-placeholder-count="4"><div style="padding:10px 12px;display:flex;flex-direction:column;gap:1px;{{k.bd}}"><span style="font-size:12px;color:#5B6B82">{{k.l}}</span><b style="font-size:17px;font-variant-numeric:tabular-nums;{{k.ink}}">{{k.v}}</b><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{k.n}}</span></div></sc-for></section>
+<div style="flex:none;display:flex;gap:6px;align-items:center"><sc-for list="{{dFil}}" as="f" hint-placeholder-count="3"><button onClick="{{f.go}}" style="min-height:36px;padding:0 12px;border-radius:18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;{{f.st}}">{{f.t}} {{f.n}}</button></sc-for><button aria-label="PDF รวม" style="margin-left:auto;width:44px;height:36px;border-radius:10px;border:1px solid #B9C6D6;background:#fff;color:#16325C;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" class="pi-ico" style="width:17px;height:17px"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"></path></svg></button></div>
+<sc-for list="{{days}}" as="d" hint-placeholder-count="7"><div class="pi-card" style="flex:none;display:flex;flex-direction:column;gap:8px;padding:12px 14px;{{d.cardSt}}">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:40px;flex:none;text-align:center;line-height:17px"><span style="display:block;font-size:12px;color:#5B6B82">{{d.dw}}</span><b style="font-size:20px">{{d.dd}}</b></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.t}}</b><span style="font-size:12px;color:#5B6B82">{{d.s}}</span></span><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap;{{d.chSt}}">{{d.ch}}</span></div>
+<sc-if value="{{d.hasProg}}" hint-placeholder-val="{{true}}"><div style="display:flex;align-items:center;gap:8px;padding-left:50px"><b style="font-size:13px;font-variant-numeric:tabular-nums">{{d.cum}}%</b><span style="position:relative;flex:1;height:6px;border-radius:3px;background:#EEF2F7"><i style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;{{d.bar}}"></i><i style="position:absolute;top:-3px;bottom:-3px;width:2px;background:#16325C;{{d.pl}}"></i></span><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:0 7px;{{d.vSt}}">{{d.var}}</span></div>
+</sc-if>
+<sc-if value="{{d.hasNote}}" hint-placeholder-val="{{false}}"><div style="padding-left:50px;font-size:12.5px;color:#B45309">{{d.note}}</div></sc-if>
+<a href="iPadDaily.dc.html" style="min-height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;text-decoration:none;{{d.btnSt}}">{{d.btn}}</a>
+</div></sc-for>
+<a href="iPadInstall.dc.html" style="flex:none;min-height:48px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:#16325C;text-decoration:none"><svg viewBox="0 0 24 24" class="pi-ico" style="width:17px;height:17px"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4"></path></svg>สร้าง Weekly Report {{wkNo}} จากรายงาน {{sentN}} ฉบับ</a>
+</sc-if>
+
+<sc-if value="{{isPlan}}" hint-placeholder-val="{{false}}">
+<section aria-label="แผนก่อสร้าง" class="pi-card" style="flex:none;position:relative;z-index:3;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:17px">แผนก่อสร้าง</b><span style="font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;{{cpRevSt}}">{{cpRev}}</span></div>
+<span style="font-size:12px;color:#5B6B82;margin-top:-6px">{{cpSub}}</span>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><sc-for list="{{cpK}}" as="k" hint-placeholder-count="4"><div style="padding:6px 8px;border-radius:10px;background:#F3F6FA;display:flex;flex-direction:column;line-height:17px"><span style="font-size:11px;color:#5B6B82">{{k.l}}</span><b style="font-size:13.5px;white-space:nowrap;{{k.vSt}}">{{k.v}}</b></div></sc-for></div>
+<div style="display:flex;gap:2px;padding:3px;border-radius:12px;background:#E3EAF3"><sc-for list="{{cpViews}}" as="w" hint-placeholder-count="2"><button onClick="{{w.go}}" aria-pressed="{{w.on}}" style="flex:1;min-height:38px;border:0;border-radius:9px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;{{w.st}}">{{w.t}}</button></sc-for></div>
+<sc-if value="{{cpEdOff}}" hint-placeholder-val="{{true}}"><div style="display:flex;gap:8px">
+<button onClick="{{cpEdit}}" style="flex:1;min-height:44px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer">แก้ไขแผน</button>
+<div style="position:relative;flex:1"><button onClick="{{cpXlGo}}" aria-haspopup="menu" aria-expanded="{{cpXlExp}}" style="width:100%;min-height:44px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer"><span style="width:20px;height:20px;border-radius:5px;background:#1D6F42;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center">X</span>Excel<svg viewBox="0 0 24 24" class="pi-ico" style="width:12px;height:12px;stroke-width:3"><path d="M6 9l6 6 6-6"></path></svg></button>
+<sc-if value="{{cpXlOpen}}" hint-placeholder-val="{{false}}"><div role="menu" style="position:absolute;right:-60px;top:50px;z-index:20;width:260px;border-radius:14px;background:#fff;border:1px solid #DDE4ED;box-shadow:0 12px 28px rgba(14,30,56,0.18);padding:6px"><button role="menuitem" onClick="{{cpImpGo}}" style="width:100%;display:flex;gap:10px;align-items:center;min-height:56px;padding:6px 10px;border:0;border-radius:10px;background:#fff;font-family:inherit;text-align:left;cursor:pointer;color:#16325C"><svg viewBox="0 0 24 24" class="pi-ico" style="width:20px;height:20px;color:#1D6F42"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19h14"></path></svg><span style="display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px">นำเข้าไฟล์แผน (.xlsx)</b><span style="font-size:12px;color:#5B6B82">Master Plan Weekly ของสถานี</span></span></button><button role="menuitem" onClick="{{cpXlExport}}" style="width:100%;display:flex;gap:10px;align-items:center;min-height:56px;padding:6px 10px;border:0;border-top:1px solid #EEF2F7;background:#fff;font-family:inherit;text-align:left;cursor:pointer;color:#16325C"><svg viewBox="0 0 24 24" class="pi-ico" style="width:20px;height:20px;color:#1D6F42"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"></path></svg><span style="display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px">ส่งออก Excel</b><span style="font-size:12px;color:#5B6B82">{{cpXlSub}}</span></span></button></div></sc-if></div>
+<button onClick="{{cpExport}}" style="flex:none;min-height:44px;padding:0 14px;border-radius:12px;border:0;background:#1F6FB5;font-family:inherit;font-size:14px;font-weight:700;color:#fff;cursor:pointer">PDF</button>
+</div></sc-if>
+<sc-if value="{{cpEdOn}}" hint-placeholder-val="{{false}}"><div style="display:flex;gap:8px"><button onClick="{{cpCancel}}" style="flex:none;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer">ยกเลิก</button><button onClick="{{cpSave}}" aria-disabled="{{cpSaveDis}}" style="flex:1;min-height:44px;border-radius:12px;border:0;font-family:inherit;font-size:14px;font-weight:700;color:#fff;{{cpSaveSt}}">{{cpSaveT}}</button></div></sc-if>
+</section>
+<sc-if value="{{cpEdOn}}" hint-placeholder-val="{{false}}"><section style="flex:none;padding:12px 14px;border-radius:14px;background:#FFF8EE;border:1px solid #F5D6A8;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;flex:none;border-radius:50%;background:#E8A15A;color:#fff;display:grid;place-items:center"><svg viewBox="0 0 24 24" class="pi-ico" style="width:15px;height:15px"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px;color:#9A4A06">กำลังแก้ไข · ร่าง {{cpNext}}</b><span style="font-size:12px;color:#9A4A06">‹ › เลื่อนวันเริ่ม · − + วันและคน · งานที่เสร็จแล้วแก้ไม่ได้ · {{cpModN}}</span></span></div><textarea onInput="{{cpWhyOn}}" aria-label="เหตุผลการแก้แผน" placeholder="เหตุผลการแก้แผน (จำเป็น) เช่น ฝนตก เลื่อนงาน AC" style="min-height:64px;border-radius:10px;border:1px solid #E5C9A0;background:#fff;padding:8px 10px;font-family:inherit;font-size:14px;color:#16325C;resize:none">{{cpWhy}}</textarea></section></sc-if>
+
+<sc-if value="{{cpGantt}}" hint-placeholder-val="{{true}}">
+<section aria-label="Gantt" class="pi-card" style="flex:none;padding:0;overflow:hidden">
+<div data-pi-gantt="" data-today="{{cpTodayX}}" class="pi-scroll" style="overflow-x:auto"><div style="position:relative;width:{{cpW}}px">
+<div aria-hidden="true" style="position:absolute;left:150px;top:0;bottom:0;display:flex"><sc-for list="{{cpShade}}" as="c" hint-placeholder-count="12"><i style="width:30px;{{c.st}}"></i></sc-for></div>
+<div style="position:relative;display:flex;height:44px;border-bottom:1px solid #DDE4ED"><span style="position:sticky;left:0;z-index:2;width:150px;flex:none;background:#fff;display:flex;align-items:flex-end;gap:6px;padding:0 0 6px 10px;font-size:11px;font-weight:700;color:#5B6B82;box-shadow:1px 0 0 #DDE4ED">WBS · งาน</span><sc-for list="{{cpDays}}" as="d" hint-placeholder-count="12"><span style="width:30px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10.5px;line-height:13px;{{d.st}}"><span>{{d.w}}</span><b style="font-size:12px;{{d.nSt}}">{{d.d}}</b></span></sc-for></div>
+<sc-for list="{{cpRows}}" as="r" hint-placeholder-count="14"><div style="position:relative;display:flex;align-items:center;{{r.rowSt}}">
+<button onClick="{{r.tog}}" aria-expanded="{{r.ex}}" aria-label="{{r.aria}}" style="position:sticky;left:0;z-index:2;width:150px;flex:none;align-self:stretch;display:flex;align-items:center;gap:4px;padding:3px 6px 3px {{r.pad}};border:0;font-family:inherit;text-align:left;color:#16325C;cursor:{{r.cur}};box-shadow:1px 0 0 #DDE4ED;{{r.lblBg}}"><svg viewBox="0 0 24 24" class="pi-ico" style="width:11px;height:11px;stroke-width:3;{{r.chSt}}"><path d="M9 5l7 7-7 7"></path></svg><b style="width:22px;flex:none;font-size:11px;color:#5B6B82">{{r.code}}</b><span style="flex:1;min-width:0;line-height:15px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:{{r.lines}};{{r.nSt}}">{{r.n}}</span></button>
+<span style="position:relative;width:{{cpTw}}px;flex:none;align-self:stretch"><i style="position:absolute;top:50%;{{r.flSt}}"></i><span style="position:absolute;top:50%;transform:translateY(-50%);overflow:hidden;{{r.barSt}}"><i style="position:absolute;left:0;top:0;bottom:0;{{r.fillSt}}"></i><b style="position:relative;{{r.lblSt}}">{{r.lbl}}</b></span></span>
+</div></sc-for>
+<div style="position:relative;display:flex;align-items:center;height:36px;border-top:1px solid #DDE4ED"><span style="position:sticky;left:0;z-index:2;width:150px;flex:none;align-self:stretch;display:flex;align-items:center;padding-left:10px;background:#fff;font-size:12px;font-weight:700;color:#5B6B82;box-shadow:1px 0 0 #DDE4ED">Milestone</span><span style="position:relative;width:{{cpTw}}px;flex:none;align-self:stretch"><sc-for list="{{cpMs}}" as="m" hint-placeholder-count="4"><i aria-label="{{m.t}} {{m.d}}" style="position:absolute;top:12px;width:12px;height:12px;transform:rotate(45deg);{{m.st}}"></i></sc-for></span></div>
+</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 12px;border-top:1px solid #EEF2F7;font-size:11.5px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:7px;border-radius:3px;background:#2E9E5B"></i>เสร็จ</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:7px;border-radius:3px;background:#1F6FB5"></i>กำลังทำ</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:7px;border-radius:3px;background:#AFC0D4"></i>ตามแผน</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:7px;border-radius:3px;box-shadow:0 0 0 1.5px #C0392B"></i>เส้นทางวิกฤต</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;border-top:2px dotted #8FA3BC"></i>เผื่อเวลา (Float)</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:12px;height:10px;background:repeating-linear-gradient(135deg,rgba(143,163,188,0.5) 0 2px,transparent 2px 4px)"></i>รอการไฟฟ้า</span><span style="flex-basis:100%">ต่อจาก = งานก่อนหน้า (เสร็จ → เริ่ม) · แตะขั้นเพื่อแสดง/ซ่อนงานย่อย</span></div>
+</section>
+</sc-if>
+
+<sc-if value="{{cpTable}}" hint-placeholder-val="{{false}}">
+<section aria-label="ตารางแผน" class="pi-card" style="flex:none;padding:0;overflow:hidden">
+<div class="pi-scroll" style="overflow-x:auto"><div style="width:{{cpTabW}}px">
+<div style="display:grid;{{cpCols}};align-items:center;min-height:36px;border-bottom:1px solid #DDE4ED;font-size:11px;font-weight:700;color:#5B6B82"><span style="position:sticky;left:0;z-index:2;align-self:stretch;display:flex;align-items:center;padding-left:10px;background:#F6F8FB;box-shadow:1px 0 0 #DDE4ED">WBS · งาน</span><span style="padding-left:6px">เริ่ม</span><span>เสร็จ</span><span>วัน</span><span>คน</span><span>ต่อจาก</span><span>สถานะ</span></div>
+<sc-for list="{{cpRowsAll}}" as="r" hint-placeholder-count="14"><div style="display:grid;{{cpCols}};align-items:center;min-height:{{r.th}};border-top:1px solid #EEF2F7;font-size:13px;{{r.tRowSt}}">
+<span style="position:sticky;left:0;z-index:2;align-self:stretch;display:flex;align-items:center;gap:6px;padding:4px 6px 4px {{r.pad}};box-shadow:1px 0 0 #DDE4ED;{{r.tLblBg}}"><b style="width:24px;flex:none;font-size:11px;color:#5B6B82">{{r.code}}</b><span style="flex:1;min-width:0;line-height:16px;{{r.nSt}}">{{r.n}}</span></span>
+<sc-if value="{{r.ed}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:center;gap:2px;padding-left:4px"><button onClick="{{r.sL}}" aria-label="เลื่อนเริ่มเร็วขึ้น" style="width:30px;height:32px;border-radius:8px;border:1px solid #B9C6D6;background:#fff;color:#16325C;cursor:pointer">‹</button><b style="min-width:38px;text-align:center;border-radius:6px;padding:2px 0;{{r.d0St}}">{{r.d0}}</b><button onClick="{{r.sR}}" aria-label="เลื่อนเริ่มช้าลง" style="width:30px;height:32px;border-radius:8px;border:1px solid #B9C6D6;background:#fff;color:#16325C;cursor:pointer">›</button></span><span style="{{r.d1St}}">{{r.d1}}</span><span style="display:flex;align-items:center;gap:2px"><button onClick="{{r.dM}}" aria-label="ลดวัน" style="width:30px;height:32px;border-radius:8px;border:1px solid #B9C6D6;background:#fff;color:#16325C;cursor:pointer">−</button><b style="min-width:20px;text-align:center;border-radius:6px;{{r.durSt}}">{{r.dur}}</b><button onClick="{{r.dP}}" aria-label="เพิ่มวัน" style="width:30px;height:32px;border-radius:8px;border:1px solid #B9C6D6;background:#fff;color:#16325C;cursor:pointer">+</button></span><span style="display:flex;align-items:center;gap:2px"><button onClick="{{r.cM}}" aria-label="ลดคน" style="width:30px;height:32px;border-radius:8px;border:1px solid #B9C6D6;background:#fff;color:#16325C;cursor:pointer">−</button><b style="min-width:20px;text-align:center;border-radius:6px;{{r.crewSt}}">{{r.crew}}</b><button onClick="{{r.cP}}" aria-label="เพิ่มคน" style="width:30px;height:32px;border-radius:8px;border:1px solid #B9C6D6;background:#fff;color:#16325C;cursor:pointer">+</button></span></sc-if>
+<sc-if value="{{r.ro}}" hint-placeholder-val="{{true}}"><span style="padding-left:6px;white-space:nowrap">{{r.lk}}{{r.d0}}</span><span>{{r.d1}}</span><span>{{r.dur}}</span><span>{{r.crew}}</span></sc-if>
+<span style="color:#5B6B82">{{r.pred}}</span><span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;white-space:nowrap;{{r.stSt}}">{{r.stT}}</span></span>
+</div></sc-for>
+</div></div>
+</section>
+</sc-if>
+
+<section aria-label="กำลังคนตามแผน" class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline"><b style="font-size:15px">กำลังคนตามแผน</b><span style="margin-left:auto;font-size:11.5px;color:#5B6B82">{{cpCapT}}</span></div>
+<div role="img" aria-label="{{cpHistA}}" style="position:relative;height:110px;display:flex;align-items:flex-end;gap:4px;padding-top:16px"><i style="position:absolute;left:0;right:0;border-top:1.5px dashed #E0574A;{{cpCapSt}}"></i><sc-for list="{{cpHist}}" as="h" hint-placeholder-count="12"><span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%"><span style="font-size:10px;color:#5B6B82">{{h.t}}</span><i style="width:100%;border-radius:3px 3px 0 0;{{h.st}}"></i></span></sc-for></div>
+<div style="display:flex;gap:4px"><sc-for list="{{cpDays}}" as="d" hint-placeholder-count="12"><span style="flex:1;text-align:center;font-size:10px;{{d.st}}">{{d.d}}</span></sc-for></div>
+<span style="font-size:12px;font-weight:700;color:{{cpPeakC}}">{{cpPeakT}}</span>
+</section>
+<section aria-label="Milestone" class="pi-card" style="flex:none;padding:8px 14px">
+<b style="display:block;font-size:15px;padding:4px 0 6px">Milestone</b>
+<sc-for list="{{cpMsL}}" as="m" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid #EEF2F7"><i style="width:11px;height:11px;flex:none;transform:rotate(45deg);margin:0 2px;{{m.dSt}}"></i><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:17px"><b style="font-size:13.5px">{{m.t}}</b><span style="font-size:11.5px;color:#5B6B82">{{m.d}}</span></span><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;{{m.pSt}}">{{m.s}}</span></div></sc-for>
+</section>
+<section aria-label="ความพร้อมขั้นถัดไป" class="pi-card" style="flex:none;padding:8px 14px">
+<div style="display:flex;align-items:baseline;gap:6px;padding:4px 0 6px"><b style="font-size:15px">ความพร้อมขั้นถัดไป</b><span style="margin-left:auto;font-size:11.5px;color:#5B6B82;text-align:right">{{cpNextT}}</span></div>
+<sc-for list="{{cpReady}}" as="c" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;min-height:46px;border-top:1px solid #EEF2F7"><span style="width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;{{c.icSt}}">{{c.ic}}</span><span style="display:flex;flex-direction:column;line-height:17px"><b style="font-size:13.5px">{{c.l}}</b><span style="font-size:11.5px;color:#5B6B82">{{c.n}}</span></span></div></sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isWq}}" hint-placeholder-val="{{false}}">
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:8px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 19px"><b style="font-size: 16px">คำขอปฏิบัติงานรายสัปดาห์</b><span style="font-size: 12px; color: #5B6B82">ส่งก่อนเริ่มสัปดาห์</span></span><span style="font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px">{{wq.ch}}</span></div>
+<div style="display:flex;align-items:center;border:1px solid #DDE4ED;border-radius:12px;overflow:hidden"><button aria-label="สัปดาห์ก่อน" style="width:44px;height:48px;border:0;background:#fff;color:#1F6FB5;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" class="pi-ico" style="width:18px;height:18px;stroke-width:2.6"><path d="M15 5l-7 7 7 7"></path></svg></button><span style="flex:1;text-align:center;line-height:18px;border-left:1px solid #EEF2F7;border-right:1px solid #EEF2F7;padding:6px 0"><b style="font-size:15px">สัปดาห์ที่ 44</b><span style="display:block;font-size:12px;color:#5B6B82">27 ต.ค. – 2 พ.ย. 2569</span></span><button aria-label="สัปดาห์ถัดไป" disabled="" style="width:44px;height:48px;border:0;background:#fff;color:#C9D3DF;display:grid;place-items:center"><svg viewBox="0 0 24 24" class="pi-ico" style="width:18px;height:18px;stroke-width:2.6"><path d="M9 5l7 7-7 7"></path></svg></button></div>
+<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#B45309"><svg viewBox="0 0 24 24" class="pi-ico" style="width:15px;height:15px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>ส่งก่อน ศ. 24 ต.ค. 15:00 · อีก 3 วัน</div>
+<div style="display:flex;gap:4px"><sc-for list="{{wqSteps}}" as="x" hint-placeholder-count="3"><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;{{x.st}}">{{x.n}}</span><b style="font-size:12px">{{x.t}}</b><span style="font-size:11px;color:#5B6B82;line-height:14px">{{x.s}}</span></div></sc-for></div>
+<div style="display:flex;gap:8px"><button style="flex:1;min-height:44px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer">ดึงจากแผน MP</button><button style="flex:1;min-height:44px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer">ดู PDF</button></div>
+</section>
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:6px;background:#E3EEF8;color:#1F6FB5;font-size:12px;font-weight:700;display:grid;place-items:center">1</span><b style="font-size:16px">แผนงาน</b><span style="font-size:12px;color:#5B6B82">{{wqTasks.length}} งาน</span></div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding-left:0;font-size:11px;color:#5B6B82;text-align:center"><sc-for list="{{wqDays}}" as="d" hint-placeholder-count="6"><span>{{d}}</span></sc-for></div>
+<sc-for list="{{wqTasks}}" as="r" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid #EEF2F7"><div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:12px;color:#1F6FB5;width:30px;flex:none">{{r.c}}</b><span style="flex:1;min-width:0;font-size:14px;font-weight:700">{{r.t}}</span></div><div style="display:flex;align-items:center;gap:6px;padding-left:36px"><span style="font-size:11px;font-weight:700;border-radius:6px;padding:0 6px;{{r.tagSt}}">{{r.tag}}</span><span style="font-size:12px;color:#5B6B82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.s}}</span></div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"><sc-for list="{{r.d}}" as="c" hint-placeholder-count="6"><button style="height:26px;border-radius:6px;cursor:pointer;{{c}}"></button></sc-for></div></div></sc-for>
+<div style="display:flex;gap:10px;font-size:11.5px;color:#5B6B82"><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:3px;background:#1F6FB5"></i>วันทำงาน</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:3px;background:#E26B63"></i>ยกมา</span><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:3px;border:1px dashed #E5A100;background:#FFF4E5"></i>ยังไม่มีวัน</span></div>
+</section>
+<sc-for list="{{wqRes}}" as="g" hint-placeholder-count="2"><section class="pi-card" style="flex:none;padding:6px 14px">
+<div style="display:flex;align-items:center;gap:8px;min-height:40px"><span style="width:22px;height:22px;border-radius:6px;background:#E3EEF8;color:#1F6FB5;font-size:12px;font-weight:700;display:grid;place-items:center">{{g.n}}</span><b style="font-size:16px">{{g.t}}</b><span style="margin-left:auto;font-size:12px;color:#5B6B82">รวม {{g.sum}}</span></div>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:8px;min-height:52px;border-top:1px solid #EEF2F7"><span style="flex:1;min-width:0;font-size:14px">{{r.t}}</span><button aria-label="ลด" style="width:40px;height:40px;border-radius:10px;border:1px solid #B9C6D6;background:#fff;color:#16325C;font-size:18px;cursor:pointer">−</button><b style="width:24px;text-align:center;font-size:15px">{{r.v}}</b><button aria-label="เพิ่ม" style="width:40px;height:40px;border-radius:10px;border:1px solid #B9C6D6;background:#fff;color:#16325C;font-size:18px;cursor:pointer">+</button></div></sc-for>
+</section></sc-for>
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<b style="font-size:16px">ตรวจก่อนส่ง</b>
+<sc-for list="{{wqChk}}" as="c" hint-placeholder-count="5"><div style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:19px"><span style="width:18px;height:18px;flex:none;margin-top:1px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;{{c.st}}">{{c.m}}</span><span style="display:flex;flex-direction:column"><span>{{c.t}}</span><span style="font-size:12px;color:#B45309">{{c.n}}</span></span></div></sc-for>
+<span style="font-size:12px;font-weight:700;color:#5B6B82;margin-top:4px">ลายเซ็นผู้ส่งคำขอ · SITE ENGINEER</span>
+<button style="height:96px;border-radius:12px;border:1.5px dashed #E5A100;background:#FFFBF3;font-family:inherit;font-size:14px;font-weight:700;color:#B45309;cursor:pointer">แตะเพื่อเซ็น</button>
+<button disabled="" style="min-height:48px;border-radius:12px;border:0;background:#A9B9CC;color:#fff;font-family:inherit;font-size:15px;font-weight:700">ส่งขออนุมัติ (PDF)</button>
+</section>
+</sc-if>
+
+<sc-if value="{{isWr}}" hint-placeholder-val="{{false}}">
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:40px;flex:none;border-radius:11px;background:#E3EEF8;color:#1F6FB5;display:grid;place-items:center"><svg viewBox="0 0 24 24" class="pi-ico" style="width:20px;height:20px"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4M8.5 16v-2.5M12 16v-4M15.5 16v-1.5"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:16px">Weekly Report</b><span style="font-size:12px;color:#5B6B82">สร้างอัตโนมัติทุกอาทิตย์ 18:00 · จากรายงานประจำวัน</span></span></div>
+<div style="display:flex;align-items:center;border:1px solid #DDE4ED;border-radius:12px;overflow:hidden"><button aria-label="สัปดาห์ก่อน" style="width:44px;height:48px;border:0;background:#fff;color:#1F6FB5;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" class="pi-ico" style="width:18px;height:18px;stroke-width:2.6"><path d="M15 5l-7 7 7 7"></path></svg></button><span style="flex:1;text-align:center;line-height:18px;border-left:1px solid #EEF2F7;border-right:1px solid #EEF2F7;padding:6px 0"><b style="font-size:15px">สัปดาห์ที่ 43</b><span style="display:block;font-size:12px;color:#5B6B82">20 – 26 ต.ค. 2569</span></span><button aria-label="สัปดาห์ถัดไป" disabled="" style="width:44px;height:48px;border:0;background:#fff;color:#C9D3DF;display:grid;place-items:center"><svg viewBox="0 0 24 24" class="pi-ico" style="width:18px;height:18px;stroke-width:2.6"><path d="M9 5l7 7-7 7"></path></svg></button></div>
+<div style="display:flex;align-items:center;gap:6px"><sc-for list="{{wrSteps}}" as="x" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;{{x.tx}}"><span style="width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;{{x.st}}">{{x.n}}</span>{{x.t}}</span><i style="flex:1;height:1px;background:#DDE4ED;{{x.ln}}"></i></sc-for></div>
+<span style="font-size:12.5px;color:#B45309">ส่งเจ้าของงานก่อน จ. 27 ต.ค. · อีก 6 วัน</span>
+</section>
+<section aria-label="สไลด์" class="pi-card" style="flex:none;padding:12px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:6px"><b style="font-size:14px">สไลด์ {{wrI1}}/8 · {{wrCur.t}}</b><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;{{wrCur.chSt}}">{{wrCur.ch}}</span></div>
+<div style="aspect-ratio:16/9;border-radius:8px;border:1px solid #DDE4ED;background:#fff;overflow:hidden;display:flex;flex-direction:column"><i style="height:14%;background:#4472C4"></i><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 14px;text-align:center"><b style="font-size:17px;color:#1F3864">{{wrCur.h}}</b><span style="font-size:10.5px;line-height:15px;color:#16325C">{{wrCur.b}}</span><sc-if value="{{wrCur.bars}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:flex-end;gap:5px;height:44px"><sc-for list="{{wrBars}}" as="b" hint-placeholder-count="6"><i style="width:14px;border-radius:2px 2px 0 0;{{b}}"></i></sc-for></span></sc-if></div></div>
+<div class="pi-scroll" style="display:flex;gap:6px;overflow-x:auto"><sc-for list="{{wrSl}}" as="x" hint-placeholder-count="8"><button onClick="{{x.go}}" aria-label="สไลด์ {{x.n}} {{x.t}}" style="flex:none;width:76px;padding:4px;border-radius:8px;background:#fff;font-family:inherit;cursor:pointer;{{x.bd}}"><span style="display:block;aspect-ratio:16/9;border-radius:4px;background:linear-gradient(#4472C4 0 18%,#F3F6FA 18%)"></span><span style="display:flex;align-items:center;gap:3px;margin-top:3px;font-size:10.5px;color:#16325C"><b>{{x.n}}</b><span style="flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{x.t}}</span><i style="width:7px;height:7px;border-radius:50%;{{x.dot}}"></i></span></button></sc-for></div>
+</section>
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center"><b style="font-size:16px">ความพร้อมก่อนส่ง</b><b style="margin-left:auto;font-size:13px;color:#B45309">3/4</b></div>
+<sc-for list="{{wrChk}}" as="c" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;{{c.box}}"><span style="width:20px;height:20px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;{{c.st}}">{{c.m}}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:13.5px">{{c.t}}</b><span style="font-size:12px;{{c.nSt}}">{{c.n}}</span></span><sc-if value="{{c.fix}}" hint-placeholder-val="{{false}}"><button onClick="{{goDaily}}" style="min-height:36px;padding:0 10px;border-radius:9px;border:1px solid #E5A100;background:#fff;font-family:inherit;font-size:13px;font-weight:700;color:#B45309;cursor:pointer">ไปแก้</button></sc-if></div></sc-for>
+<span style="font-size:12px;font-weight:700;color:#5B6B82;margin-top:4px">ส่งถึง</span>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font-size:13px;font-weight:700;border-radius:999px;padding:5px 10px;background:#E3EEF8;color:#1F6FB5">✓ เจ้าของงาน กปภ.</span><span style="font-size:13px;font-weight:700;border-radius:999px;padding:5px 10px;background:#E3EEF8;color:#1F6FB5">✓ ทีมภายใน</span><span style="font-size:13px;font-weight:700;border-radius:999px;padding:4px 10px;border:1px dashed #B9C6D6;color:#5B6B82">+ ผู้ตรวจ กฟภ.</span></div>
+<div style="display:flex;gap:8px;margin-top:4px"><button aria-label="ดาวน์โหลด PPTX หรือ PDF" style="width:48px;min-height:48px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;color:#16325C;display:grid;place-items:center;cursor:pointer"><svg viewBox="0 0 24 24" class="pi-ico" style="width:18px;height:18px"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"></path></svg></button><button disabled="" style="flex:1;min-height:48px;border-radius:12px;border:0;background:#A9B9CC;color:#fff;font-family:inherit;font-size:15px;font-weight:700">ส่งให้ 2 ผู้รับ</button></div>
+<span style="font-size:12px;color:#5B6B82;text-align:center">ส่งได้เมื่อเช็กลิสต์ครบ</span>
+</section>
+</sc-if>
+
+<sc-if value="{{isIec}}" hint-placeholder-val="{{false}}">
+<section class="pi-card" style="flex:none;padding:14px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;flex:none;border-radius:12px;background:#FFF4D6;color:#B07A00;display:grid;place-items:center"><svg viewBox="0 0 24 24" class="pi-ico" style="width:22px;height:22px"><path d="M13 3L5 14h6l-1 7 8-11h-6z"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:16px">ทดสอบ IEC 62446-1</b><span style="font-size:12px;color:#5B6B82">{{iec.sub}}</span></span><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;{{iec.chSt}}">{{iec.ch}}</span></div>
+<div style="display:flex;gap:3px"><sc-for list="{{iecSteps}}" as="x" hint-placeholder-count="7"><i style="flex:1;height:6px;border-radius:3px;{{x.bar}}"></i></sc-for></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"><sc-for list="{{iecFacts}}" as="f" hint-placeholder-count="3"><div style="padding:8px 10px;border-radius:10px;background:#F3F6FA"><span style="font-size:11.5px;color:#5B6B82">{{f.l}}</span><b style="display:block;font-size:15px">{{f.v}}</b></div></sc-for></div>
+</section>
+<section class="pi-card" style="flex:none;padding:4px 0">
+<sc-for list="{{iecSteps}}" as="x" hint-placeholder-count="7"><a href="IECTest.dc.html" style="display:flex;align-items:center;gap:12px;min-height:58px;padding:6px 14px;text-decoration:none;color:#16325C;{{x.bd}}"><span style="width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;{{x.st}}">{{x.m}}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:14.5px">{{x.t}}</b><span style="font-size:12px;{{x.sSt}}">{{x.s}}</span></span><svg viewBox="0 0 24 24" class="pi-ico" style="width:14px;height:14px;color:#7A8BA3;stroke-width:2.6"><path d="M9 5l7 7-7 7"></path></svg></a></sc-for>
+</section>
+<a href="IECTest.dc.html" style="flex:none;min-height:48px;border-radius:12px;background:#1F6FB5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;text-decoration:none">{{iec.btn}}</a>
+<a href="IECTest.dc.html" style="flex:none;min-height:44px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;color:#16325C;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;text-decoration:none">ดูชีต Excel</a>
+</sc-if>
+
+<sc-if value="{{isDc}}" hint-placeholder-val="{{false}}">
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:16px">เอกสารโครงการ</b><span style="font-size:12px;color:#5B6B82">ขออนุญาตของสถานีนี้ · 3 หมวด</span></div>
+<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:22px">{{dc.done}}</b><span style="font-size:13px;color:#5B6B82">/ {{dc.all}} ฉบับเรียบร้อย</span></div>
+<span style="height:6px;border-radius:3px;background:#EEF2F7;overflow:hidden"><i style="display:block;height:100%;background:#2E9E5B;width:{{dc.pct}}%"></i></span>
+<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#5B6B82"><sc-for list="{{dcLeg}}" as="l" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:4px"><i style="width:7px;height:7px;border-radius:50%;{{l.dot}}"></i>{{l.t}} <b style="color:#16325C">{{l.n}}</b></span></sc-for></div>
+<div style="display:flex;gap:8px"><button style="flex:1;min-height:44px;border-radius:12px;border:1px solid #B9C6D6;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#16325C;cursor:pointer">อัปโหลด</button><button style="flex:1;min-height:44px;border-radius:12px;border:0;background:#1F6FB5;font-family:inherit;font-size:14px;font-weight:700;color:#fff;cursor:pointer">ส่งออกชุดเอกสาร</button></div>
+</section>
+<b style="flex:none;font-size:14px;padding:2px 2px 0">เส้นทางขออนุญาต <span style="font-weight:400;font-size:12px;color:#5B6B82">ยื่นตามลำดับ</span></b>
+<div style="flex:none;display:flex;flex-direction:column;gap:6px"><sc-for list="{{dcStages}}" as="g" hint-placeholder-count="3"><button onClick="{{g.go}}" aria-pressed="{{g.on}}" style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;border-radius:14px;background:#fff;font-family:inherit;text-align:left;cursor:pointer;color:#16325C;{{g.bd}}"><svg viewBox="0 0 60 60" aria-hidden="true" style="width:44px;height:44px;flex:none"><circle cx="30" cy="30" r="24" fill="none" stroke="#E6ECF3" stroke-width="6"></circle><circle cx="30" cy="30" r="24" fill="none" stroke="{{g.ring}}" stroke-width="6" stroke-linecap="round" stroke-dasharray="{{g.dash}}" transform="rotate(-90 30 30)"></circle><text x="30" y="35" font-size="13" font-weight="700" text-anchor="middle" fill="#16325C">{{g.c}}</text></svg><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><span style="font-size:11.5px;color:#5B6B82">{{g.k}}</span><b style="font-size:15px">{{g.t}}</b><span style="font-size:12px;color:#5B6B82">{{g.s}}</span></span><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;{{g.chSt}}">{{g.ch}}</span></button></sc-for></div>
+<section class="pi-card" style="flex:none;padding:4px 0">
+<div style="display:flex;align-items:center;gap:6px;padding:8px 14px 4px"><b style="font-size:15px">{{dcCur.t}}</b><span style="margin-left:auto;font-size:11.5px;color:#5B6B82">ร่าง → ยื่น → อนุมัติ</span></div>
+<sc-for list="{{dcRows}}" as="r" hint-placeholder-count="4"><a href="PhonePwaDocsV2.dc.html" style="display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 14px;text-decoration:none;color:#16325C;border-top:1px solid #EEF2F7"><span style="width:30px;height:36px;flex:none;border-radius:4px;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;{{r.fileSt}}">PDF</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><span style="font-size:11.5px;font-weight:700;color:#1F6FB5">{{r.c}}</span><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.t}}</b><span style="font-size:11.5px;color:#5B6B82">{{r.s}}</span></span><span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="display:flex;align-items:center;gap:2px"><sc-for list="{{r.lv}}" as="l" hint-placeholder-count="3"><i style="width:10px;height:10px;border-radius:50%;{{l}}"></i></sc-for></span><span style="font-size:11px;font-weight:700;border-radius:999px;padding:0 7px;{{r.chSt}}">{{r.ch}}</span></span></a></sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isPs}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{psList}}" hint-placeholder-val="{{true}}">
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;flex:none;border-radius:12px;background:#16325C;color:#fff;font-size:15px;font-weight:700;display:grid;place-items:center">{{S.ini}}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{S.name}}</b><span style="font-size:12px;color:#5B6B82">ตั้งค่าเฉพาะโครงการนี้</span></span><span style="font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;background:#E2EFDA;color:#3B7420">✓ ซิงก์แล้ว</span></section>
+<sc-for list="{{psGroups}}" as="g" hint-placeholder-count="4"><div style="flex:none;display:flex;flex-direction:column;gap:6px"><sc-if value="{{g.hasL}}" hint-placeholder-val="{{true}}"><span style="padding:4px 4px 0;font-size:12px;font-weight:700;color:#5B6B82">{{g.l}}</span></sc-if><section class="pi-card" style="padding:0;overflow:hidden"><sc-for list="{{g.items}}" as="c" hint-placeholder-count="3"><button onClick="{{c.go}}" style="width:100%;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border:0;background:#fff;font-family:inherit;text-align:left;cursor:pointer;{{c.bd}}"><span style="width:32px;height:32px;flex:none;border-radius:9px;color:#fff;display:grid;place-items:center;{{c.tile}}"><svg viewBox="0 0 24 24" class="pi-ico" style="width:17px;height:17px"><path d="{{c.ic}}"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><b style="font-size:15px;{{c.tSt}}">{{c.t}}</b><span style="font-size:12px;color:#7A8BA3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{c.s}}</span></span><span style="font-size:12.5px;font-weight:700;color:#5B6B82;white-space:nowrap">{{c.sum}}</span><svg viewBox="0 0 24 24" class="pi-ico" style="width:14px;height:14px;color:#B3BFCE;stroke-width:2.6"><path d="M9 5l7 7-7 7"></path></svg></button></sc-for></section></div></sc-for>
+</sc-if>
+<sc-if value="{{psDet}}" hint-placeholder-val="{{false}}">
+<button onClick="{{psBack}}" style="flex:none;align-self:flex-start;min-height:44px;padding:0 4px;border:0;background:none;display:flex;align-items:center;gap:4px;font-family:inherit;font-size:15px;font-weight:700;color:#1F6FB5;cursor:pointer"><svg viewBox="0 0 24 24" class="pi-ico" style="width:18px;height:18px;stroke-width:2.6"><path d="M15 5l-7 7 7 7"></path></svg>หมวดทั้งหมด</button>
+<section class="pi-card" style="flex:none;padding:12px 14px;display:flex;align-items:center;gap:12px"><span style="width:40px;height:40px;flex:none;border-radius:11px;color:#fff;display:grid;place-items:center;{{psC.tile}}"><svg viewBox="0 0 24 24" class="pi-ico" style="width:20px;height:20px"><path d="{{psC.ic}}"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:19px"><b style="font-size:16px;{{psC.tSt}}">{{psC.t}}</b><span style="font-size:12px;color:#5B6B82">{{psC.s}}</span></span></section>
+<sc-for list="{{psC.groups}}" as="g" hint-placeholder-count="2"><div style="flex:none;display:flex;flex-direction:column;gap:6px"><span style="padding:4px 4px 0;font-size:12px;font-weight:700;color:#5B6B82">{{g.l}}</span><section class="pi-card" style="padding:0;overflow:hidden"><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;{{r.bd}}">
+<sc-if value="{{r.isPpl}}" hint-placeholder-val="{{false}}"><span style="width:34px;height:34px;flex:none;border-radius:50%;color:#fff;font-size:14px;font-weight:700;display:grid;place-items:center;{{r.av}}">{{r.ini}}</span></sc-if>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:18px"><span style="font-size:{{r.lSz}};{{r.lSt}}">{{r.l}}</span><b style="font-size:14px;color:#1F4F78;{{r.vSt}}">{{r.v}}</b><sc-if value="{{r.hasH}}" hint-placeholder-val="{{false}}"><span style="font-size:11.5px;color:#7A8BA3">{{r.h}}</span></sc-if></span>
+<sc-if value="{{r.hasChip}}" hint-placeholder-val="{{false}}"><span style="font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;{{r.chSt}}">{{r.ch}}</span></sc-if>
+<sc-if value="{{r.isTog}}" hint-placeholder-val="{{false}}"><button onClick="{{r.go}}" role="switch" aria-checked="{{r.onA}}" aria-label="{{r.l}}" style="width:51px;height:31px;flex:none;border-radius:16px;border:0;padding:2px;cursor:pointer;display:flex;{{r.trk}}"><i style="width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)"></i></button></sc-if>
+<sc-if value="{{r.isGo}}" hint-placeholder-val="{{true}}"><svg viewBox="0 0 24 24" class="pi-ico" style="width:14px;height:14px;color:#B3BFCE;stroke-width:2.6"><path d="M9 5l7 7-7 7"></path></svg></sc-if>
+</div></sc-for><sc-if value="{{g.hasAdd}}" hint-placeholder-val="{{false}}"><button style="width:100%;min-height:48px;border:0;border-top:1px solid #EEF2F7;background:#fff;font-family:inherit;font-size:14px;font-weight:700;color:#1F6FB5;cursor:pointer;text-align:left;padding:0 14px">+ {{g.add}}</button></sc-if></section><sc-if value="{{g.hasFoot}}" hint-placeholder-val="{{false}}"><span style="padding:0 4px;font-size:11.5px;color:#7A8BA3">{{g.foot}}</span></sc-if></div></sc-for>
+</sc-if>
+</sc-if>
+</main>
+<sc-if value="{{cpImpOpen}}" hint-placeholder-val="{{false}}"><div onClick="{{cpImpClose}}" style="position:absolute;inset:0;z-index:30;background:rgba(14,30,56,0.35)"></div><section role="dialog" aria-label="นำเข้าไฟล์แผน Excel" class="pi-scroll" style="position:absolute;left:0;right:0;bottom:0;max-height:88%;overflow-y:auto;z-index:31;background:#F3F6FA;border-radius:18px 18px 0 0;padding:8px 16px 34px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -6px 24px rgba(14,30,56,0.2)">
+<i style="align-self:center;width:36px;height:5px;border-radius:3px;background:#C9D3DF"></i>
+<div style="display:flex;align-items:center;gap:10px"><b style="flex:1;font-size:17px">นำเข้าไฟล์แผน Excel</b><button onClick="{{cpImpClose}}" aria-label="ปิด" style="width:36px;height:36px;border-radius:50%;border:0;background:#E3EAF3;color:#16325C;font-size:16px;cursor:pointer">✕</button></div>
+<button onClick="{{cpImpPick}}" style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 12px;border-radius:12px;border:1px solid #DDE4ED;background:#fff;font-family:inherit;text-align:left;cursor:pointer;color:#16325C"><span style="width:32px;height:32px;flex:none;border-radius:8px;background:#1D6F42;color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center">X</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:17px"><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Master Plan Weekly · {{S.short}}.xlsx</b><span style="font-size:12px;color:#5B6B82">48 KB · แตะเพื่อเลือกไฟล์อื่น</span></span></button>
+<div style="display:flex;flex-direction:column;gap:6px"><sc-for list="{{cpImpChk}}" as="c" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;{{c.bg}}"><span style="{{c.icSt}}">{{c.ic}}</span><span style="display:flex;flex-direction:column;line-height:17px"><b style="font-size:13.5px">{{c.t}}</b><span style="font-size:11.5px;color:#5B6B82">{{c.n}}</span></span></div></sc-for></div>
+<div class="pi-card" style="padding:4px 12px"><div style="display:flex;padding:6px 0;font-size:13px"><b>สิ่งที่เปลี่ยนจากแผนในแอป</b><span style="margin-left:auto;color:#5B6B82">{{cpImpN}}</span></div><sc-for list="{{cpImpDiff}}" as="d" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:8px;min-height:44px;border-top:1px solid #EEF2F7;font-size:12.5px"><b style="width:28px;color:#1F6FB5">{{d.c}}</b><span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:16px"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.n}}</span><span style="color:#5B6B82">{{d.k}}</span></span><span style="color:#7A8BA3;text-decoration:line-through">{{d.a}}</span><span>→</span><b style="color:#9A4A06">{{d.b}}</b></div></sc-for></div>
+<sc-for list="{{cpImpModes}}" as="m" hint-placeholder-count="2"><button onClick="{{m.go}}" aria-pressed="{{m.on}}" style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-family:inherit;text-align:left;cursor:pointer;color:#16325C;{{m.st}}"><i style="width:20px;height:20px;flex:none;border-radius:50%;margin-top:1px;{{m.dot}}"></i><span style="display:flex;flex-direction:column;line-height:18px"><b style="font-size:14px">{{m.t}}</b><span style="font-size:12px;color:#5B6B82">{{m.n}}</span></span></button></sc-for>
+<button onClick="{{cpImpDo}}" style="min-height:50px;border-radius:12px;border:0;background:#1D6F42;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">{{cpImpDoT}}</button>
+</section></sc-if>
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}"><div role="status" style="position:absolute;left:16px;right:16px;bottom:118px;z-index:40;padding:12px 14px;border-radius:12px;background:#16325C;color:#fff;font-size:14px;font-weight:700;box-shadow:0 8px 20px rgba(14,30,56,0.3)">{{toast}}</div></sc-if>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 36px; z-index: 11; pointer-events: none; background: linear-gradient(to bottom,rgba(243,246,250,0) 0%,rgba(243,246,250,0.85) 38%,#F3F6FA 62%)"></div><nav aria-label="เมนูหลัก" style="position:absolute;left:12px;right:12px;bottom:22px;z-index:12;display:flex;align-items:center;gap:2px;padding:5px;border-radius:28px;background:#fff;border:1px solid #C9D3E0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)"><a href="PhoneMenu.dc.html" aria-label="หน้าหลัก" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:800;white-space:nowrap">หน้าหลัก</span></a><a href="PhoneSurveyHome.dc.html" aria-label="งานบ้าน" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M3.5 11.5L12 4l8.5 7.5"></path><path d="M6 10v10h12V10"></path><path d="M9 14.5l3-1.8 3 1.8M9 17.5l3-1.8 3 1.8"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">งานบ้าน</span></a><a aria-current="page" href="PhoneHome.dc.html" aria-label="กปภ. · นัดวันนี้ 2" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#fff;background:#16325C"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 3.5c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-10z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">กปภ.</span><b aria-hidden="true" style="position:absolute;top:4px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;outline:2px solid #fff">2</b></a><a href="PhonePwaDocsV2.dc.html" aria-label="เอกสาร" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14.5l2 2 4-4"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">เอกสาร</span></a><i aria-hidden="true" style="width:1px;align-self:stretch;margin:12px 2px;background:#DDE4ED;flex:none"></i><a href="iPadSettings.dc.html" aria-label="ตั้งค่า" style="position:relative;flex:1 1 0;min-width:0;min-height:56px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:23px;height:23px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg><span style="font-size:10.5px;line-height:13px;font-weight:600;white-space:nowrap">ตั้งค่า</span></a></nav><div aria-label="ตัวอย่างสถานะ" style="position:absolute;left:50%;top:5px;transform:translateX(-50%);z-index:5;display:flex;gap:3px;padding:3px;border:1.5px dashed rgba(22,50,92,0.45);border-radius:10px;background:rgba(255,255,255,0.95);box-shadow:0 3px 8px rgba(22,50,92,0.12)"><sc-for list="{{modes}}" as="m" hint-placeholder-count="2"><button onClick="{{m.go}}" style="min-height:32px;padding:0 10px;border-radius:7px;border:0;font-family:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;{{m.st}}">{{m.t}}</button></sc-for></div>
+<i style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:#16325C"></i>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  // keep the open tab in view in the scrolling tab strip
+  _navTo() { const n = document.querySelector('[data-pi-nav]'), b = n && n.querySelector('[aria-pressed="true"]'); if (!b) return;
+    n.scrollTo({ left: Math.max(0, b.offsetLeft - (n.clientWidth - b.offsetWidth) / 2), behavior: 'smooth' }); }
+  _ganttTo() { document.querySelectorAll('[data-pi-gantt],[data-pi-ov]').forEach((g) => { if (!g._done) { g._done = true; g.scrollLeft = Number(g.getAttribute('data-today')) || 0; } }); }
+  componentDidMount() { setTimeout(() => { this._navTo(); this._ganttTo(); }, 0); }
+  componentDidUpdate() { setTimeout(() => { this._navTo(); this._ganttTo(); }, 0); }
+  renderVals() {
+    // iPhone counterpart of InstallTrackingPage (iPad): ภาพรวม · รายงานประจำวัน · แผนก่อสร้าง. Example stations from the PWA home's install cards.
+    const st = this.state || {}, tab = st.tab || 'ov', sid = st.sid || '154', df = st.df || 'all', set = (o) => this.setState(o);
+    const W = [5, 20, 15, 25, 10, 10, 10, 5];
+    const T = [['1', 'เตรียมงาน · รับวัสดุ'], ['2', 'โครงสร้างรองรับ (Mounting)'], ['3', 'ติดตั้งแผง · สายดินโครง'], ['4', 'ระบบ DC · สาย · MC4 · ตู้ DC'], ['5', 'อินเวอร์เตอร์ · ระบบ AC'], ['6', 'ทดสอบ IEC 62446-1'], ['7', 'ขนานไฟ · ส่งมอบ']];
+    const D = {
+      '154': { ini: 'พน', no: '154', name: 'สถานีจ่ายน้ำแพรกหนามแดง', kwp: '209.76', team: 'TCR04', ct: 'ผู้รับเหมา C', a: 71, p: 68, gain: 6, cur: 4,
+        done: [100, 100, 100, 100, 20, 0, 0], plan: [100, 100, 100, 100, 0, 0, 0], task: '5.2 สาย AC เข้า MDB · เบรกเกอร์', taskNote: 'เร็วกว่าแผน', short: 'แพรกหนามแดง', start: [2026, 9, 13], today: 8, done0: 4, curDone: 1, cap: 8,
+        crewP: 6, crewA: 6, due: '24/10', left: 3, fc: '22/10', fcN: 'เผื่อ 2 วัน', spi: '1.04',
+        acts: ['ลงนาม Daily 20/10', 'นัดทดสอบ IEC 62446'], late: false },
+      '120': { ini: 'วช', no: '120', name: 'การประปาวัดชัย', kwp: '250', team: 'TCR03', ct: 'ผู้รับเหมา B', a: 22, p: 28, gain: 2, cur: 1,
+        done: [100, 40, 0, 0, 0, 0, 0], plan: [100, 100, 0, 0, 0, 0, 0], task: '2.3 L-Feet + ซีลกันรั่ว โซน C', taskNote: 'ช้า 1 วัน', short: 'วัดชัย', start: [2026, 9, 19], today: 2, done0: 1, curDone: 2, cap: 6,
+        crewP: 8, crewA: 5, due: '30/10', left: 9, fc: '4/11', fcN: 'ช้า 5 วัน', spi: '0.79',
+        acts: ['เร่งงานโครงสร้าง ขั้น 2', 'ขอคน +3 จากผู้รับเหมา B', 'ส่ง Daily 20/10'], late: true }
+    };
+    const S = D[sid], late = S.late, ink = late ? '#D9453B' : '#1F6FB5';
+    const C = 2 * Math.PI * 30, d = (x) => (C * x / 100).toFixed(1) + ' ' + C.toFixed(1);
+    const v = { S, ink, aDash: d(S.a), pDash: d(S.p), inkTx: 'color:' + (late ? '#B42318' : '#1F6FB5'),
+      schedT: late ? 'ช้ากว่าแผน' : 'ตามแผน', varT: (S.a - S.p > 0 ? '+' : '') + (S.a - S.p) + '%',
+      curBg: late ? 'background:#FDECEA' : 'background:#E3EEF8', actN: S.acts.length, actT: S.acts.join(' · '),
+      isOv: tab === 'ov', isDaily: tab === 'daily', isPlan: tab === 'plan', isWq: tab === 'wq', isWr: tab === 'wr', isIec: tab === 'iec', isDc: tab === 'dc', isPs: tab === 'ps',
+      psOn: tab === 'ps' ? 'true' : 'false', gearSt: tab === 'ps' ? 'background:#fff;color:#1F6FB5' : 'background:rgba(255,255,255,0.18);color:#fff',
+      goPs: () => set({ tab: tab === 'ps' ? 'ov' : 'ps', psK: null }), navHide: tab === 'ps' ? 'display:none' : '',
+      goDaily: () => this.setState({ tab: 'daily' }), goPlan: () => this.setState({ tab: 'plan' }) };
+    v.kpis = [
+      { l: 'คาดส่งมอบ', v: S.fc, n: S.fcN, ink: 'color:' + (late ? '#B42318' : '#16325C') },
+      { l: 'SPI', v: S.spi, n: late ? 'ต่ำกว่าแผน' : 'ปกติ', ink: 'color:' + (late ? '#B42318' : '#2E7D4F') },
+      { l: 'แรงงาน', v: S.crewA + '/' + S.crewP, n: 'คน วันนี้', ink: 'color:' + (S.crewA < S.crewP ? '#B45309' : '#16325C') }
+    ].map((k, i) => Object.assign(k, { bd: i ? 'border-left:1px solid #EEF2F7' : 'padding-left:0' }));
+    v.tasks = T.map(([c, t], i) => { const a = S.done[i], p = S.plan[i], behind = a < p;
+      return { c, t, v: a ? a + '%' : '—', tSt: i === S.cur ? 'font-weight:700' : a === 100 ? 'color:#5B6B82' : '',
+        vSt: 'color:' + (a === 100 ? '#2E7D4F' : behind ? '#B42318' : a ? '#1F6FB5' : '#9AA6B6'),
+        bar: 'width:' + a + '%;background:' + (a === 100 ? '#70AD47' : behind ? '#D9453B' : '#1F6FB5'),
+        plan: p > 0 && p < 100 ? 'left:calc(' + p + '% - 1px)' : 'display:none' }; });
+    const tick = (on) => on ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(22,50,92,0.16)' : 'background:transparent;color:#5B6B82';
+    const TI = { ov: 'M3 3v18h18M7 15l4-4 3 3 5-6', daily: 'M9 4h6v3H9zM7 5.5H5.5v15h13v-15H17M9 12h6M9 16h4', wq: 'M4 5h16v15H4zM4 10h16M9 3v4M15 3v4', wr: 'M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4', iec: 'M13 3L5 14h6l-1 7 8-11h-6z', dc: 'M6 3h8l4 4v14H6zM14 3v4h4', plan: 'M4 6h10M4 12h16M4 18h7M17 4v4M20 10v4M14 16v4' };
+    v.tabs = [['ov', 'ภาพรวม', false], ['daily', 'รายงานประจำวัน', true], ['wq', 'คำขอรายสัปดาห์', false], ['wr', 'Weekly Report', false], ['iec', 'ทดสอบ IEC 62446', false], ['dc', 'เอกสาร', false], ['plan', 'แผนก่อสร้าง', false]].map(([k, t, dot]) => ({ t, ic: TI[k], on: tab === k ? 'true' : 'false', st: tick(tab === k), dot: dot ? '' : 'display:none', go: () => set({ tab: k }) }));
+    const ic = { daily: 'M9 4h6v3H9zM7 5.5H5.5v15h13v-15H17M9 12h6M9 16h4', week: 'M4 5h16v15H4zM4 10h16M9 3v4M15 3v4', req: 'M4 5h16v15H4zM4 10h16M8 14h3M8 17h6', iec: 'M13 3L5 14h6l-1 7 8-11h-6z', doc: 'M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4', pk: 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10' };
+    const chip = (t, k) => ({ ch: t, chSt: { ok: 'background:#E2EFDA;color:#3B7420', warn: 'background:#FFF4E5;color:#B45309', bad: 'background:#FDECEA;color:#B42318', info: 'background:#E3EEF8;color:#1F6FB5', idle: 'background:#EEF2F7;color:#5B6B82' }[k] });
+    v.docs = [
+      Object.assign({ t: 'Daily Report', s: 'งานที่ทำ จำนวนคน อากาศ ปัญหา และรูปหน้างาน', ic: ic.daily, go: () => set({ tab: 'daily' }) }, chip('วันนี้ยังไม่ส่ง', 'warn')),
+      Object.assign({ t: 'คำขอรายสัปดาห์', s: 'แผนงานสัปดาห์หน้า (R1) · ส่งขออนุมัติ', ic: ic.req, go: () => set({ tab: 'wq' }) }, chip(late ? 'ยังไม่ส่ง' : 'อนุมัติแล้ว', late ? 'warn' : 'ok')),
+      Object.assign({ t: 'Weekly Report', s: 'สรุปงานประจำสัปดาห์ (R3) จากรายงานประจำวัน', ic: ic.week, go: () => set({ tab: 'wr' }) }, chip('W43 ครบ 26/10', 'info')),
+      Object.assign({ t: 'ทดสอบ IEC 62446', s: late ? 'ยังไม่ถึงขั้นทดสอบ' : 'ครบ 1/7 ขั้น · ขั้น 2 ขาด Voc', ic: ic.iec, go: () => set({ tab: 'iec' }) }, chip(late ? 'ยังไม่เริ่ม' : 'กำลังทำ', late ? 'idle' : 'info')),
+      Object.assign({ t: 'ใบอนุญาต', s: 'งานขออนุญาตในแผน MP', ic: ic.doc, go: () => set({ tab: 'plan' }) }, chip(late ? 'เลยกำหนด 1' : 'ผ่านแล้ว', late ? 'bad' : 'ok')),
+      Object.assign({ t: 'เอกสารสถานี กปภ.', s: 'ยื่นเอกสาร · พค.2 · ส่งมอบ', ic: ic.pk, go: () => set({ tab: 'dc' }) }, chip('ขาด 3', 'warn'))
+    ].map((x, i) => Object.assign(x, { bd: i ? 'border-top:1px solid #EEF2F7' : '' }));
+    // daily reports: the last 7 days (today first)
+    const DW = ['พ.', 'อ.', 'จ.', 'อา.', 'ส.', 'ศ.', 'พฤ.'], DD = [21, 20, 19, 18, 17, 16, 15];
+    const ST = late ? ['none', 'draft', 'ok', 'off', 'rain', 'ok', 'ok'] : ['none', 'draft', 'ok', 'off', 'ok', 'ok', 'ok'];
+    const CUM = late ? [null, 22, 21, 19, 19, 19, 17] : [null, 71, 68, 64, 64, 61, 57], PL = late ? [28, 27, 25, 23, 23, 22, 20] : [68, 66, 63, 60, 60, 58, 55];
+    const DS = { none: ['ยังไม่ได้ทำรายงานวันนี้', 'วันทำงาน · ส่งก่อน 18:00', 'warn', 'ยังไม่ส่ง', 'ทำรายงานวันนี้', 1], draft: [S.task, S.crewA + ' คน · ร่างยังไม่ลงชื่อ', 'warn', 'ร่าง', 'ทำต่อ · ส่ง', 1],
+      ok: [S.task, S.crewA + ' คน · มีเมฆ', 'ok', 'ส่งแล้ว', 'เปิดรายงาน', 0], off: ['วันหยุด', 'ไม่มีงาน', 'idle', 'วันหยุด', 'เปิดรายงาน', 0], rain: ['หยุดเพราะฝน', 'ฝน 3 ชม. · 0 คน', 'bad', 'หยุดงาน', 'เปิดรายงาน', 0] };
+    const sgn = (ok, t) => ok ? 'background:#E2EFDA;color:#3B7420' : t ? 'background:#FDECEA;color:#B42318' : 'background:#EEF2F7;color:#7A8BA3';
+    const all = DD.map((dd, i) => { const k = ST[i], s = DS[k], cum = CUM[i], pl = PL[i], vr = cum == null ? 0 : cum - pl, prog = k !== 'off' && k !== 'none';
+      const eOk = k === 'ok' || k === 'rain', iOk = eOk && i > 2, iLate = eOk && i === 2;
+      return Object.assign({ dw: DW[i], dd, t: s[0], s: s[1], k, hasProg: prog, cum: cum == null ? 0 : cum,
+        bar: 'width:' + (cum || 0) + '%;background:' + (vr < -1 ? '#D9453B' : '#2E9E5B'), pl: 'left:calc(' + pl + '% - 1px)',
+        var: (vr >= 0 ? '+' : '') + vr + ' ' + (vr < 0 ? 'ช้ากว่า' : 'เร็วกว่า'), vSt: vr < 0 ? 'background:#FDECEA;color:#B42318' : 'background:#E2EFDA;color:#3B7420',
+        e: eOk ? '✓' : '—', i: iOk ? '✓' : iLate ? 'รอ 2 วัน' : '—', eSt: sgn(eOk), iSt: sgn(iOk, iLate), ph: k === 'draft' ? '2/4' : k === 'rain' ? '0/4' : '4/4',
+        hasNote: k === 'draft' || k === 'rain', note: k === 'draft' ? 'ร่างยังไม่ลงชื่อ · ขาดรูป 2 รูป' : 'ฝนตกทั้งช่วงทำงาน · แนวทาง: ทำงานในตู้ DC แทน',
+        btn: s[4], btnSt: s[5] ? 'background:#1F6FB5;color:#fff' : 'border:1px solid #B9C6D6;background:#fff;color:#16325C', cardSt: k === 'none' ? 'border-color:#F5C2BD;background:#FFFBFA' : '' }, chip(s[3], s[2])); });
+    const todo = all.filter(x => x.k === 'none' || x.k === 'draft'), bad = all.filter(x => x.k === 'rain');
+    v.days = df === 'all' ? all : df === 'todo' ? todo : bad;
+    v.dFil = [['all', 'ทั้งหมด', all.length], ['todo', 'ต้องทำ', todo.length], ['bad', 'มีปัญหา', bad.length]].map(([k, t, n]) => ({ t, n, go: () => set({ df: k }), st: df === k ? 'border:0;background:#16325C;color:#fff' : 'border:1px solid #DDE4ED;background:#fff;color:#16325C' }));
+    const sent = all.filter(x => x.k === 'ok' || x.k === 'rain').length, work = all.filter(x => x.k !== 'off').length;
+    v.sentN = sent; v.wkNo = 'W43';
+    v.dKpi = [{ l: 'ส่งแล้ว', v: sent + ' / ' + work + ' วัน', n: 'นับถึงเมื่อวาน', ink: 'color:#2E7D4F' }, { l: 'รอลงนาม · รับทราบ', v: '1 · 1', n: 'ร่าง 20/10 · ผู้ตรวจยังไม่รับทราบ 19/10', ink: 'color:#B45309' },
+      { l: 'วันนี้ 21/10', v: 'ยังไม่ส่ง', n: 'ส่งก่อน 18:00', ink: 'color:#B42318' }, { l: 'คน·วันรวม', v: late ? '26' : '36', n: 'เฉลี่ย ' + S.crewA + ' คน/วันทำงาน', ink: 'color:#16325C' }]
+      .map((k, i) => Object.assign(k, { bd: (i % 2 ? 'border-left:1px solid #EEF2F7;' : '') + (i > 1 ? 'border-top:1px solid #EEF2F7' : '') }));
+    // คำขอรายสัปดาห์ (R1): week 44
+    v.wq = chip('ร่าง · ยังไม่ส่ง', 'warn');
+    v.wqSteps = [['1', 'ร่างคำขอ', 'Site Engineer · ยังไม่ลงนาม', 'cur'], ['2', 'ส่งขออนุมัติ', 'ส่งถึงผู้ตรวจ กฟภ.', ''], ['3', 'อนุมัติ', 'ผู้ตรวจ กฟภ.', '']].map(([n, t, s2, k]) => ({ n, t, s: s2, st: k ? 'background:#1F6FB5;color:#fff' : 'background:#EEF2F7;color:#7A8BA3' }));
+    v.wqDays = ['จ 27', 'อ 28', 'พ 29', 'พฤ 30', 'ศ 31', 'ส 1'];
+    const on2 = 'border:0;background:#1F6FB5', off2 = 'border:0;background:#EEF2F7', carry = 'border:0;background:#E26B63', none = 'border:1px dashed #E5A100;background:#FFF4E5';
+    const row = (c, t, tag, s2, pat) => ({ c, t, tag, s: s2, tagSt: tag === 'จากแผน MP' ? 'background:#E3EEF8;color:#1F6FB5' : tag === 'ยังไม่มีวัน' ? 'background:#FFF4E5;color:#B45309' : 'background:#FDECEA;color:#B42318', d: pat.split('').map(x => x === '1' ? on2 : x === 'c' ? carry : x === 'n' ? none : off2) });
+    v.wqTasks = late ? [row('2.4', 'ติดตั้งรางและต่อราง (ต่อ)', 'ยกมา · ช้า 1 วัน', 'หลังคาอาคารสูบน้ำ · 40%', 'cc1100'), row('3', 'ติดตั้งแผง · สายดินโครง', 'จากแผน MP', 'โซน A–C', '011110'), row('4', 'ระบบ DC · สาย · MC4 · ตู้ DC', 'จากแผน MP', 'สตริง 1–12', '000111'), row('1.3', 'ตรวจรับวัสดุงวด 2', 'ยังไม่มีวัน', 'แผง · รางยึด', 'nnnnnn')]
+      : [row('5.4', 'ระบบดิน · วัดค่าดิน (ต่อ)', 'ยกมา · ช้า 1 วัน', 'ห้อง MDB', 'c00000'), row('5.5', 'Data Logger · Monitoring', 'จากแผน MP', 'ตู้ MDB', '110000'), row('6', 'ทดสอบ IEC 62446-1', 'จากแผน MP', 'ทุกสตริง', '001110'), row('7.1', 'การไฟฟ้าตรวจ · เปลี่ยนมิเตอร์', 'ยังไม่มีวัน', 'ตู้ AC · มิเตอร์', 'nnnnnn'), row('7.3', 'อบรมผู้ใช้ · คู่มือ O&M', 'จากแผน MP', 'อาคารสำนักงาน', '000001')];
+    v.wqRes = [{ n: '2', t: 'กำลังคน', sum: (late ? 9 : 8) + ' คน', rows: [{ t: 'ผู้ควบคุมงาน', v: 1 }, { t: 'หัวหน้างาน', v: 1 }, { t: 'ช่างไฟฟ้า', v: late ? 3 : 2 }, { t: 'ผู้ช่วยช่าง', v: late ? 4 : 4 }] },
+      { n: '3', t: 'เครื่องมือ', sum: '4 รายการ', rows: [{ t: 'เครื่องวัดฉนวน (Megger)', v: 1 }, { t: 'แคลมป์มิเตอร์ DC', v: 1 }, { t: 'สว่านไร้สาย', v: 2 }] }];
+    const ck = (ok, t, n) => ({ t, n: n || '', m: ok ? '✓' : '!', st: ok ? 'background:#E2EFDA;color:#3B7420' : 'background:#FFF4E5;color:#B45309' });
+    v.wqChk = [ck(1, 'แผนงานตรงกับแผน MP สัปดาห์ที่ 44'), ck(0, 'ทุกงานมีตำแหน่งและวัน', '1 งานยังไม่มีวัน'), ck(1, 'ประเมินความเสี่ยงงานบนที่สูงและงานไฟฟ้า'), ck(1, 'กำลังคนยืนยันกับ' + S.ct), ck(0, 'ผู้ส่งคำขอลงนาม', 'ยังไม่ได้เซ็น · เซ็นด้านล่าง')];
+    // Weekly Report (R3): week 43, built from the daily reports
+    v.wrSteps = [['1', 'รอข้อมูล', 'cur'], ['2', 'พร้อมส่ง', ''], ['3', 'ส่งแล้ว', '']].map(([n, t, k], i) => ({ n, t, st: k ? 'background:#F08C00;color:#fff' : 'border:1px solid #C9D3DF;color:#7A8BA3', tx: k ? 'color:#B45309' : 'color:#7A8BA3', ln: i === 2 ? 'display:none' : '' }));
+    const SL = [['ปก', 'Weekly Report', 'โครงการจัดการพลังงานไฟฟ้าจากระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ที่ติดตั้งบนหลังคา (Solar Rooftop) · ' + S.name + ' · ประจำวันที่ 20 – 26 ตุลาคม 2569', 1],
+      ['AGENDA', 'AGENDA', 'ความก้าวหน้า · งานรายวัน · ภาพหน้างาน · ปัญหาและแนวทางแก้ไข · แผนสัปดาห์หน้า', 1], ['ความก้าวหน้า', 'Construction Progress', 'แผนสะสม ' + S.p + '% · จริง ' + S.a + '%', 1, 1],
+      ['งานรายวัน', 'Daily Work', 'สรุปจากรายงานประจำวัน · 1 วันยังไม่เซ็น', 0], ['ภาพหน้างาน 1', 'Site Photos', '6 รูปจากรายงานประจำวัน', 1], ['ภาพหน้างาน 2', 'Site Photos', '6 รูปจากรายงานประจำวัน', 1],
+      ['ปัญหา', 'Issues & Actions', 'รวมจากรายงานประจำวัน 3 ข้อ', 1], ['แผนสัปดาห์หน้า', 'Next Week', 'จากคำขอรายสัปดาห์ W44', 1]];
+    const si = Math.min(st.wrI || 0, SL.length - 1), cur = SL[si];
+    v.wrI1 = si + 1; v.wrCur = Object.assign({ t: cur[0], h: cur[1], b: cur[2], bars: !!cur[4] }, chip(cur[3] ? 'ข้อมูลครบ' : 'รอข้อมูล', cur[3] ? 'ok' : 'warn'));
+    v.wrBars = [30, 42, 52, 60, 66, S.a].map((h, i) => 'height:' + Math.round(h * 0.6) + 'px;background:' + (i === 5 ? ink : '#9DB6D9'));
+    v.wrSl = SL.map((x, i) => ({ n: i + 1, t: x[0], go: () => set({ wrI: i }), bd: i === si ? 'border:2px solid #1F6FB5' : 'border:1px solid #DDE4ED', dot: 'background:' + (x[3] ? '#70AD47' : '#F08C00') }));
+    v.wrChk = [{ t: 'รายงานประจำวันเซ็นครบ', n: 'เซ็นแล้ว 2/3 วันทำงาน · พ. 21 รอเซ็น', ok: 0 }, { t: 'แผน MP สัปดาห์ที่ 43', n: 'ซิงก์แล้ว · แผนสะสม ' + S.p + '%', ok: 1 }, { t: 'รูปหน้างาน', n: '12 รูปจากรายงานประจำวัน', ok: 1 }, { t: 'ปัญหาและแนวทางแก้ไข', n: 'รวมจากรายงานประจำวัน 3 ข้อ', ok: 1 }]
+      .map(c => Object.assign(c, { fix: !c.ok, m: c.ok ? '✓' : '!', st: c.ok ? 'background:#E2EFDA;color:#3B7420' : 'background:#F08C00;color:#fff', box: c.ok ? 'background:#F3F6FA' : 'background:#FFF4E5;border:1px solid #F5D6A8', nSt: c.ok ? 'color:#5B6B82' : 'color:#B45309' }));
+    // IEC 62446-1: seven steps of the test
+    const IS = ['ตั้งค่าระบบ', 'ก่อนออน · แรงดัน / กระแส', 'ก่อนออน · ฉนวน (IR)', 'หลังออน · แรงดัน / กระแส', 'พลังงานและ PR', 'ภาพถ่ายความร้อน', 'ตรวจและส่งออก'];
+    const nDone = late ? 0 : 1, nCur = late ? -1 : 1;
+    v.iec = late ? Object.assign({ sub: 'เริ่มได้เมื่อระบบ DC ครบ · แผนขั้น 6', btn: 'เริ่มตั้งค่าการทดสอบ' }, chip('ยังไม่เริ่ม', 'idle')) : Object.assign({ sub: 'ครบ 1/7 ขั้น · ขั้น 2 ขาด Voc 3 สตริง', btn: 'ทำต่อ · ขั้น 2 ก่อนออน' }, chip('กำลังทำ', 'info'));
+    v.iecSteps = IS.map((t, i) => { const dn = i < nDone, cu = i === nCur;
+      return { t, m: dn ? '✓' : String(i + 1), s: dn ? 'ยืนยันแล้ว' : cu ? 'ขาด Voc 3 สตริง · 17/20 สตริง' : i === 0 && late ? 'อินเวอร์เตอร์ · สตริง · SLD' : 'ยังไม่เริ่ม',
+        st: dn ? 'background:#70AD47;color:#fff' : cu ? 'background:#1F6FB5;color:#fff' : 'background:#EEF2F7;color:#7A8BA3', sSt: cu ? 'color:#B45309' : 'color:#5B6B82',
+        bar: 'background:' + (dn ? '#70AD47' : cu ? '#1F6FB5' : '#E6ECF3'), bd: i ? 'border-top:1px solid #EEF2F7' : '' }; });
+    v.iecFacts = [{ l: 'อินเวอร์เตอร์', v: late ? '—' : '2 เครื่อง' }, { l: 'สตริง', v: late ? '—' : '20' }, { l: 'ผู้ทดสอบ', v: late ? '—' : 'ทีม ' + S.team }];
+    // เอกสาร: the permit path of this station
+    const dk = st.dcK || 'muni';
+    const STG = [['muni', 'ขั้น 1 · เทศบาล', 'อ.1 / แจ้งเทศบาล', 4, late ? 2 : 4], ['grid', 'ขั้น 2 · กฟภ.', 'ขนานไฟ (กฟภ.)', 11, late ? 3 : 9], ['erc', 'ขั้น 3 · กกพ.', 'พค.2 (กกพ.)', 0, 0]];
+    const C2 = 2 * Math.PI * 24;
+    v.dcStages = STG.map(([k, kk, t, n, dn]) => { const skip = !n, full = n && dn === n;
+      return Object.assign({ k: kk, t, c: skip ? '–' : dn + '/' + n, s: skip ? 'ต่ำกว่า 200 kVA' : full ? 'ยื่นครบแล้ว' : 'ค้าง ' + (n - dn) + ' ฉบับ', on: dk === k ? 'true' : 'false',
+        ring: skip ? 'transparent' : full ? '#2E9E5B' : '#1F6FB5', dash: skip ? '0 ' + C2.toFixed(1) : (C2 * dn / n).toFixed(1) + ' ' + C2.toFixed(1),
+        bd: dk === k ? 'border:2px solid #1F6FB5' : 'border:1px solid #DDE4ED', go: () => { if (!skip) set({ dcK: k }); } }, chip(skip ? 'ไม่ต้องยื่น' : full ? 'ครบ ' + dn + '/' + n : 'กำลังยื่น', skip ? 'idle' : full ? 'ok' : 'info')); });
+    const nAll = 15, nDoneDc = late ? 5 : 13;
+    v.dc = { done: nDoneDc, all: nAll, pct: Math.round(nDoneDc / nAll * 100) };
+    v.dcLeg = [['ต้องทำ', late ? 6 : 1, '#F08C00'], ['รอผู้อื่น', late ? 4 : 1, '#7C5CD6'], ['ครบ / อนุมัติ', nDoneDc, '#2E9E5B'], ['ยังไม่ถึง', late ? 0 : 0, '#C9D3DF']].map(([t, n, c]) => ({ t, n, dot: 'background:' + c }));
+    v.dcCur = { t: STG.find(x => x[0] === dk)[1].replace('ขั้น ', '') + ' · ' + STG.find(x => x[0] === dk)[2] };
+    const LV = (n) => [0, 1, 2].map(i => i < n ? 'background:#2E9E5B' : 'background:#E6ECF3');
+    const DOC = { muni: [['4.1-01', 'แบบแปลน Forcon · วิศวกรโยธาลงนาม', 'ทีมเราทำ', 3], ['4.1-02', 'ใบ กว. วิศวกรโยธา', 'ดึงจากคลังกลาง', 3], ['4.1-03', 'สำเนาโฉนด + ทะเบียนบ้าน', 'ขอจาก กปภ.สาขา', late ? 1 : 3], ['4.1-04', 'หนังสือแจ้งเทศบาล (ยกเว้น ข.1)', 'เราร่าง → ผจก.สาขาลงนาม', late ? 0 : 3]],
+      grid: [['4.2-01', 'แบบฟอร์มขอขนานไฟ', 'ทีมเราทำ', late ? 2 : 3], ['4.2-02', 'Single Line Diagram ลงนาม', 'วิศวกรไฟฟ้า', late ? 1 : 3], ['4.2-03', 'Datasheet แผงและอินเวอร์เตอร์', 'ดึงจากคลังกลาง', 3], ['4.2-04', 'ผลทดสอบ IEC 62446', 'รอทดสอบ', late ? 0 : 1]] };
+    const tone = (n) => n === 3 ? ['อนุมัติแล้ว', 'ok', '#2E9E5B'] : n === 2 ? ['ยื่นแล้ว', 'info', '#1F6FB5'] : n === 1 ? ['ร่าง', 'warn', '#F08C00'] : ['ยังไม่เริ่ม', 'idle', '#9FB3CC'];
+    v.dcRows = (DOC[dk] || []).map(([c, t, s2, n]) => { const [ct, k, col] = tone(n); return Object.assign({ c, t, s: s2, lv: LV(n), fileSt: 'background:' + col }, chip(ct, k)); });
+    // ตั้งค่าเฉพาะโครงการ: grouped list, then one category
+    const COL = { team: '#7C5CD6', rpt: '#4F5BD5', dwg: '#0E9488', routine: '#2E8FDB', site: '#E8833A', iec: '#E5A100', info: '#1F6FB5', adv: '#8A94A6' };
+    const PI = { team: 'M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6M22 19v-1a4 4 0 0 0-3-3.9M16 4.6a3 3 0 0 1 0 5.8', rpt: 'M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4', dwg: 'M3 5h18v14H3zM3 10h18M9 10v9', routine: 'M4 5h16v15H4zM4 10h16M9 3v4M15 3v4', site: 'M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5', iec: 'M13 3L5 14h6l-1 7 8-11h-6z', info: 'M4 4h16v16H4zM8 8h8M8 12h8M8 16h5', adv: 'M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.2v.01' };
+    const tg = st.tg || {};
+    const R = (l, v2, h, x) => Object.assign({ l, v: v2, h: h || '', hasH: !!h, isGo: true }, x || {});
+    const P = (l, v2, ch, col) => R(l, v2, '', { isPpl: true, ini: l.replace(/^(นาย|น\.ส\.|นาง|ผู้รับเหมา [A-D] · คุณ)/, '').slice(0, 1), av: 'background:' + col, hasChip: true, ch, chSt: ch === 'ผู้จัดการ' ? 'background:#EFEAFB;color:#6B4FC9' : ch === 'ภายนอก' ? 'background:#FDF0E3;color:#B4610F' : 'background:#E3EEF8;color:#1F6FB5' });
+    const T2 = (k, l, h) => R(l, '', h, { isTog: true, isGo: false, onA: tg[k] === false ? 'false' : 'true', trk: tg[k] === false ? 'background:#E3E7EE;justify-content:flex-start' : 'background:#34C759;justify-content:flex-end', go: () => set({ tg: Object.assign({}, tg, { [k]: tg[k] === false }) }) });
+    const CATS = [
+      ['team', 'ทีมและสิทธิ์', 'ใครทำงานนี้ · ใครลงนาม · ผู้รับเหมาที่เห็นงานนี้', '3 คน', [['วิศวกรผู้ควบคุมงาน', [P('นายสมชาย ใจดี', 'somchai@tcroof.co', 'ผู้จัดการ', '#8B6CE0')], 'เปลี่ยนวิศวกรผู้ควบคุมงาน', 'ลงนามรายงานประจำวันและปิดการทดสอบ IEC'], ['ทีมงานของเรา', [P('นายวีระ ทองดี', 'weera@tcroof.co', 'ทีมงาน', '#2E8FDB'), P('น.ส.ปรียา แสงทอง', 'preeya@tcroof.co', 'ทีมงาน', '#2E8FDB')], 'เพิ่มคนจากรายชื่อทีม', 'งานนี้อยู่ใน “งานของฉัน” ของคนเหล่านี้'], ['ผู้รับเหมา', [P(S.ct + ' · คุณอนุชา', 'anucha@contractor.com', 'ภายนอก', '#E8833A')], 'เชิญผู้รับเหมา (ส่งลิงก์ติดตั้งแอป)', 'เห็นเฉพาะงานนี้ · ส่งคำขอและผล IEC']]],
+      ['rpt', 'หัวเอกสาร', 'ใช้ใน DAILY REPORT · คำขอรายสัปดาห์ · Weekly Report', '', [['หัวรายงาน', [R('หน่วยงาน กปภ.', 'กปภ.สาขา · กปภ.ข.7'), R('สัญญา / โครงการ', 'จ้างติดตั้งระบบผลิตไฟฟ้าจากพลังงานแสงอาทิตย์'), R('จาก (ผู้รับจ้าง)', 'บริษัท ทีซี รีนิวเอเบิล จำกัด'), R('ถึง (ผู้ว่าจ้าง)', 'การประปาส่วนภูมิภาค'), R('เวลาทำงาน', '08:00 – 18:00', 'ค่าเริ่มของรายงานแต่ละวัน')]]]],
+      ['dwg', 'แบบก่อสร้าง', 'อัปโหลดแบบและดูประวัติ REV', '4 แบบ', [['แบบของโครงการ', [R('E-01 Single Line Diagram', 'REV 01 · 12/10/2569'), R('A-01 Roof layout (DWG)', 'REV 02 · 18/10/2569'), R('A-02 Site plan', 'REV 00 · 24/9/2569'), R('S-01 Mounting', 'REV 00 · 24/9/2569')], 'อัปโหลดแบบ / REV ใหม่', 'อัปโหลด REV ใหม่ต้องใส่เหตุผลตั้งแต่ REV 01']]],
+      ['routine', 'รอบรายงาน', 'วันทำงานและวันส่งเอกสารประจำ', 'จ – ส', [['รอบการทำงาน', [R('วันทำงาน', 'จ – ส', 'วันหยุดราชการไม่นับ'), R('วันส่งคำขอรายสัปดาห์', 'ศ 15:00', 'ขออนุมัติก่อนเริ่มสัปดาห์'), R('วันประชุม Weekly Report', 'จ', 'รายงานสร้างอัตโนมัติ อา. 18:00'), R('ผู้รับรายงาน', 'ผู้ควบคุมงาน กปภ. · นายประเสริฐ มั่นคง')]], ['การแจ้งเตือน', [T2('r1', 'ส่งรายงานประจำวันในวันหยุด', 'เฉพาะวันที่มีงาน'), T2('n2', 'รายงานประจำวันยังไม่ส่ง', 'แจ้ง 17:30 ถ้ายังไม่ส่ง'), T2('n3', 'คำขอรายสัปดาห์และ Weekly Report', 'ก่อนกำหนดส่ง 1 วัน')]]]],
+      ['site', 'ผู้ติดต่อหน้างาน', 'เห็นเฉพาะทีม', '1 คน', [['ฝั่งลูกค้า', [P('นายประยุทธ ศรีสุข', 'ผู้ประสานงาน กปภ.สาขา · โทรได้จากหน้างาน', 'ลูกค้า', '#E8833A'), R('การเข้าพื้นที่', 'แลกบัตรที่ป้อมยาม · เข้าได้ 08:00–17:00')], 'เพิ่มผู้ติดต่อ']]],
+      ['iec', 'การเชื่อมต่อและ IEC', 'กำหนดชุดเอกสาร กปภ./กกพ. และเกณฑ์ทดสอบ', 'Zero Export', [['การเชื่อมต่อ', [R('การเชื่อมต่อ', 'Zero Export'), R('ขอยกเว้นใบอนุญาต กกพ.', 'ต่ำกว่า 200 kVA · ไม่ต้องยื่น')]], ['ทดสอบ IEC 62446', [R('เครื่องมือวัด', 'Fluke 1587 FC · สอบเทียบถึง 3/2570'), R('เกณฑ์ความต้านทานฉนวน', '≥ 1 MΩ'), T2('i1', 'ผู้รับเหมากรอกผลได้', 'ผู้รับเหมาส่งผล · ทีมปิดการทดสอบ')]]]],
+      ['info', 'ข้อมูลอ้างอิง', 'แก้ที่ต้นทาง · หน้านี้แสดงอย่างเดียว', '', [['จากรายงานสำรวจและแผน', [R('ประเภทงาน', 'งานโครงการ PWA', '', { isGo: false }), R('รายงานสำรวจ', 'SV-2569-0412 · ลงนาม REV 01'), R('วันเริ่มและกำหนดส่งมอบ', '24/9/2569 – ' + S.due + '/2569'), R('ไฟล์แผน MP', 'Master Plan Weekly.xlsx')]]]],
+      ['adv', 'ขั้นสูง', 'มีผลกับทั้งโครงการ', '', [['', [R('ส่งออกข้อมูลโครงการ', 'JSON + รูปทั้งหมด'), R('ย้ายกลับไปงานสำรวจ', 'แผน MP และรายงานประจำวันเก็บไว้', '', { vSt: 'color:#C0392B' }), R('ลบโครงการนี้', 'ลบจากทุกเครื่อง · กู้คืนไม่ได้', '', { vSt: 'color:#C0392B' })]]]]];
+    const tileOf = (k) => 'background:linear-gradient(160deg,' + COL[k] + 'E6,' + COL[k] + ')';
+    const cats = CATS.map(([k, t, s2, sum, groups]) => ({ k, t, s: s2, sum, ic: PI[k], tile: tileOf(k), tSt: k === 'adv' ? 'color:#C0392B' : 'color:#16325C', go: () => set({ psK: k }),
+      groups: groups.map(([l, rows, add, foot]) => ({ l, hasAdd: !!add && !foot ? true : !!add, add: add || '', hasFoot: !!foot, foot: foot || '',
+        rows: rows.map((r, i) => Object.assign({ bd: i ? 'border-top:1px solid #EEF2F7' : '', isPpl: false, hasChip: false, isTog: false, lSz: r.isPpl ? '15px' : '12.5px', lSt: r.isPpl ? 'font-weight:700;color:#16325C' : 'color:#5B6B82' }, r, r.isPpl ? { lSz: '14.5px', lSt: 'font-weight:700;color:#16325C', vSt: 'font-weight:400;font-size:12px;color:#5B6B82' } : {})) })) }));
+    const by = {}; cats.forEach(c => { by[c.k] = c; });
+    v.psGroups = [['โครงการ', ['team', 'rpt', 'dwg']], ['การทำงาน', ['routine', 'site', 'iec']], ['', ['info']], ['', ['adv']]].map(([l, ks]) => ({ l, hasL: !!l, items: ks.map((k, i) => Object.assign({}, by[k], { bd: i ? 'border-top:1px solid #EEF2F7' : '' })) }));
+    v.psList = !st.psK; v.psDet = !!st.psK; v.psC = by[st.psK] || cats[0]; v.psBack = () => set({ psK: null });
+    // แผนก่อสร้าง: the iPad tab (InstallTrackingPage plan, docs/ui/install-tracking-ipad-v2) on a 12-day axis of this station
+    {
+      const TD = S.today, D0 = new Date(S.start[0], S.start[1], S.start[2]), NDAY = 12, WAIT = 10;
+      const DT = Array.from({ length: NDAY }, (_, i) => new Date(D0.getFullYear(), D0.getMonth(), D0.getDate() + i));
+      const WD = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'], SUN = (i) => DT[i].getDay() === 0, DS = (i) => DT[Math.max(0, Math.min(NDAY - 1, i))].getDate() + '/' + (DT[Math.max(0, Math.min(NDAY - 1, i))].getMonth() + 1);
+      // stages [name, planStart, planEnd]; sub-tasks [name, start, end]
+      const ST = [['เตรียมงาน · รับวัสดุ', 0, 0], ['โครงสร้างรองรับ (Mounting)', 1, 2], ['ติดตั้งแผง · สายดินโครง', 3, 4], ['ระบบ DC · สาย · MC4 · ตู้ DC', 5, 7], ['อินเวอร์เตอร์ · ระบบ AC', 8, 8], ['ทดสอบ IEC 62446-1', 9, 9], ['ขนานไฟ · ส่งมอบ', 11, 11]];
+      const SUB = [
+        [['ปฐมนิเทศ · ใบอนุญาตที่สูง', 0, 0], ['Lifeline · ราวกันตก', 0, 0], ['ตรวจรับวัสดุตามใบส่งของ', 0, 0], ['กองวัสดุ · ป้ายกั้นพื้นที่', 0, 0]],
+        [['มาร์กจุดยึดตามแบบ', 1, 1], ['L-Feet + ซีลกันรั่ว โซน A–B', 1, 1], ['L-Feet + ซีลกันรั่ว โซน C', 2, 2], ['ติดตั้งรางและต่อราง', 1, 2], ['ตรวจระดับ · ขันแรงบิด', 2, 2]],
+        [['ยกแผงขึ้นหลังคา', 3, 3], ['แผงโซน A', 3, 3], ['แผงโซน B', 3, 4], ['แผงโซน C', 4, 4], ['สายดินโครงและแผง', 4, 4]],
+        [['สายสตริง 1–6 (โซน A)', 5, 5], ['สายสตริง 7–12 (โซน B, C)', 6, 6], ['ย้ำหัว MC4 · ตู้ DC', 6, 6], ['ตรวจขั้ว · วัด Voc ทุกสตริง', 7, 7], ['ป้ายเตือน · ป้ายสาย DC', 7, 7]],
+        [['ยึดอินเวอร์เตอร์', 8, 8], ['สาย AC เข้า MDB · เบรกเกอร์', 8, 8], ['กันย้อน (Zero Export) + CT', 8, 8], ['ระบบดิน · วัดค่าดิน', 8, 8], ['Data Logger · Monitoring', 8, 8]],
+        [['ตรวจพินิจ (Visual)', 9, 9], ['Continuity · Polarity · Voc/Isc', 9, 9], ['ฉนวน (IR) 1000 V', 9, 9], ['Anti-islanding · อินเวอร์เตอร์', 9, 9], ['เปิดระบบ · ภาพความร้อน', 9, 9]],
+        [['การไฟฟ้าตรวจ · เปลี่ยนมิเตอร์', 11, 11], ['ขนานไฟ · ตรวจค่าผลิต', 11, 11], ['อบรมผู้ใช้ · คู่มือ O&M', 11, 11], ['As-built · รายงาน IEC · ประกัน', 11, 11], ['Punch List · ลงนามรับมอบ', 11, 11]]];
+      const CREW = [6, 8, 8, 7, 4, 3, 4], CREWSUB = [[6, 2, 2, 2], [2, 4, 4, 4, 2], [8, 3, 3, 2, 2], [4, 3, 3, 2, 2], [2, 2, 2, 2, 1], [3, 2, 2, 2, 1], [2, 4, 2, 2, 2]], CAP = S.cap;
+      const done = S.done0, status = (i) => i < done ? 'done' : i === done ? 'cur' : 'wait';
+      const READY = { 1: [['วัสดุ', true, 'แผงครบตามใบส่งของ'], ['ทีม', !late, late ? 'ขาด 3 คน · ขอผู้รับเหมาเพิ่ม' : 'ทีม ' + S.team], ['อากาศ', true, 'ไม่มีฝนช่วงทำงาน']],
+        2: [['วัสดุ', true, 'แผงและแคลมป์ครบ'], ['ทีม', !late, late ? 'ขาด 3 คน' : 'ทีม ' + S.team], ['ใบอนุญาต', true, 'WP-01 งานที่สูง']],
+        5: [['เครื่องมือ', true, 'Insulation tester · Clamp meter'], ['ทีม', true, 'วิศวกรไฟฟ้า 1 คน'], ['ผู้ตรวจ', false, 'ยังไม่นัดผู้ควบคุมงาน']] };
+      const cv = st.cpView || 'gantt', ed = !!st.cpEd, mod = st.cpMod || {}, revN = st.cpRevN || 1;
+      const SUBM = SUB.map((L, i) => L.map((u, k) => { const m = mod[i + '-' + k] || {}, a0 = Math.min(Math.max(u[1] + (m.s || 0), 0), NDAY - 1), len = Math.max(u[2] - u[1] + 1 + (m.d || 0), 1); return [u[0], a0, Math.min(a0 + len - 1, NDAY - 1)]; }));
+      const setM = (key, f) => { const m = Object.assign({ s: 0, d: 0, c: 0 }, mod[key] || {}); f(m); const nm = Object.assign({}, mod, { [key]: m }); if (!m.s && !m.d && !m.c) delete nm[key]; set({ cpMod: nm }); };
+      // forecast: the running stage stretches by its rate; later stages follow it
+      const F = [];
+      ST.forEach((x, i) => { const s0 = status(i), dur = x[2] - x[1] + 1;
+        if (s0 === 'done') F.push([x[1], x[2]]);
+        else if (s0 === 'cur') { const el = TD - x[1] + 1, fr = S.curDone / SUB[i].length, tot = late && fr > 0 ? Math.ceil(el / fr) : dur; F.push([x[1], Math.max(TD, x[1] + Math.max(tot, dur) - 1)]); }
+        else { const s1 = Math.max(x[1], F[i - 1][1] + 1); F.push([s1, s1 + dur - 1]); } });
+      const W = 30, cur0 = ST.map((_, i) => status(i));
+      v.cpTw = NDAY * W; v.cpW = 150 + NDAY * W; v.cpTodayX = Math.max(0, TD * W - 90);
+      v.cpGantt = cv === 'gantt'; v.cpTable = cv === 'table';
+      v.cpViews = [['gantt', 'Gantt'], ['table', 'ตาราง']].map(([k, t]) => ({ t, on: cv === k ? 'true' : 'false', go: () => set({ cpView: k }), st: cv === k ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(14,30,56,0.15)' : 'background:none;color:#5B6B82' }));
+      v.cpRev = ed ? 'ร่าง REV 0' + (revN + 1) : revN > 1 ? 'REV 0' + revN + ' · รออนุมัติ' : 'Baseline REV 01';
+      v.cpRevSt = ed ? 'background:#FFF1DC;color:#B45309' : revN > 1 ? 'background:#FFF1DC;color:#B45309' : 'background:#E3EEF8;color:#1F6FB5';
+      v.cpNext = 'REV 0' + (revN + 1);
+      v.cpSub = 'อนุมัติ ' + DS(0) + '/2569 · ' + DS(0) + '/2569 – ' + DS(NDAY - 1) + '/2569';
+      const nSub = SUB.reduce((a, x) => a + x.length, 0), work = DT.filter((_, i) => !SUN(i) && i !== WAIT).length;
+      v.cpK = [{ l: 'ระยะเวลา', v: NDAY + ' วัน', vSt: 'color:#16325C' }, { l: 'วันทำงาน', v: work + ' วัน', vSt: 'color:#16325C' }, { l: 'งานย่อย', v: nSub + ' งาน', vSt: 'color:#16325C' },
+        { l: 'สถานะแผน', v: late ? 'ช้ากว่าแผน' : 'ตามแผน', vSt: 'color:' + (late ? '#C0392B' : '#3B7420') }];
+      v.cpDays = DT.map((d, i) => ({ d: d.getDate(), w: WD[d.getDay()], st: i === TD ? 'color:#C0392B' : SUN(i) ? 'color:#B0506A' : 'color:#5B6B82', nSt: i === TD ? 'color:#fff;background:#C0392B;border-radius:999px;padding:0 5px' : '' }));
+      v.cpShade = DT.map((_, i) => ({ st: i === TD ? 'background:rgba(192,57,43,0.07);box-shadow:inset 1px 0 0 rgba(192,57,43,0.55)' : i === WAIT ? 'background:repeating-linear-gradient(135deg,rgba(143,163,188,0.18) 0 6px,transparent 6px 12px)' : SUN(i) ? 'background:#F8FAFC' : '' }));
+      const BAR = { done: '#2E9E5B', cur: '#1F6FB5', wait: '#AFC0D4' }, STT = { done: ['เสร็จ', 'background:#E2EFDA;color:#3B7420'], cur: ['กำลังทำ', 'background:#E3EEF8;color:#1F6FB5'], wait: ['ตามแผน', 'background:#EEF2F7;color:#5B6B82'] };
+      const exp = Object.assign({ [done]: true }, st.cpExp || {});
+      const pos = (a, b, m) => 'left:' + (a * W + m) + 'px;width:' + ((b - a + 1) * W - 2 * m) + 'px;';
+      const all = [], vis = [];
+      ST.forEach((x, i) => {
+        const s0 = cur0[i], f = F[i], a0 = Math.min(f[0], ...SUBM[i].map((u) => u[1])), a1 = Math.max(f[1], ...SUBM[i].map((u) => u[2]));
+        const pc = s0 === 'done' ? 100 : s0 === 'cur' ? Math.round(S.curDone / SUB[i].length * 100) : 0, lateBar = s0 === 'cur' && f[1] > x[2];
+        const row = { code: String(i + 1), n: x[0], dur: String(a1 - a0 + 1), crew: String(CREW[i]), pred: i ? String(i) : '–', pad: '6px', lines: 2, th: '44px', cur: 'pointer', ex: exp[i] ? 'true' : 'false',
+          chSt: 'transition:transform .15s;' + (exp[i] ? 'transform:rotate(90deg)' : ''), nSt: 'font-size:12.5px;font-weight:700', lblBg: s0 === 'cur' ? 'background:#F4F8FD' : 'background:#fff',
+          tog: () => set({ cpExp: Object.assign({}, exp, { [i]: !exp[i] }) }), rowSt: 'min-height:40px;border-top:1px solid #EEF2F7;' + (s0 === 'cur' ? 'background:rgba(31,111,181,0.04)' : ''),
+          aria: x[0] + ' ' + DS(a0) + '–' + DS(a1) + ' · ' + STT[s0][0] + ' ' + pc + '%' + (exp[i] ? ' · ซ่อนงานย่อย' : ' · แสดงงานย่อย'), flSt: 'display:none',
+          barSt: pos(a0, a1, 2) + 'height:20px;border-radius:6px;background:#DCE5EF;' + (s0 !== 'done' ? 'box-shadow:inset 0 0 0 2px ' + (lateBar ? '#C0392B' : '#C0392B') : ''),
+          fillSt: 'width:' + pc + '%;background:' + (s0 === 'done' ? '#2E9E5B' : lateBar ? '#D9453B' : '#16325C'),
+          lblSt: 'display:block;padding:0 5px;font-size:10.5px;line-height:20px;white-space:nowrap;color:' + (pc >= 50 ? '#fff' : '#16325C'), lbl: a1 > a0 ? pc + '%' : '',
+          d0: DS(a0), d1: DS(a1), stT: lateBar ? 'ช้า ' + (f[1] - x[2]) + ' วัน' : STT[s0][0], stSt: lateBar ? 'background:#FDECEA;color:#B42318' : STT[s0][1], tRowSt: 'background:#F6F8FB;font-weight:700', tLblBg: 'background:#F6F8FB', ed: false, ro: true, lk: '' };
+        all.push(row); vis.push(row);
+        SUBM[i].forEach((u, k) => {
+          const ss = s0 === 'done' ? 'done' : s0 === 'cur' ? (k < S.curDone ? 'done' : u[1] <= TD ? 'cur' : 'wait') : 'wait', fl = a1 - u[2];
+          const key = i + '-' + k, m = mod[key] || {}, can = ed && ss !== 'done', HL = 'background:#FFF1DC;color:#9A4A06', crew0 = CREWSUB[i][k] || 2;
+          const r = { code: (i + 1) + '.' + (k + 1), n: u[0], dur: String(u[2] - u[1] + 1), crew: String(crew0 + (m.c || 0)), pred: k ? (i + 1) + '.' + k : (i ? String(i) : '–'),
+            pad: '16px', lines: 1, th: ed ? '48px' : '36px', cur: 'default', ex: 'false', chSt: 'visibility:hidden', nSt: 'font-size:12px', lblBg: 'background:#fff', tog: () => {}, rowSt: 'min-height:30px',
+            aria: u[0] + ' ' + DS(u[1]) + '–' + DS(u[2]) + ' · ' + STT[ss][0] + (fl > 0 ? ' · เผื่อ ' + fl + ' วัน' : ''),
+            flSt: fl > 0 ? pos(u[2] + 1, a1, 4) + 'height:0;border-top:2px dotted #8FA3BC' : 'display:none',
+            barSt: pos(u[1], u[2], 4) + 'height:10px;border-radius:5px;background:' + BAR[ss] + (fl === 0 && ss !== 'done' ? ';box-shadow:0 0 0 1.5px #C0392B' : ''), fillSt: 'display:none', lblSt: 'display:none', lbl: '',
+            d0: DS(u[1]), d1: DS(u[2]), stT: STT[ss][0], stSt: STT[ss][1], tRowSt: '', tLblBg: 'background:#fff',
+            ed: can, ro: !can, lk: ed && ss === 'done' ? '🔒 ' : '', d0St: m.s ? HL : '', d1St: m.s || m.d ? 'font-weight:700;color:#9A4A06' : '', durSt: m.d ? HL : '', crewSt: m.c ? HL : '',
+            sL: () => setM(key, (q) => { if (u[1] > 0) q.s -= 1; }), sR: () => setM(key, (q) => { if (u[2] < NDAY - 1) q.s += 1; }),
+            dM: () => setM(key, (q) => { if (u[2] > u[1]) q.d -= 1; }), dP: () => setM(key, (q) => { if (u[2] < NDAY - 1) q.d += 1; }),
+            cM: () => setM(key, (q) => { if (crew0 + (q.c || 0) > 1) q.c -= 1; }), cP: () => setM(key, (q) => { q.c += 1; }) };
+          all.push(r); if (exp[i]) vis.push(r); });
+      });
+      v.cpRows = vis; v.cpRowsAll = all;
+      v.cpCols = 'grid-template-columns:' + (ed ? '170px 112px 44px 96px 96px 52px 76px' : '170px 56px 48px 36px 36px 52px 76px');
+      v.cpTabW = ed ? 646 : 474;
+      const MS = [['เริ่มงานหน้างาน', 0], ['ติดตั้งแผงครบ', 4], ['ทดสอบ IEC 62446-1', 9], ['ขนานไฟ · ส่งมอบ กปภ.', 11]];
+      const msS = (d) => d < TD ? ['ผ่านแล้ว', 'background:#E2EFDA;color:#3B7420', 'background:#2E9E5B'] : d === TD ? ['วันนี้', 'background:#FDECEA;color:#B42318', 'background:#C0392B'] : ['อีก ' + (d - TD) + ' วัน', 'background:#E3EEF8;color:#1F6FB5', 'background:#fff;box-shadow:inset 0 0 0 2px #16325C'];
+      v.cpMs = MS.map(([t, d]) => ({ t, d: DS(d), st: 'left:' + (d * W + 9) + 'px;' + msS(d)[2] }));
+      v.cpMsL = MS.map(([t, d]) => ({ t, d: 'กำหนด ' + DS(d) + '/2569', s: msS(d)[0], pSt: msS(d)[1], dSt: msS(d)[2] }));
+      const load = DT.map((_, d) => ST.reduce((a, x, i) => a + (F[i][0] <= d && d <= F[i][1] ? CREW[i] : 0), 0)), lmax = Math.max(CAP + 2, ...load);
+      v.cpHist = load.map((n, d) => ({ t: n || '', st: 'height:' + Math.round(n / lmax * 80) + 'px;background:' + (n > CAP ? '#E0574A' : d < TD ? '#9FC9A9' : d === TD ? '#1F6FB5' : '#AFC0D4') }));
+      v.cpCapSt = 'bottom:' + Math.round(CAP / lmax * 80) + 'px'; v.cpCapT = 'เส้นประ = ทีม ' + CAP + ' คน'; v.cpHistA = 'กำลังคนตามแผนรายวัน ' + load.join(', ') + ' คน';
+      const over = load.map((n, d) => n > CAP ? DS(d) : null).filter(Boolean);
+      v.cpPeakT = over.length ? 'เกินกำลัง ' + over.join(', ') + ' · ขยับงานที่มีเวลาเผื่อ หรือเพิ่มคน' : 'ไม่มีวันที่เกินกำลังทีม'; v.cpPeakC = over.length ? '#C0392B' : '#3B7420';
+      const nx = Math.min(done + 1, 6);
+      v.cpNextT = 'ขั้น ' + (nx + 1) + ' · ' + ST[nx][0];
+      v.cpReady = (READY[nx] || [['ทีม', true, 'ทีม ' + S.team], ['การไฟฟ้า', false, 'รอนัดวันตรวจ']]).map(([l, ok, n]) => ({ l, n, ic: ok ? '✓' : '!', icSt: ok ? 'background:#E2EFDA;color:#3B7420' : 'background:#FFF1DC;color:#B45309' }));
+      v.cpEdOn = ed; v.cpEdOff = !ed;
+      v.cpEdit = () => set({ cpEd: true, cpView: 'table', cpMod0: mod, cpWhy: '', cpXl: false });
+      v.cpCancel = () => set({ cpEd: false, cpMod: st.cpMod0 || {}, cpWhy: '', toast: 'ยกเลิกการแก้แผน' });
+      const m0 = st.cpMod0 || {}, nMod = Array.from(new Set(Object.keys(mod).concat(Object.keys(m0)))).filter((k) => JSON.stringify(mod[k] || null) !== JSON.stringify(m0[k] || null)).length, why = (st.cpWhy || '').trim(), okSave = nMod > 0 && why.length > 0;
+      v.cpModN = nMod ? 'แก้แล้ว ' + nMod + ' งาน' : 'ยังไม่ได้แก้'; v.cpWhy = st.cpWhy || ''; v.cpWhyOn = (e) => set({ cpWhy: e.target.value });
+      v.cpSaveT = 'บันทึก REV 0' + (revN + 1) + (nMod ? ' · ' + nMod + ' งาน' : ''); v.cpSaveDis = okSave ? 'false' : 'true';
+      v.cpSaveSt = okSave ? 'background:#1F6FB5;cursor:pointer' : 'background:#9FB3CC;cursor:default';
+      v.cpSave = () => okSave ? set({ cpEd: false, cpRevN: revN + 1, toast: 'บันทึกแผน REV 0' + (revN + 1) + ' แล้ว · ส่งผู้ควบคุมงาน กปภ. อนุมัติ' }) : set({ toast: nMod ? 'ใส่เหตุผลการแก้แผนก่อนบันทึก' : 'ยังไม่มีการแก้ไข' });
+      v.cpXlOpen = !!st.cpXl; v.cpXlExp = st.cpXl ? 'true' : 'false'; v.cpXlGo = () => set({ cpXl: !st.cpXl });
+      v.cpXlSub = '.xlsx · แผน REV 0' + revN + ' ทุกงานย่อย';
+      // export: a real .xlsx (stored zip, inline strings), offered through the downloads capability
+      const xlsxOf = (sheet, rows) => {
+        const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'), col = (i) => String.fromCharCode(65 + i);
+        const xmlRows = rows.map((r, ri) => '<row r="' + (ri + 1) + '">' + r.map((c, ci) => { const ref = col(ci) + (ri + 1);
+          return typeof c === 'number' ? '<c r="' + ref + '"><v>' + c + '</v></c>' : '<c r="' + ref + '" t="inlineStr"' + (ri === 0 ? ' s="1"' : '') + '><is><t xml:space="preserve">' + esc(c) + '</t></is></c>'; }).join('') + '</row>').join('');
+        const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', NS = 'http://schemas.openxmlformats.org/', R = NS + 'officeDocument/2006/relationships';
+        const Fx = {
+          '[Content_Types].xml': X + '<Types xmlns="' + NS + 'package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
+          '_rels/.rels': X + '<Relationships xmlns="' + NS + 'package/2006/relationships"><Relationship Id="rId1" Type="' + R + '/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+          'xl/workbook.xml': X + '<workbook xmlns="' + NS + 'spreadsheetml/2006/main" xmlns:r="' + R + '"><sheets><sheet name="' + esc(sheet) + '" sheetId="1" r:id="rId1"/></sheets></workbook>',
+          'xl/_rels/workbook.xml.rels': X + '<Relationships xmlns="' + NS + 'package/2006/relationships"><Relationship Id="rId1" Type="' + R + '/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="' + R + '/styles" Target="styles.xml"/></Relationships>',
+          'xl/styles.xml': X + '<styleSheet xmlns="' + NS + 'spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Tahoma"/></font><font><b/><sz val="11"/><name val="Tahoma"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" applyFont="1"/></cellXfs></styleSheet>',
+          'xl/worksheets/sheet1.xml': X + '<worksheet xmlns="' + NS + 'spreadsheetml/2006/main"><cols><col min="1" max="1" width="8" customWidth="1"/><col min="2" max="2" width="40" customWidth="1"/><col min="3" max="8" width="12" customWidth="1"/></cols><sheetData>' + xmlRows + '</sheetData></worksheet>' };
+        const enc = new TextEncoder(), CRC = [];
+        for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; }
+        const crc = (b) => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+        const parts = [], cen = []; let off = 0;
+        const u16 = (x) => [x & 255, (x >> 8) & 255], u32 = (x) => [x & 255, (x >> 8) & 255, (x >> 16) & 255, (x >>> 24) & 255];
+        Object.keys(Fx).forEach((name) => { const nb = enc.encode(name), db = enc.encode(Fx[name]), c = crc(db);
+          const lh = [].concat([0x50, 0x4b, 3, 4], u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(c), u32(db.length), u32(db.length), u16(nb.length), u16(0));
+          parts.push(new Uint8Array(lh), nb, db);
+          cen.push(new Uint8Array([].concat([0x50, 0x4b, 1, 2], u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(c), u32(db.length), u32(db.length), u16(nb.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(off))), nb);
+          off += lh.length + nb.length + db.length; });
+        const cenLen = cen.reduce((a, b) => a + b.length, 0), n = Object.keys(Fx).length;
+        const end = new Uint8Array([].concat([0x50, 0x4b, 5, 6], u16(0), u16(0), u16(n), u16(n), u32(cenLen), u32(off), u16(0)));
+        return new Blob(parts.concat(cen, [end]), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); };
+      v.cpXlExport = async () => {
+        set({ cpXl: false });
+        const rows = [['WBS', 'งาน', 'เริ่ม', 'เสร็จ', 'วัน', 'คน', 'ต่อจาก', 'สถานะ']].concat(all.map((r) => [r.code, r.n, r.d0 + '/2569', r.d1 + '/2569', Number(r.dur), Number(r.crew), r.pred, r.stT]));
+        const name = 'แผนก่อสร้าง_' + S.short + '_REV0' + revN + '.xlsx', blob = xlsxOf('แผนก่อสร้าง REV 0' + revN, rows);
+        try { const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+          if (dl) { await dl.save({ filename: name, data: blob }); set({ toast: 'บันทึก ' + name + ' แล้ว · ' + all.length + ' แถว' }); return; }
+        } catch (e) { if (e && e.code === 'declined') { set({ toast: 'ยกเลิกการดาวน์โหลด' }); return; } }
+        try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); set({ toast: 'ดาวน์โหลด ' + name + ' · ' + all.length + ' แถว' }); }
+        catch (e) { set({ toast: 'ดาวน์โหลดไม่ได้ในมุมมองนี้' }); } };
+      v.cpImpOpen = !!st.cpImp; v.cpImpGo = () => set({ cpXl: false, cpImp: true, cpImpM: st.cpImpM || 'plan' });
+      v.cpImpClose = () => set({ cpImp: false }); v.cpImpPick = () => set({ toast: 'เปิดตัวเลือกไฟล์ (.xlsx)' });
+      const CK = (k, t, n) => ({ t, n, ic: k === 'ok' ? '✓' : '!', bg: k === 'ok' ? 'background:#fff' : 'background:#FFF8F0', icSt: 'width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;' + (k === 'ok' ? 'background:#E8F5EE;color:#1F6B43' : 'background:#E8A15A;color:#fff') });
+      v.cpImpChk = [CK('ok', 'ชื่อสถานีในไฟล์ตรงกับงานนี้', S.name + ' · ' + S.kwp + ' kWp'), CK('ok', 'อ่านแผนได้ครบ', '7 ขั้น · ' + nSub + ' งานย่อย · ' + DS(0) + ' – ' + DS(NDAY - 1) + '/2569'), CK('warn', 'สูตร 2 ช่องที่แอปคำนวณเองไม่ได้', 'ใช้ค่าที่ Excel บันทึกไว้ · Excel คำนวณใหม่เมื่อเปิดไฟล์')];
+      const DIFF = [['5.2', 'สาย AC เข้า MDB · เบรกเกอร์', 'เริ่ม', DS(8), DS(9), '4-1', { s: 1 }], ['5.2', 'สาย AC เข้า MDB · เบรกเกอร์', 'วัน', '1', '2', '4-1', { d: 1 }], ['4.4', 'ตรวจขั้ว · วัด Voc ทุกสตริง', 'คน', '2', '3', '3-3', { c: 1 }], ['6.3', 'ฉนวน (IR) 1000 V', 'เริ่ม', DS(9), DS(10), '5-2', { s: 1 }]];
+      v.cpImpDiff = DIFF.map(([c, n, k, a, b]) => ({ c, n, k, a, b })); v.cpImpN = DIFF.length + ' จุด · 3 งาน';
+      const im = st.cpImpM || 'plan';
+      v.cpImpModes = [['plan', 'นำเข้าแผนทั้งหมด', 'แทนแผนในแอปด้วยไฟล์ · สร้าง REV 0' + (revN + 1) + ' · ความก้าวหน้าที่บันทึกไว้ยังอยู่'], ['prog', 'รับเฉพาะความก้าวหน้า', 'แผนในแอปไม่เปลี่ยน · รับเฉพาะ % ที่แก้ใน Excel หลังส่งออกครั้งล่าสุด']].map(([k, t, n]) => ({ t, n, on: im === k ? 'true' : 'false', go: () => set({ cpImpM: k }),
+        st: im === k ? 'border:2px solid #1D6F42;background:#F1F8F4' : 'border:1px solid #DDE4ED;background:#fff', dot: im === k ? 'border:6px solid #1D6F42;background:#fff' : 'border:2px solid #B9C6D6' }));
+      v.cpImpDoT = im === 'plan' ? 'นำเข้า · สร้าง REV 0' + (revN + 1) : 'รับความก้าวหน้า';
+      v.cpImpDo = () => { if (im !== 'plan') { set({ cpImp: false, toast: 'รับความก้าวหน้าจากไฟล์แล้ว · แผนไม่เปลี่ยน' }); return; }
+        const nm = Object.assign({}, mod); DIFF.forEach((x) => { const m = Object.assign({ s: 0, d: 0, c: 0 }, nm[x[5]] || {}); Object.keys(x[6]).forEach((q) => { m[q] = (m[q] || 0) + x[6][q]; }); nm[x[5]] = m; });
+        set({ cpImp: false, cpMod: nm, cpRevN: revN + 1, cpView: 'gantt', toast: 'นำเข้าแผนจาก Excel แล้ว · REV 0' + (revN + 1) + ' · เปลี่ยน ' + DIFF.length + ' จุด' }); };
+      v.cpExport = () => set({ toast: 'ส่งออกแผนก่อสร้าง PDF (A3 แนวนอน)' });
+      // ภาพรวม: the iPad overview (KPI strip, progress vs plan as Gantt or S-curve, project documents, site panel)
+      {
+        const ovv = st.ovView || 'gantt', oexp = Object.assign({ [done]: true }, st.ovExp || {});
+        v.ovViews = [['gantt', 'Gantt'], ['curve', 'S-Curve']].map(([k, t]) => ({ t, on: ovv === k ? 'true' : 'false', go: () => set({ ovView: k }), st: ovv === k ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(14,30,56,0.15)' : 'background:none;color:#5B6B82' }));
+        v.ovGantt = ovv === 'gantt'; v.ovCurve = ovv === 'curve';
+        const endF = F[6][1], slip = endF - ST[6][2], FD = new Date(D0.getFullYear(), D0.getMonth(), D0.getDate() + endF), fcD = FD.getDate() + '/' + (FD.getMonth() + 1);
+        v.ovSub = DS(0) + ' – ' + DS(NDAY - 1) + '/2569 · 7 ขั้นตอน · ' + nSub + ' งานย่อย';
+        v.ovFc = slip > 0 ? 'คาดส่งมอบ ' + fcD + ' · ช้า ' + slip + ' วัน' : 'คาดส่งมอบ ' + fcD + ' ตามกำหนด';
+        v.ovFcSt = slip > 0 ? 'background:#FDE7E4;color:#C0392B' : 'background:#E2EFDA;color:#3B7420';
+        v.ovK = [{ l: 'ความคืบหน้า', v: S.a + '%', n: 'แผน ' + S.p + '% · ▲' + S.gain + '% สัปดาห์นี้', ink: 'color:#1F6FB5' },
+          { l: 'กำหนดการ', v: late ? 'ช้ากว่าแผน' : 'ตามแผน', n: (S.a - S.p > 0 ? '+' : '') + (S.a - S.p) + '%', ink: 'color:' + (late ? '#B42318' : '#3B7420') },
+          { l: 'คาดส่งมอบ', v: fcD, n: slip > 0 ? 'ช้า ' + slip + ' วัน' : 'ตามกำหนด', ink: 'color:' + (slip > 0 ? '#B42318' : '#16325C') },
+          { l: 'SPI', v: S.spi, n: late ? 'ต่ำกว่าแผน' : 'ปกติ', ink: 'color:' + (late ? '#B42318' : '#3B7420') }]
+          .map((k, i) => Object.assign(k, { bd: (i % 2 ? 'border-left:1px solid #EEF2F7;' : '') + (i > 1 ? 'border-top:1px solid #EEF2F7' : '') }));
+        const WX = ['☀', '⛅', '☀', '☂', '☀', '⛅', '☀ 10%', '⛅ 20%', '☂ 70%', '☂ 60%', '⛅ 30%', '☀ 10%'];
+        v.ovDays = DT.map((d, i) => { const w = WX[(i + (late ? 3 : 0)) % 12], pr = parseInt(w.split(' ')[1] || '0');
+          return { d: d.getDate(), w: WD[d.getDay()], xi: w.split(' ')[0], xp: i >= TD ? (w.split(' ')[1] || '') : '', st: i === TD ? 'color:#C0392B' : SUN(i) ? 'color:#B0506A' : 'color:#5B6B82', nSt: i === TD ? 'color:#fff;background:#C0392B;border-radius:999px;padding:0 5px' : '',
+            xSt: i >= TD ? (pr >= 50 ? 'color:#C0392B;font-weight:700' : 'color:#1F6FB5') : 'color:#8FA3BC' }; });
+        v.ovTodayL = 150 + TD * W + W / 2 - 1;
+        const at = (a, b, m, h) => 'left:' + (a * W + m) + 'px;width:' + Math.max((b - a + 1) * W - 2 * m, 6) + 'px;height:' + h + 'px;';
+        const rows = [];
+        ST.forEach((x, i) => { const s0 = cur0[i], f = F[i], n5 = SUB[i].length, dn = s0 === 'done' ? n5 : s0 === 'cur' ? S.curDone : 0, pc = Math.round(dn / n5 * 100);
+          const over = s0 !== 'done' && f[1] > x[2], shifted = s0 === 'wait' && f[0] !== x[1];
+          rows.push({ n: x[0], sub: 'งานย่อย ' + dn + '/' + n5 + ' · ' + pc + '%', subSt: '', pad: '8px', cur: 'pointer', ex: oexp[i] ? 'true' : 'false', nSt: 'font-size:12.5px;font-weight:700',
+            ic: s0 === 'done' ? '✓' : String(i + 1), icSt: s0 === 'done' ? 'background:#2E9E5B;color:#fff' : s0 === 'cur' ? 'background:#1F6FB5;color:#fff' : 'background:#EEF2F7;color:#5B6B82',
+            lblBg: s0 === 'cur' ? 'background:#F4F8FD' : 'background:#fff', rowSt: 'min-height:44px;border-top:1px solid #EEF2F7;' + (s0 === 'cur' ? 'background:rgba(31,111,181,0.04)' : ''),
+            aria: x[0] + ' · ' + pc + '%' + (over ? ' · เกินแผน ' + (f[1] - x[2]) + ' วัน' : ''), tog: () => set({ ovExp: Object.assign({}, oexp, { [i]: !oexp[i] }) }),
+            ghost: s0 === 'done' ? 'display:none' : at(x[1], x[2], 2, 16) + 'border-radius:8px;background:#E6ECF3',
+            bar: s0 === 'done' ? at(f[0], f[1], 2, 14) + 'border-radius:7px;background:#5DAA45' : s0 === 'cur' ? at(x[1], TD, 2, 14) + 'border-radius:7px;background:' + (late ? '#D9453B' : '#1F6FB5') : 'display:none',
+            fc: (s0 === 'cur' && f[1] > TD) || shifted ? at(s0 === 'cur' ? TD + 1 : f[0], Math.min(f[1], NDAY - 1), 2, 14) + 'border-radius:7px;border:1.5px dashed #6C9BD2;background:rgba(108,155,210,0.08)' : 'display:none',
+            over: over && s0 === 'cur' ? at(x[2] + 1, Math.min(f[1], NDAY - 1), 2, 12) + 'border-radius:3px;background:repeating-linear-gradient(135deg,#E0574A 0 3px,#F7C3BD 3px 6px)' : 'display:none',
+            oT: '+' + (f[1] - x[2]) + ' วัน', oLbl: over && s0 === 'cur' && f[1] + 1 < NDAY ? 'left:' + ((Math.min(f[1], NDAY - 1) + 1) * W + 4) + 'px' : 'display:none' });
+          if (oexp[i]) SUB[i].forEach((u, k) => { const ss = s0 === 'done' ? 'done' : s0 === 'cur' ? (k < S.curDone ? 'done' : 'cur') : 'wait';
+            rows.push({ n: u[0], sub: ss === 'done' ? '100%' : '0%', subSt: ss === 'done' ? 'color:#3B7420' : '', pad: '16px', cur: 'default', ex: 'false', nSt: 'font-size:12px', ic: '', icSt: 'width:8px;height:8px;background:' + (ss === 'done' ? '#5DAA45' : ss === 'cur' ? '#1F6FB5' : '#C9D3DF'),
+              lblBg: 'background:#fff', rowSt: 'min-height:38px', aria: u[0], tog: () => {}, ghost: 'display:none', fc: 'display:none', over: 'display:none', oLbl: 'display:none', oT: '',
+              bar: at(u[1], u[2], 4, 6) + 'border-radius:3px;background:' + (ss === 'done' ? '#5DAA45' : ss === 'cur' ? '#8DB8E6' : '#DCE5EF') }); }); });
+        v.ovRows = rows;
+        const MS2 = [['ยื่นขนานไฟ', 0], ['RFI-01', 2], ['RFI-02', 4], ['RFI-03', 7], ['ทดสอบ', 9], ['ส่งมอบ', 11]];
+        v.ovMs = MS2.map(([t, d]) => ({ t, pos: 'left:' + (d * W + W / 2 - 30) + 'px', dSt: d < TD ? 'background:#16325C' : 'background:#fff;box-shadow:inset 0 0 0 1.5px #16325C' }));
+        const PAY = [['งวด 1 · 40%', late ? 'รอส่งงาน' : 'วางบิลแล้ว', 4, !late], ['งวด 2 · 40%', 'ทดสอบผ่าน', 9, false], ['งวด 3 · 20%', 'ส่งมอบ', 11, false]];
+        v.ovPay = PAY.map(([t, s2, d, ok]) => ({ t, s: s2, pos: 'left:' + Math.min(d * W + W / 2 - 30, NDAY * W - 60) + 'px', bSt: 'background:' + (ok ? '#1F6FB5' : '#9FB3CC'), sSt: 'color:' + (ok ? '#1F6FB5' : '#7A8BA3') }));
+        // S-curve: plan through แผน today, actual to today, forecast to the end
+        const WT = [5, 20, 25, 20, 15, 10, 5];
+        const cum = (spans, d) => ST.reduce((a, x, i) => { const [s1, e1] = spans[i]; return a + WT[i] * Math.max(0, Math.min(1, (d - s1 + 1) / (e1 - s1 + 1))); }, 0);
+        const planR = DT.map((_, d) => cum(ST.map((x) => [x[1], x[2]]), d)), pT = planR[TD];
+        const plan = planR.map((y, d) => d <= TD ? y * S.p / pT : S.p + (y - pT) * (100 - S.p) / Math.max(1, 100 - pT));
+        const actR = DT.map((_, d) => cum(F, d)), aT = actR[TD];
+        const act = actR.map((y, d) => d <= TD ? y * S.a / Math.max(aT, 1) : S.a + (y - aT) * (100 - S.a) / Math.max(1, 100 - aT));
+        const X0 = 30, XW = 304, cx = (d) => X0 + (d + 0.5) * XW / NDAY, cy = (y) => 200 - y * 1.9;
+        const path = (arr, a0, a1) => arr.slice(a0, a1 + 1).map((y, k) => (k ? 'L' : 'M') + cx(a0 + k).toFixed(1) + ' ' + cy(y).toFixed(1)).join(' ');
+        v.scPlan = path(plan, 0, NDAY - 1); v.scAct = path(act, 0, TD); v.scFc = path(act, TD, NDAY - 1);
+        v.scArea = 'M' + cx(0).toFixed(1) + ' 200 ' + act.slice(0, TD + 1).map((y, k) => 'L' + cx(k).toFixed(1) + ' ' + cy(y).toFixed(1)).join(' ') + ' L' + cx(TD).toFixed(1) + ' 200 Z';
+        v.scTx = cx(TD).toFixed(1); v.scTagX = (cx(TD) - 26).toFixed(1); v.scTd = DS(TD);
+        v.scPy = cy(S.p).toFixed(1); v.scAy = cy(S.a).toFixed(1); v.scLx = (cx(TD) - 7).toFixed(1);
+        const hi = S.p >= S.a; v.scPly = (cy(S.p) + (hi ? -6 : 12)).toFixed(1); v.scAly = (cy(S.a) + (hi ? 12 : -6)).toFixed(1);
+        v.scGrid = [0, 25, 50, 75, 100].map((y) => ({ y: cy(y), ty: cy(y) + 3, t: y + '%' }));
+        v.scX = DT.map((d, i) => ({ x: cx(i).toFixed(1), t: d.getDate(), f: i === TD ? '#C0392B' : SUN(i) ? '#B0506A' : '#5B6B82', w: i === TD ? '700' : '400' }));
+        v.scShade = [{ x: (X0 + TD * XW / NDAY).toFixed(1), w: (XW / NDAY).toFixed(1), f: 'rgba(192,57,43,0.07)' }, { x: (X0 + WAIT * XW / NDAY).toFixed(1), w: (XW / NDAY).toFixed(1), f: 'rgba(143,163,188,0.16)' }];
+        v.scBars = DT.map((_, d) => { const pd = Math.max(0, plan[d] - (d ? plan[d - 1] : 0)), ad = d <= TD ? Math.max(0, act[d] - (d ? act[d - 1] : 0)) : 0, x = cx(d);
+          return { x: (x - 8).toFixed(1), x2: (x + 1).toFixed(1), py: (200 - pd * 3).toFixed(1), ph: (pd * 3).toFixed(1), ay: (200 - ad * 3).toFixed(1), ah: (ad * 3).toFixed(1) }; });
+        v.scEnd = 'คาดเสร็จ ' + fcD + ' · 100%';
+        v.scA = 'S-Curve แผนสะสม ' + S.p + '% งานจริง ' + S.a + '% ณ วันนี้';
+        // project documents (iPad tiles)
+        const DOT = { ok: '#2E9E5B', warn: '#F08C00', idle: '#C9D3DF', info: '#1F6FB5', bad: '#D9453B' };
+        const tile = (t, ch, k, go) => Object.assign({ t, dot: 'background:' + DOT[k], go: go || (() => set({ toast: 'เปิด ' + t })) }, chip(ch, k === 'bad' ? 'bad' : k));
+        v.ovDocs = [tile('Daily Report', 'วันนี้ยังไม่ส่ง', 'warn', () => set({ tab: 'daily' })), tile('Weekly Report', 'W43 ครบ 26/10', 'warn', () => set({ tab: 'wr' })),
+          tile('Work Permit', 'ใช้งาน 2', 'ok'), tile('MOM', '2 ฉบับ', 'ok'), tile('RFI ขอตรวจงาน', late ? 'รอยื่น 2' : 'รอยื่น 1', 'warn'), tile('Material Approval', late ? 'อนุมัติ 3/5' : 'อนุมัติ 5/5', late ? 'warn' : 'ok'),
+          tile('NCR งานไม่ตรงสเปก', late ? 'เปิด 1' : 'เปิด 0', late ? 'bad' : 'ok'), tile('Change Order', '1 รายการ', 'ok'), tile('Test & Commissioning', late ? '0/10' : '3/10', 'idle', () => set({ tab: 'iec' })),
+          tile('Punch List', 'หลังทดสอบ', 'idle'), tile('ขนานไฟ (กฟภ.)', late ? 'ยื่น 3/11' : 'ครบ 9/11', late ? 'warn' : 'ok', () => set({ tab: 'dc' })), tile('อุปกรณ์ที่ติดตั้ง', late ? 'ยังไม่สแกน' : 'S/N ขาด 14', 'warn'),
+          tile('ส่งมอบงาน', '0/4 ฉบับ', 'warn', () => set({ tab: 'dc' }))];
+        // site panel: quantities, risks, labour
+        const sp = st.sp || 'site';
+        v.spTabs = [['site', 'ข้อมูลหน้างาน'], ['risk', 'ความเสี่ยง ' + (late ? 3 : 2)], ['lab', 'แรงงาน']].map(([k, t]) => ({ t, on: sp === k ? 'true' : 'false', go: () => set({ sp: k }), st: sp === k ? 'background:#fff;color:#16325C;box-shadow:0 1px 3px rgba(14,30,56,0.15)' : 'background:none;color:#5B6B82' }));
+        v.spSite = sp === 'site'; v.spRisk = sp === 'risk'; v.spLab = sp === 'lab';
+        const Q = late ? [['โครงสร้างรองรับ', 120, 300, 'ม.'], ['แผงโซลาร์', 0, 440, 'แผง'], ['สตริง DC', 0, 24, 'สตริง'], ['อินเวอร์เตอร์', 0, 2, 'เครื่อง'], ['ตู้ AC · กันย้อน', 0, 1, 'ชุด']]
+          : [['โครงสร้างรองรับ', 260, 260, 'ม.'], ['แผงโซลาร์', 368, 368, 'แผง'], ['สตริง DC', 20, 20, 'สตริง'], ['อินเวอร์เตอร์', 1, 2, 'เครื่อง'], ['ตู้ AC · กันย้อน', 0, 1, 'ชุด']];
+        v.spQty = Q.map(([t, a, b, u]) => ({ t, v: a + '/' + b + ' ' + u, bar: 'width:' + Math.round(a / b * 100) + '%;background:' + (a === b ? '#70AD47' : '#1F6FB5') }));
+        v.spStat = [{ l: 'แรงงานวันนี้', v: S.crewA + ' คน', n: 'สะสม ' + (late ? 14 : 58) + ' man-day', ink: 'color:#16325C' }, { l: 'งานตามแผนรายวัน (PPC)', v: late ? '57%' : '86%', n: late ? '4 จาก 7 วันทำได้ตามแผน' : '6 จาก 7 วันทำได้ตามแผน', ink: 'color:' + (late ? '#B42318' : '#3B7420') },
+          { l: 'ความปลอดภัย', v: (late ? 3 : 9) + ' วัน', n: 'ติดต่อกันไม่มีอุบัติเหตุ', ink: 'color:#3B7420' }, { l: 'ปัญหาที่เปิดอยู่', v: (late ? 2 : 1) + ' เรื่อง', n: late ? 'ทีมขาดคน · โครงสร้างช้า' : 'นัดการไฟฟ้าตรวจ', ink: 'color:#B45309' }];
+        const LV = { 'สูง': 'background:#FDECEA;color:#C0392B', 'กลาง': 'background:#FFF1DC;color:#B45309' };
+        v.spRisks = (late ? [['สูง', 'ทีมขาด 3 คน (แผน ' + S.crewP + ' มา ' + S.crewA + ')', 'ขอคนเพิ่มจาก' + S.ct + ' · ยืนยันภายใน 22/10', 'PM'], ['สูง', 'โครงสร้างรองรับช้า 1 วัน', 'ทำงานล่วงเวลา 2 วัน · ตรวจระดับพร้อมติดตั้ง', 'หัวหน้าทีม'], ['กลาง', 'ฝน 23–24/10 (โอกาส 60–70%)', 'ทำงานในร่มก่อน · เผื่อ 1 วันในแผน', 'หัวหน้าทีม']]
+          : [['กลาง', 'การไฟฟ้านัดตรวจช้ากว่า 24/10', 'โทรตามทุก 2 วัน · เตรียมเอกสารครบ', 'PM'], ['กลาง', 'ฝน 22–23/10 (โอกาส 60–70%)', 'ทำงานในห้อง MDB ก่อน · เผื่อ 1 วัน', 'หัวหน้าทีม']]).map(([lv, t, m, o]) => ({ lv, t, m, o, lvSt: LV[lv] }));
+        const lpl = load.map((n) => n), lac = load.map((n, d) => d < TD ? Math.max(0, n - (late ? 3 : (d % 3 === 1 ? 1 : 0))) : d === TD ? S.crewA : 0), lmx = Math.max(...lpl, ...lac, 1);
+        v.labBars = DT.map((_, d) => ({ ph: 'height:' + Math.round(lpl[d] / lmx * 100) + '%', ah: 'height:' + Math.round(lac[d] / lmx * 100) + '%' + (d > TD ? ';display:none' : ''), t: d <= TD ? (lac[d] || '') : (lpl[d] || ''), ty: 'bottom:calc(' + Math.round(Math.max(lpl[d], d <= TD ? lac[d] : 0) / lmx * 100) + '% + 2px)' }));
+        v.labSum = 'สะสม ' + lac.reduce((a, b) => a + b, 0) + ' man-day · แผนทั้งโครงการ ' + lpl.reduce((a, b) => a + b, 0);
+      }
+      v.toast = st.toast || ''; v.hasToast = !!st.toast;
+      if (st.toast && !this._tt) { this._tt = setTimeout(() => { this._tt = null; set({ toast: '' }); }, 2600); }
+    }
+    const on = 'background:#16325C;color:#fff', off = 'background:transparent;color:#16325C';
+    v.modes = [['154', 'NO.154 ตามแผน'], ['120', 'NO.120 ช้ากว่าแผน']].map(([k, t]) => ({ t, st: sid === k ? on : off, go: () => this.setState({ sid: k }) }));
+    return v;
+  }
+}
+</script>
+</body>
+</html>

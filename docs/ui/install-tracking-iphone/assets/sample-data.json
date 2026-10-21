@@ -1,0 +1,26 @@
+{
+  "_note": "Example data from the board PhonePwaInstall.dc.html. Every value is an example: the app reads Job, MasterSchedule, daily reports, IECReport and StationDocs. Today on the board is พ. 21 ต.ค. 2569 (2026-10-21).",
+  "today": "2026-10-21",
+  "stations": {
+    "154": { "name": "สถานีจ่ายน้ำแพรกหนามแดง", "kwp": 209.76, "team": "TCR04", "contractor": "ผู้รับเหมา C", "actual": 71, "planned": 68, "gainThisWeek": 6, "spi": 1.04,
+             "planStart": "2026-10-13", "planEnd": "2026-10-24", "todayIndex": 8, "stagesDone": 4, "runningStageSubtasksDone": 1, "crewPlanned": 6, "crewActual": 6, "crewCap": 8,
+             "forecastHandover": "2026-10-24", "slipDays": 0, "openActions": ["ลงนาม Daily 20/10", "นัดทดสอบ IEC 62446"], "late": false },
+    "120": { "name": "การประปาวัดชัย", "kwp": 250, "team": "TCR03", "contractor": "ผู้รับเหมา B", "actual": 22, "planned": 28, "gainThisWeek": 2, "spi": 0.79,
+             "planStart": "2026-10-19", "planEnd": "2026-10-30", "todayIndex": 2, "stagesDone": 1, "runningStageSubtasksDone": 2, "crewPlanned": 8, "crewActual": 5, "crewCap": 6,
+             "forecastHandover": "2026-11-01", "slipDays": 2, "openActions": ["เร่งงานโครงสร้าง ขั้น 2", "ขอคน +3 จากผู้รับเหมา B", "ส่ง Daily 20/10"], "late": true }
+  },
+  "wbs": [
+    { "code": "1", "name": "เตรียมงาน · รับวัสดุ", "planDays": [0, 0], "weight": 5, "crew": 6, "sub": ["ปฐมนิเทศ · ใบอนุญาตที่สูง", "Lifeline · ราวกันตก", "ตรวจรับวัสดุตามใบส่งของ", "กองวัสดุ · ป้ายกั้นพื้นที่"] },
+    { "code": "2", "name": "โครงสร้างรองรับ (Mounting)", "planDays": [1, 2], "weight": 20, "crew": 8, "sub": ["มาร์กจุดยึดตามแบบ", "L-Feet + ซีลกันรั่ว โซน A–B", "L-Feet + ซีลกันรั่ว โซน C", "ติดตั้งรางและต่อราง", "ตรวจระดับ · ขันแรงบิด"] },
+    { "code": "3", "name": "ติดตั้งแผง · สายดินโครง", "planDays": [3, 4], "weight": 25, "crew": 8, "sub": ["ยกแผงขึ้นหลังคา", "แผงโซน A", "แผงโซน B", "แผงโซน C", "สายดินโครงและแผง"] },
+    { "code": "4", "name": "ระบบ DC · สาย · MC4 · ตู้ DC", "planDays": [5, 7], "weight": 20, "crew": 7, "sub": ["สายสตริง 1–6 (โซน A)", "สายสตริง 7–12 (โซน B, C)", "ย้ำหัว MC4 · ตู้ DC", "ตรวจขั้ว · วัด Voc ทุกสตริง", "ป้ายเตือน · ป้ายสาย DC"] },
+    { "code": "5", "name": "อินเวอร์เตอร์ · ระบบ AC", "planDays": [8, 8], "weight": 15, "crew": 4, "sub": ["ยึดอินเวอร์เตอร์", "สาย AC เข้า MDB · เบรกเกอร์", "กันย้อน (Zero Export) + CT", "ระบบดิน · วัดค่าดิน", "Data Logger · Monitoring"] },
+    { "code": "6", "name": "ทดสอบ IEC 62446-1", "planDays": [9, 9], "weight": 10, "crew": 3, "sub": ["ตรวจพินิจ (Visual)", "Continuity · Polarity · Voc/Isc", "ฉนวน (IR) 1000 V", "Anti-islanding · อินเวอร์เตอร์", "เปิดระบบ · ภาพความร้อน"] },
+    { "code": "7", "name": "ขนานไฟ · ส่งมอบ", "planDays": [11, 11], "weight": 5, "crew": 4, "sub": ["การไฟฟ้าตรวจ · เปลี่ยนมิเตอร์", "ขนานไฟ · ตรวจค่าผลิต", "อบรมผู้ใช้ · คู่มือ O&M", "As-built · รายงาน IEC · ประกัน", "Punch List · ลงนามรับมอบ"] }
+  ],
+  "waitForUtilityDayIndex": 10,
+  "milestones": [["ยื่นขนานไฟ", 0], ["RFI-01", 2], ["RFI-02", 4], ["RFI-03", 7], ["ทดสอบ", 9], ["ส่งมอบ", 11]],
+  "paymentMilestones": [["งวด 1 · 40%", 4], ["งวด 2 · 40%", 9], ["งวด 3 · 20%", 11]],
+  "iecSteps": ["ตั้งค่าระบบ", "ก่อนออน · แรงดัน / กระแส", "ก่อนออน · ฉนวน (IR)", "หลังออน · แรงดัน / กระแส", "พลังงานและ PR", "ภาพถ่ายความร้อน", "ตรวจและส่งออก"],
+  "settingsCategories": ["ทีมและสิทธิ์", "หัวเอกสาร", "แบบก่อสร้าง", "รอบรายงาน", "ผู้ติดต่อหน้างาน", "การเชื่อมต่อและ IEC", "ข้อมูลอ้างอิง", "ขั้นสูง"]
+}

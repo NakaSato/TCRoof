@@ -10,8 +10,13 @@ mounting method with torque, washer and load rating, the clamp zone drawn on a m
 uses (`RoofMountLayout.clampOffsetsMm`, the side from `clampsLongSide`), a one-tap `ใช้ช่วงจับตาม ZNSHINE ในงานนี้` that
 sets the job's clamping zone to L/4 ± 50 mm (decided 2026-10-21: ZNSHINE's zone for ZNSHINE modules, existing layouts
 unchanged until then), the string builder (N_max and cold Voc live), cable and grounding; the list is `ModuleRulesList`,
-shared with the survey; `img/module-install-layout-ipad.png`. Phases 4–5 (daily report checklist, string test) not
-built.
+shared with the survey; `img/module-install-layout-ipad.png`. Phase 4 (2026-10-21): the daily report's
+`ตรวจติดตั้งแผงตามคู่มือ` card (both layouts) and sheet (`DailyModuleCheck.swift`, stored as `RoutineReport.Daily.moduleCheck`,
+`InstallDailyCheck`, nil on days without module work so other reports encode as before): safety ticks, mounting
+readings (bolt torques typed as a list, washer, clamps, overlap, gap, rear clearance, frame), cable, grounding and
+serials typed in; ตรวจ & ลงนาม stops while a block is open or a warn has no reason, and signing stamps the versions;
+`img/module-install-daily-ipad.png`. Not built: evidence photos per item and the barcode scan of serials (typed for now).
+Phase 5 (string test) not built.
 
 **Sources** (Claude Docs, the team's): *TCRoof Dev Spec — Module Installation Rules*
 (<https://claude.ai/artifact/PV7GXqcwu67rvmjmJR2a1B>) and its source *ZNSHINE Module Installation Spec — TCRoof*

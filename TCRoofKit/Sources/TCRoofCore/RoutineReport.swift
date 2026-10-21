@@ -110,11 +110,14 @@ public enum RoutineReport {
         public var problems: [Problem] = []
         /// Why there is no progress today (หยุดงาน); answers the "no progress" warning.
         public var stopReason = ""
+        /// The module installation checklist of ZNSHINE's manual (`ModuleRules.InstallDailyCheck`, JSON), on days with
+        /// module work; nil otherwise, so a report without one encodes as before (docs/specs/module-install-rules.md §7.3).
+        public var moduleCheck: String?
 
         public init(date: Date) { self.date = RoutineReport.calendar.startOfDay(for: date) }
 
         enum CodingKeys: String, CodingKey {
-            case date, workStart, workEnd, weather, crew, crewConfirmed, tools, materials, progress, problems, stopReason
+            case date, workStart, workEnd, weather, crew, crewConfirmed, tools, materials, progress, problems, stopReason, moduleCheck
         }
 
         public init(from decoder: Decoder) throws {
@@ -132,6 +135,7 @@ public enum RoutineReport {
             progress = try c.decodeIfPresent([ProgressLine].self, forKey: .progress) ?? []
             problems = try c.decodeIfPresent([Problem].self, forKey: .problems) ?? []
             stopReason = try c.decodeIfPresent(String.self, forKey: .stopReason) ?? ""
+            moduleCheck = try c.decodeIfPresent(String.self, forKey: .moduleCheck)
         }
 
         public var crewTotal: Int { crew.reduce(0) { $0 + $1.count } }

@@ -3,6 +3,7 @@ import SwiftData
 import QuickLook
 import TCRoofUI
 import TCRoofCore
+import ModuleRules
 
 /// A photo of the day being edited, tagged with a progress line id (or "").
 struct DraftPhoto: Identifiable, Equatable {
@@ -180,7 +181,11 @@ struct DailyReportEditor: View {
     private var signers: String { permissions.role == .external ? "วิศวกรของเรา" : "ทีมงานของงานนี้ ผู้ควบคุมงาน หรือผู้จัดการ" }
 
     private func requestSign() {
-        if canSign { showSign = true } else { withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
+        guard canSign else { return withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
+        // ZNSHINE's manual: no open block, and a reason for every warn, before our engineer signs
+        let stops = DailyModuleCard.stops(report)
+        guard stops.isEmpty else { return withAnimation { toast = "ตรวจติดตั้งแผงยังไม่ผ่าน: " + stops.joined(separator: " | ") } }
+        showSign = true
     }
 
     /// The inspector acknowledges a signed report only.
@@ -282,6 +287,7 @@ struct DailyReportEditor: View {
             MaterialsCard(materials: $report.materials, locations: job.routineSettings.locations)
             ProgressCard(report: $report, previous: others, job: job)
             ProblemsCard(problems: $report.problems, date: date)
+            DailyModuleCard(report: $report).cardStyle()
         }
     }
 
@@ -336,6 +342,15 @@ struct DailyReportEditor: View {
         saved = (report, photos)
         #if DEBUG
         debugState()
+        // `-dailyModuleDemo YES|open`: today's module checklist with a bolt at 22 N·m (the spec's case), not saved
+        if let demo = UserDefaults.standard.string(forKey: "dailyModuleDemo") {
+            var c = InstallDailyCheck()
+            c.method = .clamp; c.ppe = true; c.noJewelry = true; c.weatherDry = true; c.modulesDry = true
+            c.boltTorquesNm = [18, 19, 22]; c.clampsPerModule = 4; c.clampOverlapMm = 8; c.gapMm = 20; c.rearClearanceMm = 100
+            c.frameModified = false; c.bendRadiusMm = 50; c.groundTorquesNm = [6]; c.installedSerials = ["ZX7523351920001", "ZX7523351920002"]
+            report.moduleCheck = c.json
+            if demo == "open" { DailyModuleCard.openOnAppear = true }
+        }
         #endif
     }
 
@@ -399,6 +414,11 @@ struct DailyReportEditor: View {
     private func sign(engineer: String, signature: Data?) {
         if job.routineSettings.siteEngineer != engineer {
             var s = job.routineSettings; s.siteEngineer = engineer; job.routineSettings = s
+        }
+        // the module checklist keeps the rule set and catalog it was signed under
+        if var c = DailyModuleCard.check(report) {
+            c.ruleSetVersion = ModuleCatalog.ruleSetVersion; c.catalogVersion = ModuleCatalog.version
+            report.moduleCheck = c.json
         }
         let target = write()
         target.engineerSignedAt = .now

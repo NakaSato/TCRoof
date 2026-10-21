@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "TCRoofUI", targets: ["TCRoofUI"]),
         .library(name: "TCRoofMCP", targets: ["TCRoofMCP"]),
         .library(name: "PVYield", targets: ["PVYield"]),
+        .library(name: "ModuleRules", targets: ["ModuleRules"]),
     ],
     dependencies: [
         // Model Context Protocol (https://github.com/modelcontextprotocol/swift-sdk), only for TCRoofMCP
@@ -30,6 +31,9 @@ let package = Package(
         .target(name: "TCRoofMCP", dependencies: ["TCRoofCore", .product(name: "MCP", package: "swift-sdk")]),
         // PV module / inverter specs, PVsyst one-diode model, string sizing (docs/specs/energy-yield)
         .target(name: "PVYield", resources: [.copy("Resources/weather")]),
+        // module installation rules: catalog, mounting profiles, rule set and engine (docs/specs/module-install-rules.md)
+        .target(name: "ModuleRules", resources: [.process("Resources")]),
+        .testTarget(name: "ModuleRulesTests", dependencies: ["ModuleRules"]),
         .testTarget(name: "PVYieldTests", dependencies: ["PVYield"], resources: [.copy("Fixtures")]),
         .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore"], resources: [.copy("Fixtures")]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),

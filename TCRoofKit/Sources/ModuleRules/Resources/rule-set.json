@@ -1,0 +1,340 @@
+{
+ "version": "ZN-QES-III033A-A.1",
+ "rules": [
+  {
+   "id": "ZN-70",
+   "stages": [
+    "survey"
+   ],
+   "severity": "block",
+   "field": "altitude",
+   "message_en": "Above 2,000 m — not allowed for these modules",
+   "message_th": "สูงเกิน 2,000 ม. ติดตั้งแผงรุ่นนี้ไม่ได้"
+  },
+  {
+   "id": "ZN-73a",
+   "stages": [
+    "survey"
+   ],
+   "severity": "warn",
+   "field": "seaDistance",
+   "message_en": "Under 100 m from sea/sulfur — installation not recommended",
+   "message_th": "ห่างทะเลหรือแหล่งกำมะถันไม่ถึง 100 ม. ไม่แนะนำให้ติดตั้ง"
+  },
+  {
+   "id": "ZN-73b",
+   "stages": [
+    "survey"
+   ],
+   "severity": "warn",
+   "field": "seaDistance",
+   "message_en": "Use anti-salt modules and SS/Al hardware",
+   "message_th": "ใช้แผงกันเกลือ และอุปกรณ์สแตนเลสหรืออะลูมิเนียม"
+  },
+  {
+   "id": "ZN-69",
+   "stages": [
+    "survey"
+   ],
+   "severity": "warn",
+   "field": "humidity",
+   "message_en": "Consult ZNSHINE before installing",
+   "message_th": "ความชื้นเกิน 85 % ปรึกษา ZNSHINE ก่อนติดตั้ง"
+  },
+  {
+   "id": "T5-1",
+   "stages": [
+    "survey"
+   ],
+   "severity": "warn",
+   "field": "temperature",
+   "message_en": "Outside recommended working temperature",
+   "message_th": "อุณหภูมิเฉลี่ยรายเดือนอยู่นอกช่วง −20 ถึง +47 °C ที่แนะนำ"
+  },
+  {
+   "id": "ZN-77",
+   "stages": [
+    "survey"
+   ],
+   "severity": "warn",
+   "field": "roofFireproof",
+   "message_en": "Roof needs a fireproof layer under the array",
+   "message_th": "หลังคาต้องมีชั้นกันไฟใต้แผง"
+  },
+  {
+   "id": "ZN-81",
+   "stages": [
+    "survey",
+    "layout"
+   ],
+   "severity": "warn",
+   "field": "tilt",
+   "message_en": "Tilt under 10° — faults not covered by warranty",
+   "message_th": "มุมเอียงต่ำกว่า 10° ความเสียหายจากมุมเอียงไม่อยู่ในประกัน"
+  },
+  {
+   "id": "ZN-82",
+   "stages": [
+    "survey",
+    "layout"
+   ],
+   "severity": "info",
+   "field": "tilt",
+   "message_en": "Recommended tilt for this latitude is {tilt}°",
+   "message_th": "มุมเอียงที่แนะนำสำหรับละติจูดนี้คือ {tilt}°"
+  },
+  {
+   "id": "ZN-79",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "strings",
+   "message_en": "All modules in a string need the same tilt and orientation",
+   "message_th": "แผงในสตริงเดียวกันต้องมีมุมเอียงและทิศเดียวกัน"
+  },
+  {
+   "id": "ZN-52",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "clampSide",
+   "message_en": "Big modules cannot be fixed on the short frame",
+   "message_th": "แผงขนาดใหญ่ยึดที่ขอบด้านสั้นไม่ได้"
+  },
+  {
+   "id": "ZN-53",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "clampSide",
+   "message_en": "Small modules cannot share one horizontal rail on the long frame",
+   "message_th": "แผงขนาดเล็กใช้รางแนวนอนเส้นเดียวกันตามขอบด้านยาวร่วมกันไม่ได้"
+  },
+  {
+   "id": "ZN-85",
+   "stages": [
+    "layout"
+   ],
+   "severity": "warn",
+   "field": "bifacialHeight",
+   "message_en": "Bifacial height should be 0.5–2 m",
+   "message_th": "แผงสองหน้าควรสูงจากพื้น 0.5–2 ม."
+  },
+  {
+   "id": "ZN-90",
+   "stages": [
+    "layout",
+    "install"
+   ],
+   "severity": "warn",
+   "field": "rearClearance",
+   "message_en": "Clearance under 115 mm recommended minimum",
+   "message_th": "ระยะใต้แผงต่ำกว่า 115 มม. ที่แนะนำ"
+  },
+  {
+   "id": "ZN-91",
+   "stages": [
+    "layout",
+    "install"
+   ],
+   "severity": "block",
+   "field": "gap",
+   "message_en": "Gap between modules must be ≥ 10 mm",
+   "message_th": "ช่องว่างระหว่างแผงต้องไม่น้อยกว่า 10 มม."
+  },
+  {
+   "id": "ZN-95",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "clampSize",
+   "message_en": "Clamp below tested size",
+   "message_th": "ตัวจับเล็กกว่าขนาดที่ทดสอบ (ยาว ≥ 60 มม. หนา ≥ 3 มม.)"
+  },
+  {
+   "id": "ZN-97",
+   "stages": [
+    "layout",
+    "install"
+   ],
+   "severity": "block",
+   "field": "clampCount",
+   "message_en": "At least 4 clamps per module",
+   "message_th": "ต้องมีตัวจับอย่างน้อย 4 ตัวต่อแผง"
+  },
+  {
+   "id": "S553-zone",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "clampOffset",
+   "message_en": "Clamp outside the rated zone",
+   "message_th": "ตำแหน่งตัวจับอยู่นอกช่วงที่รับรอง"
+  },
+  {
+   "id": "S553-short",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "clampSide",
+   "message_en": "Short-side clamping not rated for this module",
+   "message_th": "แผงรุ่นนี้ไม่รับรองการจับด้านสั้น"
+  },
+  {
+   "id": "ZN-88",
+   "stages": [
+    "layout"
+   ],
+   "severity": "warn",
+   "field": "rails",
+   "message_en": "Load rating assumes 2 continuous rails",
+   "message_th": "ค่ารับแรงคิดจากรางต่อเนื่อง 2 เส้นใต้แผง"
+  },
+  {
+   "id": "ZN-105",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "strings",
+   "message_en": "One module model per string",
+   "message_th": "สตริงเดียวต้องใช้แผงรุ่นเดียวกัน"
+  },
+  {
+   "id": "ZN-106",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "strings",
+   "message_en": "String voltage exceeds limit at T_min",
+   "message_th": "แรงดันสตริงเกินขีดจำกัดที่อุณหภูมิต่ำสุด (ได้ไม่เกิน {nmax} แผง)"
+  },
+  {
+   "id": "ZN-106b",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "module",
+   "message_en": "Add datasheet temperature coefficient before sizing",
+   "message_th": "ใส่ค่าสัมประสิทธิ์อุณหภูมิ Voc จาก datasheet ก่อนคำนวณสตริง"
+  },
+  {
+   "id": "ZN-112",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "cable",
+   "message_en": "Cable under-rated",
+   "message_th": "สายรับกระแสไม่พอ (ต้องไม่น้อยกว่า {amps} A)"
+  },
+  {
+   "id": "ZN-107",
+   "stages": [
+    "layout"
+   ],
+   "severity": "block",
+   "field": "cable",
+   "message_en": "DC cable must be ≥ 4 mm²",
+   "message_th": "สาย DC ต้องไม่เล็กกว่า 4 ตร.มม."
+  },
+  {
+   "id": "ZN-122",
+   "stages": [
+    "layout"
+   ],
+   "severity": "warn",
+   "field": "grounding",
+   "message_en": "Grounding chain too long",
+   "message_th": "ต่อสายดินแผงต่อกันยาวเกิน (ขนานไม่เกิน 4 อนุกรมไม่เกิน 8)"
+  },
+  {
+   "id": "S551-torque",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "boltTorque",
+   "message_en": "Re-torque to 16–20 N·m",
+   "message_th": "ขันน็อตใหม่ให้ได้ 16–20 N·m"
+  },
+  {
+   "id": "S551-washer",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "washer",
+   "message_en": "Washer below spec",
+   "message_th": "แหวนรองต่ำกว่าสเปก"
+  },
+  {
+   "id": "S553-overlap",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "clampOverlap",
+   "message_en": "Clamp overlap must be 7–10 mm",
+   "message_th": "ตัวจับต้องทับขอบแผง 7–10 มม."
+  },
+  {
+   "id": "ZN-121",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "groundTorque",
+   "message_en": "Ground bolt must be 4–8 N·m",
+   "message_th": "น็อตสายดินต้องขันได้ 4–8 N·m"
+  },
+  {
+   "id": "ZN-108",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "bendRadius",
+   "message_en": "Cable bent tighter than 43 mm",
+   "message_th": "ดัดสายแคบกว่ารัศมี 43 มม."
+  },
+  {
+   "id": "ZN-61",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "crew",
+   "message_en": "Never work alone",
+   "message_th": "ห้ามทำงานคนเดียว (อย่างน้อย 2 คน)"
+  },
+  {
+   "id": "ZN-63",
+   "stages": [
+    "install"
+   ],
+   "severity": "block",
+   "field": "frame",
+   "message_en": "Frame modification voids warranty",
+   "message_th": "เจาะหรือดัดแปลงเฟรมแผง ประกันแผงสิ้นสุด"
+  },
+  {
+   "id": "ZN-110",
+   "stages": [
+    "commission"
+   ],
+   "severity": "block",
+   "field": "stringTest",
+   "message_en": "Recheck string before paralleling",
+   "message_th": "ตรวจสตริงใหม่ก่อนต่อขนาน (ขั้วกลับ หรือ Voc ต่างกันเกิน 10 V)"
+  }
+ ]
+}

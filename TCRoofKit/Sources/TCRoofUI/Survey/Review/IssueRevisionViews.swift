@@ -8,7 +8,7 @@ struct IssueRevisionBanner: View {
     var issue: () -> Void
     var body: some View {
         HStack(spacing: Space.m) {
-            Label("ลงนามครบแล้ว · ยังไม่ออก REV \(rev)", systemImage: "signature")
+            Label("ลงนามครบแล้ว | ยังไม่ออก REV \(rev)", systemImage: "signature")
                 .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
             Spacer(minLength: Space.s)
             TCButton("ออก REV \(rev)", systemImage: "doc.badge.plus", kind: .primary, size: .card, action: issue).fixedSize()
@@ -39,7 +39,7 @@ struct IssueRevisionSheet: View {
                     row(photos == 0 ? "รูปบังคับครบ" : "ยังขาดรูปบังคับ \(photos) รูป", ok: photos == 0)
                     if let changes, let prev = job.lastRevision { row("แก้จาก REV \(prev.rev) \(changes) รายการ", ok: true, symbol: "arrow.left.arrow.right") }
                 } footer: {
-                    Text("REV \(rev) จะเก็บไว้พร้อม PDF ตามข้อมูลและลายเซ็นตอนนี้ · ฟอร์มยังแก้ไขได้ และครั้งต่อไปจะออกเป็น REV \(RevisionRule.next(after: rev))")
+                    Text("REV \(rev) จะเก็บไว้พร้อม PDF ตามข้อมูลและลายเซ็นตอนนี้ | ฟอร์มยังแก้ไขได้ และครั้งต่อไปจะออกเป็น REV \(RevisionRule.next(after: rev))")
                 }
                 if job.issueNeedsReason {
                     PadSection("เหตุผลที่แก้ไข (ต้องกรอก)") {

@@ -113,7 +113,7 @@ struct TankPageWide: View {
                 phoneBody
             } else {
                 VStack(spacing: 14) {
-                    PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
+                    PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส | ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
                     HStack(spacing: 8) {
                         tabBar.frame(maxWidth: .infinity)
                         undoButtons()
@@ -149,17 +149,17 @@ struct TankPageWide: View {
         let size = Tank.sizeLabel(v)?.name ?? ""
         let checked = TankPoints.checked(v), points = TankPoints.done(v) && shade.isComplete
         let layout = TankLayout.current(v), laid = TankLayout.done(v)
-        func status(_ done: Bool, _ s: String) -> String { done ? s + " · เสร็จ" : "ยังไม่เสร็จ" }
+        func status(_ done: Bool, _ s: String) -> String { done ? s + " | เสร็จ" : "ยังไม่เสร็จ" }
         return [
             Step(title: "ขนาดถัง", status: status(Tank.sizeDone(v), size), done: Tank.sizeDone(v), statusOK: Tank.sizeDone(v)),
             // every standard point checked and the shading answered
-            Step(title: "สิ่งกีดขวาง · เงาบัง", status: points ? "\(checked.total) จุด · เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
+            Step(title: "สิ่งกีดขวาง | เงาบัง", status: points ? "\(checked.total) จุด | เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
                     : checked.total > 0 && checked.n == checked.total && !TankPoints.missingPhotos(v).isEmpty
                         ? "ยังขาดรูป \(TankPoints.missingPhotos(v).count) จุด"
                     : checked.total > 0 ? "ตรวจแล้ว \(checked.n)/\(checked.total)" : "ยังไม่เสร็จ",
                  done: points, statusOK: points),
             // a layout whose checks all pass
-            Step(title: "จัดแผง", status: laid ? "\(layout?.count ?? 0) แผง · เสร็จ" : layout.map { "ตรวจผ่าน \($0.checks.passed)/3" } ?? "ยังไม่เสร็จ",
+            Step(title: "จัดแผง", status: laid ? "\(layout?.count ?? 0) แผง | เสร็จ" : layout.map { "ตรวจผ่าน \($0.checks.passed)/3" } ?? "ยังไม่เสร็จ",
                  done: laid, statusOK: laid),
             Step(title: "ภาพถ่าย", status: "บังคับ \(photos.filled)/\(photos.total)", done: photos.isComplete, statusOK: photos.isComplete),
         ]
@@ -286,16 +286,16 @@ struct TankPageWide: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
-    // MARK: sub-step 4 · ภาพถ่าย (docs/specs/tank-drawing-swift.md, the designed groups)
+    // MARK: sub-step 4 | ภาพถ่าย (docs/specs/tank-drawing-swift.md, the designed groups)
 
     /// The designed photo groups; the roof, shade and cable photos are optional until the team makes them required.
     var formFields: [(title: String, ids: [String])] {
-        [("ภาพมุมสูง (โดรน หรือ Google Maps) · บังคับ", ["aerialPhoto"]),
-         ("ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) · บังคับ · เรียง เหนือ ใต้ ตะวันออก ตะวันตก", ["sidePhotos"]),
-         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) · บังคับ 2 ภาพ", [Tank.Key.roofPhotos]),
-         ("เงาบัง (ถ่ายจากกลางหลังคา) · ไม่บังคับ", [Tank.Key.shadePhoto]),
-         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) · บังคับ", [Tank.Key.cablePhoto]),
-         ("สิ่งกีดขวาง · บังคับ · ภาพแรกลงกรอบใหญ่ในรายงาน", ["obstPhotos"])]
+        [("ภาพมุมสูง (โดรน หรือ Google Maps) | บังคับ", ["aerialPhoto"]),
+         ("ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) | บังคับ | เรียง เหนือ ใต้ ตะวันออก ตะวันตก", ["sidePhotos"]),
+         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) | บังคับ 2 ภาพ", [Tank.Key.roofPhotos]),
+         ("เงาบัง (ถ่ายจากกลางหลังคา) | ไม่บังคับ", [Tank.Key.shadePhoto]),
+         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) | บังคับ", [Tank.Key.cablePhoto]),
+         ("สิ่งกีดขวาง | บังคับ | ภาพแรกลงกรอบใหญ่ในรายงาน", ["obstPhotos"])]
     }
 
     @ViewBuilder var formStep: some View {

@@ -37,8 +37,8 @@ struct GalleryOverlays: View {
                 TCButton("เปิดจริง", kind: .text, size: .card) { panel = true }
             }
             GalleryItem("แบนเนอร์ iOS + ปุ่มทำงานด่วน") {
-                TCNotificationBannerSample(title: "ถึงคิวคุณ · DJI Mavic 3T", message: "รับได้ที่ห้องเก็บเครื่องมือ",
-                                           actions: [.init("รับเครื่อง · ถ่ายภาพ", systemImage: "camera"),
+                TCNotificationBannerSample(title: "ถึงคิวคุณ | DJI Mavic 3T", message: "รับได้ที่ห้องเก็บเครื่องมือ",
+                                           actions: [.init("รับเครื่อง | ถ่ายภาพ", systemImage: "camera"),
                                                      .init("ดูคิว", systemImage: "list.bullet")])
             }
             GalleryItem("แผงการแจ้งเตือนในแอป") {
@@ -47,7 +47,7 @@ struct GalleryOverlays: View {
                                     onReadAll: { unread = false }, onOpen: { _ in unread = false })
             }
         }
-        .tcDialog(isPresented: $dialog, title: "บันทึกการคืน", subtitle: "Fluke 376 FC · S/N 58720413", confirmTitle: "บันทึกการคืน",
+        .tcDialog(isPresented: $dialog, title: "บันทึกการคืน", subtitle: "Fluke 376 FC | S/N 58720413", confirmTitle: "บันทึกการคืน",
                   confirmDisabledReason: condition == 1 ? "ใส่หมายเหตุสภาพก่อน" : nil, onConfirm: {}) {
             TCSmallSegmented(["ปกติ", "ชำรุด / ไม่ครบ"], selection: $condition)
         }
@@ -60,7 +60,7 @@ struct GalleryOverlays: View {
     }
 
     var dialogSample: some View {
-        TCDialog(title: "บันทึกการคืน", subtitle: "Fluke 376 FC · S/N 58720413", confirmTitle: "บันทึกการคืน",
+        TCDialog(title: "บันทึกการคืน", subtitle: "Fluke 376 FC | S/N 58720413", confirmTitle: "บันทึกการคืน",
                  confirmDisabledReason: nil, onCancel: {}, onConfirm: {}) {
             TCSmallSegmented(["ปกติ", "ชำรุด / ไม่ครบ"], selection: .constant(0))
         }
@@ -79,11 +79,11 @@ struct GalleryOverlays: View {
     }
 }
 
-#Preview("Overlays · iPad", traits: .landscapeLeft) {
+#Preview("Overlays | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 7, title: "หน้าต่างซ้อน และการแจ้งเตือน", subtitle: "Overlays") { GalleryOverlays() }.padding() }
 }
 
-#Preview("Overlays · iPhone") {
+#Preview("Overlays | iPhone") {
     ScrollView { GallerySection(number: 7, title: "หน้าต่างซ้อน และการแจ้งเตือน", subtitle: "Overlays") { GalleryOverlays() }.padding() }
         .environment(\.horizontalSizeClass, .compact)
 }

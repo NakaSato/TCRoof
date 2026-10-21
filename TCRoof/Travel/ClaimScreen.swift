@@ -151,16 +151,16 @@ struct ClaimScreen: View {
         VStack(alignment: .leading, spacing: 6) {
             switch status {
             case .approved(let r):
-                Label("อนุมัติแล้ว · \(r.who) · \(ClaimExport.stamp(Date(millis: r.reviewedAt)))", systemImage: "checkmark.seal.fill")
+                Label("อนุมัติแล้ว | \(r.who) | \(ClaimExport.stamp(Date(millis: r.reviewedAt)))", systemImage: "checkmark.seal.fill")
                     .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.successText)
                 if !r.note.isEmpty { Text(r.note).font(.sarabun(14, relativeTo: .subheadline)) }
             case .returned(let r):
-                Label("ส่งกลับให้แก้ · \(r.who) · \(ClaimExport.stamp(Date(millis: r.reviewedAt)))", systemImage: "arrow.uturn.backward.circle.fill")
+                Label("ส่งกลับให้แก้ | \(r.who) | \(ClaimExport.stamp(Date(millis: r.reviewedAt)))", systemImage: "arrow.uturn.backward.circle.fill")
                     .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
                 Text(r.note).font(.sarabun(14, relativeTo: .subheadline)).fixedSize(horizontal: false, vertical: true)
                 Text("ถอนการยื่นเพื่อแก้ไข แล้วยื่นเบิกอีกครั้ง").font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted)
             default:
-                Label("ยื่นเบิกแล้ว · รออนุมัติ · แก้ไม่ได้จนกว่าจะถอนการยื่น", systemImage: "lock.fill")
+                Label("ยื่นเบิกแล้ว | รออนุมัติ | แก้ไม่ได้จนกว่าจะถอนการยื่น", systemImage: "lock.fill")
                     .font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.successText)
             }
             if let log = claim?.log, !log.isEmpty {
@@ -242,7 +242,7 @@ struct ClaimScreen: View {
         var parts = ["ถึง " + ClaimPagesTime.format(stop.arrivedAt)]
         if stop.departedAt != nil { parts.append("ออก " + ClaimPagesTime.format(stop.departedAt)) }
         if let s = stop.onSite { parts.append("อยู่ \(Int(s / 60)) นาที") }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     @ViewBuilder private var warningsCard: some View {
@@ -317,7 +317,7 @@ struct ClaimScreen: View {
             ForEach(TravelClaim.Category.receipts) { c in
                 let list = expenses.filter { $0.category == c }
                 if !list.isEmpty {
-                    Text("\(c.title) · \(TravelClaim.baht(list.reduce(0) { $0 + $1.amount })) บาท")
+                    Text("\(c.title) | \(TravelClaim.baht(list.reduce(0) { $0 + $1.amount })) บาท")
                         .font(.sarabun(13, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     ForEach(list) { e in
                         Button { editingExpense = e } label: { expenseRow(e) }.buttonStyle(.plain)
@@ -355,7 +355,7 @@ struct ClaimScreen: View {
             .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
                 Text(e.vendor.isEmpty ? e.category.title : e.vendor).font(.sarabun(15, .bold, relativeTo: .subheadline)).lineLimit(1)
-                Text([RoutineReport.thaiDate(e.date), jobLabel(e.jobID)].compactMap { $0 }.joined(separator: " · "))
+                Text([RoutineReport.thaiDate(e.date), jobLabel(e.jobID)].compactMap { $0 }.joined(separator: " | "))
                     .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted).lineLimit(1)
             }
             Spacer(minLength: 8)
@@ -409,7 +409,7 @@ struct ClaimScreen: View {
                         .buttonStyle(TCButtonStyle(.text, fullWidth: true))
                 }
                 if status.isApproved {
-                    Text("อนุมัติแล้ว จึงถอนการยื่นไม่ได้ · ถ้าต้องแก้ ให้ผู้จัดการส่งกลับก่อน")
+                    Text("อนุมัติแล้ว จึงถอนการยื่นไม่ได้ | ถ้าต้องแก้ ให้ผู้จัดการส่งกลับก่อน")
                         .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.muted).multilineTextAlignment(.center)
                 } else {
                     Button("ถอนการยื่น") { showWithdraw = true }.buttonStyle(TCButtonStyle(.destructive, fullWidth: true))
@@ -437,7 +437,7 @@ struct ClaimScreen: View {
         switch result {
         case .undone?: notice = "ยกเลิกเวลาที่เพิ่งบันทึกแล้ว"
         case .nothingToClose?: notice = "ยังไม่ได้บันทึกเวลาถึงสถานีนี้"
-        case .stamped?: notice = kind == .arrive ? "บันทึกเวลาถึงแล้ว · กดอีกครั้งภายใน 2 นาทีเพื่อยกเลิก" : "บันทึกเวลาออกแล้ว"
+        case .stamped?: notice = kind == .arrive ? "บันทึกเวลาถึงแล้ว | กดอีกครั้งภายใน 2 นาทีเพื่อยกเลิก" : "บันทึกเวลาออกแล้ว"
         case nil: notice = "เดือนนี้ยื่นเบิกแล้ว ถอนการยื่นก่อนจึงบันทึกได้"
         }
     }
@@ -460,7 +460,7 @@ struct ClaimScreen: View {
                 context.insert(e)
             }
             try? context.save()
-            notice = "เพิ่มใบเสร็จ \(pages.count) ใบ · ตรวจยอดแต่ละใบก่อนยื่น"
+            notice = "เพิ่มใบเสร็จ \(pages.count) ใบ | ตรวจยอดแต่ละใบก่อนยื่น"
         }
     }
 
@@ -474,11 +474,11 @@ struct ClaimScreen: View {
     }
 
     private func upload() async {
-        guard session.survey.google.isSignedIn else { notice = "ยื่นแล้ว · ยังไม่ได้เข้าสู่ระบบ Google จึงยังไม่ส่งขึ้น Drive"; return }
+        guard session.survey.google.isSignedIn else { notice = "ยื่นแล้ว | ยังไม่ได้เข้าสู่ระบบ Google จึงยังไม่ส่งขึ้น Drive"; return }
         uploading = true
         do {
             try await ClaimExport(month: month, context: context).upload(session.survey)
-            notice = "ยื่นเบิกแล้ว · ส่งใบเบิกขึ้น Google Drive แล้ว"
+            notice = "ยื่นเบิกแล้ว | ส่งใบเบิกขึ้น Google Drive แล้ว"
         } catch {
             notice = "ยื่นแล้ว แต่ส่งขึ้น Drive ไม่สำเร็จ ลองใหม่ได้: \(error.localizedDescription)"
         }
@@ -523,7 +523,7 @@ struct ClaimSubmitSheet: View {
                 }
                 Text("ลงชื่อผู้เบิก").font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 // the canvas doesn't carry an identifier itself; its container does, for the UI test
-                ZStack { SignaturePad(signature: $signature) }
+                ZStack { AccountSignatureCanvas(signature: $signature) }
                     .frame(height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Theme.borderSubtle))
@@ -533,6 +533,7 @@ struct ClaimSubmitSheet: View {
                     Button("ล้าง") { signature = nil }.buttonStyle(TCButtonStyle(.text))
                     Spacer()
                 }
+                MySignatureActions(signature: $signature)
                 Text("เมื่อยื่นแล้ว รายการของเดือนนี้จะแก้ไม่ได้จนกว่าจะถอนการยื่น ใบเบิก PDF, Excel และรูปใบเสร็จจะส่งขึ้น Google Drive ของคุณ")
                     .font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 Spacer()

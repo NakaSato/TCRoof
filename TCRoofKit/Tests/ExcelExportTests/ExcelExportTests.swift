@@ -58,7 +58,7 @@ final class ExcelExportTests: XCTestCase {
             job.modules[ti].values["shade"] = .choice("มี", other: ""); job.modules[ti].values["shadeFrom"] = .multi(["ต้นไม้", "หอถังสูง"])
             job.modules[ti].values["shadeDir"] = .multi(["S", "SW"]); job.modules[ti].values["shadeNote"] = .text("ต้นไม้สูง ~8 ม. ห่าง 5 ม.")
             XCTAssertEqual(Schema.shadeText(job.modules[ti].values), "เงาบัง: ต้นไม้, หอถังสูง ทิศ S, SW (ต้นไม้สูง ~8 ม. ห่าง 5 ม.)")
-            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. · กึ่งฝัง")
+            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. | กึ่งฝัง")
         }
         let png = try Data(contentsOf: fixtures.appendingPathComponent("plan.png"))
         let size = ImageSize.of(png)!

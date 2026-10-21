@@ -62,7 +62,7 @@ extension InstallTrackingPage {
     private func planHeader(_ p: InstallPlan) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
-        let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) · \($0.by) · " + range } ?? range
+        let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) | \($0.by) | " + range } ?? range
         return HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 10) {
@@ -260,8 +260,8 @@ extension InstallTrackingPage {
 
     private func planAccessibility(_ r: InstallPlan.Row) -> String {
         let status = switch r.status { case .done: "เสร็จ"; case .current: "กำลังทำ"; case .waiting: "ตามแผน" }
-        return "\(r.code) \(r.title) · \(ThaiFormat.dayMonth.string(from: r.start))–\(ThaiFormat.dayMonth.string(from: r.end)) · \(status) \(Int(r.percent.rounded()))%"
-            + (r.critical ? " · เส้นทางวิกฤต" : "") + ((r.float ?? 0) > 0 ? " · เผื่อ \(r.float ?? 0) วัน" : "")
+        return "\(r.code) \(r.title) | \(ThaiFormat.dayMonth.string(from: r.start))–\(ThaiFormat.dayMonth.string(from: r.end)) | \(status) \(Int(r.percent.rounded()))%"
+            + (r.critical ? " | เส้นทางวิกฤต" : "") + ((r.float ?? 0) > 0 ? " | เผื่อ \(r.float ?? 0) วัน" : "")
     }
 
     /// Diamonds on their days: green filled when passed, navy outlined when ahead.
@@ -280,7 +280,7 @@ extension InstallTrackingPage {
         .frame(height: 44)
         .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Milestone " + p.milestones.map { "\($0.title) \(ThaiFormat.dayMonth.string(from: $0.date))" }.joined(separator: " · "))
+        .accessibilityLabel("Milestone " + p.milestones.map { "\($0.title) \(ThaiFormat.dayMonth.string(from: $0.date))" }.joined(separator: " | "))
     }
 
     private func planLegend(_ p: InstallPlan, waitLabel: String?) -> some View {
@@ -436,7 +436,7 @@ extension InstallTrackingPage {
                 }
                 if cap != nil {
                     Text(over.isEmpty ? "ไม่มีวันที่เกินกำลังทีม"
-                         : "เกินกำลัง " + over.map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", ") + " · ขยับงานที่มีเวลาเผื่อ หรือเพิ่มคน")
+                         : "เกินกำลัง " + over.map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", ") + " | ขยับงานที่มีเวลาเผื่อ หรือเพิ่มคน")
                         .font(.sarabunFixed(13, .bold)).foregroundStyle(over.isEmpty ? Theme.successInk : Theme.dangerText)
                 }
             }

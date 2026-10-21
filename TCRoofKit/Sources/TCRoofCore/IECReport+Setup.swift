@@ -17,10 +17,10 @@ public extension IECReport {
         public var title: String {
             switch self {
             case .front: "ด้านหน้า"
-            case .nameplate: "ด้านข้าง · ป้าย S/N"
+            case .nameplate: "ด้านข้าง | ป้าย S/N"
             case .otherSide: "ด้านข้างอีกด้าน"
             case .back: "ด้านหลัง"
-            case .bottom: "ด้านล่าง · ขั้วต่อสาย"
+            case .bottom: "ด้านล่าง | ขั้วต่อสาย"
             }
         }
         public var required: Bool { self == .front || self == .nameplate }

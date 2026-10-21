@@ -225,13 +225,13 @@ public enum TankPoints {
         public var overlaps: [String] = []
         public var outside = false
         public var warning: Bool { outside || !overlaps.isEmpty }
-        /// "แนวเดียวกับ V10 · ไม่ทับจุดอื่น" / "ทับ H3" / "อยู่นอกถัง"
+        /// "แนวเดียวกับ V10 | ไม่ทับจุดอื่น" / "ทับ H3" / "อยู่นอกถัง"
         public var text: String {
             var parts: [String] = []
             if outside { parts.append("อยู่นอกถัง") }
             if !aligned.isEmpty { parts.append("แนวเดียวกับ " + aligned.prefix(2).joined(separator: ", ")) }
             parts.append(overlaps.isEmpty ? "ไม่ทับจุดอื่น" : "ทับ " + overlaps.joined(separator: ", "))
-            return parts.joined(separator: " · ")
+            return parts.joined(separator: " | ")
         }
     }
     public static func check(_ v: Values, _ id: UUID) -> Check? {

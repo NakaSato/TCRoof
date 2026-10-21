@@ -69,7 +69,7 @@ final class EmergencyButtonTests: XCTestCase {
         m.values["photoFTS"] = .photo(Self.photo); m.values["emgPlace"] = .text("ผนังข้างประตู Site Office")
         XCTAssertEqual(m.completion.total, 1)
         var j = job(ftsModules: 0); j.modules = [m]
-        XCTAssertEqual(EmergencyButton.statusLine(j, m.values), "ครบช่องบังคับแล้ว · ตำแหน่งแสดงบนภาพ A2 และ SLD")
+        XCTAssertEqual(EmergencyButton.statusLine(j, m.values), "ครบช่องบังคับแล้ว | ตำแหน่งแสดงบนภาพ A2 และ SLD")
         j.values["emgMountCm"] = .text("165")
         XCTAssertEqual(EmergencyButton.statusLine(j, m.values), "ความสูงปุ่มแนะนำ 1.10–1.50 ม.")
         m.values["photoEmg"] = nil

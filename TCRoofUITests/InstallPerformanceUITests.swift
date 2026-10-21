@@ -46,7 +46,7 @@ final class InstallPerformanceUITests: XCTestCase {
         XCTAssertTrue(band.waitForExistence(timeout: 15))
         measure(metrics: metrics(app)) {
             band.tap()
-            let cell = app.staticTexts["ตารางค่าวัด · INV1 ก่อนออนระบบ"]
+            let cell = app.staticTexts["ตารางค่าวัด | INV1 ก่อนออนระบบ"]
             XCTAssertTrue(cell.waitForExistence(timeout: 10))
             app.buttons["กลับ"].firstMatch.tap()
             XCTAssertTrue(gone(cell))

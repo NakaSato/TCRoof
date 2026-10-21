@@ -40,13 +40,13 @@ public struct FloodGistda: Codable, Hashable, Sendable {
     public var headline: String {
         guard let first = years.first?.year, let last = years.last?.year else { return "" }
         let n = floodedYears.count
-        return n == 0 ? "ไม่พบน้ำท่วมซ้ำซากในรัศมี \(radiusText) · \(first)–\(last)" : "ท่วม \(n) จาก \(years.count) ปี (\(first)–\(last))"
+        return n == 0 ? "ไม่พบน้ำท่วมซ้ำซากในรัศมี \(radiusText) | \(first)–\(last)" : "ท่วม \(n) จาก \(years.count) ปี (\(first)–\(last))"
     }
-    /// "ล่าสุดปี 2567 · ท่วมมากสุดปี 2554 (101 แปลง)"; nil when nothing flooded.
+    /// "ล่าสุดปี 2567 | ท่วมมากสุดปี 2554 (101 แปลง)"; nil when nothing flooded.
     public var detail: String? {
         let f = floodedYears
         guard let latest = f.last, let most = f.max(by: { $0.plots < $1.plots }) else { return nil }
-        return "ล่าสุดปี \(latest.year)" + (most.year == latest.year ? "" : " · ท่วมมากสุดปี \(most.year) (\(most.plots) แปลง)")
+        return "ล่าสุดปี \(latest.year)" + (most.year == latest.year ? "" : " | ท่วมมากสุดปี \(most.year) (\(most.plots) แปลง)")
     }
 
     /// Bars for each year, tallest = the most plots that flooded; drawn by the editor and the PDF from the same ops.
@@ -63,40 +63,40 @@ public struct FloodGistda: Codable, Hashable, Sendable {
             o.append(.text(String(y.year % 100), at: Pt(cx, base + 10), size: 9.5, bold: y.plots > 0, color: y.plots > 0 ? ink : muted, align: .center))
         }
         o.append(.line(Pt(0, base), Pt(width, base), width: 1, color: muted))
-        o.append(.text("ปี พ.ศ. 25xx · ความสูงแท่ง = จำนวนแปลงที่ท่วมในรัศมี \(radiusText)", at: Pt(width / 2, base + 28), size: 9, color: muted, align: .center))
+        o.append(.text("ปี พ.ศ. 25xx | ความสูงแท่ง = จำนวนแปลงที่ท่วมในรัศมี \(radiusText)", at: Pt(width / 2, base + 28), size: 9, color: muted, align: .center))
         return Sketch(width: width, height: Self.chartHeight, ops: o)
     }
 
     /// Label / value rows of the GISTDA card and the PDF table.
     public var rows: [Row] {
         if manual == true {
-            return [Row(label: "ความลึกน้ำ", value: "ยังไม่ได้ข้อมูลจาก GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
+            return [Row(label: "ความลึกน้ำ", value: "ยังไม่ได้ข้อมูลจาก GISTDA | ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad)]
         }
         let f = floodedYears
-        var r = [Row(label: "สรุป", value: headline + (detail.map { " · " + $0 } ?? ""), tone: f.isEmpty ? .good : .warn)]
-        if !f.isEmpty { r.append(Row(label: "จำนวนแปลงที่ท่วม", value: f.map { "\($0.year) (\($0.plots))" }.joined(separator: " · "), tone: .normal)) }
-        r.append(Row(label: "ความลึกน้ำ", value: "ไม่มีข้อมูลความลึก · ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad))
+        var r = [Row(label: "สรุป", value: headline + (detail.map { " | " + $0 } ?? ""), tone: f.isEmpty ? .good : .warn)]
+        if !f.isEmpty { r.append(Row(label: "จำนวนแปลงที่ท่วม", value: f.map { "\($0.year) (\($0.plots))" }.joined(separator: " | "), tone: .normal)) }
+        r.append(Row(label: "ความลึกน้ำ", value: "ไม่มีข้อมูลความลึก | ใช้ค่าประเมิน \(estimatedDepthCm) ซม.", tone: .bad))
         return r
     }
-    /// "GISTDA API: flood-freq · ต.ยางซ้าย … · ดึงเมื่อ 30/9/2569 10:37 · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"
+    /// "GISTDA API: flood-freq | ต.ยางซ้าย … | ดึงเมื่อ 30/9/2569 10:37 | ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"
     public var footnote: String {
-        if manual == true { return "ใช้ค่าประเมิน \(estimatedDepthCm) ซม. เพราะ GISTDA ไม่ตอบ · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี" }
+        if manual == true { return "ใช้ค่าประเมิน \(estimatedDepthCm) ซม. เพราะ GISTDA ไม่ตอบ | ควรยืนยันความลึกกับเจ้าหน้าที่สถานี" }
         var f = Date.FormatStyle(date: .numeric, time: .shortened).locale(Locale(identifier: "th_TH"))
         f.calendar = Calendar(identifier: .buddhist)
-        return ["GISTDA API: flood-freq · ตัวเลขในวงเล็บคือจำนวนแปลงที่ท่วม", place.isEmpty ? nil : place, "ดึงเมื่อ " + fetchedAt.formatted(f),
-                "ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"].compactMap { $0 }.joined(separator: " · ")
+        return ["GISTDA API: flood-freq | ตัวเลขในวงเล็บคือจำนวนแปลงที่ท่วม", place.isEmpty ? nil : place, "ดึงเมื่อ " + fetchedAt.formatted(f),
+                "ควรยืนยันความลึกกับเจ้าหน้าที่สถานี"].compactMap { $0 }.joined(separator: " | ")
     }
     /// One line for the report summary.
     public var summary: String {
-        if manual == true { return "ไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมิน \(estimatedDepthCm) ซม." }
+        if manual == true { return "ไม่ได้ข้อมูล GISTDA | ใช้ค่าประเมิน \(estimatedDepthCm) ซม." }
         let n = floodedYears.count
         return "GISTDA: " + (n == 0 ? "ไม่พบพื้นที่ท่วมซ้ำซาก" : "ท่วม \(n) ปีในรัศมี \(radiusText)")
     }
     /// Banner over the drawing.
     public var banner: String {
-        if manual == true { return "ยังไม่ได้ข้อมูล GISTDA · ใช้ค่าประเมินระดับน้ำ \(estimatedDepthCm) ซม." }
+        if manual == true { return "ยังไม่ได้ข้อมูล GISTDA | ใช้ค่าประเมินระดับน้ำ \(estimatedDepthCm) ซม." }
         let n = floodedYears.count
-        return "GISTDA · " + (n == 0 ? "ไม่พบน้ำท่วมซ้ำซาก" : "ท่วม \(n) ปี") + " รัศมี \(radiusText) · ความลึกเป็นค่าประเมิน"
+        return "GISTDA | " + (n == 0 ? "ไม่พบน้ำท่วมซ้ำซาก" : "ท่วม \(n) ปี") + " รัศมี \(radiusText) | ความลึกเป็นค่าประเมิน"
     }
 }
 
@@ -201,7 +201,7 @@ public enum FloodCheck {
         }
         if let bf = first(.backfeed) {
             let h = floor + mount
-            rows.append(Row(id: "smdb", name: "ตู้ SMDB-PV · รีเลย์กันย้อน", tag: bf.number, height: cm(h), status: pass(h, min)))
+            rows.append(Row(id: "smdb", name: "ตู้ SMDB-PV | รีเลย์กันย้อน", tag: bf.number, height: cm(h), status: pass(h, min)))
         }
         if let f = first(.fts) {
             let h = emergencyCm(v)
@@ -222,11 +222,11 @@ public enum FloodCheck {
     }
     /// The bottom-bar line of the wide page.
     public static func statusLine(_ r: Result) -> String {
-        let head = r.fails > 0 ? "อุปกรณ์ต่ำกว่าเกณฑ์ \(r.fails) รายการ" : "ครบช่องบังคับแล้ว · อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ \(r.minCm) ซม."
+        let head = r.fails > 0 ? "อุปกรณ์ต่ำกว่าเกณฑ์ \(r.fails) รายการ" : "ครบช่องบังคับแล้ว | อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ \(r.minCm) ซม."
         switch r.state {
-        case .flooded: return head + " · จุดต่อ \(r.mdbName) เคยน้ำท่วม"
-        case .unknownFetched: return head + " · ระดับน้ำจาก GISTDA เป็นค่าประเมิน"
-        case .unknownEmpty: return head + " · ยังไม่มีข้อมูลน้ำท่วม ดึงจาก GISTDA ได้"
+        case .flooded: return head + " | จุดต่อ \(r.mdbName) เคยน้ำท่วม"
+        case .unknownFetched: return head + " | ระดับน้ำจาก GISTDA เป็นค่าประเมิน"
+        case .unknownEmpty: return head + " | ยังไม่มีข้อมูลน้ำท่วม ดึงจาก GISTDA ได้"
         case .never: return head
         }
     }

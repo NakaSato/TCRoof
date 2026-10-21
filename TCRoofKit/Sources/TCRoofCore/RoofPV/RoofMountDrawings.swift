@@ -60,13 +60,13 @@ public enum RoofMountDrawings {
 
         // captions
         let face0 = f.face
-        o.append(.text("รูปตัดแถว \(r + 1) · ด้าน\(RoofFace.direction(face0.azimuth)) · ตามแนวลาด (หน่วย ม.)", at: Pt(40, 18), size: 13,
+        o.append(.text("รูปตัดแถว \(r + 1) | ด้าน\(RoofFace.direction(face0.azimuth)) | ตามแนวลาด (หน่วย ม.)", at: Pt(40, 18), size: 13,
                        bold: true, color: ink))
         let pass = rowPasses(row, in: layout)
-        let how = layout.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน @" + m(s.rafterSpacing) + " · รางที่ ¼ และ ¾ ของแผง"
+        let how = layout.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน @" + m(s.rafterSpacing) + " | รางที่ ¼ และ ¾ ของแผง"
             : layout.options.ribClamp ? "จับสันลอนที่ ¼ และ ¾ ของแผง"
-            : "รางตกแปทั้ง 2 เส้น · ช่วงจับ \(m(s.clampMin))–\(m(s.clampMax)) ม. จากปลายแผง"
-        o.append(.text((pass ? "ถูกต้องตามมาตรฐาน · " : "ไม่ผ่าน · ") + how, at: Pt(40, height - 18), size: 12.5, bold: true,
+            : "รางตกแปทั้ง 2 เส้น | ช่วงจับ \(m(s.clampMin))–\(m(s.clampMax)) ม. จากปลายแผง"
+        o.append(.text((pass ? "ถูกต้องตามมาตรฐาน | " : "ไม่ผ่าน | ") + how, at: Pt(40, height - 18), size: 12.5, bold: true,
                        color: pass ? ok : bad))
         return Sketch(width: width, height: height, ops: o)
     }

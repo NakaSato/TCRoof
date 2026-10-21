@@ -44,8 +44,8 @@ enum JobKind: String, CaseIterable, Identifiable, Codable {
     /// What the job detail follows for this kind.
     var detail: String {
         switch self {
-        case .home: "ขออนุญาต PEA · ติดตั้ง · ขนานไฟ"
-        case .pwa: "แผน MP · รายงานประจำ · เอกสารสถานี กปภ."
+        case .home: "ขออนุญาต PEA | ติดตั้ง | ขนานไฟ"
+        case .pwa: "แผน MP | รายงานประจำ | เอกสารสถานี กปภ."
         }
     }
 }

@@ -14,11 +14,11 @@ struct PermitFormsView: View {
             TCNavBar(title: "เอกสารขออนุญาต PEA", trail: ["หน้าหลัก", job.code], current: "เอกสารขออนุญาต PEA")
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Solar Rooftop ภาคประชาชน 2569 · บ้านอยู่อาศัย · แบบฟอร์มต้นฉบับของ กฟภ. เติมข้อมูลแล้วพิมพ์ให้เซ็น")
+                    Text("Solar Rooftop ภาคประชาชน 2569 | บ้านอยู่อาศัย | แบบฟอร์มต้นฉบับของ กฟภ. เติมข้อมูลแล้วพิมพ์ให้เซ็น")
                         .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
-                    row("หนังสือมอบอำนาจ", "ใช้ตอนยื่นคำขอ ส่งเอกสารสัญญา และขอเชื่อมต่อ · เซ็นสด + อากร 30 บาท",
+                    row("หนังสือมอบอำนาจ", "ใช้ตอนยื่นคำขอ ส่งเอกสารสัญญา และขอเชื่อมต่อ | เซ็นสด + อากร 30 บาท",
                         "signature", issues: poa?.issues) { PowerOfAttorneyView(job: job) }
-                    row("แบบฟอร์มรับรองตนเอง (VSPP)", "ขอเชื่อมต่อ (ขั้น 9) · 12 หน้า พร้อมเอกสารแนบ 1–10 · วิศวกรเซ็นทุกแผ่น",
+                    row("แบบฟอร์มรับรองตนเอง (VSPP)", "ขอเชื่อมต่อ (ขั้น 9) | 12 หน้า พร้อมเอกสารแนบ 1–10 | วิศวกรเซ็นทุกแผ่น",
                         "checkmark.seal", issues: selfCert?.issues) { SelfCertificationView(job: job) }
                 }
                 .padding(isPhone ? Space.l : Space.xl)

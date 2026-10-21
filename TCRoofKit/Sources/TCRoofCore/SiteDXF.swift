@@ -66,8 +66,8 @@ public enum SiteDXF {
 
         // title under the frame, sized to the drawing
         let th = W * k * 0.012, docNo = job.docNo.isEmpty ? "-" : job.docNo, site = job.projectName.isEmpty ? "-" : job.projectName
-        var title = "SITE PLAN · \(docNo) · \(site)"
-        if !v.text("date").isEmpty { title += " · " + ISODate.thai(v.text("date")) }
+        var title = "SITE PLAN | \(docNo) | \(site)"
+        if !v.text("date").isEmpty { title += " | " + ISODate.thai(v.text("date")) }
         dxf.text(text, (0, -th * 2), height: th, title)
         dxf.text(text, (W * k, -th * 2), height: th,
                  meters == nil ? "ไม่มีมาตราส่วน: วัดระยะบนภาพใน A2 ก่อน" : "มาตราส่วนจริง หน่วย มม.", align: .right)

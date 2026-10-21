@@ -54,7 +54,7 @@ extension PWADocsHomeView {
         .background(Theme.borderOutdoor)
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .accessibilityElement()
-        .accessibilityLabel(PWADocs.Band.allCases.map { "\($0.title) \(s.bands[$0] ?? 0)" }.joined(separator: " · "))
+        .accessibilityLabel(PWADocs.Band.allCases.map { "\($0.title) \(s.bands[$0] ?? 0)" }.joined(separator: " | "))
     }
 
     /// One of the three counts; a tap opens `ต้องทำ`.
@@ -138,10 +138,10 @@ extension PWADocsHomeView {
         .buttonStyle(.plain)
     }
 
-    /// `MP 189 · 92.34 kWp · ผู้รับเหมา A`, leaving out what the station has none of.
+    /// `MP 189 | 92.34 kWp | ผู้รับเหมา A`, leaving out what the station has none of.
     private func stationLine(_ s: PWAPlan.Station) -> String {
         let who = s.contractor.isEmpty ? s.team : PWAPlan.contractorTitle(s.contractor)
-        return [s.ref, s.kWp > 0 ? "\(Self.kWp(s.kWp)) kWp" : "", who].filter { !$0.isEmpty }.joined(separator: " · ")
+        return [s.ref, s.kWp > 0 ? "\(Self.kWp(s.kWp)) kWp" : "", who].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
     static func kWp(_ x: Double) -> String {
@@ -191,9 +191,9 @@ extension PWADocsHomeView {
 
     private func groupSub(_ g: PWADocs.Group) -> String {
         switch g.origin {
-        case .internalDoc: "\(g.items.count) รายการ" + (g.draftable > 0 ? " · แอปสร้างได้ \(g.draftable)" : "")
+        case .internalDoc: "\(g.items.count) รายการ" + (g.draftable > 0 ? " | แอปสร้างได้ \(g.draftable)" : "")
         case .signoff: "\(g.items.count) รายการ"
-        case .external: "\(g.items.count) รายการ · ติดตามอย่างเดียว"
+        case .external: "\(g.items.count) รายการ | ติดตามอย่างเดียว"
         }
     }
 
@@ -203,7 +203,7 @@ extension PWADocsHomeView {
                 Circle().strokeBorder(item.ring, lineWidth: 2).frame(width: 18, height: 18)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(item.kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    (Text([item.place, item.who].filter { !$0.isEmpty }.joined(separator: " · ") + " · ").foregroundColor(Theme.inkMuted)
+                    (Text([item.place, item.who].filter { !$0.isEmpty }.joined(separator: " | ") + " | ").foregroundColor(Theme.inkMuted)
                      + Text(item.statusWord).bold().foregroundColor(item.statusInk))
                         .font(.sarabunFixed(12)).lineLimit(1)
                 }
@@ -231,7 +231,7 @@ extension PWADocsHomeView {
     // MARK: library
 
     @ViewBuilder func libraryList(_ rows: [PWADocs.LibraryRow]) -> some View {
-        Text("อัปโหลดครั้งเดียว ใช้ได้ทุกสถานี · แอปเช็กวันหมดอายุให้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        Text("อัปโหลดครั้งเดียว ใช้ได้ทุกสถานี | แอปเช็กวันหมดอายุให้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             .padding(.horizontal, 2)
         if rows.isEmpty {
             empty("ไม่พบเอกสารที่ค้นหา")
@@ -263,11 +263,11 @@ extension PWADocsHomeView {
         .buttonStyle(.plain)
     }
 
-    /// `ผู้รับจ้าง · หมดอายุ 30/11/2569`, or the packages it goes into.
+    /// `ผู้รับจ้าง | หมดอายุ 30/11/2569`, or the packages it goes into.
     private func librarySub(_ r: PWADocs.LibraryRow) -> String {
         let detail = r.state.expiresAt.map { "หมดอายุ " + ThaiFormat.numericDate.string(from: $0) }
-            ?? "ใช้ในชุด" + r.kind.packages.map { PWADocs.stepTitle($0) }.joined(separator: " · ")
-        return r.kind.scope.owner + " · " + detail
+            ?? "ใช้ในชุด" + r.kind.packages.map { PWADocs.stepTitle($0) }.joined(separator: " | ")
+        return r.kind.scope.owner + " | " + detail
     }
 
     private func empty(_ text: String) -> some View {
@@ -276,7 +276,7 @@ extension PWADocsHomeView {
     }
 }
 
-/// The station card's four steps (`อ.1 · ขนานไฟ · พค.2 · ส่งมอบ`): done a green tick, current a blue ringed number,
+/// The station card's four steps (`อ.1 | ขนานไฟ | พค.2 | ส่งมอบ`): done a green tick, current a blue ringed number,
 /// later a grey outline, not required a dashed `–` over `ไม่ต้องยื่น`. The line is green up to the current step.
 struct PWADocsStepper: View {
     let steps: [PWADocs.Step]
@@ -313,7 +313,7 @@ struct PWADocsStepper: View {
         }
         .frame(maxWidth: .infinity, minHeight: showsValues ? 48 : 0, alignment: .top)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(s.title + " · " + (s.state == .skip ? "ไม่ต้องยื่น" : s.state == .done ? "ครบ"
+        .accessibilityLabel(s.title + " | " + (s.state == .skip ? "ไม่ต้องยื่น" : s.state == .done ? "ครบ"
                                                : "เอกสาร \(s.progress.ready) จาก \(s.progress.total)"))
     }
 

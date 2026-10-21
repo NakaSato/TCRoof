@@ -87,7 +87,7 @@ public struct ReportLayout {
             if ui == a3End - 1 { sldAfter = pages.count - 1 }
         }
         let n = pages.count
-        let title = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น) · เลขที่ \(job.docNo.isEmpty ? "-" : job.docNo) · \(job.projectName)"
+        let title = "แบบสำรวจเพื่อออกแบบ (เบื้องต้น) | เลขที่ \(job.docNo.isEmpty ? "-" : job.docNo) | \(job.projectName)"
         var result: [Page] = pages.enumerated().map { i, ops in
             let fy = Self.pageH - Self.margin - 6
             return Page(ops: ops + [

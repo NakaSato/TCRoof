@@ -186,7 +186,7 @@ final class TCRoofCoreTests: XCTestCase {
         XCTAssertEqual(j.install?.doneSteps, 0)
         XCTAssertFalse(j.moveToInstall())
         XCTAssertEqual(InstallInfo(doneSteps: 3, currentFraction: 0.5).percent, 50)
-        XCTAssertEqual(InstallInfo(doneSteps: 3).currentStep, "เดินสาย DC · ตู้ DC")
+        XCTAssertEqual(InstallInfo(doneSteps: 3).currentStep, "เดินสาย DC | ตู้ DC")
         XCTAssertEqual(InstallInfo(doneSteps: 7, currentFraction: 0.5).percent, 100)
         // Drive data / backups keep the stage
         let s = tmpStore()

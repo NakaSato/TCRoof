@@ -110,7 +110,7 @@ struct StationListImportSheet: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(fileName).font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy).lineLimit(2)
-            Text("สร้างงาน PWA ใหม่ \(creating) สถานี · เติมข้อมูลที่ว่าง \(filling) สถานี · ข้าม \(items.filter { $0.choice == .skip }.count) แถว")
+            Text("สร้างงาน PWA ใหม่ \(creating) สถานี | เติมข้อมูลที่ว่าง \(filling) สถานี | ข้าม \(items.filter { $0.choice == .skip }.count) แถว")
                 .font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
             Text("สถานีที่มีอยู่แล้วเติมเฉพาะช่องที่ยังว่าง ค่าที่ต่างจากไฟล์คงตามในแอป ตรวจสถานีที่ระบบเลือกให้ก่อนนำเข้า")
                 .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
@@ -128,7 +128,7 @@ struct StationListImportSheet: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 if let p = s.phase, let o = s.order {
-                    Text("ระยะ \(p) · \(o)").font(.sarabun(13, .semibold, relativeTo: .footnote).monospacedDigit()).foregroundStyle(Theme.primary)
+                    Text("ระยะ \(p) | \(o)").font(.sarabun(13, .semibold, relativeTo: .footnote).monospacedDigit()).foregroundStyle(Theme.primary)
                 }
                 Text(s.name).font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy).lineLimit(2)
             }
@@ -144,14 +144,14 @@ struct StationListImportSheet: View {
         .frame(maxWidth: .infinity, minHeight: touchMin, alignment: .leading)
     }
 
-    /// `การประปาส่วนภูมิภาคสาขาชัยบาดาล · 163.02 kWp · อินเวอร์เตอร์ 160 kW · ลพบุรี`
+    /// `การประปาส่วนภูมิภาคสาขาชัยบาดาล | 163.02 kWp | อินเวอร์เตอร์ 160 kW | ลพบุรี`
     private func line(_ s: StationList.Station) -> String {
         var parts = [s.branch]
         if let k = s.kWp { parts.append("\(k.formatted()) kWp") }
         if let i = s.inverterKW { parts.append("อินเวอร์เตอร์ \(i.formatted()) kW") }
         parts.append(s.province)
         if s.latitude == nil { parts.append("ไม่มีพิกัด") }
-        return parts.filter { !$0.isEmpty }.joined(separator: " · ")
+        return parts.filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
     private func choiceMenu(_ item: Binding<Item>) -> some View {
@@ -205,11 +205,11 @@ struct StationListImportSheet: View {
     @ViewBuilder private func changes(_ it: Item, _ j: Job) -> some View {
         let fill = fills(it, j), differ = StationList.differs(it.row.station, j.stationListEntry)
         if !fill.isEmpty {
-            Text("เติม: " + fill.map(\.label).joined(separator: " · "))
+            Text("เติม: " + fill.map(\.label).joined(separator: " | "))
                 .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.okText)
         }
         if !differ.isEmpty {
-            Label("ต่างจากไฟล์ (คงตามในแอป): " + differ.map { describe($0, it.row.station, j) }.joined(separator: " · "),
+            Label("ต่างจากไฟล์ (คงตามในแอป): " + differ.map { describe($0, it.row.station, j) }.joined(separator: " | "),
                   systemImage: "exclamationmark.circle")
                 .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.warningText)
         }

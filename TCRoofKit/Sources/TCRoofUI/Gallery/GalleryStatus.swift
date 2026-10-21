@@ -28,7 +28,7 @@ struct GalleryStatus: View {
                 GalleryItem("จุดสถานะ + ข้อความ") {
                     VStack(alignment: .leading, spacing: 6) {
                         TCDotLine("พร้อมใช้", kind: .ok)
-                        TCDotLine("เกินกำหนดคืน · เกิน 1 วัน", kind: .overdue)
+                        TCDotLine("เกินกำหนดคืน | เกิน 1 วัน", kind: .overdue)
                     }
                 }
             }
@@ -52,13 +52,13 @@ struct GalleryStatus: View {
                 }
             }
             GalleryGrid(columns: 4, phone: 1) {
-                GalleryItem("แถบเตือน") { TCWarningBanner("เสี่ยงปานกลาง", message: "ท่วม 7 ใน 14 ปี · สูงสุด 50 ซม.") }
+                GalleryItem("แถบเตือน") { TCWarningBanner("เสี่ยงปานกลาง", message: "ท่วม 7 ใน 14 ปี | สูงสุด 50 ซม.") }
                 GalleryItem("กล่องผลสรุป") { TCResultBox("โหลดรวม 107 kW น้อยกว่า PV 120 kW → ต้องมีระบบกันย้อน (B4)") }
                 GalleryItem("บรรทัดยังขาด") { TCMissingLine("ยังขาด — โรงกรอง: ภาพมุมกว้าง") }
-                GalleryItem("Toast", note: "แตะปุ่มเพื่อแสดง · หายเองใน 2.5 วินาที") {
+                GalleryItem("Toast", note: "แตะปุ่มเพื่อแสดง | หายเองใน 2.5 วินาที") {
                     VStack(alignment: .leading, spacing: 8) {
-                        TCToast("บันทึกร่างแล้ว · 10:24")
-                        TCButton("แสดง toast", kind: .secondary, size: .card) { toast = "บันทึกร่างแล้ว · 10:24" }
+                        TCToast("บันทึกร่างแล้ว | 10:24")
+                        TCButton("แสดง toast", kind: .secondary, size: .card) { toast = "บันทึกร่างแล้ว | 10:24" }
                     }
                 }
             }
@@ -115,11 +115,11 @@ private struct WrapLayout: Layout {
     }
 }
 
-#Preview("Status · iPad", traits: .landscapeLeft) {
+#Preview("Status | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 4, title: "สถานะและข้อความแจ้ง", subtitle: "Status & feedback") { GalleryStatus() }.padding() }
 }
 
-#Preview("Status · iPhone") {
+#Preview("Status | iPhone") {
     ScrollView { GallerySection(number: 4, title: "สถานะและข้อความแจ้ง", subtitle: "Status & feedback") { GalleryStatus() }.padding() }
         .environment(\.horizontalSizeClass, .compact)
 }

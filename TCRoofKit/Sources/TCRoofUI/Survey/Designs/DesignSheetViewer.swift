@@ -32,7 +32,7 @@ struct DesignSheetViewer: View {
             }
             .tabViewStyle(.page(indexDisplayMode: design.sheet.count > 1 ? .always : .never))
             .background(Theme.paper)
-            .navigationTitle(design.name + (design.sheet.count > 1 ? " · หน้า \(page + 1)/\(design.sheet.count)" : ""))
+            .navigationTitle(design.name + (design.sheet.count > 1 ? " | หน้า \(page + 1)/\(design.sheet.count)" : ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("ปิด") { dismiss() } } }
         }

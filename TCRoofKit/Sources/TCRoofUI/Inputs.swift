@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-// Section 3 · Inputs (docs/ui/components/sections/03-inputs.png).
+// Section 3 | Inputs (docs/ui/components/sections/03-inputs.png).
 
 /// Field name: 17 semibold navy, red `*` when required, grey `ไม่บังคับ` at the end when optional.
 public struct TCFieldLabel: View {
@@ -428,7 +428,7 @@ public struct TCClearButton: View {
     }
 }
 
-/// The type menu at the right of a search box: `ทุกประเภท · 10 ▾` on a grey panel.
+/// The type menu at the right of a search box: `ทุกประเภท | 10 ▾` on a grey panel.
 public struct TCSearchTypePicker: View {
     let options: [String]
     @Binding var selection: String
@@ -447,7 +447,7 @@ public struct TCSearchTypePicker: View {
             }
         } label: {
             HStack(spacing: Space.s) {
-                Text(selection + (count.map { " · \($0)" } ?? "")).font(.sarabun(14.5, .semibold, relativeTo: .body))
+                Text(selection + (count.map { " | \($0)" } ?? "")).font(.sarabun(14.5, .semibold, relativeTo: .body))
                 Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold))
             }
             .foregroundStyle(Theme.navy)
@@ -570,7 +570,7 @@ public struct TCSegmented: View {
     }
 }
 
-/// Capsule tabs (`7 วัน · 30 วัน · ทั้งหมด`): selected solid blue, others soft blue; 44 high.
+/// Capsule tabs (`7 วัน | 30 วัน | ทั้งหมด`): selected solid blue, others soft blue; 44 high.
 public struct TCCapsuleTabs: View {
     let options: [String]
     @Binding var selection: String

@@ -54,9 +54,9 @@ extension PWADocsPadView {
 
     private func subBar(_ g: PWADocs.Group) -> String {
         switch g.origin {
-        case .internalDoc: "แอปสร้างได้ \(g.draftable) · เรียงตามกำหนด"
-        case .signoff: "ทวงได้จากแอป · เรียงตามกำหนด"
-        case .external: "ติดตามอย่างเดียว · เรียงตามกำหนด"
+        case .internalDoc: "แอปสร้างได้ \(g.draftable) | เรียงตามกำหนด"
+        case .signoff: "ทวงได้จากแอป | เรียงตามกำหนด"
+        case .external: "ติดตามอย่างเดียว | เรียงตามกำหนด"
         }
     }
 
@@ -101,12 +101,12 @@ extension PWADocsPadView {
         .accessibilityIdentifier("pwaDocs.todo.\(item.station?.mpNumber.map(String.init) ?? "lib").\(item.kind.id)")
     }
 
-    /// `MP 189 ทุ่งน้อย · อ.1 · ทวงแล้ว 2 ครั้ง`.
+    /// `MP 189 ทุ่งน้อย | อ.1 | ทวงแล้ว 2 ครั้ง`.
     private func cardPlace(_ item: PWADocs.Item, state: StationDocs.DocState) -> String {
         var parts = [item.place]
         if let p = item.package { parts.append(PWADocs.stepTitle(p)) }
         if !state.reminders.isEmpty { parts.append("ทวงแล้ว \(state.reminders.count) ครั้ง") }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     /// `เลย n วัน` red, `วันนี้` amber, else `d/M`.
@@ -152,7 +152,7 @@ extension PWADocsPadView {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("หมดอายุใน 12 เดือน").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text("แอปเตือนก่อน 60 วัน · ใช้แทนในทุกสถานีเมื่ออัปโหลดฉบับใหม่").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("แอปเตือนก่อน 60 วัน | ใช้แทนในทุกสถานีเมื่ออัปโหลดฉบับใหม่").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             PWADocsExpiryTrack(marks: marks) { libraryPaper = .init(stationID: nil, kindID: $0.id) }
         }
@@ -196,11 +196,11 @@ extension PWADocsPadView {
         .accessibilityIdentifier("pwaDocs.lib.\(r.kind.id)")
     }
 
-    /// `ผู้รับจ้าง · หมดอายุ 30/11/2569`, or its packages.
+    /// `ผู้รับจ้าง | หมดอายุ 30/11/2569`, or its packages.
     func librarySub(_ r: PWADocs.LibraryRow) -> String {
         let detail = r.state.expiresAt.map { "หมดอายุ " + ThaiFormat.numericDate.string(from: $0) }
-            ?? "ใช้ในชุด" + r.kind.packages.map { PWADocs.stepTitle($0) }.joined(separator: " · ")
-        return r.kind.scope.owner + " · " + detail
+            ?? "ใช้ในชุด" + r.kind.packages.map { PWADocs.stepTitle($0) }.joined(separator: " | ")
+        return r.kind.scope.owner + " | " + detail
     }
 
     // MARK: search
@@ -211,7 +211,7 @@ extension PWADocsPadView {
             if search.trimmingCharacters(in: .whitespaces).isEmpty {
                 searchHint(data)
             } else if hits.isEmpty {
-                Text("ไม่พบ \"\(search)\" · ลองเลข MP หรือชื่อสถานี").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("ไม่พบ \"\(search)\" | ลองเลข MP หรือชื่อสถานี").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     .padding(16)
             } else {
                 Text("\(hits.count) ผลลัพธ์").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted)
@@ -278,19 +278,19 @@ extension PWADocsPadView {
         .accessibilityIdentifier("pwaDocs.hit.\(h.kind?.id ?? h.station?.id ?? "")")
     }
 
-    /// `MP 189 ทุ่งน้อย · ขนานไฟ · ร่าง`, `คลังกลาง · ทั้ง กปภ. · ล่าสุด`, or the station's next paper.
+    /// `MP 189 ทุ่งน้อย | ขนานไฟ | ร่าง`, `คลังกลาง | ทั้ง กปภ. | ล่าสุด`, or the station's next paper.
     private func hitContext(_ h: PWADocs.Hit) -> String {
         switch h.type {
         case .station:
-            return [h.station?.name, h.station.map { PWAPlan.contractorTitle($0.contractor) }].compactMap { $0 }.joined(separator: " · ")
+            return [h.station?.name, h.station.map { PWAPlan.contractorTitle($0.contractor) }].compactMap { $0 }.joined(separator: " | ")
         case .paper:
             guard let st = h.station, let k = h.kind else { return "" }
             return [st.ref + " " + st.shortName, h.package.map { PWADocs.stepTitle($0) }, h.state.map { $0.status.padWord(k.origin) }]
-                .compactMap { $0 }.joined(separator: " · ")
+                .compactMap { $0 }.joined(separator: " | ")
         case .library:
             guard let k = h.kind else { return "" }
             return ["คลังกลาง", k.scope.owner, h.state.map { PWADocs.pill(k, $0, today: today, warnDays: 60).padTitle }]
-                .compactMap { $0 }.joined(separator: " · ")
+                .compactMap { $0 }.joined(separator: " | ")
         }
     }
 
@@ -328,7 +328,7 @@ struct PWADocsExpiryTrack: View {
                     let left = x < w / 2
                     Button { open(m.kind) } label: {
                         VStack(alignment: left ? .leading : .trailing, spacing: 4) {
-                            Text(m.kind.name + " · " + (m.expired ? "หมดอายุ" : "\(m.days) วัน"))
+                            Text(m.kind.name + " | " + (m.expired ? "หมดอายุ" : "\(m.days) วัน"))
                                 .font(.sarabunFixed(12, .bold)).foregroundStyle(m.ink).lineLimit(1).fixedSize()
                             ZStack {
                                 Circle().fill(Theme.surface).frame(width: 18, height: 18)
@@ -393,7 +393,7 @@ extension StationDocs.Scope {
     var groupSub: String {
         switch self {
         case .org: "ใช้ได้ทุกสถานี"
-        case .contractor: "ใบอนุญาตและเอกสารบริษัท · เตือนก่อนหมดอายุ 60 วัน"
+        case .contractor: "ใบอนุญาตและเอกสารบริษัท | เตือนก่อนหมดอายุ 60 วัน"
         case .project: "ใช้ทั้งโครงการ"
         case .branch: "ใช้ร่วมกันเฉพาะสถานีในสาขาเดียวกัน"
         case .site: ""

@@ -129,7 +129,7 @@ extension RoofPageWide {
 
     @ViewBuilder var mountTab: some View {
         if RoofMount.shape(values) == nil {
-            Label("วางแผงอัตโนมัติใช้ได้กับหลังคาจั่ว ปั้นหยา และเพิงหมาแหงน · หลังคานี้คิดเป็นทรงจั่ว", systemImage: "info.circle")
+            Label("วางแผงอัตโนมัติใช้ได้กับหลังคาจั่ว ปั้นหยา และเพิงหมาแหงน | หลังคานี้คิดเป็นทรงจั่ว", systemImage: "info.circle")
                 .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)
         }
         mountSummary
@@ -169,7 +169,7 @@ extension RoofPageWide {
                 .lineLimit(1).minimumScaleFactor(0.7)
                 HStack(spacing: 6) {
                     if mountBusy { ProgressView().controlSize(.small) }
-                    Text(mountBusy ? "กำลังจัดผัง…" : "แผง \(Int(mountChoice.standardOrDefault.moduleWp)) W · ขาไม่ชนสิ่งกีดขวาง")
+                    Text(mountBusy ? "กำลังจัดผัง…" : "แผง \(Int(mountChoice.standardOrDefault.moduleWp)) W | ขาไม่ชนสิ่งกีดขวาง")
                         .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
@@ -229,18 +229,18 @@ extension RoofPageWide {
             var pills: [(String, Bool)] = [(tall ? "เว้นแผงจากเงา 09:00–15:00" : "ไม่สูงพอจะทอดเงา", !tall)]
             if tall && hulls == 0 { pills = [("เงาไม่ตกบนแผง", true)] }
             return InfoText(title: o.title,
-                            lines: [String(format: "%.2f × %.2f ม. · สูง %.2f ม.", o.w, o.h, o.heightOrDefault)
+                            lines: [String(format: "%.2f × %.2f ม. | สูง %.2f ม.", o.w, o.h, o.heightOrDefault)
                                     + (o.height == nil && o.kind.defaultHeight > 0 ? " (ตามชนิด)" : ""),
-                                    String(format: "แผงเว้น %.2f ม. · ขาเว้น %.2f ม.", o.coverable ? 0 : o.kind.moduleClearance, o.footClearance)
-                                    + (o.coverable ? " · วางทับได้" : "")],
+                                    String(format: "แผงเว้น %.2f ม. | ขาเว้น %.2f ม.", o.coverable ? 0 : o.kind.moduleClearance, o.footClearance)
+                                    + (o.coverable ? " | วางทับได้" : "")],
                             pills: pills)
         case .slot(let ref):
             guard let f = m.faces.first(where: { $0.face.id == ref.face }), f.rows.indices.contains(ref.row),
                   f.rows[ref.row].slots.indices.contains(ref.column) else { return nil }
             let row = f.rows[ref.row], slot = row.slots[ref.column]
-            let place = "ด้าน\(RoofFace.direction(f.face.azimuth)) · แถว \(ref.row + 1) · ช่อง \(ref.column + 1)"
+            let place = "ด้าน\(RoofFace.direction(f.face.azimuth)) | แถว \(ref.row + 1) | ช่อง \(ref.column + 1)"
             if let why = slot.blocked {
-                return InfoText(title: "ช่องว่าง · " + place, lines: [], pills: [(why, false)])
+                return InfoText(title: "ช่องว่าง | " + place, lines: [], pills: [(why, false)])
             }
             guard let run = row.runs.first(where: { $0.columns.contains(ref.column) }) else { return nil }
             let k = run.columns.count
@@ -249,10 +249,10 @@ extension RoofPageWide {
             pills.append((m.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน" : m.options.ribClamp ? "จับสันลอน ¼ และ ¾ ของแผง" : "รางตกแปทั้ง 2 เส้น",
                           RoofMountDrawings.rowPasses(row, in: m)))
             if run.moved { pills.append((m.options.tileHooks ? "ข้ามจันทันที่ชนสิ่งกีดขวาง" : "จัดระยะ L-foot ใหม่เพื่อหลบสิ่งกีดขวาง", true)) }
-            return InfoText(title: "แผง · " + place,
-                            lines: [String(format: "ชุดราง %d แผง (%.2f kWp) · รางยาว %.2f ม.", k, Double(k) * s.moduleKW, run.railLength),
+            return InfoText(title: "แผง | " + place,
+                            lines: [String(format: "ชุดราง %d แผง (%.2f kWp) | รางยาว %.2f ม.", k, Double(k) * s.moduleKW, run.railLength),
                                     (m.options.tileHooks ? "ขอเกี่ยว " : "L-foot ")
-                                    + "\(run.feet.map(\.count).map(String.init).joined(separator: " / ")) ตัวต่อราง · ห่างมากสุด "
+                                    + "\(run.feet.map(\.count).map(String.init).joined(separator: " / ")) ตัวต่อราง | ห่างมากสุด "
                                     + String(format: "%.2f ม.", bay)],
                             pills: pills)
         }
@@ -362,10 +362,10 @@ extension RoofPageWide {
                     HStack(spacing: 8) {
                         Image(systemName: f.used ? "checkmark.square.fill" : "square").font(.system(size: 20))
                             .foregroundStyle(f.used ? Theme.primary : Theme.inkMuted)
-                        Text("\(RoofFace.direction(f.face.azimuth)) \(Int(f.face.azimuth.rounded()))° · ลาด \(String(format: "%.0f", f.face.tilt * 180 / .pi))°")
+                        Text("\(RoofFace.direction(f.face.azimuth)) \(Int(f.face.azimuth.rounded()))° | ลาด \(String(format: "%.0f", f.face.tilt * 180 / .pi))°")
                             .font(.sarabunFixed(14)).lineLimit(1)
                         Spacer(minLength: 4)
-                        Text("\(Int(f.yield.rounded()).formatted()) kWh/kWp · \(f.modules) แผง")
+                        Text("\(Int(f.yield.rounded()).formatted()) kWh/kWp | \(f.modules) แผง")
                             .font(.sarabunFixed(12.5).monospacedDigit()).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     }
                     .frame(minHeight: 44).contentShape(Rectangle())
@@ -375,7 +375,7 @@ extension RoofPageWide {
                 .accessibilityHint(auto ? "ตั้งอัตโนมัติ" : "ตั้งเอง")
             }
             if faces.contains(where: { $0.yield < best * mountChoice.standardOrDefault.faceMinShare }) {
-                Text("ด้านที่ได้พลังงานต่ำกว่า \(Int(mountChoice.standardOrDefault.faceMinShare * 100))% ของด้านที่ดีที่สุดไม่วางแผง (ค่าสมมติ) · แตะเพื่อเปิดเอง")
+                Text("ด้านที่ได้พลังงานต่ำกว่า \(Int(mountChoice.standardOrDefault.faceMinShare * 100))% ของด้านที่ดีที่สุดไม่วางแผง (ค่าสมมติ) | แตะเพื่อเปิดเอง")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
         }
@@ -421,7 +421,7 @@ extension RoofPageWide {
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             .disabled(mountBusy)
             if let t = mountTried {
-                Text("ลอง \(t.tried.formatted()) แบบ · ดีที่สุด \(t.best) แผง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ลอง \(t.tried.formatted()) แบบ | ดีที่สุด \(t.best) แผง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
         }
     }
@@ -431,7 +431,7 @@ extension RoofPageWide {
         return HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 0) {
                 Text("ทิศของขอบบนแปลน").font(.sarabunFixed(14))
-                Text(b.map { "หันทิศ" + RoofFace.direction($0) } ?? "ยังไม่ระบุ · คิดเป็นทิศเหนือ (ค่าสมมติ)")
+                Text(b.map { "หันทิศ" + RoofFace.direction($0) } ?? "ยังไม่ระบุ | คิดเป็นทิศเหนือ (ค่าสมมติ)")
                     .font(.sarabunFixed(12)).foregroundStyle(b == nil ? Self.amber : Theme.inkMuted)
             }
             Spacer(minLength: 6)
@@ -500,7 +500,7 @@ extension RoofPageWide {
                 field("ช่วงจับจากปลาย ต่ำสุด", \.clampMin, step: 0.01)
                 field("ช่วงจับจากปลาย สูงสุด", \.clampMax, step: 0.01)
                 if s.clampFollowsModule {
-                    Text("ช่วงจับคิดจากความยาวแผง (15–30%) · แก้เองได้").font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted)
+                    Text("ช่วงจับคิดจากความยาวแผง (15–30%) | แก้เองได้").font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 field("L-foot ห่างไม่เกิน", \.footSpacing, step: 0.05)
@@ -514,7 +514,7 @@ extension RoofPageWide {
             }
             .padding(.top, 4)
         } label: {
-            Text("มาตรฐานการยึดแผง" + (mountChoice.standard == nil ? "" : " · แก้ในงานนี้")).font(.sarabunFixed(14, .bold))
+            Text("มาตรฐานการยึดแผง" + (mountChoice.standard == nil ? "" : " | แก้ในงานนี้")).font(.sarabunFixed(14, .bold))
         }
         .tint(Theme.navy)
     }
@@ -534,10 +534,10 @@ extension RoofPageWide {
         let assumed = RoofMount.assumptions(values, latitude: latitude)
         return VStack(alignment: .leading, spacing: 2) {
             if !assumed.isEmpty {
-                Text("ค่าสมมติ: " + assumed.joined(separator: " · ")).font(.sarabunFixed(11.5)).foregroundStyle(Self.amber)
+                Text("ค่าสมมติ: " + assumed.joined(separator: " | ")).font(.sarabunFixed(11.5)).foregroundStyle(Self.amber)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบรรทุกของโครงหลังคากับวิศวกรโครงสร้าง")
+            Text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง | ตรวจน้ำหนักบรรทุกของโครงหลังคากับวิศวกรโครงสร้าง")
                 .font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
         }
     }

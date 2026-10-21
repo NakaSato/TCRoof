@@ -41,7 +41,7 @@ final class IECFlowUITests: XCTestCase {
                                "-iecOpen", "YES", "-iecClear", "YES"]
         app.launch()
 
-        // 1 · set-up: on iPad step 1's page
+        // 1 | set-up: on iPad step 1's page
         let setUp = button(app, "ตั้งค่าการทดสอบ", contains: true)
         XCTAssertTrue(setUp.waitForExistence(timeout: slow), "a station with no test offers its set-up")
         setUp.tap()
@@ -70,7 +70,7 @@ final class IECFlowUITests: XCTestCase {
         app.buttons["กลับ"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["1 / 4"].waitForExistence(timeout: 10), "1 inverter, 4 strings")
 
-        // 2 · before: rows for every string, and the inverter's checks
+        // 2 | before: rows for every string, and the inverter's checks
         button(app, "ก่อนการเชื่อมต่อระบบ", contains: true).tap()
         // on iPad that is step 2's page; its ถัดไป opens the string table with every before row
         let toTable = button(app, "ถัดไป 3/7", contains: true)
@@ -83,7 +83,7 @@ final class IECFlowUITests: XCTestCase {
         }
         for check in ["Continuity", "Inverter testing"] { button(app, check).tap(); button(app, "Normal").tap() }
 
-        // 3 · every string on the pad: Voc → current (0, filled) → IR +E → IR −E → the next string
+        // 3 | every string on the pad: Voc → current (0, filled) → IR +E → IR −E → the next string
         app.buttons["ป้ายรูป (Word) ช่อง 1"].tap()
         button(app, "เปิดสตริงนี้ ›").tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "INV1ST1")).firstMatch.waitForExistence(timeout: 10))
@@ -99,7 +99,7 @@ final class IECFlowUITests: XCTestCase {
         for v in Self.vmp { pad(app, v); next.tap(); pad(app, "9.5"); next.tap() }
         app.buttons["กลับ"].firstMatch.tap()
 
-        // 4 · after: the inverter check, the performance and the conditions
+        // 4 | after: the inverter check, the performance and the conditions
         button(app, "หลังเชื่อมต่อ").tap()
         button(app, "Inverter testing").tap(); button(app, "Normal").tap()
         button(app, "ผลการผลิต", contains: true).tap()
@@ -119,7 +119,7 @@ final class IECFlowUITests: XCTestCase {
         type(time.element(boundBy: 1), "13:15", "time after")
         app.staticTexts["ผู้ทดสอบและเครื่องมือ"].tap()
 
-        // 5 · the Excel
+        // 5 | the Excel
         app.buttons["กลับ"].firstMatch.tap()
         let export = button(app, "ส่งออก Excel IEC 62446", contains: true)
         XCTAssertTrue(export.waitForExistence(timeout: 10))
@@ -140,7 +140,7 @@ final class IECFlowUITests: XCTestCase {
         XCTAssertTrue(add.waitForExistence(timeout: slow), "step 1's page")
         add.tap()
         app.buttons["ด้านหน้า"].firstMatch.tap()
-        app.buttons["ด้านข้าง · ป้าย S/N"].firstMatch.tap()
+        app.buttons["ด้านข้าง | ป้าย S/N"].firstMatch.tap()
         let commit = button(app, "เพิ่ม INV3")
         XCTAssertTrue(commit.waitForExistence(timeout: 10))
         commit.tap()

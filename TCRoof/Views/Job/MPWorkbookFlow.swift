@@ -144,7 +144,7 @@ final class MPWorkbookFlow {
         let r = p.imported
         var lines: [String] = []
         if let project = r.project { lines.append(project) }
-        lines.append("\(r.tasks.count) งาน · ติดตั้ง \(r.input.installStart.thaiShort) – \(r.input.installEnd.thaiShort)")
+        lines.append("\(r.tasks.count) งาน | ติดตั้ง \(r.input.installStart.thaiShort) – \(r.input.installEnd.thaiShort)")
         let weeks = Set(r.actual.points.values.flatMap(\.keys)).count
         if weeks > 0 {
             lines.append("ความก้าวหน้าตามไฟล์ \(weeks) สัปดาห์" + (job.scheduleActual.points.isEmpty ? "" : " แทนที่บันทึกไว้"))
@@ -226,7 +226,7 @@ private struct MPWorkbookModifier: ViewModifier {
         flow.pending.flatMap { flow.mismatch($0, job: job, stations: jobs.pwaStations) }
     }
 
-    private func label(_ j: Job) -> String { [j.mpNumber.map { "MP \($0)" }, j.stationName].compactMap { $0 }.joined(separator: " · ") }
+    private func label(_ j: Job) -> String { [j.mpNumber.map { "MP \($0)" }, j.stationName].compactMap { $0 }.joined(separator: " | ") }
 
     func body(content: Content) -> some View {
         content

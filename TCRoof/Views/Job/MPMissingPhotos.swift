@@ -43,12 +43,12 @@ extension View {
     }
 }
 
-/// `100% จากเอกสารอนุมัติ · 4/2/69`: a permit task the station's papers booked (`MasterSchedule.Actual.fromDocuments`).
+/// `100% จากเอกสารอนุมัติ | 4/2/69`: a permit task the station's papers booked (`MasterSchedule.Actual.fromDocuments`).
 struct MPDocumentsMark: View {
     let day: Date
 
     var body: some View {
-        Label("100% จากเอกสารอนุมัติ · " + ThaiFormat.numericDate.string(from: day), systemImage: "checkmark.seal")
+        Label("100% จากเอกสารอนุมัติ | " + ThaiFormat.numericDate.string(from: day), systemImage: "checkmark.seal")
             .font(.sarabun(12, relativeTo: .caption))
             .foregroundStyle(Theme.inkMuted)
             .accessibilityIdentifier("mpDocumentsMark")

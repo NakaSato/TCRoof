@@ -22,6 +22,7 @@ struct PhoneSettingsList: View {
     /// จัดการผู้ใช้และสิทธิ์, full screen on iPad as on its board (docs/ui/user-admin-ipad).
     @State private var showUserAdmin = false
     @State private var calendar = CalendarService.shared
+    @State private var mySignature = MySignature.shared
     #if DEBUG
     @State private var showGallery = false
     #endif
@@ -51,6 +52,13 @@ struct PhoneSettingsList: View {
                         .labelsHidden().tint(Theme.navy)
                     }
                     .rowFrame()
+                    divider
+                    // kept on this device only, for this account (`MySignature`)
+                    NavigationLink { MySignatureSettingsPage() } label: {
+                        row("ลายเซ็นของฉัน", (mySignature.hasSignature ? "บันทึกแล้ว" : "ยังไม่ได้เซ็น") + " ›")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("settings.mySignature")
                 }
                 if pwa {
                     // the PWA module's own dock had this as a tab; here until the owner decides where it lives
@@ -63,7 +71,7 @@ struct PhoneSettingsList: View {
                 if permissions.can(.usersManage) {
                     // only these accounts sign in (firestore.rules members/)
                     section("ทีม") {
-                        NavigationLink { MembersView() } label: { row("สมาชิกทีม", "เชิญ · บทบาท ›") }
+                        NavigationLink { MembersView() } label: { row("สมาชิกทีม", "เชิญ | บทบาท ›") }
                             .buttonStyle(.plain)
                     }
                 }
@@ -175,7 +183,7 @@ struct PhoneSettingsList: View {
             })) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("ซิงก์นัดสำรวจลงปฏิทิน").foregroundStyle(Theme.navy)
-                    Text("ย้ายหรือลบนัดให้เองเมื่องานเปลี่ยน · ต้องให้สิทธิ์ปฏิทินแบบเต็ม")
+                    Text("ย้ายหรือลบนัดให้เองเมื่องานเปลี่ยน | ต้องให้สิทธิ์ปฏิทินแบบเต็ม")
                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
                 }
             }
@@ -187,7 +195,7 @@ struct PhoneSettingsList: View {
                 Button {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 } label: {
-                    Text("ไม่ได้รับสิทธิ์ปฏิทินแบบเต็ม · เปิดในการตั้งค่าของเครื่อง ›").font(.sarabun(14, .semibold))
+                    Text("ไม่ได้รับสิทธิ์ปฏิทินแบบเต็ม | เปิดในการตั้งค่าของเครื่อง ›").font(.sarabun(14, .semibold))
                         .foregroundStyle(Theme.danger).frame(maxWidth: .infinity, alignment: .leading).rowFrame()
                 }
                 .buttonStyle(.plain)

@@ -277,12 +277,12 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
         public var differences: [String] = []
         /// Each difference's photo, in the same order (nil when it has none).
         public var photos: [Photo?] = []
-        /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยืนยันแบบรวม 4 · ยังไม่ตรวจ 8"
+        /// "ตรงแบบ 9 | ย้าย 1 | ไม่มีจริง 1 | เพิ่มหน้างาน 1 | ยืนยันแบบรวม 4 | ยังไม่ตรวจ 8"
         public var counts: String {
             var parts = ["ตรงแบบ \(matches)", "\(movedLabel) \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
             if bulk > 0 { parts.append("ยืนยันแบบรวม \(bulk)") }
             if open > 0 { parts.append("ยังไม่ตรวจ \(open)") }
-            return parts.joined(separator: " · ")
+            return parts.joined(separator: " | ")
         }
     }
 

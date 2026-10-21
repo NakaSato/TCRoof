@@ -17,7 +17,7 @@ final class IECInstallPhotosTests: XCTestCase {
         XCTAssertEqual(pages.map(\.slots.count), [2, 2, 2, 2, 2, 2, 2, 1, 2, 2])
         XCTAssertEqual(pages[0].group, "หลังคา 1")
         XCTAssertEqual(pages[2].group, "")
-        XCTAssertEqual(pages[2].subtitle, "Growatt MAX 125KTL3-X LV · S/N GKLRF5N02R")
+        XCTAssertEqual(pages[2].subtitle, "Growatt MAX 125KTL3-X LV | S/N GKLRF5N02R")
         XCTAssertEqual(pages[3].slots[1].caption, "ภาพถ่ายเครื่องแปลงไฟฟ้า Inverter (Serial No.2)")
         XCTAssertEqual(r.installTally, .init(0, 19))
     }

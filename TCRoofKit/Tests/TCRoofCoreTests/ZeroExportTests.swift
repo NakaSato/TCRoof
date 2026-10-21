@@ -30,7 +30,7 @@ final class ZeroExportTests: XCTestCase {
         let m = module(ZeroExport.lv, photos: 4)
         XCTAssertTrue(m.completion.isComplete)
         XCTAssertTrue(missing(m).isEmpty)
-        XCTAssertEqual(ZeroExport.statusLine(m.values), "ครบช่องบังคับแล้ว · SLD และ B2 อัปเดตตามตำแหน่งกันย้อน")
+        XCTAssertEqual(ZeroExport.statusLine(m.values), "ครบช่องบังคับแล้ว | SLD และ B2 อัปเดตตามตำแหน่งกันย้อน")
         XCTAssertTrue(ZeroExport.isComplete(m.values))
     }
 
@@ -52,9 +52,9 @@ final class ZeroExportTests: XCTestCase {
     }
 
     func testLabelsFollowTheLevel() {
-        XCTAssertEqual(ZeroExport.photoLabel(0, hv: false, board: "MDP-2"), "ตู้ MDP-2 · วงจุดติดตั้ง CT")
-        XCTAssertEqual(ZeroExport.photoLabel(3, hv: false, board: "MDP-2"), "บัสบาร์ขาออก ACB · วัดขนาดสำหรับ CT")
-        XCTAssertEqual(ZeroExport.photoLabel(0, hv: true, board: "MDP-2"), "เสาหลังมิเตอร์ · จุด CT/VT")
+        XCTAssertEqual(ZeroExport.photoLabel(0, hv: false, board: "MDP-2"), "ตู้ MDP-2 | วงจุดติดตั้ง CT")
+        XCTAssertEqual(ZeroExport.photoLabel(3, hv: false, board: "MDP-2"), "บัสบาร์ขาออก ACB | วัดขนาดสำหรับ CT")
+        XCTAssertEqual(ZeroExport.photoLabel(0, hv: true, board: "MDP-2"), "เสาหลังมิเตอร์ | จุด CT/VT")
         XCTAssertEqual(ZeroExport.photoLabel(2, hv: true, board: "MDP-2"), "ป้ายมิเตอร์ กฟภ. / CT-VT เดิม")
     }
 

@@ -40,7 +40,7 @@ final class RoofPitchTests: XCTestCase {
         let texts = sec.sketch.ops.compactMap { op -> String? in if case let .text(t, _, _, _, _, _, _) = op { return t }; return nil }
         XCTAssertTrue(texts.contains("17.4°"))
         XCTAssertTrue(texts.contains("R 2.50"))
-        // purlin lines step by spacing · cos(pitch)
+        // purlin lines step by spacing | cos(pitch)
         let lines = Roof.purlinLines(v).filter { $0 < 8 }.sorted(by: >)
         XCTAssertEqual(lines[0] - lines[1], cos(expected * .pi / 180), accuracy: 1e-9)
         XCTAssertEqual(RoofMount.input(v, latitude: nil).ridgeHeight, 2.5, accuracy: 1e-9)

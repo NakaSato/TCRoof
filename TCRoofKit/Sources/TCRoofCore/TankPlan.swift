@@ -159,7 +159,7 @@ public struct TankPlan: Sendable {
         tag("dim", text: "dimtxt")
         // note, north arrow, caption
         let wall = Tank.typeName(v).map { "ผนัง " + $0 }
-        let note = ([wall] + [hints ? "สิ่งกีดขวางระบุในขั้นที่ 2" : nil]).compactMap { $0 }.joined(separator: " · ")
+        let note = ([wall] + [hints ? "สิ่งกีดขวางระบุในขั้นที่ 2" : nil]).compactMap { $0 }.joined(separator: " | ")
         if !note.isEmpty { o.append(.text(note, at: Pt(W - 50, 14), size: 8, color: .ink2, align: .right)) }
         tag("txt")
         if let az = Tank.azimuth(v) { o += Self.northArrow(at: Pt(W - 24, 36), azimuth: az) }

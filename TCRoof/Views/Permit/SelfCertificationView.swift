@@ -127,7 +127,7 @@ struct SelfCertificationView: View {
             Text("กรอก Inverter ปริมาณเสนอขาย และการเชื่อมต่อ แล้วแอปจะเลือกช่องในเอกสารแนบ 2 ให้")
                 .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         case .notRequired?:
-            TCStatusChip("ไม่ต้องติด Export Limiting Device · ไม่ต้องแนบรูปข้อ 2", kind: .ok)
+            TCStatusChip("ไม่ต้องติด Export Limiting Device | ไม่ต้องแนบรูปข้อ 2", kind: .ok)
         case let limiter?:
             TCStatusChip(limiter == .singleOver7 ? "ต้องติด Export Limiting Device (เฟสเดียว > 7 kW)"
                                                  : "ต้องติด Export Limiting Device (หลายเฟส > 10 kW)", kind: .pending)
@@ -206,7 +206,7 @@ struct SelfCertificationView: View {
     }
 
     private var signCard: some View {
-        PermitSection(title: "ผู้ลงนาม", subtitle: "ช่องลายเซ็นเว้นไว้ให้เซ็นจริง · วิศวกรลงนามรับรองทุกแผ่น") {
+        PermitSection(title: "ผู้ลงนาม", subtitle: "ช่องลายเซ็นเว้นไว้ให้เซ็นจริง | วิศวกรลงนามรับรองทุกแผ่น") {
             PermitField("ชื่อวิศวกร (ตัวบรรจง)", text: $form.engineerName, required: true)
             dateRow("พิมพ์วันที่ลงนามของผู้ผลิตไฟฟ้า", $form.producerSignDate)
             dateRow("พิมพ์วันที่ลงนามของวิศวกร", $form.engineerSignDate)

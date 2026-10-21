@@ -36,7 +36,7 @@ final class PDFReportTests: XCTestCase {
             job.modules[ti].values["shade"] = .choice("มี", other: ""); job.modules[ti].values["shadeFrom"] = .multi(["ต้นไม้", "หอถังสูง"])
             job.modules[ti].values["shadeDir"] = .multi(["S", "SW"]); job.modules[ti].values["shadeNote"] = .text("ต้นไม้สูง ~8 ม. ห่าง 5 ม.")
             XCTAssertEqual(Schema.shadeText(job.modules[ti].values), "เงาบัง: ต้นไม้, หอถังสูง ทิศ S, SW (ต้นไม้สูง ~8 ม. ห่าง 5 ม.)")
-            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. · กึ่งฝัง")
+            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. | กึ่งฝัง")
             // D1 wide page answers: the report draws the tank plan with the caption, level tags and the turned N arrow
             Tank.apply(&job.modules[ti].values, Tank.presets[1])
             Tank.setHeight(&job.modules[ti].values, 4.5); Tank.setExposed(&job.modules[ti].values, 1.2)
@@ -82,7 +82,7 @@ final class PDFReportTests: XCTestCase {
         XCTAssertTrue(texts.contains("แปลนวางแผงบนหลังคา (หน่วย ม.)"))
         XCTAssertTrue(texts.contains { $0.hasPrefix("ผังแผงอัตโนมัติ ") })
         XCTAssertTrue(texts.contains { $0.hasPrefix("BOQ: ราง ") })
-        XCTAssertTrue(texts.contains("รายละเอียด A · รูปตัดแถวแผงตามแนวลาด (หน่วย ม.)"))
+        XCTAssertTrue(texts.contains("รายละเอียด A | รูปตัดแถวแผงตามแนวลาด (หน่วย ม.)"))
         // a flat roof has no layout
         var flat = roof
         flat.values[Roof.Key.shape] = .choice("หลังคาคอนกรีต (ดาดฟ้า)", other: "")
@@ -215,7 +215,7 @@ final class PhotoStampReportTests: XCTestCase {
         XCTAssertTrue(draft.contains("ยังไม่ออก"))
         XCTAssertTrue(draft.contains("รายการที่แก้จาก REV 00"))
         XCTAssertTrue(draft.contains("สถานี ข"))
-        XCTAssertFalse(draft.contains { $0.contains("· รหัสตรวจสอบ") }, "no lock footer")
+        XCTAssertFalse(draft.contains { $0.contains("| รหัสตรวจสอบ") }, "no lock footer")
         // a long list continues with the column titles repeated
         let many = (0..<120).flatMap { _ in changes }
         let long = texts(ReportLayout(job: j, header: ReportHeader(changes: many)).pages())

@@ -109,7 +109,7 @@ struct InfoPageWide: View {
     /// Project and coordinator in one card; in landscape its rows spread over the height the column leaves
     /// (the design's `justify-content: space-between`, at least 14 apart).
     var projectCoordinatorBox: some View {
-        A1Card(title: "โครงการ · ผู้ประสานงาน", spacing: 0) {
+        A1Card(title: "โครงการ | ผู้ประสานงาน", spacing: 0) {
             let gap = Spacer(minLength: 14)
             gap
             field("projectName") { textInput("projectName") }
@@ -347,7 +347,7 @@ struct A1Card<Content: View>: View {
 struct PageStepBar: View {
     let job: Job
     let here: MissingGroup.Target
-    /// Shown on the right in place of the step's title (B1: "ตู้ไฟฟ้าอาคาร · 3 อาคาร").
+    /// Shown on the right in place of the step's title (B1: "ตู้ไฟฟ้าอาคาร | 3 อาคาร").
     var title: String? = nil
     /// iPhone (docs/ui/survey-d1-size-iphone): the step's name in grey after the count, this chip on the right,
     /// 6-pt bars with done steps green.

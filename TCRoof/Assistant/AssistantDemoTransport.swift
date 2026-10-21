@@ -38,8 +38,8 @@ struct AssistantDemoTransport: Assistant.Transport {
             guard let id = focus ?? stations.first?["jobID"]?.string else { return say("ยังไม่มีสถานีที่มีแผน MP") }
             if !update, !draft, focus == nil {
                 let lines = stations.prefix(5).map { s in
-                    "- **\(s["station"]?.string ?? "")** แผน \(s["plannedPercent"]?.string ?? "–")% · ทำได้ \(s["actualPercent"]?.string ?? "–")%"
-                        + (s["projectedSlipDays"]?.number.map { $0 > 0 ? " · คาดว่าช้า \(Int($0)) วัน" : "" } ?? "")
+                    "- **\(s["station"]?.string ?? "")** แผน \(s["plannedPercent"]?.string ?? "–")% | ทำได้ \(s["actualPercent"]?.string ?? "–")%"
+                        + (s["projectedSlipDays"]?.number.map { $0 > 0 ? " | คาดว่าช้า \(Int($0)) วัน" : "" } ?? "")
                 }
                 return say("สถานีที่ช้ากว่าแผนมากที่สุด:\n" + lines.joined(separator: "\n"))
             }
@@ -56,11 +56,11 @@ struct AssistantDemoTransport: Assistant.Transport {
             let behind = open.sorted { ($0.slipDays ?? 0) > ($1.slipDays ?? 0) }.prefix(3)
             let tasks = behind.map { t in
                 "- \(t.code) \(t.title): ทำได้ \(Self.num(t.actualPercent))% ต้องทำ \(Self.num(t.neededPointsPerWeek ?? 0)) คะแนน/สัปดาห์"
-                    + (t.slipDays.map { $0 > 0 ? " · คาดว่าช้า \($0) วัน" : "" } ?? "")
+                    + (t.slipDays.map { $0 > 0 ? " | คาดว่าช้า \($0) วัน" : "" } ?? "")
             }
-            let head = draft ? "**ร่างสรุปประชุมประจำสัปดาห์ · \(brief.station)**" : "**\(brief.station)**"
-            return say(head + "\nแผน \(Self.num(brief.plannedPercent))% · ทำได้ \(Self.num(brief.actualPercent))%"
-                       + (brief.projectedFinish.map { " · คาดว่าเสร็จ \($0)" } ?? "")
+            let head = draft ? "**ร่างสรุปประชุมประจำสัปดาห์ | \(brief.station)**" : "**\(brief.station)**"
+            return say(head + "\nแผน \(Self.num(brief.plannedPercent))% | ทำได้ \(Self.num(brief.actualPercent))%"
+                       + (brief.projectedFinish.map { " | คาดว่าเสร็จ \($0)" } ?? "")
                        + (tasks.isEmpty ? "" : "\n\nงานที่ต้องเร่ง:\n" + tasks.joined(separator: "\n")))
         default:
             let p = JSONValue.parse(results[results.count - 1])
@@ -80,8 +80,8 @@ struct AssistantDemoTransport: Assistant.Transport {
             guard results.count == 1 else { return call("station_priorities", "{}") }
             guard let p = decode(S.Priorities.self, 0) else { return err(0) }
             var out = ["**ลำดับความเสี่ยง**"] + p.stations.prefix(4).enumerated().map { i, s in
-                "\(i + 1). \(s.station) · ช้า \(s.projectedSlipDays ?? 0) วัน · คะแนนเสี่ยง \(num(s.riskScore))"
-                    + (s.crewNeeded.map { " · ต้องใช้ \($0) คน (มี \(num(s.crewAverage ?? 0)))" } ?? "")
+                "\(i + 1). \(s.station) | ช้า \(s.projectedSlipDays ?? 0) วัน | คะแนนเสี่ยง \(num(s.riskScore))"
+                    + (s.crewNeeded.map { " | ต้องใช้ \($0) คน (มี \(num(s.crewAverage ?? 0)))" } ?? "")
             }
             let over = p.loads.filter(\.overloaded)
             if !over.isEmpty { out += ["", "**สัปดาห์ที่คนไม่พอ**"] + over.prefix(3).map { "- \($0.week) \($0.crewGroup): ต้องใช้ \($0.crewNeeded) คน มี \(num($0.crewNow))" } }
@@ -99,25 +99,25 @@ struct AssistantDemoTransport: Assistant.Transport {
         switch kind {
         case "what_if":
             guard let w = decode(S.WhatIf.self, 1) else { return err(1) }
-            var out = ["**\(w.station)** ส่งมอบตามแผน \(w.installEnd) · คาดส่งมอบ \(w.handoverForecast) (ช้า \(w.handoverSlipDays) วัน ตามหน้าติดตามงาน)",
+            var out = ["**\(w.station)** ส่งมอบตามแผน \(w.installEnd) | คาดส่งมอบ \(w.handoverForecast) (ช้า \(w.handoverSlipDays) วัน ตามหน้าติดตามงาน)",
                        "", "ประมาณรายงาน:",
                        "- อัตราเดิม: เสร็จ \(w.base.stationFinish ?? "–") (ช้า \(w.base.slipDays ?? 0) วัน)"]
             if let s = w.scenario, let a = w.base.slipDays, let b = s.slipDays {
-                out.append("- \(s.name): เสร็จ \(s.stationFinish ?? "–") (ช้า \(b) วัน · ได้คืน \(a - b) วัน)")
+                out.append("- \(s.name): เสร็จ \(s.stationFinish ?? "–") (ช้า \(b) วัน | ได้คืน \(a - b) วัน)")
             }
             if let t = w.toFinishOnTime {
                 out.append("- ให้ทันแผน: เร็วขึ้น \(num(t.paceFactor)) เท่า คอขวด \(t.bottleneck)"
-                           + (t.crew.map { " · ใช้ \($0) คน" } ?? "") + (t.workingDaysPerWeek.map { " หรือทำงาน \($0) วัน/สัปดาห์" } ?? ""))
+                           + (t.crew.map { " | ใช้ \($0) คน" } ?? "") + (t.workingDaysPerWeek.map { " หรือทำงาน \($0) วัน/สัปดาห์" } ?? ""))
             }
             return say(out.joined(separator: "\n") + "\n\n_\(w.note)_")
         case "look_ahead":
             guard let l = decode(S.LookAhead.self, 1) else { return err(1) }
-            var out = ["**แผนล่วงหน้า · \(l.station)**"]
+            var out = ["**แผนล่วงหน้า | \(l.station)**"]
             for w in l.weeks {
                 out.append("สัปดาห์ \(w.week): " + (w.tasks.isEmpty ? "ไม่มีงานตามแผน" : w.tasks.map { t in
                     t.code + (t.waitingFor.isEmpty ? "" : " (รอ " + t.waitingFor.map { "\($0.code) \(num($0.actualPercent))%" }.joined(separator: ", ") + ")")
-                }.joined(separator: ", ")) + (w.inspections.isEmpty ? "" : " · ตรวจ " + w.inspections.joined(separator: ", "))
-                    + (w.deadlines.isEmpty ? "" : " · ส่ง " + w.deadlines.joined(separator: ", ")))
+                }.joined(separator: ", ")) + (w.inspections.isEmpty ? "" : " | ตรวจ " + w.inspections.joined(separator: ", "))
+                    + (w.deadlines.isEmpty ? "" : " | ส่ง " + w.deadlines.joined(separator: ", ")))
             }
             out.append("ฝน 14 วัน: \(l.weather.rainDays) วัน \(l.weather.rainHours) ชม.")
             return say(out.joined(separator: "\n"))

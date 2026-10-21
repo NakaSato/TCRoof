@@ -9,7 +9,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
     /// Live cases (`LiveNotifications.swift`): install days, the MP plan, and the project feed's events.
     case install, mp, feed, issue, inspect
 
-    /// The coloured word after `TCROOF ·` on the board.
+    /// The coloured word after `TCROOF |` on the board.
     public var category: String {
         switch self {
         case .survey: "สำรวจ"
@@ -100,7 +100,7 @@ public enum NotificationAction: String, CaseIterable, Sendable {
         case .navigate: "นำทาง"
         case .openSurvey: "เปิดแบบสำรวจ"
         case .remind10Minutes: "เตือนอีก 10 นาที"
-        case .pickUp: "รับเครื่อง · ถ่ายภาพตอนยืม"
+        case .pickUp: "รับเครื่อง | ถ่ายภาพตอนยืม"
         case .viewQueue: "ดูคิว"
         case .leaveQueue: "สละคิว"
         case .returnTool: "คืนอุปกรณ์"
@@ -195,7 +195,7 @@ public struct NotificationPlan: Equatable, Sendable {
     public func fireDate(now: Date) -> Date { fire.date(now: now) }
 }
 
-// MARK: - Survey · sync · Drive
+// MARK: - Survey | sync | Drive
 
 public extension NotificationPlan {
     /// The reminder before an appointment (docs/specs/calendar-travel-expenses-swift.md §A3: 1 hour).
@@ -210,7 +210,7 @@ public extension NotificationPlan {
         let at = fireAt ?? appointment.addingTimeInterval(-surveyLead)
         return NotificationPlan(id: surveyID(jobKey: jobKey, appointment: appointment), type: .survey,
                                 title: surveyTitle(minutes: Int((appointment.timeIntervalSince(at) / 60).rounded())), body: name,
-                                sub: [area, ThaiDate.time(appointment)].filter { !$0.isEmpty }.joined(separator: " · "),
+                                sub: [area, ThaiDate.time(appointment)].filter { !$0.isEmpty }.joined(separator: " | "),
                                 fire: .at(at), info: [NotificationInfo.job: jobKey, NotificationInfo.appointment: ISO.string(appointment)])
     }
 
@@ -246,10 +246,10 @@ public extension NotificationPlan {
         if due > now { fire = .at(due) }
         else if !alreadyShown { fire = .after(1) }
         else { fire = .at(nextEvening(after: now)) }
-        let shown = names.prefix(3).joined(separator: " · ") + (names.count > 3 ? " +\(names.count - 3)" : "")
+        let shown = names.prefix(3).joined(separator: " | ") + (names.count > 3 ? " +\(names.count - 3)" : "")
         let day = ISODate.string(fire.date(now: now))
         return NotificationPlan(id: syncPendingID, type: .sync, title: "รอซิงก์ \(names.count) งาน", body: "ยังไม่ได้บันทึกขึ้น Google Drive",
-                                sub: [shown, "จะซิงก์เองเมื่อมีสัญญาณ"].filter { !$0.isEmpty }.joined(separator: " · "), fire: fire,
+                                sub: [shown, "จะซิงก์เองเมื่อมีสัญญาณ"].filter { !$0.isEmpty }.joined(separator: " | "), fire: fire,
                                 // the bell's id for this backlog on the day it shows
                                 info: [NotificationInfo.bell: "sync-\(day)-\(names.count)"])
     }
@@ -267,7 +267,7 @@ public extension NotificationPlan {
 
     /// `บันทึกขึ้น Drive แล้ว`. `files` are "PDF", "Excel", "รูป"…; `folder` is "TCRoof/2569/NO.224".
     static func driveSaved(report: UUID, savedAt: Date, name: String, files: [String], folder: String, url: String?) -> NotificationPlan {
-        let body = [name, "แบบสำรวจ"].filter { !$0.isEmpty }.joined(separator: " ") + " · \(files.count) ไฟล์ (\(files.joined(separator: " · ")))"
+        let body = [name, "แบบสำรวจ"].filter { !$0.isEmpty }.joined(separator: " ") + " | \(files.count) ไฟล์ (\(files.joined(separator: " | ")))"
         return NotificationPlan(id: savedID(report: report, savedAt: savedAt), type: .done, title: "บันทึกขึ้น Drive แล้ว",
                                 body: body, sub: "โฟลเดอร์ \(folder)", fire: .after(1),
                                 info: url.map { [NotificationInfo.url: $0] } ?? [:])
@@ -305,16 +305,16 @@ public enum RoutineReportNotification {
 /// Queue, overdue and calibration notifications for borrowed tools. Nothing in the app calls these yet:
 /// they wait for the tools feature (`AppModule.tools`).
 public enum ToolNotification {
-    /// `ถึงคิวคุณ · DJI Mavic 3T`, right away, when the tool you queued for is returned.
+    /// `ถึงคิวคุณ | DJI Mavic 3T`, right away, when the tool you queued for is returned.
     public static func notifyQueueReached(toolID: String, tool: String, from: String, place: String,
                                           job: String, until: Date, waitingPhone: String? = nil) -> NotificationPlan {
-        NotificationPlan(id: "queue-\(toolID)", type: .queue, title: "ถึงคิวคุณ · \(tool)",
+        NotificationPlan(id: "queue-\(toolID)", type: .queue, title: "ถึงคิวคุณ | \(tool)",
                          body: "\(from)คืนเครื่องและส่งต่อให้คุณ รับได้ที่\(place)",
-                         sub: "งาน \(job) · ใช้ได้ถึง \(ThaiDate.dayMonth(until))", fire: .after(1),
+                         sub: "งาน \(job) | ใช้ได้ถึง \(ThaiDate.dayMonth(until))", fire: .after(1),
                          info: [NotificationInfo.tool: toolID, NotificationInfo.toolName: tool])
     }
 
-    /// `เกินกำหนดคืน · Fluke 376 FC` at 08:00 on each of the next `days` days the tool is past `due`.
+    /// `เกินกำหนดคืน | Fluke 376 FC` at 08:00 on each of the next `days` days the tool is past `due`.
     public static func notifyOverdue(toolID: String, tool: String, due: Date, waiting: String? = nil, waitingFrom: Date? = nil,
                                      waitingPhone: String? = nil, now: Date, days: Int = 7) -> [NotificationPlan] {
         let cal = Calendar.current
@@ -326,11 +326,11 @@ public enum ToolNotification {
             guard late >= 1 else { return nil }
             var body = "เกิน \(late) วัน (กำหนด \(ThaiDate.dayMonth(due)))"
             if let waiting, !waiting.isEmpty {
-                body += " · \(waiting)รอใช้ต่อ" + (waitingFrom.map { " " + ThaiDate.dayMonth($0) } ?? "")
+                body += " | \(waiting)รอใช้ต่อ" + (waitingFrom.map { " " + ThaiDate.dayMonth($0) } ?? "")
             }
             var info = [NotificationInfo.tool: toolID, NotificationInfo.toolName: tool]
             if let waitingPhone { info[NotificationInfo.phone] = waitingPhone }
-            return NotificationPlan(id: "late-\(toolID)-\(ISODate.string(at))", type: .late, title: "เกินกำหนดคืน · \(tool)",
+            return NotificationPlan(id: "late-\(toolID)-\(ISODate.string(at))", type: .late, title: "เกินกำหนดคืน | \(tool)",
                                     body: body, sub: "แตะเพื่อคืนพร้อมถ่ายภาพ 3 ภาพ", fire: .at(at), info: info)
         }
         return Array(plans.prefix(days))
@@ -350,8 +350,8 @@ public enum ToolNotification {
         let cal = Calendar.current
         let left = cal.dateComponents([.day], from: cal.startOfDay(for: at), to: cal.startOfDay(for: due)).day ?? 0
         return NotificationPlan(id: "cal-\(toolID)-\(ISODate.string(at))", type: .cal, title: "ใกล้ครบกำหนดสอบเทียบ",
-                                body: [tool, kind].filter { !$0.isEmpty }.joined(separator: " ") + " · ครบ \(ThaiDate.full(due))",
-                                sub: "เหลือ \(left) วัน · จองส่งสอบเทียบล่วงหน้า", fire: .at(at),
+                                body: [tool, kind].filter { !$0.isEmpty }.joined(separator: " ") + " | ครบ \(ThaiDate.full(due))",
+                                sub: "เหลือ \(left) วัน | จองส่งสอบเทียบล่วงหน้า", fire: .at(at),
                                 info: [NotificationInfo.tool: toolID, NotificationInfo.toolName: tool,
                                        NotificationInfo.toolKind: kind, NotificationInfo.due: ISO.string(due),
                                        NotificationInfo.bell: calibrationBellID(toolID: toolID, due: due)])

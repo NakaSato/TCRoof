@@ -47,7 +47,7 @@ final class IECBeforeVITests: XCTestCase {
         XCTAssertFalse(IECReport.currentPassesBefore(0.01))
         r.inverters[0].slots[0]?.iBeforeA = 0.4
         XCTAssertEqual(r.beforeVIStatus(r.inverters[0], slot: 1), .fail)
-        XCTAssertEqual(r.beforeVIFailures(r.inverters[0], slot: 1), ["กระแส 0.40 A · ก่อนออนต้องเป็น 0 A"])
+        XCTAssertEqual(r.beforeVIFailures(r.inverters[0], slot: 1), ["กระแส 0.40 A | ก่อนออนต้องเป็น 0 A"])
     }
 
     func testPolarityFollowsTheVocSignUntilSetByHand() throws {

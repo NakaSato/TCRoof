@@ -42,12 +42,12 @@ final class ProgressSummaryTests: XCTestCase {
         m.values["facing"] = .choice("ใต้", other: "")
         m.values["panelAreaWidth"] = .text("1200")
         m.values["panelAreaLength"] = .text("800")
-        XCTAssertEqual(j.facts(m), "ทรงปั้นหยา · เมทัลชีท · หันทิศใต้ · พื้นที่ 1200 x 800 ซม.")
+        XCTAssertEqual(j.facts(m), "ทรงปั้นหยา | เมทัลชีท | หันทิศใต้ | พื้นที่ 1200 x 800 ซม.")
 
         // half an area is no area; an empty "อื่นๆ" still says อื่นๆ
         m.values["panelAreaLength"] = .text(" ")
         m.values["roofShape"] = .choice("อื่นๆ", other: "")
         m.values["facing"] = nil
-        XCTAssertEqual(j.facts(m), "อื่นๆ · เมทัลชีท")
+        XCTAssertEqual(j.facts(m), "อื่นๆ | เมทัลชีท")
     }
 }

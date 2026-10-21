@@ -46,9 +46,9 @@ final class DeviceCaps {
 
     /// Rows for Settings › เครื่องนี้.
     var rows: [(title: String, detail: String, on: Bool)] {
-        [("อ่านตัวเลขจากป้ายอุปกรณ์", liveText ? "Live Text ในกล้อง" : "เครื่องนี้ไม่รองรับ · พิมพ์เอง", liveText),
-         ("วัดมุมเอียงหลังคา", motion ? "เซนเซอร์การเคลื่อนไหว" : "ไม่มีเซนเซอร์ · พิมพ์เอง", motion),
-         ("เข็มทิศ (ทิศของหลังคา)", compass ? "ตรวจความแม่นยำทุกครั้ง" : "ไม่มีเข็มทิศ · เลือกทิศเอง", compass),
+        [("อ่านตัวเลขจากป้ายอุปกรณ์", liveText ? "Live Text ในกล้อง" : "เครื่องนี้ไม่รองรับ | พิมพ์เอง", liveText),
+         ("วัดมุมเอียงหลังคา", motion ? "เซนเซอร์การเคลื่อนไหว" : "ไม่มีเซนเซอร์ | พิมพ์เอง", motion),
+         ("เข็มทิศ (ทิศของหลังคา)", compass ? "ตรวจความแม่นยำทุกครั้ง" : "ไม่มีเข็มทิศ | เลือกทิศเอง", compass),
          ("ตำแหน่ง (GPS)", gpsGrade.settingsDetail, gpsGrade == .gps || gpsGrade == .rough),
          ("LiDAR", lidar ? "มี" : "ไม่มี", lidar),
          ("เลนส์มุมกว้างพิเศษ (0.5×)", ultraWide ? "มี" : "ไม่มี", ultraWide)]

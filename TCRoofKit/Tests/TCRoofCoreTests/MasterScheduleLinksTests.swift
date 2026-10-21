@@ -227,7 +227,7 @@ final class MasterScheduleLinksTests: XCTestCase {
         let ac = r.installPages.first { $0.id == "ac" }!
         r.setInstallPhoto("p1", for: ac.slots[0])
         let missing = IECReport.missingPhotoLabels(r, for: .acSide)
-        XCTAssertEqual(missing, ["ตู้ AC · ภาพถ่ายตู้ควบคุมและบริภัณฑ์ไฟฟ้ากระแสสลับ (ด้านนอก)", "กราวน์ AC / Inverter Station · ภาพถ่ายกราวน์กระแสสลับ"])
+        XCTAssertEqual(missing, ["ตู้ AC | ภาพถ่ายตู้ควบคุมและบริภัณฑ์ไฟฟ้ากระแสสลับ (ด้านนอก)", "กราวน์ AC / Inverter Station | ภาพถ่ายกราวน์กระแสสลับ"])
         let gac = r.installPages.first { $0.id == "gac" }!
         r.setInstallPhoto("p2", for: ac.slots[1])
         r.setInstallPhoto("p3", for: gac.slots[0])
@@ -241,9 +241,9 @@ final class MasterScheduleLinksTests: XCTestCase {
     func testTasksOutsideConstructionOrWithoutSlotsNeedNothingAndNoTestMeansAllMissing() {
         XCTAssertEqual(IECReport.missingPhotoLabels(nil, for: .preCommissioning), [])
         XCTAssertEqual(IECReport.missingPhotoLabels(nil, for: .fireSwitch), [])
-        XCTAssertEqual(IECReport.missingPhotoLabels(nil, for: .panels), ["หลังคา 1 (2/2) · ภาพถ่ายแผงเซลล์แสงอาทิตย์"])
+        XCTAssertEqual(IECReport.missingPhotoLabels(nil, for: .panels), ["หลังคา 1 (2/2) | ภาพถ่ายแผงเซลล์แสงอาทิตย์"])
         let inv = IECReport.missingPhotoLabels(nil, for: .inverter)
-        XCTAssertEqual(inv.first, "Inverter · ยังไม่ได้เพิ่มเครื่องในขั้น 1 ของการทดสอบ IEC")
+        XCTAssertEqual(inv.first, "Inverter | ยังไม่ได้เพิ่มเครื่องในขั้น 1 ของการทดสอบ IEC")
         XCTAssertEqual(inv.count, 2, "and the Inverter Station")
     }
 }

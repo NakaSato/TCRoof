@@ -37,12 +37,12 @@ final class IECStagesUITests: XCTestCase {
         XCTAssertTrue(submit.waitForExistence(timeout: slow))
         XCTAssertTrue(submit.isEnabled)
         submit.tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด")).firstMatch
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", "ส่งผลให้ทีมแล้ว | รอทีมภายในปิด")).firstMatch
             .waitForExistence(timeout: 10), "sent, waiting for the team")
         let close = app.buttons.matching(NSPredicate(format: "label == %@", "ปิดการทดสอบ")).firstMatch
         XCTAssertTrue(close.waitForExistence(timeout: 10))
         close.tap()
-        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว | แก้ไขไม่ได้"].waitForExistence(timeout: 10))
     }
 
     func confirmed(_ app: XCUIApplication) -> XCUIElementQuery {
@@ -54,7 +54,7 @@ final class IECStagesUITests: XCTestCase {
         let first = app.buttons["ยืนยันขั้น ตั้งค่าระบบ"]
         XCTAssertTrue(first.waitForExistence(timeout: slow), "every step is done, none confirmed")
         first.tap()
-        app.buttons["ยืนยันขั้น ก่อนออน · แรงดัน / กระแส"].tap()
+        app.buttons["ยืนยันขั้น ก่อนออน | แรงดัน / กระแส"].tap()
         XCTAssertTrue(confirmed(app).element(boundBy: 1).waitForExistence(timeout: 10))
 
         // the confirmations are kept
@@ -68,16 +68,16 @@ final class IECStagesUITests: XCTestCase {
 
         // sending and closing confirms the rest
         sendAndClose(app)
-        gone(app.buttons["ยืนยันขั้น ก่อนออน · ฉนวน (IR)"], "closing confirms every step")
+        gone(app.buttons["ยืนยันขั้น ก่อนออน | ฉนวน (IR)"], "closing confirms every step")
 
         // still closed after a relaunch, and the string table is read only
         app.terminate()
         app = launch()
-        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: slow), "the result is kept")
+        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว | แก้ไขไม่ได้"].waitForExistence(timeout: slow), "the result is kept")
         sleep(1); shot("test-closed")
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ตั้งค่า")).firstMatch.exists, "no set-up on a closed test")
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ก่อนการเชื่อมต่อระบบ")).firstMatch.tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว")).firstMatch
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ปิดการทดสอบแล้ว | ดูได้อย่างเดียว")).firstMatch
             .waitForExistence(timeout: 10), "the table says it's read only")
         shot("table-read-only")
         app.buttons["กลับ"].firstMatch.tap()
@@ -88,7 +88,7 @@ final class IECStagesUITests: XCTestCase {
         edit.tap()
         app.sheets.buttons["แก้ไข"].firstMatch.exists ? app.sheets.buttons["แก้ไข"].firstMatch.tap()
             : app.buttons.matching(NSPredicate(format: "label == %@", "แก้ไข")).element(boundBy: 1).tap()
-        gone(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"], "reopened")
+        gone(app.staticTexts["ปิดการทดสอบแล้ว | แก้ไขไม่ได้"], "reopened")
         XCTAssertTrue(submitButton(app).waitForExistence(timeout: 10), "back to the contractor")
     }
 
@@ -137,8 +137,8 @@ final class IECStagesUITests: XCTestCase {
 
         let task = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "3.1 ")).firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 10), "the plan's test task on the install page")
-        // the Gantt row reads "· 100%", the plan tab's row ", 100%"
-        XCTAssertTrue(task.label.hasSuffix("100%") || task.label.contains("· 100%"), task.label)
+        // the Gantt row reads "| 100%", the plan tab's row ", 100%"
+        XCTAssertTrue(task.label.hasSuffix("100%") || task.label.contains("| 100%"), task.label)
 
         // reopened, so the station's test is left editable for the other tests
         app.terminate()
@@ -147,7 +147,7 @@ final class IECStagesUITests: XCTestCase {
         XCTAssertTrue(edit.waitForExistence(timeout: slow))
         edit.tap()
         again.buttons.matching(NSPredicate(format: "label == %@", "แก้ไข")).element(boundBy: 1).tap()
-        gone(again.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"], "reopened")
+        gone(again.staticTexts["ปิดการทดสอบแล้ว | แก้ไขไม่ได้"], "reopened")
     }
 
     /// `ส่งออก Word ภาพถ่าย` on the full sample: the appendix is made from every photo and offered to share (the file

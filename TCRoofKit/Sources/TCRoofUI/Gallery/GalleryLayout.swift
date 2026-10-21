@@ -8,12 +8,12 @@ struct GalleryLayout: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             GalleryGrid(columns: 2, minItem: 560) {
-                GalleryItem("Header · แบบสำรวจ + แถบ 13 ขั้น", note: "g-head + g-prog / g-caps (ok · cur · ว่าง)") {
-                    TCSurveyHeader(title: "B1 ตู้พิจารณาเชื่อมต่อ", subtitle: "แบบสำรวจ NO.224 · GRF2567-23407",
-                                   step: 5, count: 13, stepName: "ตู้พิจารณาเชื่อมต่อ · 3 อาคาร")
+                GalleryItem("Header | แบบสำรวจ + แถบ 13 ขั้น", note: "g-head + g-prog / g-caps (ok | cur | ว่าง)") {
+                    TCSurveyHeader(title: "B1 ตู้พิจารณาเชื่อมต่อ", subtitle: "แบบสำรวจ NO.224 | GRF2567-23407",
+                                   step: 5, count: 13, stepName: "ตู้พิจารณาเชื่อมต่อ | 3 อาคาร")
                         .framed()
                 }
-                GalleryItem("Header · PWA", note: "ชื่อ 30 px · ช่องค้นหาในหัว · มุมล่างโค้ง 15") {
+                GalleryItem("Header | PWA", note: "ชื่อ 30 px | ช่องค้นหาในหัว | มุมล่างโค้ง 15") {
                     TCPWAHeader(title: "PWA Solar Survey", subtitle: "แบบสำรวจเพื่อออกแบบ (เบื้องต้น)", search: $search, onBack: {})
                 }
             }
@@ -26,7 +26,7 @@ struct GalleryLayout: View {
                 }
             }
             GalleryGrid(columns: 1) {
-                GalleryItem("แถบล่าง (g-bar)", note: "ปุ่มสถานะ (แตะไปยังรายการที่ขาด) · บันทึกร่าง (แตะ: กำลังบันทึก → บันทึกแล้ว) · ก่อนหน้า ติดกับ ถัดไป · สูง 53") {
+                GalleryItem("แถบล่าง (g-bar)", note: "ปุ่มสถานะ (แตะไปยังรายการที่ขาด) | บันทึกร่าง (แตะ: กำลังบันทึก → บันทึกแล้ว) | ก่อนหน้า ติดกับ ถัดไป | สูง 53") {
                     TCStepBar(count: 13, previous: .init(index: 4, title: "A4 น้ำท่วม"), next: .init(index: 6, title: "B2 พื้นที่อินเวอร์เตอร์"),
                               missing: 7, missingDetail: "อาคารนี้: ภาพเบรกเกอร์", onSave: {}, onPrevious: {}, onNext: {})
                         .framed()
@@ -45,8 +45,8 @@ struct GalleryLayout: View {
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("iPhone · 390 × 844").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
-                Text("โครงเดียวกัน ย่อให้พอดีจอเดียว · ด้านบนคือ iPad 1366 × 1024").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
+                Text("iPhone | 390 × 844").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text("โครงเดียวกัน ย่อให้พอดีจอเดียว | ด้านบนคือ iPad 1366 × 1024").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.top, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -57,8 +57,8 @@ struct GalleryLayout: View {
     }
 
     @ViewBuilder var phoneSamples: some View {
-        GalleryItem("Header + แถบ 13 ขั้น", note: "ชื่อ 19 / รอง 13 · บรรทัดขั้น + ป้ายสถานะ · แถบสูง 6 (เขียว = ครบ · น้ำเงิน = ขั้นนี้)") {
-            TCSurveyHeader(title: "B1 ตู้พิจารณาเชื่อมต่อ", subtitle: "แบบสำรวจ NO.224 · GRF2567-23407", step: 5, count: 13, stepName: "ตู้พิจารณาเชื่อมต่อ") {
+        GalleryItem("Header + แถบ 13 ขั้น", note: "ชื่อ 19 / รอง 13 | บรรทัดขั้น + ป้ายสถานะ | แถบสูง 6 (เขียว = ครบ | น้ำเงิน = ขั้นนี้)") {
+            TCSurveyHeader(title: "B1 ตู้พิจารณาเชื่อมต่อ", subtitle: "แบบสำรวจ NO.224 | GRF2567-23407", step: 5, count: 13, stepName: "ตู้พิจารณาเชื่อมต่อ") {
                 Text("ขาด 2 ช่อง").font(.sarabun(11.5, .bold)).foregroundStyle(Theme.pending)
                     .padding(.horizontal, 8).padding(.vertical, 1).background(Theme.pendingSoft, in: Capsule())
             }
@@ -66,21 +66,21 @@ struct GalleryLayout: View {
             .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
-        GalleryItem("แถบล่าง", note: "บันทึก ยืดเต็ม (แตะ: กำลังบันทึก → บันทึกแล้ว) · ‹ › 72 × 53 ไอคอนอย่างเดียว · ไม่มีปุ่มสถานะ (ป้ายอยู่ที่บรรทัดขั้น)") {
+        GalleryItem("แถบล่าง", note: "บันทึก ยืดเต็ม (แตะ: กำลังบันทึก → บันทึกแล้ว) | ‹ › 72 × 53 ไอคอนอย่างเดียว | ไม่มีปุ่มสถานะ (ป้ายอยู่ที่บรรทัดขั้น)") {
             TCStepBar(count: 13, previous: .init(index: 4, title: "A4 น้ำท่วม"), next: .init(index: 6, title: "B2 พื้นที่อินเวอร์เตอร์"),
                       missing: 2, missingDetail: "", onSave: {}, onPrevious: {}, onNext: {})
                 .environment(\.horizontalSizeClass, .compact)
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
-        GalleryItem("หัวจอไล่สี (iPhone)", note: "r15 ล่าง · ชื่อ 19 · คำอธิบาย 13 · ปุ่ม 44 r12 ขาว 16 % · ลูกศรกลับเฉพาะเมื่อเปิดซ้อน") {
+        GalleryItem("หัวจอไล่สี (iPhone)", note: "r15 ล่าง | ชื่อ 19 | คำอธิบาย 13 | ปุ่ม 44 r12 ขาว 16 % | ลูกศรกลับเฉพาะเมื่อเปิดซ้อน") {
             TCGradientHeader(title: "สำรวจหน้างาน", subtitle: "นัดสำรวจ 4 งาน") { TCHeaderIcon("clock") }
                 .padding(.bottom, 12)
                 .background(Theme.background)
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
-        GalleryItem("แถบแท็บลอย (iPhone)", note: "แคปซูล r28 ขอบ 1 · ห่างขอบ 12 / ล่าง 22 · แท็บสูง 56 · เลือก = แคปซูลกรมท่า r22 · ป้ายแดงนับนัดวันนี้ · เนื้อหาจางใต้แถบ 128") {
+        GalleryItem("แถบแท็บลอย (iPhone)", note: "แคปซูล r28 ขอบ 1 | ห่างขอบ 12 / ล่าง 22 | แท็บสูง 56 | เลือก = แคปซูลกรมท่า r22 | ป้ายแดงนับนัดวันนี้ | เนื้อหาจางใต้แถบ 128") {
             GalleryTabBar()
                 .padding(.horizontal, 12).padding(.bottom, 22)
                 .frame(height: 128, alignment: .bottom)
@@ -89,14 +89,14 @@ struct GalleryLayout: View {
                 .framed()
         }
         .frame(maxWidth: 390, alignment: .leading)
-        GalleryItem("แถบแท็บลอย (iPad)", note: "กลางจอ ห่างล่าง 18 · r28 ขอบ 1 · ขาว 96 % บนเบลอ · ปุ่ม 84 × 58 r20 · ไอคอน 24 ป้าย 11.5 · เส้นคั่นก่อนตั้งค่า") {
+        GalleryItem("แถบแท็บลอย (iPad)", note: "กลางจอ ห่างล่าง 18 | r28 ขอบ 1 | ขาว 96 % บนเบลอ | ปุ่ม 84 × 58 r20 | ไอคอน 24 ป้าย 11.5 | เส้นคั่นก่อนตั้งค่า") {
             GalleryPadTabBar()
                 .padding(.bottom, 18)
                 .frame(maxWidth: .infinity).frame(height: 110, alignment: .bottom)
                 .background(Theme.phonePage)
                 .framed()
         }
-        GalleryItem("โครงจอ 1 คอลัมน์", note: "ขอบ 16 · การ์ด r16 ห่าง 12 · เลื่อนในแนวตั้ง") {
+        GalleryItem("โครงจอ 1 คอลัมน์", note: "ขอบ 16 | การ์ด r16 ห่าง 12 | เลื่อนในแนวตั้ง") {
             VStack(spacing: Space.m) {
                 slot("การ์ด 1", soft: true, height: 100)
                 slot("การ์ด 2", soft: true, height: 52)
@@ -126,7 +126,7 @@ private struct GalleryTabBar: View {
         TCTabBar(items: [
             TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
             TCTabItem("homework", title: "งานบ้าน", asset: "tab-homework"),
-            TCTabItem("pwa", title: "กปภ.", asset: "tab-pwa", badge: 2, accessibilityLabel: "กปภ. · นัดวันนี้ 2"),
+            TCTabItem("pwa", title: "กปภ.", asset: "tab-pwa", badge: 2, accessibilityLabel: "กปภ. | นัดวันนี้ 2"),
             TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
         ], selection: $selection, dividerBefore: "settings")
@@ -140,7 +140,7 @@ private struct GalleryPadTabBar: View {
     var body: some View {
         TCTabBar(items: [
             TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
-            TCTabItem("survey", title: "สำรวจ", asset: "tab-survey", badge: 2, accessibilityLabel: "สำรวจ · นัดวันนี้ 2"),
+            TCTabItem("survey", title: "สำรวจ", asset: "tab-survey", badge: 2, accessibilityLabel: "สำรวจ | นัดวันนี้ 2"),
             TCTabItem("plan", title: "แผนงาน", symbol: "calendar"),
             TCTabItem("install", title: "ติดตั้ง", asset: "tab-install"),
             TCTabItem("scan", title: "สแกน", asset: "tab-scan"),
@@ -159,11 +159,11 @@ private extension View {
     }
 }
 
-#Preview("Layout · iPad", traits: .landscapeLeft) {
+#Preview("Layout | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 1, title: "โครงหน้า", subtitle: "Layout") { GalleryLayout() }.padding() }
 }
 
-#Preview("Layout · iPhone") {
+#Preview("Layout | iPhone") {
     ScrollView { GallerySection(number: 1, title: "โครงหน้า", subtitle: "Layout") { GalleryLayout() }.padding() }
         .environment(\.horizontalSizeClass, .compact)
 }

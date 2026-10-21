@@ -472,8 +472,8 @@ struct SitePageWide: View {
 
     var noteSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("หมายเหตุหน้างาน", trailing: "ไม่บังคับ · ใต้ภาพในรายงาน")
-            TextField("เช่น รถเครนเข้าทางถนนด้านตะวันออก · ต้นไม้บังแดดเช้า", text: Binding(
+            heading("หมายเหตุหน้างาน", trailing: "ไม่บังคับ | ใต้ภาพในรายงาน")
+            TextField("เช่น รถเครนเข้าทางถนนด้านตะวันออก | ต้นไม้บังแดดเช้า", text: Binding(
                 get: { job.values.text("siteNote") },
                 set: { job.values["siteNote"] = $0.isEmpty ? nil : .text($0) }), axis: .vertical)
                 .lineLimit(1...2).font(.sarabunFixed(15))

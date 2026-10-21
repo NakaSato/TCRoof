@@ -420,9 +420,9 @@ private struct Drawer {
                     }
                 }
             }
-            // ใต้ · 105 แผง, kept on the plan (the tab lists each face's yield)
+            // ใต้ | 105 แผง, kept on the plan (the tab lists each face's yield)
             let c = P(face, face.centre.x, face.centre.y)
-            let label = RoofFace.direction(face.azimuth) + " · \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
+            let label = RoofFace.direction(face.azimuth) + " | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
             let half = ApproxText.width(label, size: 10.5, bold: true) / 2 + 8
             let cx = min(max(c.x, L.origin.x + half), L.origin.x + L.lx * k - half)
             // drawn on the sketch directly (`text` maps design units)

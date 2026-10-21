@@ -46,7 +46,7 @@ struct AssistantSettingsPage: View {
             Image(systemName: hasKey ? "checkmark.seal.fill" : "key.slash")
                 .font(.system(size: 24)).foregroundStyle(hasKey ? Theme.success : Theme.warning)
             VStack(alignment: .leading, spacing: 2) {
-                Text(hasKey ? "ใช้คีย์ในเครื่องนี้ · \(AssistantKey.model)" : "ยังไม่ได้ใส่คีย์ Qwen ในเครื่องนี้")
+                Text(hasKey ? "ใช้คีย์ในเครื่องนี้ | \(AssistantKey.model)" : "ยังไม่ได้ใส่คีย์ Qwen ในเครื่องนี้")
                     .font(.sarabun(16, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
                     .accessibilityIdentifier("assistantKeyStatus")
                 Text("วันนี้ใช้ไป \(used)/\(Assistant.OpenAI.dailyLimit) ครั้ง").font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
@@ -124,7 +124,7 @@ struct AssistantSettingsPage: View {
             defer { testing = false; used = AssistantKey.used() }
             do {
                 let r = try await client.complete(.init(messages: [.user("ตอบคำเดียวว่า พร้อม")], tools: []))
-                result = (true, "เชื่อมต่อได้ · \(client.model) ตอบว่า \"\(String((r.message.content ?? "").prefix(40)))\"")
+                result = (true, "เชื่อมต่อได้ | \(client.model) ตอบว่า \"\(String((r.message.content ?? "").prefix(40)))\"")
             } catch {
                 result = (false, error.localizedDescription)
             }

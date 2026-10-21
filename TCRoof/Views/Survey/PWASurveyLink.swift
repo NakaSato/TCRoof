@@ -19,18 +19,18 @@ extension Job {
                             capacityKW: capacityKW, date: surveyDate)
     }
 
-    /// "TC-0012 · สถานีสูบน้ำบ้านนา"
-    var linkLabel: String { projectName.isEmpty ? code : "\(code) · \(projectName)" }
+    /// "TC-0012 | สถานีสูบน้ำบ้านนา"
+    var linkLabel: String { projectName.isEmpty ? code : "\(code) | \(projectName)" }
 }
 
 /// A report to open, for `navigationDestination(item:)`.
 struct OpenSurveyReport: Identifiable, Hashable { let id: UUID }
 
-/// Short line for a report in TCRoof lists: "NO.215 · 28/9/2569 · 64%".
+/// Short line for a report in TCRoof lists: "NO.215 | 28/9/2569 | 64%".
 func surveyReportSummary(_ r: TCRoofCore.Job) -> String {
     let parts = ["NO.\(r.docNo.isEmpty ? "—" : r.docNo)", r.values.text("date").isEmpty ? nil : ISODate.thai(r.values.text("date")),
                  "กรอกแล้ว \(r.completion.percent)%"]
-    return parts.compactMap { $0 }.joined(separator: " · ")
+    return parts.compactMap { $0 }.joined(separator: " | ")
 }
 
 /// Job detail card: the job's NO.224 reports, a new one pre-filled from the job, or an existing one linked to it.

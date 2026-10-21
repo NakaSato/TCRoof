@@ -73,7 +73,7 @@ struct WeatherCard: View {
     }
 }
 
-// MARK: - 2 Crew · 3 Tools
+// MARK: - 2 Crew | 3 Tools
 
 struct CrewCard: View {
     @Binding var report: RoutineReport.Daily
@@ -222,7 +222,7 @@ struct ProgressCard: View {
             Button("+ งาน") { showAdd = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
         }) {
             if report.progress.isEmpty {
-                Text("ยังไม่มีงาน · ถ้าวันนี้หยุดงาน ระบุเหตุผล").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                Text("ยังไม่มีงาน | ถ้าวันนี้หยุดงาน ระบุเหตุผล").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 TextField("เหตุหยุดงาน เช่น ฝนตกทั้งวัน", text: $report.stopReason).textFieldStyle(OutlinedFieldStyle())
             }
             ForEach($report.progress) { $line in

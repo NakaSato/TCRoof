@@ -150,7 +150,7 @@ struct SurveyWeekCard: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(job.projectName).font(.sarabun(18, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy).lineLimit(1)
             (Text(job.surveyWhen(now: now)).font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
-             + Text(" · \(job.province)").font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted))
+             + Text(" | \(job.province)").font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted))
                 .monospacedDigit().lineLimit(1)
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -199,7 +199,7 @@ struct SurveyWeekCard: View {
                 RoundedRectangle(cornerRadius: 2).fill(job.team.color).frame(width: 4)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(job.projectName).font(.sarabun(15.5, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-                    Text("ทีม \(job.team.rawValue) · \(job.province) · \(job.capacityKW.kw)")
+                    Text("ทีม \(job.team.rawValue) | \(job.province) | \(job.capacityKW.kw)")
                         .font(.sarabun(12.5, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
                 .lineLimit(1)
@@ -218,7 +218,7 @@ struct SurveyWeekCard: View {
 
 // MARK: - Status chips
 
-/// `ทั้งหมด 9 · สนใจ 4 · ยืนยันแล้ว 3 …`: nil is `ทั้งหมด`.
+/// `ทั้งหมด 9 | สนใจ 4 | ยืนยันแล้ว 3 …`: nil is `ทั้งหมด`.
 struct SurveyStatusChips: View {
     @Binding var selection: JobStatus?
     let total: Int
@@ -297,7 +297,7 @@ private struct SurveyHomeRow: View {
                 .frame(width: 40, height: 40).background(job.team.color.opacity(0.1), in: Circle())
             VStack(alignment: .leading, spacing: 1) {
                 Text(job.projectName).font(.sarabun(15.5, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-                Text("\(job.code) · \(job.capacityKW.kw) · \(job.province)")
+                Text("\(job.code) | \(job.capacityKW.kw) | \(job.province)")
                     .font(.sarabun(12.5, relativeTo: .caption)).monospacedDigit().foregroundStyle(Theme.inkMuted)
                 if progress.tone == .draft { draftLine(progress).padding(.top, 4) }
             }
@@ -321,7 +321,7 @@ private struct SurveyHomeRow: View {
         HStack(spacing: 8) {
             // the bar gives way before the text is cut
             SurveyDraftBar(percent: p.percent).frame(minWidth: 24, maxWidth: 96)
-            Text("ทำต่อ \(p.shortValue) · \(p.percent)%").font(.sarabun(12, .bold, relativeTo: .caption)).monospacedDigit()
+            Text("ทำต่อ \(p.shortValue) | \(p.percent)%").font(.sarabun(12, .bold, relativeTo: .caption)).monospacedDigit()
                 .foregroundStyle(Theme.primary).fixedSize().layoutPriority(1)
         }
     }
@@ -349,7 +349,7 @@ private struct SurveyDraftBar: View {
 
 // MARK: - Dock
 
-/// The glass bar over the tab bar: the next appointment's survey (`ทำแบบสำรวจต่อ · ค่าไฟ` or `เริ่มสำรวจ`) and
+/// The glass bar over the tab bar: the next appointment's survey (`ทำแบบสำรวจต่อ | ค่าไฟ` or `เริ่มสำรวจ`) and
 /// the add-customer button. With no appointment ahead only the add button is left, trailing.
 struct SurveyHomeDock: View {
     let next: Job?
@@ -373,11 +373,11 @@ struct SurveyHomeDock: View {
 
     private func primary(_ job: Job) -> some View {
         let progress = job.cardProgress
-        let title = progress.tone == .draft ? "ทำแบบสำรวจต่อ · \(progress.shortValue)" : "เริ่มสำรวจ"
+        let title = progress.tone == .draft ? "ทำแบบสำรวจต่อ | \(progress.shortValue)" : "เริ่มสำรวจ"
         return Button { open(job) } label: {
             VStack(alignment: .leading, spacing: 0) {
                 Text(title).font(.sarabun(15.5, .bold, relativeTo: .headline))
-                Text("\(job.projectName) · \(job.surveyWhen(now: now)) · \(progress.percent)%")
+                Text("\(job.projectName) | \(job.surveyWhen(now: now)) | \(progress.percent)%")
                     .font(.sarabun(12, relativeTo: .caption)).monospacedDigit().opacity(0.88)
             }
             .foregroundStyle(Theme.onPrimary).lineLimit(1)

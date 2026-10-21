@@ -288,11 +288,11 @@ struct InstallTrackingPage: View {
         var opensActions = false
     }
 
-    /// `ความคืบหน้า · กำหนดการ · คาดส่งมอบ · SPI · ต้องดำเนินการ`. Without an MP plan only the open items are left.
+    /// `ความคืบหน้า | กำหนดการ | คาดส่งมอบ | SPI | ต้องดำเนินการ`. Without an MP plan only the open items are left.
     private func cells(_ data: InstallPageData) -> [Cell] {
         var out: [Cell] = []
         if let t = data.tracking {
-            let gain = t.gainThisWeek.map { " · ▲\($0)% สัปดาห์นี้" } ?? ""
+            let gain = t.gainThisWeek.map { " | ▲\($0)% สัปดาห์นี้" } ?? ""
             out.append(Cell(label: "ความคืบหน้า", value: "\(Int(t.actual.rounded()))%", ink: Theme.primary,
                             note: "แผน \(Int(t.planned.rounded()))%" + gain, weight: 1.45))
             let (title, ink): (String, Color) = switch t.schedule {
@@ -312,7 +312,7 @@ struct InstallTrackingPage: View {
         }
         let open = data.actions
         out.append(Cell(label: "ต้องดำเนินการ", value: open.isEmpty ? "ไม่มี" : "\(open.count) เรื่อง", ink: open.isEmpty ? Theme.successInk : Theme.pending,
-                        note: open.prefix(3).map(\.title).joined(separator: " · "), weight: 1.4, opensActions: !open.isEmpty))
+                        note: open.prefix(3).map(\.title).joined(separator: " | "), weight: 1.4, opensActions: !open.isEmpty))
         return out
     }
 

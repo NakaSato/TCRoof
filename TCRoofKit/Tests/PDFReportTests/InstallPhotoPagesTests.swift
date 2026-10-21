@@ -2,7 +2,7 @@ import XCTest
 @testable import PDFReport
 @testable import TCRoofCore
 
-/// IEC 62446 · 9 ภาพถ่ายติดตั้งระบบ: the cover lists every page, each page keeps its frames, empty or not.
+/// IEC 62446 | 9 ภาพถ่ายติดตั้งระบบ: the cover lists every page, each page keeps its frames, empty or not.
 final class InstallPhotoPagesTests: XCTestCase {
     private func texts(_ ops: [DrawOp]) -> [String] {
         ops.compactMap {

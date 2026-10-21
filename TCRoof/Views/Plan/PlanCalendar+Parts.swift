@@ -125,11 +125,11 @@ private struct PlanInstallBar: View {
     private var job: Job { item.job }
 
     private var title: String {
-        bar.span == 1 ? job.team.rawValue : "\(job.team.rawValue) · \(PlanLayout.shortName(job.customerName))"
+        bar.span == 1 ? job.team.rawValue : "\(job.team.rawValue) | \(PlanLayout.shortName(job.customerName))"
     }
 
     private var detail: String {
-        bar.span == 1 ? "" : "  " + (bar.continuesBefore ? "ต่อ · " : "") + "\(job.installDays) วัน · \(job.capacityKW.kw)"
+        bar.span == 1 ? "" : "  " + (bar.continuesBefore ? "ต่อ | " : "") + "\(job.installDays) วัน | \(job.capacityKW.kw)"
     }
 
     var body: some View {
@@ -272,7 +272,7 @@ struct PlanDayJobRow: View {
             Text(job.customerName).font(.system(size: 16)).lineLimit(1)
             HStack(spacing: 6) {
                 Label(job.capacityKW.kw, systemImage: "bolt").fontWeight(.bold)
-                Text("·")
+                Text("|")
                 Label(job.province, systemImage: "mappin.and.ellipse").lineLimit(1)
             }
             .font(.system(size: 14)).foregroundStyle(Theme.inkMuted)

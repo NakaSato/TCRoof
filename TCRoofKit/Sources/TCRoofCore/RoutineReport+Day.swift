@@ -54,7 +54,7 @@ extension RoutineReport {
 
     // MARK: Quick picks
 
-    /// `+10% · +20% · +30% · +50% · เสร็จ` for a line at `before` %: the steps that still fit, then what is left (เสร็จ).
+    /// `+10% | +20% | +30% | +50% | เสร็จ` for a line at `before` %: the steps that still fit, then what is left (เสร็จ).
     /// Nothing once the line is done.
     public static func quickPicks(before: Double) -> [Double] {
         let left = 100 - min(max(before, 0), 100)
@@ -70,9 +70,9 @@ extension RoutineReport {
         public let hours: Int
         /// Rain slots inside the working time.
         public let rainHours: Int
-        /// คน·ชม.
+        /// คน-ชม.
         public var total: Int { people * hours }
-        /// คน·ชม. less the rain inside the working time.
+        /// คน-ชม. less the rain inside the working time.
         public var working: Int { people * max(hours - rainHours, 0) }
     }
 

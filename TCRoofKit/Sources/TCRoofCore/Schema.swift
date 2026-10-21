@@ -220,11 +220,11 @@ public enum Schema {
     public static let shadeDirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     /// D1 shading — only asks what/which side when something does shade the tank.
     @Sendable public static func shaded(_ v: Values) -> Bool { v.choice("shade") == "มี" }
-    /// "ชนิด ค.ส.ล. · บนดิน" — nil when neither is filled.
+    /// "ชนิด ค.ส.ล. | บนดิน" — nil when neither is filled.
     public static func tankKind(_ v: Values) -> String? {
         let t = v.choice("tankType").map { $0 == "อื่นๆ" ? v.other("tankType") : $0 } ?? "", p = v.choice("tankPos") ?? ""
         let parts = [t.isEmpty ? "" : "ถัง " + t, p].filter { !$0.isEmpty }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        return parts.isEmpty ? nil : parts.joined(separator: " | ")
     }
     /// "เงาบัง: ต้นไม้, อาคาร ทิศ S, SW (สูง ~8 ม.)" / "ไม่มีเงาบัง" / nil when not answered.
     public static func shadeText(_ v: Values) -> String? {
@@ -390,7 +390,7 @@ public enum Schema {
             GroupSpec(no: "16", "ภาพถ่ายมุมสูง / ภาพถ่ายดาวเทียม", [P("aerialPhoto", "ภาพมุมสูง")]),
             GroupSpec(no: "17", "ภาพถ่ายสถานที่ติดตั้ง", [P("photoFront", "17.1 ด้านหน้า"), P("photoBack", "17.2 ด้านหลัง"), P("photoLeft", "17.3 ด้านซ้าย"), P("photoRight", "17.4 ด้านขวา")]),
             GroupSpec(no: "18", "ภาพตำแหน่งติดตั้ง Inverter", [N("inverterCount", "จำนวนอินเวอร์เตอร์", "เครื่อง", optional: true),
-                FieldSpec("invNote", "", .note("*ต้องมีพื้นที่ ยาว = (1.5 × จำนวนอินเวอร์เตอร์) + 1.5 เมตร · กว้าง = 2 เมตร")),
+                FieldSpec("invNote", "", .note("*ต้องมีพื้นที่ ยาว = (1.5 × จำนวนอินเวอร์เตอร์) + 1.5 เมตร | กว้าง = 2 เมตร")),
                 P("inverterWidePhoto", "18 มุมกว้าง"), P("inverterClosePhoto", "18.1 ภาพใกล้")]),
             GroupSpec(no: "19", "ภาพถ่ายตู้ควบคุมไฟฟ้าหลัก", [P("mainPanelWide", "19 มุมกว้าง"), P("mainPanelOpen", "19.1 เปิดฝาตู้")]),
             GroupSpec(no: "20", "ภาพถ่ายเมนเบรกเกอร์", [P("breakerPhoto", "ภาพเมนเบรกเกอร์ (ขนาดจากข้อ 10)")]),

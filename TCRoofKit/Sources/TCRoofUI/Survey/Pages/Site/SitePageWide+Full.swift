@@ -78,7 +78,7 @@ extension SitePageWide {
     var fullHeader: some View {
         HStack(spacing: 14) {
             Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onMedia)
-            Text("เต็มจอ · ใช้เครื่องมือวาด / วางสัญลักษณ์ได้เหมือนเดิม · หนีบ 2 นิ้วเพื่อซูม")
+            Text("เต็มจอ | ใช้เครื่องมือวาด / วางสัญลักษณ์ได้เหมือนเดิม | หนีบ 2 นิ้วเพื่อซูม")
                 .font(.sarabunFixed(13)).foregroundStyle(Theme.onMedia.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 8)
             Button { fullScreen = false } label: {
@@ -106,7 +106,7 @@ extension SitePageWide {
                 Spacer(minLength: 6)
                 Text("วางแล้ว \(src.filter { ids.contains($0.id) }.count)/\(src.count)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
-            Text("โมเดลจากขั้นที่บันทึกแล้ว ขนาดจริงตามสเกลภาพ · ลากการ์ดไปวางบนภาพ แล้วลากโมเดลบนภาพเพื่อย้าย")
+            Text("โมเดลจากขั้นที่บันทึกแล้ว ขนาดจริงตามสเกลภาพ | ลากการ์ดไปวางบนภาพ แล้วลากโมเดลบนภาพเพื่อย้าย")
                 .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             if metersAcross == nil { scaleNeeded }
             if src.isEmpty {
@@ -224,9 +224,9 @@ extension SitePageWide {
         let m = models.first { $0.id == s.id }
         let locked = m.map(isLocked) ?? false
         return VStack(alignment: .leading, spacing: 8) {
-            Text(s.title + " · " + s.sizeText).font(.sarabunFixed(13, .bold)).lineLimit(2)
+            Text(s.title + " | " + s.sizeText).font(.sarabunFixed(13, .bold)).lineLimit(2)
             if let m {
-                Text("หมุน \(Int(m.rotation))° · " + (locked ? (allLocked ? "ล็อกทั้งหมดจากแถบเครื่องมือ" : "ล็อกตำแหน่งแล้ว") : "ลากโมเดลบนภาพเพื่อย้าย"))
+                Text("หมุน \(Int(m.rotation))° | " + (locked ? (allLocked ? "ล็อกทั้งหมดจากแถบเครื่องมือ" : "ล็อกตำแหน่งแล้ว") : "ลากโมเดลบนภาพเพื่อย้าย"))
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 Button { changeModels { a in if let i = a.firstIndex(where: { $0.id == s.id }) { a[i].locked.toggle() } } } label: {
                     Text(m.locked ? "ปลดล็อกตำแหน่ง" : "ล็อกตำแหน่งตามที่วาง").font(.sarabunFixed(14, .bold))

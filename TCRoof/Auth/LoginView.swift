@@ -243,7 +243,7 @@ struct LoginView: View {
             Image(systemName: "lock.fill").font(.system(size: 11))
             Text("เฉพาะสมาชิกทีม TC Renewable")
             if let version {
-                Text("·")
+                Text("|")
                 Text(version).monospacedDigit()
             }
         }

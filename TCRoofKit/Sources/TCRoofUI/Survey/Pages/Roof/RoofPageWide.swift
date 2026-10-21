@@ -63,10 +63,7 @@ struct RoofPageWide: View {
     @State var mountYield: RoofMountYield.Estimate?
     @State var mountYieldBusy = false
     @State var mountYieldFor: RoofMountYield.Inputs?
-    /// The standard building roof (RoofPageWide+Design): the picker, the save question, its name and the name saved.
-    @State var roofDesignPick = false
-    @State var roofDesignSave = false
-    @State var roofDesignName = ""
+    /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
     @State var roofDesignSaved: String?
     @Environment(\.permissions) var roofPermissions
     @State var mountNote: String?
@@ -507,8 +504,11 @@ extension RoofPageWide {
         case "design":
             // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
             update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }
-            let d = RoofDesign.from(values, name: "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size, job: "DEMO", by: nil)
-            DesignLibrary.shared.saveRoof(d)
+            let name = "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size
+            // saved once per simulator, so the dropdown doesn't list a copy per launch
+            let d = DesignLibrary.shared.roofs.first { $0.name == name && !$0.archived }
+                ?? RoofDesign.from(values, name: name, job: "DEMO", by: nil)
+            if !DesignLibrary.shared.roofs.contains(where: { $0.id == d.id }) { DesignLibrary.shared.saveRoof(d) }
             update { v in
                 RoofDesign.apply(&v, d)
                 Roof.setPurlinSpacing(&v, 1.2)

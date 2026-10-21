@@ -17,7 +17,7 @@ extension RoofPageWide {
         card {
             rowSectionStage.frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            (Text("รูปตัดแถวที่เลือก").bold().underline() + Text(" · แตะแผงบนแปลนเพื่อเปลี่ยนแถว · หน่วย ม.").foregroundColor(Theme.inkMuted))
+            (Text("รูปตัดแถวที่เลือก").bold().underline() + Text(" | แตะแผงบนแปลนเพื่อเปลี่ยนแถว | หน่วย ม.").foregroundColor(Theme.inkMuted))
                 .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6)
         }
     }
@@ -27,7 +27,7 @@ extension RoofPageWide {
         return card {
             sectionStage(big: false).frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            let caption = (Text("รูปตัด A-A · " + f.title).bold().underline() + Text(" · หน่วย ม.").foregroundColor(Theme.inkMuted))
+            let caption = (Text("รูปตัด A-A | " + f.title).bold().underline() + Text(" | หน่วย ม.").foregroundColor(Theme.inkMuted))
                 .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6).truncationMode(.tail)
             let zoom = footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Theme.primary) { sectionBig = true }
                 .accessibilityLabel("ขยายรูปตัดเต็มจอ")
@@ -146,7 +146,7 @@ extension RoofPageWide {
             }
             .buttonStyle(.plain)
             if ridge {
-                Text("พื้นถึงหลังคาที่สัน · มุมคิดจากความสูงนี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("พื้นถึงหลังคาที่สัน | มุมคิดจากความสูงนี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
         }
         .foregroundStyle(Theme.navy)

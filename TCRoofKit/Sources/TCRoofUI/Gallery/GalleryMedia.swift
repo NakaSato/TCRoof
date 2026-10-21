@@ -12,12 +12,12 @@ struct GalleryMedia: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             GalleryGrid(columns: 3, phone: 1) {
-                GalleryItem("ช่องภาพ · ว่าง") {
+                GalleryItem("ช่องภาพ | ว่าง") {
                     TCPhotoSlot(hint: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลข AT ชัด", filled: false,
                                 onUpload: { hasPhoto = true }, onCamera: { hasPhoto = true }, onDelete: {}) { EmptyView() }
                 }
-                GalleryItem("ช่องภาพ · มีภาพ + overlay") {
-                    TCPhotoSlot(hint: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลข AT ชัด", filled: hasPhoto, caption: "ตัวเครื่อง · 30/9 10:22",
+                GalleryItem("ช่องภาพ | มีภาพ + overlay") {
+                    TCPhotoSlot(hint: "ถ่ายหน้าเบรกเกอร์ให้เห็นตัวเลข AT ชัด", filled: hasPhoto, caption: "ตัวเครื่อง | 30/9 10:22",
                                 mark: .init(title: "จุดเชื่อมต่อ PV", rect: CGRect(x: 0.52, y: 0.58, width: 0.4, height: 0.37)),
                                 onUpload: { hasPhoto = true }, onCamera: { hasPhoto = true }, onDelete: { hasPhoto = false }) {
                         Rectangle().fill(Theme.photoPlaceholder)
@@ -73,11 +73,11 @@ struct SampleMap: View {
     }
 }
 
-#Preview("Media · iPad", traits: .landscapeLeft) {
+#Preview("Media | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 6, title: "ภาพ แผนที่ และแบบ", subtitle: "Media") { GalleryMedia() }.padding() }
 }
 
-#Preview("Media · iPhone") {
+#Preview("Media | iPhone") {
     ScrollView { GallerySection(number: 6, title: "ภาพ แผนที่ และแบบ", subtitle: "Media") { GalleryMedia() }.padding() }
         .environment(\.horizontalSizeClass, .compact)
 }

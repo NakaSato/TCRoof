@@ -58,12 +58,12 @@ extension RoofPageWide {
 
     var planHint: String {
         if tool == .keepOut { return "ลากเพื่อวาดเขตห้ามติด" }
-        if tool == .skylight { return "ลากเพื่อวาดแผ่นใส · แตะ × เพื่อลบ" }
+        if tool == .skylight { return "ลากเพื่อวาดแผ่นใส | แตะ × เพื่อลบ" }
         if case .obstacle(let k)? = tool { return "ลากเพื่อวาด" + k.title }
         if mode == .pv { return mountTool == .remove ? "แตะแผงเพื่อเอาออก / ใส่คืน" : "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด" }
         if editPosts { return "แตะจุดตัดกริด เพิ่ม/ลบเสา" }
         if values.photo("planPhoto") != nil { return "รายงานใช้แบบร่างที่ถ่ายไว้" }
-        if values.text(Roof.Key.spansX).isEmpty || values.text(Roof.Key.spansY).isEmpty { return "ระยะตัวอย่าง · แตะเลขสีฟ้าเพื่อแก้" }
+        if values.text(Roof.Key.spansX).isEmpty || values.text(Roof.Key.spansY).isEmpty { return "ระยะตัวอย่าง | แตะเลขสีฟ้าเพื่อแก้" }
         return "แตะเลขสีฟ้า/แผ่นใสเพื่อแก้"
     }
 
@@ -92,7 +92,7 @@ extension RoofPageWide {
     }
 
     var planCaption: some View {
-        (Text("แปลนโครงหลังคา").bold().underline() + Text(" · " + planHint).foregroundColor(mode == .pv && tool == nil ? Theme.navy : Theme.inkMuted)
+        (Text("แปลนโครงหลังคา").bold().underline() + Text(" | " + planHint).foregroundColor(mode == .pv && tool == nil ? Theme.navy : Theme.inkMuted)
             .fontWeight(mode == .pv && tool == nil ? .bold : .regular))
             .font(.sarabunFixed(14)).minimumScaleFactor(0.6)
     }
@@ -110,7 +110,7 @@ extension RoofPageWide {
             HStack(spacing: 8) {
                 NorthArrow(degrees: turn).frame(width: 32, height: 32)
                 Text("ทิศเหนือ").font(.sarabunFixed(13, .bold))
-                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 | หมุน \(Int(turn))°").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .accessibilityElement(children: .combine)
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], spacing: 4) {
@@ -134,7 +134,7 @@ extension RoofPageWide {
                 NorthArrow(degrees: turn).frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 0) {
                     Text("ทิศเหนือ").font(.sarabunFixed(13, .bold))
-                    Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 · หมุน \(Int(turn))°").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                    Text(north == nil ? "ยังไม่ระบุใน A2" : "ตามภาพ A2 | หมุน \(Int(turn))°").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -155,12 +155,12 @@ extension RoofPageWide {
     var legendItems: [(LegendGlyph.Kind, String)] {
         if mode == .pv {
             return [(.pv, "แผงโซลาร์"), (.blocked, "ด้านที่ไม่วาง / ตัดแผง"), (.keepOut, "เขตห้ามติด"), (.skyOK, "แผ่นใส"),
-                    (.gap, "เงาสิ่งกีดขวาง"), (.purlin, "แป · ราง · L-foot"), (.ridge, "สันหลังคา")]
+                    (.gap, "เงาสิ่งกีดขวาง"), (.purlin, "แป | ราง | L-foot"), (.ridge, "สันหลังคา")]
         }
         let f = Roof.frame(values), pp = "แป @" + String(format: "%.2f", Roof.purlinSpacing(values))
         let two: [(LegendGlyph.Kind, String)] = f.isRafter ? [(.heavy, "อเส"), (.thin, "จันทัน @1.00")]
             : f == .rafterTruss ? [(.heavy, "จันทันถัก T1"), (.dashedHeavy, "T2 รับจันทัน")] : [(.double, "โครงถัก T1"), (.purlin, pp)]
-        return [(.post, "เสา")] + two + [(.skyOK, "แผ่นใส · วางทับได้"), (.skyNo, "แผ่นใส · ห้ามวางทับ"), (.ridge, "สันหลังคา"), (.section, "แนวรูปตัด A–A")]
+        return [(.post, "เสา")] + two + [(.skyOK, "แผ่นใส | วางทับได้"), (.skyNo, "แผ่นใส | ห้ามวางทับ"), (.ridge, "สันหลังคา"), (.section, "แนวรูปตัด A–A")]
     }
 
     func footerButton(_ title: String, icon: String? = nil, on: Bool = false, tint: Color = Theme.navy, action: @escaping () -> Void) -> some View {
@@ -180,7 +180,7 @@ extension RoofPageWide {
 
     @ViewBuilder var structureButtons: some View {
         let n = Roof.posts(values).count
-        footerButton(editPosts ? "เสร็จ · เสา \(n) ต้น" : "แก้เสา (\(n))", icon: editPosts ? nil : "square.fill", on: editPosts, tint: editPosts ? Theme.primary : Theme.navy) {
+        footerButton(editPosts ? "เสร็จ | เสา \(n) ต้น" : "แก้เสา (\(n))", icon: editPosts ? nil : "square.fill", on: editPosts, tint: editPosts ? Theme.primary : Theme.navy) {
             editPosts.toggle(); tool = nil; span = nil
         }
         if let p = values.photo("planPhoto") {
@@ -307,7 +307,7 @@ extension RoofPageWide {
                         Color.clear.frame(width: max(44, r.width), height: max(44, r.height)).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(a.canCover ? "แผ่นใส วางทับได้ · แตะเพื่อสลับ" : "แผ่นใส ห้ามวางทับ · แตะเพื่อสลับ")
+                    .accessibilityLabel(a.canCover ? "แผ่นใส วางทับได้ | แตะเพื่อสลับ" : "แผ่นใส ห้ามวางทับ | แตะเพื่อสลับ")
                     .position(x: r.midX, y: r.midY)
                 }
                 let drawn = a.kind == Roof.keepOutKind || RoofObstacleKind(rawValue: a.kind) != nil
@@ -346,7 +346,7 @@ extension RoofPageWide {
     var skylightTool: some View {
         let n = Roof.areas(values).filter { $0.kind == Roof.skylightKind }.count
         return Button { tool = tool == .skylight ? nil : .skylight; span = nil } label: {
-            Text(tool == .skylight ? "เสร็จ · แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.sarabunFixed(13, .bold))
+            Text(tool == .skylight ? "เสร็จ | แผ่นใส \(n)" : "แผ่นใส" + (n > 0 ? " (\(n))" : " +")).font(.sarabunFixed(13, .bold))
                 .foregroundStyle(tool == .skylight ? Theme.onPrimary : Theme.primary)
                 .padding(.horizontal, 10).frame(minHeight: 36)
                 .background(tool == .skylight ? Theme.primary : Theme.surface, in: RoundedRectangle(cornerRadius: 8))

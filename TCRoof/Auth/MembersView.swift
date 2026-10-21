@@ -225,7 +225,7 @@ struct MembersView: View {
             ForEach(UserRole.allCases, id: \.self) { role in
                 let people = directory.members.filter { $0.role == role }.sorted { $0.email < $1.email }
                 if !people.isEmpty {
-                    section("\(role.label) · \(people.count)") {
+                    section("\(role.label) | \(people.count)") {
                         ForEach(Array(people.enumerated()), id: \.element.id) { i, member in
                             if i > 0 { Rectangle().fill(Theme.hairline).frame(height: 1) }
                             memberRow(member)
@@ -302,7 +302,7 @@ private extension UserRole {
         case .manager: "ทำได้ทุกอย่าง รวมทั้งเชิญและลบสมาชิก"
         case .internalTeam: "วิศวกรและแอดมินของบริษัท เห็นทุกงาน"
         case .external: "วิศวกรภายนอก / ผู้รับเหมา เห็นเฉพาะงานที่ได้รับมอบหมาย"
-        case .maintainer: "นักพัฒนาแอป ทำได้ทุกอย่าง · ตั้งจาก Firebase console เท่านั้น"
+        case .maintainer: "นักพัฒนาแอป ทำได้ทุกอย่าง | ตั้งจาก Firebase console เท่านั้น"
         }
     }
 }

@@ -31,7 +31,7 @@ public extension SurveyModule {
     /// B4 also counts `photoDetail`, which the schema leaves optional for old jobs (`ZeroExport`).
     var completion: Completion { spec.completion(values) + (type == .backfeed ? ZeroExport.extraCompletion(values) : Completion()) }
     /// "ตู้ไฟฟ้า โรงสูบน้ำ"
-    var title: String { name.isEmpty ? spec.short : spec.short + " · " + name }
+    var title: String { name.isEmpty ? spec.short : spec.short + " | " + name }
 }
 
 public extension Job {
@@ -46,7 +46,7 @@ public extension Job {
         let d = m.values
         func o(_ id: String) -> String { d.choice(id) == "อื่นๆ" ? (d.other(id).isEmpty ? "อื่นๆ" : d.other(id)) : (d.choice(id) ?? "") }
         func t(_ id: String) -> String { d.text(id).trimmingCharacters(in: .whitespaces) }
-        func j(_ parts: String?...) -> String { parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ") }
+        func j(_ parts: String?...) -> String { parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " | ") }
         func span(_ id: String) -> Double { parseSpans(d.text(id)).reduce(0, +) }
         let size: String? = span("spansX") > 0 && span("spansY") > 0 ? "\(fmt(span("spansX"))) x \(fmt(span("spansY"))) ม." : nil
         switch m.type {
@@ -152,7 +152,7 @@ public struct NumberedSection: Identifiable, Sendable {
     public let number: String
     public let module: SurveyModule
     public var id: UUID { module.id }
-    /// "C1.2 หลังคา · 2 โรงสูบ"
+    /// "C1.2 หลังคา | 2 โรงสูบ"
     public var title: String { number + " " + module.title }
 }
 public struct SectionGroup: Identifiable, Sendable {

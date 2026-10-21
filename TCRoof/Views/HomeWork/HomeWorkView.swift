@@ -27,7 +27,7 @@ struct HomeWorkView: View {
     @State private var tab: HomeTab = .overview
     static let file = "home"
 
-    /// iPhone menu bar of the job: ภาพรวม · สำรวจ · ติดตั้ง · เอกสาร.
+    /// iPhone menu bar of the job: ภาพรวม | สำรวจ | ติดตั้ง | เอกสาร.
     enum HomeTab: CaseIterable {
         case overview, survey, install, docs
 
@@ -224,10 +224,10 @@ struct HomeWorkView: View {
 
     private var residentialGate: some View {
         PermitSection(title: "งานบ้านอยู่อาศัยเท่านั้น",
-                      subtitle: "โมดูลนี้ใช้กับผู้ใช้ไฟประเภท 1 (บ้านอยู่อาศัย) ในพื้นที่ PEA · โรงงาน อาคารพาณิชย์ และงาน กปภ. ใช้โมดูลอื่น") {
+                      subtitle: "โมดูลนี้ใช้กับผู้ใช้ไฟประเภท 1 (บ้านอยู่อาศัย) ในพื้นที่ PEA | โรงงาน อาคารพาณิชย์ และงาน กปภ. ใช้โมดูลอื่น") {
             PermitField("Rate code บนบิลค่าไฟ (เลข 4 หลัก)", text: $home.caRateCode, required: true, keyboard: .numberPad,
                         error: home.rateCodeIsResidential == false ? "ขึ้นต้นด้วย \(home.caRateCode.prefix(1)) — ไม่ใช่บ้านอยู่อาศัย ใช้โมดูลนี้ไม่ได้" : nil)
-            Text("หลักแรก 1 = บ้านอยู่อาศัย · หลักที่ 4 = 5 คือแรงดันต่ำกว่า 400 V · กรุงเทพฯ นนทบุรี สมุทรปราการ เป็นพื้นที่ MEA ใช้ขั้นตอนอื่น")
+            Text("หลักแรก 1 = บ้านอยู่อาศัย | หลักที่ 4 = 5 คือแรงดันต่ำกว่า 400 V | กรุงเทพฯ นนทบุรี สมุทรปราการ เป็นพื้นที่ MEA ใช้ขั้นตอนอื่น")
                 .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             TCButton("ยืนยันเป็นงานบ้าน", systemImage: "house", kind: .primary,
                      disabledReason: home.rateCodeIsResidential == true ? nil : "กรอก rate code ที่ขึ้นต้นด้วย 1") {
@@ -383,12 +383,12 @@ struct HomeWorkView: View {
 
     private var summaryText: String {
         var parts = [home.mode == .sell ? "ขายไฟส่วนเกิน" : "ผลิตใช้เอง"]
-        parts.append("แผง \(home.pvKWp) kWp · อินเวอร์เตอร์ \(home.inverterKW) kW")
+        parts.append("แผง \(home.pvKWp) kWp | อินเวอร์เตอร์ \(home.inverterKW) kW")
         if home.mode == .sell, !home.sellKW.isEmpty { parts.append("ขาย \(home.sellKW) kW") }
         if let p = home.phase { parts.append(p.title) }
         if let w = home.roofKgPerM2 { parts.append(String(format: "%.1f กก./ตร.ม.", w)) }
         if home.teamFiles { parts.append("ทีมยื่นแทน") }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     private var setupCard: some View {
@@ -431,7 +431,7 @@ struct HomeWorkView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("น้ำหนักบนหลังคา").font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
                 if let w = home.roofKgPerM2 {
-                    Text(String(format: "%.1f กก./ตร.ม. · ", w) + (w > 20 ? "ต้องขออนุญาตดัดแปลงอาคาร (ข.1 → อ.1)" : "ไม่ต้องขออนุญาตเทศบาล"))
+                    Text(String(format: "%.1f กก./ตร.ม. | ", w) + (w > 20 ? "ต้องขออนุญาตดัดแปลงอาคาร (ข.1 → อ.1)" : "ไม่ต้องขออนุญาตเทศบาล"))
                         .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(w > 20 ? Theme.pending : Theme.okText)
                 } else {
                     Text("ยังไม่คำนวณ").font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
@@ -460,7 +460,7 @@ struct HomeWorkView: View {
         parts.append(home.ppim.peaMeterNo.isEmpty ? "ยังไม่มีเลขเครื่องวัด" : "PEA No. \(home.ppim.peaMeterNo)")
         if home.ppim.coordinate == nil { parts.append("ยังไม่มีพิกัด") }
         parts += home.ppim.issues
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     /// หนังสือรับรองสภาวิศวกร for slot 6 is valid 120 days.
@@ -471,7 +471,7 @@ struct HomeWorkView: View {
 
     private var coeText: String {
         guard let left = home.coeCertDaysLeft() else { return "ใช้ได้ 120 วันนับจากวันที่ออก" }
-        return left < 0 ? "หมดอายุแล้ว \(-left) วัน · ขอฉบับใหม่" : "ใช้ได้อีก \(left) วัน"
+        return left < 0 ? "หมดอายุแล้ว \(-left) วัน | ขอฉบับใหม่" : "ใช้ได้อีก \(left) วัน"
     }
 
     // MARK: Stages

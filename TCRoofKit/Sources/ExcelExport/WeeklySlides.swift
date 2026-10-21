@@ -89,11 +89,11 @@ public enum WeeklySlides {
             var weekNo = ""
             if let s = input.schedule {
                 let first = MasterSchedule.plan(s.input).compactMap(\.start).min() ?? range.lowerBound
-                if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) · " }
+                if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) | " }
             }
             let station = [input.mpNumber.map { "MP \($0)" }, input.stationName,
-                           input.capacityKWp > 0 ? String(format: "%.2f kWp", input.capacityKWp) : nil].compactMap { $0 }.joined(separator: " · ")
-            subtitle = station + " · " + weekNo + RoutineReport.thaiDate(range.lowerBound) + " – " + RoutineReport.thaiDate(range.upperBound)
+                           input.capacityKWp > 0 ? String(format: "%.2f kWp", input.capacityKWp) : nil].compactMap { $0 }.joined(separator: " | ")
+            subtitle = station + " | " + weekNo + RoutineReport.thaiDate(range.lowerBound) + " – " + RoutineReport.thaiDate(range.upperBound)
         }
 
         func slides() -> [Slide] {

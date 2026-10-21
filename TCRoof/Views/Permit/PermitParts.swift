@@ -140,7 +140,7 @@ struct PermitIssuesCard: View {
                 }
             }
             if !issues.isEmpty {
-                Text(issues.joined(separator: " · "))
+                Text(issues.joined(separator: " | "))
                     .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }

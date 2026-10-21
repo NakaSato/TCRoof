@@ -17,13 +17,13 @@ final class TankSummaryTests: XCTestCase {
         let s = try XCTUnwrap(Tank.summary(tank("4,4,4", "4,4", height: 4.5)))
         XCTAssertEqual(s.roofArea, 96, accuracy: 1e-9)
         XCTAssertEqual(try XCTUnwrap(s.grossVolume), 432, accuracy: 1e-9)
-        XCTAssertEqual(s.text, "12.00 × 8.00 × 4.50 ม. · หลังคา 96 ม² · ปริมาตรภายนอกโดยประมาณ 432 ม³")
+        XCTAssertEqual(s.text, "12.00 × 8.00 × 4.50 ม. | หลังคา 96 ม² | ปริมาตรภายนอกโดยประมาณ 432 ม³")
     }
 
     func testSummaryWithoutHeightOrSize() throws {
         let s = try XCTUnwrap(Tank.summary(tank("4,4,4,4,4,4,4,4,4,4", "4,4,4,4,4,4,4,4,4,4", height: nil)))
         XCTAssertNil(s.grossVolume)
-        XCTAssertEqual(s.text, "40.00 × 40.00 ม. · หลังคา 1,600 ม²")
+        XCTAssertEqual(s.text, "40.00 × 40.00 ม. | หลังคา 1,600 ม²")
         XCTAssertNil(Tank.summary(Values()))
         // a small tank keeps a decimal
         XCTAssertEqual(Tank.Summary.grouped(2.26), "2.3")
@@ -40,7 +40,7 @@ final class TankSummaryTests: XCTestCase {
         let t = texts(sheet.sketch)
         XCTAssertEqual(t.filter { $0 == "1" }.count, 3, "two marks of 1–1 and grid bubble 1")
         XCTAssertEqual(t.filter { $0 == "2" }.count, 3, "two marks of 2–2 and grid bubble 2")
-        XCTAssertTrue(t.contains("40.00 × 40.00 × 4.50 ม. · หลังคา 1,600 ม² · ปริมาตรภายนอกโดยประมาณ 7,200 ม³"))
+        XCTAssertTrue(t.contains("40.00 × 40.00 × 4.50 ม. | หลังคา 1,600 ม² | ปริมาตรภายนอกโดยประมาณ 7,200 ม³"))
         XCTAssertTrue(t.contains(TankDrawings.note))
         XCTAssertGreaterThan(sheet.sketch.height, screen.sketch.height)
         XCTAssertFalse(texts(screen.sketch).contains(TankDrawings.note), "the D1 page's plan is unchanged")

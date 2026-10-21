@@ -57,7 +57,7 @@ extension RoofPageWide {
         let spacing = StructureSizes.split(Roof.member(values, n)).spacing
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("\(n) \(m.name) · เลือกขนาด").font(.sarabunFixed(16, .bold))
+                Text("\(n) \(m.name) | เลือกขนาด").font(.sarabunFixed(16, .bold))
                 Spacer()
                 Button { member = nil } label: {
                     Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44)
@@ -115,7 +115,7 @@ extension RoofPageWide {
     var photosCard: some View {
         let missing = Roof.missingShots(values).count, extra = Roof.extraStructPhotos(values)
         return VStack(alignment: .leading, spacing: 8) {
-            cardTitle("ภาพหลังคา", trailing: missing == 0 ? "ครบ 6 มุมที่แนะนำ ✓" : "\(6 - missing)/6 มุม · ต้องถ่ายครบทุกมุม",
+            cardTitle("ภาพหลังคา", trailing: missing == 0 ? "ครบ 6 มุมที่แนะนำ ✓" : "\(6 - missing)/6 มุม | ต้องถ่ายครบทุกมุม",
                       trailingColor: missing == 0 ? Theme.success : Self.red, bold: missing > 0)
             // 6 in a row when the column has room, else 3 × 2
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: cardsWidth >= 440 ? 6 : 3), spacing: 6) {

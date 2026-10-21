@@ -191,7 +191,7 @@ public enum InverterStationDrawing {
         var yy = 0.06
         while yy < fy1 { p.thin(Pt(lx - 10, Y(yy)), Pt(lx + 10, Y(yy))); yy += 0.06 }
         p.thin(Pt(lx + 10, Y(0.1)), Pt(X(f0 + 1.3), Y(-0.12) - 60))
-        p.text(X(f0 + 1.3) + 6, Y(-0.12) - 62, "TO INJECTION POINT · AC CABLE LADDER \(s.ladderWidth)x100 (NON COVER)", 14, align: .left)
+        p.text(X(f0 + 1.3) + 6, Y(-0.12) - 62, "TO INJECTION POINT | AC CABLE LADDER \(s.ladderWidth)x100 (NON COVER)", 14, align: .left)
         p.chain(pts, y: Y(ey + maxD) + 60, fs: 18)
         // equipment depth 0.85 and the walkway
         let depth = 0.85, walk = s.walkway, cx2 = X(f1) + 40
@@ -243,6 +243,6 @@ public enum InverterStationDrawing {
             }
             x += 4 * r
         }
-        p.text(cx, yb + 22, "CABLE LADDER \(s.ladderWidth)x100 (NON COVER) · \(fd.label) · เว้นระยะ D = Ø สาย", 14)
+        p.text(cx, yb + 22, "CABLE LADDER \(s.ladderWidth)x100 (NON COVER) | \(fd.label) | เว้นระยะ D = Ø สาย", 14)
     }
 }

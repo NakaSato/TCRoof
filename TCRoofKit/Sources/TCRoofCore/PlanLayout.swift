@@ -10,7 +10,7 @@ public enum PlanLayout {
         /// Columns 0 (Sunday) … 6 (Saturday), clipped to the week, inclusive.
         public let startColumn: Int
         public let endColumn: Int
-        /// The job started before this week: square left edge and `ต่อ ·`.
+        /// The job started before this week: square left edge and `ต่อ |`.
         public let continuesBefore: Bool
         /// The job runs on past this week: square right edge.
         public let continuesAfter: Bool

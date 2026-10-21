@@ -27,7 +27,7 @@ final class RoleTableTests: XCTestCase {
         for cap in caps {
             let c = try XCTUnwrap(Capability(rawValue: cap.id))
             for role in UserRole.every {
-                XCTAssertEqual(c.access(role).rawValue, cap.roles[role.rawValue]?.access, "\(cap.id) · \(role.rawValue)")
+                XCTAssertEqual(c.access(role).rawValue, cap.roles[role.rawValue]?.access, "\(cap.id) | \(role.rawValue)")
             }
         }
     }
@@ -41,7 +41,7 @@ final class RoleTableTests: XCTestCase {
         for cap in file.groups.flatMap(\.capabilities) {
             let c = try XCTUnwrap(Capability(rawValue: cap.id))
             XCTAssertEqual(c.label, cap.label, cap.id)
-            for role in UserRole.allCases { XCTAssertEqual(c.note(role), cap.roles[role.rawValue]?.note, "\(cap.id) · \(role.rawValue)") }
+            for role in UserRole.allCases { XCTAssertEqual(c.note(role), cap.roles[role.rawValue]?.note, "\(cap.id) | \(role.rawValue)") }
         }
     }
 
@@ -60,7 +60,7 @@ final class RoleTableTests: XCTestCase {
         for c in Capability.allCases where c != .boqDraft && c != .boqApprove { XCTAssertTrue(dev.can(c), c.rawValue) }
         XCTAssertFalse(dev.can(.boqDraft))
         for role in UserRole.allCases {
-            for c in Capability.maintainerOnly { XCTAssertFalse(Permissions(role: role, email: "a@b.c").can(c), "\(role) · \(c)") }
+            for c in Capability.maintainerOnly { XCTAssertFalse(Permissions(role: role, email: "a@b.c").can(c), "\(role) | \(c)") }
         }
         // a Maintainer hears every job's news, as a manager does
         XCTAssertTrue(dev.hearsNews(JobAccess(teamMembers: ["eng@tcroof.co"])))

@@ -10,7 +10,7 @@ extension InstallPlan {
         let subCrew = [[6, 2, 2, 2], [2, 4, 4, 4, 2], [8, 3, 3, 2, 2], [4, 3, 3, 2, 2], [2, 2, 2, 2, 1], [3, 2, 2, 2, 1], [2, 4, 2, 2, 2]]
         var x = InstallPlan(gantt: gantt, nonWorking: nonWorking, tracking: tracking,
                             milestones: [.init(title: "เริ่มงานหน้างาน", date: d(0)), .init(title: "ติดตั้งแผงครบ 164 แผง", date: d(4)),
-                                         .init(title: "ทดสอบ IEC 62446-1", date: d(9)), .init(title: "ขนานไฟ · ส่งมอบ กปภ.", date: d(12))],
+                                         .init(title: "ทดสอบ IEC 62446-1", date: d(9)), .init(title: "ขนานไฟ | ส่งมอบ กปภ.", date: d(12))],
                             crew: [:])
         for i in x.stages.indices {
             x.stages[i].row.crew = stageCrew[i]
@@ -25,9 +25,9 @@ extension InstallPlan {
         })
         x.teamSize = 8
         x.baseline = Baseline(revision: "Baseline REV 01", approved: d(-2), by: "ผู้ควบคุมงาน กปภ.")
-        x.ready = Ready(stage: "ขั้น 5 · อินเวอร์เตอร์ · ระบบ AC",
+        x.ready = Ready(stage: "ขั้น 5 | อินเวอร์เตอร์ | ระบบ AC",
                         items: [.init("วัสดุ", ok: false, note: "ตู้ AC รออนุมัติ MA-05"), .init("ใบอนุญาต", ok: true, note: "WP-02 งานไฟฟ้า"),
-                                .init("ทีม", ok: true, note: "TCR02 · 4 คน")])
+                                .init("ทีม", ok: true, note: "TCR02 | 4 คน")])
         return x
     }
 }

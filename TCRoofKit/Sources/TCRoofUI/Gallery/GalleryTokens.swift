@@ -4,12 +4,12 @@ import SwiftUI
 /// Section 8 of the board (sections/08-tokens.png): colour swatches, type scale, spacing.
 struct GalleryTokens: View {
     let swatches: [(String, String, Color, Bool)] = [
-        ("#16325C", "navy · ข้อความหลัก", Theme.navy, true),
+        ("#16325C", "navy | ข้อความหลัก", Theme.navy, true),
         ("#1F6FB5", "primary", Theme.primary, true),
         ("#2E8FDB", "primary-light", Theme.primaryLight, true),
         ("#E3EEF8", "primary-soft", Theme.primarySoft, false),
         ("#27A99A", "teal", Theme.teal, true),
-        ("#9EE6D6", "mint · ค่าคำนวณ", Theme.mint, false),
+        ("#9EE6D6", "mint | ค่าคำนวณ", Theme.mint, false),
         ("#3B7420", "ok / tick", Theme.okTick, true),
         ("#B45309", "pending", Theme.pending, true),
         ("#D9453B", "danger", Theme.danger, true),
@@ -38,7 +38,7 @@ struct GalleryTokens: View {
                 Text("หัวหน้า \(Int(TypeScale.header))").font(.sarabun(TypeScale.header, .bold, relativeTo: .largeTitle))
                 Text("ชื่อหน้า \(Int(TypeScale.pageTitle))").font(.sarabun(TypeScale.pageTitle, .bold, relativeTo: .title))
                 Text("ป้ายช่อง \(Int(TypeScale.label))").font(.sarabun(TypeScale.label, .bold, relativeTo: .headline))
-                Text("คำอธิบาย \(Int(TypeScale.caption)) · ระยะ 4/8/12/16/24 · มุม 8/10/12/16 · แตะได้ ≥ \(Int(touchMin)) pt")
+                Text("คำอธิบาย \(Int(TypeScale.caption)) | ระยะ 4/8/12/16/24 | มุม 8/10/12/16 | แตะได้ ≥ \(Int(touchMin)) pt")
                     .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             .foregroundStyle(Theme.navy)
@@ -46,11 +46,11 @@ struct GalleryTokens: View {
     }
 }
 
-#Preview("Tokens · iPad", traits: .landscapeLeft) {
+#Preview("Tokens | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 8, title: "สีและตัวอักษร", subtitle: "Tokens") { GalleryTokens() }.padding() }
 }
 
-#Preview("Tokens · dark", traits: .landscapeLeft) {
+#Preview("Tokens | dark", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 8, title: "สีและตัวอักษร", subtitle: "Tokens") { GalleryTokens() }.padding() }
         .preferredColorScheme(.dark)
 }

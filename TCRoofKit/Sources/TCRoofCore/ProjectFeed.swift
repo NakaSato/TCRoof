@@ -108,7 +108,7 @@ public struct FeedPost: Identifiable, Equatable, Sendable {
     }
 }
 
-/// The feed's filter chips: `ทั้งหมด` · `กปภ.` · `งานบ้าน` · `ทีมของฉัน`.
+/// The feed's filter chips: `ทั้งหมด` | `กปภ.` | `งานบ้าน` | `ทีมของฉัน`.
 public enum FeedFilter: String, CaseIterable, Identifiable, Sendable {
     case all, pwa, home, mine
 
@@ -235,7 +235,7 @@ public enum FeedBuilder {
             let d = r.daily
             let done = RoutineReport.workDone(d, in: dailies)
             let main = done.max { $0.delta < $1.delta }
-            var text = done.map { "\($0.line.title) \(RoutineReport.percent($0.line.percent))" }.joined(separator: " · ")
+            var text = done.map { "\($0.line.title) \(RoutineReport.percent($0.line.percent))" }.joined(separator: " | ")
             if text.isEmpty { text = d.stopReason.isEmpty ? "ส่งรายงานประจำวันแล้ว" : "หยุดงาน: " + d.stopReason }
             var chips: [FeedPost.Chip] = []
             if let main {
@@ -252,7 +252,7 @@ public enum FeedBuilder {
             return FeedPost(id: "daily-\(s.id)-\(RoutineReport.dayKey(d.date))",
                             kind: finished && r.inspectorAckAt == nil ? .waitingInspector : .progress,
                             project: s.project, team: s.team, recorder: r.recorder, initials: initials(team: s.team),
-                            who: who(s.team, r.recorder), place: [s.label, task].compactMap { $0 }.joined(separator: " · "),
+                            who: who(s.team, r.recorder), place: [s.label, task].compactMap { $0 }.joined(separator: " | "),
                             date: signedAt, text: text, photos: r.photos, chips: chips,
                             source: .dailyReport(project: s.id, day: d.date))
         }
@@ -288,7 +288,7 @@ public enum FeedBuilder {
     static func punchPosts(_ s: Station) -> [FeedPost] {
         s.punches.compactMap { p in
             guard !p.title.trimmingCharacters(in: .whitespaces).isEmpty, let at = p.raised ?? p.due ?? p.closed else { return nil }
-            let text = p.location.isEmpty ? p.title : p.title + " · " + p.location
+            let text = p.location.isEmpty ? p.title : p.title + " | " + p.location
             return FeedPost(id: "punch-\(s.id)-\(p.id)", kind: .issue, project: s.project, team: s.team,
                             initials: initials(team: s.team), who: who(s.team, s.project == .home ? "งานบ้าน" : ""), place: place(s, on: at),
                             date: at, text: text, photos: p.isOpen ? p.before : p.after,
@@ -406,13 +406,13 @@ public enum FeedBuilder {
     }
 
     static func who(_ team: String, _ detail: String) -> String {
-        [team.isEmpty ? nil : "ทีม " + team, detail.isEmpty ? nil : detail].compactMap { $0 }.joined(separator: " · ")
+        [team.isEmpty ? nil : "ทีม " + team, detail.isEmpty ? nil : detail].compactMap { $0 }.joined(separator: " | ")
     }
 
-    /// "TC-0012 · ติดตั้ง Day 2/5" inside the install window, else the station's label.
+    /// "TC-0012 | ติดตั้ง Day 2/5" inside the install window, else the station's label.
     static func place(_ s: Station, on date: Date) -> String {
         guard let n = s.installDay(on: date) else { return s.label }
-        return "\(s.label) · ติดตั้ง Day \(n)/\(max(s.installDays, 1))"
+        return "\(s.label) | ติดตั้ง Day \(n)/\(max(s.installDays, 1))"
     }
 
     /// "+2%", "-1.5%", "0%".

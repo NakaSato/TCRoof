@@ -91,7 +91,7 @@ struct DailyOnePage: View {
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
-                Text("รายงานประจำวัน · " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(20, .bold)).lineLimit(1)
+                Text("รายงานประจำวัน | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(20, .bold)).lineLimit(1)
                 Text(job.stationName).font(.sarabunFixed(14)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -144,7 +144,7 @@ struct DailyOnePage: View {
             Image(systemName: why == nil ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy))
                 .foregroundStyle(Theme.onPrimary).frame(width: 28, height: 28)
                 .background(why == nil ? Theme.success : Theme.warning, in: Circle())
-            Text(why.map { "ยังส่งไม่ได้ · " + $0 } ?? "ครบทุกส่วนแล้ว · พร้อมส่ง PDF 3 หน้า")
+            Text(why.map { "ยังส่งไม่ได้ | " + $0 } ?? "ครบทุกส่วนแล้ว | พร้อมส่ง PDF 3 หน้า")
                 .font(.sarabunFixed(14)).foregroundStyle(why == nil ? Theme.successText : Theme.navy).lineLimit(1)
             Spacer(minLength: 12)
             Button(action: actions.saveDraft) {
@@ -297,7 +297,7 @@ extension DailyOnePage {
             HStack(alignment: .firstTextBaseline) {
                 Text("ทีมงานวันนี้").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("\(report.crewTotal) คน · เครื่องมือ \(report.tools.reduce(0) { $0 + $1.count }) รายการ")
+                Text("\(report.crewTotal) คน | เครื่องมือ \(report.tools.reduce(0) { $0 + $1.count }) รายการ")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 8) {
@@ -308,7 +308,7 @@ extension DailyOnePage {
                             selection: $teamTab, fontSize: 14, countSize: 13)
             if teamTab == 0 && !report.crewConfirmed {
                 Button { report.crewConfirmed = true } label: {
-                    Label("ใช้ค่าเมื่อวาน · แตะยืนยันกำลังคนวันนี้", systemImage: "exclamationmark.circle")
+                    Label("ใช้ค่าเมื่อวาน | แตะยืนยันกำลังคนวันนี้", systemImage: "exclamationmark.circle")
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.warningText)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
                 }
@@ -332,7 +332,7 @@ extension DailyOnePage {
     private func labourTile(_ title: String, _ value: Int, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            Text("\(value) คน·ชม.").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text("\(value) คน-ชม.").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
             Text(sub).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
         }
         .padding(10).frame(maxWidth: .infinity, alignment: .leading)

@@ -191,7 +191,7 @@ struct FinalPageWide: View {
                 HStack(spacing: 6) {
                     A2Icon(name: "e1-ai-sparkle", fallback: "sparkle", size: 15).foregroundStyle(Self.purple)
                     Text("ข้อเสนอแนะอัตโนมัติจาก AI").font(.sarabunFixed(13, .bold)).foregroundStyle(Self.purple)
-                    if !narrow { Text("· บนเครื่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+                    if !narrow { Text("| บนเครื่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
                     Spacer(minLength: 4)
                     if rest.count >= 2 {
                         Button { add(rest) } label: {
@@ -206,7 +206,7 @@ struct FinalPageWide: View {
                 .frame(minHeight: 44)
                 ForEach(rest) { s in suggestionRow(s) }
                 if rest.isEmpty {
-                    Text("✓ ใส่ข้อเสนอแนะครบแล้ว · แก้ข้อความในช่องได้").font(.sarabunFixed(13)).foregroundStyle(Self.okText)
+                    Text("✓ ใส่ข้อเสนอแนะครบแล้ว | แก้ข้อความในช่องได้").font(.sarabunFixed(13)).foregroundStyle(Self.okText)
                 }
             }
             .padding(.top, -10)
@@ -266,7 +266,7 @@ struct FinalPageWide: View {
     func gapRow(_ g: MissingGroup) -> some View {
         HStack(spacing: 10) {
             Text(FinalSummary.code(g)).font(.sarabunFixed(14, .bold)).frame(minWidth: 30, alignment: .leading).fixedSize()
-            Text(g.items.joined(separator: " · ")).font(.sarabunFixed(14)).foregroundStyle(Self.bodyText).lineLimit(2)
+            Text(g.items.joined(separator: " | ")).font(.sarabunFixed(14)).foregroundStyle(Self.bodyText).lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button { open(g.target) } label: {
                 Text("ไปที่หน้า ›").font(.sarabunFixed(14, .semibold)).fixedSize()

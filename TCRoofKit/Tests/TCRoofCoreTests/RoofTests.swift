@@ -123,8 +123,8 @@ final class RoofTests: XCTestCase {
         Roof.setPhoto(&v, .side, nil)
         XCTAssertEqual(Roof.photo(v, .front), photo(2), "deleting one doesn't move the others")
         XCTAssertNil(Roof.photo(v, .side))
-        XCTAssertTrue(Roof.statusLine(v).hasPrefix("ยังขาด: จำนวนแผง · ระยะช่วงเสา · "))
-        XCTAssertTrue(Roof.statusLine(v).hasSuffix("ภาพมุมสูง ภาพรวม · ภาพด้านข้าง · ภาพใต้หลังคา โครง · ภาพแผ่นมุง ระยะใกล้"))
+        XCTAssertTrue(Roof.statusLine(v).hasPrefix("ยังขาด: จำนวนแผง | ระยะช่วงเสา | "))
+        XCTAssertTrue(Roof.statusLine(v).hasSuffix("ภาพมุมสูง ภาพรวม | ภาพด้านข้าง | ภาพใต้หลังคา โครง | ภาพแผ่นมุง ระยะใกล้"))
         // old photos without angles fill the slots in order; extra structure photos are kept
         var old = Values()
         old["structPhotos"] = .photos([photo(1), photo(2), photo(3)])
@@ -392,7 +392,7 @@ final class RoofTests: XCTestCase {
         var v = Values()
         XCTAssertEqual(Roof.standards.map { $0.title() }, ["โรงกรอง 19 × 16 ม.", "อาคารสูบน้ำ 12 × 8 ม.", "อาคารสำนักงาน 16 × 10 ม.",
                                                             "อาคารเก็บสารเคมี 24 × 12 ม.", "โรงจอดรถ 30 × 20 ม."])
-        XCTAssertEqual(Roof.standards[0].subtitle, "ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด")
+        XCTAssertEqual(Roof.standards[0].subtitle, "ถัก Pratt | ช่วงเสา 4 ม. | 7 × 6 กริด")
         Roof.togglePost(&v, i: 0, j: 0)
         Roof.setFrame(&v, .rafterTie); Roof.togglePost(&v, i: 0, j: 0)
         Roof.applyStandard(&v, Roof.standards[1])
@@ -408,7 +408,7 @@ final class RoofTests: XCTestCase {
         Roof.setPurlinSpacing(&v, 0.9)
         let mine = Roof.standard(from: v, id: "t-1", name: "โรงสูบน้ำ (พิจิตร)", by: "วิชัย", scope: "ทั้งทีม", date: "28 ก.ย.")
         XCTAssertEqual(mine.title(), "โรงสูบน้ำ 12 × 8 ม. (พิจิตร)")
-        XCTAssertEqual(mine.subtitle, "ขื่อรัด · แป @0.90 · โดย วิชัย · 28 ก.ย. · ทั้งทีม")
+        XCTAssertEqual(mine.subtitle, "ขื่อรัด | แป @0.90 | โดย วิชัย | 28 ก.ย. | ทั้งทีม")
         XCTAssertEqual(Roof.matchingStandard(v, in: [mine])?.id, "t-1")
         Roof.setPurlinSpacing(&v, 1.0)
         XCTAssertNil(Roof.matchingStandard(v, in: [mine]))
@@ -473,7 +473,7 @@ final class RoofTests: XCTestCase {
         Roof.choose(&m.values, Roof.Key.material, Roof.materials[0])
         m.values[Roof.Key.structure] = .choice("โครงเหล็ก", other: "")
         XCTAssertTrue(fieldGaps().isEmpty)
-        XCTAssertEqual(Roof.statusLine(m.values), "ยังขาดภาพหลังคา: " + Roof.Shot.allCases.map(\.name).joined(separator: " · "))
+        XCTAssertEqual(Roof.statusLine(m.values), "ยังขาดภาพหลังคา: " + Roof.Shot.allCases.map(\.name).joined(separator: " | "))
         XCTAssertFalse(m.completion.isComplete, "the aerial and structure photos are still required")
         for s in Roof.Shot.allCases { Roof.setPhoto(&m.values, s, Self.photos[s.rawValue % 4]) }
         XCTAssertTrue(Roof.gaps(m.values).isEmpty)

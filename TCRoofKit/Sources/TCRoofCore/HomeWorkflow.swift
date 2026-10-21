@@ -334,7 +334,7 @@ public struct HomeJob: Codable, Equatable, Sendable {
     }
 }
 
-/// One step of the job's permit route with PEA (ขออนุญาต · กฟภ.), as the permit card shows it.
+/// One step of the job's permit route with PEA (ขออนุญาต | กฟภ.), as the permit card shows it.
 public struct HomePermitStep: Equatable, Sendable, Identifiable {
     public enum State: String, Sendable { case done, current, todo }
     public let id: String
@@ -352,16 +352,16 @@ extension HomeJob {
     public var permitSteps: [HomePermitStep] {
         func done(_ ids: String...) -> Bool { ids.allSatisfy { document($0).status.isDone } }
         let raw: [(String, String, String, String, Bool)] = mode == .sell
-            ? [("request", "ยื่นคำขอขายไฟใน PPIM", "ทีมเรา · ส่วนที่ 1–5 · ล็อกขนาดที่เสนอ ≤ 5 kW", "", done("sellRequest")),
+            ? [("request", "ยื่นคำขอขายไฟใน PPIM", "ทีมเรา | ส่วนที่ 1–5 | ล็อกขนาดที่เสนอ ≤ 5 kW", "", done("sellRequest")),
                ("announce", "PEA ประกาศรายชื่อ + ใบแจ้งค่าเชื่อมต่อ", "PEA", "≤ 30 วันนับจากคำขอครบ", done("peaApproval")),
-               ("contract", "ชำระ 2,140 บาท · ลงนามสัญญา", "ลูกค้า · ส่งเอกสารสัญญา 2 ชุด", "≤ 30 วันนับจากประกาศ", done("feeReceipt", "contract")),
-               ("connect", "ติดตั้ง · ขออนุญาตเชื่อมต่อ", "ทีมเรา · แบบรับรองตนเอง + เอกสารแนบ 1–10", "ก่อน SCOD", done("connectRequest")),
-               ("cod", "PEA ตรวจระบบ · First Sync · COD", "PEA · เปลี่ยนมิเตอร์", "≤ 30 วันนับจากแจ้งขอตรวจ", done("connectionDate"))]
-            : [("request", "ยื่นคำขอเชื่อมต่อใน PPIM", "ทีมเรา · แนบ 8 ไฟล์ ช่อง 1–6, 8, 9", "", done("ppimRequest")),
-               ("review", "PEA พิจารณาแบบและระบบไฟฟ้า", "PEA · ผลพร้อมเงื่อนไข", "≤ 15 วันทำการ", done("peaApproval")),
-               ("install", "ติดตั้ง + ตั้งค่า zero export", "ทีมเรา · รูป 9 หัวข้อ", "", done("icl")),
-               ("inspect", "แบบรับรองการติดตั้ง · PEA ตรวจระบบ", "วิศวกรเซ็น · PEA ตรวจ", "≤ 30 วันทำการ", done("peaInspection")),
-               ("cod", "PEA แจ้งวันเริ่มเชื่อมต่อ / ขนานไฟ", "PEA · กกพ. แจ้งผลยกเว้นเอง", "", done("connectionDate"))]
+               ("contract", "ชำระ 2,140 บาท | ลงนามสัญญา", "ลูกค้า | ส่งเอกสารสัญญา 2 ชุด", "≤ 30 วันนับจากประกาศ", done("feeReceipt", "contract")),
+               ("connect", "ติดตั้ง | ขออนุญาตเชื่อมต่อ", "ทีมเรา | แบบรับรองตนเอง + เอกสารแนบ 1–10", "ก่อน SCOD", done("connectRequest")),
+               ("cod", "PEA ตรวจระบบ | First Sync | COD", "PEA | เปลี่ยนมิเตอร์", "≤ 30 วันนับจากแจ้งขอตรวจ", done("connectionDate"))]
+            : [("request", "ยื่นคำขอเชื่อมต่อใน PPIM", "ทีมเรา | แนบ 8 ไฟล์ ช่อง 1–6, 8, 9", "", done("ppimRequest")),
+               ("review", "PEA พิจารณาแบบและระบบไฟฟ้า", "PEA | ผลพร้อมเงื่อนไข", "≤ 15 วันทำการ", done("peaApproval")),
+               ("install", "ติดตั้ง + ตั้งค่า zero export", "ทีมเรา | รูป 9 หัวข้อ", "", done("icl")),
+               ("inspect", "แบบรับรองการติดตั้ง | PEA ตรวจระบบ", "วิศวกรเซ็น | PEA ตรวจ", "≤ 30 วันทำการ", done("peaInspection")),
+               ("cod", "PEA แจ้งวันเริ่มเชื่อมต่อ / ขนานไฟ", "PEA | กกพ. แจ้งผลยกเว้นเอง", "", done("connectionDate"))]
         let current = raw.firstIndex { !$0.4 }
         return raw.enumerated().map { i, r in
             HomePermitStep(id: r.0, title: r.1, who: r.2, limit: r.3, state: r.4 ? .done : (i == current ? .current : .todo))
@@ -371,8 +371,8 @@ extension HomeJob {
     /// The line under the permit steps.
     public var permitNote: String {
         mode == .sell
-            ? "ภาคประชาชน 2569 · ยื่น PPIM 2 ครั้ง คั่นด้วยประกาศรายชื่อและสัญญา · ไม่ลงนามภายใน 30 วันนับจากประกาศ คำขอถูกยกเลิก"
-            : "บ้านพื้นที่ PEA อินเวอร์เตอร์ต่ำกว่า 200 kVA · PEA ส่งข้อมูลให้ กกพ. เองหลังตรวจผ่าน ทีมไม่ต้องยื่นแจ้งยกเว้น · ระยะเวลาไม่รวมเวลาแก้ไข"
+            ? "ภาคประชาชน 2569 | ยื่น PPIM 2 ครั้ง คั่นด้วยประกาศรายชื่อและสัญญา | ไม่ลงนามภายใน 30 วันนับจากประกาศ คำขอถูกยกเลิก"
+            : "บ้านพื้นที่ PEA อินเวอร์เตอร์ต่ำกว่า 200 kVA | PEA ส่งข้อมูลให้ กกพ. เองหลังตรวจผ่าน ทีมไม่ต้องยื่นแจ้งยกเว้น | ระยะเวลาไม่รวมเวลาแก้ไข"
     }
 }
 
@@ -443,30 +443,30 @@ public enum HomeCatalog {
         // สำรวจ
         HomeDocSpec(id: "survey", title: "แบบสำรวจหน้างาน (หลังคา ตู้ MDB มิเตอร์ ทิศ เงา)", stage: .survey, provider: .team, form: .surveyForm),
         HomeDocSpec(id: "bill", title: "ใบแจ้งค่าไฟฟ้าของเครื่องวัด เดือนล่าสุดหรือย้อนหลังไม่เกิน 3 เดือน", stage: .survey, provider: .customer,
-                    note: "ชื่อต้องตรงผู้ยื่น · CA ขึ้นต้นด้วย 1", ppimSlot: 1),
+                    note: "ชื่อต้องตรงผู้ยื่น | CA ขึ้นต้นด้วย 1", ppimSlot: 1),
         HomeDocSpec(id: "idCard", title: "สำเนาบัตรประชาชนเจ้าของเครื่องวัด (เซ็นรับรองสำเนา)", stage: .survey, provider: .customer,
                     ppimSlot: 2),
         HomeDocSpec(id: "houseReg", title: "สำเนาทะเบียนบ้าน (หน้ารายการเกี่ยวกับบ้าน + หน้าเจ้าของ)", stage: .survey, provider: .customer,
                     note: "ผลิตใช้เอง: รวมไว้ในไฟล์ช่อง 2 ต่อจากบัตรประชาชน", ppimSlot: 2, optionalWhen: selfUse),
         HomeDocSpec(id: "sitePlan", title: "แผนผังแสดงที่ตั้งเครื่องกำเนิดไฟฟ้า พร้อมพิกัด Latitude / Longitude", stage: .survey, provider: .team,
-                    note: "ภาพถ่ายทางอากาศ วางตำแหน่งแผง อินเวอร์เตอร์ แนวสาย DC และตารางข้อมูลโครงการพร้อมพิกัด · ใช้แผ่นผังแผงจากชุดแบบได้",
+                    note: "ภาพถ่ายทางอากาศ วางตำแหน่งแผง อินเวอร์เตอร์ แนวสาย DC และตารางข้อมูลโครงการพร้อมพิกัด | ใช้แผ่นผังแผงจากชุดแบบได้",
                     ppimSlot: 3),
         HomeDocSpec(id: "sitePhotos", title: "ภาพถ่ายระบบผลิตไฟฟ้า (ชุดรูปมาตรฐาน 9 หัวข้อ)", stage: .survey, provider: .team,
-                    note: "ก่อนติดตั้งใช้รูปสถานที่ตั้งได้ · ยื่นหลังติดตั้งใช้ชุดรูประบบ หน้าละ 2 หัวข้อ มีหัวโครงการ ที่อยู่ และขนาดกำลังผลิต",
+                    note: "ก่อนติดตั้งใช้รูปสถานที่ตั้งได้ | ยื่นหลังติดตั้งใช้ชุดรูประบบ หน้าละ 2 หัวข้อ มีหัวโครงการ ที่อยู่ และขนาดกำลังผลิต",
                     form: .photoReport, ppimSlot: 4),
         HomeDocSpec(id: "roofWeight", title: "ใบคำนวณน้ำหนักบนหลังคา (กก./ตร.ม.)", stage: .survey, provider: .engineer,
                     note: "≤ 20 กก./ตร.ม. ไม่ต้องขออนุญาตดัดแปลงอาคาร (กฎกระทรวง ฉบับที่ 72 พ.ศ. 2568)", form: .roofWeight),
 
         // ออกแบบ
-        HomeDocSpec(id: "sld", title: "ชุดแบบไฟฟ้า วิศวกรลงนามทุกแผ่น: ปก · ผังติดตั้งแผง · Single Line Diagram · โครงสร้างหลังคา · รายละเอียดการยึดแผง",
+        HomeDocSpec(id: "sld", title: "ชุดแบบไฟฟ้า วิศวกรลงนามทุกแผ่น: ปก | ผังติดตั้งแผง | Single Line Diagram | โครงสร้างหลังคา | รายละเอียดการยึดแผง",
                     stage: .design, provider: .engineer,
-                    note: "SLD แสดงมิเตอร์กันไหลย้อน (zero export) + สายสื่อสาร และตารางสเปกแผง/อินเวอร์เตอร์ · ปกระบุชื่อโครงการ ขนาด kWp และพิกัด GPS",
+                    note: "SLD แสดงมิเตอร์กันไหลย้อน (zero export) + สายสื่อสาร และตารางสเปกแผง/อินเวอร์เตอร์ | ปกระบุชื่อโครงการ ขนาด kWp และพิกัด GPS",
                     ppimSlot: 6),
         HomeDocSpec(id: "engineerDocs", title: "เอกสารวิศวกรไฟฟ้า: สำเนาบัตรประชาชน + สำเนาใบอนุญาต กว. + หนังสือรับรองสภาวิศวกร",
                     stage: .design, provider: .engineer,
-                    note: "สำเนาเซ็นรับรองและเขียนกำกับว่าใช้กับโครงการนี้ · ไฟฟ้ากำลัง ภาคีวิศวกรขึ้นไป · หนังสือรับรองใช้ได้ 120 วันนับจากวันออก · ต่อท้ายชุดแบบในไฟล์ช่อง 6",
+                    note: "สำเนาเซ็นรับรองและเขียนกำกับว่าใช้กับโครงการนี้ | ไฟฟ้ากำลัง ภาคีวิศวกรขึ้นไป | หนังสือรับรองใช้ได้ 120 วันนับจากวันออก | ต่อท้ายชุดแบบในไฟล์ช่อง 6",
                     ppimSlot: 6),
-        HomeDocSpec(id: "equipment", title: "Datasheet อุปกรณ์เชื่อมต่อ: มิเตอร์กันไหลย้อน (smart power sensor) · RCBO/เบรกเกอร์ AC · AC SPD · DC fuse · DC SPD · DC breaker",
+        HomeDocSpec(id: "equipment", title: "Datasheet อุปกรณ์เชื่อมต่อ: มิเตอร์กันไหลย้อน (smart power sensor) | RCBO/เบรกเกอร์ AC | AC SPD | DC fuse | DC SPD | DC breaker",
                     stage: .design, provider: .team,
                     note: "รวมเป็นไฟล์เดียวตามลำดับใน SLD", ppimSlot: 5),
         HomeDocSpec(id: "pvSpec", title: "Datasheet แผงโซลาร์ (ระบุมาตรฐาน มอก./IEC)", stage: .design, provider: .team,
@@ -474,19 +474,19 @@ public enum HomeCatalog {
         HomeDocSpec(id: "inverterSpec", title: "Datasheet อินเวอร์เตอร์ / ผลทดสอบและรับรองผลิตภัณฑ์", stage: .design, provider: .team,
                     note: "รุ่นต้องอยู่ใน smartlist.pea.co.th", ppimSlot: 9),
         HomeDocSpec(id: "boq", title: "BOQ (Bill of quantities) จากแบบ", stage: .design, provider: .engineer,
-                    note: "ร่างจากตารางแผง/อินเวอร์เตอร์ · ราคาจำจากงานก่อน · พิมพ์ฉบับต้นทุนและฉบับส่งลูกค้า", form: .boq),
+                    note: "ร่างจากตารางแผง/อินเวอร์เตอร์ | ราคาจำจากงานก่อน | พิมพ์ฉบับต้นทุนและฉบับส่งลูกค้า", form: .boq),
         HomeDocSpec(id: "buildingPermit", title: "ขออนุญาตดัดแปลงอาคาร ข.1 → อ.1 (แบบและรายการคำนวณโยธา + โฉนด)", stage: .design, provider: .local,
-                    note: "เฉพาะน้ำหนักเกิน 20 กก./ตร.ม. · ต้องได้ อ.1 ก่อนติดตั้ง", when: { $0.needsBuildingPermit == true }),
+                    note: "เฉพาะน้ำหนักเกิน 20 กก./ตร.ม. | ต้องได้ อ.1 ก่อนติดตั้ง", when: { $0.needsBuildingPermit == true }),
 
         // ยื่นขออนุญาต
         HomeDocSpec(id: "poa", title: "หนังสือมอบอำนาจ เซ็นสด + อากร 30 บาท + สำเนาบัตรผู้มอบและผู้รับมอบ", stage: .apply, provider: .customer,
                     form: .powerOfAttorney, when: { $0.teamFiles }),
         HomeDocSpec(id: "ppimRequest", title: "ยื่นคำขอใน PPIM และบันทึกเลขคำขอ", stage: .apply, provider: .team,
-                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ · PEA พิจารณาแบบไม่เกิน 15 วันทำการนับจากเอกสารครบ (ไม่รวมเวลาแก้ไข)", when: selfUse),
+                    note: "แนบภาพหน้าจอส่วนที่ 1–5 และหน้าสถานะคำขอเก็บไว้ | PEA พิจารณาแบบไม่เกิน 15 วันทำการนับจากเอกสารครบ (ไม่รวมเวลาแก้ไข)", when: selfUse),
         HomeDocSpec(id: "sellRequest", title: "ยื่นคำขอขายไฟใน PPIM และบันทึกเลขคำขอ (ล็อกขนาดที่เสนอ)", stage: .apply, provider: .team,
-                    note: "เลข D… ระหว่างรออัปโหลด เปลี่ยนเป็น PPIM1A6… เมื่อเอกสารครบ · แผงไม่เกิน 10 kWp ยินยอมส่งข้อมูลให้สรรพากร", when: sell),
+                    note: "เลข D… ระหว่างรออัปโหลด เปลี่ยนเป็น PPIM1A6… เมื่อเอกสารครบ | แผงไม่เกิน 10 kWp ยินยอมส่งข้อมูลให้สรรพากร", when: sell),
         HomeDocSpec(id: "peaApproval", title: "PEA อนุมัติคำขอ / ประกาศรายชื่อ", stage: .apply, provider: .pea,
-                    note: "ขายไฟ: ประกาศภายใน 30 วันนับจากคำขอครบ · บันทึกวันประกาศเพื่อนับเส้นตาย 30 วัน"),
+                    note: "ขายไฟ: ประกาศภายใน 30 วันนับจากคำขอครบ | บันทึกวันประกาศเพื่อนับเส้นตาย 30 วัน"),
         HomeDocSpec(id: "feeReceipt", title: "ใบเสร็จค่าตรวจสอบการเชื่อมต่อ 2,140 บาท", stage: .apply, provider: .customer,
                     note: "ภายใน 30 วันนับจากประกาศ", when: sell),
         HomeDocSpec(id: "contract", title: "ส่งเอกสารสัญญา 2 ชุด และลงนามสัญญาซื้อขายไฟฟ้า", stage: .apply, provider: .customer,
@@ -494,9 +494,9 @@ public enum HomeCatalog {
 
         // ติดตั้ง
         HomeDocSpec(id: "workOrder", title: "ใบสั่งงานผู้รับเหมา (ขอบเขต ค่าแรง วันเข้างาน) ผู้รับเหมาเซ็นรับ", stage: .install, provider: .team,
-                    note: "ค่าแรงตั้งต้นจาก BOQ · ชุดแบบ Rev. ล่าสุด", form: .site, when: { $0.usesContractor }),
+                    note: "ค่าแรงตั้งต้นจาก BOQ | ชุดแบบ Rev. ล่าสุด", form: .site, when: { $0.usesContractor }),
         HomeDocSpec(id: "delivery", title: "ใบส่งของ/รับวัสดุหน้างาน ตาม BOQ + S/N อินเวอร์เตอร์", stage: .install, provider: .team,
-                    note: "นับจำนวนจริงเทียบ BOQ · ผู้รับเหมาเซ็นรับ", form: .site, when: { $0.usesContractor }),
+                    note: "นับจำนวนจริงเทียบ BOQ | ผู้รับเหมาเซ็นรับ", form: .site, when: { $0.usesContractor }),
         HomeDocSpec(id: "installLog", title: "บันทึกงานติดตั้งและรูประหว่างติดตั้ง", stage: .install, provider: .team, form: .installLog),
         HomeDocSpec(id: "exportLimiter", title: "ติดตั้งและตั้งค่าอุปกรณ์กันไหลย้อน (Export Limiter / zero export) + CT", stage: .install, provider: .team,
                     when: { $0.needsExportLimiter == true }),
@@ -515,7 +515,7 @@ public enum HomeCatalog {
                     note: "ฉบับที่ PEA ใช้กับสายผลิตใช้เองยังไม่ยืนยัน — ใช้แบบรับรองตนเองเป็นโครง", form: .selfCertification, when: selfUse),
         // งานบ้าน PEA อินเวอร์เตอร์ต่ำกว่า 200 kVA: PEA ส่งข้อมูลให้ กกพ. หลังตรวจผ่าน ทีมไม่ต้องแจ้งเอง (แผนภาพ กกพ.)
         HomeDocSpec(id: ercResultID, title: "ผลแจ้งยกเว้นจาก กกพ.", stage: .connect, provider: .erc,
-                    note: "PEA ส่งข้อมูลให้ กกพ. เองหลังตรวจผ่าน ทีมไม่ต้องยื่นแจ้งยกเว้น · เก็บอีเมลหรือผลจากระบบไว้ถ้าได้รับ", optional: true),
+                    note: "PEA ส่งข้อมูลให้ กกพ. เองหลังตรวจผ่าน ทีมไม่ต้องยื่นแจ้งยกเว้น | เก็บอีเมลหรือผลจากระบบไว้ถ้าได้รับ", optional: true),
         HomeDocSpec(id: "peaInspection", title: "PEA ตรวจระบบ / ทดสอบขนาน (First Sync, Anti-islanding, กันไหลย้อน)", stage: .connect, provider: .pea,
                     note: "PEA ตรวจภายใน 30 วันนับจากแจ้งขอตรวจ"),
 

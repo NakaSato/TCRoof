@@ -169,7 +169,7 @@ final class FinalSummaryTests: XCTestCase {
         let others = FinalSummary.otherPages(j)
         XCTAssertFalse(others.isEmpty)
         XCTAssertEqual(FinalSummary.statusLine(j),
-                       "ยังขาดในหน้านี้: ผลการประเมิน, ลายเซ็นวิศวกรผู้สำรวจ, ชื่อผู้ประสานงาน, ลายเซ็นผู้ประสานงาน · และอีก \(others.count) หน้า")
+                       "ยังขาดในหน้านี้: ผลการประเมิน, ลายเซ็นวิศวกรผู้สำรวจ, ชื่อผู้ประสานงาน, ลายเซ็นผู้ประสานงาน | และอีก \(others.count) หน้า")
 
         // "with conditions" and no remarks: a warning, completion unchanged
         j.values["verdict"] = .choice(Options.verdict[1], other: "")
@@ -181,7 +181,7 @@ final class FinalSummaryTests: XCTestCase {
         j.values["verdict"] = .choice(Options.verdict[0], other: "")
         XCTAssertTrue(FinalSummary.pageGaps(j.values).isEmpty)
         XCTAssertEqual(FinalSummary.statusLine(j),
-                       "หน้านี้ครบแล้ว · ยังขาดอีก \(others.count) หน้า (\(others.map(FinalSummary.code).joined(separator: ", ")))")
+                       "หน้านี้ครบแล้ว | ยังขาดอีก \(others.count) หน้า (\(others.map(FinalSummary.code).joined(separator: ", ")))")
         XCTAssertFalse(FinalSummary.isComplete(j))
         XCTAssertEqual(FinalSummary.code(MissingGroup(target: .site, title: "A2 ภาพสถานที่ติดตั้ง", items: [])), "A2")
     }
@@ -193,7 +193,7 @@ final class FinalSummaryTests: XCTestCase {
         j.values["surveyorSign"] = .photo(Photo(fileName: "s.png", width: 10, height: 10))
         j.values["customerSign"] = .photo(Photo(fileName: "c.png", width: 10, height: 10))
         if FinalSummary.otherPages(j).isEmpty {
-            XCTAssertEqual(FinalSummary.statusLine(j), "ครบทุกหน้าแล้ว · พร้อมส่งออก")
+            XCTAssertEqual(FinalSummary.statusLine(j), "ครบทุกหน้าแล้ว | พร้อมส่งออก")
             XCTAssertTrue(FinalSummary.isComplete(j))
         }
     }

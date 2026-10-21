@@ -151,8 +151,8 @@ public struct TCSaveButton: View {
     var accessibilityText: String {
         switch phase {
         case .saving, .busy: "กำลังบันทึก"
-        case .justSaved, .clean: "บันทึกล่าสุดแล้ว · ยังไม่มีการแก้ไขใหม่"
-        case .idle: edited ? "บันทึกแบบร่าง · มีการแก้ไขที่ยังไม่ได้บันทึก" : "บันทึกแบบร่าง"
+        case .justSaved, .clean: "บันทึกล่าสุดแล้ว | ยังไม่มีการแก้ไขใหม่"
+        case .idle: edited ? "บันทึกแบบร่าง | มีการแก้ไขที่ยังไม่ได้บันทึก" : "บันทึกแบบร่าง"
         }
     }
 

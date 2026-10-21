@@ -115,7 +115,7 @@ struct IECPhotoTile: View {
                 .overlay { Image(uiImage: img).resizable().scaledToFill() }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(alignment: .bottomLeading) {
-                    Text("\(caption) · \(ThaiFormat.time.string(from: asset.createdAt))").font(.sarabunFixed(13, .bold))
+                    Text("\(caption) | \(ThaiFormat.time.string(from: asset.createdAt))").font(.sarabunFixed(13, .bold))
                         .foregroundStyle(Theme.successInk).padding(.horizontal, 10).frame(height: 26)
                         .background(Theme.successSoft, in: Capsule()).padding(10)
                 }

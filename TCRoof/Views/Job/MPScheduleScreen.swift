@@ -40,7 +40,7 @@ struct MPScheduleScreen: View {
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
-        .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""))
+        .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " | MP \($0)" } ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if permissions.can(.assistantUse), job.scheduleInput != nil {
@@ -62,7 +62,7 @@ struct MPScheduleScreen: View {
                 }
             }
         }
-        .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
+        .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " | MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
             HStack(spacing: 12) {
                 if permissions.can(.assistantUse), job.scheduleInput != nil {
                     TCButton("ผู้ช่วย", systemImage: "sparkles", kind: .secondary) { assistant = true }
@@ -435,7 +435,7 @@ struct MPWeeklyReport: View {
     var body: some View {
         let st = model.status
         VStack(alignment: .leading, spacing: 12) {
-            Text("Weekly Update · ถึงสัปดาห์ \(model.week.thaiShort)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            Text("Weekly Update | ถึงสัปดาห์ \(model.week.thaiShort)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             MPReportRow(title: "รวมทั้งสถานี", planned: st.planned, actual: st.actual, bold: true)
             ForEach(MasterSchedule.Part.allCases, id: \.self) { p in
                 MPReportRow(title: p.reportTitle, planned: st.plannedByPart[p] ?? 0, actual: st.actualByPart[p] ?? 0)
@@ -461,7 +461,7 @@ struct MPMonthlyReport: View {
         let c = cal.dateComponents([.year, .month], from: monday)
         let m = MasterSchedule.month(plan: model.plan, actual: model.actual, year: c.year ?? 0, month: c.month ?? 0)
         VStack(alignment: .leading, spacing: 12) {
-            Text("Monthly Update · \(monday.thaiMonthYear)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            Text("Monthly Update | \(monday.thaiMonthYear)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             MPReportRow(title: "รวมเดือนนี้", planned: m.planned.values.reduce(0, +), actual: m.actual.values.reduce(0, +), bold: true)
             ForEach(MasterSchedule.Part.allCases, id: \.self) { p in
                 MPReportRow(title: p.reportTitle, planned: m.planned[p] ?? 0, actual: m.actual[p] ?? 0)
@@ -547,11 +547,11 @@ struct MPProgressSheet: View {
     var body: some View {
         NavigationStack {
             PadForm(maxWidth: 720) {
-                PadSection("สัปดาห์ \(week.thaiShort) · % สะสมของแต่ละงาน") {
+                PadSection("สัปดาห์ \(week.thaiShort) | % สะสมของแต่ละงาน") {
                     if tasks.isEmpty { Text("ไม่มีงานตามแผนหรืองานค้างในสัปดาห์นี้").foregroundStyle(Theme.muted) }
                     ForEach(tasks) { t in row(t) }
                 } footer: {
-                    Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้ · วันเริ่มจริงและวันเสร็จจริงใส่หรือไม่ใส่ก็ได้")
+                    Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้ | วันเริ่มจริงและวันเสร็จจริงใส่หรือไม่ใส่ก็ได้")
                 }
             }
             .navigationTitle("บันทึกความก้าวหน้า")

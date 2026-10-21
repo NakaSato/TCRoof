@@ -126,7 +126,7 @@ struct FtsPageWide: View {
                          onClear: { set(EmergencyButton.photoKey, nil) })
             .overlay(alignment: .bottomLeading) {
                 if p != nil {
-                    Text("วงจุดติดตั้งปุ่ม · ระบุความสูง").font(.sarabunFixed(12, .semibold)).lineLimit(1)
+                    Text("วงจุดติดตั้งปุ่ม | ระบุความสูง").font(.sarabunFixed(12, .semibold)).lineLimit(1)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                         .padding(8).allowsHitTesting(false)
@@ -206,7 +206,7 @@ struct FtsPageWide: View {
     var sldCard: some View {
         card {
             HStack(alignment: .firstTextBaseline) {
-                title("ใน SLD", sub: "FTS ตัดวงจร DC · ปุ่ม Emergency สั่งตัด")
+                title("ใน SLD", sub: "FTS ตัดวงจร DC | ปุ่ม Emergency สั่งตัด")
                 Spacer(minLength: 8)
                 Button(action: openDiagram) {
                     Text("ดู SLD ทั้งหมด →").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
@@ -220,7 +220,7 @@ struct FtsPageWide: View {
                 if drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)
                 } else {
-                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()
                 }
             }

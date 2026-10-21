@@ -208,8 +208,8 @@ struct ContractorWorkView: View {
         var d = SiteDocRenderer.Doc(title: "ใบสั่งงานติดตั้งระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์บนหลังคา", number: o.number, facts: [
             ("ผู้รับเหมา", o.contractor + (o.contractorPhone.isEmpty ? "" : " โทร " + o.contractorPhone)),
             ("สถานที่", job.address),
-            ("ลูกค้า / ผู้ติดต่อหน้างาน", [job.customerName, o.siteContact].filter { !$0.isEmpty }.joined(separator: " · ")),
-            ("ระบบ", "แผง \(home.pvKWp) kWp · อินเวอร์เตอร์ \(home.inverterKW) kW" + (home.phase.map { " · " + $0.title } ?? "")),
+            ("ลูกค้า / ผู้ติดต่อหน้างาน", [job.customerName, o.siteContact].filter { !$0.isEmpty }.joined(separator: " | ")),
+            ("ระบบ", "แผง \(home.pvKWp) kWp | อินเวอร์เตอร์ \(home.inverterKW) kW" + (home.phase.map { " | " + $0.title } ?? "")),
             ("ชุดแบบ / BOQ", "Rev.\(o.revision)"),
             ("ระยะเวลา", [o.start.map(PermitDate.long), o.finish.map(PermitDate.long)].compactMap { $0 }.joined(separator: " ถึง ")),
             ("ค่าแรงที่ตกลง", BOQRenderer.money(o.labor) + " บาท (ไม่รวม VAT)"),
@@ -351,7 +351,7 @@ struct ContractorWorkView: View {
         var d = SiteDocRenderer.Doc(title: "ใบตรวจรับงานผู้รับเหมา", number: s.workOrder.number, facts: [
             ("ผู้รับเหมา", s.workOrder.contractor),
             ("สถานที่", job.address),
-            ("ระบบ", "แผง \(home.pvKWp) kWp · อินเวอร์เตอร์ \(home.inverterKW) kW"),
+            ("ระบบ", "แผง \(home.pvKWp) kWp | อินเวอร์เตอร์ \(home.inverterKW) kW"),
         ])
         d.columns = [("รายการ", 0.7, .left), ("บาท", 0.3, .right)]
         d.rows = [["ค่าแรงตามใบสั่งงาน", BOQRenderer.money(s.workOrder.labor)]]
@@ -360,7 +360,7 @@ struct ContractorWorkView: View {
         }
         if s.deductions > 0 { d.rows.append(["หัก: " + (s.deductionNote.isEmpty ? "รายการหัก" : s.deductionNote), "-" + BOQRenderer.money(s.deductions)]) }
         d.rows.append(["ค่าแรงที่ต้องจ่าย (ไม่รวม VAT)", BOQRenderer.money(s.laborPayable)])
-        d.notes = ["Punch list ปิดครบ \(s.punches.count) รายการ · ใบขอเปลี่ยนแปลง \(s.changes.count) ใบ"]
+        d.notes = ["Punch list ปิดครบ \(s.punches.count) รายการ | ใบขอเปลี่ยนแปลง \(s.changes.count) ใบ"]
         d.signatures = [("ผู้รับเหมา", nil), ("ผู้ตรวจรับงาน", s.accepted)]
         return d
     }
@@ -369,7 +369,7 @@ struct ContractorWorkView: View {
 
     func signCard(title: String, sig: HomeSignature?, target: SignTarget, disabled: Bool, allowed: Bool = true,
                   pdf: @escaping () -> Void) -> some View {
-        PermitSection(title: title, subtitle: sig.map { "\($0.name) · \(PermitDate.long($0.at))" } ?? "เซ็นบนเครื่องนี้ได้เลย") {
+        PermitSection(title: title, subtitle: sig.map { "\($0.name) | \(PermitDate.long($0.at))" } ?? "เซ็นบนเครื่องนี้ได้เลย") {
             if let sig, let img = store.photo(sig.file).flatMap(UIImage.init(data:)) {
                 Image(uiImage: img).resizable().scaledToFit().frame(maxHeight: 90)
                     .accessibilityLabel("ลายเซ็นของ \(sig.name)")

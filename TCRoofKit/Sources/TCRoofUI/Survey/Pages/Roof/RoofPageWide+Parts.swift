@@ -72,7 +72,7 @@ struct SpanEditor: View {
                 outline("ทุกช่วง 4.00 ม.", enabled: spans.contains { abs($0 - 4) > 0.001 }) { set(Array(repeating: 4, count: spans.count), ref.index) }
             }
             Divider()
-            (Text("ทั้งแนว: ") + Text(spans.map { fmt($0) }.joined(separator: ", ")).bold() + Text(" · รวม " + String(format: "%.2f", total) + " ม."))
+            (Text("ทั้งแนว: ") + Text(spans.map { fmt($0) }.joined(separator: ", ")).bold() + Text(" | รวม " + String(format: "%.2f", total) + " ม."))
                 .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
         }
         .foregroundStyle(Theme.navy)

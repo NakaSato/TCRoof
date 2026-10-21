@@ -23,9 +23,9 @@ extension TankLayout {
         /// The winner.
         public var chosen: GapTrial
         public var params: Params { chosen.params }
-        /// `ลองระยะห่างแถว 11 แบบ · เลือก 2.70 ม. · 352.0 MWh/ปี`
+        /// `ลองระยะห่างแถว 11 แบบ | เลือก 2.70 ม. | 352.0 MWh/ปี`
         public var line: String {
-            String(format: "ลองระยะห่างแถว %d แบบ · เลือก %.2f ม. · %.1f MWh/ปี", trials.count, chosen.gap, chosen.mwh)
+            String(format: "ลองระยะห่างแถว %d แบบ | เลือก %.2f ม. | %.1f MWh/ปี", trials.count, chosen.gap, chosen.mwh)
                 + (chosen.gap > chosen.params.standardGap + 1e-6 ? " (กว้างกว่ามาตรฐาน)" : "")
         }
     }

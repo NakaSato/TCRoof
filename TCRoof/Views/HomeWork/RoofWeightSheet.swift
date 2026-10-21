@@ -65,7 +65,7 @@ struct RoofWeightSheet: View {
                 Text(v > 20 ? "เกิน 20 กก./ตร.ม. ต้องยื่น ข.1 ขออนุญาตดัดแปลงอาคาร พร้อมแบบและรายการคำนวณโยธา และได้ อ.1 ก่อนติดตั้ง"
                             : "ไม่เกิน 20 กก./ตร.ม. ไม่ถือเป็นการดัดแปลงอาคาร เก็บใบคำนวณนี้ไว้ในแฟ้มงาน")
                     .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.navy)
-                Text("หลายกลุ่มแผงให้คิดกลุ่มที่หนักที่สุด · หลังคาเก่าหรือโครงไม้ควรให้วิศวกรโยธาตรวจแม้ไม่ถึงเกณฑ์")
+                Text("หลายกลุ่มแผงให้คิดกลุ่มที่หนักที่สุด | หลังคาเก่าหรือโครงไม้ควรให้วิศวกรโยธาตรวจแม้ไม่ถึงเกณฑ์")
                     .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             } else {
                 Text("กรอกน้ำหนัก ขนาด และจำนวนแผง").font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)

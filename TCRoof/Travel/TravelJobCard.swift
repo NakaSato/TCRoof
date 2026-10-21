@@ -38,7 +38,7 @@ struct TravelJobCard: View {
                     Text(line).font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                     let c = cost
                     if c.amount > 0 || c.visits > 0 {
-                        Text("ค่าเดินทางงานนี้ \(TravelClaim.baht(c.amount)) บาท · \(c.visits) ครั้ง")
+                        Text("ค่าเดินทางงานนี้ \(TravelClaim.baht(c.amount)) บาท | \(c.visits) ครั้ง")
                             .font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
                     }
                 }
@@ -62,7 +62,7 @@ struct TravelJobCard: View {
         guard let s = todayStop else { return "วันนี้ยังไม่ได้บันทึกเวลาถึงสถานีนี้" }
         var parts = ["วันนี้ถึง \(ClaimPagesTime.format(s.arrivedAt))"]
         if s.departedAt != nil { parts.append("ออก \(ClaimPagesTime.format(s.departedAt))") }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     private func stamp(_ kind: TravelClaim.StampKind) async {
@@ -71,7 +71,7 @@ struct TravelJobCard: View {
         busy = false
         switch result {
         case .undone?: notice = "ยกเลิกเวลาที่เพิ่งบันทึกแล้ว"
-        case .stamped?: notice = kind == .arrive ? "บันทึกเวลาถึงแล้ว · กดอีกครั้งภายใน 2 นาทีเพื่อยกเลิก" : "บันทึกเวลาออกแล้ว"
+        case .stamped?: notice = kind == .arrive ? "บันทึกเวลาถึงแล้ว | กดอีกครั้งภายใน 2 นาทีเพื่อยกเลิก" : "บันทึกเวลาออกแล้ว"
         case .nothingToClose?: notice = "ยังไม่ได้บันทึกเวลาถึงสถานีนี้"
         case nil: notice = "เดือนนี้ยื่นเบิกแล้ว ถอนการยื่นก่อนจึงบันทึกได้"
         }

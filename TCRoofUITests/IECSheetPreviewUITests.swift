@@ -16,7 +16,7 @@ final class IECSheetPreviewUITests: XCTestCase {
         let open = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ดูชีต Excel")).firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: slow))
         open.tap()
-        XCTAssertTrue(app.staticTexts["ชีต INV 01-ก่อน · ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 20), "the preview")
+        XCTAssertTrue(app.staticTexts["ชีต INV 01-ก่อน | ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 20), "the preview")
         XCTAssertTrue(app.staticTexts["ไม่พิมพ์ลงไฟล์ Excel"].waitForExistence(timeout: 20), "drawn, with the legend")
         let toggle = app.descendants(matching: .any).matching(identifier: "iec.sheet.sources").firstMatch
         toggle.tap()
@@ -26,10 +26,10 @@ final class IECSheetPreviewUITests: XCTestCase {
 
         app.buttons["เลือกชีต"].tap()
         app.buttons["INV 02-ก่อน"].tap()
-        XCTAssertTrue(app.staticTexts["ชีต INV 02-ก่อน · ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["ชีต INV 02-ก่อน | ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 10))
         app.buttons["เลือกชีต"].tap()
         app.buttons["INV 01-หลัง"].tap()
-        XCTAssertTrue(app.staticTexts["ชีต INV 01-หลัง · ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 10), "the after sheet")
+        XCTAssertTrue(app.staticTexts["ชีต INV 01-หลัง | ตามฟอร์ม 1FORMI1"].waitForExistence(timeout: 10), "the after sheet")
         app.buttons["เลือกชีต"].tap()
         app.buttons["INV 01-ก่อน"].tap()
         XCTAssertTrue(app.staticTexts["ไม่พิมพ์ลงไฟล์ Excel"].waitForExistence(timeout: 10))
@@ -54,7 +54,7 @@ final class IECSheetPreviewUITests: XCTestCase {
         if let dir = ProcessInfo.processInfo.environment["IEC_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir + "/after-tap.png"))
         }
-        XCTAssertTrue(app.staticTexts["IEC 62446 · ก่อนออนระบบ · แรงดัน / กระแส"].waitForExistence(timeout: 15), "step 2's page")
+        XCTAssertTrue(app.staticTexts["IEC 62446 | ก่อนออนระบบ | แรงดัน / กระแส"].waitForExistence(timeout: 15), "step 2's page")
         XCTAssertTrue(app.staticTexts["INV1ST5"].waitForExistence(timeout: 5), "at String 5")
     }
 
@@ -70,7 +70,7 @@ final class IECSheetPreviewUITests: XCTestCase {
         let close = app.buttons.matching(NSPredicate(format: "label == %@", "ปิดการทดสอบ")).firstMatch
         XCTAssertTrue(close.waitForExistence(timeout: 10))
         close.tap()
-        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว · แก้ไขไม่ได้"].waitForExistence(timeout: 10), "closed")
+        XCTAssertTrue(app.staticTexts["ปิดการทดสอบแล้ว | แก้ไขไม่ได้"].waitForExistence(timeout: 10), "closed")
 
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ดูชีต Excel")).firstMatch.tap()
         let sheet = app.otherElements["ชีต Excel"]
@@ -84,12 +84,12 @@ final class IECSheetPreviewUITests: XCTestCase {
         if cancel.exists { cancel.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap() }
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: ask)
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed)
-        XCTAssertTrue(app.staticTexts["ชีต INV 01-ก่อน · ตามฟอร์ม 1FORMI1"].exists, "still on the sheet")
+        XCTAssertTrue(app.staticTexts["ชีต INV 01-ก่อน | ตามฟอร์ม 1FORMI1"].exists, "still on the sheet")
 
         voc.tap()
         XCTAssertTrue(ask.waitForExistence(timeout: 10))
         app.buttons.matching(NSPredicate(format: "label == %@", "แก้ไข")).firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["IEC 62446 · ก่อนออนระบบ · แรงดัน / กระแส"].waitForExistence(timeout: 15), "step 2's page")
+        XCTAssertTrue(app.staticTexts["IEC 62446 | ก่อนออนระบบ | แรงดัน / กระแส"].waitForExistence(timeout: 15), "step 2's page")
         XCTAssertTrue(app.staticTexts["INV1ST5"].waitForExistence(timeout: 5), "at String 5")
     }
 

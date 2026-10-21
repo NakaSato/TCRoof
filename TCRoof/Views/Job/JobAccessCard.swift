@@ -35,10 +35,10 @@ struct JobAccessCard: View {
     private var teamPart: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("ทีมงานของเรา").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-            Text("งานนี้อยู่ใน งานของฉัน ของคนในทีมงาน · แจ้งเตือนรายงานและผลทดสอบของงานนี้ไปถึงทีมงานและผู้ควบคุมงาน ไม่ใช่ทั้งทีม")
+            Text("งานนี้อยู่ใน งานของฉัน ของคนในทีมงาน | แจ้งเตือนรายงานและผลทดสอบของงานนี้ไปถึงทีมงานและผู้ควบคุมงาน ไม่ใช่ทั้งทีม")
                 .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
             if job.teamMembers.isEmpty {
-                Text("ยังไม่ได้กำหนด · แจ้งเตือนไปถึงทุกคนในทีม").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                Text("ยังไม่ได้กำหนด | แจ้งเตือนไปถึงทุกคนในทีม").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
             ForEach(job.teamMembers, id: \.self) { email in
                 HStack {
@@ -65,7 +65,7 @@ struct JobAccessCard: View {
             if !choices.isEmpty {
                 Menu {
                     ForEach(choices) { p in
-                        Button(p.name.isEmpty ? p.email : "\(p.name) · \(p.email)") { addMember(p.email) }
+                        Button(p.name.isEmpty ? p.email : "\(p.name) | \(p.email)") { addMember(p.email) }
                     }
                 } label: {
                     Label("เลือกจากรายชื่อทีม", systemImage: "person.badge.plus")
@@ -90,7 +90,7 @@ struct JobAccessCard: View {
     private var externalPart: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("ผู้รับเหมา / วิศวกรภายนอก").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-            Text("บัญชี Google ที่เห็นและทำงานนี้ได้: รายงานประจำวัน ทดสอบ IEC แนบไฟล์หน้างาน · ไม่เห็นเบอร์และที่อยู่ลูกค้า")
+            Text("บัญชี Google ที่เห็นและทำงานนี้ได้: รายงานประจำวัน ทดสอบ IEC แนบไฟล์หน้างาน | ไม่เห็นเบอร์และที่อยู่ลูกค้า")
                 .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
             if job.externals.isEmpty {
                 Text("ยังไม่ได้มอบหมาย").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)

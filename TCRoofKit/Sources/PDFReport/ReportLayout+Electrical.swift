@@ -94,7 +94,7 @@ extension ReportLayout {
         o.append(.rect(Box(0, y, W, fh), stroke: .black, fill: nil, width: 0.5))
         o.append(.textBox(g.footnote, Box(6, y + 3, W - 12, fh - 3), size: 7, color: .ink2))
         y += fh
-        return Unit(h: y, ops: box("ข้อมูลน้ำท่วมจาก GISTDA · ตามพิกัด A1 \(GPS.format(g.lat, g.lon))", height: y) + o)
+        return Unit(h: y, ops: box("ข้อมูลน้ำท่วมจาก GISTDA | ตามพิกัด A1 \(GPS.format(g.lat, g.lon))", height: y) + o)
     }
 
     /// The cross-section drawing (the same geometry as the editor) and the equipment height check.

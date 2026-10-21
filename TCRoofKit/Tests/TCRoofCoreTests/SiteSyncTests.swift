@@ -17,7 +17,7 @@ final class SiteSyncTests: XCTestCase {
         XCTAssertEqual(trafos(j).map(\.kva), ["630"])
         XCTAssertEqual(marks(j)[0].link, "tr:\(trafos(j)[0].id)")
         XCTAssertEqual(items.map(\.status), [.filled])
-        XCTAssertEqual(items[0].title, "หม้อแปลง TX 1 · 630 kVA")
+        XCTAssertEqual(items[0].title, "หม้อแปลง TX 1 | 630 kVA")
         let once = j
         SiteSync.push(&j)
         XCTAssertEqual(j, once)

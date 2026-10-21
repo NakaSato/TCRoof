@@ -9,7 +9,7 @@ struct InstallTrackingPage: View {
     enum Tab: String, CaseIterable { case overview, daily, plan }
 
     /// A screen the page pushes.
-    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec }
+    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
 
     let job: Job
     @State var tab = Debug.tab
@@ -134,7 +134,12 @@ struct InstallTrackingPage: View {
 
     var data: InstallPageData {
         #if DEBUG
-        if Debug.demo { return .demo(late: Debug.demoLate) }
+        if Debug.demo {
+            // the board's header has `รายงานสำรวจ`: any survey on the device stands in for the station's
+            var d = InstallPageData.demo(late: Debug.demoLate)
+            d.surveyReport = survey.jobs.first?.id
+            return d
+        }
         #endif
         return InstallPageData(job: job, survey: survey)
     }
@@ -150,6 +155,7 @@ struct InstallTrackingPage: View {
         case .survey(let id): SurveyReportEditor(jobID: id)
         case .detail: JobDetailView(job: job)
         case .iec: IECTestScreen(job: job)
+        case .devices: JobDevicesView(job: job)
         }
     }
 
@@ -217,11 +223,11 @@ struct InstallTrackingPage: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             // the job's own screen: customer, schedule, scans, install logs, ICL, R4, survey link, documents and Drive
             if permissions.can(.assistantUse), job.scheduleInput != nil {
-                headerButton("ผู้ช่วย", "sparkles") { assistant = true }
+                headerButton("ผู้ช่วย AI", "sparkles", primary: true) { assistant = true }
             }
             headerButton("รายละเอียดงาน", "info.circle") { route = .detail }
             if let id = data.surveyReport {
-                headerButton("รายงานสำรวจ (ดูอย่างเดียว)", "lock") { route = .survey(id) }
+                headerButton("รายงานสำรวจ", "lock", accessibility: "รายงานสำรวจ (ดูอย่างเดียว)") { route = .survey(id) }
             }
         }
         .foregroundStyle(Theme.onPrimary)
@@ -232,18 +238,23 @@ struct InstallTrackingPage: View {
         }
     }
 
-    /// An outlined button on the blue header.
-    private func headerButton(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    /// A button on the blue header: outlined, or filled white with a blue label (`primary`, the board's `ผู้ช่วย AI`).
+    private func headerButton(_ title: String, _ symbol: String, primary: Bool = false, accessibility: String? = nil,
+                              action: @escaping () -> Void) -> some View {
+        let frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        return Button(action: action) {
             Label(title, systemImage: symbol)
-                .font(.sarabunFixed(15, .semibold))
+                .font(.sarabunFixed(15, primary ? .bold : .semibold))
+                .foregroundStyle(primary ? Theme.primary : Theme.onPrimary)
                 .padding(.horizontal, 16).frame(height: 44)
-                .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.onPrimary.opacity(0.6)))
+                .background(primary ? Theme.surface : Theme.onPrimary.opacity(0.14), in: frame)
+                .overlay { if !primary { frame.strokeBorder(Theme.onPrimary.opacity(0.6)) } }
+                .shadow(color: primary ? Theme.navySolid.opacity(0.18) : .clear, radius: 4, y: 2)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .fixedSize()
+        .accessibilityLabel(accessibility ?? title)
     }
 
     // MARK: tabs

@@ -21,6 +21,7 @@ extension InstallTrackingPage {
         case .docs: .docs
         case .plan: .plan
         case .iec: .iec
+        case .devices: .devices
         }
     }
 
@@ -64,7 +65,7 @@ extension InstallTrackingPage {
     private func docTile(_ t: InstallPageData.DocTile) -> some View {
         Button { sheet = .doc(t.id) } label: {
             HStack(spacing: 10) {
-                Circle().fill(Self.ink(t.tone)).frame(width: 8, height: 8)
+                Circle().fill(Self.ink(t.tone)).frame(width: 9, height: 9)
                 Text(t.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 6)
                 chip(t.chip, t.tone).layoutPriority(1)
@@ -92,6 +93,7 @@ extension InstallTrackingPage {
         case .warn: Theme.warningInk
         case .danger: Theme.dangerText
         case .info: Theme.primary
+        case .waiting: Theme.planInspect
         case .idle: Theme.inkMuted
         }
     }
@@ -102,6 +104,7 @@ extension InstallTrackingPage {
         case .warn: Theme.warningSoft
         case .danger: Theme.dangerSoft
         case .info: Theme.primarySoft
+        case .waiting: Theme.planInspectSoft
         case .idle: Theme.hairline
         }
     }
@@ -293,7 +296,8 @@ extension InstallTrackingPage {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.sarabunFixed(26, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Text(about).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                    // up to two lines (the 4.2 sheet's state)
+                    Text(about).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 if let chip { self.chip(chip.0, chip.1).padding(.top, 10) }
@@ -354,26 +358,45 @@ extension InstallTrackingPage {
                 Text("ยังไม่มีรายการ").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
             }
             ForEach(t.items) { item in
-                Button { if let target = item.target { go(target) } } label: {
-                    HStack(alignment: .top, spacing: 16) {
-                        if !item.code.isEmpty {
-                            Text(item.code).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(width: 96, alignment: .leading)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                            Text(item.detail).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                        }
-                        Spacer(minLength: 8)
-                        chip(item.chip, item.tone)
-                    }
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(item.target == nil)
-                .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+                docRow(item).overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
             }
         }
+    }
+
+    /// A line of a tile's sheet: the whole row opens its target, or its own button does (`เปิดบันทึก ›`).
+    @ViewBuilder private func docRow(_ item: InstallPageData.DocItem) -> some View {
+        if let title = item.button, let target = item.target {
+            HStack(alignment: .center, spacing: 16) {
+                docRowLabel(item)
+                Button(title) { go(target) }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
+                    .fixedSize()
+            }
+            .padding(.vertical, 14)
+            .accessibilityElement(children: .contain)
+        } else {
+            Button { if let target = item.target { go(target) } } label: {
+                docRowLabel(item)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(item.target == nil)
+        }
+    }
+
+    private func docRowLabel(_ item: InstallPageData.DocItem) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            if !item.code.isEmpty {
+                Text(item.code).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(width: 96, alignment: .leading)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text(item.detail).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            }
+            Spacer(minLength: 8)
+            chip(item.chip, item.tone)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -33,17 +33,15 @@ public struct RoofMountQuantities: Equatable, Sendable {
             modules += f.modules
             cuts += f.cuts
             energy += Double(f.modules) * s.moduleKW * f.yield / 1000
-            for row in f.rows {
-                for run in row.runs {
-                    let lr = run.railLength, k = run.columns.count
-                    runs += 1
-                    railLength += 2 * lr
-                    splices += 2 * (Int((lr / s.railStock).rounded(.up)) - 1)
-                    feet += run.feet.reduce(0) { $0 + $1.count }
-                    midClamps += 2 * (k - 1)
-                    endClamps += 4
-                    if run.moved { moved += 1 }
-                }
+            for run in f.allRuns {
+                let lr = run.railLength, k = run.count
+                runs += 1
+                railLength += 2 * lr
+                splices += 2 * (Int((lr / s.railStock).rounded(.up)) - 1)
+                feet += run.feet.reduce(0) { $0 + $1.count }
+                midClamps += 2 * (k - 1)
+                endClamps += 4
+                if run.moved { moved += 1 }
             }
         }
         kWp = Double(modules) * s.moduleKW

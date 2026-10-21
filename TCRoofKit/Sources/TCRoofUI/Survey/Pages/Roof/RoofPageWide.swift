@@ -471,7 +471,7 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, false)
             }
             mode = .pv; scrollTarget = "info"
-        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile":
+        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
             // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
             let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"
             update { v in
@@ -480,6 +480,10 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, state == "pvshed")
                 var c = RoofMount.choice(v)
                 c.walkwayEvery = state == "pvtile" ? 6 : 0
+                // pvacross: rails across the purlins; pvland: landscape on them; pvlandalong: landscape on rails along (the hint)
+                c.landscape = ["pvland", "pvlandalong"].contains(state)
+                c.railsAcross = ["pvacross", "pvland"].contains(state)
+                if c.landscape || c.railsAcross { c.ribClamp = false }
                 RoofMount.setChoice(&v, c)
             }
             if state == "pvobst" {
@@ -491,7 +495,7 @@ extension RoofPageWide {
             mode = .pv
             for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
             switch state {
-            case "pvinfo":
+            case "pvinfo", "pvacross", "pvland":
                 if let f = mount?.faces.first, let r = f.rows.indices.first,
                    let c = f.rows[r].slots.firstIndex(where: \.isModule) {
                     mountSelection = .slot(.init(face: f.face.id, row: r, column: c))
@@ -502,7 +506,7 @@ extension RoofPageWide {
             default: break
             }
             // the hip roof and the obstacles keep the plan in view
-            if !["pvhip", "pvobst", "pvshed"].contains(state) { scrollTarget = "info" }
+            if !["pvhip", "pvobst", "pvshed", "pvacross", "pvland"].contains(state) { scrollTarget = "info" }
         case "design", "designpv":
             // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
             update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }

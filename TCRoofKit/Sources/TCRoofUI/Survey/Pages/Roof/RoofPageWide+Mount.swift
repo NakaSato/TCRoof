@@ -62,8 +62,9 @@ extension RoofPageWide {
 
     /// The slots of the run holding `ref` (a module), or `ref` alone.
     func runSlots(_ ref: RoofMountLayout.SlotRef) -> Set<RoofMountLayout.SlotRef> {
-        guard let m = mount, let f = m.faces.first(where: { $0.face.id == ref.face }), f.rows.indices.contains(ref.row),
-              let run = f.rows[ref.row].runs.first(where: { $0.columns.contains(ref.column) }) else { return [ref] }
+        guard let m = mount, let f = m.faces.first(where: { $0.face.id == ref.face }),
+              let run = f.run(row: ref.row, column: ref.column) else { return [ref] }
+        if run.across { return Set(run.rows.map { RoofMountLayout.SlotRef(face: ref.face, row: $0, column: ref.column) }) }
         return Set(run.columns.map { RoofMountLayout.SlotRef(face: ref.face, row: ref.row, column: $0) })
     }
 
@@ -245,11 +246,12 @@ extension RoofPageWide {
             if let why = slot.blocked {
                 return InfoText(title: "ช่องว่าง | " + place, lines: [], pills: [(why, false)])
             }
-            guard let run = row.runs.first(where: { $0.columns.contains(ref.column) }) else { return nil }
-            let k = run.columns.count
+            guard let run = f.run(row: ref.row, column: ref.column) else { return nil }
+            let k = run.count
             let bay = run.feet.flatMap { feet in zip(feet, feet.dropFirst()).map { $1 - $0 } }.max() ?? 0
             var pills: [(String, Bool)] = [("ขาไม่ชนสิ่งกีดขวาง", true)]
-            pills.append((m.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน" : m.options.ribClamp ? "จับสันลอน ¼ และ ¾ ของแผง" : "รางตกแปทั้ง 2 เส้น",
+            pills.append((m.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน" : m.options.ribClamp ? "จับสันลอน ¼ และ ¾ ของแผง"
+                          : m.options.acrossPurlins ? "รางตัดแป | ขาตกทุกแป" : "รางตกแปทั้ง 2 เส้น",
                           RoofMountDrawings.rowPasses(row, in: m)))
             if run.moved { pills.append((m.options.tileHooks ? "ข้ามจันทันที่ชนสิ่งกีดขวาง" : "จัดระยะ L-foot ใหม่เพื่อหลบสิ่งกีดขวาง", true)) }
             return InfoText(title: "แผง | " + place,
@@ -310,10 +312,46 @@ extension RoofPageWide {
                     changeChoice { $0.ribClamp = i == 1 }
                 }
             }
+            mountDirection
             Toggle(isOn: Binding(get: { c.avoidShade }, set: { on in changeChoice { $0.avoidShade = on } })) {
                 Text("เว้นเงาสิ่งกีดขวาง 09:00–15:00 ทั้งปี").font(.sarabunFixed(14))
             }
             .tint(Theme.primary).frame(minHeight: 44)
+        }
+    }
+
+    /// The modules' direction on the purlins (ด้านยาวตัดแป: portrait, or ตามแป: landscape) and, with L-feet on purlins,
+    /// the rails' (ตามแป on the purlins, or ตัดแป up the slope with a foot on each purlin).
+    @ViewBuilder var mountDirection: some View {
+        let c = mountChoice, tile = RoofMount.tileRoof(values)
+        let onPurlins = !tile && !c.ribClamp
+        A3Label(text: "แนวแผง")
+        RoofSegments(options: ["ด้านยาวตัดแป", "ด้านยาวตามแป"], selected: c.landscape ? 1 : 0, minSegment: 90) { i in
+            changeChoice { $0.landscape = i == 1 }
+        }
+        if onPurlins {
+            A3Label(text: "แนวราง")
+            RoofSegments(options: ["รางตามแป", "รางตัดแป"], selected: c.railsAcross ? 1 : 0, minSegment: 90) { i in
+                changeChoice { $0.railsAcross = i == 1 }
+            }
+            let spacing = Roof.purlinSpacing(values)
+            if c.landscape && !c.railsAcross && !RoofMountLayout.purlinsHoldLandscape(c.standardOrDefault, purlinSpacing: spacing) {
+                HStack(spacing: 8) {
+                    Text(String(format: "แปห่าง %.2f ม. รางตามแปรับแผงด้านยาวตามแปไม่ได้ (รางทั้ง 2 เส้นต้องตกแปในช่วงจับด้านสั้น)", spacing))
+                        .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)
+                    Spacer(minLength: 4)
+                    Button("ใช้รางตัดแป") { changeChoice { $0.railsAcross = true } }
+                        .font(.sarabunFixed(13, .bold)).frame(minHeight: 44)
+                }
+            }
+        } else if c.railsAcross {
+            Text(tile ? "ขอเกี่ยวกระเบื้องใช้รางตามแนวชายคา" : "จับสันลอนใช้รางตามแนวชายคา")
+                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        }
+        // rails parallel to the module's long side hold it by its short sides
+        if c.landscape != (c.railsAcross && onPurlins) {
+            Text("รางวางขนานด้านยาวของแผง: ตัวจับยึดด้านสั้น ตรวจคู่มือแผงว่ารับได้")
+                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -387,7 +425,7 @@ extension RoofPageWide {
     var mountAlign: some View {
         let faces = shownMount?.faces ?? [], c = mountChoice
         let face = faces.first { $0.face.id == mountFace } ?? faces.first
-        let maxOffset = c.standardOrDefault.moduleWidth + c.standardOrDefault.moduleGap
+        let maxOffset = (c.landscape ? c.standardOrDefault.moduleLength : c.standardOrDefault.moduleWidth) + c.standardOrDefault.moduleGap
         return VStack(alignment: .leading, spacing: 6) {
             A3Label(text: "จัดแนวผัง")
             if faces.count > 1 {

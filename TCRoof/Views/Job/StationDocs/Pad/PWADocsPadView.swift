@@ -65,12 +65,22 @@ struct PWADocsPadView: View {
     /// one would leave their sync stuck).
     var readOnly: Bool { !permissions.can(.stationDocsDrafts) }
 
+    /// The page's width: under `Self.minWidth` (an 11" iPad either way round, a 13" in portrait, split view) the
+    /// iPhone page's one column takes over, as the board's fixed columns don't fit and ran off both sides.
+    @State private var width: CGFloat = PWADocsPadView.minWidth
+    static let minWidth: CGFloat = 1200
+
     var body: some View {
-        if permissions.canView(.stationDocsDrafts) {
-            content
-        } else {
-            locked
+        Group {
+            if width < Self.minWidth {
+                PWADocsHomeView()
+            } else if permissions.canView(.stationDocsDrafts) {
+                content
+            } else {
+                locked
+            }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 
     /// No view of the papers at all (a role override): the header and the lock, nothing loaded. Contractors view

@@ -287,7 +287,7 @@ struct DailyReportEditor: View {
             MaterialsCard(materials: $report.materials, locations: job.routineSettings.locations)
             ProgressCard(report: $report, previous: others, job: job)
             ProblemsCard(problems: $report.problems, date: date)
-            DailyModuleCard(report: $report).cardStyle()
+            DailyModuleCard(report: $report, photos: $photos).cardStyle()
         }
     }
 

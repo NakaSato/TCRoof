@@ -72,7 +72,7 @@ extension InstallLog {
             let p = Photo(fileName: "log.jpg", width: 0, height: 0, takenAt: asset.createdAt)
             images[p.id] = asset.data
             let line = r.progress.first { $0.id.uuidString == asset.tag }
-            out.append(.init(photo: p, date: r.date, caption: line?.title ?? ""))
+            out.append(.init(photo: p, date: r.date, caption: line?.title ?? ModuleEvidence.kind(asset.tag)?.caption ?? ""))
         }
         return (out, images)
     }

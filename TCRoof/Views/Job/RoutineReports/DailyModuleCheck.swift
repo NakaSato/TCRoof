@@ -8,6 +8,8 @@ import ModuleRules
 /// module work; our engineer signs only once it has no block and every warn has a reason.
 struct DailyModuleCard: View {
     @Binding var report: RoutineReport.Daily
+    /// The day's photos: the checklist's evidence is among them (`ModuleEvidence`).
+    @Binding var photos: [DraftPhoto]
     var compact = false
     @State private var open = false
 
@@ -39,7 +41,7 @@ struct DailyModuleCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("dailyModuleCheck")
-        .sheet(isPresented: $open) { DailyModuleSheet(report: $report) }
+        .sheet(isPresented: $open) { DailyModuleSheet(report: $report, photos: $photos) }
         #if DEBUG
         .task { if Self.openOnAppear { Self.openOnAppear = false; open = true } }
         #endif
@@ -59,6 +61,8 @@ struct DailyModuleCard: View {
         if !v.blocks.isEmpty { parts.append("ห้าม \(v.blocks.count)") }
         if reasonless > 0 { parts.append("เตือนรอเหตุผล \(reasonless)") }
         if !c.openTicks.isEmpty { parts.append("ยังไม่ติ๊ก \(c.openTicks.count)") }
+        let shot = Set(photos.compactMap { ModuleEvidence.kind($0.tag) })
+        if shot.count < ModuleEvidence.allCases.count { parts.append("รูปหลักฐาน \(shot.count)/\(ModuleEvidence.allCases.count)") }
         return parts.joined(separator: " | ")
     }
 
@@ -68,9 +72,17 @@ struct DailyModuleCard: View {
     }
 }
 
+private struct ScanTarget: Identifiable {
+    let rejected: Bool
+    var id: Bool { rejected }
+}
+
 /// The checklist itself (§7.3): safety, mounting readings, cable, grounding and serials, with the rules live at the top.
 struct DailyModuleSheet: View {
     @Binding var report: RoutineReport.Daily
+    @Binding var photos: [DraftPhoto]
+    /// `สแกน` opened for the installed (false) or the rejected (true) list.
+    @State private var scanning: Bool?
     @Environment(\.dismiss) private var dismiss
     @State private var torques = ""
     @State private var groundTorques = ""
@@ -129,6 +141,9 @@ struct DailyModuleSheet: View {
             .navigationTitle("ตรวจติดตั้งแผงตามคู่มือ")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } }
+            .sheet(item: Binding(get: { scanning.map { ScanTarget(rejected: $0) } }, set: { if $0 == nil { scanning = nil } })) { t in
+                ModuleSerialScanSheet(title: t.rejected ? "สแกนแผงที่คัดออก" : "สแกนแผงที่ติดตั้ง") { addScanned($0, rejectedList: t.rejected) }
+            }
             .onAppear {
                 torques = InstallDailyCheck.text(check?.boltTorquesNm ?? [])
                 groundTorques = InstallDailyCheck.text(check?.groundTorquesNm ?? [])
@@ -187,6 +202,7 @@ struct DailyModuleSheet: View {
             }
             .pickerStyle(.segmented)
             Toggle("แผงสีเซลล์เดียวกันติดตั้งด้วยกัน", isOn: tick(\.sameColour))
+            ModuleEvidenceRow(kind: .torque, photos: $photos)
         } header: {
             Text("การยึดแผง")
         } footer: {
@@ -202,6 +218,7 @@ struct DailyModuleSheet: View {
             }
             Toggle("สายไม่โดนแดดโดยตรง", isOn: tick(\.outOfSun))
             Toggle("สายเดินในท่อ ไม่แช่น้ำ", isOn: tick(\.inConduit))
+            ModuleEvidenceRow(kind: .cable, photos: $photos)
         }
     }
 
@@ -215,6 +232,7 @@ struct DailyModuleSheet: View {
                 TextField("เช่น 5, 6", text: $groundTorques).keyboardType(.numbersAndPunctuation).multilineTextAlignment(.trailing)
                     .onChange(of: groundTorques) { _, t in edit { $0.groundTorquesNm = InstallDailyCheck.readings(t) } }
             }
+            ModuleEvidenceRow(kind: .ground, photos: $photos)
         }
     }
 
@@ -222,13 +240,26 @@ struct DailyModuleSheet: View {
         Section {
             TextField("เลขซีเรียลแผงที่ติดตั้ง บรรทัดละเลข", text: $serials, axis: .vertical).lineLimit(2...6)
                 .onChange(of: serials) { _, t in edit { $0.installedSerials = Self.lines(t) } }
+                .accessibilityIdentifier("moduleSerials.installed")
+            Button { scanning = false } label: { Label("สแกนบาร์โค้ดแผงที่ติดตั้ง", systemImage: "barcode.viewfinder") }
+                .accessibilityIdentifier("moduleSerials.scanInstalled")
             TextField("เลขซีเรียลแผงที่คัดออก (แตก สนิม)", text: $rejected, axis: .vertical).lineLimit(1...4)
                 .onChange(of: rejected) { _, t in edit { $0.rejectedSerials = Self.lines(t) } }
+            Button { scanning = true } label: { Label("สแกนบาร์โค้ดแผงที่คัดออก", systemImage: "barcode.viewfinder") }
+            ModuleEvidenceRow(kind: .rejected, photos: $photos)
         } header: {
             Text("เลขซีเรียล")
         } footer: {
             Text("ติดตั้ง \(check?.installedSerials.count ?? 0) แผง | คัดออก \(check?.rejectedSerials.count ?? 0) แผง")
         }
+    }
+
+    /// Adds scanned serials to a list, once each.
+    func addScanned(_ codes: [String], rejectedList: Bool) {
+        let text = rejectedList ? rejected : serials
+        var list = Self.lines(text)
+        for c in codes where !list.contains(c) { list.append(c) }
+        if rejectedList { rejected = list.joined(separator: "\n") } else { serials = list.joined(separator: "\n") }
     }
 
     static func lines(_ t: String) -> [String] {

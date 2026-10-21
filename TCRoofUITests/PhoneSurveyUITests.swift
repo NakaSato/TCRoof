@@ -53,11 +53,11 @@ final class PhoneSurveyUITests: XCTestCase {
         let again = no.isSelected ? no : yes
         other.tap()
 
-        let dirty = app.buttons["บันทึกแบบร่าง · มีการแก้ไขที่ยังไม่ได้บันทึก"]
+        let dirty = app.buttons["บันทึกแบบร่าง | มีการแก้ไขที่ยังไม่ได้บันทึก"]
         XCTAssertTrue(dirty.waitForExistence(timeout: 5), "an edit should mark the draft as unsaved")
         dirty.tap()
 
-        let saved = app.buttons["บันทึกล่าสุดแล้ว · ยังไม่มีการแก้ไขใหม่"]
+        let saved = app.buttons["บันทึกล่าสุดแล้ว | ยังไม่มีการแก้ไขใหม่"]
         XCTAssertTrue(saved.waitForExistence(timeout: 8), "the button should show the saved state")
 
         again.tap()

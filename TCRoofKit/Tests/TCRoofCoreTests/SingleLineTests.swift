@@ -387,7 +387,7 @@ final class SingleLineTests: XCTestCase {
         XCTAssertEqual(try note("flc").text, "กระแสพิกัดหม้อแปลง TX1 630 kVA ที่ 400 V = 909 A")
         // 800 AT / 909 A = 0.88: inside 0.8–1.25
         XCTAssertFalse(try note("mainFLC").flagged)
-        XCTAssertEqual(try note("feeders").text, "วงจรย่อย MDP-1 4 วงจร (ใช้งาน 3 · สำรอง 1)")
+        XCTAssertEqual(try note("feeders").text, "วงจรย่อย MDP-1 4 วงจร (ใช้งาน 3 | สำรอง 1)")
         // CB3 has no AT? it has 100; no diversity: 400 + 250 + 100
         XCTAssertEqual(try note("sumAT").text, "รวมพิกัดวงจรที่ใช้งาน 750 AT (ไม่คิด diversity)")
         // 2 inverters of 60 kW from A1 ÷ B2 → 120 kW on 630 kVA

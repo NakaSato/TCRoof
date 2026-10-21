@@ -41,7 +41,7 @@ struct NewJobPhoneView: View {
     private var nameMissing: Bool { triedSave && trimmedName.isEmpty }
     private var timeText: String { String(format: "%02d:%02d น.", hour, minute) }
     private var dayText: String {
-        NewJobRules.relativeDay(day, from: today) + " · " + ThaiFormat.weekdayTiny.string(from: day)
+        NewJobRules.relativeDay(day, from: today) + " | " + ThaiFormat.weekdayTiny.string(from: day)
     }
     private var installRange: (start: Date, end: Date) {
         NewJobRules.installRange(survey: day, offsetDays: installOffset, days: installDays)
@@ -51,7 +51,7 @@ struct NewJobPhoneView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TCGradientHeader(title: "เพิ่มลูกค้าใหม่", subtitle: "สำรวจหน้างาน · งานบ้าน", onClose: { dismiss() }) { EmptyView() }
+            TCGradientHeader(title: "เพิ่มลูกค้าใหม่", subtitle: "สำรวจหน้างาน | งานบ้าน", onClose: { dismiss() }) { EmptyView() }
             ScrollView {
                 VStack(spacing: 22) {
                     customerGroup
@@ -144,7 +144,7 @@ struct NewJobPhoneView: View {
     private var detailsGroup: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("รายละเอียดงาน · ไม่บังคับ").font(.sarabun(13)).foregroundStyle(Theme.groupHeader)
+                Text("รายละเอียดงาน | ไม่บังคับ").font(.sarabun(13)).foregroundStyle(Theme.groupHeader)
                 Spacer()
                 Text(showDetails ? "ซ่อน" : "แสดง").font(.sarabun(14, .semibold)).foregroundStyle(Theme.iosBlue)
             }
@@ -156,7 +156,7 @@ struct NewJobPhoneView: View {
             .accessibilityValue(showDetails ? "ขยายอยู่" : "ย่ออยู่")
             if showDetails {
                 detailsCard
-                Text("ติดตั้งโดยประมาณ \(installRangeText) · ปรับได้ภายหลังในรายละเอียดงาน")
+                Text("ติดตั้งโดยประมาณ \(installRangeText) | ปรับได้ภายหลังในรายละเอียดงาน")
                     .font(.sarabun(12.5)).foregroundStyle(Theme.groupFooter).padding(.horizontal, 16)
             }
         }
@@ -171,7 +171,7 @@ struct NewJobPhoneView: View {
         FormCard {
             FormRow(label: "ขนาดระบบ", disclosure: true, action: { open(.kWp) }) {
                 if let kWp {
-                    Text("\(kWp.formatted(.number.precision(.fractionLength(0...1)))) kWp · ~\(NewJobRules.panelCount(kWp: kWp)) แผง")
+                    Text("\(kWp.formatted(.number.precision(.fractionLength(0...1)))) kWp | ~\(NewJobRules.panelCount(kWp: kWp)) แผง")
                 } else {
                     Text("ยังไม่ทราบ").foregroundStyle(Theme.placeholder)
                 }
@@ -183,7 +183,7 @@ struct NewJobPhoneView: View {
                 TextField("ใช้ชื่อลูกค้า", text: $project).focused($focus, equals: .project)
             }
             FormRow(label: "เริ่มติดตั้ง", disclosure: true, separator: false, action: { open(.install) }) {
-                Text("+\(installOffset) วัน · \(installDays) วัน").font(.sarabun(16, .semibold)).foregroundStyle(Theme.iosBlue)
+                Text("+\(installOffset) วัน | \(installDays) วัน").font(.sarabun(16, .semibold)).foregroundStyle(Theme.iosBlue)
             }
         }
     }
@@ -277,7 +277,7 @@ struct NewJobPhoneView: View {
                     .frame(width: 28, height: 28).background(Theme.paperTick, in: Circle())
                 VStack(alignment: .leading, spacing: 0) {
                     Text("เพิ่มลูกค้าแล้ว").font(.sarabun(14, .bold))
-                    Text("\(job.code) · อยู่ในรายการงานสำรวจ").font(.sarabun(12)).opacity(0.85).lineLimit(1)
+                    Text("\(job.code) | อยู่ในรายการงานสำรวจ").font(.sarabun(12)).opacity(0.85).lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 if let onOpen {

@@ -19,12 +19,12 @@ final class TankPhotosUITests: XCTestCase {
         XCTAssertTrue(ring.waitForExistence(timeout: slow))
         let before = ring.label
 
-        let tile = app.buttons["สิ่งกีดขวาง · บังคับ"].firstMatch
+        let tile = app.buttons["สิ่งกีดขวาง | บังคับ"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 15))
         tile.tap()
         app.buttons["กล้อง"].firstMatch.tap()
 
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", before), object: ring)], timeout: 15)
-        XCTAssertTrue(app.buttons["สิ่งกีดขวาง 1 · ถ่ายแล้ว"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["สิ่งกีดขวาง 1 | ถ่ายแล้ว"].firstMatch.waitForExistence(timeout: 10))
     }
 }

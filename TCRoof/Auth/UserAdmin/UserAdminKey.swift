@@ -148,7 +148,7 @@ struct DevKeyLockScreen: View {
                 .background(Theme.onPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: 24))
                 .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Theme.onPrimary.opacity(0.25)))
             Text("จัดการผู้ใช้และสิทธิ์").font(.sarabun(26, .bold)).foregroundStyle(Theme.onPrimary)
-            Text("เฉพาะนักพัฒนา · ใส่คีย์นักพัฒนา 6 หลักเพื่อเปิดหน้านี้").font(.sarabun(15)).foregroundStyle(Theme.onPrimary.opacity(0.78))
+            Text("เฉพาะนักพัฒนา | ใส่คีย์นักพัฒนา 6 หลักเพื่อเปิดหน้านี้").font(.sarabun(15)).foregroundStyle(Theme.onPrimary.opacity(0.78))
             keyBody
             footer
         }
@@ -178,29 +178,29 @@ struct DevKeyLockScreen: View {
 
     private var unavailableText: String {
         switch store.keyState {
-        case .expired: "คีย์หมดอายุ · ตั้งคีย์ใหม่ใน Firebase console"
-        case .missing: "ยังไม่มีคีย์นักพัฒนา · ตั้งคีย์ใน Firebase console (config/devKey)"
-        default: "อ่านคีย์ไม่ได้ · ต่ออินเทอร์เน็ตแล้วลองอีกครั้ง"
+        case .expired: "คีย์หมดอายุ | ตั้งคีย์ใหม่ใน Firebase console"
+        case .missing: "ยังไม่มีคีย์นักพัฒนา | ตั้งคีย์ใน Firebase console (config/devKey)"
+        default: "อ่านคีย์ไม่ได้ | ต่ออินเทอร์เน็ตแล้วลองอีกครั้ง"
         }
     }
 
     private var footer: some View {
-        var lines = ["คีย์ออกให้โดยผู้ดูแลระบบ · เปลี่ยนทุก 30 วัน · ปลดล็อกได้ครั้งละ 15 นาที"]
-        lines.append(store.demo ? "ใส่ผิด 5 ครั้งจะล็อก 10 นาที · คีย์ตัวอย่างในบอร์ด 246810" : "ใส่ผิด 5 ครั้งจะล็อก 10 นาที")
+        var lines = ["คีย์ออกให้โดยผู้ดูแลระบบ | เปลี่ยนทุก 30 วัน | ปลดล็อกได้ครั้งละ 15 นาที"]
+        lines.append(store.demo ? "ใส่ผิด 5 ครั้งจะล็อก 10 นาที | คีย์ตัวอย่างในบอร์ด 246810" : "ใส่ผิด 5 ครั้งจะล็อก 10 นาที")
         return Text(lines.joined(separator: "\n")).font(.sarabun(12)).foregroundStyle(Theme.onPrimary.opacity(0.6))
             .padding(.top, 8)
     }
 
     private func initialError() {
-        if store.padLocked { error = "ล็อก 10 นาที · ติดต่อผู้ดูแลระบบ" }
-        else if store.attempts.failures > 0 { error = "คีย์ไม่ถูกต้อง · เหลือ \(store.attempts.left) ครั้ง" }
+        if store.padLocked { error = "ล็อก 10 นาที | ติดต่อผู้ดูแลระบบ" }
+        else if store.attempts.failures > 0 { error = "คีย์ไม่ถูกต้อง | เหลือ \(store.attempts.left) ครั้ง" }
     }
 
     private func submit(_ digits: String) {
         switch store.check(digits, unlock: true) {
         case .ok: error = nil
-        case .wrong(let left): error = "คีย์ไม่ถูกต้อง · เหลือ \(left) ครั้ง"; shake += 1
-        case .locked: error = "ล็อก 10 นาที · ติดต่อผู้ดูแลระบบ"; shake += 1
+        case .wrong(let left): error = "คีย์ไม่ถูกต้อง | เหลือ \(left) ครั้ง"; shake += 1
+        case .locked: error = "ล็อก 10 นาที | ติดต่อผู้ดูแลระบบ"; shake += 1
         case .unavailable: error = unavailableText
         }
     }
@@ -230,7 +230,7 @@ struct DevKeySheet: View {
             Theme.navySolid.opacity(0.55).ignoresSafeArea().onTapGesture { onDone(false) }
             if compact { phoneSheet } else { padSheet }
         }
-        .onAppear { if store.padLocked { error = "ล็อก 10 นาที · ติดต่อผู้ดูแลระบบ" } }
+        .onAppear { if store.padLocked { error = "ล็อก 10 นาที | ติดต่อผู้ดูแลระบบ" } }
     }
 
     private var phoneSheet: some View {
@@ -300,8 +300,8 @@ struct DevKeySheet: View {
 
     private var subtitle: String {
         switch purpose {
-        case .invite: "การเพิ่มอีเมลให้สิทธิ์เข้าแอปทันทีหลังซิงก์ · ใส่คีย์นักพัฒนาอีกครั้ง"
-        case .matrix: "ตารางสิทธิ์และกฎการใช้งานมีผลกับทุกคน · ใส่คีย์นักพัฒนาอีกครั้ง"
+        case .invite: "การเพิ่มอีเมลให้สิทธิ์เข้าแอปทันทีหลังซิงก์ | ใส่คีย์นักพัฒนาอีกครั้ง"
+        case .matrix: "ตารางสิทธิ์และกฎการใช้งานมีผลกับทุกคน | ใส่คีย์นักพัฒนาอีกครั้ง"
         case .role: "ใส่คีย์นักพัฒนาอีกครั้งเพื่อเปลี่ยนบทบาทของ \(subject)"
         }
     }
@@ -309,9 +309,9 @@ struct DevKeySheet: View {
     private func submit(_ digits: String) {
         switch store.check(digits, unlock: false) {
         case .ok: onDone(true)
-        case .wrong(let left): error = "คีย์ไม่ถูกต้อง · เหลือ \(left) ครั้ง"; shake += 1
-        case .locked: error = "ล็อก 10 นาที · ติดต่อผู้ดูแลระบบ"; shake += 1
-        case .unavailable: error = "คีย์ใช้ไม่ได้ · ตั้งคีย์ใหม่ใน Firebase console"
+        case .wrong(let left): error = "คีย์ไม่ถูกต้อง | เหลือ \(left) ครั้ง"; shake += 1
+        case .locked: error = "ล็อก 10 นาที | ติดต่อผู้ดูแลระบบ"; shake += 1
+        case .unavailable: error = "คีย์ใช้ไม่ได้ | ตั้งคีย์ใหม่ใน Firebase console"
         }
     }
 }

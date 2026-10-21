@@ -74,7 +74,7 @@ final class RoofMountYieldTests: XCTestCase {
         XCTAssertEqual(inv(Self.job(gps: nil, inverters: "60,60", roofs: 2))?.1, fit)
         XCTAssertNotNil(inv(Self.job(gps: nil, inverters: "60,60", roofs: 2))?.2)
         // none picked, or a size without a model: 60 kW, assumed
-        XCTAssertEqual(inv(Self.job(gps: nil, inverters: nil))?.2, "ยังไม่เลือกอินเวอร์เตอร์ (B2) · คิด Growatt 60 kW × \(fit)")
+        XCTAssertEqual(inv(Self.job(gps: nil, inverters: nil))?.2, "ยังไม่เลือกอินเวอร์เตอร์ (B2) | คิด Growatt 60 kW × \(fit)")
         XCTAssertEqual(inv(Self.job(gps: nil, inverters: "40"))?.2?.hasPrefix("ไม่มีแบบจำลองอินเวอร์เตอร์ 40 kW"), true)
     }
 

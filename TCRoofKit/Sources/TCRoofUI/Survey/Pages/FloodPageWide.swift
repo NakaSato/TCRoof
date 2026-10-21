@@ -65,7 +65,7 @@ struct FloodPageWide: View {
 
     var leftColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
-            A1Card(title: "ภาพตัดระดับน้ำ", trailing: "อัปเดตตามข้อมูลด้านขวา · ใช้ในรายงาน PDF", spacing: 10) {
+            A1Card(title: "ภาพตัดระดับน้ำ", trailing: "อัปเดตตามข้อมูลด้านขวา | ใช้ในรายงาน PDF", spacing: 10) {
                 sectionDrawing
                 // the GISTDA box covers the whole drawing on an iPhone, so it goes under it
                 if narrow && state == .unknownEmpty { fetchBox }
@@ -214,7 +214,7 @@ struct FloodPageWide: View {
             head {
                 Text("ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม").font(.sarabunFixed(16, .bold))
                 if !narrow { Spacer() }
-                Text("ไม่บังคับ · แนะนำถ่ายคู่ตลับเมตร").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
+                Text("ไม่บังคับ | แนะนำถ่ายคู่ตลับเมตร").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
             }
             ScrollView(.horizontal) {
                 HStack(spacing: 10) {
@@ -357,7 +357,7 @@ struct FloodPageWide: View {
 
     var neverNote: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("ไม่เคยท่วม · ข้ามรายละเอียดได้", systemImage: "checkmark.circle.fill").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.success)
+            Label("ไม่เคยท่วม | ข้ามรายละเอียดได้", systemImage: "checkmark.circle.fill").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.success)
             Text("ระดับติดตั้งอุปกรณ์ใช้แค่ระยะเผื่อจากพื้น").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -369,7 +369,7 @@ struct FloodPageWide: View {
 
     var gistdaCard: some View {
         let gps = GPS.parse(values.text("gps"))
-        return A1Card(title: "ข้อมูลน้ำท่วมจาก GISTDA", trailing: gps.map { "ตามพิกัด A1 · " + String(format: "%.4f, %.4f", $0.lat, $0.lon) } ?? "ยังไม่มีพิกัด A1", spacing: 10) {
+        return A1Card(title: "ข้อมูลน้ำท่วมจาก GISTDA", trailing: gps.map { "ตามพิกัด A1 | " + String(format: "%.4f, %.4f", $0.lat, $0.lon) } ?? "ยังไม่มีพิกัด A1", spacing: 10) {
             if let g = values.gistda {
                 if g.manual == true {
                     Text(g.rows[0].value).font(.sarabunFixed(15, .bold)).foregroundStyle(tone(.bad))
@@ -391,7 +391,7 @@ struct FloodPageWide: View {
                     .accessibilityElement().accessibilityLabel(g.headline + (g.detail.map { ". " + $0 } ?? ""))
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.pending)
-                        Text("GISTDA ไม่มีข้อมูลความลึกน้ำ · ใช้ค่าประเมิน \(g.estimatedDepthCm) ซม. ควรยืนยันกับเจ้าหน้าที่สถานี")
+                        Text("GISTDA ไม่มีข้อมูลความลึกน้ำ | ใช้ค่าประเมิน \(g.estimatedDepthCm) ซม. ควรยืนยันกับเจ้าหน้าที่สถานี")
                             .font(.sarabunFixed(14, .semibold)).foregroundStyle(tone(.bad))
                     }
                 }
@@ -404,7 +404,7 @@ struct FloodPageWide: View {
             if failure != nil { estimateButton }
             if let failure { Text(failure).font(.sarabunFixed(14, .semibold)).foregroundStyle(Theme.danger) }
             else if gps == nil { Text("ใส่พิกัด GPS ในหน้า A1 ก่อน (เช่น 17.0062, 99.8235)").font(.sarabunFixed(13)).foregroundStyle(Theme.pending) }
-            else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " · ตั้งค่าได้ในหน้าตั้งค่า").font(.sarabunFixed(13)).foregroundStyle(Theme.pending) }
+            else if gistdaKey.isEmpty { Text(FloodLookup.Failure.noKey.message + " | ตั้งค่าได้ในหน้าตั้งค่า").font(.sarabunFixed(13)).foregroundStyle(Theme.pending) }
         }
     }
     func tone(_ t: FloodGistda.Tone) -> Color { t == .good ? Theme.okTick : t == .warn ? Theme.pending : t == .bad ? Theme.dangerText : Theme.navy }
@@ -459,7 +459,7 @@ struct FloodPageWide: View {
                 job.values.setGistda(g)
             } catch {
                 let f = (error as? FloodLookup.Failure) ?? .badResponse
-                if let old = cache.lookup(lat: p.lat, lon: p.lon, fresh: false) { job.values.setGistda(old); failure = "GISTDA ไม่ตอบ · ใช้ข้อมูลที่เก็บไว้ในเครื่อง" }
+                if let old = cache.lookup(lat: p.lat, lon: p.lon, fresh: false) { job.values.setGistda(old); failure = "GISTDA ไม่ตอบ | ใช้ข้อมูลที่เก็บไว้ในเครื่อง" }
                 else { failure = f.message }
             }
             fetching = false

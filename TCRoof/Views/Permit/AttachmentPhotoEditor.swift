@@ -40,7 +40,7 @@ struct AttachmentPhotoEditor: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     canvas
-                    Text("ลากบนรูปเพื่อตีกรอบแดงจุดที่ต้องการให้ กฟภ. เห็น เช่น S/N ค่าตั้ง หรือพิกัดอุปกรณ์ · แตะกรอบเพื่อลบ")
+                    Text("ลากบนรูปเพื่อตีกรอบแดงจุดที่ต้องการให้ กฟภ. เห็น เช่น S/N ค่าตั้ง หรือพิกัดอุปกรณ์ | แตะกรอบเพื่อลบ")
                         .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     HStack(spacing: Space.s) {
                         TCButton("หมุน 90°", systemImage: "rotate.right", kind: .secondary, size: .card) {

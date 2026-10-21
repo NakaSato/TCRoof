@@ -73,7 +73,7 @@ private struct DeviceSummaryStrip: View {
     var body: some View {
         let panels = job.devices.filter { $0.kind == .panel }.count
         let others = job.devices.count - panels
-        JobCardStrip(key: "แผงที่สแกน", value: "\(panels)/\(job.estimatedPanels)" + (others > 0 ? " · อุปกรณ์อื่น \(others)" : ""),
+        JobCardStrip(key: "แผงที่สแกน", value: "\(panels)/\(job.estimatedPanels)" + (others > 0 ? " | อุปกรณ์อื่น \(others)" : ""),
                      progress: job.estimatedPanels > 0 ? Double(panels) / Double(job.estimatedPanels) : nil)
     }
 }
@@ -98,7 +98,7 @@ struct JobDevicesView: View {
 
     var body: some View {
         PadForm(maxWidth: 1100) {
-            Text("\(job.code) · \(job.projectName)").font(.sarabun(12.5, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+            Text("\(job.code) | \(job.projectName)").font(.sarabun(12.5, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 .padding(.leading, 4)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
                 ForEach(DeviceKind.allCases) { kind in
@@ -123,7 +123,7 @@ struct JobDevicesView: View {
                             HStack(spacing: 8) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(device.serial).font(.body.monospaced()).textSelection(.enabled)
-                                    Text("\(device.scannedAt.thaiShort) · \(device.scannedBy)")
+                                    Text("\(device.scannedAt.thaiShort) | \(device.scannedBy)")
                                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                                 }
                                 Spacer(minLength: 0)
@@ -520,7 +520,7 @@ struct ScanHistoryView: View {
                         Image(systemName: device.kind.symbol).foregroundStyle(Theme.primary).frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(device.serial).font(.body.monospaced())
-                            Text("\(device.kind.title) · \(device.job?.code ?? "-") · \(device.job?.projectName ?? "")")
+                            Text("\(device.kind.title) | \(device.job?.code ?? "-") | \(device.job?.projectName ?? "")")
                                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                         }
                         Spacer()

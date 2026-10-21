@@ -12,9 +12,9 @@ public extension IECReport {
         public var title: String {
             switch self {
             case .setup: "ตั้งค่าระบบ"
-            case .beforeVoltage: "ก่อนออน · แรงดัน / กระแส"
-            case .beforeInsulation: "ก่อนออน · ฉนวน (IR)"
-            case .afterVoltage: "หลังออน · แรงดัน / กระแส"
+            case .beforeVoltage: "ก่อนออน | แรงดัน / กระแส"
+            case .beforeInsulation: "ก่อนออน | ฉนวน (IR)"
+            case .afterVoltage: "หลังออน | แรงดัน / กระแส"
             case .energy: "พลังงานและ PR"
             case .thermal: "ภาพถ่ายความร้อน"
             case .review: "ตรวจและส่งออก"
@@ -151,8 +151,8 @@ public extension IECReport {
 
     /// What a locked page says instead of its own status line.
     var lockedLine: String? {
-        if result != nil { return "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว" }
-        if submission != nil { return "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด · ดูได้อย่างเดียว" }
+        if result != nil { return "ปิดการทดสอบแล้ว | ดูได้อย่างเดียว" }
+        if submission != nil { return "ส่งผลให้ทีมแล้ว | รอทีมภายในปิด | ดูได้อย่างเดียว" }
         return nil
     }
 
@@ -279,7 +279,7 @@ public extension IECReport {
         let kinds: [(PhotoKind, String)] = [(.voltageBefore, "ก่อน แรงดัน"), (.currentBefore, "ก่อน กระแส"), (.insulation, "ก่อน IR"),
                                             (.voltageAfter, "หลัง แรงดัน"), (.currentAfter, "หลัง กระแส")]
         for (i, inv) in inverters.enumerated() {
-            for k in InverterPhoto.allCases { if let id = inv.photos[k.rawValue] { out[id] = "INV\(i + 1) \(k.title.replacingOccurrences(of: " · ", with: " ")).jpg" } }
+            for k in InverterPhoto.allCases { if let id = inv.photos[k.rawValue] { out[id] = "INV\(i + 1) \(k.title.replacingOccurrences(of: " | ", with: " ")).jpg" } }
             for s in inv.strings {
                 for (k, text) in kinds { if let id = s.value.photo(k) { out[id] = "\(Self.label(inverter: i + 1, seq: s.seq)) \(text).jpg" } }
             }

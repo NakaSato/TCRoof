@@ -220,7 +220,7 @@ public enum Tank {
     public static func sourceLine(_ v: Values, timeZone: TimeZone = .current, device: String = "iPad",
                                   tail: String = "แปลนและลูกศร N หมุนตามค่านี้") -> String? {
         guard azimuth(v) != nil else { return nil }
-        guard source(v) == .compass else { return "ป้อนเอง · " + tail }
+        guard source(v) == .compass else { return "ป้อนเอง | " + tail }
         var parts = ["วัดด้วยเข็มทิศ " + device]
         if let a = v.number(Key.azimuthAcc) { parts.append("±\(Int(a.rounded()))°") }
         if let d = measuredAt(v) {
@@ -228,7 +228,7 @@ public enum Tank {
             let c = cal.dateComponents([.day, .month, .hour, .minute], from: d)
             parts.append(String(format: "%d/%d %02d:%02d", c.day ?? 0, c.month ?? 0, c.hour ?? 0, c.minute ?? 0))
         }
-        return (parts + [tail]).joined(separator: " · ")
+        return (parts + [tail]).joined(separator: " | ")
     }
 
     // MARK: size and volume summary
@@ -243,15 +243,15 @@ public enum Tank {
         /// `L·W`, or `πD²/4` for a round tank.
         public var roofArea: Double { diameter.map { Double.pi * $0 * $0 / 4 } ?? width * length }
         public var grossVolume: Double? { height.map { roofArea * $0 } }
-        /// "12.00 × 8.00 × 4.50 ม. · หลังคา 96 ม² · ปริมาตรภายนอกโดยประมาณ 432 ม³";
-        /// round: "Ø 10.00 × 5.00 ม. · หลังคา 79 ม² · ปริมาตรภายนอกโดยประมาณ 393 ม³"
+        /// "12.00 × 8.00 × 4.50 ม. | หลังคา 96 ม² | ปริมาตรภายนอกโดยประมาณ 432 ม³";
+        /// round: "Ø 10.00 × 5.00 ม. | หลังคา 79 ม² | ปริมาตรภายนอกโดยประมาณ 393 ม³"
         public var text: String {
             let size = (diameter.map { [$0] } ?? [width, length]) + (height.map { [$0] } ?? [])
-            return (diameter == nil ? "" : "Ø ") + size.map { String(format: "%.2f", $0) }.joined(separator: " × ") + " ม. · " + figures
+            return (diameter == nil ? "" : "Ø ") + size.map { String(format: "%.2f", $0) }.joined(separator: " × ") + " ม. | " + figures
         }
-        /// "หลังคา 96 ม² · ปริมาตรภายนอกโดยประมาณ 432 ม³", or the area alone without a height.
+        /// "หลังคา 96 ม² | ปริมาตรภายนอกโดยประมาณ 432 ม³", or the area alone without a height.
         public var figures: String {
-            "หลังคา " + Self.grouped(roofArea) + " ม²" + (grossVolume.map { " · ปริมาตรภายนอกโดยประมาณ " + Self.grouped($0) + " ม³" } ?? "")
+            "หลังคา " + Self.grouped(roofArea) + " ม²" + (grossVolume.map { " | ปริมาตรภายนอกโดยประมาณ " + Self.grouped($0) + " ม³" } ?? "")
         }
         /// Whole numbers with thousands separators ("1,600"), one decimal below 10.
         static func grouped(_ x: Double) -> String {

@@ -43,7 +43,7 @@ struct OutageLetterSheet: View {
                 signSection
                 PadSection {
                     if !form.issues.isEmpty {
-                        Text("ยังขาด: " + form.issues.joined(separator: " · "))
+                        Text("ยังขาด: " + form.issues.joined(separator: " | "))
                             .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
                     }
                     Button { open() } label: { Label("ดูตัวอย่าง PDF", systemImage: "doc.text.magnifyingglass") }
@@ -51,7 +51,7 @@ struct OutageLetterSheet: View {
                     Button { keep(pdf()); dismiss() } label: { Label("บันทึกเป็นไฟล์ของเอกสาร", systemImage: "square.and.arrow.down") }
                         .frame(minHeight: touchMin)
                 } footer: {
-                    Text("ไฟล์เก็บในแฟ้มเอกสารของงาน สถานะเป็น “ร่างแล้ว” · พิมพ์แล้วลงนามบนกระดาษ")
+                    Text("ไฟล์เก็บในแฟ้มเอกสารของงาน สถานะเป็น “ร่างแล้ว” | พิมพ์แล้วลงนามบนกระดาษ")
                 }
             }
             .navigationTitle("ร่างหนังสือแจ้งดับไฟ")
@@ -104,7 +104,7 @@ struct OutageLetterSheet: View {
                 .accessibilityIdentifier("outage.body")
             if !form.body.isEmpty { Button("ใช้ข้อความมาตรฐาน") { form.body = "" }.frame(minHeight: touchMin) }
         } footer: {
-            Text(form.body.isEmpty ? "ข้อความมาตรฐานเปลี่ยนตามวันและเวลาด้านบน · แก้ได้ แล้วแอปจะใช้ข้อความที่แก้"
+            Text(form.body.isEmpty ? "ข้อความมาตรฐานเปลี่ยนตามวันและเวลาด้านบน | แก้ได้ แล้วแอปจะใช้ข้อความที่แก้"
                                    : "ใช้ข้อความที่แก้เอง วันและเวลาด้านบนไม่เปลี่ยนข้อความนี้แล้ว")
         }
     }

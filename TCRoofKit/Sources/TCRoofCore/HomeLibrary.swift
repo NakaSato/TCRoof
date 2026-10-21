@@ -174,7 +174,7 @@ extension HomeJob {
         if let stage = currentStage {
             for spec in missing(in: stage) {
                 out.append(HomeAction(id: "doc-" + spec.id, kind: .document, title: spec.title,
-                                      detail: stage.title + " · " + spec.provider.title, docID: spec.id))
+                                      detail: stage.title + " | " + spec.provider.title, docID: spec.id))
             }
         }
         return Array(out.prefix(limit))

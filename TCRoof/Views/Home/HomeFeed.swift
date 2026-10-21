@@ -230,8 +230,8 @@ struct HomeFeed: View {
     private var offlineLine: some View {
         HStack(spacing: 6) {
             Image(systemName: "wifi.slash").font(.system(size: 11, weight: .semibold))
-            Text(["ออฟไลน์ · แสดงข้อมูลในเครื่อง", sync.lastSync.map { "ซิงก์ล่าสุด " + ThaiFormat.time.string(from: $0) }]
-                .compactMap { $0 }.joined(separator: " · "))
+            Text(["ออฟไลน์ | แสดงข้อมูลในเครื่อง", sync.lastSync.map { "ซิงก์ล่าสุด " + ThaiFormat.time.string(from: $0) }]
+                .compactMap { $0 }.joined(separator: " | "))
                 .font(.sarabun(12.5, relativeTo: .caption)).lineLimit(1)
         }
         .foregroundStyle(Theme.warningText)
@@ -284,7 +284,7 @@ struct HomeFeed: View {
     private func card(_ p: FeedPost) -> some View {
         let mine = acked(p)
         return TCFeedPost(initials: p.initials, avatar: avatar(p), who: p.who, badge: p.kind.badge, tone: p.kind.tone.ui,
-                          detail: p.place + " · " + FeedBuilder.when(p, now: now), text: p.text,
+                          detail: p.place + " | " + FeedBuilder.when(p, now: now), text: p.text,
                           stats: p.stats.map { .init($0.value, $0.label, $0.tone.ui) },
                           photoCount: p.photos.count, photoChips: p.chips.map { .init($0.text, $0.tone.ui) },
                           issue: issueBox(p),
@@ -460,23 +460,23 @@ struct HomeFeed: View {
                      text: "สรุปวันที่ \(FeedBuilder.shortDate(now)) — ส่งรายงานแล้ว 8/12 สถานี กปภ. ความคืบหน้ารวม +2% ปัญหาค้าง 1 เรื่อง (งานบ้าน TC-0012)",
                      stats: [.init("8/12", "ส่งรายงาน", .blue), .init("+2%", "ความคืบหน้ารวม", .green), .init("1", "ปัญหาค้าง", .red)],
                      source: .summary(day: day), pinned: true, seedAcks: 5),
-            FeedPost(id: "demo-issue", kind: .issue, project: .home, team: "TCR01", initials: "B", who: "ทีม B · งานบ้าน",
-                     place: "TC-0012 · ติดตั้ง Day 2/5", date: ago(180),
+            FeedPost(id: "demo-issue", kind: .issue, project: .home, team: "TCR01", initials: "B", who: "ทีม B | งานบ้าน",
+                     place: "TC-0012 | ติดตั้ง Day 2/5", date: ago(180),
                      text: "พบรอยรั่วที่ครอบหลังคาจุด B3 หลังเจาะยึดราง ต้องอุดซิลิโคนและทดสอบน้ำก่อนวางแผงแถว B",
-                     issue: .init(owner: "ทีม B (สมศักดิ์ · ตัวอย่าง)", due: now.adding(days: 1), fixed: false),
+                     issue: .init(owner: "ทีม B (สมศักดิ์ | ตัวอย่าง)", due: now.adding(days: 1), fixed: false),
                      source: .punch(project: "demo", id: "demo"), seedAcks: 1),
-            FeedPost(id: "demo-progress", kind: .progress, project: .pwa, team: "TCR03", initials: "A", who: "ทีม A · ผู้รับเหมา A",
-                     place: "MP 189 ทุ่งน้อย · 2.3 ติดตั้งแผง", date: ago(25),
+            FeedPost(id: "demo-progress", kind: .progress, project: .pwa, team: "TCR03", initials: "A", who: "ทีม A | ผู้รับเหมา A",
+                     place: "MP 189 ทุ่งน้อย | 2.3 ติดตั้งแผง", date: ago(25),
                      text: "วางแผงแถว C เสร็จ 48/120 แผง ขันทอร์กครบ เหลือแถว D พรุ่งนี้เช้า (ฝนบ่ายนี้ หยุดงานบนหลังคา 13:00)",
                      photos: ["roof", "inverters", "roof", "roof"], chips: [.init("+6% วันนี้", .green), .init("38% / แผน 50%", .red)],
                      source: .dailyReport(project: "demo", day: day), seedAcks: 4),
             FeedPost(id: "demo-test", kind: .testResult, project: .pwa, team: "TCR04", initials: "TC", who: "TCRoof",
-                     place: "MP 77 โชคชัย · 3.1 Pre-Commissioning", date: ago(60),
+                     place: "MP 77 โชคชัย | 3.1 Pre-Commissioning", date: ago(60),
                      text: "ผลทดสอบ IEC 62446 ผ่านครบ 12 สตริง พร้อมอบรม O&M 24 ต.ค.",
                      stats: [.init("12/12", "สตริงผ่าน", .green), .init("> 40 MΩ", "ฉนวน", .blue), .init("171 kWp", "กำลังติดตั้ง", .blue)],
                      source: .test(project: "demo", id: "demo"), seedAcks: 7),
-            FeedPost(id: "demo-inspector", kind: .waitingInspector, project: .pwa, team: "TCR02", initials: "C", who: "ทีม C · ผู้รับเหมา C",
-                     place: "MP 154 แพรกหนามแดง · 2.5 Inverter", date: ago(120),
+            FeedPost(id: "demo-inspector", kind: .waitingInspector, project: .pwa, team: "TCR02", initials: "C", who: "ทีม C | ผู้รับเหมา C",
+                     place: "MP 154 แพรกหนามแดง | 2.5 Inverter", date: ago(120),
                      text: "ติดตั้งอินเวอร์เตอร์ 3 ตัวครบ เดินสาย AC เข้าตู้แล้ว ขอผู้แทน กปภ. ตรวจ 10:30 พรุ่งนี้",
                      photos: ["inverters", "roof", "inverters", "roof", "inverters", "roof"], chips: [.init("71% / แผน 68%", .green)],
                      source: .dailyReport(project: "demo", day: day), seedAcks: 2),
@@ -490,8 +490,8 @@ struct HomeFeed: View {
         guard d.bool(forKey: "homeFeedRefresh") || d.double(forKey: "homeFeedArrive") > 0, pulls > 0 else { return [] }
         let day = FeedBuilder.calendar.startOfDay(for: now)
         return (1...pulls).reversed().map { n in
-            FeedPost(id: "demo-pull-\(n)", kind: .progress, project: .pwa, team: "TCR02", initials: "C", who: "ทีม C · ผู้รับเหมา C",
-                     place: "MP 154 แพรกหนามแดง · 2.6 สาย AC", date: now.addingTimeInterval(Double(n - pulls) * 60),
+            FeedPost(id: "demo-pull-\(n)", kind: .progress, project: .pwa, team: "TCR02", initials: "C", who: "ทีม C | ผู้รับเหมา C",
+                     place: "MP 154 แพรกหนามแดง | 2.6 สาย AC", date: now.addingTimeInterval(Double(n - pulls) * 60),
                      text: "รายงานใหม่ \(n) (ตัวอย่าง): เดินสาย AC ช่วงที่ \(n) เสร็จ",
                      chips: [.init("+\(n)% วันนี้", .green)], source: .dailyReport(project: "demo", day: day))
         }

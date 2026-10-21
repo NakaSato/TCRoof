@@ -107,7 +107,7 @@ struct PadHome<Popover: View>: View {
 
     private func heroItem(_ item: TimelineItem) -> HeroItem {
         let a = item.appointment
-        return HeroItem(id: item.id, time: item.time, kind: item.isInstall ? "\(item.tag) · \(item.right)" : "นัดสำรวจ · \(item.right)",
+        return HeroItem(id: item.id, time: item.time, kind: item.isInstall ? "\(item.tag) | \(item.right)" : "นัดสำรวจ | \(item.right)",
                         name: item.name, place: item.place, fraction: item.progress, percent: Int((item.progress * 100).rounded()),
                         actionTitle: item.action, appointment: a) {
             if let link = item.link { openFeed(link) } else if item.isInstall { openInstall(a.job) } else { open(a, a.nextStep?.page) }
@@ -173,12 +173,12 @@ struct TimelineItem: Identifiable {
             let started = start <= .now
             let a = TodayAppointment(job: job, report: report(job))
             out.append(TimelineItem(kind: .live, date: start, isInstall: true, appointment: a,
-                                    tag: "ติดตั้ง · Day \(day)/\(job.installDays)",
+                                    tag: "ติดตั้ง | Day \(day)/\(job.installDays)",
                                     right: started ? "กำลังทำ" : a.countdown(to: start),
-                                    name: "\(job.code) · ทีม \(job.team.rawValue)",
+                                    name: "\(job.code) | ทีม \(job.team.rawValue)",
                                     place: [job.province.isEmpty ? nil : "จ.\(job.province)",
                                             job.capacityKW > 0 ? "\(job.capacityKW.plain) kWp" : nil,
-                                            started ? "ทีมเข้างานแล้ว" : nil].compactMap { $0 }.joined(separator: " · "),
+                                            started ? "ทีมเข้างานแล้ว" : nil].compactMap { $0 }.joined(separator: " | "),
                                     progress: Double(day) / Double(max(job.installDays, 1)),
                                     action: "เปิดบันทึกประจำวัน ›", clock: allDay ? "ทั้งวัน" : nil))
         }
@@ -190,10 +190,10 @@ struct TimelineItem: Identifiable {
             let isNext = job.persistentModelID == nextID
             let steps = a.report.map { "\($0.stepsDone)/\($0.steps.count) ขั้น" } ?? "ยังไม่เริ่ม"
             out.append(TimelineItem(kind: isNext ? .next : .later, date: job.surveyDate, isInstall: false, appointment: a,
-                                    tag: isNext ? "นัดสำรวจ · ถัดไป" : "นัดสำรวจ",
+                                    tag: isNext ? "นัดสำรวจ | ถัดไป" : "นัดสำรวจ",
                                     right: ahead ? a.countdown : "ผ่านแล้ว",
                                     name: a.name,
-                                    place: [a.place, steps].filter { !$0.isEmpty }.joined(separator: " · "),
+                                    place: [a.place, steps].filter { !$0.isEmpty }.joined(separator: " | "),
                                     progress: a.fraction, action: a.actionTitle, order: 1))
         }
         out += planRows(jobs: jobs, survey: survey, report: report)
@@ -223,11 +223,11 @@ struct TimelineItem: Identifiable {
         return PWAPlan.agenda(stations, deadlines: deadlines, days: [now], today: now, threshold: threshold).compactMap { item in
             guard let (job, s) = byID[item.station] else { return nil }
             let done = (bars[item.station]?.actual ?? 0) / 100
-            // `ทุ่งน้อย · ผู้รับเหมา A · TCR01 · ช้ากว่าแผน 12%` without the station, which an install row has in its name
-            let party = item.subtitle.components(separatedBy: " · ").filter { $0 != s.shortName }.joined(separator: " · ")
+            // `ทุ่งน้อย | ผู้รับเหมา A | TCR01 | ช้ากว่าแผน 12%` without the station, which an install row has in its name
+            let party = item.subtitle.components(separatedBy: " | ").filter { $0 != s.shortName }.joined(separator: " | ")
             switch item.type {
             case .install:
-                return row(item, job: job, report: report(job), name: "\(item.title) · \(s.shortName)", place: party, progress: done)
+                return row(item, job: job, report: report(job), name: "\(item.title) | \(s.shortName)", place: party, progress: done)
             case .test, .inspection, .document:
                 return row(item, job: job, report: report(job), name: item.title, place: item.subtitle, progress: item.type == .test ? done : 0)
             case .survey, .notice: return nil
@@ -253,7 +253,7 @@ struct TimelineItem: Identifiable {
         let right = item.type == .document ? item.status.title
             : ahead ? a.countdown(to: at ?? now) : working ? item.status.title : "ผ่านแล้ว"
         return TimelineItem(kind: working ? .live : .later, date: at ?? now.startOfDay, isInstall: item.type == .install, appointment: a,
-                            tag: [item.type.title, item.ref].filter { !$0.isEmpty }.joined(separator: " · "), right: right,
+                            tag: [item.type.title, item.ref].filter { !$0.isEmpty }.joined(separator: " | "), right: right,
                             name: name, place: place, progress: progress, action: action,
                             planID: item.id, clock: item.start.map(PWAPlan.clock) ?? "ทั้งวัน", link: link,
                             inHero: item.type == .install, order: order)
@@ -268,11 +268,11 @@ struct TimelineItem: Identifiable {
         let surveys = jobs.map(\.surveyDate).filter { $0.isToday && $0 > now }.sorted().map(minutes)
         let first = surveys.first ?? 10 * 60 + 30, second = surveys.dropFirst().first ?? 14 * 60
         let rows: [(Int?, PWAPlan.JobType, String, String, String, PWAPlan.AgendaStatus, Double)] = [
-            (8 * 60, .install, "MP 189", "2.3 ติดตั้งแผงเซลล์ · ทุ่งน้อย", "ผู้รับเหมา A · TCR01 · ช้ากว่าแผน 12%", .doing, 0.38),
-            (8 * 60 + 30, .install, "MP 120", "2.1 โครงสร้างรองรับ + Walkway · วัดชัย", "ผู้รับเหมา B · TCR03 · ช้ากว่าแผน 6%", .doing, 0.22),
-            (first, .inspection, "MP 154", "ผู้แทน กปภ. ตรวจ 2.5 Inverter", "แพรกหนามแดง · ผู้รับเหมา C", .waiting, 0),
-            ((first + second) / 2, .document, "MP 189", "ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)", "ทุ่งน้อย · ครบกำหนดวันนี้", .mustSubmit, 0),
-            (second, .test, "MP 77", "3.1 Pre-Commissioning (IEC 62446)", "โชคชัย · TCR05", .onPlan, 0),
+            (8 * 60, .install, "MP 189", "2.3 ติดตั้งแผงเซลล์ | ทุ่งน้อย", "ผู้รับเหมา A | TCR01 | ช้ากว่าแผน 12%", .doing, 0.38),
+            (8 * 60 + 30, .install, "MP 120", "2.1 โครงสร้างรองรับ + Walkway | วัดชัย", "ผู้รับเหมา B | TCR03 | ช้ากว่าแผน 6%", .doing, 0.22),
+            (first, .inspection, "MP 154", "ผู้แทน กปภ. ตรวจ 2.5 Inverter", "แพรกหนามแดง | ผู้รับเหมา C", .waiting, 0),
+            ((first + second) / 2, .document, "MP 189", "ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)", "ทุ่งน้อย | ครบกำหนดวันนี้", .mustSubmit, 0),
+            (second, .test, "MP 77", "3.1 Pre-Commissioning (IEC 62446)", "โชคชัย | TCR05", .onPlan, 0),
         ]
         guard !jobs.isEmpty else { return [] }
         return rows.enumerated().map { i, r in
@@ -313,7 +313,7 @@ private struct TodayTimelineCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("วันนี้").font(.sarabun(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                     .accessibilityAddTraits(.isHeader)
-                Text("\(items.count) รายการ · ทุกแผนงาน").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
+                Text("\(items.count) รายการ | ทุกแผนงาน").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 4)
             if items.isEmpty {
@@ -499,13 +499,13 @@ struct PendingSurvey: Identifiable {
             .nonEmpty ?? "งานสำรวจ"
     }
 
-    /// `ยังขาด 3 รายการใน C1 หลังคา · แก้ไขล่าสุด 28/9`, or `ครบทุกขั้น · ยังไม่ส่งรายงานให้ กปภ.`
+    /// `ยังขาด 3 รายการใน C1 หลังคา | แก้ไขล่าสุด 28/9`, or `ครบทุกขั้น | ยังไม่ส่งรายงานให้ กปภ.`
     var status: (text: String, missing: Bool) {
         let edited = "แก้ไขล่าสุด " + ThaiFormat.dayMonth.string(from: report.updated)
-        guard !isComplete, let next = report.nextStep else { return ("ครบทุกขั้น · ยังไม่ส่งรายงานให้ กปภ.", false) }
+        guard !isComplete, let next = report.nextStep else { return ("ครบทุกขั้น | ยังไม่ส่งรายงานให้ กปภ.", false) }
         let n = report.missingGroups.first { $0.target == next.page }?.items.count ?? 0
         let what = n > 0 ? "ยังขาด \(n) รายการใน \(next.code) \(next.title)" : "ทำถึง \(next.code) \(next.title)"
-        return (what + " · " + edited, n > 0)
+        return (what + " | " + edited, n > 0)
     }
 
     /// `ทำต่อ C1 ›` at the next step, or `ส่งออก ›` (E1) when every step is done.

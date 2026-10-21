@@ -1,7 +1,7 @@
 import Foundation
 import TCRoofCore
 
-/// IEC 62446 · 9 ภาพถ่ายติดตั้งระบบ as A4 pages: the cover with its contents, then one page per `IECReport.InstallPage`
+/// IEC 62446 | 9 ภาพถ่ายติดตั้งระบบ as A4 pages: the cover with its contents, then one page per `IECReport.InstallPage`
 /// (the design canvas's `IECInstallCover` and `IECInstall1–12`). The geometry is the boards', drawn at 794 × 1123 px and
 /// scaled to the page: every element on one column 98–700 px, two photo frames a page (one tall frame when the page has
 /// one photo), the roof's name above its photos, `n / total` at the foot. A slot without a photo keeps its empty
@@ -79,7 +79,7 @@ public struct InstallPhotoPages {
         }
         ops.append(.text("สารบัญ", at: S.at(399, 422), size: S.size(22), bold: true, align: .center))
 
-        // the contents, one row a page: ลำดับ 64 px · รายการ · จำนวนรูป 92 px · หน้า 72 px across 98–700
+        // the contents, one row a page: ลำดับ 64 px | รายการ | จำนวนรูป 92 px | หน้า 72 px across 98–700
         let rowH = 31.0, headH = 33.0, top = 444.0
         let rows = pages.enumerated().map { n, p in ["9.\(n + 1)", p.title, "\(p.slots.count)", "\(n + 1)"] }
         let bottom = top + headH + rowH * Double(rows.count)

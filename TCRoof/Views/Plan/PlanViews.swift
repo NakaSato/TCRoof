@@ -65,7 +65,7 @@ struct PlanListView: View {
                                 JobDetailView(job: job)
                             } footer: {
                                 JobCardStrip(key: "ช่วงติดตั้ง",
-                                             value: "\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) · \(job.installDays) วัน")
+                                             value: "\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) | \(job.installDays) วัน")
                             }
                         }
                     }
@@ -101,7 +101,7 @@ struct PlanListView: View {
                                         Spacer(minLength: 4)
                                         TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color).fixedSize()
                                     }
-                                    Text("\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) · \(job.installDays) วัน · \(job.capacityKW.kw)")
+                                    Text("\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) | \(job.installDays) วัน | \(job.capacityKW.kw)")
                                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                                 }
                             }

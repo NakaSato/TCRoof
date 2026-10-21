@@ -8,9 +8,9 @@ final class TankPhotoTagTests: XCTestCase {
         var p = try JSONDecoder().decode(Photo.self, from: Data(old.utf8))
         XCTAssertNil(p.note); XCTAssertNil(p.tag); XCTAssertNil(p.caption)
         p.tag = "V3"; p.note = " ฝาปล่องแตก "
-        XCTAssertEqual(p.caption, "V3 · ฝาปล่องแตก")
+        XCTAssertEqual(p.caption, "V3 | ฝาปล่องแตก")
         let back = try JSONDecoder().decode(Photo.self, from: JSONEncoder().encode(p))
-        XCTAssertEqual(back.caption, "V3 · ฝาปล่องแตก")
+        XCTAssertEqual(back.caption, "V3 | ฝาปล่องแตก")
     }
 
     func testTagsComeFromTheTanksPoints() {

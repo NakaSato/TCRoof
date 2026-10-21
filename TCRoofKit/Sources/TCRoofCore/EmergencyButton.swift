@@ -47,6 +47,6 @@ public enum EmergencyButton {
     public static func statusLine(_ job: Job, _ v: Values) -> String {
         if photoMissing(v) { return "ยังขาดภาพบังคับ 1 ภาพ" }
         if !isRecommended(heightCm(job)) { return "ความสูงปุ่มแนะนำ 1.10–1.50 ม." }
-        return "ครบช่องบังคับแล้ว · ตำแหน่งแสดงบนภาพ A2 และ SLD"
+        return "ครบช่องบังคับแล้ว | ตำแหน่งแสดงบนภาพ A2 และ SLD"
     }
 }

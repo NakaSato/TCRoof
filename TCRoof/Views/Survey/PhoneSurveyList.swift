@@ -111,7 +111,7 @@ struct PhoneSurveyList: View {
     private func header(now: Date) -> some View {
         let greeting = SurveyGreeting.text(hour: Calendar.current.component(.hour, from: now))
         return TCGradientHeader(title: "สำรวจหน้างาน",
-                                subtitle: "\(greeting) · \(ThaiFormat.weekdayShortYear.string(from: now))",
+                                subtitle: "\(greeting) | \(ThaiFormat.weekdayShortYear.string(from: now))",
                                 large: true) { EmptyView() }
     }
 

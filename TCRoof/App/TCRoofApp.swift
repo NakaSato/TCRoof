@@ -122,6 +122,47 @@ struct RootView: View {
                 job.kind = .pwa
                 try? context.save()
             }
+            // moved back: the job leaves the install list, unless its installation has started (an MP plan or a log)
+            session.survey.onMovedBackToSurvey = { id in
+                guard let job = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first,
+                      job.status == .installing, job.scheduleInputJSON == nil, job.logs.isEmpty else { return }
+                job.status = .confirmed
+                try? context.save()
+            }
+            // a deleted survey takes the job made for it along (its syncID is the survey's id), unless work was recorded on it
+            session.survey.onDeleted = { survey in
+                let id = survey.id.uuidString
+                guard survey.jobSyncID == id,
+                      let job = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first,
+                      job.scheduleInputJSON == nil, job.iecReportJSON == nil, job.stationDocsJSON == nil,
+                      job.logs.isEmpty, job.surveys.isEmpty, job.devices.isEmpty, job.inspections.isEmpty, job.documents.isEmpty
+                else { return }
+                context.delete(job)
+                try? context.save()
+            }
+            // a survey moved to installation with no TCRoof job gets one, so its card opens the install tracking page. Its
+            // syncID is the survey's id: two devices making it for the same survey write the same record
+            session.survey.makeInstallJob = { survey in
+                let id = survey.id.uuidString
+                if let job = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.syncID == id })))?.first {
+                    if job.status == .confirmed || job.status == .interested { job.status = .installing }
+                    job.kind = .pwa
+                    try? context.save()
+                    return id
+                }
+                let v = survey.values
+                let job = Job(code: SampleData.newJobCode(),
+                              projectName: survey.projectName.isEmpty ? "ยังไม่ได้ตั้งชื่อโครงการ" : survey.projectName,
+                              customerName: v.text("coordinator"), phone: v.text("phone"), address: v.text("address"), province: "",
+                              capacityKW: Double(v.text("capacity").trimmingCharacters(in: .whitespaces)) ?? 0, team: .t1,
+                              status: .installing, surveyDate: ISODate.date(v.text("date")) ?? survey.created,
+                              installStart: .now, installDays: 2)
+                job.syncID = id
+                job.kind = .pwa
+                context.insert(job)
+                try? context.save()
+                return id
+            }
             #if DEBUG
             // Simulator checks run on sample data, offline.
             if DebugScreen.requested != nil {
@@ -203,7 +244,7 @@ struct DebugScreen: View {
                     id: "demo-25", mpNumber: 25, name: "สถานีผลิตน้ำนครชัยศรี", kWp: 220,
                     energy: 410, expected: 790, pr: 63, status: .alarm, openRepairs: 1,
                     nextPM: Calendar.current.date(byAdding: .day, value: 21, to: .now),
-                    note: "INV 2 fault · 2 วัน"
+                    note: "INV 2 fault | 2 วัน"
                 ),
                 initialTab: tab
             )

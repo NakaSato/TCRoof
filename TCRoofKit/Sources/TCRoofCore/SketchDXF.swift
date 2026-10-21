@@ -230,7 +230,7 @@ public struct SketchDXF: Sendable {
         return s
     }
 
-    /// Thai to TIS-620 bytes; a few symbols to their CAD codes, anything else outside ASCII to "?".
+    /// Thai to TIS-620 bytes; "|" to "-", a few symbols to their CAD codes, anything else outside ASCII to "?".
     static func tis620(_ s: String) -> Data {
         let swap: [Character: String] = ["·": "-", "×": "x", "□": "SHS ", "–": "-", "°": "%%d", "Ø": "%%c", "½": "1/2", "¼": "1/4"]
         var bytes: [UInt8] = []
@@ -239,7 +239,9 @@ public struct SketchDXF: Sendable {
             if ch == "\r\n" { bytes += [13, 10]; continue }
             for u in ch.unicodeScalars {
                 let v = u.value
-                if v >= 0x20 && v <= 0x7E || v == 10 || v == 13 { bytes.append(UInt8(v)) }
+                // the "|" between items prints as "-", as the "·" it replaced did
+                if v == 0x7C { bytes.append(UInt8(ascii: "-")) }
+                else if v >= 0x20 && v <= 0x7E || v == 10 || v == 13 { bytes.append(UInt8(v)) }
                 else if v >= 0x0E01 && v <= 0x0E5B { bytes.append(UInt8(v - 0x0D60)) }
                 else if let r = swap[Character(u)] { bytes += Array(r.utf8) }
                 else { bytes.append(UInt8(ascii: "?")) }

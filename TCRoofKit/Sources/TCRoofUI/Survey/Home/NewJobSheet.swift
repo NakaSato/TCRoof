@@ -16,7 +16,7 @@ struct NewJobSheet: View {
                     ForEach(JobTemplate.all) { t in
                         Button { create(t) } label: { card(t) }.buttonStyle(.plain)
                     }
-                    Label("ทุกแบบมี A ข้อมูลทั่วไป และ E สรุปผลและลงนาม · เพิ่มหรือลบหัวข้อภายหลังได้ในหน้าแก้ไขงาน", systemImage: "info.circle")
+                    Label("ทุกแบบมี A ข้อมูลทั่วไป และ E สรุปผลและลงนาม | เพิ่มหรือลบหัวข้อภายหลังได้ในหน้าแก้ไขงาน", systemImage: "info.circle")
                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted).padding(.top, 4)
                 }
                 .padding(20)

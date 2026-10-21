@@ -43,9 +43,9 @@ public struct PowerAdvice: Equatable, Sendable {
     /// Lines for the banner, most urgent first; empty when all is well.
     public var notes: [String] {
         var out: [String] = []
-        if hot { out.append("เครื่องร้อน พักในที่ร่ม · หยุดโหลดแผนที่ชั่วคราว") }
-        if lowStorage { out.append("พื้นที่ในเครื่องเหลือน้อยกว่า 2 GB · ย้ายงานที่ส่งแล้วขึ้น Drive") }
-        if holdUploads { out.append("แบตเตอรี่ต่ำ · รออัปโหลดรูปเมื่อชาร์จหรือต่อ Wi-Fi") }
+        if hot { out.append("เครื่องร้อน พักในที่ร่ม | หยุดโหลดแผนที่ชั่วคราว") }
+        if lowStorage { out.append("พื้นที่ในเครื่องเหลือน้อยกว่า 2 GB | ย้ายงานที่ส่งแล้วขึ้น Drive") }
+        if holdUploads { out.append("แบตเตอรี่ต่ำ | รออัปโหลดรูปเมื่อชาร์จหรือต่อ Wi-Fi") }
         else if lowBattery { out.append("แบตเตอรี่ต่ำ") }
         return out
     }

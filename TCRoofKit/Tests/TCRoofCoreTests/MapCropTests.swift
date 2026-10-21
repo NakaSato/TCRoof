@@ -74,7 +74,7 @@ final class MapCropTests: XCTestCase {
         let c = MapCrop.standard
         XCTAssertEqual(c.meters(across: 200, aspect: 332.0 / 620).w, 108)
         XCTAssertEqual(c.meters(across: 200, aspect: 332.0 / 620).h, 69)
-        XCTAssertEqual(c.label(across: 200, aspect: 332.0 / 620), "ภาพในรายงาน · 108 × 69 ม.")
+        XCTAssertEqual(c.label(across: 200, aspect: 332.0 / 620), "ภาพในรายงาน | 108 × 69 ม.")
         XCTAssertEqual(c.meters(across: 200, aspect: 400.0 / 640).h, 80)
     }
 

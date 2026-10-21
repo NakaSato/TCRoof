@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-/// Section 5 · Cards & lists (docs/ui/components/sections/05-cards.png). Cards take plain values, never app models.
+/// Section 5 | Cards & lists (docs/ui/components/sections/05-cards.png). Cards take plain values, never app models.
 
 /// White card: radius 16, `border-subtle` hairline, `shadow-card`.
 struct TCCardBackground: ViewModifier {
@@ -90,7 +90,7 @@ public enum TCSyncState: Sendable {
     var color: Color { self == .pending ? Theme.warning : Theme.okText }
 }
 
-/// PWA job card: number, gap chip, name, place · kWp, ring %, 13-step bar, resume strip, section counts, date and sync.
+/// PWA job card: number, gap chip, name, place | kWp, ring %, 13-step bar, resume strip, section counts, date and sync.
 public struct TCPWAJobCard: View {
     public struct Resume: Sendable {
         public let index: Int
@@ -336,7 +336,7 @@ public struct TCNumberTile: View {
     }
 }
 
-/// Side filter list: a small title, then rows of dot · name · count; the selected row is primarySoft with a primary rim.
+/// Side filter list: a small title, then rows of dot | name | count; the selected row is primarySoft with a primary rim.
 public struct TCSideFilterList<ID: Hashable>: View {
     public struct Row: Identifiable {
         public let id: ID

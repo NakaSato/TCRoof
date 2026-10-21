@@ -58,7 +58,7 @@ public enum RoofMountYield {
         public var kWhPerKWp: Double
         /// On the plane's irradiation; nil from SolarModel (a fixed 80 %).
         public var performanceRatio: Double?
-        /// e.g. `Growatt MAX 60KTL3 LV × 2 · DC/AC 1.25`.
+        /// e.g. `Growatt MAX 60KTL3 LV × 2 | DC/AC 1.25`.
         public var inverterLine: String?
         public var source: Source
         /// What was assumed (ค่าสมมติ).
@@ -66,13 +66,13 @@ public enum RoofMountYield {
 
         public var isHourly: Bool { if case .hourly = source { return true }; return false }
 
-        /// `คำนวณรายชั่วโมง · PVGIS-ERA5 TMY กรุงเทพฯ (ห่าง 12 กม.)` or `ประมาณแบบท้องฟ้าใส · …`.
+        /// `คำนวณรายชั่วโมง | PVGIS-ERA5 TMY กรุงเทพฯ (ห่าง 12 กม.)` or `ประมาณแบบท้องฟ้าใส | …`.
         public var sourceLine: String {
             switch source {
             case .hourly(let d, let place, let km, _):
-                return "คำนวณรายชั่วโมง · \(d) \(place)" + (km >= 1 ? String(format: " (ห่าง %.0f กม.)", km) : "")
+                return "คำนวณรายชั่วโมง | \(d) \(place)" + (km >= 1 ? String(format: " (ห่าง %.0f กม.)", km) : "")
             case .clearSky(let why):
-                return "ประมาณแบบท้องฟ้าใส PR 80% · \(why)"
+                return "ประมาณแบบท้องฟ้าใส PR 80% | \(why)"
             }
         }
     }
@@ -137,7 +137,7 @@ public enum RoofMountYield {
         }
         if size != nil { return (spec, fit, "อินเวอร์เตอร์ \(kw) kW × \(fit) ตามสัดส่วนหลังคานี้") }
         let why = i.inverterSizes.isEmpty ? "ยังไม่เลือกอินเวอร์เตอร์ (B2)" : "ไม่มีแบบจำลองอินเวอร์เตอร์ \(i.inverterSizes.map(String.init).joined(separator: ", ")) kW"
-        return (spec, fit, "\(why) · คิด Growatt \(kw) kW × \(fit)")
+        return (spec, fit, "\(why) | คิด Growatt \(kw) kW × \(fit)")
     }
 
     // MARK: - Estimate
@@ -173,7 +173,7 @@ public enum RoofMountYield {
         let d = near.dataset
         return Estimate(faces: out, kWp: kWp, mwh: r.energies.eGrid / 1000, p90MWh: r.probability.p90OneYear / 1000,
                         kWhPerKWp: r.specificYield, performanceRatio: r.performanceRatio,
-                        inverterLine: "\(inv.spec.manufacturer) \(inv.spec.model) × \(inv.count) · " + String(format: "DC/AC %.2f", r.dcAcRatio),
+                        inverterLine: "\(inv.spec.manufacturer) \(inv.spec.model) × \(inv.count) | " + String(format: "DC/AC %.2f", r.dcAcRatio),
                         source: .hourly(dataset: d.source, place: d.place, distanceKm: near.distanceKm, attribution: d.attribution),
                         assumptions: assumptions)
     }

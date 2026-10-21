@@ -164,7 +164,7 @@ extension InfoPageWide {
                 .accessibilityLabel("ตำแหน่งปัจจุบัน")
             }
             if locating, let a = liveAccuracy {
-                Text("กำลังหาตำแหน่ง · ± \(Int(a.rounded())) ม.").font(.footnote).foregroundStyle(Theme.inkMuted)
+                Text("กำลังหาตำแหน่ง | ± \(Int(a.rounded())) ม.").font(.footnote).foregroundStyle(Theme.inkMuted)
             }
             gpsNote.font(.footnote)
         }
@@ -226,7 +226,7 @@ extension InfoPageWide {
             .background(Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderSubtle))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("วิศวกรผู้สำรวจ \(value.isEmpty ? myEngineer : value) · ดึงจากการตั้งค่า แก้ไขไม่ได้")
+            .accessibilityLabel("วิศวกรผู้สำรวจ \(value.isEmpty ? myEngineer : value) | ดึงจากการตั้งค่า แก้ไขไม่ได้")
         }
     }
 

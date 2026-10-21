@@ -159,10 +159,10 @@ final class PhotoStampTests: XCTestCase {
         var p = Photo(fileName: "a.jpg", width: 4, height: 3, takenAt: taken)
         XCTAssertNil(p.stampLine, "a library photo has nothing to print")
         p.apply(PhotoStamp(lat: 17.00621, lon: 99.82354, accuracy: 6, heading: 195.4, pitch: -12, device: "iPad14,8"))
-        XCTAssertEqual(p.stampLine, "17.0062, 99.8235 · หันทิศ 195° · 29/9/2569 10:42")
+        XCTAssertEqual(p.stampLine, "17.0062, 99.8235 | หันทิศ 195° | 29/9/2569 10:42")
         XCTAssertEqual(p.device, "iPad14,8")
         p.lat = nil; p.lon = nil
-        XCTAssertEqual(p.stampLine, "หันทิศ 195° · 29/9/2569 10:42")
+        XCTAssertEqual(p.stampLine, "หันทิศ 195° | 29/9/2569 10:42")
         XCTAssertTrue(PhotoStamp().isEmpty)
     }
 

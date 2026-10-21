@@ -5,7 +5,7 @@ import TCRoofCore
 import PDFReport
 import ExcelExport
 
-/// `9 ภาพถ่ายติดตั้งระบบ` (design canvas `iPad · IEC 62446 · 9`): the roofs, then one card per page of the report with its
+/// `9 ภาพถ่ายติดตั้งระบบ` (design canvas `iPad | IEC 62446 | 9`): the roofs, then one card per page of the report with its
 /// photo slots, and `PDF รายงาน 9`, which makes every page (cover, contents, one page each) from what is taken. The
 /// pages follow the station's roofs and inverters (`IECReport.installPages`); an inverter's two photos are step 1's.
 /// On iPhone (compact width, `IECInstallPhotosScreen`) it is one column: the button under the count, the photos stacked.
@@ -45,9 +45,9 @@ struct IECInstallPhotosPage: View {
         let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 14))
         return layout {
             VStack(alignment: .leading, spacing: 4) {
-                Text(left == 0 ? "ครบ \(t.total) รูปแล้ว" : "ถ่ายแล้ว \(t.done)/\(t.total) รูป · เหลือ \(left)")
+                Text(left == 0 ? "ครบ \(t.total) รูปแล้ว" : "ถ่ายแล้ว \(t.done)/\(t.total) รูป | เหลือ \(left)")
                     .font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text(left == 0 ? "พร้อมทำรายงาน 9 (\(pages) หน้า + ปก)" : "ช่องที่ยังไม่มีรูปจะว่างในรายงาน · \(pages) หน้า + ปก")
+                Text(left == 0 ? "พร้อมทำรายงาน 9 (\(pages) หน้า + ปก)" : "ช่องที่ยังไม่มีรูปจะว่างในรายงาน | \(pages) หน้า + ปก")
                     .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
             }
             if !compact { Spacer(minLength: 8) }
@@ -64,7 +64,7 @@ struct IECInstallPhotosPage: View {
     private func roofs(_ r: IECReport) -> some View {
         let list = r.installPhotos.effectiveRoofs
         return VStack(alignment: .leading, spacing: 10) {
-            Text("หลังคา · \(list.count) หลัง (หลังละ 2 หน้า)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+            Text("หลังคา | \(list.count) หลัง (หลังละ 2 หน้า)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
             ForEach(list) { roof in
                 HStack(spacing: 10) {
                     IECRoofNameField(name: roof.name) { name in
@@ -100,7 +100,7 @@ struct IECInstallPhotosPage: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(page.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
                     Text(page.slots.contains { if case .inverter = $0.source { true } else { false } }
-                         ? "รูปเดียวกับขั้น 1/7 · " + page.subtitle : page.subtitle)
+                         ? "รูปเดียวกับขั้น 1/7 | " + page.subtitle : page.subtitle)
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 8)
@@ -245,7 +245,7 @@ struct IECInstallPhotosScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if locked {
-                    Label("ผลทดสอบส่งหรือปิดแล้ว · ทีมต้องเปิด “แก้ไข” ในหน้าทดสอบ IEC ก่อนจึงแก้รูปได้ · ทำ PDF ได้", systemImage: "lock")
+                    Label("ผลทดสอบส่งหรือปิดแล้ว | ทีมต้องเปิด “แก้ไข” ในหน้าทดสอบ IEC ก่อนจึงแก้รูปได้ | ทำ PDF ได้", systemImage: "lock")
                         .font(.sarabunFixed(14)).foregroundStyle(Theme.warningInk)
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Theme.pendingSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))

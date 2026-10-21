@@ -99,7 +99,7 @@ public enum RoofTruss {
         public let rows: [Row]
         /// Trusses (T1) or rafter pairs on the roof.
         public let frames: Int
-        /// "โครง T1 3 ชุด · ช่วง 16.00 ม. · ยาวตามสัน 24.00 ม. · มุม 15°"
+        /// "โครง T1 3 ชุด | ช่วง 16.00 ม. | ยาวตามสัน 24.00 ม. | มุม 15°"
         public let summary: String
         /// What the quantities leave out.
         public let note: String
@@ -177,19 +177,19 @@ public enum RoofTruss {
         }
         let unit = f.isRafter ? "จันทัน \(frames) คู่ @1.00" : "โครง T1 \(frames) ชุด"
         let summary = [unit, String(format: "ช่วง %.2f ม.", g.span), String(format: "ยาวตามสัน %.2f ม.", run), "มุม " + Roof.slopeText(v), frameNote]
-            .filter { !$0.isEmpty }.joined(separator: " · ")
+            .filter { !$0.isEmpty }.joined(separator: " | ")
         return Schedule(rows: rows, frames: frames, summary: summary,
-                        note: "ความยาวตามแนวศูนย์กลางชิ้นส่วน ไม่รวมระยะต่อทาบและเศษ · " + TankDrawings.note)
+                        note: "ความยาวตามแนวศูนย์กลางชิ้นส่วน ไม่รวมระยะต่อทาบและเศษ | " + TankDrawings.note)
     }
 
-    /// "12 · 31.20" for a row's per-truss cell, "-" for members along the ridge.
+    /// "12 | 31.20" for a row's per-truss cell, "-" for members along the ridge.
     public static func perFrameText(_ r: Row) -> String {
         guard let c = r.perFrameCount else { return "-" }
-        return r.perFrameLength.map { String(format: "%d · %.2f", c, $0) } ?? "\(c)"
+        return r.perFrameLength.map { String(format: "%d | %.2f", c, $0) } ?? "\(c)"
     }
-    /// "36 · 93.60 ม." for the roof, or "36 แผ่น" for plates.
+    /// "36 | 93.60 ม." for the roof, or "36 แผ่น" for plates.
     public static func totalText(_ r: Row) -> String {
-        r.length > 0 ? String(format: "%d · %.2f ม.", r.count, r.length) : "\(r.count) แผ่น"
+        r.length > 0 ? String(format: "%d | %.2f ม.", r.count, r.length) : "\(r.count) แผ่น"
     }
 
     // MARK: details A / B
@@ -207,10 +207,10 @@ public enum RoofTruss {
             return s == "-" ? nil : names[n - 1] + " " + (s.isEmpty ? "ไม่ระบุขนาด" : s)
         }
         let spacing = Roof.purlinSpacing(v)
-        o += Panel(g, x: 0, title: "รายละเอียด A · ที่รองรับ", kind: .support, purlin: spacing, label: label).ops
+        o += Panel(g, x: 0, title: "รายละเอียด A | ที่รองรับ", kind: .support, purlin: spacing, label: label).ops
         o.append(.line(Pt(380, 8), Pt(380, detailHeight - 26), width: 0.5, color: RGBA(hex: 0xC9CED6)))
-        o += Panel(g, x: 385, title: "รายละเอียด B · สันหลังคา", kind: .ridge, purlin: spacing, label: label).ops
-        o.append(.text("ไม่ได้มาตราส่วน · ขนาดตามที่กรอกในรายการโครงสร้าง · " + TankDrawings.note, at: Pt(10, detailHeight - 12), size: 8.5,
+        o += Panel(g, x: 385, title: "รายละเอียด B | สันหลังคา", kind: .ridge, purlin: spacing, label: label).ops
+        o.append(.text("ไม่ได้มาตราส่วน | ขนาดตามที่กรอกในรายการโครงสร้าง | " + TankDrawings.note, at: Pt(10, detailHeight - 12), size: 8.5,
                        color: RGBA(hex: 0x6B7685)))
         return Sketch(width: detailWidth, height: detailHeight, ops: o)
     }

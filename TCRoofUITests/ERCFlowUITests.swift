@@ -56,7 +56,7 @@ final class ERCFlowUITests: XCTestCase {
 
         app.launchArguments = ["-screen", "job", "-jobKind", "pwa", "-noNotificationPrompt", "YES"]
         app.launch()
-        let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ลำดับ กกพ. · ถึงคิวทีมเรา")).firstMatch
+        let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ลำดับ กกพ. | ถึงคิวทีมเรา")).firstMatch
         XCTAssertTrue(app.staticTexts["เอกสารสถานี กปภ."].waitForExistence(timeout: slow) || line.waitForExistence(timeout: 8))
         for _ in 0..<8 where !line.exists { app.swipeUp() }
         XCTAssertTrue(line.exists, "the job's card should say whose turn it is in the ERC flow")

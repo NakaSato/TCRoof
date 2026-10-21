@@ -190,9 +190,9 @@ extension TankPageWide {
         }
     }
 
-    /// "แปลนหลังคาถังน้ำใส 40 × 40 ม. · หน่วย ม." (a round tank: "… Ø 30 ม. …")
+    /// "แปลนหลังคาถังน้ำใส 40 × 40 ม. | หน่วย ม." (a round tank: "… Ø 30 ม. …")
     var planCaption: String? {
-        Tank.sizeText(values).map { "แปลนหลังคาถังน้ำใส " + $0 + " · หน่วย ม." }
+        Tank.sizeText(values).map { "แปลนหลังคาถังน้ำใส " + $0 + " | หน่วย ม." }
     }
 
     /// The full plan with the span numbers to edit, full screen.

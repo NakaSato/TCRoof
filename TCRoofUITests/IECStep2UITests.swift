@@ -1,6 +1,6 @@
 import XCTest
 
-/// Step 2/7 `ก่อนออน · แรงดัน / กระแส` on iPad (docs/ui/iec62446-step2-before-vi-ipad): continuous mode walks the 3
+/// Step 2/7 `ก่อนออน | แรงดัน / กระแส` on iPad (docs/ui/iec62446-step2-before-vi-ipad): continuous mode walks the 3
 /// unfinished strings through the dialog (V → A → the next string), the values are kept, a failing Voc shows its
 /// alert, and an empty slot can take a string. iPad simulator: `-only-testing:TCRoofUITests/IECStep2UITests`. It
 /// replaces the first installing station's test with the sample (`-iecStep2 YES`).
@@ -33,7 +33,7 @@ final class IECStep2UITests: XCTestCase {
 
     func testContinuousModeMeasuresTheRestAndKeepsThem() {
         var app = launch("todo")
-        let start = button(app, "วัดต่อเนื่อง · เหลือ 3", contains: true)
+        let start = button(app, "วัดต่อเนื่อง | เหลือ 3", contains: true)
         XCTAssertTrue(start.waitForExistence(timeout: slow), "3 strings left on INV1")
         start.tap()
         // INV1ST14, 15, 16: V then A each; the photos are there, so the dialog goes straight on

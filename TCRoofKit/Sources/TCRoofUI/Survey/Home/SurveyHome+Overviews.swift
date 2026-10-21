@@ -113,7 +113,7 @@ extension SurveyHomeView {
         } else {
             HStack(spacing: 12) {
                 pills
-                Text(["\(count) สถานี", note ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                Text(["\(count) สถานี", note ?? ""].filter { !$0.isEmpty }.joined(separator: " | "))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().fixedSize()
             }
         }
@@ -205,7 +205,7 @@ extension SurveyHomeView {
             TCPlanRing(actual: Double(t.actual) / 100, plan: t.plan.map { Double($0) / 100 })
             VStack(alignment: .leading, spacing: 0) {
                 Text("กำลังติดตั้ง \(t.count) สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text("\(number(t.kWp, digits: 1)) kWp · เฉลี่ย \(t.actual)%" + (t.plan.map { " / แผน \($0)%" } ?? ""))
+                Text("\(number(t.kWp, digits: 1)) kWp | เฉลี่ย \(t.actual)%" + (t.plan.map { " / แผน \($0)%" } ?? ""))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 if let plan = t.plan {
                     Text(t.actual >= plan ? "ภาพรวมตามแผน" : "ภาพรวมช้ากว่าแผน \(plan - t.actual)%")
@@ -248,7 +248,7 @@ extension SurveyHomeView {
             VStack(alignment: .leading, spacing: 0) {
                 Text(team.name).font(.sarabunFixed(12, .bold))
                 (Text("\(team.stations) สถานี")
-                 + Text(team.behind > 0 ? " · ช้า \(team.behind)" : "").foregroundStyle(on ? Theme.dangerLine : Theme.dangerText))
+                 + Text(team.behind > 0 ? " | ช้า \(team.behind)" : "").foregroundStyle(on ? Theme.dangerLine : Theme.dangerText))
                     .font(.sarabunFixed(11))
             }
             .lineLimit(1).minimumScaleFactor(0.75)
@@ -269,7 +269,7 @@ extension SurveyHomeView {
         Button { host.openDailyReports?() } label: {
             HStack(spacing: 8) {
                 Image(systemName: "list.clipboard").font(.system(size: 15, weight: .semibold))
-                (Text("รายงานประจำวันวันนี้ ") + Text("\(t.sent)/\(t.reporting)").bold() + Text(" ส่งแล้ว · ยังไม่ส่ง \(t.unsent) สถานี"))
+                (Text("รายงานประจำวันวันนี้ ") + Text("\(t.sent)/\(t.reporting)").bold() + Text(" ส่งแล้ว | ยังไม่ส่ง \(t.unsent) สถานี"))
                     .font(.sarabunFixed(13)).multilineTextAlignment(.leading)
                 Spacer(minLength: 4)
                 if host.openDailyReports != nil { Text("›").font(.sarabunFixed(17)) }
@@ -311,7 +311,7 @@ extension SurveyHomeView {
 
     private func installRow(_ s: InstallStationSummary) -> some View {
         let behind = InstallOverview.pace(s, threshold: threshold) == .behind
-        let who = [s.contractor, s.dueDate.map { "ส่งมอบ " + dayMonth($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: " · ")
+        let who = [s.contractor, s.dueDate.map { "ส่งมอบ " + dayMonth($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: " | ")
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 if let mp = s.mpNumber { Text("MP \(mp)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted) }
@@ -328,7 +328,7 @@ extension SurveyHomeView {
             HStack(spacing: 6) {
                 Text("\(Int(s.actual.rounded()))%").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).fixedSize()
                 if let plan = s.plan { Text("/ แผน \(Int(plan.rounded()))%").fixedSize() }
-                if !s.currentTask.isEmpty { Text("· " + s.currentTask).foregroundStyle(Theme.navy).lineLimit(1) }
+                if !s.currentTask.isEmpty { Text("| " + s.currentTask).foregroundStyle(Theme.navy).lineLimit(1) }
                 Spacer(minLength: 6)
                 Text(who).lineLimit(1).layoutPriority(1)
             }
@@ -402,7 +402,7 @@ extension SurveyHomeView {
             TCPlanRing(actual: Double(t.yield) / 100, tint: Theme.success)
             VStack(alignment: .leading, spacing: 0) {
                 Text("ส่งมอบแล้ว \(t.count) สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text("\(number(t.kWp, digits: 1)) kWp · PR เฉลี่ย \(t.pr.map { "\($0)" } ?? "—")%")
+                Text("\(number(t.kWp, digits: 1)) kWp | PR เฉลี่ย \(t.pr.map { "\($0)" } ?? "—")%")
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 (Text("วันนี้ผลิต ") + Text(number(t.energy, digits: 0)).bold() + Text(" / คาด \(number(t.expected, digits: 0)) kWh"))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.navy)
@@ -487,7 +487,7 @@ extension SurveyHomeView {
             HStack(spacing: 6) {
                 Text(number(s.energy, digits: 0)).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).fixedSize()
                 Text("/ คาด \(number(s.expected, digits: 0)) kWh").fixedSize()
-                Text("· PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%").foregroundStyle(Theme.navy).fixedSize()
+                Text("| PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%").foregroundStyle(Theme.navy).fixedSize()
                 Spacer(minLength: 6)
                 Text(s.note).lineLimit(1)
                 Text("›").font(.sarabunFixed(17)).foregroundStyle(Theme.inkFaint).frame(height: 12).accessibilityHidden(true)
@@ -519,7 +519,7 @@ enum PWAOverviewDemo {
     static let install: [InstallStationSummary] = {
         // the last column is the iPad board's permits, อปท. กกพ. กฟภ. กว.: o got, w handed in, t not handed in, l overdue
         let rows: [(Int, String, Double, Double, Double, String, String, Int, Bool, String)] = [
-            (189, "สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล", 92.34, 38, 50, "2.3 ติดตั้งแผง", "A", 2, true, "twoo"),
+            (189, "สถานีผลิตน้ำทุ่งน้อย | สาขาเมืองพล", 92.34, 38, 50, "2.3 ติดตั้งแผง", "A", 2, true, "twoo"),
             (120, "การประปาวัดชัย", 250, 22, 28, "2.1 โครงสร้าง", "B", 17, false, "owwo"),
             (98, "การประปาบ้านโป่ง", 90, 50, 52, "2.2 สาย DC", "A", -7, false, "oooo"),
             (154, "สถานีจ่ายน้ำแพรกหนามแดง", 209.76, 71, 68, "2.5 อินเวอร์เตอร์", "C", -1, true, "oowo"),
@@ -543,7 +543,7 @@ enum PWAOverviewDemo {
     static let maintenance: [MaintenanceStationSummary] = [
         .init(id: "demo-12", mpNumber: 12, name: "สถานีผลิตน้ำบางเลน", kWp: 180, energy: 612, expected: 650, pr: 81, nextPM: day(7), note: "PM " + short(7)),
         .init(id: "demo-25", mpNumber: 25, name: "สถานีผลิตน้ำนครชัยศรี", kWp: 220, energy: 410, expected: 790, pr: 63, status: .alarm, openRepairs: 1,
-              nextPM: day(21), note: "INV 2 fault · 2 วัน"),
+              nextPM: day(21), note: "INV 2 fault | 2 วัน"),
         .init(id: "demo-31", mpNumber: 31, name: "สถานีผลิตน้ำพุทธมณฑล", kWp: 150, energy: 530, expected: 540, pr: 84, nextPM: day(27), note: "PM " + short(27)),
         .init(id: "demo-44", mpNumber: 44, name: "สถานีผลิตน้ำสามพราน", kWp: 120, energy: 0, expected: 430, pr: 0, status: .offline, openRepairs: 1,
               nextPM: day(15), note: "ไม่มีข้อมูล 6 ชม."),
@@ -552,9 +552,9 @@ enum PWAOverviewDemo {
     ]
 
     static let tasks: [MaintenanceTask] = [
-        .init(id: "t1", date: day(2), title: "ล้างแผง · กำแพงแสน (MP 52)", assignee: "ผู้รับเหมา B"),
-        .init(id: "t2", date: day(7), title: "PM รอบ 6 เดือน · บางเลน (MP 12)", assignee: "ทีม TC"),
-        .init(id: "t3", date: day(11), title: "PM รอบ 6 เดือน · ดอนตูม (MP 7)", assignee: "ทีม TC"),
+        .init(id: "t1", date: day(2), title: "ล้างแผง | กำแพงแสน (MP 52)", assignee: "ผู้รับเหมา B"),
+        .init(id: "t2", date: day(7), title: "PM รอบ 6 เดือน | บางเลน (MP 12)", assignee: "ทีม TC"),
+        .init(id: "t3", date: day(11), title: "PM รอบ 6 เดือน | ดอนตูม (MP 7)", assignee: "ทีม TC"),
     ]
 
     private static func short(_ offset: Int) -> String {

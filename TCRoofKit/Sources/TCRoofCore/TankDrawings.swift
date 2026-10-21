@@ -39,7 +39,7 @@ public enum TankDrawings {
             o.append(.rect(Box(x, ly - 5, 12, 10), stroke: RGBA(hex: 0xCBD5E1), fill: heatColours[i], width: 0.5))
             o.append(.text(t, at: Pt(x + 16, ly), size: 8.5, color: ink)); x += 16 + ApproxText.width(t, size: 8.5) + 18
         }
-        o.append(.text("แดดจัดเต็มท้องฟ้า (ค่าสมมติ) · แผงที่โดนเงาเสียแดดตรง เก็บแสงกระจาย", at: Pt(16, h - 8), size: 8, color: muted))
+        o.append(.text("แดดจัดเต็มท้องฟ้า (ค่าสมมติ) | แผงที่โดนเงาเสียแดดตรง เก็บแสงกระจาย", at: Pt(16, h - 8), size: 8, color: muted))
         return Sketch(width: W, height: h, ops: o)
     }
 
@@ -76,7 +76,7 @@ public enum TankDrawings {
         o.append(.line(Pt(c.x - d.x * 9, c.y - d.y * 9), Pt(c.x + d.x * 9, c.y + d.y * 9), width: 1.6, color: navy))
         let tip = Pt(c.x + d.x * 9, c.y + d.y * 9), n = Pt(-d.y * 4, d.x * 4)
         o.append(.polygon([Pt(tip.x + d.x * 5, tip.y + d.y * 5), Pt(tip.x + n.x, tip.y + n.y), Pt(tip.x - n.x, tip.y - n.y)], stroke: nil, fill: navy))
-        o.append(.text("แผงลาดลงด้าน" + wall + String(format: " · เอียง %.1f°", l.params.tilt), at: Pt(c.x + 18, c.y), size: 9, bold: true, color: navy))
+        o.append(.text("แผงลาดลงด้าน" + wall + String(format: " | เอียง %.1f°", l.params.tilt), at: Pt(c.x + 18, c.y), size: 9, bold: true, color: navy))
         return Sketch(width: plan.sketch.width, height: plan.sketch.height, ops: o)
     }
 
@@ -92,8 +92,8 @@ public enum TankDrawings {
         let name = across ? "รูปตัด 2–2" : "รูปตัด 1–1"
         var o: [DrawOp] = []
         // a round tank (one span of D each way): cut through the centre, across the diameter
-        let title = Tank.isRound(v) ? name + " · ตัดผ่านศูนย์กลาง" + String(format: " · Ø %@ ม.", fmt(L))
-            : name + " · ตัดที่กึ่งกลาง" + (across ? "แนว A…" : "แนว 1…") + String(format: " · ยาว %@ ม.", fmt(L))
+        let title = Tank.isRound(v) ? name + " | ตัดผ่านศูนย์กลาง" + String(format: " | Ø %@ ม.", fmt(L))
+            : name + " | ตัดที่กึ่งกลาง" + (across ? "แนว A…" : "แนว 1…") + String(format: " | ยาว %@ ม.", fmt(L))
         o.append(.text(title, at: Pt(16, 16), size: 12, bold: true, color: ink))
         guard let H = Tank.height(v), H > 0 else {
             o.append(.text("ใส่ความสูงถังเพื่อวาดรูปตัด", at: Pt(W / 2, 60), size: 13, color: muted, align: .center))
@@ -152,7 +152,7 @@ public enum TankDrawings {
         if let sum = Tank.summary(v) {
             o.append(.text(sum.text, at: Pt(16, baseY + t + 40), size: 9, bold: true, color: ink))
         }
-        o.append(.text(String(format: "ผนังและพื้น %.2f ม.", wall) + (buried ? String(format: " · ดินถมบนหลังคา %.2f ม.", cover) : "") + " (ค่าสมมติ) · "
+        o.append(.text(String(format: "ผนังและพื้น %.2f ม.", wall) + (buried ? String(format: " | ดินถมบนหลังคา %.2f ม.", cover) : "") + " (ค่าสมมติ) | "
                        + note, at: Pt(16, baseY + t + 53), size: 8, color: muted))
         let h = baseY + t + 64
         return Sketch(width: W, height: h, ops: [.rect(Box(0, 0, W, h), stroke: nil, fill: .white)] + o)
@@ -169,7 +169,7 @@ public enum TankDrawings {
     public static func tableSection(_ p: TankLayout.Params, width W: Double = 760) -> Sketch {
         let h0 = 272.0
         var o: [DrawOp] = [.rect(Box(0, 0, W, h0), stroke: nil, fill: .white)]
-        o.append(.text("รูปตัดแถวแผงบนหลังคาถัง (มาตรฐาน) · หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
+        o.append(.text("รูปตัดแถวแผงบนหลังคาถัง (มาตรฐาน) | หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
         let span = p.frontIn + 2 * p.postDY + p.rowGap + (p.depth - p.frontIn - p.postDY) + 0.8
         let k = min((W - 80) / (span + 0.4), 130 / (p.hBack + 0.8))
         let x0 = 40 + (p.frontIn + 0.4) * k, roofY = 192.0
@@ -215,7 +215,7 @@ public enum TankDrawings {
         o.append(.text(String(format: "ปล่อง %.2f", p.ventH), at: Pt(X(vx + vw) + 4, Y(p.ventH * 0.4)), size: 8.5, color: vent))
         o.append(.text(String(format: "ปล่องระบายอยู่ใต้แผงได้เมื่อเหลือช่องว่าง ≥ %.2f ม. (ในรูป %.2f ม.)", p.underClear, room), at: Pt(16, h0 - 24),
                        size: 8.5, color: room >= p.underClear ? ok : vent))
-        o.append(.text(String(format: "ฐานราก %.0f×%.0f×150 มม. ยึดพื้นหลังคา · ค้ำ X ทุกช่วงเสา · ราง 4 เส้นต่อโต๊ะ · แผง 2 แผงตามแนวลาด",
+        o.append(.text(String(format: "ฐานราก %.0f×%.0f×150 มม. ยึดพื้นหลังคา | ค้ำ X ทุกช่วงเสา | ราง 4 เส้นต่อโต๊ะ | แผง 2 แผงตามแนวลาด",
                               p.footing * 1000, p.footing * 1000), at: Pt(16, h0 - 10), size: 8.5, color: muted))
         return Sketch(width: W, height: h0, ops: o)
     }
@@ -244,7 +244,7 @@ extension TankDrawings {
         func X(_ m: Double) -> Double { x0 + m * k }
         func Y(_ m: Double) -> Double { roofY - m * k }
         var o: [DrawOp] = [.rect(Box(0, 0, W, h0), stroke: nil, fill: .white)]
-        o.append(.text("รูปด้านหน้าโต๊ะแผง แถว \(t.row + 1) · \(t.columns) คอลัมน์ × 2 แผง · หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
+        o.append(.text("รูปด้านหน้าโต๊ะแผง แถว \(t.row + 1) | \(t.columns) คอลัมน์ × 2 แผง | หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
         // slab
         o.append(.rect(Box(X(-0.6), roofY, (L + 1.2) * k, 7), stroke: ink, fill: concrete, width: 0.8))
         // posts: the back one behind, lighter; footings
@@ -285,7 +285,7 @@ extension TankDrawings {
         dimH(0, L, roofY + 48, String(format: "ยาว %.2f", L))
         o.append(.text(String(format: "%.2f", p.hFront), at: Pt(X(0) - 6, Y(p.hFront / 2)), size: 9, bold: true, color: dim, align: .right))
         let bays = zip(xs, xs.dropFirst()).map { $1 - $0 }
-        o.append(.text(String(format: "เสา %d คู่ (หน้า %.2f / หลัง %.2f ม.) · ช่วงเสามากสุด %.2f ม. · ค้ำ X ทุกช่วงเสา แนวหน้าและแนวหลัง · ราง 4 เส้น · ฐานราก %.0f×%.0f×150 มม. ทุกเสา",
+        o.append(.text(String(format: "เสา %d คู่ (หน้า %.2f / หลัง %.2f ม.) | ช่วงเสามากสุด %.2f ม. | ค้ำ X ทุกช่วงเสา แนวหน้าและแนวหลัง | ราง 4 เส้น | ฐานราก %.0f×%.0f×150 มม. ทุกเสา",
                               xs.count, p.hFront, p.hBack, bays.max() ?? 0, p.footing * 1000, p.footing * 1000),
                        at: Pt(16, h0 - 10), size: 8.5, color: muted))
         return Sketch(width: W, height: h0, ops: o)
@@ -309,20 +309,20 @@ extension TankLayout {
         return SolarModel.yield(lat: latitude, tilt: params.tilt, azimuthFromSouth: fromSouth)
     }
 
-    /// `ผังแผงอัตโนมัติ 410 แผง · 233.7 kWp · 340.2 MWh/ปี · 13 โต๊ะ · 7 แถว · เอียง 19.7°`
+    /// `ผังแผงอัตโนมัติ 410 แผง | 233.7 kWp | 340.2 MWh/ปี | 13 โต๊ะ | 7 แถว | เอียง 19.7°`
     public func summaryLine(latitude: Double, facing: Double?) -> String {
         let e = kWp * yield(latitude: latitude, facing: facing) / 1000
-        return "ผังแผงอัตโนมัติ \(count) แผง · " + String(format: "%.1f kWp · %.1f MWh/ปี · ", kWp, e)
-            + "\(builtTables.count) โต๊ะ · \(rows) แถว · " + String(format: "เอียง %.1f°", params.tilt)
-            + (params.rowGap > params.standardGap + 1e-6 ? String(format: " · แถวห่าง %.2f ม.", params.rowGap) : "")
+        return "ผังแผงอัตโนมัติ \(count) แผง | " + String(format: "%.1f kWp | %.1f MWh/ปี | ", kWp, e)
+            + "\(builtTables.count) โต๊ะ | \(rows) แถว | " + String(format: "เอียง %.1f°", params.tilt)
+            + (params.rowGap > params.standardGap + 1e-6 ? String(format: " | แถวห่าง %.2f ม.", params.rowGap) : "")
     }
 
-    /// `BOQ: เสา 198 · ฐานราก 198 · ราง 1,234.5 ม. · ตัวยึดราง 396 · ตัวจับกลาง … · ค้ำ X … · กราวด์ 13`
+    /// `BOQ: เสา 198 | ฐานราก 198 | ราง 1,234.5 ม. | ตัวยึดราง 396 | ตัวจับกลาง … | ค้ำ X … | กราวด์ 13`
     public var boqLine: String {
         let b = bom
-        return String(format: "BOQ: เสา %d · ฐานราก %d · คานรับราง %d · ราง %.1f ม. · ตัวยึดราง %d · ตัวจับกลาง %d · ตัวจับปลาย %d · ค้ำ X %d · กราวด์ %d",
+        return String(format: "BOQ: เสา %d | ฐานราก %d | คานรับราง %d | ราง %.1f ม. | ตัวยึดราง %d | ตัวจับกลาง %d | ตัวจับปลาย %d | ค้ำ X %d | กราวด์ %d",
                       b.posts, b.footings, b.rafters, b.railLength, b.railClamps, b.midClamps, b.endClamps, b.braces, b.groundLugs)
-            + (checks.cutColumns > 0 ? " · ตัดแผง \(checks.cutColumns) คอลัมน์" : "")
+            + (checks.cutColumns > 0 ? " | ตัดแผง \(checks.cutColumns) คอลัมน์" : "")
     }
 
     /// The three checks as one line.
@@ -332,7 +332,7 @@ extension TankLayout {
         parts.append(c.ventsUnder > 0 ? String(format: "ปล่องใต้แผง %d จุด เหลือ ≥ %.2f ม.", c.ventsUnder, c.ventHeadroom ?? 0) : "ไม่มีปล่องใต้แผง")
         parts.append(String(format: "ห่างขอบถัง %.2f ม.", c.edge ?? 0))
         parts.append(c.legsOK ? "ขาไม่ชนสิ่งกีดขวาง" : "ขาชนสิ่งกีดขวาง")
-        return "ตรวจ \(c.passed)/3: " + parts.joined(separator: " · ")
+        return "ตรวจ \(c.passed)/3: " + parts.joined(separator: " | ")
     }
 
     /// What the report assumed.

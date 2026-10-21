@@ -67,7 +67,7 @@ struct AddWorkSheet: View {
                         }
                     }
                 } footer: {
-                    Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง · ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
+                    Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง | ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
                 }
                 PadSection("รายละเอียด") {
                     TextField(task?.title ?? "รายละเอียดงาน", text: $description, axis: .vertical)
@@ -136,7 +136,7 @@ struct DailySignSheet: View {
                 PadSection("Site Engineer") {
                     TextField("ชื่อผู้ลงนาม", text: $engineer)
                 }
-                SignatureField(signature: $signature)
+                SignatureField(signature: $signature, mine: true)
                 PadSection {
                     Text("ลงนามแล้วระบบจะสร้าง PDF เก็บในเอกสารโครงการ (อัปโหลดขึ้น Drive ได้จากหน้างาน) และอัปเดตความก้าวหน้าในแผน MP")
                         .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
@@ -202,10 +202,14 @@ struct InspectorAckSheet: View {
 /// ลายมือชื่อ, optional: drawn with Apple Pencil or a finger; printed on the DAILY REPORT's page 3 when given.
 struct SignatureField: View {
     @Binding var signature: Data?
+    /// The signed-in person signs: offer their saved signature (`MySignature`).
+    var mine = false
 
     var body: some View {
         PadSection("ลายมือชื่อ (ไม่บังคับ)") {
-            SignaturePad(signature: $signature)
+            Group {
+                if mine { AccountSignatureCanvas(signature: $signature) } else { SignaturePad(signature: $signature) }
+            }
                 .frame(height: 180)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.45)))
@@ -216,9 +220,10 @@ struct SignatureField: View {
                     }
                 }
                 .accessibilityIdentifier("signaturePad")
+            if mine { MySignatureActions(signature: $signature) }
             Button("ล้างลายเซ็น") { signature = nil }.disabled(signature == nil).frame(minHeight: touchMin)
         } footer: {
-            Text("พิมพ์ในหน้า 3 ของรายงาน · ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
+            Text("พิมพ์ในหน้า 3 ของรายงาน | ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
         }
     }
 }
@@ -286,7 +291,7 @@ struct RoutineSettingsSheet: View {
                     TextField("ชื่อสัญญา / โครงการ", text: $s.contractName, axis: .vertical)
                     TextField("ผู้ว่าจ้าง", text: $s.employer)
                     TextField("ผู้รับจ้าง", text: $s.contractor)
-                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) · เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
+                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) | เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
                     TextField("Site Engineer", text: $s.siteEngineer)
                     TextField("Inspector", text: $s.inspector)
                 }

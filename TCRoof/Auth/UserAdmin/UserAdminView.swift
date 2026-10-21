@@ -126,7 +126,7 @@ struct UserAdminView: View {
             .accessibilityLabel("กลับไปตั้งค่า")
             VStack(alignment: .leading, spacing: 0) {
                 Text("จัดการผู้ใช้และสิทธิ์").font(.sarabun(24, .bold))
-                Text("โหมดนักพัฒนา · \(UserRole.allCases.count) บทบาท · members/<email>.role").font(.sarabun(14)).opacity(0.9)
+                Text("โหมดนักพัฒนา | \(UserRole.allCases.count) บทบาท | members/<email>.role").font(.sarabun(14)).opacity(0.9)
             }
             .foregroundStyle(Theme.onPrimary)
             .lineLimit(1)
@@ -175,8 +175,8 @@ struct UserAdminView: View {
     }
 
     var syncLine: String {
-        guard let at = store.lastSync else { return store.offline ? "ออฟไลน์ · ข้อมูลในเครื่อง" : "กำลังซิงก์…" }
-        return (store.offline ? "ออฟไลน์ · " : "") + "ซิงก์ล่าสุด " + ThaiFormat.numericDate.string(from: at) + " " + ThaiFormat.time.string(from: at)
+        guard let at = store.lastSync else { return store.offline ? "ออฟไลน์ | ข้อมูลในเครื่อง" : "กำลังซิงก์…" }
+        return (store.offline ? "ออฟไลน์ | " : "") + "ซิงก์ล่าสุด " + ThaiFormat.numericDate.string(from: at) + " " + ThaiFormat.time.string(from: at)
     }
 
     @ViewBuilder
@@ -201,7 +201,7 @@ struct UserAdminView: View {
             HStack(spacing: 12) {
                 Circle().fill(Theme.pendingYellow).frame(width: 10, height: 10)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("แก้ไข \(store.pendingCount) รายการ · ยังไม่บันทึก").font(.sarabun(14, .bold))
+                    Text("แก้ไข \(store.pendingCount) รายการ | ยังไม่บันทึก").font(.sarabun(14, .bold))
                         .accessibilityIdentifier("userAdmin.pending")
                     Text("บันทึกแล้วจะซิงก์ members/<email>.role ให้ทุกเครื่อง").font(.sarabun(12)).opacity(0.8)
                 }
@@ -248,7 +248,7 @@ struct UserAdminView: View {
             Theme.navySolid.opacity(0.45).ignoresSafeArea()
             VStack(alignment: .leading, spacing: 12) {
                 Text("ส่งคำเชิญ").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
-                Text("บันทึกแล้ว · ส่งคำเชิญให้เขาเข้าสู่ระบบด้วยบัญชี Google นี้").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                Text("บันทึกแล้ว | ส่งคำเชิญให้เขาเข้าสู่ระบบด้วยบัญชี Google นี้").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 ForEach(sent) { inv in
                     ShareLink(item: store.inviteText(inv)) {
                         Label("ส่งคำเชิญ \(inv.email)", systemImage: "paperplane")
@@ -290,14 +290,14 @@ struct UserAdminView: View {
         roleFilter = nil
         selected = email
         if compact { tab = .users; phoneDetail = email }
-        toast = "เพิ่ม \(email) แล้ว · กดบันทึกและซิงก์เพื่อส่งคำเชิญ"
+        toast = "เพิ่ม \(email) แล้ว | กดบันทึกและซิงก์เพื่อส่งคำเชิญ"
     }
 
     func save() {
         let n = store.pendingCount
         roleEditing = nil
         guard let saved = store.save(by: me, assign: assign) else { return }
-        toast = "บันทึกแล้ว · ซิงก์ members/<email>.role · \(n) รายการ"
+        toast = "บันทึกแล้ว | ซิงก์ members/<email>.role | \(n) รายการ"
         if !store.demo { sent = saved.invites }
     }
 

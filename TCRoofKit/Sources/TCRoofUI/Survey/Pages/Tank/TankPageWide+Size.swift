@@ -88,7 +88,7 @@ extension TankPageWide {
             AnyView(surfaceRow)
             AnyView(azimuthField)
             if fill { Spacer(minLength: 8) }
-            nextButton("ถัดไป · สิ่งกีดขวาง ›") { withAnimation { tab = 2 } }.padding(.top, fill ? 0 : 6)
+            nextButton("ถัดไป | สิ่งกีดขวาง ›") { withAnimation { tab = 2 } }.padding(.top, fill ? 0 : 6)
         })
     }
 
@@ -248,14 +248,14 @@ extension TankPageWide {
         return Menu {
             ForEach(Tank.presets, id: \.name) { p in
                 Button { choose(p) } label: {
-                    if cur == p { Label(p.name + " · " + p.sub, systemImage: "checkmark") } else { Text(p.name + " · " + p.sub) }
+                    if cur == p { Label(p.name + " | " + p.sub, systemImage: "checkmark") } else { Text(p.name + " | " + p.sub) }
                 }
             }
             Divider()
             Button("+ กำหนดขนาดเอง (กว้าง × ยาว)") { customSize() }
         } label: {
             HStack(spacing: 6) {
-                Text(shown.map { $0.name + " · " + $0.sub } ?? "เลือกจากรายการ").font(.sarabunFixed(16, shown == nil ? .regular : .semibold))
+                Text(shown.map { $0.name + " | " + $0.sub } ?? "เลือกจากรายการ").font(.sarabunFixed(16, shown == nil ? .regular : .semibold))
                     .foregroundStyle(shown == nil ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 4)
                 dropIcon
@@ -270,7 +270,7 @@ extension TankPageWide {
             Button { sizeOpen.toggle() } label: {
                 HStack(spacing: 6) {
                     if let shown {
-                        (Text(shown.name).font(.sarabunFixed(17, .bold)) + Text(" · " + shown.sub).font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
+                        (Text(shown.name).font(.sarabunFixed(17, .bold)) + Text(" | " + shown.sub).font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
                             .lineLimit(1).minimumScaleFactor(0.7)
                     } else {
                         Text("เลือกจากรายการ").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)

@@ -115,7 +115,7 @@ final class TankDesignTests: XCTestCase {
         let s = TankDesign.summary(v)!
         XCTAssertEqual(s.design, "ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด)")
         XCTAssertEqual([s.matches, s.moved, s.absent, s.added, s.open], [1, 1, 1, 1, 18])
-        XCTAssertEqual(s.counts, "ตรงแบบ 1 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยังไม่ตรวจ 18")
+        XCTAssertEqual(s.counts, "ตรงแบบ 1 | ย้าย 1 | ไม่มีจริง 1 | เพิ่มหน้างาน 1 | ยังไม่ตรวจ 18")
         XCTAssertEqual(s.differences[0], "V3 ย้าย 4.00 ม. (21.27, 1.27 → 17.27, 1.27)")
         XCTAssertEqual(s.differences[1], "V6 ไม่มีจริง")
         XCTAssertTrue(s.differences[2].hasPrefix("L4 เพิ่มหน้างาน"), s.differences[2])
@@ -144,7 +144,7 @@ final class TankDesignTests: XCTestCase {
         XCTAssertTrue(TankPoints.done(v))
         var s = TankDesign.summary(v)!
         XCTAssertEqual([s.matches, s.absent, s.bulk, s.open], [1, 1, 19, 0])
-        XCTAssertEqual(s.counts, "ตรงแบบ 1 · ย้าย 0 · ไม่มีจริง 1 · เพิ่มหน้างาน 0 · ยืนยันแบบรวม 19")
+        XCTAssertEqual(s.counts, "ตรงแบบ 1 | ย้าย 0 | ไม่มีจริง 1 | เพิ่มหน้างาน 0 | ยืนยันแบบรวม 19")
         list = TankPoints.points(v)
         XCTAssertFalse(list[0].bulk)
         TankPoints.setStatus(&v, list[2].id, TankPoints.ok)

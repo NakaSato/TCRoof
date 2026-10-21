@@ -102,10 +102,10 @@ public struct TankStandard: Codable, Equatable, Sendable {
         return out
     }
 
-    /// `เอียง 19.7° · ระยะแถว 5.50 ม. · แผง 570 W`
+    /// `เอียง 19.7° | ระยะแถว 5.50 ม. | แผง 570 W`
     public var summary: String {
         let p = params
-        return String(format: "เอียง %.1f° · ระยะแถว %.2f ม. · แผง %.0f W", p.tilt, p.rowPitch, moduleKW * 1000)
+        return String(format: "เอียง %.1f° | ระยะแถว %.2f ม. | แผง %.0f W", p.tilt, p.rowPitch, moduleKW * 1000)
     }
 
     // MARK: Codable (a field missing from an older or newer document keeps the built-in value)

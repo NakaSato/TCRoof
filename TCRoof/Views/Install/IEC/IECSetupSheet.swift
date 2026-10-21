@@ -70,7 +70,7 @@ struct IECSetupSheet: View {
         } header: {
             Text("Inverter \(i + 1)")
         } footer: {
-            Text("ใส่จำนวนแผงของแต่ละช่องสตริง ช่องที่เว้นว่างคือไม่มีสตริง · \(report.inverters[i].strings.count) สตริง")
+            Text("ใส่จำนวนแผงของแต่ละช่องสตริง ช่องที่เว้นว่างคือไม่มีสตริง | \(report.inverters[i].strings.count) สตริง")
         }
     }
 

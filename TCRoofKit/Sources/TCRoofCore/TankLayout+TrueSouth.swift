@@ -36,11 +36,11 @@ extension TankLayout {
         public var south: TrueSouth
         /// The true-south layout's energy against the wall's (−0.087 is 8.7 % less).
         public var change: Double { wall.mwh > 0 ? south.mwh / wall.mwh - 1 : 0 }
-        /// `หันทิศใต้จริง (หมุนแถว 12°): 368 แผง · 321.3 MWh/ปี · น้อยกว่า 8.7% (เทียบเท่านั้น)`
+        /// `หันทิศใต้จริง (หมุนแถว 12°): 368 แผง | 321.3 MWh/ปี | น้อยกว่า 8.7% (เทียบเท่านั้น)`
         public var line: String {
             let d = abs(change) * 100
             let word = abs(change) < 0.0005 ? "เท่ากัน" : String(format: "%@กว่า %.1f%%", change < 0 ? "น้อย" : "มาก", d)
-            return String(format: "หันทิศใต้จริง (หมุนแถว %.0f°): %d แผง · %.1f MWh/ปี · %@ (เทียบเท่านั้น)",
+            return String(format: "หันทิศใต้จริง (หมุนแถว %.0f°): %d แผง | %.1f MWh/ปี | %@ (เทียบเท่านั้น)",
                           abs(south.wallOffset), south.count, south.mwh, word)
         }
     }

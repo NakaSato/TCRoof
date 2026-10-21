@@ -68,9 +68,9 @@ final class ProjectFeedTests: XCTestCase {
         XCTAssertEqual(posts.map(\.id), ["daily-a-2026-10-12", "daily-a-2026-10-11"])
         let p = posts[0]
         XCTAssertEqual(p.kind, .progress)
-        XCTAssertEqual(p.who, "ทีม TCR01 · สมชาย")
+        XCTAssertEqual(p.who, "ทีม TCR01 | สมชาย")
         XCTAssertEqual(p.initials, "1")
-        XCTAssertTrue(p.place.hasPrefix("MP 189 ทุ่งน้อย · 2.3 "))
+        XCTAssertTrue(p.place.hasPrefix("MP 189 ทุ่งน้อย | 2.3 "))
         XCTAssertEqual(p.photos, ["p1", "p2"])
         XCTAssertEqual(p.chips.first, .init("+6% วันนี้", .green))
         XCTAssertEqual(p.source, .dailyReport(project: "a", day: d(12)))
@@ -147,8 +147,8 @@ final class ProjectFeedTests: XCTestCase {
         let s = home([punch("รอยรั่วที่ครอบหลังคา", raised: d(12, 14), due: d(13)), punch("", raised: d(12, 14)), punch("เก่า", raised: nil)])
         let posts = records([s], now: d(12, 17))
         XCTAssertEqual(posts.count, 1)
-        XCTAssertEqual(posts[0].who, "ทีม TCR02 · งานบ้าน")
-        XCTAssertEqual(posts[0].place, "TC-0012 · ติดตั้ง Day 2/5")
+        XCTAssertEqual(posts[0].who, "ทีม TCR02 | งานบ้าน")
+        XCTAssertEqual(posts[0].place, "TC-0012 | ติดตั้ง Day 2/5")
         XCTAssertEqual(posts[0].issue, .init(owner: "ช่างตัวอย่าง", due: d(13), fixed: false, canFix: false))
         XCTAssertEqual(FeedBuilder.when(posts[0], now: d(12, 17)), "3 ชม.")
     }

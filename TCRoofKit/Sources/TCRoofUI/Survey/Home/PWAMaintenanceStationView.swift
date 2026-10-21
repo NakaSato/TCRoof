@@ -94,7 +94,7 @@ public struct PWAMaintenanceStationView: View {
                     Button("แชร์ข้อมูลสถานี") {}
                     Button("รีเฟรชข้อมูล") {}
                 } label: {
-                    Text("···")
+                    Text("…")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(Theme.onPrimary)
                         .frame(width: 44, height: 44)
@@ -111,7 +111,7 @@ public struct PWAMaintenanceStationView: View {
                 .lineLimit(1)
                 .accessibilityIdentifier("stationDetail.title")
 
-            Text("\(station.kWp.formatted(.number.precision(.fractionLength(0...1)))) kWp · ส่งมอบ \(detail.handoverDate) · \(detail.contractor)")
+            Text("\(station.kWp.formatted(.number.precision(.fractionLength(0...1)))) kWp | ส่งมอบ \(detail.handoverDate) | \(detail.contractor)")
                 .font(.sarabunFixed(13))
                 .foregroundStyle(Theme.onPrimary.opacity(0.92))
                 .lineLimit(1)

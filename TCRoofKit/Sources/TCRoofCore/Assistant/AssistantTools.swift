@@ -255,7 +255,7 @@ public extension Assistant {
                 guard okS, okF else { return error("วันที่ต้องเป็น yyyy-MM-dd") }
                 let today = ScheduleBrief.day(self.today, calendar: calendar)
                 guard (s ?? "") <= today, (f ?? "") <= today else { return error("วันที่จริงต้องไม่เกินวันนี้") }
-                let show = { (s: String?, f: String?) in "เริ่ม \(s ?? "–") · เสร็จ \(f ?? "–")" }
+                let show = { (s: String?, f: String?) in "เริ่ม \(s ?? "–") | เสร็จ \(f ?? "–")" }
                 let before = show(job.actual.started[task.rawValue].map { ScheduleBrief.day($0, calendar: calendar) },
                                   job.actual.finished[task.rawValue].map { ScheduleBrief.day($0, calendar: calendar) })
                 return propose(job, task, .dates(task: task, started: s, finished: f), before: before, after: show(s, f))

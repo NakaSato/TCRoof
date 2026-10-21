@@ -57,8 +57,8 @@ final class TankRoundTests: XCTestCase {
         let s = try XCTUnwrap(Tank.summary(round(10)))
         XCTAssertEqual(s.roofArea, Double.pi * 25, accuracy: 1e-9)
         XCTAssertEqual(try XCTUnwrap(s.grossVolume), 392.699, accuracy: 0.001)
-        XCTAssertEqual(s.text, "Ø 10.00 × 5.00 ม. · หลังคา 79 ม² · ปริมาตรภายนอกโดยประมาณ 393 ม³")
-        XCTAssertEqual(try XCTUnwrap(Tank.summary(round(30, height: nil))).text, "Ø 30.00 ม. · หลังคา 707 ม²")
+        XCTAssertEqual(s.text, "Ø 10.00 × 5.00 ม. | หลังคา 79 ม² | ปริมาตรภายนอกโดยประมาณ 393 ม³")
+        XCTAssertEqual(try XCTUnwrap(Tank.summary(round(30, height: nil))).text, "Ø 30.00 ม. | หลังคา 707 ม²")
     }
 
     func testSizeDoneAndCompletionCountTheDiameter() throws {
@@ -156,7 +156,7 @@ final class TankRoundTests: XCTestCase {
         let t = texts(sheet.sketch)
         XCTAssertTrue(t.contains("Ø 30.00"))
         XCTAssertTrue(t.contains("แปลนหลังคาถังน้ำใสทรงกลม Ø 30 ม."))
-        XCTAssertTrue(t.contains("Ø 30.00 × 5.00 ม. · หลังคา 707 ม² · ปริมาตรภายนอกโดยประมาณ 3,534 ม³"))
+        XCTAssertTrue(t.contains("Ø 30.00 × 5.00 ม. | หลังคา 707 ม² | ปริมาตรภายนอกโดยประมาณ 3,534 ม³"))
         XCTAssertEqual(t.filter { $0 == "1" }.count, 2); XCTAssertEqual(t.filter { $0 == "2" }.count, 2)
         // the frame is the bounding square, and the PDF / Excel picture is the printed plan
         XCTAssertEqual(sheet.frame.k * 30, sheet.sketch.ops.compactMap { op -> Double? in if case let .circle(_, r, _, _, w) = op, w == 1.4 { return 2 * r }; return nil }.first!, accuracy: 1e-9)

@@ -11,7 +11,7 @@ enum PWADocsDemo {
                              current: StationDocs.Package, next: String, status: StationDocs.Status, due: Int, handover: Int)
 
     private static let rows: [Row] = [
-        (189, "สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล", 92.34, "A", .notify, .building, "building_exempt_notice", .draft, 0, 3),
+        (189, "สถานีผลิตน้ำทุ่งน้อย | สาขาเมืองพล", 92.34, "A", .notify, .building, "building_exempt_notice", .draft, 0, 3),
         (120, "การประปาวัดชัย", 250, "B", .notify, .gridConnection, "owner_signoff", .requested, 6, 18),
         (98, "การประปาบ้านโป่ง", 90, "A", .notify, .handover, "punch_list", .missing, 8, 9),
         (154, "สถานีจ่ายน้ำแพรกหนามแดง", 209.76, "C", .notify, .pk2, "install_photo_report", .draft, 5, 12),

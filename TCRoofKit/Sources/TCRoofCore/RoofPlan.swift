@@ -368,7 +368,7 @@ private struct Drawer {
     /// The roof PV layout (docs/specs/roof-pv-layout.md §4): each face's usable area, purlins and shade, the modules
     /// (dashed red on a face switched off), cut slots in red, removed slots dashed, rails and L-feet, and a label per face.
     mutating func pvMount(_ m: RoofMountLayout, selected: Set<RoofMountLayout.SlotRef>) {
-        let s = m.standard
+        let w = m.moduleAlong, l = m.moduleUp
         func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
         let green = RGBA(hex: 0x2EAD4B), shadeFill = RGBA(hex: 0xFBE3C8), cutRed = RGBA(hex: 0xE0433A), railInk = RGBA(hex: 0x334155)
         for f in m.faces {
@@ -392,8 +392,8 @@ private struct Drawer {
             for (r, row) in f.rows.enumerated() {
                 for (c, slot) in row.slots.enumerated() {
                     let ref = RoofMountLayout.SlotRef(face: face.id, row: r, column: c)
-                    let poly = [P(face, slot.u, row.v), P(face, slot.u + s.moduleWidth, row.v),
-                                P(face, slot.u + s.moduleWidth, row.v + s.moduleLength), P(face, slot.u, row.v + s.moduleLength)]
+                    let poly = [P(face, slot.u, row.v), P(face, slot.u + w, row.v),
+                                P(face, slot.u + w, row.v + l), P(face, slot.u, row.v + l)]
                     let on = selected.contains(ref)
                     if slot.isModule {
                         if f.used {
@@ -420,9 +420,16 @@ private struct Drawer {
                     }
                 }
             }
-            // ใต้ · 105 แผง, kept on the plan (the tab lists each face's yield)
+            // rails up the slope, across the purlins
+            for run in f.columnRuns where f.used {
+                for (u, feet) in zip(run.railsAt, run.feet) {
+                    add(.line(P(face, u, run.start), P(face, u, run.end), width: 0.6, color: railInk, dash: []), "rail")
+                    for v in feet { add(.circle(P(face, u, v), r: 1.1, stroke: nil, fill: railInk), "foot") }
+                }
+            }
+            // ใต้ | 105 แผง, kept on the plan (the tab lists each face's yield)
             let c = P(face, face.centre.x, face.centre.y)
-            let label = RoofFace.direction(face.azimuth) + " · \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
+            let label = RoofFace.direction(face.azimuth) + " | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
             let half = ApproxText.width(label, size: 10.5, bold: true) / 2 + 8
             let cx = min(max(c.x, L.origin.x + half), L.origin.x + L.lx * k - half)
             // drawn on the sketch directly (`text` maps design units)

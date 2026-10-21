@@ -56,7 +56,7 @@ final class RoofTrussTests: XCTestCase {
         let v = roof(.howe), s = try XCTUnwrap(RoofTruss.schedule(v))
         // T1 on the three grid lines inside, as the plan draws them
         XCTAssertEqual(s.frames, 3)
-        XCTAssertEqual(s.summary, "โครง T1 3 ชุด · ช่วง 16.00 ม. · ยาวตามสัน 24.00 ม. · มุม 15°")
+        XCTAssertEqual(s.summary, "โครง T1 3 ชุด | ช่วง 16.00 ม. | ยาวตามสัน 24.00 ม. | มุม 15°")
         func row(_ n: Int) throws -> RoofTruss.Row { try XCTUnwrap(s.rows.first { $0.row == n }, "row \(n)") }
         let purlins = Roof.purlinLines(v).count
         XCTAssertEqual(try row(1).count, purlins); XCTAssertEqual(try row(1).length, Double(purlins) * 24, accuracy: 1e-9)
@@ -72,8 +72,8 @@ final class RoofTrussTests: XCTestCase {
         let plates = try XCTUnwrap(s.rows.first { $0.row == nil })
         XCTAssertEqual(plates.perFrameCount, 34); XCTAssertEqual(plates.count, 102)
         XCTAssertEqual(RoofTruss.totalText(plates), "102 แผ่น")
-        XCTAssertEqual(RoofTruss.perFrameText(try row(3)), "1 · 16.00")
-        XCTAssertEqual(RoofTruss.totalText(try row(3)), "3 · 48.00 ม.")
+        XCTAssertEqual(RoofTruss.perFrameText(try row(3)), "1 | 16.00")
+        XCTAssertEqual(RoofTruss.totalText(try row(3)), "3 | 48.00 ม.")
     }
 
     func testRowsNotUsedAreLeftOutAndEmptyOnesSaySo() throws {

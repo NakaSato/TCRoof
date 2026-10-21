@@ -2,7 +2,7 @@ import Foundation
 
 /// One permit of a station on the iPad install row's `งานขออนุญาต` block (docs/ui/pwa-solar-survey-ipad-v3 FIX-01).
 public struct InstallPermit: Hashable, Sendable {
-    /// Who the permit is from, in the row's order: อปท. · กกพ. · กฟภ. · กว.
+    /// Who the permit is from, in the row's order: อปท. | กกพ. | กฟภ. | กว.
     public enum Authority: String, CaseIterable, Sendable {
         case local, erc, pea, engineer
 

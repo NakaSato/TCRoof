@@ -1,6 +1,6 @@
 import XCTest
 
-/// Step 4/7 `หลังออน · แรงดัน / กระแส` on iPad (docs/ui/iec62446-step4-after-vi-ipad), step 2's page for the after phase:
+/// Step 4/7 `หลังออน | แรงดัน / กระแส` on iPad (docs/ui/iec62446-step4-after-vi-ipad), step 2's page for the after phase:
 /// continuous mode measures the strings `todo` leaves (photo first from the stub camera, then Vmp and Imp), a Vmp off
 /// its group's median shows its alert, and the dialog has no polarity. iPad simulator:
 /// `-only-testing:TCRoofUITests/IECStep4UITests`. It replaces the first installing station's test with the sample.
@@ -27,7 +27,7 @@ final class IECStep4UITests: XCTestCase {
 
     func testContinuousModeMeasuresTheRest() {
         let app = launch("todo")
-        let start = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "วัดต่อเนื่อง · เหลือ 7")).firstMatch
+        let start = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "วัดต่อเนื่อง | เหลือ 7")).firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: slow), "9 of 16 measured")
         start.tap()
         for v in ["613.1", "612.2", "611.8", "614.0", "612.7", "613.5", "612.9"] {
@@ -48,7 +48,7 @@ final class IECStep4UITests: XCTestCase {
 
     func testTheDialogHasNoPolarity() {
         let app = launch("vmp")
-        XCTAssertTrue(app.staticTexts["มิเตอร์ V · หลังออน"].waitForExistence(timeout: slow))
+        XCTAssertTrue(app.staticTexts["มิเตอร์ V | หลังออน"].waitForExistence(timeout: slow))
         XCTAssertFalse(app.buttons["✓ ถูกต้อง"].exists, "no polarity after the connection")
         XCTAssertTrue(app.staticTexts["แรงดัน Vmp"].exists || app.otherElements["แรงดัน Vmp"].exists)
     }

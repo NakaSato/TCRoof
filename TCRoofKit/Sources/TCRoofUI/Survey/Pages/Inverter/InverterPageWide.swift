@@ -191,7 +191,7 @@ struct InverterPageWide: View {
         }
         .overlay(alignment: .bottomLeading) {
             if photo != nil && tab == .boundary {
-                Text(drawing ? "แตะทีละมุม · แตะจุดแรกเพื่อปิดขอบเขต (\(draft.count) จุด)" : "วาดขอบเขตแล้วใส่ระยะบนเส้น")
+                Text(drawing ? "แตะทีละมุม | แตะจุดแรกเพื่อปิดขอบเขต (\(draft.count) จุด)" : "วาดขอบเขตแล้วใส่ระยะบนเส้น")
                     .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(Theme.surface.opacity(0.95), in: Capsule()).padding(10).allowsHitTesting(false)
@@ -306,7 +306,7 @@ struct InverterPageWide: View {
     var sizeCard: some View {
         let s = station
         return VStack(alignment: .leading, spacing: 8) {
-            label("ขนาดพื้นที่ที่มีจริง (วัด)", required: true, aside: "ก × ย × ส (ม.) · แปลนวาดตามค่านี้")
+            label("ขนาดพื้นที่ที่มีจริง (วัด)", required: true, aside: "ก × ย × ส (ม.) | แปลนวาดตามค่านี้")
             if narrow {
                 RatioRow(weights: [1, 1], spacing: 10) { roomWidthStepper(s); roomLengthStepper(s) }
                 heightField(s)
@@ -393,7 +393,7 @@ struct InverterPageWide: View {
                     stepButton("plus", enabled: !editable.isEmpty) { setSpan(sel, by: InverterStation.spanStep) }
                 }
             }
-            Text(s.spansOK ? "\(s.spans.count) ช่วง · รวม \(String(format: "%.2f", s.planLength)) ม. " + (custom ? "✓" : "· อัตโนมัติ ✓")
+            Text(s.spansOK ? "\(s.spans.count) ช่วง | รวม \(String(format: "%.2f", s.planLength)) ม. " + (custom ? "✓" : "| อัตโนมัติ ✓")
                            : "ช่วงสุดท้ายเหลือ \(String(format: "%.2f", s.lastSpan)) ม. ✗")
                 .font(.sarabunFixed(13, s.spansOK ? .regular : .bold)).foregroundStyle(s.spansOK ? Theme.success : Theme.danger)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {

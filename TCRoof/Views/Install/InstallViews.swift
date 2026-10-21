@@ -97,7 +97,7 @@ struct InstallRecordsView: View {
     static func inspectionStatus(_ job: Job) -> (text: String, color: Color) {
         guard let inspection = job.inspection else { return ("ยังไม่เริ่มตรวจรับ", Theme.muted) }
         if inspection.submittedAt != nil {
-            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Theme.success) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
+            return inspection.allPassed ? ("ตรวจรับแล้ว | ผ่านทุกข้อ", Theme.success) : ("ตรวจรับแล้ว | มีข้อไม่ผ่าน", Theme.danger)
         }
         return ("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", .orange)
     }
@@ -118,7 +118,7 @@ struct JobInstallLogsView: View {
                 header {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(job.projectName).font(.sarabun(28, .bold, relativeTo: .title)).foregroundStyle(Theme.navy)
-                        Text("\(job.code) · \(job.installStart.thaiLong) – \(job.installEnd.thaiLong)")
+                        Text("\(job.code) | \(job.installStart.thaiLong) – \(job.installEnd.thaiLong)")
                             .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                     }
                     if !isPhone { Spacer() }
@@ -174,7 +174,7 @@ private struct LogCard: View {
                     .background(.orange.opacity(0.12), in: Capsule())
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
             }
-            Text(log.detailLines.prefix(3).joined(separator: " · "))
+            Text(log.detailLines.prefix(3).joined(separator: " | "))
                 .font(.sarabun(15, relativeTo: .subheadline))
                 .lineLimit(2)
             let photos = log.sortedPhotos
@@ -214,7 +214,7 @@ struct InstallLogFormView: View {
         NavigationStack {
             PadForm(maxWidth: 720) {
                 PadSection {
-                    InfoRow(title: "โครงการ", value: "\(job.code) · \(job.projectName)")
+                    InfoRow(title: "โครงการ", value: "\(job.code) | \(job.projectName)")
                     DatePicker("วันที่บันทึก", selection: $date, displayedComponents: .date)
                     TextField("ผู้บันทึก", text: $recorder)
                 }
@@ -381,10 +381,10 @@ struct InstallLogHistoryView: View {
                 ForEach(logs) { log in
                     PadLink { InstallLogDetailView(log: log) } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
-                            Text("\(log.date.thaiLong) · \(log.recorder) · \(log.sortedPhotos.count) รูป")
+                            Text("\(log.job?.code ?? "-") | \(log.job?.projectName ?? "")").bold()
+                            Text("\(log.date.thaiLong) | \(log.recorder) | \(log.sortedPhotos.count) รูป")
                                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
-                            Text(log.detailLines.joined(separator: " · ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
+                            Text(log.detailLines.joined(separator: " | ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
                         }
                         .foregroundStyle(Theme.navy)
                     }

@@ -30,11 +30,11 @@ extension IECSetupPage {
                 Image(systemName: "trash").font(.system(size: 22)).foregroundStyle(Theme.dangerText).frame(width: 56, height: 56).background(Theme.dangerSoft, in: Circle())
                 Text("ลบ INV\(i + 1) ?").font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy)
             }
-            Text(["INV\(i + 1)", inv.model, inv.serial.isEmpty ? nil : "S/N \(inv.serial)"].compactMap { $0 }.joined(separator: " · ") + " จะถูกนำออกจากงานนี้")
+            Text(["INV\(i + 1)", inv.model, inv.serial.isEmpty ? nil : "S/N \(inv.serial)"].compactMap { $0 }.joined(separator: " | ") + " จะถูกนำออกจากงานนี้")
                 .font(.sarabunFixed(16)).foregroundStyle(Theme.navy)
             VStack(alignment: .leading, spacing: 6) {
                 bullet("รายการสตริง \(inv.strings.count) ช่อง และค่าที่วัดแล้ว \(measured) สตริง (รวมรูป) ของ INV\(i + 1) จะถูกลบ")
-                bullet("Excel จะไม่มีแผ่น INV \(String(format: "%02d", i + 1))-ก่อน / -หลัง · อินเวอร์เตอร์ที่เหลือเรียงเลขแผ่นใหม่")
+                bullet("Excel จะไม่มีแผ่น INV \(String(format: "%02d", i + 1))-ก่อน / -หลัง | อินเวอร์เตอร์ที่เหลือเรียงเลขแผ่นใหม่")
                 bullet("ลบแล้วกู้คืนไม่ได้")
                 if last { bullet("ต้องมีอินเวอร์เตอร์อย่างน้อย 1 เครื่อง จึงลบเครื่องสุดท้ายไม่ได้") }
             }
@@ -155,7 +155,7 @@ struct IECAddInverterSheet: View {
                 Text("รุ่นอินเวอร์เตอร์").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                     + Text("  *").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
                 Spacer()
-                Text("จากแคตตาล็อกอุปกรณ์ · รุ่นกำหนด kW และ MPPT ให้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("จากแคตตาล็อกอุปกรณ์ | รุ่นกำหนด kW และ MPPT ให้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 10) {
                 ForEach(catalog, id: \.self) { m in modelCard(m) }
@@ -172,7 +172,7 @@ struct IECAddInverterSheet: View {
                     .frame(width: 56, height: 40).background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 6))
                 VStack(alignment: .leading, spacing: 0) {
                     Text(m.brand + " " + m.model).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                    Text("\(m.kw) kW · \(m.mppt) MPPT · \(m.mppt * 2) ช่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("\(m.kw) kW | \(m.mppt) MPPT | \(m.mppt * 2) ช่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }
@@ -188,7 +188,7 @@ struct IECAddInverterSheet: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack { Text("S/N").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy); Spacer()
-                    Text("O5 · แผ่น INV \(String(format: "%02d", number))").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+                    Text("O5 | แผ่น INV \(String(format: "%02d", number))").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
                 HStack(spacing: 0) {
                     TextField("แตะเพื่อพิมพ์ หรือสแกนป้าย", text: $serial).font(.sarabunFixed(16)).textInputAutocapitalization(.characters)
                         .autocorrectionDisabled().padding(.horizontal, 14).accessibilityLabel("S/N ใหม่")
@@ -205,10 +205,10 @@ struct IECAddInverterSheet: View {
                     Text("จากรุ่น").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("\(model?.mppt ?? 0)").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
-                    Text("MPPT · \((model?.mppt ?? 0) * 2) ช่อง DC input").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("MPPT | \((model?.mppt ?? 0) * 2) ช่อง DC input").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                Text("\(model?.kw ?? 0) kW · 2 สตริงต่อ MPPT").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(model?.kw ?? 0) kW | 2 สตริงต่อ MPPT").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(alignment: .leading, spacing: 6) {
                 Text("แผงต่อสตริง").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
@@ -228,7 +228,7 @@ struct IECAddInverterSheet: View {
 
     private var info: some View {
         let nn = String(format: "%02d", number)
-        return Text("เพิ่มแท็บ INV\(number) ในรายการสตริง (ทุกช่องเริ่มเป็นสตริง \(modules) แผง แล้วตั้ง SPARE ช่องที่ไม่ได้ใช้) · Excel เพิ่มแผ่น INV \(nn)-ก่อน และ INV \(nn)-หลัง ที่ลิงก์หัวเรื่องจาก INV 01")
+        return Text("เพิ่มแท็บ INV\(number) ในรายการสตริง (ทุกช่องเริ่มเป็นสตริง \(modules) แผง แล้วตั้ง SPARE ช่องที่ไม่ได้ใช้) | Excel เพิ่มแผ่น INV \(nn)-ก่อน และ INV \(nn)-หลัง ที่ลิงก์หัวเรื่องจาก INV 01")
             .font(.sarabunFixed(14)).foregroundStyle(Theme.navy).padding(14).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }

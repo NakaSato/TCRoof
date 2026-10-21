@@ -74,10 +74,10 @@ public enum RoutineReport {
                 .joined(separator: "|")
         }
 
-        /// "2.1 ติดตั้งโครงสร้าง… · หลังคา 1", or the description alone.
+        /// "2.1 ติดตั้งโครงสร้าง… | หลังคา 1", or the description alone.
         public var title: String {
             let what = description.isEmpty ? (task?.title ?? "งานอื่น") : description
-            return location.isEmpty ? what : what + " · " + location
+            return location.isEmpty ? what : what + " | " + location
         }
     }
 

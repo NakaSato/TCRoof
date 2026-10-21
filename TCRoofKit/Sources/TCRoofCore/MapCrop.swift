@@ -68,10 +68,10 @@ public struct MapCrop: Equatable, Sendable {
         (Int((across * w / 100).rounded()), Int((across * aspect * h / 100).rounded()))
     }
 
-    /// "ภาพในรายงาน · 108 × 69 ม."
+    /// "ภาพในรายงาน | 108 × 69 ม."
     public func label(across: Double, aspect: Double) -> String {
         let m = meters(across: across, aspect: aspect)
-        return "ภาพในรายงาน · \(m.w) × \(m.h) ม."
+        return "ภาพในรายงาน | \(m.w) × \(m.h) ม."
     }
 
     /// The frame on a map (or picture) of this size.

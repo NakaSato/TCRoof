@@ -53,7 +53,7 @@ extension UserAdminView {
             .accessibilityIdentifier("userAdmin.back")
             VStack(alignment: .leading, spacing: 0) {
                 Text(phoneDetail != nil ? "รายละเอียดผู้ใช้" : "จัดการผู้ใช้และสิทธิ์").font(.sarabun(22, .bold))
-                Label("นักพัฒนา · ปลดล็อกเหลือ \(remainingText) นาที", systemImage: "clock")
+                Label("นักพัฒนา | ปลดล็อกเหลือ \(remainingText) นาที", systemImage: "clock")
                     .font(.sarabun(13)).opacity(0.9).monospacedDigit()
             }
             .foregroundStyle(Theme.onPrimary)
@@ -234,7 +234,7 @@ extension UserAdminView {
         VStack(spacing: 12) {
             AdminSegments(items: UserRole.allCases.map { r in
                 .init(id: r, title: r == .external ? "ภายนอก" : r.label,
-                      detail: "\(r.english) · \(store.shown.filter { $0.role == r }.count) คน", tint: UserAdminStyle.ink(r))
+                      detail: "\(r.english) | \(store.shown.filter { $0.role == r }.count) คน", tint: UserAdminStyle.ink(r))
             }, selected: phoneRole, height: 52, radius: 13) { phoneRole = $0 }
             .accessibilityIdentifier("userAdmin.roleSegment")
             .padding(.horizontal, 16)
@@ -315,7 +315,7 @@ extension UserAdminView {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(c.label).font(.sarabun(14.5)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
-                    Text(enforced ? "\(c.rawValue) · บังคับใน rules" : c.rawValue).font(.sarabun(12)).foregroundStyle(Theme.inkFaint)
+                    Text(enforced ? "\(c.rawValue) | บังคับใน rules" : c.rawValue).font(.sarabun(12)).foregroundStyle(Theme.inkFaint)
                     if let note { Text(note).font(.sarabun(12)).foregroundStyle(Theme.warningInk) }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -333,7 +333,7 @@ extension UserAdminView {
         }
         .buttonStyle(.plain)
         .opacity(c.access(.manager) == .disabled ? 0.7 : 1)
-        .accessibilityLabel("\(r.label) · \(c.label) · \(a.label)" + (note.map { " (\($0))" } ?? ""))
+        .accessibilityLabel("\(r.label) | \(c.label) | \(a.label)" + (note.map { " (\($0))" } ?? ""))
         .accessibilityIdentifier("userAdmin.cell.\(r.rawValue)|\(c.rawValue)")
     }
 
@@ -364,7 +364,7 @@ extension UserAdminView {
                     if store.log.isEmpty {
                         Text("ยังไม่มีประวัติการแก้ไข").font(.sarabun(14)).foregroundStyle(Theme.muted).padding(32)
                     }
-                    Text("auditLog · เพิ่มได้อย่างเดียว ลบไม่ได้").font(.sarabun(12)).foregroundStyle(Theme.muted)
+                    Text("auditLog | เพิ่มได้อย่างเดียว ลบไม่ได้").font(.sarabun(12)).foregroundStyle(Theme.muted)
                         .padding(.vertical, 12)
                 }
                 .padding(.horizontal, 14)
@@ -405,7 +405,7 @@ extension UserAdminView {
                 HStack(spacing: 10) {
                     Circle().fill(Theme.pendingYellow).frame(width: 10, height: 10)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("แก้ไข \(store.pendingCount) รายการ · ยังไม่บันทึก").font(.sarabun(15, .bold))
+                        Text("แก้ไข \(store.pendingCount) รายการ | ยังไม่บันทึก").font(.sarabun(15, .bold))
                             .accessibilityIdentifier("userAdmin.pending")
                         Text("บันทึกแล้วจะซิงก์ members/<email>.role ให้ทุกเครื่อง").font(.sarabun(12)).opacity(0.8)
                     }

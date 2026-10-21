@@ -44,7 +44,7 @@ extension TankPageWide {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if let c = southCompare {
-                        Text(String(format: "แถวหันทิศใต้จริง หมุนจากผนังถัง %.0f° · เทียบเท่านั้น ผังที่ใช้ยังขนานผนังถังตามมาตรฐานทีม",
+                        Text(String(format: "แถวหันทิศใต้จริง หมุนจากผนังถัง %.0f° | เทียบเท่านั้น ผังที่ใช้ยังขนานผนังถังตามมาตรฐานทีม",
                                     abs(c.south.wallOffset)))
                             .font(.sarabunFixed(14)).fixedSize(horizontal: false, vertical: true)
                         southPlan(c.south)
@@ -66,8 +66,8 @@ extension TankPageWide {
 
     func southVerdict(_ c: TankLayout.SouthComparison) -> String {
         c.change < 0
-            ? String(format: "ขนานผนังถังได้พลังงานมากกว่า %.1f%% · ใช้ผังขนานผนังถังต่อ", -c.change * 100)
-            : String(format: "หันทิศใต้จริงได้พลังงานมากกว่า %.1f%% · แต่โต๊ะเอียงจากผนัง ติดตั้งและเดินรางยากกว่า", c.change * 100)
+            ? String(format: "ขนานผนังถังได้พลังงานมากกว่า %.1f%% | ใช้ผังขนานผนังถังต่อ", -c.change * 100)
+            : String(format: "หันทิศใต้จริงได้พลังงานมากกว่า %.1f%% | แต่โต๊ะเอียงจากผนัง ติดตั้งและเดินรางยากกว่า", c.change * 100)
     }
 
     /// The tank plan with the turned modules, their posts and the obstacles.

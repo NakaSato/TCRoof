@@ -83,7 +83,7 @@ struct PWADocsUploadSheet: View {
     private var head: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("อัปโหลดเอกสาร · " + (station.map { $0.ref + " " + $0.shortName } ?? "คลังกลาง"))
+                Text("อัปโหลดเอกสาร | " + (station.map { $0.ref + " " + $0.shortName } ?? "คลังกลาง"))
                     .font(.sarabunFixed(19, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Text(station == nil ? "ใช้กับทุกสถานี" : package?.padTitle ?? "ทุกชุดของสถานีนี้")
                     .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
@@ -109,9 +109,9 @@ struct PWADocsUploadSheet: View {
         let all = slots
         let shown = showAll ? all : Array(all.prefix(12))
         return VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("1 · ใส่ในช่องไหน")
+            sectionTitle("1 | ใส่ในช่องไหน")
             if all.isEmpty {
-                Text("เอกสารของสถานีนี้ครบแล้ว · เปลี่ยนไฟล์ได้จากหน้าเอกสาร").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("เอกสารของสถานีนี้ครบแล้ว | เปลี่ยนไฟล์ได้จากหน้าเอกสาร").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             FlowLayout(spacing: 8) {
                 ForEach(shown) { k in slotChip(k) }
@@ -139,7 +139,7 @@ struct PWADocsUploadSheet: View {
 
     private func sharedNote(_ k: StationDocs.Kind) -> some View {
         let others = k.packages.filter { $0 != package }.map { PWADocs.stepTitle($0) }
-        return Text("⇄ ไฟล์นี้จะเข้า " + others.joined(separator: " · ") + " ด้วย · อัปโหลดครั้งเดียว")
+        return Text("⇄ ไฟล์นี้จะเข้า " + others.joined(separator: " | ") + " ด้วย | อัปโหลดครั้งเดียว")
             .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dockTeal)
             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.tealSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -147,7 +147,7 @@ struct PWADocsUploadSheet: View {
 
     private var sourceSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("2 · จากไหน")
+            sectionTitle("2 | จากไหน")
             HStack(spacing: 10) {
                 sourceCard(.camera, "ถ่ายรูปเอกสาร", "ตัดขอบ ปรับให้ตรง รวมหลายหน้า", enabled: DocumentCamera.isAvailable) {
                     #if DEBUG
@@ -159,7 +159,7 @@ struct PWADocsUploadSheet: View {
                     #endif
                     scanning = true
                 }
-                sourceCard(.file, "เลือกไฟล์", "PDF · รูป · Word", enabled: true) { importing = true }
+                sourceCard(.file, "เลือกไฟล์", "PDF | รูป | Word", enabled: true) { importing = true }
             }
             if let file {
                 Label(file.name, systemImage: "doc.fill").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
@@ -190,7 +190,7 @@ struct PWADocsUploadSheet: View {
 
     private var maskSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("3 · ยืนยันว่าปิดข้อมูลบนบัตรทุกใบแล้ว", ink: Theme.dangerText)
+            sectionTitle("3 | ยืนยันว่าปิดข้อมูลบนบัตรทุกใบแล้ว", ink: Theme.dangerText)
             HStack(spacing: 16) {
                 ForEach(Self.maskChecks, id: \.self) { c in
                     let on = masked.contains(c)
@@ -213,7 +213,7 @@ struct PWADocsUploadSheet: View {
     }
 
     private var offlineNote: some View {
-        Label("ออฟไลน์ · ไฟล์จะเข้าคิวและส่งเมื่อออนไลน์", systemImage: "wifi.slash")
+        Label("ออฟไลน์ | ไฟล์จะเข้าคิวและส่งเมื่อออนไลน์", systemImage: "wifi.slash")
             .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.warningText)
             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.warningSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -338,7 +338,7 @@ struct PWALibrarySheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     if let note = kind.note { Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
                     if PWADocs.isIDCard(kind) {
-                        Text("🔒 ก่อนแนบ ปิดศาสนา กรุ๊ปเลือด และวันเกิดบนบัตรทุกใบ · แอปไม่เก็บเลขบัตรเป็นข้อความ")
+                        Text("🔒 ก่อนแนบ ปิดศาสนา กรุ๊ปเลือด และวันเกิดบนบัตรทุกใบ | แอปไม่เก็บเลขบัตรเป็นข้อความ")
                             .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.dangerText)
                     }
                     Text("ใช้ใน \(used.count) สถานี").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)

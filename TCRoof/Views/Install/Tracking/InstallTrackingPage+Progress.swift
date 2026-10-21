@@ -40,7 +40,7 @@ extension InstallTrackingPage {
                 Text("ความคืบหน้าเทียบแผน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).frame(height: 24)
                     .accessibilityAddTraits(.isHeader)
                 HStack(spacing: 10) {
-                    Text([range, "\(g.rows.count) ขั้นตอน", g.subCount > 0 ? "\(g.subCount) งานย่อย" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                    Text([range, "\(g.rows.count) ขั้นตอน", g.subCount > 0 ? "\(g.subCount) งานย่อย" : ""].filter { !$0.isEmpty }.joined(separator: " | "))
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     if let t = data.tracking { forecastPill(t) }
                 }
@@ -54,11 +54,11 @@ extension InstallTrackingPage {
         }
     }
 
-    /// `คาดส่งมอบ 6/10 ตามกำหนด · เผื่อ 1 วัน`, amber with no spare day, red `คาดส่งมอบช้า n วัน` when late.
+    /// `คาดส่งมอบ 6/10 ตามกำหนด | เผื่อ 1 วัน`, amber with no spare day, red `คาดส่งมอบช้า n วัน` when late.
     private func forecastPill(_ t: InstallTracking) -> some View {
         let slack = t.slackDays(), end = ThaiFormat.dayMonth.string(from: t.forecastEnd())
-        let (text, tone): (String, InstallPageData.Tone) = slack < 0 ? ("คาดส่งมอบ \(end) · ช้า \(-slack) วัน", .danger)
-            : slack == 0 ? ("คาดส่งมอบ \(end) ตามกำหนดพอดี", .warn) : ("คาดส่งมอบ \(end) ตามกำหนด · เผื่อ \(slack) วัน", .ok)
+        let (text, tone): (String, InstallPageData.Tone) = slack < 0 ? ("คาดส่งมอบ \(end) | ช้า \(-slack) วัน", .danger)
+            : slack == 0 ? ("คาดส่งมอบ \(end) ตามกำหนดพอดี", .warn) : ("คาดส่งมอบ \(end) ตามกำหนด | เผื่อ \(slack) วัน", .ok)
         return Text(text).font(.sarabunFixed(12, .bold)).foregroundStyle(Self.ink(tone)).lineLimit(1)
             .padding(.horizontal, 10).frame(height: 22)
             .background(Self.fill(tone), in: Capsule())
@@ -233,7 +233,7 @@ extension InstallTrackingPage {
         .contentShape(Rectangle())
         .onTapGesture { stage = row }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.code) \(row.title) · \(Int(row.percent.rounded()))%" + (row.overrunDays > 0 ? " · เกินแผน \(row.overrunDays) วัน" : ""))
+        .accessibilityLabel("\(row.code) \(row.title) | \(Int(row.percent.rounded()))%" + (row.overrunDays > 0 ? " | เกินแผน \(row.overrunDays) วัน" : ""))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: "เปิดรายละเอียด") { stage = row }
     }
@@ -295,7 +295,7 @@ extension InstallTrackingPage {
                     HStack(spacing: 4) {
                         RoundedRectangle(cornerRadius: 2).fill(Theme.ganttTrack).frame(width: 10, height: 12)
                         RoundedRectangle(cornerRadius: 2).fill(Theme.primary.opacity(0.55)).frame(width: 10, height: 12)
-                        Text("แท่ง = งานต่อวัน (แผน · จริง)")
+                        Text("แท่ง = งานต่อวัน (แผน | จริง)")
                     }
                     Text("เส้นแดงที่วันนี้ = ห่างจากแผน")
                 }
@@ -312,7 +312,7 @@ extension InstallTrackingPage {
     private func curveSummary(_ data: InstallPageData) -> String {
         guard let t = data.tracking else { return "" }
         let late = t.slackDays()
-        return "แผน \(Int(t.planned.rounded()))% จริง \(Int(t.actual.rounded()))% · คาดเสร็จ \(ThaiFormat.numericDate.string(from: t.forecastEnd()))"
+        return "แผน \(Int(t.planned.rounded()))% จริง \(Int(t.actual.rounded()))% | คาดเสร็จ \(ThaiFormat.numericDate.string(from: t.forecastEnd()))"
             + (late < 0 ? " ช้า \(-late) วัน" : "")
     }
 }
@@ -658,7 +658,7 @@ struct InstallCurveChart: View {
                 let dot = CGRect(x: end.x - 6, y: end.y - 6, width: 12, height: 12)
                 ctx.fill(Path(ellipseIn: dot), with: .color(Theme.surface))
                 ctx.stroke(Path(ellipseIn: dot), with: .color(Theme.primary), lineWidth: 2.5)
-                ctx.draw(label("คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f)) · 100%", Theme.primary, size: 14, bold: true),
+                ctx.draw(label("คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f)) | 100%", Theme.primary, size: 14, bold: true),
                          at: CGPoint(x: end.x - 12, y: end.y), anchor: .trailing)
             }
         }

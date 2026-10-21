@@ -21,6 +21,42 @@ final class RoofDesignTests: XCTestCase {
         return v
     }
 
+    /// The check screen's drag (§3.2): a moved area differs from the design, and moved back it matches again.
+    func testMovingAnAreaOnSite() {
+        let d = RoofDesign.from(roof(), name: "โรงสูบน้ำ", job: "TCR-7", by: nil)
+        var site = roof()
+        RoofDesign.apply(&site, d)
+        RoofDesign.confirmRest(&site)
+        let id = "o:" + site.obstacles(Roof.Key.obstacles)[1].id.uuidString
+        // the turbine, 0.6 m wide, dragged 1.23 m right: snapped to 5 cm
+        XCTAssertTrue(Roof.moveArea(&site, index: 1, x: 9.23, y: 6, lx: 16, ly: 12))
+        XCTAssertEqual(Roof.areas(site)[1].x, 9.25, accuracy: 1e-9)
+        XCTAssertEqual(RoofDesign.items(site).first { $0.id == id }?.state, .differs)
+        // kept on the roof: past the right edge it stops at 16 − 0.6
+        Roof.moveArea(&site, index: 1, x: 30, y: -2, lx: 16, ly: 12)
+        XCTAssertEqual(Roof.areas(site)[1].x, 15.4, accuracy: 1e-9)
+        XCTAssertEqual(Roof.areas(site)[1].y, 0, accuracy: 1e-9)
+        // back where the design has it: it matches again
+        Roof.moveArea(&site, index: 1, x: 8, y: 6, lx: 16, ly: 12)
+        XCTAssertEqual(RoofDesign.items(site).first { $0.id == id }?.state, .matches)
+        XCTAssertFalse(Roof.moveArea(&site, index: 1, x: 8.01, y: 6, lx: 16, ly: 12), "under 2.5 cm doesn't move it")
+        XCTAssertFalse(Roof.moveArea(&site, index: 9, x: 1, y: 1, lx: 16, ly: 12))
+    }
+
+    /// A design's card: what it holds and its plan.
+    func testCardLines() throws {
+        let d = RoofDesign.from(roof(), name: "โรงสูบน้ำ", job: "TCR-7", by: nil)
+        XCTAssertEqual(d.contents, "แป @1.20 ม. | แผ่นใส 1 | สิ่งกีดขวาง 1")
+        XCTAssertEqual(try XCTUnwrap(d.thumbnail).ops.count, 1 + 3 + 1 + 2 + 1, "white, 3 + 1 bay lines, 2 marks, outline")
+        let t = TankDesign.pwa40x40
+        XCTAssertEqual(t.contents, "ระบาย 12 | ลงถัง 6 | บันได 3 | ท่อ 0")
+        let plan = try XCTUnwrap(t.thumbnail())
+        XCTAssertFalse(plan.ops.isEmpty)
+        // turned, the 64 × 40 plan stands up
+        let wide = try XCTUnwrap(TankDesign.pwa64x40.thumbnail()), tall = try XCTUnwrap(TankDesign.pwa64x40.thumbnail(turned: true))
+        XCTAssertNotEqual(wide.width / wide.height > 1, tall.width / tall.height > 1)
+    }
+
     func testSavingPickingAndCheckingARoof() throws {
         let d = RoofDesign.from(roof(), name: "โรงสูบน้ำ 16×12", job: "TCR-7", by: "a@tcroof.co")
         DesignLibrary.shared.saveRoof(d)
@@ -53,7 +89,7 @@ final class RoofDesignTests: XCTestCase {
         XCTAssertEqual(items.filter { $0.state == .added }.count, 1)
         XCTAssertTrue(RoofDesign.done(site))
         let s = try XCTUnwrap(RoofDesign.summary(site))
-        XCTAssertEqual(s.counts, "ตรงแบบ 5 · ต่างจากแบบ 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1")
+        XCTAssertEqual(s.counts, "ตรงแบบ 5 | ต่างจากแบบ 1 | ไม่มีจริง 1 | เพิ่มหน้างาน 1")
         XCTAssertTrue(s.differences.contains("ระยะแป ต่างจากแบบ"))
         // toggling a confirmation back opens it again
         RoofDesign.toggle(&site, "size")

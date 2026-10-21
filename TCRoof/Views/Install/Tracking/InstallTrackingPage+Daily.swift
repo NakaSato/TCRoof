@@ -64,20 +64,20 @@ extension InstallTrackingPage {
         let dates = { (ds: [Date]) in ds.sorted().map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", ") }
         let waitNote = [d.drafts.isEmpty ? nil : "ร่าง " + dates(d.drafts),
                         d.unacknowledged.isEmpty ? nil : "ผู้ตรวจยังไม่รับทราบ " + dates(d.unacknowledged)].compactMap { $0 }
-        out.append(DailyKPI(label: "รอลงนาม · รับทราบ", value: "\(d.drafts.count) · \(d.unacknowledged.count)",
+        out.append(DailyKPI(label: "รอลงนาม | รับทราบ", value: "\(d.drafts.count) | \(d.unacknowledged.count)",
                             ink: d.drafts.isEmpty && d.unacknowledged.isEmpty ? Theme.successInk : Theme.warningInk,
-                            note: waitNote.isEmpty ? "ครบทุกฉบับ" : waitNote.joined(separator: " · ")))
+                            note: waitNote.isEmpty ? "ครบทุกฉบับ" : waitNote.joined(separator: " | ")))
         let today = d.rows.first { $0.date == d.today }
         let (value, ink, note): (String, Color, String) = switch today?.state {
         case .signed?, .stopped?: ("ส่งแล้ว", Theme.successInk, today?.ackAt == nil ? "รอผู้ตรวจรับทราบ" : "ผู้ตรวจรับทราบแล้ว")
-        case .draft?: ("ร่างไว้", Theme.warningInk, "ยังไม่ลงนาม · ส่งก่อน \(d.workEnd)")
+        case .draft?: ("ร่างไว้", Theme.warningInk, "ยังไม่ลงนาม | ส่งก่อน \(d.workEnd)")
         case .today?, .missing?: ("ยังไม่ส่ง", Theme.dangerText, "ส่งก่อน \(d.workEnd)")
         case nil: ("ไม่ต้องส่ง", Theme.inkMuted, d.inWindow ? "วันหยุดของหน้างาน" : "นอกช่วงติดตั้ง")
         }
         out.append(DailyKPI(label: "วันนี้ " + ThaiFormat.dayMonth.string(from: d.today), value: value, ink: ink, note: note))
         if d.hasReports {
             let avg = d.workedDays > 0 ? Double(d.manDays) / Double(d.workedDays) : 0
-            out.append(DailyKPI(label: "คน·วันรวม", value: "\(d.manDays)", ink: Theme.navy,
+            out.append(DailyKPI(label: "คน-วันรวม", value: "\(d.manDays)", ink: Theme.navy,
                                 note: "เฉลี่ย \(avg.formatted(.number.precision(.fractionLength(0...1)))) คน/วันที่ทำงาน"))
             out.append(DailyKPI(label: "หยุดเพราะฝน", value: "\(d.rainStops) วัน", ink: Theme.navy, note: "ฝนรวม \(d.rainHours) ชม. จากรายงาน"))
         }
@@ -176,7 +176,7 @@ extension InstallTrackingPage {
             Text("งานที่ทำ").frame(maxWidth: .infinity, alignment: .leading)
             Text("สะสม (แผน MP)").frame(width: Col.progress, alignment: .leading)
             Text("รูป").frame(width: Col.photos, alignment: .leading)
-            Text("ลงนาม · รับทราบ").frame(width: Col.sign, alignment: .leading)
+            Text("ลงนาม | รับทราบ").frame(width: Col.sign, alignment: .leading)
             Text("ปัญหา").frame(width: Col.problem, alignment: .leading)
             Color.clear.frame(width: Col.action, height: 1)
         }
@@ -270,7 +270,7 @@ extension InstallTrackingPage {
     private func actionButton(_ r: InstallDailyData.Row) -> some View {
         let (title, prominent): (String, Bool) = switch r.state {
         case .today: ("ทำรายงานวันนี้", true)
-        case .draft: ("ทำต่อ · ส่ง", true)
+        case .draft: ("ทำต่อ | ส่ง", true)
         case .missing: ("ทำรายงาน", false)
         case .signed, .stopped: ("เปิดรายงาน", false)
         }
@@ -334,7 +334,7 @@ extension InstallTrackingPage {
                         .frame(maxWidth: .infinity)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(ThaiFormat.dayMonth.string(from: day.date))
-                        .accessibilityValue([day.plan.map { "แผน \($0) คน" }, day.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " · "))
+                        .accessibilityValue([day.plan.map { "แผน \($0) คน" }, day.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " | "))
                     }
                 }
             }

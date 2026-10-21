@@ -96,8 +96,8 @@ public extension IECReport {
         public let page: InstallPage
         public let slot: InstallSlot
 
-        /// `ตู้ AC · ภาพถ่ายตู้ควบคุม… (ด้านใน)`
-        public var label: String { page.title + " · " + slot.caption }
+        /// `ตู้ AC | ภาพถ่ายตู้ควบคุม… (ด้านใน)`
+        public var label: String { page.title + " | " + slot.caption }
     }
 
     /// The construction task a report slot shows, after the `photo_slots` of `forms/pwa/projects/
@@ -139,7 +139,7 @@ public extension IECReport {
         guard task.part == .construction else { return [] }
         let r = report ?? IECReport()
         var out = r.missingInstallPhotos(for: task).map(\.label)
-        if task == .inverter, r.inverters.isEmpty { out.insert("Inverter · ยังไม่ได้เพิ่มเครื่องในขั้น 1 ของการทดสอบ IEC", at: 0) }
+        if task == .inverter, r.inverters.isEmpty { out.insert("Inverter | ยังไม่ได้เพิ่มเครื่องในขั้น 1 ของการทดสอบ IEC", at: 0) }
         return out
     }
 }

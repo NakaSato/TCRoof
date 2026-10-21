@@ -201,7 +201,7 @@ private struct Drawer {
     mutating func notes(top: Double) -> Double {
         guard !m.notes.isEmpty else { return top }
         line(20, top + 4, L.width - 20, top + 4, L.grey, w: 0.8)
-        text("ค่าที่คำนวณจากข้อมูลสำรวจ · หมายเหตุ ไม่ใช่ข้อผิดพลาด", 24, top + 26, size: 13, bold: true)
+        text("ค่าที่คำนวณจากข้อมูลสำรวจ | หมายเหตุ ไม่ใช่ข้อผิดพลาด", 24, top + 26, size: 13, bold: true)
         for (k, n) in m.notes.enumerated() {
             let y = top + 50 + Double(k) * 20
             text("• " + n.text, 32, y, size: 12, n.flagged ? L.amber : L.ink)
@@ -224,7 +224,7 @@ private struct Drawer {
         add(SLSymbols.breaker(x: fx, y: top + 50))
         stack(bd.main, x: fx + 16, y: top + 60)
         o.append(.polygon([Pt(fx - 6, top + 200), Pt(fx + 6, top + 200), Pt(fx, top + 211)], stroke: nil, fill: L.ink))
-        text(clip("ปลายสาย TX\(tx.index + 1)" + (bd.location.isEmpty ? "" : " · " + bd.location), 28), fx + 14, top + 212, size: 11, L.grey)
+        text(clip("ปลายสาย TX\(tx.index + 1)" + (bd.location.isEmpty ? "" : " | " + bd.location), 28), fx + 14, top + 212, size: 11, L.grey)
         hit(fx - 20, top, 180, 200, bd.target)
         hit(fx - 20, top + 40, 180, 130, bd.main.target)
     }
@@ -247,14 +247,14 @@ private struct Drawer {
 
         // frame and title
         dashedRect(Box(60, C, 1440, busY + 160 + rowsH - C), L.ink)
-        text("\(cb.name) (TX\(tx.index + 1))" + (cb.location.isEmpty ? "" : " · " + cb.location), inX + 26, C + 20, size: 14, bold: true)
-        text("LV 230/400 V · 3P 4W", 1484, C + 20, size: 12, L.grey, align: .right)
+        text("\(cb.name) (TX\(tx.index + 1))" + (cb.location.isEmpty ? "" : " | " + cb.location), inX + 26, C + 20, size: 14, bold: true)
+        text("LV 230/400 V | 3P 4W", 1484, C + 20, size: 12, L.grey, align: .right)
         hit(60, C, 600, 34, cb.target)
 
         // feeder from the transformer: fork, then the incomer with its draw-out main breaker
         line(colX, forkY, inX, forkY, w: 3)
         line(inX, forkY, inX, C + 42)
-        text("สาย LV จาก TX\(tx.index + 1) · ขนาด ? (A3)", inX - 18, (forkY + C) / 2, size: 11, L.red, align: .center, angle: -90)
+        text("สาย LV จาก TX\(tx.index + 1) | ขนาด ? (A3)", inX - 18, (forkY + C) / 2, size: 11, L.red, align: .center, angle: -90)
         add(SLSymbols.breaker(x: inX, y: C + 52, drawout: true))
         stack(cb.main, x: inX + 18, y: C + 56)
         hit(inX - 12, C + 40, 200, 150, cb.main.target)

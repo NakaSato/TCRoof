@@ -75,7 +75,7 @@ struct InspectionView: View {
             VStack(alignment: .leading, spacing: 2) {
                 // one line, scaled down on the phone rather than broken mid-word
                 Text("ใบตรวจรับงานติดตั้งระบบโซลาร์รูฟ").font(.sarabun(20, .bold, relativeTo: .title3)).lineLimit(1).minimumScaleFactor(0.7)
-                Text("\(job.code) · \(job.projectName)").font(.sarabun(15, relativeTo: .subheadline))
+                Text("\(job.code) | \(job.projectName)").font(.sarabun(15, relativeTo: .subheadline))
             }
             .foregroundStyle(Theme.onPrimary)
             Spacer()
@@ -148,7 +148,7 @@ struct InspectionView: View {
         } else {
             Spacer()
             TCEmptyState("ยังไม่มีใบตรวจรับที่ส่งแล้ว", systemImage: "checkmark.seal",
-                         description: Text("ใบตรวจรับงาน (ICL) กรอกและลงนามโดยทีมภายใน · ดูได้เมื่อทีมส่งแล้ว"))
+                         description: Text("ใบตรวจรับงาน (ICL) กรอกและลงนามโดยทีมภายใน | ดูได้เมื่อทีมส่งแล้ว"))
             Spacer()
         }
     }
@@ -440,7 +440,7 @@ struct InspectionReport: View {
                     GridRow { Text("รหัสโครงการ").foregroundStyle(Theme.inkMuted); Text(job.code) }
                     GridRow { Text("โครงการ").foregroundStyle(Theme.inkMuted); Text(job.projectName) }
                     GridRow { Text("ที่อยู่").foregroundStyle(Theme.inkMuted); Text("\(job.address) \(job.province)") }
-                    GridRow { Text("ขนาดระบบ").foregroundStyle(Theme.inkMuted); Text("\(job.capacityKW.kw) · แผง \(job.devices.filter { $0.kind == .panel }.count) แผง") }
+                    GridRow { Text("ขนาดระบบ").foregroundStyle(Theme.inkMuted); Text("\(job.capacityKW.kw) | แผง \(job.devices.filter { $0.kind == .panel }.count) แผง") }
                     GridRow { Text("ทีมติดตั้ง").foregroundStyle(Theme.inkMuted); Text(job.team.rawValue) }
                 }
                 .font(.sarabun(15, relativeTo: .subheadline))

@@ -40,7 +40,7 @@ public enum ClaimExcel {
         x.row(["วันที่", "ประเภท", "ร้าน", "เลขภาษี", "งาน", "จำนวนเงิน (บาท)", "ใบเสร็จ"].map { .text($0, .head) })
         for i in s.items {
             x.row([.text(RoutineReport.thaiDate(i.date), .cell), .text(i.category.title, .cell),
-                   .text([i.vendor, i.note].filter { !$0.isEmpty }.joined(separator: " · "), .cell), .text(i.taxID, .cell),
+                   .text([i.vendor, i.note].filter { !$0.isEmpty }.joined(separator: " | "), .cell), .text(i.taxID, .cell),
                    .text(job(i.jobID), .cell), baht(i.amount), .text(receiptNumbers[i.id].map { "#\($0)" } ?? "ไม่มี", .center)])
         }
         x.row([.text("รวม", .headLeft), .empty, .empty, .empty, .empty, .number(Double(s.items.reduce(0) { $0 + $1.amount }) / 100, .head)])

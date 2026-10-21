@@ -167,7 +167,7 @@ extension PlanCalendarView {
 
     // MARK: Title row and controls
 
-    /// `ติดตั้ง n งาน · สำรวจ n นัด` for the shown month, or the shown week in week view, team-filtered.
+    /// `ติดตั้ง n งาน | สำรวจ n นัด` for the shown month, or the shown week in week view, team-filtered.
     private var phoneCounts: some View {
         let first: Date, last: Date
         if phoneMode == .week {
@@ -178,7 +178,7 @@ extension PlanCalendarView {
         }
         let data = phoneData(from: first, to: last)
         let surveys = data.surveys.values.reduce(0, +)
-        return Text("ติดตั้ง \(data.spans.count) งาน · สำรวจ \(surveys) นัด")
+        return Text("ติดตั้ง \(data.spans.count) งาน | สำรวจ \(surveys) นัด")
             .font(.sarabun(13, relativeTo: .subheadline)).foregroundStyle(Theme.inkStrong)
             .lineLimit(1)
     }
@@ -436,7 +436,7 @@ extension PlanCalendarView {
         let surveyCount = surveys.appointments.count + surveys.reports.count
         let teams = Set(installs.map(\.team)).count
         let summary = [surveyCount > 0 ? "สำรวจ \(surveyCount)" : nil, installs.isEmpty ? nil : "ติดตั้ง \(installs.count)",
-                       teams > 0 ? "\(teams) ทีม" : nil].compactMap { $0 }.joined(separator: " · ")
+                       teams > 0 ? "\(teams) ทีม" : nil].compactMap { $0 }.joined(separator: " | ")
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(selected.thaiLong).font(.sarabun(18, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
@@ -461,7 +461,7 @@ extension PlanCalendarView {
     private func appointmentRow(_ job: Job) -> some View {
         let time = ThaiFormat.time.string(from: job.surveyDate)
         return NavigationLink { SurveyFormView(job: job) } label: {
-            PlanAgendaRow(rule: Theme.survey, title: job.projectName, subtitle: "นัดสำรวจ · ทีม \(job.team.rawValue)") {
+            PlanAgendaRow(rule: Theme.survey, title: job.projectName, subtitle: "นัดสำรวจ | ทีม \(job.team.rawValue)") {
                 Text("\(time) น.").font(.sarabun(15, .bold, relativeTo: .body)).monospacedDigit().foregroundStyle(Theme.navy)
             }
             .accessibilityElement(children: .ignore)
@@ -475,7 +475,7 @@ extension PlanCalendarView {
         let title = report.projectName.isEmpty ? "แบบสำรวจ กปภ." : report.projectName
         let linked = report.jobSyncID.flatMap { surveyModel.linkedJobLabel?($0) } ?? "ยังไม่ผูกกับงาน"
         return NavigationLink { SurveyReportEditor(jobID: report.id) } label: {
-            PlanAgendaRow(rule: Theme.survey, title: title, subtitle: "\(linked) · \(surveyReportSummary(report))") {
+            PlanAgendaRow(rule: Theme.survey, title: title, subtitle: "\(linked) | \(surveyReportSummary(report))") {
                 PlanInfoBadge(title: "แบบ กปภ.")
             }
             .accessibilityElement(children: .ignore)
@@ -488,7 +488,7 @@ extension PlanCalendarView {
         let day = job.installDay(on: selected) ?? 1
         let total = max(job.installDays, 1)
         return NavigationLink { JobDetailView(job: job) } label: {
-            PlanAgendaRow(rule: job.team.color, title: job.projectName, subtitle: "งานติดตั้ง · ทีม \(job.team.rawValue)",
+            PlanAgendaRow(rule: job.team.color, title: job.projectName, subtitle: "งานติดตั้ง | ทีม \(job.team.rawValue)",
                           progress: (day, total, job.team.color)) {
                 VStack(alignment: .trailing, spacing: 0) {
                     Text("วัน \(day)/\(total)").font(.sarabun(15, .bold, relativeTo: .body)).monospacedDigit().foregroundStyle(Theme.navy)
@@ -559,7 +559,7 @@ private struct PlanRangeLines: View {
             .frame(width: max(column * CGFloat(bar.span) - leading - trailing, 0), height: Self.lane)
             .offset(x: column * CGFloat(bar.startColumn) + leading, y: CGFloat(bar.lane) * (Self.lane + Self.gap))
             .accessibilityElement()
-            .accessibilityLabel("ทีม \(job.team.rawValue.suffix(2)) · \(nickname(job)) · ช่วงติดตั้ง")
+            .accessibilityLabel("ทีม \(job.team.rawValue.suffix(2)) | \(nickname(job)) | ช่วงติดตั้ง")
     }
 }
 
@@ -569,14 +569,14 @@ private func nickname(_ job: Job) -> String {
     return name.split(separator: " ").first.map(String.init) ?? name
 }
 
-/// A job's days in the week view: team tint at 20 %, a 4 pt solid leading edge, `TCR01 · <project>` or just `01`.
+/// A job's days in the week view: team tint at 20 %, a 4 pt solid leading edge, `TCR01 | <project>` or just `01`.
 private struct PlanWeekBar: View {
     let bar: PlanLayout.Bar<PersistentIdentifier>
     let job: Job
 
     var body: some View {
         let color = job.team.color
-        let label = bar.span >= 3 ? "\(job.team.rawValue) · \(job.projectName)" : String(job.team.rawValue.suffix(2))
+        let label = bar.span >= 3 ? "\(job.team.rawValue) | \(job.projectName)" : String(job.team.rawValue.suffix(2))
         GeometryReader { geo in
             let column = geo.size.width / 7
             Text(label)

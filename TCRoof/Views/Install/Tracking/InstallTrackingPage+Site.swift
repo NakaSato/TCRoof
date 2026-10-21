@@ -235,7 +235,7 @@ extension InstallTrackingPage {
                 if s.plannedManDays != nil { legendSwatch(Theme.track, "แผน") }
                 legendSwatch(Theme.primary, "จริง")
                 Spacer(minLength: 8)
-                Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " · แผนทั้งโครงการ \($0)" } ?? ""))
+                Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " | แผนทั้งโครงการ \($0)" } ?? ""))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             HStack(alignment: .bottom, spacing: 6) {
@@ -259,7 +259,7 @@ extension InstallTrackingPage {
                     .frame(maxWidth: .infinity)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(ThaiFormat.dayMonth.string(from: d.date))
-                    .accessibilityValue([d.plan.map { "แผน \($0) คน" }, d.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " · "))
+                    .accessibilityValue([d.plan.map { "แผน \($0) คน" }, d.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " | "))
                 }
             }
         }
@@ -321,7 +321,7 @@ extension InstallTrackingPage {
     }
 
     private func actionsSheet(_ actions: [InstallPageData.Action]) -> some View {
-        sheetFrame(width: 730, title: "ต้องดำเนินการ", about: "รายการที่ค้างจากแผน รายงาน และเอกสาร · แตะเพื่อเปิดรายการ", chip: nil) {
+        sheetFrame(width: 730, title: "ต้องดำเนินการ", about: "รายการที่ค้างจากแผน รายงาน และเอกสาร | แตะเพื่อเปิดรายการ", chip: nil) {
             if actions.isEmpty {
                 Text("ไม่มีรายการค้าง").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
             }

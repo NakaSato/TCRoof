@@ -58,8 +58,8 @@ final class WeeklySlidesTests: XCTestCase {
 
         let all = (1...count).compactMap { zip.string("ppt/slides/slide\($0).xml") }.joined()
         XCTAssertTrue(all.contains("รายงานประจำสัปดาห์ (Weekly Report)"))
-        XCTAssertTrue(all.contains("MP 189 · สถานีผลิตน้ำทุ่งน้อย · 92.34 kWp"))
-        XCTAssertTrue(all.contains("ติดตั้งโครงสร้าง · โซน A  +20%"), "the day's delta from the day before")
+        XCTAssertTrue(all.contains("MP 189 | สถานีผลิตน้ำทุ่งน้อย | 92.34 kWp"))
+        XCTAssertTrue(all.contains("ติดตั้งโครงสร้าง | โซน A  +20%"), "the day's delta from the day before")
         XCTAssertTrue(all.contains("ฝนตก &lt;บ่าย&gt; &amp; ลมแรง"), "text is escaped")
         XCTAssertTrue(all.contains("เดินสาย DC"))
         XCTAssertTrue(all.contains("* 1 วันใช้กำลังคนจากวันก่อนโดยไม่ได้ยืนยัน"))

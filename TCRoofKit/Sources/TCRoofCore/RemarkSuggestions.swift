@@ -155,8 +155,8 @@ public enum FinalSummary {
 
     public static func statusLine(_ job: Job) -> String {
         let here = pageGaps(job.values), others = otherPages(job)
-        if !here.isEmpty { return "ยังขาดในหน้านี้: " + here.joined(separator: ", ") + (others.isEmpty ? "" : " · และอีก \(others.count) หน้า") }
-        if !others.isEmpty { return "หน้านี้ครบแล้ว · ยังขาดอีก \(others.count) หน้า (\(others.map(code).joined(separator: ", ")))" }
-        return "ครบทุกหน้าแล้ว · พร้อมส่งออก"
+        if !here.isEmpty { return "ยังขาดในหน้านี้: " + here.joined(separator: ", ") + (others.isEmpty ? "" : " | และอีก \(others.count) หน้า") }
+        if !others.isEmpty { return "หน้านี้ครบแล้ว | ยังขาดอีก \(others.count) หน้า (\(others.map(code).joined(separator: ", ")))" }
+        return "ครบทุกหน้าแล้ว | พร้อมส่งออก"
     }
 }

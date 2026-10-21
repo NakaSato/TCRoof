@@ -19,10 +19,10 @@ struct SurveyHistoryView: View {
                 ForEach(surveys) { survey in
                     PadLink { SurveyDetailView(survey: survey) } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(survey.job?.code ?? "-") · \(survey.job?.projectName ?? "")").bold()
-                            Text("\(survey.createdAt.thaiLongTime) · โดย \(survey.surveyor)")
+                            Text("\(survey.job?.code ?? "-") | \(survey.job?.projectName ?? "")").bold()
+                            Text("\(survey.createdAt.thaiLongTime) | โดย \(survey.surveyor)")
                                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
-                            Text("\(survey.roofType) · \(survey.roofAreaSqm.plain) ตร.ม. · เสนอ \(survey.recommendedKW.kw)")
+                            Text("\(survey.roofType) | \(survey.roofAreaSqm.plain) ตร.ม. | เสนอ \(survey.recommendedKW.kw)")
                                 .font(.sarabun(15, relativeTo: .subheadline))
                         }
                         .foregroundStyle(Theme.navy)
@@ -59,7 +59,7 @@ struct SurveyDetailView: View {
             }
             PadSection("ระบบไฟฟ้า") {
                 InfoRow(title: "การไฟฟ้า / CA", value: "\(orDash(survey.utility)) / \(orDash(survey.caNumber))")
-                InfoRow(title: "มิเตอร์", value: [survey.meterPhase, survey.meterSize].filter { !$0.isEmpty }.joined(separator: " · "))
+                InfoRow(title: "มิเตอร์", value: [survey.meterPhase, survey.meterSize].filter { !$0.isEmpty }.joined(separator: " | "))
                 InfoRow(title: "เมนเบรกเกอร์", value: survey.mainBreakerAmp > 0 ? "\(survey.mainBreakerAmp) A" : "-")
                 InfoRow(title: "อัตราค่าไฟ", value: orDash(survey.tariff))
                 if survey.monthlyKWh > 0 { InfoRow(title: "หน่วย/เดือน", value: "\(survey.monthlyKWh.plain) kWh") }

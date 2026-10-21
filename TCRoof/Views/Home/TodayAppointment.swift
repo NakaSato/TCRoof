@@ -42,10 +42,10 @@ struct TodayAppointment: Identifiable {
         return parts.isEmpty ? (job.province.isEmpty ? "" : "จ.\(job.province)") : parts.joined(separator: " ")
     }
 
-    /// "ต.หนองบัว อ.เมือง · 120 kWp"
+    /// "ต.หนองบัว อ.เมือง | 120 kWp"
     var place: String {
         let size = job.capacityKW > 0 ? "\(job.capacityKW.plain) kWp" : ""
-        return [area, size].filter { !$0.isEmpty }.joined(separator: " · ")
+        return [area, size].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
     var percent: Int { report?.completion.percent ?? 0 }

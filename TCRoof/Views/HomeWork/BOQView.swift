@@ -97,7 +97,7 @@ enum BOQRenderer {
         }
         for l in [company.address, [company.phone.isEmpty ? "" : "โทรศัพท์ " + company.phone,
                                     company.taxID.isEmpty ? "" : "เลขประจำตัวผู้เสียภาษี " + company.taxID].filter { !$0.isEmpty }
-                                    .joined(separator: " · ")] where !l.isEmpty {
+                                    .joined(separator: " | ")] where !l.isEmpty {
             text(l, CGRect(x: left, y: y, width: 535, height: 13), font(8.5)); y += 12
         }
         y += 6
@@ -249,7 +249,7 @@ struct BOQView: View {
     /// One menu on every width: Excel (both sheets, the company file) and the two PDFs.
     private var exportMenu: some View {
         Menu {
-            Button { exportExcel() } label: { Label("Excel · Cost + Sent", systemImage: "tablecells") }
+            Button { exportExcel() } label: { Label("Excel | Cost + Sent", systemImage: "tablecells") }
             Button { export(customer: true) } label: { Label("PDF ฉบับส่งลูกค้า", systemImage: "paperplane") }
             Button { export(customer: false) } label: { Label("PDF ฉบับต้นทุน", systemImage: "doc.text") }
         } label: {

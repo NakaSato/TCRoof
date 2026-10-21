@@ -115,7 +115,7 @@ private struct Builder {
             isc = SingleLine.shortCircuit(kva: kva, zPercent: z!)
         }
         if zAssumed { assumptions.append(SLAssumption(id: "z", text: "%Z ของ TX\(connT + 1) ไม่มีข้อมูล ใช้ \(SingleLine.fmt(SLConstants.defaultZPercent)) % คำนวณกระแสลัดวงจร")) }
-        if isc != nil { assumptions.append(SLAssumption(id: "isc", text: "Isc = S / (√3 × 400 V × Z) · แหล่งจ่ายแรงสูงไม่จำกัด ไม่นับอิมพีแดนซ์สาย")) }
+        if isc != nil { assumptions.append(SLAssumption(id: "isc", text: "Isc = S / (√3 × 400 V × Z) | แหล่งจ่ายแรงสูงไม่จำกัด ไม่นับอิมพีแดนซ์สาย")) }
 
         // PV side
         let pv = pvBranch(isc: isc, connT: connT)
@@ -141,7 +141,7 @@ private struct Builder {
         if fr.state == .flooded || fr.state == .unknownFetched {
             let year = t(v.text("floodYear"))
             let when = fr.state == .flooded ? (year.isEmpty ? "" : " (ปี \(year))") : " (ประเมิน GISTDA)"
-            flood = SLFlood(text: "\(fr.mdbName) น้ำเคยเข้า \(Int(fr.level)) ซม.\(when) · ตู้ SMDB-PV และรีเลย์กันย้อนต้องสูง ≥ \(fr.minCm) ซม.",
+            flood = SLFlood(text: "\(fr.mdbName) น้ำเคยเข้า \(Int(fr.level)) ซม.\(when) | ตู้ SMDB-PV และรีเลย์กันย้อนต้องสูง ≥ \(fr.minCm) ซม.",
                             minCm: fr.minCm, levelCm: Int(fr.level))
         }
 
@@ -158,8 +158,8 @@ private struct Builder {
         let meterNo = t(v.text("meterNo")), ca = t(v.text("meterCA")), rate = t(v.text("meterRate")), ctv = t(v.text("meterCT"))
         let meter = [
             SLText("PEA METER " + (meterNo.isEmpty ? "?" : meterNo), meterNo.isEmpty ? .missing : .known, bold: true),
-            SLText("CA \(ca.isEmpty ? "?" : ca) · อัตรา \(rate.isEmpty ? "?" : rate)", ca.isEmpty || rate.isEmpty ? .missing : .known),
-            SLText("รับไฟ \(kvText) kV \(phase.isEmpty ? "?" : phase) · CT \(ctv.isEmpty ? "?" : ctv) A", kv.isEmpty || phase.isEmpty || ctv.isEmpty ? .missing : .known),
+            SLText("CA \(ca.isEmpty ? "?" : ca) | อัตรา \(rate.isEmpty ? "?" : rate)", ca.isEmpty || rate.isEmpty ? .missing : .known),
+            SLText("รับไฟ \(kvText) kV \(phase.isEmpty ? "?" : phase) | CT \(ctv.isEmpty ? "?" : ctv) A", kv.isEmpty || phase.isEmpty || ctv.isEmpty ? .missing : .known),
         ]
         if meterNo.isEmpty { miss("meter", "มิเตอร์: หมายเลข", blocking: false, SLTarget(.electrical)) }
         let protections = Set(trafos.map { t($0.hvProtection) }.filter { !$0.isEmpty })
@@ -195,7 +195,7 @@ private struct Builder {
             let z = blank(tr.impedance) ? "?" : t(tr.impedance)
             lines.append(SLText("\(vec), Z=\(z)%", blank(tr.vectorGroup) || blank(tr.impedance) ? .missing : .known))
             lines.append(blank(tr.kva) ? SLText("? kVA", .missing) : SLText(t(tr.kva) + " kVA"))
-            let id = "\(blank(tr.brand) ? "" : t(tr.brand) + " · ")SN \(blank(tr.serial) ? "?" : t(tr.serial)) · ปี \(blank(tr.year) ? "?" : t(tr.year))"
+            let id = "\(blank(tr.brand) ? "" : t(tr.brand) + " | ")SN \(blank(tr.serial) ? "?" : t(tr.serial)) | ปี \(blank(tr.year) ? "?" : t(tr.year))"
             lines.append(SLText(id, blank(tr.serial) || blank(tr.year) ? .missing : .known))
             if let c = SLCondition(tr.condition) {
                 lines.append(SLText("สภาพ: " + t(tr.condition) + (blank(tr.conditionNote) ? "" : " — " + t(tr.conditionNote)), .condition(c), bold: true))
@@ -315,7 +315,7 @@ private struct Builder {
             if let at = cb.main.atAmps, at > 0 {
                 let r = at / flc
                 let off = r < 0.8 || r > 1.25
-                head.append(SLNote(id: "mainFLC", text: "เมน \(cb.name) \(f(at)) AT = \(String(format: "%.2f", r)) × กระแสพิกัด" + (off ? " · นอกช่วง 0.8–1.25 ×" : ""),
+                head.append(SLNote(id: "mainFLC", text: "เมน \(cb.name) \(f(at)) AT = \(String(format: "%.2f", r)) × กระแสพิกัด" + (off ? " | นอกช่วง 0.8–1.25 ×" : ""),
                                    flagged: off, target: cb.main.target))
             }
         }
@@ -324,12 +324,12 @@ private struct Builder {
         if !rawCB.isEmpty {
             let n = rawCB.reduce(0) { $0 + max($1.count, 1) }
             let spare = rawCB.filter(\.spare).reduce(0) { $0 + max($1.count, 1) }
-            head.append(SLNote(id: "feeders", text: "วงจรย่อย \(cb.name) \(n) วงจร (ใช้งาน \(n - spare) · สำรอง \(spare))", target: cb.target))
+            head.append(SLNote(id: "feeders", text: "วงจรย่อย \(cb.name) \(n) วงจร (ใช้งาน \(n - spare) | สำรอง \(spare))", target: cb.target))
             let used = rawCB.filter { !$0.spare }
             let sum = used.reduce(0.0) { $0 + (num($1.at) ?? 0) * Double(max($1.count, 1)) }
             let unknown = used.filter { num($0.at) == nil }.reduce(0) { $0 + max($1.count, 1) }
             if !used.isEmpty {
-                head.append(SLNote(id: "sumAT", text: "รวมพิกัดวงจรที่ใช้งาน \(f(sum)) AT (ไม่คิด diversity)" + (unknown > 0 ? " · ไม่รู้ AT \(unknown) วงจร" : ""),
+                head.append(SLNote(id: "sumAT", text: "รวมพิกัดวงจรที่ใช้งาน \(f(sum)) AT (ไม่คิด diversity)" + (unknown > 0 ? " | ไม่รู้ AT \(unknown) วงจร" : ""),
                                    target: cb.target))
             }
         }
@@ -337,7 +337,7 @@ private struct Builder {
         let pvKW = pv.inverterSizes.map { Double($0.reduce(0, +)) } ?? pv.inverterKW.flatMap { kw in pv.inverterCount.map { kw * Double($0) } } ?? pv.capacityKWp
         if let kw = pvKW, let kva = tx.kva, kva > 0 {
             let p = kw / kva * 100
-            head.append(SLNote(id: "pvShare", text: "กำลัง PV ต่อหม้อแปลง \(f(kw)) kW ÷ \(f(kva)) kVA = \(Int(p.rounded())) %" + (p > 100 ? " · เกิน 100 %" : ""),
+            head.append(SLNote(id: "pvShare", text: "กำลัง PV ต่อหม้อแปลง \(f(kw)) kW ÷ \(f(kva)) kVA = \(Int(p.rounded())) %" + (p > 100 ? " | เกิน 100 %" : ""),
                                flagged: p > 100, target: tx.target))
         }
         if let at = pv.totalAT {
@@ -380,7 +380,7 @@ private struct Builder {
             pv.totalCableM = pv.cableRuns * SLConstants.cableRunM
             if let isc { pv.requiredIC = SingleLine.requiredIC(isc: isc) }
             assumptions.append(SLAssumption(id: "length", text: "ระยะสาย AC \(SLConstants.cableRunM) ม./เส้น × \(pv.cableRuns) เส้น = \(pv.totalCableM) ม. (ไม่มีข้อมูลระยะจริง)"))
-            let icText = pv.requiredIC.map { " · IC ≥ \($0) kA" } ?? " · IC ≥ ? kA"
+            let icText = pv.requiredIC.map { " | IC ≥ \($0) kA" } ?? " | IC ≥ ? kA"
             rows += [SLRow(label: "อินเวอร์เตอร์", value: SLText(pv.inverterSummary, .new)),
                      SLRow(label: "เบรกเกอร์อินเวอร์เตอร์", value: SLText(all.breakerSummary, .new)),
                      SLRow(label: "เบรกเกอร์ PV รวม", value: SLText("\(fd.at) AT" + icText, pv.requiredIC == nil ? .missing : .new)),
@@ -401,7 +401,7 @@ private struct Builder {
             assumptions.append(SLAssumption(id: "invKW", text: "กำลังอินเวอร์เตอร์ \(SingleLine.fmt(kw)) kW/เครื่อง = A1 ÷ B2 ปัดเป็นขนาดมาตรฐาน (B2 ยังไม่มีช่อง kW)"))
             assumptions.append(SLAssumption(id: "sizes", text: "สาย/ราง ตามตาราง CV 0.6/1 kV ร้อยท่อ (เบรกเกอร์ = I × 1.25 ตามเกณฑ์ทีม)"))
             assumptions.append(SLAssumption(id: "length", text: "ระยะสาย AC \(SLConstants.cableRunM) ม./เส้น × \(pv.cableRuns) เส้น = \(pv.totalCableM) ม. (ไม่มีข้อมูลระยะจริง)"))
-            let icText = pv.requiredIC.map { " · IC ≥ \($0) kA" } ?? " · IC ≥ ? kA"
+            let icText = pv.requiredIC.map { " | IC ≥ \($0) kA" } ?? " | IC ≥ ? kA"
             rows += [SLRow(label: "อินเวอร์เตอร์", value: SLText("\(n) × \(SingleLine.fmt(kw)) kW", .new)),
                      SLRow(label: "เบรกเกอร์อินเวอร์เตอร์", value: SLText("\(at) AT × \(n)", .new)),
                      SLRow(label: "เบรกเกอร์ PV รวม", value: SLText("\(total) AT" + icText, pv.requiredIC == nil ? .missing : .new)),

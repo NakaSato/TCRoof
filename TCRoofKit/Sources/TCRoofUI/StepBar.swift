@@ -174,12 +174,12 @@ public struct TCStatusButton: View {
 
     public var body: some View {
         TCBarStatusView(missing == 0
-            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: detail, label: "ครบช่องบังคับแล้ว · " + detail, action: action)
-            : .gapChip(title: "ยังขาด \(missing) รายการ", sub: detail, label: "ไปยังรายการที่ขาด · " + detail, action: action))
+            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: detail, label: "ครบช่องบังคับแล้ว | " + detail, action: action)
+            : .gapChip(title: "ยังขาด \(missing) รายการ", sub: detail, label: "ไปยังรายการที่ขาด | " + detail, action: action))
     }
 }
 
-/// The iPad bottom bar of every survey step (docs/ui/survey-bar-ipad, `g-bar`): status · `บันทึกร่างตอนนี้` · ‹ · ›
+/// The iPad bottom bar of every survey step (docs/ui/survey-bar-ipad, `g-bar`): status | `บันทึกร่างตอนนี้` | ‹ | ›
 /// in a centred 1240-wide row, all 53 high. The status shrinks and truncates first.
 public struct TCPadStepBar: View {
     let status: TCBarStatus
@@ -208,7 +208,7 @@ public struct TCPadStepBar: View {
 }
 
 /// Bottom bar of a step (`g-bar`, height 53).
-/// iPad: status button · `บันทึกร่างตอนนี้` · ‹ ก่อนหน้า · ถัดไป ›. iPhone: `บันทึก` stretches, ‹ and › icon only, no status button
+/// iPad: status button | `บันทึกร่างตอนนี้` | ‹ ก่อนหน้า | ถัดไป ›. iPhone: `บันทึก` stretches, ‹ and › icon only, no status button
 /// (the step line in the header carries it).
 public struct TCStepBar: View {
     public struct Step: Sendable {
@@ -250,8 +250,8 @@ public struct TCStepBar: View {
             .background(Rectangle().fill(Theme.surface.shadow(.drop(color: .black.opacity(0.08), radius: 8, y: -2))).ignoresSafeArea(edges: .bottom))
         } else {
             TCPadStepBar(status: missing == 0
-                            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: missingDetail, label: "ครบช่องบังคับแล้ว · " + missingDetail, action: onStatus)
-                            : .gapChip(title: "ยังขาด \(missing) รายการ", sub: missingDetail, label: "ไปยังรายการที่ขาด · " + missingDetail, action: onStatus),
+                            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: missingDetail, label: "ครบช่องบังคับแล้ว | " + missingDetail, action: onStatus)
+                            : .gapChip(title: "ยังขาด \(missing) รายการ", sub: missingDetail, label: "ไปยังรายการที่ขาด | " + missingDetail, action: onStatus),
                          save: .pad(save: save, version: saveVersion),
                          previous: nav(.previous, previous, onPrevious), next: nav(.next, next, onNext))
         }

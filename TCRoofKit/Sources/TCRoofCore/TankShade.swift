@@ -204,25 +204,25 @@ public struct TankShade: Sendable {
 
     // MARK: report
 
-    /// `เงาแถวหน้า 1.7% · เงาสิ่งบัง 0.4% · สูญเสียรวม 2.1% · เสียจากสิ่งบัง 1.2 MWh/ปี`
+    /// `เงาแถวหน้า 1.7% | เงาสิ่งบัง 0.4% | สูญเสียรวม 2.1% | เสียจากสิ่งบัง 1.2 MWh/ปี`
     public var summaryLine: String {
-        String(format: "เงาแถวหน้า %.1f%% · เงาสิ่งบัง %.1f%% · สูญเสียรวม %.1f%% · เสียจากสิ่งบัง %.1f MWh/ปี",
+        String(format: "เงาแถวหน้า %.1f%% | เงาสิ่งบัง %.1f%% | สูญเสียรวม %.1f%% | เสียจากสิ่งบัง %.1f MWh/ปี",
                rowLoss * 100, objectLoss * 100, totalLoss * 100, objectMWh)
     }
 
     /// One recommendation line (a proposal for E1).
     public func recommendation(_ v: Values) -> String {
         if objects.isEmpty {
-            return Schema.shaded(v) ? "ใส่ความสูงและระยะห่างของสิ่งที่บังในขั้นที่ 2 เพื่อคิดเงาจากสิ่งบัง" : "ไม่มีสิ่งบังรอบถัง · เงามาจากแถวแผงหน้าเท่านั้น"
+            return Schema.shaded(v) ? "ใส่ความสูงและระยะห่างของสิ่งที่บังในขั้นที่ 2 เพื่อคิดเงาจากสิ่งบัง" : "ไม่มีสิ่งบังรอบถัง | เงามาจากแถวแผงหน้าเท่านั้น"
         }
         let what = v.multi("shadeFrom").joined(separator: " / "), side = objects.map(\.direction).joined(separator: ", ")
         let name = what.isEmpty ? "สิ่งที่บัง" : what
-        if objectLoss < 0.01 { return String(format: "%@ด้าน %@ ทำให้เสียพลังงาน %.1f%% · ยอมรับได้ ไม่ต้องแก้", name, side, objectLoss * 100) }
+        if objectLoss < 0.01 { return String(format: "%@ด้าน %@ ทำให้เสียพลังงาน %.1f%% | ยอมรับได้ ไม่ต้องแก้", name, side, objectLoss * 100) }
         if let h = cutTo {
             return String(format: "เสนอตัดแต่ง%@ด้าน %@ ให้สูงไม่เกิน %@ ม. จะเหลือการสูญเสียต่ำกว่า 1%% (ตอนนี้ %.1f%%, %.1f MWh/ปี)", name, side,
                           fmt(h), objectLoss * 100, objectMWh)
         }
-        return String(format: "%@ด้าน %@ ทำให้เสียพลังงาน %.1f%% (%.1f MWh/ปี) · เสนอเว้นแผงด้านนั้นหรือย้ายสิ่งบัง", name, side, objectLoss * 100, objectMWh)
+        return String(format: "%@ด้าน %@ ทำให้เสียพลังงาน %.1f%% (%.1f MWh/ปี) | เสนอเว้นแผงด้านนั้นหรือย้ายสิ่งบัง", name, side, objectLoss * 100, objectMWh)
     }
 
     // MARK: helpers

@@ -82,7 +82,7 @@ struct PWADocsPadView: View {
                 .accessibilityHidden(true)
             Text("เอกสารสำหรับทีมภายใน").font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy)
                 .accessibilityAddTraits(.isHeader)
-            Text("เอกสาร PWA ร่างและยื่นโดยทีมภายใน · ผู้รับเหมาไม่มีสิทธิ์เข้าถึงหน้านี้")
+            Text("เอกสาร PWA ร่างและยื่นโดยทีมภายใน | ผู้รับเหมาไม่มีสิทธิ์เข้าถึงหน้านี้")
                 .font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
             Text("งานที่ต้องส่งจากหน้างาน เช่น รายงานประจำวันและผลทดสอบ IEC ทำได้ในหน้างานของแต่ละสถานี")
                 .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)

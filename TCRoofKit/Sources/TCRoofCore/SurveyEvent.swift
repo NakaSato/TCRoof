@@ -56,7 +56,7 @@ public struct SurveyEvent: Equatable, Sendable {
     /// `hours`: how long a timed survey takes (spec: 3 h).
     public init(_ s: Source, hours: Double = 3, calendar cal: Calendar = .current) {
         let name = s.projectName.trimmed.isEmpty ? s.customerName.trimmed : s.projectName.trimmed
-        title = "สำรวจ · " + name + (s.code.isEmpty ? "" : " (\(s.code))")
+        title = "สำรวจ | " + name + (s.code.isEmpty ? "" : " (\(s.code))")
         let t = cal.dateComponents([.hour, .minute], from: s.start)
         isAllDay = (t.hour ?? 0) == 0 && (t.minute ?? 0) == 0
         let day = cal.startOfDay(for: s.start)
@@ -78,7 +78,7 @@ public struct SurveyEvent: Equatable, Sendable {
         let phone = s.formPhone.trimmed.isEmpty ? s.phone.trimmed : s.formPhone.trimmed
         if !phone.isEmpty { lines.append("โทร: " + phone) }
         let size = s.capacityKW > 0 ? "ขนาด \(Self.kw(s.capacityKW)) kW" : ""
-        let team = [s.team.isEmpty ? "" : "ทีม: " + s.team, size].filter { !$0.isEmpty }.joined(separator: " · ")
+        let team = [s.team.isEmpty ? "" : "ทีม: " + s.team, size].filter { !$0.isEmpty }.joined(separator: " | ")
         if !team.isEmpty { lines.append(team) }
         // to the pin when the form has one, else to the address
         let destination = pin.map { String(format: "%.6f,%.6f", $0.lat, $0.lon) }

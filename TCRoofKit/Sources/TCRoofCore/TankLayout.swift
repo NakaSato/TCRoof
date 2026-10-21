@@ -124,6 +124,9 @@ public struct TankLayout: Sendable {
 
     public let params: Params
     public let size: (w: Double, h: Double)
+    /// A round tank's roof (its bounding square is `size`): module columns are clipped to it less the edge setback and
+    /// footings stay inside it; nil for a rectangle, whose results are unchanged.
+    public let circle: TankPoints.Circle?
     /// Quarter turns from the tank plan to the layout's frame: 0 the bottom wall faces south, 1 the right, 2 the top, 3 the left.
     public let turn: Int
     public let tables: [Table]
@@ -183,7 +186,7 @@ public struct TankLayout: Sendable {
     /// The layout for the tank in `v`; `off` are the panels switched off by hand. nil without a size.
     public init?(_ v: Values, params p: Params, off: Set<String> = []) {
         guard let t = TankPoints.tankSize(v) else { return nil }
-        self.init(size: t, turn: Self.turn(v), openings: Self.openings(v), params: p, off: off)
+        self.init(size: t, turn: Self.turn(v), openings: Self.openings(v), params: p, off: off, circle: TankPoints.circle(v))
     }
 
     struct Row { var upper: Double; var free: [Int]; var ventsUnder: Set<Int>; var headroom: Double? }
@@ -193,7 +196,7 @@ public struct TankLayout: Sendable {
     }
 
     /// Each row's free module columns (§3 steps 2–4, no posts).
-    static func rows(_ fr: Frame, _ open: [Opening], _ p: Params) -> [Row] {
+    static func rows(_ fr: Frame, _ open: [Opening], _ p: Params, circle: TankPoints.Circle? = nil) -> [Row] {
         let e = p.clearance, n = p.columns(fr.fw), x0 = x0(fr, p)
         guard n > 0 else { return [] }
         let fo = open.map { Opening(rect: fr.rect($0.rect), vent: $0.vent) }
@@ -204,6 +207,9 @@ public struct TankLayout: Sendable {
             var row = Row(upper: upper, free: [], ventsUnder: [], headroom: nil)
             for c in 0..<n {
                 let strip = TankPoints.Rect(x: x0 + Double(c) * (p.cellW + p.moduleGap), y: upper, w: p.cellW, h: p.depth)
+                // a round tank: the column's two modules inside the circle less the setback (a quarter turn of the
+                // bounding square keeps the circle where it is)
+                if let circle, !circle.contains(strip, margin: p.clearance) { continue }
                 var ok = true
                 for (i, o) in fo.enumerated() {
                     let grown = TankPoints.Rect(x: o.rect.x - p.openClear, y: o.rect.y - p.openClear, w: o.rect.w + 2 * p.openClear, h: o.rect.h + 2 * p.openClear)
@@ -230,8 +236,9 @@ public struct TankLayout: Sendable {
         return out
     }
 
-    init(size t: (w: Double, h: Double), turn q: Int, openings open: [Opening], params p: Params, off: Set<String>) {
-        params = p; size = t; turn = q
+    init(size t: (w: Double, h: Double), turn q: Int, openings open: [Opening], params p: Params, off: Set<String>,
+         circle: TankPoints.Circle? = nil) {
+        params = p; size = t; turn = q; self.circle = circle
         let fr = Frame(q: q, W: t.w, H: t.h), x0 = Self.x0(fr, p)
         func colX(_ c: Int) -> Double { x0 + Double(c) * (p.cellW + p.moduleGap) }
         // footing keep-out: each opening grown by the clearance and half a footing
@@ -242,12 +249,13 @@ public struct TankLayout: Sendable {
         func free(_ x: Double, _ ys: [Double]) -> Bool {
             ys.allSatisfy { y in
                 x >= p.footing / 2 && x <= fr.fw - p.footing / 2 && y >= p.footing / 2 && y <= fr.fh - p.footing / 2
+                    && (circle?.contains(x, y, margin: p.footing / 2) ?? true)
                     && !keep.contains { x > $0.x + 1e-9 && x < $0.x + $0.w - 1e-9 && y > $0.y + 1e-9 && y < $0.y + $0.h - 1e-9 }
             }
         }
         var list: [Table] = [], cutList: [Cut] = []
         var under = Set<Int>(), headroom: Double?
-        for (r, row) in Self.rows(fr, open, p).enumerated() {
+        for (r, row) in Self.rows(fr, open, p, circle: circle).enumerated() {
             under.formUnion(row.ventsUnder)
             if let h = row.headroom { headroom = min(headroom ?? h, h) }
             let upper = row.upper, yF = upper + p.depth - p.frontIn, ys = [yF, yF - p.postDY]
@@ -285,7 +293,8 @@ public struct TankLayout: Sendable {
         var ck = Checks()
         let on = built.flatMap { $0.panels.filter(\.on) }
         if !on.isEmpty {
-            ck.edge = on.map { min($0.x, $0.y, t.w - ($0.x + $0.w), t.h - ($0.y + $0.h)) }.min()
+            if let circle { ck.edge = on.map { circle.clearance(TankPoints.Rect(x: $0.x, y: $0.y, w: $0.w, h: $0.h)) }.min() }
+            else { ck.edge = on.map { min($0.x, $0.y, t.w - ($0.x + $0.w), t.h - ($0.y + $0.h)) }.min() }
             ck.edgeOK = (ck.edge ?? 0) >= p.clearance - 1e-6
         }
         ck.ventsUnder = under.count
@@ -353,7 +362,9 @@ public struct TankLayout: Sendable {
     public static func offsetRange(_ v: Values, _ p: Params) -> (x: Double, y: Double) {
         guard let t = TankPoints.tankSize(v) else { return (0, 0) }
         let fr = Frame(q: turn(v), W: t.w, H: t.h), uw = fr.fw - 2 * p.clearance, uh = fr.fh - 2 * p.clearance
-        let sy = uh >= p.depth ? (uh - p.depth).truncatingRemainder(dividingBy: p.rowPitch) : 0
+        // a rectangle's row count is fixed, so only the remainder moves; a circle's rows can take any phase of a pitch
+        let sy = uh >= p.depth ? (TankPoints.circle(v) == nil ? (uh - p.depth).truncatingRemainder(dividingBy: p.rowPitch)
+                                                              : min(p.rowPitch, uh - p.depth)) : 0
         return (max(0, uw - p.width(p.columns(fr.fw))), max(0, sy))
     }
     public static func snap(_ d: Double) -> Double { TankPoints.snap(d) }
@@ -367,8 +378,9 @@ public struct TankLayout: Sendable {
     }
 
     /// The modules without posts (the search's first stage).
-    static func count(size t: (w: Double, h: Double), turn q: Int, openings: [Opening], params p: Params) -> Int {
-        rows(Frame(q: q, W: t.w, H: t.h), openings, p).reduce(0) { $0 + runs($1.free).filter { $0.count >= 2 }.reduce(0) { $0 + 2 * $1.count } }
+    static func count(size t: (w: Double, h: Double), turn q: Int, openings: [Opening], params p: Params,
+                      circle: TankPoints.Circle? = nil) -> Int {
+        rows(Frame(q: q, W: t.w, H: t.h), openings, p, circle: circle).reduce(0) { $0 + runs($1.free).filter { $0.count >= 2 }.reduce(0) { $0 + 2 * $1.count } }
     }
 
     /// `หาผังแผงมากสุด`: every offset on the 5 cm grid; stage 1 counts modules without posts, stage 2 lays out the ten
@@ -377,19 +389,19 @@ public struct TankLayout: Sendable {
     public static func best(_ v: Values, base: Params? = nil, stepX: Double = TankPoints.grid, stepY: Double = TankPoints.grid) -> Params? {
         let base = base ?? defaults(v)
         guard let t = TankPoints.tankSize(v) else { return nil }
-        let q = turn(v), open = openings(v), r = offsetRange(v, base)
+        let q = turn(v), open = openings(v), r = offsetRange(v, base), circle = TankPoints.circle(v)
         let nx = Int((r.x / stepX + 1e-9).rounded(.down)), ny = Int((r.y / stepY + 1e-9).rounded(.down))
         var found: [(n: Int, p: Params)] = []
         for j in 0...ny {
             for i in 0...nx {
                 var p = base
                 p.offX = snap(Double(i) * stepX); p.offY = snap(Double(j) * stepY)
-                found.append((count(size: t, turn: q, openings: open, params: p), p))
+                found.append((count(size: t, turn: q, openings: open, params: p, circle: circle), p))
             }
         }
         let top = found.enumerated().sorted { $0.element.n != $1.element.n ? $0.element.n > $1.element.n : $0.offset < $1.offset }
             .prefix(10).map(\.element.p)
-        let laid = top.map { TankLayout(size: t, turn: q, openings: open, params: $0, off: []) }
+        let laid = top.map { TankLayout(size: t, turn: q, openings: open, params: $0, off: [], circle: circle) }
         var pick: TankLayout?
         for l in laid where pick == nil || l.count > pick!.count { pick = l }
         return pick?.params

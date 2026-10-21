@@ -8,7 +8,7 @@ D1 DXF (`TCRoofCore/TankDXF.swift`); the row shade (`TankShade`, §3a step 4); t
 `TankLayout+Energy.swift`, tests `TankEnergyTests`: `หาผังที่ได้พลังงานมากที่สุด`, gaps 2.70–4.70 m kept as
 `tankPvGap`, energy tiles on card 2); the side section and the front elevation (`TankDrawings.tableSection`,
 `tableFront`) in the B1-C3 sheet and the PDF; the true-south comparison (§3a, `TankLayout+TrueSouth.swift`, tests
-`TankTrueSouthTests`); the team's structure standard, editable by managers (§1). Not built: the inspect mode, sliders, deltas and notes per cut column of the prototype (§4.3); D1's page undo (`TankUndo`) covers layout edits.
+`TankTrueSouthTests`); the team's structure standard, editable by managers (§1). Not built: the inspect mode, sliders, deltas and notes per cut column of the prototype (§4.3); D1's page undo (`TankUndo`) covers layout edits. Round tanks (2026-10-21, [`tank-drawing-swift.md`](tank-drawing-swift.md) §1a): the same rules with `TankLayout.circle`, module columns kept inside the circle less the setback and footings inside it.
 **Builds on:** tank drawing ([`tank-drawing-swift.md`](tank-drawing-swift.md), [`tank-drawing-swift.md`](tank-drawing-swift.md)),
 types in [`auto-drawing.md`](auto-drawing.md) §8
 **Interactive prototype:** `prototype/mount-layout.html` (open in a browser) · **Demo:** `img/mount_demo.mp4` (22 steps),

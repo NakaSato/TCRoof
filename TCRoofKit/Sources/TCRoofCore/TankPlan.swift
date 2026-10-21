@@ -25,6 +25,12 @@ public struct TankPlan: Sendable {
     /// 1–1 and 2–2 at the centre lines, the cross-shaped vents of a `cross` design, and under the caption the size and
     /// volume summary and the note that it is not a construction drawing.
     public init?(_ v: Values, width W: Double = 690, chips: Bool = false, hints: Bool = false, details: Bool = false) {
+        if Tank.isRound(v) {
+            // a round tank: the circle, its centre lines and the diameter (`TankPlan+Round`); no spans to tap
+            guard let r = Self.round(v, width: W, hints: hints, details: details) else { return nil }
+            sketch = r.sketch; self.chips = []; tags = r.tags; frame = r.frame
+            return
+        }
         let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
         let TW = sx.reduce(0, +), TH = sy.reduce(0, +)
@@ -73,19 +79,7 @@ public struct TankPlan: Sendable {
                 for d in [-half, half] { o.append(.line(Pt(ox + 3, oy + y * k + d), Pt(ox + w - 3, oy + y * k + d), width: 0.4, color: beam, dash: [3, 2])) }
             }
             tag("beam")
-            // section marks: 1–1 cuts at half of the width (seen towards the left), 2–2 at half of the length (seen up)
-            let mark = RGBA(hex: 0x16325C), cxm = ox + w / 2, cym = oy + h / 2
-            o.append(.line(Pt(cxm, oy - 6), Pt(cxm, oy + h + 6), width: 0.7, color: mark, dash: [10, 3, 2, 3]))
-            o.append(.line(Pt(ox - 6, cym), Pt(ox + w + 6, cym), width: 0.7, color: mark, dash: [10, 3, 2, 3]))
-            for (c, dir, n) in [(Pt(cxm, oy + 13), Pt(-1, 0), "1"), (Pt(cxm, oy + h - 13), Pt(-1, 0), "1"),
-                                (Pt(ox + 13, cym), Pt(0, -1), "2"), (Pt(ox + w - 13, cym), Pt(0, -1), "2")] {
-                // the arrow head on the side the section is seen from, then the numbered bubble
-                let tip = Pt(c.x + dir.x * 13, c.y + dir.y * 13), nrm = Pt(-dir.y * 4, dir.x * 4)
-                o.append(.polygon([tip, Pt(c.x + dir.x * 7 + nrm.x, c.y + dir.y * 7 + nrm.y), Pt(c.x + dir.x * 7 - nrm.x, c.y + dir.y * 7 - nrm.y)],
-                                  stroke: nil, fill: mark))
-                o.append(.circle(c, r: 6, stroke: mark, fill: .white, width: 0.9))
-                o.append(.text(n, at: c, size: 7.5, bold: true, color: mark, align: .center))
-            }
+            o += Self.sectionMarks(ox: ox, oy: oy, w: w, h: h)
             tag("sect", text: "txt")
         }
         // level tags in the four quadrants
@@ -188,6 +182,24 @@ public struct TankPlan: Sendable {
     /// The beams' width on the plan (m), assumed.
     public static let beam = 0.30
 
+    /// Section marks: 1–1 cuts at half of the width (seen towards the left), 2–2 at half of the length (seen up).
+    static func sectionMarks(ox: Double, oy: Double, w: Double, h: Double) -> [DrawOp] {
+        var o: [DrawOp] = []
+        let mark = RGBA(hex: 0x16325C), cxm = ox + w / 2, cym = oy + h / 2
+        o.append(.line(Pt(cxm, oy - 6), Pt(cxm, oy + h + 6), width: 0.7, color: mark, dash: [10, 3, 2, 3]))
+        o.append(.line(Pt(ox - 6, cym), Pt(ox + w + 6, cym), width: 0.7, color: mark, dash: [10, 3, 2, 3]))
+        for (c, dir, n) in [(Pt(cxm, oy + 13), Pt(-1, 0), "1"), (Pt(cxm, oy + h - 13), Pt(-1, 0), "1"),
+                            (Pt(ox + 13, cym), Pt(0, -1), "2"), (Pt(ox + w - 13, cym), Pt(0, -1), "2")] {
+            // the arrow head on the side the section is seen from, then the numbered bubble
+            let tip = Pt(c.x + dir.x * 13, c.y + dir.y * 13), nrm = Pt(-dir.y * 4, dir.x * 4)
+            o.append(.polygon([tip, Pt(c.x + dir.x * 7 + nrm.x, c.y + dir.y * 7 + nrm.y), Pt(c.x + dir.x * 7 - nrm.x, c.y + dir.y * 7 - nrm.y)],
+                              stroke: nil, fill: mark))
+            o.append(.circle(c, r: 6, stroke: mark, fill: .white, width: 0.9))
+            o.append(.text(n, at: c, size: 7.5, bold: true, color: mark, align: .center))
+        }
+        return o
+    }
+
     /// A `cross` design's vent (แบบเห็ด on a column head, the 40 × 40 sheet): a plus as wide as the vent, flange ticks
     /// at the arms' ends and a circle in the middle.
     static func crossVent(_ b: Box) -> [DrawOp] {
@@ -208,6 +220,7 @@ public struct TankPlan: Sendable {
     /// The iPhone plan (docs/ui/survey-d1-size-iphone, 330 × 300): the outline, the grid lines named 1… / A… and the
     /// two totals, the north arrow at the top right. Each span stays on the full plan (`init`).
     public static func compact(_ v: Values) -> Sketch? {
+        if Tank.isRound(v) { return compactRound(v) }
         let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
         guard !sx.isEmpty, !sy.isEmpty, let f = compactFrame(v) else { return nil }
         let TW = sx.reduce(0, +), TH = sy.reduce(0, +), k = f.k, w = TW * k, h = TH * k, ox = f.ox, oy = f.oy

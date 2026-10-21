@@ -62,7 +62,8 @@ public extension Job {
         case .fts: return j(d.photo("photoEmg") != nil ? "มีภาพปุ่ม Emergency" : nil, t("emgPlace").isEmpty ? nil : t("emgPlace"),
                             d.photo("photoFTS") != nil ? "มีภาพตู้ FTS" : nil)
         case .roof: return j(o("roofShape"), o("roofMaterial"), o("roofStructure"), t("panelsBefore").isEmpty ? nil : "แผง \(t("panelsBefore"))" + (t("panelsCut").isEmpty ? "" : " (ตัด \(t("panelsCut")))"), size)
-        case .tank: return j(Schema.tankKind(d), t("tankHeight").isEmpty ? nil : "สูง \(t("tankHeight")) ม.", t("surface"), size, d.obstacles("obst").filter { !$0.isAbsent }.isEmpty ? nil : "สิ่งกีดขวาง \(d.obstacles("obst").filter { !$0.isAbsent }.count) จุด", Schema.shadeText(d))
+        case .tank: return j(Schema.tankKind(d), t("tankHeight").isEmpty ? nil : "สูง \(t("tankHeight")) ม.", t("surface"),
+                             Tank.isRound(d) ? Tank.diameter(d).map(Tank.diameterText) : size, d.obstacles("obst").filter { !$0.isAbsent }.isEmpty ? nil : "สิ่งกีดขวาง \(d.obstacles("obst").filter { !$0.isAbsent }.count) จุด", Schema.shadeText(d))
         case .sed: return j(t("distA").isEmpty || t("distB").isEmpty ? nil : "บ่อ \(t("distA")) x \(t("distB")) ซม.")
         case .house: return j(o("buildingType"), o("roofShape"), o("roofMaterial"), t("mainBreaker").isEmpty ? nil : "เมน \(t("mainBreaker")) A", o("facing").isEmpty ? nil : "หันทิศ" + o("facing"))
         case .roofForm: return j(o("roofShape"), o("roofMaterial"), o("facing").isEmpty ? nil : "หันทิศ" + o("facing"),

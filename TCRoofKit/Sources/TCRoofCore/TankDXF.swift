@@ -15,7 +15,7 @@ public enum TankDXF {
     /// nil without spans (no `TankPlan`).
     public static func build(_ v: Values) -> RoofDXF.Output? {
         guard let plan = TankPlan(v, details: true) else { return nil }
-        let f = plan.frame, TH = parseSpans(v.text(Roof.Key.spansY)).reduce(0, +)
+        let f = plan.frame, TH = TankPoints.tankSize(v)?.h ?? 0
         var o = SketchDXF.Options()
         o.dashes = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true; o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)

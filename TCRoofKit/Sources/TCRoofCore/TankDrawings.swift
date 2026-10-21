@@ -70,7 +70,7 @@ public enum TankDrawings {
         let r = max(1.2, l.params.footing / 2 * f.k)
         for t in l.builtTables { for p in t.posts { o.append(.rect(Box(f.ox + p.x * f.k - r, f.oy + p.y * f.k - r, 2 * r, 2 * r), stroke: nil, fill: post)) } }
         // the slope tag in the bottom-left corner: an arrow towards the wall the panels face
-        let wall = ["ผนังล่าง", "ผนังขวา", "ผนังบน", "ผนังซ้าย"][l.turn]
+        let wall = (l.circle == nil ? ["ผนังล่าง", "ผนังขวา", "ผนังบน", "ผนังซ้าย"] : ["ล่างของแปลน", "ขวาของแปลน", "บนของแปลน", "ซ้ายของแปลน"])[l.turn]
         let d = [Pt(0, 1), Pt(1, 0), Pt(0, -1), Pt(-1, 0)][l.turn]
         let c = Pt(f.ox + 18, f.oy + l.size.h * f.k + 34)
         o.append(.line(Pt(c.x - d.x * 9, c.y - d.y * 9), Pt(c.x + d.x * 9, c.y + d.y * 9), width: 1.6, color: navy))
@@ -91,8 +91,10 @@ public enum TankDrawings {
         let spans = across ? s.x : s.y, L = spans.reduce(0, +)
         let name = across ? "รูปตัด 2–2" : "รูปตัด 1–1"
         var o: [DrawOp] = []
-        o.append(.text(name + " | ตัดที่กึ่งกลาง" + (across ? "แนว A…" : "แนว 1…") + String(format: " | ยาว %@ ม.", fmt(L)), at: Pt(16, 16),
-                       size: 12, bold: true, color: ink))
+        // a round tank (one span of D each way): cut through the centre, across the diameter
+        let title = Tank.isRound(v) ? name + " | ตัดผ่านศูนย์กลาง" + String(format: " | Ø %@ ม.", fmt(L))
+            : name + " | ตัดที่กึ่งกลาง" + (across ? "แนว A…" : "แนว 1…") + String(format: " | ยาว %@ ม.", fmt(L))
+        o.append(.text(title, at: Pt(16, 16), size: 12, bold: true, color: ink))
         guard let H = Tank.height(v), H > 0 else {
             o.append(.text("ใส่ความสูงถังเพื่อวาดรูปตัด", at: Pt(W / 2, 60), size: 13, color: muted, align: .center))
             return Sketch(width: W, height: 90, ops: [.rect(Box(0, 0, W, 90), stroke: nil, fill: .white)] + o)
@@ -142,7 +144,7 @@ public enum TankDrawings {
             for y in [a, b] { o.append(.line(Pt(x - 4, y), Pt(x + 4, y), width: 0.8, color: dim)) }
             o.append(.text(label, at: Pt(x + (right ? 6 : -6), (a + b) / 2), size: 9.5, bold: true, color: dim, align: right ? .left : .right))
         }
-        dimH(X(0), X(L), baseY + t + 16, fmt(L))
+        dimH(X(0), X(L), baseY + t + 16, (Tank.isRound(v) ? "Ø " : "") + fmt(L))
         dimV(X(L) + t + 2 * k + 8, roofY, baseY, "สูง " + fmt(H), right: true)
         if partly { dimV(X(0) - t - 2 * k - 8, roofY, groundY, "พ้นดิน " + String(format: "%.2f", min(H, max(0, exposed))), right: false) }
         if buried { dimV(X(0) - t - 2 * k - 8, roofY - cover * k, roofY, "ดินถม " + String(format: "%.2f", cover), right: false) }

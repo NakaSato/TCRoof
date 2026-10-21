@@ -1,6 +1,6 @@
 # D1 ถังน้ำใส — tank drawing and survey flow, Swift feature spec (iPad + iPhone)
 
-**Status:** Mostly built (2026-10-19). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions with the object's height and distance), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังที่ได้พลังงานมากที่สุด`, panel edits, three checks, the energy tiles, the shade simulation `TankShade`, the true-south comparison), sub-step 4's designed photo groups (`บังคับ {k}/5`), undo (`TankUndo`: `↶` / `↷`, ⌘Z), the tank sections and the row section (`TankDrawings`, also in the B1-C3 sheet), the layout, shade and sections in the PDF, the layout lines in Excel, and `ส่งออก DXF`. Not built: `บันทึกจาก GPS`, iPhone shake to undo, the drag loupe, the interaction draft's tool modes (§4.3), and in the layout the inverter / DC-AC line, roof load and walkway checks and generated notes. The web backup still writes obstacles as label / x / y / w / h only. Decided 2026-10-19: the roof photos (overview and surface, `minPhotos: 2`) and the cable route are required (5 required fields with the aerial, walls and obstacles; old jobs without them show the missing photos), the four wall slots stay, the shade photo stays optional; the shade recommendation goes to E1 when objects cost 1 % or more.
+**Status:** Mostly built (2026-10-19; round tanks 2026-10-21, §1a). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, round tanks by diameter, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions with the object's height and distance), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังที่ได้พลังงานมากที่สุด`, panel edits, three checks, the energy tiles, the shade simulation `TankShade`, the true-south comparison), sub-step 4's designed photo groups (`บังคับ {k}/5`), undo (`TankUndo`: `↶` / `↷`, ⌘Z), the tank sections and the row section (`TankDrawings`, also in the B1-C3 sheet), the layout, shade and sections in the PDF, the layout lines in Excel, and `ส่งออก DXF`. Not built: `บันทึกจาก GPS`, iPhone shake to undo, the drag loupe, the interaction draft's tool modes (§4.3), and in the layout the inverter / DC-AC line, roof load and walkway checks and generated notes. The web backup still writes obstacles as label / x / y / w / h only. Decided 2026-10-19: the roof photos (overview and surface, `minPhotos: 2`) and the cable route are required (5 required fields with the aerial, walls and obstacles; old jobs without them show the missing photos), the four wall slots stay, the shade photo stays optional; the shade recommendation goes to E1 when objects cost 1 % or more.
 **Design:** the TCRoof canvas D1 pages (`iPadD1` ขนาดถัง, `iPadD1Obs` สิ่งกีดขวาง, `iPadD1Layout` จัดแผง, `iPadD1Shade` เงาบัง, `iPadD1Photo` ภาพถ่าย) and the folders [`docs/ui/survey-d1-size`](../ui/survey-d1-size) (iPad), [`survey-d1-size-iphone`](../ui/survey-d1-size-iphone), [`survey-d1-obstacles-iphone`](../ui/survey-d1-obstacles-iphone), [`survey-d1-layout-iphone`](../ui/survey-d1-layout-iphone). The app follows the folders where they differ from the canvas.
 **Design rules and drawing standard:** [`auto-drawing.md`](auto-drawing.md) §5–§7
 **Types and code detail of the first draft:** [`auto-drawing.md`](auto-drawing.md) §8 Tank, §9 UI, §10 PDF, §11 tests (the app did not build those types; see §2)
@@ -16,7 +16,7 @@
 | Draft | Now (D1 as built) |
 |---|---|
 | tank size from `spansX` / `spansY` typed as `16@4` | pick a **preset** (40 × 40, 64 × 40, 30 × 30, 20 × 20), which writes the spans, or **`+ กำหนดขนาดเอง`**, which opens the span editor on the plan. The spans stay the only stored size. |
-| round tank (`tankDiameter`) in the form | not in D1 |
+| round tank (`tankDiameter`) in the form | in D1 since 2026-10-21: `รูปทรงถัง` สี่เหลี่ยม / ทรงกลม in sub-step 1 (§1a) |
 | `tankType` (ชนิดถัง) | still asked and required: completion, the PDF and Excel read it |
 | `tankAboveGround` always asked | `tankExposed` (`ส่วนพ้นดิน`), typed only when `tankPos` = กึ่งฝัง; บนดิน = height, ฝังดิน = 0 |
 | `surface` free text | `surface` picked from คอนกรีต / คอนกรีตเคลือบกันซึม / ดินปลูกหญ้า / หินกรวด, or `อื่นๆ` typed |
@@ -168,6 +168,35 @@ on the plan (21 มี.ค. / มิ.ย. / ธ.ค. at 09:00 and 15:00, the sha
 
 **Right: `สิ่งที่บังแดด`.** The existing `shade`, `shadeFrom`, `shadeDir`, plus new `shadeHeight` and `shadeDistance` (`ห่างผนังถัง (ม.) *`) when shaded. Results: `เงาแถวหน้า %`, `เงาต้นไม้ %`, `สูญเสียรวม %`, `MWh/ปี ที่เสียจากต้นไม้`, and one recommendation line recorded as a proposal for E1. `shadeNote` stays; old jobs show their note until height and distance are entered.
 
+## 1a. Round tanks (first version, built 2026-10-21)
+
+- **Data:** `tankShape` = `round` and `tankDiameter` (m, at least 2 m), both optional and hidden; absent `tankShape` is
+  the rectangle, so every older job reads as before. `Tank.setDiameter` writes the legacy spans as one span of D each way
+  (the circle's bounding square), so the schema's completion, `Progress`, the site plan and every reader of the spans keep
+  working; `Tank.spans` takes the diameter whatever is stored. `tankHeight` and the setting fields are unchanged.
+- **Sub-step 1:** `รูปทรงถัง` สี่เหลี่ยม / ทรงกลม (iPad: two buttons as the position row; iPhone: a segmented track).
+  Round shows `เส้นผ่านศูนย์กลาง (ม.)` (a stepper, 0.50 m steps) instead of the size menu; the presets stay rectangular.
+  Going round takes the rectangle's narrower side the first time and drops a standard design; points that were only
+  seeded are cleared so sub-step 2 seeds the round layout. Size label and caption `Ø 30 ม.` (`Tank.sizeText`).
+- **Summary:** `πD²/4` and `πD²/4·H`, e.g. `Ø 10.00 × 5.00 ม. · หลังคา 79 ม² · ปริมาตรภายนอกโดยประมาณ 393 ม³`.
+- **Plan** (`TankPlan+Round`): a double rim, the two centre lines, `Ø 30.00` under the circle, the level tags, the
+  openings, ladders and pipes outside the rim on their radius, the N arrow and `แปลนหลังคาถังน้ำใสทรงกลม Ø 30 ม.`; the
+  printed plan adds the section marks on the centre lines, the summary and the note (no beams). The frame is the bounding
+  square, so the PDF, Excel's picture (`Drawings.plan`), the DXF (the rim as `CIRCLE`s on `OUTLINE`) and the layout use the
+  same tank metres. The iPhone plan is the rim, centre lines and diameter.
+- **Openings:** seeded V1 at the centre, V2–V7 on a ring at 0.55 R every 60°, H1–H3 at 0.85 R at 30° / 150° / 270°
+  (`TankPoints.roundLayout`), pulled inside on a small tank. Moves, drops, adds and rows keep every opening inside the
+  circle (`TankPoints.Circle`); ladders and pipes go to the rim and slide along it. The live check's `อยู่นอกถัง` tests the
+  circle. The distances read `ห่างขอบซ้ายสุด` / `ห่างขอบบนสุด` (from the bounding square). `เริ่มจากแบบมาตรฐาน กปภ.`
+  and `บันทึกเป็นแบบมาตรฐาน` are hidden.
+- **Sections:** 1–1 and 2–2 cut through the centre across D (`ตัดผ่านศูนย์กลาง · Ø 24 ม.`), with no inner columns.
+- **Layout:** `TankLayout.circle`: a module column is placed only when both its modules are inside the circle less the
+  1.00 m setback, footings stay inside the circle, and the edge check measures to the rim. Rows, posts, hatches, vents,
+  `หาผังแผงมากสุด` (with the rows' offset over a whole pitch), the energy search, the shade (objects beside the rim) and the
+  true-south comparison all run on it. Rows still follow the plan's sides facing the one nearest south.
+- **Excel:** NO.224 has no size cell, so nothing changes there besides the plan picture; the one-page summary's line
+  reads `Ø 30 ม.`.
+
 ## 2. Pipeline (TCRoofCore, no UIKit)
 
 ```
@@ -276,7 +305,7 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 4. ~~Should the new photo slots (roof, shade, cable route, fourth wall) become required? This changes D1 completion for old jobs.~~ Roof and cable route required, shade optional, the four wall slots stay (2026-10-19).
 5. Excel NO.224 has the plan in `C3:X15`: should the panel layout go there too, or somewhere else?
 6. Energy per kWp (1,452 kWh/kWp in the design): which source (PVGIS, the team's yield table)? Sub-step 3 shows a clear-sky estimate (`SolarModel`); calibrating it is still open.
-7. Round tanks: still needed? If yes, the size picker needs a `ถังกลม · เส้นผ่านศูนย์กลาง` option.
+7. ~~Round tanks: still needed? If yes, the size picker needs a `ถังกลม · เส้นผ่านศูนย์กลาง` option.~~ A first version is built (§1a, 2026-10-21). Still open: should a round tank's rows face true south (a circle has no walls, so the team rule of rows on the walls doesn't apply), and which standard openings does a กปภ. round tank have?
 8. `WebBackup`: should it carry the obstacle status fields and the D1 keys that are not in the schema?
 9. Undo is built (`TankUndo`). The drag loupe is in the design but not built: still wanted, or are the guide and the distance fields enough?
 10. ~~Tank sections (รูปตัด) from the draft: still wanted in the PDF?~~ Yes: the PDF prints `รูปตัดถัง 1–1` and `2–2`.

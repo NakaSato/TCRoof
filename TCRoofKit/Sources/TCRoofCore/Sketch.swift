@@ -105,9 +105,10 @@ public enum Drawings {
     /// A roof whose frame type was chosen on the C1 page draws the C1 plan (frame lines, posts, ridge, skylights);
     /// a tank draws `TankPlan` (the D1 page's plan).
     public static func plan(_ v: Values, tank: Bool, width W: Double = 690) -> Sketch? {
+        // a tank draws from `Tank.spans` (a round tank from its diameter)
+        if tank { return TankPlan(v, width: W, details: true)?.sketch }
         let sx = parseSpans(v.text("spansX")), sy = parseSpans(v.text("spansY"))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
-        if tank { return TankPlan(v, width: W, details: true)?.sketch }
         if Roof.hasFrame(v) {
             let p = RoofPlan(v).sketch, k = W / p.width
             return Sketch(width: W, height: p.height * k, ops: p.translated(0, 0, scale: k))

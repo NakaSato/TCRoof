@@ -96,16 +96,19 @@ extension TankPageWide {
                 }
                 Text(s.counts).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
-            Button { designAsk = true } label: {
-                Label(from ? "เปลี่ยนแบบมาตรฐาน กปภ." : "เริ่มจากแบบมาตรฐาน กปภ.", systemImage: "square.grid.3x3")
-                    .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
+            // the standard designs are rectangular: a round tank keeps its own layout
+            if !Tank.isRound(values) {
+                Button { designAsk = true } label: {
+                    Label(from ? "เปลี่ยนแบบมาตรฐาน กปภ." : "เริ่มจากแบบมาตรฐาน กปภ.", systemImage: "square.grid.3x3")
+                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.45)))
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
             // a fully checked tank can become a design of the library (the team's only: `design.library`)
-            if TankPoints.done(values) && permissions.can(.designLibrary) {
+            if TankPoints.done(values) && permissions.can(.designLibrary) && !Tank.isRound(values) {
                 Button { designName = TankDesign.current(values).map { $0.design.name + " | " + job.projectName } ?? job.projectName; saveDesignAsk = true } label: {
                     Label("บันทึกเป็นแบบมาตรฐาน", systemImage: "square.and.arrow.down.on.square")
                         .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
@@ -484,12 +487,14 @@ extension TankPageWide {
 
     func pointDistances(_ p: Obstacle) -> some View {
         let r = TankPoints.rect(p)
+        // a round tank measures from the leftmost and topmost points of its rim
+        let round = Tank.isRound(values), left = round ? "ห่างขอบซ้ายสุด" : "ห่างผนังซ้าย", top = round ? "ห่างขอบบนสุด" : "ห่างผนังบน"
         return HStack(alignment: .top, spacing: 8) {
-            field("ห่างผนังซ้าย") {
-                PointDistanceField(value: r?.x, label: "ห่างผนังซ้าย") { x in update { TankPoints.move(&$0, p.id, x: x, y: nil) } }
+            field(left) {
+                PointDistanceField(value: r?.x, label: left) { x in update { TankPoints.move(&$0, p.id, x: x, y: nil) } }
             }
-            field("ห่างผนังบน") {
-                PointDistanceField(value: r?.y, label: "ห่างผนังบน") { y in update { TankPoints.move(&$0, p.id, x: nil, y: y) } }
+            field(top) {
+                PointDistanceField(value: r?.y, label: top) { y in update { TankPoints.move(&$0, p.id, x: nil, y: y) } }
             }
         }
         .id(p.id)

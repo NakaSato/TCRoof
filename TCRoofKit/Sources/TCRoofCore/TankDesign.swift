@@ -144,6 +144,8 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
 
     /// Every design, the closest to the tank's size first.
     public static func ranked(_ v: Values) -> [Match] {
+        // the designs are rectangular: none for a round tank
+        guard !Tank.isRound(v) else { return [] }
         let all = Self.all
         guard let t = TankPoints.tankSize(v) else { return all.map { Match(design: $0, turned: false, difference: nil) } }
         return all.map { d in
@@ -194,6 +196,8 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
     public static func apply(_ v: inout Values, _ d: TankDesign, turned: Bool = false) {
         // turned a quarter clockwise: the design's rows become columns, read from the bottom
         let sx = turned ? Array(d.ys.reversed()) : d.xs, sy = turned ? d.xs : d.ys
+        // a design is rectangular
+        v[Tank.Key.shape] = nil
         Roof.setSpans(&v, .x, sx)
         Roof.setSpans(&v, .y, sy)
         TankPoints.write(&v, d.points(turned: turned))
@@ -219,7 +223,7 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
     /// (points marked absent left out), based on the design it started from.
     public static func from(_ v: Values, name: String, job: String, by email: String?, now: Date = Date()) -> TankDesign? {
         let s = Tank.spans(v)
-        guard !s.x.isEmpty, !s.y.isEmpty, let t = TankPoints.tankSize(v) else { return nil }
+        guard !Tank.isRound(v), !s.x.isEmpty, !s.y.isEmpty, let t = TankPoints.tankSize(v) else { return nil }
         func index(_ spans: [Double], _ at: Double) -> Int {
             var edge = 0.0
             for (i, w) in spans.enumerated() { edge += w; if at < edge { return i } }

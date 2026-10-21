@@ -2,7 +2,7 @@
 
 **Status:** Partly built, by a different route than this spec first planned.
 - **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), C1's pitch from a measured ridge height (`Roof.pitch`, §4.4), the C2 and C3 sections from measured sizes (`RoofSectionMeasured.swift`, §4.4), the `n@d` span shorthand (`parseSpans`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank sections 1–1 / 2–2 and the size and volume summary (`TankDrawings.swift`, `Tank.summary`, §5.5), the printed tank plan's beams, section marks and cross vents (`TankPlan(details:)`), the Howe truss as C1's seventh frame type, details A / B and the member schedule (`RoofTruss.swift`, built 2026-10-20) with its steel weights (`SteelSection.swift`, built 2026-10-21), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel.
-- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), `MemberSpec` depth parsing, `uniformLabel`, `DrawOp.arc`, the round tank, the section in Excel (open question 3), the `autoDrawings` flag and the SVG snapshot tests.
+- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), `MemberSpec` depth parsing, `uniformLabel`, `DrawOp.arc`, the section in Excel (open question 3), the `autoDrawings` flag and the SVG snapshot tests.
 
 **Owner:** TCRoof · **Module:** `TCRoofKit` (TCRoofCore / TCRoofUI / PDFReport / ExcelExport)
 **Date:** 2026-09-29, tank parts updated 2026-10-01 to the D1 design, merged with the Swift implementation spec and checked against the code 2026-10-17 · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Standard tank designs:** [`standard-designs.md`](standard-designs.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
@@ -331,7 +331,7 @@ covers its data and drawings.
   wall A stays on top.
 - **Vent height:** `ventHeight` (m above the roof), used by the panel layout; 1.00 m assumed until measured.
 - **Step 1 done** with spans, type, height, position and surface; the azimuth is optional.
-- **Round tanks** (`tankDiameter`) are not built.
+- **Round tanks** (first version, 2026-10-21): `tankShape` = `round` with `tankDiameter` (m, at least 2), both optional and hidden; the diameter writes the legacy spans as one span of D each way (the bounding square), so completion, `Progress`, the site plan and Excel's plan picture keep reading them. Presets and the standard designs stay rectangular. See [`tank-drawing-swift.md`](tank-drawing-swift.md) §1a.
 
 ### 5.2 Openings, as built (`TankPoints.swift`, `TankDesign.swift`)
 
@@ -394,8 +394,7 @@ enough. That spec holds its rules.
 ### 5.5 Tank section and summary (built)
 
 As built: the sections are `TankDrawings.section` (D1's B1-C3 sheet and the PDF; the cover over a buried tank is an
-assumed 0.50 m, not `soilDepth`). `Tank.summary` gives the size, `L·W` and `L·W·H` (from the spans; round tanks are not
-built): on D1 step 1 under the heights, on each section, and under the printed plan's caption. The printed plan
+assumed 0.50 m, not `soilDepth`). `Tank.summary` gives the size, `L·W` and `L·W·H` (from the spans; a round tank `πD²/4` and `πD²/4·H`, labelled `Ø D × H ม.`): on D1 step 1 under the heights, on each section, and under the printed plan's caption. The printed plan
 (`TankPlan(details: true)`, which `Drawings.plan` gives the PDF and Excel and `TankDXF` exports on layers `BEAM` and
 `SECTION_MARK`) adds the beams, the section marks and the cross vents; D1's own plan is unchanged. The draft:
 

@@ -75,13 +75,13 @@ struct ERCFlowRows: View {
         let ours = now.filter { states[$0] == .open }
         let theirs = now.filter { states[$0] != .open }
         return VStack(alignment: .leading, spacing: 4) {
-            Text(now.isEmpty ? "ครบทุกขั้นแล้ว" : ours.isEmpty ? "รอหน่วยงานอื่น" : "ถึงคิวทีมเรา: " + ours.map(label).joined(separator: " · "))
+            Text(now.isEmpty ? "ครบทุกขั้นแล้ว" : ours.isEmpty ? "รอหน่วยงานอื่น" : "ถึงคิวทีมเรา: " + ours.map(label).joined(separator: " | "))
                 .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
             if !theirs.isEmpty {
-                Text("รออยู่: " + theirs.map { "\(label($0)) (\($0.party.title))" }.joined(separator: " · "))
+                Text("รออยู่: " + theirs.map { "\(label($0)) (\($0.party.title))" }.joined(separator: " | "))
                     .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
-            Text(variant.title + " · วันทำการไม่นับเสาร์ อาทิตย์ และวันหยุดของหน้างาน")
+            Text(variant.title + " | วันทำการไม่นับเสาร์ อาทิตย์ และวันหยุดของหน้างาน")
                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             if variant == .under200 {
                 Text("การไฟฟ้าส่งข้อมูลให้สำนักงาน กกพ. เองหลังตรวจผ่าน ทีมเราไม่ต้องยื่นแจ้งยกเว้นหรือ พค.2")
@@ -97,7 +97,7 @@ struct ERCFlowRows: View {
     /// move it where nothing recorded would be hidden.
     @ViewBuilder private var flowMismatch: some View {
         if !record.events.isEmpty, variant != ctx.variant {
-            Text("บันทึกไว้ตามลำดับ\(Self.sizeText(variant)) · ขนาดสถานีตอนนี้\(Self.sizeText(ctx.variant))")
+            Text("บันทึกไว้ตามลำดับ\(Self.sizeText(variant)) | ขนาดสถานีตอนนี้\(Self.sizeText(ctx.variant))")
                 .font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.pending)
             if record.canSwitch(to: ctx.variant) {
                 Button {
@@ -156,7 +156,7 @@ struct ERCFlowRows: View {
 
     private func detail(_ step: ERCFlow.Step, _ state: ERCFlow.State) -> String {
         let failed = record.failedRounds(step)
-        let rounds = failed > 0 ? " · ไม่ผ่านมาแล้ว \(failed) รอบ" : ""
+        let rounds = failed > 0 ? " | ไม่ผ่านมาแล้ว \(failed) รอบ" : ""
         switch state {
         case .done(let day): return thai(day) + rounds
         case .open: return "แตะเพื่อบันทึกวัน" + papers(step)
@@ -164,7 +164,7 @@ struct ERCFlowRows: View {
             var s = "รอตั้งแต่ \(thai(since))"
             if let due, let n = left(step, state) {
                 let unit = step.limit?.working == true ? "วันทำการ" : "วัน"
-                s += " · ครบกำหนด \(thai(due)) " + (n >= 0 ? "(เหลือ \(n) \(unit))" : "(เกินกำหนด \(-n) \(unit))")
+                s += " | ครบกำหนด \(thai(due)) " + (n >= 0 ? "(เหลือ \(n) \(unit))" : "(เกินกำหนด \(-n) \(unit))")
             }
             return s + rounds
         case .blocked: return ""
@@ -181,7 +181,7 @@ struct ERCFlowRows: View {
     private func papers(_ step: ERCFlow.Step) -> String {
         guard let package = package(step) else { return "" }
         let p = StationDocs.progress(package, station: job.stationDocs, library: library, job.stationContext)
-        return " · เอกสารชุด\(package.title)พร้อม \(p.ready)/\(p.total)"
+        return " | เอกสารชุด\(package.title)พร้อม \(p.ready)/\(p.total)"
     }
 
     @ViewBuilder private func chip(_ step: ERCFlow.Step, _ state: ERCFlow.State) -> some View {
@@ -213,7 +213,7 @@ struct ERCFlowRows: View {
             PadSection("ประวัติ") {
                 ForEach(Array(record.events.enumerated().reversed()), id: \.offset) { _, e in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(thai(e.day)) · \(e.step.title)" + (e.result == .failed ? " · ไม่ผ่าน" : e.result == .passed ? " · ผ่าน" : ""))
+                        Text("\(thai(e.day)) | \(e.step.title)" + (e.result == .failed ? " | ไม่ผ่าน" : e.result == .passed ? " | ผ่าน" : ""))
                             .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(e.result == .failed ? Theme.dangerText : Theme.navy)
                         if !e.note.isEmpty { Text(e.note).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted) }
                     }

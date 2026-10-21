@@ -126,7 +126,7 @@ struct MPOverviewView: View {
         }
         .sheet(item: $list) { b in
             StationListImportSheet(stations: jobs.pwaStations, fileName: b.name, items: b.items) { created, filled in
-                listResult = "สร้างงานใหม่ \(created) สถานี · เติมข้อมูล \(filled) สถานี"
+                listResult = "สร้างงานใหม่ \(created) สถานี | เติมข้อมูล \(filled) สถานี"
             }
         }
         .alert(listResult ?? "", isPresented: Binding(get: { listResult != nil }, set: { if !$0 { listResult = nil } })) {
@@ -204,13 +204,13 @@ struct MPOverviewView: View {
 
     private func inspectionCard(_ items: [PWAPlan.AgendaItem]) -> some View {
         VStack(spacing: 0) {
-            heading("นัดตรวจรับ", "ผู้แทน กปภ. · ถึงสิ้นสัปดาห์หน้า")
+            heading("นัดตรวจรับ", "ผู้แทน กปภ. | ถึงสิ้นสัปดาห์หน้า")
             ForEach(items) { item in
                 let when = PWAPlanFormat.dayMonth.string(from: item.day) + (item.start.map { " " + PWAPlan.clock($0) } ?? "")
                 NavigationLink {
                     if let job = job(item.station) { JobDetailView(job: job) }
                 } label: {
-                    line(when, item.title, [item.ref, item.subtitle].filter { !$0.isEmpty }.joined(separator: " · "),
+                    line(when, item.title, [item.ref, item.subtitle].filter { !$0.isEmpty }.joined(separator: " | "),
                          chip: item.status.title, fill: Theme.planInspectSoft, ink: Theme.planInspect)
                 }
                 .buttonStyle(.plain)
@@ -232,7 +232,7 @@ struct MPOverviewView: View {
     private func dueCard(_ due: PWAPlan.DeadlineGroups) -> some View {
         let rows = due.thisWeek + due.nextWeek
         return VStack(spacing: 0) {
-            heading("กำหนดส่ง", "สัปดาห์นี้และสัปดาห์หน้า · รวมที่เลยกำหนด")
+            heading("กำหนดส่ง", "สัปดาห์นี้และสัปดาห์หน้า | รวมที่เลยกำหนด")
             ForEach(rows) { d in
                 let colors = toneColors(d.tone)
                 NavigationLink {
@@ -290,7 +290,7 @@ struct MPOverviewRow: View {
                 }
                 let contractor = job.routineSettings.subcontractor.trimmingCharacters(in: .whitespaces)
                 Text([row.current.map { "\($0.task.code) \($0.task.title)" } ?? "ไม่มีงานตามแผนสัปดาห์นี้",
-                      contractor.isEmpty ? "" : PWAPlan.contractorTitle(contractor)].filter { !$0.isEmpty }.joined(separator: " · "))
+                      contractor.isEmpty ? "" : PWAPlan.contractorTitle(contractor)].filter { !$0.isEmpty }.joined(separator: " | "))
                     .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 if isPhone {
                     HStack(spacing: 10) { numbers(st); MPVarianceChip(variance: st.variance) }

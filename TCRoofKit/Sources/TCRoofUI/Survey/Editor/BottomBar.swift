@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// iPhone bottom bar of the survey steps (docs/ui/components/iphone-bottom-bar): "บันทึก" · ‹ · › on every step,
+/// iPhone bottom bar of the survey steps (docs/ui/components/iphone-bottom-bar): "บันทึก" | ‹ | › on every step,
 /// or two buttons on a detail page (delete + done) and on SLD (two equal actions).
 struct BottomBar: View {
     struct Action {

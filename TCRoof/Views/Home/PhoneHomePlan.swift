@@ -63,13 +63,13 @@ extension HomePlanItem {
                 }
                 return HomePlanItem(id: item.id, type: item.type, day: item.day, start: item.start,
                                     name: "\(s.ref) \(s.shortName) — \(item.title)",
-                                    place: [party, kWp, note].compactMap { $0 }.joined(separator: " · "),
+                                    place: [party, kWp, note].compactMap { $0 }.joined(separator: " | "),
                                     progress: (bar?.actual ?? 0) / 100, job: job)
             }
             let n = job.installDay(on: item.day) ?? 1
             return HomePlanItem(id: item.id, type: item.type, day: item.day, start: item.start,
                                 name: "\(job.code) \(job.stationName) — \(item.title)",
-                                place: [job.province.isEmpty ? nil : "จ.\(job.province)", kWp, "ทีม \(job.team.rawValue)"].compactMap { $0 }.joined(separator: " · "),
+                                place: [job.province.isEmpty ? nil : "จ.\(job.province)", kWp, "ทีม \(job.team.rawValue)"].compactMap { $0 }.joined(separator: " | "),
                                 progress: Double(n - 1) / Double(max(job.installDays, 1)), job: job)
         }
     }
@@ -81,8 +81,8 @@ extension HomePlanItem {
         let cal = PWAPlan.calendar
         let tomorrow = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: now)) ?? now
         let rows: [(Int, Int, PWAPlan.JobType, String, String, Double)] = [
-            (0, 8 * 60, .install, "MP 133 บางปะกง — 2.3 ติดตั้งแผงเซลล์", "ผู้รับเหมา A · 120.5 kWp · ตามแผน", 0.55),
-            (0, 13 * 60 + 30, .test, "MP 77 โชคชัย — 3.1 Pre-Commissioning (IEC 62446)", "ทีม TC · 171 kWp", 0.94),
+            (0, 8 * 60, .install, "MP 133 บางปะกง — 2.3 ติดตั้งแผงเซลล์", "ผู้รับเหมา A | 120.5 kWp | ตามแผน", 0.55),
+            (0, 13 * 60 + 30, .test, "MP 77 โชคชัย — 3.1 Pre-Commissioning (IEC 62446)", "ทีม TC | 171 kWp", 0.94),
             (1, 10 * 60, .document, "MP 154 แพรกหนามแดง — ยื่นขอขนานไฟ กฟภ.", "สำนักงาน กฟภ. จ.สมุทรสงคราม", 0.71),
         ]
         return zip(jobs, rows).enumerated().map { i, pair in
@@ -104,7 +104,7 @@ extension HomePlanItem {
         default: (title, link) = ("ดูแผนงาน ›", .calendar(day))
         }
         let typeTitle = type == .document ? "ยื่นเอกสาร" : type.title
-        return HeroItem(id: id, time: start.map(PWAPlan.clock) ?? "ทั้งวัน", kind: "\(typeTitle) · \(PWAPlan.ahead(day, from: now))",
+        return HeroItem(id: id, time: start.map(PWAPlan.clock) ?? "ทั้งวัน", kind: "\(typeTitle) | \(PWAPlan.ahead(day, from: now))",
                         name: name, place: place, fraction: progress, percent: Int((progress * 100).rounded()),
                         actionTitle: title, date: day, appointment: TodayAppointment(job: job, report: report)) { open(link) }
     }

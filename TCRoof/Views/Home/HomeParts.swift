@@ -216,7 +216,7 @@ struct HomeBrandHeader: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(size.isPad && unread > 0 ? "การแจ้งเตือน · ใหม่ \(unread)" : "การแจ้งเตือน")
+        .accessibilityLabel(size.isPad && unread > 0 ? "การแจ้งเตือน | ใหม่ \(unread)" : "การแจ้งเตือน")
         .accessibilityValue(size.isPad || unread == 0 ? "" : "ยังไม่อ่าน \(unread)")
         .anchorPreference(key: BellAnchorKey.self, value: .bounds) { size.isPad ? $0 : nil }
     }
@@ -283,7 +283,7 @@ struct ModuleRow: View {
 struct HeroItem: Identifiable {
     let id: String
     let time: String
-    /// `นัดสำรวจ · อีก 49 นาที`, `ติดตั้ง · Day 2/5 · กำลังทำ`
+    /// `นัดสำรวจ | อีก 49 นาที`, `ติดตั้ง | Day 2/5 | กำลังทำ`
     let kind: String
     let name: String
     let place: String
@@ -301,7 +301,7 @@ struct HeroItem: Identifiable {
 extension TodayAppointment {
     /// The appointment's page of the hero card; its button opens the report at the next step.
     func heroItem(open: @escaping (TodayAppointment, MissingGroup.Target?) -> Void) -> HeroItem {
-        HeroItem(id: id, time: time, kind: "นัดสำรวจ · \(countdown)", name: name, place: place, fraction: fraction, percent: percent,
+        HeroItem(id: id, time: time, kind: "นัดสำรวจ | \(countdown)", name: name, place: place, fraction: fraction, percent: percent,
                  actionTitle: actionTitle, appointment: self) { open(self, nextStep?.page) }
     }
 }
@@ -385,18 +385,18 @@ struct AppointmentHero: View {
         .padding(.trailing, size.isPad ? -10 : -8).padding(.vertical, -6)
     }
 
-    /// `พฤ. 1 ต.ค. · 1/3`: only the date may truncate, never the counter. VoiceOver reads the full weekday and month.
+    /// `พฤ. 1 ต.ค. | 1/3`: only the date may truncate, never the counter. VoiceOver reads the full weekday and month.
     private var dateLabel: some View {
         let date = current?.date ?? .now
         let counter = appointments.isEmpty ? nil : (page + 1, appointments.count)
         return HStack(spacing: 0) {
             Text(ThaiFormat.weekdayTiny.string(from: date)).lineLimit(1)
-            if let (n, m) = counter { Text(" · \(n)/\(m)").lineLimit(1).fixedSize().layoutPriority(1) }
+            if let (n, m) = counter { Text(" | \(n)/\(m)").lineLimit(1).fixedSize().layoutPriority(1) }
         }
         .font(.sarabun(size.heroLabel, relativeTo: .caption)).opacity(labelOpacity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel([ThaiFormat.weekday.string(from: date) + " " + ThaiFormat.dayMonthLong.string(from: date),
-                             counter.map { "รายการที่ \($0.0) จาก \($0.1)" }].compactMap { $0 }.joined(separator: " · "))
+                             counter.map { "รายการที่ \($0.0) จาก \($0.1)" }].compactMap { $0 }.joined(separator: " | "))
     }
 
     private func pagerButton(_ symbol: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
@@ -465,7 +465,7 @@ func mapsURL(_ c: (lat: Double, lon: Double)) -> URL {
 }
 
 extension View {
-    /// `โทร <number>` · `ส่งข้อความ` · `ดูรายละเอียดผู้ประสานงานใน A1` · `ยกเลิก` for the appointment being called.
+    /// `โทร <number>` | `ส่งข้อความ` | `ดูรายละเอียดผู้ประสานงานใน A1` | `ยกเลิก` for the appointment being called.
     func callDialog(_ calling: Binding<TodayAppointment?>, open: @escaping (TodayAppointment, MissingGroup.Target?) -> Void) -> some View {
         modifier(CallDialog(calling: calling, open: open))
     }
@@ -487,7 +487,7 @@ private struct CallDialog: ViewModifier {
             }
             Button("ยกเลิก", role: .cancel) {}
         } message: { a in
-            Text("ผู้ประสานงาน · \(a.name)")
+            Text("ผู้ประสานงาน | \(a.name)")
         }
     }
 }

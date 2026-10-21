@@ -35,8 +35,8 @@ enum AppModule: String, CaseIterable, Identifiable {
     /// One-line subtitle of the iPhone module rows.
     var shortSubtitle: String {
         switch self {
-        case .survey: "นัดหมาย · หลังคา · ระบบไฟฟ้า"
-        case .install: "บันทึกประจำวัน · ใบตรวจรับ ICL"
+        case .survey: "นัดหมาย | หลังคา | ระบบไฟฟ้า"
+        case .install: "บันทึกประจำวัน | ใบตรวจรับ ICL"
         default: subtitle
         }
     }
@@ -337,7 +337,7 @@ struct HomeView: View {
         showSettings = false
         if let key = Self.jobKey(link), job(key) == nil {
             waitingLink = link
-            linkNotice = "งานนี้ยังไม่ซิงก์มาที่เครื่องนี้ · จะเปิดให้เมื่อซิงก์เสร็จ"
+            linkNotice = "งานนี้ยังไม่ซิงก์มาที่เครื่องนี้ | จะเปิดให้เมื่อซิงก์เสร็จ"
             return
         }
         switch link {
@@ -496,7 +496,7 @@ struct SettingsView: View {
             dismiss()
             session.signOut()
             if kind == .switchAccount, !who.isEmpty {
-                session.notice = "\(who) ออกจากระบบแล้ว · เข้าสู่ระบบด้วยบัญชี Google ของคุณ"
+                session.notice = "\(who) ออกจากระบบแล้ว | เข้าสู่ระบบด้วยบัญชี Google ของคุณ"
             }
         }
     }

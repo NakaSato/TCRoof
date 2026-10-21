@@ -53,6 +53,15 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
     public var height: Double { ys.reduce(0, +) }
     /// "64 × 40 ม."
     public var size: String { "\(fmt(width)) × \(fmt(height)) ม." }
+    /// What the design holds, for its card: `ระบาย 12 | ลงถัง 6 | บันได 3 | ท่อ 0`.
+    public var contents: String {
+        "ระบาย \(vents.count) | ลงถัง \(hatches.count) | บันได \(ladders.count) | ท่อ \(pipes.count)"
+    }
+    /// The design's plan for its card (as D1 would draw it once picked), turned like the match.
+    public func thumbnail(turned: Bool = false) -> Sketch? {
+        DesignThumbnail.sketch(xs: turned ? Array(ys.reversed()) : xs, ys: turned ? xs : ys,
+                               marks: DesignThumbnail.marks(points(turned: turned)))
+    }
 
     /// The measured size matches a design within this, |ΔW| + |ΔL| in metres (§3.1; decided 2026-10-19).
     public static let tolerance = 1.0
@@ -277,12 +286,12 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
         public var differences: [String] = []
         /// Each difference's photo, in the same order (nil when it has none).
         public var photos: [Photo?] = []
-        /// "ตรงแบบ 9 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยืนยันแบบรวม 4 · ยังไม่ตรวจ 8"
+        /// "ตรงแบบ 9 | ย้าย 1 | ไม่มีจริง 1 | เพิ่มหน้างาน 1 | ยืนยันแบบรวม 4 | ยังไม่ตรวจ 8"
         public var counts: String {
             var parts = ["ตรงแบบ \(matches)", "\(movedLabel) \(moved)", "ไม่มีจริง \(absent)", "เพิ่มหน้างาน \(added)"]
             if bulk > 0 { parts.append("ยืนยันแบบรวม \(bulk)") }
             if open > 0 { parts.append("ยังไม่ตรวจ \(open)") }
-            return parts.joined(separator: " · ")
+            return parts.joined(separator: " | ")
         }
     }
 

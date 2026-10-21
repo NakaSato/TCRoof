@@ -68,7 +68,7 @@ public struct ClaimPages {
 
     public func pages() -> [ReportLayout.Page] {
         let month = RoutineReport.thaiMonth(header.month)
-        var f = Flow(title: "ใบเบิกค่าเดินทางและค่าใช้จ่าย", subtitle: "\(header.company) · \(month)")
+        var f = Flow(title: "ใบเบิกค่าเดินทางและค่าใช้จ่าย", subtitle: "\(header.company) | \(month)")
         let vehicles = Set(summary.days.map(\.vehicle)).sorted { $0.rawValue < $1.rawValue }.map(\.title).joined(separator: ", ")
         let plates = Set(summary.days.map(\.plate).filter { !$0.isEmpty }).sorted().joined(separator: ", ")
         base.facts(&f, [("ผู้เบิก", header.person), ("อีเมล", header.email), ("เดือน", month),
@@ -165,11 +165,11 @@ public struct ClaimPages {
         var pictures: [Picture] = []
         for item in summary.items {
             guard let photo = receipts[item.id], let n = numbers[item.id] else { continue }
-            pictures.append(Picture(photo: photo, caption: "#\(n) · \(RoutineReport.thaiDate(item.date)) · \(item.category.title) · \(TravelClaim.baht(item.amount)) บาท"))
+            pictures.append(Picture(photo: photo, caption: "#\(n) | \(RoutineReport.thaiDate(item.date)) | \(item.category.title) | \(TravelClaim.baht(item.amount)) บาท"))
         }
         pictures += odometers
         guard !pictures.isEmpty else { return [] }
-        var f = Flow(title: "ภาคผนวก: ใบเสร็จและเลขไมล์", subtitle: "\(header.person) · \(RoutineReport.thaiMonth(header.month))")
+        var f = Flow(title: "ภาคผนวก: ใบเสร็จและเลขไมล์", subtitle: "\(header.person) | \(RoutineReport.thaiMonth(header.month))")
         let h = (RoutineReportPages.pageH - 2 * Self.margin - 50 - 20 - 2 * 30) / 2
         for (i, p) in pictures.enumerated() {
             if i > 0, i % 2 == 0 { f.newPage() }

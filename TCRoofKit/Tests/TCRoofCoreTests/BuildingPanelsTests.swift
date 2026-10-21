@@ -30,19 +30,19 @@ final class BuildingPanelsTests: XCTestCase {
 
         let opts = BuildingPanels.options(job)
         XCTAssertEqual(opts.count, 3)
-        XCTAssertEqual(opts[0].label, "MDP-1 · CB1 400 AT")
-        XCTAssertEqual(opts[1].cbText, "CB2 · 250 AT")
+        XCTAssertEqual(opts[0].label, "MDP-1 | CB1 400 AT")
+        XCTAssertEqual(opts[1].cbText, "CB2 | 250 AT")
         XCTAssertNil(opts[0].linkedTo)
 
         let pump = try module(job, "โรงสูบน้ำ")
-        XCTAssertEqual(BuildingPanels.subLine(pump, in: job), "ยังไม่ผูก A3 · โหลด 85 kW")
+        XCTAssertEqual(BuildingPanels.subLine(pump, in: job), "ยังไม่ผูก A3 | โหลด 85 kW")
         BuildingPanels.link(&job, panel: pump.id, to: opts[0].ref)
         let linked = try module(job, "โรงสูบน้ำ")
         XCTAssertEqual(linked.values.text("breakerAT"), "400")
         XCTAssertEqual(linked.values.text("a3Breaker"), opts[0].ref.key)
         XCTAssertEqual(mdpBreakers(job)[0].target, "ตู้ไฟฟ้า โรงสูบน้ำ (B1.1)")
         XCTAssertEqual(BuildingPanels.options(job)[0].linkedTo, pump.id)
-        XCTAssertEqual(BuildingPanels.subLine(linked, in: job), "CB1 · 400 AT · โหลด 85 kW")
+        XCTAssertEqual(BuildingPanels.subLine(linked, in: job), "CB1 | 400 AT | โหลด 85 kW")
 
         // moving the link clears the old breaker
         BuildingPanels.link(&job, panel: pump.id, to: opts[1].ref)
@@ -70,7 +70,7 @@ final class BuildingPanelsTests: XCTestCase {
         let job = SingleLineTests.fixture()
         // โรงสูบน้ำ 85 + อาคารสำนักงาน 22, โรงกรอง missing; B2 has no sizes so PV = A1 120
         let n = try XCTUnwrap(BuildingPanels.daytimeNote(job))
-        XCTAssertEqual(n.text, "โหลดกลางวันรวม 107 kW (ยังขาดโรงกรอง) · PV 120 kW → ต้องมีระบบกันย้อน (B4)")
+        XCTAssertEqual(n.text, "โหลดกลางวันรวม 107 kW (ยังขาดโรงกรอง) | PV 120 kW → ต้องมีระบบกันย้อน (B4)")
         XCTAssertTrue(n.needsZeroExport)
 
         // B2 sizes win over A1
@@ -79,7 +79,7 @@ final class BuildingPanelsTests: XCTestCase {
         big.modules[i].values["invSizes"] = .text("40,40")
         XCTAssertEqual(BuildingPanels.pvKW(big), 80)
         XCTAssertFalse(try XCTUnwrap(BuildingPanels.daytimeNote(big)).needsZeroExport)
-        XCTAssertTrue(try XCTUnwrap(BuildingPanels.daytimeNote(big)).text.hasSuffix("โหลดมากกว่า PV · กันย้อนยังแนะนำตามเงื่อนไข กฟภ."))
+        XCTAssertTrue(try XCTUnwrap(BuildingPanels.daytimeNote(big)).text.hasSuffix("โหลดมากกว่า PV | กันย้อนยังแนะนำตามเงื่อนไข กฟภ."))
 
         // no load yet: no note
         var empty = job
@@ -106,7 +106,7 @@ final class BuildingPanelsTests: XCTestCase {
         job.modules[pump].values["photoWide"] = .photo(Self.photo)
         job.modules[office].values["photoWide"] = .photo(Self.photo)
         job.modules[office].values["photoBreaker"] = .photo(Self.photo)
-        XCTAssertEqual(BuildingPanels.statusLine(job), "ยังขาด: ภาพเบรกเกอร์ โรงสูบน้ำ · โรงกรอง ทั้ง 2 ภาพ · โหลด โรงกรอง")
+        XCTAssertEqual(BuildingPanels.statusLine(job), "ยังขาด: ภาพเบรกเกอร์ โรงสูบน้ำ | โรงกรอง ทั้ง 2 ภาพ | โหลด โรงกรอง")
         // the iPad bar's chip counts the same gaps per building
         XCTAssertEqual(BuildingPanels.missingItems(job.modules[pump].values), ["ภาพเบรกเกอร์"])
         XCTAssertEqual(BuildingPanels.missingItems(job.modules[office].values), [])
@@ -148,6 +148,6 @@ final class BuildingPanelsTests: XCTestCase {
         linked.values["pvPoint"] = .shapes([SiteShape(kind: .pvPoint, points: [ShapePoint(0.1, 0.1), ShapePoint(0.3, 0.3)])])
         linked.values["spareSlots"] = .text("2")
         XCTAssertEqual(linked.completion, old.completion)
-        XCTAssertEqual(BuildingPanels.pointLabel(linked.values), "จุดเชื่อมต่อ PV · ช่องว่าง 2 ช่อง")
+        XCTAssertEqual(BuildingPanels.pointLabel(linked.values), "จุดเชื่อมต่อ PV | ช่องว่าง 2 ช่อง")
     }
 }

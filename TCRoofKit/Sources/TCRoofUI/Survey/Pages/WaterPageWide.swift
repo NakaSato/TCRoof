@@ -119,7 +119,7 @@ struct WaterPageWide: View {
             header(1, "ตำแหน่งจุดจ่ายน้ำ", required: true) {
                 // the grey tag gives way first when the column is narrow (portrait with the sidebar)
                 ViewThatFits(in: .horizontal) {
-                    Text("ภาพจากหน้า A2 · แตะบนภาพเพื่อย้ายจุด").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize()
+                    Text("ภาพจากหน้า A2 | แตะบนภาพเพื่อย้ายจุด").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize()
                         .padding(.horizontal, 8).padding(.vertical, 4).background(Self.tileFill, in: RoundedRectangle(cornerRadius: 6))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Color.clear.frame(height: 1)
@@ -151,7 +151,7 @@ struct WaterPageWide: View {
         HStack(spacing: 10) {
             summaryTile("หลังคาที่ต้องล้าง", WaterPoint.roofNames(job))
             summaryTile("จำนวนแผง (จาก D1)", WaterPoint.panelSummary(job))
-            if !narrow { summaryTile("แสดงผลใน", "ภาพ A2 · รายงาน") }
+            if !narrow { summaryTile("แสดงผลใน", "ภาพ A2 | รายงาน") }
         }
     }
 
@@ -225,7 +225,7 @@ struct WaterPageWide: View {
         return card {
             header(3, "ภาพประกอบ", required: true) {
                 Spacer(minLength: 8)
-                Text(missing == 0 ? "2/2 ภาพ ✓" : "\(2 - missing)/2 ภาพ · ขาดอีก \(missing) ภาพ")
+                Text(missing == 0 ? "2/2 ภาพ ✓" : "\(2 - missing)/2 ภาพ | ขาดอีก \(missing) ภาพ")
                     .font(.sarabunFixed(13, missing == 0 ? .semibold : .bold))
                     .foregroundStyle(missing == 0 ? Theme.success : Theme.danger).lineLimit(1)
             }
@@ -239,7 +239,7 @@ struct WaterPageWide: View {
     var wideCaption: String {
         let roofs = job.modules.filter { $0.type == .roof || $0.type == .tank }
         let name = roofs.first.map { $0.name.trimmingCharacters(in: .whitespaces).isEmpty ? $0.spec.short : $0.name }
-        return (name.map { $0 + " · " } ?? "") + "จุดที่ต้องล้าง"
+        return (name.map { $0 + " | " } ?? "") + "จุดที่ต้องล้าง"
     }
 
     func photoTile(_ title: String, key: String, caption: String, hint: String) -> some View {

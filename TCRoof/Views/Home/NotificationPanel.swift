@@ -44,12 +44,12 @@ struct AppNotification: Identifiable {
             if job.surveyDate.isToday {
                 out.append(.init(id: "survey-\(key)-\(day)", kind: .survey,
                                  title: "นัดสำรวจ " + job.surveyDate.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)),
-                                 detail: [job.code, job.projectName, job.address].filter { !$0.isEmpty }.joined(separator: " · "),
+                                 detail: [job.code, job.projectName, job.address].filter { !$0.isEmpty }.joined(separator: " | "),
                                  date: job.surveyDate, job: job))
             }
             if let d = job.installDay(on: .now) {
                 out.append(.init(id: "install-\(key)-\(day)", kind: .install, title: "ติดตั้ง Day \(d)/\(job.installDays)",
-                                 detail: "\(job.code) · ทีม \(job.team.rawValue) · \(job.capacityKW.plain) kWp · จ.\(job.province)",
+                                 detail: "\(job.code) | ทีม \(job.team.rawValue) | \(job.capacityKW.plain) kWp | จ.\(job.province)",
                                  date: Calendar.current.date(bySettingHour: Calendar.current.component(.hour, from: job.installStart),
                                                              minute: Calendar.current.component(.minute, from: job.installStart), second: 0, of: .now) ?? .now))
                 if let owed = dailyReportOwed(job, key: key, day: day) { out.append(owed) }
@@ -62,14 +62,14 @@ struct AppNotification: Identifiable {
         if let latest = pending.map(\.updated).max() {
             // a new id whenever the count changes, so a fresh backlog shows as unread again
             out.append(.init(id: "sync-\(day)-\(pending.count)", kind: .syncPending, title: "รอซิงก์ \(pending.count) งาน",
-                             detail: "ยังไม่ได้บันทึกขึ้นคลาวด์ · แตะเพื่อซิงก์ตอนมีสัญญาณ", date: latest))
+                             detail: "ยังไม่ได้บันทึกขึ้นคลาวด์ | แตะเพื่อซิงก์ตอนมีสัญญาณ", date: latest))
         }
         let weekAgo = Date.now.adding(days: -7)
         for j in survey.jobs {
             guard let saved = j.drive?.lastSaved, saved > weekAgo else { continue }
             let name = [j.docNo.isEmpty ? "" : "NO.\(j.docNo)", j.projectName].filter { !$0.isEmpty }.joined(separator: " ")
             out.append(.init(id: "saved-\(j.id.uuidString)-\(saved.millis)", kind: .saved, title: "บันทึกขึ้น Drive แล้ว",
-                             detail: "\(name.isEmpty ? "งานสำรวจ" : name) · \(j.photoCount) ภาพ", date: saved))
+                             detail: "\(name.isEmpty ? "งานสำรวจ" : name) | \(j.photoCount) ภาพ", date: saved))
         }
         return out.sorted { a, b in a.isToday != b.isToday ? a.isToday : a.date > b.date }
     }
@@ -90,15 +90,15 @@ struct AppNotification: Identifiable {
         if case .overdue = state { overdue = true }
         return .init(id: ToolNotification.calibrationBellID(toolID: tool.id, due: due), kind: .calibration,
                      title: overdue ? "เกินกำหนดสอบเทียบ" : "ใกล้ครบกำหนดสอบเทียบ",
-                     detail: [tool.name, tool.kind].filter { !$0.isEmpty }.joined(separator: " ") + " · " + state.title,
+                     detail: [tool.name, tool.kind].filter { !$0.isEmpty }.joined(separator: " ") + " | " + state.title,
                      date: Date.now.startOfDay, link: .toolRecord(tool: tool.id), todo: true)
     }
 
     private static func feed(_ post: FeedPost) -> AppNotification {
         let fixed = post.issue?.fixed == true
         let type = FeedNotification.type(post.kind)
-        return .init(id: post.id, kind: .feed(post.kind), title: fixed ? "ปัญหา · แก้แล้ว" : FeedNotification.title(post.kind),
-                     detail: post.kind == .summary ? post.text : post.place + " · " + post.text, date: post.date,
+        return .init(id: post.id, kind: .feed(post.kind), title: fixed ? "ปัญหา | แก้แล้ว" : FeedNotification.title(post.kind),
+                     detail: post.kind == .summary ? post.text : post.place + " | " + post.text, date: post.date,
                      link: DeepLink.route(type: type, action: nil, info: FeedNotification.plan(post).info),
                      todo: post.issue != nil && !fixed)
     }

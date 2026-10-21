@@ -105,7 +105,7 @@ struct PWAPhoneTabs: View {
         let waiting = installing.reduce(0) { $0 + $1.papersWaitingToSend }
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house", action: goHome),
-            TCTabItem(.project, title: "โครงการ", asset: "tab-project", badge: today, accessibilityLabel: today > 0 ? "โครงการ · นัดวันนี้ \(today)" : nil),
+            TCTabItem(.project, title: "โครงการ", asset: "tab-project", badge: today, accessibilityLabel: today > 0 ? "โครงการ | นัดวันนี้ \(today)" : nil),
             TCTabItem(.plan, title: "แผนงาน", symbol: "calendar"),
             docsItem(waiting),
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape", accessibilityLabel: "ตั้งค่าโครงการ PWA"),
@@ -114,7 +114,7 @@ struct PWAPhoneTabs: View {
 
     private func docsItem(_ waiting: Int) -> TCTabItem<PWATab> {
         var item = TCTabItem(PWATab.docs, title: "เอกสาร", asset: "tab-docs", badge: waiting,
-                             accessibilityLabel: waiting > 0 ? "เอกสารสถานี กปภ. · รอส่ง \(waiting)" : "เอกสารสถานี กปภ.")
+                             accessibilityLabel: waiting > 0 ? "เอกสารสถานี กปภ. | รอส่ง \(waiting)" : "เอกสารสถานี กปภ.")
         item.badgeColor = Theme.warning
         return item
     }

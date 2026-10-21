@@ -40,10 +40,10 @@ extension UserAdminView {
         HStack(alignment: .bottom, spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("สิทธิ์ \(Capability.allCases.count) รายการ").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
-                Text("ตาม docs/reference/roles/user-roles.json · กดแก้ไขและยืนยันคีย์ก่อนเปลี่ยน").font(.sarabun(11)).foregroundStyle(Theme.muted)
+                Text("ตาม docs/reference/roles/user-roles.json | กดแก้ไขและยืนยันคีย์ก่อนเปลี่ยน").font(.sarabun(11)).foregroundStyle(Theme.muted)
                 HStack(spacing: 6) {
                     Button { if matrixEditing { matrixEditing = false } else { ask(.matrix) } } label: {
-                        Label(matrixEditing ? "กำลังแก้ไข · เสร็จ" : "แก้ไขสิทธิ์และกฎ", systemImage: "lock")
+                        Label(matrixEditing ? "กำลังแก้ไข | เสร็จ" : "แก้ไขสิทธิ์และกฎ", systemImage: "lock")
                             .font(.sarabun(12, .bold))
                             .foregroundStyle(matrixEditing ? Theme.onPrimary : Theme.primary)
                             .padding(.horizontal, 12).frame(minHeight: 44)
@@ -68,7 +68,7 @@ extension UserAdminView {
             ForEach(UserRole.allCases, id: \.self) { r in
                 VStack(spacing: 3) {
                     RolePill(role: r)
-                    Text("\(r.english) · \(store.shown.filter { $0.role == r }.count) คน").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
+                    Text("\(r.english) | \(store.shown.filter { $0.role == r }.count) คน").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                 }
                 .frame(width: Self.column)
             }
@@ -108,7 +108,7 @@ extension UserAdminView {
         return HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(c.label).font(.sarabun(13.5)).foregroundStyle(Theme.navy)
-                Text(enforced ? "\(c.rawValue) · บังคับใน rules" : c.rawValue).font(.sarabun(11)).foregroundStyle(Theme.inkFaint)
+                Text(enforced ? "\(c.rawValue) | บังคับใน rules" : c.rawValue).font(.sarabun(11)).foregroundStyle(Theme.inkFaint)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.trailing, 8)
@@ -144,7 +144,7 @@ extension UserAdminView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(r.label) · \(c.label) · \(a.label)" + (note.map { " (\($0))" } ?? ""))
+        .accessibilityLabel("\(r.label) | \(c.label) | \(a.label)" + (note.map { " (\($0))" } ?? ""))
         .accessibilityIdentifier("userAdmin.cell.\(r.rawValue)|\(c.rawValue)")
     }
 
@@ -169,9 +169,9 @@ extension UserAdminView {
     /// The rules that are facts of the system, shown locked on. `ปิดบัญชีเมื่อไม่ใช้งาน 30 วัน` is left out: nothing
     /// in the app does it (docs/ui/user-admin-ipad "No source").
     static let rules: [(String, String)] = [
-        ("ปิด / ระงับบัญชีได้เฉพาะ Maintainer", "ผู้จัดการตั้งบทบาทและเพิ่มสมาชิกได้ แต่ปิดบัญชีไม่ได้ · ล็อกไว้"),
-        ("เข้าได้เฉพาะอีเมลในรายชื่อสมาชิก", "members/<email> · บัญชีอื่นถูกล้างข้อมูลในเครื่อง"),
-        ("คนภายนอกเห็นเฉพาะงานที่ได้รับมอบหมาย", "บังคับใน firestore.rules · ข้อมูลติดต่อลูกค้าแยกใน jobContacts"),
+        ("ปิด / ระงับบัญชีได้เฉพาะ Maintainer", "ผู้จัดการตั้งบทบาทและเพิ่มสมาชิกได้ แต่ปิดบัญชีไม่ได้ | ล็อกไว้"),
+        ("เข้าได้เฉพาะอีเมลในรายชื่อสมาชิก", "members/<email> | บัญชีอื่นถูกล้างข้อมูลในเครื่อง"),
+        ("คนภายนอกเห็นเฉพาะงานที่ได้รับมอบหมาย", "บังคับใน firestore.rules | ข้อมูลติดต่อลูกค้าแยกใน jobContacts"),
         ("iPad ใช้ร่วมกันต้องล็อกอินแยกคน", "บทบาทมีผลตามบัญชีที่ล็อกอิน"),
     ]
 
@@ -181,7 +181,7 @@ extension UserAdminView {
                 Text("กฎการใช้งาน").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).padding(.bottom, 8)
                 ForEach(Self.rules, id: \.0) { t, d in
                     Button {
-                        if !matrixEditing { ask(.matrix) } else { toast = "กฎนี้ล็อกไว้ · เป็นข้อเท็จจริงของระบบ" }
+                        if !matrixEditing { ask(.matrix) } else { toast = "กฎนี้ล็อกไว้ | เป็นข้อเท็จจริงของระบบ" }
                     } label: {
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 0) {
@@ -198,7 +198,7 @@ extension UserAdminView {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(t)
-                    .accessibilityValue("เปิด · ล็อกไว้")
+                    .accessibilityValue("เปิด | ล็อกไว้")
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
@@ -217,12 +217,12 @@ extension UserAdminView {
 
     /// The board's `ข้อตกลง` (`v.dec`), static.
     static let decisions = [
-        "รายงานประจำวัน: หัวหน้างานผู้รับเหมากรอก วิศวกรของเราเซ็นรับทราบ · แผน MP นับเฉพาะที่เซ็นแล้ว",
-        "IEC 62446: ผู้รับเหมาทดสอบและส่งผล ทีมภายในปิด · นับ 3.1 เข้าแผน MP เมื่อทีมภายในปิด",
+        "รายงานประจำวัน: หัวหน้างานผู้รับเหมากรอก วิศวกรของเราเซ็นรับทราบ | แผน MP นับเฉพาะที่เซ็นแล้ว",
+        "IEC 62446: ผู้รับเหมาทดสอบและส่งผล ทีมภายในปิด | นับ 3.1 เข้าแผน MP เมื่อทีมภายในปิด",
         "วิศวกรภายนอกกับผู้รับเหมาใช้บทบาทเดียวกัน (external)",
-        "ผู้รับเหมาต้องส่ง: รายงานประจำวันทุกวันที่เข้างาน · คำขอรายสัปดาห์ทุกสัปดาห์ · ผล IEC 62446 ก่อนและหลังขนาน (เฉพาะงานที่ได้รับมอบหมาย)",
+        "ผู้รับเหมาต้องส่ง: รายงานประจำวันทุกวันที่เข้างาน | คำขอรายสัปดาห์ทุกสัปดาห์ | ผล IEC 62446 ก่อนและหลังขนาน (เฉพาะงานที่ได้รับมอบหมาย)",
         "เซ็นตรวจรับขั้นสุดท้าย: ผู้จัดการ หรือวิศวกรภายในผู้ควบคุมงานของงานนั้น",
-        "Drive: ทีมอัปโหลดเข้า Drive กลาง · ผู้รับเหมาเข้า Drive ของตัวเอง แชร์ให้ทีมอ่าน",
+        "Drive: ทีมอัปโหลดเข้า Drive กลาง | ผู้รับเหมาเข้า Drive ของตัวเอง แชร์ให้ทีมอ่าน",
         "BOQ ปิดใช้งานทุกบทบาท",
         "ปิด / ระงับบัญชีผู้ใช้: เฉพาะ Maintainer (ผู้จัดการตั้งบทบาทได้ แต่ปิดบัญชีไม่ได้)",
     ]

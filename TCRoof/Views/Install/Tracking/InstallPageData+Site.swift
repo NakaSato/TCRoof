@@ -47,7 +47,7 @@ extension InstallPageData {
         let prevention: String
     }
 
-    /// `ข้อมูลหน้างาน · ความเสี่ยง · แรงงาน`.
+    /// `ข้อมูลหน้างาน | ความเสี่ยง | แรงงาน`.
     struct Site {
         var asOf: Date
         /// `ความคืบหน้าตามงาน`: the MP install tasks' % (the app keeps no installed quantities).
@@ -72,18 +72,18 @@ extension InstallPageData {
     /// The IEC line: closed with its date and who, or the steps done and what the first open one lacks; and the
     /// photos on Drive.
     static func iecDetail(_ r: IECReport, drive: IECReport.Tally?) -> String {
-        let photos = drive.map { " · รูปขึ้น Drive \($0.done)/\($0.total)" } ?? ""
+        let photos = drive.map { " | รูปขึ้น Drive \($0.done)/\($0.total)" } ?? ""
         if let result = r.result {
             let f = DateFormatter()
             f.locale = Locale(identifier: "th_TH"); f.calendar = Calendar(identifier: .buddhist); f.dateFormat = "d MMM yyyy"
-            return "ปิดการทดสอบ " + f.string(from: result.completedAt) + (result.by.isEmpty ? "" : " · " + result.by) + photos
+            return "ปิดการทดสอบ " + f.string(from: result.completedAt) + (result.by.isEmpty ? "" : " | " + result.by) + photos
         }
         if let sent = r.submission {
-            return "ส่งผลให้ทีมแล้ว" + (sent.by.isEmpty ? "" : " · " + sent.by) + " · รอทีมภายในปิด" + photos
+            return "ส่งผลให้ทีมแล้ว" + (sent.by.isEmpty ? "" : " | " + sent.by) + " | รอทีมภายในปิด" + photos
         }
         let steps = IECReport.Stage.allCases.filter { $0 != .review }
         let done = steps.filter(r.isDone).count
-        let next = steps.first { !r.isDone($0) }.map { " · ขั้น \($0.rawValue) ขาด " + (r.missing($0).first ?? "") } ?? " · พร้อมสรุปผล"
+        let next = steps.first { !r.isDone($0) }.map { " | ขั้น \($0.rawValue) ขาด " + (r.missing($0).first ?? "") } ?? " | พร้อมสรุปผล"
         return "ครบ \(done)/\(steps.count) ขั้น" + next + photos
     }
 
@@ -120,7 +120,7 @@ extension InstallPageData {
                 let open = w.upperBound >= day
                 return DocItem(id: "w\(RoutineReport.dayKey(start))", code: "W\(iso.component(.weekOfYear, from: w.upperBound))",
                                title: "สรุปงานประจำสัปดาห์ \(ThaiFormat.dayMonth.string(from: w.lowerBound)) – \(ThaiFormat.numericDate.string(from: w.upperBound))",
-                               detail: "\(reports.count) รายงาน · \(reports.reduce(0) { $0 + $1.crewTotal }) คน·วัน",
+                               detail: "\(reports.count) รายงาน | \(reports.reduce(0) { $0 + $1.crewTotal }) คน-วัน",
                                chip: open ? "ครบ \(ThaiFormat.dayMonth.string(from: w.upperBound))" : "ครบสัปดาห์", tone: open ? .info : .ok, target: .weekly)
             }
             let this = RoutineReport.week(of: day)
@@ -162,7 +162,7 @@ extension InstallPageData {
             let left = due.map { cal.dateComponents([.day], from: day, to: cal.startOfDay(for: $0)).day ?? 0 }
             let count = "\(p.ready)/\(p.total)"
             let chip = p.isComplete ? "ครบ " + count
-                : due.map { (left ?? 0 < 0 ? "เลยกำหนด " : "กำหนด ") + ThaiFormat.dayMonth.string(from: $0) + " · " + count } ?? count
+                : due.map { (left ?? 0 < 0 ? "เลยกำหนด " : "กำหนด ") + ThaiFormat.dayMonth.string(from: $0) + " | " + count } ?? count
             let tone: Tone = p.isComplete ? .ok : (left ?? 1) < 0 ? .danger : (left ?? 8) <= 7 ? .warn : .idle
             return DocTile(id: id, title: title, about: "เอกสารชุดยื่น\(package.title)", chip: chip, tone: tone, items: paperItems(papers))
         }
@@ -198,7 +198,7 @@ extension InstallPageData {
     }
 
     private static func dailyTitle(_ r: RoutineReport.Daily) -> String {
-        if !r.progress.isEmpty { return r.progress.prefix(3).map(\.title).joined(separator: " · ") }
+        if !r.progress.isEmpty { return r.progress.prefix(3).map(\.title).joined(separator: " | ") }
         if !r.stopReason.isEmpty { return "หยุดงาน: " + r.stopReason }
         return "ไม่มีงานที่บันทึก"
     }
@@ -206,7 +206,7 @@ extension InstallPageData {
     private static func dailyDetail(_ r: RoutineReport.Daily, photos: Int) -> String {
         let weather = Dictionary(grouping: r.weather.compactMap { $0 }, by: { $0 }).max { $0.value.count < $1.value.count }?.key
         return [ThaiFormat.numericDate.string(from: r.date), r.crewTotal > 0 ? "\(r.crewTotal) คน" : nil,
-                r.rainHours > 0 ? "ฝน \(r.rainHours) ชม." : weather?.title, "\(photos) รูป"].compactMap { $0 }.joined(separator: " · ")
+                r.rainHours > 0 ? "ฝน \(r.rainHours) ชม." : weather?.title, "\(photos) รูป"].compactMap { $0 }.joined(separator: " | ")
     }
 
     @MainActor static func site(job: Job, gantt: InstallGantt?, today: Date) -> Site {
@@ -258,7 +258,7 @@ extension InstallPageData {
             ("รับวัสดุเข้าหน้างาน ตรวจนับครบตามใบส่งของ", "แดดจัด", 4, "", 6)]
         let dailyItems = daily.enumerated().map { i, r in
             DocItem(id: "dr\(i)", code: String(format: "DR-%03d", 7 - i), title: r.0,
-                    detail: "\(ThaiFormat.numericDate.string(from: d(6 - i))) · \(r.2) คน · \(r.1) · \(r.4) รูป", chip: "ส่งแล้ว", tone: .ok, target: .day(d(6 - i)))
+                    detail: "\(ThaiFormat.numericDate.string(from: d(6 - i))) | \(r.2) คน | \(r.1) | \(r.4) รูป", chip: "ส่งแล้ว", tone: .ok, target: .day(d(6 - i)))
         }
         func papers(_ names: [(String, StationDocs.Status)]) -> [DocItem] {
             names.enumerated().map { i, p in
@@ -271,29 +271,29 @@ extension InstallPageData {
                     chip: "วันนี้ส่งแล้ว", tone: .ok, items: dailyItems),
             DocTile(id: "weekly", title: "Weekly Report", about: "สรุปงานประจำสัปดาห์ (R3) จากรายงานประจำวัน",
                     chip: "W40 ครบ \(ThaiFormat.dayMonth.string(from: d(10)))", tone: .warn,
-                    items: [DocItem(id: "w40", code: "W40", title: "สรุปงานประจำสัปดาห์", detail: "4 รายงาน · 26 คน·วัน", chip: "ร่างพร้อมแล้ว", tone: .info, target: .weekly),
-                            DocItem(id: "w39", code: "W39", title: "สรุปงานประจำสัปดาห์", detail: "3 รายงาน · 18 คน·วัน", chip: "ครบสัปดาห์", tone: .ok, target: .weekly)]),
+                    items: [DocItem(id: "w40", code: "W40", title: "สรุปงานประจำสัปดาห์", detail: "4 รายงาน | 26 คน-วัน", chip: "ร่างพร้อมแล้ว", tone: .info, target: .weekly),
+                            DocItem(id: "w39", code: "W39", title: "สรุปงานประจำสัปดาห์", detail: "3 รายงาน | 18 คน-วัน", chip: "ครบสัปดาห์", tone: .ok, target: .weekly)]),
             DocTile(id: "permits", title: "ใบอนุญาต", about: "งานขออนุญาตในแผน MP (1.x)", chip: "ได้ 3/4", tone: .idle, items: []),
             DocTile(id: "commissioning", title: "Test & Commissioning", about: "เอกสารชุดยื่นทดสอบระบบ", chip: "3/10", tone: .idle,
                     items: papers([("ตารางตรวจสอบก่อน / หลังเชื่อมต่อ (IEC 62446)", .draft), ("ภาพถ่ายความร้อน", .missing)])),
             DocTile(id: "punch", title: "Punch List", about: "Punch List Inspection Report", chip: "ยังไม่มี", tone: .idle,
                     items: papers([("Punch List Inspection Report", .missing)])),
-            DocTile(id: "grid", title: "ขออนุญาตขนานไฟ", about: "เอกสารชุดยื่นขนานไฟ", chip: "กำหนด \(ThaiFormat.dayMonth.string(from: d(11))) · 4/6", tone: .warn,
+            DocTile(id: "grid", title: "ขออนุญาตขนานไฟ", about: "เอกสารชุดยื่นขนานไฟ", chip: "กำหนด \(ThaiFormat.dayMonth.string(from: d(11))) | 4/6", tone: .warn,
                     items: papers([("Single Line Diagram + เอกสารวิศวกรไฟฟ้า", .signed), ("หนังสือแจ้งดับไฟ", .draft)])),
             DocTile(id: "devices", title: "อุปกรณ์ที่ติดตั้ง", about: "หมายเลข S/N ที่สแกนเข้าสถานีนี้", chip: "สแกน 150", tone: .idle,
                     items: [DocItem(id: "panel", title: "แผงโซลาร์เซลล์", detail: "สแกนล่าสุด " + ThaiFormat.numericDate.string(from: d(4)), chip: "150 ชิ้น", tone: .ok)]),
-            DocTile(id: "handover", title: "ส่งมอบงาน", about: "เอกสารชุดยื่นส่งมอบงาน", chip: "กำหนด \(ThaiFormat.dayMonth.string(from: d(12))) · 2/9", tone: .warn, items: [])]
+            DocTile(id: "handover", title: "ส่งมอบงาน", about: "เอกสารชุดยื่นส่งมอบงาน", chip: "กำหนด \(ThaiFormat.dayMonth.string(from: d(12))) | 2/9", tone: .warn, items: [])]
     }
 
     static func demoSite(day: Date) -> Site {
         func d(_ i: Int) -> Date { day.adding(days: i - 6) }
         var s = Site(asOf: day)
-        s.tasks = [("ส่งวัสดุเข้าหน้างาน", 100), ("ติดตั้งโครงสร้างราง", 100), ("ติดตั้งแผงโซลาร์", 100), ("เดินสาย DC · ตู้ DC", 50),
-                   ("ติดตั้งอินเวอร์เตอร์ · ตู้ AC", 0), ("ทดสอบระบบ", 0)]
+        s.tasks = [("ส่งวัสดุเข้าหน้างาน", 100), ("ติดตั้งโครงสร้างราง", 100), ("ติดตั้งแผงโซลาร์", 100), ("เดินสาย DC | ตู้ DC", 50),
+                   ("ติดตั้งอินเวอร์เตอร์ | ตู้ AC", 0), ("ทดสอบระบบ", 0)]
         s.hasReports = true; s.peopleToday = 6; s.manDays = 44; s.reportsSent = 7; s.workingDaysSoFar = 7; s.rainHours = 2
         s.issues = [.init(description: "รออนุมัติตู้ AC ก่อน \(ThaiFormat.dayMonth.string(from: d(8)))", since: d(4))]
-        s.risks = [SiteRisk(id: "1", level: .high, title: "ตู้ AC ส่งไม่ทันขั้น 5 (\(ThaiFormat.dayMonth.string(from: d(8))))", prevention: "ติดตาม MA-05 ทุกวัน · สำรองตู้จากคลัง"),
-                   SiteRisk(id: "2", level: .medium, title: "ฝนตก \(ThaiFormat.dayMonth.string(from: d(8)))–\(ThaiFormat.dayMonth.string(from: d(9))) (โอกาส 60–70%)", prevention: "ทำงานในร่มก่อน · เผื่อ 1 วันในแผน"),
+        s.risks = [SiteRisk(id: "1", level: .high, title: "ตู้ AC ส่งไม่ทันขั้น 5 (\(ThaiFormat.dayMonth.string(from: d(8))))", prevention: "ติดตาม MA-05 ทุกวัน | สำรองตู้จากคลัง"),
+                   SiteRisk(id: "2", level: .medium, title: "ฝนตก \(ThaiFormat.dayMonth.string(from: d(8)))–\(ThaiFormat.dayMonth.string(from: d(9))) (โอกาส 60–70%)", prevention: "ทำงานในร่มก่อน | เผื่อ 1 วันในแผน"),
                    SiteRisk(id: "3", level: .low, title: "การไฟฟ้านัดตรวจหลัง \(ThaiFormat.dayMonth.string(from: d(12)))", prevention: "ยื่นเอกสารขนานไฟให้ครบก่อน")]
         let plan = [4, 6, 6, 8, 8, 6, 6, 6, 4, 4, nil, nil, 4], actual: [Int?] = [4, 6, 6, 8, 8, 6, 6]
         s.labour = plan.indices.compactMap { i in

@@ -57,11 +57,11 @@ extension SurveyEditor {
     }
 
     var padJobCard: some View {
-        padCard("โครงการ · ตำแหน่งหน้างาน", note: form.isDraft ? "ร่าง · บันทึกอัตโนมัติทุกครั้งที่แก้ไข" : nil) {
+        padCard("โครงการ | ตำแหน่งหน้างาน", note: form.isDraft ? "ร่าง | บันทึกอัตโนมัติทุกครั้งที่แก้ไข" : nil) {
             if let job = form.job {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(job.customerName).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
-                    Text("\(job.code) · \(job.address) \(job.province)").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
+                    Text("\(job.code) | \(job.address) \(job.province)").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                 }
             }
             HStack(spacing: 12) {
@@ -189,7 +189,7 @@ extension SurveyEditor {
             padField("ขนาดที่เสนอ") {
                 TCNumberField("ขนาดที่เสนอ", value: optional(\.recommendedKW), range: 0...100_000, step: 0.01, unit: "kWp")
             }
-            Text("เว้นว่างเพื่อใช้ค่าที่คำนวณ (\(SurveyOptions.autoKW(form).kw)) · ใช้หน่วย kWh ถ้ากรอก ไม่เช่นนั้นคิดจากค่าไฟ 4.5 บาท/หน่วย · ใช้ไฟกลางวัน 60% · แดดเฉลี่ย 4 ชม./วัน")
+            Text("เว้นว่างเพื่อใช้ค่าที่คำนวณ (\(SurveyOptions.autoKW(form).kw)) | ใช้หน่วย kWh ถ้ากรอก ไม่เช่นนั้นคิดจากค่าไฟ 4.5 บาท/หน่วย | ใช้ไฟกลางวัน 60% | แดดเฉลี่ย 4 ชม./วัน")
                 .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
         }
     }

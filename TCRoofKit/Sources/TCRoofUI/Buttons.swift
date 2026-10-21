@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-/// Section 2 · Buttons (docs/ui/components/sections/02-buttons.png).
+/// Section 2 | Buttons (docs/ui/components/sections/02-buttons.png).
 public enum TCButtonKind: CaseIterable, Sendable {
     /// Solid #1F6FB5.
     case primary
@@ -23,11 +23,11 @@ public enum TCButtonKind: CaseIterable, Sendable {
 }
 
 public enum TCButtonSize: Sendable {
-    /// Primary in a page: iPad 52 · r12 · 16 pt, hugs content; iPhone 48 · r10 · 15 pt, full width.
+    /// Primary in a page: iPad 52 | r12 | 16 pt, hugs content; iPhone 48 | r10 | 15 pt, full width.
     case page
-    /// Inside a card: 44 · r10 · 14 pt.
+    /// Inside a card: 44 | r10 | 14 pt.
     case card
-    /// Bottom bar: 53 · r10 · 16 pt.
+    /// Bottom bar: 53 | r10 | 16 pt.
     case bar
 
     func height(compact: Bool) -> CGFloat {

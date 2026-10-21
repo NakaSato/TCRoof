@@ -75,7 +75,7 @@ struct UpdateRequiredView: View {
                         .font(.sarabun(15, .semibold, relativeTo: .subheadline))
                         .foregroundStyle(Theme.warningText)
                 }
-                Text("เวอร์ชันซิงก์ของเครื่องนี้ \(AppCompat.syncVersion) · ต้องการ \(gate.minimum ?? 0)")
+                Text("เวอร์ชันซิงก์ของเครื่องนี้ \(AppCompat.syncVersion) | ต้องการ \(gate.minimum ?? 0)")
                     .font(.sarabun(TypeScale.caption, relativeTo: .caption))
                     .foregroundStyle(Theme.muted)
             }

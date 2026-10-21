@@ -141,7 +141,7 @@ struct ElectricalPageWide: View {
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text("ผังการจ่ายไฟ").font(.sarabunFixed(22, .bold))
-                Text("กรอกทุกอย่างในผังนี้ · มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text("กรอกทุกอย่างในผังนี้ | มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 8)
                 a2Button
                 diagramButton
@@ -196,7 +196,7 @@ struct ElectricalPageWide: View {
 
     var zoomPanel: some View {
         HStack(spacing: 10) {
-            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม · ลากเพื่อเลื่อน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+            if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม | ลากเพื่อเลื่อน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
             HStack(spacing: 6) {
                 zoomButton("minus", "ย่อ") { step(-1) }
                 Text("\(Int((scale * 100).rounded()))%").font(.sarabunFixed(16, .bold)).frame(minWidth: 52)
@@ -300,7 +300,7 @@ struct ElectricalPageWide: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                Text("ครบ 5 ลูกแล้ว (สูงสุด) · แตะหม้อแปลงเพื่อขยายมาแก้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("ครบ 5 ลูกแล้ว (สูงสุด) | แตะหม้อแปลงเพื่อขยายมาแก้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderControl.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6, 4])))
             }

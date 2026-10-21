@@ -144,7 +144,7 @@ struct DailyReportListView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(RoutineReport.thaiDate(d)).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 if let r {
-                    Text("\(r.crewTotal) คน · \(r.progress.count) งาน" + (r.rainHours > 0 ? " · ฝน \(r.rainHours) ชม." : ""))
+                    Text("\(r.crewTotal) คน | \(r.progress.count) งาน" + (r.rainHours > 0 ? " | ฝน \(r.rainHours) ชม." : ""))
                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
             }

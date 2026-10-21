@@ -115,7 +115,7 @@ final class TankPointsTests: XCTestCase {
         let list = TankPoints.points(v)
         var c = TankPoints.check(v, list[8].id)!
         XCTAssertEqual(c.aligned.first, "V10")
-        XCTAssertEqual(c.text, "แนวเดียวกับ V10, V3 · ไม่ทับจุดอื่น")
+        XCTAssertEqual(c.text, "แนวเดียวกับ V10, V3 | ไม่ทับจุดอื่น")
         XCTAssertFalse(c.warning)
         TankPoints.move(&v, list[8].id, x: list[9].x.isEmpty ? 0 : Double(list[9].x)! - 0.3, y: Double(list[9].y)!)
         c = TankPoints.check(v, list[8].id)!

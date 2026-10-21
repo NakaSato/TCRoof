@@ -107,7 +107,7 @@ struct AddToCalendarButton: View {
 }
 
 /// The appointment's calendar line (spec §A1, §A5): `ซิงก์ลงปฏิทินแล้ว ✓` while automatic sync keeps it,
-/// `นัดถูกลบจากปฏิทิน · เพิ่มอีกครั้ง` after it was deleted in Calendar, else `เพิ่มลงปฏิทิน`.
+/// `นัดถูกลบจากปฏิทิน | เพิ่มอีกครั้ง` after it was deleted in Calendar, else `เพิ่มลงปฏิทิน`.
 struct AppointmentCalendarControl: View {
     let job: Job
     var compact = false
@@ -123,7 +123,7 @@ struct AppointmentCalendarControl: View {
                 .accessibilityIdentifier("calendarSynced")
         case .deletedInCalendar:
             Button { service.readd(key) } label: {
-                Label(compact ? "เพิ่มอีกครั้ง" : "นัดถูกลบจากปฏิทิน · เพิ่มอีกครั้ง", systemImage: "calendar.badge.exclamationmark")
+                Label(compact ? "เพิ่มอีกครั้ง" : "นัดถูกลบจากปฏิทิน | เพิ่มอีกครั้ง", systemImage: "calendar.badge.exclamationmark")
                     .font(.sarabun(compact ? 13 : 15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
             }
             .accessibilityIdentifier("calendarReadd")
@@ -133,7 +133,7 @@ struct AppointmentCalendarControl: View {
     }
 }
 
-/// `นำทาง · โทร · ปฏิทิน` under an appointment in the plan (spec §A5), the team's (the customer's phone and address).
+/// `นำทาง | โทร | ปฏิทิน` under an appointment in the plan (spec §A5), the team's (the customer's phone and address).
 struct AppointmentActions: View {
     let job: Job
     @Environment(\.openURL) private var openURL

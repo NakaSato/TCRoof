@@ -19,8 +19,8 @@ public enum ZeroExport {
 
     /// The label of photo slot `slot` (0…3) for the level; `board` is A3's connection board name ("MDP-1").
     public static func photoLabel(_ slot: Int, hv: Bool, board: String) -> String {
-        let lvLabels = ["ตู้ \(board) · วงจุดติดตั้ง CT", "ช่องว่างสำหรับรีเลย์", "ป้ายพิกัด ACB เมน / CT เดิม", "บัสบาร์ขาออก ACB · วัดขนาดสำหรับ CT"]
-        let hvLabels = ["เสาหลังมิเตอร์ · จุด CT/VT", "ระยะห่างสายแรงสูง", "ป้ายมิเตอร์ กฟภ. / CT-VT เดิม", "ทางเข้ารถกระเช้า · พื้นที่ทำงาน"]
+        let lvLabels = ["ตู้ \(board) | วงจุดติดตั้ง CT", "ช่องว่างสำหรับรีเลย์", "ป้ายพิกัด ACB เมน / CT เดิม", "บัสบาร์ขาออก ACB | วัดขนาดสำหรับ CT"]
+        let hvLabels = ["เสาหลังมิเตอร์ | จุด CT/VT", "ระยะห่างสายแรงสูง", "ป้ายมิเตอร์ กฟภ. / CT-VT เดิม", "ทางเข้ารถกระเช้า | พื้นที่ทำงาน"]
         return (hv ? hvLabels : lvLabels)[slot]
     }
 
@@ -44,7 +44,7 @@ public enum ZeroExport {
         if k > 0 { return "ยังขาด: ภาพประกอบอีก \(k) ภาพ (ต้องมีอย่างน้อย \(minPhotos) ภาพ)" }
         if v.choice(levelKey) == nil { return "ยังขาด: ตำแหน่งกันย้อน" }
         if isHV(v) && v.choice(poleKey) == nil { return "ยังขาด: เสา" }
-        return "ครบช่องบังคับแล้ว · SLD และ B2 อัปเดตตามตำแหน่งกันย้อน"
+        return "ครบช่องบังคับแล้ว | SLD และ B2 อัปเดตตามตำแหน่งกันย้อน"
     }
     public static func isComplete(_ v: Values) -> Bool {
         missingPhotos(v) == 0 && v.choice(levelKey) != nil && (!isHV(v) || v.choice(poleKey) != nil)

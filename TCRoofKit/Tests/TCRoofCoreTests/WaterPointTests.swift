@@ -78,7 +78,7 @@ final class WaterPointTests: XCTestCase {
         m.values["photoWide"] = .photo(Self.photo)
         m.values["waterMode"] = .choice(WaterPoint.Mode.new.rawValue, other: "")
         XCTAssertTrue(m.completion.isComplete)
-        XCTAssertEqual(WaterPoint.statusLine(m.values), "ครบช่องบังคับแล้ว · จุดจ่ายน้ำแสดงบนภาพ A2 และรายงาน")
+        XCTAssertEqual(WaterPoint.statusLine(m.values), "ครบช่องบังคับแล้ว | จุดจ่ายน้ำแสดงบนภาพ A2 และรายงาน")
         // placing the pin is stored on the job, not the module, so the section's count doesn't move
         var j = job(waterModules: 0); j.modules.append(m)
         let before = j.completion
@@ -93,6 +93,6 @@ final class WaterPointTests: XCTestCase {
         j.modules.append(SurveyModule(type: .tank, name: "หลังคาถังน้ำใส 1", values: Values(["panelsBefore": .text("420"), "panelsCut": .text("4")])))
         j.values["capacity"] = .text("237.1")
         XCTAssertEqual(WaterPoint.roofNames(j), "หลังคาถังน้ำใส 1")
-        XCTAssertEqual(WaterPoint.panelSummary(j), "416 แผง · 237.1 kWp")
+        XCTAssertEqual(WaterPoint.panelSummary(j), "416 แผง | 237.1 kWp")
     }
 }

@@ -46,6 +46,16 @@ public struct RoofDesign: Codable, Hashable, Sendable, Identifiable {
     public var length: Double { Roof.spans(values, .y).reduce(0, +) }
     /// "32 × 24 ม."
     public var size: String { "\(fmt(width)) × \(fmt(length)) ม." }
+    /// What the design holds, for its card: `แป @1.20 ม. | แผ่นใส 2 | สิ่งกีดขวาง 1`.
+    public var contents: String {
+        let areas = Roof.areas(values), sky = areas.filter { $0.kind == Roof.skylightKind }.count
+        return String(format: "แป @%.2f ม.", Roof.purlinSpacing(values)) + " | แผ่นใส \(sky) | สิ่งกีดขวาง \(areas.count - sky)"
+    }
+    /// The design's roof plan for its card.
+    public var thumbnail: Sketch? {
+        DesignThumbnail.sketch(xs: Roof.spans(values, .x), ys: Roof.spans(values, .y),
+                               marks: DesignThumbnail.marks(values.obstacles(Roof.Key.obstacles)))
+    }
 
     // MARK: saving and picking
 

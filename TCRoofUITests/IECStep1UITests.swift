@@ -36,7 +36,7 @@ final class IECStep1UITests: XCTestCase {
         XCTAssertTrue(app.textFields["S/N ใหม่"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.textFields["S/N ใหม่"].value as? String, "TCR2026SN01", "the stub nameplate's serial")
         app.buttons["ด้านหน้า"].firstMatch.tap()
-        app.buttons["ด้านข้าง · ป้าย S/N"].firstMatch.tap()
+        app.buttons["ด้านข้าง | ป้าย S/N"].firstMatch.tap()
         let commit = button(app, "เพิ่ม INV3")
         XCTAssertTrue(commit.waitForExistence(timeout: 10))
         commit.tap()
@@ -77,6 +77,6 @@ final class IECStep1UITests: XCTestCase {
         tester.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 30) + "ทีมทดสอบ\n")
         XCTAssertTrue(next.isEnabled, "SLD, date, tester and strings are there")
         next.tap()
-        XCTAssertTrue(app.staticTexts["ตารางค่าวัด · INV1 ก่อนออนระบบ"].waitForExistence(timeout: 15), "step 2's page")
+        XCTAssertTrue(app.staticTexts["ตารางค่าวัด | INV1 ก่อนออนระบบ"].waitForExistence(timeout: 15), "step 2's page")
     }
 }

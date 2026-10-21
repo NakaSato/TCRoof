@@ -19,7 +19,7 @@ final class GoogleSession {
         var errorDescription: String? {
             switch self {
             case .notMember(let email): return "\(email) ยังไม่ได้รับสิทธิ์ใช้แอปนี้ ติดต่อผู้ดูแลระบบให้เพิ่มบัญชีในรายชื่อสมาชิก"
-            case .suspended: return "บัญชีนี้ถูกระงับ · ติดต่อผู้ดูแลระบบ"
+            case .suspended: return "บัญชีนี้ถูกระงับ | ติดต่อผู้ดูแลระบบ"
             case .offline: return "ต่ออินเทอร์เน็ตเพื่อตรวจสิทธิ์บัญชีในการเข้าสู่ระบบครั้งแรก"
             case .noEmail: return "Google ไม่ได้ส่งอีเมลของบัญชีมา ลองเข้าสู่ระบบอีกครั้ง"
             }
@@ -58,6 +58,7 @@ final class GoogleSession {
         }
         #endif
         if let email { MemberRole.shared.signedIn(email) }
+        MySignature.shared.account = email
     }
 
     var isSignedIn: Bool { email != nil }
@@ -95,6 +96,7 @@ final class GoogleSession {
         }
         LocalData.signedIn(mail, role: MemberRole.savedRole(mail))
         email = mail
+        MySignature.shared.account = mail
         MemberRole.shared.signedIn(mail)
         Self.fillUserName()
     }
@@ -118,6 +120,7 @@ final class GoogleSession {
         CloudSync.shared.stop()
         survey.google.signOut()
         email = nil
+        MySignature.shared.account = nil
         MemberRole.shared.signedOut()
         // the display name belongs to the account; the next person signs in with their own
         UserDefaults.standard.removeObject(forKey: Self.userNameKey)

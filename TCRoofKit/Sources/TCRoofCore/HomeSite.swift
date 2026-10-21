@@ -127,7 +127,7 @@ public struct HomeDelivery: Codable, Equatable, Sendable {
         let goods: Set<HomeBOQ.Section> = [.module, .inverter, .mounting, .cable, .conduit, .combiner]
         for l in boq.lines where goods.contains(l.section) {
             if l.isNote {
-                if let last = d.items.indices.last { d.items[last].description += " · " + l.description }
+                if let last = d.items.indices.last { d.items[last].description += " | " + l.description }
                 continue
             }
             let serial = l.section == .inverter && l.unit == "Pcs" || HomeBOQ.isExportControl(l.description)

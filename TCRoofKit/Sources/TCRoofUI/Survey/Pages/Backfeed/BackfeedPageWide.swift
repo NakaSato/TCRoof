@@ -126,8 +126,8 @@ struct BackfeedPageWide: View {
         return card {
             header(1, "ตำแหน่งกันย้อน", required: true) { hint("ใช้ค่าเดียวกับ B2 และ SLD") }
             HStack(spacing: 12) {
-                levelChoice(ZeroExport.lv, tag: "LV · 400 V", title: "กันย้อนที่แรงต่ำ", sub: "CT ที่เมนตู้ \(board) (400 V)")
-                levelChoice(ZeroExport.hv, tag: "HV · \(kv) kV", title: "กันย้อนที่แรงสูง", sub: "CT/VT หลังมิเตอร์ กฟภ. (\(kv) kV)")
+                levelChoice(ZeroExport.lv, tag: "LV | 400 V", title: "กันย้อนที่แรงต่ำ", sub: "CT ที่เมนตู้ \(board) (400 V)")
+                levelChoice(ZeroExport.hv, tag: "HV | \(kv) kV", title: "กันย้อนที่แรงสูง", sub: "CT/VT หลังมิเตอร์ กฟภ. (\(kv) kV)")
             }
             if hv { poleRow }
         }
@@ -193,7 +193,7 @@ struct BackfeedPageWide: View {
         let keys = ZeroExport.photoKeys
         return card {
             header(2, "ภาพประกอบ", required: true) {
-                Text(missing == 0 ? "\(n) ภาพ · ครบขั้นต่ำ \(ZeroExport.minPhotos) ภาพ ✓" : "\(n)/\(ZeroExport.minPhotos) ภาพ · ขาดอีก \(missing) ภาพ")
+                Text(missing == 0 ? "\(n) ภาพ | ครบขั้นต่ำ \(ZeroExport.minPhotos) ภาพ ✓" : "\(n)/\(ZeroExport.minPhotos) ภาพ | ขาดอีก \(missing) ภาพ")
                     .font(.sarabunFixed(13, missing == 0 ? .semibold : .bold))
                     .foregroundStyle(missing == 0 ? Theme.success : Theme.danger).lineLimit(1).minimumScaleFactor(0.7)
             }
@@ -221,7 +221,7 @@ struct BackfeedPageWide: View {
                 .frame(minHeight: 60, maxHeight: .infinity)
                 .overlay(alignment: .topLeading) {
                     if values.text("detail").isEmpty {
-                        Text(hv ? "เช่น ระยะจากมิเตอร์ถึงเสา · การขออนุญาต กฟภ." : "เช่น ตำแหน่ง CT · ช่องว่างในตู้สำหรับรีเลย์")
+                        Text(hv ? "เช่น ระยะจากมิเตอร์ถึงเสา | การขออนุญาต กฟภ." : "เช่น ตำแหน่ง CT | ช่องว่างในตู้สำหรับรีเลย์")
                             .font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted.opacity(0.8))
                             .padding(.horizontal, 13).padding(.vertical, 16).allowsHitTesting(false)
                     }

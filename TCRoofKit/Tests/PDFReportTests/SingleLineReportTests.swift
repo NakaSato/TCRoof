@@ -79,7 +79,7 @@ final class BuildingPanelReportTests: XCTestCase {
             default: return nil
             }
         }
-        XCTAssertTrue(texts.contains("จุดเชื่อมต่อ PV · ช่องว่าง 2 ช่อง"), "\(texts)")
-        XCTAssertTrue(texts.contains { $0.contains("MDP-1 · CB1 · 400 AT") }, "\(texts)")
+        XCTAssertTrue(texts.contains("จุดเชื่อมต่อ PV | ช่องว่าง 2 ช่อง"), "\(texts)")
+        XCTAssertTrue(texts.contains { $0.contains("MDP-1 | CB1 | 400 AT") }, "\(texts)")
     }
 }

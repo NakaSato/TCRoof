@@ -227,7 +227,7 @@ final class PWADocsTests: XCTestCase {
 
     func testPK2TitleAndLetterNumber() {
         let item = D.Item(kind: S.kind("layout_plan")!, status: .draft, station: nil, package: .pk2, due: nil)
-        XCTAssertEqual(D.title(item), "พค.2 ข้อ 8 · " + S.kind("layout_plan")!.name)
+        XCTAssertEqual(D.title(item), "พค.2 ข้อ 8 | " + S.kind("layout_plan")!.name)
         XCTAssertEqual(D.letterNumber("ส่งแล้ว เลขที่ TC-PML-001/2569 รอ"), "TC-PML-001/2569")
         XCTAssertNil(D.letterNumber("รอลงนาม"))
     }

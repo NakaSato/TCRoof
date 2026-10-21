@@ -62,7 +62,7 @@ struct SiteMarksEditor: View {
 
     var hint: String {
         if let a = armed { return "แตะบนภาพเพื่อวาง \(a.title)" }
-        return "เลือกสัญลักษณ์ แล้วแตะบนภาพเพื่อวาง · ลากเพื่อย้าย · แตะสัญลักษณ์เพื่อเลือกแล้วลบ"
+        return "เลือกสัญลักษณ์ แล้วแตะบนภาพเพื่อวาง | ลากเพื่อย้าย | แตะสัญลักษณ์เพื่อเลือกแล้วลบ"
     }
 
     func chip(_ k: MarkKind) -> some View {

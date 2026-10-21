@@ -97,8 +97,8 @@ struct PhoneTabs<HomeRoot: View>: View {
         let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
             TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
-            TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),
-            TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. · นัดวันนี้ \(pwa)" : nil),
+            TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
+            TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. | นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { showSettings = true },

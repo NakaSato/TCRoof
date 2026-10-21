@@ -22,7 +22,7 @@ struct InstallPickerSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("เพิ่มโครงการติดตั้ง").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
-                    Text("ดึงข้อมูลจากงานสำรวจ · งานที่สำรวจยังไม่ครบจะถามก่อนเพิ่ม").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                    Text("ดึงข้อมูลจากงานสำรวจ | งานที่สำรวจยังไม่ครบจะถามก่อนเพิ่ม").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
                 Button { dismiss() } label: {
@@ -55,7 +55,7 @@ struct InstallPickerSheet: View {
             Button("เพิ่มทั้งที่ยังไม่ครบ") { unfinished = nil; add(j.id) }
             Button("ยกเลิก", role: .cancel) { unfinished = nil }
         } message: { j in
-            Text("แบบสำรวจกรอกแล้ว \(j.completion.percent)% · เพิ่มเป็นงานติดตั้งได้ และยังกรอกแบบสำรวจต่อได้")
+            Text("แบบสำรวจกรอกแล้ว \(j.completion.percent)% | เพิ่มเป็นงานติดตั้งได้ และยังกรอกแบบสำรวจต่อได้")
         }
     }
 
@@ -91,11 +91,11 @@ struct InstallPickerSheet: View {
         .padding(.horizontal, 24).padding(.vertical, 10)
     }
 
-    /// "สถานที่ · 90 kWp · 36 รูป"
+    /// "สถานที่ | 90 kWp | 36 รูป"
     func detail(_ j: Job) -> String {
         let kw = j.values.text("capacity").trimmingCharacters(in: .whitespaces)
         return [j.values.text("address").trimmingCharacters(in: .whitespacesAndNewlines), kw.isEmpty ? "" : kw + " kWp", "\(j.photoCount) รูป"]
-            .filter { !$0.isEmpty }.joined(separator: " · ")
+            .filter { !$0.isEmpty }.joined(separator: " | ")
     }
 }
 
@@ -112,7 +112,7 @@ struct MaintenancePickerSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("เพิ่มโครงการบำรุงรักษา").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
-                    Text("เลือกจากงานติดตั้ง · สถานีที่เพิ่มจะนับเป็นส่งมอบแล้ว").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                    Text("เลือกจากงานติดตั้ง | สถานีที่เพิ่มจะนับเป็นส่งมอบแล้ว").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
                 Button { dismiss() } label: {
@@ -162,10 +162,10 @@ struct MaintenancePickerSheet: View {
         .padding(.horizontal, 24).padding(.vertical, 10)
     }
 
-    /// "ติดตั้ง 85% · 90 kWp · TCR02"
+    /// "ติดตั้ง 85% | 90 kWp | TCR02"
     func detail(_ s: InstallStationSummary) -> String {
         let kWp = s.kWp.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US")))
-        return ["ติดตั้ง \(Int(s.actual.rounded()))%", s.kWp > 0 ? kWp + " kWp" : "", s.contractor].filter { !$0.isEmpty }.joined(separator: " · ")
+        return ["ติดตั้ง \(Int(s.actual.rounded()))%", s.kWp > 0 ? kWp + " kWp" : "", s.contractor].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 }
 #endif

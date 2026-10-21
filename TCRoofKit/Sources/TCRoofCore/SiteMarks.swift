@@ -32,7 +32,7 @@ public enum MarkKind: String, Codable, CaseIterable, Identifiable, Sendable {
         switch self {
         case .meter: return "มิเตอร์ กฟภ."
         case .zeroExport: return "Zero Export"
-        case .trafo: return "TX · kVA"
+        case .trafo: return "TX | kVA"
         case .mdb: return "ตู้ + AT"
         case .inv: return "อินเวอร์เตอร์"
         case .meterSub: return "มิเตอร์"

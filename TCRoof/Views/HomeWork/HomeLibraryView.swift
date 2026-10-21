@@ -19,7 +19,7 @@ struct HomeLibraryView: View {
             TCNavBar(title: "คลังเอกสาร", trail: ["งานบ้าน"], current: "คลังเอกสาร") {}
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("เก็บครั้งเดียว ใช้ทุกงาน · datasheet จับคู่จากรุ่นที่กรอกในข้อมูล PPIM · วิศวกรและชุดอุปกรณ์ใช้ตัวที่ตั้งเป็นค่าหลัก")
+                    Text("เก็บครั้งเดียว ใช้ทุกงาน | datasheet จับคู่จากรุ่นที่กรอกในข้อมูล PPIM | วิศวกรและชุดอุปกรณ์ใช้ตัวที่ตั้งเป็นค่าหลัก")
                         .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
                     companyCard
                     ForEach(HomeLibrary.Kind.allCases, id: \.self) { kindCard($0) }
@@ -56,7 +56,7 @@ struct HomeLibraryView: View {
 
     /// Letterhead of the BOQ.
     private var companyCard: some View {
-        PermitSection(title: "หัวกระดาษบริษัท", subtitle: "พิมพ์บน BOQ · ราคาที่จำไว้ \(library.prices.count) รายการ") {
+        PermitSection(title: "หัวกระดาษบริษัท", subtitle: "พิมพ์บน BOQ | ราคาที่จำไว้ \(library.prices.count) รายการ") {
             PermitRow {
                 PermitField("ชื่อบริษัท (ไทย)", text: $library.company.nameTH)
                 PermitField("ชื่อบริษัท (อังกฤษ)", text: $library.company.nameEN)
@@ -111,7 +111,7 @@ struct HomeLibraryView: View {
                 parts.append("ยังไม่ใส่วันที่ออกหนังสือรับรอง")
             }
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 }
 
@@ -197,7 +197,7 @@ struct HomeLibraryItemSheet: View {
             ForEach(Array(item.files.enumerated()), id: \.element) { i, name in
                 HStack {
                     Button { preview = store.url(name) } label: {
-                        Label("ไฟล์ \(i + 1) · \(name.hasSuffix("pdf") ? "PDF" : "รูป")", systemImage: name.hasSuffix("pdf") ? "doc.richtext" : "photo")
+                        Label("ไฟล์ \(i + 1) | \(name.hasSuffix("pdf") ? "PDF" : "รูป")", systemImage: name.hasSuffix("pdf") ? "doc.richtext" : "photo")
                             .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.primary)
                     }
                     .buttonStyle(.plain)

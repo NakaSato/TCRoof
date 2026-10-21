@@ -125,8 +125,8 @@ struct PPIMPackView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Text(home.mode == .selfUse
-                         ? "ส่วนที่ 4 ของคำขอเชื่อมต่อ (ไม่ขายไฟ) ใน PPIM · ช่องละ 1 ไฟล์ PDF · ชื่อไฟล์และขนาดตามหน้าจอ PPIM · ช่อง 7 ไม่มีในงานแสงอาทิตย์"
-                         : "สายขายไฟ: ใช้ไฟล์ชุดเดียวกันแนบในคำขอขายไฟ/ขอเชื่อมต่อ · ช่องของหน้าจอขายไฟยังไม่ยืนยัน")
+                         ? "ส่วนที่ 4 ของคำขอเชื่อมต่อ (ไม่ขายไฟ) ใน PPIM | ช่องละ 1 ไฟล์ PDF | ชื่อไฟล์และขนาดตามหน้าจอ PPIM | ช่อง 7 ไม่มีในงานแสงอาทิตย์"
+                         : "สายขายไฟ: ใช้ไฟล์ชุดเดียวกันแนบในคำขอขายไฟ/ขอเชื่อมต่อ | ช่องของหน้าจอขายไฟยังไม่ยืนยัน")
                         .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
                     HStack(spacing: Space.s) {
                         TCButton("เก็บเข้าแฟ้มเอกสาร", systemImage: "folder.badge.plus", kind: .secondary, size: .card) { keepSlots() }
@@ -182,7 +182,7 @@ struct PPIMPackView: View {
             if s.url == nil {
                 TCStatusChip("ยังไม่มีไฟล์", kind: .pending)
             } else {
-                TCStatusChip(String(format: "%.2f MB", Double(s.bytes) / 1_000_000) + (s.ok ? "" : " · เกิน \(s.upload.slot.maxMB) MB"),
+                TCStatusChip(String(format: "%.2f MB", Double(s.bytes) / 1_000_000) + (s.ok ? "" : " | เกิน \(s.upload.slot.maxMB) MB"),
                              kind: s.ok ? .done : .overdue)
             }
         }

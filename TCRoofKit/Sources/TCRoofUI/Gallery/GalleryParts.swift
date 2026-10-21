@@ -1,7 +1,7 @@
 #if canImport(UIKit) && DEBUG
 import SwiftUI
 
-/// One board section: white card, radius 16, title `n · ชื่อ` over a rule.
+/// One board section: white card, radius 16, title `n | ชื่อ` over a rule.
 struct GallerySection<Content: View>: View {
     let number: Int
     let title: String
@@ -11,7 +11,7 @@ struct GallerySection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("\(number) · \(title)").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy)
+                Text("\(number) | \(title)").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy)
                 Text(subtitle).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.bottom, 10)

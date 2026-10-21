@@ -86,12 +86,12 @@ struct PWADocSheetPad: View {
         .padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 12)
     }
 
-    /// `MP 189 ทุ่งน้อย · 4.1 ใบอนุญาต อ.1 / แจ้งเทศบาล`, or `คลังกลาง`.
+    /// `MP 189 ทุ่งน้อย | 4.1 ใบอนุญาต อ.1 / แจ้งเทศบาล`, or `คลังกลาง`.
     private var place: String {
-        guard let st = station else { return "คลังกลาง · " + kind.scope.title }
+        guard let st = station else { return "คลังกลาง | " + kind.scope.title }
         let packages = StationDocs.packages(st.docsContext)
         let p = kind.packages.first(where: packages.contains)
-        return [st.ref + " " + st.shortName, p?.padTitle].compactMap { $0 }.joined(separator: " · ")
+        return [st.ref + " " + st.shortName, p?.padTitle].compactMap { $0 }.joined(separator: " | ")
     }
 
     private var steps: some View {
@@ -167,12 +167,12 @@ struct PWADocSheetPad: View {
         .padding(24)
     }
 
-    /// `ฉบับล่าสุด · PDF · 5 หน้า`.
+    /// `ฉบับล่าสุด | PDF | 5 หน้า`.
     private var fileLine: String {
         guard let url else { return "ฉบับล่าสุด" }
         let ext = url.pathExtension.uppercased()
-        let pages = PDFDocument(url: url).map { " · \($0.pageCount) หน้า" } ?? ""
-        return "ฉบับล่าสุด · " + ext + pages
+        let pages = PDFDocument(url: url).map { " | \($0.pageCount) หน้า" } ?? ""
+        return "ฉบับล่าสุด | " + ext + pages
     }
 
     private func loadThumbnail() async {
@@ -189,12 +189,12 @@ struct PWADocSheetPad: View {
             fact("ผู้รับผิดชอบ", responsible)
             if let st = station, let due = page.due(kind, st) { dueFact(due) }
             if let number = PWADocs.letterNumber(state.note) { fact("เลขที่หนังสือ", number) }
-            if kind.packages.count > 1 { fact("ใช้ร่วมกัน", kind.packages.map { PWADocs.stepTitle($0) }.joined(separator: " · ")) }
+            if kind.packages.count > 1 { fact("ใช้ร่วมกัน", kind.packages.map { PWADocs.stepTitle($0) }.joined(separator: " | ")) }
             if let st = station, !st.contractor.isEmpty { fact("ผู้รับเหมา", st.contractor) }
             if let end = state.expiresAt { fact("หมดอายุ", ThaiFormat.numericDate.string(from: end)) }
             if !state.note.isEmpty { fact("หมายเหตุ", state.note) }
             if PWADocs.isIDCard(kind) {
-                Text("🔒 ก่อนแนบ ปิดศาสนา กรุ๊ปเลือด และวันเกิดบนบัตรทุกใบ · แอปไม่เก็บเลขบัตรเป็นข้อความ")
+                Text("🔒 ก่อนแนบ ปิดศาสนา กรุ๊ปเลือด และวันเกิดบนบัตรทุกใบ | แอปไม่เก็บเลขบัตรเป็นข้อความ")
                     .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.dangerText)
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -301,7 +301,7 @@ struct PWADocSheetPad: View {
             out.append(Action(title: n == 0 ? "ทวง" : "ทวง (ครั้งที่ \(n + 1))", id: "remind") {
                 shareText = SharedText(text: page.remind(kind, stationID: stationID))
             })
-            out.append(Action(title: kind.origin == .external ? "ได้รับแล้ว · อัปโหลด" : "อัปโหลดฉบับลงนาม", id: "upload") { uploading = true })
+            out.append(Action(title: kind.origin == .external ? "ได้รับแล้ว | อัปโหลด" : "อัปโหลดฉบับลงนาม", id: "upload") { uploading = true })
         case .signed, .submitted:
             out.append(Action(title: "บันทึกผลอนุมัติ", id: "approve") { set(.approved) })
         case .approved:

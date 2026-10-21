@@ -117,8 +117,8 @@ struct PadDockBar: View {
         let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
             TCTabItem(.home, title: "หน้าแรก", symbol: "house"),
-            TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ · นัดวันนี้ \(pwa)" : nil),
-            TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),
+            TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ | นัดวันนี้ \(pwa)" : nil),
+            TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
             TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),

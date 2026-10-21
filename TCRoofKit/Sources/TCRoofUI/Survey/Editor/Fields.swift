@@ -145,7 +145,7 @@ struct FieldView: View {
         case .photos(let max):
             PhotosField(photos: photosBinding, jobID: jobID, max: max)
         case .signature:
-            SignatureField(photo: photoBinding, jobID: jobID)
+            SignatureField(photo: photoBinding, jobID: jobID, mine: spec.id == "surveyorSign")
         case .obstacles:
             ObstaclesEditor(items: Binding(get: { values.obstacles(spec.id) }, set: { values[spec.id] = $0.isEmpty ? nil : .obstacles($0) }))
         case .marks(let photoField):

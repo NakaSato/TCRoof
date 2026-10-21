@@ -16,10 +16,10 @@ public extension ReportLayout {
         // title block
         let docNo = job.docNo.isEmpty ? "-" : job.docNo
         o.append(.text("แผนภาพเส้นเดียว (Single Line Diagram)", at: Pt(mg, mg + 10), size: 17, bold: true, color: ink))
-        o.append(.text("เลขที่ \(docNo) · \(job.projectName.isEmpty ? "(ยังไม่ตั้งชื่อโครงการ)" : job.projectName) · วันที่ \(ISODate.thai(job.values.text("date")))"
-                       + (job.values.text("engineer").isEmpty ? "" : " · วิศวกร \(job.values.text("engineer"))"), at: Pt(mg, mg + 30), size: 10, color: .dark))
+        o.append(.text("เลขที่ \(docNo) | \(job.projectName.isEmpty ? "(ยังไม่ตั้งชื่อโครงการ)" : job.projectName) | วันที่ \(ISODate.thai(job.values.text("date")))"
+                       + (job.values.text("engineer").isEmpty ? "" : " | วิศวกร \(job.values.text("engineer"))"), at: Pt(mg, mg + 30), size: 10, color: .dark))
         o.append(.text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง", at: Pt(W - mg, mg + 10), size: 11, bold: true, color: red, align: .right))
-        o.append(.text("ข้อมูล A1 · A3 · A4 · B1 · B2 · B4 · B5 · ยังขาด \(sl.missing.count) จุด", at: Pt(W - mg, mg + 30), size: 9, color: muted, align: .right))
+        o.append(.text("ข้อมูล A1 | A3 | A4 | B1 | B2 | B4 | B5 | ยังขาด \(sl.missing.count) จุด", at: Pt(W - mg, mg + 30), size: 9, color: muted, align: .right))
         o.append(.line(Pt(mg, mg + 42), Pt(W - mg, mg + 42), width: 1, color: ink))
 
         // diagram, vector
@@ -78,17 +78,17 @@ public extension ReportLayout {
         if let f = sl.flood {
             let h = m.height(f.text, width: sideW - 12, size: 8.5, bold: false) + 14
             o.append(.rect(Box(sx, y, sideW, h), stroke: amber, fill: RGBA(hex: 0xFFF4E3), width: 0.8))
-            o.append(.textBox("จุดเชื่อมต่อเคยน้ำท่วม · " + f.text, Box(sx + 6, y + 6, sideW - 12, h - 8), size: 8.5, color: RGBA(hex: 0x7A4A00)))
+            o.append(.textBox("จุดเชื่อมต่อเคยน้ำท่วม | " + f.text, Box(sx + 6, y + 6, sideW - 12, h - 8), size: 8.5, color: RGBA(hex: 0x7A4A00)))
             y += h + 10
         }
         heading("สรุป")
-        var notes = ["ข้อมูลที่ขาดอื่นๆ \(sl.others.count) จุด · ไม่กระทบแบบ"]
-        if sl.conditionCounts.bad + sl.conditionCounts.fair > 0 { notes.append("สภาพอุปกรณ์ ชำรุด \(sl.conditionCounts.bad) · พอใช้ \(sl.conditionCounts.fair)") }
-        if !sl.assumptions.isEmpty { notes.append("ค่าสมมติ \(sl.assumptions.count) ข้อ" + (sl.pv.totalCableM > 0 ? " · รวมระยะสาย \(sl.pv.totalCableM) ม." : "")) }
+        var notes = ["ข้อมูลที่ขาดอื่นๆ \(sl.others.count) จุด | ไม่กระทบแบบ"]
+        if sl.conditionCounts.bad + sl.conditionCounts.fair > 0 { notes.append("สภาพอุปกรณ์ ชำรุด \(sl.conditionCounts.bad) | พอใช้ \(sl.conditionCounts.fair)") }
+        if !sl.assumptions.isEmpty { notes.append("ค่าสมมติ \(sl.assumptions.count) ข้อ" + (sl.pv.totalCableM > 0 ? " | รวมระยะสาย \(sl.pv.totalCableM) ม." : "")) }
         for n in notes { o.append(.text(n, at: Pt(sx, y + 5), size: 8.5, color: .dark)); y += 13 }
         for a in sl.assumptions.prefix(5) {
-            let h = m.height("· " + a.text, width: sideW, size: 7.5, bold: false)
-            o.append(.textBox("· " + a.text, Box(sx, y, sideW, h), size: 7.5, color: muted))
+            let h = m.height("| " + a.text, width: sideW, size: 7.5, bold: false)
+            o.append(.textBox("| " + a.text, Box(sx, y, sideW, h), size: 7.5, color: muted))
             y += h + 2
         }
         return Page(ops: o, width: W, height: H)

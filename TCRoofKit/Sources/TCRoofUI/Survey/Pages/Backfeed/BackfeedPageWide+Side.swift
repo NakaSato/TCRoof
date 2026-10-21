@@ -42,7 +42,7 @@ extension BackfeedPageWide {
                 } else if let b = drawing.zeroExportBox {
                     SLDCrop(drawing: drawing, box: b, fill: true)
                 } else {
-                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()
                 }
             }
@@ -56,14 +56,14 @@ extension BackfeedPageWide {
 
     // MARK: A2
 
-    /// "ตู้ MDP-1 · ห้องไฟฟ้า อาคารสูบน้ำ" (the board and its A3 location) or "ข้างมิเตอร์ PEA" with the symbol's name.
+    /// "ตู้ MDP-1 | ห้องไฟฟ้า อาคารสูบน้ำ" (the board and its A3 location) or "ข้างมิเตอร์ PEA" with the symbol's name.
     func siteCaption(_ sl: SingleLine, _ mark: MapMark?) -> String {
         if hv {
             let name = mark?.label.trimmingCharacters(in: .whitespaces) ?? ""
-            return "ข้างมิเตอร์ PEA" + (name.isEmpty ? "" : " · " + name)
+            return "ข้างมิเตอร์ PEA" + (name.isEmpty ? "" : " | " + name)
         }
         let loc = sl.connectionBoard?.location.trimmingCharacters(in: .whitespaces) ?? ""
-        return "ตู้ \(ZeroExport.boardName(sl))" + (loc.isEmpty ? "" : " · " + loc)
+        return "ตู้ \(ZeroExport.boardName(sl))" + (loc.isEmpty ? "" : " | " + loc)
     }
 
     func siteCard(_ sl: SingleLine) -> some View {
@@ -156,7 +156,7 @@ struct SiteMarkCrop: View {
         .frame(width: size.width, height: size.height)
         .clipped()
         .overlay(alignment: .bottomLeading) {
-            Text(mark == nil ? "ยังไม่มีสัญลักษณ์ กันย้อน · วางบนภาพในหน้า A2" : caption)
+            Text(mark == nil ? "ยังไม่มีสัญลักษณ์ กันย้อน | วางบนภาพในหน้า A2" : caption)
                 .font(.sarabunFixed(12.5, .semibold)).foregroundStyle(mark == nil ? Theme.pending : Theme.navy)
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .padding(.horizontal, 8).padding(.vertical, 4)
@@ -198,7 +198,7 @@ extension BackfeedPageWide {
         for (k, key) in ZeroExport.photoKeys.enumerated() {
             v[key] = k < count ? model.addPhoto(Self.placeholder(k), to: job.id).map { .photo($0) } : nil
         }
-        v["detail"] = .text(isHV ? "ระยะจากมิเตอร์ถึงเสาใหม่ประมาณ 8 ม. · ต้องขออนุญาต กฟภ." : "ติดตั้ง CT ที่บัสบาร์ขาออกเมน ACB · มีช่องว่างในตู้สำหรับรีเลย์")
+        v["detail"] = .text(isHV ? "ระยะจากมิเตอร์ถึงเสาใหม่ประมาณ 8 ม. | ต้องขออนุญาต กฟภ." : "ติดตั้ง CT ที่บัสบาร์ขาออกเมน ACB | มีช่องว่างในตู้สำหรับรีเลย์")
         job.modules[i].values = v
     }
 

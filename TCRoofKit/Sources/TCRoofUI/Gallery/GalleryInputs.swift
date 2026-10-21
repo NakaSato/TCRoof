@@ -7,7 +7,7 @@ struct GalleryInputs: View {
     @State var kwp = "120"
     @State var at = "400"
     @State var kw = "85"
-    @State var breaker = "MDP-1 · CB1"
+    @State var breaker = "MDP-1 | CB1"
     @State var date = Self.sampleDate(hour: 10, minute: 30)
     @State var height = 48.0
     @State var search = ""
@@ -49,7 +49,7 @@ struct GalleryInputs: View {
             }
             GalleryGrid {
                 GalleryItem("Dropdown") {
-                    TCDropdown(["MDP-1 · CB1", "MDP-1 · CB2", "MDP-2 · CB1"], selection: $breaker, accessibilityTitle: "เบรกเกอร์")
+                    TCDropdown(["MDP-1 | CB1", "MDP-1 | CB2", "MDP-2 | CB1"], selection: $breaker, accessibilityTitle: "เบรกเกอร์")
                 }
                 GalleryItem("วันที่") { TCDateField(date: $date, accessibilityTitle: "วันที่") }
                 GalleryItem("Stepper ±") { TCStepperField(value: $height, range: 0...200, unit: "ม.", title: "ความสูง") }
@@ -68,10 +68,10 @@ struct GalleryInputs: View {
                 GalleryItem("Chip ตอบ \"ไม่ผ่าน\"") { TCChoiceChips(["ผ่าน", "ไม่ผ่าน"], selection: $pass, negative: ["ไม่ผ่าน"]) }
                 GalleryItem("Segmented") { TCSegmented(["10:00", "12:00", "14:00"], selection: $slot) }
                 GalleryItem("แท็บแคปซูล") { TCCapsuleTabs(["7 วัน", "30 วัน", "ทั้งหมด"], selection: $window) }
-                GalleryItem("Segmented · ตัวกรอง iPhone", note: "สูง 44 · ราง r10 · ช่องเลือก r8") {
+                GalleryItem("Segmented | ตัวกรอง iPhone", note: "สูง 44 | ราง r10 | ช่องเลือก r8") {
                     TCSegmented(["7 วัน", "30 วัน", "ทั้งหมด"], selection: $window, fontSize: 14, style: .filter)
                 }
-                GalleryItem("Segmented · สลับมุมมอง iPhone", note: "สูง 44 · ราง r12 · ช่องเลือก r10") {
+                GalleryItem("Segmented | สลับมุมมอง iPhone", note: "สูง 44 | ราง r12 | ช่องเลือก r10") {
                     TCSegmented(["เดือน", "สัปดาห์"], selection: $calendarView, fontSize: 14, style: .view)
                 }
             }
@@ -92,13 +92,13 @@ struct GalleryInputs: View {
                 GalleryItem("ช่องลายเซ็น") { TCSignatureBox(strokes: $strokes) }
             }
             GalleryGrid {
-                GalleryItem("ป้ายชื่อช่อง", note: "* = บังคับ · ไม่บังคับ = ป้ายเทาท้ายชื่อ") {
+                GalleryItem("ป้ายชื่อช่อง", note: "* = บังคับ | ไม่บังคับ = ป้ายเทาท้ายชื่อ") {
                     VStack(alignment: .leading, spacing: Space.s) {
                         TCFieldLabel("ความสูงปุ่ม", required: true)
                         TCFieldLabel("ยี่ห้อ / รุ่น", optional: true)
                     }
                 }
-                GalleryItem("ช่องบังคับยังว่าง", note: "ขอบแดง + พื้นชมพู · นับใน \"ยังขาด n ช่อง\"") {
+                GalleryItem("ช่องบังคับยังว่าง", note: "ขอบแดง + พื้นชมพู | นับใน \"ยังขาด n ช่อง\"") {
                     TCTextField("กระแส", text: $missing, unit: "A", required: true)
                 }
                 GalleryItem("อ่านอย่างเดียว / ปิด", note: "มาจากขั้นอื่น แก้ที่ต้นทาง") {
@@ -112,7 +112,7 @@ struct GalleryInputs: View {
                 }
             }
             GalleryGrid {
-                GalleryItem("Dropdown · เปิดรายการ", note: "เปิดทีละรายการ · เลือกแล้วปิดเอง") {
+                GalleryItem("Dropdown | เปิดรายการ", note: "เปิดทีละรายการ | เลือกแล้วปิดเอง") {
                     VStack(spacing: 6) {
                         TCDropdownLabel(title: rating, open: true)
                         TCDropdownList(["250 AT", "300 AT", "400 AT", "500 AT"], selection: rating) { rating = $0 }
@@ -127,14 +127,14 @@ struct GalleryInputs: View {
                         TCSwitchRow("มี SPD", isOn: $spd)
                     }
                 }
-                GalleryItem("เลือกหลายรายการ", note: "แตะสลับ · เลือกได้หลายข้อ") {
+                GalleryItem("เลือกหลายรายการ", note: "แตะสลับ | เลือกได้หลายข้อ") {
                     TCMultiChips(["SPD", "RCD", "หน้าตู้ ≥ 1 ม."], selection: $protections)
                 }
             }
             GalleryGrid {
                 GalleryItem("เวลา", note: "ใช้กับเวลาที่วัดค่า") { TCDateField(date: $date, kind: .time, accessibilityTitle: "เวลา") }
-                GalleryItem("ช่องพร้อมปุ่มล้าง", note: "× แสดงเมื่อมีค่า · เป้ากด 44 pt") { ClearableSample(text: $brand) }
-                GalleryItem("ช่วงค่า จาก–ถึง", note: "เช่น ช่วงเวลาโหลด · ระยะ min–max") { TCRangeField(from: $from, to: $to) }
+                GalleryItem("ช่องพร้อมปุ่มล้าง", note: "× แสดงเมื่อมีค่า | เป้ากด 44 pt") { ClearableSample(text: $brand) }
+                GalleryItem("ช่วงค่า จาก–ถึง", note: "เช่น ช่วงเวลาโหลด | ระยะ min–max") { TCRangeField(from: $from, to: $to) }
                 GalleryItem("ข้อความยาว + ตัวนับ", note: "จำกัดความยาวหมายเหตุ") { TCLongText("หมายเหตุ", text: $remark, limit: 200) }
             }
         }
@@ -165,11 +165,11 @@ private struct ClearableSample: View {
     }
 }
 
-#Preview("Inputs · iPad", traits: .landscapeLeft) {
+#Preview("Inputs | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 3, title: "ช่องกรอกข้อมูล", subtitle: "Inputs") { GalleryInputs() }.padding() }
 }
 
-#Preview("Inputs · iPhone") {
+#Preview("Inputs | iPhone") {
     ScrollView { GallerySection(number: 3, title: "ช่องกรอกข้อมูล", subtitle: "Inputs") { GalleryInputs() }.padding() }
         .environment(\.horizontalSizeClass, .compact)
 }

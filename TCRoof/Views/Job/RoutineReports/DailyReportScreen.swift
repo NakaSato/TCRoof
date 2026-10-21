@@ -37,7 +37,7 @@ struct DailyReportScreen: View {
 }
 
 /// One day's report. iPad regular width (≥ 1000 pt): the one-page layout of docs/ui/daily-report-ipad
-/// (`DailyOnePage`); otherwise one column of sections 1–6 and the photos, with the bottom bar บันทึกร่าง · ตรวจ & ลงนาม.
+/// (`DailyOnePage`); otherwise one column of sections 1–6 and the photos, with the bottom bar บันทึกร่าง | ตรวจ & ลงนาม.
 struct DailyReportEditor: View {
     @Bindable var job: Job
     let date: Date
@@ -389,7 +389,7 @@ struct DailyReportEditor: View {
     }
 
     /// Only our engineer takes a signature off (firestore.rules refuses a contractor's change to `engineerSignedAt`).
-    private var signedForOthers: String { "รายงานนี้ลงนามแล้ว · แก้ได้เฉพาะ\(signers)" }
+    private var signedForOthers: String { "รายงานนี้ลงนามแล้ว | แก้ได้เฉพาะ\(signers)" }
 
     private func saveDraft() {
         write()
@@ -410,7 +410,7 @@ struct DailyReportEditor: View {
         }
         if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()
-        withAnimation { toast = "ลงนามแล้ว · เก็บ PDF ในเอกสารโครงการ" }
+        withAnimation { toast = "ลงนามแล้ว | เก็บ PDF ในเอกสารโครงการ" }
     }
 
     private func acknowledge(name: String, at when: Date, signature: Data?) {

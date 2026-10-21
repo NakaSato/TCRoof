@@ -39,7 +39,7 @@ public enum SiteModels {
         public let id: String
         /// "D1", "C1.2"
         public let code: String
-        /// "ถังน้ำใส · 1 (ใหม่)"
+        /// "ถังน้ำใส | 1 (ใหม่)"
         public let name: String
         public let skin: Skin
         /// PV area (tank, roof) or electrical building.
@@ -57,8 +57,8 @@ public enum SiteModels {
         public var hasSize: Bool { (width ?? 0) > 0 && (length ?? 0) > 0 }
         /// "40 × 40 ม."
         public var sizeText: String { hasSize ? fmt(width!) + " × " + fmt(length!) + " ม." : "ยังไม่มีขนาด" }
-        /// "ขั้น 12/13 · 40 × 40 ม. · 400 แผง"
-        public var subtitle: String { (["ขั้น \(step)/\(steps)", sizeText] + (extra.isEmpty ? [] : [extra])).joined(separator: " · ") }
+        /// "ขั้น 12/13 | 40 × 40 ม. | 400 แผง"
+        public var subtitle: String { (["ขั้น \(step)/\(steps)", sizeText] + (extra.isEmpty ? [] : [extra])).joined(separator: " | ") }
         public var color: RGBA { isPV ? RGBA(hex: 0x1F6FB5) : RGBA(hex: 0x178A7D) }
     }
 

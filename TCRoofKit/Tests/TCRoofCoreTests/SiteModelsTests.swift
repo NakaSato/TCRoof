@@ -47,7 +47,7 @@ final class SiteModelsTests: XCTestCase {
         // PV areas first, then electrical buildings
         XCTAssertEqual(s.map(\.code), ["D1", "B1", "B2"])
         XCTAssertEqual(s[0].width, 40); XCTAssertEqual(s[0].length, 40)
-        XCTAssertTrue(s[0].subtitle.contains("40 × 40 ม. · 400 แผง"))
+        XCTAssertTrue(s[0].subtitle.contains("40 × 40 ม. | 400 แผง"))
         XCTAssertEqual(s[2].width, 5); XCTAssertEqual(s[2].length, 4)
         XCTAssertFalse(s[1].hasSize)
         XCTAssertEqual(s[1].sizeText, "ยังไม่มีขนาด")

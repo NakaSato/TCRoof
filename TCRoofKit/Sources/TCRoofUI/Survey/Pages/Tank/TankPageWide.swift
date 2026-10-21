@@ -43,6 +43,8 @@ struct TankPageWide: View {
     /// iPhone sub-step 2: the selected point, the shading view, the plan full screen and its zoom, the row and delete
     /// questions.
     @State var pointSel: UUID?
+    /// A text field is being edited: the point shortcuts (Return, ⌫, Tab) leave the keys to it.
+    @State var fieldEditing = false
     @State var obsShade = false
     @State var obsFull = false
     @State var obsZoom: CGFloat = 1
@@ -113,7 +115,7 @@ struct TankPageWide: View {
                 phoneBody
             } else {
                 VStack(spacing: 14) {
-                    PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส · ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
+                    PageStepBar(job: job, here: .module(moduleID), title: narrow ? "ถังน้ำใส" : "ถังน้ำใส | ขนาด สิ่งกีดขวาง/เงาบัง จัดแผง ภาพ")
                     HStack(spacing: 8) {
                         tabBar.frame(maxWidth: .infinity)
                         undoButtons()
@@ -149,17 +151,17 @@ struct TankPageWide: View {
         let size = Tank.sizeLabel(v)?.name ?? ""
         let checked = TankPoints.checked(v), points = TankPoints.done(v) && shade.isComplete
         let layout = TankLayout.current(v), laid = TankLayout.done(v)
-        func status(_ done: Bool, _ s: String) -> String { done ? s + " · เสร็จ" : "ยังไม่เสร็จ" }
+        func status(_ done: Bool, _ s: String) -> String { done ? s + " | เสร็จ" : "ยังไม่เสร็จ" }
         return [
             Step(title: "ขนาดถัง", status: status(Tank.sizeDone(v), size), done: Tank.sizeDone(v), statusOK: Tank.sizeDone(v)),
             // every standard point checked and the shading answered
-            Step(title: "สิ่งกีดขวาง · เงาบัง", status: points ? "\(checked.total) จุด · เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
+            Step(title: "สิ่งกีดขวาง | เงาบัง", status: points ? "\(checked.total) จุด | เสร็จ" : TankPoints.done(v) ? "ยังไม่ตอบเงาบัง"
                     : checked.total > 0 && checked.n == checked.total && !TankPoints.missingPhotos(v).isEmpty
                         ? "ยังขาดรูป \(TankPoints.missingPhotos(v).count) จุด"
                     : checked.total > 0 ? "ตรวจแล้ว \(checked.n)/\(checked.total)" : "ยังไม่เสร็จ",
                  done: points, statusOK: points),
             // a layout whose checks all pass
-            Step(title: "จัดแผง", status: laid ? "\(layout?.count ?? 0) แผง · เสร็จ" : layout.map { "ตรวจผ่าน \($0.checks.passed)/3" } ?? "ยังไม่เสร็จ",
+            Step(title: "จัดแผง", status: laid ? "\(layout?.count ?? 0) แผง | เสร็จ" : layout.map { "ตรวจผ่าน \($0.checks.passed)/3" } ?? "ยังไม่เสร็จ",
                  done: laid, statusOK: laid),
             Step(title: "ภาพถ่าย", status: "บังคับ \(photos.filled)/\(photos.total)", done: photos.isComplete, statusOK: photos.isComplete),
         ]
@@ -286,16 +288,16 @@ struct TankPageWide: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
-    // MARK: sub-step 4 · ภาพถ่าย (docs/specs/tank-drawing-swift.md, the designed groups)
+    // MARK: sub-step 4 | ภาพถ่าย (docs/specs/tank-drawing-swift.md, the designed groups)
 
     /// The designed photo groups; the roof, shade and cable photos are optional until the team makes them required.
     var formFields: [(title: String, ids: [String])] {
-        [("ภาพมุมสูง (โดรน หรือ Google Maps) · บังคับ", ["aerialPhoto"]),
-         ("ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) · บังคับ · เรียง เหนือ ใต้ ตะวันออก ตะวันตก", ["sidePhotos"]),
-         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) · บังคับ 2 ภาพ", [Tank.Key.roofPhotos]),
-         ("เงาบัง (ถ่ายจากกลางหลังคา) · ไม่บังคับ", [Tank.Key.shadePhoto]),
-         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) · บังคับ", [Tank.Key.cablePhoto]),
-         ("สิ่งกีดขวาง · บังคับ · ภาพแรกลงกรอบใหญ่ในรายงาน", ["obstPhotos"])]
+        [("ภาพมุมสูง (โดรน หรือ Google Maps) | บังคับ", ["aerialPhoto"]),
+         ("ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) | บังคับ | เรียง เหนือ ใต้ ตะวันออก ตะวันตก", ["sidePhotos"]),
+         ("หลังคาถัง (ภาพรวม + ผิวหลังคา) | บังคับ 2 ภาพ", [Tank.Key.roofPhotos]),
+         ("เงาบัง (ถ่ายจากกลางหลังคา) | ไม่บังคับ", [Tank.Key.shadePhoto]),
+         ("ทางเดินสายไฟ (จากถังถึงห้อง Inverter) | บังคับ", [Tank.Key.cablePhoto]),
+         ("สิ่งกีดขวาง | บังคับ | ภาพแรกลงกรอบใหญ่ในรายงาน", ["obstPhotos"])]
     }
 
     @ViewBuilder var formStep: some View {
@@ -381,7 +383,7 @@ extension TankPageWide {
             span = RoofPageWide.SpanRef(axis: .x, index: 2)
         case "empty": update { $0[Roof.Key.spansX] = nil; $0[Roof.Key.spansY] = nil }
         case "tab2": tab = 2
-        case "design", "design64", "designcompare":
+        case "design", "design64", "designcompare", "designlayout":
             // docs/specs/standard-designs.md: the 40 × 40 (or 64 × 40) sheet, two points checked, one moved, one absent
             update { v in
                 TankDesign.apply(&v, state == "design64" ? .pwa64x40 : .pwa40x40)
@@ -394,10 +396,17 @@ extension TankPageWide {
             pointSel = TankPoints.points(values)[safe: 2]?.id
             tab = 2
             // designcompare: also a point added on site, and the เทียบกับแบบ view
+            // designlayout: the layout step, with its ยังตรวจแบบไม่ครบ banner
+            if state == "designlayout" { tab = 3 }
             if state == "designcompare" {
                 update { v in _ = TankPoints.add(&v, kind: TankPoints.vent) }
                 obsCompare = true
             }
+        // designpick: the size measured 40 × 40 and the design picker open (docs/specs/standard-designs.md §3.1)
+        case "designpick":
+            tab = 2
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            designAsk = true
         case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete":
             // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
             update { v in

@@ -10,7 +10,7 @@ extension RoofPageWide {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let s = RoofTruss.schedule(values) {
-                        Text(Roof.frame(values).title + " · " + s.summary)
+                        Text(Roof.frame(values).title + " | " + s.summary)
                             .font(.sarabunFixed(15, .bold)).fixedSize(horizontal: false, vertical: true)
                         trussDetails
                         scheduleTable(s)
@@ -50,7 +50,7 @@ extension RoofPageWide {
     func scheduleTable(_ s: RoofTruss.Schedule) -> some View {
         let rafter = Roof.frame(values).isRafter
         return VStack(spacing: 0) {
-            scheduleRow(ScheduleLine(n: "", name: "ชิ้นส่วน", size: "ขนาด", per: rafter ? "ต่อคู่ (ชิ้น · ม.)" : "ต่อโครง (ชิ้น · ม.)",
+            scheduleRow(ScheduleLine(n: "", name: "ชิ้นส่วน", size: "ขนาด", per: rafter ? "ต่อคู่ (ชิ้น | ม.)" : "ต่อโครง (ชิ้น | ม.)",
                                      total: "ทั้งหลังคา", kgm: "กก./ม.", perKg: rafter ? "กก./คู่" : "กก./โครง", kg: "กก. รวม"), header: true)
             ForEach(Array(s.rows.enumerated()), id: \.offset) { _, r in
                 Divider()
@@ -99,14 +99,14 @@ extension RoofPageWide {
             Text(l.name).font(.sarabunFixed(header ? 12.5 : 14, .bold))
             // iPhone: the size and kg/m under the name, no columns of their own
             if narrow {
-                let sub = header ? "ขนาด · กก./ม." : l.kgm.isEmpty || l.kgm == "-" ? l.size : l.size + " · " + l.kgm + " กก./ม."
+                let sub = header ? "ขนาด | กก./ม." : l.kgm.isEmpty || l.kgm == "-" ? l.size : l.size + " | " + l.kgm + " กก./ม."
                 Text(sub).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// iPhone: a count over its weight ("12 · 31.20" / "171.6 กก."); the weight alone on the total line.
+    /// iPhone: a count over its weight ("12 | 31.20" / "171.6 กก."); the weight alone on the total line.
     func scheduleCell(_ count: String, _ kg: String, header: Bool, total: Bool) -> some View {
         VStack(alignment: .trailing, spacing: 2) {
             if !count.isEmpty { Text(count).monospacedDigit() }

@@ -46,7 +46,7 @@ extension TravelClaim {
         public var title: String {
             switch self {
             case .open: "ยังไม่ยื่นเบิก"
-            case .submitted: "ยื่นเบิกแล้ว · รออนุมัติ"
+            case .submitted: "ยื่นเบิกแล้ว | รออนุมัติ"
             case .approved: "อนุมัติแล้ว"
             case .returned: "ส่งกลับให้แก้"
             }

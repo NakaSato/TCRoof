@@ -135,7 +135,7 @@ struct PhoneNotificationsView: View {
                 if showSynced, let at = syncedAt { syncedRow(at) }
             }
             if !yesterday.isEmpty {
-                groupHeader("เมื่อวาน · " + ThaiFormat.dayMonth.string(from: .now.adding(days: -1)))
+                groupHeader("เมื่อวาน | " + ThaiFormat.dayMonth.string(from: .now.adding(days: -1)))
                 ForEach(yesterday) { row($0) }
             }
             if !earlier.isEmpty {
@@ -188,7 +188,7 @@ struct PhoneNotificationsView: View {
 
     /// The shared list's detail without its own "tap to sync" note, which the hint line replaces here.
     private func phoneDetail(_ n: AppNotification) -> String {
-        n.kind == .syncPending ? "เก็บไว้ในเครื่องแล้ว · ยังไม่ขึ้นคลาวด์" : n.detail
+        n.kind == .syncPending ? "เก็บไว้ในเครื่องแล้ว | ยังไม่ขึ้นคลาวด์" : n.detail
     }
 
     private func symbol(_ n: AppNotification) -> String {

@@ -50,7 +50,7 @@ public enum BuildingPanels {
         }
     }
 
-    /// A breaker the panel can be linked to: `MDP-1 · CB1 400 AT`.
+    /// A breaker the panel can be linked to: `MDP-1 | CB1 400 AT`.
     public struct Option: Hashable, Identifiable, Sendable {
         public var ref: BreakerRef
         public var boardName: String
@@ -60,10 +60,10 @@ public enum BuildingPanels {
         /// The B1 section already linked to it, if any.
         public var linkedTo: UUID?
         public var id: String { ref.key }
-        /// "CB1 · 400 AT" / "CB1"
-        public var cbText: String { "CB\(number)" + (at.isEmpty ? "" : " · \(at) AT") }
-        /// "MDP-1 · CB1 400 AT"
-        public var label: String { "\(boardName) · CB\(number)" + (at.isEmpty ? "" : " \(at) AT") }
+        /// "CB1 | 400 AT" / "CB1"
+        public var cbText: String { "CB\(number)" + (at.isEmpty ? "" : " | \(at) AT") }
+        /// "MDP-1 | CB1 400 AT"
+        public var label: String { "\(boardName) | CB\(number)" + (at.isEmpty ? "" : " \(at) AT") }
     }
 
     static func t(_ s: String) -> String { s.trimmingCharacters(in: .whitespaces) }
@@ -182,7 +182,7 @@ public enum BuildingPanels {
         return hasLoad(v) ? .complete : .noLoad
     }
 
-    /// "CB1 · 400 AT · โหลด 85 kW" / "CB2 · 250 AT · ยังไม่กรอกโหลด"; AT from the A3 link, else `breakerAT`.
+    /// "CB1 | 400 AT | โหลด 85 kW" / "CB2 | 250 AT | ยังไม่กรอกโหลด"; AT from the A3 link, else `breakerAT`.
     public static func subLine(_ m: SurveyModule, in job: Job) -> String {
         let link = linked(m, in: job), at = link.map(\.at) ?? t(m.values.text(Key.breakerAT))
         var parts: [String] = []
@@ -190,7 +190,7 @@ public enum BuildingPanels {
         if !at.isEmpty { parts.append("\(at) AT") }
         if parts.isEmpty { parts.append("ยังไม่ผูก A3") }
         parts.append(m.values.number(Key.loadKW).map { "โหลด \(fmt($0)) kW" } ?? "ยังไม่กรอกโหลด")
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     // MARK: daytime load
@@ -209,11 +209,11 @@ public enum BuildingPanels {
         public var pv: Double?
         /// Σ load < PV: zero export (B4) is needed.
         public var needsZeroExport: Bool
-        /// "โหลดกลางวันรวม 107 kW (ยังขาดโรงกรอง) · PV 120 kW"
+        /// "โหลดกลางวันรวม 107 kW (ยังขาดโรงกรอง) | PV 120 kW"
         public var lead: String {
-            "โหลดกลางวันรวม \(fmt(load)) kW" + (missing.isEmpty ? "" : " (ยังขาด\(missing.joined(separator: ", ")))") + (pv.map { " · PV \(fmt($0)) kW" } ?? " · PV ? kW")
+            "โหลดกลางวันรวม \(fmt(load)) kW" + (missing.isEmpty ? "" : " (ยังขาด\(missing.joined(separator: ", ")))") + (pv.map { " | PV \(fmt($0)) kW" } ?? " | PV ? kW")
         }
-        public var conclusion: String { needsZeroExport ? "ต้องมีระบบกันย้อน (B4)" : "โหลดมากกว่า PV · กันย้อนยังแนะนำตามเงื่อนไข กฟภ." }
+        public var conclusion: String { needsZeroExport ? "ต้องมีระบบกันย้อน (B4)" : "โหลดมากกว่า PV | กันย้อนยังแนะนำตามเงื่อนไข กฟภ." }
         public var text: String { lead + " → " + conclusion }
     }
 
@@ -252,14 +252,14 @@ public enum BuildingPanels {
         if !hasLoad(v) { out.append("โหลด") }
         return out
     }
-    /// "ยังขาด: ภาพเบรกเกอร์ โรงสูบน้ำ · โรงกรอง ทั้ง 2 ภาพ" / "ครบทุกอาคาร"
+    /// "ยังขาด: ภาพเบรกเกอร์ โรงสูบน้ำ | โรงกรอง ทั้ง 2 ภาพ" / "ครบทุกอาคาร"
     public static func statusLine(_ job: Job) -> String {
         let m = missing(job)
-        return m.isEmpty ? "ครบทุกอาคาร" : "ยังขาด: " + m.joined(separator: " · ")
+        return m.isEmpty ? "ครบทุกอาคาร" : "ยังขาด: " + m.joined(separator: " | ")
     }
 
-    /// "จุดเชื่อมต่อ PV · ช่องว่าง 2 ช่อง"
+    /// "จุดเชื่อมต่อ PV | ช่องว่าง 2 ช่อง"
     public static func pointLabel(_ v: Values) -> String {
-        "จุดเชื่อมต่อ PV" + (v.number(Key.spareSlots).map { " · ช่องว่าง \(fmt($0)) ช่อง" } ?? "")
+        "จุดเชื่อมต่อ PV" + (v.number(Key.spareSlots).map { " | ช่องว่าง \(fmt($0)) ช่อง" } ?? "")
     }
 }

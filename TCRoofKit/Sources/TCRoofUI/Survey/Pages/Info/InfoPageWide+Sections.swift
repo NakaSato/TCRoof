@@ -10,7 +10,7 @@ extension InfoPageWide {
     // MARK: installation areas
 
     var areasBox: some View {
-        A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ · รวม \(job.steps.count) ขั้น", spacing: 10, vertical: 14) {
+        A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ | รวม \(job.steps.count) ขั้น", spacing: 10, vertical: 14) {
             areaTiles
         }
     }
@@ -19,8 +19,8 @@ extension InfoPageWide {
     var areaTiles: some View {
         let layout = mainWidth >= 440 ? AnyLayout(RatioRow(weights: [1, 1], spacing: 10)) : AnyLayout(VStackLayout(spacing: 8))
         return layout {
-            areaTile("หลังคา", "หน้า C · หลัง", count: count(.roof)) { setCount(.roof, $0) }
-            areaTile("ถังน้ำใส", "หน้า D1 · ถัง", count: count(.tank)) { setCount(.tank, $0) }
+            areaTile("หลังคา", "หน้า C | หลัง", count: count(.roof)) { setCount(.roof, $0) }
+            areaTile("ถังน้ำใส", "หน้า D1 | ถัง", count: count(.tank)) { setCount(.tank, $0) }
         }
     }
 
@@ -85,7 +85,7 @@ extension InfoPageWide {
         areaChange = nil
     }
 
-    /// "C1.2 หลังคา · อาคารสูบน้ำ"
+    /// "C1.2 หลังคา | อาคารสูบน้ำ"
     func sectionName(_ m: SurveyModule) -> String {
         job.steps.first { $0.page == .module(m.id) }.map { $0.code + " " + $0.title } ?? m.title
     }
@@ -102,7 +102,7 @@ extension InfoPageWide {
                                crop: Binding(get: { mapCrop }, set: { job.values[MapCrop.key] = .text($0.text) }),
                                keys: model.settings.mapKeys, fill: twoColumns)
                 HStack(alignment: .center, spacing: 8) {
-                    Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย")
+                    Text("ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel | แตะค้างที่หมุดเพื่อย้าย")
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button("รีเซ็ตกรอบ") { job.values[MapCrop.key] = .text(MapCrop.standard.text) }
@@ -161,7 +161,7 @@ extension InfoPageWide {
         case .ok, .empty:
             if let gpsFailure { Text(gpsFailure).foregroundStyle(Theme.danger) }
             else if let fix {
-                Text(GPSGrade.note(accuracy: fix.accuracy) + " · บันทึกเมื่อ \(fix.time.formatted(.dateTime.hour().minute()))")
+                Text(GPSGrade.note(accuracy: fix.accuracy) + " | บันทึกเมื่อ \(fix.time.formatted(.dateTime.hour().minute()))")
                     .foregroundStyle(GPSGrade(accuracy: fix.accuracy) == .approximate ? Theme.pending : Theme.inkMuted)
             }
         }
@@ -200,9 +200,9 @@ struct InfoPageHeader: View {
     @Environment(\.horizontalSizeClass) var sizeClass
 
     var subtitle: String {
-        // "TC-0012 · สถานีสูบน้ำ" → "TC-0012"; the project name is already on the page
-        let code = job.jobSyncID.flatMap { model.linkedJobLabel?($0) }?.components(separatedBy: " · ").first
-        return (["แบบสำรวจ NO.\(job.docNo.isEmpty ? "—" : job.docNo)"] + [code, subtitleSuffix].compactMap { $0 }).joined(separator: " · ")
+        // "TC-0012 | สถานีสูบน้ำ" → "TC-0012"; the project name is already on the page
+        let code = job.jobSyncID.flatMap { model.linkedJobLabel?($0) }?.components(separatedBy: " | ").first
+        return (["แบบสำรวจ NO.\(job.docNo.isEmpty ? "—" : job.docNo)"] + [code, subtitleSuffix].compactMap { $0 }).joined(separator: " | ")
     }
 
     var body: some View {
@@ -277,7 +277,7 @@ struct InfoPageBar: View {
     var statusOK = false
     /// Tapping the status line (C1: opens the first gap).
     var statusAction: (() -> Void)? = nil
-    /// The last page's primary button ("ขั้นสุดท้าย" / "สรุปผล · ส่งออก"), in place of "next".
+    /// The last page's primary button ("ขั้นสุดท้าย" / "สรุปผล | ส่งออก"), in place of "next".
     var finish: (sub: String, title: String, action: () -> Void)? = nil
     /// iPhone: VoiceOver names for ‹ › when they step within the page (D1's sub-steps), in place of the steps either side.
     var previousLabel: String? = nil
@@ -286,16 +286,16 @@ struct InfoPageBar: View {
     /// iPhone: `phoneBar` (docs/ui/components/iphone-bottom-bar) in place of the iPad bar.
     @Environment(\.horizontalSizeClass) var sizeClass
 
-    /// Step names short enough for the previous / next buttons ("A3 หม้อแปลง · MDB", as in docs/ui/survey-a2).
+    /// Step names short enough for the previous / next buttons ("A3 หม้อแปลง | MDB", as in docs/ui/survey-a2).
     static func barTitle(_ s: SurveyStep) -> String {
-        s.page == .electrical ? "หม้อแปลง · MDB" : s.title
+        s.page == .electrical ? "หม้อแปลง | MDB" : s.title
     }
 
     @ViewBuilder var body: some View {
         if sizeClass == .compact { phoneBar } else { padBar }
     }
 
-    /// iPhone (docs/ui/components/iphone-bottom-bar): "บันทึก" · ‹ · ›, icons only; the step line above shows the gaps.
+    /// iPhone (docs/ui/components/iphone-bottom-bar): "บันทึก" | ‹ | ›, icons only; the step line above shows the gaps.
     var phoneBar: some View {
         let steps = job.steps
         let i = steps.firstIndex { $0.page == here } ?? 0
@@ -322,7 +322,7 @@ struct InfoPageBar: View {
         return Date()
     }
 
-    /// iPad: status · save · ‹ · ›. Portrait narrows the buttons (`narrow`, `tight`) and the status truncates first.
+    /// iPad: status | save | ‹ | ›. Portrait narrows the buttons (`narrow`, `tight`) and the status truncates first.
     var padBar: some View {
         let steps = job.steps
         let i = steps.firstIndex { $0.page == here } ?? 0

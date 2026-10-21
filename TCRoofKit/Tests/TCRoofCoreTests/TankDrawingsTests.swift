@@ -34,7 +34,7 @@ final class TankDrawingsTests: XCTestCase {
         XCTAssertTrue(texts(try XCTUnwrap(TankDrawings.section(tank(height: nil), across: false))).contains("ใส่ความสูงถังเพื่อวาดรูปตัด"))
         XCTAssertNil(TankDrawings.section(Values(), across: false))
         // the summary (§5.5): 40 × 40 × 4.5, gross
-        XCTAssertTrue(partly.contains("40.00 × 40.00 × 4.50 ม. · หลังคา 1,600 ม² · ปริมาตรภายนอกโดยประมาณ 7,200 ม³"))
+        XCTAssertTrue(partly.contains("40.00 × 40.00 × 4.50 ม. | หลังคา 1,600 ม² | ปริมาตรภายนอกโดยประมาณ 7,200 ม³"))
         XCTAssertTrue(partly.contains { $0.contains(TankDrawings.note) })
     }
 

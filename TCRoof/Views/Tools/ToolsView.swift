@@ -128,7 +128,7 @@ struct ToolsView: View {
         let due = tool.calibrationDue.map { "สอบเทียบครบ " + ThaiFormat.short.string(from: $0) }
         let overdue = if case .overdue = state { true } else { false }
         return TCListRow(symbol: "gauge.with.dots.needle.50percent", title: tool.name, code: tool.code.isEmpty ? nil : tool.code,
-                         subtitle: [tool.kind, due ?? state.title].filter { !$0.isEmpty }.joined(separator: " · "),
+                         subtitle: [tool.kind, due ?? state.title].filter { !$0.isEmpty }.joined(separator: " | "),
                          status: kind.map { (state.title, $0) }, overdue: overdue) { editing = tool }
     }
 }

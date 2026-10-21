@@ -237,9 +237,9 @@ public struct InverterStation: Hashable, Sendable {
     /// Status line of the page.
     public var status: String {
         let n = sizes.count
-        if !measured { return "ใส่ขนาดพื้นที่ที่มีจริง ก × ย · แปลนแสดงขนาดขั้นต่ำ" }
+        if !measured { return "ใส่ขนาดพื้นที่ที่มีจริง ก × ย | แปลนแสดงขนาดขั้นต่ำ" }
         if site == .outdoor && !spansOK { return "ระยะช่วงเสารวมเกินความยาวห้อง" }
-        if isOK { return "ครบช่องบังคับแล้ว · พื้นที่พอสำหรับ \(n) เครื่อง" }
+        if isOK { return "ครบช่องบังคับแล้ว | พื้นที่พอสำหรับ \(n) เครื่อง" }
         if !fits { return "พื้นที่จริงสั้นไป \(String(format: "%.1f", shortfall)) ม. สำหรับ \(n) เครื่อง" }
         return "ทางเดินหน้าตู้แคบกว่า 1.2 ม."
     }

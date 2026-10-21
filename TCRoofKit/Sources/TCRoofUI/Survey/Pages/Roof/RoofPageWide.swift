@@ -30,6 +30,8 @@ struct RoofPageWide: View {
     @State var tool: Tool?
     /// The rectangle being dragged out, metres (x1, y1, x2, y2).
     @State var drag: (Double, Double, Double, Double)?
+    /// An area being dragged to its site position on a roof filled from a design: its `obst` index and the finger's offset.
+    @State var moving: (index: Int, offset: CGSize)?
     /// The member row picked (1…7): its size list is open and its lines are red on the plan and the section.
     @State var member: Int?
     @State var dropdown: String?
@@ -63,10 +65,7 @@ struct RoofPageWide: View {
     @State var mountYield: RoofMountYield.Estimate?
     @State var mountYieldBusy = false
     @State var mountYieldFor: RoofMountYield.Inputs?
-    /// The standard building roof (RoofPageWide+Design): the picker, the save question, its name and the name saved.
-    @State var roofDesignPick = false
-    @State var roofDesignSave = false
-    @State var roofDesignName = ""
+    /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
     @State var roofDesignSaved: String?
     @Environment(\.permissions) var roofPermissions
     @State var mountNote: String?
@@ -104,10 +103,16 @@ struct RoofPageWide: View {
     static let line = Theme.borderSubtle
     static let amber = Theme.pending
 
+    /// The page's view type is erased in a few places (`AnyView`): written out in full it nests so deep that a Debug
+    /// build on a device runs out of stack working it out (SIGSEGV in swift_getTypeByMangledName on opening C1).
     var body: some View {
+        presented(page)
+    }
+
+    private var page: some View {
         VStack(spacing: 16) {
             PageStepBar(job: job, here: .module(moduleID), title: "แปลนและโครงสร้างหลังคา")
-            if stacked { stackedLayout } else { wideLayout }
+            if stacked { AnyView(stackedLayout) } else { AnyView(wideLayout) }
         }
         .foregroundStyle(Theme.navy)
         #if DEBUG
@@ -116,6 +121,11 @@ struct RoofPageWide: View {
         .onChange(of: request.wrappedValue) { _, k in if let k { open(gap: k); request.wrappedValue = nil } }
         .task(id: mountKey) { await refreshMount() }
         .task(id: mountYieldInputs) { await refreshYield() }
+    }
+
+    /// The page's alerts and sheets.
+    private func presented<V: View>(_ page: V) -> some View {
+        page
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -157,8 +167,8 @@ struct RoofPageWide: View {
             // the section keeps the design's 297 pt on a tall screen and gives the plan room on a short one (11" landscape)
             GeometryReader { geo in
                 VStack(spacing: 12) {
-                    planCard.frame(maxHeight: .infinity)
-                    sectionCard.frame(height: min(297, max(200, geo.size.height * 0.375)))
+                    AnyView(planCard).frame(maxHeight: .infinity)
+                    AnyView(sectionCard).frame(height: min(297, max(200, geo.size.height * 0.375)))
                 }
             }
             .frame(width: leftWidth)
@@ -178,9 +188,9 @@ struct RoofPageWide: View {
 
     func cardsColumn(fill: Bool) -> some View {
         VStack(spacing: 12) {
-            roofCard
-            membersCard.frame(maxHeight: fill ? .infinity : nil)
-            photosCard
+            AnyView(roofCard)
+            AnyView(membersCard).frame(maxHeight: fill ? .infinity : nil)
+            AnyView(photosCard)
         }
     }
 
@@ -197,12 +207,12 @@ struct RoofPageWide: View {
     var stackedColumn: some View {
             VStack(spacing: 12) {
                 // iPhone: the legend and footer sit under the plan, so the plan gets the full width
-                planCard.frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
+                AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
-                sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
-                roofCard.id("info")
-                membersCard.id("members")
-                photosCard.id("photos")
+                AnyView(sectionCard).frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
+                AnyView(roofCard).id("info")
+                AnyView(membersCard).id("members")
+                AnyView(photosCard).id("photos")
             }
             .padding(.bottom, 4)
     }
@@ -232,7 +242,7 @@ struct RoofPageWide: View {
             RoofSegments(options: ["หลังคา *", "แผงบนหลังคา"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
                 setMode(i == 1 ? .pv : .structure)
             }
-            if mode == .structure { roofTab; roofDesignSection } else { mountTab }
+            if mode == .structure { AnyView(VStack(alignment: .leading, spacing: 10) { roofTab; roofDesignSection }) } else { AnyView(mountTab) }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -461,7 +471,7 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, false)
             }
             mode = .pv; scrollTarget = "info"
-        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile":
+        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
             // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
             let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"
             update { v in
@@ -470,6 +480,10 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, state == "pvshed")
                 var c = RoofMount.choice(v)
                 c.walkwayEvery = state == "pvtile" ? 6 : 0
+                // pvacross: rails across the purlins; pvland: landscape on them; pvlandalong: landscape on rails along (the hint)
+                c.landscape = ["pvland", "pvlandalong"].contains(state)
+                c.railsAcross = ["pvacross", "pvland"].contains(state)
+                if c.landscape || c.railsAcross { c.ribClamp = false }
                 RoofMount.setChoice(&v, c)
             }
             if state == "pvobst" {
@@ -481,7 +495,7 @@ extension RoofPageWide {
             mode = .pv
             for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
             switch state {
-            case "pvinfo":
+            case "pvinfo", "pvacross", "pvland":
                 if let f = mount?.faces.first, let r = f.rows.indices.first,
                    let c = f.rows[r].slots.firstIndex(where: \.isModule) {
                     mountSelection = .slot(.init(face: f.face.id, row: r, column: c))
@@ -492,18 +506,25 @@ extension RoofPageWide {
             default: break
             }
             // the hip roof and the obstacles keep the plan in view
-            if !["pvhip", "pvobst", "pvshed"].contains(state) { scrollTarget = "info" }
-        case "design":
+            if !["pvhip", "pvobst", "pvshed", "pvacross", "pvland"].contains(state) { scrollTarget = "info" }
+        case "design", "designpv", "designlist":
             // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
             update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }
-            let d = RoofDesign.from(values, name: "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size, job: "DEMO", by: nil)
-            DesignLibrary.shared.saveRoof(d)
+            let name = "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size
+            // saved once per simulator, so the dropdown doesn't list a copy per launch
+            let d = DesignLibrary.shared.roofs.first { $0.name == name && !$0.archived }
+                ?? RoofDesign.from(values, name: name, job: "DEMO", by: nil)
+            if !DesignLibrary.shared.roofs.contains(where: { $0.id == d.id }) { DesignLibrary.shared.saveRoof(d) }
             update { v in
                 RoofDesign.apply(&v, d)
                 Roof.setPurlinSpacing(&v, 1.2)
                 RoofDesign.toggle(&v, "size"); RoofDesign.toggle(&v, "frame")
             }
             scrollTarget = "info"
+            // designpv: the แผงบนหลังคา tab, with its ยังตรวจแบบไม่ครบ banner
+            if state == "designpv" { mode = .pv }
+            // designlist: the หลังคามาตรฐาน dropdown open, the design's card ticked
+            if state == "designlist" { try? await Task.sleep(nanoseconds: 800_000_000); dropdown = "std" }
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
         case "frame-h": update { Roof.setFrame(&$0, .howe) }

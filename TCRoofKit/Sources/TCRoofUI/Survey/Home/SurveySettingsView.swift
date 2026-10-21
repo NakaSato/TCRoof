@@ -27,11 +27,11 @@ struct SurveySettingsView: View {
                 PadSection("แผงโซลาร์") {
                     PadPicker("แผงโซลาร์", selection: $s.pvModule) {
                         ForEach(PVModuleCatalog.all) { spec in
-                            ForEach(spec.variants) { v in Text("\(spec.manufacturer) \(spec.series) · \(Int(v.pmaxW)) W").tag(v.id) }
+                            ForEach(spec.variants) { v in Text("\(spec.manufacturer) \(spec.series) | \(Int(v.pmaxW)) W").tag(v.id) }
                         }
                     }
                     if let hit = PVModuleCatalog.variant(s.pvModule) {
-                        LabeledContent("ขนาด", value: "\(Int(hit.spec.mechanical.lengthMm)) × \(Int(hit.spec.mechanical.widthMm)) มม. · \(hit.spec.mechanical.weightKg.formatted()) กก.")
+                        LabeledContent("ขนาด", value: "\(Int(hit.spec.mechanical.lengthMm)) × \(Int(hit.spec.mechanical.widthMm)) มม. | \(hit.spec.mechanical.weightKg.formatted()) กก.")
                         LabeledContent("Voc / Isc", value: "\(hit.variant.stc.vocV.formatted()) V / \(hit.variant.stc.iscA.formatted()) A")
                     }
                 } footer: {

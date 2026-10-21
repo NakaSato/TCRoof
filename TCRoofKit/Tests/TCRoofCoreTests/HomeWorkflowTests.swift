@@ -469,13 +469,13 @@ final class HomeSiteTests: XCTestCase {
         let (_, b) = boq()
         var d = HomeDelivery.from(b)
         XCTAssertFalse(d.items.contains { $0.description == "Labors Cost" })            // labour isn't material
-        XCTAssertEqual(d.items[0].description, "ZNSHINE SOLAR PANEL 575W · Model : ZXM7-UHLD144")
+        XCTAssertEqual(d.items[0].description, "ZNSHINE SOLAR PANEL 575W | Model : ZXM7-UHLD144")
         XCTAssertEqual(d.items[0].planned, 9)
         let inv = d.items.firstIndex { $0.description.contains("MIN 5000TL-X") }!
         XCTAssertTrue(d.items[inv].needsSerials)
         XCTAssertTrue(d.items.contains { $0.needsSerials && HomeBOQ.isExportControl($0.description) })
         d.items[0].delivered = 8
-        XCTAssertTrue(d.issues.contains("ส่งไม่ครบ: ZNSHINE SOLAR PANEL 575W · Model : ZXM7-UHLD144 ขาด 1 Module"))
+        XCTAssertTrue(d.issues.contains("ส่งไม่ครบ: ZNSHINE SOLAR PANEL 575W | Model : ZXM7-UHLD144 ขาด 1 Module"))
         d.items[inv].delivered = 1
         XCTAssertTrue(d.issues.contains { $0.hasPrefix("ยังไม่มี S/N ครบ") })
         d.items[inv].serials = ["SN-1"]

@@ -36,7 +36,10 @@ final class TankTrueSouthTests: XCTestCase {
         }
     }
 
-    func testTurnedLayoutKeepsTheSetbackAndTheLegsClear() throws {
+    /// The prototype on the กปภ. 40 × 40 tank at 17° N, top wall facing 12°: the turned layout keeps the setback and its
+    /// legs clear of the openings, and it loses modules to the turned fit and makes less energy than following the walls.
+    /// One test, so the true-south search runs once.
+    func testTheTurnedLayoutAndFollowingTheWalls() throws {
         let v = tank(azimuth: 12), p = TankLayout.defaults(v)
         let s = try XCTUnwrap(TankLayout.trueSouth(v, latitude: 17))
         let t = TankPoints.tankSize(v)!
@@ -50,19 +53,15 @@ final class TankTrueSouthTests: XCTestCase {
         } }
         XCTAssertGreaterThanOrEqual(s.gap, 2.7 - 1e-9)
         XCTAssertGreaterThan(s.yield, 1000)
-    }
 
-    /// The prototype on the กปภ. 40 × 40 tank at 17° N, top wall facing 12°: turning the rows loses modules to the
-    /// turned fit and makes less energy than following the walls.
-    func testFollowingTheWallsWinsOnTheFixture() throws {
-        let v = tank(azimuth: 12)
+        // compareSouth is this comparison with the same search
+        XCTAssertTrue(TankLayout.comparesSouth(v))
         let wall = try XCTUnwrap(TankLayout.bestEnergy(v, latitude: 17))
-        let c = try XCTUnwrap(TankLayout.compareSouth(v, latitude: 17, wall: wall))
+        let c = TankLayout.SouthComparison(wall: wall.chosen, south: s)
         XCTAssertLessThan(c.south.count, c.wall.modules)
         XCTAssertLessThan(c.south.mwh, c.wall.mwh)
         XCTAssertLessThan(c.change, 0)
         XCTAssertTrue(c.line.hasPrefix("หันทิศใต้จริง (หมุนแถว 12°): \(c.south.count) แผง"), c.line)
         XCTAssertTrue(c.line.contains("น้อยกว่า"))
-        print("true south:", c.line, "gap", c.south.gap, "rowLoss", c.south.rowLoss, "wall", c.wall.modules, c.wall.mwh)
     }
 }

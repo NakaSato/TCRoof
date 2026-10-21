@@ -116,7 +116,7 @@ final class HomeNavbarUITests: XCTestCase {
         XCTAssertTrue(waitGone(notificationsPanel(app)), "a second tap on the bell should close the notifications")
     }
 
-    /// `อ่านทั้งหมด` clears the count: VoiceOver drops `· ใหม่ n` (states/04 hides the badge).
+    /// `อ่านทั้งหมด` clears the count: VoiceOver drops `| ใหม่ n` (states/04 hides the badge).
     /// The read state stays on the simulator, so a second run finds everything read already.
     func testAllReadDropsCount() {
         let app = launch()

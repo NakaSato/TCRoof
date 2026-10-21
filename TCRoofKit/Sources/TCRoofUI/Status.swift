@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-/// Section 4 · Status & feedback (docs/ui/components/sections/04-status.png).
+/// Section 4 | Status & feedback (docs/ui/components/sections/04-status.png).
 
 /// Status chip: capsule 24 high, 12.5 pt bold, optional 7 pt dot.
 public struct TCStatusChip: View {
@@ -77,7 +77,7 @@ public struct TCSampleValue: View {
     public var body: some View { TCStatusChip(title, fill: .clear, text: Theme.pending) }
 }
 
-/// Dot + bold text: `● พร้อมใช้`, `● เกินกำหนดคืน · เกิน 1 วัน`. Wraps.
+/// Dot + bold text: `● พร้อมใช้`, `● เกินกำหนดคืน | เกิน 1 วัน`. Wraps.
 public struct TCDotLine: View {
     let title: String
     let color: Color

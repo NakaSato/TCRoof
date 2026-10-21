@@ -54,7 +54,7 @@ struct PanelsPageWide: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            PageStepBar(job: job, here: .module(moduleID), title: "ตู้ไฟฟ้าอาคาร · \(panels.count) อาคาร")
+            PageStepBar(job: job, here: .module(moduleID), title: "ตู้ไฟฟ้าอาคาร | \(panels.count) อาคาร")
             if stacked { stackedLayout } else { wideLayout }
         }
         .foregroundStyle(Theme.navy)

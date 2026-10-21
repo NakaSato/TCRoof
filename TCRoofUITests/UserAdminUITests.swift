@@ -35,7 +35,7 @@ final class UserAdminUITests: XCTestCase {
         let app = launch(["-userAdminWrongKey", "0"])
         XCTAssertTrue(app.buttons["devKey.1"].waitForExistence(timeout: slow))
         type(app, "111111")
-        XCTAssertTrue(text(app, "คีย์ไม่ถูกต้อง · เหลือ 4 ครั้ง").waitForExistence(timeout: 5))
+        XCTAssertTrue(text(app, "คีย์ไม่ถูกต้อง | เหลือ 4 ครั้ง").waitForExistence(timeout: 5))
         type(app, "246810")
         waitGone(app.buttons["devKey.1"])
         XCTAssertTrue(app.buttons["userAdmin.lock"].isHittable, "the page is open")

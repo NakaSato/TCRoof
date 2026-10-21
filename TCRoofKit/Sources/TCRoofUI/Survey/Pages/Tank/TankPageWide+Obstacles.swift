@@ -19,7 +19,7 @@ extension TankPageWide {
 
     /// iPad: the plan card on the left and the selected point on the right; one column in portrait.
     @ViewBuilder var padObstacleStep: some View {
-        let next = nextButton("ถัดไป · จัดแผง ›") { withAnimation { tab = 3 } }
+        let next = nextButton("ถัดไป | จัดแผง ›") { withAnimation { tab = 3 } }
         if stacked {
             obstacleSheets(ScrollView {
                 VStack(spacing: 14) {
@@ -65,13 +65,8 @@ extension TankPageWide {
         } message: {
             Text("เก็บผลตรวจของถังนี้ (ช่วงเสา จุดที่มีจริง ตำแหน่งหน้างาน) เป็นแบบในคลัง งานถัดไปเริ่มจากแบบนี้ได้")
         }
-        .confirmationDialog("เริ่มจากแบบมาตรฐาน กปภ.", isPresented: $designAsk, titleVisibility: .visible) {
-            ForEach(TankDesign.ranked(values)) { m in
-                Button(m.design.name + (m.line.map { " · " + $0 } ?? "")) { useDesign(m) }
-            }
-            Button("ยกเลิก", role: .cancel) {}
-        } message: {
-            Text("แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่")
+        .sheet(isPresented: $designAsk) {
+            TankDesignPicker(matches: TankDesign.ranked(values), current: TankDesign.current(values)?.design.id) { useDesign($0) }
         }
         .confirmationDialog("ยืนยัน \(TankPoints.pending(values).count) จุดที่เหลือว่าตรงแบบ?", isPresented: $bulkAsk, titleVisibility: .visible) {
             Button("ยืนยันที่เหลือ") {
@@ -111,7 +106,7 @@ extension TankPageWide {
             .buttonStyle(.plain)
             // a fully checked tank can become a design of the library (the team's only: `design.library`)
             if TankPoints.done(values) && permissions.can(.designLibrary) {
-                Button { designName = TankDesign.current(values).map { $0.design.name + " · " + job.projectName } ?? job.projectName; saveDesignAsk = true } label: {
+                Button { designName = TankDesign.current(values).map { $0.design.name + " | " + job.projectName } ?? job.projectName; saveDesignAsk = true } label: {
                     Label("บันทึกเป็นแบบมาตรฐาน", systemImage: "square.and.arrow.down.on.square")
                         .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 44)
@@ -164,7 +159,7 @@ extension TankPageWide {
 
     var selectedPoint: Obstacle? { pointSel.flatMap { id in TankPoints.points(values).first { $0.id == id } } }
 
-    // MARK: card 1 · plan
+    // MARK: card 1 | plan
 
     var obstaclePlanCard: some View {
         let c = TankPoints.checked(values), all = c.total > 0 && c.n == c.total
@@ -180,10 +175,10 @@ extension TankPageWide {
         }
     }
 
-    /// `บนหลังคา · 15 จุด` / `เงาบัง · <answer>`
+    /// `บนหลังคา | 15 จุด` / `เงาบัง | <answer>`
     var obstacleSegment: some View {
         let n = TankPoints.points(values).count, shade = values.choice("shade")
-        let items = [(false, "บนหลังคา · \(n) จุด"), (true, "เงาบัง" + (shade.map { " · " + $0 } ?? ""))]
+        let items = [(false, "บนหลังคา | \(n) จุด"), (true, "เงาบัง" + (shade.map { " | " + $0 } ?? ""))]
         return HStack(spacing: 3) {
             ForEach(items, id: \.0) { item in
                 let on = obsShade == item.0
@@ -227,7 +222,7 @@ extension TankPageWide {
                 .accessibilityLabel("ขยายแปลนเต็มจอ")
                 .disabled(!Tank.hasSize(values))
             }
-            Text(Tank.hasSize(values) ? "แตะจุดเพื่อเลือก · ลากเพื่อย้าย" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
+            Text(Tank.hasSize(values) ? "แตะจุดเพื่อเลือก | ลากเพื่อย้าย" : "เลือกขนาดถังในขั้นที่ 1 ก่อน")
                 .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                 .padding(.horizontal, 10).padding(.bottom, 8)
         }
@@ -339,7 +334,7 @@ extension TankPageWide {
                 }
                 if let p = selectedPoint {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("จุด \(p.label) · " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note)).font(.sarabunFixed(16, .bold))
+                        Text("จุด \(p.label) | " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note)).font(.sarabunFixed(16, .bold))
                         statusChoice(p)
                     }
                     .padding(14)
@@ -363,7 +358,7 @@ extension TankPageWide {
         .foregroundStyle(Theme.navy)
     }
 
-    // MARK: card 2 · the selected point
+    // MARK: card 2 | the selected point
 
     @ViewBuilder var pointCard: some View {
         if let p = selectedPoint {
@@ -372,7 +367,7 @@ extension TankPageWide {
                 : moved ? ("ย้ายแล้ว", Theme.okTick, Theme.okSoft) : ("ตามแบบ", Theme.inkMuted, Theme.primarySoft)
             // each row erased, as the info card: the card's full concrete type overflows the main thread's stack on
             // the iPad when the runtime resolves it (SIGSEGV in swift_getTypeByMangledName under pointActions)
-            phoneCard(2, "จุด \(p.label) · " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note), chip: chip) {
+            phoneCard(2, "จุด \(p.label) | " + (p.note.isEmpty ? TankPoints.kindName(p.kind) : p.note), chip: chip) {
                 AnyView(pointPicker(p))
                 AnyView(field("สถานะ", required: true) { statusChoice(p) })
                 AnyView(pointDistances(p))
@@ -439,6 +434,37 @@ extension TankPageWide {
             statusButton(p, TankPoints.ok, "มีตรงแบบ", on: Theme.mint, ink: Theme.navy)
             statusButton(p, TankPoints.absent, "ไม่มีจริง", on: Theme.danger.opacity(0.14), ink: Theme.dangerText)
         }
+        .background { pointKeys(p) }
+        .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { _ in fieldEditing = true }
+        .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidEndEditingNotification)) { _ in fieldEditing = false }
+    }
+
+    /// A hardware keyboard on the selected point (docs/specs/standard-designs.md §3.2): Return = ตรงแบบ and on to the next
+    /// point still to check, ⌫ = ไม่มีจริง, Tab = the next point. Off while a text field has the keys.
+    func pointKeys(_ p: Obstacle) -> some View {
+        KeyCatcher(active: !fieldEditing) { key in
+            switch key {
+            case .keyboardReturnOrEnter, .keypadEnter:
+                update { TankPoints.setStatus(&$0, p.id, TankPoints.ok) }
+                let open = Set(TankPoints.pending(values).map(\.id))
+                pointSel = Self.next(after: p.id, in: TankPoints.points(values).map(\.id)) { open.contains($0) } ?? p.id
+            case .keyboardDeleteOrBackspace:
+                update { TankPoints.setStatus(&$0, p.id, TankPoints.absent) }
+            case .keyboardTab:
+                pointSel = Self.next(after: p.id, in: TankPoints.points(values).map(\.id)) { _ in true } ?? p.id
+            default:
+                return false
+            }
+            return true
+        }
+        .frame(width: 1, height: 1)
+        .accessibilityHidden(true)
+    }
+
+    /// The first id after `id` in `ids` that `ok` takes, going round (never `id` itself); nil when none.
+    static func next(after id: UUID, in ids: [UUID], _ ok: (UUID) -> Bool) -> UUID? {
+        guard let i = ids.firstIndex(of: id) else { return ids.first(where: ok) }
+        return (ids[(i + 1)...] + ids[..<i]).first(where: ok)
     }
 
     func statusButton(_ p: Obstacle, _ s: String, _ title: String, on bg: Color, ink: Color) -> some View {
@@ -483,14 +509,14 @@ extension TankPageWide {
 
     /// The vents' height above the roof, one value for the tank: whether panels can pass over them in จัดแผง.
     var ventHeightField: some View {
-        field("ความสูงปล่อง", aside: "ใช้กับทุกปล่อง · ไม่วัดใช้ 1.00 ม.") {
+        field("ความสูงปล่อง", aside: "ใช้กับทุกปล่อง | ไม่วัดใช้ 1.00 ม.") {
             // not measured: the steppers start from the 1.00 m the layout assumes; clearing the field goes back to it
             TankStepper(value: Tank.ventHeight(values) ?? TankLayout.Params().ventH, step: 0.05, range: 0...5, label: "ความสูงปล่อง",
                         unit: "ม.", glyph: 17) { h in update { Tank.setVentHeight(&$0, h) } }
         }
     }
 
-    /// "แนวเดียวกับ V10 · ไม่ทับจุดอื่น" in mint; an overlap or a point outside the tank in orange.
+    /// "แนวเดียวกับ V10 | ไม่ทับจุดอื่น" in mint; an overlap or a point outside the tank in orange.
     @ViewBuilder func pointInfo(_ p: Obstacle) -> some View {
         if let c = TankPoints.check(values, p.id) {
             HStack(alignment: .top, spacing: 8) {

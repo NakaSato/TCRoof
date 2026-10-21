@@ -70,7 +70,7 @@ struct SiteMapPreview: View {
             }
             .overlay(alignment: .topLeading) { levelPicker.padding(phone ? 8 : 10) }
             .overlay(alignment: .topTrailing) { zoomButtons.padding(phone ? 8 : 10) }
-            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ · ระดับซูมนี้ใช้ในรายงาน").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
+            .overlay(alignment: .bottomLeading) { if phone { tag(Text("ลากหมุดเพื่อปรับ | ระดับซูมนี้ใช้ในรายงาน").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)).padding(8) } }
             .overlay(alignment: .bottomTrailing) { if coordinate != nil { scaleBar(size).padding(phone ? 8 : 10) } }
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { frameSize = $0 }

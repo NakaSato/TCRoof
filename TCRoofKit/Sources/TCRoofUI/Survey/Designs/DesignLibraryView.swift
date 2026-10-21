@@ -32,7 +32,7 @@ struct DesignLibraryView: View {
                 Section {
                     let saved = DesignLibrary.shared.tanks
                     if saved.isEmpty {
-                        Text("ยังไม่มีแบบที่บันทึก · ตรวจถังครบทุกจุดแล้วกด บันทึกเป็นแบบมาตรฐาน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text("ยังไม่มีแบบที่บันทึก | ตรวจถังครบทุกจุดแล้วกด บันทึกเป็นแบบมาตรฐาน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     }
                     ForEach(saved) { d in row(d) }
                 } header: {
@@ -43,7 +43,7 @@ struct DesignLibraryView: View {
                 Section {
                     let roofs = DesignLibrary.shared.roofs
                     if roofs.isEmpty {
-                        Text("ยังไม่มีแบบหลังคา · ตรวจหลังคา C1 แล้วกด บันทึกเป็นแบบมาตรฐาน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text("ยังไม่มีแบบหลังคา | ใน C1 เปิด หลังคามาตรฐาน แล้วกด บันทึกค่าปัจจุบันเป็นแบบใหม่ (ทั้งทีม)").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     }
                     ForEach(roofs) { d in roofRow(d) }
                 } header: {
@@ -109,7 +109,7 @@ struct DesignLibraryView: View {
     struct SharedFile: Identifiable { let url: URL; var id: String { url.path } }
 
     func counts(_ d: TankDesign) -> String {
-        "ช่องระบาย \(d.vents.count) · ช่องลงถัง \(d.hatches.count) · บันได \(d.ladders.count)" + (d.pipes.isEmpty ? "" : " · ท่อ \(d.pipes.count)")
+        "ช่องระบาย \(d.vents.count) | ช่องลงถัง \(d.hatches.count) | บันได \(d.ladders.count)" + (d.pipes.isEmpty ? "" : " | ท่อ \(d.pipes.count)")
     }
 
     func row(_ d: TankDesign) -> some View {
@@ -122,8 +122,8 @@ struct DesignLibraryView: View {
                             .padding(.horizontal, 6).padding(.vertical, 1).background(Theme.hairline, in: Capsule())
                     }
                 }
-                Text(d.size + " · " + counts(d)).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
-                Text((d.isSeed ? "" : "rev \(d.revision) · ") + d.source).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                Text(d.size + " | " + counts(d)).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                Text((d.isSeed ? "" : "rev \(d.revision) | ") + d.source).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
             Spacer(minLength: 6)
             Menu {
@@ -155,9 +155,9 @@ struct DesignLibraryView: View {
                     }
                 }
                 let n = d.values.obstacles(Roof.Key.obstacles).count
-                Text(d.size + " · ระยะแป " + fmt(Roof.purlinSpacing(d.values)) + " ม." + (n > 0 ? " · สิ่งกีดขวาง \(n)" : ""))
+                Text(d.size + " | ระยะแป " + fmt(Roof.purlinSpacing(d.values)) + " ม." + (n > 0 ? " | สิ่งกีดขวาง \(n)" : ""))
                     .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
-                Text("rev \(d.revision) · " + d.source).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                Text("rev \(d.revision) | " + d.source).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
             Spacer(minLength: 6)
             Menu {

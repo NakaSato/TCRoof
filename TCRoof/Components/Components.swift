@@ -151,7 +151,7 @@ struct JobCard<Destination: View, Footer: View>: View {
     }
 }
 
-/// The box under a `JobCard`, like the survey card's progress box: `แผง` · `12/26` · 46 %, an optional bar.
+/// The box under a `JobCard`, like the survey card's progress box: `แผง` | `12/26` | 46 %, an optional bar.
 struct JobCardStrip: View {
     let key: String
     let value: String

@@ -18,7 +18,7 @@ struct ExportSheet: View {
              "summary": "ภาพรวมโครงการในหน้าเดียว",
              "excel": "กรอกลงแบบฟอร์ม NO.224 ครบทุกแผ่น พร้อมรูป",
              "data": "สำหรับเปิดต่อบน iPad เครื่องอื่น",
-             "photos": "แยกโฟลเดอร์ตามหัวข้อใน Drive · ส่งเฉพาะรูปใหม่"][rawValue]!
+             "photos": "แยกโฟลเดอร์ตามหัวข้อใน Drive | ส่งเฉพาะรูปใหม่"][rawValue]!
         }
         var symbol: String { ["report": "doc.richtext", "summary": "doc.text.magnifyingglass", "excel": "tablecells", "data": "curlybraces", "photos": "photo.on.rectangle.angled"][rawValue]! }
         var tint: Color { ["report": Theme.danger, "summary": Theme.warning, "excel": Paper.tick, "data": Theme.primary, "photos": Theme.teal][rawValue]! }

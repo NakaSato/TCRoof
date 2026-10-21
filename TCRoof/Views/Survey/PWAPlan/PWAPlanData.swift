@@ -55,7 +55,7 @@ extension Job {
 enum PWAPlanDemo {
     /// MP, name, kWp, actual, plan, contractor, due as days from today.
     private static let stations: [(Int, String, Double, Double, Double, String, Int)] = [
-        (189, "สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล", 92.34, 38, 50, "A", 3),
+        (189, "สถานีผลิตน้ำทุ่งน้อย | สาขาเมืองพล", 92.34, 38, 50, "A", 3),
         (120, "การประปาวัดชัย", 250, 22, 28, "B", 18),
         (98, "การประปาบ้านโป่ง", 90, 50, 52, "A", -6),
         (154, "สถานีจ่ายน้ำแพรกหนามแดง", 209.76, 71, 68, "C", 0),
@@ -71,15 +71,15 @@ enum PWAPlanDemo {
 
     /// Day offset, start, end, type, ref, title, subtitle, status, opens.
     private static let agenda: [(Int, String, String, PWAPlan.JobType, String, String, String, PWAPlan.AgendaStatus, PWAPlan.Target)] = [
-        (0, "08:00", "17:00", .install, "MP 189", "2.3 ติดตั้งแผงเซลล์", "ทุ่งน้อย · ผู้รับเหมา A · TCR01", .doing, .station),
-        (0, "08:30", "17:00", .install, "MP 120", "2.1 โครงสร้างรองรับ + Walkway", "วัดชัย · ผู้รับเหมา B · TCR03 · ช้ากว่าแผน 6%", .doing, .station),
-        (0, "09:30", "11:30", .survey, "NO.224", "นัดสำรวจ สถานีผลิตน้ำ 1", "กปภ. สาขาตัวอย่าง · TCR02", .booked, .survey),
-        (0, "10:30", "12:00", .inspection, "MP 154", "ผู้แทน กปภ. ตรวจ 2.5 Inverter", "แพรกหนามแดง · ผู้รับเหมา C", .waiting, .station),
-        (0, "13:00", "", .document, "MP 189", "ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)", "เทศบาลเมืองพล · ครบกำหนดวันนี้", .mustSubmit, .docs),
-        (0, "14:00", "16:30", .test, "MP 77", "3.1 Pre-Commissioning (IEC 62446)", "โชคชัย · TCR05 · ใช้เครื่องวัดฉนวน + I-V", .booked, .station),
-        (0, "16:00", "", .notice, "รายงาน", "ส่งรายงานประจำวันก่อน 18:00", "ยังไม่ส่ง 4 สถานี · วัดชัย บ้านโป่ง หนองแค บ้านบึง", .alert, .dailies),
-        (1, "08:00", "17:00", .install, "MP 189", "2.3 ติดตั้งแผงเซลล์", "ทุ่งน้อย · ผู้รับเหมา A · TCR01", .onPlan, .station),
-        (1, "09:00", "11:00", .inspection, "MP 98", "ผู้แทน กปภ. ตรวจ 2.2 สาย DC", "บ้านโป่ง · ผู้รับเหมา A", .waiting, .station),
+        (0, "08:00", "17:00", .install, "MP 189", "2.3 ติดตั้งแผงเซลล์", "ทุ่งน้อย | ผู้รับเหมา A | TCR01", .doing, .station),
+        (0, "08:30", "17:00", .install, "MP 120", "2.1 โครงสร้างรองรับ + Walkway", "วัดชัย | ผู้รับเหมา B | TCR03 | ช้ากว่าแผน 6%", .doing, .station),
+        (0, "09:30", "11:30", .survey, "NO.224", "นัดสำรวจ สถานีผลิตน้ำ 1", "กปภ. สาขาตัวอย่าง | TCR02", .booked, .survey),
+        (0, "10:30", "12:00", .inspection, "MP 154", "ผู้แทน กปภ. ตรวจ 2.5 Inverter", "แพรกหนามแดง | ผู้รับเหมา C", .waiting, .station),
+        (0, "13:00", "", .document, "MP 189", "ยื่นแจ้งเทศบาล (กฎกระทรวงยกเว้น)", "เทศบาลเมืองพล | ครบกำหนดวันนี้", .mustSubmit, .docs),
+        (0, "14:00", "16:30", .test, "MP 77", "3.1 Pre-Commissioning (IEC 62446)", "โชคชัย | TCR05 | ใช้เครื่องวัดฉนวน + I-V", .booked, .station),
+        (0, "16:00", "", .notice, "รายงาน", "ส่งรายงานประจำวันก่อน 18:00", "ยังไม่ส่ง 4 สถานี | วัดชัย บ้านโป่ง หนองแค บ้านบึง", .alert, .dailies),
+        (1, "08:00", "17:00", .install, "MP 189", "2.3 ติดตั้งแผงเซลล์", "ทุ่งน้อย | ผู้รับเหมา A | TCR01", .onPlan, .station),
+        (1, "09:00", "11:00", .inspection, "MP 98", "ผู้แทน กปภ. ตรวจ 2.2 สาย DC", "บ้านโป่ง | ผู้รับเหมา A", .waiting, .station),
     ]
 
     /// `monthTypesByDay`: the job types on each day of the board's October, by day of the month. They are the
@@ -96,27 +96,27 @@ enum PWAPlanDemo {
     /// The board's rows for a day it has no agenda for: start, end, ref, title, subtitle, status, opens. A day takes
     /// the template at its day of the month modulo the type's count.
     private static let templates: [PWAPlan.JobType: [(String, String, String, String, String, PWAPlan.AgendaStatus, PWAPlan.Target)]] = [
-        .install: [("08:00", "17:00", "MP 133", "2.3 ติดตั้งแผงเซลล์", "บางปะกง · ผู้รับเหมา A · TCR01", .onPlan, .station),
-                   ("08:00", "17:00", "MP 142", "2.2 เดินสาย DC", "หนองแค · ผู้รับเหมา C · TCR07", .onPlan, .station),
-                   ("08:30", "17:00", "MP 88", "2.5 ติดตั้ง Inverter", "พนัสนิคม · ผู้รับเหมา B · TCR08", .onPlan, .station)],
-        .survey: [("09:30", "11:30", "NO.231", "นัดสำรวจ สถานีผลิตน้ำ 2", "กปภ. สาขาตัวอย่าง · TCR02", .booked, .survey)],
-        .inspection: [("10:00", "11:30", "MP 109", "ผู้แทน กปภ. ตรวจ 2.6 ระบบ AC", "ศรีราชา · ผู้รับเหมา A", .waiting, .station)],
-        .document: [("13:00", "", "MP 154", "ส่งเอกสาร พค.2 ข้อ 19–23", "แพรกหนามแดง · กกพ.", .mustSubmit, .docs)],
-        .test: [("14:00", "16:30", "MP 109", "3.1 Pre-Commissioning (IEC 62446)", "ศรีราชา · TCR10", .booked, .station)],
+        .install: [("08:00", "17:00", "MP 133", "2.3 ติดตั้งแผงเซลล์", "บางปะกง | ผู้รับเหมา A | TCR01", .onPlan, .station),
+                   ("08:00", "17:00", "MP 142", "2.2 เดินสาย DC", "หนองแค | ผู้รับเหมา C | TCR07", .onPlan, .station),
+                   ("08:30", "17:00", "MP 88", "2.5 ติดตั้ง Inverter", "พนัสนิคม | ผู้รับเหมา B | TCR08", .onPlan, .station)],
+        .survey: [("09:30", "11:30", "NO.231", "นัดสำรวจ สถานีผลิตน้ำ 2", "กปภ. สาขาตัวอย่าง | TCR02", .booked, .survey)],
+        .inspection: [("10:00", "11:30", "MP 109", "ผู้แทน กปภ. ตรวจ 2.6 ระบบ AC", "ศรีราชา | ผู้รับเหมา A", .waiting, .station)],
+        .document: [("13:00", "", "MP 154", "ส่งเอกสาร พค.2 ข้อ 19–23", "แพรกหนามแดง | กกพ.", .mustSubmit, .docs)],
+        .test: [("14:00", "16:30", "MP 109", "3.1 Pre-Commissioning (IEC 62446)", "ศรีราชา | TCR10", .booked, .station)],
         .notice: [("16:00", "", "รายงาน", "ส่งรายงานประจำวันก่อน 18:00", "ยังไม่ส่ง 3 สถานี", .alert, .dailies)],
     ]
 
     /// Day offset, title, subtitle, kind, chip, tone, MP.
     private static let deadlines: [(Int, String, String, PWAPlan.DeadlineKind, String, PWAPlan.Tone, Int)] = [
-        (-4, "ส่งมอบงาน", "MP 77 โชคชัย · Punch list + As-Built", .handover, "เลยกำหนด 4 วัน", .late, 77),
-        (0, "ส่งมอบงาน", "MP 154 แพรกหนามแดง · จริง 71% / แผน 68%", .handover, "เสี่ยงช้า", .risk, 154),
-        (0, "แจ้งเทศบาล (ยกเว้น ข.1)", "MP 189 ทุ่งน้อย · เทศบาลเมืองพล", .document, "วันนี้", .risk, 189),
-        (2, "ส่งมอบงาน", "MP 88 พนัสนิคม · ผู้รับเหมา B", .handover, "ตามแผน", .ok, 88),
-        (3, "ส่งมอบงาน", "MP 189 ทุ่งน้อย · จริง 38% / แผน 50%", .handover, "ช้ากว่าแผน", .late, 189),
-        (8, "ยื่น พค.2 (กกพ.)", "MP 154 แพรกหนามแดง · 209.76 kWp ≥ 200 kVA", .document, "เอกสาร 18/23", .risk, 154),
-        (8, "ส่งมอบงาน", "MP 133 บางปะกง · ผู้รับเหมา A", .handover, "ตามแผน", .ok, 133),
-        (10, "ยื่นขอขนานไฟ (กฟภ.)", "MP 109 ศรีราชา · ชุด 4.2 ครบ 11/11", .document, "พร้อมยื่น", .ok, 109),
-        (12, "อบรม O&M (3.2)", "MP 77 โชคชัย · คู่มือภาคตะวันออกเฉียงเหนือ", .other, "นัดแล้ว", .ok, 77),
+        (-4, "ส่งมอบงาน", "MP 77 โชคชัย | Punch list + As-Built", .handover, "เลยกำหนด 4 วัน", .late, 77),
+        (0, "ส่งมอบงาน", "MP 154 แพรกหนามแดง | จริง 71% / แผน 68%", .handover, "เสี่ยงช้า", .risk, 154),
+        (0, "แจ้งเทศบาล (ยกเว้น ข.1)", "MP 189 ทุ่งน้อย | เทศบาลเมืองพล", .document, "วันนี้", .risk, 189),
+        (2, "ส่งมอบงาน", "MP 88 พนัสนิคม | ผู้รับเหมา B", .handover, "ตามแผน", .ok, 88),
+        (3, "ส่งมอบงาน", "MP 189 ทุ่งน้อย | จริง 38% / แผน 50%", .handover, "ช้ากว่าแผน", .late, 189),
+        (8, "ยื่น พค.2 (กกพ.)", "MP 154 แพรกหนามแดง | 209.76 kWp ≥ 200 kVA", .document, "เอกสาร 18/23", .risk, 154),
+        (8, "ส่งมอบงาน", "MP 133 บางปะกง | ผู้รับเหมา A", .handover, "ตามแผน", .ok, 133),
+        (10, "ยื่นขอขนานไฟ (กฟภ.)", "MP 109 ศรีราชา | ชุด 4.2 ครบ 11/11", .document, "พร้อมยื่น", .ok, 109),
+        (12, "อบรม O&M (3.2)", "MP 77 โชคชัย | คู่มือภาคตะวันออกเฉียงเหนือ", .other, "นัดแล้ว", .ok, 77),
     ]
 
     /// The project's actual percent by week up to last week; this week's is the weighted average of the stations.
@@ -130,10 +130,10 @@ enum PWAPlanDemo {
             return p.count == 2 ? p[0] * 60 + p[1] : nil
         }
         func team(_ subtitle: String) -> String {
-            subtitle.components(separatedBy: " · ").first { $0.hasPrefix("TCR") } ?? ""
+            subtitle.components(separatedBy: " | ").first { $0.hasPrefix("TCR") } ?? ""
         }
         func contractor(_ subtitle: String) -> String {
-            subtitle.components(separatedBy: " · ").first { $0.hasPrefix("ผู้รับเหมา ") }.map { String($0.dropFirst("ผู้รับเหมา ".count)) } ?? ""
+            subtitle.components(separatedBy: " | ").first { $0.hasPrefix("ผู้รับเหมา ") }.map { String($0.dropFirst("ผู้รับเหมา ".count)) } ?? ""
         }
 
         let bars = stations.map { s in

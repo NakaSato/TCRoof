@@ -53,7 +53,7 @@ struct ClaimExport {
                 guard let data, let id = t.syncID else { continue }
                 let key = "odo-\(end)-\(id)"
                 images[key] = data
-                odometers.append(.init(photo: photo(key, data), caption: "เลขไมล์\(end) · \(RoutineReport.thaiDate(t.date))"))
+                odometers.append(.init(photo: photo(key, data), caption: "เลขไมล์\(end) | \(RoutineReport.thaiDate(t.date))"))
             }
         }
         var signature: Photo?
@@ -101,7 +101,7 @@ struct ClaimExport {
         let c = TravelStore.claim(context, month: month, create: true)!
         c.signature = signature
         c.submittedAt = .now
-        c.addLog("ยื่นเบิก \(Self.stamp(.now)) · \(TravelClaim.baht(summary.total)) บาท")
+        c.addLog("ยื่นเบิก \(Self.stamp(.now)) | \(TravelClaim.baht(summary.total)) บาท")
         try? context.save()
     }
 
@@ -110,7 +110,7 @@ struct ClaimExport {
         // an approved month stays as approved; a manager sends it back first
         guard let c = claim, !ClaimReviews.shared.status(month: month, submittedAt: c.submittedAt).isApproved else { return }
         c.submittedAt = nil
-        c.addLog("ถอนการยื่น \(Self.stamp(.now))" + (reason.isEmpty ? "" : " · \(reason)"))
+        c.addLog("ถอนการยื่น \(Self.stamp(.now))" + (reason.isEmpty ? "" : " | \(reason)"))
         try? context.save()
     }
 

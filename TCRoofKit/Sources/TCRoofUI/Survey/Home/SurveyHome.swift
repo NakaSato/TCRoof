@@ -242,7 +242,7 @@ struct SurveyHomeView: View {
         } message: { p in Text(p.notes.joined(separator: "\n")) }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
-        .onAppear { model.reload() }
+        .onAppear { model.reload(); model.linkInstallJobs() }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {
@@ -349,8 +349,8 @@ struct SurveyHomeView: View {
                 Button(complete ? "เปิดดูแบบสำรวจ" : "กรอกต่อ") { asking = nil; go(job, complete ? nil : job.nextStep?.page) }
                 Button("ยกเลิก", role: .cancel) { asking = nil }
             } message: {
-                Text(complete ? "แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)"
-                     : "แบบสำรวจกรอกแล้ว \(job.completion.percent)% · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง และยังกรอกแบบสำรวจต่อได้ (ย้ายกลับได้จากงานติดตั้ง)")
+                Text(complete ? "แบบสำรวจกรอกครบแล้ว | เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)"
+                     : "แบบสำรวจกรอกแล้ว \(job.completion.percent)% | เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง และยังกรอกแบบสำรวจต่อได้ (ย้ายกลับได้จากงานติดตั้ง)")
             }
         }
     }

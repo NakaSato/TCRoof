@@ -32,7 +32,7 @@ public extension Assistant {
                 case .busy: "ผู้ช่วยมีคนใช้มาก ลองอีกครั้งในอีกสักครู่"
                 case .server(let status, let message): "ผู้ช่วยขัดข้อง (\(status))" + (message.isEmpty ? "" : ": \(message)")
                 case .badReply: "ผู้ช่วยไม่ได้ตอบ ลองอีกครั้ง"
-                case .freeQuotaUsed: "โควตาฟรีของ Qwen หมดแล้ว (ตั้งให้ใช้เฉพาะโควตาฟรี จึงไม่เสียเงิน) · ใช้ได้อีกเมื่อมีโควตาฟรีใหม่"
+                case .freeQuotaUsed: "โควตาฟรีของ Qwen หมดแล้ว (ตั้งให้ใช้เฉพาะโควตาฟรี จึงไม่เสียเงิน) | ใช้ได้อีกเมื่อมีโควตาฟรีใหม่"
                 }
             }
         }

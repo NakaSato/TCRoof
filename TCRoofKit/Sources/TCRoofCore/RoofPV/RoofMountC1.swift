@@ -87,9 +87,13 @@ public enum RoofMount {
         public var digest = ""
         /// A walkway after every n columns; 0 = none.
         public var walkwayEvery = 0
+        /// Modules landscape, the long side along the purlins (ด้านยาวตามแป).
+        public var landscape = false
+        /// Rails up the slope across the purlins (รางตัดแป); L-feet on purlins only.
+        public var railsAcross = false
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery }
+        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -101,6 +105,8 @@ public enum RoofMount {
             standard = try c.decodeIfPresent(RoofMountStandard.self, forKey: .standard)
             digest = try c.decodeIfPresent(String.self, forKey: .digest) ?? ""
             walkwayEvery = try c.decodeIfPresent(Int.self, forKey: .walkwayEvery) ?? 0
+            landscape = try c.decodeIfPresent(Bool.self, forKey: .landscape) ?? false
+            railsAcross = try c.decodeIfPresent(Bool.self, forKey: .railsAcross) ?? false
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -110,12 +116,14 @@ public enum RoofMount {
             try c.encode(removed, forKey: .removed); try c.encodeIfPresent(standard, forKey: .standard)
             try c.encode(digest, forKey: .digest)
             if walkwayEvery > 0 { try c.encode(walkwayEvery, forKey: .walkwayEvery) }
+            if landscape { try c.encode(landscape, forKey: .landscape) }
+            if railsAcross { try c.encode(railsAcross, forKey: .railsAcross) }
         }
 
         /// The layout's options for a roof (tile hooks on concrete tiles).
         public func options(tile: Bool) -> RoofMountLayout.Options {
             .init(ribClamp: ribClamp && !tile, avoidShade: avoidShade, faceUse: faceUse, removed: Set(removed), tileHooks: tile,
-                  walkwayEvery: walkwayEvery)
+                  walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross)
         }
         public var standardOrDefault: RoofMountStandard { standard ?? RoofMount.defaultStandard }
     }
@@ -145,6 +153,8 @@ public enum RoofMount {
         if input.tileRoof { parts.append("tile") }
         if input.shedLowAtStart { parts.append("shedStart") }
         if c.walkwayEvery > 0 { parts.append("walk \(c.walkwayEvery)") }
+        if c.landscape { parts.append("landscape") }
+        if c.railsAcross && !c.ribClamp && !input.tileRoof { parts.append("railsAcross") }
         parts += input.obstacles.map { o in
             String(format: "%@ %.2f %.2f %.2f %.2f %.2f %@", o.kind.rawValue, o.x, o.y, o.w, o.h, o.heightOrDefault, o.coverable ? "c" : "")
         }
@@ -183,18 +193,23 @@ public enum RoofMount {
 
     // MARK: - Report lines (docs/specs/roof-pv-layout.md §7)
 
-    /// `ผังแผงอัตโนมัติ 216 แผง · 129.6 kWp · 191.1 MWh/ปี · ลาด 15° · แป @1.20 ม. · 4 แถว`
+    /// `ผังแผงอัตโนมัติ 216 แผง | 129.6 kWp | 191.1 MWh/ปี | ลาด 15° | แป @1.20 ม. | 4 แถว`
     public static func summaryLine(_ m: RoofMountLayout) -> String {
         let q = m.quantities, rows = m.faces.filter(\.used).map(\.rows.count).max() ?? 0
         let fixing = m.options.tileHooks ? "ขอเกี่ยวกระเบื้อง" : m.options.ribClamp ? "จับสันลอน" : String(format: "แป @%.2f ม.", m.purlins.count > 1 ? m.purlins[1] - m.purlins[0] : 0)
-        return "ผังแผงอัตโนมัติ \(q.modules) แผง · " + String(format: "%.1f kWp · %.1f MWh/ปี · ลาด %.0f° · ", q.kWp, q.energy, m.roof.tilt * 180 / .pi)
-            + fixing + " · \(rows) แถว"
+        return "ผังแผงอัตโนมัติ \(q.modules) แผง | " + String(format: "%.1f kWp | %.1f MWh/ปี | ลาด %.0f° | ", q.kWp, q.energy, m.roof.tilt * 180 / .pi)
+            + fixing + (m.options.landscape || m.options.acrossPurlins ? " | " + arrangement(m.options) : "") + " | \(rows) แถว"
     }
 
-    /// `BOQ: ราง 502.2 ม. · ต่อราง 80 · L-foot 496 · ตัวจับกลาง 364 · ตัวจับปลาย 136 · 34 ชุดราง`
+    /// `แผงด้านยาวตัดแป | รางตามแป`: how the modules and rails lie on the purlins.
+    public static func arrangement(_ o: RoofMountLayout.Options) -> String {
+        (o.landscape ? "แผงด้านยาวตามแป" : "แผงด้านยาวตัดแป") + " | " + (o.acrossPurlins ? "รางตัดแป" : "รางตามแป")
+    }
+
+    /// `BOQ: ราง 502.2 ม. | ต่อราง 80 | L-foot 496 | ตัวจับกลาง 364 | ตัวจับปลาย 136 | 34 ชุดราง`
     public static func boqLine(_ q: RoofMountQuantities) -> String {
-        String(format: "BOQ: ราง %.1f ม. · ต่อราง %d · %@ %d · ตัวจับกลาง %d · ตัวจับปลาย %d · %d ชุดราง", q.railLength, q.splices,
-               footName(q), q.feet, q.midClamps, q.endClamps, q.runs) + (q.cuts > 0 ? " · ตัดแผง \(q.cuts)" : "")
+        String(format: "BOQ: ราง %.1f ม. | ต่อราง %d | %@ %d | ตัวจับกลาง %d | ตัวจับปลาย %d | %d ชุดราง", q.railLength, q.splices,
+               footName(q), q.feet, q.midClamps, q.endClamps, q.runs) + (q.cuts > 0 ? " | ตัดแผง \(q.cuts)" : "")
     }
 
     /// `L-foot`, or `ขอเกี่ยวกระเบื้อง` on a tile roof.
@@ -203,7 +218,7 @@ public enum RoofMount {
     /// `น้ำหนักเพิ่ม 13.4 กก./ม² (เกณฑ์ 15)`, with a warning above the standard's limit.
     public static func loadLine(_ q: RoofMountQuantities) -> String {
         String(format: "น้ำหนักแผงและราง %.1f กก./ม² (เกณฑ์ %.0f)", q.load, q.loadLimit)
-            + (q.overLoad ? " · เกินเกณฑ์ ตรวจโครงหลังคากับวิศวกรโครงสร้าง" : "")
+            + (q.overLoad ? " | เกินเกณฑ์ ตรวจโครงหลังคากับวิศวกรโครงสร้าง" : "")
     }
 
     /// Whether the job has a roof PV layout to print: a supported shape and spans.

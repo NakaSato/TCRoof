@@ -213,7 +213,7 @@ public enum MeasuredRoofSection {
         var o2: [DrawOp] = [.rect(Box(0, 0, W, 0), stroke: nil, fill: .white)]
 
         o2.append(.text("รูปตัดโครงหลังคา — " + i.title, at: Pt(16, 14), size: 10, bold: true, color: ink))
-        o2.append(.text("หน่วย: ม. · มาตราส่วนโดยประมาณ", at: Pt(W - 16, 14), size: 8.5, color: .ink2, align: .right))
+        o2.append(.text("หน่วย: ม. | มาตราส่วนโดยประมาณ", at: Pt(W - 16, 14), size: 8.5, color: .ink2, align: .right))
 
         // ground and columns
         let ground = P(0, 0).y
@@ -292,13 +292,13 @@ public enum MeasuredRoofSection {
 
         // members, assumed values, warnings and the note
         var y = chainY + 30
-        let rows = i.members.enumerated().map { n, m in "\(n + 1) " + m.name + " · " + (m.size.isEmpty ? "— ไม่ได้ระบุ —" : m.size) }
+        let rows = i.members.enumerated().map { n, m in "\(n + 1) " + m.name + " | " + (m.size.isEmpty ? "— ไม่ได้ระบุ —" : m.size) }
         let colWd = (W - 32) / 2
         for (n, t) in rows.enumerated() {
             o2.append(.text(t, at: Pt(16 + Double(n % 2) * colWd, y + Double(n / 2) * 12), size: 8.5, color: ink))
         }
         y += Double((rows.count + 1) / 2) * 12 + (rows.isEmpty ? 0 : 4)
-        if !i.assumed.isEmpty { o2.append(.text("ค่าสมมติ: " + i.assumed.joined(separator: " · "), at: Pt(16, y), size: 8, color: .ink2)); y += 12 }
+        if !i.assumed.isEmpty { o2.append(.text("ค่าสมมติ: " + i.assumed.joined(separator: " | "), at: Pt(16, y), size: 8, color: .ink2)); y += 12 }
         for w in i.warnings { o2.append(.text(w, at: Pt(16, y), size: 8, bold: true, color: red)); y += 12 }
         o2.append(.text(TankDrawings.note, at: Pt(16, y), size: 7.5, color: .ink2))
         let H = y + 10

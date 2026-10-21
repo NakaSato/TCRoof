@@ -62,7 +62,7 @@ struct InstallPageData {
                                 "เริ่ม " + ThaiFormat.numericDate.string(from: job.installStart),
                                 "ส่งมอบ " + ThaiFormat.numericDate.string(from: job.installEnd)]
         title = job.stationName
-        subtitle = parts.compactMap { $0 }.joined(separator: " · ")
+        subtitle = parts.compactMap { $0 }.joined(separator: " | ")
         surveyReport = report?.id
 
         if let input = job.scheduleInput {
@@ -108,13 +108,13 @@ struct InstallPageData {
             let permits = RoutineReport.permits(plan: MasterSchedule.plan(input), actual: job.scheduleActual, at: today)
             let late = (InstallOverview.permits(permits) ?? []).filter { $0.state == .overdue }
             if !late.isEmpty {
-                items.append(.init(id: "permits", priority: .high, title: "ใบอนุญาตเลยกำหนด " + late.map { $0.authority.title }.joined(separator: " · "),
-                                   detail: "ตามแผน MP · เปิดแผนก่อสร้าง", target: .plan))
+                items.append(.init(id: "permits", priority: .high, title: "ใบอนุญาตเลยกำหนด " + late.map { $0.authority.title }.joined(separator: " | "),
+                                   detail: "ตามแผน MP | เปิดแผนก่อสร้าง", target: .plan))
             }
         }
         if dailyUnsent {
             items.append(.init(id: "daily", priority: .medium, title: "รายงานประจำวัน " + ThaiFormat.dayMonth.string(from: day),
-                               detail: todayState == .draft ? "ร่างไว้ · ยังไม่ลงนาม" : "ยังไม่ได้ทำ", target: .daily))
+                               detail: todayState == .draft ? "ร่างไว้ | ยังไม่ลงนาม" : "ยังไม่ได้ทำ", target: .daily))
         }
         let nextWeek = cal.date(byAdding: .day, value: 7, to: RoutineReport.week(of: day).lowerBound) ?? day
         if job.scheduleInput != nil, job.weeklyRequest(for: nextWeek)?.engineerSignedAt == nil {
@@ -122,7 +122,7 @@ struct InstallPageData {
         }
         let waiting = job.papersWaitingToSend
         if waiting > 0 {
-            items.append(.init(id: "docs", priority: .medium, title: "เอกสารรอยื่น \(waiting) ฉบับ", detail: "ลงนามแล้ว · ยังไม่ส่ง", target: .docs))
+            items.append(.init(id: "docs", priority: .medium, title: "เอกสารรอยื่น \(waiting) ฉบับ", detail: "ลงนามแล้ว | ยังไม่ส่ง", target: .docs))
         }
         actions = items
         docs = Self.docTiles(job: job, today: today)
@@ -145,7 +145,7 @@ extension InstallPageData {
     static func demo(today: Date = .now) -> InstallPageData {
         let cal = Calendar.current, day = cal.startOfDay(for: today)
         let start = day.adding(days: -6), due = day.adding(days: 6)
-        let ac = Action(id: "ac", priority: .high, title: "ตู้ AC · กันย้อน รออนุมัติ (MA-05)", detail: "ต้องได้ก่อนขั้น 5 · ผู้รับผิดชอบ: จัดซื้อ", target: .docs)
+        let ac = Action(id: "ac", priority: .high, title: "ตู้ AC | กันย้อน รออนุมัติ (MA-05)", detail: "ต้องได้ก่อนขั้น 5 | ผู้รับผิดชอบ: จัดซื้อ", target: .docs)
         let wr = Action(id: "wr", priority: .medium, title: "Weekly Report W40 (WR-02)", detail: "ร่างอัตโนมัติพร้อมแล้ว", target: .weekly)
         let rfi = Action(id: "rfi", priority: .medium, title: "ยื่น RFI-03 ตรวจรับงานสาย DC", detail: "ยื่นได้เมื่อรายการตรวจขั้น 4 ครบ", target: .docs)
         let daily = Action(id: "daily", priority: .medium, title: "รายงานประจำวัน", detail: "ยังไม่ได้ทำ", target: .daily)
@@ -156,31 +156,31 @@ extension InstallPageData {
             list.enumerated().map { k, u in Sub(u.0, percent: percent(k), start: d(u.1), end: d(u.2)) }
         }
         let rows: [InstallGantt.Row] = [
-            .init(id: "s1", code: "1", title: "เตรียมงาน · รับวัสดุ", status: .done, start: d(0), end: d(0), actualStart: d(0), actualEnd: d(0), percent: 100,
-                  subs: subs([("ปฐมนิเทศ · ใบอนุญาตที่สูง", 0, 0), ("Lifeline · ราวกันตก", 0, 0), ("ตรวจรับวัสดุตามใบส่งของ", 0, 0),
-                              ("กองวัสดุ · ป้ายกั้นพื้นที่", 0, 0)]) { _ in 100 }),
+            .init(id: "s1", code: "1", title: "เตรียมงาน | รับวัสดุ", status: .done, start: d(0), end: d(0), actualStart: d(0), actualEnd: d(0), percent: 100,
+                  subs: subs([("ปฐมนิเทศ | ใบอนุญาตที่สูง", 0, 0), ("Lifeline | ราวกันตก", 0, 0), ("ตรวจรับวัสดุตามใบส่งของ", 0, 0),
+                              ("กองวัสดุ | ป้ายกั้นพื้นที่", 0, 0)]) { _ in 100 }),
             .init(id: "s2", code: "2", title: "โครงสร้างรองรับ (Mounting)", status: .done, start: d(1), end: d(2), actualStart: d(1), actualEnd: d(2), percent: 100,
                   subs: subs([("มาร์กจุดยึดตามแบบ", 1, 1), ("L-Feet + ซีลกันรั่ว โซน A–B", 1, 1), ("L-Feet + ซีลกันรั่ว โซน C", 2, 2),
-                              ("ติดตั้งรางและต่อราง", 1, 2), ("ตรวจระดับ · ขันแรงบิด", 2, 2)]) { _ in 100 }),
-            .init(id: "s3", code: "3", title: "ติดตั้งแผง · สายดินโครง", status: .done, start: d(3), end: d(4), actualStart: d(3), actualEnd: d(4), percent: 100,
-                  subs: subs([("ยกแผงขึ้นหลังคา", 3, 3), ("แผงโซน A · 64 แผง", 3, 3), ("แผงโซน B · 60 แผง", 3, 4), ("แผงโซน C · 40 แผง", 4, 4),
+                              ("ติดตั้งรางและต่อราง", 1, 2), ("ตรวจระดับ | ขันแรงบิด", 2, 2)]) { _ in 100 }),
+            .init(id: "s3", code: "3", title: "ติดตั้งแผง | สายดินโครง", status: .done, start: d(3), end: d(4), actualStart: d(3), actualEnd: d(4), percent: 100,
+                  subs: subs([("ยกแผงขึ้นหลังคา", 3, 3), ("แผงโซน A | 64 แผง", 3, 3), ("แผงโซน B | 60 แผง", 3, 4), ("แผงโซน C | 40 แผง", 4, 4),
                               ("สายดินโครงและแผง", 4, 4)]) { _ in 100 }),
-            .init(id: "s4", code: "4", title: "ระบบ DC · สาย · MC4 · ตู้ DC", status: .current, start: d(5), end: d(7), actualStart: d(5), actualEnd: d(6), percent: 50,
+            .init(id: "s4", code: "4", title: "ระบบ DC | สาย | MC4 | ตู้ DC", status: .current, start: d(5), end: d(7), actualStart: d(5), actualEnd: d(6), percent: 50,
                   forecastEnd: d(8), overrunDays: 1,
-                  subs: subs([("สายสตริง 1–6 (โซน A)", 5, 5), ("สายสตริง 7–12 (โซน B, C)", 6, 6), ("ย้ำหัว MC4 · ตู้ DC", 6, 6),
-                              ("ตรวจขั้ว · วัด Voc ทุกสตริง", 7, 7), ("ป้ายเตือน · ป้ายสาย DC", 7, 7)]) { $0 < 3 ? 100 : 0 }),
-            .init(id: "s5", code: "5", title: "อินเวอร์เตอร์ · ระบบ AC", status: .waiting, start: d(8), end: d(8), percent: 0,
-                  subs: subs([("ยึดอินเวอร์เตอร์", 8, 8), ("สาย AC เข้า MDB · เบรกเกอร์", 8, 8), ("กันย้อน (Zero Export) + CT", 8, 8),
-                              ("ระบบดิน · วัดค่าดิน", 8, 8), ("Data Logger · Monitoring", 8, 8)]) { _ in 0 }),
+                  subs: subs([("สายสตริง 1–6 (โซน A)", 5, 5), ("สายสตริง 7–12 (โซน B, C)", 6, 6), ("ย้ำหัว MC4 | ตู้ DC", 6, 6),
+                              ("ตรวจขั้ว | วัด Voc ทุกสตริง", 7, 7), ("ป้ายเตือน | ป้ายสาย DC", 7, 7)]) { $0 < 3 ? 100 : 0 }),
+            .init(id: "s5", code: "5", title: "อินเวอร์เตอร์ | ระบบ AC", status: .waiting, start: d(8), end: d(8), percent: 0,
+                  subs: subs([("ยึดอินเวอร์เตอร์", 8, 8), ("สาย AC เข้า MDB | เบรกเกอร์", 8, 8), ("กันย้อน (Zero Export) + CT", 8, 8),
+                              ("ระบบดิน | วัดค่าดิน", 8, 8), ("Data Logger | Monitoring", 8, 8)]) { _ in 0 }),
             .init(id: "s6", code: "6", title: "ทดสอบ IEC 62446-1", status: .waiting, start: d(9), end: d(9), percent: 0,
-                  subs: subs([("ตรวจพินิจ (Visual)", 9, 9), ("Continuity · Polarity · Voc/Isc", 9, 9), ("ฉนวน (IR) 1000 V", 9, 9),
-                              ("Anti-islanding · อินเวอร์เตอร์", 9, 9), ("เปิดระบบ · ภาพความร้อน", 9, 9)]) { _ in 0 }),
-            .init(id: "s7", code: "7", title: "ขนานไฟ · ส่งมอบ", status: .waiting, start: d(12), end: d(12), percent: 0,
-                  subs: subs([("การไฟฟ้าตรวจ · เปลี่ยนมิเตอร์", 12, 12), ("ขนานไฟ · ตรวจค่าผลิต", 12, 12), ("อบรมผู้ใช้ · คู่มือ O&M", 12, 12),
-                              ("As-built · รายงาน IEC · ประกัน", 12, 12), ("Punch List · ลงนามรับมอบ", 12, 12)]) { _ in 0 })]
+                  subs: subs([("ตรวจพินิจ (Visual)", 9, 9), ("Continuity | Polarity | Voc/Isc", 9, 9), ("ฉนวน (IR) 1000 V", 9, 9),
+                              ("Anti-islanding | อินเวอร์เตอร์", 9, 9), ("เปิดระบบ | ภาพความร้อน", 9, 9)]) { _ in 0 }),
+            .init(id: "s7", code: "7", title: "ขนานไฟ | ส่งมอบ", status: .waiting, start: d(12), end: d(12), percent: 0,
+                  subs: subs([("การไฟฟ้าตรวจ | เปลี่ยนมิเตอร์", 12, 12), ("ขนานไฟ | ตรวจค่าผลิต", 12, 12), ("อบรมผู้ใช้ | คู่มือ O&M", 12, 12),
+                              ("As-built | รายงาน IEC | ประกัน", 12, 12), ("Punch List | ลงนามรับมอบ", 12, 12)]) { _ in 0 })]
         var data = InstallPageData(
             title: "การประปาบ้านโป่ง (ตัวอย่าง)",
-            subtitle: "งานติดตั้ง 90 kWp · ทีม TCR02 · เริ่ม \(ThaiFormat.numericDate.string(from: start)) · ส่งมอบ \(ThaiFormat.numericDate.string(from: due))",
+            subtitle: "งานติดตั้ง 90 kWp | ทีม TCR02 | เริ่ม \(ThaiFormat.numericDate.string(from: start)) | ส่งมอบ \(ThaiFormat.numericDate.string(from: due))",
             tracking: InstallTracking(actual: 50, planned: 52, actualWeekAgo: 36, start: start, due: due, today: day),
             actions: [ac, wr, rfi, daily], dailyUnsent: true, surveyReport: nil,
             gantt: InstallGantt(rows: rows, today: day), nonWorking: [d(10), d(11)])

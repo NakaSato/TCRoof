@@ -111,7 +111,7 @@ struct JobEditorView: View {
         if cardFinal { return "E1 สรุปผลและลงนาม" }
         if let m = cardPanels { return m.type.code + " " + m.spec.label }
         if let m = cardRoof {
-            return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "C1") + " " + m.spec.short + (m.name.isEmpty ? "" : " · " + m.name)
+            return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "C1") + " " + m.spec.short + (m.name.isEmpty ? "" : " | " + m.name)
         }
         if let m = cardTank {
             return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "D1") + " " + m.spec.short + (m.name.isEmpty ? "" : " " + m.name)
@@ -120,7 +120,7 @@ struct JobEditorView: View {
         if let m = cardFts { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B5") + " ปุ่ม Emergency" }
         if let m = cardWater { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B3") + " " + m.spec.label }
         if let m = cardInverter { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B2") + " " + m.spec.label }
-        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง · MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
+        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง | MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
     }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?
@@ -391,7 +391,7 @@ struct JobEditorView: View {
         return InfoPageBar(job: job, here: .final, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: before.map { p in { withAnimation { page = p } } }, next: nil,
                            statusText: FinalSummary.statusLine(job), statusAlert: !done, statusOK: done,
-                           finish: (sub: "ขั้นสุดท้าย", title: "สรุปผล · ส่งออก", action: { model.flush(job.id); checked { showExport = true } }))
+                           finish: (sub: "ขั้นสุดท้าย", title: "สรุปผล | ส่งออก", action: { model.flush(job.id); checked { showExport = true } }))
     }
 
     var pageBar: some View {
@@ -438,7 +438,7 @@ struct JobEditorView: View {
     var electricalStatus: TCBarStatus? {
         let gaps = ElectricalPageWide.gaps(job)
         guard let first = gaps.first else { return nil }
-        return .missing("ยังขาดภาพ: " + gaps.map(\.title).joined(separator: " · ") + " · ไปต่อได้ แล้วค่อยกลับมาเติม",
+        return .missing("ยังขาดภาพ: " + gaps.map(\.title).joined(separator: " | ") + " | ไปต่อได้ แล้วค่อยกลับมาเติม",
                         action: { electricalRequest = first.index })
     }
 
@@ -449,11 +449,11 @@ struct JobEditorView: View {
         let c = job.steps.first { $0.page == .site }?.completion ?? Completion()
         let list = gaps.map(\.title).joined(separator: ", ")
         let go = { siteRequest = first.item }
-        let label = "ยังไม่มี (ไม่บังคับ) \(gaps.count) รายการ: \(list) · แตะเพื่อไปที่รายการ"
+        let label = "ยังไม่มี (ไม่บังคับ) \(gaps.count) รายการ: \(list) | แตะเพื่อไปที่รายการ"
         return c.isComplete
-            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list, label: "ครบช่องบังคับแล้ว · " + label, action: go)
+            ? .okChip(title: "ครบช่องบังคับแล้ว", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list, label: "ครบช่องบังคับแล้ว | " + label, action: go)
             : .gapChip(title: "ครบ \(c.filled)/\(c.total) ช่องในหน้านี้", sub: "ยังไม่มี (ไม่บังคับ): ", emphasis: list,
-                       label: "ครบ \(c.filled)/\(c.total) ช่อง · " + label, action: go)
+                       label: "ครบ \(c.filled)/\(c.total) ช่อง | " + label, action: go)
     }
 
     /// B1: the gaps of every building; tapping opens the first building with gaps, starting from this one.

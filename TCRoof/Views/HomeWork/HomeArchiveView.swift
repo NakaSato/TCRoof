@@ -64,7 +64,7 @@ struct HomeArchiveView: View {
                     addCard
                     if job.documents.count > 6 { TCTextField("ค้นหาชื่อไฟล์", text: $query) }
                     if docs.isEmpty {
-                        Text(job.documents.isEmpty ? "ยังไม่มีเอกสาร · ไฟล์ที่ส่งออกจากแบบฟอร์ม BOQ ชุดไฟล์ PPIM และเอกสารผู้รับเหมาจะเข้ามาที่นี่เอง"
+                        Text(job.documents.isEmpty ? "ยังไม่มีเอกสาร | ไฟล์ที่ส่งออกจากแบบฟอร์ม BOQ ชุดไฟล์ PPIM และเอกสารผู้รับเหมาจะเข้ามาที่นี่เอง"
                                                    : "ไม่พบไฟล์ที่ตรงกับคำค้น")
                             .font(.sarabun(14, relativeTo: .body)).foregroundStyle(Theme.inkMuted)
                     }
@@ -127,7 +127,7 @@ struct HomeArchiveView: View {
                     }
                 }
             }
-            Text("เก็บในเครื่องนี้และขึ้น Drive ของบัญชีที่ล็อกอิน · บางไฟล์มีเลขบัตรประชาชน แชร์โฟลเดอร์เฉพาะคนในทีม")
+            Text("เก็บในเครื่องนี้และขึ้น Drive ของบัญชีที่ล็อกอิน | บางไฟล์มีเลขบัตรประชาชน แชร์โฟลเดอร์เฉพาะคนในทีม")
                 .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         }
     }
@@ -153,7 +153,7 @@ struct HomeArchiveView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(doc.name).font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
                             .lineLimit(2).multilineTextAlignment(.leading)
-                        Text(PermitDate.long(doc.addedAt) + " · " + ByteCountFormatter.string(fromByteCount: Int64(doc.data.count), countStyle: .file))
+                        Text(PermitDate.long(doc.addedAt) + " | " + ByteCountFormatter.string(fromByteCount: Int64(doc.data.count), countStyle: .file))
                             .font(.sarabun(TypeScale.caption, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     }
                 }

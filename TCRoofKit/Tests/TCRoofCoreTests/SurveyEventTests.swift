@@ -20,7 +20,7 @@ final class SurveyEventTests: XCTestCase {
 
     func testATimedSurveyFromTheJob() {
         let e = SurveyEvent(source(start: at(20, 9, 30), form: false), calendar: cal)
-        XCTAssertEqual(e.title, "สำรวจ · สถานีผลิตน้ำทุ่งน้อย (TCR2569-12345)")
+        XCTAssertEqual(e.title, "สำรวจ | สถานีผลิตน้ำทุ่งน้อย (TCR2569-12345)")
         XCTAssertFalse(e.isAllDay)
         XCTAssertEqual(e.start, at(20, 9, 30))
         XCTAssertEqual(e.end, at(20, 12, 30), "3 hours")
@@ -31,7 +31,7 @@ final class SurveyEventTests: XCTestCase {
         let lines = e.notes.components(separatedBy: "\n")
         XCTAssertEqual(lines[0], "ผู้ประสานงาน: กปภ.สาขาเมืองพล")
         XCTAssertEqual(lines[1], "โทร: 043 123 456")
-        XCTAssertEqual(lines[2], "ทีม: TCR01 · ขนาด 92.34 kW")
+        XCTAssertEqual(lines[2], "ทีม: TCR01 | ขนาด 92.34 kW")
         XCTAssertTrue(lines[3].hasPrefix("นำทาง (Apple Maps): maps://?daddr=%E0%B8"), "to the address, encoded")
         XCTAssertEqual(lines.last, "เปิดงานใน TCRoof: tcroof://job/ABC-1")
     }

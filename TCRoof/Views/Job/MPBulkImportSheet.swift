@@ -149,7 +149,7 @@ struct MPBulkImportSheet: View {
         .frame(maxWidth: .infinity, minHeight: touchMin, alignment: .leading)
     }
 
-    /// `สถานีผลิตน้ำประปาบางไทร · 414.96 kWp · 18 งาน · ติดตั้ง 23 ต.ค. 67 – 22 ธ.ค. 67`
+    /// `สถานีผลิตน้ำประปาบางไทร | 414.96 kWp | 18 งาน | ติดตั้ง 23 ต.ค. 67 – 22 ธ.ค. 67`
     private func fileLine(_ it: Item) -> String {
         var parts: [String] = []
         if let n = it.station.name { parts.append(n) }
@@ -158,7 +158,7 @@ struct MPBulkImportSheet: View {
             parts.append("\(r.tasks.count) งาน")
             parts.append("ติดตั้ง \(r.input.installStart.thaiShort) – \(r.input.installEnd.thaiShort)")
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     /// The matching stations first, then the rest by name.
@@ -169,7 +169,7 @@ struct MPBulkImportSheet: View {
     }
 
     private func label(_ j: Job) -> String {
-        [j.mpNumber.map { "MP \($0)" }, j.stationName].compactMap { $0 }.joined(separator: " · ")
+        [j.mpNumber.map { "MP \($0)" }, j.stationName].compactMap { $0 }.joined(separator: " | ")
     }
 
     private func apply() {

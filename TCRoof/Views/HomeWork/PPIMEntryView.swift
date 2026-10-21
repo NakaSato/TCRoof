@@ -42,7 +42,7 @@ struct PPIMEntryView: View {
     }
 
     private var meterCard: some View {
-        PermitSection(title: "เครื่องวัดและที่ตั้ง", subtitle: "ส่วนที่ 3 · ข้อมูลเครื่องวัดหน่วยไฟฟ้า และพิกัดภูมิศาสตร์") {
+        PermitSection(title: "เครื่องวัดและที่ตั้ง", subtitle: "ส่วนที่ 3 | ข้อมูลเครื่องวัดหน่วยไฟฟ้า และพิกัดภูมิศาสตร์") {
             PermitRow {
                 PermitField("หมายเลขเครื่องวัด (PEA No.)", text: $home.ppim.peaMeterNo, required: true, keyboard: .numberPad)
                 copyRow("ระดับแรงดันของเครื่องวัด", PPIMEntry.meterVoltage(home.phase) ?? "เลือกระบบไฟในหน้างานบ้าน")

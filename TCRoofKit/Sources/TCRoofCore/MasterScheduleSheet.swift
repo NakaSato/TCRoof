@@ -33,8 +33,8 @@ public enum MasterScheduleSheet {
         var o: [DrawOp] = []
 
         // header
-        o.append(.text("แผนงาน MP · " + title, at: Pt(margin, margin + 10), size: 16, bold: true, color: navy))
-        let idx = weeks.firstIndex(of: wk).map { " · W\($0)" } ?? ""
+        o.append(.text("แผนงาน MP | " + title, at: Pt(margin, margin + 10), size: 16, bold: true, color: navy))
+        let idx = weeks.firstIndex(of: wk).map { " | W\($0)" } ?? ""
         let was = original.map { "   แผนเดิม \(pct(MasterSchedule.status(plan: $0, actual: actual, through: wk).planned))" } ?? ""
         o.append(.text("ถึงสัปดาห์ \(short(wk))\(idx)   แผน \(pct(st.planned))\(was)   ทำได้ \(pct(st.actual))   " + variance(st.variance),
                        at: Pt(width - margin, margin + 10), size: 11, bold: true, color: st.variance < -0.05 ? red : navy, align: .right))
@@ -45,7 +45,7 @@ public enum MasterScheduleSheet {
         o += weekly(st, plan: plan, in: Box(width - margin - panelW, top, panelW, 0))
         let monday = cal.date(byAdding: .day, value: 1, to: wk) ?? wk, mc = cal.dateComponents([.year, .month], from: monday)
         let m = MasterSchedule.month(plan: plan, actual: actual, year: mc.year ?? 0, month: mc.month ?? 0)
-        o += monthly(m, title: "Monthly Update · เดือน \(mc.month ?? 0)/\((mc.year ?? 0) + 543)",
+        o += monthly(m, title: "Monthly Update | เดือน \(mc.month ?? 0)/\((mc.year ?? 0) + 543)",
                      at: Pt(width - margin - panelW, top + 470))
 
         // legend and source
@@ -60,7 +60,7 @@ public enum MasterScheduleSheet {
             o.append(.rect(Box(margin + 310, ly - 8, 18, 3), stroke: nil, fill: muted))
             o.append(.text("แผนเดิม (ก่อนปรับแผน)", at: Pt(margin + 334, ly - 6), size: 8, color: navy))
         }
-        o.append(.text("สร้างจาก TCRoof · \(short(Date()))", at: Pt(width - margin, ly - 6), size: 8, color: muted, align: .right))
+        o.append(.text("สร้างจาก TCRoof | \(short(Date()))", at: Pt(width - margin, ly - 6), size: 8, color: muted, align: .right))
         return Sketch(width: width, height: height, ops: o)
     }
 

@@ -53,7 +53,7 @@ struct TankCompassView: View {
             .buttonStyle(.plain).accessibilityLabel("ปิด")
             VStack(alignment: .leading, spacing: 2) {
                 Text("เล็งแนวผนัง A").font(.sarabunFixed(18, .bold))
-                Text("ยืนที่มุม A-1 · ให้เส้นเหลืองทับขอบผนังที่วิ่งไปมุม \(corner)").font(.sarabunFixed(14)).lineLimit(2)
+                Text("ยืนที่มุม A-1 | ให้เส้นเหลืองทับขอบผนังที่วิ่งไปมุม \(corner)").font(.sarabunFixed(14)).lineLimit(2)
             }
             .shadow(color: .black.opacity(0.6), radius: 3)
             Spacer(minLength: 8)
@@ -99,12 +99,12 @@ struct TankCompassView: View {
                 ProgressView().tint(Theme.onMedia).frame(width: 60, height: 60)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(reader.locked != nil ? "ถือนิ่งครบ 2 วินาที · จับค่าแล้ว" : "ถือเครื่องนิ่ง 2 วินาที")
+                Text(reader.locked != nil ? "ถือนิ่งครบ 2 วินาที | จับค่าแล้ว" : "ถือเครื่องนิ่ง 2 วินาที")
                     .font(.sarabunFixed(16, .bold)).foregroundStyle(reader.locked != nil ? Self.green : Theme.onMedia)
                 if let wall {
                     Text("แนวผนัง A \(Int(wall.rounded()) % 360)° − 90° = ผนังบนหันไปทิศ").font(.sarabunFixed(14))
                 }
-                Text("ยืนห่างเหล็กเสริม ราวเหล็ก ท่อ ≥ 1 ม. · เกิน ±10° ให้หมุนเครื่องเป็นเลข 8")
+                Text("ยืนห่างเหล็กเสริม ราวเหล็ก ท่อ ≥ 1 ม. | เกิน ±10° ให้หมุนเครื่องเป็นเลข 8")
                     .font(.sarabunFixed(13, reader.accuracyOK ? .regular : .bold))
                     .foregroundStyle(reader.accuracyOK ? Self.yellow : Theme.danger)
             }
@@ -136,7 +136,7 @@ struct TankCompassView: View {
     var manualEntry: some View {
         VStack(spacing: 16) {
             Image(systemName: "location.north.circle").font(.system(size: 54)).foregroundStyle(Theme.disabledText)
-            Text("อุปกรณ์นี้ไม่มีเข็มทิศ · ป้อนมุมเอง").font(.sarabunFixed(20, .bold))
+            Text("อุปกรณ์นี้ไม่มีเข็มทิศ | ป้อนมุมเอง").font(.sarabunFixed(20, .bold))
             Text("ผนังบน (แนว A) หันไปทิศ (องศา 0–359)").font(.sarabunFixed(15)).foregroundStyle(Theme.onMedia.opacity(0.8))
             HStack(spacing: 10) {
                 TextField("เช่น 90", text: $typed).keyboardType(.numberPad)

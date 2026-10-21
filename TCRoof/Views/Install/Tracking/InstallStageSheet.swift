@@ -38,7 +38,7 @@ struct InstallStageSheet: View {
         let n = (cal.dateComponents([.day], from: row.start, to: row.end).day ?? 0) + 1
         let range = row.start == row.end ? ThaiFormat.numericDate.string(from: row.start)
             : "\(ThaiFormat.dayMonth.string(from: row.start))–\(ThaiFormat.numericDate.string(from: row.end))"
-        return "ขั้นที่ \(index)/\(count) · \(range) · \(n) วัน"
+        return "ขั้นที่ \(index)/\(count) | \(range) | \(n) วัน"
     }
 
     private var head: some View {
@@ -69,7 +69,7 @@ struct InstallStageSheet: View {
 
     private var lateBox: some View {
         HStack(spacing: 10) {
-            Text("คาดว่าเกินแผน \(row.overrunDays) วัน · สาเหตุ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+            Text("คาดว่าเกินแผน \(row.overrunDays) วัน | สาเหตุ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
                 .fixedSize()
             Spacer(minLength: 4)
             ForEach(MasterSchedule.LateCause.allCases, id: \.self) { c in

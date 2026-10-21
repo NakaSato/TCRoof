@@ -138,9 +138,9 @@ struct DailyReportEditor: View {
 
     private var onePage: some View {
         DailyOnePage(job: job, date: date, report: $report, photos: $photos, others: others, log: log, dirty: dirty,
-                     actions: .init(saveDraft: requestSaveDraft, sign: requestSign, acknowledge: requestAck,
-                                    clearSignature: clearSignature, clearAck: clearAck, preview: previewPDF, send: exportPDF,
-                                    day: moveDay, settings: { showSettings = true }))
+                     actions: .init(saveDraft: requestSaveDraft, sign: requestSign, clearSignature: clearSignature,
+                                    preview: previewPDF, send: exportPDF, day: moveDay, open: openDay,
+                                    settings: { showSettings = true }))
     }
 
     private var classic: some View {
@@ -166,6 +166,17 @@ struct DailyReportEditor: View {
     /// The previous or next report day; today's unsaved edits are kept as a draft first (a signed report asks).
     private func moveDay(_ step: Int) {
         guard let d = RoutineReport.reportDay(from: date, by: step, settings: job.routineSettings, limit: .now) else { return }
+        go(to: d)
+    }
+
+    /// A day picked in the calendar (up to today), handled as `moveDay`.
+    private func openDay(_ day: Date) {
+        let d = RoutineReport.calendar.startOfDay(for: day)
+        guard d != date, d <= RoutineReport.calendar.startOfDay(for: .now) else { return }
+        go(to: d)
+    }
+
+    private func go(to d: Date) {
         if dirty, log?.engineerSignedAt != nil {
             // a contractor's edits to a signed report aren't kept (they'd take our engineer's signature off)
             guard canSign else { return moveTo(d) }
@@ -201,13 +212,6 @@ struct DailyReportEditor: View {
         log.setSignature(nil, tag: InstallLog.engineerSignatureTag, context: context)
         log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         job.feedMP()
-        try? context.save()
-    }
-
-    private func clearAck() {
-        guard canSign else { return }
-        log?.inspectorAckAt = nil
-        log?.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         try? context.save()
     }
 

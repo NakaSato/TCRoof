@@ -43,6 +43,8 @@ struct TankPageWide: View {
     /// iPhone sub-step 2: the selected point, the shading view, the plan full screen and its zoom, the row and delete
     /// questions.
     @State var pointSel: UUID?
+    /// A text field is being edited: the point shortcuts (Return, ⌫, Tab) leave the keys to it.
+    @State var fieldEditing = false
     @State var obsShade = false
     @State var obsFull = false
     @State var obsZoom: CGFloat = 1

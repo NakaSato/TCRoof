@@ -434,6 +434,37 @@ extension TankPageWide {
             statusButton(p, TankPoints.ok, "มีตรงแบบ", on: Theme.mint, ink: Theme.navy)
             statusButton(p, TankPoints.absent, "ไม่มีจริง", on: Theme.danger.opacity(0.14), ink: Theme.dangerText)
         }
+        .background { pointKeys(p) }
+        .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { _ in fieldEditing = true }
+        .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidEndEditingNotification)) { _ in fieldEditing = false }
+    }
+
+    /// A hardware keyboard on the selected point (docs/specs/standard-designs.md §3.2): Return = ตรงแบบ and on to the next
+    /// point still to check, ⌫ = ไม่มีจริง, Tab = the next point. Off while a text field has the keys.
+    func pointKeys(_ p: Obstacle) -> some View {
+        KeyCatcher(active: !fieldEditing) { key in
+            switch key {
+            case .keyboardReturnOrEnter, .keypadEnter:
+                update { TankPoints.setStatus(&$0, p.id, TankPoints.ok) }
+                let open = Set(TankPoints.pending(values).map(\.id))
+                pointSel = Self.next(after: p.id, in: TankPoints.points(values).map(\.id)) { open.contains($0) } ?? p.id
+            case .keyboardDeleteOrBackspace:
+                update { TankPoints.setStatus(&$0, p.id, TankPoints.absent) }
+            case .keyboardTab:
+                pointSel = Self.next(after: p.id, in: TankPoints.points(values).map(\.id)) { _ in true } ?? p.id
+            default:
+                return false
+            }
+            return true
+        }
+        .frame(width: 1, height: 1)
+        .accessibilityHidden(true)
+    }
+
+    /// The first id after `id` in `ids` that `ok` takes, going round (never `id` itself); nil when none.
+    static func next(after id: UUID, in ids: [UUID], _ ok: (UUID) -> Bool) -> UUID? {
+        guard let i = ids.firstIndex(of: id) else { return ids.first(where: ok) }
+        return (ids[(i + 1)...] + ids[..<i]).first(where: ok)
     }
 
     func statusButton(_ p: Obstacle, _ s: String, _ title: String, on bg: Color, ink: Color) -> some View {

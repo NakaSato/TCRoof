@@ -16,7 +16,14 @@ shared with the survey; `img/module-install-layout-ipad.png`. Phase 4 (2026-10-2
 readings (bolt torques typed as a list, washer, clamps, overlap, gap, rear clearance, frame), cable, grounding and
 serials typed in; ตรวจ & ลงนาม stops while a block is open or a warn has no reason, and signing stamps the versions;
 `img/module-install-daily-ipad.png`. Not built: evidence photos per item and the barcode scan of serials (typed for now).
-Phase 5 (string test) not built.
+Phase 5 (2026-10-21): the string test on IEC step 2 (`StringTest.swift` in `ModuleRules`, `IECReport+StringTest.swift`,
+the app's `IECVIPage+Manual.swift`), with the module's values from its datasheet (decided 2026-10-21: ZNSHINE follows
+the datasheet): the IEC test's module (brand and power) is matched to the catalog, and each string's expected Voc is
+N × Voc × (1 + β × (T − 25)) at the module temperature, typed in step 1 (`แผง | ไม่มีใน Excel`,
+`Conditions.moduleTempC`, no Excel cell) or estimated from the air, the light and NMOT (T = T_air + (NMOT − 20) × G / 800).
+ZN-132 (warn, rule set A.2) flags a string more than 5 % off at 200 W/m² or more, in step 2's `ตรวจตามคู่มือแผง` card;
+it doesn't fail the string. ZN-110 (block) fails both strings of an MPPT whose Voc differ by more than 10 V (a reversed
+string already fails as `ขั้วสายกลับ`), and applies to any module. The Excel sheet and its median check are unchanged. `img/module-install-string-test-ipad.png`.
 
 **Sources** (Claude Docs, the team's): *TCRoof Dev Spec — Module Installation Rules*
 (<https://claude.ai/artifact/PV7GXqcwu67rvmjmJR2a1B>) and its source *ZNSHINE Module Installation Spec — TCRoof*

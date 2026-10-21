@@ -96,6 +96,7 @@ struct IECVIPage: View {
             if let s = inv.slots[slot - 1] {
                 flowLine(r, inv, s, i)
                 failAlert(r, inv)
+                manualCard(r, inv, s)
                 photoCards(r, inv, s, i)
             } else {
                 emptyNote(inv)

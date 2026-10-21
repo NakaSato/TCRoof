@@ -64,9 +64,11 @@ final class CloudSync {
 
     /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
     /// the listeners aren't using get evicted and have to be downloaded again. On a restart the listeners
-    /// then start from this cache and download only what changed. Must run before the first Firestore call.
+    /// then start from this cache and download only what changed. Must run before the first Firestore call: Firestore
+    /// throws (and the app aborts) on settings changed once it has started, so the app sets them at launch, right after
+    /// `FirebaseApp.configure()`; sign-in reads `members/<email>` before sync starts.
     private static var cacheConfigured = false
-    private static func configureCache() {
+    static func configureCache() {
         guard !cacheConfigured else { return }
         cacheConfigured = true
         let settings = Firestore.firestore().settings

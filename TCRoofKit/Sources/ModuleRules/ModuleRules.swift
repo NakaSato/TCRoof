@@ -39,6 +39,18 @@ public enum ModuleRules {
         }
     }
 
+    /// ZN-132: the Voc a string of `modules` should read at `cellTempC`, from the datasheet's Voc and β; nil without β.
+    public static func expectedVoc(module: ModuleModel, modules: Int, cellTempC: Double) -> Double? {
+        coldVoc(module: module, tMinC: cellTempC).map { $0 * Double(modules) }
+    }
+
+    /// The module temperature estimated from the datasheet's NMOT (800 W/m², 20 °C air): T = T_air + (NMOT − 20) × G / 800.
+    /// Nil without NMOT.
+    public static func cellTemperature(module: ModuleModel, ambientC: Double, irradianceWm2: Double) -> Double? {
+        guard let nmot = module.nmotC else { return nil }
+        return ambientC + (nmot - 20) * irradianceWm2 / 800
+    }
+
     /// §5.5.3: the allowed clamp offset A (module edge → clamp centre, mm): L/4 ± 50 on the long side, W/5 ± 50 on the
     /// short side for 60 / 66 / 120 / 132 cells only (nil: not rated).
     public static func clampZone(module: ModuleModel, side: ClampSide) -> ClosedRange<Double>? {

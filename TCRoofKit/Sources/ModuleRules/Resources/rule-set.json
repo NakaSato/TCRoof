@@ -1,5 +1,5 @@
 {
- "version": "ZN-QES-III033A-A.1",
+ "version": "ZN-QES-III033A-A.2",
  "rules": [
   {
    "id": "ZN-70",
@@ -336,6 +336,16 @@
    "field": "stringTest",
    "message_en": "Recheck string before paralleling",
    "message_th": "ตรวจสตริงใหม่ก่อนต่อขนาน (ขั้วกลับ หรือ Voc ต่างกันเกิน 10 V)"
+  },
+  {
+   "id": "ZN-132",
+   "stages": [
+    "commission"
+   ],
+   "severity": "warn",
+   "field": "stringTest",
+   "message_en": "String Voc deviates more than 5% from expected: check connections",
+   "message_th": "Voc ต่างจากค่าที่คาดตามคู่มือแผงเกิน 5% ({strings}) ตรวจจุดต่อสาย"
   }
  ]
 }

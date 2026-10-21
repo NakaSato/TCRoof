@@ -220,6 +220,10 @@ struct IECSetupPage: View {
                 IECConditionTile(label: "เวลา | AA30", unit: "น.", text: r.before.time ?? "", keyboard: .numbersAndPunctuation) { t in
                     job.updateIEC(context) { $0.before.time = t.isEmpty ? nil : t }
                 }
+                // no Excel cell: the string test's expected Voc (ZN-132) uses it, else NMOT's estimate
+                IECConditionTile(label: "แผง | ไม่มีใน Excel", unit: "°C", text: r.before.moduleTempC.map { IECFormat.number($0, digits: 1) } ?? "", keyboard: .decimalPad) { t in
+                    job.updateIEC(context) { $0.before.moduleTempC = Double(t) }
+                }
             }
         }
     }

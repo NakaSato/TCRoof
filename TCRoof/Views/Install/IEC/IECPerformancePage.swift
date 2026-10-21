@@ -157,7 +157,10 @@ struct IECConditionsPage: View {
             IECNumberField(title: "อุณหภูมิอากาศ", unit: "°C", value: c.ambientC) { v in var n = c; n.ambientC = v; set(n) }
             IECNumberField(title: "ความเข้มแสง", unit: "W/m²", value: c.irradianceWm2) { v in var n = c; n.irradianceWm2 = v; set(n) }
             IECTextField(title: "เวลาทดสอบ", text: c.time ?? "", placeholder: "13:00") { t in var n = c; n.time = t.isEmpty ? nil : t; set(n) }
-            if gridOn != .distantPast { gridOnRow(gridOn) }
+            if gridOn != .distantPast { gridOnRow(gridOn) } else {
+                // the before phase only: the string test's module temperature (no Excel cell)
+                IECNumberField(title: "อุณหภูมิแผง (ไม่ใส่ = ประมาณจาก NMOT)", unit: "°C", value: c.moduleTempC) { v in var n = c; n.moduleTempC = v; set(n) }
+            }
         }
         .padding(18).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

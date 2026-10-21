@@ -196,7 +196,7 @@ public enum RuleEngine {
         "ZN-70", "ZN-73a", "ZN-73b", "ZN-69", "T5-1", "ZN-77", "ZN-81", "ZN-82",
         "ZN-79", "ZN-52", "ZN-53", "ZN-85", "ZN-90", "ZN-91", "ZN-95", "ZN-97", "S553-zone", "S553-short", "ZN-88",
         "ZN-105", "ZN-106", "ZN-106b", "ZN-112", "ZN-107", "ZN-122",
-        "S551-torque", "S551-washer", "S553-overlap", "ZN-121", "ZN-108", "ZN-61", "ZN-63", "ZN-110",
+        "S551-torque", "S551-washer", "S553-overlap", "ZN-121", "ZN-108", "ZN-61", "ZN-63", "ZN-110", "ZN-132",
     ]
 
     static func fire(_ id: String, _ values: [String: String] = [:], rules: [RuleSpec]) -> RuleResult? {

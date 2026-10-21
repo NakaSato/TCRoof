@@ -40,6 +40,7 @@ public extension IECReport {
         }
         if let a = s.iBeforeA, !Self.currentPassesBefore(a) { out.append("กระแส \(String(format: "%.2f", a)) A | ก่อนออนต้องเป็น 0 A") }
         if s.polarityOK == false { out.append("ขั้วสายกลับ") }
+        if let p = parallelFailure(inv, slot: slot) { out.append(p) }
         return out
     }
 

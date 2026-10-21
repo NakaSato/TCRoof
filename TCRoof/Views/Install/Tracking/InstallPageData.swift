@@ -7,7 +7,7 @@ import TCRoofCore
 struct InstallPageData {
     enum Priority { case high, medium }
     /// A screen an open item leads to.
-    enum Target: Hashable { case daily, request, docs, plan, weekly, day(Date), iec }
+    enum Target: Hashable { case daily, request, docs, plan, weekly, day(Date), iec, devices }
 
     struct Action: Identifiable {
         let id: String

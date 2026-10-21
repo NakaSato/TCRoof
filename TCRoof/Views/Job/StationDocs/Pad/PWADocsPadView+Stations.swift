@@ -589,15 +589,26 @@ struct ProgressBar: View {
 // MARK: - words and colours
 
 extension StationDocs.Package {
-    /// The iPad panel's package titles, numbered as the hand-over folders (`4.1`, `4.2`, `4.3`).
-    var padTitle: String {
+    /// The section number of the hand-over folders (`4.1`, `4.2`, `4.3`); the test and the hand-over have none.
+    var section: String? {
         switch self {
-        case .building: "4.1 ใบอนุญาต อ.1 / แจ้งเทศบาล"
-        case .gridConnection: "4.2 ขออนุญาตขนานไฟ (กฟภ.)"
-        case .pk2: "4.3 พค.2 | ยกเว้นใบอนุญาต กกพ."
+        case .building: "4.1"
+        case .gridConnection: "4.2"
+        case .pk2: "4.3"
+        case .commissioning, .handover: nil
+        }
+    }
+
+    /// The iPad panel's package titles, numbered by `section`.
+    var padTitle: String {
+        let name = switch self {
+        case .building: "ใบอนุญาต อ.1 / แจ้งเทศบาล"
+        case .gridConnection: "ขออนุญาตขนานไฟ (กฟภ.)"
+        case .pk2: "พค.2 | ยกเว้นใบอนุญาต กกพ."
         case .commissioning: "ทดสอบระบบ"
         case .handover: "ส่งมอบงาน"
         }
+        return [section, name].compactMap { $0 }.joined(separator: " ")
     }
 
     /// What goes in, short.

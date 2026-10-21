@@ -106,6 +106,31 @@ final class InstallTrackingUITests: XCTestCase {
         back(app)
     }
 
+    /// The board of 21 ต.ค. 2569 (docs/ui/install-tracking-ipad-overview): `4.2 ขนานไฟ (กฟภ.)` lists the station's 11
+    /// papers, and a row of `อุปกรณ์ที่ติดตั้ง` pushes the device list with `เปิดบันทึก ›`.
+    func testGridAndDevicesTiles() {
+        let app = launch()
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        let grid = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "4.2 ขนานไฟ (กฟภ.)")).firstMatch
+        XCTAssertTrue(grid.waitForExistence(timeout: 8))
+        grid.tap()
+        let papers = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "4.2-"))
+        XCTAssertTrue(papers.firstMatch.waitForExistence(timeout: 8), "the tile should list its papers")
+        XCTAssertEqual(papers.count, 11)
+        app.buttons["ปิด"].firstMatch.tap()
+        XCTAssertTrue(waitGone(papers.firstMatch))
+
+        let devices = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "อุปกรณ์ที่ติดตั้ง")).firstMatch
+        XCTAssertTrue(devices.waitForExistence(timeout: 8))
+        devices.tap()
+        let open = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "เปิดบันทึก")).firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: 8), "each device kind should offer เปิดบันทึก")
+        open.tap()
+        XCTAssertTrue(waitGone(pageBack(app)), "เปิดบันทึก should push the device list")
+        XCTAssertTrue(app.staticTexts["อุปกรณ์ที่ติดตั้ง"].waitForExistence(timeout: 8), "the device list should open")
+        back(app)
+    }
+
     func testSitePanelTabs() {
         let app = launch()
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))

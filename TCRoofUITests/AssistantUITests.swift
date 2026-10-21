@@ -132,7 +132,7 @@ final class AssistantUITests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
 
-    /// From a station's install tracking page (iPad): the header's ผู้ช่วย opens the chat on that station, and the
+    /// From a station's install tracking page (iPad): the header's ผู้ช่วย AI opens the chat on that station, and the
     /// what-if and priorities chips answer.
     func testFromTheInstallPage() throws {
         guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("the install tracking page is the iPad's") }
@@ -141,8 +141,8 @@ final class AssistantUITests: XCTestCase {
                                "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
         app.launch()
 
-        let open = app.buttons["ผู้ช่วย"].firstMatch
-        XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย")
+        let open = app.buttons["ผู้ช่วย AI"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย AI")
         shot("13-install-page")
         open.tap()
         let intro = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ผู้ช่วยดูแผนของ'")).firstMatch

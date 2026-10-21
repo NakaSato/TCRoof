@@ -141,8 +141,9 @@ struct InstallPageData {
 
 #if DEBUG
 extension InstallPageData {
-    /// `-installDemo YES`: the board's example (บ้านโป่ง, today 30/9 of 24/9 – 6/10), for screenshots only.
-    static func demo(today: Date = .now) -> InstallPageData {
+    /// `-installDemo YES`: the board's example (บ้านโป่ง, today 30/9 of 24/9 – 6/10), for screenshots only. `late` puts
+    /// the running stage further behind (docs/ui/install-tracking-iphone state 02).
+    static func demo(today: Date = .now, late: Bool = false) -> InstallPageData {
         let cal = Calendar.current, day = cal.startOfDay(for: today)
         let start = day.adding(days: -6), due = day.adding(days: 6)
         let ac = Action(id: "ac", priority: .high, title: "ตู้ AC | กันย้อน รออนุมัติ (MA-05)", detail: "ต้องได้ก่อนขั้น 5 | ผู้รับผิดชอบ: จัดซื้อ", target: .docs)
@@ -165,10 +166,10 @@ extension InstallPageData {
             .init(id: "s3", code: "3", title: "ติดตั้งแผง | สายดินโครง", status: .done, start: d(3), end: d(4), actualStart: d(3), actualEnd: d(4), percent: 100,
                   subs: subs([("ยกแผงขึ้นหลังคา", 3, 3), ("แผงโซน A | 64 แผง", 3, 3), ("แผงโซน B | 60 แผง", 3, 4), ("แผงโซน C | 40 แผง", 4, 4),
                               ("สายดินโครงและแผง", 4, 4)]) { _ in 100 }),
-            .init(id: "s4", code: "4", title: "ระบบ DC | สาย | MC4 | ตู้ DC", status: .current, start: d(5), end: d(7), actualStart: d(5), actualEnd: d(6), percent: 50,
-                  forecastEnd: d(8), overrunDays: 1,
+            .init(id: "s4", code: "4", title: "ระบบ DC | สาย | MC4 | ตู้ DC", status: .current, start: d(5), end: d(7), actualStart: d(5), actualEnd: d(6),
+                  percent: late ? 30 : 50, forecastEnd: d(late ? 10 : 8), overrunDays: late ? 3 : 1,
                   subs: subs([("สายสตริง 1–6 (โซน A)", 5, 5), ("สายสตริง 7–12 (โซน B, C)", 6, 6), ("ย้ำหัว MC4 | ตู้ DC", 6, 6),
-                              ("ตรวจขั้ว | วัด Voc ทุกสตริง", 7, 7), ("ป้ายเตือน | ป้ายสาย DC", 7, 7)]) { $0 < 3 ? 100 : 0 }),
+                              ("ตรวจขั้ว | วัด Voc ทุกสตริง", 7, 7), ("ป้ายเตือน | ป้ายสาย DC", 7, 7)]) { $0 < (late ? 1 : 3) ? 100 : $0 == 1 && late ? 40 : 0 }),
             .init(id: "s5", code: "5", title: "อินเวอร์เตอร์ | ระบบ AC", status: .waiting, start: d(8), end: d(8), percent: 0,
                   subs: subs([("ยึดอินเวอร์เตอร์", 8, 8), ("สาย AC เข้า MDB | เบรกเกอร์", 8, 8), ("กันย้อน (Zero Export) + CT", 8, 8),
                               ("ระบบดิน | วัดค่าดิน", 8, 8), ("Data Logger | Monitoring", 8, 8)]) { _ in 0 }),
@@ -181,13 +182,13 @@ extension InstallPageData {
         var data = InstallPageData(
             title: "การประปาบ้านโป่ง (ตัวอย่าง)",
             subtitle: "งานติดตั้ง 90 kWp | ทีม TCR02 | เริ่ม \(ThaiFormat.numericDate.string(from: start)) | ส่งมอบ \(ThaiFormat.numericDate.string(from: due))",
-            tracking: InstallTracking(actual: 50, planned: 52, actualWeekAgo: 36, start: start, due: due, today: day),
+            tracking: InstallTracking(actual: late ? 41 : 50, planned: 52, actualWeekAgo: late ? 33 : 36, start: start, due: due, today: day),
             actions: [ac, wr, rfi, daily], dailyUnsent: true, surveyReport: nil,
             gantt: InstallGantt(rows: rows, today: day), nonWorking: [d(10), d(11)])
         data.docs = demoTiles(day: day)
         data.site = demoSite(day: day)
         // the board's cumulative plan and actual by day, flat over the two days waiting on the utility
-        let planned: [Double] = [4, 10, 18, 26, 36, 44, 52, 60, 70, 85, 85, 85, 100], actual: [Double] = [5, 12, 20, 20, 40, 47, 50]
+        let planned: [Double] = [4, 10, 18, 26, 36, 44, 52, 60, 70, 85, 85, 85, 100], actual: [Double] = late ? [5, 12, 18, 18, 30, 36, 41] : [5, 12, 20, 20, 40, 47, 50]
         data.curveDays = planned.indices.map { CurveDay(date: d($0), planned: planned[$0], actual: $0 < actual.count ? actual[$0] : nil) }
         data.waitLabel = "รอการไฟฟ้านัดตรวจ"
         data.plan = InstallPlan.demo(gantt: InstallGantt(rows: rows, today: day), nonWorking: data.nonWorking, tracking: data.tracking, day: day)

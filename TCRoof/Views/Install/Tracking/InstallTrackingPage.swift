@@ -30,7 +30,7 @@ struct InstallTrackingPage: View {
     @State var sheet: Sheet? = Debug.sheet
     @State var siteTab = Debug.site
     /// `ทุกรายงาน`'s segment: all, to do, with a problem.
-    @State var dailyFilter = 0
+    @State var dailyFilter = Debug.dailyFilter
     @State var shared: Shared?
     /// `แผนก่อสร้าง`'s plan file: import and export of the station's own workbook.
     @State var workbook = MPWorkbookFlow()
@@ -134,7 +134,7 @@ struct InstallTrackingPage: View {
 
     var data: InstallPageData {
         #if DEBUG
-        if Debug.demo { return .demo() }
+        if Debug.demo { return .demo(late: Debug.demoLate) }
         #endif
         return InstallPageData(job: job, survey: survey)
     }
@@ -386,7 +386,11 @@ struct InstallTrackingPage: View {
         static let planView = UserDefaults.standard.string(forKey: "installPlanView").flatMap(PlanView.init) ?? .gantt
         static let planCollapsed = UserDefaults.standard.bool(forKey: "installPlanCollapsed")
         static let stage: Int? = UserDefaults.standard.object(forKey: "installStage") == nil ? nil : UserDefaults.standard.integer(forKey: "installStage")
-        static let demo = UserDefaults.standard.bool(forKey: "installDemo")
+        /// `-installDemo YES`, or `late` for a station behind its plan (iPhone board state 02).
+        static let demo = UserDefaults.standard.bool(forKey: "installDemo") || demoLate
+        static let demoLate = UserDefaults.standard.string(forKey: "installDemo") == "late"
+        /// `-installDailyFilter todo|problem` (iPhone): `รายงานประจำวัน`'s filter.
+        static let dailyFilter = ["todo": 1, "problem": 2][UserDefaults.standard.string(forKey: "installDailyFilter") ?? ""] ?? 0
         static let sheet: Sheet? = UserDefaults.standard.string(forKey: "installSheet").map { $0 == "actions" ? .actions : .doc($0) }
         static let site = UserDefaults.standard.string(forKey: "installSite").flatMap(SiteTab.init) ?? .info
         static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
@@ -403,6 +407,7 @@ struct InstallTrackingPage: View {
         static let settings = false
         static let settingsCategory: SettingsCategory? = nil
         static let demo = false
+        static let dailyFilter = 0
         static let tab = Tab.overview
         static let view = ProgressView.gantt
         static let planView = PlanView.gantt

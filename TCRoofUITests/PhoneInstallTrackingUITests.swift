@@ -119,4 +119,46 @@ final class PhoneInstallTrackingUITests: XCTestCase {
         app.buttons["ตั้งค่าเฉพาะโครงการ"].tap()
         XCTAssertTrue(any(app, "installTab.overview").waitForExistence(timeout: 8), "the gear again closes it")
     }
+
+    // MARK: board states
+
+    var fixture: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../TCRoofKit/Tests/ExcelExportTests/Fixtures/mp-weekly-bangsai.xlsx").standardized
+    }
+
+    func shot(_ name: String) {
+        guard let dir = ProcessInfo.processInfo.environment["INSTALL_SHOTS"] else { return }
+        try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name + ".png"))
+    }
+
+    /// With `TEST_RUNNER_INSTALL_SHOTS=<folder>`, saves the board's states that need a tap (docs/ui/install-tracking-iphone
+    /// `states/` names): the late station, its S-curve and plan, the Excel menu and the import sheet. The sheet is closed
+    /// without importing.
+    func testBoardStates() throws {
+        guard ProcessInfo.processInfo.environment["INSTALL_SHOTS"] != nil else { throw XCTSkip("set TEST_RUNNER_INSTALL_SHOTS") }
+        var app = launch(["-installDemo", "late"])
+        XCTAssertTrue(any(app, "installStage.4").waitForExistence(timeout: slow))
+        sleep(1); shot("02-overview-late")
+        app.buttons["S-Curve"].firstMatch.tap()
+        XCTAssertTrue(any(app, "install.curve").waitForExistence(timeout: 8))
+        sleep(1); shot("04-overview-scurve-late")
+        app.terminate()
+
+        app = launch(["-installDemo", "late", "-installTab", "plan"])
+        XCTAssertTrue(any(app, "plan.edit").waitForExistence(timeout: slow))
+        sleep(1); shot("15-plan-gantt-late")
+        app.terminate()
+
+        app = launch(["-installTab", "plan", "-mpImportFile", fixture.path])
+        XCTAssertTrue(any(app, "plan.edit").waitForExistence(timeout: slow))
+        app.buttons["ไฟล์แผน Excel"].firstMatch.tap()
+        let importItem = app.buttons["นำเข้าไฟล์แผน (.xlsx)"].firstMatch
+        XCTAssertTrue(importItem.waitForExistence(timeout: 8), "Excel ▾ lists the import")
+        sleep(1); shot("18-plan-excel-menu")
+        importItem.tap()
+        XCTAssertTrue(any(app, "mpImport.run").waitForExistence(timeout: 15), "the import opens its sheet")
+        sleep(1); shot("19-plan-import")
+        app.buttons["ปิด"].firstMatch.tap()
+    }
 }

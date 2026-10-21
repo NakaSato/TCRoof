@@ -11,6 +11,8 @@ struct MPImportSheet: View {
     let flow: MPWorkbookFlow
     let pending: MPWorkbookFlow.Pending
     @Bindable var job: Job
+    /// The station the file names when it isn't this one, and the station it fits, if any.
+    var otherStation: (file: String, fits: String?)?
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var progressOnly = false
@@ -29,7 +31,10 @@ struct MPImportSheet: View {
         guard let input = job.scheduleInput else { return [] }
         let now = Dictionary(MasterSchedule.plan(input).map { ($0.task, $0) }) { a, _ in a }
         let file = MasterSchedule.plan(pending.imported.input)
-        func day(_ d: Date?) -> String { d.map(ThaiFormat.dayMonth.string(from:)) ?? "–" }
+        // d/m, with the year when the file's plan is in another year than the station's
+        let cal = MasterSchedule.calendar
+        let otherYear = cal.component(.year, from: input.installStart) != cal.component(.year, from: pending.imported.input.installStart)
+        func day(_ d: Date?) -> String { d.map((otherYear ? ThaiFormat.numericDate : ThaiFormat.dayMonth).string(from:)) ?? "–" }
         return file.flatMap { f -> [Change] in
             guard let o = now[f.task] else { return [] }
             var out: [Change] = []
@@ -46,9 +51,14 @@ struct MPImportSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     fileCard
-                    check(station.name != nil, station.name != nil ? "ชื่อสถานีในไฟล์ตรงกับงานนี้" : "ไฟล์ไม่ระบุชื่อสถานี",
-                          [job.stationName, job.capacityKW > 0 ? job.capacityKW.formatted(.number.precision(.fractionLength(0...2))) + " kWp" : nil]
-                            .compactMap { $0 }.joined(separator: " | "))
+                    if let other = otherStation {
+                        check(false, "ไฟล์นี้อาจเป็นของสถานีอื่น", "ไฟล์: \(other.file) | สถานีนี้: \(job.stationName)"
+                              + (other.fits.map { " | ไฟล์ตรงกับ \($0)" } ?? ""))
+                    } else {
+                        check(station.name != nil, station.name != nil ? "ชื่อสถานีในไฟล์ตรงกับงานนี้" : "ไฟล์ไม่ระบุชื่อสถานี",
+                              [job.stationName, job.capacityKW > 0 ? job.capacityKW.formatted(.number.precision(.fractionLength(0...2))) + " kWp" : nil]
+                                .compactMap { $0 }.joined(separator: " | "))
+                    }
                     check(true, "อ่านแผนได้ครบ", "\(r.tasks.count) งาน | " + ThaiFormat.numericDate.string(from: r.input.installStart) + " – "
                           + ThaiFormat.numericDate.string(from: r.input.installEnd))
                     if let note = MPWorkbookFlow.formulaNote(r.formulas) { check(false, "สูตรที่แอปคำนวณเองไม่ได้", note) }
@@ -63,11 +73,17 @@ struct MPImportSheet: View {
             }
             .background(Theme.phonePage.ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
-                Button(progressOnly ? "รับเฉพาะความก้าวหน้า" : "นำเข้าแผน") { run() }
-                    .buttonStyle(TCButtonStyle(.primary, size: .page, fullWidth: true))
-                    .padding(16)
-                    .background(Theme.phonePage)
-                    .accessibilityIdentifier("mpImport.run")
+                VStack(spacing: 10) {
+                    if otherStation?.fits != nil {
+                        Button("เลือกสถานีอื่น…") { otherChoice() }
+                            .buttonStyle(TCButtonStyle(.secondary, size: .page, fullWidth: true))
+                    }
+                    Button((progressOnly ? "รับเฉพาะความก้าวหน้า" : "นำเข้าแผน") + (otherStation == nil ? "" : "ที่สถานีนี้")) { run() }
+                        .buttonStyle(TCButtonStyle(.primary, size: .page, fullWidth: true))
+                        .accessibilityIdentifier("mpImport.run")
+                }
+                .padding(16)
+                .background(Theme.phonePage)
             }
             .navigationTitle("นำเข้าไฟล์แผน Excel")
             .navigationBarTitleDisplayMode(.inline)
@@ -170,6 +186,15 @@ struct MPImportSheet: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? .isSelected : [])
         .accessibilityIdentifier(only ? "mpImport.progress" : "mpImport.all")
+    }
+
+    /// The alert's choices for a file of another station: closes the sheet, then asks there.
+    private func otherChoice() {
+        let p = pending
+        flow.pending = nil
+        flow.confirmsInSheet = false
+        dismiss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { flow.pending = p }
     }
 
     private func run() {

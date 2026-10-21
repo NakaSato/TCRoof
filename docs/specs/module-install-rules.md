@@ -4,7 +4,14 @@
 engine and the four calculators, with unit tests). Phase 2 (2026-10-21): the residential survey's
 `ตรวจตามคู่มือติดตั้งแผง` card / section (`SurveyFormView+Install.swift`, stored as `SurveyForm.installCheckJSON`,
 synced as `installCheck`; saving stops on a block or a warn without a reason; the altitude comes with the GPS fix;
-`img/module-install-survey-ipad.png`). Phases 3–5 (layout, daily report checklist, string test) not built.
+`img/module-install-survey-ipad.png`). Phase 3 (2026-10-21): C1 แผงบนหลังคา's `ตรวจตามคู่มือติดตั้งแผง` card (`RoofPageWide+Rules.swift`, stored as C1's
+`pvRules`, `ArrayLayoutCheck`): the catalog model (matched from the layout's module, or picked, which sets it), the
+mounting method with torque, washer and load rating, the clamp zone drawn on a module bar against the offsets the layout
+uses (`RoofMountLayout.clampOffsetsMm`, the side from `clampsLongSide`), a one-tap `ใช้ช่วงจับตาม ZNSHINE ในงานนี้` that
+sets the job's clamping zone to L/4 ± 50 mm (decided 2026-10-21: ZNSHINE's zone for ZNSHINE modules, existing layouts
+unchanged until then), the string builder (N_max and cold Voc live), cable and grounding; the list is `ModuleRulesList`,
+shared with the survey; `img/module-install-layout-ipad.png`. Phases 4–5 (daily report checklist, string test) not
+built.
 
 **Sources** (Claude Docs, the team's): *TCRoof Dev Spec — Module Installation Rules*
 (<https://claude.ai/artifact/PV7GXqcwu67rvmjmJR2a1B>) and its source *ZNSHINE Module Installation Spec — TCRoof*

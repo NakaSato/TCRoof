@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import ModuleRules
 
 /// C1 roof (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof /
 /// PV-layout tabs, member sizes 1–7 and the six photo angles on the right, on one screen. Field ids, choices and Excel
@@ -471,6 +472,20 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, false)
             }
             mode = .pv; scrollTarget = "info"
+        // pvrules: the installation checks card (ModuleRules) with a too-long string and a thin cable
+        case "pvrules":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setChoice(&v, RoofMount.Choice())
+            }
+            setLayoutCheck { c in
+                c = ArrayLayoutCheck(); c.method = .clamp; c.tMinC = 15; c.inverterMaxDcV = 1100; c.modulesPerString = 22
+                c.cableMm2 = 2.5; c.cableAmpacityA = 30; c.clampLengthMm = 60; c.clampThicknessMm = 3; c.clampsPerModule = 4
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            scrollTarget = "rules"
         case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
             // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
             let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"

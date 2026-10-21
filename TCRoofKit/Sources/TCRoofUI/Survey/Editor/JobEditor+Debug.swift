@@ -58,6 +58,15 @@ extension JobEditorView {
     }
 
     func openDebugPage() {
+        // `-surveyPageCycle YES`: A2 and C1 in turn every 3 s, for profiling what opening C1 costs each time
+        if UserDefaults.standard.bool(forKey: "surveyPageCycle"), let roof = job.modules.first(where: { $0.type == .roof }) {
+            Task { @MainActor in
+                for i in 0..<20 {
+                    try? await Task.sleep(for: .seconds(3))
+                    select(i % 2 == 0 ? .site : .module(roof.id))
+                }
+            }
+        }
         seedAutofill()
         seedPlatePhoto()
         seedReview()

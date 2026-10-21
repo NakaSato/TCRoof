@@ -227,16 +227,16 @@ struct JobEditorView: View {
     /// A2 fills the screen without scrolling; every other page scrolls.
     @ViewBuilder var detailArea: some View {
         if cardElectrical {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 ElectricalPageWide(job: $job, request: $electricalRequest, focus: $electricalFocus, openDiagram: { showSLD = true },
                                    narrow: compact)
             }
             // iPhone: the page pads and scrolls itself
             .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1240 + 48 + 200, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardPanels {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 PanelsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
                                stacked: compact || infoColumns != 2,
                                select: { id in withAnimation { page = id.map { .module($0) } ?? .info } },
@@ -244,63 +244,63 @@ struct JobEditorView: View {
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardInverter {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 InverterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                                  stacked: compact || infoColumns != 2)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardWater {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 WaterPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), openSite: { select(.site) },
                               stacked: compact || infoColumns != 2)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardBackfeed {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 BackfeedPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                                  openSite: { select(.site) }, openDiagram: { showSLD = true }, stacked: compact || infoColumns != 2)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, compact || infoColumns != 2 ? 0 : 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardFts {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 FtsPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                             openSite: { select(.site) }, openDiagram: { showSLD = true }, stacked: compact || infoColumns != 2)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardRoof {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                              stacked: compact || infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if let m = cardTank {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 TankPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
                              stacked: compact || infoColumns != 2 || (detailSize.width < 1100 && !debugWide), tab: $tankTab)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if cardFinal {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 finalBanners
                 FinalPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 32 : 48),
                               stacked: compact || infoColumns != 2 || detailSize.width < 1100,
@@ -308,25 +308,25 @@ struct JobEditorView: View {
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1240 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if cardFlood {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 FloodPageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48), stacked: compact || infoColumns != 2)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if cardSite {
-            VStack(spacing: 12) {
+            AnyView(VStack(spacing: 12) {
                 SitePageWide(job: $job, width: min(detailSize.width, 1318 + 48) - (compact ? 0 : 48), request: $siteRequest,
                              stacked: compact || infoColumns != 2)
             }
             // iPhone: the bands run edge to edge
             .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16)
             .frame(maxWidth: 1318 + 48, maxHeight: .infinity)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity))
         } else if page == .photos || page == .revisions {
-            reviewDetail.frame(maxWidth: .infinity, maxHeight: .infinity)
+            AnyView(reviewDetail.frame(maxWidth: .infinity, maxHeight: .infinity))
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -334,11 +334,11 @@ struct JobEditorView: View {
                         if cardInfo {
                             // iPhone: the bands run edge to edge
                             // landscape: the cards fill the visible height (less the 16-pt padding above and below)
-                            InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2,
+                            AnyView(InfoPageWide(job: $job, width: min(detailSize.width, 1240 + 48) - (compact ? 0 : 48), twoColumns: infoColumns == 2,
                                          fillHeight: compact ? 0 : max(0, scrollHeight - 32))
-                                .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16).frame(maxWidth: 1240 + 48)
+                                .padding(.horizontal, compact ? 0 : 24).padding(.vertical, compact ? 0 : 16).frame(maxWidth: 1240 + 48))
                         } else {
-                            detail.padding(compact ? 16 : 24).frame(maxWidth: 980)
+                            AnyView(detail.padding(compact ? 16 : 24).frame(maxWidth: 980))
                         }
                     }
                     .frame(maxWidth: .infinity).id("top")

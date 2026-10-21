@@ -45,7 +45,7 @@ public struct RoofPlan: Sendable {
         public static var catalogDefault: Module {
             let c = EquipmentCatalog.bundled, m = c.pv.first { $0.def == true } ?? c.pv.first
             return m.map { Module(length: Double($0.l) / 1000, width: Double($0.wd) / 1000, kW: Double($0.w) / 1000, kg: $0.kg) }
-                ?? Module(length: 2.279, width: 1.134, kW: 0.57)
+                ?? Module(length: 2.278, width: 1.134, kW: 0.57)
         }
     }
 

@@ -1,30 +1,7 @@
 {
- "version": "ZN-2026-10-21",
- "source": "ZNSHINE ZXM7-UHLDD144 datasheet 2301.E (2023-10-07); the 59-model list of QES/ZX-RD-III033A is still to come",
+ "version": "ZN-2026-10-21b",
+ "source": "ZNSHINE ZXM7-UHLDD144 Series datasheet, version 2301.E (docs/reference/datasheets/ZXM7-UHLDD144_Series.pdf); 570 W is the team's module",
  "models": [
-  {
-   "id": "ZXM7-UHLDD144-565",
-   "manufacturer": "ZNSHINE",
-   "series": "ZXM7-UHLDD144",
-   "technology": "mono",
-   "cellCount": 144,
-   "pmaxW": 565,
-   "vmpV": 42.2,
-   "impA": 13.39,
-   "vocV": 50.9,
-   "iscA": 14.17,
-   "stcTolerancePct": 3,
-   "lengthMm": 2278,
-   "widthMm": 1134,
-   "thicknessMm": 30,
-   "weightKg": 31.5,
-   "maxSystemVoltageV": 1500,
-   "maxSeriesFuseA": 30,
-   "betaVocPctPerC": -0.25,
-   "gammaPmaxPctPerC": -0.3,
-   "bifacial": true,
-   "doubleGlass": true
-  },
   {
    "id": "ZXM7-UHLDD144-570",
    "manufacturer": "ZNSHINE",
@@ -46,7 +23,48 @@
    "betaVocPctPerC": -0.25,
    "gammaPmaxPctPerC": -0.3,
    "bifacial": true,
-   "doubleGlass": true
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
+  },
+  {
+   "id": "ZXM7-UHLDD144-565",
+   "manufacturer": "ZNSHINE",
+   "series": "ZXM7-UHLDD144",
+   "technology": "mono",
+   "cellCount": 144,
+   "pmaxW": 565,
+   "vmpV": 42.2,
+   "impA": 13.39,
+   "vocV": 50.9,
+   "iscA": 14.17,
+   "stcTolerancePct": 3,
+   "lengthMm": 2278,
+   "widthMm": 1134,
+   "thicknessMm": 30,
+   "weightKg": 31.5,
+   "maxSystemVoltageV": 1500,
+   "maxSeriesFuseA": 30,
+   "betaVocPctPerC": -0.25,
+   "gammaPmaxPctPerC": -0.3,
+   "bifacial": true,
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
   },
   {
    "id": "ZXM7-UHLDD144-575",
@@ -69,7 +87,16 @@
    "betaVocPctPerC": -0.25,
    "gammaPmaxPctPerC": -0.3,
    "bifacial": true,
-   "doubleGlass": true
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
   },
   {
    "id": "ZXM7-UHLDD144-580",
@@ -92,7 +119,16 @@
    "betaVocPctPerC": -0.25,
    "gammaPmaxPctPerC": -0.3,
    "bifacial": true,
-   "doubleGlass": true
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
   },
   {
    "id": "ZXM7-UHLDD144-585",
@@ -115,7 +151,16 @@
    "betaVocPctPerC": -0.25,
    "gammaPmaxPctPerC": -0.3,
    "bifacial": true,
-   "doubleGlass": true
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
   },
   {
    "id": "ZXM7-UHLDD144-590",
@@ -138,7 +183,16 @@
    "betaVocPctPerC": -0.25,
    "gammaPmaxPctPerC": -0.3,
    "bifacial": true,
-   "doubleGlass": true
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
   },
   {
    "id": "ZXM7-UHLDD144-595",
@@ -161,7 +215,16 @@
    "betaVocPctPerC": -0.25,
    "gammaPmaxPctPerC": -0.3,
    "bifacial": true,
-   "doubleGlass": true
+   "doubleGlass": true,
+   "frontLoadPa": 5400,
+   "rearLoadPa": 2400,
+   "nmotC": 44,
+   "alphaIscPctPerC": 0.046,
+   "bifacialFactor": 0.8,
+   "cable": "4 mm², 1200 mm",
+   "connector": "MC4-EVO2",
+   "junctionBox": "IP68, 3 diodes",
+   "datasheet": "ZXM7-UHLDD144 2301.E"
   }
  ]
 }

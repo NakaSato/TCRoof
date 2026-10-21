@@ -113,6 +113,9 @@ extension RoofPageWide {
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
             }
+            if let line = m?.datasheetLine {
+                Text(line).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+            }
             if let m, m.doubleGlass {
                 Text("แผงกระจกสองชั้น: คู่มือฉบับนี้เขียนสำหรับแผงกระจกชั้นเดียว").font(.sarabunFixed(11.5)).foregroundStyle(Self.amber)
             }

@@ -192,7 +192,7 @@ The rules surface in four places, each with a live rule banner at the top and ba
 
 - Each rule id has one passing and one failing unit test; the calculation table and the tilt boundaries 15°, 25°, 30°,
   35°, 40° are tested.
-- The catalog loads all 59 ZNSHINE models (each with size class, STC values and dimensions).
+- The catalog loads the ZXM7-UHLDD144 datasheet's models (each with size class, STC values, dimensions and the datasheet's loads, NMOT and coefficients).
 - A block disables submit and lists the rule id; a warn cannot be submitted without a reason.
 - Changing the rule-set version does not re-validate signed reports; they show the version they were signed under.
 - A daily report can't be signed by the TC engineer while any block is open.
@@ -209,8 +209,9 @@ The rules surface in four places, each with a live rule banner at the top and ba
 
 ## 9. Open items
 
-- **The 59-model catalog:** neither source doc lists the models; the dev spec points to "the earlier markdown extract".
-  Phase 1 ships the models the repo already has data for.
+- ~~**The 59-model catalog**~~ Decided 2026-10-21: the catalog follows the team's module datasheet, ZNSHINE
+  ZXM7-UHLDD144 Series version 2301.E (`docs/reference/datasheets/ZXM7-UHLDD144_Series.pdf`), 565–595 W, with 570 W
+  first; the app's default module `p570` follows it (2278 × 1134 × 30 mm, was 2279).
 - ZNSHINE datasheets for β (Voc), γ (Pmax), NOCT per model (blocks ZN-106 and energy yield).
 - Confirm with ZNSHINE: M6 tracker torque (16–20 N·m as stated), parallel fusing wording, 78-cell allowed methods, the
   big-module landscape rule.

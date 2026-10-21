@@ -44,8 +44,29 @@ public struct ModuleModel: Codable, Sendable, Identifiable, Equatable {
     public var gammaPmaxPctPerC: Double?
     public var bifacial: Bool
     public var doubleGlass: Bool
+    // From the module's datasheet, when the catalog has it (all optional, so a catalog without them still loads).
+    /// Max static load, front and rear, Pa (the module's own test; the mounting method's rating is `MountingProfile`).
+    public var frontLoadPa: Double?, rearLoadPa: Double?
+    public var nmotC: Double?
+    public var alphaIscPctPerC: Double?
+    public var bifacialFactor: Double?
+    public var cable: String?, connector: String?, junctionBox: String?
+    /// The datasheet version these values come from.
+    public var datasheet: String?
 
     public var sizeClass: SizeClass { SizeClass(cellCount: cellCount) }
+
+    /// One line of the datasheet values, Thai, for the pickers.
+    public var datasheetLine: String? {
+        var parts: [String] = []
+        if let f = frontLoadPa, let r = rearLoadPa { parts.append(String(format: "รับแรงหน้า %.0f / หลัง %.0f Pa", f, r)) }
+        if let b = betaVocPctPerC { parts.append(String(format: "Voc %.2f %%/°C", b)) }
+        if let n = nmotC { parts.append(String(format: "NMOT %.0f °C", n)) }
+        if let c = cable { parts.append("สาย " + c) }
+        if let c = connector { parts.append(c) }
+        guard !parts.isEmpty else { return nil }
+        return (datasheet.map { "datasheet " + $0 + ": " } ?? "") + parts.joined(separator: " | ")
+    }
 
     public init(id: String, manufacturer: String = "ZNSHINE", series: String = "", technology: String = "mono", cellCount: Int,
                 pmaxW: Double, vmpV: Double, impA: Double, vocV: Double, iscA: Double, stcTolerancePct: Double = 3,

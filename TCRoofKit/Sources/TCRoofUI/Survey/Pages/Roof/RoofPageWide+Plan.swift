@@ -300,9 +300,12 @@ extension RoofPageWide {
     /// Skylights toggle วางทับได้ / ห้ามวางทับ on tap; in a drawing tool or the PV mode, skylights / keep-out zones get a ×.
     func areaButtons(_ L: RoofPlan.Layout, _ fit: SketchFit) -> some View {
         ZStack(alignment: .topLeading) {
+            let movable = mode == .structure && !editPosts && tool == nil && RoofDesign.current(values) != nil
             ForEach(Array(L.areas.enumerated()), id: \.offset) { _, item in
                 let r = fit.rect(item.box), a = item.area
-                if a.kind == Roof.skylightKind && mode == .structure && !editPosts && tool == nil {
+                if movable {
+                    areaMover(a, r, L, fit)
+                } else if a.kind == Roof.skylightKind && mode == .structure && !editPosts && tool == nil {
                     Button { update { Roof.toggleCover(&$0, index: a.index) } } label: {
                         Color.clear.frame(width: max(44, r.width), height: max(44, r.height)).contentShape(Rectangle())
                     }
@@ -323,6 +326,35 @@ extension RoofPageWide {
                 }
             }
         }
+    }
+
+    /// On a roof filled from a design (standard-designs.md §3.2): drag an area to where it is on site, snapped to 5 cm,
+    /// which makes its item ต่างจากแบบ; a skylight still switches วางทับได้ / ห้ามวางทับ on tap.
+    func areaMover(_ a: Roof.Area, _ r: CGRect, _ L: RoofPlan.Layout, _ fit: SketchFit) -> some View {
+        let offset = moving?.index == a.index ? moving?.offset ?? .zero : .zero
+        let k = fit.s * L.k
+        let name = a.kind == Roof.skylightKind ? "แผ่นใส" : a.kind == Roof.keepOutKind ? "เขตห้ามติด" : a.label
+        return Color.clear
+            .frame(width: max(44, r.width), height: max(44, r.height))
+            .overlay {
+                if offset != .zero {
+                    RoundedRectangle(cornerRadius: 2).fill(Self.amber.opacity(0.12))
+                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(Self.amber, style: StrokeStyle(lineWidth: 2, dash: [5, 3])))
+                        .frame(width: r.width, height: r.height)
+                        .offset(offset)
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { if a.kind == Roof.skylightKind { update { Roof.toggleCover(&$0, index: a.index) } } }
+            .gesture(DragGesture(minimumDistance: 6).onChanged { g in moving = (a.index, g.translation) }.onEnded { g in
+                moving = nil
+                guard k > 0 else { return }
+                update { Roof.moveArea(&$0, index: a.index, x: a.x + g.translation.width / k, y: a.y + g.translation.height / k,
+                                       lx: L.lx, ly: L.ly) }
+            })
+            .accessibilityLabel(name + (a.kind == Roof.skylightKind ? (a.canCover ? " วางทับได้" : " ห้ามวางทับ") : ""))
+            .accessibilityHint("ลากเพื่อย้ายไปตำแหน่งที่พบหน้างาน")
+            .position(x: r.midX, y: r.midY)
     }
 
     func drawSurface(_ L: RoofPlan.Layout, _ fit: SketchFit) -> some View {

@@ -30,6 +30,8 @@ struct RoofPageWide: View {
     @State var tool: Tool?
     /// The rectangle being dragged out, metres (x1, y1, x2, y2).
     @State var drag: (Double, Double, Double, Double)?
+    /// An area being dragged to its site position on a roof filled from a design: its `obst` index and the finger's offset.
+    @State var moving: (index: Int, offset: CGSize)?
     /// The member row picked (1…7): its size list is open and its lines are red on the plan and the section.
     @State var member: Int?
     @State var dropdown: String?

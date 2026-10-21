@@ -76,7 +76,14 @@ final class ReviewLockUITests: XCTestCase {
         confirm01.tap()
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: issue01)
         XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 15), .completed, "REV 01 is issued")
-        button(app, beginsWith: "REV และรายการแก้ไข").tap()
+        // on an 11" iPad in portrait the row is at the sidebar's end, under its pinned เพิ่มหัวข้อสำรวจ bar: scroll it up first
+        let history = button(app, beginsWith: "REV และรายการแก้ไข")
+        let height = app.windows.firstMatch.frame.height
+        for _ in 0..<4 where history.frame.maxY > height - 120 {
+            let x = history.frame.midX, top = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+            top.withOffset(CGVector(dx: x, dy: height * 0.7)).press(forDuration: 0.05, thenDragTo: top.withOffset(CGVector(dx: x, dy: height * 0.35)))
+        }
+        history.tap()
         XCTAssertTrue(element(app, containing: "สถานีแจ้งขนาดหม้อแปลงใหม่").waitForExistence(timeout: 10), "the history shows the reason")
     }
 }

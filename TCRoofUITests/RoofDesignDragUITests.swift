@@ -16,6 +16,9 @@ final class RoofDesignDragUITests: XCTestCase {
         // the plan is above the card the demo scrolls to
         let skylight = app.otherElements.matching(NSPredicate(format: "label BEGINSWITH %@", "แผ่นใส")).firstMatch
         for _ in 0..<4 where !skylight.isHittable { app.swipeDown() }
+        // clear of the page's header: on an 11" iPad in portrait the plan scrolls, and the first visible part of a skylight
+        // can still sit under the header, where the drag would start on the header
+        for _ in 0..<4 where skylight.frame.minY < 220 { app.swipeDown() }
         XCTAssertTrue(skylight.isHittable, "a skylight on the plan")
         let from = skylight.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         from.press(forDuration: 0.1, thenDragTo: from.withOffset(CGVector(dx: 60, dy: 0)))

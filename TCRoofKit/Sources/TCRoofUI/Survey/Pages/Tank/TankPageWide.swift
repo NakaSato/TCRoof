@@ -400,6 +400,11 @@ extension TankPageWide {
                 update { v in _ = TankPoints.add(&v, kind: TankPoints.vent) }
                 obsCompare = true
             }
+        // designpick: the size measured 40 × 40 and the design picker open (docs/specs/standard-designs.md §3.1)
+        case "designpick":
+            tab = 2
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            designAsk = true
         case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete":
             // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
             update { v in

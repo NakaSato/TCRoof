@@ -75,7 +75,7 @@ No other กปภ. design codes or sizes are invented. The library grows in thr
   on a tie.)
 - **After picking:** the dialog's message reads "แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่";
   the pick is one undo step.
-- (Not built: the design cards with a thumbnail plan, the counts and the source.)
+- **Cards** (built 2026-10-21, `DesignCard`): each design shows a small plan (`DesignThumbnail`: the outline, the bays and a mark per item), its size and contents, the match line in green or red, and its source; D1's picker is a sheet of them (`TankDesignPicker`) and C1's `หลังคามาตรฐาน` dropdown lists the team's designs the same way.
 - **Rotated tanks:** a tank measured 40 × 64 matches the 64 × 40 design **rotated**. The app rotates the template so
   the plan matches the site picture's orientation.
 

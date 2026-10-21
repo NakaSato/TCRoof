@@ -65,13 +65,8 @@ extension TankPageWide {
         } message: {
             Text("เก็บผลตรวจของถังนี้ (ช่วงเสา จุดที่มีจริง ตำแหน่งหน้างาน) เป็นแบบในคลัง งานถัดไปเริ่มจากแบบนี้ได้")
         }
-        .confirmationDialog("เริ่มจากแบบมาตรฐาน กปภ.", isPresented: $designAsk, titleVisibility: .visible) {
-            ForEach(TankDesign.ranked(values)) { m in
-                Button(m.design.name + (m.line.map { " | " + $0 } ?? "")) { useDesign(m) }
-            }
-            Button("ยกเลิก", role: .cancel) {}
-        } message: {
-            Text("แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่")
+        .sheet(isPresented: $designAsk) {
+            TankDesignPicker(matches: TankDesign.ranked(values), current: TankDesign.current(values)?.design.id) { useDesign($0) }
         }
         .confirmationDialog("ยืนยัน \(TankPoints.pending(values).count) จุดที่เหลือว่าตรงแบบ?", isPresented: $bulkAsk, titleVisibility: .visible) {
             Button("ยืนยันที่เหลือ") {

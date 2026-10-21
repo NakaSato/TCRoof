@@ -202,6 +202,85 @@ final class RoofMountLayoutTests: XCTestCase {
         })
     }
 
+    /// ด้านยาวตามแป: landscape modules, the long side along the eave, with the rails on purlins inside the short side's
+    /// share of the clamping zone.
+    func testLandscapeModulesLieAlongThePurlins() {
+        let s = RoofMountStandard.standard
+        // purlins @1.20 can't put two rails inside a 1.13 m module's clamping zone: none fits, and the tab says so
+        XCTAssertEqual(RoofMountLayout.best(Self.gable(), options: .init(landscape: true)).quantities.modules, 0)
+        XCTAssertFalse(RoofMountLayout.purlinsHoldLandscape(s, purlinSpacing: 1.20))
+        XCTAssertTrue(RoofMountLayout.purlinsHoldLandscape(s, purlinSpacing: 0.60))
+        let l = RoofMountLayout.best(Self.gable(purlins: 0.60), options: .init(landscape: true))
+        XCTAssertEqual(l.moduleUp, s.moduleWidth); XCTAssertEqual(l.moduleAlong, s.moduleLength)
+        XCTAssertGreaterThan(l.quantities.modules, 0)
+        let z = RoofMountLayout.clampZone(s, side: s.moduleWidth)
+        for f in l.faces {
+            for row in f.rows {
+                XCTAssertTrue(l.purlins.contains { abs($0 - row.rails.0) < 1e-9 } && l.purlins.contains { abs($0 - row.rails.1) < 1e-9 })
+                XCTAssertTrue((z.min - 1e-9...z.max + 1e-9).contains(row.rails.0 - row.v))
+                XCTAssertTrue((z.min - 1e-9...z.max + 1e-9).contains(row.v + s.moduleWidth - row.rails.1))
+                for slot in row.slots where slot.isModule {
+                    let rect = [Pt(slot.u, row.v), Pt(slot.u + s.moduleLength, row.v), Pt(slot.u + s.moduleLength, row.v + s.moduleWidth),
+                                Pt(slot.u, row.v + s.moduleWidth)]
+                    XCTAssertTrue(f.face.contains(rect))
+                }
+            }
+        }
+        XCTAssertTrue(RoofMount.summaryLine(l).contains("แผงด้านยาวตามแป | รางตามแป"))
+    }
+
+    /// รางตัดแป: rails up the slope, a foot on each purlin they cross (none near an obstacle), every module on a run.
+    func testRailsAcrossThePurlins() {
+        for landscape in [false, true] {
+            for input in [Self.gable(), Self.hip, Self.shed] {
+                let l = RoofMountLayout.best(input, options: .init(landscape: landscape, railsAcross: true)), s = l.standard
+                let q = l.quantities
+                XCTAssertGreaterThan(q.modules, 0)
+                for f in l.faces {
+                    XCTAssertTrue(f.rows.allSatisfy(\.runs.isEmpty), "no rails along the eave")
+                    var held = 0
+                    for run in f.columnRuns {
+                        XCTAssertEqual(run.railsAt.count, 2); XCTAssertEqual(run.feet.count, 2)
+                        held += run.count
+                        for (u, feet) in zip(run.railsAt, run.feet) {
+                            XCTAssertGreaterThanOrEqual(feet.count, 2)
+                            for v in feet {
+                                XCTAssertTrue(l.purlins.contains { abs($0 - v) < 1e-9 }, "a foot off a purlin")
+                                XCTAssertTrue(v > run.start && v < run.end)
+                                for ob in f.obstacles {
+                                    let b = ob.box, m = ob.obstacle.footClearance
+                                    if b.u0 - m <= u && u <= b.u1 + m { XCTAssertFalse(b.v0 - m < v && v < b.v1 + m, "foot on an obstacle") }
+                                }
+                            }
+                            XCTAssertTrue(zip(feet, feet.dropFirst()).allSatisfy { $1 - $0 <= max(s.footSpacing, input.purlinSpacing) + 1e-6 })
+                        }
+                        // the modules of a run touch, in one column
+                        let rows = run.rows.map { f.rows[$0] }
+                        XCTAssertTrue(zip(rows, rows.dropFirst()).allSatisfy { abs($1.v - ($0.v + l.moduleUp + s.moduleGap)) < 1e-6 })
+                    }
+                    XCTAssertEqual(held, f.modules, "every module on a run across the purlins")
+                }
+                XCTAssertEqual(q.runs, l.faces.filter(\.used).map(\.columnRuns.count).reduce(0, +))
+                XCTAssertTrue(RoofMountDrawings.rowSection(l, face: 0, row: 0).ops.contains {
+                    if case .text(let t, _, _, _, _, _, _) = $0 { return t.contains("รางตัดแป") } else { return false }
+                })
+            }
+        }
+        // rib clamps and tile hooks keep their rails along the eave
+        XCTAssertFalse(RoofMountLayout.Options(ribClamp: true, railsAcross: true).acrossPurlins)
+        XCTAssertFalse(RoofMountLayout.Options(tileHooks: true, railsAcross: true).acrossPurlins)
+    }
+
+    /// An older job's choice has no direction, and the default writes nothing new (its digest stays).
+    func testTheDirectionDefaultsKeepOlderJobs() throws {
+        let c = try JSONDecoder().decode(RoofMount.Choice.self, from: Data(#"{"ribClamp":false,"avoidShade":true}"#.utf8))
+        XCTAssertFalse(c.landscape); XCTAssertFalse(c.railsAcross)
+        let json = String(decoding: try JSONEncoder().encode(RoofMount.Choice()), as: UTF8.self)
+        XCTAssertFalse(json.contains("landscape") || json.contains("railsAcross"))
+        var turned = RoofMount.Choice(); turned.railsAcross = true
+        XCTAssertNotEqual(RoofMount.digest(Self.gable(), choice: turned), RoofMount.digest(Self.gable(), choice: RoofMount.Choice()))
+    }
+
     func testAWalkwayEveryNColumns() {
         let l = RoofMountLayout.best(Self.gable(), options: .init(walkwayEvery: 6))
         for f in l.faces {

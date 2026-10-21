@@ -8,8 +8,9 @@ public enum RoofMountDrawings {
 
     /// Whether a row passes the standard: both rails on a purlin (or rib clamps), each inside the clamping zone.
     public static func rowPasses(_ row: RoofMountLayout.Row, in layout: RoofMountLayout) -> Bool {
-        let s = layout.standard, l = s.moduleLength
-        let zone = (s.clampMin - 1e-6)...(s.clampMax + 1e-6)
+        let s = layout.standard, l = layout.moduleUp, z = RoofMountLayout.clampZone(s, side: l)
+        let zone = (z.min - 1e-6)...(z.max + 1e-6)
+        // rails across the purlins have a foot on every purlin they cross, or the module was cut
         if layout.options.freeRows { return true }
         let onPurlins = layout.purlins.contains { abs($0 - row.rails.0) < 1e-6 } && layout.purlins.contains { abs($0 - row.rails.1) < 1e-6 }
         return onPurlins && zone.contains(row.rails.0 - row.v) && zone.contains(row.v + l - row.rails.1)
@@ -23,7 +24,8 @@ public enum RoofMountDrawings {
             o.append(.text("ยังไม่มีแถวแผงบนด้านนี้", at: Pt(width / 2, height / 2), size: 15, color: muted, align: .center))
             return Sketch(width: width, height: height, ops: o)
         }
-        let f = layout.faces[face], row = f.rows[r], s = layout.standard, l = s.moduleLength
+        let f = layout.faces[face], row = f.rows[r], s = layout.standard, l = layout.moduleUp
+        if layout.options.acrossPurlins { return acrossSection(layout, face: face, row: r) }
         let from = row.v - 0.7, to = row.v + l + 0.7
         let k = (width - 80) / (to - from)
         func x(_ v: Double) -> Double { 40 + (v - from) * k }
@@ -49,7 +51,7 @@ public enum RoofMountDrawings {
             o.append(.text(label, at: Pt((x(a) + x(b)) / 2, y - 9), size: 12, bold: true, color: dim, align: .center))
         }
         func m(_ d: Double) -> String { String(format: "%.2f", d) }
-        dimension(row.v, row.v + l, modY - 26, "แผงยาว " + m(l))
+        dimension(row.v, row.v + l, modY - 26, (layout.options.landscape ? "แผงกว้าง " : "แผงยาว ") + m(l))
         dimension(row.v, row.rails.0, modY - 4, m(row.rails.0 - row.v))
         dimension(row.rails.1, row.v + l, modY - 4, m(row.v + l - row.rails.1))
         dimension(row.rails.0, row.rails.1, sheetY + 40, "รางห่าง " + m(row.rails.1 - row.rails.0))
@@ -65,9 +67,49 @@ public enum RoofMountDrawings {
         let pass = rowPasses(row, in: layout)
         let how = layout.options.tileHooks ? "ขอเกี่ยวกระเบื้องยึดจันทัน @" + m(s.rafterSpacing) + " | รางที่ ¼ และ ¾ ของแผง"
             : layout.options.ribClamp ? "จับสันลอนที่ ¼ และ ¾ ของแผง"
-            : "รางตกแปทั้ง 2 เส้น | ช่วงจับ \(m(s.clampMin))–\(m(s.clampMax)) ม. จากปลายแผง"
+            : "รางตกแปทั้ง 2 เส้น | ช่วงจับ \(m(RoofMountLayout.clampZone(s, side: l).min))–\(m(RoofMountLayout.clampZone(s, side: l).max)) ม. จากปลายแผง"
         o.append(.text((pass ? "ถูกต้องตามมาตรฐาน | " : "ไม่ผ่าน | ") + how, at: Pt(40, height - 18), size: 12.5, bold: true,
                        color: pass ? ok : bad))
+        return Sketch(width: width, height: height, ops: o)
+    }
+
+    /// Rails across the purlins: the section up the slope through the first column of the row, the rail on an L-foot at
+    /// every purlin it crosses, the modules of its run on top.
+    static func acrossSection(_ layout: RoofMountLayout, face: Int, row r: Int) -> Sketch {
+        var o: [DrawOp] = []
+        let f = layout.faces[face], l = layout.moduleUp
+        guard let run = f.columnRuns.first(where: { $0.rows.contains(r) }) else {
+            o.append(.text("แถวนี้ไม่มีแผง", at: Pt(width / 2, height / 2), size: 15, color: muted, align: .center))
+            return Sketch(width: width, height: height, ops: o)
+        }
+        let from = run.start - 0.5, to = run.end + 0.5
+        let k = (width - 80) / (to - from)
+        func x(_ v: Double) -> Double { 40 + (v - from) * k }
+        let sheetY = 150.0, footH = 18.0, railH = 8.0, modH = 9.0
+        let railTop = sheetY - footH - railH, modY = railTop - modH
+        o.append(.line(Pt(x(from), sheetY), Pt(x(to), sheetY), width: 2.4, color: ink))
+        for p in layout.purlins where p >= from && p <= to {
+            o.append(.rect(Box(x(p) - 7, sheetY + 1.5, 14, 22), stroke: purlin, fill: RGBA(hex: 0xE5E7EB), width: 1))
+        }
+        for v in run.feet.first ?? [] {
+            o.append(.rect(Box(x(v) - 3, sheetY - footH, 6, footH), stroke: nil, fill: RGBA(hex: 0x64748B)))
+        }
+        o.append(.rect(Box(x(run.start), railTop, (run.end - run.start) * k, railH), stroke: rail, fill: RGBA(hex: 0xCBD5E1), width: 1))
+        for i in run.rows {
+            o.append(.rect(Box(x(f.rows[i].v), modY, l * k, modH), stroke: RGBA(hex: 0xDCE6F2), fill: i == r ? module : module.withAlpha(0.55), width: 1))
+        }
+        func m(_ d: Double) -> String { String(format: "%.2f", d) }
+        let y = sheetY + 40
+        o.append(.line(Pt(x(run.start), y), Pt(x(run.end), y), width: 1, color: dim))
+        for v in [run.start, run.end] { o.append(.line(Pt(x(v), y - 5), Pt(x(v), y + 5), width: 1, color: dim)) }
+        o.append(.text("รางยาว " + m(run.railLength), at: Pt((x(run.start) + x(run.end)) / 2, y - 9), size: 12, bold: true, color: dim, align: .center))
+        let gaps = zip(run.feet.first ?? [], (run.feet.first ?? []).dropFirst()).map { $1 - $0 }
+        o.append(.text("รูปตัดแถว \(r + 1) | ด้าน\(RoofFace.direction(f.face.azimuth)) | ตามแนวลาด (หน่วย ม.)", at: Pt(40, 18), size: 13,
+                       bold: true, color: ink))
+        let how = "รางตัดแป | ขาตกทุกแป \((run.feet.first ?? []).count) จุด | ห่างมากสุด " + m(gaps.max() ?? 0)
+            + " | รางห่าง " + m((run.railsAt.last ?? 0) - (run.railsAt.first ?? 0)) + " ม. ตามแนวชายคา"
+
+        o.append(.text("ถูกต้องตามมาตรฐาน | " + how, at: Pt(40, height - 18), size: 12.5, bold: true, color: ok))
         return Sketch(width: width, height: height, ops: o)
     }
 }

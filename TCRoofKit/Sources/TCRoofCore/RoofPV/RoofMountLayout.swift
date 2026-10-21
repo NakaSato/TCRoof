@@ -18,13 +18,21 @@ public struct RoofMountLayout: Sendable {
         public var tileHooks = false
         /// A walkway one module wide after every n columns, for cleaning; 0 = none.
         public var walkwayEvery = 0
+        /// Modules landscape: the long side along the eave (ด้านยาวตามแป); false = portrait, the long side up the slope.
+        public var landscape = false
+        /// Rails up the slope across the purlins (รางตัดแป), an L-foot on each purlin they cross; false = rails along the
+        /// eave on the purlins (รางตามแป). Only with L-feet on purlins.
+        public var railsAcross = false
         public init(ribClamp: Bool = false, avoidShade: Bool = true, faceUse: [String: Bool] = [:], removed: Set<SlotRef> = [],
-                    tileHooks: Bool = false, walkwayEvery: Int = 0) {
+                    tileHooks: Bool = false, walkwayEvery: Int = 0, landscape: Bool = false, railsAcross: Bool = false) {
             self.ribClamp = ribClamp; self.avoidShade = avoidShade; self.faceUse = faceUse; self.removed = removed
-            self.tileHooks = tileHooks; self.walkwayEvery = walkwayEvery
+            self.tileHooks = tileHooks; self.walkwayEvery = walkwayEvery; self.landscape = landscape; self.railsAcross = railsAcross
         }
-        /// Rows don't depend on the purlins: rib clamps or tile hooks hold the rails at ¼ and ¾ of the module.
-        public var freeRows: Bool { ribClamp || tileHooks }
+        /// Rows don't depend on the purlins: rib clamps or tile hooks hold the rails at ¼ and ¾ of the module, or the rails
+        /// cross the purlins.
+        public var freeRows: Bool { ribClamp || tileHooks || railsAcross }
+        /// Rails up the slope on purlins (rib clamps and tile hooks keep their rails along the eave).
+        public var acrossPurlins: Bool { railsAcross && !ribClamp && !tileHooks }
     }
 
     /// A module slot: the face, the row up the slope and the column along it.
@@ -51,16 +59,27 @@ public struct RoofMountLayout: Sendable {
         public var isModule: Bool { blocked == nil }
     }
 
-    /// Neighbouring modules on one pair of rails.
+    /// Neighbouring modules on one pair of rails: along the eave, the columns of one row (its rails are the row's); up the
+    /// slope (`acrossPurlins`), the rows of one column, on the rails at `railsAt` (u).
     public struct Run: Sendable {
         public var columns: [Int]
-        /// Rail ends along the eave.
+        /// Rail ends along the rail: along the eave (u), or up the slope (v) for a run across the purlins.
         public var start: Double, end: Double
-        /// L-foot positions along each rail (lower, upper).
+        /// L-foot positions along each rail (lower, upper; or left, right across the purlins).
         public var feet: [[Double]]
         /// The feet were moved off equal spacing to miss an obstacle.
         public var moved: Bool
+        /// Across the purlins: the rows the run holds and where its two rails are along the eave.
+        public var rows: [Int] = []
+        public var railsAt: [Double] = []
         public var railLength: Double { end - start }
+        /// Modules on the run.
+        public var count: Int { rows.isEmpty ? columns.count : rows.count }
+        public var across: Bool { !rows.isEmpty }
+        /// The run holds that slot.
+        public func holds(row: Int, column: Int, inRow r: Int) -> Bool {
+            across ? rows.contains(row) && columns.contains(column) : r == row && columns.contains(column)
+        }
     }
 
     public struct Row: Sendable {
@@ -95,6 +114,14 @@ public struct RoofMountLayout: Sendable {
         public var obstacles: [FaceObstacle]
         /// Shade outlines on this face, in (u, v).
         public var shade: [[Pt]]
+        /// Runs up the slope, one per column stretch, when the rails cross the purlins.
+        public var columnRuns: [Run] = []
+        /// Every run of the face: each row's along the eave, then those across the purlins.
+        public var allRuns: [Run] { rows.flatMap(\.runs) + columnRuns }
+        /// The run holding a slot.
+        public func run(row: Int, column: Int) -> Run? {
+            rows.indices.contains(row) ? rows[row].runs.first { $0.columns.contains(column) } ?? columnRuns.first { $0.rows.contains(row) && $0.columns.contains(column) } : nil
+        }
     }
 
     public var faces: [Face]
@@ -157,6 +184,25 @@ public struct RoofMountLayout: Sendable {
 
     public var placements: [String: Placement] { Dictionary(uniqueKeysWithValues: faces.map { ($0.face.id, $0.placement) }) }
 
+    /// The module's size up the slope and along the eave, as laid (portrait or landscape).
+    public var moduleUp: Double { Self.up(standard, options) }
+    public var moduleAlong: Double { Self.along(standard, options) }
+    static func up(_ s: RoofMountStandard, _ o: Options) -> Double { o.landscape ? s.moduleWidth : s.moduleLength }
+    static func along(_ s: RoofMountStandard, _ o: Options) -> Double { o.landscape ? s.moduleLength : s.moduleWidth }
+    /// Whether landscape modules can sit on rails along the purlins: two purlins `purlinSpacing` apart must both fall in the
+    /// clamping zone of the module's short side. Wider purlins need the rails across them (รางตัดแป).
+    public static func purlinsHoldLandscape(_ s: RoofMountStandard, purlinSpacing: Double) -> Bool {
+        let z = clampZone(s, side: s.moduleWidth)
+        return purlinSpacing >= s.moduleWidth - 2 * z.max - 1e-9 && purlinSpacing <= s.moduleWidth - 2 * z.min + 1e-9
+    }
+
+    /// The clamping zone from a module end along a side of length `side`: the standard's on the long side, the same share
+    /// of the short one.
+    public static func clampZone(_ s: RoofMountStandard, side: Double) -> (min: Double, max: Double) {
+        let k = s.moduleLength > 0 ? side / s.moduleLength : 1
+        return (s.clampMin * k, s.clampMax * k)
+    }
+
     // MARK: - One face
 
     /// One result per face, written from the parallel search.
@@ -178,6 +224,9 @@ public struct RoofMountLayout: Sendable {
         let shade: [[Pt]]
         private let shadeBounds: [(x0: Double, y0: Double, x1: Double, y1: Double)]
         private var cache: [Int: String?] = [:]
+        /// The module up the slope and along the eave, as laid.
+        var up: Double { RoofMountLayout.up(standard, options) }
+        var along: Double { RoofMountLayout.along(standard, options) }
         private var forbiddenCache: [Double: [(Double, Double)]] = [:]
 
         init(face: RoofFace, standard: RoofMountStandard, options: Options, purlins: [Double], obstacles: [FaceObstacle], shade: [[Pt]]) {
@@ -240,7 +289,7 @@ public struct RoofMountLayout: Sendable {
         }
 
         private func check(_ u: Double, _ v: Double) -> String? {
-            let l = standard.moduleLength, w = standard.moduleWidth
+            let l = up, w = along
             let rect = [Pt(u, v), Pt(u + w, v), Pt(u + w, v + l), Pt(u, v + l)]
             if !face.contains(rect) { return RoofMountLayout.outside }
             for ob in obstacles where !ob.obstacle.coverable {
@@ -271,7 +320,7 @@ public struct RoofMountLayout: Sendable {
         /// most rows, since every row is the same length; `centred` then centres each row between its purlins where its
         /// neighbours allow.
         func rows(shift: Double, centred: Bool) -> [(v: Double, a: Double, b: Double)] {
-            let l = standard.moduleLength, g = standard.moduleGap, lo = standard.clampMin, hi = standard.clampMax
+            let l = up, g = standard.moduleGap, zone = RoofMountLayout.clampZone(standard, side: l), lo = zone.min, hi = zone.max
             let vmin = face.vMin, vmax = face.vMax(standard)
             var out: [(v: Double, a: Double, b: Double)] = []
             var v = vmin + shift
@@ -344,7 +393,7 @@ public struct RoofMountLayout: Sendable {
 
         /// The face laid out with a placement (§3.3–3.5).
         func layout(_ p: Placement) -> Face {
-            let w = standard.moduleWidth, pitch = w + standard.moduleGap
+            let w = along, pitch = w + standard.moduleGap
             let umin = face.polygon.map(\.x).min() ?? 0, umax = face.polygon.map(\.x).max() ?? 0
             var rows: [Row] = []
             for (r, row) in self.rows(shift: p.rowShift, centred: p.centred).enumerated() {
@@ -360,7 +409,11 @@ public struct RoofMountLayout: Sendable {
                 rows.append(Row(v: row.v, rails: (row.a, row.b), slots: slots))
             }
             var cuts = 0
-            for r in rows.indices {
+            var columnRuns: [Run] = []
+            if options.acrossPurlins {
+                (columnRuns, cuts) = acrossRuns(&rows)
+            }
+            for r in rows.indices where !options.acrossPurlins {
                 for _ in 0..<200 {
                     var runs: [[Int]] = [], current: [Int] = []
                     for (i, s) in rows[r].slots.enumerated() {
@@ -392,16 +445,86 @@ public struct RoofMountLayout: Sendable {
             }
             let n = rows.reduce(0) { $0 + $1.slots.filter(\.isModule).count }
             return Face(face: face, rows: rows, placement: p, modules: n, cuts: cuts, yield: 0, used: true,
-                        obstacles: obstacles, shade: shade)
+                        obstacles: obstacles, shade: shade, columnRuns: columnRuns)
+        }
+
+        /// Rails up the slope across the purlins: each column's stretch of touching modules on two rails at ¼ and ¾ of the
+        /// module (inside the clamping zone), an L-foot on every purlin under a rail, none on an obstacle. A stretch whose
+        /// rails can't be held (a purlin skipped past the foot spacing, too long an overhang, under two feet) has the module
+        /// nearest the failure cut, and is tried again.
+        func acrossRuns(_ rows: inout [Row]) -> (runs: [Run], cuts: Int) {
+            let l = up, w = along, g = standard.moduleGap
+            let zone = RoofMountLayout.clampZone(standard, side: w)
+            let a = min(max(w / 4, zone.min), zone.max)
+            let columns = rows.map(\.slots.count).max() ?? 0
+            var out: [Run] = [], cuts = 0
+            for c in 0..<columns {
+                for _ in 0..<200 {
+                    // stretches of touching modules in this column
+                    var stretches: [[Int]] = [], current: [Int] = []
+                    for r in rows.indices {
+                        let here = rows[r].slots.indices.contains(c) && rows[r].slots[c].isModule
+                        let touches = current.last.map { rows[r].v - (rows[$0].v + l) <= g + 1e-6 } ?? true
+                        if here && touches { current.append(r); continue }
+                        if !current.isEmpty { stretches.append(current) }
+                        current = here ? [r] : []
+                    }
+                    if !current.isEmpty { stretches.append(current) }
+                    var runs: [Run] = [], failure: (stretch: [Int], at: Double)?
+                    for st in stretches {
+                        let u = rows[st[0]].slots[c].u
+                        let va = rows[st[0]].v - standard.railOverhang, vb = rows[st[st.count - 1]].v + l + standard.railOverhang
+                        var feet: [[Double]] = [], moved = false
+                        for x in [u + a, u + w - a] {
+                            let f = purlinFeet(va, vb, avoiding: forbidden(alongEaveAt: x))
+                            moved = moved || f.moved
+                            guard let placed = f.feet else { failure = (st, f.failedAt); break }
+                            feet.append(placed)
+                        }
+                        if failure != nil { break }
+                        runs.append(Run(columns: [c], start: va, end: vb, feet: feet, moved: moved, rows: st, railsAt: [u + a, u + w - a]))
+                    }
+                    guard let failure else { out += runs; break }
+                    let r = failure.stretch.min { abs(rows[$0].v + l / 2 - failure.at) < abs(rows[$1].v + l / 2 - failure.at) }!
+                    rows[r].slots[c].blocked = RoofMountLayout.cutForFeet
+                    rows[r].slots[c].cut = true
+                    cuts += 1
+                }
+            }
+            return (out, cuts)
+        }
+
+        /// Stretches up the slope of a rail at `u` where no foot may go.
+        func forbidden(alongEaveAt u: Double) -> [(Double, Double)] {
+            obstacles.compactMap { ob in
+                let m = ob.obstacle.footClearance, b = ob.box
+                return b.u0 - m <= u && u <= b.u1 + m ? (b.v0 - m, b.v1 + m) : nil
+            }
+        }
+
+        /// L-feet of a rail up the slope from `va` to `vb`: one on every purlin under it that misses the obstacles. Nil
+        /// (with where it failed) under two feet, when the rail overhangs a foot by more than the cantilever (at least half
+        /// a purlin spacing, which the row shift can't always avoid), or when a gap passes the foot spacing.
+        func purlinFeet(_ va: Double, _ vb: Double, avoiding bad: [(Double, Double)]) -> (feet: [Double]?, failedAt: Double, moved: Bool) {
+            func ok(_ x: Double) -> Bool { bad.allSatisfy { !($0.0 < x && x < $0.1) } }
+            let under = purlins.filter { $0 > va + 0.02 && $0 < vb - 0.02 }
+            let feet = under.filter(ok)
+            let cantilever = max(standard.footCantilever, purlinSpacing / 2 + 0.05)
+            let gap = max(standard.footSpacing, purlinSpacing) + 1e-6
+            guard feet.count >= 2, let lo = feet.first, let hi = feet.last else { return (nil, (va + vb) / 2, false) }
+            if lo - va > cantilever { return (nil, va + cantilever / 2, true) }
+            if vb - hi > cantilever { return (nil, vb - cantilever / 2, true) }
+            for (x, y) in zip(feet, feet.dropFirst()) where y - x > gap { return (nil, (x + y) / 2, true) }
+            return (feet, 0, feet.count != under.count)
         }
 
         /// The most modules over every column offset (5 cm steps), row shift (10 cm steps up to one row pitch) and
         /// centred or packed rows; then fewer cut columns, then centred (§3.6).
         func best() -> Face {
-            let rowPitch = standard.moduleLength + standard.moduleGap + (options.freeRows ? 0 : purlinSpacing)
+            let rowPitch = up + standard.moduleGap + (options.freeRows ? 0 : purlinSpacing)
             var best: Face?, tried = 0
             for j in 0...Int(rowPitch / 0.10) {
-                for k in 0...Int((standard.moduleWidth + standard.moduleGap) / 0.05) {
+                for k in 0...Int((along + standard.moduleGap) / 0.05) {
                     for centred in [true, false] {
                         let f = layout(Placement(columnOffset: Double(k) * 0.05, rowShift: Double(j) * 0.10, centred: centred))
                         tried += 1

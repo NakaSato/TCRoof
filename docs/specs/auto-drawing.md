@@ -1,8 +1,8 @@
 # Auto 2D Drawings: Roof Structure & Tank Size
 
 **Status:** Partly built, by a different route than this spec first planned.
-- **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), C1's pitch from a measured ridge height (`Roof.pitch`, §4.4), the C2 and C3 sections from measured sizes (`RoofSectionMeasured.swift`, §4.4), the `n@d` span shorthand (`parseSpans`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank sections 1–1 / 2–2 and the size and volume summary (`TankDrawings.swift`, `Tank.summary`, §5.5), the printed tank plan's beams, section marks and cross vents (`TankPlan(details:)`), the Howe truss as C1's seventh frame type, details A / B and the member schedule (`RoofTruss.swift`, built 2026-10-20), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel.
-- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), `MemberSpec` depth parsing, steel weights in the schedule, `uniformLabel`, `DrawOp.arc`, the round tank, the section in Excel (open question 3), the `autoDrawings` flag and the SVG snapshot tests.
+- **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), C1's pitch from a measured ridge height (`Roof.pitch`, §4.4), the C2 and C3 sections from measured sizes (`RoofSectionMeasured.swift`, §4.4), the `n@d` span shorthand (`parseSpans`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank sections 1–1 / 2–2 and the size and volume summary (`TankDrawings.swift`, `Tank.summary`, §5.5), the printed tank plan's beams, section marks and cross vents (`TankPlan(details:)`), the Howe truss as C1's seventh frame type, details A / B and the member schedule (`RoofTruss.swift`, built 2026-10-20) with its steel weights (`SteelSection.swift`, built 2026-10-21), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel.
+- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), `MemberSpec` depth parsing, `uniformLabel`, `DrawOp.arc`, the round tank, the section in Excel (open question 3), the `autoDrawings` flag and the SVG snapshot tests.
 
 **Owner:** TCRoof · **Module:** `TCRoofKit` (TCRoofCore / TCRoofUI / PDFReport / ExcelExport)
 **Date:** 2026-09-29, tank parts updated 2026-10-01 to the D1 design, merged with the Swift implementation spec and checked against the code 2026-10-17 · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Standard tank designs:** [`standard-designs.md`](standard-designs.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
@@ -283,7 +283,18 @@ Parse depth with `#"(\d+(?:\.\d+)?)"#` over the size part only, never the spacin
   purlins, ridge cap, bottom-chord splice. Labels use the entered sizes.
 - **Member schedule** per truss: purlins `2(n+1)` (shed `n+1`), top chord `2(L+o)`, bottom chord `B`, verticals and
   diagonals (count and Σ length), fascia per metre run, king post `d+R`, gussets = node count. A rafter frame lists
-  purlin, rafter, tie beam, king post and struts. Steel weight (kg) in v2, from a section-weight table.
+  purlin, rafter, tie beam, king post and struts.
+- **Steel weight (built 2026-10-21, `SteelSection.swift`):** each steel row shows kg/m, kg per truss (per rafter pair)
+  and kg for the roof, and the table ends with a steel total for one truss and the roof, labelled ประมาณ, in the
+  `ชิ้นส่วน` sheet and the PDF. `SteelSection.parse` reads lipped C `C-h×b×lip×t`, `2C-…` (two channels), tube
+  `□-h×b×t`, pipe `Ø-D×t` and `ท่อกลม Øn" หนา t` (outside diameters of the JIS / มอก. 107 series, 1" = 34.0),
+  H / I `h×b×tw×tf` and angle `L-a×b×t`. Mass = area × 7,850 kg/m³, with the tables' method: cold-formed shapes are
+  centre line × t less each 90° bend's rounding at inside radius t ((1 − π/4)·3t² a bend); H adds four root fillets
+  (JIS radii for the listed sizes, else r = tf); I takes its tapered flanges as parallel; angles leave out the radii.
+  Against มอก. 1228 / JIS G 3350, G 3466, G 3444 and G 3192 tables (`SteelSectionTests`): C, □ and pipe within
+  0.5 %, H within 1 %, angle and I within 2 %. Wood, ค.ส.ล., the T2 truss, an empty size and anything not read
+  have no weight ("-"), never a guess; the note names those rows. Gusset plates are left out of the total (their
+  size is the engineer's), as are laps, bolts and waste.
 - **Guards:** return `nil` with a missing reason when `B ≤ 0`, `θ ∉ (0, 60]` or any number is non-finite. Cap purlins
   at 200 and rafters at 300; past the cap draw every n-th and note the real count.
 

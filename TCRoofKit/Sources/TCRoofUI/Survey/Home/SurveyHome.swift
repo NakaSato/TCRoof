@@ -242,7 +242,7 @@ struct SurveyHomeView: View {
         } message: { p in Text(p.notes.joined(separator: "\n")) }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
-        .onAppear { model.reload() }
+        .onAppear { model.reload(); model.linkInstallJobs() }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {

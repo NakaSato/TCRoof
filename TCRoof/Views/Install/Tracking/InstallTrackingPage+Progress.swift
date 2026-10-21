@@ -521,6 +521,8 @@ struct InstallCurveChart: View {
     let forecastEnd: Date?
     let nonWorking: Set<Date>
     let waitLabel: String?
+    /// iPhone: the forecast's label goes under the plot, clear of today's tag (docs/ui/install-tracking-iphone state 03).
+    var compact = false
 
     private static let weekday: DateFormatter = {
         let f = DateFormatter()
@@ -549,7 +551,7 @@ struct InstallCurveChart: View {
             var d = last
             while d < f, let n = cal.date(byAdding: .day, value: 1, to: d) { axis.append(n); d = n }
         }
-        let left: CGFloat = 48, right = size.width - 12, top: CGFloat = 26, bottom = size.height - 30
+        let left: CGFloat = 48, right = size.width - 12, top: CGFloat = 26, bottom = size.height - (compact ? 52 : 30)
         let n = CGFloat(max(axis.count, 1)), cw = (right - left) / n
         func index(_ d: Date) -> Int? { axis.firstIndex { cal.isDate($0, inSameDayAs: d) } }
         func xs(_ i: Int) -> CGFloat { left + cw * CGFloat(i) }
@@ -659,7 +661,7 @@ struct InstallCurveChart: View {
                 ctx.fill(Path(ellipseIn: dot), with: .color(Theme.surface))
                 ctx.stroke(Path(ellipseIn: dot), with: .color(Theme.primary), lineWidth: 2.5)
                 ctx.draw(label("คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f)) | 100%", Theme.primary, size: 14, bold: true),
-                         at: CGPoint(x: end.x - 12, y: end.y), anchor: .trailing)
+                         at: compact ? CGPoint(x: right, y: bottom + 40) : CGPoint(x: end.x - 12, y: end.y), anchor: .trailing)
             }
         }
 

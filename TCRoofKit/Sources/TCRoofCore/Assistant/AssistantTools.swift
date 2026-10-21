@@ -84,6 +84,11 @@ public extension Assistant {
         public var before: String
         public var after: String
 
+        public init(id: String, jobID: String, station: String, change: Change, title: String, before: String, after: String) {
+            self.id = id; self.jobID = jobID; self.station = station; self.change = change
+            self.title = title; self.before = before; self.after = after
+        }
+
         public var task: MasterSchedule.Task {
             switch change {
             case .progress(let t, _, _), .dates(let t, _, _), .lateCause(let t, _): t

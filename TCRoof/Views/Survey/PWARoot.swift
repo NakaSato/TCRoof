@@ -29,8 +29,9 @@ struct PWARoot: View {
         SolarSurveyEntryView()
             .environment(\.pwaOverview, overview)
             .navigationDestination(item: $station) { job in
-                // iPad: a station being installed opens its install tracking page (docs/ui/install-tracking-ipad)
-                if sizeClass != .compact, jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
+                // a station being installed opens its install tracking page (docs/ui/install-tracking-ipad, and on
+                // iPhone docs/ui/install-tracking-iphone)
+                if jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
             }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(item: $maintenanceStation) { s in
@@ -54,10 +55,10 @@ struct PWARoot: View {
                 try? await Task.sleep(for: .milliseconds(600))
                 showPlan = true
             }
-            // `-installOpen YES` (iPad): the first installing station's install tracking page, seeding one with an MP
-            // plan and daily reports when none is installing. It changes that job for good.
+            // `-installOpen YES`: the first installing station's install tracking page, seeding one with an MP plan and
+            // daily reports when none is installing. It changes that job for good.
             .task {
-                guard sizeClass != .compact, UserDefaults.standard.bool(forKey: "installOpen") else { return }
+                guard UserDefaults.standard.bool(forKey: "installOpen") else { return }
                 if jobs.pwaInstalling.isEmpty, let job = jobs.first(where: { $0.kind == .pwa }) ?? jobs.first {
                     job.kind = .pwa
                     job.seedRoutineDemo(context)

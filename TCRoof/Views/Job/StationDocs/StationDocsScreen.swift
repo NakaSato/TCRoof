@@ -17,6 +17,13 @@ struct StationDocsScreen: View {
     @State private var showStation = false
     @Environment(\.horizontalSizeClass) private var sizeClass
 
+    /// Opened on a package, and with one paper's sheet open (the iPhone install tracking page's `เอกสาร`).
+    init(job: Job, package: StationDocs.Package? = nil, paper: StationDocs.Kind? = nil) {
+        self.job = job
+        _tab = State(initialValue: .package(package ?? .gridConnection))
+        _editing = State(initialValue: paper)
+    }
+
     private var ctx: StationDocs.Context { job.stationContext }
 
     /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).

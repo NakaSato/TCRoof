@@ -28,9 +28,11 @@ struct InstallStageSheet: View {
             footer
         }
         .padding(24)
-        .frame(width: 870)
+        .frame(maxWidth: 870)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
+        // the phone's width less its margins
+        .padding(.horizontal, 12)
     }
 
     private var days: String {

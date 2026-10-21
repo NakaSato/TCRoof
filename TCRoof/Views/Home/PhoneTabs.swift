@@ -27,6 +27,24 @@ enum PhoneTab: String {
     var fadeHeight: CGFloat { self == .homeWork ? 108 : 128 }
 }
 
+/// The iPhone dock's state, for the screens under it: a pushed page that keeps the dock (the install tracking page,
+/// docs/ui/install-tracking-iphone) puts `PhoneDockBar` under itself, as `PadDock` does on iPad.
+@Observable final class PhoneDock {
+    var tab: PhoneTab
+    private(set) var opened: Set<PhoneTab>
+    var showSettings = false
+
+    init(_ tab: PhoneTab) {
+        self.tab = tab
+        opened = [tab]
+    }
+
+    func select(_ t: PhoneTab) {
+        opened.insert(t)
+        tab = t
+    }
+}
+
 /// iPhone root: one `NavigationStack` per tab, the selected one shown. Each tab's root screen carries
 /// `TCTabBar` as its bottom safe-area inset, so the page scrolls behind the dock and a pushed screen slides in
 /// over it and covers it, like a system tab bar that hides on push. A tab's stack is built the first time it is opened and then kept,
@@ -35,17 +53,14 @@ enum PhoneTab: String {
 struct PhoneTabs<HomeRoot: View>: View {
     @ViewBuilder let home: () -> HomeRoot
 
-    @State private var tab: PhoneTab = Self.initialTab
-    @State private var opened: Set<PhoneTab> = [Self.initialTab]
-    @State private var showSettings = false
+    @State private var dock = PhoneDock(Self.initialTab)
     @State private var notificationService = NotificationService.shared
-    @Query(sort: \Job.installStart) private var jobs: [Job]
 
     var body: some View {
         ZStack {
             ForEach(PhoneTab.stacks, id: \.self) { t in
-                if opened.contains(t) {
-                    let shown = t == tab
+                if dock.opened.contains(t) {
+                    let shown = t == dock.tab
                     stack(t)
                         .opacity(shown ? 1 : 0)
                         .allowsHitTesting(shown)
@@ -53,20 +68,16 @@ struct PhoneTabs<HomeRoot: View>: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView(pwa: tab == .pwa).presentationDetents([.large]).environment(\.homeInk, .outdoor)
+        .environment(dock)
+        .sheet(isPresented: $dock.showSettings) {
+            SettingsView(pwa: dock.tab == .pwa).presentationDetents([.large]).environment(\.homeInk, .outdoor)
         }
         // a notification tap opens its screen on the home stack
         .onChange(of: notificationService.link) { _, link in
             guard link != nil else { return }
-            showSettings = false
-            select(.home)
+            dock.showSettings = false
+            dock.select(.home)
         }
-    }
-
-    private func select(_ t: PhoneTab) {
-        opened.insert(t)
-        tab = t
     }
 
     private func stack(_ t: PhoneTab) -> some View {
@@ -82,27 +93,8 @@ struct PhoneTabs<HomeRoot: View>: View {
                 }
             }
             // the PWA home keeps its own space over the dock, for its add button
-            .safeAreaInset(edge: .bottom, spacing: t == .pwa ? 0 : PhoneTab.barGap) {
-                TCTabBar(items: items, selection: Binding(get: { tab }, set: select), dividerBefore: .settings)
-                    .padding(.horizontal, 12).padding(.bottom, 22)
-                    .background(alignment: .bottom) { TCDockFade(t.fade, height: t.fadeHeight) }
-            }
-            // the dock measures from the screen's bottom edge, not the home indicator's safe area, and stays
-            // there behind the keyboard instead of riding up on it (survey list search)
-            .ignoresSafeArea(.all, edges: .bottom)
+            .phoneDock(fade: t.fade, fadeHeight: t.fadeHeight, spacing: t == .pwa ? 0 : PhoneTab.barGap)
         }
-    }
-
-    private var items: [TCTabItem<PhoneTab>] {
-        let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
-        return [
-            TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
-            TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
-            TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. | นัดวันนี้ \(pwa)" : nil),
-            TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
-            // not a tab: settings stays a sheet, like the avatar
-            TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { showSettings = true },
-        ]
     }
 
     private static var initialTab: PhoneTab {
@@ -113,5 +105,44 @@ struct PhoneTabs<HomeRoot: View>: View {
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif
         return .home
+    }
+}
+
+/// The iPhone dock (`TCTabBar`): `PhoneTabs` puts it under each tab's root, and a pushed page that keeps the dock puts
+/// it under itself (`phoneDock`). Outside `PhoneTabs` it is not shown.
+struct PhoneDockBar: View {
+    @Environment(PhoneDock.self) private var dock: PhoneDock?
+    @Query(sort: \Job.installStart) private var jobs: [Job]
+
+    var body: some View {
+        if let dock {
+            TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings)
+        }
+    }
+
+    private func items(_ dock: PhoneDock) -> [TCTabItem<PhoneTab>] {
+        let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
+        return [
+            TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
+            TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
+            TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. | นัดวันนี้ \(pwa)" : nil),
+            TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
+            // not a tab: settings stays a sheet, like the avatar
+            TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { dock.showSettings = true },
+        ]
+    }
+}
+
+extension View {
+    /// The iPhone dock as the bottom safe-area inset, 22 pt above the screen's edge, over the page's fade.
+    func phoneDock(fade: Color, fadeHeight: CGFloat = 128, spacing: CGFloat = PhoneTab.barGap) -> some View {
+        safeAreaInset(edge: .bottom, spacing: spacing) {
+            PhoneDockBar()
+                .padding(.horizontal, 12).padding(.bottom, 22)
+                .background(alignment: .bottom) { TCDockFade(fade, height: fadeHeight) }
+        }
+        // the dock measures from the screen's bottom edge, not the home indicator's safe area, and stays
+        // there behind the keyboard instead of riding up on it (survey list search)
+        .ignoresSafeArea(.all, edges: .bottom)
     }
 }

@@ -128,6 +128,9 @@ extension RoofPageWide {
     // MARK: the tab
 
     @ViewBuilder var mountTab: some View {
+        if let s = RoofDesign.summary(values), s.open > 0 {
+            DesignCheckBanner(open: s.open, unit: "รายการ") { withAnimation { mode = .structure } }
+        }
         if RoofMount.shape(values) == nil {
             Label("วางแผงอัตโนมัติใช้ได้กับหลังคาจั่ว ปั้นหยา และเพิงหมาแหงน | หลังคานี้คิดเป็นทรงจั่ว", systemImage: "info.circle")
                 .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)

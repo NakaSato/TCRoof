@@ -19,6 +19,9 @@ extension TankPageWide {
     }
 
     @ViewBuilder var layoutSideCards: some View {
+        if let s = TankDesign.summary(values), s.open > 0 {
+            DesignCheckBanner(open: s.open, unit: "จุด") { withAnimation { tab = 2 } }
+        }
         if let l = TankLayout.current(values) {
             layoutSummaryCard(l)
             layoutChecksCard(l)

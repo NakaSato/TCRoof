@@ -64,3 +64,50 @@ final class ArrayLayoutCheckTests: XCTestCase {
         XCTAssertEqual(ArrayLayoutCheck.decode(""), ArrayLayoutCheck())
     }
 }
+
+/// The daily report's module checklist (docs/specs/module-install-rules.md §7.3).
+final class InstallDailyCheckTests: XCTestCase {
+    func ids(_ c: InstallDailyCheck, crew: Int? = 3) -> Set<String> { Set(c.validation(crew: crew).results.map(\.id)) }
+
+    func testTheReadingsTheRulesCheck() {
+        var c = InstallDailyCheck()
+        XCTAssertTrue(c.validation(crew: 3).results.isEmpty)
+        c.boltTorquesNm = [18, 22]
+        XCTAssertTrue(ids(c).contains("S551-torque"), "22 N·m: the acceptance case")
+        XCTAssertFalse(c.canSign(crew: 3))
+        c.boltTorquesNm = [18, 19]; c.clampOverlapMm = 6; c.groundTorquesNm = [9]; c.bendRadiusMm = 30; c.frameModified = true
+        XCTAssertEqual(ids(c), ["S553-overlap", "ZN-121", "ZN-108", "ZN-63"])
+        // the crew: the report's count unless the checklist has its own
+        XCTAssertTrue(ids(InstallDailyCheck(), crew: 1).contains("ZN-61"))
+        var own = InstallDailyCheck(); own.crewCount = 2
+        XCTAssertFalse(ids(own, crew: 1).contains("ZN-61"))
+    }
+
+    func testAWarnSignsWithAReason() {
+        var c = InstallDailyCheck(); c.rearClearanceMm = 90
+        XCTAssertFalse(c.canSign(crew: 2))
+        c.reasons["ZN-90"] = "หลังคาเตี้ย ยืนยันกับผู้ออกแบบแล้ว"
+        XCTAssertTrue(c.canSign(crew: 2))
+    }
+
+    func testTheWasherFollowsTheMethod() {
+        var c = InstallDailyCheck(); c.washerThicknessMm = 1.6; c.washerOdMm = 18
+        c.method = .bolt
+        XCTAssertTrue(ids(c).contains("S551-washer"))
+        c.method = .tracker1P
+        XCTAssertFalse(ids(c).contains("S551-washer"))
+    }
+
+    func testTicksReadingsAndStoring() {
+        var c = InstallDailyCheck()
+        XCTAssertEqual(c.openTicks.count, 10)
+        c.ppe = true; c.noJewelry = true
+        XCTAssertEqual(c.openTicks.count, 8)
+        XCTAssertEqual(InstallDailyCheck.readings("18, 19.5 20;x 21"), [18, 19.5, 20, 21])
+        XCTAssertEqual(InstallDailyCheck.text([18, 19.5]), "18, 19.5")
+        c.boltTorquesNm = [18]; c.installedSerials = ["ZX7523351920"]
+        XCTAssertEqual(InstallDailyCheck.decode(c.json), c)
+        XCTAssertNil(InstallDailyCheck.decode(""))
+        XCTAssertEqual(InstallDailyCheck.decode("{\"gapMm\":12}")?.gapMm, 12)
+    }
+}

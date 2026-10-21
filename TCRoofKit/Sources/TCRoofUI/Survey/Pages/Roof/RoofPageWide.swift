@@ -507,7 +507,7 @@ extension RoofPageWide {
             }
             // the hip roof and the obstacles keep the plan in view
             if !["pvhip", "pvobst", "pvshed", "pvacross", "pvland"].contains(state) { scrollTarget = "info" }
-        case "design", "designpv":
+        case "design", "designpv", "designlist":
             // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
             update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }
             let name = "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size
@@ -523,6 +523,8 @@ extension RoofPageWide {
             scrollTarget = "info"
             // designpv: the แผงบนหลังคา tab, with its ยังตรวจแบบไม่ครบ banner
             if state == "designpv" { mode = .pv }
+            // designlist: the หลังคามาตรฐาน dropdown open, the design's card ticked
+            if state == "designlist" { try? await Task.sleep(nanoseconds: 800_000_000); dropdown = "std" }
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
         case "frame-h": update { Roof.setFrame(&$0, .howe) }

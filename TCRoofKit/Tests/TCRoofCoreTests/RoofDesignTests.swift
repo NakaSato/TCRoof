@@ -43,6 +43,20 @@ final class RoofDesignTests: XCTestCase {
         XCTAssertFalse(Roof.moveArea(&site, index: 9, x: 1, y: 1, lx: 16, ly: 12))
     }
 
+    /// A design's card: what it holds and its plan.
+    func testCardLines() throws {
+        let d = RoofDesign.from(roof(), name: "โรงสูบน้ำ", job: "TCR-7", by: nil)
+        XCTAssertEqual(d.contents, "แป @1.20 ม. | แผ่นใส 1 | สิ่งกีดขวาง 1")
+        XCTAssertEqual(try XCTUnwrap(d.thumbnail).ops.count, 1 + 3 + 1 + 2 + 1, "white, 3 + 1 bay lines, 2 marks, outline")
+        let t = TankDesign.pwa40x40
+        XCTAssertEqual(t.contents, "ระบาย 12 | ลงถัง 6 | บันได 3 | ท่อ 0")
+        let plan = try XCTUnwrap(t.thumbnail())
+        XCTAssertFalse(plan.ops.isEmpty)
+        // turned, the 64 × 40 plan stands up
+        let wide = try XCTUnwrap(TankDesign.pwa64x40.thumbnail()), tall = try XCTUnwrap(TankDesign.pwa64x40.thumbnail(turned: true))
+        XCTAssertNotEqual(wide.width / wide.height > 1, tall.width / tall.height > 1)
+    }
+
     func testSavingPickingAndCheckingARoof() throws {
         let d = RoofDesign.from(roof(), name: "โรงสูบน้ำ 16×12", job: "TCR-7", by: "a@tcroof.co")
         DesignLibrary.shared.saveRoof(d)

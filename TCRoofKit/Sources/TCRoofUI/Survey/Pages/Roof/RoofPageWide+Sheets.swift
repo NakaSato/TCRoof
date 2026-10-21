@@ -87,24 +87,13 @@ extension RoofPageWide {
     /// หลังคา then checks it item by item.
     func designRow(_ d: RoofDesign, difference: Double?, matches: Bool) -> some View {
         let on = RoofDesign.current(values)?.id == d.id
-        let line = d.size + (difference.map { matches ? " | ตรงกับขนาดที่วัด" : " | ต่างจากที่วัด " + fmt(($0 * 100).rounded() / 100) + " ม." } ?? "")
+        let line = difference.map { matches ? "ตรงกับขนาดที่วัด" : "ต่างจากที่วัด " + fmt(($0 * 100).rounded() / 100) + " ม." }
         return Button { update { RoofDesign.apply(&$0, d) }; dropdown = nil; span = nil } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "square.grid.3x3").font(.system(size: 18)).foregroundStyle(Theme.navy).frame(width: 40, height: 24)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(d.name).font(.sarabunFixed(16, on ? .bold : .regular)).lineLimit(1)
-                    Text(line).font(.sarabunFixed(12)).foregroundStyle(matches ? Theme.okText : Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
-                }
-                Spacer(minLength: 6)
-                if on { Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.success) }
-            }
-            .padding(.horizontal, 12).frame(minHeight: 52)
-            .background(on ? Self.soft : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-            .padding(.horizontal, 6)
-            .contentShape(Rectangle())
+            DesignCard(name: d.name, detail: d.size + " | " + d.contents, line: line, matches: matches,
+                       source: d.source, sketch: d.thumbnail, selected: on)
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .padding(.horizontal, 6).padding(.vertical, 3)
     }
 
     func standardRow(_ s: Roof.Standard, on: Bool) -> some View {

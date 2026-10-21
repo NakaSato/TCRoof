@@ -53,6 +53,15 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
     public var height: Double { ys.reduce(0, +) }
     /// "64 × 40 ม."
     public var size: String { "\(fmt(width)) × \(fmt(height)) ม." }
+    /// What the design holds, for its card: `ระบาย 12 | ลงถัง 6 | บันได 3 | ท่อ 0`.
+    public var contents: String {
+        "ระบาย \(vents.count) | ลงถัง \(hatches.count) | บันได \(ladders.count) | ท่อ \(pipes.count)"
+    }
+    /// The design's plan for its card (as D1 would draw it once picked), turned like the match.
+    public func thumbnail(turned: Bool = false) -> Sketch? {
+        DesignThumbnail.sketch(xs: turned ? Array(ys.reversed()) : xs, ys: turned ? xs : ys,
+                               marks: DesignThumbnail.marks(points(turned: turned)))
+    }
 
     /// The measured size matches a design within this, |ΔW| + |ΔL| in metres (§3.1; decided 2026-10-19).
     public static let tolerance = 1.0

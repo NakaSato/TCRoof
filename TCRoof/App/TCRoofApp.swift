@@ -32,6 +32,8 @@ struct TCRoofApp: App {
 
     init() {
         FirebaseApp.configure()
+        // before any Firestore call (sign-in's membership check is one): settings can't change once it has started
+        CloudSync.configureCache()
         AppFont.register()
         _session = State(initialValue: GoogleSession())
     }

@@ -59,6 +59,12 @@ final class ModuleCatalogTests: XCTestCase {
         XCTAssertEqual(m.betaVocPctPerC, -0.25)
         XCTAssertTrue(m.bifacial && m.doubleGlass)
         for m in ModuleCatalog.models { XCTAssertGreaterThan(m.pmaxW, 0); XCTAssertGreaterThan(m.lengthMm, m.widthMm) }
+        // the team's module first, with the datasheet (ZXM7-UHLDD144 2301.E) values the rules don't use
+        XCTAssertEqual(ModuleCatalog.models.first?.id, "ZXM7-UHLDD144-570")
+        XCTAssertEqual(m.frontLoadPa, 5400); XCTAssertEqual(m.rearLoadPa, 2400); XCTAssertEqual(m.nmotC, 44)
+        XCTAssertEqual(m.maxSeriesFuseA, 30); XCTAssertEqual(m.gammaPmaxPctPerC, -0.30); XCTAssertEqual(m.alphaIscPctPerC, 0.046)
+        XCTAssertEqual(m.connector, "MC4-EVO2"); XCTAssertEqual(m.datasheet, "ZXM7-UHLDD144 2301.E")
+        XCTAssertTrue(m.datasheetLine?.contains("5400") ?? false)
     }
 
     func testMountingProfilesFollowTheManual() throws {

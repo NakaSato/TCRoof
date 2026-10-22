@@ -8,7 +8,11 @@ import FirebaseCore
 /// Drive uploads' background session (`DriveBackground`), so uploads go on after the person leaves the app.
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        MainActor.assumeIsolated { NotificationService.shared.configure() }
+        MainActor.assumeIsolated {
+            NotificationService.shared.configure()
+            // starts Drive uploads left waiting while the app is closed (`DriveBackgroundWork`)
+            DriveBackgroundWork.register()
+        }
         DriveBackground.activate()
         return true
     }
@@ -23,7 +27,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct TCRoofApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    let container: ModelContainer = {
+    /// One container for the process: the scene's, and `DriveBackgroundWork`'s when iOS launches the app for it.
+    let container = TCRoofApp.sharedContainer
+    static let sharedContainer: ModelContainer = {
         let schema = Schema([
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
             Inspection.self, PhotoAsset.self, DocumentAsset.self,
@@ -80,6 +86,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @Environment(GoogleSession.self) private var session
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -107,6 +114,18 @@ struct RootView: View {
             #endif
         }
         .systemNotifications(survey: session.survey)
+        // Drive work left when the person leaves: iOS starts it later, even after the app is closed
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { DriveBackgroundWork.scheduleIfNeeded(context) }
+        }
+        #if DEBUG
+        // `-driveBackgroundPass YES`: the background task's pass at launch, since the simulator runs no BGTask
+        .task {
+            guard UserDefaults.standard.bool(forKey: "driveBackgroundPass") else { return }
+            let ok = await DriveBackgroundWork.pass(context)
+            print("DriveBackgroundWork: pass \(ok ? "ok" : "failed"), work left: \(DriveBackgroundWork.hasWork(context))")
+        }
+        #endif
         // ซิงก์นัดอัตโนมัติ, when turned on in Settings › ปฏิทิน
         .calendarSync()
         // what the signed-in member's role lets them do, for every screen

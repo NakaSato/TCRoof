@@ -24,6 +24,8 @@ final class PhotoSync {
         self.context = context
         self.survey = survey
         schedule(after: 2)
+        // job document uploads started earlier that didn't finish (the person left, offline, the app closed)
+        ProjectDriveUpload.resumeRequested(context: context, survey: survey)
     }
 
     func stop() {
@@ -56,7 +58,10 @@ final class PhotoSync {
     private func run() {
         guard running == nil else { again = true; return }
         guard paused == 0, let context, let survey, survey.google.isSignedIn, survey.settings.autoUploadPhotos else { return }
+        // time to hand the photos over if the person leaves the app mid-pass; iOS sends them from there
+        let time = BackgroundTime("Drive photos")
         running = Task { [weak self] in
+            defer { time.end() }
             var failed = false
             do { try await self?.download(context, survey) } catch { failed = true; print("PhotoSync: download: \(error.localizedDescription)") }
             do { try await self?.upload(context, survey) } catch { failed = true; print("PhotoSync: upload: \(error.localizedDescription)") }
@@ -130,19 +135,31 @@ final class PhotoSync {
             let folder = try await route.jobFolder(job)
             if job.driveFolderURL == nil { job.driveFolderURL = folder.url.absoluteString }
             var subfolders: [String: String] = [:]
-            for p in photos where paused == 0 && !p.photo.isDeleted && p.photo.driveFileID == nil {
-                let place = route.construction(p.folder)
-                let path = place.joined(separator: "/")
-                if subfolders[path] == nil { subfolders[path] = try await survey.driveSubfolder(place, under: folder.id) }
-                // signatures are PNG (they keep their transparent background); photos JPEG
-                let png = p.photo.data.starts(with: [0x89, 0x50, 0x4E, 0x47])
-                let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: png ? "image/png" : "image/jpeg")
-                let id = try await survey.driveUpload(file, to: subfolders[path] ?? folder.id)
-                // deleted while it uploaded: the Drive file stays, the record isn't made
-                guard !p.photo.isDeleted else { continue }
-                p.photo.driveFileID = id
-                try? context.save()
+            // every photo handed to the background transfer first, so iOS sends them all if the app goes to the
+            // background; a failure part-way still records those handed over
+            var waits: [(photo: PhotoAsset, wait: Task<String, Error>)] = []
+            var failure: Error?
+            do {
+                for p in photos where paused == 0 && !p.photo.isDeleted && p.photo.driveFileID == nil {
+                    let place = route.construction(p.folder)
+                    let path = place.joined(separator: "/")
+                    if subfolders[path] == nil { subfolders[path] = try await survey.driveSubfolder(place, under: folder.id) }
+                    // signatures are PNG (they keep their transparent background); photos JPEG
+                    let png = p.photo.data.starts(with: [0x89, 0x50, 0x4E, 0x47])
+                    let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: png ? "image/png" : "image/jpeg")
+                    waits.append((p.photo, try await survey.driveStartUpload(file, to: subfolders[path] ?? folder.id)))
+                }
+            } catch { failure = error }
+            for w in waits {
+                do {
+                    let id = try await w.wait.value
+                    // deleted while it uploaded: the Drive file stays, the record isn't made
+                    guard !w.photo.isDeleted else { continue }
+                    w.photo.driveFileID = id
+                    try? context.save()
+                } catch { failure = failure ?? error }
             }
+            if let failure { throw failure }
         }
     }
 

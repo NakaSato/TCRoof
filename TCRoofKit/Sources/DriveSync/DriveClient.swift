@@ -9,6 +9,21 @@ import FoundationNetworking
 /// Supplies a fresh OAuth access token (the app target implements this with Google Sign-In).
 public protocol DriveTokenProvider: Sendable {
     func accessToken() async throws -> String
+    /// A token that stays valid for at least `seconds`: an upload handed to a background session may only start later.
+    func accessToken(validFor seconds: TimeInterval) async throws -> String
+}
+
+public extension DriveTokenProvider {
+    func accessToken(validFor seconds: TimeInterval) async throws -> String { try await accessToken() }
+}
+
+/// Sends an upload's bytes outside the app's own life: the app's background URLSession (`DriveBackgroundTransfer`),
+/// which iOS goes on with while the app is in the background or after the system ends it.
+public protocol DriveTransfer: Sendable {
+    /// Starts sending `body` with `request` and returns the id to wait on.
+    func enqueue(_ request: URLRequest, body: Data) throws -> Int
+    /// The response's body and status once the upload has finished.
+    func result(_ id: Int) async throws -> (data: Data, status: Int)
 }
 
 public struct DriveFile: Decodable, Hashable, Sendable, Identifiable {
@@ -54,7 +69,17 @@ public struct DriveClient: Sendable {
 
     let tokens: DriveTokenProvider
     let session: URLSession
-    public init(tokens: DriveTokenProvider, session: URLSession = .shared) { self.tokens = tokens; self.session = session }
+    /// Where `startUploadOnce` sends the bytes; nil sends them on `session` while the app waits.
+    let transfer: (any DriveTransfer)?
+    /// Set once by the app at launch (`DriveBackgroundTransfer.shared`); every client made after takes it.
+    nonisolated(unsafe) public static var backgroundTransfer: (any DriveTransfer)?
+    /// How long the token of an upload handed to the transfer must last: iOS may start it a while later.
+    static let transferTokenLife: TimeInterval = 30 * 60
+
+    public init(tokens: DriveTokenProvider, session: URLSession = .shared,
+                transfer: (any DriveTransfer)? = DriveClient.backgroundTransfer) {
+        self.tokens = tokens; self.session = session; self.transfer = transfer
+    }
 
     static func q(_ s: String) -> String { s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'") }
 
@@ -63,11 +88,15 @@ public struct DriveClient: Sendable {
         r.setValue("Bearer \(try await tokens.accessToken())", forHTTPHeaderField: "Authorization")
         let (data, resp) = try await session.data(for: r)
         guard let h = resp as? HTTPURLResponse else { throw DriveError.badResponse }
-        guard (200..<300).contains(h.statusCode) else {
-            let msg = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]).flatMap { ($0["error"] as? [String: Any])?["message"] as? String }
-            throw DriveError.http(h.statusCode, msg ?? String(decoding: data.prefix(200), as: UTF8.self))
-        }
+        try Self.check(h.statusCode, data)
         return data
+    }
+
+    /// Throws Drive's own message for a status outside 2xx.
+    static func check(_ status: Int, _ data: Data) throws {
+        guard !(200..<300).contains(status) else { return }
+        let msg = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]).flatMap { ($0["error"] as? [String: Any])?["message"] as? String }
+        throw DriveError.http(status, msg ?? String(decoding: data.prefix(200), as: UTF8.self))
     }
 
     public func search(_ query: String, orderBy: String? = nil, pageSize: Int = 100) async throws -> [DriveFile] {
@@ -127,8 +156,8 @@ public struct DriveClient: Sendable {
         return try await createFolder(name, parent: parent)
     }
 
-    /// Multipart upload of a new file (Drive keeps earlier versions as separate files).
-    public func upload(_ data: Data, name: String, mimeType: String, parent: String) async throws -> DriveFile {
+    /// The request and body of a multipart upload (no token yet).
+    static func multipart(_ data: Data, name: String, mimeType: String, parent: String) throws -> (request: URLRequest, body: Data) {
         var c = URLComponents(url: Self.upload, resolvingAgainstBaseURL: false)!
         c.queryItems = [.init(name: "uploadType", value: "multipart"), .init(name: "fields", value: Self.fields)]
         let boundary = "survey-" + UUID().uuidString
@@ -139,20 +168,63 @@ public struct DriveClient: Sendable {
         body.append(Data("\r\n--\(boundary)--\r\n".utf8))
         var r = URLRequest(url: c.url!); r.httpMethod = "POST"
         r.setValue("multipart/related; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        r.httpBody = body
         r.timeoutInterval = 300
+        return (r, body)
+    }
+
+    /// Multipart upload of a new file (Drive keeps earlier versions as separate files). With a `transfer`, the bytes go
+    /// through it, so an upload under way when the person leaves the app still lands.
+    public func upload(_ data: Data, name: String, mimeType: String, parent: String) async throws -> DriveFile {
+        if let transfer { return try await handOver(data, name: name, mimeType: mimeType, parent: parent, to: transfer).value }
+        let (request, body) = try Self.multipart(data, name: name, mimeType: mimeType, parent: parent)
+        var r = request
+        r.httpBody = body
         return try JSONDecoder().decode(DriveFile.self, from: try await send(r))
+    }
+
+    /// Hands the upload to `transfer` and returns the wait for its file.
+    private func handOver(_ data: Data, name: String, mimeType: String, parent: String,
+                          to transfer: any DriveTransfer) async throws -> Task<DriveFile, Error> {
+        let (request, body) = try Self.multipart(data, name: name, mimeType: mimeType, parent: parent)
+        var r = request
+        r.setValue("Bearer \(try await tokens.accessToken(validFor: Self.transferTokenLife))", forHTTPHeaderField: "Authorization")
+        let id = try transfer.enqueue(r, body: body)
+        return Task {
+            let (out, status) = try await transfer.result(id)
+            try Self.check(status, out)
+            return try JSONDecoder().decode(DriveFile.self, from: out)
+        }
+    }
+
+    /// The file of that name with the same content already in `parent`, if any.
+    func existing(_ data: Data, name: String, parent: String) async throws -> DriveFile? {
+        #if canImport(CryptoKit)
+        let md5 = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let same = try await search("name = '\(Self.q(name))' and '\(Self.q(parent))' in parents and trashed = false")
+        return same.first { $0.md5Checksum == md5 }
+        #else
+        return nil
+        #endif
     }
 
     /// Uploads unless `parent` already holds a file of that name with the same content, which it returns instead: an
     /// upload whose answer was lost, or a photo a stale list says was never sent, never lands on Drive twice.
     public func uploadOnce(_ data: Data, name: String, mimeType: String, parent: String) async throws -> DriveFile {
-        #if canImport(CryptoKit)
-        let md5 = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        let same = try await search("name = '\(Self.q(name))' and '\(Self.q(parent))' in parents and trashed = false")
-        if let f = same.first(where: { $0.md5Checksum == md5 }) { return f }
-        #endif
+        if let f = try await existing(data, name: name, parent: parent) { return f }
         return try await upload(data, name: name, mimeType: mimeType, parent: parent)
+    }
+
+    /// `uploadOnce` in two steps: this returns once the bytes are handed over (or the same file is found), and the task
+    /// it returns gives the file when it lands. With a `transfer`, iOS goes on sending while the app is in the
+    /// background or after the system ends it, so a caller starts every file before waiting on any. A file that lands
+    /// while nothing waits (the app was ended) is found by the same check on the next pass, not sent again.
+    public func startUploadOnce(_ data: Data, name: String, mimeType: String, parent: String) async throws -> Task<DriveFile, Error> {
+        if let f = try await existing(data, name: name, parent: parent) { return Task { f } }
+        guard let transfer else {
+            let client = self
+            return Task { try await client.upload(data, name: name, mimeType: mimeType, parent: parent) }
+        }
+        return try await handOver(data, name: name, mimeType: mimeType, parent: parent, to: transfer)
     }
 
     public func download(_ id: String) async throws -> Data {

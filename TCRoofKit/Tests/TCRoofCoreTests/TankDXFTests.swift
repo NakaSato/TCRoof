@@ -99,7 +99,11 @@ final class TankDXFTests: XCTestCase {
         let sections = [false, true].compactMap { TankDrawings.sectionCAD(v, across: $0) } + [TankDrawings.tableSectionCAD(l.params)]
             + [TankDrawings.tableFrontCAD(l)].compactMap { $0 }
         XCTAssertEqual(sections.count, 4)
-        XCTAssertEqual(dims.count, plan + sections.map(\.dimensions.count).reduce(0, +))
+        // the plan's chains twice (the module plan and the mounting plan), the mounting plan's own, the sections'
+        let chains: Int = l.builtTables.map { (t: TankLayout.Table) -> Int in t.pairs + 1 }.reduce(0, +)
+        let postLines: Set<Int> = Set(l.builtTables.flatMap { (t: TankLayout.Table) -> [Int] in t.posts.map { Int(($0.y * 1000).rounded()) } })
+        let mounting = chains + postLines.count + 1
+        XCTAssertEqual(dims.count, 2 * plan + mounting + sections.map(\.dimensions.count).reduce(0, +))
         // both tank sections' heights read H (metres), live
         let key = String(data: SketchDXF.tis620("สูง <>"), encoding: .isoLatin1)!
         let heights = dims.filter { t.value($0, "1") == key }
@@ -114,6 +118,36 @@ final class TankDXFTests: XCTestCase {
         let sectionLines = recs.filter { t.value($0, "8") == "TC-TANK-SECTION" }
         XCTAssertFalse(sectionLines.isEmpty)
         XCTAssertTrue(sectionLines.allSatisfy { e in e.filter { $0.0 == "20" }.allSatisfy { Double($0.1)! < planBottom - 2 } })
+    }
+
+    /// The mounting plan beside the module plan, as the team draws it: a footing block at every post, the rafters,
+    /// rails and bracing as members on WIPEOUTs, a chain along each table and one across the post lines.
+    func testMountingPlan() throws {
+        let v = Self.sample(layout: true), l = try XCTUnwrap(TankLayout.current(v))
+        XCTAssertEqual(l.turn % 2, 0, "rows along x in the sample")
+        let out = try XCTUnwrap(TankDXF.build(v)), recs = t.rawEntities(out.data)
+        let tables = l.builtTables, posts = tables.map(\.posts.count).reduce(0, +), pairs = tables.map(\.pairs).reduce(0, +)
+        let footings = recs.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("TC_FOOTING_") }
+        XCTAssertEqual(footings.count, posts)
+        XCTAssertTrue(footings.allSatisfy { t.value($0, "8") == "TC-PV-FOOTING" })
+        func members(_ layer: String) -> Int { recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == layer }.count }
+        XCTAssertEqual(members("TC-PV-RAFTER"), pairs)
+        XCTAssertEqual(members("TC-PV-RAIL"), 4 * tables.count)
+        let braces = tables.map { 2 * max(0, $0.pairs - 1) }.reduce(0, +)
+        XCTAssertEqual(members("TC-PV-BRACE"), braces)
+        // each member on its own WIPEOUT
+        XCTAssertEqual(recs.filter { $0.first?.1 == "WIPEOUT" }.count, pairs + 4 * tables.count + braces)
+        // the footing block: the footing square (300 mm), base plate and post
+        let lines = t.lines(out.data)
+        XCTAssertTrue(lines.indices.contains { lines[$0] == "TC_FOOTING_300" && lines[$0 - 2] == "AcDbBlockBegin" })
+        // a chain along a table measures its cantilevers and bays, summing to the table's length
+        let first = try XCTUnwrap(tables.first)
+        let along = recs.filter { $0.first?.1 == "DIMENSION" && t.value($0, "50") == "0" }.map { abs(t.double($0, "14") - t.double($0, "13")) }
+        let fronts: [Double] = stride(from: 0, to: first.posts.count, by: 2).map { first.posts[$0].x }
+        let bays: [Double] = zip(fronts, fronts.dropFirst()).map { $1 - $0 }
+        for b in bays { XCTAssertTrue(along.contains { abs($0 - b) < 1e-3 }, "bay \(b)") }
+        // it sits to the right of the module plan, which starts at the tank's west wall (x = 0)
+        XCTAssertTrue(footings.allSatisfy { t.double($0, "10") > 40 })
     }
 
     /// The PDF's drawings are the same sketches the DXF places.

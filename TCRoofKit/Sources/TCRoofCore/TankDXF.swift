@@ -45,6 +45,16 @@ public enum TankDXF {
                 for q in t.posts { dxf.circle(pvGroup, p(q.x, q.y), r: l.params.footing / 2) }
             }
         }
+        // to the right of the plan: the mounting plan (the team's drawing: footings, rafters, rails, bracing, dimension chains)
+        if let l = TankLayout.current(v) {
+            let div = millimetres ? 1000.0 : 1, e = dxf.extents
+            let dx = (e.max.x - e.min.x) / div + 6
+            dxf.add(plan.sketch.ops, layer: { i, _ in plan.tags[i].flatMap { drawnDims.contains($0) ? nil : layers[$0] } },
+                    transform: { q in let a = tf(q); return (a.0 + dx, a.1) }, pointsPerMetre: f.k)
+            dxf.add(plan.dimensions, layer: layers["dim"]!, transform: { q in let a = tf(q); return (a.0 + dx, a.1) }, pointsPerMetre: f.k)
+            mountingPlan(&dxf, l, dx: dx, TH: TH)
+        }
+
         // under the plan, to scale and in metres: sections 1–1 and 2–2, then the module rows' section and the table's front
         // elevation, each with its zero (the tank's west wall, a row's front post, the table's west end) at x = 0
         let tables: [TankDrawings.SectionCAD] = [false, true].compactMap { TankDrawings.sectionCAD(v, across: $0) }
@@ -62,6 +72,66 @@ public enum TankDXF {
             top = base + (o.y - h) / k - gap
         }
         return dxf.output
+    }
+
+    /// The post base the team draws at every post (their mounting plan's block): the footing square, the base plate and
+    /// the C post's flanges and the two 50 mm plates, centred on the post (metres, rows along x).
+    static func footingBlock(_ dxf: inout SketchDXF, footing f: Double) -> String {
+        dxf.block(String(format: "TC_FOOTING_%.0f", f * 1000)) { d in
+            let l = CADLayers.pvFooting
+            func rect(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double) { d.polyline(l, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], closed: true) }
+            rect(-f / 2, -f / 2, f / 2, f / 2)
+            d.polyline(l, [(0.0748, 0.0415), (0.0601, 0.0562), (-0.0601, 0.0562), (-0.0748, 0.0415),
+                           (-0.0748, -0.0415), (-0.0601, -0.0562), (0.0601, -0.0562), (0.0748, -0.0415)], closed: true)
+            rect(0.0503, -0.0244, 0.064, 0.0244); rect(-0.064, -0.0244, -0.0503, 0.0244)
+            rect(-0.025, 0.0062, 0.025, 0.0562); rect(-0.025, -0.0562, 0.025, -0.0062)
+        }
+    }
+
+    /// The mounting plan beside the module plan, `dx` metres to the right (docs/specs/cad-export-dxf, Tank mounting plan):
+    /// per table the rafters (50 mm members up the slope at each post pair), the four rails and the bracing between
+    /// posts along the front and back lines, each on a WIPEOUT, the footing block at every post, a dimension chain along
+    /// each table (cantilever, bays, cantilever) beyond its low edge, and one across the post lines from wall to wall.
+    static func mountingPlan(_ dxf: inout SketchDXF, _ l: TankLayout, dx: Double, TH: Double) {
+        let p = l.params, fr = TankLayout.Frame(q: l.turn, W: l.size.w, H: l.size.h)
+        func at(_ q: Pt) -> (Double, Double) { (dx + q.x, TH - q.y) }
+        func plan(_ u: Double, _ w: Double) -> (Double, Double) { let q = fr.from(u, w); return at(Pt(q.0, q.1)) }
+        /// A member `width` wide along a → b (DXF metres), on a WIPEOUT.
+        func member(_ layer: SketchDXF.Layer, _ a: (Double, Double), _ b: (Double, Double), width: Double) {
+            let L = hypot(b.0 - a.0, b.1 - a.1)
+            guard L > 1e-6 else { return }
+            let nx = -(b.1 - a.1) / L * width / 2, ny = (b.0 - a.0) / L * width / 2
+            let pts = [(a.0 + nx, a.1 + ny), (b.0 + nx, b.1 + ny), (b.0 - nx, b.1 - ny), (a.0 - nx, a.1 - ny)]
+            dxf.wipeout(layer, pts)
+            dxf.polyline(layer, pts, closed: true)
+        }
+        let footing = footingBlock(&dxf, footing: p.footing), turn = l.turn % 2 == 1 ? 90.0 : 0
+        var lines: Set<Int> = []   // the post lines across the slope, in mm of the layout frame
+        for t in l.builtTables {
+            let s = l.structure(t)
+            for r in s.rafters { member(CADLayers.pvRafter, at(r.0), at(r.1), width: 0.05) }
+            for r in s.rails { member(CADLayers.pvRail, at(r.0), at(r.1), width: 0.05) }
+            // bracing between neighbouring pairs, front line and back line
+            let front = stride(from: 0, to: t.posts.count, by: 2).map { t.posts[$0] }, back = stride(from: 1, to: t.posts.count, by: 2).map { t.posts[$0] }
+            for line in [front, back] { for (a, b) in zip(line, line.dropFirst()) { member(CADLayers.pvBrace, at(a), at(b), width: 0.04) } }
+            for q in t.posts { dxf.insert(CADLayers.pvFooting, footing, at: at(q), rotation: turn) }
+            // the chain along the table, beyond its low edge: from its west end over each post pair to its east end
+            let b = fr.rect(TankPoints.Rect(x: t.x, y: t.y, w: t.w, h: t.h))
+            let us = [b.x] + front.map { fr.to($0.x, $0.y).0 } + [b.x + b.w]
+            let edge = b.y + b.h, line = edge + 0.6
+            for (u0, u1) in zip(us, us.dropFirst()) where u1 - u0 > 1e-6 {
+                let a = plan(u0, edge), c = plan(u1, edge), o = plan(0, line)
+                dxf.dimension(CADLayers.dim, a, c, at: o, vertical: l.turn % 2 == 1, text: String(format: "%.2f", u1 - u0), height: 0.24)
+            }
+            for q in front + back { lines.insert(Int((fr.to(q.x, q.y).1 * 1000).rounded())) }
+        }
+        // across the post lines, left of the tank in the layout's frame: wall, each post line, wall
+        let ws = [0.0] + lines.sorted().map { Double($0) / 1000 } + [fr.fh]
+        for (w0, w1) in zip(ws, ws.dropFirst()) where w1 - w0 > 1e-6 {
+            dxf.dimension(CADLayers.dim, plan(0, w0), plan(0, w1), at: plan(-1.6, 0), vertical: l.turn % 2 == 0,
+                          text: String(format: "%.2f", w1 - w0), height: 0.24)
+        }
+        dxf.text(CADLayers.text, at(Pt(0, -2.2)), height: 0.5, "แปลนฐานรากและโครงยึดแผง / Mounting plan")
     }
 
     /// A section's op → its standard layer by colour: concrete and outlines on TC-TANK-SECTION, soil on TC-TANK-SOIL,

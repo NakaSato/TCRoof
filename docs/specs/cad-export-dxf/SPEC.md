@@ -149,6 +149,13 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
+- **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
+  plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
+  table, the rafters (50 mm members up the slope at every post pair, TC-PV-RAFTER, red), the four rails (TC-PV-RAIL,
+  yellow) and the bracing between neighbouring posts on the front and back lines (TC-PV-BRACE, cyan), each on its own
+  WIPEOUT; the team's footing block at every post (`TC_FOOTING_<mm>`: the footing square at `footing`, the base plate,
+  the C post's flanges and the two 50 mm plates; TC-PV-FOOTING, green); a dimension chain along each table beyond its
+  low edge (cantilever, bays, cantilever) and one across the post lines from wall to wall. No modules are drawn there.
 - **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
   (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero

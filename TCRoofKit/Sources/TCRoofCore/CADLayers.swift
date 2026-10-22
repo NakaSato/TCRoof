@@ -27,11 +27,14 @@ public enum CADLayers {
 
     // PV, on the roof and on the tank
     public static let pvModule = SketchDXF.Layer("TC-PV-MODULE", aci: 150, lineweight: 25, description: "แผงโซลาร์ / PV modules")
-    public static let pvRail = SketchDXF.Layer("TC-PV-RAIL", aci: 8, lineweight: 18, description: "รางยึดแผง / Mounting rails")
+    public static let pvRail = SketchDXF.Layer("TC-PV-RAIL", aci: 2, lineweight: 18, description: "รางยึดแผง / Mounting rails")
     public static let pvFoot = SketchDXF.Layer("TC-PV-FOOT", aci: 250, lineweight: 18, description: "ขายึดราง / Rail feet")
     public static let pvCut = SketchDXF.Layer("TC-PV-CUT", aci: 1, lineweight: 18, description: "จุดตัดราง / Rail cuts")
     public static let pvKeepout = SketchDXF.Layer("TC-PV-KEEPOUT", aci: 1, linetype: .hidden, lineweight: 18, description: "ระยะห้ามวางแผง / Keep-out zones")
     public static let pvTable = SketchDXF.Layer("TC-PV-TABLE", aci: 170, lineweight: 25, description: "โต๊ะแผงและฐานราก / Module tables and footings")
+    public static let pvRafter = SketchDXF.Layer("TC-PV-RAFTER", aci: 1, lineweight: 25, description: "คานเอียงรับราง / Rafters")
+    public static let pvBrace = SketchDXF.Layer("TC-PV-BRACE", aci: 4, lineweight: 18, description: "ค้ำยันระหว่างเสา / Bracing between posts")
+    public static let pvFooting = SketchDXF.Layer("TC-PV-FOOTING", aci: 3, lineweight: 25, description: "ฐานรากและฐานเสา / Footings and post bases")
 
     // D1 tank
     public static let tankOutline = SketchDXF.Layer("TC-TANK-OUTLINE", aci: 7, lineweight: 50, description: "ขอบถังน้ำใส / Tank outline")
@@ -66,7 +69,7 @@ public enum CADLayers {
     public static let all: [SketchDXF.Layer] = [
         grid, dim, text, north, sectionMark, obstacle,
         roofOutline, roofRidge, roofTruss, roofPost, roofPurlin, roofSkylight, roofSection, roofTable,
-        pvModule, pvRail, pvFoot, pvCut, pvKeepout, pvTable,
+        pvModule, pvRail, pvFoot, pvCut, pvKeepout, pvTable, pvRafter, pvBrace, pvFooting,
         tankOutline, tankBeam, tankSection, tankSoil,
         siteFrame, siteBuilding, sitePVArea, sitePanelArea, siteCable, siteMeasure, siteCrane, siteShade, siteShape, siteSymbol,
         sldLine, sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed, sldText, sldOther,

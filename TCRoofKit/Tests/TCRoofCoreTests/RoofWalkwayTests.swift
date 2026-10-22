@@ -27,19 +27,35 @@ final class RoofWalkwayTests: XCTestCase {
         let used = m.faces.filter(\.used)
         XCTAssertFalse(ws.isEmpty)
         for f in used {
-            let mine = ws.filter { $0.face.id == f.face.id }
+            let mine = ws.filter { $0.face.id == f.face.id && !$0.ridge }
             XCTAssertEqual(mine.count, 1, "one walkway on face \(f.face.id)")
             // in the middle: no other column's centre is nearer the face's middle
             let us = f.face.polygon.map(\.x), mid = ((us.min() ?? 0) + (us.max() ?? 0)) / 2
             let w = try XCTUnwrap(mine.first)
             XCTAssertLessThanOrEqual(abs(w.u + w.width / 2 - mid), m.moduleAlong / 2 + m.standard.moduleGap + 1e-6)
-            // it runs the face's whole array, first row to last
-            XCTAssertEqual(w.v0, f.rows.first?.v ?? -1, accuracy: 1e-9)
-            XCTAssertEqual(w.v1, (f.rows.last?.v ?? 0) + m.moduleUp, accuracy: 1e-9)
+            // it starts at the first row and runs on past the last one up to the ridge
+            if w.access { XCTAssertEqual(w.v0, 0, accuracy: 1e-9, "the way up starts at the eave") }
+            else { XCTAssertEqual(w.v0, f.rows.first?.v ?? -1, accuracy: 1e-9) }
+            XCTAssertGreaterThan(w.v1, (f.rows.last?.v ?? 0) + m.moduleUp)
+            XCTAssertEqual(w.v1, w.ridgeEnd - RoofWalkway.band / 2, accuracy: 1e-9)
+            XCTAssertEqual(w.v1, f.face.slopeLength - RoofWalkway.band / 2, accuracy: 1e-6, "it meets the ridge walkway")
         }
         // older choices without it keep their digest; the DXF draws it with the detail
         XCTAssertFalse(RoofMount.choice(RoofDXFTests(name: "x", testClosure: { _ in }).roof()).walkwayCentre)
+        // and one walkway along the ridge, centred on it, 0.50 m in from each end; the modules keep clear of its band
+        let ridge = try XCTUnwrap(ws.filter(\.ridge).first)
+        XCTAssertEqual(ws.filter(\.ridge).count, 1)
+        XCTAssertEqual(ridge.b0 + RoofWalkway.band / 2, ridge.face.slopeLength, accuracy: 1e-9)
+        let (lo, hi) = try XCTUnwrap(ridge.face.span(atV: ridge.face.slopeLength))
+        XCTAssertEqual(ridge.v0, lo + RoofWalkway.ridgeInset, accuracy: 1e-9); XCTAssertEqual(ridge.v1, hi - RoofWalkway.ridgeInset, accuracy: 1e-9)
+        XCTAssertGreaterThanOrEqual(m.standard.setRidge, RoofWalkway.ridgeClear - 1e-9)
+        for f in used { for row in f.rows { XCTAssertLessThanOrEqual(row.v + m.moduleUp, f.face.slopeLength - RoofWalkway.band / 2 + 1e-6) } }
+        // one roof access only, on one side
+        XCTAssertEqual(ws.filter(\.access).count, 1)
         let out = RoofDXF.build(v, parts: [.pv])
+        XCTAssertTrue(out.layers.contains("TC-PV-ACCESS"))
+        let s = String(decoding: out.data, as: UTF8.self)
+        XCTAssertEqual(s.components(separatedBy: RoofWalkway.accessNote).count - 1, 1)
         XCTAssertTrue(out.layers.contains("TC-PV-WALKWAY")); XCTAssertTrue(out.layers.contains("TC-DETAIL"))
     }
 
@@ -79,6 +95,13 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertEqual(count("LWPOLYLINE", "TC-PV-WALKWAY"), 2 * panels + 2 * feet)
         XCTAssertEqual(count("LWPOLYLINE", "TC-PV-LIFELINE"), ws.map(\.supports.count).reduce(0, +))
         XCTAssertEqual(count("LWPOLYLINE", "TC-PV-CABLETRAY"), ws.count)
+        // a cross rail at every L-foot, under the whole band (outline and the hat section's two inner lines), drawn
+        // before the tray and grating so their WIPEOUTs cover it
+        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-RAIL"), feet)
+        let lines = t.lines(out.data)
+        let firstRail = try XCTUnwrap(lines.indices.first { lines[$0] == "LWPOLYLINE" && lines[$0 + 8] == "TC-PV-RAIL" })
+        let firstTray = try XCTUnwrap(lines.indices.first { lines[$0] == "WIPEOUT" && lines[$0 + 8] == "TC-PV-CABLETRAY" })
+        XCTAssertLessThan(firstRail, firstTray)
         // the top view's hatches: grating crossed (ANSI37), the tray dotted, the rail solid
         let hatches = recs.filter { $0.first?.1 == "HATCH" }
         XCTAssertEqual(hatches.filter { t.value($0, "2") == "ANSI37" && t.value($0, "8") == "TC-PV-WALKWAY" }.count, panels)

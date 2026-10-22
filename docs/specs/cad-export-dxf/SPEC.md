@@ -161,7 +161,16 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   0.30 × 2.40; the app follows the note. With any walkway the DXF also carries the team's walkway detail
   (`Walkway.dxf`: top view, elevations 1–3, detail 1) as one block `TC_DETAIL_WALKWAY` on TC-DETAIL beside the drawing,
   at the plot scale; it comes from `Resources/walkway-detail.json`, made by `tools/cad-details/convert.py` from the DXF
-  (blocks, dimensions and leaders exploded, XCLIP frames applied); run it again when the detail changes.
+  (blocks, dimensions and leaders exploded, XCLIP frames applied); run it again when the detail changes. Under the
+  band, a cross rail (hat section 24 mm, TC-PV-RAIL, grey) at every L-foot. Down the middle (`walkwayCentre`) each
+  face's walkway runs on past its top row to the ridge (`RoofWalkway.ridgeEnd`, or where a hip edge crosses the
+  band), and on a roof with a ridge a walkway runs along it (`RoofWalkway.ridgeWalkway`: centred on the ridge, 0.50 m
+  in from each end; the layout then keeps the modules 0.50 m from the ridge, `ridgeClear`), the up-slope walkways
+  stopping at its edge. The roof is reached on one side only (`access`): the lowest walkway of the face whose eave is
+  at the plan's top starts at the eave, and a cat ladder 0.45 m wide stands in line with its grating, 0.75 m out on
+  plan with rungs and an UP arrow (TC-PV-ACCESS, magenta), tagged `ROOF ACCESS LADDER + WALKWAY + LIFELINE` and
+  `ONE SIDE ONLY - SIDE TO BE CONFIRMED BY INSTALLER ON SITE`; a ladder below the plan pushes its title and the
+  section down. Open: which side the team takes as standard.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, TC-PV-RAFTER, red), the four rails (TC-PV-RAIL,

@@ -153,6 +153,9 @@ public struct RoofMountLayout: Sendable {
     /// The layout with each face's placement given (or the best one where none is).
     public static func compute(_ input: RoofMountInput, standard: RoofMountStandard = .standard, options: Options = .init(),
                                placements: [String: Placement] = [:]) -> RoofMountLayout {
+        var standard = standard
+        // the walkway along the ridge needs half its band clear of modules on each face
+        if options.walkwayCentre, input.shape != .shed { standard.setRidge = max(standard.setRidge, RoofWalkway.ridgeClear) }
         let roof = RoofFaces(input, standard: standard)
         let purlins = RoofFaces.purlins(slopeLength: roof.slopeLength, spacing: input.purlinSpacing)
         let contexts = Context.make(roof, input: input, standard: standard, options: options, purlins: purlins)

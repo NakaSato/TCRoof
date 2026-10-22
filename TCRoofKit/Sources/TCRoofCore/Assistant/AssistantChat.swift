@@ -27,6 +27,9 @@ public enum Assistant {
         public var content: String?
         public var toolCalls: [ToolCall]?
         public var toolCallID: String?
+        /// The provider's own content blocks of an assistant reply, sent back as they came (Claude's `thinking` blocks
+        /// must be). Kept on the device only: never encoded, so OpenAI-style bodies and the function never see it.
+        public var providerBlocks: JSONValue? = nil
 
         enum CodingKeys: String, CodingKey {
             case role, content

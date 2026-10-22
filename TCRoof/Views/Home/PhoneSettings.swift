@@ -76,10 +76,10 @@ struct PhoneSettingsList: View {
                     }
                 }
                 if permissions.can(.assistantUse) {
-                    // the Qwen key lives in this device's Keychain (docs/specs/project-assistant-qwen.md §7)
+                    // the AI keys live in this device's Keychain, one per provider (docs/specs/project-assistant-qwen.md §7)
                     section("ผู้ช่วยโครงการ (AI)") {
                         NavigationLink { AssistantSettingsPage() } label: {
-                            row("คีย์ Qwen", AssistantKey.hasKey ? "ตั้งค่าแล้ว ›" : "ยังไม่ได้ใส่ ›")
+                            row("คีย์ AI | " + AssistantKey.provider.title, AssistantKey.hasActiveKey ? "ตั้งค่าแล้ว ›" : "ยังไม่ได้ใส่ ›")
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("assistantSettingsRow")

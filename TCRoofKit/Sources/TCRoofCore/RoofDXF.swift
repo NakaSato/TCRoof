@@ -78,14 +78,16 @@ public enum RoofDXF {
             }
         }
         if parts.contains(.section) {
-            let s = RoofSection(v), top = parts.contains(.plan) ? -2.5 : 0
+            // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)
+            let s = RoofSection(v, trueScale: true), top = parts.contains(.plan) ? -2.5 : 0
             let ts: (Pt) -> (Double, Double) = { p in ((p.x - 380) / s.scale + L.lx / 2, top - p.y / s.scale) }
-            for (op, tag) in zip(s.sketch.ops, s.tags) {
-                guard let tag else { continue }
+            for (i, (op, tag)) in zip(s.sketch.ops, s.tags).enumerated() {
+                guard let tag, !s.dimensionOps.contains(i) else { continue }
                 write(op, tag, ts, s.scale, text: th)
             }
-            TEXT("DIM", ts(Pt(380, 226)), th, fmt(s.span), mid: true)
-            TEXT("TEXT", (L.lx / 2 - s.span / 2, top - 252 / s.scale - 0.8), th * 1.4,
+            dxf.options.fixedTextHeight = th * 0.8
+            dxf.add(s.dimensions, layer: layer("DIM"), transform: ts, pointsPerMetre: s.scale)
+            TEXT("TEXT", (L.lx / 2 - s.span / 2, top - (s.sketch.height + 2) / s.scale - 0.8), th * 1.4,
                  "รูปตัด A-A | " + f.label + " | ช่วง " + fmt(s.span) + " ม. | ลาด " + Roof.slopeText(v), mid: false)
         }
         if parts.contains(.table) {

@@ -163,8 +163,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   the line) from an anonymous block `*D<n>`, in a style per text height (`TC_<height>`: DIMTSZ ticks, CORDIA text,
   DIMLFAC to metres, two decimals; `TC_<height>_Z` drops trailing zeros for labels like `4` or `1.5`), so CAD redraws it
   the same after an edit. The measured part of the label is written `<>`, so moving a point updates the number;
-  `Ø <>` keeps its prefix, and any other label stays as written. The C1 section's dimensions stay lines: the section is
-  a diagram, not to scale. A `hatch` is one HATCH (ANSI31 at the sketch's spacing, inside the box), and an opaque
+  `Ø <>` keeps its prefix, and any other label stays as written. The C1 section is drawn to scale for the DXF
+  (`RoofSection(trueScale:)`, 2026-10-22: the ground at the clear height under the tie, or under the column top for a
+  rafter frame; the page and the PDF keep the compact diagram), so its half spans, span, overhangs, clear height, rise
+  and heel are DIMENSIONs too (`RoofSection.dimensions`). A `hatch` is one HATCH (ANSI31 at the sketch's spacing, inside the box), and an opaque
   coloured fill with no stroke (posts, rail feet, junction dots, a north arrow's head) adds a SOLID HATCH inside its
   outline (`Options.hatchEntities`; off writes the old lines).
 - **Objects, not loose lines**: a polyline, a rectangle, a polygon and an outline are one LWPOLYLINE each (closed for the
@@ -184,5 +186,4 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
 1. Does PEA (or PWA) accept DXF in the permit pack, or must it be DWG / PDF only?
 2. SLD in real scale or paper scale (A3 sheet in mm, 1:1 with the PDF)? Paper scale is simpler for a schematic.
 3. Should a title block (company, job, date, signer) be drawn into each DXF?
-5. Should the C1 section be drawn to scale, so its dimensions can be real ones too?
 4. ~~Is the TIS-620 codepage enough?~~ Answered 2026-10-22: TIS-620 with the team's `cordia.shx` (width 0.85), above.

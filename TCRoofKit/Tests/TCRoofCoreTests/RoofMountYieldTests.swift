@@ -39,7 +39,7 @@ final class RoofMountYieldTests: XCTestCase {
         // the south face beats the north face
         let s = try XCTUnwrap(e.faces.first { $0.id == "S" }), n = try XCTUnwrap(e.faces.first { $0.id == "N" })
         XCTAssertGreaterThan(s.kWhPerKWp, n.kWhPerKWp)
-        // within a quarter of the clear-sky model, which the layout's face choice still uses
+        // within a quarter of the clear-sky model (the fallback)
         let clear = RoofMountYield.clearSky(i, reason: "")
         XCTAssertEqual(e.mwh / clear.mwh, 1, accuracy: 0.25)
     }

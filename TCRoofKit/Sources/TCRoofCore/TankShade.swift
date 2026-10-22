@@ -49,22 +49,22 @@ public struct TankShade: Sendable {
     // MARK: the simulation
 
     /// The shade on the stored layout; nil without one.
-    public init?(_ v: Values, latitude: Double) {
+    public init?(_ v: Values, latitude: Double, longitude: Double? = nil) {
         guard let l = TankLayout.current(v), l.count > 0 else { return nil }
         self.init(layout: l, objects: Self.objects(v), azimuth: Tank.azimuth(v).map(Double.init), exposed: Tank.exposed(v) ?? 0,
-                  latitude: latitude)
+                  latitude: latitude, longitude: longitude)
     }
 
     /// One panel as the simulation sees it: its centre on the plan, its height above the roof, its row and whether a
     /// row stands in front of it, and its place on the slope (0 the upper module, 1 the lower).
     struct Spot { var key: String; var x, y, z: Double; var lower: Bool; var behindRow: Bool }
 
-    public init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double, latitude lat: Double) {
+    public init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double, latitude lat: Double, longitude: Double? = nil) {
         self.objects = objects
         let sim = Sim(layout: l, objects: objects, azimuth: azimuth, exposed: exposed)
         let r = sim.run(latitude: lat, dayStep: SolarModel.dayStep, minutes: SolarModel.stepMinutes)
         rowLoss = r.rowLoss; objectLoss = r.objectLoss
-        energy = l.kWp * l.yield(latitude: lat, facing: sim.facing) / 1000
+        energy = l.kWp * l.yield(latitude: lat, longitude: longitude, facing: sim.facing) / 1000
         objectMWh = energy * objectLoss
         heat = r.heat
         let moments: [(day: Int, time: Double, title: String)] = [
@@ -183,23 +183,25 @@ public struct TankShade: Sendable {
 
     // MARK: the last answer
 
-    /// The simulation for these values, kept for the next call with the same values and latitude (E1 asks on every render).
-    public static func current(_ v: Values, latitude: Double) -> TankShade? {
-        if let hit = cache.get(v, latitude) { return hit.shade }
-        let s = TankShade(v, latitude: latitude)
-        cache.set(v, latitude, s)
+    /// The simulation for these values, kept for the next call with the same values and site (E1 asks on every render).
+    public static func current(_ v: Values, latitude: Double, longitude: Double? = nil) -> TankShade? {
+        if let hit = cache.get(v, latitude, longitude) { return hit.shade }
+        let s = TankShade(v, latitude: latitude, longitude: longitude)
+        cache.set(v, latitude, longitude, s)
         return s
     }
     private static let cache = Last()
     private final class Last: @unchecked Sendable {
         private let lock = NSLock()
-        struct Entry { var values: Values; var latitude: Double; var shade: TankShade? }
+        struct Entry { var values: Values; var latitude: Double; var longitude: Double?; var shade: TankShade? }
         private var entry: Entry?
-        func get(_ v: Values, _ lat: Double) -> Entry? {
+        func get(_ v: Values, _ lat: Double, _ lon: Double?) -> Entry? {
             lock.lock(); defer { lock.unlock() }
-            return entry?.values == v && entry?.latitude == lat ? entry : nil
+            return entry?.values == v && entry?.latitude == lat && entry?.longitude == lon ? entry : nil
         }
-        func set(_ v: Values, _ lat: Double, _ s: TankShade?) { lock.lock(); entry = Entry(values: v, latitude: lat, shade: s); lock.unlock() }
+        func set(_ v: Values, _ lat: Double, _ lon: Double?, _ s: TankShade?) {
+            lock.lock(); entry = Entry(values: v, latitude: lat, longitude: lon, shade: s); lock.unlock()
+        }
     }
 
     // MARK: report

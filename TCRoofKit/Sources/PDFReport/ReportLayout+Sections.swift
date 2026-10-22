@@ -180,7 +180,7 @@ extension ReportLayout {
     func roofPVUnits(_ d: Values) -> [Unit] {
         guard RoofMount.printable(d) else { return [] }
         let lat = RoofMount.latitude(gps: j.text("gps"))
-        let m = RoofMount.layout(d, latitude: lat).layout, q = m.quantities
+        let (m, energy) = RoofMount.printed(d, job: job), q = m.quantities
         guard q.modules > 0 else { return [] }
         let W = Self.cw, plan = RoofPlan(d, mode: .pv, mount: m).sketch, k = (W - 16) / plan.width
         let used = m.faces
@@ -191,11 +191,13 @@ extension ReportLayout {
         var o = box("แปลนวางแผงบนหลังคา (หน่วย ม.)", height: h)
         o += plan.translated(8, Self.band + 6, scale: k)
         var y = Self.band + 6 + plan.height * k + 10
-        o.append(.text(RoofMount.summaryLine(m), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
+        o.append(.text(RoofMount.summaryLine(m, energy: energy.mwh), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
         for f in used {
             let face = f.face
+            // the energy card's figure for a face in use, the plane's for one left empty
+            let kWhPerKWp = energy.faces.first { $0.id == face.id }?.kWhPerKWp ?? f.yield
             let t = "ด้าน\(RoofFace.direction(face.azimuth)) \(Int(face.azimuth.rounded()))° | ลาด " + String(format: "%.0f°", face.tilt * 180 / .pi)
-                + " | \(Int(f.yield.rounded())) kWh/kWp | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)") + (f.cuts > 0 ? " | ตัด \(f.cuts)" : "")
+                + " | \(Int(kWhPerKWp.rounded())) kWh/kWp | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)") + (f.cuts > 0 ? " | ตัด \(f.cuts)" : "")
             o.append(.text(t, at: Pt(14, y), size: 8, color: f.used ? .black : .tag)); y += lineH
         }
         o.append(.text(RoofMount.boqLine(q), at: Pt(8, y), size: 8)); y += lineH
@@ -338,7 +340,7 @@ extension ReportLayout {
     /// D1's stored panel layout (docs/specs/tank-drawing-swift.md §5): the layout on the plan with its figures, BOQ,
     /// checks and assumptions, the standard row section, then the tank sections 1–1 and 2–2.
     func tankLayoutUnits(_ d: Values) -> [Unit] {
-        let W = Self.cw, lat = RoofMount.latitude(gps: j.text("gps"))
+        let W = Self.cw, (lat, lon) = RoofMount.site(job)
         var out: [Unit] = []
         if let l = TankLayout.current(d), l.count > 0, let plan = TankDrawings.layoutPlan(d, l) {
             let k = (W - 16) / plan.width, lineH = 11.0
@@ -347,13 +349,13 @@ extension ReportLayout {
             var o = box("ผังจัดแผงบนหลังคาถัง (หน่วย ม.)", height: h)
             o += plan.translated(8, Self.band + 6, scale: k)
             var y = Self.band + 6 + plan.height * k + 10
-            o.append(.text(l.summaryLine(latitude: lat ?? RoofMount.defaultLatitude, facing: TankLayout.facing(d)), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
+            o.append(.text(l.summaryLine(latitude: lat ?? RoofMount.defaultLatitude, longitude: lon, facing: TankLayout.facing(d)), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
             o.append(.text(l.boqLine, at: Pt(8, y), size: 8)); y += lineH
             o.append(.text(l.checksLine, at: Pt(8, y), size: 8, color: l.checks.allOK ? .black : .tag)); y += lineH
             if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " | "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
             o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง | ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))
             out.append(Unit(h: h, ops: o))
-            if let sh = TankShade(d, latitude: lat ?? RoofMount.defaultLatitude) { out.append(tankShadeUnit(d, l, sh)) }
+            if let sh = TankShade(d, latitude: lat ?? RoofMount.defaultLatitude, longitude: lon) { out.append(tankShadeUnit(d, l, sh)) }
             let sec = TankDrawings.tableSection(l.params), ks = (W - 16) / sec.width, sh = Self.band + 6 + sec.height * ks + 4
             var s = box("ภาพตัดโต๊ะแผง", height: sh)
             s += sec.translated(8, Self.band + 6, scale: ks)

@@ -7,11 +7,11 @@ import TCRoofCore
 /// `หาผังที่ได้พลังงานมากที่สุด` it is worked out off the main thread when the walls are a degree or more off south; card 1
 /// shows one line, and `ดูผังเทียบ` opens the turned plan beside the chosen layout's numbers. Nothing is stored.
 extension TankPageWide {
-    func compareSouth(_ v: Values, latitude: Double, wall: TankLayout.EnergySearch) {
+    func compareSouth(_ v: Values, latitude: Double, longitude: Double?, wall: TankLayout.EnergySearch) {
         guard TankLayout.comparesSouth(v) else { return }
         southBusy = true
         Task { @MainActor in
-            let c = await Task.detached(priority: .utility) { TankLayout.compareSouth(v, latitude: latitude, wall: wall) }.value
+            let c = await Task.detached(priority: .utility) { TankLayout.compareSouth(v, latitude: latitude, longitude: longitude, wall: wall) }.value
             // a newer search or layout may have replaced the one compared
             if energySearch?.chosen == wall.chosen { southCompare = c }
             southBusy = false

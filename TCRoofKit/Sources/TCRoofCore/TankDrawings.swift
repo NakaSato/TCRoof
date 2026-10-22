@@ -302,16 +302,16 @@ extension TankLayout {
         return (Double(az) + d).truncatingRemainder(dividingBy: 360)
     }
 
-    /// kWh per kWp per year from the roof layout's sun model (`SolarModel`), at the panels' tilt and facing; south
-    /// facing when the tank has no azimuth.
-    public func yield(latitude: Double, facing: Double?) -> Double {
+    /// kWh per kWp per year at the panels' tilt and facing (`PlaneYield`: the hourly engine with a longitude near the
+    /// bundled weather, else `SolarModel`); south facing when the tank has no azimuth.
+    public func yield(latitude: Double, longitude: Double? = nil, facing: Double?) -> Double {
         let fromSouth = facing.map { ($0 - 180 + 540).truncatingRemainder(dividingBy: 360) - 180 } ?? 0
-        return SolarModel.yield(lat: latitude, tilt: params.tilt, azimuthFromSouth: fromSouth)
+        return PlaneYield.kWhPerKWp(latitude: latitude, longitude: longitude, tilt: params.tilt, azimuthFromSouth: fromSouth)
     }
 
     /// `ผังแผงอัตโนมัติ 410 แผง | 233.7 kWp | 340.2 MWh/ปี | 13 โต๊ะ | 7 แถว | เอียง 19.7°`
-    public func summaryLine(latitude: Double, facing: Double?) -> String {
-        let e = kWp * yield(latitude: latitude, facing: facing) / 1000
+    public func summaryLine(latitude: Double, longitude: Double? = nil, facing: Double?) -> String {
+        let e = kWp * yield(latitude: latitude, longitude: longitude, facing: facing) / 1000
         return "ผังแผงอัตโนมัติ \(count) แผง | " + String(format: "%.1f kWp | %.1f MWh/ปี | ", kWp, e)
             + "\(builtTables.count) โต๊ะ | \(rows) แถว | " + String(format: "เอียง %.1f°", params.tilt)
             + (params.rowGap > params.standardGap + 1e-6 ? String(format: " | แถวห่าง %.2f ม.", params.rowGap) : "")

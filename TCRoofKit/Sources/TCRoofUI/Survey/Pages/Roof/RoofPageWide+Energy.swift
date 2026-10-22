@@ -18,8 +18,8 @@ extension RoofPageWide {
         return y
     }
 
-    /// MWh/ปี for the summary: the hourly engine's when it ran.
-    var shownEnergy: Double? { currentYield.flatMap { $0.isHourly ? $0.mwh : nil } }
+    /// The energy card's figure, which the report and the workbook print too (`RoofMount.printed`).
+    var shownEnergy: Double? { currentYield?.mwh }
 
     func refreshYield() async {
         guard let inputs = mountYieldInputs else { mountYieldBusy = false; return }

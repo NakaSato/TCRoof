@@ -18,7 +18,7 @@ public enum RoofMountYield {
             public var id: String
             public var modules: Int
             public var tiltDeg: Double, azimuthDeg: Double
-            /// SolarModel's kWh/kWp (the fallback).
+            /// SolarModel's kWh/kWp (the fallback; the layout's own face yield is `PlaneYield`'s).
             public var clearSkyYield: Double
         }
         public var faces: [Face]
@@ -89,8 +89,10 @@ public enum RoofMountYield {
             if !st.sizesAssumed { sizes += st.sizes }
         }
         return Inputs(faces: used.map { f in
-                          Inputs.Face(id: f.face.id, modules: f.modules, tiltDeg: f.face.tilt * 180 / .pi,
-                                      azimuthDeg: f.face.azimuth, clearSkyYield: f.yield)
+                          let tilt = f.face.tilt * 180 / .pi
+                          let fromSouth = (f.face.azimuth - 180 + 540).truncatingRemainder(dividingBy: 360) - 180
+                          return Inputs.Face(id: f.face.id, modules: f.modules, tiltDeg: tilt, azimuthDeg: f.face.azimuth,
+                                             clearSkyYield: SolarModel.yield(lat: layout.latitude, tilt: tilt, azimuthFromSouth: fromSouth))
                       },
                       moduleWp: s.moduleWp, moduleLength: s.moduleLength, moduleWidth: s.moduleWidth,
                       inverterSizes: sizes, roofSections: max(1, job.modules.filter { $0.type == .roof }.count),
@@ -188,5 +190,24 @@ public enum RoofMountYield {
         let mwh = faces.reduce(0) { $0 + $1.mwh }, kWp = i.kWp
         return Estimate(faces: faces, kWp: kWp, mwh: mwh, p90MWh: nil, kWhPerKWp: kWp > 0 ? mwh * 1000 / kWp : 0,
                         performanceRatio: nil, inverterLine: nil, source: .clearSky(reason: reason), assumptions: [])
+    }
+}
+
+extension RoofMount {
+    /// A1's GPS as the layouts' site: its latitude (nil without GPS, the callers then take `defaultLatitude`) and its
+    /// longitude (nil without a latitude, so a default latitude is never paired with a real longitude).
+    public static func site(_ job: Job) -> (latitude: Double?, longitude: Double?) {
+        let gps = job.values.text("gps")
+        guard let lat = latitude(gps: gps) else { return (nil, nil) }
+        return (lat, longitude(gps: gps))
+    }
+
+    /// The roof's layout as the job keeps it, at the job's site, and its energy as C1's card works it out
+    /// (`RoofMountYield.estimate`), for the report and the workbook. Slow on the first call at a site: not on the
+    /// main thread.
+    public static func printed(_ v: Values, job: Job) -> (layout: RoofMountLayout, energy: RoofMountYield.Estimate) {
+        let s = site(job)
+        let m = layout(v, latitude: s.latitude, longitude: s.longitude).layout
+        return (m, RoofMountYield.estimate(RoofMountYield.inputs(m, job: job)))
     }
 }

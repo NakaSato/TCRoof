@@ -104,15 +104,15 @@ extension TankPageWide {
             update { TankLayout.save(&$0, TankLayout.auto($0), off: []) }
         case .max:
             // the row gaps from the standard's up, scored by the year's energy after shade (tank-mounting-layout.md §3a)
-            let v = values, lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude
+            let v = values, site = RoofMount.site(job), lat = site.latitude ?? RoofMount.defaultLatitude, lon = site.longitude
             layoutSearching = true
             Task { @MainActor in
-                let s = await Task.detached(priority: .userInitiated) { TankLayout.bestEnergy(v, latitude: lat) }.value
+                let s = await Task.detached(priority: .userInitiated) { TankLayout.bestEnergy(v, latitude: lat, longitude: lon) }.value
                 if let s { update { TankLayout.save(&$0, s.params, off: []) } }
                 energySearch = s
                 southCompare = nil
                 layoutSearching = false
-                if let s { compareSouth(v, latitude: lat, wall: s) }
+                if let s { compareSouth(v, latitude: lat, longitude: lon, wall: s) }
             }
         }
     }
@@ -378,9 +378,9 @@ extension TankPageWide {
     }
 
     func refreshShade() async {
-        let v = values, lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude
+        let v = values, site = RoofMount.site(job), lat = site.latitude ?? RoofMount.defaultLatitude, lon = site.longitude
         shadeBusy = true
-        let r = await Task.detached(priority: .userInitiated) { TankShade(v, latitude: lat) }.value
+        let r = await Task.detached(priority: .userInitiated) { TankShade(v, latitude: lat, longitude: lon) }.value
         guard !Task.isCancelled else { return }
         shadeResult = r
         shadeBusy = false

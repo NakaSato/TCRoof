@@ -41,9 +41,12 @@ public enum RoofMount {
 
     /// Latitude from A1's `gps` ("lat, lon").
     public static func latitude(gps: String) -> Double? { GPS.parse(gps).map(\.lat) }
+    /// Longitude from A1's `gps`: with it, the energy figures come from the hourly engine near the bundled weather
+    /// (`PlaneYield`).
+    public static func longitude(gps: String) -> Double? { GPS.parse(gps).map(\.lon) }
 
-    /// The engine's input. `latitude` nil takes the default.
-    public static func input(_ v: Values, latitude: Double?) -> RoofMountInput {
+    /// The engine's input. `latitude` nil takes the default; `longitude` nil keeps the face yields on `SolarModel`.
+    public static func input(_ v: Values, latitude: Double?, longitude: Double? = nil) -> RoofMountInput {
         let xs = Roof.spans(v, .x), ys = Roof.spans(v, .y), alongX = Roof.ridge(v) == .h
         let shape = shape(v) ?? .gable
         let across = alongX ? ys.reduce(0, +) : xs.reduce(0, +)
@@ -59,6 +62,7 @@ public enum RoofMount {
                                  purlinSpacing: Roof.purlinSpacing(v), latitude: latitude ?? defaultLatitude, bearing: bearing(v) ?? 0,
                                  obstacles: obstacles, shedLowAtStart: shape == .shed && shedLowAtStart(v))
         out.tileRoof = tileRoof(v)
+        out.longitude = latitude == nil ? nil : longitude
         return out
     }
 
@@ -169,8 +173,8 @@ public enum RoofMount {
 
     /// The layout as the job keeps it: the stored placements while the inputs are the ones they were found for, else
     /// the best layout. `fresh` is true when the search ran (the caller stores its placements with `remember`).
-    public static func layout(_ v: Values, latitude: Double?) -> (layout: RoofMountLayout, fresh: Bool) {
-        let input = input(v, latitude: latitude), c = choice(v)
+    public static func layout(_ v: Values, latitude: Double?, longitude: Double? = nil) -> (layout: RoofMountLayout, fresh: Bool) {
+        let input = input(v, latitude: latitude, longitude: longitude), c = choice(v)
         if !c.placements.isEmpty, c.digest == digest(input, choice: c) {
             return (RoofMountLayout.compute(input, standard: c.standardOrDefault, options: c.options(tile: input.tileRoof),
                                             placements: c.placements), false)
@@ -193,11 +197,12 @@ public enum RoofMount {
 
     // MARK: - Report lines (docs/specs/roof-pv-layout.md §7)
 
-    /// `ผังแผงอัตโนมัติ 216 แผง | 129.6 kWp | 191.1 MWh/ปี | ลาด 15° | แป @1.20 ม. | 4 แถว`
-    public static func summaryLine(_ m: RoofMountLayout) -> String {
+    /// `ผังแผงอัตโนมัติ 216 แผง | 129.6 kWp | 191.1 MWh/ปี | ลาด 15° | แป @1.20 ม. | 4 แถว`. `energy` (MWh) is the
+    /// energy card's figure (`RoofMountYield.estimate`), so the report prints what the page shows; nil adds up the faces.
+    public static func summaryLine(_ m: RoofMountLayout, energy: Double? = nil) -> String {
         let q = m.quantities, rows = m.faces.filter(\.used).map(\.rows.count).max() ?? 0
         let fixing = m.options.tileHooks ? "ขอเกี่ยวกระเบื้อง" : m.options.ribClamp ? "จับสันลอน" : String(format: "แป @%.2f ม.", m.purlins.count > 1 ? m.purlins[1] - m.purlins[0] : 0)
-        return "ผังแผงอัตโนมัติ \(q.modules) แผง | " + String(format: "%.1f kWp | %.1f MWh/ปี | ลาด %.0f° | ", q.kWp, q.energy, m.roof.tilt * 180 / .pi)
+        return "ผังแผงอัตโนมัติ \(q.modules) แผง | " + String(format: "%.1f kWp | %.1f MWh/ปี | ลาด %.0f° | ", q.kWp, energy ?? q.energy, m.roof.tilt * 180 / .pi)
             + fixing + (m.options.landscape || m.options.acrossPurlins ? " | " + arrangement(m.options) : "") + " | \(rows) แถว"
     }
 

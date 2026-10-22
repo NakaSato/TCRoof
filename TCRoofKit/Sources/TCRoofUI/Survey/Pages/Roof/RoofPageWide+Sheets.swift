@@ -407,7 +407,8 @@ struct RoofCADSheet: View {
     }
 
     func export() {
-        let out = RoofDXF.build(values, parts: chosen, millimetres: mm)
+        let site = RoofMount.site(job)
+        let out = RoofDXF.build(values, parts: chosen, millimetres: mm, latitude: site.latitude, longitude: site.longitude)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do { try out.data.write(to: url, options: .atomic); result = (url, out); sharing = true } catch {}
     }

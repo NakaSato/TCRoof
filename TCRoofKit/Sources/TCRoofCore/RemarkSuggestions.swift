@@ -25,7 +25,7 @@ public enum RemarkSuggestions {
     /// 1 % or more, and the line is left out below that.
     static func shade(_ job: Job) -> [RemarkSuggestion] {
         let sections = job.sectionsByCategory.flatMap(\.sections)
-        let lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude
+        let lat = RoofMount.latitude(gps: job.values.text("gps")), lon = lat == nil ? nil : RoofMount.longitude(gps: job.values.text("gps"))
         return job.modules.filter { $0.type == .tank }.compactMap { m in
             let v = m.values
             guard Schema.shaded(v) else { return nil }
@@ -36,7 +36,7 @@ public enum RemarkSuggestions {
             let name = m.name.trimmingCharacters(in: .whitespaces)
             let title = m.spec.short + (name.isEmpty ? "" : " " + name)
             let text: String
-            if !TankShade.objects(v).isEmpty, let sim = TankShade.current(v, latitude: lat) {
+            if !TankShade.objects(v).isEmpty, let sim = TankShade.current(v, latitude: lat ?? RoofMount.defaultLatitude, longitude: lon) {
                 guard sim.objectLoss >= 0.01 else { return nil }
                 let what = from == ["ต้นไม้"] ? "ตัดแต่งต้นไม้" : "ลดเงาจาก" + (from.isEmpty ? "สิ่งกีดขวาง" : from.joined(separator: "/"))
                 let cut = sim.cutTo.map { " ให้สูงไม่เกิน \(fmt($0)) ม." } ?? ""

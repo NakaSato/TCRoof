@@ -73,7 +73,7 @@ final class SingleLineDXFTests: XCTestCase {
         let breakers = inserts.filter { t.value($0, "2") == "SLD_BREAKER" }.count
         XCTAssertGreaterThan(breakers, 3)
         let l = t.lines(out.data)
-        XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 + 4] == "SLD_BREAKER" }.count, 1)
+        XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 - 1] == "0" && t.after(l, $0, "2") == "SLD_BREAKER" }.count, 1)
         // a new-equipment (blue) breaker is the same block on the new-equipment layer
         XCTAssertTrue(inserts.contains { t.value($0, "2") == "SLD_BREAKER" && t.value($0, "8") == "SLD_NEW" })
         // every symbol's ops really are the same block geometry: the drawing's ops minus the symbols' plus the blocks

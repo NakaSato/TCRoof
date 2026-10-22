@@ -91,7 +91,7 @@ final class TankDXFTests: XCTestCase {
         let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }
         XCTAssertEqual(modules.count, l.count)
         XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "PV" })
-        let tables = raw.filter { $0.first?.1 == "POLYLINE" && t.value($0, "8") == "PV_GROUP" }
+        let tables = raw.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "PV_GROUP" }
         XCTAssertEqual(tables.count, l.builtTables.count)
         XCTAssertTrue(tables.allSatisfy { t.value($0, "70") == "1" })
     }

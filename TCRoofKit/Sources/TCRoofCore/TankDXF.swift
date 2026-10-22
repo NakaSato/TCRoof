@@ -30,7 +30,12 @@ public enum TankDXF {
                 // each module an INSERT of one block per size on plan (its lower-left corner the base point)
                 for q in t.panels where q.on {
                     let name = String(format: "PV_MODULE_%.0fx%.0f", q.w * 1000, q.h * 1000)
-                    dxf.block(name) { d in d.polyline(pv, [(0, 0), (q.w, 0), (q.w, q.h), (0, q.h)], closed: true) }
+                    // a WIPEOUT under the outline hides the beams and grid the module covers, as on the printed plan
+                    dxf.block(name) { d in
+                        let r = [(0.0, 0.0), (q.w, 0), (q.w, q.h), (0, q.h)]
+                        d.wipeout(pv, r)
+                        d.polyline(pv, r, closed: true)
+                    }
                     dxf.insert(pv, name, at: p(q.x, q.y + q.h))
                 }
                 for q in t.posts { dxf.circle(pvGroup, p(q.x, q.y), r: l.params.footing / 2) }

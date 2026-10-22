@@ -1,7 +1,7 @@
 import Foundation
 
 /// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): the roof plan, section A-A, member table and PV layout as a plain
-/// DXF R12 drawing (LINE / CIRCLE / TEXT on named layers) that any CAD program opens. Coordinates are metres from the
+/// DXF R2000 drawing (LINE / CIRCLE / TEXT on named layers) that any CAD program opens. Coordinates are metres from the
 /// plan's bottom-left corner, written in millimetres (1:1) or metres; the section sits under the plan and the table to
 /// its right. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874).
 public enum RoofDXF {
@@ -63,6 +63,8 @@ public enum RoofDXF {
             let pv = RoofPlan(v, mode: .pv, mount: RoofMount.layout(v, latitude: latitude, longitude: longitude).layout)
             for (op, tag) in zip(pv.sketch.ops, pv.tags) {
                 guard let tag, let l = pvLayers[tag] else { continue }
+                // a module hides the purlins and grid under it
+                if tag == "pv", case let .polygon(pts, _, _, _) = op { dxf.wipeout(layer(l), pts.map(tp)) }
                 write(op, l, tp, L.k, text: th)
             }
         }

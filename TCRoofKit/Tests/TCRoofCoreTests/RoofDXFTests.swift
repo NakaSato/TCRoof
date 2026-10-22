@@ -1,7 +1,7 @@
 import XCTest
 @testable import TCRoofCore
 
-/// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): a DXF R12 file with the design's layers.
+/// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): a DXF R2000 file with the design's layers.
 final class RoofDXFTests: XCTestCase {
     func roof() -> Values {
         var v = Values()
@@ -18,7 +18,7 @@ final class RoofDXFTests: XCTestCase {
     func testHeaderLayersAndEntities() {
         let out = RoofDXF.build(roof(), parts: [.plan, .section, .table])
         let l = lines(out.data)
-        XCTAssertEqual(Array(l.prefix(8)), ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009"])
+        XCTAssertEqual(Array(l.prefix(8)), ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1015"])
         XCTAssertTrue(l.contains("ANSI_874"))
         XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "4", "millimetres")
         XCTAssertEqual(l.suffix(3), ["0", "EOF", ""])
@@ -27,12 +27,12 @@ final class RoofDXFTests: XCTestCase {
         }
         XCTAssertFalse(out.layers.contains("PV"))
         // every layer is declared once in the LAYER table
-        let table = l.firstIndex(of: "LAYER")!
-        XCTAssertEqual(l[table + 2], String(out.layers.count))
-        XCTAssertEqual(out.entities, zip(l, l.dropFirst()).filter { $0.0 == "0" && ["LINE", "POLYLINE", "CIRCLE", "TEXT", "INSERT"].contains($0.1) }.count)
-        // 10 posts, each one closed POLYLINE of 4 sides, on POST
         let t = SketchDXFTests()
-        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "POLYLINE" && t.value($0, "8") == "POST" }.count, 10)
+        // layer 0 and the drawing's
+        XCTAssertEqual(t.tableCount(l, "LAYER"), out.layers.count + 1)
+        XCTAssertEqual(out.entities, t.records(out.data).count)
+        // 10 posts, each one closed LWPOLYLINE of 4 sides, on POST
+        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "POST" }.count, 10)
         XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "POST" }.count, 40)
     }
 

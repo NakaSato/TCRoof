@@ -1,6 +1,6 @@
 import Foundation
 
-/// SLD "ส่งออก DXF" (docs/specs/cad-export-dxf phase 2): the same diagram as the A3 PDF page, as DXF R12 at paper scale,
+/// SLD "ส่งออก DXF" (docs/specs/cad-export-dxf phase 2): the same diagram as the A3 PDF page, as DXF R2000 at paper scale,
 /// 400 mm wide (A3 landscape less its margins), with a title line and the "not a construction drawing" note under it.
 /// Layers follow `SingleLineLayout.color(_:)`: ink is a known value, blue new equipment, red a missing value, grey an
 /// assumed one. Condition colours (green / amber / red) only colour text, which goes on `SLD_TEXT` with its colour kept.

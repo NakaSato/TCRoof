@@ -1,16 +1,16 @@
 import XCTest
 @testable import TCRoofCore
 
-/// docs/specs/cad-export-dxf phase 1: the shared `Sketch` → DXF R12 writer, and `RoofDXF` unchanged on top of it.
+/// docs/specs/cad-export-dxf phase 1: the shared `Sketch` → DXF R2000 writer, and `RoofDXF` unchanged on top of it.
 final class SketchDXFTests: XCTestCase {
     var fixtures: URL { URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures") }
     func lines(_ d: Data) -> [String] { String(data: d, encoding: .isoLatin1)!.components(separatedBy: "\r\n") }
-    /// The entities as written (code, value pairs), a POLYLINE's VERTEX and SEQEND records left out.
-    func rawEntities(_ d: Data) -> [[(String, String)]] { records(d).filter { !["VERTEX", "SEQEND"].contains($0.first?.1 ?? "") } }
+    /// The entities as written (code, value pairs).
+    func rawEntities(_ d: Data) -> [[(String, String)]] { records(d) }
     /// Every record of the ENTITIES section.
     func records(_ d: Data) -> [[(String, String)]] {
         let l = lines(d)
-        let start = l.firstIndex(of: "ENTITIES")! + 1, end = l.lastIndex(of: "ENDSEC")! - 1
+        let start = l.firstIndex(of: "ENTITIES")! + 1, end = l[start...].firstIndex(of: "ENDSEC")! - 1
         var out: [[(String, String)]] = []
         var i = start
         while i + 1 < end {
@@ -19,28 +19,32 @@ final class SketchDXFTests: XCTestCase {
         }
         return out
     }
-    /// The entities with each POLYLINE as the LINEs it draws (its layer, linetype and colour on each), so geometry checks
-    /// read every segment the same way.
+    /// The entities with each LWPOLYLINE as the LINEs it draws (its layer, linetype and colour on each), so geometry
+    /// checks read every segment the same way.
     func entities(_ d: Data) -> [[(String, String)]] {
         var out: [[(String, String)]] = []
-        var poly: [(String, String)]?, pts: [(String, String)] = []
         for r in records(d) {
-            switch r.first?.1 {
-            case "POLYLINE": poly = r; pts = []
-            case "VERTEX": pts.append((value(r, "10")!, value(r, "20")!))
-            case "SEQEND":
-                guard let p = poly else { continue }
-                let keep = p.filter { ["8", "6", "62"].contains($0.0) }, closed = (Int(value(p, "70") ?? "0") ?? 0) & 1 == 1
-                let n = closed ? pts.count : pts.count - 1
-                for k in 0..<max(0, n) {
-                    let a = pts[k], b = pts[(k + 1) % pts.count]
-                    out.append([("0", "LINE")] + keep + [("10", a.0), ("20", a.1), ("30", "0"), ("11", b.0), ("21", b.1), ("31", "0")])
-                }
-                poly = nil
-            default: out.append(r)
+            guard r.first?.1 == "LWPOLYLINE" else { out.append(r); continue }
+            let xs = r.filter { $0.0 == "10" }.map(\.1), ys = r.filter { $0.0 == "20" }.map(\.1), pts = Array(zip(xs, ys))
+            let keep = r.filter { ["8", "6", "62"].contains($0.0) }, closed = (Int(value(r, "70") ?? "0") ?? 0) & 1 == 1
+            let n = closed ? pts.count : pts.count - 1
+            for k in 0..<max(0, n) {
+                let a = pts[k], b = pts[(k + 1) % pts.count]
+                out.append([("0", "LINE")] + keep + [("10", a.0), ("20", a.1), ("30", "0"), ("11", b.0), ("21", b.1), ("31", "0")])
             }
         }
         return out
+    }
+    /// The value of the first group `code` after line `i`.
+    func after(_ l: [String], _ i: Int, _ code: String) -> String? {
+        var k = i + 1
+        while k + 1 < l.count { if l[k] == code { return l[k + 1] }; k += 2 }
+        return nil
+    }
+    /// A table's record count.
+    func tableCount(_ l: [String], _ name: String) -> Int? {
+        guard let i = l.indices.first(where: { l[$0] == name && l[$0 - 1] == "2" && l[$0 - 2] == "TABLE" }) else { return nil }
+        return after(l, i, "70").flatMap(Int.init)
     }
     func value(_ e: [(String, String)], _ code: String) -> String? { e.first { $0.0 == code }?.1 }
     func double(_ e: [(String, String)], _ code: String) -> Double { Double(value(e, code)!)! }
@@ -61,10 +65,10 @@ final class SketchDXFTests: XCTestCase {
     func testTextStyleExtentsAndView() throws {
         let d = dxf(ops).data(), l = lines(d)
         // the STYLE table: STANDARD and CORDIA (cordia.shx, width 0.85); $TEXTSTYLE names it
-        let style = try XCTUnwrap(l.indices.first { l[$0] == "STYLE" && l[$0 + 2] == "CORDIA" })
-        XCTAssertEqual(l[style + 7], "41"); XCTAssertEqual(l[style + 8], "0.85")
+        let style = try XCTUnwrap(l.indices.first { l[$0] == "STYLE" && l[$0 - 1] == "0" && after(l, $0, "2") == "CORDIA" })
+        XCTAssertEqual(after(l, style, "41"), "0.85")
         XCTAssertEqual(l[l.firstIndex(of: "cordia.shx")! - 1], "3")
-        XCTAssertTrue(l.indices.contains { l[$0] == "STYLE" && l[$0 + 2] == "STANDARD" })
+        XCTAssertTrue(l.indices.contains { l[$0] == "STYLE" && l[$0 - 1] == "0" && after(l, $0, "2") == "Standard" })
         XCTAssertEqual(l[l.firstIndex(of: "$TEXTSTYLE")! + 2], "CORDIA")
         // every TEXT uses it, at its width
         let texts = entities(d).filter { $0.first?.1 == "TEXT" }
@@ -78,12 +82,12 @@ final class SketchDXFTests: XCTestCase {
                 XCTAssertTrue(double(e, x) >= ext.0 - 1e-6 && double(e, x) <= ext.2 + 1e-6 && double(e, y) >= ext.1 - 1e-6 && double(e, y) <= ext.3 + 1e-6)
             }
         }
-        let vp = try XCTUnwrap(l.firstIndex(of: "*ACTIVE"))
-        XCTAssertEqual(Double(l[vp + 12])!, (ext.0 + ext.2) / 2, accuracy: 1e-3)
-        XCTAssertEqual(Double(l[vp + 14])!, (ext.1 + ext.3) / 2, accuracy: 1e-3)
+        let vp = try XCTUnwrap(l.firstIndex(of: "*Active"))
+        XCTAssertEqual(Double(after(l, vp, "12")!)!, (ext.0 + ext.2) / 2, accuracy: 1e-3)
+        XCTAssertEqual(Double(after(l, vp, "22")!)!, (ext.1 + ext.3) / 2, accuracy: 1e-3)
     }
 
-    /// Shapes are POLYLINEs and marked symbols are INSERTs of BLOCKs, so CAD edits them as objects.
+    /// Shapes are LWPOLYLINEs and marked symbols are INSERTs of BLOCKs, so CAD edits them as objects.
     func testPolylinesBlocksAndInserts() throws {
         var d = SketchDXF(options: Self.all)
         let sym: [DrawOp] = [.rect(Box(0, 0, 10, 10), stroke: .black, fill: nil), .line(Pt(0, 0), Pt(10, 10), width: 1, color: .black)]
@@ -101,7 +105,7 @@ final class SketchDXFTests: XCTestCase {
         // one BLOCKS section between TABLES and ENTITIES: BOX once (the moved copy is the same), BOX-2 for the bigger one
         let blocks = try XCTUnwrap(l.firstIndex(of: "BLOCKS")), ents = try XCTUnwrap(l.firstIndex(of: "ENTITIES"))
         XCTAssertLessThan(blocks, ents)
-        XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 - 1] == "0" }.map { l[$0 + 4] }, ["BOX", "BOX-2"])
+        XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 - 1] == "0" }.map { after(l, $0, "2")! }, ["*Model_Space", "*Paper_Space", "BOX", "BOX-2"])
         // block bodies sit on layer 0 in colour BYBLOCK
         let body = Array(l[blocks..<ents])
         XCTAssertTrue(zip(body, body.dropFirst()).contains { $0.0 == "62" && $0.1 == "0" })
@@ -109,10 +113,11 @@ final class SketchDXFTests: XCTestCase {
         let inserts = raw.filter { $0.first?.1 == "INSERT" }
         XCTAssertEqual(inserts.map { value($0, "2")! }, ["BOX", "BOX", "BOX-2"])
         XCTAssertEqual(inserts.map { double($0, "10") }, [0, 5000, 10000])
-        // the free polyline: one open POLYLINE of 3 vertices
-        let poly = try XCTUnwrap(raw.first { $0.first?.1 == "POLYLINE" })
+        // the free polyline: one open LWPOLYLINE of 3 vertices
+        let poly = try XCTUnwrap(raw.first { $0.first?.1 == "LWPOLYLINE" })
         XCTAssertEqual(value(poly, "70"), "0")
-        XCTAssertEqual(records(data).filter { $0.first?.1 == "VERTEX" }.count, 3)
+        XCTAssertEqual(value(poly, "90"), "3")
+        XCTAssertEqual(poly.filter { $0.0 == "10" }.count, 3)
         // the extents cover the inserted blocks
         XCTAssertEqual(Double(l[l.firstIndex(of: "$EXTMAX")! + 2])!, 12000, accuracy: 1e-6)
         // a rectangle outside a symbol is one closed polyline
@@ -126,7 +131,8 @@ final class SketchDXFTests: XCTestCase {
         var p = SketchDXF(options: o)
         p.add(ops, layer: { _, _ in .init("A", aci: 7) }, transform: { ($0.x, $0.y) }, pointsPerMetre: 1, symbols: [.init("BOX", origin: Pt(0, 0), range: 0..<2)])
         XCTAssertTrue(rawEntities(p.data()).allSatisfy { $0.first?.1 == "LINE" })
-        XCTAssertNil(lines(p.data()).firstIndex(of: "BLOCKS"))
+        let pl = lines(p.data())
+        XCTAssertEqual(pl.indices.filter { pl[$0] == "BLOCK" && pl[$0 - 1] == "0" }.count, 2, "the two spaces only")
     }
 
     /// The symbols the app's texts use reach CAD as codes or ASCII, never "?".
@@ -137,6 +143,32 @@ final class SketchDXFTests: XCTestCase {
         // a diameter however it was typed
         XCTAssertEqual(String(data: SketchDXF.tis620("ø20 φ25 ⌀32 Ø40"), encoding: .isoLatin1), "%%c20 %%c25 %%c32 %%c40")
         XCTAssertEqual(String(data: SketchDXF.tis620("ม²"), encoding: .isoLatin1), String(data: SketchDXF.tis620("ตร.ม."), encoding: .isoLatin1))
+    }
+
+    /// R2000: every object has a unique handle below $HANDSEED, and every entity names its owner.
+    func testHandlesAndOwners() throws {
+        var d = dxf(ops)
+        d.block("M") { b in b.wipeout(.init("A", aci: 7), [(0, 0), (1, 0), (1, 2), (0, 2)]); b.polyline(.init("A", aci: 7), [(0, 0), (1, 0), (1, 2), (0, 2)], closed: true) }
+        d.insert(.init("A", aci: 7), "M", at: (3, 3))
+        let l = lines(d.data())
+        XCTAssertEqual(l[l.firstIndex(of: "$ACADVER")! + 2], "AC1015")
+        var handles: [Int] = []
+        for i in stride(from: l.firstIndex(of: "ENDSEC")! + 1, to: l.count - 1, by: 2) where l[i] == "5" || l[i] == "105" { handles.append(Int(l[i + 1], radix: 16)!) }
+        XCTAssertEqual(Set(handles).count, handles.count, "unique")
+        let seed = Int(l[l.firstIndex(of: "$HANDSEED")! + 2], radix: 16)!
+        XCTAssertTrue(handles.allSatisfy { $0 < seed })
+        // every record of ENTITIES is owned by *Model_Space's record
+        let ms = try XCTUnwrap(l.indices.first { l[$0] == "*Model_Space" && l[$0 - 1] == "2" && l[$0 - 10] == "BLOCK_RECORD" })
+        let msHandle = l[ms - 8]
+        XCTAssertTrue(records(d.data()).allSatisfy { value($0, "330") == msHandle })
+        // the wipeout: the module's frame, a closed 5-point boundary, its class and its frame off
+        let w = try XCTUnwrap(l.lastIndex(of: "AcDbWipeout"))
+        XCTAssertEqual(after(l, w, "11"), "1000"); XCTAssertEqual(after(l, w, "22"), "2000"); XCTAssertEqual(after(l, w, "91"), "5")
+        XCTAssertTrue(l.contains("ACAD_WIPEOUT_VARS"))
+        XCTAssertTrue(l.indices.contains { l[$0] == "WIPEOUT" && l[$0 - 1] == "1" })
+        // the wipeout comes before the outline in the block
+        XCTAssertLessThan(l.indices.first { l[$0] == "WIPEOUT" && l[$0 - 1] == "0" }!, l.lastIndex(of: "LWPOLYLINE")!)
+        XCTAssertFalse(lines(dxf(ops).data()).contains("ACAD_WIPEOUT_VARS"))
     }
 
     static var all: SketchDXF.Options {
@@ -170,17 +202,17 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual((l.count - 1) % 2, 0, "even number of lines")
         XCTAssertEqual(Array(l.suffix(3)), ["0", "EOF", ""])
         XCTAssertEqual(d.layers, ["A", "B"])
-        let table = l.firstIndex(of: "LAYER")!
-        XCTAssertEqual(l[table + 2], "2")
+        // layer 0 and the two
+        XCTAssertEqual(tableCount(l, "LAYER"), 3)
         XCTAssertEqual(l.filter { $0 == "DASHED" }.count, 2, "declared once, used once")
-        XCTAssertEqual(l[l.firstIndex(of: "LTYPE")! + 2], "2")
+        XCTAssertEqual(tableCount(l, "LTYPE"), 4)
         XCTAssertEqual(d.entityCount, rawEntities(d.data()).count)
         // red line on a black layer keeps its colour
         XCTAssertEqual(value(entities(d.data())[0], "62"), "1")
 
         let plain = lines(dxf([.line(Pt(0, 0), Pt(10, 0), width: 1, color: .black)]).data())
         XCTAssertFalse(plain.contains("DASHED"))
-        XCTAssertEqual(plain[plain.firstIndex(of: "LTYPE")! + 2], "1")
+        XCTAssertEqual(tableCount(plain, "LTYPE"), 3)
     }
 
     func testFillOnlyRectWritesNothing() {

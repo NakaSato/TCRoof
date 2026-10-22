@@ -1,8 +1,8 @@
 import Foundation
 
 /// A2 "ส่งออก DXF" (docs/specs/cad-export-dxf phase 3): the site plan drawn over the site picture — building models,
-/// drawn shapes and symbols — as DXF R12 in millimetres, from the picture's bottom-left corner with Y up. The picture
-/// itself is not written (R12 has no images); its frame is. With a scale (`siteScale`, metres across the picture) the
+/// drawn shapes and symbols — as DXF R2000 in millimetres, from the picture's bottom-left corner with Y up. The picture
+/// itself is not written (no image is embedded); its frame is. With a scale (`siteScale`, metres across the picture) the
 /// drawing is at real scale; without one it is 400 mm wide and the title says so, and building models (which need the
 /// scale) are left out, as on the report.
 public enum SiteDXF {

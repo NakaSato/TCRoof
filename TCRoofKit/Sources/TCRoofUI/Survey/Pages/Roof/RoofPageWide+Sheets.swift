@@ -334,7 +334,7 @@ struct RoofCADSheet: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("ส่งออก CAD").font(.sarabunFixed(17, .bold))
-                    Text("DXF R12 | เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("DXF R2000 | เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button(action: close) { Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 36) }

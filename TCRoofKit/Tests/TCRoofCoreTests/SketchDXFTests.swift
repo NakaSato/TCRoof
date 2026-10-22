@@ -171,6 +171,43 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertFalse(lines(dxf(ops).data()).contains("ACAD_WIPEOUT_VARS"))
     }
 
+    /// A dimension is a DIMENSION with its look in an anonymous block, a style of its text height, and its measured
+    /// length live.
+    func testDimensions() throws {
+        var d = SketchDXF()
+        let l = SketchDXF.Layer("DIM", aci: 3)
+        d.dimension(l, (0, 0), (4, 0), at: (2, -1), vertical: false, text: "4.00", height: 0.25)
+        d.dimension(l, (5, 0), (5, 3.5), at: (6, 0), vertical: true, text: "Ø 3.50", height: 0.25)
+        d.dimension(l, (0, 0), (2, 0), at: (1, 1), vertical: false, text: "ไม่ระบุ", height: 0.3)
+        d.dimension(l, (0, 0), (1.5, 0), at: (1, 2), vertical: false, text: "1.5", height: 0.25)
+        let data = d.data(), lines = lines(data)
+        let dims = rawEntities(data).filter { $0.first?.1 == "DIMENSION" }
+        XCTAssertEqual(dims.count, 4)
+        XCTAssertEqual(dims.map { value($0, "2")! }, ["*D1", "*D2", "*D3", "*D4"])
+        // `1.5` is live too, in a style that drops trailing zeros
+        XCTAssertEqual(dims.map { value($0, "3")! }, ["TC_250", "TC_250", "TC_300", "TC_250_Z"])
+        XCTAssertEqual(dims.map { value($0, "1")! }, ["", "%%c <>", String(data: SketchDXF.tis620("ไม่ระบุ"), encoding: .isoLatin1)!, ""])
+        XCTAssertEqual(dims.map { value($0, "50")! }, ["0", "90", "0", "0"])
+        XCTAssertEqual(double(dims[1], "13"), 5000); XCTAssertEqual(double(dims[1], "24"), 3500)
+        // the anonymous blocks, flagged 1, each with 2 extension lines, the dimension line, 2 ticks and the text
+        let b = try XCTUnwrap(lines.indices.first { lines[$0] == "*D1" && lines[$0 - 1] == "2" && lines[$0 - 2] == "AcDbBlockBegin" })
+        XCTAssertEqual(lines[b + 2], "1")
+        let end = lines[b...].firstIndex(of: "ENDBLK")!
+        XCTAssertEqual(lines[b..<end].filter { $0 == "AcDbLine" }.count, 5)
+        XCTAssertTrue(lines[b..<end].contains("4.00"))
+        // the styles: ticks, two decimals in metres, CORDIA text
+        let st = try XCTUnwrap(lines.indices.first { lines[$0] == "TC_250" && lines[$0 - 1] == "2" && lines[$0 - 2] == "AcDbDimStyleTableRecord" })
+        XCTAssertEqual(after(lines, st, "140"), "250"); XCTAssertEqual(after(lines, st, "142"), "100")
+        XCTAssertEqual(after(lines, st, "144"), "0.001"); XCTAssertEqual(after(lines, st, "271"), "2")
+        let cordia = try XCTUnwrap(lines.indices.first { lines[$0] == "CORDIA" && lines[$0 - 1] == "2" && lines[$0 - 2] == "AcDbTextStyleTableRecord" })
+        XCTAssertEqual(after(lines, st, "340"), lines[cordia - 8])
+        XCTAssertEqual(tableCount(lines, "DIMSTYLE"), 4)
+        let z = try XCTUnwrap(lines.indices.first { lines[$0] == "TC_250_Z" && lines[$0 - 1] == "2" && lines[$0 - 2] == "AcDbDimStyleTableRecord" })
+        XCTAssertEqual(after(lines, z, "78"), "8"); XCTAssertEqual(after(lines, st, "78"), "0")
+        // the extents take in the dimensions
+        XCTAssertEqual(Double(lines[lines.firstIndex(of: "$EXTMAX")! + 2])!, 6200, accuracy: 300)
+    }
+
     static var all: SketchDXF.Options {
         var o = SketchDXF.Options()
         o.dashes = true; o.opColours = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true; o.skipFillOnly = true; o.centreText = false
@@ -215,10 +252,16 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual(tableCount(plain, "LTYPE"), 3)
     }
 
-    func testFillOnlyRectWritesNothing() {
+    func testFillOnlyRectWritesNothing() throws {
         XCTAssertEqual(dxf([.rect(Box(0, 0, 10, 10), stroke: nil, fill: .white)]).entityCount, 0)
         XCTAssertEqual(dxf([.circle(Pt(0, 0), r: 2, stroke: nil, fill: .white)]).entityCount, 0)
-        XCTAssertEqual(dxf([.circle(Pt(0, 0), r: 2, stroke: nil, fill: .black)]).entityCount, 1, "a junction dot")
+        // a junction dot: its circle and a SOLID HATCH inside it
+        let dot = dxf([.circle(Pt(0, 0), r: 2, stroke: nil, fill: .black)])
+        XCTAssertEqual(dot.entityCount, 2)
+        let solid = try XCTUnwrap(rawEntities(dot.data()).first { $0.first?.1 == "HATCH" })
+        XCTAssertEqual(value(solid, "2"), "SOLID"); XCTAssertEqual(value(solid, "70"), "1"); XCTAssertEqual(value(solid, "40"), "200")
+        // a translucent tint is no solid
+        XCTAssertEqual(dxf([.circle(Pt(0, 0), r: 2, stroke: nil, fill: RGBA(1, 0, 0, 0.3))]).entityCount, 1)
     }
 
     func testTextAlignAndAngle() {
@@ -246,9 +289,25 @@ final class SketchDXFTests: XCTestCase {
         }
     }
 
+    /// A hatch is one HATCH entity: ANSI31 in the box, its lines as far apart as the sketch's.
+    func testHatchIsAnEntity() throws {
+        let box = Box(20, 20, 30, 10)
+        let h = try XCTUnwrap(rawEntities(dxf([.hatch(box, color: .red, spacing: 4)]).data()).first)
+        XCTAssertEqual(h.first?.1, "HATCH")
+        XCTAssertEqual(value(h, "2"), "ANSI31"); XCTAssertEqual(value(h, "70"), "0"); XCTAssertEqual(value(h, "93"), "4")
+        // the boundary: the box in drawing units (x·100, (100 − y)·100)
+        let xs = h.filter { $0.0 == "10" }.dropFirst().map { Double($0.1)! }, ys = h.filter { $0.0 == "20" }.dropFirst().map { Double($0.1)! }
+        XCTAssertEqual(Set(xs), [2000, 5000]); XCTAssertEqual(Set(ys), [7000, 8000])
+        // 4 pt along x at 10 pt/m is 0.4 m, so 400 / √2 mm across the 45° lines
+        let across = 400 / 2.squareRoot()
+        XCTAssertEqual(double(h, "41"), across / 3.175, accuracy: 1e-3)
+        XCTAssertEqual(double(h, "46"), across / 2.squareRoot(), accuracy: 1e-3)
+    }
+
     func testHatchLinesStayInBox() {
         let box = Box(20, 20, 30, 10)
-        let d = dxf([.hatch(box, color: .red, spacing: 4)])
+        var o = Self.all; o.hatchEntities = false
+        let d = dxf([.hatch(box, color: .red, spacing: 4)], o)
         let ls = entities(d.data())
         XCTAssertGreaterThan(ls.count, 5)
         for e in ls {

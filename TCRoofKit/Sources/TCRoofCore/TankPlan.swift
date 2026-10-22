@@ -18,6 +18,8 @@ public struct TankPlan: Sendable {
     public let tags: [String?]
     /// The tank's top-left corner on the sketch and its points per metre.
     public let frame: (ox: Double, oy: Double, k: Double)
+    /// The span chains and totals (the ops tagged dim / dimtxt) as dimensions, for the DXF's DIMENSIONs.
+    public let dimensions: [SketchDXF.Dimension]
 
     /// nil without spans. `chips` leaves the span numbers to the page (it draws them as buttons); `hints` adds the
     /// page's note about sub-step 2. `details` is the printed sheet (the PDF, the Excel picture and the DXF,
@@ -28,7 +30,7 @@ public struct TankPlan: Sendable {
         if Tank.isRound(v) {
             // a round tank: the circle, its centre lines and the diameter (`TankPlan+Round`); no spans to tap
             guard let r = Self.round(v, width: W, hints: hints, details: details) else { return nil }
-            sketch = r.sketch; self.chips = []; tags = r.tags; frame = r.frame
+            sketch = r.sketch; self.chips = []; tags = r.tags; frame = r.frame; dimensions = r.dimensions
             return
         }
         let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
@@ -137,6 +139,16 @@ public struct TankPlan: Sendable {
             else { o.append(.text(String(format: "%.2f", s), at: p, size: fsX, color: ink, align: .center)) }
         }
         o.append(.text(String(format: "%.2f", TW), at: Pt(ox + w / 2, ty - 7), size: 9, bold: true, color: ink, align: .center))
+        var dims: [SketchDXF.Dimension] = []
+        for (i, s) in sx.enumerated() {
+            dims.append(.init(Pt(ox + xs[i] * k, oy + h + 6), Pt(ox + xs[i + 1] * k, oy + h + 6), at: Pt(0, cy), text: String(format: "%.2f", s), size: fsX))
+        }
+        dims.append(.init(Pt(ox, cy), Pt(ox + w, cy), at: Pt(0, ty), text: String(format: "%.2f", TW), size: 9))
+        for (j, s) in sy.enumerated() {
+            dims.append(.init(Pt(ox + w + 6, oy + ys[j] * k), Pt(ox + w + 6, oy + ys[j + 1] * k), at: Pt(cx, 0), vertical: true,
+                              text: String(format: "%.2f", s), size: fsY))
+        }
+        dims.append(.init(Pt(cx, oy), Pt(cx, oy + h), at: Pt(tx, 0), vertical: true, text: String(format: "%.2f", TH), size: 9))
 
         o.append(.line(Pt(cx, oy - 4), Pt(cx, oy + h + 4), width: 0.6, color: ink))
         o.append(.line(Pt(tx, oy - 4), Pt(tx, oy + h + 4), width: 0.6, color: ink))
@@ -177,6 +189,7 @@ public struct TankPlan: Sendable {
         self.chips = chipList
         self.tags = tags
         frame = (ox, oy, k)
+        dimensions = dims
     }
 
     /// The beams' width on the plan (m), assumed.

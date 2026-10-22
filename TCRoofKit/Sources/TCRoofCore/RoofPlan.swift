@@ -12,6 +12,8 @@ public struct RoofPlan: Sendable {
     public struct Chip: Sendable { public let axis: Roof.Axis; public let index: Int; public let value: Double; public let at: Pt }
     public struct Layout: Sendable {
         public var chips: [Chip] = []
+        /// The dimension chains (the ops tagged dim / dimtxt) as dimensions, for the DXF's DIMENSIONs.
+        public var dimensions: [SketchDXF.Dimension] = []
         public var addX = Pt(0, 0), addY = Pt(0, 0)
         /// Grid intersections (i along x, j along y).
         public var nodes: [(i: Int, j: Int, at: Pt, post: Bool)] = []
@@ -284,6 +286,11 @@ private struct Drawer {
             if !chips { text(fmt(s), 139, (gy[j] + gy[j + 1]) / 2, 12, angle: -90, "dimtxt") }
         }
         L.addX = P(gx.last! + 22, 21); L.addY = P(139, gy.last! + 22)
+        // the same chains as dimensions: the extension lines start at 47 (x) and 165 (y), next to the plan
+        for i in xs.indices { L.dimensions.append(.init(P(gx[i], 47), P(gx[i + 1], 47), at: P(0, 32), text: fmt(xs[i]), size: 12)) }
+        L.dimensions.append(.init(P(gx.first!, 47), P(gx.last!, 47), at: P(0, 10), text: String(format: "%.2f", Lx), size: 13))
+        for j in ys.indices { L.dimensions.append(.init(P(165, gy[j]), P(165, gy[j + 1]), at: P(150, 0), vertical: true, text: fmt(ys[j]), size: 12)) }
+        L.dimensions.append(.init(P(165, gy.first!), P(165, gy.last!), at: P(128, 0), vertical: true, text: String(format: "%.2f", Ly), size: 13))
     }
 
     /// `แป @1.00` on one bay of the lower face.

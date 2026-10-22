@@ -53,9 +53,12 @@ public enum RoofDXF {
         let f = Roof.frame(v), xs = Roof.spans(v, .x), ys = Roof.spans(v, .y)
         if parts.contains(.plan) {
             for (op, tag) in zip(plan.sketch.ops, plan.tags) {
-                guard let tag, let l = planLayers[tag] else { continue }
+                // the dimension chains are DIMENSIONs, not their lines and texts
+                guard let tag, let l = planLayers[tag], L.dimensions.isEmpty || (tag != "dim" && tag != "dimtxt") else { continue }
                 write(op, l, tp, L.k, text: tag == "dimtxt" ? th * 0.8 : th)
             }
+            dxf.options.fixedTextHeight = th * 0.8
+            dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
             TEXT("TEXT", (0, -1.2), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }

@@ -19,8 +19,11 @@ public enum TankDXF {
         var o = SketchDXF.Options()
         o.dashes = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true; o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)
-        dxf.add(plan.sketch.ops, layer: { i, _ in plan.tags[i].flatMap { layers[$0] } },
-                transform: { p in ((p.x - f.ox) / f.k, TH - (p.y - f.oy) / f.k) }, pointsPerMetre: f.k)
+        let tf: (Pt) -> (Double, Double) = { p in ((p.x - f.ox) / f.k, TH - (p.y - f.oy) / f.k) }
+        // the span chains are DIMENSIONs, not their lines and texts
+        let drawnDims: Set<String> = plan.dimensions.isEmpty ? [] : ["dim", "dimtxt"]
+        dxf.add(plan.sketch.ops, layer: { i, _ in plan.tags[i].flatMap { drawnDims.contains($0) ? nil : layers[$0] } }, transform: tf, pointsPerMetre: f.k)
+        dxf.add(plan.dimensions, layer: layers["dim"]!, transform: tf, pointsPerMetre: f.k)
 
         // the panel layout is in tank metres from the same corner (TankLayoutPlan draws it on the plan's frame)
         if let l = TankLayout.current(v) {

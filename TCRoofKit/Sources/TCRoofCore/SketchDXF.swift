@@ -43,6 +43,9 @@ public struct SketchDXF: Sendable {
         public var polylines = true
         /// The ops of each `Symbol` passed to `add` as an INSERT of a BLOCK.
         public var blocks = true
+        /// `hatch` as a HATCH entity (pattern ANSI31 at the sketch's spacing) instead of its lines, and an opaque fill with
+        /// no stroke (a junction dot, a column base) as a SOLID HATCH inside its outline.
+        public var hatchEntities = true
         public init() {}
     }
 
@@ -55,6 +58,19 @@ public struct SketchDXF: Sendable {
         /// The symbol's ops, as indices into the sketch's ops.
         public var range: Range<Int>
         public init(_ name: String, origin: Pt, range: Range<Int>) { self.name = name; self.origin = origin; self.range = range }
+    }
+
+    /// A linear dimension on a sketch, in sketch points: extension lines from `a` and `b` to the dimension line through
+    /// `at`, measuring along x (along y when `vertical`). `text` is what the drawing prints there and `size` its font
+    /// size; the part of it that is the measured length (`4.00`) stays live in CAD.
+    public struct Dimension: Sendable, Equatable {
+        public var a, b, at: Pt
+        public var vertical: Bool
+        public var text: String
+        public var size: Double
+        public init(_ a: Pt, _ b: Pt, at: Pt, vertical: Bool = false, text: String, size: Double) {
+            self.a = a; self.b = b; self.at = at; self.vertical = vertical; self.text = text; self.size = size
+        }
     }
 
     /// A text style: its name, its font file and its width factor.
@@ -83,6 +99,9 @@ public struct SketchDXF: Sendable {
     private var inBlock = false
     /// A WIPEOUT was written: the file declares its class and its frame setting.
     private var wipeouts = false
+    /// The dimension styles in use (one per text height, drawing units), in order of first use, and the dimensions written.
+    private var dimStyles: [(name: String, height: Double, zeros: Bool)] = []
+    private var dimCount = 0
     private var blockLo = (x: Double.infinity, y: Double.infinity), blockHi = (x: -Double.infinity, y: -Double.infinity)
 
     public init(options: Options = .init()) { self.options = options }
@@ -167,6 +186,97 @@ public struct SketchDXF: Sendable {
         func px(_ v: Double) -> String { Self.num(((v * 1e6).rounded()) / 1e6) }
         for v in pts + [pts[0]] { ents += ["14", px((v.0 - x0) / w - 0.5), "24", px(0.5 - (v.1 - y0) / h)] }
         cover(x0, y0); cover(x1, y1)
+    }
+
+    /// A linear DIMENSION (metres): extension lines from `a` and `b` to the dimension line through `p`, measuring along x
+    /// (y when `vertical`), with 45° ticks and its text `height` high above the line. Its look is an anonymous block
+    /// (`*D1`, …) drawn as the style draws it; the style (`TC_<height>`) has the same sizes, CORDIA text, two decimals
+    /// in metres (`TC_<height>_Z` without trailing zeros, for a label like `4` or `1.5`), so CAD redraws it the same
+    /// after an edit. The measured part of `text` is written as `<>` so it follows the points; any other label is kept.
+    public mutating func dimension(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double), at p: (Double, Double), vertical: Bool,
+                                   text: String, height: Double) {
+        let length = vertical ? abs(b.1 - a.1) : abs(b.0 - a.0)
+        guard length > 1e-6, height > 0 else { return }
+        // `4.00` as written, or `4` / `1.5` (trailing zeros suppressed, DIMZIN 8)
+        var measured = String(format: "%.2f", length), zeros = true
+        var label = text.range(of: measured).map { text.replacingCharacters(in: $0, with: "<>") } ?? text
+        let trimmed = Self.num((length * 100).rounded() / 100)
+        if label == text, text == trimmed || text.hasSuffix(" " + trimmed) {
+            label = String(text.dropLast(trimmed.count)) + "<>"; measured = trimmed; zeros = false
+        }
+        let hu = (height * unit * (options.millimetres ? 10 : 1000)).rounded() / (options.millimetres ? 10 : 1000)
+        let style = "TC_" + Self.num(hu).replacingOccurrences(of: ".", with: "_") + (zeros ? "" : "_Z")
+        if !dimStyles.contains(where: { $0.name == style }) { dimStyles.append((style, hu, zeros)) }
+        dimCount += 1
+        let tick = height * 0.4, ext = height * 0.4, gap = height * 0.25
+        // a point along the measured axis and across it
+        func pt(_ along: Double, _ across: Double) -> (Double, Double) { vertical ? (across, along) : (along, across) }
+        let (u1, u2) = vertical ? (a.1, b.1) : (a.0, b.0), line = vertical ? p.0 : p.1
+        let lo = min(u1, u2), hi = max(u1, u2), mid = (lo + hi) / 2
+        // text above the line: up for a horizontal one, to the left for a vertical one (reading from the right)
+        let side = vertical ? -1.0 : 1.0, textAt = pt(mid, line + side * (gap + height / 2))
+        let name = block("*D\(dimCount)") { d in
+            for (u, from) in [(u1, vertical ? a.0 : a.1), (u2, vertical ? b.0 : b.1)] {
+                let dir: Double = line >= from ? 1 : -1
+                d.line(l, pt(u, from), pt(u, line + dir * ext))
+            }
+            d.line(l, pt(lo - ext, line), pt(hi + ext, line))
+            for u in [lo, hi] { d.line(l, (pt(u, line).0 - tick / 2, pt(u, line).1 - tick / 2), (pt(u, line).0 + tick / 2, pt(u, line).1 + tick / 2)) }
+            d.text(l, textAt, height: height, label.replacingOccurrences(of: "<>", with: measured), align: .center, middle: true,
+                   angle: vertical ? 90 : 0)
+        }
+        if let box = blockBox[name], box.lo.x <= box.hi.x { cover(box.lo.x / unit, box.lo.y / unit); cover(box.hi.x / unit, box.hi.y / unit) }
+        use(l)
+        let def = pt(u2, line)
+        ents += head("DIMENSION", l.name) + ["100", "AcDbDimension", "2", name, "3", style,
+                                              "10", q(def.0), "20", q(def.1), "30", "0", "11", q(textAt.0), "21", q(textAt.1), "31", "0",
+                                              "70", "32", "71", "5", "1", label == "<>" ? "" : label,
+                                              "100", "AcDbAlignedDimension", "13", q(a.0), "23", q(a.1), "33", "0", "14", q(b.0), "24", q(b.1), "34", "0",
+                                              "50", vertical ? "90" : "0", "100", "AcDbRotatedDimension"]
+    }
+
+    /// The sketch's dimensions as DIMENSIONs on `l`; the text height is `fixedTextHeight`, else the size × 0.7.
+    public mutating func add(_ dims: [Dimension], layer l: Layer, transform tf: (Pt) -> (Double, Double), pointsPerMetre ppm: Double) {
+        for d in dims {
+            dimension(l, tf(d.a), tf(d.b), at: tf(d.at), vertical: d.vertical, text: d.text, height: options.fixedTextHeight ?? d.size * 0.7 / ppm)
+        }
+    }
+
+    /// A HATCH inside the polygon `pts` (metres): ANSI31's 45° lines `spacing` metres apart (measured across them).
+    public mutating func hatch(_ l: Layer, _ pts: [(Double, Double)], spacing: Double, extra: [String] = []) {
+        guard pts.count >= 3, spacing > 0 else { return }
+        let d = spacing * unit, k = d / 2.squareRoot()
+        hatchEntity(l, boundary: Self.polygonPath(pts.map { (q($0.0), q($0.1)) }), extra: extra,
+                    pattern: ["75", "1", "76", "1", "52", "0", "41", Self.num((d / 3.175 * 1e6).rounded() / 1e6), "77", "0", "78", "1",
+                              "53", "45", "43", "0", "44", "0", "45", Self.num((-k * 1e6).rounded() / 1e6), "46", Self.num((k * 1e6).rounded() / 1e6), "79", "0"],
+                    name: "ANSI31", solid: false)
+        for v in pts { cover(v.0, v.1) }
+    }
+
+    /// A SOLID HATCH inside the polygon `pts` (metres).
+    public mutating func solid(_ l: Layer, _ pts: [(Double, Double)], extra: [String] = []) {
+        guard pts.count >= 3 else { return }
+        hatchEntity(l, boundary: Self.polygonPath(pts.map { (q($0.0), q($0.1)) }), extra: extra, pattern: ["75", "0", "76", "1"], name: "SOLID", solid: true)
+        for v in pts { cover(v.0, v.1) }
+    }
+
+    /// A SOLID HATCH filling the circle at `c` (metres).
+    public mutating func solid(_ l: Layer, circle c: (Double, Double), r: Double, extra: [String] = []) {
+        guard r > 0 else { return }
+        hatchEntity(l, boundary: ["92", "1", "93", "1", "72", "2", "10", q(c.0), "20", q(c.1), "40", q(r), "50", "0", "51", "360", "73", "1"],
+                    extra: extra, pattern: ["75", "0", "76", "1"], name: "SOLID", solid: true)
+        cover(c.0 - r, c.1 - r); cover(c.0 + r, c.1 + r)
+    }
+
+    static func polygonPath(_ pts: [(String, String)]) -> [String] {
+        ["92", "3", "72", "0", "73", "1", "93", String(pts.count)] + pts.flatMap { ["10", $0.0, "20", $0.1] }
+    }
+
+    private mutating func hatchEntity(_ l: Layer, boundary: [String], extra: [String], pattern: [String], name: String, solid: Bool) {
+        use(l)
+        ents += head("HATCH", layerName(l)) + extra + ["100", "AcDbHatch", "10", "0", "20", "0", "30", "0", "210", "0", "220", "0", "230", "1",
+                                                       "2", name, "70", solid ? "1" : "0", "71", "0", "91", "1"]
+            + boundary + ["97", "0"] + pattern + ["98", "0"]
     }
 
     /// `height` in metres; `angle` in degrees counter-clockwise; `middle` aligns the line's vertical middle on `p`.
@@ -293,6 +403,12 @@ public struct SketchDXF: Sendable {
         options.skipFillOnly && stroke == nil && (fill == nil || fill == .white)
     }
 
+    /// An opaque, coloured fill with no stroke: a junction dot, a column base, a solid arrow.
+    private func solidFill(_ stroke: RGBA?, _ fill: RGBA?) -> Bool {
+        guard options.hatchEntities, stroke == nil, let f = fill, f.a >= 0.99 else { return false }
+        return !(f.r > 0.97 && f.g > 0.97 && f.b > 0.97)
+    }
+
     fileprivate mutating func write(_ op: DrawOp, _ l: Layer, _ tf: (Pt) -> (Double, Double), _ ppm: Double) {
         func corners(_ b: Box) -> [Pt] { [Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY)] }
         let fixed = options.fixedTextHeight
@@ -305,12 +421,15 @@ public struct SketchDXF: Sendable {
             polyline(l, p.map(tf), closed: false, extra: style(l, color, dash))
         case let .rect(b, stroke, fill, _):
             if background(stroke, fill) { return }
-            outline(l, corners(b), tf, style(l, stroke, []))
+            if solidFill(stroke, fill) { solid(l, corners(b).map(tf), extra: style(l, fill, [])) }
+            outline(l, corners(b), tf, style(l, stroke ?? fill, []))
         case let .polygon(p, stroke, fill, _):
             if background(stroke, fill) { return }
-            outline(l, p, tf, style(l, stroke, []))
+            if solidFill(stroke, fill) { solid(l, p.map(tf), extra: style(l, fill, [])) }
+            outline(l, p, tf, style(l, stroke ?? fill, []))
         case let .circle(c, r, stroke, fill, _):
             if background(stroke, fill) { return }
+            if solidFill(stroke, fill) { solid(l, circle: tf(c), r: r / ppm, extra: style(l, fill, [])) }
             circle(l, tf(c), r: r / ppm, extra: style(l, stroke ?? fill, []))
         case let .text(t, at, size, _, color, align, angle):
             if options.centreText { text(l, tf(at), height: textHeight(size), t, align: .center, middle: true, angle: 0, extra: []) }
@@ -327,6 +446,8 @@ public struct SketchDXF: Sendable {
         case let .hatch(r, color, sp):
             guard options.hatches, r.w > 0, r.h > 0, sp > 0 else { return }
             let e = style(l, color, [])
+            // the sketch's lines are `sp` apart along x, so sp / √2 across them
+            if options.hatchEntities { hatch(l, corners(r).map(tf), spacing: sp / ppm / 2.squareRoot(), extra: e); return }
             for (a, b) in Self.hatchLines(r, spacing: sp) { line(l, tf(a), tf(b), extra: e) }
         case let .photo(p, r):
             guard options.outlineBoxes else { return }
@@ -421,14 +542,31 @@ public struct SketchDXF: Sendable {
         out += table("LAYER", tLayer, names.count, la)
         // Standard stays as CAD programs expect it; the text uses `textStyle`
         let standard = ts.name.uppercased() == "STANDARD"
-        var st: [String] = []
+        var st: [String] = [], textStyleHandle = ""
         for s in standard ? [ts] : [TextStyle(name: "Standard", font: "txt", width: 1), ts] {
-            st += record("STYLE", tStyle, "AcDbTextStyleTableRecord", s.name) + ["40", "0", "41", Self.num(s.width), "50", "0", "71", "0", "42", "2.5", "3", s.font, "4", ""]
+            let handle = h()
+            if s == ts { textStyleHandle = handle }
+            st += record("STYLE", tStyle, "AcDbTextStyleTableRecord", s.name, handle: handle)
+                + ["40", "0", "41", Self.num(s.width), "50", "0", "71", "0", "42", "2.5", "3", s.font, "4", ""]
         }
         out += table("STYLE", tStyle, standard ? 1 : 2, st)
         out += table("VIEW", tView, 0, []) + table("UCS", tUCS, 0, [])
         out += table("APPID", tAppid, 1, record("APPID", tAppid, "AcDbRegAppTableRecord", "ACAD"))
-        out += table("DIMSTYLE", tDim, 1, ["0", "DIMSTYLE", "105", h(), "330", tDim, "100", "AcDbSymbolTableRecord", "100", "AcDbDimStyleTableRecord",
+        // a style per dimension text height: ticks, the text above the line in the drawing's font, two decimals in metres
+        var dimRecords: [String] = []
+        for ds in dimStyles {
+            let x = ds.height, f = { (v: Double) in Self.num((v * 1000).rounded() / 1000) }
+            dimRecords += ["0", "DIMSTYLE", "105", h(), "330", tDim, "100", "AcDbSymbolTableRecord", "100", "AcDbDimStyleTableRecord",
+                           "2", ds.name, "70", "0", "3", "", "4", "", "40", "1", "41", f(x * 0.6), "42", "0", "43", f(x * 1.5), "44", f(x * 0.4),
+                           "45", "0", "46", f(x * 0.4), "47", "0", "48", "0", "140", f(x), "141", "0", "142", f(x * 0.4), "143", "0.03937007874",
+                           "144", options.millimetres ? "0.001" : "1", "145", "0", "146", "1", "147", f(x * 0.25),
+                           "71", "0", "72", "0", "73", "0", "74", "0", "75", "0", "76", "0", "77", "1", "78", ds.zeros ? "0" : "8",
+                           "170", "0", "171", "2", "172", "1", "173", "0", "174", "0", "175", "0", "176", "0", "177", "0", "178", "0",
+                           "271", "2", "272", "2", "273", "2", "274", "2", "275", "0", "277", "2", "278", "46", "279", "0",
+                           "280", "0", "281", "0", "282", "0", "283", "0", "284", "0", "285", "0", "286", "0", "288", "0", "289", "3",
+                           "340", textStyleHandle, "371", "-2", "372", "-2"]
+        }
+        out += table("DIMSTYLE", tDim, 1 + dimStyles.count, dimRecords + ["0", "DIMSTYLE", "105", h(), "330", tDim, "100", "AcDbSymbolTableRecord", "100", "AcDbDimStyleTableRecord",
                                            "2", "Standard", "70", "0", "3", "", "4", "", "40", "1", "41", "2.5", "42", "0.625", "43", "3.75", "44", "1.25",
                                            "45", "0", "46", "0", "47", "0", "48", "0", "140", "2.5", "141", "2.5", "142", "0", "143", "0.03937007874",
                                            "144", "1", "145", "0", "146", "1", "147", "0.625", "71", "0", "72", "0", "73", "0", "74", "0", "75", "0",
@@ -446,7 +584,9 @@ public struct SketchDXF: Sendable {
         out += table("BLOCK_RECORD", tRecords, 2 + blockList.count, br)
         out += ["0", "ENDSEC", "0", "SECTION", "2", "BLOCKS"]
         func block(_ name: String, _ rec: String, _ body: [String]) -> [String] {
-            ["0", "BLOCK", "5", h(), "330", rec, "100", "AcDbEntity", "8", "0", "100", "AcDbBlockBegin", "2", name, "70", "0",
+            // a name starting with * is anonymous (a dimension's look)
+            ["0", "BLOCK", "5", h(), "330", rec, "100", "AcDbEntity", "8", "0", "100", "AcDbBlockBegin", "2", name,
+             "70", name.hasPrefix("*") && !name.hasSuffix("_Space") ? "1" : "0",
              "10", "0", "20", "0", "30", "0", "3", name, "1", ""]
                 + resolve(body, owner: rec) + ["0", "ENDBLK", "5", h(), "330", rec, "100", "AcDbEntity", "8", "0", "100", "AcDbBlockEnd"]
         }

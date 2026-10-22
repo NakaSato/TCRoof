@@ -33,7 +33,13 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertEqual(out.entities, t.records(out.data).count)
         // 10 posts, each one closed LWPOLYLINE of 4 sides, on POST
         XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "POST" }.count, 10)
-        XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "POST" }.count, 40)
+        XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "POST" && $0.first?.1 == "LINE" }.count, 40)
+        // the span chains: one DIMENSION per span and one per total, nothing else on DIM
+        let v = roof(), spans = Roof.spans(v, .x).count + Roof.spans(v, .y).count
+        // (the section's schematic dimensions stay lines: it isn't drawn to scale)
+        let dim = t.rawEntities(RoofDXF.build(v, parts: [.plan]).data).filter { t.value($0, "8") == "DIM" }
+        XCTAssertEqual(dim.filter { $0.first?.1 == "DIMENSION" }.count, spans + 2)
+        XCTAssertTrue(dim.allSatisfy { $0.first?.1 == "DIMENSION" })
     }
 
     func testUnitsAndPV() {

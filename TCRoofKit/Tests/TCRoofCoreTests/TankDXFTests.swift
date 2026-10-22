@@ -51,8 +51,11 @@ final class TankDXFTests: XCTestCase {
             return Box(x * 1000, (TH - y - h) * 1000, w * 1000, h * 1000)
         }
         XCTAssertFalse(boxes.isEmpty)
-        let lines = t.entities(try XCTUnwrap(TankDXF.build(v)).data).filter { layerOf($0) == "OBSTACLE" }
+        let obstacle = t.entities(try XCTUnwrap(TankDXF.build(v)).data).filter { layerOf($0) == "OBSTACLE" }
+        let lines = obstacle.filter { $0.first?.1 == "LINE" }
         XCTAssertFalse(lines.isEmpty)
+        // each box's hatch is one HATCH
+        XCTAssertEqual(obstacle.filter { $0.first?.1 == "HATCH" }.count, boxes.count)
         for e in lines {
             let a = Pt(t.double(e, "10"), t.double(e, "20")), b = Pt(t.double(e, "11"), t.double(e, "21"))
             let inside = boxes.contains { r in [a, b].allSatisfy { $0.x >= r.x - 1 && $0.x <= r.maxX + 1 && $0.y >= r.y - 1 && $0.y <= r.maxY + 1 } }

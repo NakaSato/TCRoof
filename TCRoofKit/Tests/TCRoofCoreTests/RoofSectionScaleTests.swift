@@ -50,10 +50,10 @@ final class RoofSectionScaleTests: XCTestCase {
         let out = RoofDXF.build(roof(.pratt), parts: [.section])
         let dims = t.rawEntities(out.data).filter { $0.first?.1 == "DIMENSION" }
         XCTAssertEqual(dims.count, RoofSection(roof(.pratt), trueScale: true).dimensions.count)
-        // the clear height reads 5.50 m live (measured in mm, shown in metres)
+        // the clear height reads 5.50 m live (the drawing is in metres)
         let key = String(data: SketchDXF.tis620("สูงใต้ขื่อ <>"), encoding: .isoLatin1)!
         let clear = try XCTUnwrap(dims.first { t.value($0, "1") == key && t.value($0, "50") == "90" })
-        XCTAssertEqual(abs(t.double(clear, "24") - t.double(clear, "23")) / 1000, 5.5, accuracy: 1e-3)
+        XCTAssertEqual(abs(t.double(clear, "24") - t.double(clear, "23")), 5.5, accuracy: 1e-3)
         // no loose dimension lines left on the section's DIM layer apart from the slope arc and the callouts
         XCTAssertLessThan(t.rawEntities(out.data).filter { t.value($0, "8") == "TC-DIM" && $0.first?.1 == "LINE" }.count, 12)
     }

@@ -52,9 +52,9 @@ final class SketchDXFTests: XCTestCase {
     func testGoldenUnchanged() throws {
         let v = RoofDXFTests().roof()
         let cases: [(String, Data)] = [
-            ("roof-plan-section-table-mm.dxf", RoofDXF.build(v, parts: [.plan, .section, .table]).data),
+            ("roof-plan-section-table-mm.dxf", RoofDXF.build(v, parts: [.plan, .section, .table], millimetres: true).data),
             ("roof-plan-m.dxf", RoofDXF.build(v, parts: [.plan], millimetres: false).data),
-            ("roof-pv-mm.dxf", RoofDXF.build(v, parts: [.pv]).data),
+            ("roof-pv-mm.dxf", RoofDXF.build(v, parts: [.pv], millimetres: true).data),
         ]
         for (name, data) in cases {
             XCTAssertEqual(data, try Data(contentsOf: fixtures.appendingPathComponent(name)), name)

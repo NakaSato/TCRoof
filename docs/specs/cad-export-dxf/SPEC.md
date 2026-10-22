@@ -149,6 +149,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
+- **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
+  CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
+  decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.
+  The single line diagram stays in paper millimetres: it is an A3 sheet, not a real-world drawing.
 - **Layer standard** (`TCRoofCore/CADLayers.swift`, 2026-10-22): every export takes its layers from one list, named
   `TC-<area>-<item>` (shared `TC-GRID`, `TC-DIM`, `TC-TEXT`, `TC-NORTH`, `TC-SECTION-MARK`, `TC-OBSTACLE`; then
   `TC-ROOF-*`, `TC-PV-*`, `TC-TANK-*`, `TC-SITE-*`, `TC-SLD-*`). Each layer has its colour, linetype (grid CENTER;

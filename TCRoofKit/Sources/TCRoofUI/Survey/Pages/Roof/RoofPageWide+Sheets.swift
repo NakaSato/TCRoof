@@ -319,7 +319,7 @@ struct RoofCADSheet: View {
     let pvMode: Bool
     let close: () -> Void
     @State private var parts: Set<RoofDXF.Part> = [.plan, .section, .table]
-    @State private var mm = true
+    @State private var mm = false
     @State private var result: (url: URL, out: RoofDXF.Output)?
     @State private var sharing = false
 

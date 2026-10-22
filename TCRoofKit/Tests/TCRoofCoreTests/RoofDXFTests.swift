@@ -20,7 +20,7 @@ final class RoofDXFTests: XCTestCase {
         let l = lines(out.data)
         XCTAssertEqual(Array(l.prefix(8)), ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1015"])
         XCTAssertTrue(l.contains("ANSI_874"))
-        XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "4", "millimetres")
+        XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "6", "metres by default")
         XCTAssertEqual(l.suffix(3), ["0", "EOF", ""])
         for layer in ["TC-GRID", "TC-ROOF-OUTLINE", "TC-ROOF-RIDGE", "TC-ROOF-TRUSS", "TC-ROOF-POST", "TC-ROOF-PURLIN", "TC-ROOF-SKYLIGHT", "TC-SECTION-MARK", "TC-DIM", "TC-TEXT", "TC-ROOF-SECTION", "TC-ROOF-TABLE"] {
             XCTAssertTrue(out.layers.contains(layer), layer)
@@ -43,7 +43,7 @@ final class RoofDXFTests: XCTestCase {
     }
 
     func testUnitsAndPV() {
-        let mm = RoofDXF.build(roof(), parts: [.plan]), m = RoofDXF.build(roof(), parts: [.plan], millimetres: false)
+        let mm = RoofDXF.build(roof(), parts: [.plan], millimetres: true), m = RoofDXF.build(roof(), parts: [.plan])
         XCTAssertEqual(mm.entities, m.entities)
         XCTAssertEqual(lines(m.data)[lines(m.data).firstIndex(of: "$INSUNITS")! + 2], "6")
         // the outline's far corner: 19 m × 16 m

@@ -2,7 +2,7 @@ import Foundation
 
 /// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): the roof plan, section A-A, member table and PV layout as a plain
 /// DXF R2000 drawing (LINE / CIRCLE / TEXT on named layers) that any CAD program opens. Coordinates are metres from the
-/// plan's bottom-left corner, written in millimetres (1:1) or metres; the section sits under the plan and the table to
+/// plan's bottom-left corner, written in metres (1 unit = 1 m, the default) or millimetres; the section sits under the plan and the table to
 /// its right. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874).
 public enum RoofDXF {
     public enum Part: String, CaseIterable, Sendable { case plan, section, table, pv }
@@ -39,7 +39,7 @@ public enum RoofDXF {
 
     /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`. `longitude` picks the
     /// faces in use as the page does (`PlaneYield`).
-    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, latitude: Double? = nil,
+    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = false, latitude: Double? = nil,
                              longitude: Double? = nil) -> Output {
         var o = SketchDXF.Options(); o.millimetres = millimetres
         var dxf = SketchDXF(options: o)

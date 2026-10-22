@@ -34,21 +34,21 @@ final class TankDXFTests: XCTestCase {
         let v = Self.sample(), (TW, TH) = spans(v)
         let out = try XCTUnwrap(TankDXF.build(v))
         let l = t.lines(out.data)
-        XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "4")
+        XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "6", "metres")
         for name in ["TC-GRID", "TC-TANK-OUTLINE", "TC-DIM", "TC-OBSTACLE", "TC-NORTH", "TC-TEXT"] { XCTAssertTrue(out.layers.contains(name), name) }
         let outline = t.entities(out.data).filter { layerOf($0) == "TC-TANK-OUTLINE" }
         let xs = outline.flatMap { [t.double($0, "10"), t.double($0, "11")] }, ys = outline.flatMap { [t.double($0, "20"), t.double($0, "21")] }
-        XCTAssertEqual(xs.min()!, 0, accuracy: 1)
-        XCTAssertEqual(xs.max()!, TW * 1000, accuracy: 1)
-        XCTAssertEqual(ys.min()!, 0, accuracy: 1)
-        XCTAssertEqual(ys.max()!, TH * 1000, accuracy: 1)
+        XCTAssertEqual(xs.min()!, 0, accuracy: 1e-3)
+        XCTAssertEqual(xs.max()!, TW, accuracy: 1e-3)
+        XCTAssertEqual(ys.min()!, 0, accuracy: 1e-3)
+        XCTAssertEqual(ys.max()!, TH, accuracy: 1e-3)
     }
 
     func testObstacleLinesInsideTheirBoxes() throws {
         let v = Self.sample(), (_, TH) = spans(v)
         let boxes: [Box] = v.obstacles(Roof.Key.obstacles).filter { !$0.isAbsent }.compactMap { o in
             guard let x = NumberInput.value(o.x), let y = NumberInput.value(o.y), let w = NumberInput.value(o.w), let h = NumberInput.value(o.h) else { return nil }
-            return Box(x * 1000, (TH - y - h) * 1000, w * 1000, h * 1000)
+            return Box(x, TH - y - h, w, h)
         }
         XCTAssertFalse(boxes.isEmpty)
         let obstacle = t.entities(try XCTUnwrap(TankDXF.build(v)).data).filter { layerOf($0) == "TC-OBSTACLE" }
@@ -58,7 +58,7 @@ final class TankDXFTests: XCTestCase {
         XCTAssertEqual(obstacle.filter { $0.first?.1 == "HATCH" }.count, boxes.count)
         for e in lines {
             let a = Pt(t.double(e, "10"), t.double(e, "20")), b = Pt(t.double(e, "11"), t.double(e, "21"))
-            let inside = boxes.contains { r in [a, b].allSatisfy { $0.x >= r.x - 1 && $0.x <= r.maxX + 1 && $0.y >= r.y - 1 && $0.y <= r.maxY + 1 } }
+            let inside = boxes.contains { r in [a, b].allSatisfy { $0.x >= r.x - 1e-3 && $0.x <= r.maxX + 1e-3 && $0.y >= r.y - 1e-3 && $0.y <= r.maxY + 1e-3 } }
             XCTAssertTrue(inside, "\(a) \(b)")
         }
     }
@@ -67,7 +67,7 @@ final class TankDXFTests: XCTestCase {
         let v = Self.sample(), (TW, _) = spans(v)
         let ents = t.entities(try XCTUnwrap(TankDXF.build(v)).data)
         // the white background rect spans the whole sketch, well outside the tank and its chains
-        let far = ents.filter { e in ["10", "11"].contains { c in t.value(e, c).flatMap(Double.init).map { $0 < -30_000 || $0 > TW * 1000 + 30_000 } ?? false } }
+        let far = ents.filter { e in ["10", "11"].contains { c in t.value(e, c).flatMap(Double.init).map { $0 < -30 || $0 > TW + 30 } ?? false } }
         XCTAssertTrue(far.isEmpty)
         XCTAssertNil(ents.first { t.value($0, "62") != nil }, "layer colours only")
         XCTAssertNil(TankDXF.build(Values()))

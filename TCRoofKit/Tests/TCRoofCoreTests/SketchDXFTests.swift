@@ -217,13 +217,13 @@ final class SketchDXFTests: XCTestCase {
         func layer(_ name: String) throws -> Int {
             try XCTUnwrap(l.indices.first { l[$0] == name && l[$0 - 1] == "2" && l[$0 - 2] == "AcDbLayerTableRecord" })
         }
-        let g = try layer("TC-GRID")
+        let g = try layer("G-GRID")
         XCTAssertEqual(after(l, g, "62"), "8"); XCTAssertEqual(after(l, g, "6"), "CENTER"); XCTAssertEqual(after(l, g, "370"), "18")
         XCTAssertEqual(after(l, g, "290"), "1")
         XCTAssertEqual(after(l, g, "1001"), "AcAecLayerStandard")
-        XCTAssertEqual(after(l, try layer("TC-SITE-FRAME"), "290"), "0", "the frame doesn't plot")
+        XCTAssertEqual(after(l, try layer("G-ANNO-NPLT"), "290"), "0", "the frame doesn't plot")
         XCTAssertEqual(after(l, try layer("Defpoints"), "290"), "0")
-        XCTAssertEqual(after(l, try layer("TC-TANK-BEAM"), "6"), "HIDDEN")
+        XCTAssertEqual(after(l, try layer("S-TANK-BEAM-E"), "6"), "HIDDEN")
         // both linetypes declared, nothing else
         XCTAssertEqual(tableCount(l, "LTYPE"), 5)
         XCTAssertTrue(l.indices.contains { l[$0] == "AcAecLayerStandard" && l[$0 - 1] == "2" })
@@ -235,7 +235,26 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual(lines(m.data())[lines(m.data()).firstIndex(of: "$LTSCALE")! + 2], "0.125")
         // the standard: unique names, every one with a description
         XCTAssertEqual(Set(CADLayers.all.map(\.name)).count, CADLayers.all.count)
-        XCTAssertTrue(CADLayers.all.allSatisfy { $0.name.hasPrefix("TC-") && !$0.description.isEmpty })
+        XCTAssertTrue(CADLayers.all.allSatisfy { !$0.description.isEmpty })
+        // in the NCS format: Discipline-Major[-Minor]-Status, every name and its hatch layer
+        for l in CADLayers.all { XCTAssertTrue(CADLayers.conforms(l.name), l.name); XCTAssertTrue(CADLayers.conforms(CADLayers.hatch(of: l).name), l.name) }
+        XCTAssertEqual(CADLayers.hatch(of: CADLayers.pvFooting).name, "S-FTNG-HATC-N")
+        XCTAssertEqual(CADLayers.hatch(of: CADLayers.grid).name, "G-GRID-HATC")
+        XCTAssertEqual(CADLayers.named("S-FTNG-HATC-N")?.lineweight, 13)
+        // existing and new keep apart: the building and tank are E, what we install N
+        XCTAssertTrue([CADLayers.roofOutline, CADLayers.tankOutline, CADLayers.roofTruss].allSatisfy { $0.name.hasSuffix("-E") })
+        XCTAssertTrue([CADLayers.pvModule, CADLayers.pvRail, CADLayers.pvFooting, CADLayers.pvWalkway].allSatisfy { $0.name.hasSuffix("-N") })
+        // the non-plot layer says so in its name
+        XCTAssertTrue(CADLayers.all.filter { !$0.plot }.allSatisfy { $0.name.hasSuffix("-NPLT") })
+        // every older TC- name maps to a layer of today's standard, one to one
+        XCTAssertEqual(Set(CADLayers.legacy.values).count, CADLayers.legacy.count)
+        XCTAssertTrue(CADLayers.legacy.values.allSatisfy { n in CADLayers.all.contains { $0.name == n } })
+        // the standards file declares every layer and its hatch layers
+        let std = lines(CADLayers.standardsFile())
+        for l in CADLayers.everyLayer {
+            XCTAssertTrue(CADLayers.conforms(l.name), l.name)
+            XCTAssertTrue(std.indices.contains { std[$0] == l.name && std[$0 - 1] == "2" && std[$0 - 2] == "AcDbLayerTableRecord" }, l.name)
+        }
     }
 
     static var all: SketchDXF.Options {
@@ -268,9 +287,10 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual(l.last, "")
         XCTAssertEqual((l.count - 1) % 2, 0, "even number of lines")
         XCTAssertEqual(Array(l.suffix(3)), ["0", "EOF", ""])
-        XCTAssertEqual(d.layers, ["A", "B"])
-        // layers 0 and Defpoints, and the two
-        XCTAssertEqual(tableCount(l, "LAYER"), 4)
+        // the hatch on its layer's HATC layer
+        XCTAssertEqual(d.layers, ["A", "A-HATC", "B"])
+        // layers 0 and Defpoints, and the three
+        XCTAssertEqual(tableCount(l, "LAYER"), 5)
         XCTAssertEqual(l.filter { $0 == "DASHED" }.count, 2, "declared once, used once")
         XCTAssertEqual(tableCount(l, "LTYPE"), 4)
         XCTAssertEqual(d.entityCount, rawEntities(d.data()).count)

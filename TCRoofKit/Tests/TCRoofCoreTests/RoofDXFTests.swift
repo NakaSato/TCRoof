@@ -22,22 +22,22 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(l.contains("ANSI_874"))
         XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "6", "metres by default")
         XCTAssertEqual(l.suffix(3), ["0", "EOF", ""])
-        for layer in ["TC-GRID", "TC-ROOF-OUTLINE", "TC-ROOF-RIDGE", "TC-ROOF-TRUSS", "TC-ROOF-POST", "TC-ROOF-PURLIN", "TC-ROOF-SKYLIGHT", "TC-SECTION-MARK", "TC-DIM", "TC-TEXT", "TC-ROOF-SECTION", "TC-ROOF-TABLE"] {
+        for layer in ["G-GRID", "S-ROOF-OTLN-E", "S-ROOF-RIDG-E", "S-ROOF-FRAM-E", "S-COLS-E", "S-ROOF-PURL-E", "A-ROOF-SKYL-E", "G-ANNO-SYMB", "G-ANNO-DIMS", "G-ANNO-TEXT", "S-ROOF-SECT-E", "G-ANNO-SCHD"] {
             XCTAssertTrue(out.layers.contains(layer), layer)
         }
-        XCTAssertFalse(out.layers.contains("TC-PV-MODULE"))
+        XCTAssertFalse(out.layers.contains("E-PVMD-N"))
         // every layer is declared once in the LAYER table
         let t = SketchDXFTests()
         // layers 0 and Defpoints, and the drawing's
         XCTAssertEqual(t.tableCount(l, "LAYER"), out.layers.count + 2)
         XCTAssertEqual(out.entities, t.records(out.data).count)
         // 10 posts, each one closed LWPOLYLINE of 4 sides, on POST
-        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "TC-ROOF-POST" }.count, 10)
-        XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "TC-ROOF-POST" && $0.first?.1 == "LINE" }.count, 40)
+        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "S-COLS-E" }.count, 10)
+        XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "S-COLS-E" && $0.first?.1 == "LINE" }.count, 40)
         // the span chains: one DIMENSION per span and one per total, nothing else on DIM
         let v = roof(), spans = Roof.spans(v, .x).count + Roof.spans(v, .y).count
         // (the section's schematic dimensions stay lines: it isn't drawn to scale)
-        let dim = t.rawEntities(RoofDXF.build(v, parts: [.plan]).data).filter { t.value($0, "8") == "TC-DIM" }
+        let dim = t.rawEntities(RoofDXF.build(v, parts: [.plan]).data).filter { t.value($0, "8") == "G-ANNO-DIMS" }
         XCTAssertEqual(dim.filter { $0.first?.1 == "DIMENSION" }.count, spans + 2)
         XCTAssertTrue(dim.allSatisfy { $0.first?.1 == "DIMENSION" })
     }
@@ -50,9 +50,9 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(lines(mm.data).contains("19000"))
         XCTAssertTrue(lines(m.data).contains("19"))
         let pv = RoofDXF.build(roof(), parts: [.pv])
-        XCTAssertEqual(pv.layers.first, "TC-PV-MODULE")
-        XCTAssertTrue(pv.layers.contains("TC-PV-RAIL"))
-        XCTAssertTrue(pv.layers.contains("TC-PV-FOOT"))
+        XCTAssertEqual(pv.layers.first, "E-PVMD-N")
+        XCTAssertTrue(pv.layers.contains("S-PVRL-N"))
+        XCTAssertTrue(pv.layers.contains("S-PVFT-N"))
     }
 
     func testThaiIsTIS620() {
@@ -60,6 +60,6 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertEqual(Array(d), [0xA1, 0x20, 0x78, 0x25, 0x25, 0x64])
         XCTAssertEqual(RoofDXF.num(1500), "1500")
         XCTAssertEqual(RoofDXF.num(0.25), "0.25")
-        XCTAssertEqual(RoofDXF.layerSummary([.plan, .section, .table]), "TC-GRID | TC-ROOF-POST | TC-ROOF-TRUSS | TC-ROOF-PURLIN | TC-ROOF-SECTION | TC-DIM | TC-TEXT | TC-ROOF-TABLE")
+        XCTAssertEqual(RoofDXF.layerSummary([.plan, .section, .table]), "G-GRID | S-COLS-E | S-ROOF-FRAM-E | S-ROOF-PURL-E | S-ROOF-SECT-E | G-ANNO-DIMS | G-ANNO-TEXT | G-ANNO-SCHD")
     }
 }

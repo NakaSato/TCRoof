@@ -361,7 +361,10 @@ public struct SketchDXF: Sendable {
         ["92", "3", "72", "0", "73", "1", "93", String(pts.count)] + pts.flatMap { ["10", $0.0, "20", $0.1] }
     }
 
-    private mutating func hatchEntity(_ l: Layer, boundary: [String], extra: [String], pattern: [String], name: String, solid: Bool, loops: Int = 1) {
+    private mutating func hatchEntity(_ layer: Layer, boundary: [String], extra: [String], pattern: [String], name: String, solid: Bool, loops: Int = 1) {
+        // a hatch on its layer's HATC layer (S-FTNG-N → S-FTNG-HATC-N), so hatches freeze apart from the lines they fill;
+        // inside a block it stays on 0 with the rest
+        let l = inBlock && !blockLayers ? layer : CADLayers.hatch(of: layer)
         use(l)
         ents += head("HATCH", layerName(l)) + extra + ["100", "AcDbHatch", "10", "0", "20", "0", "30", "0", "210", "0", "220", "0", "230", "1",
                                                        "2", name, "70", solid ? "1" : "0", "71", "0", "91", String(loops)]

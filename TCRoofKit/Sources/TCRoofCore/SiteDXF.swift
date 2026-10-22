@@ -41,7 +41,8 @@ public enum SiteDXF {
         let W = sketchWidth, H = W * Double(p.height) / Double(p.width), box = Box(0, 0, W, H)
         let k = (meters ?? paperWidth / 1000) / W   // metres per sketch point
         var o = SketchDXF.Options(); o.millimetres = millimetres
-        o.dashes = true; o.opColours = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true
+        // every object ByLayer: the layers carry the colours
+        o.dashes = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true
         o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)
         func add(_ ops: [DrawOp], _ l: SketchDXF.Layer) {

@@ -158,8 +158,8 @@ public enum TankDXF {
         dxf.text(CADLayers.text, at(Pt(0, -2.2)), height: 0.5, "แปลนฐานรากและโครงยึดแผง / Mounting plan")
     }
 
-    /// A section's op → its standard layer by colour: concrete and outlines on TC-TANK-SECTION, soil on TC-TANK-SOIL,
-    /// modules, posts and bracing on the PV layers, vents as obstacles, words on TC-TEXT; nil for the white background,
+    /// A section's op → its standard layer by colour: concrete and outlines on S-TANK-SECT-E, soil on C-TOPO-E,
+    /// modules, posts and bracing on the PV layers, vents as obstacles, words on G-ANNO-TEXT; nil for the white background,
     /// the module joints and translucent tints.
     static func sectionLayer(_ op: DrawOp) -> SketchDXF.Layer? {
         func same(_ a: RGBA?, _ b: RGBA) -> Bool { a.map { abs($0.r - b.r) + abs($0.g - b.g) + abs($0.b - b.b) < 0.01 } ?? false }

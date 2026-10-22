@@ -176,7 +176,12 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   dimension chains with a leader to the cage. Without a gable ridge walkway (hip or shed roofs, or a walkway every n
   columns) the lowest walkway of the face whose eave is at the plan's top starts at the eave instead, with a cat ladder
   0.45 m wide 0.75 m out on plan, rungs and an UP arrow; a ladder below the plan pushes its title and the section
-  down. Open: whether the team keeps the eave ladder for hip roofs.
+  down. The roof page's plan and the PDF draw the same walkways and way up, simplified (`RoofPlan.walkways`: the band,
+  its grating and lifeline, the cage and landing or the eave ladder, `ทางขึ้นหลังคา`; tags `walkway` and `access`,
+  which the CAD export leaves to its own drawing), under the face labels; a roof without walkways draws as before.
+  Every module of the roof's CAD plan is the team's PV panel block (`TK_MODULE_PLAN`, `RoofDXF.modulePanel`), its long
+  side along the module's, stretched to the module on plan, on its WIPEOUT; a roof file defines only that block of the
+  tank components. Open: whether the team keeps the eave ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, P-RAFT-N, red), the four rails (P-RAIL-N,
@@ -198,8 +203,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   base, bolt, post and brace stubs) and the PV panel on plan (cells and busbars). Each is one block `TK_…` on its PV
   layer (BYBLOCK inside, so the INSERT's layer colours it; coordinates to a micrometre), so a component is edited once
   for every place it is used. The tank DXF puts them together: the rows' section (topping, side base and M12 at every
-  post, the posts, the rafter along the tilt over the post tops, the braces to the rafter 1.10 m from the front post
-  and 1.40 m from the back post, the two modules with their clamps on the rafter), the front elevation (topping and
+  post, the posts, the rafter along the tilt over the post tops, 0.82 m past the low post and 0.28 m past the high one
+  (4.00 m) but kept inside the modules, the braces to the rafter 0.565 m from the low post and 1.40 m from the high
+  post and the outer strut from the low post's foot to the rafter 0.60 m past it, all measured on section 1, the two
+  modules with their clamps on the rafter), the front elevation (topping and
   front base at every post, the posts, X bracing in every bay), the footing block on the mounting plan (the footing
   square with `TK_BASE_PLAN` inside), every module on the plan (`TK_MODULE_PLAN` on its WIPEOUT, stretched to the
   module) and, under the sections at 1:10, DETAIL CONCRETE TOPPING and DETAIL 1 with their dimensions and labels.

@@ -27,6 +27,9 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
         public var pacePointsPerWeek: Double?
         public var projectedFinish: String?
         public var slipDays: Int?
+        /// Working days the task can slip on the plan before it moves the install end (`InstallCriticalPath`, links
+        /// read from the dates); 0 = on the critical path. Nil for permit tasks and tasks without dates.
+        public var floatDays: Int?
     }
 
     public struct DayLine: Codable, Equatable, Sendable {
@@ -101,6 +104,10 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
             PartLine(part: $0.reportTitle, plannedPercent: Self.round(status.plannedByPart[$0] ?? 0),
                      actualPercent: Self.round(status.actualByPart[$0] ?? 0))
         }
+        let float = InstallCriticalPath.float(plan.compactMap { p in
+            guard p.weight > 0, p.task.part != .permit, let s = p.start, let e = p.end else { return nil }
+            return InstallCriticalPath.Task(id: p.task.rawValue, start: s, end: e)
+        }, calendar: cal)
         tasks = plan.filter { $0.weight > 0 }.map { p in
             let r = recovery[p.task]
             return TaskLine(code: p.task.code, title: p.task.title, weight: p.weight,
@@ -113,7 +120,8 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
                             state: r?.state, remainingPoints: r.map { Self.round($0.remaining) },
                             neededPointsPerWeek: r?.neededPerWeek.map(Self.round),
                             pacePointsPerWeek: r?.pacePerWeek.map(Self.round),
-                            projectedFinish: r?.projectedFinish.map(day), slipDays: r?.slipDays)
+                            projectedFinish: r?.projectedFinish.map(day), slipDays: r?.slipDays,
+                            floatDays: float[p.task.rawValue])
         }
         let tracking = InstallTracking(actual: status.actual, planned: status.planned, start: input.installStart,
                                        due: input.installEnd, today: today)

@@ -37,6 +37,10 @@ App (team / manager / Maintainer; assistant.use)
   `Session.resolve(id, confirmed:)` tells the model.
 - **No customer data.** `Assistant.Job` carries the station name, MP number, kWp, the plan, progress and daily reports;
   never the customer's name, phone or address.
+- **How it answers.** Like an experienced site engineer: plain Thai sentences, no field names or JSON, the main point
+  first; then what the numbers show, the cause, what it affects and what to do, with its assumptions. Each task's
+  `floatDays` (`InstallCriticalPath` on the plan's dates; 0 = critical path) lets it say which delays move the
+  finish, and it never trades tests, the manufacturer's installation rules, permits or the utility's steps for speed.
 - **Tokens.** The system prompt and the tool descriptions are short English (Thai takes two to three times the
   tokens; the model is told to answer in Thai), `get_project` takes `sections` (survey, papers, erc, iec, weekly, icl,
   devices, logs, inspections; default all) and leaves out empty parts, and earlier questions' tool results aren't

@@ -119,6 +119,15 @@ final class AssistantTests: XCTestCase {
 
     private func object(_ outcome: Assistant.Toolbox.Outcome) -> JSONValue { JSONValue.parse(outcome.text) ?? .null }
 
+    func testBriefMarksTheCriticalPath() throws {
+        let b = try XCTUnwrap(job().brief(today: today))
+        let floats = b.tasks.compactMap(\.floatDays)
+        XCTAssertFalse(floats.isEmpty)
+        XCTAssertTrue(floats.contains(0))                          // the last task to end has none
+        XCTAssertTrue(floats.allSatisfy { $0 >= 0 })
+        XCTAssertTrue(b.tasks.filter { $0.code.hasPrefix("1.") }.allSatisfy { $0.floatDays == nil })   // permits
+    }
+
     func testFindsAJobByIdNumberOrName() {
         let b = box()
         XCTAssertEqual(b.find("job-2").map(\.id), ["job-2"])

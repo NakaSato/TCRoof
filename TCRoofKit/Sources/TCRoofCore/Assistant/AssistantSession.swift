@@ -16,6 +16,8 @@ public extension Assistant {
         @ObservationIgnored private let transport: Transport
         @ObservationIgnored private let jobs: @MainActor () -> [Job]
         @ObservationIgnored private let now: () -> Date
+        /// Builds `get_project`'s facts of one station, on demand (the app reads them from its models).
+        @ObservationIgnored private let project: @MainActor (Job) -> ProjectFacts?
         @ObservationIgnored public var maxRounds = 5
         /// Messages kept after the system prompt; older turns are dropped whole.
         @ObservationIgnored public var historyLimit = 30
@@ -25,10 +27,13 @@ public extension Assistant {
         /// - Parameters:
         ///   - focus: the job the chat was opened from, if any.
         ///   - jobs: the stations the person may see, read fresh for every tool call.
+        ///   - project: the rest of a station's project for `get_project`; by default the job's own `project`.
         public init(transport: Transport, focus: Job? = nil, jobs: @escaping @MainActor () -> [Job],
+                    project: @escaping @MainActor (Job) -> ProjectFacts? = { $0.project },
                     now: @escaping () -> Date = Date.init) {
             self.transport = transport
             self.jobs = jobs
+            self.project = project
             self.now = now
             messages = [.system(Self.systemPrompt(today: now(), focus: focus))]
         }
@@ -48,7 +53,9 @@ public extension Assistant {
                 }
                 let box = Toolbox(jobs: jobs(), today: now())
                 for call in calls {
-                    let outcome = box.run(call.function.name, arguments: call.function.arguments)
+                    let outcome = call.function.name == "get_project"
+                        ? projectFacts(box, arguments: call.function.arguments)
+                        : box.run(call.function.name, arguments: call.function.arguments)
                     if case .proposal(let a, _) = outcome {
                         proposals.removeAll { $0.jobID == a.jobID && ($0.task == a.task || a.isReplan) && Self.sameKind($0.change, a.change) }
                         proposals.append(a)
@@ -57,6 +64,17 @@ public extension Assistant {
                 }
             }
             throw Failure.tooManyRounds
+        }
+
+        /// `get_project`, with the facts built here only for the station asked.
+        private func projectFacts(_ box: Toolbox, arguments: String) -> Toolbox.Outcome {
+            let args = JSONValue.parse(arguments.isEmpty ? "{}" : arguments) ?? .object([:])
+            switch box.single(args["job"]?.string ?? "") {
+            case .failure(let e): return e
+            case .found(let job):
+                guard let f = project(job) else { return box.error("ไม่มีข้อมูลโครงการของ \(job.station)") }
+                return .result(f.json())
+            }
         }
 
         /// Takes a proposal off the list (confirmed and saved by the app, or dismissed) and tells the model.
@@ -107,6 +125,8 @@ public extension Assistant {
             - ตอบเป็นภาษาไทย สั้น ตรงประเด็น ใช้รายการเมื่อมีหลายข้อ
             - ตัวเลขทุกตัว (%, คะแนน, วันที่, จำนวนวันที่ช้า) ต้องมาจากผลของเครื่องมือเท่านั้น ห้ามคำนวณหรือเดาเอง
             - ข้อมูลที่ไม่มีในเครื่องมือ ให้บอกว่าไม่มีข้อมูล
+            - คำถามเรื่องอื่นของโครงการนอกจากแผน MP (แบบสำรวจ เอกสารสถานี ลำดับ กกพ. ทดสอบ IEC คำขอรายสัปดาห์ ICL อุปกรณ์ นัดตรวจ)
+              ให้ใช้ get_project และเมื่อแนะนำเรื่องแผน ให้ดูด้วยว่ามีเอกสารหรือการทดสอบที่ค้างอยู่ซึ่งจะทำให้ส่งมอบไม่ได้
             - งานแต่ละงานมีน้ำหนักเป็นคะแนน (รวมทั้งสถานี 100) neededPointsPerWeek คือคะแนนต่อสัปดาห์ที่ต้องทำเพื่อให้เสร็จตามแผน (งานที่เลยกำหนดแล้วคือคะแนนที่เหลือทั้งหมด)
               pacePointsPerWeek คืออัตราที่ทำได้จริง slipDays คือจำนวนวันที่คาดว่าจะเสร็จช้ากว่าแผน
             - วันส่งมอบที่คาดของสถานี ให้อ้าง handoverForecast และ handoverSlipDays (ตรงกับ "คาดส่งมอบ" ในหน้าติดตามงาน คิดจาก SPI)

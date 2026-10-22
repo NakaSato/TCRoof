@@ -25,16 +25,20 @@ public extension Assistant {
         public var inspections: [RoutineReport.Inspection]
         /// Open paper and hand-over deadlines (`PWAPlan.deadlines`), for the look-ahead.
         public var deadlines: [Deadline]
+        /// The rest of the project for `get_project`, when given here; the app instead builds it only for the station
+        /// asked (`Session`'s `project`).
+        public var project: ProjectFacts?
 
         public init(id: String, station: String, mpNumber: Int? = nil, kWp: Double? = nil, input: MasterSchedule.Input?,
                     actual: MasterSchedule.Actual = .init(), dailies: [RoutineReport.Daily] = [], canEdit: Bool,
                     canReplan: Bool = false, contractor: String = "", team: String = "",
                     workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], inspections: [RoutineReport.Inspection] = [],
-                    deadlines: [Deadline] = []) {
+                    deadlines: [Deadline] = [], project: ProjectFacts? = nil) {
             self.id = id; self.station = station; self.mpNumber = mpNumber; self.kWp = kWp
             self.input = input; self.actual = actual; self.dailies = dailies; self.canEdit = canEdit
             self.canReplan = canReplan; self.contractor = contractor; self.team = team
             self.workingWeekdays = workingWeekdays; self.inspections = inspections; self.deadlines = deadlines
+            self.project = project
         }
 
         /// The crew group the station draws on, for the all-station loads.
@@ -165,7 +169,7 @@ public extension Assistant {
             self.jobs = jobs; self.today = today; self.calendar = calendar; self.makeID = makeID
         }
 
-        public static let names = ["list_stations", "get_schedule", "get_week_tasks",
+        public static let names = ["list_stations", "get_schedule", "get_project", "get_week_tasks",
                                    "propose_progress", "propose_dates", "propose_late_cause",
                                    "what_if", "station_priorities", "look_ahead", "suggest_replan", "propose_replan"]
 
@@ -175,6 +179,7 @@ public extension Assistant {
             case "list_stations": return listStations(args)
             case "get_schedule": return withJob(args) { job, _, _ in .result(job.brief(today: today)!.json()) }
             case "get_week_tasks": return withJob(args) { weekTasks($0, $1, $2, args) }
+            case "get_project": return project(args) { $0.project }
             case "propose_progress": return proposeProgress(args)
             case "propose_dates": return proposeDates(args)
             case "propose_late_cause": return proposeCause(args)
@@ -209,8 +214,15 @@ public extension Assistant {
                 return r
             }
             .sorted { ($0["variance"]?.number ?? 0) < ($1["variance"]?.number ?? 0) }
-            let out: JSONValue = .object(["count": .number(Double(rows.count)),
-                                          "stations": .array(rows.prefix(limit).map(JSONValue.object))])
+            // stations without an MP plan go last, and only when all are asked for
+            let unplanned: [[String: JSONValue]] = onlyBehind ? [] : jobs.filter { $0.input == nil }.map { j in
+                var r: [String: JSONValue] = ["jobID": .string(j.id), "station": .string(j.station), "hasMPPlan": .bool(false)]
+                if let mp = j.mpNumber { r["mpNumber"] = .number(Double(mp)) }
+                return r
+            }
+            let all = rows + unplanned
+            let out: JSONValue = .object(["count": .number(Double(all.count)),
+                                          "stations": .array(all.prefix(limit).map(JSONValue.object))])
             return .result(Self.encode(out))
         }
 
@@ -291,13 +303,35 @@ public extension Assistant {
 
         // MARK: Lookup
 
-        func withJob(_ args: JSONValue,
-                             _ body: (Job, MasterSchedule.Input, [MasterSchedule.PlannedTask]) -> Outcome) -> Outcome {
-            let ref = args["job"]?.string ?? ""
+        /// `get_project` for the station `args["job"]` names, with or without an MP plan. `facts` builds its facts; the
+        /// session passes its own provider, since they are read from the app's models only for the station asked.
+        public func project(_ args: JSONValue, facts: (Job) -> ProjectFacts?) -> Outcome {
+            switch single(args["job"]?.string ?? "") {
+            case .failure(let e): return e
+            case .found(let job):
+                guard let f = facts(job) else { return error("ไม่มีข้อมูลโครงการของ \(job.station)") }
+                return .result(f.json())
+            }
+        }
+
+        enum Pick { case found(Job), failure(Outcome) }
+
+        /// The one station `ref` names, else the error to answer.
+        func single(_ ref: String) -> Pick {
             let found = find(ref)
             guard found.count == 1, let job = found.first else {
-                if found.isEmpty { return error("ไม่พบสถานี \(ref) ใช้ list_stations เพื่อดูรายชื่อ") }
-                return error("พบหลายสถานีที่ตรงกับ \(ref): " + found.prefix(5).map { "\($0.station) (\($0.id))" }.joined(separator: ", "))
+                if found.isEmpty { return .failure(error("ไม่พบสถานี \(ref) ใช้ list_stations เพื่อดูรายชื่อ")) }
+                return .failure(error("พบหลายสถานีที่ตรงกับ \(ref): " + found.prefix(5).map { "\($0.station) (\($0.id))" }.joined(separator: ", ")))
+            }
+            return .found(job)
+        }
+
+        func withJob(_ args: JSONValue,
+                             _ body: (Job, MasterSchedule.Input, [MasterSchedule.PlannedTask]) -> Outcome) -> Outcome {
+            let job: Job
+            switch single(args["job"]?.string ?? "") {
+            case .failure(let e): return e
+            case .found(let j): job = j
             }
             guard let input = job.input else { return error("\(job.station) ยังไม่มีแผน MP") }
             return body(job, input, MasterSchedule.plan(input, calendar: calendar))
@@ -370,10 +404,12 @@ public extension Assistant {
             let job = p("string", "รหัสงาน (jobID), เลข MP เช่น 189 หรือส่วนหนึ่งของชื่อสถานี")
             let task = p("string", "รหัสงานในแผน MP เช่น 2.3")
             return [
-                fn("list_stations", "รายชื่อสถานีที่มีแผน MP เรียงจากช้ากว่าแผนมากที่สุด",
-                   ["filter": p("string", "behind = เฉพาะที่ช้ากว่าแผนหรือคาดว่าจะเสร็จช้า, all = ทุกสถานี", enum: ["behind", "all"]),
+                fn("list_stations", "รายชื่อสถานี เรียงจากช้ากว่าแผน MP มากที่สุด สถานีที่ยังไม่มีแผน MP (hasMPPlan false) อยู่ท้ายสุดเมื่อ filter = all",
+                   ["filter": p("string", "behind = เฉพาะที่ช้ากว่าแผนหรือคาดว่าจะเสร็จช้า, all = ทุกสถานี รวมที่ยังไม่มีแผน", enum: ["behind", "all"]),
                     "limit": p("integer", "จำนวนสูงสุด (ค่าเริ่มต้น 20)")], required: []),
                 fn("get_schedule", "แผน MP ของสถานีหนึ่ง: % แผนและจริง, แต่ละงาน (ต้องทำกี่คะแนนต่อสัปดาห์, อัตราที่ผ่านมา, วันที่คาดว่าเสร็จ), งานสัปดาห์นี้ และรายงานประจำวันล่าสุด",
+                   ["job": job], required: ["job"]),
+                fn("get_project", "ข้อมูลโครงการทั้งหมดของสถานีนอกจากแผน MP: ข้อมูลงาน (ขนาด สถานะ ทีม), แบบสำรวจ NO.224 (% ที่กรอก แต่ละหมวด ที่ยังขาด), เอกสารสถานี กปภ. (แต่ละชุด เอกสารที่ยังไม่พร้อม ที่ใกล้หมดอายุ), ลำดับ กกพ., ทดสอบ IEC 62446 (แต่ละขั้น ผลแต่ละ inverter ภาพถ่ายติดตั้ง), คำขอรายสัปดาห์ R1, ใบตรวจรับ ICL, อุปกรณ์ที่สแกน, บันทึกติดตั้ง และนัดตรวจ ใช้ได้กับสถานีที่ยังไม่มีแผน MP",
                    ["job": job], required: ["job"]),
                 fn("get_week_tasks", "คะแนนตามแผนและที่ทำจริงของแต่ละงานในสัปดาห์หนึ่ง",
                    ["job": job, "week": p("string", "วันใดก็ได้ในสัปดาห์ yyyy-MM-dd (ค่าเริ่มต้น สัปดาห์นี้)")], required: ["job"]),

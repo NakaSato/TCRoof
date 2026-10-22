@@ -23,7 +23,11 @@ struct AssistantChatView: View {
     private let transport: Assistant.Transport
 
     /// Reads the stations for each tool call; filled once the view has its model context.
-    @MainActor final class Source { var read: @MainActor () -> [Assistant.Job] = { [] } }
+    @MainActor final class Source {
+        var read: @MainActor () -> [Assistant.Job] = { [] }
+        /// `get_project`'s facts of one station, built only when asked.
+        var project: @MainActor (Assistant.Job) -> Assistant.ProjectFacts? = { _ in nil }
+    }
 
     init(focus: Job? = nil) {
         self.focus = focus
@@ -39,7 +43,8 @@ struct AssistantChatView: View {
     }
 
     private static func makeSession(_ t: Assistant.Transport, focus: Job?, source: Source) -> Assistant.Session {
-        Assistant.Session(transport: t, focus: focus?.assistantJob(.team), jobs: { source.read() })
+        Assistant.Session(transport: t, focus: focus?.assistantJob(.team), jobs: { source.read() },
+                          project: { source.project($0) })
     }
 
     var body: some View {
@@ -86,7 +91,11 @@ struct AssistantChatView: View {
             let context = self.context, permissions = self.permissions
             source.read = {
                 let library = StationDocsStore.loadLibrary()
-                return context.assistantStations().map { $0.assistantJob(permissions, library: library) }
+                return context.assistantProjects().map { $0.assistantJob(permissions, library: library) }
+            }
+            source.project = { job in
+                context.assistantProjects().first { $0.overviewID == job.id }
+                    .map { $0.assistantProject(library: StationDocsStore.loadLibrary()) }
             }
         }
     }

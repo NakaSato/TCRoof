@@ -60,13 +60,36 @@ public extension Assistant {
                 public var status: String
                 public var note: String?
                 public var expires: String?
+                /// Every package the paper belongs to (`StationDocs.Package` ids), for `get_project`'s `package`; not sent.
+                var packageIDs: [String] = []
+                /// Its earliest package's due day, for the default short list; not sent.
+                var due: String?
+
+                enum CodingKeys: String, CodingKey { case package, name, status, note, expires }
             }
             public var packages: [Package]
-            /// Papers not ready yet (not signed, submitted or approved), at most `listLimit`.
+            /// Papers not ready yet (not signed, submitted or approved), due soonest first. `get_project` sends the
+            /// first `shortList` of them, or all of one package when asked (`listed(package:)`).
             public var open: [Paper]
             public var openCount: Int
             /// Papers expired or expiring within 30 days.
             public var expiring: [Paper]
+
+            /// Open papers left out of what is sent; the model asks with `package` for them.
+            public var moreOpen: Int?
+
+            static let shortList = 5
+
+            /// As sent: every package's count, and the open papers of `package` (up to `listLimit`), else the
+            /// `shortList` due soonest.
+            func listed(package: StationDocs.Package?) -> Papers {
+                var p = self
+                let pick = package.map { id in open.filter { $0.packageIDs.contains(id.rawValue) } } ?? open
+                p.open = Array(pick.prefix(package == nil ? Self.shortList : ProjectFacts.listLimit))
+                let left = (package == nil ? openCount : pick.count) - p.open.count
+                p.moreOpen = left > 0 ? left : nil
+                return p
+            }
         }
 
         public struct ERC: Codable, Equatable, Sendable {
@@ -183,14 +206,20 @@ public extension Assistant {
 
         /// Compact JSON for the model: keys sorted, only `sections`, and no empty lists or objects (the system prompt
         /// tells the model a part left out means there is none).
-        public func json(_ sections: Set<Section> = Set(Section.allCases)) -> String {
+        /// `papersPackage` lists every open paper of that package; without it, the papers' counts and the few due soonest.
+        public func json(_ sections: Set<Section> = Set(Section.allCases), papersPackage: StationDocs.Package? = nil) -> String {
             let e = JSONEncoder()
             e.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-            guard let data = try? e.encode(self), let full = try? JSONDecoder().decode(JSONValue.self, from: data),
+            var sent = self
+            sent.papers = papers?.listed(package: papersPackage)
+            guard let data = try? e.encode(sent), let full = try? JSONDecoder().decode(JSONValue.self, from: data),
                   case .object(var o) = full else { return "{}" }
             for s in Section.allCases where !sections.contains(s) { for k in s.keys { o.removeValue(forKey: k) } }
             return Toolbox.encode(Self.pruned(.object(o)) ?? .object([:]))
         }
+
+        /// The paper package a tool call names (`grid_connection`, `pk2`, `building`, `commissioning`, `handover`).
+        static func package(_ v: JSONValue?) -> StationDocs.Package? { v?.string.flatMap(StationDocs.Package.init(rawValue:)) }
 
         /// Drops empty arrays and objects, at any depth.
         static func pruned(_ v: JSONValue) -> JSONValue? {
@@ -267,19 +296,43 @@ public extension Assistant {
                            today: Date, calendar cal: Calendar) -> Papers {
             let day = { (d: Date) in ScheduleBrief.day(d, calendar: cal) }
             var open: [Papers.Paper] = [], expiring: [Papers.Paper] = []
-            var seen = Set<String>()
+            var at: [String: Int] = [:]
             let packages = StationDocs.packages(ctx).map { pkg in
-                for kind in StationDocs.papers(in: pkg, ctx) where seen.insert(kind.id).inserted {
+                let due = s.due(pkg).map(day)
+                for kind in StationDocs.papers(in: pkg, ctx) {
+                    // a paper of two packages is listed once, under the first, and found by either
+                    if let i = at[kind.id] {
+                        guard i >= 0 else { continue }      // ready, or not needed: not in the open list
+                        open[i].packageIDs.append(pkg.rawValue)
+                        if let d = due, open[i].due.map({ d < $0 }) ?? true { open[i].due = d }
+                        continue
+                    }
                     let state = StationDocs.state(kind, station: s, library: library)
-                    let paper = Papers.Paper(package: pkg.title, name: kind.name, status: state.status.title,
+                    var paper = Papers.Paper(package: pkg.title, name: kind.name, status: state.status.title,
                                              note: state.note.isEmpty ? nil : state.note, expires: state.expiresAt.map(day))
-                    if state.status != .notNeeded, !state.status.isReady { open.append(paper) }
+                    paper.packageIDs = [pkg.rawValue]
+                    paper.due = due
                     if StationDocs.expiry(kind, state, on: today, calendar: cal) != nil { expiring.append(paper) }
+                    if state.status != .notNeeded, !state.status.isReady {
+                        at[kind.id] = open.count
+                        open.append(paper)
+                    } else {
+                        at[kind.id] = -1
+                    }
                 }
                 let p = StationDocs.progress(pkg, station: s, library: library, ctx)
-                return Papers.Package(title: pkg.title, ready: p.ready, total: p.total, due: s.due(pkg).map(day))
+                return Papers.Package(title: pkg.title, ready: p.ready, total: p.total, due: due)
             }
-            return Papers(packages: packages, open: Array(open.prefix(listLimit)), openCount: open.count, expiring: expiring)
+            // due soonest first (no due day last), the packages' order kept within a day
+            let sorted = open.enumerated().sorted { a, b in
+                switch (a.element.due, b.element.due) {
+                case let (x?, y?) where x != y: x < y
+                case (.some, nil): true
+                case (nil, .some): false
+                default: a.offset < b.offset
+                }
+            }.map(\.element)
+            return Papers(packages: packages, open: sorted, openCount: open.count, expiring: expiring)
         }
 
         static func erc(_ r: ERCFlow.Record, _ ctx: ERCFlow.Context, today: Date) -> ERC {

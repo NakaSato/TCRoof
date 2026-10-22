@@ -25,7 +25,7 @@ struct AssistantSettingsPage: View {
                     Text("ผู้จัดการเป็นผู้ใส่คีย์ในแต่ละเครื่อง").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
                 if let result { resultLine(result) }
-                Text("คีย์เก็บในพวงกุญแจของเครื่องนี้เท่านั้น ไม่ซิงก์และไม่อยู่ในข้อมูลสำรอง แอปส่งเฉพาะแผน MP ความก้าวหน้า และรายงานประจำวันของสถานีไปยัง Qwen ไม่ส่งชื่อ เบอร์ หรือที่อยู่ลูกค้า แต่ละเครื่องใช้ได้ \(Assistant.OpenAI.dailyLimit) ครั้งต่อวัน")
+                Text("คีย์เก็บในพวงกุญแจของเครื่องนี้เท่านั้น ไม่ซิงก์และไม่อยู่ในข้อมูลสำรอง แอปส่งข้อมูลงานของสถานีไปยัง Qwen เฉพาะที่ผู้ช่วยถาม (แผน MP ความก้าวหน้า รายงานประจำวัน แบบสำรวจ เอกสารสถานี ลำดับ กกพ. ทดสอบ IEC คำขอรายสัปดาห์ ICL อุปกรณ์) ไม่ส่งชื่อ เบอร์ หรือที่อยู่ลูกค้า แต่ละเครื่องถามได้ \(Assistant.OpenAI.dailyLimit) คำถามต่อวัน")
                     .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             .padding(16)
@@ -49,7 +49,7 @@ struct AssistantSettingsPage: View {
                 Text(hasKey ? "ใช้คีย์ในเครื่องนี้ | \(AssistantKey.model)" : "ยังไม่ได้ใส่คีย์ Qwen ในเครื่องนี้")
                     .font(.sarabun(16, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
                     .accessibilityIdentifier("assistantKeyStatus")
-                Text("วันนี้ใช้ไป \(used)/\(Assistant.OpenAI.dailyLimit) ครั้ง").font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
+                Text("วันนี้ถามไป \(used)/\(Assistant.OpenAI.dailyLimit) คำถาม").font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 0)
         }

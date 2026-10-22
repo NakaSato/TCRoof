@@ -11,8 +11,11 @@ public extension Assistant {
         /// refuses a call once the free quota is used up instead of billing it (`Failure.freeQuotaUsed`).
         public static let defaultModel = "qwen3.8-max"
         public static let maxTokens = 1_500
-        /// Requests a device may send per Bangkok day.
+        /// Questions a device may ask per Bangkok day; a question's tool rounds don't count.
         public static let dailyLimit = 50
+        /// Requests a device may send per Bangkok day whatever the questions (a question takes up to
+        /// `Session.maxRounds`), which stops a runaway loop. The function uses the same rule.
+        public static let dailyRequestLimit = dailyLimit * 5
 
         public enum Failure: Error, Equatable, LocalizedError {
             case noKey
@@ -28,7 +31,7 @@ public extension Assistant {
                 switch self {
                 case .noKey: "ยังไม่ได้ใส่คีย์ Qwen ในเครื่องนี้ ให้ผู้จัดการใส่ที่ ตั้งค่า › ผู้ช่วยโครงการ (AI)"
                 case .badKey: "คีย์ Qwen ใช้ไม่ได้หรือหมดอายุ ให้ผู้จัดการตรวจที่ ตั้งค่า › ผู้ช่วยโครงการ (AI)"
-                case .limit(let n): "เครื่องนี้ใช้ผู้ช่วยครบ \(n) ครั้งของวันนี้แล้ว"
+                case .limit(let n): "เครื่องนี้ถามผู้ช่วยครบ \(n) คำถามของวันนี้แล้ว"
                 case .busy: "ผู้ช่วยมีคนใช้มาก ลองอีกครั้งในอีกสักครู่"
                 case .server(let status, let message): "ผู้ช่วยขัดข้อง (\(status))" + (message.isEmpty ? "" : ": \(message)")
                 case .badReply: "ผู้ช่วยไม่ได้ตอบ ลองอีกครั้ง"

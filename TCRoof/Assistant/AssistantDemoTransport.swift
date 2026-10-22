@@ -13,7 +13,7 @@ struct AssistantDemoTransport: Assistant.Transport {
         let asked = r.messages.lastIndex { $0.role == .user && !($0.content ?? "").hasPrefix("[ระบบ]") } ?? 0
         let question = r.messages[asked].content ?? ""
         let results = r.messages[asked...].filter { $0.role == .tool }.compactMap(\.content)
-        let left = max(0, 50 - r.messages.filter { $0.role == .assistant }.count - 1)
+        let left = max(0, Assistant.OpenAI.dailyLimit - r.messages.filter { $0.role == .user && !($0.content ?? "").hasPrefix("[ระบบ]") }.count)
         func call(_ name: String, _ args: String) -> Assistant.Reply {
             Assistant.Reply(message: .init(role: .assistant, content: nil,
                                            toolCalls: [.init(id: "demo-\(results.count)", name: name, arguments: args)]),
@@ -23,6 +23,8 @@ struct AssistantDemoTransport: Assistant.Transport {
             Assistant.Reply(message: .init(role: .assistant, content: text), remainingToday: left)
         }
 
+        if let facts = Self.project(question, results, focus: Self.mpNumber(question) ?? Self.focusID(r.messages.first?.content),
+                                    call: call, say: say) { return facts }
         if let plan = Self.strategy(question, results, focus: Self.mpNumber(question) ?? Self.focusID(r.messages.first?.content),
                                     call: call, say: say) { return plan }
 
@@ -67,6 +69,39 @@ struct AssistantDemoTransport: Assistant.Transport {
             if let e = p?["error"]?.string { return say(e) }
             return say("เสนอบันทึก \(p?["task"]?.string ?? "") เป็น \(p?["after"]?.string ?? "") ยังไม่ได้บันทึก กดยืนยันในการ์ดด้านล่าง")
         }
+    }
+
+    /// `เอกสารและการทดสอบที่ค้าง`: one station's papers and IEC test from `get_project` (the station the chat was
+    /// opened from, else the one most behind).
+    private static func project(_ q: String, _ results: [String], focus: String?,
+                                call: (String, String) -> Assistant.Reply, say: (String) -> Assistant.Reply) -> Assistant.Reply? {
+        guard q.contains("เอกสาร") || q.contains("IEC") else { return nil }
+        if let last = results.last, let p = JSONValue.parse(last), p["basics"] != nil || p["error"] != nil {
+            if let e = p["error"]?.string { return say(e) }
+            var out = ["**เอกสารและการทดสอบ | \(p["station"]?.string ?? "")**"]
+            out += array(p["papers"]?["packages"]).map { k in
+                "- \(k["title"]?.string ?? ""): พร้อม \(k["ready"]?.string ?? "0")/\(k["total"]?.string ?? "0") ฉบับ"
+                    + (k["due"]?.string.map { " | กำหนดส่ง \($0)" } ?? "")
+            }
+            let open = array(p["papers"]?["open"])
+            if !open.isEmpty {
+                out += ["", "ยังไม่พร้อม (ใกล้กำหนดก่อน):"] + open.map { "- \($0["name"]?.string ?? "") (\($0["status"]?.string ?? ""))" }
+            }
+            if let more = p["papers"]?["moreOpen"]?.number { out.append("และอีก \(Int(more)) ฉบับ") }
+            if let iec = p["iec"] {
+                let steps = array(iec["steps"])
+                let done = steps.filter { $0["done"] == .bool(true) }.count
+                out += ["", "ทดสอบ IEC 62446: เสร็จ \(done)/\(steps.count) ขั้น | \(iec["stringCount"]?.string ?? "0") สตริง"]
+            } else {
+                out += ["", "ยังไม่ได้ตั้งค่าการทดสอบ IEC 62446"]
+            }
+            return say(out.joined(separator: "\n"))
+        }
+        if results.isEmpty, focus == nil { return call("list_stations", #"{"filter":"all","limit":10}"#) }
+        guard let id = focus ?? array(JSONValue.parse(results[0])?["stations"]).first?["jobID"]?.string else {
+            return say("ยังไม่มีสถานี")
+        }
+        return call("get_project", #"{"job":"\#(id)","sections":["papers","iec"]}"#)
     }
 
     /// The strategy chips: priorities, a recovery what-if, the look-ahead and a re-plan, answered from their tools.

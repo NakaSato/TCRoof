@@ -57,6 +57,10 @@ public enum Assistant {
         public var messages: [Message]
         public var tools: [JSONValue]
         public init(messages: [Message], tools: [JSONValue]) { self.messages = messages; self.tools = tools }
+
+        /// It starts a new question (ends with the person's message), not a tool round of one: what the daily limit
+        /// counts.
+        public var isNewQuestion: Bool { messages.last?.role == .user }
     }
 
     /// What the function returns: the model's message and the person's requests left today.

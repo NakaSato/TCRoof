@@ -58,8 +58,8 @@ final class AssistantUITests: XCTestCase {
         shot("05-saved")
     }
 
-    /// The strategy chips: priorities, a recovery what-if, the look-ahead, and a re-plan card, dismissed so the demo
-    /// station keeps its plan.
+    /// The strategy chips: priorities, a recovery what-if, the look-ahead, the papers and IEC test (`get_project`), and
+    /// a re-plan card, dismissed so the demo station keeps its plan.
     func testStrategyChips() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "assistant", "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
@@ -77,6 +77,8 @@ final class AssistantUITests: XCTestCase {
         ask("จัดลำดับความสำคัญทุกสถานี", expect: "ลำดับความเสี่ยง", shot: "06-priorities")
         ask("วางแผนเร่งงานให้ทันกำหนด", expect: "อัตราเดิม", shot: "07-whatif")
         ask("แผนล่วงหน้า 3 สัปดาห์", expect: "แผนล่วงหน้า", shot: "08-lookahead")
+        // get_project: the station's papers and IEC test, beyond the MP plan
+        ask("เอกสารและการทดสอบที่ค้าง", expect: "เอกสารและการทดสอบ", shot: "10-project")
 
         let replan = app.buttons["เสนอแผนใหม่ที่ทำได้จริง"]
         XCTAssertTrue(replan.waitForExistence(timeout: 5))

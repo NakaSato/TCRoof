@@ -189,6 +189,22 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
   at x = 0, on TC-TANK-SECTION / TC-TANK-SOIL / the PV layers by colour, their lengths, heights, spacings, post heights
   and bays as live DIMENSIONs.
+- **Tank mounting components** (2026-10-22, after the team's `Tank mounting Section 1.dxf`, `Section 2.dxf` and
+  `PV_Panel.dxf` in `reference/`): `tools/cad-details/components.py` takes the components out one by one, true size in
+  metres with their base point at (0, 0), into `Resources/tank-components.json` (`TankComponents`): the module's side
+  view with its two rail clamps (2280 mm, stretched along the slope to the layout's module), the R30 rail with its
+  clamp and on its own, the post base side and front, the expansion bolt M12, the base plate on plan, the concrete
+  topping 300 × 150 (its AR-CONC hatch kept with the source's line families), the topping on plan, DETAIL 1 (topping,
+  base, bolt, post and brace stubs) and the PV panel on plan (cells and busbars). Each is one block `TK_…` on its PV
+  layer (BYBLOCK inside, so the INSERT's layer colours it; coordinates to a micrometre), so a component is edited once
+  for every place it is used. The tank DXF puts them together: the rows' section (topping, side base and M12 at every
+  post, the posts, the rafter along the tilt over the post tops, the braces to the rafter 1.10 m from the front post
+  and 1.40 m from the back post, the two modules with their clamps on the rafter), the front elevation (topping and
+  front base at every post, the posts, X bracing in every bay), the footing block on the mounting plan (the footing
+  square with `TK_BASE_PLAN` inside), every module on the plan (`TK_MODULE_PLAN` on its WIPEOUT, stretched to the
+  module) and, under the sections at 1:10, DETAIL CONCRETE TOPPING and DETAIL 1 with their dimensions and labels.
+  Posts, rafters and braces are closed polylines (50, 75 and 45 mm), stretched by their grips. The PDF keeps its own
+  drawings. Run the tool again when a reference drawing changes.
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.

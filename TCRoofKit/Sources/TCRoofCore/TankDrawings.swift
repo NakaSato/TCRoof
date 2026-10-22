@@ -52,6 +52,12 @@ public enum TankDrawings {
         public var origin: Pt
         public var dimensions: [SketchDXF.Dimension]
         public var dimensionOps: Set<Int>
+        /// The ops the DXF draws from the team's components instead (`TankComponents`): footings, posts, braces and the
+        /// modules' side view; and which drawing it is, with its post pairs along it (front elevation).
+        public var structureOps: Set<Int> = []
+        public var role: Role = .tank
+        public var posts: [Double] = []
+        public enum Role: Sendable { case tank, rows, front }
     }
 
     /// Wall and slab thickness and the soil over a buried tank, assumed (ค่าสมมติ).
@@ -260,7 +266,7 @@ public enum TankDrawings {
         // roof slab
         o.append(.rect(Box(X(-p.frontIn - 0.4), roofY, (span + 0.4) * k, 7), stroke: ink, fill: concrete, width: 0.8))
         o.append(.text("หลังคาถัง (พื้น ค.ส.ล.)", at: Pt(X(-p.frontIn - 0.4), roofY + 16), size: 8.5, color: muted))
-        let fw = p.footing * k
+        let fw = p.footing * k, structureStart = o.count
         for row in 0..<2 {
             let front = Double(row) * p.rowPitch, back = front + p.postDY
             for (x, h) in [(front, p.hFront), (back, p.hBack)] {
@@ -276,6 +282,7 @@ public enum TankDrawings {
             let ym = ya + (mid - a) * p.tanT
             o.append(.line(Pt(X(mid), Y(ym) - 5), Pt(X(mid), Y(ym) + 1), width: 1.2, color: .white))
         }
+        let structure = Set(structureStart..<o.count)
         // dimensions along the roof
         var dims: [SketchDXF.Dimension] = [], dimOps: Set<Int> = []
         func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
@@ -309,7 +316,8 @@ public enum TankDrawings {
         o.append(.text(String(format: "ฐานราก %.0f×%.0f×150 มม. ยึดพื้นหลังคา | ค้ำ X ทุกช่วงเสา | ราง 4 เส้นต่อโต๊ะ | แผง 2 แผงตามแนวลาด",
                               p.footing * 1000, p.footing * 1000), at: Pt(16, h0 - 10), size: 8.5, color: muted))
         let sketch = Sketch(width: W, height: h0, ops: o)
-        return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps)
+        return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps,
+                          structureOps: structure, role: .rows)
     }
 }
 
@@ -344,7 +352,7 @@ extension TankDrawings {
         // slab
         o.append(.rect(Box(X(-0.6), roofY, (L + 1.2) * k, 7), stroke: ink, fill: concrete, width: 0.8))
         // posts: the back one behind, lighter; footings
-        let fw = max(3, p.footing * k)
+        let fw = max(3, p.footing * k), structureStart = o.count
         for x in xs {
             o.append(.rect(Box(X(x) - fw / 2, roofY - max(2, 0.15 * k), fw, max(2, 0.15 * k)), stroke: ink, fill: concrete, width: 0.6))
             o.append(.line(Pt(X(x), roofY), Pt(X(x), Y(p.hBack)), width: 1.2, color: post.withAlpha(0.45)))
@@ -355,6 +363,7 @@ extension TankDrawings {
             o.append(.line(Pt(X(x1), Y(0.15)), Pt(X(x2), Y(p.hFront - 0.1)), width: 0.7, color: post, dash: [4, 2]))
             o.append(.line(Pt(X(x1), Y(p.hFront - 0.1)), Pt(X(x2), Y(0.15)), width: 0.7, color: post, dash: [4, 2]))
         }
+        let structure = Set(structureStart..<o.count)
         // modules: lower and upper, seen from the front; off panels as outlines
         let on = Set(t.panels.filter(\.on).map(\.key)), mid = ya + (p.cellH + p.moduleGap * p.cosT / 2) * p.tanT
         for c in 0..<t.columns {
@@ -391,7 +400,8 @@ extension TankDrawings {
                               xs.count, p.hFront, p.hBack, bays.max() ?? 0, p.footing * 1000, p.footing * 1000),
                        at: Pt(16, h0 - 10), size: 8.5, color: muted))
         let sketch = Sketch(width: W, height: h0, ops: o)
-        return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps)
+        return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps,
+                          structureOps: structure, role: .front, posts: xs)
     }
 }
 

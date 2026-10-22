@@ -110,6 +110,9 @@ public struct SketchDXF: Sendable {
     private var blockBox: [String: (lo: (x: Double, y: Double), hi: (x: Double, y: Double))] = [:]
     /// Drawing a block's body: entities on layer 0, colour BYBLOCK, measured into `blockLo` / `blockHi`.
     private var inBlock = false
+    /// Coordinates to a micrometre instead of a millimetre of drawing units: the team's component blocks
+    /// (`TankComponents`), whose profiles have sub-millimetre detail in a file in metres.
+    var fine = false
     /// Drawing a block whose entities keep their own layers and colours (a detail sheet), not layer 0 / BYBLOCK.
     private var blockLayers = false
     /// A WIPEOUT was written: the file declares its class and its frame setting.
@@ -141,7 +144,7 @@ public struct SketchDXF: Sendable {
     private func head(_ type: String, _ layer: String) -> [String] {
         ["0", type, "5", Self.handle, "330", Self.owner, "100", "AcDbEntity", "8", layer]
     }
-    private func q(_ m: Double) -> String { Self.num((m * unit * 1000).rounded() / 1000) }
+    private func q(_ m: Double) -> String { fine ? Self.num((m * unit * 1e6).rounded() / 1e6, places: 6) : Self.num((m * unit * 1000).rounded() / 1000) }
     /// Grows the extents by a point in metres.
     private mutating func cover(_ x: Double, _ y: Double) {
         if inBlock { blockLo = (min(blockLo.x, x * unit), min(blockLo.y, y * unit)); blockHi = (max(blockHi.x, x * unit), max(blockHi.y, y * unit)); return }
@@ -308,6 +311,37 @@ public struct SketchDXF: Sendable {
         for v in pts { cover(v.0, v.1) }
     }
 
+    /// One line family of a hatch pattern as a drawing stores it, already scaled and turned: its angle (degrees), a point
+    /// it passes through, the offset to the next line and its dashes (metres; negative = gap).
+    public struct PatternLine: Sendable {
+        public var angle: Double, base: (Double, Double), offset: (Double, Double), dashes: [Double]
+        public init(angle: Double, base: (Double, Double), offset: (Double, Double), dashes: [Double]) {
+            self.angle = angle; self.base = base; self.offset = offset; self.dashes = dashes
+        }
+    }
+
+    /// A HATCH named `name` (AR-CONC, …) of the given line families over one or more loops (metres), as the source drew
+    /// it, so it reads as that pattern in any CAD program; with no families, SOLID.
+    public mutating func patternHatch(_ l: Layer, loops: [[(Double, Double)]], name: String, lines: [PatternLine]) {
+        let ls = loops.filter { $0.count >= 3 }
+        guard !ls.isEmpty else { return }
+        func n6(_ x: Double) -> String { Self.num((x * unit * 1e7).rounded() / 1e7, places: 7) }
+        var boundary: [String] = []
+        // every loop an outer boundary (the team's toppings hatch the regions around the base as separate loops)
+        for loop in ls {
+            boundary += ["92", "3", "72", "0", "73", "1", "93", String(loop.count)] + loop.flatMap { ["10", q($0.0), "20", q($0.1)] }
+            for v in loop { cover(v.0, v.1) }
+        }
+        let solid = lines.isEmpty
+        var pattern = solid ? ["75", "0", "76", "1"] : ["75", "1", "76", "2", "52", "0", "41", "1", "77", "0", "78", String(lines.count)]
+        for f in lines {
+            pattern += ["53", Self.num((f.angle * 1e6).rounded() / 1e6, places: 6), "43", n6(f.base.0), "44", n6(f.base.1), "45", n6(f.offset.0), "46", n6(f.offset.1),
+                        "79", String(f.dashes.count)] + f.dashes.flatMap { ["49", n6($0)] }
+        }
+        hatchEntity(l, boundary: boundary, extra: inBlock && !blockLayers ? ["62", "0"] : [], pattern: pattern,
+                    name: solid ? "SOLID" : name, solid: solid, loops: ls.count)
+    }
+
     /// A SOLID HATCH inside the polygon `pts` (metres).
     public mutating func solid(_ l: Layer, _ pts: [(Double, Double)], extra: [String] = []) {
         guard pts.count >= 3 else { return }
@@ -327,10 +361,10 @@ public struct SketchDXF: Sendable {
         ["92", "3", "72", "0", "73", "1", "93", String(pts.count)] + pts.flatMap { ["10", $0.0, "20", $0.1] }
     }
 
-    private mutating func hatchEntity(_ l: Layer, boundary: [String], extra: [String], pattern: [String], name: String, solid: Bool) {
+    private mutating func hatchEntity(_ l: Layer, boundary: [String], extra: [String], pattern: [String], name: String, solid: Bool, loops: Int = 1) {
         use(l)
         ents += head("HATCH", layerName(l)) + extra + ["100", "AcDbHatch", "10", "0", "20", "0", "30", "0", "210", "0", "220", "0", "230", "1",
-                                                       "2", name, "70", solid ? "1" : "0", "71", "0", "91", "1"]
+                                                       "2", name, "70", solid ? "1" : "0", "71", "0", "91", String(loops)]
             + boundary + ["97", "0"] + pattern + ["98", "0"]
     }
 
@@ -412,6 +446,9 @@ public struct SketchDXF: Sendable {
     /// Defines a block drawn by `draw` (block-relative metres, Y up) and returns its name: `name`, or `name-2`, … when a
     /// block of that name already holds something else. An identical body reuses the existing block.
     /// `keepLayers` keeps each entity on its own layer and colour (a detail sheet) instead of layer 0 and BYBLOCK.
+    /// Whether a block of that name is defined.
+    func hasBlock(_ name: String) -> Bool { blockBody[name] != nil }
+
     @discardableResult
     public mutating func block(_ name: String, keepLayers: Bool = false, _ draw: (inout SketchDXF) -> Void) -> String {
         let saved = ents
@@ -433,13 +470,19 @@ public struct SketchDXF: Sendable {
 
     /// An INSERT of the block `name` at `p` (metres), turned `rotation` degrees counter-clockwise and scaled `scale` times.
     public mutating func insert(_ l: Layer, _ name: String, at p: (Double, Double), rotation: Double = 0, scale: Double = 1, color: RGBA? = nil) {
+        insert(l, name, at: p, rotation: rotation, xScale: scale, yScale: scale, color: color)
+    }
+
+    /// An INSERT stretched `xScale` along the block's x and `yScale` along its y (a module drawn at another length).
+    public mutating func insert(_ l: Layer, _ name: String, at p: (Double, Double), rotation: Double = 0, xScale: Double, yScale: Double, color: RGBA? = nil) {
         use(l)
         ents += head("INSERT", l.name) + style(l, color, []) + ["100", "AcDbBlockReference", "2", name, "10", q(p.0), "20", q(p.1), "30", "0"]
-        if abs(scale - 1) > 1e-12 { let k = Self.num((scale * 1e6).rounded() / 1e6); ents += ["41", k, "42", k, "43", k] }
+        func n(_ k: Double) -> String { Self.num((k * 1e6).rounded() / 1e6, places: 6) }
+        if abs(xScale - 1) > 1e-12 || abs(yScale - 1) > 1e-12 { ents += ["41", n(xScale), "42", n(yScale), "43", n(yScale)] }
         if abs(rotation) > 1e-9 { ents += ["50", Self.num((rotation * 1000).rounded() / 1000)] }
         if let b = blockBox[name], b.lo.x <= b.hi.x {
             let r = rotation * .pi / 180
-            for x in [b.lo.x * scale, b.hi.x * scale] { for y in [b.lo.y * scale, b.hi.y * scale] {
+            for x in [b.lo.x * xScale, b.hi.x * xScale] { for y in [b.lo.y * yScale, b.hi.y * yScale] {
                 cover(p.0 + (x * cos(r) - y * sin(r)) / unit, p.1 + (x * sin(r) + y * cos(r)) / unit)
             } }
         }
@@ -749,9 +792,9 @@ public struct SketchDXF: Sendable {
     }
 
     /// The design's `String(number)`: integers without a decimal point, others without trailing zeros.
-    static func num(_ x: Double) -> String {
+    static func num(_ x: Double, places: Int = 3) -> String {
         if x == x.rounded() && abs(x) < 1e15 { return String(Int(x)) }
-        var s = String(format: "%.3f", x)
+        var s = String(format: "%.\(places)f", x)
         while s.hasSuffix("0") { s.removeLast() }
         return s
     }

@@ -32,6 +32,42 @@ final class SketchDXFTests: XCTestCase {
         }
     }
 
+    /// Every CAD program shows the text in the team's Thai SHX font, and the drawing opens framed.
+    func testTextStyleExtentsAndView() throws {
+        let d = dxf(ops).data(), l = lines(d)
+        // the STYLE table: STANDARD and CORDIA (cordia.shx, width 0.85); $TEXTSTYLE names it
+        let style = try XCTUnwrap(l.indices.first { l[$0] == "STYLE" && l[$0 + 2] == "CORDIA" })
+        XCTAssertEqual(l[style + 7], "41"); XCTAssertEqual(l[style + 8], "0.85")
+        XCTAssertEqual(l[l.firstIndex(of: "cordia.shx")! - 1], "3")
+        XCTAssertTrue(l.indices.contains { l[$0] == "STYLE" && l[$0 + 2] == "STANDARD" })
+        XCTAssertEqual(l[l.firstIndex(of: "$TEXTSTYLE")! + 2], "CORDIA")
+        // every TEXT uses it, at its width
+        let texts = entities(d).filter { $0.first?.1 == "TEXT" }
+        XCTAssertFalse(texts.isEmpty)
+        XCTAssertTrue(texts.allSatisfy { value($0, "7") == "CORDIA" && value($0, "41") == "0.85" })
+        // extents cover every line end, and the active viewport is centred on them
+        let ext = (Double(l[l.firstIndex(of: "$EXTMIN")! + 2])!, Double(l[l.firstIndex(of: "$EXTMIN")! + 4])!,
+                   Double(l[l.firstIndex(of: "$EXTMAX")! + 2])!, Double(l[l.firstIndex(of: "$EXTMAX")! + 4])!)
+        for e in entities(d) where e.first?.1 == "LINE" {
+            for (x, y) in [("10", "20"), ("11", "21")] {
+                XCTAssertTrue(double(e, x) >= ext.0 - 1e-6 && double(e, x) <= ext.2 + 1e-6 && double(e, y) >= ext.1 - 1e-6 && double(e, y) <= ext.3 + 1e-6)
+            }
+        }
+        let vp = try XCTUnwrap(l.firstIndex(of: "*ACTIVE"))
+        XCTAssertEqual(Double(l[vp + 12])!, (ext.0 + ext.2) / 2, accuracy: 1e-3)
+        XCTAssertEqual(Double(l[vp + 14])!, (ext.1 + ext.3) / 2, accuracy: 1e-3)
+    }
+
+    /// The symbols the app's texts use reach CAD as codes or ASCII, never "?".
+    func testSymbolsAreCADSafe() {
+        let t = String(data: SketchDXF.tis620("1,600 ม² | 432 ม³ | ±5 → ≥ 2 — ok…"), encoding: .isoLatin1)!
+        XCTAssertFalse(t.contains("?"))
+        XCTAssertTrue(t.contains("%%p5 -> >= 2 - ok..."))
+        // a diameter however it was typed
+        XCTAssertEqual(String(data: SketchDXF.tis620("ø20 φ25 ⌀32 Ø40"), encoding: .isoLatin1), "%%c20 %%c25 %%c32 %%c40")
+        XCTAssertEqual(String(data: SketchDXF.tis620("ม²"), encoding: .isoLatin1), String(data: SketchDXF.tis620("ตร.ม."), encoding: .isoLatin1))
+    }
+
     static var all: SketchDXF.Options {
         var o = SketchDXF.Options()
         o.dashes = true; o.opColours = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true; o.skipFillOnly = true; o.centreText = false

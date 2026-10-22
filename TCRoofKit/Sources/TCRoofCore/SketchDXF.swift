@@ -2,8 +2,10 @@ import Foundation
 
 /// Any `Sketch` as a plain DXF R12 drawing (LINE / CIRCLE / TEXT on named layers) that AutoCAD, BricsCAD, DraftSight and
 /// LibreCAD open (docs/specs/cad-export-dxf). Callers map sketch points to metres (Y up) and pick a layer per op;
-/// coordinates are written in millimetres or metres. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874).
-/// The default options write what `RoofDXF` always wrote; the others add what the C1 export never needed.
+/// coordinates are written in millimetres or metres. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874), the
+/// byte codes a Thai SHX font reads, in the text style `CORDIA` (cordia.shx, width 0.85) so CAD programs show Thai
+/// instead of their default font's blanks. The header carries the drawing's extents and limits and the VPORT table its
+/// view, so the drawing opens framed. The other options add what the C1 export never needed.
 public struct SketchDXF: Sendable {
     public struct Layer: Sendable, Hashable {
         public var name: String
@@ -31,7 +33,17 @@ public struct SketchDXF: Sendable {
         public var fixedTextHeight: Double? = nil
         /// Every `.text` op centred on its anchor, ignoring its align and angle (`RoofDXF`).
         public var centreText = true
+        /// The text style every `TEXT` uses (the STYLE table, group 7, and the width factor, group 41).
+        public var textStyle = TextStyle.cordia
         public init() {}
+    }
+
+    /// A text style: its name, its font file and its width factor.
+    public struct TextStyle: Sendable, Equatable {
+        public var name: String, font: String, width: Double
+        public init(name: String, font: String, width: Double) { self.name = name; self.font = font; self.width = width }
+        /// The team's Thai CAD font: cordia.shx at width 0.85.
+        public static let cordia = TextStyle(name: "CORDIA", font: "cordia.shx", width: 0.85)
     }
 
     public var options: Options
@@ -41,6 +53,8 @@ public struct SketchDXF: Sendable {
     private var aciOf: [String: Int] = [:]
     /// The DASHED pattern (dash, gap) in drawing units, from the first dashed op.
     private var dashPattern: (Double, Double)?
+    /// What the entities cover, in drawing units (text by an estimate of its width).
+    private var lo = (x: Double.infinity, y: Double.infinity), hi = (x: -Double.infinity, y: -Double.infinity)
 
     public init(options: Options = .init()) { self.options = options }
 
@@ -56,6 +70,10 @@ public struct SketchDXF: Sendable {
         count[l.name, default: 0] += 1
     }
     private func q(_ m: Double) -> String { Self.num((m * unit * 1000).rounded() / 1000) }
+    /// Grows the extents by a point in metres.
+    private mutating func cover(_ x: Double, _ y: Double) {
+        lo = (min(lo.x, x * unit), min(lo.y, y * unit)); hi = (max(hi.x, x * unit), max(hi.y, y * unit))
+    }
     /// Linetype and colour groups after the layer.
     private func style(_ l: Layer, _ color: RGBA?, _ dash: [Double]) -> [String] {
         var g: [String] = []
@@ -68,10 +86,12 @@ public struct SketchDXF: Sendable {
     private mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double), extra: [String]) {
         guard hypot(b.0 - a.0, b.1 - a.1) > 1e-6 else { return }
         use(l); ents += ["0", "LINE", "8", l.name] + extra + ["10", q(a.0), "20", q(a.1), "30", "0", "11", q(b.0), "21", q(b.1), "31", "0"]
+        cover(a.0, a.1); cover(b.0, b.1)
     }
     public mutating func circle(_ l: Layer, _ c: (Double, Double), r: Double) { circle(l, c, r: r, extra: []) }
     private mutating func circle(_ l: Layer, _ c: (Double, Double), r: Double, extra: [String]) {
         use(l); ents += ["0", "CIRCLE", "8", l.name] + extra + ["10", q(c.0), "20", q(c.1), "30", "0", "40", q(r)]
+        cover(c.0 - r, c.1 - r); cover(c.0 + r, c.1 + r)
     }
     /// `height` in metres; `angle` in degrees counter-clockwise; `middle` aligns the line's vertical middle on `p`.
     public mutating func text(_ l: Layer, _ p: (Double, Double), height: Double, _ s: String, align: TextAlign = .left, middle: Bool = false, angle: Double = 0) {
@@ -79,7 +99,13 @@ public struct SketchDXF: Sendable {
     }
     private mutating func text(_ l: Layer, _ p: (Double, Double), height: Double, _ s: String, align: TextAlign, middle: Bool, angle: Double, extra: [String]) {
         guard !s.isEmpty else { return }
-        use(l); ents += ["0", "TEXT", "8", l.name] + extra + ["10", q(p.0), "20", q(p.1), "30", "0", "40", q(height), "1", s]
+        let ts = options.textStyle
+        use(l); ents += ["0", "TEXT", "8", l.name] + extra + ["7", ts.name, "10", q(p.0), "20", q(p.1), "30", "0", "40", q(height), "1", s,
+                                                             "41", Self.num(ts.width)]
+        // the extents: about 0.6 of the height a letter, along the angle from where the alignment puts the start
+        let w = Double(s.count) * height * 0.6 * ts.width, r = angle * .pi / 180
+        let start = align == .left ? 0 : align == .center ? -w / 2 : -w
+        for t in [start, start + w] { for dy in [-height, height] { cover(p.0 + t * cos(r) - dy * sin(r), p.1 + t * sin(r) + dy * cos(r)) } }
         var a = angle.truncatingRemainder(dividingBy: 360); if a < 0 { a += 360 }
         if abs(a) > 1e-9 { ents += ["50", Self.num((a * 1000).rounded() / 1000)] }
         let h = align == .left ? 0 : align == .center ? 1 : 2
@@ -182,18 +208,45 @@ public struct SketchDXF: Sendable {
 
     // MARK: file
 
+    /// What the entities cover (drawing units), or a unit square when there are none.
+    var extents: (min: (x: Double, y: Double), max: (x: Double, y: Double)) {
+        guard lo.x <= hi.x, lo.y <= hi.y else { return (min: (x: 0, y: 0), max: (x: 1, y: 1)) }
+        return (min: lo, max: hi)
+    }
+
     /// Header, tables and entities: R12, CRLF line ends, TIS-620 bytes.
     public func data() -> Data {
+        func n(_ x: Double) -> String { Self.num((x * 1000).rounded() / 1000) }
+        let e = extents, ts = options.textStyle
+        let w = max(e.max.x - e.min.x, 1e-3), h = max(e.max.y - e.min.y, 1e-3)
         var out = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "9", "$DWGCODEPAGE", "3", "ANSI_874",
-                   "9", "$INSUNITS", "70", options.millimetres ? "4" : "6", "0", "ENDSEC",
-                   "0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LTYPE", "70", dashPattern == nil ? "1" : "2",
+                   "9", "$INSUNITS", "70", options.millimetres ? "4" : "6",
+                   "9", "$EXTMIN", "10", n(e.min.x), "20", n(e.min.y), "30", "0",
+                   "9", "$EXTMAX", "10", n(e.max.x), "20", n(e.max.y), "30", "0",
+                   "9", "$LIMMIN", "10", n(e.min.x), "20", n(e.min.y),
+                   "9", "$LIMMAX", "10", n(e.max.x), "20", n(e.max.y),
+                   "9", "$TEXTSTYLE", "7", ts.name, "0", "ENDSEC",
+                   "0", "SECTION", "2", "TABLES"]
+        // the view the drawing opens in: the extents with a 5 % margin
+        out += ["0", "TABLE", "2", "VPORT", "70", "1",
+                "0", "VPORT", "2", "*ACTIVE", "70", "0", "10", "0", "20", "0", "11", "1", "21", "1",
+                "12", n((e.min.x + e.max.x) / 2), "22", n((e.min.y + e.max.y) / 2), "13", "0", "23", "0", "14", "1", "24", "1",
+                "15", "0", "25", "0", "16", "0", "26", "0", "36", "1", "17", "0", "27", "0", "37", "0",
+                "40", n(max(h, w / 1.5) * 1.05), "41", "1.5", "42", "50", "43", "0", "44", "0", "50", "0", "51", "0",
+                "71", "0", "72", "100", "73", "1", "74", "3", "75", "0", "76", "0", "77", "0", "78", "0", "0", "ENDTAB"]
+        out += ["0", "TABLE", "2", "LTYPE", "70", dashPattern == nil ? "1" : "2",
                    "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0.0"]
         if let (d, g) = dashPattern {
-            func n(_ x: Double) -> String { Self.num((x * 1000).rounded() / 1000) }
             out += ["0", "LTYPE", "2", "DASHED", "70", "0", "3", "Dashed __ __", "72", "65", "73", "2", "40", n(d + g), "49", n(d), "49", n(-g)]
         }
         out += ["0", "ENDTAB", "0", "TABLE", "2", "LAYER", "70", String(order.count)]
         for l in order { out += ["0", "LAYER", "2", l, "70", "0", "62", String(aciOf[l] ?? 7), "6", "CONTINUOUS"] }
+        out += ["0", "ENDTAB"]
+        // STANDARD stays as CAD programs expect it; the text uses `textStyle`
+        out += ["0", "TABLE", "2", "STYLE", "70", ts.name == "STANDARD" ? "1" : "2"]
+        for s in ts.name == "STANDARD" ? [ts] : [TextStyle(name: "STANDARD", font: "txt", width: 1), ts] {
+            out += ["0", "STYLE", "2", s.name, "70", "0", "40", "0", "41", Self.num(s.width), "50", "0", "71", "0", "42", "2.5", "3", s.font, "4", ""]
+        }
         out += ["0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"] + ents + ["0", "ENDSEC", "0", "EOF"]
         return Self.tis620(out.joined(separator: "\r\n") + "\r\n")
     }
@@ -230,9 +283,16 @@ public struct SketchDXF: Sendable {
         return s
     }
 
-    /// Thai to TIS-620 bytes; "|" to "-", a few symbols to their CAD codes, anything else outside ASCII to "?".
+    /// Thai to TIS-620 bytes; "|" to "-", the symbols the app's texts use to their CAD codes or ASCII (`m²` and `m³` as
+    /// the Thai drawing's ตร.ม. / ลบ.ม.), anything else outside ASCII to "?".
     static func tis620(_ s: String) -> Data {
-        let swap: [Character: String] = ["·": "-", "×": "x", "□": "SHS ", "–": "-", "°": "%%d", "Ø": "%%c", "½": "1/2", "¼": "1/4"]
+        let s = s.replacingOccurrences(of: "ม²", with: "ตร.ม.").replacingOccurrences(of: "ม³", with: "ลบ.ม.")
+        let swap: [Character: String] = [
+            "·": "-", "×": "x", "□": "SHS ", "–": "-", "—": "-", "−": "-", "°": "%%d", "Ø": "%%c", "ø": "%%c", "φ": "%%c", "Φ": "%%c", "⌀": "%%c", "±": "%%p",
+            "½": "1/2", "¼": "1/4", "¾": "3/4", "²": "2", "³": "3", "→": "->", "…": "...", "≥": ">=", "≤": "<=",
+            "≠": "<>", "≈": "~", "÷": "/", "“": "\"", "”": "\"", "‘": "'", "’": "'", "›": ">", "•": "-",
+            "✓": "/", "✕": "x", "✗": "x", "Ω": "ohm",
+        ]
         var bytes: [UInt8] = []
         bytes.reserveCapacity(s.utf8.count)
         for ch in s {

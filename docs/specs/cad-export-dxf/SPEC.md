@@ -131,9 +131,20 @@ are not at a real size. Translucent tints (a model's area) are not written; the 
 
 Not written by any export: fills (R12 has no fill short of `SOLID`), photos (an outline only), bold, line widths.
 
+Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` and LibreCAD):
+- **Text style `CORDIA`**: the STYLE table holds `STANDARD` (txt) and `CORDIA` (`cordia.shx`, width factor 0.85, the
+  team's Thai SHX font); every `TEXT` names it (group 7) with width 0.85 (group 41), and `$TEXTSTYLE` is `CORDIA`. A
+  Thai SHX font reads the TIS-620 bytes as they are written, so the codepage stays. Before, the text used the CAD
+  program's default font, which has no Thai (the letters showed as boxes). A computer without `cordia.shx` gets the CAD
+  program's font substitution prompt; copy the font into its Fonts folder.
+- **Extents and view**: `$EXTMIN` / `$EXTMAX` and `$LIMMIN` / `$LIMMAX` from what the entities cover (text by an estimate
+  of its width), and a VPORT table whose `*ACTIVE` view is centred on them with a 5 % margin, so the file opens framed.
+- **Symbols**: `m²` / `m³` become ตร.ม. / ลบ.ม.; ± → `%%p`; ø, φ, ⌀ → `%%c`; — − → `-`; → `->`; ≥ ≤ ≠ ≈ … ² ³ ¾ quotes ✓ ✕
+  Ω to ASCII. A `?` left in a file is a value the survey hasn't got yet (`IC ? kA`, `?AF`).
+
 ## Open questions
 
 1. Does PEA (or PWA) accept DXF in the permit pack, or must it be DWG / PDF only?
 2. SLD in real scale or paper scale (A3 sheet in mm, 1:1 with the PDF)? Paper scale is simpler for a schematic.
 3. Should a title block (company, job, date, signer) be drawn into each DXF?
-4. Is the TIS-620 codepage enough, or does any customer's CAD need a Unicode font (`\U+0E01` escapes, R2000+ format)?
+4. ~~Is the TIS-620 codepage enough?~~ Answered 2026-10-22: TIS-620 with the team's `cordia.shx` (width 0.85), above.

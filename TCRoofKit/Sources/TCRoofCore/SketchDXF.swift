@@ -362,7 +362,7 @@ public struct SketchDXF: Sendable {
     }
 
     private mutating func hatchEntity(_ layer: Layer, boundary: [String], extra: [String], pattern: [String], name: String, solid: Bool, loops: Int = 1) {
-        // a hatch on its layer's HATC layer (S-FTNG-N → S-FTNG-HATC-N), so hatches freeze apart from the lines they fill;
+        // a hatch on its layer's HATC layer (P-FTNG-N → P-FTNG-HATC-N), so hatches freeze apart from the lines they fill;
         // inside a block it stays on 0 with the rest
         let l = inBlock && !blockLayers ? layer : CADLayers.hatch(of: layer)
         use(l)

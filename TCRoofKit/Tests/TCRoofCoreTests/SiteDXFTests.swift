@@ -38,7 +38,7 @@ final class SiteDXFTests: XCTestCase {
         XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "6", "metres")
         XCTAssertEqual(l.suffix(2), ["EOF", ""])
         XCTAssertEqual(l.count % 2, 1, "group-code pairs plus the final line end")
-        for name in ["G-ANNO-NPLT", "E-PVAR-N", "E-CABL-N", "G-ANNO-MEAS", "C-ACCS-T", "C-SHAD-E", "E-EQPM-E", "G-ANNO-NRTH", "G-ANNO-TEXT"] {
+        for name in ["G-ANNO-NPLT", "P-AREA-N", "E-CABL-N", "G-ANNO-MEAS", "C-ACCS-T", "C-SHAD-E", "E-EQPM-E", "G-ANNO-NRTH", "G-ANNO-TEXT"] {
             XCTAssertTrue(out.layers.contains(name), name)
         }
         let ents = t.entities(out.data)
@@ -48,14 +48,14 @@ final class SiteDXFTests: XCTestCase {
         XCTAssertEqual(frame.flatMap { [t.double($0, "10"), t.double($0, "11")] }.max()!, 100, accuracy: 1e-3)
         XCTAssertEqual(frame.flatMap { [t.double($0, "20"), t.double($0, "21")] }.max()!, 50, accuracy: 1e-3)
         // the 40 × 20 m tank centred on the picture: one outline (its tint is not written), name tag above
-        let pv = ents.filter { layerOf($0) == "E-PVAR-N" && $0.first?.1 == "LINE" }
+        let pv = ents.filter { layerOf($0) == "P-AREA-N" && $0.first?.1 == "LINE" }
         // its corners are (30, 15) and (70, 35) m
         func corner(_ e: [(String, String)]) -> Bool {
             [t.double(e, "10"), t.double(e, "11")].allSatisfy { abs($0 - 30) < 1e-3 || abs($0 - 70) < 1e-3 }
                 && [t.double(e, "20"), t.double(e, "21")].allSatisfy { abs($0 - 15) < 1e-3 || abs($0 - 35) < 1e-3 }
         }
         XCTAssertEqual(pv.filter(corner).count, 4, "each edge once")
-        XCTAssertTrue(ents.contains { layerOf($0) == "E-PVAR-N" && $0.first?.1 == "TEXT" })
+        XCTAssertTrue(ents.contains { layerOf($0) == "P-AREA-N" && $0.first?.1 == "TEXT" })
     }
 
     func testYUpAndMeasureLabel() throws {
@@ -73,7 +73,7 @@ final class SiteDXFTests: XCTestCase {
 
     func testWithoutScaleIsPaperSizedAndHasNoModels() throws {
         let out = try XCTUnwrap(SiteDXF.build(Self.sample(scaled: false)))
-        XCTAssertFalse(out.layers.contains("E-PVAR-N"))
+        XCTAssertFalse(out.layers.contains("P-AREA-N"))
         let frame = t.entities(out.data).filter { layerOf($0) == "G-ANNO-NPLT" }
         XCTAssertEqual(frame.flatMap { [t.double($0, "10"), t.double($0, "11")] }.max()!, SiteDXF.paperWidth / 1000, accuracy: 1e-4)
         XCTAssertTrue(t.entities(out.data).contains { layerOf($0) == "G-ANNO-MEAS" && $0.first?.1 == "LINE" })

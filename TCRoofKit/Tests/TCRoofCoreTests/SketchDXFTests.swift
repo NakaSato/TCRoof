@@ -238,9 +238,9 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertTrue(CADLayers.all.allSatisfy { !$0.description.isEmpty })
         // in the NCS format: Discipline-Major[-Minor]-Status, every name and its hatch layer
         for l in CADLayers.all { XCTAssertTrue(CADLayers.conforms(l.name), l.name); XCTAssertTrue(CADLayers.conforms(CADLayers.hatch(of: l).name), l.name) }
-        XCTAssertEqual(CADLayers.hatch(of: CADLayers.pvFooting).name, "S-FTNG-HATC-N")
+        XCTAssertEqual(CADLayers.hatch(of: CADLayers.pvFooting).name, "P-FTNG-HATC-N")
         XCTAssertEqual(CADLayers.hatch(of: CADLayers.grid).name, "G-GRID-HATC")
-        XCTAssertEqual(CADLayers.named("S-FTNG-HATC-N")?.lineweight, 13)
+        XCTAssertEqual(CADLayers.named("P-FTNG-HATC-N")?.lineweight, 13)
         // existing and new keep apart: the building and tank are E, what we install N
         XCTAssertTrue([CADLayers.roofOutline, CADLayers.tankOutline, CADLayers.roofTruss].allSatisfy { $0.name.hasSuffix("-E") })
         XCTAssertTrue([CADLayers.pvModule, CADLayers.pvRail, CADLayers.pvFooting, CADLayers.pvWalkway].allSatisfy { $0.name.hasSuffix("-N") })

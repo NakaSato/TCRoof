@@ -94,11 +94,15 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
         UserDefaults.standard.removeObject(forKey: Self.grantedKey)
     }
 
-    public func accessToken() async throws -> String {
-        if let t = cachedToken() { return t }
+    public func accessToken() async throws -> String { try await accessToken(validFor: 60) }
+
+    /// Refreshes once the cached token has less than `seconds` left (a background upload may start later). Google's
+    /// tokens last an hour, so a fresh one always does.
+    public func accessToken(validFor seconds: TimeInterval) async throws -> String {
+        if let t = cachedToken(margin: seconds) { return t }
         guard let refresh = Keychain.read("google.refresh") else { throw DriveError.notSignedIn }
         _ = try await token(["refresh_token": refresh, "grant_type": "refresh_token"])
-        guard let t = cachedToken() else { throw DriveError.notSignedIn }
+        guard let t = cachedToken(margin: min(seconds, 60)) else { throw DriveError.notSignedIn }
         return t
     }
     /// A fresh OpenID token with its access token, for signing in to Firebase with the same Google account.
@@ -112,9 +116,9 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
         return (idToken, accessToken)
     }
 
-    private func cachedToken() -> String? {
+    private func cachedToken(margin: TimeInterval = 60) -> String? {
         lock.lock(); defer { lock.unlock() }
-        if let t = accessTokenValue, expiry > Date().addingTimeInterval(60) { return t }
+        if let t = accessTokenValue, expiry > Date().addingTimeInterval(margin) { return t }
         return nil
     }
     private func clearToken() {

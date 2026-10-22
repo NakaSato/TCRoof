@@ -3,6 +3,24 @@ import Foundation
 import DriveSync
 import TCRoofCore
 
+/// Drive uploads through iOS's background transfer (`DriveBackgroundTransfer`), for the app delegate, which links
+/// TCRoofUI and not DriveSync.
+public enum DriveBackground {
+    /// At launch: every Drive client made after sends its uploads through the background session, and iOS hands over
+    /// the ones that finished while the app was closed.
+    public static func activate() {
+        DriveBackgroundTransfer.shared.activate()
+        DriveClient.backgroundTransfer = DriveBackgroundTransfer.shared
+    }
+
+    /// `application(_:handleEventsForBackgroundURLSession:completionHandler:)`; false for another session's events.
+    public static func handleEvents(_ identifier: String, completion: @escaping () -> Void) -> Bool {
+        guard identifier == DriveBackgroundTransfer.identifier else { return false }
+        DriveBackgroundTransfer.shared.handleEvents(completion: completion)
+        return true
+    }
+}
+
 /// A file the host app puts in one of its own project folders on Google Drive.
 public struct DriveUpload: Sendable {
     public let name: String
@@ -72,7 +90,15 @@ public extension SurveyModel {
 
     /// Uploads one file into a folder from `driveFolder` and returns its id; the same file already there is reused.
     func driveUpload(_ file: DriveUpload, to folderID: String) async throws -> String {
-        try await DriveClient(tokens: google).uploadOnce(file.data, name: file.name, mimeType: file.mimeType, parent: folderID).id
+        try await driveStartUpload(file, to: folderID).value
+    }
+
+    /// `driveUpload` in two steps: returns once the file is handed to the background transfer (`DriveBackground`),
+    /// and the task gives its id when it lands. Start every file of a pass first, then wait: iOS goes on sending them
+    /// all when the person leaves the app.
+    func driveStartUpload(_ file: DriveUpload, to folderID: String) async throws -> Task<String, Error> {
+        let pending = try await DriveClient(tokens: google).startUploadOnce(file.data, name: file.name, mimeType: file.mimeType, parent: folderID)
+        return Task { try await pending.value.id }
     }
 
     /// Downloads one file by id, such as a photo another device uploaded.

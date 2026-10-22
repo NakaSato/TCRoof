@@ -4,11 +4,19 @@ import TCRoofCore
 import SwiftData
 import FirebaseCore
 
-/// Sets the notification delegate at launch, so a quick action that starts the app is still handled.
+/// Sets the notification delegate at launch, so a quick action that starts the app is still handled, and connects the
+/// Drive uploads' background session (`DriveBackground`), so uploads go on after the person leaves the app.
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         MainActor.assumeIsolated { NotificationService.shared.configure() }
+        DriveBackground.activate()
         return true
+    }
+
+    /// iOS woke the app for Drive uploads that finished while it was in the background or closed.
+    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
+                     completionHandler: @escaping () -> Void) {
+        if !DriveBackground.handleEvents(identifier, completion: completionHandler) { completionHandler() }
     }
 }
 

@@ -46,7 +46,7 @@ public struct TextRun: Hashable, Sendable {
     }
 }
 
-public enum DrawOp: Sendable {
+public enum DrawOp: Equatable, Sendable {
     case line(Pt, Pt, width: Double, color: RGBA, dash: [Double] = [])
     case rect(Box, stroke: RGBA?, fill: RGBA?, width: Double = 1)
     /// Diagonal hatching clipped to a rect (obstacles).

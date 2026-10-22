@@ -211,8 +211,11 @@ struct AssistantChatView: View {
                 .accessibilityLabel("ส่ง")
             }
             if let n = session.remainingToday {
-                Text("วันนี้ใช้ได้อีก \(n) คำถาม").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                Text("วันนี้ใช้ได้อีก \(n) คำถาม" + (session.servedBy.map { " | ตอบโดย " + $0 } ?? ""))
+                    .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                    .lineLimit(1).truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .trailing)
+                    .accessibilityIdentifier("assistantServedBy")
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 10)

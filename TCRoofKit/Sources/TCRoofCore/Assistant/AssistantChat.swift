@@ -70,7 +70,12 @@ public enum Assistant {
     public struct Reply: Codable, Equatable, Sendable {
         public var message: Message
         public var remainingToday: Int?
-        public init(message: Message, remainingToday: Int? = nil) { self.message = message; self.remainingToday = remainingToday }
+        /// Who answered, `Claude (Anthropic) | claude-opus-5-5`, with ` | สำรอง` when the backup provider did; nil
+        /// from the Cloud Function.
+        public var servedBy: String?
+        public init(message: Message, remainingToday: Int? = nil, servedBy: String? = nil) {
+            self.message = message; self.remainingToday = remainingToday; self.servedBy = servedBy
+        }
     }
 
     /// Sends one request; the app's is the Cloud Function, tests stub it.

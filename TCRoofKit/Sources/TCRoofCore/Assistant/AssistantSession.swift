@@ -12,6 +12,8 @@ public extension Assistant {
         /// Proposed changes not yet confirmed or dismissed, oldest first.
         public private(set) var proposals: [PendingAction] = []
         public private(set) var remainingToday: Int?
+        /// Who answered the last request (`Reply.servedBy`).
+        public private(set) var servedBy: String?
 
         @ObservationIgnored private let transport: Transport
         @ObservationIgnored private let jobs: @MainActor () -> [Job]
@@ -45,6 +47,7 @@ public extension Assistant {
             for _ in 0..<maxRounds {
                 let reply = try await transport.complete(Request(messages: trimmed(), tools: Toolbox.definitions))
                 remainingToday = reply.remainingToday ?? remainingToday
+                servedBy = reply.servedBy ?? servedBy
                 let m = reply.message
                 messages.append(m)
                 guard let calls = m.toolCalls, !calls.isEmpty else {

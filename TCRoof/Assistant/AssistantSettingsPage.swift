@@ -21,6 +21,9 @@ struct AssistantSettingsPage: View {
     @State private var used = AssistantKey.used()
     /// Bumped after a key is saved or removed, so the list of keys reads the Keychain again.
     @State private var keysChanged = 0
+    @State private var digestProvider = AssistantKey.digestProvider
+    @State private var digestModel = AssistantKey.digestModel
+    @State private var backupProvider = AssistantKey.backupProvider
 
     private var manages: Bool { permissions.can(.usersManage) }
     private var hasKey: Bool { _ = keysChanged; return AssistantKey.hasKey(provider) }
@@ -30,7 +33,7 @@ struct AssistantSettingsPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 status
-                if manages { form } else {
+                if manages { form; uses } else {
                     Text("ผู้จัดการเป็นผู้ใส่คีย์ในแต่ละเครื่อง").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 }
                 if let result { resultLine(result) }
@@ -67,8 +70,56 @@ struct AssistantSettingsPage: View {
                     Text("มีคีย์ในเครื่อง: " + withKeys.map(\.title).joined(separator: ", "))
                         .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
+                Text(routesLine).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                    .accessibilityIdentifier("assistantRoutes")
             }
             Spacer(minLength: 0)
+        }
+        .padding(16)
+        .tcCard()
+    }
+
+    /// `สรุปรายวัน: Qwen | qwen-turbo | สำรอง: Claude (Anthropic)`.
+    private var routesLine: String {
+        _ = keysChanged; _ = digestProvider; _ = digestModel; _ = backupProvider
+        let digest = AssistantKey.route(.digest)
+        return "สรุปรายวัน: \(digest.label) | สำรอง: " + (AssistantKey.backupProvider?.title ?? "ไม่ใช้")
+    }
+
+    private static let sameAsChat = "เหมือนแชทผู้ช่วย"
+    private static let noBackup = "ไม่ใช้"
+
+    private func pick(_ none: String, _ value: Binding<Assistant.Provider?>, save: @escaping (Assistant.Provider?) -> Void) -> Binding<String> {
+        Binding(get: { value.wrappedValue?.title ?? none },
+                set: { t in
+                    let p = Assistant.Provider.allCases.first { $0.title == t }
+                    value.wrappedValue = p
+                    save(p)
+                })
+    }
+
+    /// Which provider the daily summary uses (with an optional cheaper model) and which one answers when the one in use
+    /// fails. Only providers with a key on this device are offered.
+    private var uses: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("การใช้งาน").font(.sarabun(17, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            TCFieldLabel("สรุปรายวันบนหน้าแรก")
+            TCDropdown([Self.sameAsChat] + withKeys.map(\.title),
+                       selection: pick(Self.sameAsChat, $digestProvider) { AssistantKey.digestProvider = $0 },
+                       accessibilityTitle: "ผู้ให้บริการของสรุปรายวัน")
+                .accessibilityIdentifier("assistantDigestProvider")
+            TCFieldLabel("รุ่นโมเดลของสรุปรายวัน (เว้นว่าง = รุ่นเดียวกับผู้ให้บริการนั้น)", optional: true)
+            TCTextField(AssistantKey.model(digestProvider ?? active), text: $digestModel)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .onChange(of: digestModel) { _, m in AssistantKey.digestModel = m }
+                .accessibilityIdentifier("assistantDigestModel")
+            TCFieldLabel("สำรองเมื่อผู้ให้บริการหลักใช้ไม่ได้")
+            TCDropdown([Self.noBackup] + withKeys.map(\.title),
+                       selection: pick(Self.noBackup, $backupProvider) { AssistantKey.backupProvider = $0 },
+                       accessibilityTitle: "ผู้ให้บริการสำรอง")
+                .accessibilityIdentifier("assistantBackupProvider")
+            Text("ถ้าผู้ให้บริการหลักตอบไม่ได้ (คีย์ใช้ไม่ได้ ระบบล่ม คนใช้มาก หรือโควตาหมด) ผู้ช่วยจะถามผู้ให้บริการสำรองแทนในคำถามนั้น แล้วกลับไปใช้ผู้ให้บริการหลักในคำถามถัดไป นับเป็นคำถามเดียว")
+                .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
         }
         .padding(16)
         .tcCard()
@@ -161,6 +212,9 @@ struct AssistantSettingsPage: View {
 
     private func remove() {
         AssistantKey.remove(provider)
+        // a use or backup on this provider has no key now: back to the chat's provider / none
+        if AssistantKey.digestProvider == provider { AssistantKey.digestProvider = nil; digestProvider = nil }
+        if AssistantKey.backupProvider == provider { AssistantKey.backupProvider = nil; backupProvider = nil }
         refresh()
         result = nil
     }

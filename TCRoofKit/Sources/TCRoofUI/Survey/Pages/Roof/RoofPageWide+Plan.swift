@@ -9,6 +9,17 @@ struct SketchCanvas: View {
     let ops: [DrawOp]
     let fit: SketchFit
     var body: some View {
+        SketchDrawing(ops: ops, fit: fit).equatable()
+            .background(Theme.paper)
+    }
+}
+
+/// The drawing itself, drawn again only when its ops or fit change: the pages around it are rebuilt on every edit and
+/// every drag frame, and drawing a plan's text and modules costs far more than comparing them.
+private struct SketchDrawing: View, Equatable {
+    let ops: [DrawOp]
+    let fit: SketchFit
+    var body: some View {
         Canvas { ctx, _ in
             ctx.withCGContext { cg in
                 cg.translateBy(x: fit.ox, y: fit.oy)
@@ -16,12 +27,11 @@ struct SketchCanvas: View {
                 PDFRenderer.draw(ops, in: cg, photo: { _ in nil })
             }
         }
-        .background(Theme.paper)
     }
 }
 
 /// A sketch of `w` × `h` fitted and centred in `size`.
-struct SketchFit {
+struct SketchFit: Equatable {
     let s, ox, oy: CGFloat
     init(_ w: Double, _ h: Double, in size: CGSize) {
         s = min(size.width / w, size.height / h)

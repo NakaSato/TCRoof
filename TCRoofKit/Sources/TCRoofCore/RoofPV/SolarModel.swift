@@ -34,8 +34,16 @@ public enum SolarModel {
 
     struct Sample { let altitude, azimuth, ghi, dni, dhi: Double }
 
-    /// Every 15 minutes from 05:00 to 19:00 on every third day, with the sun up.
+    /// Every 15 minutes from 05:00 to 19:00 on every third day, with the sun up. About 6,000 sun positions, so they
+    /// are kept per latitude: pages ask for a plane's yield on every redraw.
     static func samples(lat: Double) -> [Sample] {
+        if let hit = sampleCache.get(lat) { return hit }
+        let out = computeSamples(lat: lat)
+        sampleCache.set(lat, out)
+        return out
+    }
+
+    static func computeSamples(lat: Double) -> [Sample] {
         var out: [Sample] = []
         for n in stride(from: 1, to: 366, by: dayStep) {
             var t = 5.0
@@ -53,6 +61,14 @@ public enum SolarModel {
     /// Yearly kWh per kWp of an unshaded plane tilted `tilt`° and facing `azimuth`° from south (+ west), with the
     /// performance ratio.
     public static func yield(lat: Double, tilt: Double, azimuthFromSouth gp: Double) -> Double {
+        let key = YieldKey(lat: lat, tilt: tilt, azimuth: gp)
+        if let hit = yieldCache.get(key) { return hit }
+        let y = computeYield(lat: lat, tilt: tilt, azimuthFromSouth: gp)
+        yieldCache.set(key, y)
+        return y
+    }
+
+    static func computeYield(lat: Double, tilt: Double, azimuthFromSouth gp: Double) -> Double {
         let b = rad(tilt), dt = stepMinutes / 60 * Double(dayStep)
         var sum = 0.0
         for s in samples(lat: lat) {
@@ -64,6 +80,35 @@ public enum SolarModel {
         }
         return sum * performanceRatio / 1000
     }
+
+    /// The last few latitudes' samples (a page shows one site; a test may try several).
+    final class SampleCache: @unchecked Sendable {
+        private var items: [(lat: Double, samples: [Sample])] = []
+        private let lock = NSLock()
+        func get(_ lat: Double) -> [Sample]? { lock.lock(); defer { lock.unlock() }; return items.first { $0.lat == lat }?.samples }
+        func set(_ lat: Double, _ s: [Sample]) {
+            lock.lock(); defer { lock.unlock() }
+            items.removeAll { $0.lat == lat }
+            items.insert((lat, s), at: 0)
+            if items.count > 8 { items.removeLast() }
+        }
+    }
+    static let sampleCache = SampleCache()
+
+    struct YieldKey: Hashable { let lat, tilt, azimuth: Double }
+
+    /// Planes already worked out, by their exact inputs.
+    final class YieldCache: @unchecked Sendable {
+        private var items: [YieldKey: Double] = [:]
+        private let lock = NSLock()
+        func get(_ k: YieldKey) -> Double? { lock.lock(); defer { lock.unlock() }; return items[k] }
+        func set(_ k: YieldKey, _ v: Double) {
+            lock.lock(); defer { lock.unlock() }
+            if items.count > 1024 { items.removeAll() }
+            items[k] = v
+        }
+    }
+    static let yieldCache = YieldCache()
 
     static func rad(_ d: Double) -> Double { d * .pi / 180 }
     static func deg(_ r: Double) -> Double { r * 180 / .pi }

@@ -34,6 +34,23 @@ final class PlaneYieldTests: XCTestCase {
         XCTAssertEqual(y(15, 0) / SolarModel.yield(lat: Self.bangkok.lat, tilt: 15, azimuthFromSouth: 0), 1, accuracy: 0.25)
     }
 
+    func testSolarModelKeepsWhatItWorkedOut() {
+        // pages ask on every redraw, so the sun positions and the planes are kept; the figures stay the same
+        let planes: [(lat: Double, tilt: Double, az: Double)] = [(13.8, 15, 20), (13.8, 15, -160), (18.79, 5, 0), (7.0, 30, 90)]
+        for p in planes {
+            let fresh = SolarModel.computeYield(lat: p.lat, tilt: p.tilt, azimuthFromSouth: p.az)
+            XCTAssertEqual(SolarModel.yield(lat: p.lat, tilt: p.tilt, azimuthFromSouth: p.az), fresh)
+            XCTAssertEqual(SolarModel.yield(lat: p.lat, tilt: p.tilt, azimuthFromSouth: p.az), fresh)
+        }
+        let s = SolarModel.samples(lat: 13.8), c = SolarModel.computeSamples(lat: 13.8)
+        XCTAssertEqual(s.count, c.count)
+        XCTAssertEqual(s.map(\.dni), c.map(\.dni))
+        // more latitudes than are kept: each still gives its own figure
+        for lat in stride(from: 5.0, through: 20, by: 1) {
+            XCTAssertEqual(SolarModel.yield(lat: lat, tilt: 10, azimuthFromSouth: 0), SolarModel.computeYield(lat: lat, tilt: 10, azimuthFromSouth: 0))
+        }
+    }
+
     func testFallsBackToSolarModel() {
         // no longitude, or no weather near the site (Chiang Mai)
         XCTAssertEqual(PlaneYield.kWhPerKWp(latitude: 13.8, longitude: nil, tilt: 15, azimuthFromSouth: 20),

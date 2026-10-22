@@ -143,6 +143,14 @@ directly (`AssistantRouter`: the key on this device, else the function).
   they belong to; from earlier questions only text and tool calls go back, since the session shortens old turns (a
   leading run of thinking blocks may be dropped). A `refusal` stop answers in words. `AssistantProvidersTests`.
   The Cloud Function stays Qwen-only.
+- **Per use and backup (2026-10-22).** The chat and the feed's daily summary each have a route (`Assistant.Use`,
+  `AssistantKey.route`): the summary can take another provider and a cheaper model (`assistant.digestProvider`,
+  `assistant.digestModel`; nil / empty = the chat's). A backup provider (`assistant.backupProvider`) answers a request
+  when the main one fails with a bad key, busy, down, its quota used up or no answer (`Assistant.Failover`); the
+  device's daily limit and a cancel are never passed on, and the next request tries the main one again.
+  `AssistantRouter` counts the request once for both. Replies say who answered (`Reply.servedBy`, `| สำรอง` for the
+  backup), shown under the chat's input. Only providers with a key are offered; removing a key clears a use or
+  backup on it. `AssistantFailoverTests`.
 - Trade-off: a key on a device can be extracted by someone with that device and tools, and the limit is per device,
   not per person. Use a key with a spending cap in the Qwen console, and rotate it if a device is lost. Moving to
   the Cloud Function later only needs the Blaze plan and the deploy; a device without a key then uses it.

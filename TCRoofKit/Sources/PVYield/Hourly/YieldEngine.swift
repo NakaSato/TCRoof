@@ -1,14 +1,15 @@
 import Foundation
 
-/// The PVsyst-style hourly chain of tools/yield-reference/reference_engine.py (`run_array` and `run`), for front-lit
-/// arrays on one or more faces:
+/// The PVsyst-style hourly chain of tools/yield-reference/reference_engine.py (`run_array` and `run`), for arrays on
+/// one or more faces:
 ///
 ///     sun (SPA, hour-effective) ─► Perez POA ─► IAM (ASHRAE, Marion diffuse) ─► horizon, near shading ─► soiling
 ///     ─► PVsyst cell temperature ─► one-diode MPP ─► quality, LID, mismatch ─► DC ohmic ─► MPPT current limit
 ///     ─► inverter efficiency ─► clipping ─► AC ohmic ─► unavailability, night consumption ─► E_grid
 ///
-/// then PR, the monthly table, PVsyst ageing and P50/P90. Not ported yet: the bifacial rear side and row-to-row
-/// shading (pvlib infinite sheds), so `YieldSystem` has no rows or rear gain.
+/// then PR, the monthly table, PVsyst ageing and P50/P90. With `YieldSystem.rows`, the front takes row-to-row shading
+/// and the ground between the rows (`InfiniteSheds`); with `YieldSystem.bifacial`, the rear side's light, after
+/// bifaciality and rear mismatch, joins the front's effective irradiance before the module model.
 ///
 /// Pure and synchronous: run it off the main thread. A year on one face takes tens of milliseconds (release).
 public enum YieldEngine {
@@ -18,10 +19,11 @@ public enum YieldEngine {
         var poa: [Double], gEff: [Double], tCell: [Double], pMpp: [Double], pDcIn: [Double]
         var sunny: [Bool], over: [Bool]
         var e: FaceEnergies
+        var rows: YieldResult.RowLayout?
     }
 
     struct FaceEnergies {
-        var hInc = 0.0, hIAM = 0.0, hShade = 0.0, hFrontEff = 0.0
+        var hInc = 0.0, hIAM = 0.0, hShade = 0.0, hFrontEff = 0.0, hRearRaw = 0.0, hRearEff = 0.0, hEff = 0.0
         var eNominal = 0.0, eIrrLevel = 0.0, eTemp = 0.0, eQuality = 0.0, eArrMpp = 0.0, eCurrentLimit = 0.0
     }
 
@@ -63,7 +65,8 @@ public enum YieldEngine {
         var e = YieldEnergies()
         e.hHor = kwh(track.hours.map(\.ghi))
         e.hInc = weighted(\.hInc); e.hIAM = weighted(\.hIAM); e.hShade = weighted(\.hShade)
-        e.hFrontEff = weighted(\.hFrontEff); e.hEff = e.hFrontEff
+        e.hFrontEff = weighted(\.hFrontEff); e.hRearRaw = weighted(\.hRearRaw); e.hRearEff = weighted(\.hRearEff)
+        e.hEff = weighted(\.hEff)
         e.eNominal = summed(\.eNominal); e.eAfterIrrLevel = summed(\.eIrrLevel); e.eAfterTemp = summed(\.eTemp)
         e.eAfterQualityLidMismatch = summed(\.eQuality); e.eArrMpp = summed(\.eArrMpp)
         e.eAfterCurrentLimit = summed(\.eCurrentLimit)
@@ -85,7 +88,8 @@ public enum YieldEngine {
         let faces = parts.map { p in
             YieldResult.Face(id: p.face.id, modules: p.face.moduleCount, tiltDeg: p.face.tiltDeg, azimuthDegTrueN: p.face.azimuthDegTrueN,
                              hInc: p.e.hInc, hShade: p.e.hShade, eDCIn: p.e.eCurrentLimit,
-                             dcYield: p.e.eCurrentLimit / (Double(p.face.moduleCount) * system.module.stc.pNomW / 1000))
+                             dcYield: p.e.eCurrentLimit / (Double(p.face.moduleCount) * system.module.stc.pNomW / 1000),
+                             rows: p.rows)
         }
         let hourly = keepHourly ? YieldResult.Hourly(poa: poaW, gEff: gEffW, tCell: tCellW, pModule: pModW, pDCIn: dcIn, pAC: ac, pGrid: grid) : nil
         return YieldResult(system: system, energies: e, monthly: monthly, hours: hours, faces: faces, hourly: hourly,
@@ -117,7 +121,21 @@ public enum YieldEngine {
         var r = FaceRun(face: face, poa: .init(repeating: 0, count: n), gEff: .init(repeating: 0, count: n),
                         tCell: .init(repeating: 0, count: n), pMpp: .init(repeating: 0, count: n),
                         pDcIn: .init(repeating: 0, count: n), sunny: .init(repeating: false, count: n),
-                        over: .init(repeating: false, count: n), e: FaceEnergies())
+                        over: .init(repeating: false, count: n), e: FaceEnergies(), rows: nil)
+
+        // rows: the reference's `sheds`, front shading and (bifacial) the rear over the rows' ground
+        var rowSheds: InfiniteSheds?
+        if let rows = system.rows {
+            let pitch = rows.pitchM ?? RowGeometry.designPitch(site: track.site, tiltDeg: tilt, slantM: rows.slantM, azimuthDegTrueN: az,
+                                                               utcOffsetHours: track.utcOffsetHours)
+            let sheds = InfiniteSheds(.init(tilt: tilt, azimuth: az, gcr: rows.slantM / pitch, height: rows.heightM(tiltDeg: tilt),
+                                            pitch: pitch, albedo: rows.albedo))
+            rowSheds = sheds
+            r.rows = .init(pitchM: pitch, gcr: sheds.geometry.gcr, heightM: sheds.geometry.height, shadedHours: 0)
+        }
+        let rear = system.bifacial
+        let rearSheds = rowSheds == nil ? rear?.sheds(faceTilt: tilt, faceAzimuth: az) : nil
+        let isoSkyView = (1 + cos(tilt * .pi / 180)) / 2
         var e = FaceEnergies()
         for k in 0..<n {
             let h = track.hours[k]
@@ -129,11 +147,33 @@ public enum YieldEngine {
                 if 90 - h.zenith <= hz.elevation(at: h.azimuth) { beam = 0 }
                 sky *= skyFactor
             }
-            let gShade = (beam * iamBeam + sky * diffuse.sky + poa.ground * diffuse.ground) * (1 - face.nearShadingLossFrac)
-            let g = gShade * (1 - L.soiling)
+            var gShade: Double
+            var rearRaw = 0.0
+            if let sheds = rowSheds, let rows = system.rows {
+                // linear beam shading × the electrical factor, the sky the next row leaves, the shaded ground
+                let s = sheds.irradiance(zenith: h.zenith, sunAzimuth: h.azimuth, ghi: h.ghi, dhi: h.dhi, dni: h.dni)
+                let fsh = min(1, max(0, s.front.shadedFraction * rows.electricalFactor))
+                let isoSky = h.dhi * isoSkyView
+                let vf = isoSky > 0 ? min(1, max(0, s.front.skyDiffuse / isoSky)) : 1
+                gShade = (beam * (1 - fsh) * iamBeam + sky * vf * diffuse.sky + s.front.groundDiffuse * diffuse.ground)
+                    * (1 - face.nearShadingLossFrac)
+                if h.ghi > 0 {
+                    if s.front.shadedFraction > 0.001 { r.rows?.shadedHours += 1 }
+                    if rear != nil { rearRaw = s.back.global }
+                }
+            } else {
+                gShade = (beam * iamBeam + sky * diffuse.sky + poa.ground * diffuse.ground) * (1 - face.nearShadingLossFrac)
+                if let rear, let sheds = rearSheds {
+                    rearRaw = rear.rearIrradiance(sheds, faceTilt: tilt, faceAzimuth: az, roofSky: poa.sky, hour: h)
+                }
+            }
+            let gFront = gShade * (1 - L.soiling)
+            let gRear = rear.map { $0.bifaciality * rearRaw * (1 - $0.rearMismatch) } ?? 0
+            let g = gFront + gRear
             let tc = thermal.cellTemperature(poaGlobal: poa.global, airTemp: h.tempAir, wind: h.windSpeed, moduleEfficiency: eta)
             r.poa[k] = poa.global; r.gEff[k] = g; r.tCell[k] = tc
-            e.hInc += poa.global; e.hIAM += gIAM; e.hShade += gShade; e.hFrontEff += g
+            e.hInc += poa.global; e.hIAM += gIAM; e.hShade += gShade; e.hFrontEff += gFront
+            e.hRearRaw += rearRaw; e.hRearEff += gRear; e.hEff += g
             e.eNominal += s.pNomW * g / 1000
             guard g > 0.5 else { continue }
             r.sunny[k] = true
@@ -155,6 +195,7 @@ public enum YieldEngine {
         }
         // to kWh (W·h sums over 1 h steps); per-module sums times the face's modules
         e.hInc /= 1000; e.hIAM /= 1000; e.hShade /= 1000; e.hFrontEff /= 1000
+        e.hRearRaw /= 1000; e.hRearEff /= 1000; e.hEff /= 1000
         e.eNominal *= nMod / 1000; e.eIrrLevel *= nMod / 1000; e.eTemp *= nMod / 1000
         e.eQuality = e.eTemp * kq
         e.eArrMpp /= 1000; e.eCurrentLimit /= 1000

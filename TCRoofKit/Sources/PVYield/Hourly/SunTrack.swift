@@ -27,10 +27,13 @@ public struct SunTrack: Sendable {
     public var hours: [Hour]
     public var site: SolarPosition.Site
     public var weatherSource: String
+    /// Local time of the monthly table and of the rows' design pitch (Thailand +7).
+    public var utcOffsetHours: Double
 
     /// - Parameter utcOffsetHours: local time for the monthly table (Thailand +7).
     public init(weather w: HourlyWeather, site: SolarPosition.Site, utcOffsetHours: Double = 7) {
         self.site = site
+        self.utcOffsetHours = utcOffsetHours
         weatherSource = w.source
         let n = w.count, offset = Int(utcOffsetHours * 3600)
         var out = [Hour](repeating: Hour(unix: 0, zenith: 95, azimuth: 0, ghi: 0, dni: 0, dhi: 0, dniExtra: 0, airmass: nil,

@@ -518,7 +518,8 @@ def run(sc: Scenario) -> dict:
         scenario=sc.name, config=asdict(sc), p_nom_dc_kWp=p_nom_dc / 1000,
         rows=(dict(pitch_m=round(sh["pitch_m"], 3), gcr=round(sh["gcr"], 3),
                    height_m=round(sc.rows.height_m(sc.tilt), 3),
-                   shaded_hours=int((sh["shaded_fraction_front"] > 0.001).sum()))
+                   # daylight hours only: pvlib calls a row fully shaded whenever the sun is behind it
+                   shaded_hours=int(((sh["shaded_fraction_front"] > 0.001) & (df["ghi"].values > 0)).sum()))
               if sh is not None else None),
         dc_ac_ratio=round(p_nom_dc / inv["acNominalPowerW"], 3), modules=n_mod,
         faces=([dict(name=f.name, modules=a["n_mod"], tilt=f.tilt, azimuth=f.azimuth,

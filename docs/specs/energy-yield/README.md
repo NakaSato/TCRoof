@@ -13,31 +13,31 @@ Preliminary and PVsyst-equivalent energy yield for TCRoof: residential surveys a
 
 - `TCRoofKit/Sources/PVYield`: pure Swift, Foundation only; no dependency on the other targets yet.
   - The module and inverter ids match `TCRoofCore/Resources/pv-modules/znshine-zxm7-uhldd144.json` and `equipment-catalog.json` (Growatt MAX 60/80/125).
-- `TCRoofKit/Sources/PVYield/Hourly`: the hourly chain ported from the reference engine (sun position, Perez, IAM, cell temperature, inverter, multi-face, horizon, P50/P90, ageing). See `pvyield-package.md` § Hourly engine.
-- `TCRoofKit/Tests/PVYieldTests`: 26 tests (14 module/inverter, 12 hourly chain).
+- `TCRoofKit/Sources/PVYield/Hourly`: the hourly chain ported from the reference engine (sun position, Perez, IAM, cell temperature, inverter, multi-face, horizon, row-to-row shading, bifacial rear side, P50/P90, ageing). See `pvyield-package.md` § Hourly engine.
+- `TCRoofKit/Tests/PVYieldTests`: 38 tests (18 module/inverter, 20 hourly chain).
   - The one-diode model matches pvlib to within 0.0001 % Pmp.
   - The Znshine 570 W datasheet fit matches the datasheet NMOT to within +0.29 %.
   - The Growatt efficiency fits reproduce the datasheet values.
   - The string-sizing tests use the Znshine 570 W on each Growatt model.
-- `TCRoofKit/Tests/PVYieldTests/Fixtures/golden`: golden yield values per scenario, a full hourly trace for `60kW-ERA5`, every stage of every 37th hour (`stages-60kW-ERA5.json`) and a two-face gable with a horizon (`60kW-ERA5-faces-horizon.json`).
-  - The Swift hourly engine matches every front-lit scenario to rounding (E_grid within 0.0001 %, every step within 0.0003 %).
+- `TCRoofKit/Tests/PVYieldTests/Fixtures/golden`: golden yield values per scenario, a full hourly trace for `60kW-ERA5`, every stage of every 37th hour (`stages-60kW-ERA5.json`), the infinite sheds step by step (`stages-sheds.json`) and a two-face gable with a horizon (`60kW-ERA5-faces-horizon.json`).
+  - The Swift hourly engine matches every scenario, front-lit, bifacial and ground rows, to rounding (E_grid within 0.0001 %).
 - `tools/yield-reference/`: the hourly PVsyst-style chain in Python (pvlib), which is the specification for the Swift engine.
   - `site_yield.py --lat --lon`: any site from its coordinates.
   - `pwa_batch.py`: the PWA station list, with per-face survey input in `data/pwa-faces.csv`.
   - `make_report.py`: regenerates `RESULTS.md`.
-  - `stage_fixtures.py`: writes the stage and multi-face fixtures for the Swift tests.
+  - `stage_fixtures.py`: writes the stage, sheds and multi-face fixtures for the Swift tests.
 
 ## Status
 
 Done:
-- Hourly chain in `PVYield` for front-lit arrays: sun position (NREL SPA), the hour-effective sun and DNI fix, Perez, IAM, horizon and near shading, soiling, cell temperature, one-diode MPP, DC losses, MPPT current limit, inverter and clipping, AC losses, PR, monthly table, ageing, P50/P90. Tested against `Fixtures/golden`.
+- Hourly chain in `PVYield`: sun position (NREL SPA), the hour-effective sun and DNI fix, Perez, IAM, horizon and near shading, row-to-row shading and the bifacial rear side (pvlib infinite sheds), soiling, cell temperature, one-diode MPP, DC losses, MPPT current limit, inverter and clipping, AC losses, PR, monthly table, ageing, P50/P90. Tested against `Fixtures/golden`.
 
 - C1's แผงบนหลังคา tab shows `พลังงานต่อปี` from it (`TCRoofCore/RoofPV/RoofMountYield.swift`): P50 and P90 MWh/yr, kWh/kWp, PR, per face, the inverters and the source. It runs on the layout's faces in use (tilt from `Roof.slope`, compass azimuth from the plan's bearing), their module counts, the standard's module matched to the catalog (`p570` → Znshine ZXM7-UHLDD144-570) and B2's inverter sizes (Growatt MAX 60/80/125; with one roof section the roof takes all of them, else as many as keep DC/AC ≤ 1.3, said as ค่าสมมติ). It is computed off the main thread, 0.6 s after the layout settles, and never stored.
 - Weather: `PVYield/Resources/weather` ships the Bangkok PVGIS-ERA5 TMY (`BundledWeather`), used for sites within 100 km. Elsewhere, without A1's GPS, or with a module that has no model, the card shows `SolarModel`'s clear-sky estimate and says why.
 
 Next:
 - A weather year for every site: more bundled TMYs (one per region or a PVGIS grid), or a fetch-and-cache step. Needs a decision on the source and its licence (§4 of the dev spec).
-- Bifacial rear gain and row-to-row shading (pvlib infinite sheds; golden `*-bifacial-*` and `*-ground-*`).
+- Use rows and the rear side in the app: nothing in TCRoofCore sets `YieldSystem.rows` or `.bifacial` yet (C1 is a pitched roof; ground and flat-roof racks would need their row inputs, and a bifacial roof its standoff and the sheet's albedo).
 - Models for the catalog's other modules (`p550`, `p580`, `p620`: PAN files or datasheet temperature coefficients).
 - Near shading and the obstacles' shade from the layout into `ArrayFace.nearShadingLossFrac`.
 - Switch the layout's face choice, the report line (`RoofMount.summaryLine`) and the tank's energy search (`TankLayout+Energy`, `TankShade`) once every site has hourly weather; until then they stay on `SolarModel` so a job's numbers don't change with its location.

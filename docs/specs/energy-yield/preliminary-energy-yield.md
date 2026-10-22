@@ -4,7 +4,7 @@
 |---|---|
 | **Feature** | Preliminary Energy Yield (on-site quick estimate) |
 | **App** | TCRoof (iOS / iPadOS, Swift) |
-| **Status** | Research complete, figures rechecked live 2026-10-20. Hourly PVsyst-style engine ported to `PVYield` (front-lit arrays, tested against the reference) and shown in C1's แผงบนหลังคา tab for sites near the bundled Bangkok TMY (`RoofMountYield`); the PVGIS client is not built |
+| **Status** | Research complete, figures rechecked live 2026-10-20. Hourly PVsyst-style engine ported to `PVYield` (front-lit and bifacial arrays, roofs and ground rows, tested against the reference) and shown in C1's แผงบนหลังคา tab for sites near the bundled Bangkok TMY (`RoofMountYield`); the PVGIS client is not built |
 | **Date** | 2026-10-20 |
 
 ## 1. Summary

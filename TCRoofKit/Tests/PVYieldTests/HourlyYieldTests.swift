@@ -2,7 +2,8 @@ import XCTest
 @testable import PVYield
 
 /// The hourly chain against the reference engine (tools/yield-reference, pvlib 0.13–0.16): each stage on
-/// `stages-60kW-ERA5.json`, the full hourly trace of 60kW-ERA5, and every front-lit golden scenario.
+/// `stages-60kW-ERA5.json` and the infinite sheds on `stages-sheds.json`, the full hourly trace of 60kW-ERA5, and
+/// every golden scenario (front-lit, bifacial on roofs, ground rows).
 ///
 /// Tolerances (the reference states none; these are what an exact port of the same equations gives, with margin):
 /// - SPA: 1e-5° (the fixture keeps 6 decimals). The hour's effective sun interpolates the slow SPA terms over the
@@ -59,10 +60,21 @@ final class HourlyYieldTests: XCTestCase {
             let lat, lon, tilt, azimuth: Double
             let inverter_json, module_json: String
             let design: Design
+            struct Thermal: Decodable { let u_c: Double }
+            struct Bifacial: Decodable {
+                let enabled: Bool
+                let bifaciality, albedo, height_m, pitch_m, module_slant_m, tilt_rel_deg, rear_mismatch: Double
+                let frame: String
+            }
+            struct Rows: Decodable { let slant_m, clearance_m, albedo, electrical_factor: Double; let pitch_m: Double? }
             let ghi_target_kwh_m2: Double?
             let uncertainty: Uncertainty
             let faces: [Face]?
+            let thermal: Thermal
+            let bifacial: Bifacial
+            let rows: Rows?
         }
+        struct Rows: Decodable { let pitch_m, gcr, height_m: Double; let shaded_hours: Int }
         struct Month: Decodable { let month: Int; let GHI, POA, E_grid, PR: Double }
         struct Age: Decodable { let year: Int; let E_grid: Double }
         struct Probability: Decodable { let sigma_1yr, sigma_10yr, P50, P90_1yr, P90_10yr, P99_1yr: Double }
@@ -78,6 +90,7 @@ final class HourlyYieldTests: XCTestCase {
         let probability: Probability
         let hours: Hours
         let faces: [Face]?
+        let rows: Rows?
     }
 
     enum LossValue: Decodable {
@@ -104,6 +117,17 @@ final class HourlyYieldTests: XCTestCase {
         var s = YieldSystem(module: module, inverter: inverter,
                             design: StringDesign(modulesPerString: c.design.modules_per_string, strings: c.design.strings), faces: faces)
         s.uncertainty = YieldUncertainty(meteoData: c.uncertainty.meteo_data)
+        s.thermal.uc = c.thermal.u_c
+        if let r = c.rows {
+            s.rows = RowGeometry(slantM: r.slant_m, clearanceM: r.clearance_m, pitchM: r.pitch_m, albedo: r.albedo,
+                                 electricalFactor: r.electrical_factor)
+        }
+        if c.bifacial.enabled {
+            let b = c.bifacial
+            s.bifacial = BifacialRear(bifaciality: b.bifaciality, albedo: b.albedo, heightM: b.height_m, pitchM: b.pitch_m,
+                                      moduleSlantM: b.module_slant_m, tiltRelDeg: b.tilt_rel_deg,
+                                      frame: try XCTUnwrap(BifacialRear.Frame(rawValue: b.frame)), rearMismatch: b.rear_mismatch)
+        }
         return s
     }
 
@@ -205,7 +229,19 @@ final class HourlyYieldTests: XCTestCase {
     }
 
     static let goldenScenarios = ["60kW-ERA5", "60kW-GSA", "80kW-ERA5", "80kW-GSA", "125kW-ERA5", "125kW-GSA",
-                                  "60kW-ERA5-faces-horizon"]
+                                  "60kW-ERA5-faces-horizon",
+                                  "60kW-ERA5-bifacial-roof", "60kW-ERA5-bifacial-roof-albedo0.5-h0.20", "80kW-ERA5-bifacial-roof",
+                                  "125kW-ERA5-bifacial-roof",
+                                  "60kW-ERA5-ground-bifacial", "80kW-ERA5-ground-bifacial", "125kW-ERA5-ground-bifacial",
+                                  "125kW-ERA5-ground-monofacial", "125kW-ERA5-ground-bifacial-tilt10",
+                                  "125kW-ERA5-ground-bifacial-tilt20", "125kW-ERA5-ground-bifacial-gravel0.4"]
+
+    func testEveryGoldenFileIsTested() throws {
+        let dir = try XCTUnwrap(Bundle.module.url(forResource: "Fixtures/golden", withExtension: nil))
+        let names = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".json") }
+            .map { String($0.dropLast(5)) }.filter { !$0.hasPrefix("stages-") && !$0.hasSuffix("-hourly") }
+        XCTAssertEqual(Set(names), Set(Self.goldenScenarios))
+    }
 
     func testGoldenScenarios() throws {
         for name in Self.goldenScenarios {
@@ -219,7 +255,8 @@ final class HourlyYieldTests: XCTestCase {
         let e = r.energies, ge = g.energies_kWh
         let pairs: [(String, Double, Double)] = [
             ("H_hor", e.hHor, ge.hHor), ("H_inc", e.hInc, ge.hInc), ("H_iam", e.hIAM, ge.hIAM), ("H_shade", e.hShade, ge.hShade),
-            ("H_front_eff", e.hFrontEff, ge.hFrontEff), ("H_eff", e.hEff, ge.hEff), ("E_nominal", e.eNominal, ge.eNominal),
+            ("H_front_eff", e.hFrontEff, ge.hFrontEff), ("H_rear_raw", e.hRearRaw, ge.hRearRaw),
+            ("H_rear_eff", e.hRearEff, ge.hRearEff), ("H_eff", e.hEff, ge.hEff), ("E_nominal", e.eNominal, ge.eNominal),
             ("E_after_irr_level", e.eAfterIrrLevel, ge.eAfterIrrLevel), ("E_after_temp", e.eAfterTemp, ge.eAfterTemp),
             ("E_after_quality_lid_mm", e.eAfterQualityLidMismatch, ge.eAfterQualityLidMismatch), ("E_arr_mpp", e.eArrMpp, ge.eArrMpp),
             ("E_after_current_limit", e.eAfterCurrentLimit, ge.eAfterCurrentLimit), ("E_after_inv_eff", e.eAfterInvEff, ge.eAfterInvEff),
@@ -234,11 +271,17 @@ final class HourlyYieldTests: XCTestCase {
         XCTAssertEqual(r.dcAcRatio, g.dc_ac_ratio, accuracy: 0.0005, name)
         XCTAssertEqual(r.specificYield, g.specific_yield, accuracy: 0.05 + g.specific_yield * 1e-4, name)
         XCTAssertEqual(r.performanceRatio, g.PR, accuracy: 0.00005 + g.PR * 1e-4, name)
-        // the golden diagram has a bifacial step (index 4) the front-only port leaves out
-        let goldenLosses = g.loss_diagram.compactMap { $0.last?.number }.enumerated().filter { $0.offset != 4 }.map(\.element)
+        let goldenLosses = g.loss_diagram.compactMap { $0.last?.number }
         XCTAssertEqual(r.lossDiagram.count, goldenLosses.count, name)
         for (a, b) in zip(r.lossDiagram.map(\.percent), goldenLosses) {
             XCTAssertEqual(a, b, accuracy: 0.0051 + abs(b) * 1e-3, "\(name) loss diagram")
+        }
+        XCTAssertEqual(r.rows == nil, g.rows == nil, name)
+        if let rows = r.rows, let gr = g.rows {
+            XCTAssertEqual(rows.pitchM, gr.pitch_m, accuracy: 0.00051, name)
+            XCTAssertEqual(rows.gcr, gr.gcr, accuracy: 0.00051, name)
+            XCTAssertEqual(rows.heightM, gr.height_m, accuracy: 0.00051, name)
+            XCTAssertEqual(rows.shadedHours, gr.shaded_hours, name)
         }
         for (m, gm) in zip(r.monthly, g.monthly) {
             XCTAssertEqual(m.month, gm.month)
@@ -272,6 +315,127 @@ final class HourlyYieldTests: XCTestCase {
                 XCTAssertEqual(f.dcYield, b.dc_yield_kWh_per_kWp, accuracy: 0.051 + b.dc_yield_kWh_per_kWp * 1e-4, "\(name) \(b.name)")
             }
         }
+    }
+
+    // MARK: infinite sheds
+
+    struct ShedStages: Decodable {
+        struct Factors: Decodable { let rowSky, rowGround, groundSky: Double }
+        struct Geometry: Decodable { let tilt, gcr, height, pitch: Double; let front, back: Factors }
+        struct DesignPitch: Decodable { let tilt, slant, pitch: Double }
+        struct Hour: Decodable {
+            struct Ground: Decodable {
+                let poa_front_direct, poa_front_sky_diffuse, poa_front_ground_diffuse, shaded_fraction_front: Double
+                let poa_back_direct, poa_back_sky_diffuse, poa_back_ground_diffuse, shaded_fraction_back: Double
+                let gShade, gFront, gRear: Double
+            }
+            struct Roof: Decodable { let rearRaw, gFront: Double }
+            let row: Int
+            let ground: Ground
+            let roof: Roof
+        }
+        let groundScenario, roofScenario: String
+        let pitch: Double
+        let geometries: [Geometry]
+        let designPitches: [DesignPitch]
+        let hours: [Hour]
+    }
+
+    func testViewFactorsMatchPvlib() throws {
+        for g in try golden("stages-sheds", as: ShedStages.self).geometries {
+            let s = InfiniteSheds(.init(tilt: g.tilt, azimuth: 180, gcr: g.gcr, height: g.height, pitch: g.pitch, albedo: 0.2))
+            for (v, ref, side) in [(s.front, g.front, "front"), (s.back, g.back, "back")] {
+                XCTAssertEqual(v.rowSky, ref.rowSky, accuracy: 1e-12, "tilt \(g.tilt) \(side)")
+                XCTAssertEqual(v.rowGround, ref.rowGround, accuracy: 1e-12, "tilt \(g.tilt) \(side)")
+                XCTAssertEqual(v.groundSky, ref.groundSky, accuracy: 1e-12, "tilt \(g.tilt) \(side)")
+            }
+        }
+    }
+
+    func testDesignPitchMatchesReference() throws {
+        for p in try golden("stages-sheds", as: ShedStages.self).designPitches {
+            XCTAssertEqual(RowGeometry.designPitch(site: Self.site, tiltDeg: p.tilt, slantM: p.slant), p.pitch, accuracy: 1e-6,
+                           "tilt \(p.tilt)")
+        }
+    }
+
+    /// Both sides of the ground rows hour by hour, and the effective irradiance of the ground and roof scenarios.
+    func testShedsHoursMatchReference() throws {
+        let st = try golden("stages-sheds", as: ShedStages.self)
+        let ground = try golden(st.groundScenario, as: Golden.self), roof = try golden(st.roofScenario, as: Golden.self)
+        let gs = try system(ground), rs = try system(roof)
+        let rows = try XCTUnwrap(gs.rows)
+        let sheds = InfiniteSheds(.init(tilt: 15, azimuth: 180, gcr: rows.slantM / st.pitch, height: rows.heightM(tiltDeg: 15),
+                                        pitch: st.pitch, albedo: rows.albedo))
+        let gh = try XCTUnwrap(YieldEngine.run(gs, track: Self.track, hourly: true).hourly)
+        let rh = try XCTUnwrap(YieldEngine.run(rs, track: Self.track, hourly: true).hourly)
+        let rear = try XCTUnwrap(rs.bifacial)
+        let roofSheds = rear.sheds(faceTilt: 10, faceAzimuth: 180)
+        let tol = { (x: Double) in max(1e-5, abs(x) * 1e-6) }
+        for h in st.hours {
+            let t = Self.track.hours[h.row], ref = h.ground
+            let s = sheds.irradiance(zenith: t.zenith, sunAzimuth: t.azimuth, ghi: t.ghi, dhi: t.dhi, dni: t.dni)
+            XCTAssertEqual(s.front.direct, ref.poa_front_direct, accuracy: tol(ref.poa_front_direct), "row \(h.row)")
+            XCTAssertEqual(s.front.skyDiffuse, ref.poa_front_sky_diffuse, accuracy: tol(ref.poa_front_sky_diffuse), "row \(h.row)")
+            XCTAssertEqual(s.front.groundDiffuse, ref.poa_front_ground_diffuse, accuracy: tol(ref.poa_front_ground_diffuse), "row \(h.row)")
+            XCTAssertEqual(s.front.shadedFraction, ref.shaded_fraction_front, accuracy: 1e-6, "row \(h.row)")
+            XCTAssertEqual(s.back.direct, ref.poa_back_direct, accuracy: tol(ref.poa_back_direct), "row \(h.row)")
+            XCTAssertEqual(s.back.skyDiffuse, ref.poa_back_sky_diffuse, accuracy: tol(ref.poa_back_sky_diffuse), "row \(h.row)")
+            XCTAssertEqual(s.back.groundDiffuse, ref.poa_back_ground_diffuse, accuracy: tol(ref.poa_back_ground_diffuse), "row \(h.row)")
+            XCTAssertEqual(s.back.shadedFraction, ref.shaded_fraction_back, accuracy: 1e-6, "row \(h.row)")
+            XCTAssertEqual(gh.gEff[h.row], ref.gFront + ref.gRear, accuracy: tol(ref.gFront + ref.gRear) * 10, "row \(h.row)")
+            // the roof frame: the sun turned into the roof's plane
+            let poa = Irradiance.planeOfArray(tilt: 10, azimuth: 180, albedo: rs.losses.albedo, hour: t)
+            let raw = rear.rearIrradiance(roofSheds, faceTilt: 10, faceAzimuth: 180, roofSky: poa.sky, hour: t)
+            XCTAssertEqual(raw, h.roof.rearRaw, accuracy: tol(h.roof.rearRaw), "roof row \(h.row)")
+            let roofEff = h.roof.gFront + rear.bifaciality * h.roof.rearRaw * (1 - rear.rearMismatch)
+            XCTAssertEqual(rh.gEff[h.row], roofEff, accuracy: tol(roofEff) * 10, "roof row \(h.row)")
+        }
+    }
+
+    func testSunInRoofFrame() {
+        // a flat roof leaves the sun where it is (azimuth from up the slope, which faces north on a south roof)
+        let flat = BifacialRear.sunInRoofFrame(zenith: 30, azimuth: 120, roofTilt: 0, roofAzimuth: 180)
+        XCTAssertEqual(flat.zenith, 30, accuracy: 1e-9)
+        // the sun square on the roof's normal is at the roof frame's zenith
+        XCTAssertEqual(BifacialRear.sunInRoofFrame(zenith: 20, azimuth: 180, roofTilt: 20, roofAzimuth: 180).zenith, 0, accuracy: 1e-6)
+        XCTAssertEqual(BifacialRear.sunInRoofFrame(zenith: 0, azimuth: 0, roofTilt: 20, roofAzimuth: 180).zenith, 20, accuracy: 1e-9)
+    }
+
+    func testRowsShadeAndRearSideAddUp() throws {
+        let g = try golden("125kW-ERA5-ground-bifacial", as: Golden.self)
+        let both = try system(g)
+        var open = both
+        open.rows = nil
+        open.bifacial = nil
+        var mono = both
+        mono.bifacial = nil
+        var wide = mono
+        wide.rows?.pitchM = 20
+        let rb = YieldEngine.run(both, track: Self.track), ro = YieldEngine.run(open, track: Self.track)
+        let rm = YieldEngine.run(mono, track: Self.track), rw = YieldEngine.run(wide, track: Self.track)
+        // rows shade the front; wide rows shade less; the rear side adds back
+        XCTAssertLessThan(rm.energies.hShade, ro.energies.hShade)
+        XCTAssertGreaterThan(rw.energies.hShade, rm.energies.hShade)
+        XCTAssertLessThan(try XCTUnwrap(rw.rows).shadedHours, try XCTUnwrap(rm.rows).shadedHours)
+        XCTAssertEqual(rm.energies.hRearRaw, 0)
+        XCTAssertEqual(rm.energies.hEff, rm.energies.hFrontEff, accuracy: 1e-9)
+        XCTAssertGreaterThan(rb.energies.hRearEff, 0)
+        XCTAssertEqual(rb.energies.hEff, rb.energies.hFrontEff + rb.energies.hRearEff, accuracy: 1e-6)
+        XCTAssertGreaterThan(rb.energies.eGrid, rm.energies.eGrid)
+        // a front-lit run says nothing about rows or the rear
+        XCTAssertNil(ro.rows)
+        XCTAssertEqual(ro.lossDiagram[4].percent, 0, accuracy: 1e-12)
+    }
+
+    func testEnergiesWithoutRearKeysDecode() throws {
+        let old = #"{"H_hor":1,"H_inc":2,"H_iam":3,"H_shade":4,"H_front_eff":5,"H_eff":5,"E_nominal":6,"E_after_irr_level":7,"#
+            + #""E_after_temp":8,"E_after_quality_lid_mm":9,"E_arr_mpp":10,"E_after_current_limit":11,"E_after_inv_eff":12,"#
+            + #""E_after_clipping":13,"E_after_ac_ohmic":14,"E_grid":15}"#
+        let e = try JSONDecoder().decode(YieldEnergies.self, from: Data(old.utf8))
+        XCTAssertEqual(e.hRearRaw, 0)
+        XCTAssertEqual(e.eGrid, 15)
+        XCTAssertEqual(try JSONDecoder().decode(YieldEnergies.self, from: JSONEncoder().encode(e)), e)
     }
 
     // MARK: inputs

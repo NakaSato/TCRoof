@@ -151,7 +151,7 @@ public enum RoofDXF {
             return
         }
         // across the sheet: the tag past the plan's grid bubbles and dimension chains on that side, with a leader to the cage
-        let e = dxf.extents, unit = dxf.unit, x = dx < 0 ? min(tip.0, e.min.x / unit - 0.4) : max(tip.0, e.max.x / unit + 0.4)
+        let ext = dxf.extents, unit = dxf.unit, x = dx < 0 ? min(tip.0, ext.min.x / unit - 0.4) : max(tip.0, ext.max.x / unit + 0.4)
         if abs(x - tip.0) > 1e-6 { dxf.line(CADLayers.pvAccess, (tip.0 + (dx < 0 ? 0.15 : -0.15), tip.1), (x, tip.1)) }
         let tx = x + (dx < 0 ? -0.15 : 0.15), align: TextAlign = dx < 0 ? .right : .left
         dxf.text(CADLayers.text, (tx, tip.1 + 0.8 * h), height: h, W.ridgeAccessTag, align: align, middle: true)

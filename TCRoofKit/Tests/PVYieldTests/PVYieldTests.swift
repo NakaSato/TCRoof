@@ -218,7 +218,8 @@ final class InverterTests: XCTestCase {
 
     /// A PAN without `muVocSpec` (or with a comma decimal there) must not size strings on the STC Voc.
     func testAMissingVocCoefficientFallsBackToTheModel() throws {
-        let text = String(decoding: try fixture("ET-M772BH550GL.PAN"), as: UTF8.self)
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "Fixtures/ET-M772BH550GL.PAN", withExtension: nil))
+        let text = String(decoding: try Data(contentsOf: url), as: UTF8.self)
         let i60 = try GrowattCatalog.max60KTL3LV()
 
         let without = text.split(separator: "\n", omittingEmptySubsequences: false)

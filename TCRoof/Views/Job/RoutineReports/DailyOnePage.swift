@@ -10,13 +10,13 @@ struct DailyOnePage: View {
     struct Actions {
         var saveDraft: () -> Void
         var sign: () -> Void
-        var acknowledge: () -> Void
         var clearSignature: () -> Void
-        var clearAck: () -> Void
         var preview: () -> Void
         var send: () -> Void
         /// Moves to the previous (-1) or next (+1) report day; nil when there is none that way.
         var day: (Int) -> Void
+        /// Opens a day picked in the calendar, the same way as `day`.
+        var open: (Date) -> Void
         var settings: () -> Void
     }
 
@@ -32,7 +32,12 @@ struct DailyOnePage: View {
     @State var selected: UUID?
     @State var teamTab = DailyOnePage.Debug.tools ? 1 : 0
     @State var mapFull = false
-    @State var showTime = false
+    @State var pop: Pop?
+    @State var showWeather = false
+    #if DEBUG
+    /// `-routineDailyState signedcard`: a signed card with a drawn example signature, not saved.
+    @State var demoSign: (at: Date, drawn: Data)?
+    #endif
     @State var showAdd = false
     @Environment(\.dismiss) private var dismiss
 
@@ -61,7 +66,7 @@ struct DailyOnePage: View {
         .background(Theme.pageGradient.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $mapFull) { fullPlan }
-        .sheet(isPresented: $showTime) { DailyTimeSheet(report: $report) }
+        .sheet(isPresented: $showWeather) { DailyWeatherSheet(report: $report) }
         .sheet(isPresented: $showAdd) {
             AddWorkSheet(locations: settings.locations, plan: plan.isEmpty ? nil : plan) { lines in
                 for var l in lines where !report.progress.contains(where: { $0.key == l.key }) {
@@ -132,7 +137,7 @@ struct DailyOnePage: View {
     var blocker: String? {
         if let i = report.progress.firstIndex(where: { photos(of: $0).isEmpty }) { return "งาน \(i + 1) ยังไม่มีรูป" }
         if settings.siteEngineer.trimmingCharacters(in: .whitespaces).isEmpty { return "ใส่ชื่อผู้รายงานก่อนส่ง" }
-        if log?.engineerSignedAt == nil || dirty { return "ผู้รายงานยังไม่ได้เซ็น" }
+        if signedAt == nil { return "ผู้รายงานยังไม่ได้เซ็น" }
         return nil
     }
 
@@ -181,7 +186,8 @@ struct DailyOnePage: View {
 
     /// `-routineDailyState task2|tools|dropdown|signed|map|daybefore|material` (with `-screen daily`): states 02–08 of
     /// docs/ui/daily-report-ipad. `daybefore` is the editor's (it opens the day before); `dropdown` can't open a system
-    /// menu by itself, so it shows state 01. Release builds have none.
+    /// menu by itself, so it shows state 01. docs/ui/daily-report-ipad-v3 adds `datepicker`, `worktime`,
+    /// `worktimecustom` (07:00–17:00) and `signedcard`, none saved. Release builds have none.
     enum Debug {
         #if DEBUG
         static let state = UserDefaults.standard.string(forKey: "routineDailyState") ?? ""
@@ -225,6 +231,23 @@ struct DailyOnePage: View {
         return img.jpegData(compressionQuality: 0.7) ?? Data()
     }
 
+    /// A drawn squiggle standing in for a signature.
+    static func demoSignature() -> Data {
+        let size = CGSize(width: 480, height: 180)
+        let img = UIGraphicsImageRenderer(size: size).image { _ in
+            let p = UIBezierPath()
+            p.move(to: CGPoint(x: 30, y: 150))
+            p.addCurve(to: CGPoint(x: 140, y: 140), controlPoint1: CGPoint(x: 70, y: 20), controlPoint2: CGPoint(x: 120, y: 30))
+            p.addCurve(to: CGPoint(x: 230, y: 130), controlPoint1: CGPoint(x: 150, y: 40), controlPoint2: CGPoint(x: 220, y: 40))
+            p.addCurve(to: CGPoint(x: 330, y: 110), controlPoint1: CGPoint(x: 250, y: 70), controlPoint2: CGPoint(x: 300, y: 70))
+            p.addCurve(to: CGPoint(x: 450, y: 80), controlPoint1: CGPoint(x: 360, y: 150), controlPoint2: CGPoint(x: 400, y: 90))
+            UIColor(Theme.navy).setStroke()
+            p.lineWidth = 9; p.lineCapStyle = .round; p.lineJoinStyle = .round
+            p.stroke()
+        }
+        return img.pngData() ?? Data()
+    }
+
     private func debugState() {
         seedBoard()
         switch Debug.state {
@@ -234,6 +257,14 @@ struct DailyOnePage: View {
             selected = line.id
             report.progress[1].percent = min(before(line) + 50, 100)
         case "map": mapFull = true
+        case "datepicker": pop = .date
+        case "worktime": pop = .time
+        case "worktimecustom":
+            report.workStart = RoutineReport.WorkHours.text(7); report.workEnd = RoutineReport.WorkHours.text(17)
+            pop = .time
+        case "signedcard":
+            let at = RoutineReport.calendar.date(bySettingHour: 17, minute: 40, second: 0, of: date) ?? date
+            demoSign = (at, Self.demoSignature())
         case "material":
             if let line = report.progress.first(where: { $0.id == selected }) {
                 report.materials.append(.init(name: "รางอะลูมิเนียม", location: line.location, qty: 12, unit: "เส้น"))
@@ -255,39 +286,6 @@ extension DailyOnePage {
             AnyView(DailyModuleCard(report: $report, photos: $photos, compact: true).dailyCard())
             AnyView(signCard)
         }
-    }
-
-    private var daySwitcher: some View {
-        HStack(spacing: 0) {
-            Button { actions.day(-1) } label: {
-                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
-            }
-            .accessibilityLabel("วันก่อน")
-            Text(RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                .frame(maxWidth: .infinity).lineLimit(1).minimumScaleFactor(0.8)
-            Button { actions.day(1) } label: {
-                Image(systemName: "chevron.right").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
-            }
-            .disabled(RoutineReport.reportDay(from: date, by: 1, settings: settings, limit: .now) == nil)
-            .accessibilityLabel("วันถัดไป")
-            Button { showTime = true } label: {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 4) {
-                        Text("เวลาทำงาน").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
-                        if report.rainHours > 0 { Image(systemName: "cloud.rain").font(.system(size: 10)).foregroundStyle(Theme.primary) }
-                    }
-                    Text("\(report.workStart.replacingOccurrences(of: ".", with: ":"))–\(report.workEnd.replacingOccurrences(of: ".", with: ":"))")
-                        .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                }
-                .padding(.horizontal, 12).frame(height: 44)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("เวลาทำงานและสภาพอากาศ")
-        }
-        .foregroundStyle(Theme.primary)
-        .padding(4)
-        .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: team
@@ -341,92 +339,6 @@ extension DailyOnePage {
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: sign
-
-    private var signCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("ลงนาม").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                Spacer()
-                Text("ลงใน DAILY REPORT หน้า 3").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            }
-            HStack(alignment: .top, spacing: 10) {
-                signColumn(title: "ผู้รายงาน", role: "SITE ENGINEER", required: true,
-                           signedAt: dirty ? nil : log?.engineerSignedAt, drawn: log?.signature(InstallLog.engineerSignatureTag)?.data,
-                           name: nameBinding(\.siteEngineer),
-                           placeholder: "ชื่อผู้รายงาน", tap: actions.sign, clear: actions.clearSignature)
-                signColumn(title: "ผู้ตรวจงาน", role: "INSPECTOR", required: false,
-                           signedAt: dirty ? nil : log?.inspectorAckAt, drawn: log?.signature(InstallLog.inspectorSignatureTag)?.data,
-                           name: nameBinding(\.inspector),
-                           placeholder: "ชื่อผู้ตรวจงาน", tap: actions.acknowledge, clear: actions.clearAck)
-            }
-        }
-        .padding(16)
-        .dailyCard()
-    }
-
-    private func nameBinding(_ key: WritableKeyPath<RoutineReport.Settings, String>) -> Binding<String> {
-        Binding(get: { job.routineSettings[keyPath: key] }, set: { v in
-            var s = job.routineSettings
-            s[keyPath: key] = v
-            job.routineSettings = s
-        })
-    }
-
-    private func signColumn(title: String, role: String, required: Bool, signedAt: Date?, drawn: Data?, name: Binding<String>,
-                            placeholder: String, tap: @escaping () -> Void, clear: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 2) {
-                Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
-                if required { Text("*").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.danger) }
-                Spacer(minLength: 4)
-                Text(role).font(.sarabunFixed(9.5, .bold)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            }
-            Group {
-                if let at = signedAt {
-                    ZStack(alignment: .topTrailing) {
-                        VStack(spacing: 2) {
-                            // the drawn signature when there is one, else the name
-                            if let drawn, let image = UIImage(data: drawn) {
-                                Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 44)
-                                    .accessibilityLabel("ลายเซ็น " + name.wrappedValue)
-                            } else {
-                                Text(name.wrappedValue.isEmpty ? "ลงนามแล้ว" : name.wrappedValue)
-                                    .font(.sarabunFixed(17, .bold)).italic().foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
-                            }
-                            Text("ลงนาม " + ThaiFormat.time.string(from: at)).font(.sarabunFixed(11)).foregroundStyle(Theme.successText)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        Button(action: clear) {
-                            Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Theme.inkFaint)
-                                .frame(width: 44, height: 44)
-                        }
-                        .accessibilityLabel("ล้างลายเซ็น" + title)
-                    }
-                    .background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                } else {
-                    Button(action: tap) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "signature").font(.system(size: 18, weight: .semibold))
-                            Text("แตะเพื่อเซ็น").font(.sarabunFixed(14, .bold))
-                        }
-                        .foregroundStyle(Theme.primary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(title + " แตะเพื่อเซ็น")
-                    .accessibilityIdentifier(required ? "dailySign" : "dailyAck")
-                }
-            }
-            .frame(height: 82)
-            TextField(placeholder, text: name).font(.sarabunFixed(15)).textFieldStyle(OutlinedFieldStyle(dense: true))
-        }
-        .frame(maxWidth: .infinity)
-    }
 }
 
 /// The team card's rows: a name and a `7 คน ⌄` menu (`ลบออก`, then 1–12), and a dashed `+ เพิ่ม… ⌄` menu of the
@@ -500,48 +412,6 @@ struct DailyCountRows: View {
 struct TrailingIconLabel: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 6) { configuration.title; configuration.icon.font(.system(size: 12, weight: .semibold)) }
-    }
-}
-
-/// เวลาทำงาน and the day's weather (the one-page layout has no room for the 15-hour strip).
-struct DailyTimeSheet: View {
-    @Binding var report: RoutineReport.Daily
-    @Environment(\.dismiss) private var dismiss
-    static let presets = [("08.00", "17.00"), ("08.00", "18.00"), ("07.00", "16.00"), ("07.00", "17.00")]
-
-    var body: some View {
-        NavigationStack {
-            PadForm(maxWidth: 760) {
-                PadSection("เวลาทำงาน") {
-                    HStack(spacing: 8) {
-                        ForEach(Self.presets.indices, id: \.self) { i in
-                            let p = Self.presets[i]
-                            let on = report.workStart == p.0 && report.workEnd == p.1
-                            Button { report.workStart = p.0; report.workEnd = p.1 } label: {
-                                Text("\(p.0)–\(p.1)").font(.sarabunFixed(15, on ? .bold : .regular)).monospacedDigit()
-                                    .padding(.horizontal, 12).frame(minHeight: 44)
-                                    .background(on ? Theme.primary : Theme.segmentTrack, in: Capsule())
-                                    .foregroundStyle(on ? Theme.onPrimary : Theme.navy)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    HStack(spacing: 12) {
-                        TextField("08.00", text: $report.workStart).frame(width: 90).textFieldStyle(OutlinedFieldStyle(dense: true))
-                        Text("–")
-                        TextField("18.00", text: $report.workEnd).frame(width: 90).textFieldStyle(OutlinedFieldStyle(dense: true))
-                        Text("น.").foregroundStyle(Theme.inkMuted)
-                    }
-                    .monospacedDigit()
-                }
-                PadSection {
-                    WeatherCard(weather: $report.weather)
-                }
-            }
-            .navigationTitle("เวลาทำงานและสภาพอากาศ")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() }.bold() } }
-        }
     }
 }
 

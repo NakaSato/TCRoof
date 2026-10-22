@@ -160,4 +160,56 @@ extension RoutineReport {
         }
         return nil
     }
+
+    // MARK: Date picker (docs/ui/daily-report-ipad-v3 §1)
+
+    /// A day's dot in the one-page report's month calendar.
+    public enum DayStatus: Hashable, Sendable {
+        /// The reporter signed it (`engineerSignedAt`).
+        case sent
+        case draft
+        /// A working day before today, on or after the install start, with no report.
+        case missing
+        /// No dot: a day off, today or later without a report, or before the install start.
+        case none
+    }
+
+    /// The day's dot. `signed` is nil when the day has no report, else whether it is signed. A report on a day off still
+    /// shows its state; today without a report has no dot yet, since the day isn't over.
+    public static func dayStatus(_ date: Date, signed: Bool?, settings: Settings, today: Date, from start: Date? = nil) -> DayStatus {
+        if let signed { return signed ? .sent : .draft }
+        let d = day(date)
+        guard d < day(today), isWorkingDay(d, settings: settings) else { return .none }
+        if let start, d < day(start) { return .none }
+        return .missing
+    }
+
+    /// The month of `date` for a calendar grid that starts on Sunday: the blank cells before the 1st and every day.
+    public static func monthGrid(_ date: Date) -> (leading: Int, days: [Date]) {
+        guard let month = calendar.dateInterval(of: .month, for: date) else { return (0, []) }
+        let first = day(month.start)
+        let count = calendar.range(of: .day, in: .month, for: first)?.count ?? 30
+        return (calendar.component(.weekday, from: first) - 1, (0..<count).map { add(first, $0) })
+    }
+
+    // MARK: Working time (docs/ui/daily-report-ipad-v3 §2)
+
+    /// The working-time picker's limits: start 06–10, end 15–20, at least 4 hours, 1-hour steps.
+    public enum WorkHours {
+        public static let starts = 6...10
+        public static let ends = 15...20
+        public static let minimum = 4
+        /// The picker's presets (the station settings keep one pair of hours, not a list).
+        public static let presets: [(start: String, end: String)] = [("08.00", "17.00"), ("08.00", "18.00"), ("07.00", "16.00")]
+
+        /// `8` → `"08.00"`, the stored format.
+        public static func text(_ hour: Int) -> String { String(format: "%02d.00", hour) }
+
+        /// The start or end moved by `step` hours, or nil when that leaves its range or the 4-hour minimum.
+        public static func step(start: Int, end: Int, moveEnd: Bool, by step: Int) -> (start: Int, end: Int)? {
+            let s = moveEnd ? start : start + step, e = moveEnd ? end + step : end
+            guard starts.contains(s), ends.contains(e), e - s >= minimum else { return nil }
+            return (s, e)
+        }
+    }
 }

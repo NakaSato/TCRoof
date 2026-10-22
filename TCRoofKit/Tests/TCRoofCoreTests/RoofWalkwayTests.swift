@@ -104,6 +104,28 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertFalse(lines.contains("TK_TOPPING")); XCTAssertFalse(lines.contains("TK_MODULE_SIDE"))
     }
 
+    /// The BOQ counts the walkways' materials from the walkways drawn: gratings, cross rails with two L-feet each, the
+    /// lifeline and its supports, the tray, and one caged ladder on a gable roof down the middle.
+    func testTheBOQCountsThem() throws {
+        let v = roofCentre(), m = RoofMount.layout(v, latitude: 15).layout, ws = RoofWalkway.walkways(m)
+        let w = m.quantities.walkway
+        XCTAssertEqual(w.walkways, ws.count)
+        XCTAssertEqual(w.length, ws.map { $0.v1 - $0.v0 }.reduce(0, +), accuracy: 1e-9)
+        XCTAssertEqual(w.gratings, ws.map(\.panels.count).reduce(0, +))
+        XCTAssertEqual(w.crossRails, ws.map(\.feet.count).reduce(0, +)); XCTAssertEqual(w.lFeet, 2 * w.crossRails)
+        XCTAssertEqual(w.supports, ws.map(\.supports.count).reduce(0, +))
+        XCTAssertEqual(w.ladders, 1); XCTAssertEqual(w.cagedLadders, 1)
+        let line = RoofMount.walkwayLine(m.quantities)
+        XCTAssertTrue(line.contains("ตะแกรง HDG 0.30×2.40 \(w.gratings) แผ่น")); XCTAssertTrue(line.contains("บันไดลิงพร้อมกรงและชานพัก 1"))
+        // every n columns: an eave ladder, no cage
+        let e = RoofMount.layout(roof(every: 3), latitude: 15).layout.quantities.walkway
+        XCTAssertEqual(e.ladders, 1); XCTAssertEqual(e.cagedLadders, 0)
+        // none without walkways, and no line
+        let plain = RoofDXFTests(name: "x", testClosure: { _ in }).roof()
+        XCTAssertEqual(RoofMount.layout(plain, latitude: 15).layout.quantities.walkway, RoofWalkwayQuantities([]))
+        XCTAssertEqual(RoofMount.walkwayLine(RoofMount.layout(plain, latitude: 15).layout.quantities), "")
+    }
+
     func testWalkwaysFromTheLayout() throws {
         let m = RoofMount.layout(roof(every: 3), latitude: 15).layout
         let ws = RoofWalkway.walkways(m)

@@ -83,6 +83,29 @@ public enum TankDXF {
                 if d.role == .rows { comps.rowSection(&dxf, params, origin: (0, base)) }
                 if d.role == .front { comps.frontElevation(&dxf, params, posts: d.posts, origin: (0, base)) }
             }
+            // the posts' grid bubbles under the drawing's lowest dimension, as on the mounting plan
+            if let l = TankLayout.current(v), d.role != .tank {
+                let g = TankMountGrid(l), r = 9 / k
+                let lowest = d.dimensions.map { base + (o.y - $0.at.y) / k }.min() ?? base - 1
+                let y = min(lowest, base) - 2.4 * r
+                var marks: [(Double, String)] = []
+                if d.role == .rows, let p = params {
+                    for (i, row) in g.rows.prefix(2).enumerated() {
+                        let x0 = Double(i) * p.rowPitch
+                        if let f = g.letter(atW: row.front) { marks.append((x0, f)) }
+                        if let b = g.letter(atW: row.back) { marks.append((x0 + p.postDY, b)) }
+                    }
+                }
+                if d.role == .front, let t = l.builtTables.max(by: { $0.columns < $1.columns }) {
+                    let fr = TankLayout.Frame(q: l.turn, W: l.size.w, H: l.size.h)
+                    let a = t.panels.flatMap { [fr.to($0.x, $0.y).0, fr.to($0.x + $0.w, $0.y + $0.h).0] }.min() ?? 0
+                    for x in d.posts { if let n = g.number(row: t.row, u: a + x) { marks.append((x, "\(n)")) } }
+                }
+                for (x, name) in marks {
+                    dxf.line(CADLayers.grid, (x, base), (x, y + r))
+                    bubble(&dxf, (x, y), r: r, name)
+                }
+            }
             top = base + (o.y - h) / k - gap
         }
         // under them, the footing details (plan and DETAIL 1) at 1:10
@@ -155,6 +178,7 @@ public enum TankDXF {
             dxf.dimension(CADLayers.dim, plan(0, w0), plan(0, w1), at: plan(-1.6, 0), vertical: l.turn % 2 == 0,
                           text: String(format: "%.2f", w1 - w0), height: 0.24)
         }
+        mountGrid(&dxf, l, TankMountGrid(l), at: at)
         dxf.text(CADLayers.text, at(Pt(0, -2.2)), height: 0.5, "แปลนฐานรากและโครงยึดแผง / Mounting plan")
     }
 

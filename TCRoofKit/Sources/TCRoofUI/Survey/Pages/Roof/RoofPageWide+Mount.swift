@@ -514,6 +514,18 @@ extension RoofPageWide {
         .accessibilityLabel("ทิศของขอบบนแปลน " + (b.map { "\(Int($0)) องศา" } ?? "ยังไม่ระบุ"))
     }
 
+    /// The walkways' BOQ cells, when the layout has walkways.
+    func walkwayCells(_ w: RoofWalkwayQuantities?) -> [(String, String)] {
+        guard let w, w.walkways > 0 else { return [] }
+        var cells: [(String, String)] = [
+            ("ทางเดิน", String(format: "%d แนว %.1f ม.", w.walkways, w.length)), ("ตะแกรง HDG", "\(w.gratings) แผ่น"),
+            ("รางขวาง | L-feet", "\(w.crossRails) | \(w.lFeet)"), ("สลิงกันตก", String(format: "%.1f ม. | %d เสา", w.lifeline, w.supports)),
+            ("รางเคเบิล + PPR", String(format: "%.1f ม.", w.tray)),
+        ]
+        if w.ladders > 0 { cells.append(("บันไดลิง", w.cagedLadders > 0 ? "\(w.ladders) (กรง + ชานพัก)" : "\(w.ladders)")) }
+        return cells
+    }
+
     var mountQuantities: some View {
         let q = shownMount?.quantities
         let cells: [(String, String)] = [
@@ -521,7 +533,7 @@ extension RoofPageWide {
             (q.map(RoofMount.footName) ?? "L-foot", "\(q?.feet ?? 0)"),
             ("ตัวจับกลาง", "\(q?.midClamps ?? 0)"), ("ตัวจับปลาย", "\(q?.endClamps ?? 0)"), ("ชุดราง", "\(q?.runs ?? 0)"),
             ("ตัดแผง", "\(q?.cuts ?? 0)"), ("ขาชนสิ่งกีดขวาง", "0"),
-        ]
+        ] + walkwayCells(q?.walkway)
         return VStack(alignment: .leading, spacing: 4) {
             A3Label(text: "ปริมาณวัสดุ (BOQ)")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {

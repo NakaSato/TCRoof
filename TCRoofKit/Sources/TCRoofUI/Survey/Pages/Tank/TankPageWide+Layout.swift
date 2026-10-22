@@ -282,6 +282,8 @@ extension TankPageWide {
             ("Mid / End clamp", "\(b.midClamps) / \(b.endClamps)"),
             ("Rail clamp", "\(b.railClamps)"),
             ("ค้ำยันไขว้", "\(b.braces) ชุด"),
+            ("ฐานเสา | พุก M12", "\(b.bases) | \(b.anchors)"),
+            ("ค้ำโครงข้าง | ค้ำยื่น", "\(b.sideBraces) | \(b.struts)"),
         ]
         let chip = ("\(l.count) แผง | " + String(format: "%.1f kWp", l.kWp), Theme.okTick, Theme.okSoft)
         return phoneCard(2, "สรุป | วัสดุโครงสร้าง", chip: chip) {

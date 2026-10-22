@@ -227,6 +227,19 @@ public enum RoofMount {
                footName(q), q.feet, q.midClamps, q.endClamps, q.runs) + (q.cuts > 0 ? " | ตัดแผง \(q.cuts)" : "")
     }
 
+    /// `ทางเดิน 3 แนว 38.2 ม. | ตะแกรง HDG 0.30×2.40 17 แผ่น | รางขวาง 32 | L-feet ทางเดิน 64 | สลิงกันตก 38.2 ม. เสารับ
+    /// 17 | รางเคเบิล + ท่อ PPR 38.2 ม. | บันไดลิงพร้อมกรงและชานพัก 1`; empty without walkways.
+    public static func walkwayLine(_ q: RoofMountQuantities) -> String {
+        let w = q.walkway
+        guard w.walkways > 0 else { return "" }
+        var parts = [String(format: "ทางเดิน %d แนว %.1f ม.", w.walkways, w.length), "ตะแกรง HDG 0.30×2.40 \(w.gratings) แผ่น",
+                     "รางขวาง \(w.crossRails)", "L-feet ทางเดิน \(w.lFeet)", String(format: "สลิงกันตก %.1f ม. เสารับ %d", w.lifeline, w.supports),
+                     String(format: "รางเคเบิล + ท่อ PPR %.1f ม.", w.tray)]
+        if w.cagedLadders > 0 { parts.append("บันไดลิงพร้อมกรงและชานพัก \(w.cagedLadders)") }
+        if w.ladders > w.cagedLadders { parts.append("บันไดลิง \(w.ladders - w.cagedLadders)") }
+        return parts.joined(separator: " | ")
+    }
+
     /// `L-foot`, or `ขอเกี่ยวกระเบื้อง` on a tile roof.
     public static func footName(_ q: RoofMountQuantities) -> String { q.hooks ? "ขอเกี่ยวกระเบื้อง" : "L-foot" }
 

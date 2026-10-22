@@ -84,6 +84,10 @@ public struct TankLayout: Sendable {
 
     public struct TableBOM: Hashable, Sendable {
         public var modules, posts, footings, rafters, railClamps, midClamps, endClamps, braces, groundLugs: Int
+        /// The team's section 1 and detail 1: an aluminium base at every post on its concrete topping (`footings`), two
+        /// M12 expansion bolts per base (its two slots), the front and back braces of every post pair's frame and its
+        /// outer strut.
+        public var bases = 0, anchors = 0, sideBraces = 0, struts = 0
         public var railLength: Double
         /// One table of `columns` × 2 modules, `length` m long, on `pairs` post pairs.
         public init(columns c: Int, length: Double, pairs: Int) {
@@ -98,10 +102,12 @@ public struct TankLayout: Sendable {
             // X in every post bay, front and back lines
             braces = 2 * max(0, pairs - 1)
             groundLugs = c > 0 ? 1 : 0
+            bases = posts; anchors = 2 * posts; sideBraces = 2 * pairs; struts = pairs
         }
     }
     public struct BOM: Hashable, Sendable {
         public var posts = 0, footings = 0, rafters = 0, railClamps = 0, midClamps = 0, endClamps = 0, braces = 0, groundLugs = 0
+        public var bases = 0, anchors = 0, sideBraces = 0, struts = 0
         public var railLength = 0.0
     }
 
@@ -287,6 +293,7 @@ public struct TankLayout: Sendable {
             b.posts += q.posts; b.footings += q.footings; b.rafters += q.rafters; b.railClamps += q.railClamps
             b.midClamps += q.midClamps; b.endClamps += q.endClamps; b.braces += q.braces; b.groundLugs += q.groundLugs
             b.railLength += q.railLength
+            b.bases += q.bases; b.anchors += q.anchors; b.sideBraces += q.sideBraces; b.struts += q.struts
         }
         bom = b
 

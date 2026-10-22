@@ -188,4 +188,30 @@ final class TankDXFTests: XCTestCase {
         XCTAssertEqual(tables.count, l.builtTables.count)
         XCTAssertTrue(tables.allSatisfy { t.value($0, "70") == "1" })
     }
+
+    /// The mounting plan's grid: a letter on every post line, a number on every pair of a row, every footing on a
+    /// crossing with its reference, and the same bubbles under the row section's and front elevation's posts.
+    func testMountingGrid() throws {
+        let v = Self.sample(layout: true), l = try XCTUnwrap(TankLayout.current(v)), g = TankMountGrid(l)
+        let tables = l.builtTables, rows = Set(tables.map(\.row))
+        XCTAssertEqual(g.rows.count, rows.count)
+        XCTAssertEqual(g.letters.count, 2 * rows.count, "a front and a back line per row")
+        XCTAssertEqual(g.letters.first?.name, "A")
+        XCTAssertEqual(g.letters.dropFirst().first?.name, "B")
+        // every post has a reference, and no two share one
+        let refs = tables.flatMap(\.posts).map { g.ref($0) }
+        XCTAssertFalse(refs.contains(nil))
+        XCTAssertEqual(Set(refs.compactMap { $0 }).count, refs.count)
+        XCTAssertEqual(TankMountGrid.letter(26), "AA")
+        let out = try XCTUnwrap(TankDXF.build(v)), recs = t.rawEntities(out.data)
+        let names = Set(recs.filter { $0.first?.1 == "TEXT" && t.value($0, "8") == "G-GRID" }.compactMap { t.value($0, "1") })
+        for line in g.letters { XCTAssertTrue(names.contains(line.name), line.name) }
+        for row in g.rows { for i in row.us.indices { XCTAssertTrue(names.contains("\(i + 1)")) } }
+        // two bubbles per letter line and one per pair on the plan, plus those under the sections
+        let circles = recs.filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-GRID" }.count
+        let pairs = g.rows.map(\.us.count).reduce(0, +)
+        XCTAssertGreaterThan(circles, 2 * g.letters.count + pairs)
+        let tags = Set(recs.filter { $0.first?.1 == "TEXT" && t.value($0, "8") == "G-ANNO-TEXT" }.compactMap { t.value($0, "1") })
+        for r in refs.compactMap({ $0 }) { XCTAssertTrue(tags.contains(r), r) }
+    }
 }

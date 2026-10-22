@@ -247,7 +247,8 @@ struct Fill {
             let (layout, energy) = RoofMount.printed(d, job: job)
             if layout.quantities.modules > 0 {
                 a.raw("A38", RoofMount.summaryLine(layout, energy: energy.mwh))
-                a.raw("A39", RoofMount.boqLine(layout.quantities) + " | " + RoofMount.loadLine(layout.quantities))
+                let walk = RoofMount.walkwayLine(layout.quantities)
+                a.raw("A39", RoofMount.boqLine(layout.quantities) + " | " + RoofMount.loadLine(layout.quantities) + (walk.isEmpty ? "" : " | " + walk))
             }
         }
         let top = [d.photo("aerialPhoto")] + d.photos("generalPhotos").map { Optional($0) }, st = d.photos("structPhotos")

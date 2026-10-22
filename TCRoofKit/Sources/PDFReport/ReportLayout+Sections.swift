@@ -201,6 +201,8 @@ extension ReportLayout {
             o.append(.text(t, at: Pt(14, y), size: 8, color: f.used ? .black : .tag)); y += lineH
         }
         o.append(.text(RoofMount.boqLine(q), at: Pt(8, y), size: 8)); y += lineH
+        let walk = RoofMount.walkwayLine(q)
+        if !walk.isEmpty { o.append(.text(walk, at: Pt(8, y), size: 8)); y += lineH }
         o.append(.text(RoofMount.loadLine(q), at: Pt(8, y), size: 8, bold: q.overLoad, color: q.overLoad ? .tag : .black)); y += lineH
         if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " | "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
         o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง | ตรวจน้ำหนักบรรทุกของโครงหลังคากับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))

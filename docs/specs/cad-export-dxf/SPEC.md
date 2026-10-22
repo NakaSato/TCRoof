@@ -181,7 +181,11 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   which the CAD export leaves to its own drawing), under the face labels; a roof without walkways draws as before.
   Every module of the roof's CAD plan is the team's PV panel block (`TK_MODULE_PLAN`, `RoofDXF.modulePanel`), its long
   side along the module's, stretched to the module on plan, on its WIPEOUT; a roof file defines only that block of the
-  tank components. Open: whether the team keeps the eave ladder for hip roofs.
+  tank components. The BOQ counts the walkways (`RoofWalkwayQuantities`, `RoofMount.walkwayLine`: length, HDG
+  gratings, cross rails and their L-feet, lifeline and supports, cable tray and PPR, caged or eave ladders) on the roof
+  page, in the PDF and in the Excel's row 39; the tank's BOM adds a base and two M12 bolts per post and two side braces
+  and a strut per post pair (`TableBOM`), on the tank page and in its BOQ line. Open: whether the team keeps the eave
+  ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, P-RAFT-N, red), the four rails (P-RAIL-N,
@@ -189,6 +193,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT; the team's footing block at every post (`TC_FOOTING_<mm>`: the footing square at `footing`, the base plate,
   the C post's flanges and the two 50 mm plates; P-FTNG-N, green); a dimension chain along each table beyond its
   low edge (cantilever, bays, cantilever) and one across the post lines from wall to wall. No modules are drawn there.
+- **Tank mounting grid** (2026-10-22, `TankMountGrid`): the mounting plan carries the structure's own grid on G-GRID:
+  a letter line on every post line across the slope (A, B the first row's front and back posts, then C, D …, ordered
+  in the layout frame; lines closer than 50 mm share a letter) with a bubble past each wall, and per row a number line
+  through every post pair (1, 2, 3 … from the frame's west end; a row's tables share a number where their pairs line
+  up) from behind its back posts to past its low edge, with its bubble there. Each footing is tagged with its
+  reference, letter and number (`B-3`, G-ANNO-TEXT). The rows' section carries the first two rows' letters under its
+  posts and the front elevation the longest table's numbers, as bubbles under their lowest dimension, so a section
+  reads against the plan.
 - **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
   (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero

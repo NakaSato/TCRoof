@@ -282,6 +282,32 @@ public struct SketchDXF: Sendable {
         for v in pts { cover(v.0, v.1) }
     }
 
+    /// A HATCH crossed at 45° and 135° (ANSI37), `spacing` metres between lines, in colour `aci`.
+    public mutating func crossHatch(_ l: Layer, _ pts: [(Double, Double)], spacing: Double, aci: Int) {
+        let d = spacing * unit, k = d / 2.squareRoot()
+        patternHatch(l, pts, name: "ANSI37", scale: d / 3.175, aci: aci, families: [(45, (-k, k), []), (135, (-k, -k), [])])
+    }
+
+    /// A HATCH of dots (DOTS) `spacing` metres apart, in colour `aci`.
+    public mutating func dotsHatch(_ l: Layer, _ pts: [(Double, Double)], spacing: Double, aci: Int) {
+        let d = spacing * unit
+        patternHatch(l, pts, name: "DOTS", scale: d / 1.5875, aci: aci, families: [(0, (0, d), [0, -d])])
+    }
+
+    /// A pattern HATCH from its line families (angle in degrees, offset between lines and dashes in drawing units).
+    private mutating func patternHatch(_ l: Layer, _ pts: [(Double, Double)], name: String, scale: Double, aci: Int,
+                                       families: [(Double, (Double, Double), [Double])]) {
+        guard pts.count >= 3 else { return }
+        func n6(_ x: Double) -> String { Self.num((x * 1e6).rounded() / 1e6) }
+        var pattern = ["75", "1", "76", "1", "52", "0", "41", n6(scale), "77", "0", "78", String(families.count)]
+        for (angle, off, dashes) in families {
+            pattern += ["53", Self.num(angle), "43", "0", "44", "0", "45", n6(off.0), "46", n6(off.1), "79", String(dashes.count)]
+            pattern += dashes.flatMap { ["49", n6($0)] }
+        }
+        hatchEntity(l, boundary: Self.polygonPath(pts.map { (q($0.0), q($0.1)) }), extra: colourGroup(l, aci), pattern: pattern, name: name, solid: false)
+        for v in pts { cover(v.0, v.1) }
+    }
+
     /// A SOLID HATCH inside the polygon `pts` (metres).
     public mutating func solid(_ l: Layer, _ pts: [(Double, Double)], extra: [String] = []) {
         guard pts.count >= 3 else { return }

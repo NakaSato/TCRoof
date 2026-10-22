@@ -34,9 +34,9 @@ public enum CADLayers {
     public static let pvTable = SketchDXF.Layer("TC-PV-TABLE", aci: 170, lineweight: 25, description: "โต๊ะแผงและฐานราก / Module tables and footings")
     public static let pvRafter = SketchDXF.Layer("TC-PV-RAFTER", aci: 1, lineweight: 25, description: "คานเอียงรับราง / Rafters")
     public static let pvBrace = SketchDXF.Layer("TC-PV-BRACE", aci: 4, lineweight: 18, description: "ค้ำยันระหว่างเสา / Bracing between posts")
-    public static let pvWalkway = SketchDXF.Layer("TC-PV-WALKWAY", aci: 3, lineweight: 25, description: "ทางเดิน HDG 0.30×2.40 ม. ขาตั้ง L-Feet / Walkway grating and L-feet")
-    public static let pvLifeline = SketchDXF.Layer("TC-PV-LIFELINE", aci: 6, lineweight: 25, description: "สลิงกันตก 6 มม. และเสารับ / Lifeline wire rope and supports")
-    public static let pvCableTray = SketchDXF.Layer("TC-PV-CABLETRAY", aci: 1, lineweight: 25, description: "รางเคเบิลและท่อ PPR / Cable tray and PPR pipe")
+    public static let pvWalkway = SketchDXF.Layer("TC-PV-WALKWAY", aci: 10, lineweight: 25, description: "ทางเดิน HDG 0.30×2.40 ม. ขาตั้ง L-Feet / Walkway grating and L-feet")
+    public static let pvLifeline = SketchDXF.Layer("TC-PV-LIFELINE", aci: 130, lineweight: 25, description: "สลิงกันตก 6 มม. เสารับ และราง / Lifeline wire rope, supports and rail")
+    public static let pvCableTray = SketchDXF.Layer("TC-PV-CABLETRAY", aci: 3, lineweight: 25, description: "รางเคเบิลและท่อ PPR / Cable tray and PPR pipe")
     public static let detail = SketchDXF.Layer("TC-DETAIL", aci: 7, lineweight: 18, description: "แบบรายละเอียดของทีม / Team detail sheets")
     public static let pvFooting = SketchDXF.Layer("TC-PV-FOOTING", aci: 3, lineweight: 25, description: "ฐานรากและฐานเสา / Footings and post bases")
 

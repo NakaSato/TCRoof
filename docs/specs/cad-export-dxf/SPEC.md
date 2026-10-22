@@ -149,17 +149,19 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
-- **Roof walkways** (2026-10-22, after the team's `Walkway.dxf`, kept in `reference/`): each walkway gap of C1's PV
-  layout (`RoofWalkway.walkways`: one module column up the slope, every n columns or, as most roofs have it, one down
-  the middle of each face, `walkwayCentre`, the roof page's `กลางหลังคา`, the default once walkways are on) is drawn
-  as a 0.90 m band: the 6 mm wire-rope lifeline with supports every 2.40 m (TC-PV-LIFELINE), the rail, the HDG grating
-  0.30 × 2.40 × 0.03 m in panels on L-feet every 1.20 m (TC-PV-WALKWAY), the 3/4" PPR pipe and the 200 mm cable tray
-  (TC-PV-CABLETRAY), grating and tray on WIPEOUTs, with the band's width and a tag. The positions across the band
-  (lifeline 0.05, rail 0.12, grating 0.17–0.47, pipe 0.505, tray 0.54–0.74) are read off the detail's top view; open:
-  the team to confirm them. With any walkway the DXF also carries the team's walkway detail (top view, elevations 1–3,
-  detail 1) as one block `TC_DETAIL_WALKWAY` on TC-DETAIL beside the drawing, at the plot scale; it comes from
-  `Resources/walkway-detail.json`, made by `tools/cad-details/convert.py` from the DXF (blocks, dimensions and leaders
-  exploded, XCLIP frames applied); run it again when the detail changes.
+- **Roof walkways** (2026-10-22, after the team's walkway drawings in `reference/`): each walkway gap of C1's PV layout
+  (`RoofWalkway.walkways`: one module column up the slope, every n columns or, as most roofs have it, one down the
+  middle of each face, `walkwayCentre`, the roof page's `กลางหลังคา`, the default once walkways are on) is drawn as the
+  team's top view `Walkway_S1.dxf`, measured: a 0.90 m band with, from its cable-tray side, the 200 mm cable tray at
+  0.053–0.253 (dotted, TC-PV-CABLETRAY, green), the HDG grating 0.30 × 2.40 × 0.03 m at 0.325–0.625 in panels with a
+  0.03 inner frame, cross-hatched (ANSI37, TC-PV-WALKWAY, red), with L-feet every 1.20 m from 0.63 m in at both its
+  edges (magenta), the 3/4" PPR pipe at 0.656, the rail at 0.687–0.712 (solid, green) and the 6 mm wire-rope lifeline
+  at 0.80 with supports every 2.40 m from 0.65 m in (TC-PV-LIFELINE, cyan); grating and tray on WIPEOUTs, with the
+  band's width and a tag. Open: `Walkway_S1` draws the grating panels about 3.06 m long while its note says
+  0.30 × 2.40; the app follows the note. With any walkway the DXF also carries the team's walkway detail
+  (`Walkway.dxf`: top view, elevations 1–3, detail 1) as one block `TC_DETAIL_WALKWAY` on TC-DETAIL beside the drawing,
+  at the plot scale; it comes from `Resources/walkway-detail.json`, made by `tools/cad-details/convert.py` from the DXF
+  (blocks, dimensions and leaders exploded, XCLIP frames applied); run it again when the detail changes.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, TC-PV-RAFTER, red), the four rails (TC-PV-RAIL,

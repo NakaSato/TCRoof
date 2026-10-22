@@ -55,10 +55,13 @@ final class RoofWalkwayTests: XCTestCase {
             XCTAssertEqual(p.first?.0 ?? -1, w.v0, accuracy: 1e-9); XCTAssertEqual(p.last?.1 ?? -1, w.v1, accuracy: 1e-9)
             XCTAssertTrue(zip(p, p.dropFirst()).allSatisfy { abs($0.1 - $1.0) < 1e-9 })
             XCTAssertTrue(p.allSatisfy { $0.1 - $0.0 <= RoofWalkway.panel + 1e-9 })
-            // lifeline supports at both ends, never more than 2.40 apart; L-feet every 1.20
+            // lifeline supports every 2.40 from 0.65 in, inside the walkway; L-feet every 1.20 from 0.63 in
             let s = w.supports
-            XCTAssertEqual(s.first ?? -1, w.v0, accuracy: 1e-9); XCTAssertEqual(s.last ?? -1, w.v1, accuracy: 1e-9)
-            XCTAssertTrue(zip(s, s.dropFirst()).allSatisfy { $1 - $0 <= RoofWalkway.support + 1e-9 })
+            XCTAssertFalse(s.isEmpty)
+            if w.v1 - w.v0 > 2 * RoofWalkway.supportStart { XCTAssertEqual(s[0], w.v0 + RoofWalkway.supportStart, accuracy: 1e-9) }
+            XCTAssertTrue(s.allSatisfy { $0 > w.v0 && $0 < w.v1 })
+            XCTAssertTrue(zip(s, s.dropFirst()).allSatisfy { abs($1 - $0 - RoofWalkway.support) < 1e-9 })
+            if let f = w.feet.first { XCTAssertEqual(f, w.v0 + RoofWalkway.footStart, accuracy: 1e-9) }
             XCTAssertTrue(zip(w.feet, w.feet.dropFirst()).allSatisfy { abs($1 - $0 - RoofWalkway.foot) < 1e-9 })
             // the band sits inside its gap
             XCTAssertGreaterThanOrEqual(w.b0, w.u - 1e-9); XCTAssertLessThanOrEqual(w.b0 + RoofWalkway.band, w.u + w.width + 1e-9)
@@ -72,9 +75,15 @@ final class RoofWalkwayTests: XCTestCase {
         for l in ["TC-PV-WALKWAY", "TC-PV-LIFELINE", "TC-PV-CABLETRAY", "TC-DETAIL"] { XCTAssertTrue(out.layers.contains(l), l) }
         func count(_ type: String, _ layer: String) -> Int { recs.filter { $0.first?.1 == type && t.value($0, "8") == layer }.count }
         let panels = ws.map(\.panels.count).reduce(0, +), feet = ws.map(\.feet.count).reduce(0, +)
-        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-WALKWAY"), panels + 2 * feet)
-        XCTAssertEqual(count("CIRCLE", "TC-PV-LIFELINE"), ws.map(\.supports.count).reduce(0, +))
+        // each panel's outline and inner frame, an L-foot square at both grating edges
+        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-WALKWAY"), 2 * panels + 2 * feet)
+        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-LIFELINE"), ws.map(\.supports.count).reduce(0, +))
         XCTAssertEqual(count("LWPOLYLINE", "TC-PV-CABLETRAY"), ws.count)
+        // the top view's hatches: grating crossed (ANSI37), the tray dotted, the rail solid
+        let hatches = recs.filter { $0.first?.1 == "HATCH" }
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "ANSI37" && t.value($0, "8") == "TC-PV-WALKWAY" }.count, panels)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "DOTS" && t.value($0, "8") == "TC-PV-CABLETRAY" }.count, ws.count)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "SOLID" && t.value($0, "8") == "TC-PV-LIFELINE" }.count, ws.count)
         // the grating and the tray hide what is under them
         XCTAssertEqual(count("WIPEOUT", "TC-PV-WALKWAY"), panels)
         // the detail sheet, once, to the right of the plan

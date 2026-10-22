@@ -30,26 +30,35 @@ public enum RoofDXF {
                                                "txt": "TEXT", "dimtxt": "DIM"]
     static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
-    /// One walkway band on plan (metres, y up from the plan's bottom edge `ly`): the cable tray and the grating panels on
-    /// WIPEOUTs, the PPR pipe, the rail, the L-feet, the lifeline with its supports, the band's width and a label.
+    /// One walkway band on plan (metres, y up from the plan's bottom edge `ly`) as the team's top view draws it: the cable
+    /// tray dotted, the grating panels cross-hatched with their inner frame, both on WIPEOUTs, the PPR pipe, the rail
+    /// solid, the L-feet, the wire-rope lifeline with its supports, the band's width and a tag.
     static func walkway(_ dxf: inout SketchDXF, _ w: RoofWalkway, ly: Double, text h: Double) {
         func at(_ a: Double, _ v: Double) -> (Double, Double) { let p = w.face.plan(w.b0 + a, v); return (p.x, ly - p.y) }
-        func strip(_ l: SketchDXF.Layer, _ a0: Double, _ a1: Double, _ v0: Double, _ v1: Double) {
-            let pts = [at(a0, v0), at(a1, v0), at(a1, v1), at(a0, v1)]
-            dxf.wipeout(l, pts); dxf.polyline(l, pts, closed: true)
-        }
+        func box(_ a0: Double, _ a1: Double, _ v0: Double, _ v1: Double) -> [(Double, Double)] { [at(a0, v0), at(a1, v0), at(a1, v1), at(a0, v1)] }
         typealias W = RoofWalkway
-        strip(CADLayers.pvCableTray, W.tray.0, W.tray.1, w.v0, w.v1)
+        let tray = box(W.tray.0, W.tray.1, w.v0, w.v1)
+        dxf.wipeout(CADLayers.pvCableTray, tray); dxf.polyline(CADLayers.pvCableTray, tray, closed: true)
+        dxf.dotsHatch(CADLayers.pvCableTray, tray, spacing: 0.05, aci: CADLayers.pvCableTray.aci)
+        for (a, b) in w.panels {
+            let outer = box(W.grating.0, W.grating.1, a, b)
+            dxf.wipeout(CADLayers.pvWalkway, outer); dxf.polyline(CADLayers.pvWalkway, outer, closed: true)
+            let f = min(W.gratingFrame, (b - a) / 4)
+            let inner = box(W.grating.0 + f, W.grating.1 - f, a + f, b - f)
+            dxf.polyline(CADLayers.pvWalkway, inner, closed: true)
+            dxf.crossHatch(CADLayers.pvWalkway, inner, spacing: 0.025, aci: CADLayers.pvWalkway.aci)
+        }
         dxf.line(CADLayers.pvCableTray, at(W.pipe, w.v0), at(W.pipe, w.v1))
-        for (a, b) in w.panels { strip(CADLayers.pvWalkway, W.grating.0, W.grating.1, a, b) }
-        dxf.line(CADLayers.pvRail, at(W.rail, w.v0), at(W.rail, w.v1))
+        dxf.solid(CADLayers.pvLifeline, box(W.rail.0, W.rail.1, w.v0, w.v1), aci: 80)
         for v in w.feet {
-            for a in [W.grating.0, W.grating.1] {
-                dxf.polyline(CADLayers.pvWalkway, [at(a - 0.03, v - 0.03), at(a + 0.03, v - 0.03), at(a + 0.03, v + 0.03), at(a - 0.03, v + 0.03)], closed: true)
+            for a in [W.grating.0 + 0.014, W.grating.1 - 0.014] {
+                dxf.polyline(CADLayers.pvWalkway, box(a - 0.02, a + 0.02, v - 0.02, v + 0.02), closed: true, aci: 6)
             }
         }
         dxf.line(CADLayers.pvLifeline, at(W.lifeline, w.v0), at(W.lifeline, w.v1))
-        for v in w.supports { dxf.circle(CADLayers.pvLifeline, at(W.lifeline, v), r: 0.04) }
+        for v in w.supports {
+            dxf.polyline(CADLayers.pvLifeline, box(W.lifeline - 0.02, W.lifeline + 0.02, v - 0.02, v + 0.02), closed: true, aci: 3)
+        }
         // the band's width across the walkway's start, when the gap runs along a plan axis
         let a = at(0, w.v0), b = at(W.band, w.v0), up = at(0, w.v0 + 1)
         let across = (b.0 - a.0, b.1 - a.1), along = (up.0 - a.0, up.1 - a.1), back = 0.5 / max(1e-9, hypot(along.0, along.1))

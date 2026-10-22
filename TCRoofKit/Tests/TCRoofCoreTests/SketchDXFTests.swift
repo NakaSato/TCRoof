@@ -208,6 +208,36 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual(Double(lines[lines.firstIndex(of: "$EXTMAX")! + 2])!, 6200, accuracy: 300)
     }
 
+    /// Each layer carries its standard settings: colour, linetype, lineweight, plot flag and description; the
+    /// linetypes it uses are declared, and $LTSCALE is the A3 plot scale.
+    func testLayerSettings() throws {
+        var d = SketchDXF()
+        d.line(CADLayers.grid, (0, 0), (40, 0)); d.line(CADLayers.siteFrame, (0, 0), (0, 30)); d.line(CADLayers.tankBeam, (1, 1), (2, 2))
+        let l = lines(d.data())
+        func layer(_ name: String) throws -> Int {
+            try XCTUnwrap(l.indices.first { l[$0] == name && l[$0 - 1] == "2" && l[$0 - 2] == "AcDbLayerTableRecord" })
+        }
+        let g = try layer("TC-GRID")
+        XCTAssertEqual(after(l, g, "62"), "8"); XCTAssertEqual(after(l, g, "6"), "CENTER"); XCTAssertEqual(after(l, g, "370"), "18")
+        XCTAssertEqual(after(l, g, "290"), "1")
+        XCTAssertEqual(after(l, g, "1001"), "AcAecLayerStandard")
+        XCTAssertEqual(after(l, try layer("TC-SITE-FRAME"), "290"), "0", "the frame doesn't plot")
+        XCTAssertEqual(after(l, try layer("Defpoints"), "290"), "0")
+        XCTAssertEqual(after(l, try layer("TC-TANK-BEAM"), "6"), "HIDDEN")
+        // both linetypes declared, nothing else
+        XCTAssertEqual(tableCount(l, "LTYPE"), 5)
+        XCTAssertTrue(l.indices.contains { l[$0] == "AcAecLayerStandard" && l[$0 - 1] == "2" })
+        // 40 m × 30 m in mm on A3: 1 : 125
+        XCTAssertEqual(d.plotScale, 125)
+        XCTAssertEqual(l[l.firstIndex(of: "$LTSCALE")! + 2], "125")
+        var o = SketchDXF.Options(); o.millimetres = false
+        var m = SketchDXF(options: o); m.line(CADLayers.grid, (0, 0), (40, 0)); m.line(CADLayers.grid, (0, 0), (0, 30))
+        XCTAssertEqual(lines(m.data())[lines(m.data()).firstIndex(of: "$LTSCALE")! + 2], "0.125")
+        // the standard: unique names, every one with a description
+        XCTAssertEqual(Set(CADLayers.all.map(\.name)).count, CADLayers.all.count)
+        XCTAssertTrue(CADLayers.all.allSatisfy { $0.name.hasPrefix("TC-") && !$0.description.isEmpty })
+    }
+
     static var all: SketchDXF.Options {
         var o = SketchDXF.Options()
         o.dashes = true; o.opColours = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true; o.skipFillOnly = true; o.centreText = false
@@ -239,8 +269,8 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual((l.count - 1) % 2, 0, "even number of lines")
         XCTAssertEqual(Array(l.suffix(3)), ["0", "EOF", ""])
         XCTAssertEqual(d.layers, ["A", "B"])
-        // layer 0 and the two
-        XCTAssertEqual(tableCount(l, "LAYER"), 3)
+        // layers 0 and Defpoints, and the two
+        XCTAssertEqual(tableCount(l, "LAYER"), 4)
         XCTAssertEqual(l.filter { $0 == "DASHED" }.count, 2, "declared once, used once")
         XCTAssertEqual(tableCount(l, "LTYPE"), 4)
         XCTAssertEqual(d.entityCount, rawEntities(d.data()).count)

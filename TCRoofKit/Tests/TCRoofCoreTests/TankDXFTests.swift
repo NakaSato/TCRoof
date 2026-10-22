@@ -35,8 +35,8 @@ final class TankDXFTests: XCTestCase {
         let out = try XCTUnwrap(TankDXF.build(v))
         let l = t.lines(out.data)
         XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "4")
-        for name in ["GRID", "OUTLINE", "DIM", "OBSTACLE", "NORTH", "TEXT"] { XCTAssertTrue(out.layers.contains(name), name) }
-        let outline = t.entities(out.data).filter { layerOf($0) == "OUTLINE" }
+        for name in ["TC-GRID", "TC-TANK-OUTLINE", "TC-DIM", "TC-OBSTACLE", "TC-NORTH", "TC-TEXT"] { XCTAssertTrue(out.layers.contains(name), name) }
+        let outline = t.entities(out.data).filter { layerOf($0) == "TC-TANK-OUTLINE" }
         let xs = outline.flatMap { [t.double($0, "10"), t.double($0, "11")] }, ys = outline.flatMap { [t.double($0, "20"), t.double($0, "21")] }
         XCTAssertEqual(xs.min()!, 0, accuracy: 1)
         XCTAssertEqual(xs.max()!, TW * 1000, accuracy: 1)
@@ -51,7 +51,7 @@ final class TankDXFTests: XCTestCase {
             return Box(x * 1000, (TH - y - h) * 1000, w * 1000, h * 1000)
         }
         XCTAssertFalse(boxes.isEmpty)
-        let obstacle = t.entities(try XCTUnwrap(TankDXF.build(v)).data).filter { layerOf($0) == "OBSTACLE" }
+        let obstacle = t.entities(try XCTUnwrap(TankDXF.build(v)).data).filter { layerOf($0) == "TC-OBSTACLE" }
         let lines = obstacle.filter { $0.first?.1 == "LINE" }
         XCTAssertFalse(lines.isEmpty)
         // each box's hatch is one HATCH
@@ -72,18 +72,18 @@ final class TankDXFTests: XCTestCase {
         XCTAssertNil(ents.first { t.value($0, "62") != nil }, "layer colours only")
         XCTAssertNil(TankDXF.build(Values()))
         // the north arrow's solid head is outlined
-        XCTAssertGreaterThanOrEqual(ents.filter { layerOf($0) == "NORTH" && $0[0].1 == "LINE" }.count, 4)
+        XCTAssertGreaterThanOrEqual(ents.filter { layerOf($0) == "TC-NORTH" && $0[0].1 == "LINE" }.count, 4)
     }
 
     func testPanelLayout() throws {
         let v = Self.sample(layout: true)
         let l = try XCTUnwrap(TankLayout.current(v))
         let out = try XCTUnwrap(TankDXF.build(v))
-        XCTAssertTrue(out.layers.contains("PV"))
-        XCTAssertTrue(out.layers.contains("PV_GROUP"))
+        XCTAssertTrue(out.layers.contains("TC-PV-MODULE"))
+        XCTAssertTrue(out.layers.contains("TC-PV-TABLE"))
         // one INSERT of the module block per panel switched on
-        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "PV" }.count, l.count)
-        XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("PV"))
+        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "TC-PV-MODULE" }.count, l.count)
+        XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("TC-PV-MODULE"))
     }
 
     /// Each module is an INSERT of one PV_MODULE block; the table outlines are closed polylines.
@@ -93,8 +93,8 @@ final class TankDXFTests: XCTestCase {
         let raw = t.rawEntities(out.data)
         let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }
         XCTAssertEqual(modules.count, l.count)
-        XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "PV" })
-        let tables = raw.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "PV_GROUP" }
+        XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "TC-PV-MODULE" })
+        let tables = raw.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "TC-PV-TABLE" }
         XCTAssertEqual(tables.count, l.builtTables.count)
         XCTAssertTrue(tables.allSatisfy { t.value($0, "70") == "1" })
     }

@@ -5,12 +5,13 @@ import Foundation
 /// volume summary and note (`details`), plus the sub-step 3 panel layout (`TankLayout.current`) when
 /// there is one. Layer colours carry the meaning, so ops keep no colour of their own.
 public enum TankDXF {
+    /// The plan's tags → the team's standard layers (`CADLayers`).
     static let layers: [String: SketchDXF.Layer] = [
-        "grid": .init("GRID", aci: 8), "out": .init("OUTLINE", aci: 7), "dim": .init("DIM", aci: 3), "dimtxt": .init("DIM", aci: 3),
-        "obst": .init("OBSTACLE", aci: 1), "north": .init("NORTH", aci: 7), "txt": .init("TEXT", aci: 7),
-        "beam": .init("BEAM", aci: 8), "sect": .init("SECTION_MARK", aci: 5),
+        "grid": CADLayers.grid, "out": CADLayers.tankOutline, "dim": CADLayers.dim, "dimtxt": CADLayers.dim,
+        "obst": CADLayers.obstacle, "north": CADLayers.north, "txt": CADLayers.text,
+        "beam": CADLayers.tankBeam, "sect": CADLayers.sectionMark,
     ]
-    static let pv = SketchDXF.Layer("PV", aci: 150), pvGroup = SketchDXF.Layer("PV_GROUP", aci: 170)
+    static let pv = CADLayers.pvModule, pvGroup = CADLayers.pvTable
 
     /// nil without spans (no `TankPlan`).
     public static func build(_ v: Values) -> RoofDXF.Output? {

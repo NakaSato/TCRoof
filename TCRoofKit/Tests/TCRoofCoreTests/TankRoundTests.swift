@@ -181,7 +181,7 @@ final class TankRoundTests: XCTestCase {
         TankLayout.save(&v, TankLayout.auto(v), off: [])
         let out = try XCTUnwrap(TankDXF.build(v))
         XCTAssertTrue(String(decoding: out.data, as: UTF8.self).contains("CIRCLE"))
-        XCTAssertTrue(out.layers.contains("OUTLINE")); XCTAssertTrue(out.layers.contains("PV_GROUP"))
+        XCTAssertTrue(out.layers.contains("TC-TANK-OUTLINE")); XCTAssertTrue(out.layers.contains("TC-PV-TABLE"))
     }
 
     // MARK: layout

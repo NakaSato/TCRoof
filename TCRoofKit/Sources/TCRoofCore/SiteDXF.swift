@@ -11,17 +11,16 @@ public enum SiteDXF {
     /// Drawing width in mm when the picture has no scale.
     public static let paperWidth = 400.0
 
-    static let frame = SketchDXF.Layer("FRAME", aci: 8), pvArea = SketchDXF.Layer("PV_AREA", aci: 5),
-               building = SketchDXF.Layer("BUILDING", aci: 4), symbol = SketchDXF.Layer("SYMBOL", aci: 7),
-               north = SketchDXF.Layer("NORTH", aci: 7), text = SketchDXF.Layer("TEXT", aci: 7)
+    static let frame = CADLayers.siteFrame, pvArea = CADLayers.sitePVArea, building = CADLayers.siteBuilding,
+               symbol = CADLayers.siteSymbol, north = CADLayers.north, text = CADLayers.text
     static func layer(_ k: ShapeKind) -> SketchDXF.Layer {
         switch k {
-        case .panelArea: return .init("PANEL_AREA", aci: 1)
-        case .cableRoute: return .init("CABLE", aci: 5)
-        case .measure: return .init("MEASURE", aci: 3)
-        case .craneEntry: return .init("CRANE", aci: 30)
-        case .shade: return .init("SHADE", aci: 30)
-        case .boundary, .pvPoint: return .init("SHAPE", aci: 4)
+        case .panelArea: return CADLayers.sitePanelArea
+        case .cableRoute: return CADLayers.siteCable
+        case .measure: return CADLayers.siteMeasure
+        case .craneEntry: return CADLayers.siteCrane
+        case .shade: return CADLayers.siteShade
+        case .boundary, .pvPoint: return CADLayers.siteShape
         }
     }
 

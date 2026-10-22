@@ -10,12 +10,12 @@ public enum SingleLineDXF {
 
     /// (colour, layer).
     static let colourLayers: [(RGBA, SketchDXF.Layer)] = [
-        (SingleLineLayout.ink, .init("SLD_LINE", aci: 7)), (SingleLineLayout.blue, .init("SLD_NEW", aci: 5)),
-        (SingleLineLayout.green, .init("SLD_OK", aci: 3)), (SingleLineLayout.amber, .init("SLD_WARN", aci: 30)),
-        (SingleLineLayout.red, .init("SLD_MISSING", aci: 1)), (SingleLineLayout.pole, .init("SLD_POLE", aci: 8)),
-        (SingleLineLayout.grey, .init("SLD_ASSUMED", aci: 8)),
+        (SingleLineLayout.ink, CADLayers.sldLine), (SingleLineLayout.blue, CADLayers.sldNew),
+        (SingleLineLayout.green, CADLayers.sldOK), (SingleLineLayout.amber, CADLayers.sldWarn),
+        (SingleLineLayout.red, CADLayers.sldMissing), (SingleLineLayout.pole, CADLayers.sldPole),
+        (SingleLineLayout.grey, CADLayers.sldAssumed),
     ]
-    static let textLayer = SketchDXF.Layer("SLD_TEXT", aci: 7), otherLayer = SketchDXF.Layer("SLD_OTHER", aci: 7)
+    static let textLayer = CADLayers.sldText, otherLayer = CADLayers.sldOther
 
     static func layer(_ op: DrawOp) -> SketchDXF.Layer {
         let colour: RGBA?

@@ -7,10 +7,10 @@ final class SingleLineDXFTests: XCTestCase {
 
     func testLayersAndPaperScale() {
         let out = SingleLineDXF.build(SingleLineTests.fixture())
-        XCTAssertTrue(out.layers.contains("SLD_LINE"))
-        XCTAssertTrue(out.layers.contains("SLD_TEXT"))
-        XCTAssertTrue(out.layers.contains("SLD_NEW"))
-        XCTAssertTrue(out.layers.contains("SLD_POLE"))
+        XCTAssertTrue(out.layers.contains("TC-SLD-LINE"))
+        XCTAssertTrue(out.layers.contains("TC-SLD-TEXT"))
+        XCTAssertTrue(out.layers.contains("TC-SLD-NEW"))
+        XCTAssertTrue(out.layers.contains("TC-SLD-POLE"))
         XCTAssertEqual(t.rawEntities(out.data).count, out.entities)
         let ents = t.entities(out.data)
         for e in ents {
@@ -28,7 +28,7 @@ final class SingleLineDXFTests: XCTestCase {
     func testMissingValueLayer() {
         // the fixture's CB3 has no IC / AF / brand, and TX2…5 no %Z
         XCTAssertFalse(SingleLine.build(SingleLineTests.fixture()).missing.isEmpty)
-        XCTAssertTrue(SingleLineDXF.build(SingleLineTests.fixture()).layers.contains("SLD_MISSING"))
+        XCTAssertTrue(SingleLineDXF.build(SingleLineTests.fixture()).layers.contains("TC-SLD-MISSING"))
     }
 
     func testHVAndLVDiffer() {
@@ -55,11 +55,11 @@ final class SingleLineDXFTests: XCTestCase {
     }
 
     func testLayerByColour() {
-        XCTAssertEqual(SingleLineDXF.layer(.line(Pt(0, 0), Pt(1, 1), width: 1, color: SingleLineLayout.red)).name, "SLD_MISSING")
-        XCTAssertEqual(SingleLineDXF.layer(.line(Pt(0, 0), Pt(1, 1), width: 1, color: SingleLineLayout.grey)).name, "SLD_ASSUMED")
-        XCTAssertEqual(SingleLineDXF.layer(SLSymbols.pole(x: 0, y: 0)).name, "SLD_POLE")
-        XCTAssertEqual(SingleLineDXF.layer(.text("x", at: Pt(0, 0), size: 9, color: SingleLineLayout.red)).name, "SLD_TEXT")
-        XCTAssertEqual(SingleLineDXF.layer(.rect(Box(0, 0, 1, 1), stroke: .black, fill: nil)).name, "SLD_OTHER")
+        XCTAssertEqual(SingleLineDXF.layer(.line(Pt(0, 0), Pt(1, 1), width: 1, color: SingleLineLayout.red)).name, "TC-SLD-MISSING")
+        XCTAssertEqual(SingleLineDXF.layer(.line(Pt(0, 0), Pt(1, 1), width: 1, color: SingleLineLayout.grey)).name, "TC-SLD-ASSUMED")
+        XCTAssertEqual(SingleLineDXF.layer(SLSymbols.pole(x: 0, y: 0)).name, "TC-SLD-POLE")
+        XCTAssertEqual(SingleLineDXF.layer(.text("x", at: Pt(0, 0), size: 9, color: SingleLineLayout.red)).name, "TC-SLD-TEXT")
+        XCTAssertEqual(SingleLineDXF.layer(.rect(Box(0, 0, 1, 1), stroke: .black, fill: nil)).name, "TC-SLD-OTHER")
     }
 
     /// Each symbol is an INSERT of its block: a breaker drawn many times is defined once.
@@ -75,7 +75,7 @@ final class SingleLineDXFTests: XCTestCase {
         let l = t.lines(out.data)
         XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 - 1] == "0" && t.after(l, $0, "2") == "SLD_BREAKER" }.count, 1)
         // a new-equipment (blue) breaker is the same block on the new-equipment layer
-        XCTAssertTrue(inserts.contains { t.value($0, "2") == "SLD_BREAKER" && t.value($0, "8") == "SLD_NEW" })
+        XCTAssertTrue(inserts.contains { t.value($0, "2") == "SLD_BREAKER" && t.value($0, "8") == "TC-SLD-NEW" })
         // every symbol's ops really are the same block geometry: the drawing's ops minus the symbols' plus the blocks
         XCTAssertTrue(drawing.symbols.allSatisfy { $0.range.upperBound <= drawing.sketch.ops.count })
     }

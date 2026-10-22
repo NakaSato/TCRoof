@@ -149,6 +149,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
+- **Layer standard** (`TCRoofCore/CADLayers.swift`, 2026-10-22): every export takes its layers from one list, named
+  `TC-<area>-<item>` (shared `TC-GRID`, `TC-DIM`, `TC-TEXT`, `TC-NORTH`, `TC-SECTION-MARK`, `TC-OBSTACLE`; then
+  `TC-ROOF-*`, `TC-PV-*`, `TC-TANK-*`, `TC-SITE-*`, `TC-SLD-*`). Each layer has its colour, linetype (grid CENTER;
+  beams, keep-out, cable and crane HIDDEN), lineweight, plot flag (the site picture frame and Defpoints don't plot) and
+  a Thai / English description (XDATA `AcAecLayerStandard`, the layer manager's Description). `$LTSCALE` is the plot
+  scale that fits the drawing on A3 (`SketchDXF.plotScale`), so CENTER and HIDDEN print with their paper-millimetre
+  patterns; a sketch's own dash is divided by it. `$LWDISPLAY` is on. Open: map these onto the company's own layer
+  list once its drawing is available as DXF.
 - **Dimensions and hatches** (2026-10-22): the plans' span chains and totals (C1's plan, D1's square and round plans:
   `RoofPlan.Layout.dimensions`, `TankPlan.dimensions`) are DIMENSIONs (`SketchDXF.dimension`), one per span and one per
   total, in place of their lines and texts. Each draws as the sketch did (extension lines, 45° ticks, the text above

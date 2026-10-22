@@ -11,11 +11,24 @@ import Foundation
 /// hold a WIPEOUT (`wipeout`) that hides what lies under it, its frame off. The other options add what the C1 export
 /// never needed.
 public struct SketchDXF: Sendable {
+    /// A layer and its settings in the layer manager (`CADLayers` is the team's standard).
     public struct Layer: Sendable, Hashable {
+        /// A layer's linetype. CENTER and HIDDEN are declared when a layer uses them, in paper millimetres scaled by
+        /// `$LTSCALE`.
+        public enum Linetype: String, Sendable, Hashable { case continuous = "Continuous", center = "CENTER", hidden = "HIDDEN" }
         public var name: String
         /// AutoCAD colour index.
         public var aci: Int
-        public init(_ name: String, aci: Int) { self.name = name; self.aci = aci }
+        public var linetype: Linetype
+        /// Lineweight in 1/100 mm (25 = 0.25 mm); -3 is the CAD program's default.
+        public var lineweight: Int
+        /// False: shown but never plotted.
+        public var plot: Bool
+        /// The layer manager's Description column.
+        public var description: String
+        public init(_ name: String, aci: Int, linetype: Linetype = .continuous, lineweight: Int = -3, plot: Bool = true, description: String = "") {
+            self.name = name; self.aci = aci; self.linetype = linetype; self.lineweight = lineweight; self.plot = plot; self.description = description
+        }
     }
 
     public struct Options: Sendable {
@@ -85,7 +98,7 @@ public struct SketchDXF: Sendable {
     private var ents: [String] = []
     private var count: [String: Int] = [:]
     private var order: [String] = []
-    private var aciOf: [String: Int] = [:]
+    private var layerOf: [String: Layer] = [:]
     /// The DASHED pattern (dash, gap) in drawing units, from the first dashed op.
     private var dashPattern: (Double, Double)?
     /// What the entities cover, in drawing units (text by an estimate of its width).
@@ -115,7 +128,7 @@ public struct SketchDXF: Sendable {
 
     private mutating func use(_ l: Layer) {
         if inBlock { return }
-        if count[l.name] == nil { order.append(l.name); aciOf[l.name] = l.aci }
+        if count[l.name] == nil { order.append(l.name); layerOf[l.name] = l }
         count[l.name, default: 0] += 1
     }
     /// Handle and owner placeholders, given their values when the file is written.
@@ -479,6 +492,16 @@ public struct SketchDXF: Sendable {
 
     // MARK: file
 
+    /// The plot scale (1 : n) that fits the drawing on an A3 sheet (400 × 277 mm usable), from the usual scales.
+    public var plotScale: Double {
+        let e = extents, mm = options.millimetres ? 1.0 : 1000
+        let need = max((e.max.x - e.min.x) * mm / 400, (e.max.y - e.min.y) * mm / 277)
+        return [1, 2, 5, 10, 20, 25, 50, 75, 100, 125, 200, 250, 500, 1000, 2000, 5000].first { $0 >= need } ?? need.rounded(.up)
+    }
+    /// `$LTSCALE`: the plot scale, so a CENTER or HIDDEN line prints with its paper-millimetre pattern (× 0.001 in a
+    /// metre drawing).
+    var ltScale: Double { plotScale * (options.millimetres ? 1 : 0.001) }
+
     /// What the entities cover (drawing units), or a unit square when there are none.
     var extents: (min: (x: Double, y: Double), max: (x: Double, y: Double)) {
         guard lo.x <= hi.x, lo.y <= hi.y else { return (min: (x: 0, y: 0), max: (x: 1, y: 1)) }
@@ -488,6 +511,7 @@ public struct SketchDXF: Sendable {
     /// Header, classes, tables, blocks, entities and objects: R2000 (AC1015), CRLF line ends, TIS-620 bytes.
     public func data() -> Data {
         func n(_ x: Double) -> String { Self.num((x * 1000).rounded() / 1000) }
+        func n6(_ x: Double) -> String { Self.num((x * 1e6).rounded() / 1e6) }
         var next = 0
         func h() -> String { next += 1; return String(next, radix: 16, uppercase: true) }
         /// `a` with each placeholder handle numbered and each placeholder owner set to `owner`.
@@ -528,18 +552,34 @@ public struct SketchDXF: Sendable {
         for name in ["ByBlock", "ByLayer", "Continuous"] {
             lt += record("LTYPE", tLtype, "AcDbLinetypeTableRecord", name) + ["3", name == "Continuous" ? "Solid line" : "", "72", "65", "73", "0", "40", "0"]
         }
+        // the layers' linetypes, in paper millimetres at $LTSCALE 1 (× 0.001 in a metre drawing, see `ltScale`)
+        let used = Set(order.compactMap { layerOf[$0]?.linetype })
+        var ltCount = 3
+        for (type, desc, pattern) in [(Layer.Linetype.center, "Center ____ _ ____ _", [12.0, -3, 3, -3]), (.hidden, "Hidden __ __ __", [4.0, -2])]
+            where used.contains(type) {
+            lt += record("LTYPE", tLtype, "AcDbLinetypeTableRecord", type.rawValue)
+                + ["3", desc, "72", "65", "73", String(pattern.count), "40", n(pattern.map(abs).reduce(0, +))]
+                + pattern.flatMap { ["49", n($0), "74", "0"] }
+            ltCount += 1
+        }
+        // a sketch's own dash, in drawing units: divided by $LTSCALE so it prints as drawn
         if let (d, g) = dashPattern {
+            let k = ltScale
             lt += record("LTYPE", tLtype, "AcDbLinetypeTableRecord", "DASHED")
-                + ["3", "Dashed __ __", "72", "65", "73", "2", "40", n(d + g), "49", n(d), "74", "0", "49", n(-g), "74", "0"]
+                + ["3", "Dashed __ __", "72", "65", "73", "2", "40", n((d + g) / k), "49", n(d / k), "74", "0", "49", n(-g / k), "74", "0"]
+            ltCount += 1
         }
-        out += table("LTYPE", tLtype, dashPattern == nil ? 3 : 4, lt)
-        // layer 0 (the blocks' layer) first, then the drawing's
-        let names = ["0"] + order.filter { $0 != "0" }
+        out += table("LTYPE", tLtype, ltCount, lt)
+        // layer 0 (the blocks' layer) and Defpoints (the dimensions' points, never plotted) first, then the drawing's
+        let layers = [Layer("0", aci: 7), Layer("Defpoints", aci: 7, plot: false)] + order.filter { $0 != "0" && $0 != "Defpoints" }.map { layerOf[$0]! }
         var la: [String] = []
-        for l in names {
-            la += record("LAYER", tLayer, "AcDbLayerTableRecord", l) + ["62", String(aciOf[l] ?? 7), "6", "Continuous", "370", "-3", "390", normal]
+        for l in layers {
+            la += record("LAYER", tLayer, "AcDbLayerTableRecord", l.name)
+                + ["62", String(l.aci), "6", l.linetype.rawValue, "290", l.plot ? "1" : "0", "370", String(l.lineweight), "390", normal]
+            // the description, where AutoCAD keeps it
+            if !l.description.isEmpty { la += ["1001", "AcAecLayerStandard", "1000", "", "1000", l.description] }
         }
-        out += table("LAYER", tLayer, names.count, la)
+        out += table("LAYER", tLayer, layers.count, la)
         // Standard stays as CAD programs expect it; the text uses `textStyle`
         let standard = ts.name.uppercased() == "STANDARD"
         var st: [String] = [], textStyleHandle = ""
@@ -551,7 +591,8 @@ public struct SketchDXF: Sendable {
         }
         out += table("STYLE", tStyle, standard ? 1 : 2, st)
         out += table("VIEW", tView, 0, []) + table("UCS", tUCS, 0, [])
-        out += table("APPID", tAppid, 1, record("APPID", tAppid, "AcDbRegAppTableRecord", "ACAD"))
+        out += table("APPID", tAppid, 2, record("APPID", tAppid, "AcDbRegAppTableRecord", "ACAD")
+                     + record("APPID", tAppid, "AcDbRegAppTableRecord", "AcAecLayerStandard"))
         // a style per dimension text height: ticks, the text above the line in the drawing's font, two decimals in metres
         var dimRecords: [String] = []
         for ds in dimStyles {
@@ -632,6 +673,8 @@ public struct SketchDXF: Sendable {
                       "9", "$LIMMIN", "10", n(e.min.x), "20", n(e.min.y),
                       "9", "$LIMMAX", "10", n(e.max.x), "20", n(e.max.y),
                       "9", "$TEXTSTYLE", "7", ts.name, "9", "$CLAYER", "8", "0", "9", "$DIMSTYLE", "2", "Standard",
+                      "9", "$LTSCALE", "40", n6(ltScale), "9", "$PSLTSCALE", "70", "1", "9", "$CELTYPE", "6", "BYLAYER",
+                      "9", "$LWDISPLAY", "290", "1",
                       "9", "$LUNITS", "70", "2", "9", "$HANDSEED", "5", String(next + 1, radix: 16, uppercase: true),
                       "9", "$MEASUREMENT", "70", "1", "9", "$INSUNITS", "70", options.millimetres ? "4" : "6", "0", "ENDSEC"]
         return Self.tis620((header + out).joined(separator: "\r\n") + "\r\n")

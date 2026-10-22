@@ -18,7 +18,7 @@ public enum RoofMountYield {
             public var id: String
             public var modules: Int
             public var tiltDeg: Double, azimuthDeg: Double
-            /// SolarModel's kWh/kWp (the fallback).
+            /// SolarModel's kWh/kWp (the fallback; the layout's own face yield is `PlaneYield`'s).
             public var clearSkyYield: Double
         }
         public var faces: [Face]
@@ -48,6 +48,12 @@ public enum RoofMountYield {
         public var mwh: Double, kWhPerKWp: Double
     }
 
+    /// One step of the loss chain: its Thai label and the % change over it.
+    public struct LossStep: Equatable, Sendable {
+        public var label: String
+        public var percent: Double
+    }
+
     public struct Estimate: Equatable, Sendable {
         public var faces: [FaceYield]
         public var kWp: Double
@@ -63,6 +69,14 @@ public enum RoofMountYield {
         public var source: Source
         /// What was assumed (ค่าสมมติ).
         public var assumptions: [String]
+        /// MWh per month, January first (P50, year 1); empty from SolarModel.
+        public var monthlyMWh: [Double] = []
+        /// The loss chain from the horizontal irradiation to the grid, steps that change nothing left out; empty from
+        /// SolarModel.
+        public var losses: [LossStep] = []
+        /// MWh over `lifetimeYears` with the module ageing (PVsyst's, linear); nil from SolarModel.
+        public var lifetimeMWh: Double?
+        public var lifetimeYears = 0
 
         public var isHourly: Bool { if case .hourly = source { return true }; return false }
 
@@ -89,8 +103,10 @@ public enum RoofMountYield {
             if !st.sizesAssumed { sizes += st.sizes }
         }
         return Inputs(faces: used.map { f in
-                          Inputs.Face(id: f.face.id, modules: f.modules, tiltDeg: f.face.tilt * 180 / .pi,
-                                      azimuthDeg: f.face.azimuth, clearSkyYield: f.yield)
+                          let tilt = f.face.tilt * 180 / .pi
+                          let fromSouth = (f.face.azimuth - 180 + 540).truncatingRemainder(dividingBy: 360) - 180
+                          return Inputs.Face(id: f.face.id, modules: f.modules, tiltDeg: tilt, azimuthDeg: f.face.azimuth,
+                                             clearSkyYield: SolarModel.yield(lat: layout.latitude, tilt: tilt, azimuthFromSouth: fromSouth))
                       },
                       moduleWp: s.moduleWp, moduleLength: s.moduleLength, moduleWidth: s.moduleWidth,
                       inverterSizes: sizes, roofSections: max(1, job.modules.filter { $0.type == .roof }.count),
@@ -171,12 +187,27 @@ public enum RoofMountYield {
         if let a = inv.assumed { assumptions.insert(a, at: 0) }
         if module.stc.pNomW != i.moduleWp { assumptions.append(String(format: "แผง %.0f W", module.stc.pNomW)) }
         let d = near.dataset
-        return Estimate(faces: out, kWp: kWp, mwh: r.energies.eGrid / 1000, p90MWh: r.probability.p90OneYear / 1000,
-                        kWhPerKWp: r.specificYield, performanceRatio: r.performanceRatio,
-                        inverterLine: "\(inv.spec.manufacturer) \(inv.spec.model) × \(inv.count) | " + String(format: "DC/AC %.2f", r.dcAcRatio),
-                        source: .hourly(dataset: d.source, place: d.place, distanceKm: near.distanceKm, attribution: d.attribution),
-                        assumptions: assumptions)
+        var e = Estimate(faces: out, kWp: kWp, mwh: r.energies.eGrid / 1000, p90MWh: r.probability.p90OneYear / 1000,
+                         kWhPerKWp: r.specificYield, performanceRatio: r.performanceRatio,
+                         inverterLine: "\(inv.spec.manufacturer) \(inv.spec.model) × \(inv.count) | " + String(format: "DC/AC %.2f", r.dcAcRatio),
+                         source: .hourly(dataset: d.source, place: d.place, distanceKm: near.distanceKm, attribution: d.attribution),
+                         assumptions: assumptions)
+        e.monthlyMWh = r.monthly.sorted { $0.month < $1.month }.map { $0.eGrid / 1000 }
+        e.losses = zip(r.lossDiagram, lossLabels).compactMap { step, th in
+            abs(step.percent) < 0.05 ? nil : LossStep(label: th, percent: step.percent)
+        }
+        let years = r.ageing
+        e.lifetimeMWh = years.reduce(0, +) / 1000
+        e.lifetimeYears = years.count
+        return e
     }
+
+    /// `YieldResult.lossDiagram`'s steps in Thai, in its order.
+    static let lossLabels = [
+        "แสงบนระนาบแผง (Perez)", "มุมตกกระทบ (IAM)", "เงาบัง", "ฝุ่นบนแผง", "แสงด้านหลังแผง (สองหน้า)",
+        "ความเข้มแสงต่ำ", "อุณหภูมิแผง", "คุณภาพแผง LID และ mismatch", "สายไฟ DC", "กระแสเกิน MPPT",
+        "ประสิทธิภาพอินเวอร์เตอร์", "ตัดกำลังเกินอินเวอร์เตอร์ (clipping)", "สายไฟ AC", "หยุดทำงานและไฟกลางคืน",
+    ]
 
     /// SolarModel's estimate (what `RoofMountQuantities.energy` adds up).
     static func clearSky(_ i: Inputs, reason: String) -> Estimate {
@@ -188,5 +219,24 @@ public enum RoofMountYield {
         let mwh = faces.reduce(0) { $0 + $1.mwh }, kWp = i.kWp
         return Estimate(faces: faces, kWp: kWp, mwh: mwh, p90MWh: nil, kWhPerKWp: kWp > 0 ? mwh * 1000 / kWp : 0,
                         performanceRatio: nil, inverterLine: nil, source: .clearSky(reason: reason), assumptions: [])
+    }
+}
+
+extension RoofMount {
+    /// A1's GPS as the layouts' site: its latitude (nil without GPS, the callers then take `defaultLatitude`) and its
+    /// longitude (nil without a latitude, so a default latitude is never paired with a real longitude).
+    public static func site(_ job: Job) -> (latitude: Double?, longitude: Double?) {
+        let gps = job.values.text("gps")
+        guard let lat = latitude(gps: gps) else { return (nil, nil) }
+        return (lat, longitude(gps: gps))
+    }
+
+    /// The roof's layout as the job keeps it, at the job's site, and its energy as C1's card works it out
+    /// (`RoofMountYield.estimate`), for the report and the workbook. Slow on the first call at a site: not on the
+    /// main thread.
+    public static func printed(_ v: Values, job: Job) -> (layout: RoofMountLayout, energy: RoofMountYield.Estimate) {
+        let s = site(job)
+        let m = layout(v, latitude: s.latitude, longitude: s.longitude).layout
+        return (m, RoofMountYield.estimate(RoofMountYield.inputs(m, job: job)))
     }
 }

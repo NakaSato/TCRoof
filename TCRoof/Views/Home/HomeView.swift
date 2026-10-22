@@ -215,6 +215,7 @@ struct HomeView: View {
         case .calendar(let day): PlanCalendarView(day: day)
         case .stationDocs(let key): if let job = job(key) { StationDocsScreen(job: job) }
         case .records: InstallRecordsView()
+        case .claims(let month): ClaimScreen(month: month)
         }
     }
 
@@ -363,6 +364,7 @@ struct HomeView: View {
         case .inspection(let key): openRecord(.inspection(job: key), job: key)
         case .homework(let key): openRecord(.homework(job: key), job: key)
         case .records: feedLink = .records
+        case .claims(let month): feedLink = .claims(month: month)
         case .driveFolder(let url): openURL(url)
         case .share(let url): shareURL = SharedLink(url: url)
         case .remindLater, .home: break

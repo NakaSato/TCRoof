@@ -39,7 +39,7 @@ extension TankLayout {
     /// has fewer modules than `best` and never less energy than its layout), the wider ones the spec's coarser pass
     /// (rows 0.20 m, columns 0.10 m), and a wider winner is searched again on the 5 cm grid. The year is sampled more
     /// coarsely than `TankShade` (every 6th day, half hours), which ranks the gaps the same.
-    public static func bestEnergy(_ v: Values, latitude: Double, base: Params? = nil) -> EnergySearch? {
+    public static func bestEnergy(_ v: Values, latitude: Double, longitude: Double? = nil, base: Params? = nil) -> EnergySearch? {
         let base = base ?? defaults(v)
         guard TankPoints.tankSize(v) != nil else { return nil }
         let objects = TankShade.objects(v), az = Tank.azimuth(v).map(Double.init), exposed = Tank.exposed(v) ?? 0
@@ -50,7 +50,7 @@ extension TankLayout {
             guard l.count > 0 else { return GapTrial(gap: g, params: p, modules: 0, kWp: 0, mwh: 0, rowLoss: 0) }
             let sim = TankShade.Sim(layout: l, objects: objects, azimuth: az, exposed: exposed)
             let r = sim.run(latitude: latitude, dayStep: 6, minutes: 30)
-            let y = yields[l.turn] ?? l.yield(latitude: latitude, facing: sim.facing)
+            let y = yields[l.turn] ?? l.yield(latitude: latitude, longitude: longitude, facing: sim.facing)
             yields[l.turn] = y
             return GapTrial(gap: g, params: p, modules: l.count, kWp: l.kWp, mwh: l.kWp * y / 1000 * (1 - r.rowLoss - r.objectLoss), rowLoss: r.rowLoss)
         }

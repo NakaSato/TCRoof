@@ -244,9 +244,9 @@ struct Fill {
         // NO.224 has no cells for the roof PV layout (docs/specs/roof-pv-layout.md §7): its figures and BOQ go into the
         // blank rows 38–39 under the roof's options, as the tank sheet does with its extras
         if RoofMount.printable(d) {
-            let layout = RoofMount.layout(d, latitude: RoofMount.latitude(gps: job.values.text("gps"))).layout
+            let (layout, energy) = RoofMount.printed(d, job: job)
             if layout.quantities.modules > 0 {
-                a.raw("A38", RoofMount.summaryLine(layout))
+                a.raw("A38", RoofMount.summaryLine(layout, energy: energy.mwh))
                 a.raw("A39", RoofMount.boqLine(layout.quantities) + " | " + RoofMount.loadLine(layout.quantities))
             }
         }
@@ -269,8 +269,8 @@ struct Fill {
         if let from = TankDesign.current(d), let sum = TankDesign.summary(d) { a.raw("N19", "แบบ กปภ. \(from.design.size) | " + sum.counts) }
         // the stored panel layout in the blank rows 37–38 above the photo pages (docs/specs/tank-drawing-swift.md §5)
         if let l = TankLayout.current(d), l.count > 0 {
-            let lat = RoofMount.latitude(gps: job.values.text("gps")) ?? RoofMount.defaultLatitude
-            a.raw("A37", l.summaryLine(latitude: lat, facing: TankLayout.facing(d)))
+            let (lat, lon) = RoofMount.site(job)
+            a.raw("A37", l.summaryLine(latitude: lat ?? RoofMount.defaultLatitude, longitude: lon, facing: TankLayout.facing(d)))
             a.raw("A38", l.boqLine)
         }
         let ob = d.photos("obstPhotos"); a.pic("A20:Z32", img(ob.first))

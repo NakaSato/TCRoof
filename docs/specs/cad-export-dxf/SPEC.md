@@ -10,7 +10,7 @@ Every drawing TCRoof already makes as a `Sketch` (C1 roof plan, SLD, D1 tank lay
 
 | Option | DWG read | DWG write | DXF | Offline | Cost | Notes |
 |---|---|---|---|---|---|---|
-| **Own DXF writer (this spec)** | – | – | write R12 | yes | free | Built: `TCRoofCore/SketchDXF.swift`, used by C1, the SLD, D1 and A2 |
+| **Own DXF writer (this spec)** | – | – | write R2000 | yes | free | Built: `TCRoofCore/SketchDXF.swift`, used by C1, the SLD, D1 and A2 |
 | ODA File Converter (Mac/Windows desktop) | yes | yes | yes | yes | free | Converts DXF ↔ DWG in batches. Not an iOS library |
 | Autodesk Platform Services (Viewer + Model Derivative) | view only | – | view | no | free tier, then usage-billed | Shown in a `WKWebView`; needs an Autodesk account |
 | LibreDWG / libdxfrw / dxflib | partial | partial | yes | yes | free | **GPL**: cannot ship in a closed App Store app |
@@ -131,9 +131,39 @@ are not at a real size. Translucent tints (a model's area) are not written; the 
 
 Not written by any export: fills (R12 has no fill short of `SOLID`), photos (an outline only), bold, line widths.
 
+Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` and LibreCAD):
+- **Text style `CORDIA`**: the STYLE table holds `STANDARD` (txt) and `CORDIA` (`cordia.shx`, width factor 0.85, the
+  team's Thai SHX font); every `TEXT` names it (group 7) with width 0.85 (group 41), and `$TEXTSTYLE` is `CORDIA`. A
+  Thai SHX font reads the TIS-620 bytes as they are written, so the codepage stays. Before, the text used the CAD
+  program's default font, which has no Thai (the letters showed as boxes). A computer without `cordia.shx` gets the CAD
+  program's font substitution prompt; copy the font into its Fonts folder.
+- **Extents and view**: `$EXTMIN` / `$EXTMAX` and `$LIMMIN` / `$LIMMAX` from what the entities cover (text by an estimate
+  of its width), and a VPORT table whose `*ACTIVE` view is centred on them with a 5 % margin, so the file opens framed.
+- **Standard DXF R2000** (`AC1015`, replacing R12 on 2026-10-22): every object has a handle and its owner, entities
+  carry their subclass markers, and the file has every standard table (VPORT, LTYPE ByBlock / ByLayer / Continuous,
+  LAYER with `0`, STYLE `Standard` + `CORDIA`, VIEW, UCS, APPID `ACAD`, DIMSTYLE `Standard`, BLOCK_RECORD), the
+  `*Model_Space` / `*Paper_Space` blocks, a CLASSES section and OBJECTS (the root dictionary, `ACAD_GROUP`, the layouts
+  `Model` / `Layout1`, `ACAD_MLINESTYLE`, `ACAD_PLOTSTYLENAME`). `ezdxf audit` finds no errors; LibreCAD opens it
+  (its `dxf2pdf` needs `-a` to fit the page). Shapes are LWPOLYLINEs.
+- **Wipeouts under PV modules**: each D1 module block (`PV_MODULE_<w>x<h>`) and each C1 แผงบนหลังคา module starts with a
+  WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
+  off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
+  ignores WIPEOUT and shows the lines under it.
+- **Objects, not loose lines**: a polyline, a rectangle, a polygon and an outline are one LWPOLYLINE each (closed for the
+  shapes). The SLD's symbols are BLOCKs placed by INSERTs (`SingleLineDrawing.symbols`, marked where the layout draws
+  them: `SLD_BREAKER`, `SLD_BREAKER_DRAWOUT`, `SLD_TRANSFORMER`, `SLD_METER`, `SLD_CT`, `SLD_POLE`, `SLD_HV_SWITCH`,
+  `SLD_HV_DEVICE`, `SLD_ARRESTER`, `SLD_CABLE_TERMINATIONS`, `SLD_INVERTER`, `SLD_DC_DISCONNECT`, `SLD_PV_ARRAY`,
+  `SLD_EMERGENCY`, `SLD_LOAD`, `SLD_GROUND`, `SLD_LINE_BREAK`), and each D1 module an INSERT of `PV_MODULE_<w>x<h>`. Block
+  bodies are on layer 0 in colour BYBLOCK, so an insert shows its own layer and colour (a new-equipment breaker is the same
+  block on `SLD_NEW`). A symbol whose geometry differs from its name's block gets its own (`SLD_HV_SWITCH-2`), so the
+  drawing never changes; `SketchDXF.Symbol` marks any sketch's symbols the same way. Plain wires, grid lines and hatch
+  strokes stay LINEs. The roof golden files hold the same segments, circles and texts as before.
+- **Symbols**: `m²` / `m³` become ตร.ม. / ลบ.ม.; ± → `%%p`; ø, φ, ⌀ → `%%c`; — − → `-`; → `->`; ≥ ≤ ≠ ≈ … ² ³ ¾ quotes ✓ ✕
+  Ω to ASCII. A `?` left in a file is a value the survey hasn't got yet (`IC ? kA`, `?AF`).
+
 ## Open questions
 
 1. Does PEA (or PWA) accept DXF in the permit pack, or must it be DWG / PDF only?
 2. SLD in real scale or paper scale (A3 sheet in mm, 1:1 with the PDF)? Paper scale is simpler for a schematic.
 3. Should a title block (company, job, date, signer) be drawn into each DXF?
-4. Is the TIS-620 codepage enough, or does any customer's CAD need a Unicode font (`\U+0E01` escapes, R2000+ format)?
+4. ~~Is the TIS-620 codepage enough?~~ Answered 2026-10-22: TIS-620 with the team's `cordia.shx` (width 0.85), above.

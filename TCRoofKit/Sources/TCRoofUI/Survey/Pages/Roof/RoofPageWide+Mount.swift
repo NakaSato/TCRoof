@@ -11,11 +11,13 @@ extension RoofPageWide {
     enum MountSelection: Equatable { case slot(RoofMountLayout.SlotRef), area(Int) }
 
     var latitude: Double? { RoofMount.latitude(gps: job.values.text("gps")) }
+    /// With a latitude only, so the faces in use come from the hourly engine near the bundled weather (`PlaneYield`).
+    var longitude: Double? { RoofMount.site(job).longitude }
 
     /// The layout on screen; the offscreen render (no task runs there) works it out in place.
     var shownMount: RoofMountLayout? {
         if let mount { return mount }
-        return scrolls || mode != .pv ? nil : RoofMount.layout(values, latitude: latitude).layout
+        return scrolls || mode != .pv ? nil : RoofMount.layout(values, latitude: latitude, longitude: longitude).layout
     }
     var mountChoice: RoofMount.Choice { RoofMount.choice(values) }
 
@@ -27,9 +29,9 @@ extension RoofPageWide {
     /// Lays the roof out (the best layout when the inputs changed), keeps a fresh search's placements on the job.
     func refreshMount() async {
         guard mode == .pv else { return }
-        let v = values, lat = latitude
+        let v = values, lat = latitude, lon = longitude
         mountBusy = true
-        let result = await Task.detached(priority: .userInitiated) { RoofMount.layout(v, latitude: lat) }.value
+        let result = await Task.detached(priority: .userInitiated) { RoofMount.layout(v, latitude: lat, longitude: lon) }.value
         guard !Task.isCancelled else { return }
         if result.fresh {
             mountTried = (result.layout.faces.map(\.tried).reduce(0, +), result.layout.quantities.modules)

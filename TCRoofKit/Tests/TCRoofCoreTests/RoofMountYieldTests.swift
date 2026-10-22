@@ -39,7 +39,7 @@ final class RoofMountYieldTests: XCTestCase {
         // the south face beats the north face
         let s = try XCTUnwrap(e.faces.first { $0.id == "S" }), n = try XCTUnwrap(e.faces.first { $0.id == "N" })
         XCTAssertGreaterThan(s.kWhPerKWp, n.kWhPerKWp)
-        // within a quarter of the clear-sky model, which the layout's face choice still uses
+        // within a quarter of the clear-sky model (the fallback)
         let clear = RoofMountYield.clearSky(i, reason: "")
         XCTAssertEqual(e.mwh / clear.mwh, 1, accuracy: 0.25)
     }
@@ -84,5 +84,35 @@ final class RoofMountYieldTests: XCTestCase {
         XCTAssertNotNil(RoofMountYield.moduleSpec(catalogID: "p570"))
         XCTAssertNil(RoofMountYield.moduleSpec(catalogID: "p620"))
         XCTAssertNil(RoofMountYield.catalogModule(wp: 600, length: 2.28, width: 1.13))
+    }
+
+    /// The report's figures (preliminary-energy-yield.md §11): monthly, the loss chain, the lifetime, the range.
+    func testTheReportFigures() throws {
+        let e = RoofMountYield.estimate(RoofMountYield.inputs(Self.layout, job: Self.job(gps: "13.80, 100.55")))
+        XCTAssertTrue(e.isHourly)
+        XCTAssertEqual(e.monthlyMWh.count, 12)
+        XCTAssertEqual(e.monthlyMWh.reduce(0, +), e.mwh, accuracy: e.mwh * 1e-6)
+        XCTAssertEqual(RoofMountYield.lossLabels.count, 14)
+        XCTAssertFalse(e.losses.isEmpty)
+        XCTAssertTrue(e.losses.allSatisfy { abs($0.percent) >= 0.05 })
+        // no bifacial rear here, so its step is left out; temperature always costs something in Bangkok
+        XCTAssertFalse(e.losses.contains { $0.label.contains("สองหน้า") })
+        XCTAssertLessThan(try XCTUnwrap(e.losses.first { $0.label == "อุณหภูมิแผง" }).percent, -3)
+        // 25 years with 0.4 %/year ageing: about 95 % of 25 × year one
+        XCTAssertEqual(e.lifetimeYears, 25)
+        XCTAssertEqual(try XCTUnwrap(e.lifetimeMWh) / (25 * e.mwh), 0.95, accuracy: 0.01)
+        let head = RoofMountYield.headline(e)
+        XCTAssertTrue(head.hasPrefix(String(format: "พลังงานปีแรก %.1f–%.1f MWh (P90–P50)", try XCTUnwrap(e.p90MWh), e.mwh)), head)
+        XCTAssertTrue(RoofMountYield.sourceReportLine(e).contains("PVGIS © European Union"))
+        XCTAssertTrue(try XCTUnwrap(RoofMountYield.lossLine(e)).contains("อุณหภูมิแผง −"))
+        let chart = try XCTUnwrap(RoofMountYield.monthlyChart(e))
+        XCTAssertEqual(chart.ops.filter { if case .rect = $0 { return true }; return false }.count, 13)   // the background and 12 bars
+        // SolarModel's estimate: one figure, marked, no chart or chain
+        let clear = RoofMountYield.estimate(RoofMountYield.inputs(Self.layout, job: Self.job(gps: nil)))
+        XCTAssertTrue(RoofMountYield.headline(clear).contains("(ท้องฟ้าใส)"))
+        XCTAssertNil(RoofMountYield.monthlyChart(clear))
+        XCTAssertNil(RoofMountYield.lossLine(clear))
+        XCTAssertNil(RoofMountYield.lifetimeLine(clear))
+        XCTAssertEqual(RoofMountYield.grouped(4512.4), "4,512")
     }
 }

@@ -8,6 +8,8 @@ struct AppNotification: Identifiable {
         case survey, install, syncPending, saved
         /// A tool due for calibration, today's daily report not sent by 17:00, and a post of the project feed.
         case calibration, report, feed(FeedPost.Kind)
+        /// A manager's decision on this person's expense claim.
+        case claim(approved: Bool)
     }
     let id: String
     let kind: Kind
@@ -71,7 +73,16 @@ struct AppNotification: Identifiable {
             out.append(.init(id: "saved-\(j.id.uuidString)-\(saved.millis)", kind: .saved, title: "บันทึกขึ้น Drive แล้ว",
                              detail: "\(name.isEmpty ? "งานสำรวจ" : name) | \(j.photoCount) ภาพ", date: saved))
         }
+        out += ClaimReviews.shared.recent.map(claim)
         return out.sorted { a, b in a.isToday != b.isToday ? a.isToday : a.date > b.date }
+    }
+
+    /// A claim decision of the last 7 days; one sent back is to do.
+    @MainActor private static func claim(_ r: TravelClaim.Review) -> AppNotification {
+        let plan = ClaimNotification.plan(r)
+        return .init(id: plan.bellID, kind: .claim(approved: r.decision == .approved), title: plan.title,
+                     detail: plan.body + " | " + plan.sub, date: Date(timeIntervalSince1970: Double(r.reviewedAt) / 1000),
+                     link: .claims(month: r.month), todo: r.decision == .returned)
     }
 
     /// `ยังไม่ได้ส่งรายงานประจำวัน` once 17:00 has passed on a working install day whose report isn't signed.

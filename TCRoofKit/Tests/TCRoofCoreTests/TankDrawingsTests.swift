@@ -23,6 +23,44 @@ final class TankDrawingsTests: XCTestCase {
         XCTAssertTrue(texts(plan).contains { $0.hasPrefix("แผงลาดลงด้านผนังล่าง") })
     }
 
+    /// The printed plan (tank-mounting-layout.md §5): each table's rafters, rails, clamps and lug, counted as the BOQ.
+    func testThePrintedPlanDrawsTheStructureAsCounted() throws {
+        let v = tank(), l = try XCTUnwrap(TankLayout.current(v))
+        let parts = l.builtTables.map(l.structure)
+        XCTAssertEqual(parts.reduce(0) { $0 + $1.rafters.count }, l.bom.rafters)
+        XCTAssertEqual(parts.reduce(0) { $0 + $1.clamps.count }, l.bom.railClamps)
+        XCTAssertEqual(parts.count, l.bom.groundLugs)
+        XCTAssertTrue(parts.allSatisfy { $0.rails.count == 4 })
+        // rails add up to the BOQ's length, and every clamp, rafter and lug sits on its table
+        let railLength = parts.flatMap(\.rails).reduce(0.0) { $0 + hypot($1.1.x - $1.0.x, $1.1.y - $1.0.y) }
+        XCTAssertEqual(railLength, l.bom.railLength, accuracy: 1e-6)
+        for (t, s) in zip(l.builtTables, parts) {
+            let inside = { (p: Pt) in p.x >= t.x - 1e-6 && p.x <= t.x + t.w + 1e-6 && p.y >= t.y - 1e-6 && p.y <= t.y + t.h + 1e-6 }
+            XCTAssertTrue((s.clamps + [s.lug] + s.rafters.flatMap { [$0.0, $0.1] }).allSatisfy(inside))
+        }
+        // the printed plan adds them and a legend; the screen's plan is unchanged
+        let plain = try XCTUnwrap(TankDrawings.layoutPlan(v, l)), printed = try XCTUnwrap(TankDrawings.layoutPlan(v, l, structure: true))
+        XCTAssertGreaterThan(printed.height, plain.height)
+        XCTAssertGreaterThanOrEqual(printed.ops.count - plain.ops.count, l.bom.rafters + 4 * parts.count + l.bom.railClamps + l.bom.groundLugs)
+        let t = texts(printed)
+        XCTAssertTrue(t.contains("จุดยึดราง (rail clamp) \(l.bom.railClamps)"))
+        XCTAssertTrue(t.contains("ground lug \(l.bom.groundLugs)"))
+        XCTAssertTrue(t.contains("คานเอียง (rafter) \(l.bom.rafters)"))
+    }
+
+    /// Turned layouts (each wall facing south) keep the rafters up the slope and the rails along the row.
+    func testTheStructureFollowsTheTurn() throws {
+        for az in [0, 90, 180, 270] {
+            var v = tank()
+            v[Tank.Key.azimuth] = .text(String(az))
+            TankLayout.save(&v, TankLayout.auto(v), off: [])
+            let l = try XCTUnwrap(TankLayout.current(v)), t = try XCTUnwrap(l.builtTables.first), s = l.structure(t)
+            let alongX = t.w >= t.h
+            for (a, b) in s.rails { XCTAssertEqual(alongX ? a.y : a.x, alongX ? b.y : b.x, accuracy: 1e-9, "az \(az)") }
+            for (a, b) in s.rafters { XCTAssertEqual(alongX ? a.x : a.y, alongX ? b.x : b.y, accuracy: 1e-9, "az \(az)") }
+        }
+    }
+
     func testSectionsFollowTheGround() throws {
         let partly = texts(try XCTUnwrap(TankDrawings.section(tank(), across: false)))
         XCTAssertTrue(partly.contains("พ้นดิน 1.20"))

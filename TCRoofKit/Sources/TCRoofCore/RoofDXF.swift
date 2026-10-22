@@ -1,7 +1,7 @@
 import Foundation
 
 /// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): the roof plan, section A-A, member table and PV layout as a plain
-/// DXF R12 drawing (LINE / CIRCLE / TEXT on named layers) that any CAD program opens. Coordinates are metres from the
+/// DXF R2000 drawing (LINE / CIRCLE / TEXT on named layers) that any CAD program opens. Coordinates are metres from the
 /// plan's bottom-left corner, written in millimetres (1:1) or metres; the section sits under the plan and the table to
 /// its right. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874).
 public enum RoofDXF {
@@ -31,8 +31,10 @@ public enum RoofDXF {
          parts.isEmpty ? "" : "DIM | TEXT", parts.contains(.table) ? "TABLE" : ""].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
-    /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`.
-    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, latitude: Double? = nil) -> Output {
+    /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`. `longitude` picks the
+    /// faces in use as the page does (`PlaneYield`).
+    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, latitude: Double? = nil,
+                             longitude: Double? = nil) -> Output {
         var o = SketchDXF.Options(); o.millimetres = millimetres
         var dxf = SketchDXF(options: o)
         func layer(_ name: String) -> SketchDXF.Layer { .init(name, aci: colors[name] ?? 7) }
@@ -58,9 +60,11 @@ public enum RoofDXF {
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }
         if parts.contains(.pv) {
-            let pv = RoofPlan(v, mode: .pv, mount: RoofMount.layout(v, latitude: latitude).layout)
+            let pv = RoofPlan(v, mode: .pv, mount: RoofMount.layout(v, latitude: latitude, longitude: longitude).layout)
             for (op, tag) in zip(pv.sketch.ops, pv.tags) {
                 guard let tag, let l = pvLayers[tag] else { continue }
+                // a module hides the purlins and grid under it
+                if tag == "pv", case let .polygon(pts, _, _, _) = op { dxf.wipeout(layer(l), pts.map(tp)) }
                 write(op, l, tp, L.k, text: th)
             }
         }

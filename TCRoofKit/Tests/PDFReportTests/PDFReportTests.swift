@@ -235,5 +235,31 @@ final class TankLayoutPDFTests: XCTestCase {
         XCTAssertTrue(texts.contains("ภาพตัดโต๊ะแผง"))
         XCTAssertTrue(texts.contains("รูปด้านหน้าโต๊ะแผง"))
         XCTAssertTrue(texts.contains { $0.hasPrefix("รูปด้านหน้าโต๊ะแผง แถว ") })
+        // the plan prints with its structure legend
+        XCTAssertTrue(texts.contains { $0.hasPrefix("จุดยึดราง (rail clamp) ") })
+    }
+}
+
+final class RoofEnergyPDFTests: XCTestCase {
+    /// The roof layout's energy prints the range, the chart, the chain, the source and both disclaimers.
+    func testTheEnergyUnit() throws {
+        var v = Values()
+        v[Roof.Key.spansX] = .text("6@5"); v[Roof.Key.spansY] = .text("3@6")
+        var job = Job.new(template: JobTemplate.all[0])
+        job.values["gps"] = .text("13.80, 100.55")
+        let e = RoofMount.printed(v, job: job).energy
+        XCTAssertTrue(e.isHourly)
+        let unit = ReportLayout(job: job, header: ReportHeader()).roofEnergyUnit(e)
+        let texts = unit.ops.compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertTrue(texts.contains("พลังงานไฟฟ้าโดยประมาณ"))
+        XCTAssertTrue(texts.contains { $0.contains("(P90–P50)") })
+        XCTAssertTrue(texts.contains("พลังงานรายเดือน (MWh, P50 ปีแรก)"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("จากแสงแนวราบถึงไฟเข้าระบบ") })
+        XCTAssertTrue(texts.contains { $0.hasPrefix("ประมาณการเบื้องต้น") })
+        XCTAssertTrue(texts.contains { $0.hasPrefix("Preliminary estimate") })
+        XCTAssertTrue(texts.contains { $0.contains("PVGIS © European Union") })
+        // every line fits inside the unit
+        let ys = unit.ops.compactMap { op -> Double? in if case .text(_, let at, _, _, _, _, _) = op { return at.y }; return nil }
+        XCTAssertLessThan(ys.max() ?? 0, unit.h)
     }
 }

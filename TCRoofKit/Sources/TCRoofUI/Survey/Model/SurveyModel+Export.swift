@@ -96,7 +96,7 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Single Line Diagram A3")
     }
 
-    /// The single line diagram as DXF R12 at A3 paper scale (`SingleLineDXF`), for CAD programs.
+    /// The single line diagram as DXF R2000 at A3 paper scale (`SingleLineDXF`), for CAD programs.
     public func exportSingleLineDXF(_ job: Job, hv: Bool? = nil) throws -> ExportFile {
         flush(job.id)
         let url = tempURL("SLD " + baseName(job) + ".dxf")
@@ -104,7 +104,7 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Single Line Diagram DXF")
     }
 
-    /// A D1 tank's roof plan and panel layout as DXF R12 at real scale (`TankDXF`), named like C1's: `NO<job no>_D1.dxf`.
+    /// A D1 tank's roof plan and panel layout as DXF R2000 at real scale (`TankDXF`), named like C1's: `NO<job no>_D1.dxf`.
     public func exportTankDXF(_ job: Job, moduleID: UUID) throws -> ExportFile? {
         flush(job.id)
         guard let m = job.modules.first(where: { $0.id == moduleID }), let out = TankDXF.build(m.values) else { return nil }
@@ -114,7 +114,7 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Tank plan DXF")
     }
 
-    /// The A2 site plan (models, shapes, symbols over the picture's frame) as DXF R12 (`SiteDXF`): `NO<job no>_A2.dxf`.
+    /// The A2 site plan (models, shapes, symbols over the picture's frame) as DXF R2000 (`SiteDXF`): `NO<job no>_A2.dxf`.
     public func exportSiteDXF(_ job: Job) throws -> ExportFile? {
         flush(job.id)
         guard let out = SiteDXF.build(job) else { return nil }

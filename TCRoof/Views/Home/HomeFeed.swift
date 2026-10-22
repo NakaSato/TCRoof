@@ -14,6 +14,8 @@ enum FeedLink: Hashable, Identifiable {
     case calendar(Date)
     case stationDocs(job: String)
     case records
+    /// เดินทางและเบิกค่าใช้จ่าย on a month, from a claim decision.
+    case claims(month: String)
 
     var id: Self { self }
 }

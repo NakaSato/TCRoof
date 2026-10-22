@@ -27,7 +27,10 @@ without keeping them, and approves it or sends it back with a reason. The decisi
 document (`TravelClaim.Review`, one per person and month, `<owner>_<month>`) that only managers write, signed with their
 own email and never on their own claim; it counts only for the submission it was made on, so a withdrawn and
 resubmitted month waits again. The claimant sees it on the claim screen (`ClaimReviews`), can't withdraw an approved
-month, and withdraws a returned one to edit it. A submitted month's Drive folder is shared read only with
+month, and withdraws a returned one to edit it. A new decision is announced on the claimant's device once sync brings it
+in (`ClaimNotification`: `อนุมัติใบเบิกแล้ว` or `ใบเบิกถูกส่งกลับให้แก้` with the reason, Settings' `ผลอนุมัติใบเบิก` switch,
+not on the first sync after sign-in, not when over 3 days old), lists in the bell for 7 days (one sent back is to do),
+and a tap opens the claim screen on its month. A submitted month's Drive folder is shared read only with
 `config/app.claimShareWith` (the approvers' emails), so their review opens the receipts. Not built: the suggested
 arrival and departure by region monitoring (§B2, optional), and a notification to the claimant on a decision.
 **Platform:** TCRoof on **iPad** (SwiftUI, SwiftData, iPadOS 17+). It also runs on iPhone.

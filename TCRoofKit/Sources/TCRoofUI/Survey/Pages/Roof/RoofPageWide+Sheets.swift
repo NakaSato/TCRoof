@@ -334,7 +334,7 @@ struct RoofCADSheet: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("ส่งออก CAD").font(.sarabunFixed(17, .bold))
-                    Text("DXF R12 | เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("DXF R2000 | เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button(action: close) { Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 36) }
@@ -407,7 +407,8 @@ struct RoofCADSheet: View {
     }
 
     func export() {
-        let out = RoofDXF.build(values, parts: chosen, millimetres: mm)
+        let site = RoofMount.site(job)
+        let out = RoofDXF.build(values, parts: chosen, millimetres: mm, latitude: site.latitude, longitude: site.longitude)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do { try out.data.write(to: url, options: .atomic); result = (url, out); sharing = true } catch {}
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// SLD "ส่งออก DXF" (docs/specs/cad-export-dxf phase 2): the same diagram as the A3 PDF page, as DXF R12 at paper scale,
+/// SLD "ส่งออก DXF" (docs/specs/cad-export-dxf phase 2): the same diagram as the A3 PDF page, as DXF R2000 at paper scale,
 /// 400 mm wide (A3 landscape less its margins), with a title line and the "not a construction drawing" note under it.
 /// Layers follow `SingleLineLayout.color(_:)`: ink is a known value, blue new equipment, red a missing value, grey an
 /// assumed one. Condition colours (green / amber / red) only colour text, which goes on `SLD_TEXT` with its colour kept.
@@ -38,7 +38,7 @@ public enum SingleLineDXF {
         o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)
         dxf.add(drawing.sketch.ops, layer: { _, op in layer(op) }, transform: { p in (p.x * s / 1000, (H - p.y) * s / 1000) },
-                pointsPerMetre: 1000 / s)
+                pointsPerMetre: 1000 / s, symbols: drawing.symbols)
 
         let docNo = job.docNo.isEmpty ? "-" : job.docNo, site = job.projectName.isEmpty ? "-" : job.projectName
         var title = "SINGLE LINE DIAGRAM | \(docNo) | \(site)"

@@ -198,11 +198,11 @@ extension TankLayout {
     /// standard's (`gapSteps`) gets the coarse offset pass (columns 0.10 m over a module width, rows 0.20 m over a
     /// pitch), the ten best counts are posted, and the gap with the most MWh wins; the winner is searched again on the
     /// 5 cm grid. The year is sampled as in `bestEnergy`.
-    public static func trueSouth(_ v: Values, latitude: Double, base: Params? = nil) -> TrueSouth? {
+    public static func trueSouth(_ v: Values, latitude: Double, longitude: Double? = nil, base: Params? = nil) -> TrueSouth? {
         let base = base ?? defaults(v)
         guard let t = TankPoints.tankSize(v), let az = Tank.azimuth(v).map(Double.init), let off = wallOffset(v) else { return nil }
         let open = openings(v), objects = TankShade.objects(v), exposed = Tank.exposed(v) ?? 0, circle = TankPoints.circle(v)
-        let yield = SolarModel.yield(lat: latitude, tilt: base.tilt, azimuthFromSouth: 0)
+        let yield = PlaneYield.kWhPerKWp(latitude: latitude, longitude: longitude, tilt: base.tilt, azimuthFromSouth: 0)
 
         func trial(_ gap: Double, step: (x: Double, y: Double)) -> TrueSouth {
             var p = base; p.rowGap = gap
@@ -236,8 +236,8 @@ extension TankLayout {
     }
 
     /// `bestEnergy`'s winner beside the true-south layout; nil when the walls already face within a degree of south.
-    public static func compareSouth(_ v: Values, latitude: Double, wall: EnergySearch) -> SouthComparison? {
-        guard comparesSouth(v), let s = trueSouth(v, latitude: latitude) else { return nil }
+    public static func compareSouth(_ v: Values, latitude: Double, longitude: Double? = nil, wall: EnergySearch) -> SouthComparison? {
+        guard comparesSouth(v), let s = trueSouth(v, latitude: latitude, longitude: longitude) else { return nil }
         return SouthComparison(wall: wall.chosen, south: s)
     }
 }

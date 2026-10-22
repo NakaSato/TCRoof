@@ -129,6 +129,8 @@ public struct RoofMountLayout: Sendable {
     public var purlins: [Double]
     public var standard: RoofMountStandard
     public var options: Options
+    /// The latitude the face yields were worked out at.
+    public var latitude = RoofMount.defaultLatitude
 
     // MARK: - Reasons
 
@@ -158,7 +160,7 @@ public struct RoofMountLayout: Sendable {
         }
         let faces = results.all
         var out = RoofMountLayout(faces: faces, roof: roof, purlins: purlins, standard: standard, options: options)
-        out.decideFaces(latitude: input.latitude)
+        out.decideFaces(latitude: input.latitude, longitude: input.longitude)
         return out
     }
 
@@ -169,12 +171,14 @@ public struct RoofMountLayout: Sendable {
         return compute(input, standard: standard, options: o)
     }
 
-    /// Each face's yield, and which faces get modules.
-    mutating func decideFaces(latitude: Double) {
+    /// Each face's yield (`PlaneYield`: hourly with a longitude near the bundled weather), and which faces get modules.
+    mutating func decideFaces(latitude: Double, longitude: Double?) {
+        self.latitude = latitude
         for i in faces.indices {
             let f = faces[i].face
             let fromSouth = (f.azimuth - 180 + 540).truncatingRemainder(dividingBy: 360) - 180
-            faces[i].yield = SolarModel.yield(lat: latitude, tilt: f.tilt * 180 / .pi, azimuthFromSouth: fromSouth)
+            faces[i].yield = PlaneYield.kWhPerKWp(latitude: latitude, longitude: longitude, tilt: f.tilt * 180 / .pi,
+                                                 azimuthFromSouth: fromSouth)
         }
         let top = faces.map(\.yield).max() ?? 0
         for i in faces.indices {

@@ -35,6 +35,8 @@ public struct RoofMountInput: Sendable {
     public var ridgeHeight: Double
     public var purlinSpacing: Double
     public var latitude: Double
+    /// From A1's GPS; nil keeps the face yields on `SolarModel` (`PlaneYield`).
+    public var longitude: Double?
     /// Compass bearing of the plan's top edge, degrees.
     public var bearing: Double
     public var obstacles: [Obstacle]

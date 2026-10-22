@@ -149,6 +149,11 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
+- **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
+  (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
+  (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
+  at x = 0, on TC-TANK-SECTION / TC-TANK-SOIL / the PV layers by colour, their lengths, heights, spacings, post heights
+  and bays as live DIMENSIONs.
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.

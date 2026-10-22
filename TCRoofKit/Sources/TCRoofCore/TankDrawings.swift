@@ -43,6 +43,17 @@ public enum TankDrawings {
         return Sketch(width: W, height: h, ops: o)
     }
 
+    /// A drawing drawn to one scale, as the DXF places it: `k` sketch points per metre, `origin` the sketch point of
+    /// (0 m, 0 m) (x along the drawing, y up from the base or the roof), its dimensions (sketch points) and the ops that
+    /// drew them, which the DXF leaves out for DIMENSIONs.
+    public struct SectionCAD: Sendable {
+        public var sketch: Sketch
+        public var k: Double
+        public var origin: Pt
+        public var dimensions: [SketchDXF.Dimension]
+        public var dimensionOps: Set<Int>
+    }
+
     /// Wall and slab thickness and the soil over a buried tank, assumed (ค่าสมมติ).
     public static let wall = 0.30, cover = 0.50, column = 0.40
 
@@ -139,7 +150,12 @@ public enum TankDrawings {
     /// Section 1–1 (`across` false: cut at half of Σ spansX, the tank across Σ spansY) or 2–2 (`across` true: cut at
     /// half of Σ spansY, across Σ spansX). The ground follows the position: at the base above ground, 0.50 m of soil
     /// over the roof when buried, at H − exposed when partly buried. nil without a size; without a height it says so.
-    public static func section(_ v: Values, across: Bool, width W: Double = 760) -> Sketch? {
+    public static func section(_ v: Values, across: Bool, width W: Double = 760) -> Sketch? { buildSection(v, across: across, width: W)?.0 }
+
+    /// The section as the DXF draws it, to scale with its dimensions; nil without a size or a height.
+    public static func sectionCAD(_ v: Values, across: Bool, width W: Double = 760) -> SectionCAD? { buildSection(v, across: across, width: W)?.1 }
+
+    static func buildSection(_ v: Values, across: Bool, width W: Double) -> (Sketch, SectionCAD?)? {
         let s = Tank.spans(v)
         guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
         let spans = across ? s.x : s.y, L = spans.reduce(0, +)
@@ -151,7 +167,7 @@ public enum TankDrawings {
         o.append(.text(title, at: Pt(16, 16), size: 12, bold: true, color: ink))
         guard let H = Tank.height(v), H > 0 else {
             o.append(.text("ใส่ความสูงถังเพื่อวาดรูปตัด", at: Pt(W / 2, 60), size: 13, color: muted, align: .center))
-            return Sketch(width: W, height: 90, ops: [.rect(Box(0, 0, W, 90), stroke: nil, fill: .white)] + o)
+            return (Sketch(width: W, height: 90, ops: [.rect(Box(0, 0, W, 90), stroke: nil, fill: .white)] + o), nil)
         }
         let pos = Tank.position(v), exposed = Tank.exposed(v) ?? H
         let buried = pos == Tank.buried, partly = pos == Tank.partly
@@ -188,20 +204,28 @@ public enum TankDrawings {
         }
         o.append(.text("น้ำ", at: Pt(X(L / 2), (roofY + baseY) / 2), size: 10, color: muted, align: .center))
         // dimensions: length below, height on the right, the exposed part on the left when partly buried
-        func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
+        // (the ops they draw are kept for the DXF, which writes DIMENSIONs instead; +1 for the background drawn first)
+        var dims: [SketchDXF.Dimension] = [], dimOps: Set<Int> = []
+        func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String, from: Double) {
+            let n = o.count
             o.append(.line(Pt(a, y), Pt(b, y), width: 0.8, color: dim))
             for x in [a, b] { o.append(.line(Pt(x, y - 4), Pt(x, y + 4), width: 0.8, color: dim)) }
             o.append(.text(label, at: Pt((a + b) / 2, y + 9), size: 9.5, bold: true, color: dim, align: .center))
+            dimOps.formUnion((n + 1)...(o.count))
+            dims.append(.init(Pt(a, from), Pt(b, from), at: Pt(0, y), text: label, size: 9.5))
         }
-        func dimV(_ x: Double, _ a: Double, _ b: Double, _ label: String, right: Bool) {
+        func dimV(_ x: Double, _ a: Double, _ b: Double, _ label: String, right: Bool, from: Double) {
+            let n = o.count
             o.append(.line(Pt(x, a), Pt(x, b), width: 0.8, color: dim))
             for y in [a, b] { o.append(.line(Pt(x - 4, y), Pt(x + 4, y), width: 0.8, color: dim)) }
             o.append(.text(label, at: Pt(x + (right ? 6 : -6), (a + b) / 2), size: 9.5, bold: true, color: dim, align: right ? .left : .right))
+            dimOps.formUnion((n + 1)...(o.count))
+            dims.append(.init(Pt(from, a), Pt(from, b), at: Pt(x, 0), vertical: true, text: label, size: 9.5))
         }
-        dimH(X(0), X(L), baseY + t + 16, (Tank.isRound(v) ? "Ø " : "") + fmt(L))
-        dimV(X(L) + t + 2 * k + 8, roofY, baseY, "สูง " + fmt(H), right: true)
-        if partly { dimV(X(0) - t - 2 * k - 8, roofY, groundY, "พ้นดิน " + String(format: "%.2f", min(H, max(0, exposed))), right: false) }
-        if buried { dimV(X(0) - t - 2 * k - 8, roofY - cover * k, roofY, "ดินถม " + String(format: "%.2f", cover), right: false) }
+        dimH(X(0), X(L), baseY + t + 16, (Tank.isRound(v) ? "Ø " : "") + fmt(L), from: baseY + t)
+        dimV(X(L) + t + 2 * k + 8, roofY, baseY, "สูง " + fmt(H), right: true, from: X(L) + t)
+        if partly { dimV(X(0) - t - 2 * k - 8, roofY, groundY, "พ้นดิน " + String(format: "%.2f", min(H, max(0, exposed))), right: false, from: X(0) - t) }
+        if buried { dimV(X(0) - t - 2 * k - 8, roofY - cover * k, roofY, "ดินถม " + String(format: "%.2f", cover), right: false, from: X(0) - t) }
         // the size and volume summary (§5.5), the assumed thicknesses and the note every drawing sheet carries
         if let sum = Tank.summary(v) {
             o.append(.text(sum.text, at: Pt(16, baseY + t + 40), size: 9, bold: true, color: ink))
@@ -209,7 +233,8 @@ public enum TankDrawings {
         o.append(.text(String(format: "ผนังและพื้น %.2f ม.", wall) + (buried ? String(format: " | ดินถมบนหลังคา %.2f ม.", cover) : "") + " (ค่าสมมติ) | "
                        + note, at: Pt(16, baseY + t + 53), size: 8, color: muted))
         let h = baseY + t + 64
-        return Sketch(width: W, height: h, ops: [.rect(Box(0, 0, W, h), stroke: nil, fill: .white)] + o)
+        let sketch = Sketch(width: W, height: h, ops: [.rect(Box(0, 0, W, h), stroke: nil, fill: .white)] + o)
+        return (sketch, SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), baseY), dimensions: dims, dimensionOps: dimOps))
     }
 
     /// The note every drawing sheet carries (docs/specs/auto-drawing.md §1).
@@ -220,7 +245,10 @@ public enum TankDrawings {
     /// The standard side section of two rows (§5): the roof slab, footings, front and back posts with their heights, a
     /// brace, the two modules down the slope, the spacings 2.80 / 2.70 / 2.80 and a vent under the first row with its
     /// clearance. Drawn from the layout's parameters.
-    public static func tableSection(_ p: TankLayout.Params, width W: Double = 760) -> Sketch {
+    public static func tableSection(_ p: TankLayout.Params, width W: Double = 760) -> Sketch { tableSectionCAD(p, width: W).sketch }
+
+    /// The row section as the DXF draws it: to scale, the spacings and post heights as dimensions.
+    public static func tableSectionCAD(_ p: TankLayout.Params, width W: Double = 760) -> SectionCAD {
         let h0 = 272.0
         var o: [DrawOp] = [.rect(Box(0, 0, W, h0), stroke: nil, fill: .white)]
         o.append(.text("รูปตัดแถวแผงบนหลังคาถัง (มาตรฐาน) | หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
@@ -249,18 +277,27 @@ public enum TankDrawings {
             o.append(.line(Pt(X(mid), Y(ym) - 5), Pt(X(mid), Y(ym) + 1), width: 1.2, color: .white))
         }
         // dimensions along the roof
+        var dims: [SketchDXF.Dimension] = [], dimOps: Set<Int> = []
         func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
+            let n = o.count
             o.append(.line(Pt(X(a), y), Pt(X(b), y), width: 0.8, color: dim))
             for x in [a, b] { o.append(.line(Pt(X(x), y - 4), Pt(X(x), y + 4), width: 0.8, color: dim)) }
             o.append(.text(label, at: Pt((X(a) + X(b)) / 2, y + 9), size: 9.5, bold: true, color: dim, align: .center))
+            dimOps.formUnion(n..<o.count)
+            dims.append(.init(Pt(X(a), roofY), Pt(X(b), roofY), at: Pt(0, y), text: label, size: 9.5))
         }
         let dy = roofY + 34
         dimH(0, p.postDY, dy, String(format: "%.2f", p.postDY))
         dimH(p.postDY, p.rowPitch, dy, String(format: "%.2f", p.rowGap))
         dimH(p.rowPitch, p.rowPitch + p.postDY, dy, String(format: "%.2f", p.postDY))
-        // post heights
+        // post heights (dimensions in the DXF, beside the first row's posts)
+        dimOps.insert(o.count)
         o.append(.text(String(format: "%.2f", p.hFront), at: Pt(X(0) - 5, Y(p.hFront / 2)), size: 9.5, bold: true, color: dim, align: .right))
+        dimOps.insert(o.count)
         o.append(.text(String(format: "%.2f", p.hBack), at: Pt(X(p.postDY) + 5, Y(p.hBack / 2)), size: 9.5, bold: true, color: dim))
+        dims.append(.init(Pt(X(0), roofY), Pt(X(0), Y(p.hFront)), at: Pt(X(0) - 12, 0), vertical: true, text: String(format: "%.2f", p.hFront), size: 9.5))
+        dims.append(.init(Pt(X(p.postDY), roofY), Pt(X(p.postDY), Y(p.hBack)), at: Pt(X(p.postDY) + 12, 0), vertical: true,
+                          text: String(format: "%.2f", p.hBack), size: 9.5))
         o.append(.text(String(format: "เอียง %.1f°", p.tilt), at: Pt(X(p.postDY / 2), Y(p.hBack) - 14), size: 9.5, bold: true, color: navy, align: .center))
         // a vent under the back half of the first row, with the clearance left above it
         let vx = 0.55, vw = TankPoints.ventSize
@@ -271,7 +308,8 @@ public enum TankDrawings {
                        size: 8.5, color: room >= p.underClear ? ok : vent))
         o.append(.text(String(format: "ฐานราก %.0f×%.0f×150 มม. ยึดพื้นหลังคา | ค้ำ X ทุกช่วงเสา | ราง 4 เส้นต่อโต๊ะ | แผง 2 แผงตามแนวลาด",
                               p.footing * 1000, p.footing * 1000), at: Pt(16, h0 - 10), size: 8.5, color: muted))
-        return Sketch(width: W, height: h0, ops: o)
+        let sketch = Sketch(width: W, height: h0, ops: o)
+        return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps)
     }
 }
 
@@ -282,7 +320,11 @@ extension TankDrawings {
     /// footings, front posts with the back posts behind, X bracing in every bay, the 4 rails, the modules (those
     /// switched off as outlines), the bay spacings, the cantilevers and the length. The longest built table; nil
     /// without one.
-    public static func tableFront(_ l: TankLayout, width W: Double = 760) -> Sketch? {
+    public static func tableFront(_ l: TankLayout, width W: Double = 760) -> Sketch? { tableFrontCAD(l, width: W)?.sketch }
+
+    /// The front elevation as the DXF draws it: to scale, the bays, cantilevers, length and front post height as
+    /// dimensions.
+    public static func tableFrontCAD(_ l: TankLayout, width W: Double = 760) -> SectionCAD? {
         let p = l.params
         guard let t = l.builtTables.max(by: { $0.columns < $1.columns }) else { return nil }
         let fr = TankLayout.Frame(q: l.turn, W: l.size.w, H: l.size.h)
@@ -329,20 +371,27 @@ extension TankDrawings {
             o.append(.line(Pt(X(0), Y(y)), Pt(X(L), Y(y)), width: 0.9, color: RGBA(hex: 0x94A3B8)))
         }
         // dimensions: the cantilevers and bays, then the length
+        var dims: [SketchDXF.Dimension] = [], dimOps: Set<Int> = []
         func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
+            let n = o.count
             o.append(.line(Pt(X(a), y), Pt(X(b), y), width: 0.8, color: dim))
             for x in [a, b] { o.append(.line(Pt(X(x), y - 4), Pt(X(x), y + 4), width: 0.8, color: dim)) }
             if (b - a) * k >= 18 { o.append(.text(label, at: Pt((X(a) + X(b)) / 2, y + 9), size: 8.5, bold: true, color: dim, align: .center)) }
+            dimOps.formUnion(n..<o.count)
+            dims.append(.init(Pt(X(a), roofY), Pt(X(b), roofY), at: Pt(0, y), text: label, size: 8.5))
         }
         let marks = [0.0] + xs + [L]
         for (u, w) in zip(marks, marks.dropFirst()) where w - u > 1e-6 { dimH(u, w, roofY + 26, String(format: "%.2f", w - u)) }
         dimH(0, L, roofY + 48, String(format: "ยาว %.2f", L))
+        dimOps.insert(o.count)
         o.append(.text(String(format: "%.2f", p.hFront), at: Pt(X(0) - 6, Y(p.hFront / 2)), size: 9, bold: true, color: dim, align: .right))
+        dims.append(.init(Pt(X(0), roofY), Pt(X(0), Y(p.hFront)), at: Pt(X(0) - 14, 0), vertical: true, text: String(format: "%.2f", p.hFront), size: 9))
         let bays = zip(xs, xs.dropFirst()).map { $1 - $0 }
         o.append(.text(String(format: "เสา %d คู่ (หน้า %.2f / หลัง %.2f ม.) | ช่วงเสามากสุด %.2f ม. | ค้ำ X ทุกช่วงเสา แนวหน้าและแนวหลัง | ราง 4 เส้น | ฐานราก %.0f×%.0f×150 มม. ทุกเสา",
                               xs.count, p.hFront, p.hBack, bays.max() ?? 0, p.footing * 1000, p.footing * 1000),
                        at: Pt(16, h0 - 10), size: 8.5, color: muted))
-        return Sketch(width: W, height: h0, ops: o)
+        let sketch = Sketch(width: W, height: h0, ops: o)
+        return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps)
     }
 }
 

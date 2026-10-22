@@ -36,6 +36,8 @@ public enum CADLayers {
     // D1 tank
     public static let tankOutline = SketchDXF.Layer("TC-TANK-OUTLINE", aci: 7, lineweight: 50, description: "ขอบถังน้ำใส / Tank outline")
     public static let tankBeam = SketchDXF.Layer("TC-TANK-BEAM", aci: 8, linetype: .hidden, lineweight: 25, description: "คานหลังคาถัง / Tank roof beams")
+    public static let tankSection = SketchDXF.Layer("TC-TANK-SECTION", aci: 7, lineweight: 35, description: "รูปตัดถัง พื้น ผนัง เสา ฐานราก / Tank sections, slabs, walls, columns, footings")
+    public static let tankSoil = SketchDXF.Layer("TC-TANK-SOIL", aci: 32, lineweight: 25, description: "ดินและระดับดิน / Soil and ground line")
 
     // A2 site plan
     public static let siteFrame = SketchDXF.Layer("TC-SITE-FRAME", aci: 8, lineweight: 18, plot: false, description: "กรอบภาพผังบริเวณ (ไม่พิมพ์) / Site picture frame (no plot)")
@@ -65,7 +67,7 @@ public enum CADLayers {
         grid, dim, text, north, sectionMark, obstacle,
         roofOutline, roofRidge, roofTruss, roofPost, roofPurlin, roofSkylight, roofSection, roofTable,
         pvModule, pvRail, pvFoot, pvCut, pvKeepout, pvTable,
-        tankOutline, tankBeam,
+        tankOutline, tankBeam, tankSection, tankSoil,
         siteFrame, siteBuilding, sitePVArea, sitePanelArea, siteCable, siteMeasure, siteCrane, siteShade, siteShape, siteSymbol,
         sldLine, sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed, sldText, sldOther,
     ]

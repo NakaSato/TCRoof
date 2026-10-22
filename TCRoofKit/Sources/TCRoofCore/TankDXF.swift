@@ -45,6 +45,43 @@ public enum TankDXF {
                 for q in t.posts { dxf.circle(pvGroup, p(q.x, q.y), r: l.params.footing / 2) }
             }
         }
+        // under the plan, to scale and in metres: sections 1–1 and 2–2, then the module rows' section and the table's front
+        // elevation, each with its zero (the tank's west wall, a row's front post, the table's west end) at x = 0
+        let tables: [TankDrawings.SectionCAD] = [false, true].compactMap { TankDrawings.sectionCAD(v, across: $0) }
+            + (TankLayout.current(v).map { [TankDrawings.tableSectionCAD($0.params)] + [TankDrawings.tableFrontCAD($0)].compactMap { $0 } } ?? [])
+        let gap = 3.0
+        var top = dxf.extents.min.y / (millimetres ? 1000 : 1) - gap
+        for d in tables {
+            let o = d.origin, k = d.k, h = d.sketch.height
+            // the drawing's top edge at `top`; (origin) at (0, top - origin.y / k)
+            let base = top - o.y / k
+            let tf: (Pt) -> (Double, Double) = { p in ((p.x - o.x) / k, base + (o.y - p.y) / k) }
+            let skip = d.dimensionOps
+            dxf.add(d.sketch.ops, layer: { i, op in skip.contains(i) ? nil : sectionLayer(op) }, transform: tf, pointsPerMetre: k)
+            dxf.add(d.dimensions, layer: CADLayers.dim, transform: tf, pointsPerMetre: k)
+            top = base + (o.y - h) / k - gap
+        }
         return dxf.output
+    }
+
+    /// A section's op → its standard layer by colour: concrete and outlines on TC-TANK-SECTION, soil on TC-TANK-SOIL,
+    /// modules, posts and bracing on the PV layers, vents as obstacles, words on TC-TEXT; nil for the white background,
+    /// the module joints and translucent tints.
+    static func sectionLayer(_ op: DrawOp) -> SketchDXF.Layer? {
+        func same(_ a: RGBA?, _ b: RGBA) -> Bool { a.map { abs($0.r - b.r) + abs($0.g - b.g) + abs($0.b - b.b) < 0.01 } ?? false }
+        switch op {
+        case .text, .textBox, .runs: return CADLayers.text
+        case let .rect(_, nil, f, _), let .polygon(_, nil, f, _): if (f?.a ?? 0) < 1 || f == .white { return nil }
+        case let .line(_, _, _, c, _) where c == .white: return nil
+        default: break
+        }
+        let c = SketchDXF.colour(op)
+        if same(c, TankDrawings.soil) { return CADLayers.tankSoil }
+        if same(c, TankDrawings.panel) || (c.map { $0.r > 0.97 && $0.g > 0.97 && $0.b > 0.97 } ?? false) { return CADLayers.pvModule }
+        if same(c, TankDrawings.post) { return CADLayers.pvTable }
+        if same(c, TankDrawings.vent) { return CADLayers.obstacle }
+        if same(c, TankDrawings.dim) { return CADLayers.dim }
+        if same(c, RGBA(hex: 0x94A3B8)) { return CADLayers.pvRail }
+        return CADLayers.tankSection
     }
 }

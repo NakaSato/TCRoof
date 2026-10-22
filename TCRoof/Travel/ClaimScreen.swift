@@ -16,7 +16,7 @@ struct ClaimScreen: View {
     @Query private var allClaims: [ClaimMonth]
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
-    @State private var month = TravelClaim.monthKey(.now)
+    @State private var month: String
     @State private var editingTrip: Trip?
     @State private var editingExpense: Expense?
     @State private var newExpense: NewExpense?
@@ -36,6 +36,9 @@ struct ClaimScreen: View {
         var receipt: Data?
         var date: Date
     }
+
+    /// `month` ("2026-10") opens that month, as a claim decision's notification does; nil opens this month.
+    init(month: String? = nil) { _month = State(initialValue: month ?? TravelClaim.monthKey(.now)) }
 
     private var me: String { TravelStore.owner }
     private var trips: [Trip] { allTrips.filter { $0.ownerEmail == me && $0.monthKey == month } }

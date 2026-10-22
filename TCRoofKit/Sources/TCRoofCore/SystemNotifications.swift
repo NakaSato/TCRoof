@@ -8,6 +8,8 @@ public enum NotificationType: String, CaseIterable, Sendable {
     case survey, queue, late, cal, sync, done, report
     /// Live cases (`LiveNotifications.swift`): install days, the MP plan, and the project feed's events.
     case install, mp, feed, issue, inspect
+    /// A manager's decision on the person's expense claim (`ClaimNotification`).
+    case claim
 
     /// The coloured word after `TCROOF |` on the board.
     public var category: String {
@@ -24,6 +26,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .feed: "ความคืบหน้า"
         case .issue: "ปัญหา"
         case .inspect: "รอผู้ตรวจ"
+        case .claim: "เบิกจ่าย"
         }
     }
 
@@ -31,7 +34,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
     public var level: Level {
         switch self {
         case .late: .timeSensitive
-        case .survey, .queue, .report, .install, .mp, .feed, .issue, .inspect: .active
+        case .survey, .queue, .report, .install, .mp, .feed, .issue, .inspect, .claim: .active
         case .cal, .sync, .done: .passive
         }
     }
@@ -48,7 +51,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .sync: [.syncNow, .viewPending]
         case .done: [.openDrive, .shareLink]
         case .install: [.navigate]
-        case .report, .mp, .feed, .issue, .inspect: []
+        case .report, .mp, .feed, .issue, .inspect, .claim: []
         }
     }
 
@@ -61,13 +64,14 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .report: .report
         case .install, .mp: .plan
         case .feed, .issue, .inspect: .feed
+        case .claim: .claim
         }
     }
 }
 
 /// A switch in Settings › การแจ้งเตือน.
 public enum NotificationGroup: String, CaseIterable, Sendable {
-    case survey, tools, calibration, syncExport, report, plan, feed
+    case survey, tools, calibration, syncExport, report, plan, feed, claim
 
     public var title: String {
         switch self {
@@ -78,6 +82,7 @@ public enum NotificationGroup: String, CaseIterable, Sendable {
         case .report: "รายงานประจำ"
         case .plan: "วันติดตั้งและแผน MP"
         case .feed: "ความคืบหน้าโครงการ"
+        case .claim: "ผลอนุมัติใบเบิก"
         }
     }
 
@@ -161,6 +166,8 @@ public enum NotificationInfo {
     public static let record = "record"
     /// The day of that daily report (`ISO`).
     public static let day = "day"
+    /// The month of a claim decision ("2026-10").
+    public static let month = "month"
 }
 
 /// One local notification to post.
@@ -399,6 +406,8 @@ public enum DeepLink: Equatable, Sendable {
     case homework(job: String)
     /// The install records, where the daily summary leads.
     case records
+    /// เดินทางและเบิกค่าใช้จ่าย on a month ("2026-10"), where a claim decision leads.
+    case claims(month: String)
     case home
 
     /// The link for a tap (`action` nil or the system default / dismiss id) or a quick action.
@@ -417,6 +426,7 @@ public enum DeepLink: Equatable, Sendable {
             case .report: return job.isEmpty ? .home : info[NotificationInfo.kind] == "request" ? .weeklyRequest(job: job) : .dailyReport(job: job)
             case .install, .mp: return job.isEmpty ? .home : .job(job: job)
             case .feed, .issue, .inspect: return FeedNotification.link(info)
+            case .claim: return ClaimNotification.link(info)
             }
         }
         switch action {

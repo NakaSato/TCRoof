@@ -7,6 +7,10 @@ Writes, next to the golden scenarios, without touching them:
   60kW-ERA5-faces-horizon.json
                           a two-face gable (east with a horizon and 2 % near shading, west open) on the 60 kW design,
                           the multi-face and horizon path of `run`.
+  stages-sheds.json       pvlib infinite sheds step by step: the view factors of a few row geometries (front and
+                          back), the 21-December design pitch, and for every 37th hour the front and back sides of the
+                          125kW-ERA5-ground-bifacial rows, the roof-frame rear side of 60kW-ERA5-bifacial-roof (the sun
+                          turned into the roof plane), and each scenario's front, rear and effective irradiance.
 
 Run:  python3 -I stage_fixtures.py   (pvlib >= 0.10; 0.13 reproduces the committed golden files exactly)
 """
@@ -75,12 +79,55 @@ def stages() -> dict:
     return dict(scenario=sc.name, every=STEP, pvlib=pvlib.__version__, hours=hours, marion=marion)
 
 
+def sheds_stages() -> dict:
+    from pvlib.bifacial import infinite_sheds as IS, utils as U
+    geoms = []
+    for tilt, gcr, height, pitch in ((15, 0.803, 1.192, 5.697), (10, 0.853, 0.997, 5.363), (0.01, 0.990, 0.12, 2.30),
+                                     (25, 0.5, 1.5, 4.0)):
+        out = dict(tilt=tilt, gcr=gcr, height=height, pitch=pitch)
+        for side, t in (("front", tilt), ("back", 180 - tilt)):
+            max_rows = float(np.ceil(height / (pitch * pvlib.tools.tand(5))))
+            out[side] = dict(
+                rowSky=float(U.vf_row_sky_2d_integ(t, gcr, 0., 1.)),
+                rowGround=float(U.vf_row_ground_2d_integ(t, gcr, x0=0., x1=1., g0=0., g1=1.)),
+                groundSky=float(U.vf_ground_sky_2d_integ(t, gcr, height, pitch, g0=0, g1=1, max_rows=max_rows)))
+        geoms.append(out)
+    pitches = [dict(tilt=t, slant=4.576, pitch=R.design_pitch(13.75, 100.50, t, 4.576, 180)) for t in (10, 15, 20)]
+
+    def setup(name):
+        sc = next(s for s in R.scenarios() if s.name == name)
+        df = R.load_meteo(sc)
+        sp = R.sun_position(df, sc.lat, sc.lon)
+        return sc, df, sp, R.plane_of_array(df, sp, sc)
+
+    gsc, gdf, gsp, gpoa = setup("125kW-ERA5-ground-bifacial")
+    sh = R.sheds(gdf, gsp, gsc)
+    _, g_shade, g_front = R.effective_irradiance(gpoa, gsc, gdf, sh, gsp)
+    g_rear = gsc.bifacial.bifaciality * np.where(gdf["ghi"].values > 0, sh["poa_back"], 0.0) * (1 - gsc.bifacial.rear_mismatch)
+
+    rsc, rdf, rsp, rpoa = setup("60kW-ERA5-bifacial-roof")
+    _, _, r_front = R.effective_irradiance(rpoa, rsc, rdf, None, rsp)
+    r_raw = R.rear_irradiance(rdf, rsp, rpoa, rsc)
+
+    f = lambda a, k: round(float(np.nan_to_num(np.asarray(a)[k])), 6)
+    keys = ["poa_front_direct", "poa_front_sky_diffuse", "poa_front_ground_diffuse", "shaded_fraction_front",
+            "poa_back_direct", "poa_back_sky_diffuse", "poa_back_ground_diffuse", "shaded_fraction_back"]
+    hours = []
+    for k in range(0, len(gdf), STEP):
+        hours.append(dict(row=k, ground={key: f(sh[key], k) for key in keys} | dict(
+            gShade=f(g_shade, k), gFront=f(g_front, k), gRear=f(g_rear, k)),
+            roof=dict(rearRaw=f(r_raw, k), gFront=f(r_front, k))))
+    return dict(groundScenario=gsc.name, roofScenario=rsc.name, every=STEP, pvlib=pvlib.__version__,
+                pitch=round(float(sh["pitch_m"]), 9), geometries=geoms, designPitches=pitches, hours=hours)
+
+
 def main():
     (GOLD / "stages-60kW-ERA5.json").write_text(json.dumps(stages(), indent=0))
     r = R.run(faces_scenario())
     r.pop("_hourly")
     (GOLD / "60kW-ERA5-faces-horizon.json").write_text(json.dumps(r, indent=1))
-    print("stages + faces written to", GOLD)
+    (GOLD / "stages-sheds.json").write_text(json.dumps(sheds_stages(), indent=0))
+    print("stages, faces and sheds written to", GOLD)
 
 
 if __name__ == "__main__":

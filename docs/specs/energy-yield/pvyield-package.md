@@ -95,7 +95,7 @@ The result reproduces η_max to within 0.01 pt and η_euro exactly. Swap in the 
 
 ## Hourly engine (`Sources/PVYield/Hourly`)
 
-A port of `tools/yield-reference/reference_engine.py` (`sun_position`, `plane_of_array`, `effective_irradiance`, `run_array`, `run`) for front-lit arrays on one or more faces.
+A port of `tools/yield-reference/reference_engine.py` (`sun_position`, `plane_of_array`, `effective_irradiance`, `sheds`, `rear_irradiance`, `design_pitch`, `run_array`, `run`) for arrays on one or more faces, front-lit or bifacial, on roofs or in rows.
 
 | File | Reference step |
 |---|---|
@@ -103,10 +103,12 @@ A port of `tools/yield-reference/reference_engine.py` (`sun_position`, `plane_of
 | `SolarPosition.swift`, `SolarPosition+Tables.swift` | NREL SPA, pvlib `spa_python` defaults (ΔT 67 s, 1013.25 hPa, 12 °C). Tables generated from pvlib's `spa.py`. |
 | `SunTrack.swift` | `sun_position`: the hour's effective zenith and azimuth over 5-minute samples, and the DNI fix. The slow SPA terms are worked out at each end of the hour and interpolated. One track serves every face at the site. |
 | `Irradiance.swift` | Spencer extraterrestrial, Kasten–Young airmass, AOI, Perez 1990 sky diffuse, ground reflection; ASHRAE IAM and Marion's diffuse integration; PVsyst cell temperature (`ThermalModel`). |
-| `YieldInputs.swift` | `YieldLosses`, `StringDesign`, `HorizonProfile`, `ArrayFace` (tilt, `azimuthDegTrueN`, near shading, horizon), `YieldUncertainty`, `YieldSystem` (module, inverter × count, faces). |
-| `YieldEngine.swift` | `run_array` per face and `run` over the inverters: one-diode MPP, quality/LID/mismatch, DC ohmic, MPPT current limit, inverter efficiency and clipping, AC ohmic, unavailability and night consumption. |
+| `YieldInputs.swift` | `YieldLosses`, `StringDesign`, `HorizonProfile`, `ArrayFace` (tilt, `azimuthDegTrueN`, near shading, horizon), `RowGeometry` (slant, clearance, pitch or `designPitch`, ground albedo, electrical factor), `BifacialRear` (bifaciality, albedo, height, pitch, slant, frame `roof` / `ground`, rear mismatch), `YieldUncertainty`, `YieldSystem` (module, inverter × count, faces, optional rows and rear side). |
+| `InfiniteSheds.swift` | pvlib `infinite_sheds` (isotropic) with the `bifacial.utils` view factors: row to sky, row to ground, ground to sky (once per geometry), the unshaded ground and the shaded slant per hour, for the front and the back. |
+| `RearSide.swift` | `rear_irradiance`: the rear side without rows, in the roof's frame (the sun turned into the roof plane, the roof's Perez sky as its DHI) or on flat ground. |
+| `YieldEngine.swift` | `run_array` per face and `run` over the inverters: row-to-row shading and the rear side's light, one-diode MPP, quality/LID/mismatch, DC ohmic, MPPT current limit, inverter efficiency and clipping, AC ohmic, unavailability and night consumption. |
 | `BundledWeather.swift` | The weather years in `Resources/weather` (the Bangkok PVGIS-ERA5 TMY), the nearest one within 100 km of a site, and a small cache of their sun tracks. |
-| `YieldResult.swift` | Energies at every step (`YieldEnergies`, the golden's `energies_kWh` keys), PR, specific yield, monthly table, loss diagram, PVsyst ageing, P50/P90/P99, hour counts, per-face results, optional hourly trace. |
+| `YieldResult.swift` | Energies at every step (`YieldEnergies`, the golden's `energies_kWh` keys, `H_rear_raw` / `H_rear_eff` optional when decoding), PR, specific yield, monthly table, loss diagram, PVsyst ageing, P50/P90/P99, hour counts, per-face results with their rows (`RowLayout`: pitch, GCR, height, shaded daylight hours), optional hourly trace. |
 
 ```swift
 let weather = try HourlyWeather.pvgisTMY(csv: text, latitude: 13.75, longitude: 100.50)
@@ -116,6 +118,18 @@ let system = YieldSystem(module: try ZnshineZXM7UHLDD144.fit(570).spec, inverter
                          faces: [ArrayFace(id: "S", moduleCount: 132, tiltDeg: 10, azimuthDegTrueN: 180)])
 let r = YieldEngine.run(system, track: track)
 print(r.energies.eGrid, r.specificYield, r.performanceRatio, r.probability.p90OneYear)
+```
+
+Ground rows, bifacial:
+
+```swift
+var ground = system
+ground.faces = [ArrayFace(id: "rows", moduleCount: 132, tiltDeg: 15, azimuthDegTrueN: 180)]
+ground.thermal.uc = 29                                        // free-standing
+ground.rows = RowGeometry()                                   // 2 in portrait, 0.6 m up, pitch from 21 Dec 09:00
+ground.bifacial = BifacialRear(frame: .ground)                // sees the rows' ground
+let g = YieldEngine.run(ground, track: track)
+print(g.rows?.pitchM, g.energies.hRearEff, g.lossDiagram[4])  // 5.697 m, rear gain after φ and mismatch
 ```
 
 Extensions beyond the reference: `inverterCount` (identical inverters sharing the array evenly; 1 reproduces the reference) and `design: nil` (no string design yet, so no MPPT current limit).
@@ -129,12 +143,15 @@ Extensions beyond the reference: `inverterCount` (identical inverters sharing th
 | Marion diffuse IAM, 9 tilts | 1e-9 | passes |
 | POA direct / sky / ground, south 10° and east 30° | 0.01 W/m² or 1e-5 | passes |
 | Hourly trace of 60kW-ERA5 (8,760 h): POA, G_eff, T_cell, P_module, P_DC, P_AC, P_grid | 1e-5–1e-4 relative | worst hour at 0.05 of the tolerance (fixture rounding) |
-| Annual energies, every step, 7 scenarios (60/80/125 kW × ERA5/GSA, two-face gable with horizon) | 0.01 % | E_grid within 0.0001 %, worst step 0.0003 % |
+| Infinite sheds view factors, 4 geometries × front and back | 1e-12 | passes |
+| 21-December design pitch, 10°/15°/20° | 1e-6 m | passes |
+| Sheds sides (ground rows, front and back) and the roof-frame rear, every 37th hour | 1e-6 relative | passes |
+| Annual energies, every step, all 18 scenarios (60/80/125 kW × ERA5/GSA, two-face gable with horizon, bifacial on roofs, ground rows mono and bifacial, 10°/20°, gravel) | 0.01 % (0.01 kWh/m² for the small rear sums) | E_grid within 0.0001 %; worst step 0.0003 % front-lit, the rear sums to the golden's 2 decimals |
 | Monthly, ageing, lifetime, P50/P90/P99, hour counts | the golden's rounding | passes |
 
 **Runtime** (MacBook, `swift test -c release`): the sun track of a year 66 ms (once per site), one face for a year 29 ms. Debug builds are about 10× slower. Pure Swift on value types, so run it off the main thread.
 
-**Not ported yet:** the bifacial rear side (`rear_irradiance`) and row-to-row shading (`sheds`), both pvlib infinite sheds; their golden scenarios (`*-bifacial-*`, `*-ground-*`) are not tested yet.
+As in the reference, `structure_shading` and `transmission` (pvlib's `shade_factor`, `transmission_factor`) only change pvlib's combined `poa_global`, which the chain doesn't use, so they have no effect and `BifacialRear` leaves them out. `shaded_hours` counts daylight hours only (GHI > 0): pvlib calls a row fully shaded whenever the sun is behind it, which counted most nights (3005 hours against 472 at 15°).
 
 ## Reference engine (Python)
 

@@ -56,7 +56,7 @@ final class RoofWalkwayTests: XCTestCase {
         // one roof access only, on one side
         XCTAssertEqual(ws.filter(\.access).count, 1)
         let out = RoofDXF.build(v, parts: [.pv])
-        XCTAssertTrue(out.layers.contains("TC-PV-ACCESS"))
+        XCTAssertTrue(out.layers.contains("S-LADD-N"))
         let s = String(decoding: out.data, as: UTF8.self)
         XCTAssertTrue(s.contains("TC_ROOF_ACCESS")); XCTAssertTrue(s.contains("ONE SIDE ONLY (LEFT)"))
         XCTAssertEqual(t.records(out.data).filter { r in r.first?.1 == "INSERT" && r.contains { $0.0 == "2" && $0.1 == "TC_ROOF_ACCESS" } }.count, 1)
@@ -67,7 +67,7 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertFalse(r2.accessAtStart); XCTAssertEqual(r2.wallS, hi, accuracy: 1e-9)
         XCTAssertEqual(r2.v1, hi - RoofWalkway.landing, accuracy: 1e-9)
         XCTAssertTrue(String(decoding: RoofDXF.build(right, parts: [.pv]).data, as: UTF8.self).contains("ONE SIDE ONLY (RIGHT)"))
-        XCTAssertTrue(out.layers.contains("TC-PV-WALKWAY")); XCTAssertTrue(out.layers.contains("TC-DETAIL"))
+        XCTAssertTrue(out.layers.contains("S-WALK-N")); XCTAssertTrue(out.layers.contains("G-DETL"))
     }
 
     func testWalkwaysFromTheLayout() throws {
@@ -99,33 +99,36 @@ final class RoofWalkwayTests: XCTestCase {
     func testTheDXFDrawsThemAndTheDetail() throws {
         let v = roof(every: 3), out = RoofDXF.build(v, parts: [.pv]), recs = t.rawEntities(out.data)
         let ws = RoofWalkway.walkways(RoofMount.layout(v, latitude: nil).layout)
-        for l in ["TC-PV-WALKWAY", "TC-PV-LIFELINE", "TC-PV-CABLETRAY", "TC-DETAIL"] { XCTAssertTrue(out.layers.contains(l), l) }
+        for l in ["S-WALK-N", "S-LIFE-N", "E-CTRY-N", "G-DETL"] { XCTAssertTrue(out.layers.contains(l), l) }
         func count(_ type: String, _ layer: String) -> Int { recs.filter { $0.first?.1 == type && t.value($0, "8") == layer }.count }
         let panels = ws.map(\.panels.count).reduce(0, +), feet = ws.map(\.feet.count).reduce(0, +)
-        // each panel's outline and inner frame, an L-foot square at both grating edges
-        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-WALKWAY"), 2 * panels + 2 * feet)
-        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-LIFELINE"), ws.map(\.supports.count).reduce(0, +))
-        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-CABLETRAY"), ws.count)
+        // each panel's outline and inner frame; an L-foot square at both grating edges and each lifeline support on
+        // their own layers (every object ByLayer)
+        XCTAssertEqual(count("LWPOLYLINE", "S-WALK-N"), 2 * panels)
+        XCTAssertEqual(count("LWPOLYLINE", "S-WALK-FOOT-N"), 2 * feet)
+        XCTAssertEqual(count("LWPOLYLINE", "S-LIFE-SUPT-N"), ws.map(\.supports.count).reduce(0, +))
+        XCTAssertFalse(recs.contains { ["S-WALK-N", "S-WALK-FOOT-N", "S-WALK-RAIL-N", "S-LIFE-N", "S-LIFE-SUPT-N"].contains(t.value($0, "8") ?? "") && t.value($0, "62") != nil })
+        XCTAssertEqual(count("LWPOLYLINE", "E-CTRY-N"), ws.count)
         // a cross rail at every L-foot, under the whole band (outline and the hat section's two inner lines), drawn
         // before the tray and grating so their WIPEOUTs cover it
-        XCTAssertEqual(count("LWPOLYLINE", "TC-PV-RAIL"), feet)
+        XCTAssertEqual(count("LWPOLYLINE", "S-WALK-RAIL-N"), feet)
         let lines = t.lines(out.data)
-        let firstRail = try XCTUnwrap(lines.indices.first { lines[$0] == "LWPOLYLINE" && lines[$0 + 8] == "TC-PV-RAIL" })
-        let firstTray = try XCTUnwrap(lines.indices.first { lines[$0] == "WIPEOUT" && lines[$0 + 8] == "TC-PV-CABLETRAY" })
+        let firstRail = try XCTUnwrap(lines.indices.first { lines[$0] == "LWPOLYLINE" && lines[$0 + 8] == "S-WALK-RAIL-N" })
+        let firstTray = try XCTUnwrap(lines.indices.first { lines[$0] == "WIPEOUT" && lines[$0 + 8] == "E-CTRY-N" })
         XCTAssertLessThan(firstRail, firstTray)
-        // the top view's hatches: grating crossed (ANSI37), the tray dotted, the rail solid
+        // the top view's hatches, each on its layer's HATC layer: grating crossed (ANSI37), the tray dotted, the rail solid
         let hatches = recs.filter { $0.first?.1 == "HATCH" }
-        XCTAssertEqual(hatches.filter { t.value($0, "2") == "ANSI37" && t.value($0, "8") == "TC-PV-WALKWAY" }.count, panels)
-        XCTAssertEqual(hatches.filter { t.value($0, "2") == "DOTS" && t.value($0, "8") == "TC-PV-CABLETRAY" }.count, ws.count)
-        XCTAssertEqual(hatches.filter { t.value($0, "2") == "SOLID" && t.value($0, "8") == "TC-PV-LIFELINE" }.count, ws.count)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "ANSI37" && t.value($0, "8") == "S-WALK-HATC-N" }.count, panels)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "DOTS" && t.value($0, "8") == "E-CTRY-HATC-N" }.count, ws.count)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "SOLID" && t.value($0, "8") == "S-LIFE-RAIL-HATC-N" }.count, ws.count)
         // the grating and the tray hide what is under them
-        XCTAssertEqual(count("WIPEOUT", "TC-PV-WALKWAY"), panels)
+        XCTAssertEqual(count("WIPEOUT", "S-WALK-N"), panels)
         // the detail sheet, once, to the right of the plan
         let detail = recs.filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "TC_DETAIL_WALKWAY" }
         XCTAssertEqual(detail.count, 1)
         // no walkway: none of it
         let none = RoofDXF.build(roof(every: 0), parts: [.pv])
-        XCTAssertFalse(none.layers.contains("TC-PV-WALKWAY")); XCTAssertFalse(none.layers.contains("TC-DETAIL"))
+        XCTAssertFalse(none.layers.contains("S-WALK-N")); XCTAssertFalse(none.layers.contains("G-DETL"))
     }
 
     func testTheDetailIsTheTeamsSheet() throws {
@@ -144,6 +147,6 @@ final class RoofWalkwayTests: XCTestCase {
         let written = body.filter { $0 == "AcDbLine" || $0 == "AcDbPolyline" }.count
         XCTAssertGreaterThan(Double(written), 0.95 * Double(d.lines.count + d.polylines.count))
         XCTAssertLessThanOrEqual(written, d.lines.count + d.polylines.count)
-        XCTAssertTrue(body.contains("TC-DETAIL"))
+        XCTAssertTrue(body.contains("G-DETL"))
     }
 }

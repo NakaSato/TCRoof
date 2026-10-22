@@ -56,7 +56,7 @@ final class TankComponentsTests: XCTestCase {
         XCTAssertTrue(lines.contains("AR-CONC"))
         // members are closed polylines, so they stretch by their grips: the rows' posts, rafters and braces
         let recs = t.records(out.data)
-        let rafters = recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "TC-PV-RAFTER" && t.double($0, "20") < 0 }
+        let rafters = recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "S-PVRF-N" && t.double($0, "20") < 0 }
         XCTAssertEqual(rafters.count, 2)
         XCTAssertTrue(rafters.allSatisfy { t.value($0, "70") == "1" })
     }

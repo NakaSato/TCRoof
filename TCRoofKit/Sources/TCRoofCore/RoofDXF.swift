@@ -40,8 +40,8 @@ public enum RoofDXF {
         // the cross rails under the whole band (the tray and the grating cover them): a hat section, grey
         for v in w.feet {
             let r = W.railWidth / 2
-            dxf.polyline(CADLayers.pvRail, box(0, W.band, v - r, v + r), closed: true, aci: 8)
-            for d in [-r / 3, r / 3] { dxf.line(CADLayers.pvRail, at(0, v + d), at(W.band, v + d), aci: 8) }
+            dxf.polyline(CADLayers.walkRail, box(0, W.band, v - r, v + r), closed: true)
+            for d in [-r / 3, r / 3] { dxf.line(CADLayers.walkRail, at(0, v + d), at(W.band, v + d)) }
         }
         let tray = box(W.tray.0, W.tray.1, w.v0, w.v1)
         dxf.wipeout(CADLayers.pvCableTray, tray); dxf.polyline(CADLayers.pvCableTray, tray, closed: true)
@@ -55,15 +55,15 @@ public enum RoofDXF {
             dxf.crossHatch(CADLayers.pvWalkway, inner, spacing: 0.025, aci: CADLayers.pvWalkway.aci)
         }
         dxf.line(CADLayers.pvCableTray, at(W.pipe, w.v0), at(W.pipe, w.v1))
-        dxf.solid(CADLayers.pvLifeline, box(W.rail.0, W.rail.1, w.v0, w.v1), aci: 80)
+        dxf.solid(CADLayers.lifeRail, box(W.rail.0, W.rail.1, w.v0, w.v1))
         for v in w.feet {
             for a in [W.grating.0 + 0.014, W.grating.1 - 0.014] {
-                dxf.polyline(CADLayers.pvWalkway, box(a - 0.02, a + 0.02, v - 0.02, v + 0.02), closed: true, aci: 6)
+                dxf.polyline(CADLayers.walkFoot, box(a - 0.02, a + 0.02, v - 0.02, v + 0.02), closed: true)
             }
         }
         dxf.line(CADLayers.pvLifeline, at(W.lifeline, w.v0), at(W.lifeline, w.v1))
         for v in w.supports {
-            dxf.polyline(CADLayers.pvLifeline, box(W.lifeline - 0.02, W.lifeline + 0.02, v - 0.02, v + 0.02), closed: true, aci: 3)
+            dxf.polyline(CADLayers.lifeSupport, box(W.lifeline - 0.02, W.lifeline + 0.02, v - 0.02, v + 0.02), closed: true)
         }
         // the band's width across the walkway's free end (its start, or its end when the ridge access is at the start),
         // when the gap runs along a plan axis
@@ -158,7 +158,7 @@ public enum RoofDXF {
         dxf.text(CADLayers.text, (tx, tip.1 - 0.8 * h), height: h, note, align: align, middle: true)
     }
 
-    /// "TC-GRID | TC-ROOF-POST | TC-ROOF-TRUSS | …", the sheet's layer line.
+    /// "G-GRID | S-COLS-E | S-ROOF-FRAM-E | …", the sheet's layer line.
     public static func layerSummary(_ parts: Set<Part>) -> String {
         let keys = (parts.contains(.plan) ? ["GRID", "POST", "TRUSS", "PURLIN"] : []) + (parts.contains(.section) ? ["SECTION"] : [])
             + (parts.contains(.pv) ? ["PV"] : []) + (parts.isEmpty ? [] : ["DIM", "TEXT"]) + (parts.contains(.table) ? ["TABLE"] : [])

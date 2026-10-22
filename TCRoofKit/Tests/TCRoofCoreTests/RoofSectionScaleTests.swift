@@ -55,6 +55,6 @@ final class RoofSectionScaleTests: XCTestCase {
         let clear = try XCTUnwrap(dims.first { t.value($0, "1") == key && t.value($0, "50") == "90" })
         XCTAssertEqual(abs(t.double(clear, "24") - t.double(clear, "23")), 5.5, accuracy: 1e-3)
         // no loose dimension lines left on the section's DIM layer apart from the slope arc and the callouts
-        XCTAssertLessThan(t.rawEntities(out.data).filter { t.value($0, "8") == "TC-DIM" && $0.first?.1 == "LINE" }.count, 12)
+        XCTAssertLessThan(t.rawEntities(out.data).filter { t.value($0, "8") == "G-ANNO-DIMS" && $0.first?.1 == "LINE" }.count, 12)
     }
 }

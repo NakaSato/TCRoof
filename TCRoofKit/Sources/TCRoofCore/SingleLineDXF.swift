@@ -3,7 +3,8 @@ import Foundation
 /// SLD "ส่งออก DXF" (docs/specs/cad-export-dxf phase 2): the same diagram as the A3 PDF page, as DXF R2000 at paper scale,
 /// 400 mm wide (A3 landscape less its margins), with a title line and the "not a construction drawing" note under it.
 /// Layers follow `SingleLineLayout.color(_:)`: ink is a known value, blue new equipment, red a missing value, grey an
-/// assumed one. Condition colours (green / amber / red) only colour text, which goes on `SLD_TEXT` with its colour kept.
+/// assumed one. Text goes on the text layer of its colour's meaning (`E-SLDG-MISS-TEXT`, …; ink on `E-SLDG-TEXT`), so
+/// every object is ByLayer and the condition colours (green / amber / red) come from the layers.
 public enum SingleLineDXF {
     /// Drawing width in mm.
     public static let paperWidth = 400.0
@@ -20,7 +21,9 @@ public enum SingleLineDXF {
     static func layer(_ op: DrawOp) -> SketchDXF.Layer {
         let colour: RGBA?
         switch op {
-        case .text, .textBox, .runs: return textLayer
+        case let .text(_, _, _, _, c, _, _), let .textBox(_, _, _, _, c, _), let .runs(_, _, c, _):
+            guard c != SingleLineLayout.ink, let meaning = colourLayers.first(where: { $0.0 == c })?.1 else { return textLayer }
+            return CADLayers.annotation(of: meaning)
         case let .line(_, _, _, c, _), let .polyline(_, _, c, _), let .hatch(_, c, _): colour = c
         // the pole marker is the only shape filled `pole` (its stroke is grey)
         case let .rect(_, s, f, _), let .polygon(_, s, f, _), let .circle(_, _, s, f, _): colour = f == SLSymbols.poleFill ? f : s ?? f
@@ -34,7 +37,7 @@ public enum SingleLineDXF {
         let drawing = SingleLineLayout.draw(SingleLine.build(job, hvOverride: hv))
         let H = drawing.sketch.height, s = paperWidth / drawing.width   // mm per sketch point
         var o = SketchDXF.Options()
-        o.dashes = true; o.opColours = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true
+        o.dashes = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true
         o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)
         dxf.add(drawing.sketch.ops, layer: { _, op in layer(op) }, transform: { p in (p.x * s / 1000, (H - p.y) * s / 1000) },

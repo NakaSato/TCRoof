@@ -16,7 +16,7 @@ are behind, what pace each task needs, and booking progress, actual dates and la
 App (team / manager / Maintainer; assistant.use)
   ├─ Assistant.Session: the conversation, kept on the device
   ├─ Assistant.Toolbox: runs the model's tool calls on the device's jobs
-  │     read: list_stations, get_schedule, get_week_tasks
+  │     read: list_stations, get_schedule, get_project, get_week_tasks
   │     propose: propose_progress, propose_dates, propose_late_cause → PendingAction (nothing saved)
   │     strategy: what_if, station_priorities, look_ahead, suggest_replan; propose_replan → PendingAction
   └─ AssistantRouter: Qwen directly with this device's key when it has one (§6), else
@@ -37,6 +37,20 @@ App (team / manager / Maintainer; assistant.use)
   `Session.resolve(id, confirmed:)` tells the model.
 - **No customer data.** `Assistant.Job` carries the station name, MP number, kWp, the plan, progress and daily reports;
   never the customer's name, phone or address.
+- **How it answers.** Like an experienced site engineer: plain Thai sentences, no field names or JSON, the main point
+  first; then what the numbers show, the cause, what it affects and what to do, with its assumptions. Each task's
+  `floatDays` (`InstallCriticalPath` on the plan's dates; 0 = critical path) lets it say which delays move the
+  finish, and it never trades tests, the manufacturer's installation rules, permits or the utility's steps for speed.
+- **Tokens.** The system prompt and the tool descriptions are short English (Thai takes two to three times the
+  tokens; the model is told to answer in Thai), `get_project` takes `sections` (survey, papers, erc, iec, weekly, icl,
+  devices, logs, inspections; default all) and leaves out empty parts, and earlier questions' tool results aren't
+  sent again. A question that reads one station's project costs about 5,000–6,000 tokens over its two rounds.
+- **The whole project, on demand.** `get_project` answers the rest of one station (`Assistant.ProjectFacts`): the job's
+  basics, its NO.224 surveys (completion, each section's facts, what is missing; never A1's answers), the station's
+  papers by package with those not ready or expiring, the ERC flow's headline and waits, the IEC 62446 test (each
+  step done / confirmed / missing, each inverter's strings, kWp, PR and pass, `9 ภาพถ่ายติดตั้งระบบ`), the last four
+  weekly requests R1, the ICL, scanned devices, install logs and upcoming inspections. The app builds it only for the
+  station asked (`Session`'s `project`, `Job.assistantProject`), and it works on stations without an MP plan too.
 
 ## 2. Core (`TCRoofCore/Assistant/`)
 
@@ -45,10 +59,11 @@ App (team / manager / Maintainer; assistant.use)
 | `ScheduleRecovery.swift` | `MasterSchedule.recovery(plan:actual:today:)`: per task with weight, points done and left, weeks left, needed points per week, pace so far, projected finish (the Saturday of the week it ends at that pace), slip days, and a state (`done`, `upcoming`, `onTrack`, `atRisk`, `overdue`) |
 | `ScheduleBrief.swift` | One station as JSON for the model: plan vs actual, per part, per task with its recovery numbers and late cause, this and the next two weeks' tasks, the projected station finish, and the last 14 days of daily reports (crew, rain hours, stop reason, progress lines, open problems) |
 | `AssistantChat.swift` | The OpenAI-compatible messages, `Request` / `Reply`, the `Transport` protocol, `JSONValue` |
-| `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the eleven tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
+| `ProjectFacts.swift` | `Assistant.ProjectFacts`: one station's project besides its MP plan, for `get_project` (`AssistantProjectTests`) |
+| `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the twelve tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
 | `AssistantStrategy.swift` | `Assistant.Strategy`: the planning tools of §5 (`what_if`, `station_priorities`, `look_ahead`, `suggest_replan`, `propose_replan`) and the shared task-by-task forecast |
 | `AssistantOpenAI.swift` | `Assistant.OpenAI`: the request and reply checks for calling Qwen directly with the device's key (§6), and the daily limit per device |
-| `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message; the Thai system prompt |
+| `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message, and tool results of earlier questions sent as a one-line note (`droppedResult`; the device keeps them whole, the model calls again when it needs them); the system prompt |
 
 ## 3. Server (`functions/`)
 
@@ -73,7 +88,8 @@ App (team / manager / Maintainer; assistant.use)
 - `AssistantClient` (`Assistant.Transport`) POSTs the callable's JSON with the account's ID token to
   `https://asia-southeast1-<project>.cloudfunctions.net/assistant` (no FirebaseFunctions SDK); errors in Thai
   (`resource-exhausted`: the day's limit). `AssistantRouter` picks the device's key first (§6).
-- Jobs → `Assistant.Job`: only jobs with an MP plan, `canEdit = permissions.can(.mpProgress, on: job.access)`.
+- Jobs → `Assistant.Job`: every PWA station (`list_stations` adds those without an MP plan, last, for `filter: all`;
+  the plan's tools answer that they have none), `canEdit = permissions.can(.mpProgress, on: job.access)`.
 - `AssistantChatView` from TC components: opened from the install tracking page header (focus on that station),
   แผน MP ทุกสถานี and `MPScheduleScreen`; prompt chips `สถานีไหนช้ากว่าแผน`, `ต้องเร่งงานอะไรสัปดาห์นี้`,
   `ร่างสรุปประชุมประจำสัปดาห์`, `อัปเดตความก้าวหน้าจากรายงานประจำวัน`; proposal cards with ยืนยัน / ยกเลิก, shown

@@ -119,6 +119,15 @@ final class AssistantTests: XCTestCase {
 
     private func object(_ outcome: Assistant.Toolbox.Outcome) -> JSONValue { JSONValue.parse(outcome.text) ?? .null }
 
+    func testBriefMarksTheCriticalPath() throws {
+        let b = try XCTUnwrap(job().brief(today: today))
+        let floats = b.tasks.compactMap(\.floatDays)
+        XCTAssertFalse(floats.isEmpty)
+        XCTAssertTrue(floats.contains(0))                          // the last task to end has none
+        XCTAssertTrue(floats.allSatisfy { $0 >= 0 })
+        XCTAssertTrue(b.tasks.filter { $0.code.hasPrefix("1.") }.allSatisfy { $0.floatDays == nil })   // permits
+    }
+
     func testFindsAJobByIdNumberOrName() {
         let b = box()
         XCTAssertEqual(b.find("job-2").map(\.id), ["job-2"])
@@ -285,6 +294,25 @@ final class AssistantTests: XCTestCase {
         let s = Assistant.Session(transport: stub, jobs: { [] }, now: { self.today })
         do { try await s.send("x"); XCTFail("no error") }
         catch { XCTAssertEqual(error as? Assistant.Failure, .tooManyRounds) }
+    }
+
+    @MainActor
+    func testEarlierToolResultsAreSentAsANote() async throws {
+        let stub = Stub([])
+        let j = job()
+        let s = Assistant.Session(transport: stub, jobs: { [j] }, now: { self.today })
+        for i in 0..<2 {
+            await stub.push([calls([("get_schedule", #"{"job":"189"}"#)]), .init(role: .assistant, content: "a\(i)")])
+            try await s.send("q\(i)")
+        }
+        let sent = s.trimmed()
+        let tools = sent.filter { $0.role == .tool }
+        XCTAssertEqual(tools.count, 2)
+        XCTAssertEqual(tools[0].content, Assistant.Session.droppedResult)      // the first question's
+        XCTAssertTrue(tools[1].content!.contains("structure") || tools[1].content!.contains("2.1"))   // this question's, whole
+        XCTAssertGreaterThan(s.messages.filter { $0.role == .tool }[0].content!.count, 1_000)          // kept on the device
+        // the model's answers and the questions are all still sent
+        XCTAssertEqual(sent.filter { $0.role == .user }.map(\.content), ["q0", "q1"])
     }
 
     @MainActor

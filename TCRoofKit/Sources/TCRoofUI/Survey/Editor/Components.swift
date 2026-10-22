@@ -75,17 +75,27 @@ struct PaperBox<Content: View>: View {
 struct SketchView: View {
     let sketch: Sketch
     var body: some View {
+        SketchViewDrawing(ops: sketch.ops, width: sketch.width, height: sketch.height).equatable()
+            .aspectRatio(CGFloat(sketch.width / max(sketch.height, 1)), contentMode: .fit)
+            .background(Theme.paper)
+    }
+}
+
+/// The drawing itself, drawn again only when its ops or size change, not on every edit of the page around it.
+private struct SketchViewDrawing: View, Equatable {
+    let ops: [DrawOp]
+    let width: Double
+    let height: Double
+    var body: some View {
         Canvas { ctx, size in
-            let k = min(size.width / CGFloat(sketch.width), size.height / CGFloat(sketch.height))
-            let dx = (size.width - CGFloat(sketch.width) * k) / 2
+            let k = min(size.width / CGFloat(width), size.height / CGFloat(height))
+            let dx = (size.width - CGFloat(width) * k) / 2
             ctx.withCGContext { cg in
                 cg.translateBy(x: dx, y: 0)
                 cg.scaleBy(x: k, y: k)
-                PDFRenderer.draw(sketch.ops, in: cg, photo: { _ in nil })
+                PDFRenderer.draw(ops, in: cg, photo: { _ in nil })
             }
         }
-        .aspectRatio(CGFloat(sketch.width / max(sketch.height, 1)), contentMode: .fit)
-        .background(Theme.paper)
     }
 }
 

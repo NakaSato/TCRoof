@@ -183,24 +183,32 @@ public struct TankShade: Sendable {
 
     // MARK: the last answer
 
-    /// The simulation for these values, kept for the next call with the same values and site (E1 asks on every render).
+    /// The simulation for these values, kept for the next call with the same values and site (E1 asks on every render,
+    /// once per shaded tank, so the last few tanks are kept, not only the last one).
     public static func current(_ v: Values, latitude: Double, longitude: Double? = nil) -> TankShade? {
         if let hit = cache.get(v, latitude, longitude) { return hit.shade }
         let s = TankShade(v, latitude: latitude, longitude: longitude)
         cache.set(v, latitude, longitude, s)
         return s
     }
-    private static let cache = Last()
-    private final class Last: @unchecked Sendable {
+    private static let cache = Recent()
+    private final class Recent: @unchecked Sendable {
         private let lock = NSLock()
         struct Entry { var values: Values; var latitude: Double; var longitude: Double?; var shade: TankShade? }
-        private var entry: Entry?
+        /// Most recent first.
+        private var entries: [Entry] = []
+        static let size = 8
         func get(_ v: Values, _ lat: Double, _ lon: Double?) -> Entry? {
             lock.lock(); defer { lock.unlock() }
-            return entry?.values == v && entry?.latitude == lat && entry?.longitude == lon ? entry : nil
+            guard let i = entries.firstIndex(where: { $0.latitude == lat && $0.longitude == lon && $0.values == v }) else { return nil }
+            let e = entries.remove(at: i)
+            entries.insert(e, at: 0)
+            return e
         }
         func set(_ v: Values, _ lat: Double, _ lon: Double?, _ s: TankShade?) {
-            lock.lock(); entry = Entry(values: v, latitude: lat, longitude: lon, shade: s); lock.unlock()
+            lock.lock(); defer { lock.unlock() }
+            entries.insert(Entry(values: v, latitude: lat, longitude: lon, shade: s), at: 0)
+            if entries.count > Self.size { entries.removeLast() }
         }
     }
 

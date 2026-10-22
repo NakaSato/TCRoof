@@ -252,7 +252,10 @@ public enum TankPoints {
         return o.isAbsent || !isStandard(o) || moved(o)
     }
     /// The points that need a photo and have none.
-    public static func missingPhotos(_ v: Values) -> [Obstacle] { points(v).filter { needsPhoto($0, in: v) && $0.photo == nil } }
+    public static func missingPhotos(_ v: Values) -> [Obstacle] {
+        guard TankDesign.current(v) != nil else { return [] }
+        return points(v).filter { ($0.isAbsent || !isStandard($0) || moved($0)) && $0.photo == nil }
+    }
     public static func setPhoto(_ v: inout Values, _ id: UUID, _ p: Photo?) { edit(&v, id) { $0.photo = p } }
     /// The points still to check, in list order (the chips and ‹ ›).
     public static func pending(_ v: Values) -> [Obstacle] { points(v).filter { $0.status.isEmpty } }

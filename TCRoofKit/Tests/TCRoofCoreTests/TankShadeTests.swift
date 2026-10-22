@@ -47,6 +47,26 @@ final class TankShadeTests: XCTestCase {
         XCTAssertGreaterThan(s.objectMWh, 0)
     }
 
+    func testTwoShadedTanksKeepTheirOwnSimulation() throws {
+        // E1 asks for every shaded tank on each render: both stay kept, each with its own answer
+        func tank(_ height: String) -> Values {
+            var v = Values()
+            Tank.apply(&v, Tank.presets[0])
+            TankLayout.save(&v, TankLayout.auto(v), off: [])
+            v["shade"] = .choice("มี", other: ""); v["shadeDir"] = .multi(["S"])
+            v[TankShade.Key.height] = .text(height); v[TankShade.Key.distance] = .text("3")
+            return v
+        }
+        let a = tank("12"), b = tank("9")
+        let first = try XCTUnwrap(TankShade.current(a, latitude: 17)), second = try XCTUnwrap(TankShade.current(b, latitude: 17))
+        XCTAssertNotEqual(first.objectLoss, second.objectLoss)
+        for _ in 0..<3 {
+            XCTAssertEqual(TankShade.current(a, latitude: 17)?.objectLoss, first.objectLoss)
+            XCTAssertEqual(TankShade.current(b, latitude: 17)?.objectLoss, second.objectLoss)
+        }
+        XCTAssertEqual(TankShade(a, latitude: 17)?.objectLoss, first.objectLoss)
+    }
+
     func testTheSurveyAnswersBecomeObjects() {
         var v = Values()
         XCTAssertTrue(TankShade.objects(v).isEmpty)

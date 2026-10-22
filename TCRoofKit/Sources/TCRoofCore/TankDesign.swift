@@ -213,8 +213,25 @@ public struct TankDesign: Hashable, Sendable, Identifiable, Codable {
         guard !key.isEmpty else { return nil }
         let turned = key.hasSuffix("@r"), id = turned ? String(key.dropLast(2)) : key
         let snap = v.text(Tank.Key.designSnapshot)
-        if !snap.isEmpty, let d = try? JSONDecoder().decode(TankDesign.self, from: Data(snap.utf8)), d.id == id { return (d, turned) }
+        if !snap.isEmpty, let d = snapshots.decode(snap), d.id == id { return (d, turned) }
         return (seeds + DesignLibrary.shared.tanks).first { $0.id == id }.map { ($0, turned) }
+    }
+
+    /// The last snapshots decoded: the tank page asks for the design once per point on every render.
+    static let snapshots = Snapshots()
+    final class Snapshots: @unchecked Sendable {
+        private let lock = NSLock()
+        private var items: [(text: String, design: TankDesign?)] = []
+        func decode(_ text: String) -> TankDesign? {
+            lock.lock()
+            if let hit = items.first(where: { $0.text == text }) { lock.unlock(); return hit.design }
+            lock.unlock()
+            let d = try? JSONDecoder().decode(TankDesign.self, from: Data(text.utf8))
+            lock.lock(); defer { lock.unlock() }
+            items.insert((text, d), at: 0)
+            if items.count > 4 { items.removeLast() }
+            return d
+        }
     }
 
     // MARK: saving a checked tank as a design (§2)

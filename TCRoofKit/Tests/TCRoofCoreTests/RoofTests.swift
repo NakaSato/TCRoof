@@ -218,6 +218,14 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(RoofMount.choice(Values()), RoofMount.Choice())
     }
 
+    func testAPlanDrawnAgainComparesEqual() {
+        // the page draws its plan again only when the ops differ (SketchCanvas)
+        let v = Self.designRoof()
+        XCTAssertEqual(RoofPlan(v, chips: true).sketch.ops, RoofPlan(v, chips: true).sketch.ops)
+        XCTAssertNotEqual(RoofPlan(v).sketch.ops, RoofPlan(v, dragging: (2, 2, 5, 4)).sketch.ops)
+        XCTAssertNotEqual(RoofPlan(v).sketch.ops, RoofPlan(v, highlight: 2).sketch.ops)
+    }
+
     func testAShedRoofDrawsItsRidgeOnTheHighEdge() {
         var v = Self.designRoof()
         func ridgeY(_ v: Values) -> [Double] {

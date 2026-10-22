@@ -188,7 +188,8 @@ final class InverterTests: XCTestCase {
         let r60 = StringSizing.check(module: module, inverter: i60, modulesPerString: 11, stringsPerMppt: 2, totalModules: 132)
         XCTAssertEqual(r60.worst, .warning)
         XCTAssertEqual(r60.checks.first { $0.name == "Operating current per MPPT" }?.level, .warning)
-        XCTAssertEqual(r60.checks.first { $0.name == "Short-circuit current per MPPT" }?.level, .ok)
+        // 2 × 14.23 = 28.5 A is under the 32 A limit, but × 1.25 = 35.6 A is not: a warning, not an error
+        XCTAssertEqual(r60.checks.first { $0.name == "Short-circuit current per MPPT" }?.level, .warning)
 
         // 125 kW: 32 A / 40 A limits hold even with +10 % bifacial current.
         let r125 = StringSizing.check(module: module, inverter: i125, modulesPerString: 14, stringsPerMppt: 2,
@@ -198,5 +199,66 @@ final class InverterTests: XCTestCase {
         // 21 modules breaks the 1,100 V limit.
         let bad = StringSizing.check(module: module, inverter: i60, modulesPerString: 21, stringsPerMppt: 1)
         XCTAssertEqual(bad.worst, .error)
+    }
+
+    /// A module rated below the inverter's 1,100 V sets the limit itself.
+    func testTheModulesOwnVoltageRatingCapsTheString() throws {
+        var module = try ZnshineZXM7UHLDD144.fit(570).spec
+        let i60 = try GrowattCatalog.max60KTL3LV()
+        module.maxSystemVoltageV = 1000
+        let lim = StringSizing.limits(module: module, inverter: i60)
+        XCTAssertEqual(lim.max, 18)       // 1,000 V / 53.0 V
+        XCTAssertEqual(StringSizing.maxDCVoltage(module: module, inverter: i60), 1000)
+        let r = StringSizing.check(module: module, inverter: i60, modulesPerString: 19, stringsPerMppt: 1)
+        XCTAssertEqual(r.checks.first { $0.name == "Max DC voltage" }?.level, .error, "19 × 53.0 V = 1,007 V > 1,000 V")
+        XCTAssertTrue(r.checks.first { $0.name == "Max DC voltage" }?.detail.contains("module rating") ?? false)
+        module.maxSystemVoltageV = 1500
+        XCTAssertEqual(StringSizing.limits(module: module, inverter: i60).max, 20, "a 1,500 V module leaves the inverter's limit")
+    }
+
+    /// A PAN without `muVocSpec` (or with a comma decimal there) must not size strings on the STC Voc.
+    func testAMissingVocCoefficientFallsBackToTheModel() throws {
+        let text = String(decoding: try fixture("ET-M772BH550GL.PAN"), as: UTF8.self)
+        let i60 = try GrowattCatalog.max60KTL3LV()
+
+        let without = text.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.contains("muVocSpec=") }.joined(separator: "\n")
+        let bare = try PANParser.parse(text: without)
+        XCTAssertEqual(bare.temperatureCoefficients.muVocVPerK, 0)
+        let lim = StringSizing.limits(module: bare, inverter: i60)
+        XCTAssertGreaterThan(lim.vocCold, bare.stc.vocV + 1, "the model's Voc at 10 °C, not 49.9 V")
+        XCTAssertLessThanOrEqual(lim.max, 21, "22 × 51.8 V would be 1,140 V")
+        XCTAssertLessThanOrEqual(Double(lim.max) * lim.vocCold, 1100)
+
+        // a comma decimal is read like a point
+        let comma = try PANParser.parse(text: text.replacingOccurrences(of: "muVocSpec=-128.0", with: "muVocSpec=-128,0"))
+        XCTAssertEqual(comma.temperatureCoefficients.muVocVPerK, -0.128, accuracy: 1e-12)
+    }
+
+    /// `limits` and `check` agree: a string shorter than the minimum is an error, not a warning.
+    func testStartVoltageIsAHardMinimumInBoth() throws {
+        let module = try ZnshineZXM7UHLDD144.fit(570).spec
+        let i60 = try GrowattCatalog.max60KTL3LV()
+        let min = StringSizing.limits(module: module, inverter: i60).min
+        XCTAssertEqual(min, 7)
+        let short = StringSizing.check(module: module, inverter: i60, modulesPerString: min - 1, stringsPerMppt: 1)
+        XCTAssertEqual(short.checks.first { $0.name == "Start voltage" }?.level, .error, "6 × 36.3 V = 218 V < 250 V")
+        XCTAssertEqual(short.checks.first { $0.name == "MPPT window, hot" }?.level, .ok, "218 V is inside the 200 V window")
+        let ok = StringSizing.check(module: module, inverter: i60, modulesPerString: min, stringsPerMppt: 1)
+        XCTAssertEqual(ok.checks.first { $0.name == "Start voltage" }?.level, .ok)
+    }
+
+    /// Isc over the limit is an error; only its 1.25 × margin over it, a warning; a factor of 1 is the plain check.
+    func testShortCircuitMargin() throws {
+        let module = try ZnshineZXM7UHLDD144.fit(570).spec
+        let i60 = try GrowattCatalog.max60KTL3LV()
+        func level(_ c: StringSizing.Conditions, strings: Int = 2) -> StringSizing.Level? {
+            StringSizing.check(module: module, inverter: i60, modulesPerString: 11, stringsPerMppt: strings, conditions: c)
+                .checks.first { $0.name == "Short-circuit current per MPPT" }?.level
+        }
+        XCTAssertEqual(level(.init()), .warning)
+        XCTAssertEqual(level(.init(iscSafetyFactor: 1)), .ok)
+        XCTAssertEqual(level(.init(), strings: 1), .ok, "14.2 × 1.25 = 17.8 A")
+        XCTAssertEqual(level(.init(bifacialCurrentGain: 0.15)), .error, "2 × 14.23 × 1.15 = 32.7 A > 32 A")
     }
 }

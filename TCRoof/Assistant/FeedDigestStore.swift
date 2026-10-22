@@ -28,7 +28,7 @@ final class FeedDigestStore {
     private(set) var entries: [String: Entry]
     /// Days being asked now.
     private(set) var busy: Set<String> = []
-    @ObservationIgnored var transport: Assistant.Transport = AssistantRouter()
+    @ObservationIgnored var transport: Assistant.Transport = AssistantRouter(use: .digest)
 
     init() {
         entries = UserDefaults.standard.data(forKey: Self.key)

@@ -274,13 +274,6 @@ public enum RoofDXF {
             if let det = RoofTruss.details(v) { details(&dxf, det, at: (tx, ty - 1.2), width: 14, text: th) }
         }
 
-        // beside the drawing, with walkways: the team's walkway detail (top view, elevations, detail 1) at the plot scale
-        if !walkways.isEmpty, let d = CADDetail.walkway {
-            let unit = millimetres ? 1000.0 : 1, e = dxf.extents, scale = dxf.plotScale
-            let name = dxf.detailBlock(d, name: "TC_DETAIL_WALKWAY")
-            let h = d.size[1] * scale / 1000
-            dxf.insert(CADLayers.detail, name, at: (e.max.x / unit + 3, e.max.y / unit - h), scale: scale * unit / 1000)
-        }
         return dxf.output
     }
 

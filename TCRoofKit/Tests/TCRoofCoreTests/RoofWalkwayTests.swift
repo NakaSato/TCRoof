@@ -67,7 +67,7 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertFalse(r2.accessAtStart); XCTAssertEqual(r2.wallS, hi, accuracy: 1e-9)
         XCTAssertEqual(r2.v1, hi - RoofWalkway.landing, accuracy: 1e-9)
         XCTAssertTrue(String(decoding: RoofDXF.build(right, parts: [.pv]).data, as: UTF8.self).contains("ONE SIDE ONLY (RIGHT)"))
-        XCTAssertTrue(out.layers.contains("P-WALK-N")); XCTAssertTrue(out.layers.contains("G-DETL"))
+        XCTAssertTrue(out.layers.contains("P-WALK-N")); XCTAssertFalse(out.layers.contains("G-DETL"))
     }
 
     /// The page's plan and the PDF draw the walkways and the way up too (simplified), only when there are walkways.
@@ -152,10 +152,10 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertTrue(RoofWalkway.walkways(RoofMount.layout(roof(every: 0), latitude: 15).layout).isEmpty)
     }
 
-    func testTheDXFDrawsThemAndTheDetail() throws {
+    func testTheDXFDrawsThem() throws {
         let v = roof(every: 3), out = RoofDXF.build(v, parts: [.pv]), recs = t.rawEntities(out.data)
         let ws = RoofWalkway.walkways(RoofMount.layout(v, latitude: nil).layout)
-        for l in ["P-WALK-N", "P-LIFE-N", "P-CTRY-N", "G-DETL"] { XCTAssertTrue(out.layers.contains(l), l) }
+        for l in ["P-WALK-N", "P-LIFE-N", "P-CTRY-N"] { XCTAssertTrue(out.layers.contains(l), l) }
         func count(_ type: String, _ layer: String) -> Int { recs.filter { $0.first?.1 == type && t.value($0, "8") == layer }.count }
         let panels = ws.map(\.panels.count).reduce(0, +), feet = ws.map(\.feet.count).reduce(0, +)
         // each panel's outline and inner frame; an L-foot square at both grating edges and each lifeline support on
@@ -179,9 +179,9 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertEqual(hatches.filter { t.value($0, "2") == "SOLID" && t.value($0, "8") == "P-LIFE-RAIL-HATC-N" }.count, ws.count)
         // the grating and the tray hide what is under them
         XCTAssertEqual(count("WIPEOUT", "P-WALK-N"), panels)
-        // the detail sheet, once, to the right of the plan
-        let detail = recs.filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "TC_DETAIL_WALKWAY" }
-        XCTAssertEqual(detail.count, 1)
+        // no walkway detail sheet beside the drawing (the team asked for it to be left out)
+        XCTAssertFalse(recs.contains { $0.first?.1 == "INSERT" && t.value($0, "2") == "TC_DETAIL_WALKWAY" })
+        XCTAssertFalse(out.layers.contains("G-DETL"))
         // no walkway: none of it
         let none = RoofDXF.build(roof(every: 0), parts: [.pv])
         XCTAssertFalse(none.layers.contains("P-WALK-N")); XCTAssertFalse(none.layers.contains("G-DETL"))

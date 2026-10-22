@@ -21,6 +21,8 @@ public struct RoofMountLayout: Sendable {
         /// One walkway one module wide down the middle of each face (the column nearest its centre along the eave), as
         /// most roofs have it.
         public var walkwayCentre = false
+        /// The roof access at the ridge walkway's right end on plan (false = left), on a gable roof down the middle.
+        public var walkwayAccessRight = false
         /// Modules landscape: the long side along the eave (ด้านยาวตามแป); false = portrait, the long side up the slope.
         public var landscape = false
         /// Rails up the slope across the purlins (รางตัดแป), an L-foot on each purlin they cross; false = rails along the
@@ -28,10 +30,10 @@ public struct RoofMountLayout: Sendable {
         public var railsAcross = false
         public init(ribClamp: Bool = false, avoidShade: Bool = true, faceUse: [String: Bool] = [:], removed: Set<SlotRef> = [],
                     tileHooks: Bool = false, walkwayEvery: Int = 0, landscape: Bool = false, railsAcross: Bool = false,
-                    walkwayCentre: Bool = false) {
+                    walkwayCentre: Bool = false, walkwayAccessRight: Bool = false) {
             self.ribClamp = ribClamp; self.avoidShade = avoidShade; self.faceUse = faceUse; self.removed = removed
             self.tileHooks = tileHooks; self.walkwayEvery = walkwayEvery; self.landscape = landscape; self.railsAcross = railsAcross
-            self.walkwayCentre = walkwayCentre
+            self.walkwayCentre = walkwayCentre; self.walkwayAccessRight = walkwayAccessRight
         }
         /// Rows don't depend on the purlins: rib clamps or tile hooks hold the rails at ¼ and ¾ of the module, or the rails
         /// cross the purlins.
@@ -153,6 +155,9 @@ public struct RoofMountLayout: Sendable {
     /// The layout with each face's placement given (or the best one where none is).
     public static func compute(_ input: RoofMountInput, standard: RoofMountStandard = .standard, options: Options = .init(),
                                placements: [String: Placement] = [:]) -> RoofMountLayout {
+        var standard = standard
+        // the walkway along the ridge needs half its band clear of modules on each face
+        if options.walkwayCentre, input.shape != .shed { standard.setRidge = max(standard.setRidge, RoofWalkway.ridgeClear) }
         let roof = RoofFaces(input, standard: standard)
         let purlins = RoofFaces.purlins(slopeLength: roof.slopeLength, spacing: input.purlinSpacing)
         let contexts = Context.make(roof, input: input, standard: standard, options: options, purlins: purlins)

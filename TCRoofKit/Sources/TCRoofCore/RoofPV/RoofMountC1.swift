@@ -93,13 +93,15 @@ public enum RoofMount {
         public var walkwayEvery = 0
         /// One walkway down the middle of each face (most roofs).
         public var walkwayCentre = false
+        /// The roof access ladder at the ridge's right end on plan (false = left); drawing only, not in the digest.
+        public var accessRight = false
         /// Modules landscape, the long side along the purlins (ด้านยาวตามแป).
         public var landscape = false
         /// Rails up the slope across the purlins (รางตัดแป); L-feet on purlins only.
         public var railsAcross = false
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross, walkwayCentre }
+        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross, walkwayCentre, accessRight }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -114,6 +116,7 @@ public enum RoofMount {
             landscape = try c.decodeIfPresent(Bool.self, forKey: .landscape) ?? false
             railsAcross = try c.decodeIfPresent(Bool.self, forKey: .railsAcross) ?? false
             walkwayCentre = try c.decodeIfPresent(Bool.self, forKey: .walkwayCentre) ?? false
+            accessRight = try c.decodeIfPresent(Bool.self, forKey: .accessRight) ?? false
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -126,12 +129,14 @@ public enum RoofMount {
             if landscape { try c.encode(landscape, forKey: .landscape) }
             if railsAcross { try c.encode(railsAcross, forKey: .railsAcross) }
             if walkwayCentre { try c.encode(walkwayCentre, forKey: .walkwayCentre) }
+            if accessRight { try c.encode(accessRight, forKey: .accessRight) }
         }
 
         /// The layout's options for a roof (tile hooks on concrete tiles).
         public func options(tile: Bool) -> RoofMountLayout.Options {
             .init(ribClamp: ribClamp && !tile, avoidShade: avoidShade, faceUse: faceUse, removed: Set(removed), tileHooks: tile,
-                  walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross, walkwayCentre: walkwayCentre)
+                  walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross, walkwayCentre: walkwayCentre,
+                  walkwayAccessRight: accessRight)
         }
         public var standardOrDefault: RoofMountStandard { standard ?? RoofMount.defaultStandard }
     }

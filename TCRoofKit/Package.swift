@@ -22,7 +22,7 @@ let package = Package(
     targets: [
         // raw deflate / inflate / crc32 from the system zlib (iOS SDK and Linux both ship it)
         .target(name: "CZlib", linkerSettings: [.linkedLibrary("z")]),
-        .target(name: "TCRoofCore", dependencies: ["PVYield", "ModuleRules"], resources: [.process("Resources/equipment-catalog.json"), .copy("Resources/pv-modules"), .copy("Resources/PermitForms")]),
+        .target(name: "TCRoofCore", dependencies: ["PVYield", "ModuleRules"], resources: [.process("Resources/equipment-catalog.json"), .process("Resources/walkway-detail.json"), .copy("Resources/pv-modules"), .copy("Resources/PermitForms")]),
         .target(name: "ExcelExport", dependencies: ["TCRoofCore", "CZlib"], resources: [.process("Resources")]),
         .target(name: "PDFReport", dependencies: ["TCRoofCore"], resources: [.process("Resources")]),
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),

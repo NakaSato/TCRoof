@@ -149,6 +149,33 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
+- **Roof walkways** (2026-10-22, after the team's `Walkway.dxf`, kept in `reference/`): each walkway gap of C1's PV
+  layout (`RoofWalkway.walkways`: one module column up the slope, every n columns or, as most roofs have it, one down
+  the middle of each face, `walkwayCentre`, the roof page's `กลางหลังคา`, the default once walkways are on) is drawn
+  as a 0.90 m band: the 6 mm wire-rope lifeline with supports every 2.40 m (TC-PV-LIFELINE), the rail, the HDG grating
+  0.30 × 2.40 × 0.03 m in panels on L-feet every 1.20 m (TC-PV-WALKWAY), the 3/4" PPR pipe and the 200 mm cable tray
+  (TC-PV-CABLETRAY), grating and tray on WIPEOUTs, with the band's width and a tag. The positions across the band
+  (lifeline 0.05, rail 0.12, grating 0.17–0.47, pipe 0.505, tray 0.54–0.74) are read off the detail's top view; open:
+  the team to confirm them. With any walkway the DXF also carries the team's walkway detail (top view, elevations 1–3,
+  detail 1) as one block `TC_DETAIL_WALKWAY` on TC-DETAIL beside the drawing, at the plot scale; it comes from
+  `Resources/walkway-detail.json`, made by `tools/cad-details/convert.py` from the DXF (blocks, dimensions and leaders
+  exploded, XCLIP frames applied); run it again when the detail changes.
+- **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
+  plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
+  table, the rafters (50 mm members up the slope at every post pair, TC-PV-RAFTER, red), the four rails (TC-PV-RAIL,
+  yellow) and the bracing between neighbouring posts on the front and back lines (TC-PV-BRACE, cyan), each on its own
+  WIPEOUT; the team's footing block at every post (`TC_FOOTING_<mm>`: the footing square at `footing`, the base plate,
+  the C post's flanges and the two 50 mm plates; TC-PV-FOOTING, green); a dimension chain along each table beyond its
+  low edge (cantilever, bays, cantilever) and one across the post lines from wall to wall. No modules are drawn there.
+- **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
+  (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
+  (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
+  at x = 0, on TC-TANK-SECTION / TC-TANK-SOIL / the PV layers by colour, their lengths, heights, spacings, post heights
+  and bays as live DIMENSIONs.
+- **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
+  CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
+  decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.
+  The single line diagram stays in paper millimetres: it is an A3 sheet, not a real-world drawing.
 - **Layer standard** (`TCRoofCore/CADLayers.swift`, 2026-10-22): every export takes its layers from one list, named
   `TC-<area>-<item>` (shared `TC-GRID`, `TC-DIM`, `TC-TEXT`, `TC-NORTH`, `TC-SECTION-MARK`, `TC-OBSTACLE`; then
   `TC-ROOF-*`, `TC-PV-*`, `TC-TANK-*`, `TC-SITE-*`, `TC-SLD-*`). Each layer has its colour, linetype (grid CENTER;
@@ -163,8 +190,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   the line) from an anonymous block `*D<n>`, in a style per text height (`TC_<height>`: DIMTSZ ticks, CORDIA text,
   DIMLFAC to metres, two decimals; `TC_<height>_Z` drops trailing zeros for labels like `4` or `1.5`), so CAD redraws it
   the same after an edit. The measured part of the label is written `<>`, so moving a point updates the number;
-  `Ø <>` keeps its prefix, and any other label stays as written. The C1 section's dimensions stay lines: the section is
-  a diagram, not to scale. A `hatch` is one HATCH (ANSI31 at the sketch's spacing, inside the box), and an opaque
+  `Ø <>` keeps its prefix, and any other label stays as written. The C1 section is drawn to scale for the DXF
+  (`RoofSection(trueScale:)`, 2026-10-22: the ground at the clear height under the tie, or under the column top for a
+  rafter frame; the page and the PDF keep the compact diagram), so its half spans, span, overhangs, clear height, rise
+  and heel are DIMENSIONs too (`RoofSection.dimensions`). A `hatch` is one HATCH (ANSI31 at the sketch's spacing, inside the box), and an opaque
   coloured fill with no stroke (posts, rail feet, junction dots, a north arrow's head) adds a SOLID HATCH inside its
   outline (`Options.hatchEntities`; off writes the old lines).
 - **Objects, not loose lines**: a polyline, a rectangle, a polygon and an outline are one LWPOLYLINE each (closed for the
@@ -184,5 +213,4 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
 1. Does PEA (or PWA) accept DXF in the permit pack, or must it be DWG / PDF only?
 2. SLD in real scale or paper scale (A3 sheet in mm, 1:1 with the PDF)? Paper scale is simpler for a schematic.
 3. Should a title block (company, job, date, signer) be drawn into each DXF?
-5. Should the C1 section be drawn to scale, so its dimensions can be real ones too?
 4. ~~Is the TIS-620 codepage enough?~~ Answered 2026-10-22: TIS-620 with the team's `cordia.shx` (width 0.85), above.

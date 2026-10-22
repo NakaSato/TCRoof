@@ -1,7 +1,9 @@
 import Foundation
 
 /// C1 section A-A (docs/ui/survey-c1 `renderVals`, `S.*`): a true-scale cut across the ridge for the seven frame types,
-/// with dimensions and the callouts ①–⑦ of the member rows. The sketch is the design's 760 × 250 viewBox.
+/// with dimensions and the callouts ①–⑦ of the member rows. The sketch is the design's 760 × 250 viewBox, where the
+/// columns stop at a fixed ground line; `trueScale` (the DXF) draws the ground at the clear height, to the frame's scale,
+/// so the sketch grows taller, and lists the dimensions (`dimensions`) for the DXF's DIMENSIONs.
 /// `tags` names each op's CAD layer (`SECTION`, `DIM`, `GRID`; nil for fills, labels and the light core strokes).
 public struct RoofSection: Sendable {
     public static let width = 760.0, height = 250.0
@@ -16,13 +18,17 @@ public struct RoofSection: Sendable {
     public let bays: Int
     /// Sketch points per metre.
     public let scale: Double
+    /// With `trueScale`: the half spans, the span, the overhangs, the clear height, the rise and the heel, and the
+    /// indices of the ops that draw their lines and ticks (the DXF writes DIMENSIONs instead).
+    public var dimensions: [SketchDXF.Dimension] = []
+    public var dimensionOps: Set<Int> = []
 
     static let dark = RGBA(hex: 0x1A1D22), core = RGBA(hex: 0xD5DBE3), webCore = RGBA(hex: 0xF2F4F7), navy = RGBA(hex: 0x16325C)
     static let sheet = RGBA(hex: 0x1F4F78), red = RGBA(hex: 0xD9453B), blue = RGBA(hex: 0x1F6FB5), gridC = RGBA(hex: 0x8A97AA)
     static let concrete = RGBA(hex: 0xC9CED6)
 
     /// - Parameter highlight: member row 1…7 whose callout is filled red.
-    public init(_ v: Values, highlight: Int? = nil) {
+    public init(_ v: Values, highlight: Int? = nil, trueScale: Bool = false) {
         let f = Roof.frame(v), ridge = Roof.ridge(v)
         let span = Roof.span(v), half = span / 2, nH = Roof.bays(v)
         let ang = Roof.slope(v), tn = tan(ang * .pi / 180), rise = half * tn
@@ -30,6 +36,8 @@ public struct RoofSection: Sendable {
         let sc = min(540 / span, 118 / (rise + heelM)), HW = half * sc, XL = 380 - HW, XR = 380 + HW, YB = 150.0
         let heel = heelM * sc, YE = YB - heel, YT = YE - rise * sc, pw = half / Double(nH)
         let overhang = Roof.overhang(v), clear = Roof.clearHeight(v)
+        // the ground: a fixed line in the design; at the clear height under the tie (a rafter frame's column top) to scale
+        let G0 = trueScale && clear > 0 ? (f.isRafter ? YE : YB) + clear * sc : 192.0, dy = G0 - 192
         var o: [DrawOp] = [], tg: [String?] = []
         func add(_ op: DrawOp, _ tag: String?) { o.append(op); tg.append(tag) }
         var webs: [[Pt]] = [], chords: [[Pt]] = [], cols: [[Pt]] = []
@@ -55,7 +63,7 @@ public struct RoofSection: Sendable {
 
         add(.rect(Box(0, 0, Self.width, Self.height), stroke: nil, fill: .white), nil)
         let gdash: [Double] = [12, 3, 2, 3]
-        line(XL, 24, XL, 240, 0.6, Self.gridC, dash: gdash, "GRID"); line(XR, 24, XR, 240, 0.6, Self.gridC, dash: gdash, "GRID")
+        line(XL, 24, XL, 240 + dy, 0.6, Self.gridC, dash: gdash, "GRID"); line(XR, 24, XR, 240 + dy, 0.6, Self.gridC, dash: gdash, "GRID")
         line(380, 24, 380, YB, 0.6, Self.gridC, dash: gdash, "GRID")
         let gA = ridge == .h ? "A" : "1"
         let gB = ridge == .h ? Roof.gridName(.y, Roof.spans(v, .y).count) : Roof.gridName(.x, Roof.spans(v, .x).count)
@@ -82,7 +90,7 @@ public struct RoofSection: Sendable {
                 webs.append([pt(b, topY(b)), pt(b, ybot(b))])
             }
             let xi1 = XL + HW * 0.8, xi2 = XR - HW * 0.8
-            for x in [XL, XR, xi1, xi2] { cols.append([pt(x, ybot(x)), pt(x, 190)]); hatches.append(Box(x - 6, ybot(x), 12, 6)) }
+            for x in [XL, XR, xi1, xi2] { cols.append([pt(x, ybot(x)), pt(x, G0 - 2)]); hatches.append(Box(x - 6, ybot(x), 12, 6)) }
         } else if isC {
             let eL = XL - ov, eR = XR + ov, cs = 1 / hypot(1, slope), sn = slope * cs
             let dv = max(4, 0.17 * sc), hp = max(4.5, 0.1 * sc), fw = hp * 0.55, sh = (hp + 0.6) / cs, sh2 = (hp + 2.2) / cs
@@ -97,7 +105,7 @@ public struct RoofSection: Sendable {
             func xl(_ y: Double) -> Double { XL + (YE - y) / slope }
             func xr(_ y: Double) -> Double { XR - (YE - y) / slope }
             L += "M\(g(xl(yc))) \(g(yc))H\(g(xr(yc)))M\(g(xl(yc + dc))) \(g(yc + dc))H\(g(xr(yc + dc)))"
-            let w = max(7, 0.3 * sc), Hh = 192 - YE, hw = max(10, 0.36 * Hh), yB0 = YE + hw, yB1 = yB0 + max(4, 0.14 * Hh)
+            let w = max(7, 0.3 * sc), Hh = G0 - YE, hw = max(10, 0.36 * Hh), yB0 = YE + hw, yB1 = yB0 + max(4, 0.14 * Hh)
             let pj = max(8, 0.3 * sc), ys = yB1 + max(5, 0.2 * Hh)
             var Hd = ""
             G = Rafter(dv: dv, hp: hp, yc: yc, dc: dc, w: w, pj: pj, yB1: yB1, eL: eL)
@@ -107,8 +115,8 @@ public struct RoofSection: Sendable {
                 L += "M\(g(XL + wc / 2)) \(g(yb1))H\(g(XR - wc / 2))M\(g(XL + wc / 2)) \(g(yb2))H\(g(XR - wc / 2))"
                 for (x, k, e) in [(XL, 1.0, eL), (XR, -1.0, eR)] {
                     let o = x - k * wc / 2, i = x + k * wc / 2, xf = e + k * fx
-                    L += "M\(g(o)) \(g(yb(o)))V192M\(g(i)) \(g(yb(i)))V192"
-                    L += "M\(g(x - wc / 2 - 9)) 192H\(g(x - 3))l2 -4l2 8l2 -4H\(g(x + wc / 2 + 9))"
+                    L += "M\(g(o)) \(g(yb(o)))V\(g(G0))M\(g(i)) \(g(yb(i)))V\(g(G0))"
+                    L += "M\(g(x - wc / 2 - 9)) \(g(G0))H\(g(x - 3))l2 -4l2 8l2 -4H\(g(x + wc / 2 + 9))"
                     Hd += "M\(g(o - k * bw * 0.6)) \(g(yb1))H\(g(o + k * bw * 0.4))V\(g(yb2))H\(g(o - k * bw * 0.6))z"
                     for y in [yo1, yo2] { L += "M\(g(x - k * (y - YE) / slope)) \(g(y))H\(g(o))" }
                     L += "M\(g(e)) \(g(yb(e)))L\(g(xf)) \(g(yb2))M\(g(e + k * 2.2)) \(g(yb(e) + 0.6))L\(g(xf + k * 2.2)) \(g(yb2 - 2.2))"
@@ -119,8 +127,8 @@ public struct RoofSection: Sendable {
                 for (x, k) in [(XL, 1.0), (XR, -1.0)] {
                     let o = x - k * w / 2, i = x + k * w / 2
                     Hd += "M\(g(o)) \(g(yb(o)))L\(g(i)) \(g(yb(i)))V\(g(yB0))H\(g(o))z"
-                    L += "M\(g(o)) \(g(yB0))H\(g(i + k * pj))V\(g(yB1))L\(g(i)) \(g(ys))V192M\(g(o)) \(g(yB0))V192"
-                    L += "M\(g(x - w / 2 - 9)) 192H\(g(x - 3))l2 -4l2 8l2 -4H\(g(x + w / 2 + 9))"
+                    L += "M\(g(o)) \(g(yB0))H\(g(i + k * pj))V\(g(yB1))L\(g(i)) \(g(ys))V\(g(G0))M\(g(o)) \(g(yB0))V\(g(G0))"
+                    L += "M\(g(x - w / 2 - 9)) \(g(G0))H\(g(x - 3))l2 -4l2 8l2 -4H\(g(x + w / 2 + 9))"
                 }
             }
             // C purlins square to the rafter, at ระยะแป along the slope
@@ -140,7 +148,7 @@ public struct RoofSection: Sendable {
             path("M372 \(g(YT - dv - sh2 + 5))L380 \(g(YT - dv - sh2 - 2))L388 \(g(YT - dv - sh2 + 5))", width: 1.6, color: Self.sheet)
         } else {
             chords += [[pt(XL, YE), pt(380, YT), pt(XR, YE)], [pt(XL, YB), pt(XR, YB)], [pt(XL, YB), pt(XL, YE)], [pt(XR, YB), pt(XR, YE)]]
-            cols += [[pt(XL, 150), pt(XL, 192)], [pt(XR, 150), pt(XR, 192)]]
+            cols += [[pt(XL, 150), pt(XL, G0)], [pt(XR, 150), pt(XR, G0)]]
             let nodes = [XL] + pts + [XR]
             switch f {
             case .normal:
@@ -210,35 +218,54 @@ public struct RoofSection: Sendable {
         for c in cols { add(.polyline(c, width: 4.4, color: Self.core), nil) }
         let colXs = isC ? [] : isR ? [XL, XR, XL + HW * 0.8, XR - HW * 0.8] : [XL, XR]
         for x in colXs {
-            add(.rect(Box(x - 9, 192, 18, 3), stroke: nil, fill: Self.dark), "SECTION")
-            add(.polyline([pt(x - 12, 199), pt(x - 6, 196), pt(x - 2, 202), pt(x + 2, 196), pt(x + 8, 199)], width: 0.9, color: Self.dark), "SECTION")
+            add(.rect(Box(x - 9, G0, 18, 3), stroke: nil, fill: Self.dark), "SECTION")
+            add(.polyline([pt(x - 12, 199 + dy), pt(x - 6, 196 + dy), pt(x - 2, 202 + dy), pt(x + 2, 196 + dy), pt(x + 8, 199 + dy)], width: 0.9, color: Self.dark), "SECTION")
         }
         for b in hatches { add(.hatch(b, color: RGBA(hex: 0x3A3F47), spacing: 5), nil); add(.rect(b, stroke: RGBA(hex: 0x111111), fill: nil, width: 1), "SECTION") }
 
-        // dimensions
+        // dimensions (in the design 192 is the ground; `dy` moves what hangs off it)
         let oL = XL - ov, oR = XR + ov, cX = isK ? XR - 28 : XL - 22, cT = isC ? YE : YB
-        func dim(_ a: Double, _ b: Double, _ c: Double, _ d: Double) { line(a, b, c, d, 0.8, Self.navy, "DIM") }
+        var dimOps: Set<Int> = []
+        func dim(_ a: Double, _ b: Double, _ c: Double, _ d: Double) { dimOps.insert(o.count); line(a, b, c, d, 0.8, Self.navy, "DIM") }
         func tick(_ x: Double, _ y: Double) { dim(x, y, x + 8, y - 8) }
-        dim(XL - 6, 208, XR + 6, 208); dim(XL - 6, 230, XR + 6, 230)
-        tick(XL - 4, 212); tick(376, 212); tick(XR - 4, 212); tick(XL - 4, 234); tick(XR - 4, 234); dim(380, 200, 380, 212)
-        for x in pts { dim(x, 205, x, 211) }
-        dim(oL - 6, 230, XL, 230); dim(XR, 230, oR + 6, 230)
-        tick(oL - 4, 234); tick(oR - 4, 234); dim(oL, 222, oL, 238); dim(oR, 222, oR, 238)
-        dim(cX, cT - 6, cX, 199); tick(cX - 4, cT + 4); tick(cX - 4, 199)
-        if isK { dim(XR - 8, cT, cX - 4, cT); dim(XR - 8, 195, cX - 4, 195) } else { dim(cX - 4, cT, XL - 4, cT); dim(cX - 4, 195, XL - 10, 195) }
+        dim(XL - 6, 208 + dy, XR + 6, 208 + dy); dim(XL - 6, 230 + dy, XR + 6, 230 + dy)
+        tick(XL - 4, 212 + dy); tick(376, 212 + dy); tick(XR - 4, 212 + dy); tick(XL - 4, 234 + dy); tick(XR - 4, 234 + dy); dim(380, 200 + dy, 380, 212 + dy)
+        for x in pts { dim(x, 205 + dy, x, 211 + dy) }
+        dim(oL - 6, 230 + dy, XL, 230 + dy); dim(XR, 230 + dy, oR + 6, 230 + dy)
+        tick(oL - 4, 234 + dy); tick(oR - 4, 234 + dy); dim(oL, 222 + dy, oL, 238 + dy); dim(oR, 222 + dy, oR, 238 + dy)
+        dim(cX, cT - 6, cX, 199 + dy); tick(cX - 4, cT + 4); tick(cX - 4, 199 + dy)
+        if isK { dim(XR - 8, cT, cX - 4, cT); dim(XR - 8, 195 + dy, cX - 4, 195 + dy) } else { dim(cX - 4, cT, XL - 4, cT); dim(cX - 4, 195 + dy, XL - 10, 195 + dy) }
         let ovT = String(format: "%.2f", overhang)
-        text("ชายคา " + ovT, oL - 8, 234, align: .right); text(ovT, oR + 8, 234)
-        text(isC ? "สูงถึงหัวเสา" : "สูงใต้ขื่อ", cX - 6, (cT + 195) / 2 - 3, align: .right)
-        text(String(format: "%.2f", clear), cX - 6, (cT + 195) / 2 + 11, bold: true, align: .right)
-        overhangLabel = Pt(oL - 40, 230); clearLabel = Pt(cX - 30, (cT + 195) / 2 + 2)
+        text("ชายคา " + ovT, oL - 8, 234 + dy, align: .right); text(ovT, oR + 8, 234 + dy)
+        text(isC ? "สูงถึงหัวเสา" : "สูงใต้ขื่อ", cX - 6, (cT + 195 + dy) / 2 - 3, align: .right)
+        text(String(format: "%.2f", clear), cX - 6, (cT + 195 + dy) / 2 + 11, bold: true, align: .right)
+        overhangLabel = Pt(oL - 40, 230 + dy); clearLabel = Pt(cX - 30, (cT + 195 + dy) / 2 + 2)
         let halfT = isC ? String(format: "%.2f", half) : "\(nH) × " + String(format: "%.2f", half / Double(nH)) + " = " + String(format: "%.2f", half)
-        text(halfT, (XL + 380) / 2, 201, color: Self.blue, align: .center); text(halfT, (XR + 380) / 2, 201, color: Self.blue, align: .center)
-        text(fmt(span) + " (จากแปลน)", 380, 246, 13, bold: true, align: .center)
+        text(halfT, (XL + 380) / 2, 201 + dy, color: Self.blue, align: .center); text(halfT, (XR + 380) / 2, 201 + dy, color: Self.blue, align: .center)
+        text(fmt(span) + " (จากแปลน)", 380, 246 + dy, 13, bold: true, align: .center)
         let RX = XR + 46
         dim(RX, YT - 4, RX, YB + 4); dim(386, YT, RX + 4, YT)
         tick(RX - 4, YT + 4); tick(RX - 4, YE + 4); if !isC { tick(RX - 4, 154) }
         text("R " + String(format: "%.2f", rise), RX + 6, (YT + YE) / 2 + 4)
         if !isC { text(String(format: "%.2f", heelM), RX + 6, (YE + YB) / 2 + 4) }
+        if trueScale {
+            // the same measures as dimensions; the extension lines start at the frame (or just under the ground)
+            typealias D = SketchDXF.Dimension
+            let low = G0 + 6
+            dimensions += [D(Pt(XL, low), Pt(380, low), at: Pt(0, 208 + dy), text: halfT, size: 12),
+                           D(Pt(380, low), Pt(XR, low), at: Pt(0, 208 + dy), text: halfT, size: 12),
+                           D(Pt(XL, low), Pt(XR, low), at: Pt(0, 230 + dy), text: String(format: "%.2f", span) + " (จากแปลน)", size: 12)]
+            if ov > 0.5 {
+                dimensions += [D(Pt(oL, 222 + dy), Pt(XL, low), at: Pt(0, 230 + dy), text: "ชายคา " + ovT, size: 12),
+                               D(Pt(XR, low), Pt(oR, 222 + dy), at: Pt(0, 230 + dy), text: ovT, size: 12)]
+            }
+            let side = isK ? XR - 8 : XL - 4
+            dimensions.append(D(Pt(side, cT), Pt(side, G0), at: Pt(cX, 0), vertical: true,
+                                text: (isC ? "สูงถึงหัวเสา " : "สูงใต้ขื่อ ") + String(format: "%.2f", clear), size: 12))
+            dimensions.append(D(Pt(386, YT), Pt(XR + 4, YE), at: Pt(RX, 0), vertical: true, text: "R " + String(format: "%.2f", rise), size: 12))
+            if !isC && heelM > 0 { dimensions.append(D(Pt(XR + 4, YE), Pt(XR + 4, YB), at: Pt(RX, 0), vertical: true, text: String(format: "%.2f", heelM), size: 12)) }
+            dimensionOps = dimOps
+        }
         text(Roof.slopeText(v), XL + 44, YE - 4)
         riseLabel = Pt(RX + 30, (YT + YE) / 2)
         var arc: [Pt] = []
@@ -263,10 +290,10 @@ public struct RoofSection: Sendable {
             call(3, 430, 172, 430, G.yc + G.dc)
             if isK {
                 let o = XL - G.wc / 2, xf = G.eL + G.fx, ye = topY(G.eL)
-                call(4, XL + 60, 196, o + G.bw * 0.4, (G.yb1 + G.yb2) / 2); call(5, G.eL + 8, 196, (xf + o) / 2, G.yb2)
-                call(6, G.eL - 26, 96, (G.eL + xf) / 2 - 1, (ye + G.yb2) / 2); call(7, XL + 96, 172, XL + G.wc / 2, (G.yb2 + 192) / 2)
+                call(4, XL + 60, 196 + dy, o + G.bw * 0.4, (G.yb1 + G.yb2) / 2); call(5, G.eL + 8, 196 + dy, (xf + o) / 2, G.yb2)
+                call(6, G.eL - 26, 96, (G.eL + xf) / 2 - 1, (ye + G.yb2) / 2); call(7, XL + 96, 172, XL + G.wc / 2, (G.yb2 + G0) / 2)
             } else {
-                call(4, XL + 44, 196, XL + G.w / 2 + G.pj - 2, G.yB1 - 1); call(6, G.eL - 22, 96, G.eL - 1.5, topY(G.eL) - G.dv / 2 + 2)
+                call(4, XL + 44, 196 + dy, XL + G.w / 2 + G.pj - 2, G.yB1 - 1); call(6, G.eL - 22, 96, G.eL - 1.5, topY(G.eL) - G.dv / 2 + 2)
             }
         } else if isR {
             call(1, x1 - 20, 44, x1, topY(x1) - 5); call(2, x2 + 10, 44, x2, topY(x2))
@@ -285,7 +312,7 @@ public struct RoofSection: Sendable {
             add(.circle(c, r: 11, stroke: .white, fill: Self.red, width: 2), nil)
             add(.text(String(n), at: c, size: 13, bold: true, color: .white, align: .center), nil)
         }
-        sketch = Sketch(width: Self.width, height: Self.height, ops: o)
+        sketch = Sketch(width: Self.width, height: Self.height + max(0, dy), ops: o)
         tags = tg
         callouts = bubbles
         self.span = span; self.half = half; self.rise = rise; self.bays = nH; self.scale = sc

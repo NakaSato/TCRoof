@@ -2,7 +2,7 @@ import Foundation
 
 /// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): the roof plan, section A-A, member table and PV layout as a plain
 /// DXF R2000 drawing (LINE / CIRCLE / TEXT on named layers) that any CAD program opens. Coordinates are metres from the
-/// plan's bottom-left corner, written in millimetres (1:1) or metres; the section sits under the plan and the table to
+/// plan's bottom-left corner, written in metres (1 unit = 1 m, the default) or millimetres; the section sits under the plan and the table to
 /// its right. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874).
 public enum RoofDXF {
     public enum Part: String, CaseIterable, Sendable { case plan, section, table, pv }
@@ -30,6 +30,39 @@ public enum RoofDXF {
                                                "txt": "TEXT", "dimtxt": "DIM"]
     static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
+    /// One walkway band on plan (metres, y up from the plan's bottom edge `ly`): the cable tray and the grating panels on
+    /// WIPEOUTs, the PPR pipe, the rail, the L-feet, the lifeline with its supports, the band's width and a label.
+    static func walkway(_ dxf: inout SketchDXF, _ w: RoofWalkway, ly: Double, text h: Double) {
+        func at(_ a: Double, _ v: Double) -> (Double, Double) { let p = w.face.plan(w.b0 + a, v); return (p.x, ly - p.y) }
+        func strip(_ l: SketchDXF.Layer, _ a0: Double, _ a1: Double, _ v0: Double, _ v1: Double) {
+            let pts = [at(a0, v0), at(a1, v0), at(a1, v1), at(a0, v1)]
+            dxf.wipeout(l, pts); dxf.polyline(l, pts, closed: true)
+        }
+        typealias W = RoofWalkway
+        strip(CADLayers.pvCableTray, W.tray.0, W.tray.1, w.v0, w.v1)
+        dxf.line(CADLayers.pvCableTray, at(W.pipe, w.v0), at(W.pipe, w.v1))
+        for (a, b) in w.panels { strip(CADLayers.pvWalkway, W.grating.0, W.grating.1, a, b) }
+        dxf.line(CADLayers.pvRail, at(W.rail, w.v0), at(W.rail, w.v1))
+        for v in w.feet {
+            for a in [W.grating.0, W.grating.1] {
+                dxf.polyline(CADLayers.pvWalkway, [at(a - 0.03, v - 0.03), at(a + 0.03, v - 0.03), at(a + 0.03, v + 0.03), at(a - 0.03, v + 0.03)], closed: true)
+            }
+        }
+        dxf.line(CADLayers.pvLifeline, at(W.lifeline, w.v0), at(W.lifeline, w.v1))
+        for v in w.supports { dxf.circle(CADLayers.pvLifeline, at(W.lifeline, v), r: 0.04) }
+        // the band's width across the walkway's start, when the gap runs along a plan axis
+        let a = at(0, w.v0), b = at(W.band, w.v0), up = at(0, w.v0 + 1)
+        let across = (b.0 - a.0, b.1 - a.1), along = (up.0 - a.0, up.1 - a.1), back = 0.5 / max(1e-9, hypot(along.0, along.1))
+        let o = (a.0 - along.0 * back, a.1 - along.1 * back)
+        if abs(across.1) < 1e-6 || abs(across.0) < 1e-6 {
+            dxf.dimension(CADLayers.dim, a, b, at: o, vertical: abs(across.0) < 1e-6, text: String(format: "%.2f", W.band), height: h)
+        }
+        // a short tag before the start, reading left to right across the walkway (the detail sheet has the rest)
+        var angle = atan2(across.1, across.0) * 180 / .pi
+        if angle > 90 { angle -= 180 } else if angle <= -90 { angle += 180 }
+        dxf.text(CADLayers.text, at(W.band / 2, w.v0 - 0.9), height: h, W.tag, align: .center, middle: true, angle: angle)
+    }
+
     /// "TC-GRID | TC-ROOF-POST | TC-ROOF-TRUSS | …", the sheet's layer line.
     public static func layerSummary(_ parts: Set<Part>) -> String {
         let keys = (parts.contains(.plan) ? ["GRID", "POST", "TRUSS", "PURLIN"] : []) + (parts.contains(.section) ? ["SECTION"] : [])
@@ -39,7 +72,7 @@ public enum RoofDXF {
 
     /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`. `longitude` picks the
     /// faces in use as the page does (`PlaneYield`).
-    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = true, latitude: Double? = nil,
+    public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = false, latitude: Double? = nil,
                              longitude: Double? = nil) -> Output {
         var o = SketchDXF.Options(); o.millimetres = millimetres
         var dxf = SketchDXF(options: o)
@@ -68,24 +101,31 @@ public enum RoofDXF {
             TEXT("TEXT", (0, -1.2), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }
+        var walkways: [RoofWalkway] = []
         if parts.contains(.pv) {
-            let pv = RoofPlan(v, mode: .pv, mount: RoofMount.layout(v, latitude: latitude, longitude: longitude).layout)
+            let mount = RoofMount.layout(v, latitude: latitude, longitude: longitude).layout
+            let pv = RoofPlan(v, mode: .pv, mount: mount)
             for (op, tag) in zip(pv.sketch.ops, pv.tags) {
                 guard let tag, let l = pvLayers[tag] else { continue }
                 // a module hides the purlins and grid under it
                 if tag == "pv", case let .polygon(pts, _, _, _) = op { dxf.wipeout(layer(l), pts.map(tp)) }
                 write(op, l, tp, L.k, text: th)
             }
+            // the walkways in their gaps, as the team's walkway detail draws them
+            walkways = RoofWalkway.walkways(mount)
+            for w in walkways { walkway(&dxf, w, ly: L.ly, text: th * 0.5) }
         }
         if parts.contains(.section) {
-            let s = RoofSection(v), top = parts.contains(.plan) ? -2.5 : 0
+            // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)
+            let s = RoofSection(v, trueScale: true), top = parts.contains(.plan) ? -2.5 : 0
             let ts: (Pt) -> (Double, Double) = { p in ((p.x - 380) / s.scale + L.lx / 2, top - p.y / s.scale) }
-            for (op, tag) in zip(s.sketch.ops, s.tags) {
-                guard let tag else { continue }
+            for (i, (op, tag)) in zip(s.sketch.ops, s.tags).enumerated() {
+                guard let tag, !s.dimensionOps.contains(i) else { continue }
                 write(op, tag, ts, s.scale, text: th)
             }
-            TEXT("DIM", ts(Pt(380, 226)), th, fmt(s.span), mid: true)
-            TEXT("TEXT", (L.lx / 2 - s.span / 2, top - 252 / s.scale - 0.8), th * 1.4,
+            dxf.options.fixedTextHeight = th * 0.8
+            dxf.add(s.dimensions, layer: layer("DIM"), transform: ts, pointsPerMetre: s.scale)
+            TEXT("TEXT", (L.lx / 2 - s.span / 2, top - (s.sketch.height + 2) / s.scale - 0.8), th * 1.4,
                  "รูปตัด A-A | " + f.label + " | ช่วง " + fmt(s.span) + " ม. | ลาด " + Roof.slopeText(v), mid: false)
         }
         if parts.contains(.table) {
@@ -101,6 +141,13 @@ public enum RoofDXF {
             }
         }
 
+        // beside the drawing, with walkways: the team's walkway detail (top view, elevations, detail 1) at the plot scale
+        if !walkways.isEmpty, let d = CADDetail.walkway {
+            let unit = millimetres ? 1000.0 : 1, e = dxf.extents, scale = dxf.plotScale
+            let name = dxf.detailBlock(d, name: "TC_DETAIL_WALKWAY")
+            let h = d.size[1] * scale / 1000
+            dxf.insert(CADLayers.detail, name, at: (e.max.x / unit + 3, e.max.y / unit - h), scale: scale * unit / 1000)
+        }
         return dxf.output
     }
 

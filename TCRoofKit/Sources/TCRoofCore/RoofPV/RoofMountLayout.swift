@@ -18,15 +18,20 @@ public struct RoofMountLayout: Sendable {
         public var tileHooks = false
         /// A walkway one module wide after every n columns, for cleaning; 0 = none.
         public var walkwayEvery = 0
+        /// One walkway one module wide down the middle of each face (the column nearest its centre along the eave), as
+        /// most roofs have it.
+        public var walkwayCentre = false
         /// Modules landscape: the long side along the eave (ด้านยาวตามแป); false = portrait, the long side up the slope.
         public var landscape = false
         /// Rails up the slope across the purlins (รางตัดแป), an L-foot on each purlin they cross; false = rails along the
         /// eave on the purlins (รางตามแป). Only with L-feet on purlins.
         public var railsAcross = false
         public init(ribClamp: Bool = false, avoidShade: Bool = true, faceUse: [String: Bool] = [:], removed: Set<SlotRef> = [],
-                    tileHooks: Bool = false, walkwayEvery: Int = 0, landscape: Bool = false, railsAcross: Bool = false) {
+                    tileHooks: Bool = false, walkwayEvery: Int = 0, landscape: Bool = false, railsAcross: Bool = false,
+                    walkwayCentre: Bool = false) {
             self.ribClamp = ribClamp; self.avoidShade = avoidShade; self.faceUse = faceUse; self.removed = removed
             self.tileHooks = tileHooks; self.walkwayEvery = walkwayEvery; self.landscape = landscape; self.railsAcross = railsAcross
+            self.walkwayCentre = walkwayCentre
         }
         /// Rows don't depend on the purlins: rib clamps or tile hooks hold the rails at ¼ and ¾ of the module, or the rails
         /// cross the purlins.
@@ -401,14 +406,17 @@ public struct RoofMountLayout: Sendable {
             let umin = face.polygon.map(\.x).min() ?? 0, umax = face.polygon.map(\.x).max() ?? 0
             var rows: [Row] = []
             for (r, row) in self.rows(shift: p.rowShift, centred: p.centred).enumerated() {
-                var slots: [Slot] = []
+                var slots: [Slot] = [], us: [Double] = []
                 var u = umin + standard.setVerge + p.columnOffset
-                while u + w <= umax + 1e-9 {
-                    let column = slots.count, n = options.walkwayEvery
-                    let walk = n > 0 && column % (n + 1) == n
+                while u + w <= umax + 1e-9 { us.append(u); u += pitch }
+                // the centre walkway: the column whose middle is nearest the face's middle along the eave
+                let mid = (umin + umax) / 2
+                let centre = options.walkwayCentre ? us.indices.min { abs(us[$0] + w / 2 - mid) < abs(us[$1] + w / 2 - mid) } : nil
+                for (column, u) in us.enumerated() {
+                    let n = options.walkwayEvery
+                    let walk = (n > 0 && column % (n + 1) == n) || column == centre
                     let removed = options.removed.contains(SlotRef(face: face.id, row: r, column: column))
                     slots.append(Slot(u: u, blocked: walk ? RoofMountLayout.walkway : removed ? RoofMountLayout.removedByUser : blocked(u, row.v)))
-                    u += pitch
                 }
                 rows.append(Row(v: row.v, rails: (row.a, row.b), slots: slots))
             }

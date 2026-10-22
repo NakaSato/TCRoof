@@ -13,8 +13,11 @@ public struct RoofWalkway: Sendable {
     /// The walkway along the ridge, centred on it: `u` and `width` are then across it (v on `face`, half on each side
     /// of the ridge), `v0` and `v1` along it (u on `face`).
     public var ridge = false
-    /// The one walkway the roof is reached by: it starts at the eave, where the access ladder stands beyond it.
+    /// The one walkway the roof is reached by. On a gable roof it is the ridge walkway, reached by the cat ladder up the
+    /// gable wall at the ridge (the team's top view: cage, ladder and a 0.60 × 1.00 m landing) at its start (`v0`) or end
+    /// (`accessAtStart` false); elsewhere it is an up-slope walkway starting at the eave, with the ladder beyond it.
     public var access = false
+    public var accessAtStart = true
 
     /// Across the band, from its cable-tray side (metres; the band is centred in the gap), as `Walkway_S1.dxf` draws it.
     public static let band = 0.90, tray = (0.053, 0.253), grating = (0.325, 0.625), gratingFrame = 0.03, pipe = 0.656
@@ -30,6 +33,11 @@ public struct RoofWalkway: Sendable {
     /// rungs every 0.25 m.
     public static let ladderWidth = 0.45, ladderOut = 0.75, rung = 0.25
     public static let accessTag = "ROOF ACCESS LADDER + WALKWAY + LIFELINE (SEE DETAIL)"
+    /// The ridge access (`Roof access Topview.dxf`): the cat ladder 0.60 m wide between its stiles, its cage R 0.30 m
+    /// standing 0.90 m out from the gable wall, and the landing grating 0.60 × 0.98 m on the roof, framed 0.05 m.
+    public static let gableLadder = 0.60, cageRadius = 0.30, cageOut = 0.90, landing = 0.98, landingFrame = 0.05
+    public static let ridgeAccessTag = "ROOF ACCESS: CAT LADDER WITH CAGE + LANDING 0.60x1.00 (SEE TOP VIEW)"
+    public static let ridgeAccessNote = "ONE SIDE ONLY (%@) - CONFIRM ON SITE"
     public static let accessNote = "ONE SIDE ONLY - SIDE TO BE CONFIRMED BY INSTALLER ON SITE"
 
     /// The ridge setback the centre walkways ask for: half the band and 50 mm.
@@ -80,16 +88,33 @@ public struct RoofWalkway: Sendable {
             }
             out += mine
         }
-        // one side only: the lowest walkway of the face whose eave is at the plan's top (clear of the plan's title
-        // below it) is the way up, from the eave
-        let low = Dictionary(grouping: out.indices, by: { out[$0].face.id }).values.compactMap { $0.min { out[$0].v0 < out[$1].v0 } }
+        if var r = ridgeWalkway(m) {
+            // a gable roof is reached up its gable wall at the ridge, on the side picked (left or right on plan)
+            if r.face.edges.contains(.verge), let (lo, hi) = r.face.span(atV: r.face.slopeLength) {
+                let a = r.face.plan(lo, r.face.slopeLength), b = r.face.plan(hi, r.face.slopeLength)
+                // left on plan: the smaller x, or the lower end of a ridge drawn up the sheet (plan y runs down)
+                let loIsLeft = abs(a.x - b.x) > 1e-6 ? a.x < b.x : a.y > b.y
+                r.access = true
+                r.accessAtStart = loIsLeft != m.options.walkwayAccessRight
+                if r.accessAtStart { r.v0 = lo + Self.landing } else { r.v1 = hi - Self.landing }
+                out.append(r)
+                return out
+            }
+            out.append(r)
+        }
+        // otherwise one side only: the lowest walkway of the face whose eave is at the plan's top (clear of the plan's
+        // title below it) is the way up, from the eave
+        let low = Dictionary(grouping: out.indices.filter { !out[$0].ridge }, by: { out[$0].face.id }).values
+            .compactMap { $0.min { out[$0].v0 < out[$1].v0 } }
         if let i = low.min(by: { out[$0].eaveY < out[$1].eaveY }) {
             out[i].access = true
             out[i].v0 = min(out[i].v0, out[i].eaveEnd)
         }
-        if let r = ridgeWalkway(m) { out.append(r) }
         return out
     }
+
+    /// The gable wall's point at the ridge where the ladder stands (s along the ridge), for the ridge access.
+    public var wallS: Double { accessAtStart ? v0 - Self.landing : v1 + Self.landing }
 
     /// Down the middle on a roof with a ridge (not a shed): the walkway along the ridge, centred on it, from 0.50 m in
     /// from one end of the ridge to 0.50 m in from the other; nil when the ridge is shorter than a grating panel.

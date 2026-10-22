@@ -166,11 +166,17 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   face's walkway runs on past its top row to the ridge (`RoofWalkway.ridgeEnd`, or where a hip edge crosses the
   band), and on a roof with a ridge a walkway runs along it (`RoofWalkway.ridgeWalkway`: centred on the ridge, 0.50 m
   in from each end; the layout then keeps the modules 0.50 m from the ridge, `ridgeClear`), the up-slope walkways
-  stopping at its edge. The roof is reached on one side only (`access`): the lowest walkway of the face whose eave is
-  at the plan's top starts at the eave, and a cat ladder 0.45 m wide stands in line with its grating, 0.75 m out on
-  plan with rungs and an UP arrow (TC-PV-ACCESS, magenta), tagged `ROOF ACCESS LADDER + WALKWAY + LIFELINE` and
-  `ONE SIDE ONLY - SIDE TO BE CONFIRMED BY INSTALLER ON SITE`; a ladder below the plan pushes its title and the
-  section down. Open: which side the team takes as standard.
+  stopping at its edge. The roof is reached on one side only (`access`). On a gable roof that is one end of the ridge
+  walkway, left or right on plan (the roof page's `ทางขึ้นหลังคา (บันไดลิง)`, `Choice.accessRight`, drawing only, not
+  in the digest): the team's top view (`reference/Roof access Topview.dxf`) as the block `TC_ROOF_ACCESS` on
+  TC-PV-ACCESS (magenta) at the gable wall on the ridge, turned along the walkway: the cat ladder 0.60 m between its
+  stiles, the cage R 0.30 m standing 0.90 m out with its brackets, and the landing grating 0.60 × 0.98 m on the roof,
+  framed 0.05 m and cross-hatched, where the ridge walkway starts. Its tag, `ROOF ACCESS: CAT LADDER WITH CAGE +
+  LANDING 0.60x1.00 (SEE TOP VIEW)` and `ONE SIDE ONLY (LEFT|RIGHT) - CONFIRM ON SITE`, sits past the plan's grid and
+  dimension chains with a leader to the cage. Without a gable ridge walkway (hip or shed roofs, or a walkway every n
+  columns) the lowest walkway of the face whose eave is at the plan's top starts at the eave instead, with a cat ladder
+  0.45 m wide 0.75 m out on plan, rungs and an UP arrow; a ladder below the plan pushes its title and the section
+  down. Open: whether the team keeps the eave ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, TC-PV-RAFTER, red), the four rails (TC-PV-RAIL,

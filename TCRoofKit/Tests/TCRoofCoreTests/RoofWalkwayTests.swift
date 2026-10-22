@@ -34,20 +34,23 @@ final class RoofWalkwayTests: XCTestCase {
             let w = try XCTUnwrap(mine.first)
             XCTAssertLessThanOrEqual(abs(w.u + w.width / 2 - mid), m.moduleAlong / 2 + m.standard.moduleGap + 1e-6)
             // it starts at the first row and runs on past the last one up to the ridge
-            if w.access { XCTAssertEqual(w.v0, 0, accuracy: 1e-9, "the way up starts at the eave") }
-            else { XCTAssertEqual(w.v0, f.rows.first?.v ?? -1, accuracy: 1e-9) }
+            XCTAssertFalse(w.access, "a gable roof is reached at the ridge, not the eave")
+            XCTAssertEqual(w.v0, f.rows.first?.v ?? -1, accuracy: 1e-9)
             XCTAssertGreaterThan(w.v1, (f.rows.last?.v ?? 0) + m.moduleUp)
             XCTAssertEqual(w.v1, w.ridgeEnd - RoofWalkway.band / 2, accuracy: 1e-9)
             XCTAssertEqual(w.v1, f.face.slopeLength - RoofWalkway.band / 2, accuracy: 1e-6, "it meets the ridge walkway")
         }
         // older choices without it keep their digest; the DXF draws it with the detail
         XCTAssertFalse(RoofMount.choice(RoofDXFTests(name: "x", testClosure: { _ in }).roof()).walkwayCentre)
-        // and one walkway along the ridge, centred on it, 0.50 m in from each end; the modules keep clear of its band
+        // and one walkway along the ridge, centred on it, from the access landing at its left end (by default) to 0.50 m
+        // in from the other; the modules keep clear of its band
         let ridge = try XCTUnwrap(ws.filter(\.ridge).first)
         XCTAssertEqual(ws.filter(\.ridge).count, 1)
         XCTAssertEqual(ridge.b0 + RoofWalkway.band / 2, ridge.face.slopeLength, accuracy: 1e-9)
         let (lo, hi) = try XCTUnwrap(ridge.face.span(atV: ridge.face.slopeLength))
-        XCTAssertEqual(ridge.v0, lo + RoofWalkway.ridgeInset, accuracy: 1e-9); XCTAssertEqual(ridge.v1, hi - RoofWalkway.ridgeInset, accuracy: 1e-9)
+        XCTAssertTrue(ridge.access); XCTAssertTrue(ridge.accessAtStart)
+        XCTAssertEqual(ridge.wallS, lo, accuracy: 1e-9, "the ladder stands at the gable wall")
+        XCTAssertEqual(ridge.v0, lo + RoofWalkway.landing, accuracy: 1e-9); XCTAssertEqual(ridge.v1, hi - RoofWalkway.ridgeInset, accuracy: 1e-9)
         XCTAssertGreaterThanOrEqual(m.standard.setRidge, RoofWalkway.ridgeClear - 1e-9)
         for f in used { for row in f.rows { XCTAssertLessThanOrEqual(row.v + m.moduleUp, f.face.slopeLength - RoofWalkway.band / 2 + 1e-6) } }
         // one roof access only, on one side
@@ -55,7 +58,15 @@ final class RoofWalkwayTests: XCTestCase {
         let out = RoofDXF.build(v, parts: [.pv])
         XCTAssertTrue(out.layers.contains("TC-PV-ACCESS"))
         let s = String(decoding: out.data, as: UTF8.self)
-        XCTAssertEqual(s.components(separatedBy: RoofWalkway.accessNote).count - 1, 1)
+        XCTAssertTrue(s.contains("TC_ROOF_ACCESS")); XCTAssertTrue(s.contains("ONE SIDE ONLY (LEFT)"))
+        XCTAssertEqual(t.records(out.data).filter { r in r.first?.1 == "INSERT" && r.contains { $0.0 == "2" && $0.1 == "TC_ROOF_ACCESS" } }.count, 1)
+        // the right end when picked: the landing at the ridge's other end
+        var right = v; var c = RoofMount.choice(right); c.accessRight = true; RoofMount.setChoice(&right, c)
+        XCTAssertEqual(RoofMount.digest(RoofMount.input(right, latitude: 15), choice: c), RoofMount.digest(RoofMount.input(v, latitude: 15), choice: RoofMount.choice(v)))
+        let r2 = try XCTUnwrap(RoofWalkway.walkways(RoofMount.layout(right, latitude: 15).layout).first(where: \.ridge))
+        XCTAssertFalse(r2.accessAtStart); XCTAssertEqual(r2.wallS, hi, accuracy: 1e-9)
+        XCTAssertEqual(r2.v1, hi - RoofWalkway.landing, accuracy: 1e-9)
+        XCTAssertTrue(String(decoding: RoofDXF.build(right, parts: [.pv]).data, as: UTF8.self).contains("ONE SIDE ONLY (RIGHT)"))
         XCTAssertTrue(out.layers.contains("TC-PV-WALKWAY")); XCTAssertTrue(out.layers.contains("TC-DETAIL"))
     }
 

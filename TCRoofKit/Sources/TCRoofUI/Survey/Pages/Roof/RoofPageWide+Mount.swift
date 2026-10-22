@@ -391,6 +391,7 @@ extension RoofPageWide {
                 }
                 .pickerStyle(.segmented).frame(minHeight: 44)
             }
+            if centre { mountAccessSide }
             if n > 0 {
                 HStack(spacing: 6) {
                     Text("ทางเดินกว้าง 1 แผง ทุก").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
@@ -400,6 +401,22 @@ extension RoofPageWide {
                     stepButton("plus", enabled: n < 40) { changeChoice { $0.walkwayEvery = min(40, n + 1) } }
                 }
             }
+        }
+    }
+
+    /// Down the middle the roof is reached up the gable wall at one end of the ridge walkway (the CAD file's cat ladder
+    /// and landing): which end, as the plan shows it.
+    var mountAccessSide: some View {
+        HStack(spacing: 8) {
+            Text("ทางขึ้นหลังคา (บันไดลิง)").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Spacer(minLength: 4)
+            Picker("ทางขึ้นหลังคา", selection: Binding(get: { mountChoice.accessRight ? 1 : 0 }, set: { pick in
+                changeChoice { $0.accessRight = pick == 1 }
+            })) {
+                Text("ซ้าย").tag(0)
+                Text("ขวา").tag(1)
+            }
+            .pickerStyle(.segmented).frame(width: 140, height: 44)
         }
     }
 

@@ -160,11 +160,49 @@ public extension Assistant {
 
         static let listLimit = 25
 
-        /// Compact JSON, keys sorted, for the model.
-        public func json() -> String {
+        /// The parts `get_project` can be asked for; the station's name and `basics` always come.
+        public enum Section: String, CaseIterable, Sendable {
+            case survey, papers, erc, iec, weekly, icl, devices, logs, inspections
+
+            var keys: [String] {
+                switch self {
+                case .survey: ["surveys"]
+                case .weekly: ["weeklyRequests"]
+                case .logs: ["installLogs", "lastInstallLog"]
+                default: [rawValue]
+                }
+            }
+
+            /// The sections named in a tool call's `sections`; all of them when it names none it knows.
+            static func parse(_ v: JSONValue?) -> Set<Section> {
+                guard case .array(let items) = v ?? .null else { return Set(allCases) }
+                let picked = Set(items.compactMap { $0.string.flatMap(Section.init(rawValue:)) })
+                return picked.isEmpty ? Set(allCases) : picked
+            }
+        }
+
+        /// Compact JSON for the model: keys sorted, only `sections`, and no empty lists or objects (the system prompt
+        /// tells the model a part left out means there is none).
+        public func json(_ sections: Set<Section> = Set(Section.allCases)) -> String {
             let e = JSONEncoder()
             e.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-            return (try? String(data: e.encode(self), encoding: .utf8)) ?? "{}"
+            guard let data = try? e.encode(self), let full = try? JSONDecoder().decode(JSONValue.self, from: data),
+                  case .object(var o) = full else { return "{}" }
+            for s in Section.allCases where !sections.contains(s) { for k in s.keys { o.removeValue(forKey: k) } }
+            return Toolbox.encode(Self.pruned(.object(o)) ?? .object([:]))
+        }
+
+        /// Drops empty arrays and objects, at any depth.
+        static func pruned(_ v: JSONValue) -> JSONValue? {
+            switch v {
+            case .array(let a):
+                let kept = a.compactMap(pruned)
+                return kept.isEmpty ? nil : .array(kept)
+            case .object(let o):
+                let kept = o.compactMapValues(pruned)
+                return kept.isEmpty ? nil : .object(kept)
+            default: return v
+            }
         }
 
         // MARK: Building

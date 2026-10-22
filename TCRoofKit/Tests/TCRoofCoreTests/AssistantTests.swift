@@ -288,6 +288,25 @@ final class AssistantTests: XCTestCase {
     }
 
     @MainActor
+    func testEarlierToolResultsAreSentAsANote() async throws {
+        let stub = Stub([])
+        let j = job()
+        let s = Assistant.Session(transport: stub, jobs: { [j] }, now: { self.today })
+        for i in 0..<2 {
+            await stub.push([calls([("get_schedule", #"{"job":"189"}"#)]), .init(role: .assistant, content: "a\(i)")])
+            try await s.send("q\(i)")
+        }
+        let sent = s.trimmed()
+        let tools = sent.filter { $0.role == .tool }
+        XCTAssertEqual(tools.count, 2)
+        XCTAssertEqual(tools[0].content, Assistant.Session.droppedResult)      // the first question's
+        XCTAssertTrue(tools[1].content!.contains("structure") || tools[1].content!.contains("2.1"))   // this question's, whole
+        XCTAssertGreaterThan(s.messages.filter { $0.role == .tool }[0].content!.count, 1_000)          // kept on the device
+        // the model's answers and the questions are all still sent
+        XCTAssertEqual(sent.filter { $0.role == .user }.map(\.content), ["q0", "q1"])
+    }
+
+    @MainActor
     func testHistoryIsTrimmedAtAPersonsMessage() async throws {
         let stub = Stub([])
         let s = Assistant.Session(transport: stub, jobs: { [] }, now: { self.today })

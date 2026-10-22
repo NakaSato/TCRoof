@@ -515,25 +515,25 @@ extension Assistant.Toolbox {
             ])])
         }
         func p(_ type: String, _ description: String) -> JSONValue { .object(["type": .string(type), "description": .string(description)]) }
-        let job = p("string", "รหัสงาน (jobID), เลข MP เช่น 189 หรือส่วนหนึ่งของชื่อสถานี")
+        let job = p("string", "jobID, MP number (189) or part of the station name")
         return [
-            fn("what_if", "จำลองแผนเร่งงานของสถานีหนึ่ง: วันจบของแต่ละงานด้วยอัตราเดิม และเมื่อเพิ่มคน เพิ่มวันทำงาน หรือเริ่มงานที่ยังไม่เริ่มสัปดาห์นี้ พร้อมสิ่งที่ต้องทำเพื่อให้ทันแผน (คน วันทำงาน งานคอขวด)",
-               ["job": job, "crew_change": p("integer", "จำนวนคนที่เพิ่ม (ลบ = ลด) เทียบกับค่าเฉลี่ย 14 วัน"),
-                "extra_days": p("integer", "วันทำงานต่อสัปดาห์ที่เพิ่ม เช่น 1 = ทำเสาร์หรืออาทิตย์เพิ่ม"),
+            fn("what_if", "Simulate speeding up one station: each task's finish at the current pace and with more crew, more working days or tasks started now; and what it takes to finish on plan (crew, working days, bottleneck)",
+               ["job": job, "crew_change": p("integer", "people added (negative = fewer) vs the 14-day average"),
+                "extra_days": p("integer", "working days added per week"),
                 "start_now": .object(["type": .string("array"), "items": .object(["type": .string("string")]),
-                                      "description": .string("รหัสงานที่ยังไม่เริ่มที่จะเริ่มคู่ขนานสัปดาห์นี้ เช่น [\"2.3\"]")])],
+                                      "description": .string("codes of unstarted tasks to start in parallel this week, e.g. [\"2.3\"]")])],
                required: ["job"]),
-            fn("station_priorities", "จัดลำดับความเสี่ยงทุกสถานี (วันที่ช้า × ขนาด kWp) ภาระคนของแต่ละผู้รับเหมา/ทีม 4 สัปดาห์ข้างหน้า และสถานีที่มีคนเหลือพอย้ายไปช่วย",
+            fn("station_priorities", "Risk ranking of all stations (days late × kWp), each crew's load over the next 4 weeks, and stations with crew to spare",
                [:], required: []),
-            fn("look_ahead", "แผนล่วงหน้ารายสัปดาห์ของสถานีหนึ่ง: งานแต่ละสัปดาห์ งานก่อนหน้าที่ยังไม่เสร็จ นัดตรวจ กำหนดส่งเอกสาร ฝนและวันหยุดงาน 14 วัน ปัญหาค้าง",
-               ["job": job, "weeks": p("integer", "จำนวนสัปดาห์ 1–6 (ค่าเริ่มต้น 3)")], required: ["job"]),
-            fn("suggest_replan", "ร่างแผนใหม่ที่ทำได้จริงจากวันนี้: วันเริ่ม/จบใหม่ของงานที่ต้องเลื่อน และวันจบติดตั้งใหม่ ใช้ก่อน propose_replan",
+            fn("look_ahead", "One station week by week: tasks, unfinished tasks they wait on, inspections, paper deadlines, rain and stop days of the last 14 days, open problems",
+               ["job": job, "weeks": p("integer", "1–6 (default 3)")], required: ["job"]),
+            fn("suggest_replan", "Draft a feasible plan from today: new start / end of tasks that must move and the new install end. Use before propose_replan",
                ["job": job], required: ["job"]),
-            fn("propose_replan", "เสนอแผนใหม่ (แทนวันตามแผนของงาน) ผู้มีสิทธิ์ตั้งค่าแผนต้องกดยืนยันก่อนบันทึก ใช้วันที่จาก suggest_replan",
-               ["job": job, "reason": p("string", "เหตุผลสั้น ๆ"),
-                "tasks": .object(["type": .string("array"), "description": .string("งานที่เปลี่ยนวัน"),
+            fn("propose_replan", "Propose a new plan (replaces tasks' planned dates); someone allowed to set up the plan must confirm. Use suggest_replan's dates",
+               ["job": job, "reason": p("string", "short reason"),
+                "tasks": .object(["type": .string("array"), "description": .string("tasks whose dates change"),
                                   "items": .object(["type": .string("object"), "properties": .object([
-                                      "task": p("string", "รหัสงาน เช่น 2.3"), "start": p("string", "yyyy-MM-dd"), "end": p("string", "yyyy-MM-dd")]),
+                                      "task": p("string", "task code, e.g. 2.3"), "start": p("string", "yyyy-MM-dd"), "end": p("string", "yyyy-MM-dd")]),
                                       "required": .array(["task", "start", "end"].map(JSONValue.string))])])],
                required: ["job", "tasks"]),
         ]

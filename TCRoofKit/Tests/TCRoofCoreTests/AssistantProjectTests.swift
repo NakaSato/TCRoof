@@ -90,6 +90,24 @@ final class AssistantProjectTests: XCTestCase {
         XCTAssertTrue(f.inspections[0].hasSuffix("2.5 Inverter"))
     }
 
+    func testSectionsKeepOnlyWhatIsAskedAndDropEmptyParts() {
+        var inv = IECReport.Inverter(ratedKW: 80)
+        inv.slots[0] = .init(modules: 18)
+        let f = facts(iec: IECReport(module: .init(brand: "ZNSHINE", powerW: 570), inverters: [inv]))
+        let box = Assistant.Toolbox(jobs: [Assistant.Job(id: "job-2", station: "สถานีผลิตน้ำบางพลี", mpNumber: 190, input: nil,
+                                                          canEdit: true, project: f)], today: today)
+        let iec = box.run("get_project", arguments: #"{"job":"190","sections":["iec"]}"#).text
+        XCTAssertTrue(iec.contains(#""iec""#))
+        XCTAssertTrue(iec.contains(#""basics""#))
+        XCTAssertFalse(iec.contains(#""papers""#))
+        XCTAssertFalse(iec.contains(#""icl""#))
+        XCTAssertFalse(iec.contains("[]"))                           // e.g. no vocOutlierSlots, no surveys
+        XCTAssertFalse(iec.contains("{}"))
+        let all = box.run("get_project", arguments: #"{"job":"190","sections":["nonsense"]}"#).text
+        XCTAssertTrue(all.contains(#""papers""#) && all.contains(#""icl""#))   // an unknown name gives everything
+        XCTAssertLessThan(iec.count, all.count)
+    }
+
     @MainActor
     func testSessionBuildsFactsOnlyForTheStationAsked() async throws {
         let stub = ProjectStub([

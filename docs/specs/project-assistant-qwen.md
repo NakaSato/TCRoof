@@ -37,6 +37,10 @@ App (team / manager / Maintainer; assistant.use)
   `Session.resolve(id, confirmed:)` tells the model.
 - **No customer data.** `Assistant.Job` carries the station name, MP number, kWp, the plan, progress and daily reports;
   never the customer's name, phone or address.
+- **Tokens.** The system prompt and the tool descriptions are short English (Thai takes two to three times the
+  tokens; the model is told to answer in Thai), `get_project` takes `sections` (survey, papers, erc, iec, weekly, icl,
+  devices, logs, inspections; default all) and leaves out empty parts, and earlier questions' tool results aren't
+  sent again. A question that reads one station's project costs about 5,000–6,000 tokens over its two rounds.
 - **The whole project, on demand.** `get_project` answers the rest of one station (`Assistant.ProjectFacts`): the job's
   basics, its NO.224 surveys (completion, each section's facts, what is missing; never A1's answers), the station's
   papers by package with those not ready or expiring, the ERC flow's headline and waits, the IEC 62446 test (each
@@ -55,7 +59,7 @@ App (team / manager / Maintainer; assistant.use)
 | `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the twelve tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
 | `AssistantStrategy.swift` | `Assistant.Strategy`: the planning tools of §5 (`what_if`, `station_priorities`, `look_ahead`, `suggest_replan`, `propose_replan`) and the shared task-by-task forecast |
 | `AssistantOpenAI.swift` | `Assistant.OpenAI`: the request and reply checks for calling Qwen directly with the device's key (§6), and the daily limit per device |
-| `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message; the Thai system prompt |
+| `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message, and tool results of earlier questions sent as a one-line note (`droppedResult`; the device keeps them whole, the model calls again when it needs them); the system prompt |
 
 ## 3. Server (`functions/`)
 

@@ -310,7 +310,7 @@ public extension Assistant {
             case .failure(let e): return e
             case .found(let job):
                 guard let f = facts(job) else { return error("ไม่มีข้อมูลโครงการของ \(job.station)") }
-                return .result(f.json())
+                return .result(f.json(ProjectFacts.Section.parse(args["sections"])))
             }
         }
 
@@ -401,27 +401,32 @@ public extension Assistant {
                 if let values { o["enum"] = .array(values.map(JSONValue.string)) }
                 return .object(o)
             }
-            let job = p("string", "รหัสงาน (jobID), เลข MP เช่น 189 หรือส่วนหนึ่งของชื่อสถานี")
-            let task = p("string", "รหัสงานในแผน MP เช่น 2.3")
+            let job = p("string", "jobID, MP number (189) or part of the station name")
+            let task = p("string", "MP task code, e.g. 2.3")
+            let week = p("string", "any day of the week, yyyy-MM-dd (default this week)")
+            let sections: JSONValue = .object([
+                "type": .string("array"), "description": .string("only these parts (default all)"),
+                "items": .object(["type": .string("string"), "enum": .array(ProjectFacts.Section.allCases.map { .string($0.rawValue) })]),
+            ])
             return [
-                fn("list_stations", "รายชื่อสถานี เรียงจากช้ากว่าแผน MP มากที่สุด สถานีที่ยังไม่มีแผน MP (hasMPPlan false) อยู่ท้ายสุดเมื่อ filter = all",
-                   ["filter": p("string", "behind = เฉพาะที่ช้ากว่าแผนหรือคาดว่าจะเสร็จช้า, all = ทุกสถานี รวมที่ยังไม่มีแผน", enum: ["behind", "all"]),
-                    "limit": p("integer", "จำนวนสูงสุด (ค่าเริ่มต้น 20)")], required: []),
-                fn("get_schedule", "แผน MP ของสถานีหนึ่ง: % แผนและจริง, แต่ละงาน (ต้องทำกี่คะแนนต่อสัปดาห์, อัตราที่ผ่านมา, วันที่คาดว่าเสร็จ), งานสัปดาห์นี้ และรายงานประจำวันล่าสุด",
+                fn("list_stations", "Stations, most behind the MP plan first; with filter all, those without an MP plan last (hasMPPlan false)",
+                   ["filter": p("string", "behind = behind plan or expected late; all = every station", enum: ["behind", "all"]),
+                    "limit": p("integer", "max rows (default 20)")], required: []),
+                fn("get_schedule", "One station's MP plan: planned vs actual %, each task's needed and actual pace and projected finish, this week's tasks, recent daily reports",
                    ["job": job], required: ["job"]),
-                fn("get_project", "ข้อมูลโครงการทั้งหมดของสถานีนอกจากแผน MP: ข้อมูลงาน (ขนาด สถานะ ทีม), แบบสำรวจ NO.224 (% ที่กรอก แต่ละหมวด ที่ยังขาด), เอกสารสถานี กปภ. (แต่ละชุด เอกสารที่ยังไม่พร้อม ที่ใกล้หมดอายุ), ลำดับ กกพ., ทดสอบ IEC 62446 (แต่ละขั้น ผลแต่ละ inverter ภาพถ่ายติดตั้ง), คำขอรายสัปดาห์ R1, ใบตรวจรับ ICL, อุปกรณ์ที่สแกน, บันทึกติดตั้ง และนัดตรวจ ใช้ได้กับสถานีที่ยังไม่มีแผน MP",
-                   ["job": job], required: ["job"]),
-                fn("get_week_tasks", "คะแนนตามแผนและที่ทำจริงของแต่ละงานในสัปดาห์หนึ่ง",
-                   ["job": job, "week": p("string", "วันใดก็ได้ในสัปดาห์ yyyy-MM-dd (ค่าเริ่มต้น สัปดาห์นี้)")], required: ["job"]),
-                fn("propose_progress", "เสนอบันทึก % สะสมของงานหนึ่ง ผู้ใช้ต้องกดยืนยันก่อนบันทึก",
-                   ["job": job, "task": task, "percent": p("number", "% สะสมของงานนี้ 0–100"),
-                    "week": p("string", "สัปดาห์ที่บันทึก yyyy-MM-dd (ค่าเริ่มต้น สัปดาห์นี้)")], required: ["job", "task", "percent"]),
-                fn("propose_dates", "เสนอวันเริ่มจริง / วันเสร็จจริงของงานหนึ่ง ผู้ใช้ต้องกดยืนยัน ไม่ใส่ = คงเดิม, ค่าว่าง = ลบ",
+                fn("get_project", "One station's project besides the MP plan; works without a plan. Sections: survey (NO.224 completion, facts, missing), papers (PWA station papers not ready or expiring), erc (ERC flow waits), iec (IEC 62446 steps, inverters, install photos), weekly (requests R1), icl, devices, logs (install logs), inspections. basics always",
+                   ["job": job, "sections": sections], required: ["job"]),
+                fn("get_week_tasks", "Planned and done points of each task in one week",
+                   ["job": job, "week": week], required: ["job"]),
+                fn("propose_progress", "Propose a task's cumulative %; the user must confirm",
+                   ["job": job, "task": task, "percent": p("number", "cumulative % 0–100"), "week": week],
+                   required: ["job", "task", "percent"]),
+                fn("propose_dates", "Propose a task's actual start / finish; the user must confirm. Left out = unchanged, empty = cleared",
                    ["job": job, "task": task, "started": p("string", "yyyy-MM-dd"), "finished": p("string", "yyyy-MM-dd")],
                    required: ["job", "task"]),
-                fn("propose_late_cause", "เสนอสาเหตุที่งานล่าช้า ผู้ใช้ต้องกดยืนยัน",
+                fn("propose_late_cause", "Propose why a task is late; the user must confirm",
                    ["job": job, "task": task,
-                    "cause": p("string", "weather สภาพอากาศ, material วัสดุ, owner เจ้าของงาน, contractor ผู้รับเหมา, none ไม่ระบุ",
+                    "cause": p("string", "weather, material, owner, contractor or none",
                                enum: ["weather", "material", "owner", "contractor", "none"])],
                    required: ["job", "task", "cause"]),
             ] + strategyDefinitions

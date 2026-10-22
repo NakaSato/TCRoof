@@ -14,10 +14,15 @@ public enum RoofDXF {
         public let layers: [String]
     }
 
-    /// AutoCAD colour index per layer (the design's `LY`).
-    public static let colors: [String: Int] = ["GRID": 8, "OUTLINE": 7, "RIDGE": 1, "TRUSS": 5, "POST": 7, "PURLIN": 30, "SKYLIGHT": 4,
-                                               "OBSTACLE": 1, "SECTION_MARK": 1, "DIM": 3, "TEXT": 7, "PV": 150, "PV_RAIL": 8, "PV_FOOT": 250, "PV_CUT": 1,
-                                               "KEEPOUT": 1, "SECTION": 7, "TABLE": 7]
+    /// The design's layer keys (`LY`) → the team's standard layers (`CADLayers`).
+    public static let standard: [String: SketchDXF.Layer] = [
+        "GRID": CADLayers.grid, "OUTLINE": CADLayers.roofOutline, "RIDGE": CADLayers.roofRidge, "TRUSS": CADLayers.roofTruss,
+        "POST": CADLayers.roofPost, "PURLIN": CADLayers.roofPurlin, "SKYLIGHT": CADLayers.roofSkylight, "OBSTACLE": CADLayers.obstacle,
+        "SECTION_MARK": CADLayers.sectionMark, "DIM": CADLayers.dim, "TEXT": CADLayers.text, "PV": CADLayers.pvModule,
+        "PV_RAIL": CADLayers.pvRail, "PV_FOOT": CADLayers.pvFoot, "PV_CUT": CADLayers.pvCut, "KEEPOUT": CADLayers.pvKeepout,
+        "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable,
+    ]
+    static func layer(_ key: String) -> SketchDXF.Layer { standard[key] ?? CADLayers.text }
     /// The plan's path keys (`RoofPlan.tags`) → layers.
     static let planLayers: [String: String] = ["grid": "GRID", "bub": "GRID", "out": "OUTLINE", "ridge": "RIDGE", "tbd": "TRUSS",
                                                "truss": "TRUSS", "t2": "TRUSS", "raft": "TRUSS", "eave": "TRUSS", "post": "POST",
@@ -25,10 +30,11 @@ public enum RoofDXF {
                                                "txt": "TEXT", "dimtxt": "DIM"]
     static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
-    /// "GRID | POST | TRUSS | PURLIN | SECTION | DIM | TEXT | TABLE", the sheet's layer line.
+    /// "TC-GRID | TC-ROOF-POST | TC-ROOF-TRUSS | …", the sheet's layer line.
     public static func layerSummary(_ parts: Set<Part>) -> String {
-        [parts.contains(.plan) ? "GRID | POST | TRUSS | PURLIN" : "", parts.contains(.section) ? "SECTION" : "", parts.contains(.pv) ? "PV" : "",
-         parts.isEmpty ? "" : "DIM | TEXT", parts.contains(.table) ? "TABLE" : ""].filter { !$0.isEmpty }.joined(separator: " | ")
+        let keys = (parts.contains(.plan) ? ["GRID", "POST", "TRUSS", "PURLIN"] : []) + (parts.contains(.section) ? ["SECTION"] : [])
+            + (parts.contains(.pv) ? ["PV"] : []) + (parts.isEmpty ? [] : ["DIM", "TEXT"]) + (parts.contains(.table) ? ["TABLE"] : [])
+        return keys.map { layer($0).name }.joined(separator: " | ")
     }
 
     /// `latitude` (A1's GPS) places the PV layout's shade; nil takes `RoofMount.defaultLatitude`. `longitude` picks the
@@ -37,7 +43,7 @@ public enum RoofDXF {
                              longitude: Double? = nil) -> Output {
         var o = SketchDXF.Options(); o.millimetres = millimetres
         var dxf = SketchDXF(options: o)
-        func layer(_ name: String) -> SketchDXF.Layer { .init(name, aci: colors[name] ?? 7) }
+        func layer(_ key: String) -> SketchDXF.Layer { Self.layer(key) }
         func TEXT(_ l: String, _ p: (Double, Double), _ h: Double, _ t: String, mid: Bool) {
             dxf.text(layer(l), p, height: h, t, align: mid ? .center : .left, middle: mid)
         }
@@ -53,9 +59,12 @@ public enum RoofDXF {
         let f = Roof.frame(v), xs = Roof.spans(v, .x), ys = Roof.spans(v, .y)
         if parts.contains(.plan) {
             for (op, tag) in zip(plan.sketch.ops, plan.tags) {
-                guard let tag, let l = planLayers[tag] else { continue }
+                // the dimension chains are DIMENSIONs, not their lines and texts
+                guard let tag, let l = planLayers[tag], L.dimensions.isEmpty || (tag != "dim" && tag != "dimtxt") else { continue }
                 write(op, l, tp, L.k, text: tag == "dimtxt" ? th * 0.8 : th)
             }
+            dxf.options.fixedTextHeight = th * 0.8
+            dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
             TEXT("TEXT", (0, -1.2), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }

@@ -149,6 +149,24 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   WIPEOUT of its outline, so the grid, beams and purlins under a module are hidden as on the printed plan; the frame is
   off (`ACAD_WIPEOUT_VARS` → `WIPEOUTVARIABLES` 70 = 0), so only the module's own outline shows and prints. LibreCAD
   ignores WIPEOUT and shows the lines under it.
+- **Layer standard** (`TCRoofCore/CADLayers.swift`, 2026-10-22): every export takes its layers from one list, named
+  `TC-<area>-<item>` (shared `TC-GRID`, `TC-DIM`, `TC-TEXT`, `TC-NORTH`, `TC-SECTION-MARK`, `TC-OBSTACLE`; then
+  `TC-ROOF-*`, `TC-PV-*`, `TC-TANK-*`, `TC-SITE-*`, `TC-SLD-*`). Each layer has its colour, linetype (grid CENTER;
+  beams, keep-out, cable and crane HIDDEN), lineweight, plot flag (the site picture frame and Defpoints don't plot) and
+  a Thai / English description (XDATA `AcAecLayerStandard`, the layer manager's Description). `$LTSCALE` is the plot
+  scale that fits the drawing on A3 (`SketchDXF.plotScale`), so CENTER and HIDDEN print with their paper-millimetre
+  patterns; a sketch's own dash is divided by it. `$LWDISPLAY` is on. Open: map these onto the company's own layer
+  list once its drawing is available as DXF.
+- **Dimensions and hatches** (2026-10-22): the plans' span chains and totals (C1's plan, D1's square and round plans:
+  `RoofPlan.Layout.dimensions`, `TankPlan.dimensions`) are DIMENSIONs (`SketchDXF.dimension`), one per span and one per
+  total, in place of their lines and texts. Each draws as the sketch did (extension lines, 45° ticks, the text above
+  the line) from an anonymous block `*D<n>`, in a style per text height (`TC_<height>`: DIMTSZ ticks, CORDIA text,
+  DIMLFAC to metres, two decimals; `TC_<height>_Z` drops trailing zeros for labels like `4` or `1.5`), so CAD redraws it
+  the same after an edit. The measured part of the label is written `<>`, so moving a point updates the number;
+  `Ø <>` keeps its prefix, and any other label stays as written. The C1 section's dimensions stay lines: the section is
+  a diagram, not to scale. A `hatch` is one HATCH (ANSI31 at the sketch's spacing, inside the box), and an opaque
+  coloured fill with no stroke (posts, rail feet, junction dots, a north arrow's head) adds a SOLID HATCH inside its
+  outline (`Options.hatchEntities`; off writes the old lines).
 - **Objects, not loose lines**: a polyline, a rectangle, a polygon and an outline are one LWPOLYLINE each (closed for the
   shapes). The SLD's symbols are BLOCKs placed by INSERTs (`SingleLineDrawing.symbols`, marked where the layout draws
   them: `SLD_BREAKER`, `SLD_BREAKER_DRAWOUT`, `SLD_TRANSFORMER`, `SLD_METER`, `SLD_CT`, `SLD_POLE`, `SLD_HV_SWITCH`,
@@ -166,4 +184,5 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
 1. Does PEA (or PWA) accept DXF in the permit pack, or must it be DWG / PDF only?
 2. SLD in real scale or paper scale (A3 sheet in mm, 1:1 with the PDF)? Paper scale is simpler for a schematic.
 3. Should a title block (company, job, date, signer) be drawn into each DXF?
+5. Should the C1 section be drawn to scale, so its dimensions can be real ones too?
 4. ~~Is the TIS-620 codepage enough?~~ Answered 2026-10-22: TIS-620 with the team's `cordia.shx` (width 0.85), above.

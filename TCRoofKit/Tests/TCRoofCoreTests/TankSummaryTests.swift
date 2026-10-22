@@ -63,7 +63,7 @@ final class TankSummaryTests: XCTestCase {
 
     func testTheDXFHasTheBeamsAndMarks() throws {
         let out = try XCTUnwrap(TankDXF.build(TankDXFTests.sample()))
-        XCTAssertTrue(out.layers.contains("BEAM"))
-        XCTAssertTrue(out.layers.contains("SECTION_MARK"))
+        XCTAssertTrue(out.layers.contains("TC-TANK-BEAM"))
+        XCTAssertTrue(out.layers.contains("TC-SECTION-MARK"))
     }
 }

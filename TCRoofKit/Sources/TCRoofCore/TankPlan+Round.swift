@@ -7,7 +7,7 @@ import Foundation
 /// in the same tank metres as a rectangle's.
 extension TankPlan {
     static func round(_ v: Values, width W: Double, hints: Bool, details: Bool)
-        -> (sketch: Sketch, tags: [String?], frame: (ox: Double, oy: Double, k: Double))? {
+        -> (sketch: Sketch, tags: [String?], frame: (ox: Double, oy: Double, k: Double), dimensions: [SketchDXF.Dimension])? {
         guard let D = Tank.diameter(v) else { return nil }
         let padL = 52.0, padT = 66.0, padR = 78.0, padB = 82.0, maxH = (W * 0.78).rounded()
         let k = min((W - padL - padR) / D, (maxH - padT - padB) / D), w = D * k, h = w
@@ -68,6 +68,7 @@ extension TankPlan {
         o.append(.line(Pt(ox - 4, cy), Pt(ox + w + 4, cy), width: 0.6, color: ink))
         o.append(tick(Pt(ox, cy))); o.append(tick(Pt(ox + w, cy)))
         o.append(.text("Ø " + String(format: "%.2f", D), at: Pt(ox + w / 2, cy - 7), size: 9, bold: true, color: ink, align: .center))
+        let dims = [SketchDXF.Dimension(Pt(ox, c.y), Pt(ox + w, c.y), at: Pt(0, cy), text: "Ø " + String(format: "%.2f", D), size: 9)]
         tag("dim", text: "dimtxt")
         // note, north arrow, caption
         let wall = Tank.typeName(v).map { "ผนัง " + $0 }
@@ -89,7 +90,7 @@ extension TankPlan {
             o.append(.text(TankDrawings.note, at: Pt(ox, bottom + 4), size: 7.5, color: .ink2)); bottom += 12
         }
         tag("txt")
-        return (Sketch(width: W, height: max(H, bottom), ops: o), tags, (ox, oy, k))
+        return (Sketch(width: W, height: max(H, bottom), ops: o), tags, (ox, oy, k), dims)
     }
 
     /// The iPhone's 330 × 300 plan of a round tank: the rim, the centre lines, the diameter and the north arrow.

@@ -38,45 +38,45 @@ final class SiteDXFTests: XCTestCase {
         XCTAssertEqual(l[l.firstIndex(of: "$INSUNITS")! + 2], "4")
         XCTAssertEqual(l.suffix(2), ["EOF", ""])
         XCTAssertEqual(l.count % 2, 1, "group-code pairs plus the final line end")
-        for name in ["FRAME", "PV_AREA", "CABLE", "MEASURE", "CRANE", "SHADE", "SYMBOL", "NORTH", "TEXT"] {
+        for name in ["TC-SITE-FRAME", "TC-SITE-PV-AREA", "TC-SITE-CABLE", "TC-SITE-MEASURE", "TC-SITE-CRANE", "TC-SITE-SHADE", "TC-SITE-SYMBOL", "TC-NORTH", "TC-TEXT"] {
             XCTAssertTrue(out.layers.contains(name), name)
         }
         let ents = t.entities(out.data)
         // the picture is 100 m × 50 m, from (0, 0)
-        let frame = ents.filter { layerOf($0) == "FRAME" }
+        let frame = ents.filter { layerOf($0) == "TC-SITE-FRAME" }
         XCTAssertEqual(frame.count, 4)
         XCTAssertEqual(frame.flatMap { [t.double($0, "10"), t.double($0, "11")] }.max()!, 100_000, accuracy: 0.01)
         XCTAssertEqual(frame.flatMap { [t.double($0, "20"), t.double($0, "21")] }.max()!, 50_000, accuracy: 0.01)
         // the 40 × 20 m tank centred on the picture: one outline (its tint is not written), name tag above
-        let pv = ents.filter { layerOf($0) == "PV_AREA" && $0.first?.1 == "LINE" }
+        let pv = ents.filter { layerOf($0) == "TC-SITE-PV-AREA" && $0.first?.1 == "LINE" }
         // its corners are (30, 15) and (70, 35) m
         func corner(_ e: [(String, String)]) -> Bool {
             [t.double(e, "10"), t.double(e, "11")].allSatisfy { abs($0 - 30_000) < 0.5 || abs($0 - 70_000) < 0.5 }
                 && [t.double(e, "20"), t.double(e, "21")].allSatisfy { abs($0 - 15_000) < 0.5 || abs($0 - 35_000) < 0.5 }
         }
         XCTAssertEqual(pv.filter(corner).count, 4, "each edge once")
-        XCTAssertTrue(ents.contains { layerOf($0) == "PV_AREA" && $0.first?.1 == "TEXT" })
+        XCTAssertTrue(ents.contains { layerOf($0) == "TC-SITE-PV-AREA" && $0.first?.1 == "TEXT" })
     }
 
     func testYUpAndMeasureLabel() throws {
         let ents = t.entities(try XCTUnwrap(SiteDXF.build(Self.sample())).data)
         // the cable route's first point is 10% across, 90% down the picture: 10 m, 5 m up
-        let cable = ents.filter { layerOf($0) == "CABLE" }
+        let cable = ents.filter { layerOf($0) == "TC-SITE-CABLE" }
         XCTAssertEqual(cable.count, 2)
         XCTAssertTrue(cable.contains { abs(t.double($0, "10") - 10_000) < 1 && abs(t.double($0, "20") - 5_000) < 1 })
         // the measure line is 50 m and labelled so ("ม" is TIS-620 0xC1)
-        XCTAssertTrue(ents.contains { layerOf($0) == "MEASURE" && t.value($0, "1") == "50.0 \u{C1}." })
+        XCTAssertTrue(ents.contains { layerOf($0) == "TC-SITE-MEASURE" && t.value($0, "1") == "50.0 \u{C1}." })
         // the crane entry is dashed
-        XCTAssertTrue(ents.contains { layerOf($0) == "CRANE" && t.value($0, "6") == "DASHED" })
-        XCTAssertTrue(ents.contains { layerOf($0) == "TEXT" && (t.value($0, "1") ?? "").hasPrefix("SITE PLAN - 6901 - ") })
+        XCTAssertTrue(ents.contains { layerOf($0) == "TC-SITE-CRANE" && t.value($0, "6") == "DASHED" })
+        XCTAssertTrue(ents.contains { layerOf($0) == "TC-TEXT" && (t.value($0, "1") ?? "").hasPrefix("SITE PLAN - 6901 - ") })
     }
 
     func testWithoutScaleIsPaperSizedAndHasNoModels() throws {
         let out = try XCTUnwrap(SiteDXF.build(Self.sample(scaled: false)))
-        XCTAssertFalse(out.layers.contains("PV_AREA"))
-        let frame = t.entities(out.data).filter { layerOf($0) == "FRAME" }
+        XCTAssertFalse(out.layers.contains("TC-SITE-PV-AREA"))
+        let frame = t.entities(out.data).filter { layerOf($0) == "TC-SITE-FRAME" }
         XCTAssertEqual(frame.flatMap { [t.double($0, "10"), t.double($0, "11")] }.max()!, SiteDXF.paperWidth, accuracy: 0.01)
-        XCTAssertTrue(t.entities(out.data).contains { layerOf($0) == "MEASURE" && $0.first?.1 == "LINE" })
-        XCTAssertFalse(t.entities(out.data).contains { layerOf($0) == "MEASURE" && $0.first?.1 == "TEXT" }, "no length without a scale")
+        XCTAssertTrue(t.entities(out.data).contains { layerOf($0) == "TC-SITE-MEASURE" && $0.first?.1 == "LINE" })
+        XCTAssertFalse(t.entities(out.data).contains { layerOf($0) == "TC-SITE-MEASURE" && $0.first?.1 == "TEXT" }, "no length without a scale")
     }
 }

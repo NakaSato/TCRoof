@@ -5,7 +5,9 @@ import Foundation
 /// coordinates are written in millimetres or metres. Thai text is written in TIS-620 (`$DWGCODEPAGE` ANSI_874), the
 /// byte codes a Thai SHX font reads, in the text style `CORDIA` (cordia.shx, width 0.85) so CAD programs show Thai
 /// instead of their default font's blanks. The header carries the drawing's extents and limits and the VPORT table its
-/// view, so the drawing opens framed. The other options add what the C1 export never needed.
+/// view, so the drawing opens framed. Shapes are POLYLINEs (a rectangle is one closed polyline, not four lines), and
+/// the symbols a caller marks (`Symbol`) are BLOCKs placed by INSERTs, so the drawing edits as objects in CAD. The other
+/// options add what the C1 export never needed.
 public struct SketchDXF: Sendable {
     public struct Layer: Sendable, Hashable {
         public var name: String
@@ -35,7 +37,22 @@ public struct SketchDXF: Sendable {
         public var centreText = true
         /// The text style every `TEXT` uses (the STYLE table, group 7, and the width factor, group 41).
         public var textStyle = TextStyle.cordia
+        /// `polyline`, `rect`, `polygon` and outlines as one POLYLINE each (closed for the shapes) instead of LINEs.
+        public var polylines = true
+        /// The ops of each `Symbol` passed to `add` as an INSERT of a BLOCK.
+        public var blocks = true
         public init() {}
+    }
+
+    /// Ops of a sketch that draw one symbol (a breaker, a transformer, a meter): written as an INSERT of the block
+    /// `name` at `origin`. Every symbol of a name must draw the same thing relative to its origin; one that doesn't gets
+    /// a block of its own (`name-2`, …), so the drawing never changes.
+    public struct Symbol: Sendable, Equatable {
+        public var name: String
+        public var origin: Pt
+        /// The symbol's ops, as indices into the sketch's ops.
+        public var range: Range<Int>
+        public init(_ name: String, origin: Pt, range: Range<Int>) { self.name = name; self.origin = origin; self.range = range }
     }
 
     /// A text style: its name, its font file and its width factor.
@@ -55,6 +72,14 @@ public struct SketchDXF: Sendable {
     private var dashPattern: (Double, Double)?
     /// What the entities cover, in drawing units (text by an estimate of its width).
     private var lo = (x: Double.infinity, y: Double.infinity), hi = (x: -Double.infinity, y: -Double.infinity)
+    /// The BLOCKS section, each block's body (to compare a symbol with it) and what it covers (drawing units, from its
+    /// base point).
+    private var blockSection: [String] = []
+    private var blockBody: [String: [String]] = [:]
+    private var blockBox: [String: (lo: (x: Double, y: Double), hi: (x: Double, y: Double))] = [:]
+    /// Drawing a block's body: entities on layer 0, colour BYBLOCK, measured into `blockLo` / `blockHi`.
+    private var inBlock = false
+    private var blockLo = (x: Double.infinity, y: Double.infinity), blockHi = (x: -Double.infinity, y: -Double.infinity)
 
     public init(options: Options = .init()) { self.options = options }
 
@@ -66,18 +91,24 @@ public struct SketchDXF: Sendable {
     // MARK: entities
 
     private mutating func use(_ l: Layer) {
+        if inBlock { return }
         if count[l.name] == nil { order.append(l.name); aciOf[l.name] = l.aci }
         count[l.name, default: 0] += 1
     }
     private func q(_ m: Double) -> String { Self.num((m * unit * 1000).rounded() / 1000) }
     /// Grows the extents by a point in metres.
     private mutating func cover(_ x: Double, _ y: Double) {
+        if inBlock { blockLo = (min(blockLo.x, x * unit), min(blockLo.y, y * unit)); blockHi = (max(blockHi.x, x * unit), max(blockHi.y, y * unit)); return }
         lo = (min(lo.x, x * unit), min(lo.y, y * unit)); hi = (max(hi.x, x * unit), max(hi.y, y * unit))
     }
+    /// The layer an entity goes on: 0 inside a block, so the INSERT's layer shows through.
+    private func layerName(_ l: Layer) -> String { inBlock ? "0" : l.name }
     /// Linetype and colour groups after the layer.
     private func style(_ l: Layer, _ color: RGBA?, _ dash: [Double]) -> [String] {
         var g: [String] = []
         if options.dashes, dash.count >= 2 { g += ["6", "DASHED"] }
+        // inside a block: BYBLOCK, so the INSERT's layer and colour show through
+        if inBlock { return g + ["62", "0"] }
         if options.opColours, let color, Self.aci(color) != l.aci { g += ["62", String(Self.aci(color))] }
         return g
     }
@@ -85,14 +116,32 @@ public struct SketchDXF: Sendable {
     public mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double)) { line(l, a, b, extra: []) }
     private mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double), extra: [String]) {
         guard hypot(b.0 - a.0, b.1 - a.1) > 1e-6 else { return }
-        use(l); ents += ["0", "LINE", "8", l.name] + extra + ["10", q(a.0), "20", q(a.1), "30", "0", "11", q(b.0), "21", q(b.1), "31", "0"]
+        use(l); ents += ["0", "LINE", "8", layerName(l)] + extra + ["10", q(a.0), "20", q(a.1), "30", "0", "11", q(b.0), "21", q(b.1), "31", "0"]
         cover(a.0, a.1); cover(b.0, b.1)
     }
     public mutating func circle(_ l: Layer, _ c: (Double, Double), r: Double) { circle(l, c, r: r, extra: []) }
     private mutating func circle(_ l: Layer, _ c: (Double, Double), r: Double, extra: [String]) {
-        use(l); ents += ["0", "CIRCLE", "8", l.name] + extra + ["10", q(c.0), "20", q(c.1), "30", "0", "40", q(r)]
+        use(l); ents += ["0", "CIRCLE", "8", layerName(l)] + extra + ["10", q(c.0), "20", q(c.1), "30", "0", "40", q(r)]
         cover(c.0 - r, c.1 - r); cover(c.0 + r, c.1 + r)
     }
+    /// One POLYLINE through `pts` (metres), closed back to the first; LINEs with `polylines` off.
+    public mutating func polyline(_ l: Layer, _ pts: [(Double, Double)], closed: Bool = false) { polyline(l, pts, closed: closed, extra: []) }
+    private mutating func polyline(_ l: Layer, _ pts: [(Double, Double)], closed: Bool, extra: [String]) {
+        var p: [(Double, Double)] = []
+        for v in pts where p.last.map({ hypot(v.0 - $0.0, v.1 - $0.1) > 1e-6 }) ?? true { p.append(v) }
+        if closed, p.count > 1, hypot(p[0].0 - p[p.count - 1].0, p[0].1 - p[p.count - 1].1) <= 1e-6 { p.removeLast() }
+        guard p.count >= 2 else { return }
+        guard options.polylines, p.count > 2 || closed else {
+            let n = closed ? p.count : p.count - 1
+            for i in 0..<n { line(l, p[i], p[(i + 1) % p.count], extra: extra) }
+            return
+        }
+        let name = layerName(l)
+        use(l); ents += ["0", "POLYLINE", "8", name] + extra + ["66", "1", "10", "0", "20", "0", "30", "0", "70", closed ? "1" : "0"]
+        for v in p { ents += ["0", "VERTEX", "8", name, "10", q(v.0), "20", q(v.1), "30", "0"]; cover(v.0, v.1) }
+        ents += ["0", "SEQEND", "8", name]
+    }
+
     /// `height` in metres; `angle` in degrees counter-clockwise; `middle` aligns the line's vertical middle on `p`.
     public mutating func text(_ l: Layer, _ p: (Double, Double), height: Double, _ s: String, align: TextAlign = .left, middle: Bool = false, angle: Double = 0) {
         text(l, p, height: height, s, align: align, middle: middle, angle: angle, extra: [])
@@ -100,7 +149,7 @@ public struct SketchDXF: Sendable {
     private mutating func text(_ l: Layer, _ p: (Double, Double), height: Double, _ s: String, align: TextAlign, middle: Bool, angle: Double, extra: [String]) {
         guard !s.isEmpty else { return }
         let ts = options.textStyle
-        use(l); ents += ["0", "TEXT", "8", l.name] + extra + ["7", ts.name, "10", q(p.0), "20", q(p.1), "30", "0", "40", q(height), "1", s,
+        use(l); ents += ["0", "TEXT", "8", layerName(l)] + extra + (inBlock && !extra.contains("62") ? ["62", "0"] : []) + ["7", ts.name, "10", q(p.0), "20", q(p.1), "30", "0", "40", q(height), "1", s,
                                                              "41", Self.num(ts.width)]
         // the extents: about 0.6 of the height a letter, along the angle from where the alignment puts the start
         let w = Double(s.count) * height * 0.6 * ts.width, r = angle * .pi / 180
@@ -120,10 +169,84 @@ public struct SketchDXF: Sendable {
 
     /// Writes `ops` mapped by `transform` (sketch point → metres, Y up). `layer` picks a layer per op (index, op); nil
     /// skips it. `pointsPerMetre` converts radii, text sizes and dash lengths.
-    public mutating func add(_ ops: [DrawOp], layer: (Int, DrawOp) -> Layer?, transform tf: (Pt) -> (Double, Double), pointsPerMetre ppm: Double) {
-        for (i, op) in ops.enumerated() {
-            guard let l = layer(i, op) else { continue }
-            write(op, l, tf, ppm)
+    /// `symbols` become INSERTs of their blocks (with `blocks` on); the INSERT takes the layer and colour of the symbol's
+    /// first non-text op.
+    public mutating func add(_ ops: [DrawOp], layer: (Int, DrawOp) -> Layer?, transform tf: (Pt) -> (Double, Double), pointsPerMetre ppm: Double,
+                             symbols: [Symbol] = []) {
+        var starts: [Int: Symbol] = [:]
+        if options.blocks {
+            for s in symbols where !s.range.isEmpty && s.range.upperBound <= ops.count && starts[s.range.lowerBound] == nil { starts[s.range.lowerBound] = s }
+        }
+        var i = 0
+        while i < ops.count {
+            if let s = starts[i] {
+                let shown = s.range.filter { layer($0, ops[$0]) != nil }
+                // the layer and colour of the first op that draws (not a label, not a white mask)
+                let skip = options.skipFillOnly
+                let drawn: (DrawOp) -> Bool = { op in
+                    switch op {
+                    case .text, .runs, .textBox: return false
+                    case let .rect(_, st, f, _), let .polygon(_, st, f, _), let .circle(_, _, st, f, _):
+                        return !(skip && st == nil && (f == nil || f == .white))
+                    default: return true
+                    }
+                }
+                if let first = shown.first(where: { drawn(ops[$0]) }) ?? shown.first, let l = layer(first, ops[first]) {
+                    let o = tf(s.origin)
+                    let name = block(s.name) { d in
+                        for k in shown { d.write(ops[k], l, { p in let a = tf(p); return (a.0 - o.0, a.1 - o.1) }, ppm) }
+                    }
+                    insert(l, name, at: o, color: Self.colour(ops[first]))
+                }
+                i = s.range.upperBound
+                continue
+            }
+            if let l = layer(i, ops[i]) { write(ops[i], l, tf, ppm) }
+            i += 1
+        }
+    }
+
+    /// The op's stroke (or fill) colour, for an INSERT's colour.
+    static func colour(_ op: DrawOp) -> RGBA? {
+        switch op {
+        case let .line(_, _, _, c, _), let .polyline(_, _, c, _), let .hatch(_, c, _): return c
+        case let .rect(_, s, f, _), let .polygon(_, s, f, _), let .circle(_, _, s, f, _): return s ?? f
+        case let .text(_, _, _, _, c, _, _), let .textBox(_, _, _, _, c, _), let .runs(_, _, c, _): return c
+        case .photo, .photoFill, .checkbox: return nil
+        }
+    }
+
+    /// Defines a block drawn by `draw` (block-relative metres, Y up) and returns its name: `name`, or `name-2`, … when a
+    /// block of that name already holds something else. An identical body reuses the existing block.
+    @discardableResult
+    public mutating func block(_ name: String, _ draw: (inout SketchDXF) -> Void) -> String {
+        let saved = ents
+        ents = []; inBlock = true
+        blockLo = (.infinity, .infinity); blockHi = (-.infinity, -.infinity)
+        draw(&self)
+        let body = ents, box = (lo: blockLo, hi: blockHi)
+        ents = saved; inBlock = false
+        var n = 1, nm = name
+        while let existing = blockBody[nm] {
+            if existing == body { return nm }
+            n += 1; nm = "\(name)-\(n)"
+        }
+        blockBody[nm] = body
+        blockBox[nm] = box
+        blockSection += ["0", "BLOCK", "8", "0", "2", nm, "70", "0", "10", "0", "20", "0", "30", "0", "3", nm] + body + ["0", "ENDBLK", "8", "0"]
+        return nm
+    }
+
+    /// An INSERT of the block `name` at `p` (metres), turned `rotation` degrees counter-clockwise.
+    public mutating func insert(_ l: Layer, _ name: String, at p: (Double, Double), rotation: Double = 0, color: RGBA? = nil) {
+        use(l)
+        ents += ["0", "INSERT", "8", l.name] + style(l, color, []) + ["2", name, "10", q(p.0), "20", q(p.1), "30", "0"]
+        if abs(rotation) > 1e-9 { ents += ["50", Self.num((rotation * 1000).rounded() / 1000)] }
+        if let b = blockBox[name], b.lo.x <= b.hi.x {
+            let r = rotation * .pi / 180
+            for x in [b.lo.x, b.hi.x] { for y in [b.lo.y, b.hi.y] {
+                cover(p.0 + (x * cos(r) - y * sin(r)) / unit, p.1 + (x * sin(r) + y * cos(r)) / unit)
+            } }
         }
     }
 
@@ -133,7 +256,7 @@ public struct SketchDXF: Sendable {
     }
 
     private mutating func outline(_ l: Layer, _ c: [Pt], _ tf: (Pt) -> (Double, Double), _ extra: [String]) {
-        for i in c.indices { line(l, tf(c[i]), tf(c[(i + 1) % c.count]), extra: extra) }
+        polyline(l, c.map(tf), closed: true, extra: extra)
     }
 
     /// A white or empty shape with no stroke only paints over what is under it (a background, a mask); a solid one
@@ -142,7 +265,7 @@ public struct SketchDXF: Sendable {
         options.skipFillOnly && stroke == nil && (fill == nil || fill == .white)
     }
 
-    private mutating func write(_ op: DrawOp, _ l: Layer, _ tf: (Pt) -> (Double, Double), _ ppm: Double) {
+    fileprivate mutating func write(_ op: DrawOp, _ l: Layer, _ tf: (Pt) -> (Double, Double), _ ppm: Double) {
         func corners(_ b: Box) -> [Pt] { [Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY)] }
         let fixed = options.fixedTextHeight
         func textHeight(_ size: Double) -> Double { fixed ?? size * 0.7 / ppm }
@@ -151,8 +274,7 @@ public struct SketchDXF: Sendable {
             noteDash(dash, ppm); line(l, tf(a), tf(b), extra: style(l, color, dash))
         case let .polyline(p, _, color, dash):
             noteDash(dash, ppm)
-            let e = style(l, color, dash)
-            for i in 0..<max(0, p.count - 1) { line(l, tf(p[i]), tf(p[i + 1]), extra: e) }
+            polyline(l, p.map(tf), closed: false, extra: style(l, color, dash))
         case let .rect(b, stroke, fill, _):
             if background(stroke, fill) { return }
             outline(l, corners(b), tf, style(l, stroke, []))
@@ -247,7 +369,9 @@ public struct SketchDXF: Sendable {
         for s in ts.name == "STANDARD" ? [ts] : [TextStyle(name: "STANDARD", font: "txt", width: 1), ts] {
             out += ["0", "STYLE", "2", s.name, "70", "0", "40", "0", "41", Self.num(s.width), "50", "0", "71", "0", "42", "2.5", "3", s.font, "4", ""]
         }
-        out += ["0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"] + ents + ["0", "ENDSEC", "0", "EOF"]
+        out += ["0", "ENDTAB", "0", "ENDSEC"]
+        if !blockSection.isEmpty { out += ["0", "SECTION", "2", "BLOCKS"] + blockSection + ["0", "ENDSEC"] }
+        out += ["0", "SECTION", "2", "ENTITIES"] + ents + ["0", "ENDSEC", "0", "EOF"]
         return Self.tis620(out.joined(separator: "\r\n") + "\r\n")
     }
 

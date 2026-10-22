@@ -29,10 +29,11 @@ final class RoofDXFTests: XCTestCase {
         // every layer is declared once in the LAYER table
         let table = l.firstIndex(of: "LAYER")!
         XCTAssertEqual(l[table + 2], String(out.layers.count))
-        XCTAssertEqual(out.entities, zip(l, l.dropFirst()).filter { $0.0 == "0" && ["LINE", "CIRCLE", "TEXT"].contains($0.1) }.count)
-        // 10 posts, 4 lines each, on POST
-        let posts = zip(l, l.dropFirst()).filter { $0.0 == "8" && $0.1 == "POST" }.count
-        XCTAssertEqual(posts, 40)
+        XCTAssertEqual(out.entities, zip(l, l.dropFirst()).filter { $0.0 == "0" && ["LINE", "POLYLINE", "CIRCLE", "TEXT", "INSERT"].contains($0.1) }.count)
+        // 10 posts, each one closed POLYLINE of 4 sides, on POST
+        let t = SketchDXFTests()
+        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "POLYLINE" && t.value($0, "8") == "POST" }.count, 10)
+        XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "POST" }.count, 40)
     }
 
     func testUnitsAndPV() {

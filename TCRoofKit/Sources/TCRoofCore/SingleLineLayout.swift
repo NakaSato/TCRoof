@@ -16,6 +16,8 @@ public struct SingleLineDrawing: Sendable {
     /// The zero-export parts: LV the incomer CT, relay box and control line in the connection board; HV the meter,
     /// CT/VT, relay box and HV bus (B4's crop).
     public var zeroExportBox: Box? = nil
+    /// The ops that draw one symbol each (breaker, transformer, meter …), for the DXF's blocks.
+    public var symbols: [SketchDXF.Symbol] = []
     public var width: Double { sketch.width }
     public var height: Double { sketch.height }
 }
@@ -49,6 +51,7 @@ private struct Drawer {
     var midX = 780.0
     var ftsBox: Box?
     var zeroExportBox: Box?
+    var symbols: [SketchDXF.Symbol] = []
     typealias L = SingleLineLayout
     var ink: RGBA { L.ink }
 
@@ -57,6 +60,11 @@ private struct Drawer {
     // MARK: primitives
 
     mutating func add(_ ops: [DrawOp]) { o += ops }
+    /// A symbol's ops, kept as one (`SketchDXF.Symbol`) for the DXF.
+    mutating func sym(_ name: String, _ x: Double, _ y: Double, _ ops: [DrawOp]) {
+        symbols.append(.init(name, origin: Pt(x, y), range: o.count..<(o.count + ops.count)))
+        o += ops
+    }
     mutating func line(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, _ c: RGBA = L.ink, w: Double = 2, dash: [Double] = []) {
         o.append(.line(Pt(x1, y1), Pt(x2, y2), width: w, color: c, dash: dash))
     }
@@ -111,19 +119,19 @@ private struct Drawer {
 
         // --- PEA line, tap, meter
         line(40, 60, 1520, 60)
-        for x in [110.0, 1080.0, 1470.0] { o.append(SLSymbols.pole(x: x, y: 60)) }
-        for x in [260.0, 560.0, 1240.0] { add(SLSymbols.lineBreak(x: x)) }
+        for x in [110.0, 1080.0, 1470.0] { sym("SLD_POLE", x, 60, [SLSymbols.pole(x: x, y: 60)]) }
+        for x in [260.0, 560.0, 1240.0] { sym("SLD_LINE_BREAK", x, 60, SLSymbols.lineBreak(x: x)) }
         text(m.sourceLabel, 430, 48, size: 13, bold: true, align: .center)
-        add(SLSymbols.hvDevice(m.protectionKind, x: mid, y: 60))
+        sym("SLD_HV_DEVICE", mid, 60, SLSymbols.hvDevice(m.protectionKind, x: mid, y: 60))
         text(m.protection, mid + 18, 95)
-        o.append(SLSymbols.pole(x: mid, y: 107))
-        add(SLSymbols.meter(x: mid, y: 140))
+        sym("SLD_POLE", mid, 107, [SLSymbols.pole(x: mid, y: 107)])
+        sym("SLD_METER", mid, 140, SLSymbols.meter(x: mid, y: 140))
         line(mid, 112, mid, 126)
         for (k, t) in m.meter.enumerated() { text(t, mid + 24, 132 + Double(k) * 18) }
         hit(mid - 20, 120, 330, 62, SLTarget(.electrical))
         if hv {
             // HV zero export: CT/VT in the line under the meter, relay box on the left, dashed control line
-            line(mid, 154, mid, 178); add(SLSymbols.ct(x: mid, y: 192)); line(mid, 206, mid, busY)
+            line(mid, 154, mid, 178); sym("SLD_CT", mid, 192, SLSymbols.ct(x: mid, y: 192)); line(mid, 206, mid, busY)
             text("CT/VT แรงสูง (ใหม่)", mid + 22, 196, size: 12, L.blue)
             o.append(.rect(Box(80, 172, 210, 44), stroke: L.blue, fill: .white, width: 2))
             text("รีเลย์กันย้อน แรงสูง", 185, 191, size: 13, bold: true, L.blue, align: .center)
@@ -146,21 +154,21 @@ private struct Drawer {
         var maxRows = 0
         for tx in m.transformers {
             let x = cx(tx.index)
-            add(SLSymbols.hvSwitch(x: x, y: busY, kind: tx.protection))
+            sym("SLD_HV_SWITCH", x, busY, SLSymbols.hvSwitch(x: x, y: busY, kind: tx.protection))
             line(x, busY + 40, x, 318)
             // lightning arrester: drawn when present, `LA ?` when not answered
             if tx.hasLA != false {
                 line(x, 300, x - 60, 300)
                 if tx.hasLA == true {
-                    add(SLSymbols.arrester(x: x - 60))
+                    sym("SLD_ARRESTER", x - 60, 300, SLSymbols.arrester(x: x - 60))
                     text("LA", x - 86, 350, size: 11, L.grey)
                 } else {
                     line(x - 60, 300, x - 60, 310)
                     text("LA ?", x - 86, 330, size: 11, bold: true, L.red)
                 }
             }
-            add(SLSymbols.cableTerminations(x: x))
-            add(SLSymbols.transformer(x: x))
+            sym("SLD_CABLE_TERMINATIONS", x, 318, SLSymbols.cableTerminations(x: x))
+            sym("SLD_TRANSFORMER", x, 370, SLSymbols.transformer(x: x))
             for (k, t) in tx.lines.enumerated() {
                 let s = SLText(clip(t.text, 34), t.status, bold: t.bold)
                 text(s, x + 30, k == 0 ? 366 : 388 + Double(k - 1) * 18, size: k == 0 ? 13 : 12)
@@ -192,7 +200,9 @@ private struct Drawer {
         let bottom = max(C + 660, connection(C: C, colX: cx(connT), forkY: forkY, hasOthers: maxRows > 0))
         let h = notes(top: bottom)
         o.insert(.rect(Box(0, 0, L.width, h), stroke: nil, fill: .white), at: 0)
-        return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits, ftsBox: ftsBox, zeroExportBox: zeroExportBox)
+        let shifted = symbols.map { SketchDXF.Symbol($0.name, origin: $0.origin, range: ($0.range.lowerBound + 1)..<($0.range.upperBound + 1)) }
+        return SingleLineDrawing(sketch: Sketch(width: L.width, height: h, ops: o), hits: hits, ftsBox: ftsBox, zeroExportBox: zeroExportBox,
+                                 symbols: shifted)
     }
 
     // MARK: level 2 notes
@@ -221,7 +231,7 @@ private struct Drawer {
         if !direct { line(trunk, top - 20, fx, top - 20); line(fx, top - 20, fx, top + 50) }
         text(clip(bd.name, 16), fx + 10, top + 20, size: 13, bold: true)
         line(fx, top + 50, fx, top + 200)
-        add(SLSymbols.breaker(x: fx, y: top + 50))
+        sym("SLD_BREAKER", fx, top + 50, SLSymbols.breaker(x: fx, y: top + 50))
         stack(bd.main, x: fx + 16, y: top + 60)
         o.append(.polygon([Pt(fx - 6, top + 200), Pt(fx + 6, top + 200), Pt(fx, top + 211)], stroke: nil, fill: L.ink))
         text(clip("ปลายสาย TX\(tx.index + 1)" + (bd.location.isEmpty ? "" : " | " + bd.location), 28), fx + 14, top + 212, size: 11, L.grey)
@@ -255,14 +265,14 @@ private struct Drawer {
         line(colX, forkY, inX, forkY, w: 3)
         line(inX, forkY, inX, C + 42)
         text("สาย LV จาก TX\(tx.index + 1) | ขนาด ? (A3)", inX - 18, (forkY + C) / 2, size: 11, L.red, align: .center, angle: -90)
-        add(SLSymbols.breaker(x: inX, y: C + 52, drawout: true))
+        sym("SLD_BREAKER_DRAWOUT", inX, C + 52, SLSymbols.breaker(x: inX, y: C + 52, drawout: true))
         stack(cb.main, x: inX + 18, y: C + 56)
         hit(inX - 12, C + 40, 200, 150, cb.main.target)
         line(inX, C + 102, inX, hv ? busY : C + 160)
 
         // zero export on the low-voltage side: CT in the incomer, relay box, dashed links
         if !hv {
-            add(SLSymbols.ct(x: inX, y: C + 174))
+            sym("SLD_CT", inX, C + 174, SLSymbols.ct(x: inX, y: C + 174))
             line(inX, C + 188, inX, busY)
             text("CT กันย้อน (ใหม่)", inX - 110, C + 178, size: 12, L.blue)
             o.append(.rect(Box(relayX, C + 40, 200, 46), stroke: L.blue, fill: .white, width: 2))
@@ -306,7 +316,7 @@ private struct Drawer {
         dot(pvX, busY, r: 4, L.blue)
         text("PV", pvX, busY - 8, size: 12, bold: true, L.blue, align: .center)
         line(pvX, busY, pvX, busY + 14, L.blue); line(pvX, busY + 50, pvX, smdbY, L.blue)
-        add(SLSymbols.breaker(x: pvX, y: busY + 14, color: L.blue))
+        sym("SLD_BREAKER", pvX, busY + 14, SLSymbols.breaker(x: pvX, y: busY + 14, color: L.blue))
         let tot = pv.totalAT.map { "\($0)" } ?? "?"
         let pvc = pv.totalAT == nil ? L.red : L.blue
         text("MCCB,3P", pvX - 110, busY + 24, size: 12, L.blue)
@@ -327,11 +337,11 @@ private struct Drawer {
         for i in 0..<cols {
             let x = invX0 + Double(i) * colStep
             line(x, smdbY, x, smdbY + 12, L.blue)
-            add(SLSymbols.breaker(x: x, y: smdbY + 12, color: L.blue))
+            sym("SLD_BREAKER", x, smdbY + 12, SLSymbols.breaker(x: x, y: smdbY + 12, color: L.blue))
             line(x, smdbY + 48, x, smdbY + 60, L.blue)
-            add(SLSymbols.inverter(x: x, y: smdbY + 60))
-            add(SLSymbols.dcDisconnect(x: x, y: smdbY + 96))
-            add(SLSymbols.pvArray(x: x, y: smdbY + 150))
+            sym("SLD_INVERTER", x, smdbY + 60, SLSymbols.inverter(x: x, y: smdbY + 60))
+            sym("SLD_DC_DISCONNECT", x, smdbY + 96, SLSymbols.dcDisconnect(x: x, y: smdbY + 96))
+            sym("SLD_PV_ARRAY", x, smdbY + 150, SLSymbols.pvArray(x: x, y: smdbY + 150))
         }
         if (pv.inverterCount ?? 0) > cols { text("… × \(pv.inverterCount!)", lastX + 50, smdbY + 80, size: 12, bold: true, L.blue) }
         let brT = pv.inverterAT.map { "\($0)" } ?? "?"
@@ -366,7 +376,7 @@ private struct Drawer {
         guard m.hasB5 else { return smdbY + 230 }
         let ey = smdbY + 192
         control([(lastX + 10, smdbY + 124), (emgX, smdbY + 124), (emgX, ey - 12)])
-        add(SLSymbols.emergency(x: emgX, y: ey))
+        sym("SLD_EMERGENCY", emgX, ey, SLSymbols.emergency(x: emgX, y: ey))
         text("ปุ่ม Emergency", emgX, ey + 28, size: 11, L.blue, align: .center)
         hit(emgX - 40, ey - 16, 80, 56, .module(.fts))
         let left = invX0 - 250, right = max(ctrlX, emgX + 50) + 14
@@ -381,7 +391,7 @@ private struct Drawer {
         dot(x, busY, r: 4)
         text("\(k + 1)", x, busY - 8, size: 12, align: .center)
         line(x, busY, x, busY + 14)
-        add(SLSymbols.breaker(x: x, y: busY + 14))
+        sym("SLD_BREAKER", x, busY + 14, SLSymbols.breaker(x: x, y: busY + 14))
         if compact { compactStack(br, x: x + 12, y: busY + 24) } else { stack(br, x: x + 16, y: busY + 24) }
         if br.spare {
             text("SPARE", x + 6, busY + (compact ? 82 : 70), size: compact ? 11 : 12, bold: true, align: .right)
@@ -390,7 +400,7 @@ private struct Drawer {
         }
         line(x, busY + 50, x, busY + 220)
         if !br.feeder.isEmpty { text(clip(br.feeder, 30), x - 16, busY + 135, size: 10, align: .center, angle: -90) }
-        o.append(SLSymbols.load(x: x, y: busY + 220))
+        sym("SLD_LOAD", x, busY + 220, [SLSymbols.load(x: x, y: busY + 220)])
         // the label width follows the column pitch
         let chars = space >= 140 ? 18 : compact ? 8 : 14
         for (i, t) in br.destination.prefix(4).enumerated() {
@@ -418,7 +428,7 @@ private struct Drawer {
         text("G", gx + 22, gy + 26, size: 12)
         line(gx - 10, gy + 4, gx - 10, gy + 22, w: 1.2)
         line(gx, gy + 30, gx, busY + 240)
-        add(SLSymbols.ground(x: gx, y: busY + 240, widths: [12, 8, 4], step: 5, 1.5))
+        sym("SLD_GROUND", gx, busY + 240, SLSymbols.ground(x: gx, y: busY + 240, widths: [12, 8, 4], step: 5, 1.5))
         text("GROUND ROD", gx, busY + 270, size: 11, align: .center)
         text(clip(cb.ground, 30), gx - 12, busY + 150, size: 10, align: .center, angle: -90)
         hit(gx - 30, gy - 10, 70, 290, cb.target)

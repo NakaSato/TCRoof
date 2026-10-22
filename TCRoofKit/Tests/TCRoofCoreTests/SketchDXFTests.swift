@@ -5,8 +5,10 @@ import XCTest
 final class SketchDXFTests: XCTestCase {
     var fixtures: URL { URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures") }
     func lines(_ d: Data) -> [String] { String(data: d, encoding: .isoLatin1)!.components(separatedBy: "\r\n") }
-    /// (code, value) pairs of the ENTITIES section.
-    func entities(_ d: Data) -> [[(String, String)]] {
+    /// The entities as written (code, value pairs), a POLYLINE's VERTEX and SEQEND records left out.
+    func rawEntities(_ d: Data) -> [[(String, String)]] { records(d).filter { !["VERTEX", "SEQEND"].contains($0.first?.1 ?? "") } }
+    /// Every record of the ENTITIES section.
+    func records(_ d: Data) -> [[(String, String)]] {
         let l = lines(d)
         let start = l.firstIndex(of: "ENTITIES")! + 1, end = l.lastIndex(of: "ENDSEC")! - 1
         var out: [[(String, String)]] = []
@@ -14,6 +16,29 @@ final class SketchDXFTests: XCTestCase {
         while i + 1 < end {
             if l[i] == "0" { out.append([]) }
             out[out.count - 1].append((l[i], l[i + 1])); i += 2
+        }
+        return out
+    }
+    /// The entities with each POLYLINE as the LINEs it draws (its layer, linetype and colour on each), so geometry checks
+    /// read every segment the same way.
+    func entities(_ d: Data) -> [[(String, String)]] {
+        var out: [[(String, String)]] = []
+        var poly: [(String, String)]?, pts: [(String, String)] = []
+        for r in records(d) {
+            switch r.first?.1 {
+            case "POLYLINE": poly = r; pts = []
+            case "VERTEX": pts.append((value(r, "10")!, value(r, "20")!))
+            case "SEQEND":
+                guard let p = poly else { continue }
+                let keep = p.filter { ["8", "6", "62"].contains($0.0) }, closed = (Int(value(p, "70") ?? "0") ?? 0) & 1 == 1
+                let n = closed ? pts.count : pts.count - 1
+                for k in 0..<max(0, n) {
+                    let a = pts[k], b = pts[(k + 1) % pts.count]
+                    out.append([("0", "LINE")] + keep + [("10", a.0), ("20", a.1), ("30", "0"), ("11", b.0), ("21", b.1), ("31", "0")])
+                }
+                poly = nil
+            default: out.append(r)
+            }
         }
         return out
     }
@@ -56,6 +81,52 @@ final class SketchDXFTests: XCTestCase {
         let vp = try XCTUnwrap(l.firstIndex(of: "*ACTIVE"))
         XCTAssertEqual(Double(l[vp + 12])!, (ext.0 + ext.2) / 2, accuracy: 1e-3)
         XCTAssertEqual(Double(l[vp + 14])!, (ext.1 + ext.3) / 2, accuracy: 1e-3)
+    }
+
+    /// Shapes are POLYLINEs and marked symbols are INSERTs of BLOCKs, so CAD edits them as objects.
+    func testPolylinesBlocksAndInserts() throws {
+        var d = SketchDXF(options: Self.all)
+        let sym: [DrawOp] = [.rect(Box(0, 0, 10, 10), stroke: .black, fill: nil), .line(Pt(0, 0), Pt(10, 10), width: 1, color: .black)]
+        let moved = sym.map { op -> DrawOp in
+            if case let .rect(b, s, f, w) = op { return .rect(Box(b.x + 50, b.y, b.w, b.h), stroke: s, fill: f, width: w) }
+            if case let .line(a, b, w, c, dash) = op { return .line(Pt(a.x + 50, a.y), Pt(b.x + 50, b.y), width: w, color: c, dash: dash) }
+            return op
+        }
+        let bigger: [DrawOp] = [.rect(Box(100, 0, 20, 20), stroke: .black, fill: nil)]
+        let ops = sym + moved + bigger + [.polyline([Pt(0, 50), Pt(10, 60), Pt(20, 50)], width: 1, color: .black)]
+        d.add(ops, layer: { _, _ in .init("A", aci: 7) }, transform: { ($0.x / 10, (100 - $0.y) / 10) }, pointsPerMetre: 10,
+              symbols: [.init("BOX", origin: Pt(0, 0), range: 0..<2), .init("BOX", origin: Pt(50, 0), range: 2..<4),
+                        .init("BOX", origin: Pt(100, 0), range: 4..<5)])
+        let data = d.data(), l = lines(data)
+        // one BLOCKS section between TABLES and ENTITIES: BOX once (the moved copy is the same), BOX-2 for the bigger one
+        let blocks = try XCTUnwrap(l.firstIndex(of: "BLOCKS")), ents = try XCTUnwrap(l.firstIndex(of: "ENTITIES"))
+        XCTAssertLessThan(blocks, ents)
+        XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 - 1] == "0" }.map { l[$0 + 4] }, ["BOX", "BOX-2"])
+        // block bodies sit on layer 0 in colour BYBLOCK
+        let body = Array(l[blocks..<ents])
+        XCTAssertTrue(zip(body, body.dropFirst()).contains { $0.0 == "62" && $0.1 == "0" })
+        let raw = rawEntities(data)
+        let inserts = raw.filter { $0.first?.1 == "INSERT" }
+        XCTAssertEqual(inserts.map { value($0, "2")! }, ["BOX", "BOX", "BOX-2"])
+        XCTAssertEqual(inserts.map { double($0, "10") }, [0, 5000, 10000])
+        // the free polyline: one open POLYLINE of 3 vertices
+        let poly = try XCTUnwrap(raw.first { $0.first?.1 == "POLYLINE" })
+        XCTAssertEqual(value(poly, "70"), "0")
+        XCTAssertEqual(records(data).filter { $0.first?.1 == "VERTEX" }.count, 3)
+        // the extents cover the inserted blocks
+        XCTAssertEqual(Double(l[l.firstIndex(of: "$EXTMAX")! + 2])!, 12000, accuracy: 1e-6)
+        // a rectangle outside a symbol is one closed polyline
+        var r = SketchDXF(options: Self.all)
+        r.add([.rect(Box(0, 0, 10, 10), stroke: .black, fill: nil)], layer: { _, _ in .init("A", aci: 7) }, transform: { ($0.x, $0.y) }, pointsPerMetre: 1)
+        let rp = rawEntities(r.data())
+        XCTAssertEqual(rp.count, 1)
+        XCTAssertEqual(value(rp[0], "70"), "1")
+        // with both off, the old LINEs
+        var o = Self.all; o.polylines = false; o.blocks = false
+        var p = SketchDXF(options: o)
+        p.add(ops, layer: { _, _ in .init("A", aci: 7) }, transform: { ($0.x, $0.y) }, pointsPerMetre: 1, symbols: [.init("BOX", origin: Pt(0, 0), range: 0..<2)])
+        XCTAssertTrue(rawEntities(p.data()).allSatisfy { $0.first?.1 == "LINE" })
+        XCTAssertNil(lines(p.data()).firstIndex(of: "BLOCKS"))
     }
 
     /// The symbols the app's texts use reach CAD as codes or ASCII, never "?".
@@ -103,7 +174,7 @@ final class SketchDXFTests: XCTestCase {
         XCTAssertEqual(l[table + 2], "2")
         XCTAssertEqual(l.filter { $0 == "DASHED" }.count, 2, "declared once, used once")
         XCTAssertEqual(l[l.firstIndex(of: "LTYPE")! + 2], "2")
-        XCTAssertEqual(d.entityCount, entities(d.data()).count)
+        XCTAssertEqual(d.entityCount, rawEntities(d.data()).count)
         // red line on a black layer keeps its colour
         XCTAssertEqual(value(entities(d.data())[0], "62"), "1")
 

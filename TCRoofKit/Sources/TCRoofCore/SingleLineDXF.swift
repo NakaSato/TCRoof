@@ -38,7 +38,7 @@ public enum SingleLineDXF {
         o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)
         dxf.add(drawing.sketch.ops, layer: { _, op in layer(op) }, transform: { p in (p.x * s / 1000, (H - p.y) * s / 1000) },
-                pointsPerMetre: 1000 / s)
+                pointsPerMetre: 1000 / s, symbols: drawing.symbols)
 
         let docNo = job.docNo.isEmpty ? "-" : job.docNo, site = job.projectName.isEmpty ? "-" : job.projectName
         var title = "SINGLE LINE DIAGRAM | \(docNo) | \(site)"

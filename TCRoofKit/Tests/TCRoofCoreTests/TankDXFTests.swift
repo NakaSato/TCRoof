@@ -78,7 +78,21 @@ final class TankDXFTests: XCTestCase {
         let out = try XCTUnwrap(TankDXF.build(v))
         XCTAssertTrue(out.layers.contains("PV"))
         XCTAssertTrue(out.layers.contains("PV_GROUP"))
-        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "PV" }.count, l.count * 4)
+        // one INSERT of the module block per panel switched on
+        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "PV" }.count, l.count)
         XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("PV"))
+    }
+
+    /// Each module is an INSERT of one PV_MODULE block; the table outlines are closed polylines.
+    func testModulesAreBlocks() throws {
+        let v = Self.sample(layout: true)
+        let l = try XCTUnwrap(TankLayout.current(v)), out = try XCTUnwrap(TankDXF.build(v))
+        let raw = t.rawEntities(out.data)
+        let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }
+        XCTAssertEqual(modules.count, l.count)
+        XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "PV" })
+        let tables = raw.filter { $0.first?.1 == "POLYLINE" && t.value($0, "8") == "PV_GROUP" }
+        XCTAssertEqual(tables.count, l.builtTables.count)
+        XCTAssertTrue(tables.allSatisfy { t.value($0, "70") == "1" })
     }
 }

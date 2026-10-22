@@ -11,8 +11,8 @@ final class SingleLineDXFTests: XCTestCase {
         XCTAssertTrue(out.layers.contains("SLD_TEXT"))
         XCTAssertTrue(out.layers.contains("SLD_NEW"))
         XCTAssertTrue(out.layers.contains("SLD_POLE"))
+        XCTAssertEqual(t.rawEntities(out.data).count, out.entities)
         let ents = t.entities(out.data)
-        XCTAssertEqual(ents.count, out.entities)
         for e in ents {
             for code in ["10", "11"] {
                 guard let x = t.value(e, code).flatMap(Double.init) else { continue }
@@ -60,5 +60,23 @@ final class SingleLineDXFTests: XCTestCase {
         XCTAssertEqual(SingleLineDXF.layer(SLSymbols.pole(x: 0, y: 0)).name, "SLD_POLE")
         XCTAssertEqual(SingleLineDXF.layer(.text("x", at: Pt(0, 0), size: 9, color: SingleLineLayout.red)).name, "SLD_TEXT")
         XCTAssertEqual(SingleLineDXF.layer(.rect(Box(0, 0, 1, 1), stroke: .black, fill: nil)).name, "SLD_OTHER")
+    }
+
+    /// Each symbol is an INSERT of its block: a breaker drawn many times is defined once.
+    func testSymbolsAreBlocks() throws {
+        let job = SingleLineTests.level2(), drawing = SingleLineLayout.draw(SingleLine.build(job))
+        let out = SingleLineDXF.build(job)
+        let inserts = t.rawEntities(out.data).filter { $0.first?.1 == "INSERT" }
+        XCTAssertEqual(inserts.count, drawing.symbols.count)
+        let names = Set(inserts.compactMap { t.value($0, "2") })
+        for n in ["SLD_BREAKER", "SLD_TRANSFORMER", "SLD_METER", "SLD_POLE"] { XCTAssertTrue(names.contains(n), n) }
+        let breakers = inserts.filter { t.value($0, "2") == "SLD_BREAKER" }.count
+        XCTAssertGreaterThan(breakers, 3)
+        let l = t.lines(out.data)
+        XCTAssertEqual(l.indices.filter { l[$0] == "BLOCK" && l[$0 + 4] == "SLD_BREAKER" }.count, 1)
+        // a new-equipment (blue) breaker is the same block on the new-equipment layer
+        XCTAssertTrue(inserts.contains { t.value($0, "2") == "SLD_BREAKER" && t.value($0, "8") == "SLD_NEW" })
+        // every symbol's ops really are the same block geometry: the drawing's ops minus the symbols' plus the blocks
+        XCTAssertTrue(drawing.symbols.allSatisfy { $0.range.upperBound <= drawing.sketch.ops.count })
     }
 }

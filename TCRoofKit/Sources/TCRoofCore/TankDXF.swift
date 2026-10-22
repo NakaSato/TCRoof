@@ -25,13 +25,14 @@ public enum TankDXF {
         // the panel layout is in tank metres from the same corner (TankLayoutPlan draws it on the plan's frame)
         if let l = TankLayout.current(v) {
             func p(_ x: Double, _ y: Double) -> (Double, Double) { (x, TH - y) }
-            func box(_ layer: SketchDXF.Layer, _ x: Double, _ y: Double, _ w: Double, _ h: Double) {
-                let c = [p(x, y), p(x + w, y), p(x + w, y + h), p(x, y + h)]
-                for i in 0..<4 { dxf.line(layer, c[i], c[(i + 1) % 4]) }
-            }
             for t in l.builtTables {
-                box(pvGroup, t.x, t.y, t.w, t.h)
-                for q in t.panels where q.on { box(pv, q.x, q.y, q.w, q.h) }
+                dxf.polyline(pvGroup, [p(t.x, t.y), p(t.x + t.w, t.y), p(t.x + t.w, t.y + t.h), p(t.x, t.y + t.h)], closed: true)
+                // each module an INSERT of one block per size on plan (its lower-left corner the base point)
+                for q in t.panels where q.on {
+                    let name = String(format: "PV_MODULE_%.0fx%.0f", q.w * 1000, q.h * 1000)
+                    dxf.block(name) { d in d.polyline(pv, [(0, 0), (q.w, 0), (q.w, q.h), (0, q.h)], closed: true) }
+                    dxf.insert(pv, name, at: p(q.x, q.y + q.h))
+                }
                 for q in t.posts { dxf.circle(pvGroup, p(q.x, q.y), r: l.params.footing / 2) }
             }
         }

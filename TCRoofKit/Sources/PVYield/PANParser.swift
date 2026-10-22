@@ -37,7 +37,7 @@ public enum PANParser {
             return v
         }
         func opt(_ key: String, _ dict: [String: String]) -> Double? {
-            dict[key].flatMap { Double($0) }
+            dict[key].flatMap { Double($0.replacingOccurrences(of: ",", with: ".")) }
         }
 
         let manufacturer = c["Manufacturer"] ?? "Unknown"
@@ -50,7 +50,8 @@ public enum PANParser {
             toleranceMinusPercent: opt("PNomTolLow", m), tolerancePlusPercent: opt("PNomTolUp", m))
         let tc = TemperatureCoefficients(
             muIscAPerK: try num("muISC", m) / 1000,        // mA/K → A/K
-            muVocVPerK: (opt("muVocSpec", m) ?? 0) / 1000, // mV/K → V/K
+            // mV/K → V/K; 0 when the file has none: `StringSizing` then takes the cold Voc from the model
+            muVocVPerK: (opt("muVocSpec", m) ?? 0) / 1000,
             muPmpPercentPerK: opt("muPmpReq", m) ?? 0)
         let cells = CellLayout(cellsInSeries: Int(try num("NCelS", m)),
                                cellsInParallel: Int(opt("NCelP", m) ?? 1),

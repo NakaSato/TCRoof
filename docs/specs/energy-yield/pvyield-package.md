@@ -13,7 +13,7 @@ Portable PV module and inverter specifications, PVsyst one-diode model, inverter
 | `ZnshineExamples.swift` | ZNSHINE ZXM7-UHLDD144 (565–595 W) datasheet entries and `fit(_:)`. |
 | `InverterSpec.swift` | `Codable` inverter spec, three-term loss model (Schmidt–Sauer) fitted from max + European efficiency, AC output with clipping and night consumption. |
 | `GrowattCatalog.swift` | Growatt MAX 60KTL3 LV, MAX 80KTL3 LV, MAX 125KTL3-X LV from the datasheets. |
-| `StringSizing.swift` | Min/max modules per string and checks for max DC voltage, MPPT window, start voltage, Isc and Imp per MPPT, inputs available, DC/AC ratio. |
+| `StringSizing.swift` | Min/max modules per string and checks for max DC voltage, MPPT window, start voltage, Isc and Imp per MPPT, inputs available, DC/AC ratio. The voltage limit is the lower of the inverter's and the module's `maxSystemVoltageV`; the cold Voc comes from the datasheet coefficient, or the one-diode model when the spec has none (never the STC Voc); the start voltage against the hot Vmp is a hard minimum in both `limits` and `check`; Isc over the limit is an error and Isc × `iscSafetyFactor` (1.25, IEC 62548) over it a warning. |
 | `Hourly/*.swift` | The hourly yield chain (§ Hourly engine). |
 | `tools/yield-reference/components/*.json` | Exported specs: ET Solar 550 W (from PAN), Znshine 570 W (fitted), the three Growatt inverters. |
 

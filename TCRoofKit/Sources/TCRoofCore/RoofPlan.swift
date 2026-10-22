@@ -300,12 +300,12 @@ private struct Drawer {
         guard m2 < Lcr - 0.1 else { return }
         if hor {
             let xd = x0 + W * 0.72, ya = y0 + m1 * k, yb = y0 + m2 * k
-            line(xd, ya, xd, yb, 1, RoofPlan.amber); tick(xd, ya, 1, RoofPlan.amber); tick(xd, yb, 1, RoofPlan.amber)
-            text(t, xd + 6, (ya + yb) / 2, 12.5, bold: true, color: RoofPlan.amber, bg: true, align: .left)
+            line(xd, ya, xd, yb, 1, RoofPlan.amber, "callout"); tick(xd, ya, 1, RoofPlan.amber, "callout"); tick(xd, yb, 1, RoofPlan.amber, "callout")
+            text(t, xd + 6, (ya + yb) / 2, 12.5, bold: true, color: RoofPlan.amber, bg: true, align: .left, "note")
         } else {
             let yd = y0 + H * 0.74, xa = x0 + m1 * k, xb = x0 + m2 * k
-            line(xa, yd, xb, yd, 1, RoofPlan.amber); tick(xa, yd, 1, RoofPlan.amber); tick(xb, yd, 1, RoofPlan.amber)
-            text(t, (xa + xb) / 2, yd - 10, 12.5, bold: true, color: RoofPlan.amber, bg: true)
+            line(xa, yd, xb, yd, 1, RoofPlan.amber, "callout"); tick(xa, yd, 1, RoofPlan.amber, "callout"); tick(xb, yd, 1, RoofPlan.amber, "callout")
+            text(t, (xa + xb) / 2, yd - 10, 12.5, bold: true, color: RoofPlan.amber, bg: true, "note")
         }
     }
 
@@ -532,7 +532,7 @@ private struct Drawer {
     /// Obstacle labels as on the old plan.
     mutating func obstacleLabels() {
         for (a, b) in L.areas where a.kind == "" && !a.label.isEmpty {
-            add(.text("\(a.label) \(fmt(a.w))x\(fmt(a.h))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark), nil)
+            add(.text("\(a.label) \(fmt(a.w))x\(fmt(a.h))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark), "note")
         }
     }
 
@@ -543,8 +543,8 @@ private struct Drawer {
             [.circle(c, r: 10.5, stroke: sc, fill: .white, width: 1.4), .text("A", at: c, size: 14, bold: true, color: sc, align: .center)]
         }
         func ends(_ arrow: DrawOp, _ at: Pt) {
-            add(arrow, nil)
-            let b = bubble(at); add(b[0], "sec"); add(b[1], nil)
+            add(arrow, "sec")
+            let b = bubble(at); add(b[0], "sec"); add(b[1], "sec")
         }
         if hor {
             let sx = x0 + W * 0.42
@@ -566,14 +566,14 @@ private struct Drawer {
     /// The frame and slope labels (structure mode), then `สันหลังคา`.
     mutating func labels() {
         if !pvMode {
-            for (t, x, y) in notes { let s = t.hasPrefix("ลาด"); text(t, x, y, s ? 13 : 11, bold: !s, bg: true) }
+            for (t, x, y) in notes { let s = t.hasPrefix("ลาด"); text(t, x, y, s ? 13 : 11, bold: !s, bg: true, "note") }
         }
         let c = ridgeAcross
         if shed && hor {
             // outside the high edge, clear of the chips at the right
-            text("สันหลังคา (ด้านสูง)", x0 + W * 0.78, c + (lowAtStart ? 15 : -15), 13, bold: true, bg: true)
+            text("สันหลังคา (ด้านสูง)", x0 + W * 0.78, c + (lowAtStart ? 15 : -15), 13, bold: true, bg: true, "note")
         } else {
-            text(shed ? "สันหลังคา (ด้านสูง)" : "สันหลังคา", hor ? x0 + W + 34 : c, hor ? c : y0 - 30, 13, bold: true, bg: true)
+            text(shed ? "สันหลังคา (ด้านสูง)" : "สันหลังคา", hor ? x0 + W + 34 : c, hor ? c : y0 - 30, 13, bold: true, bg: true, "note")
         }
     }
 

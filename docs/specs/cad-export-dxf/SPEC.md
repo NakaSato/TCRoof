@@ -203,6 +203,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   reads against the plan.
   Beside the mounting plan, a footing schedule (G-ANNO-SCHD): a line per letter line with its footings' references
   (`A-1…A-14`), the footing size, the post height (the row's front or back post) and the count, and the total.
+- **Roof structure drawing** (2026-10-22): the plan's words reach the DXF: the T1 marks on the trusses, the slope
+  labels, `สันหลังคา`, obstacle labels and the purlin callout (`แป @1.00` with its ticks) on G-ANNO-TEXT, and the
+  section mark's letters and arrows on G-ANNO-SYMB. Section A-A's member callouts ①–⑦ (bubble, number, leader and
+  arrow) are on G-ANNO-SYMB with their numbers, which the DXF left out before. The table part is the member schedule
+  the PDF prints (`RoofTruss.schedule`, `RoofDXF.memberSchedule`): per member row its size, pieces and length per
+  truss and for the roof, kg/m, kg per truss and in all, the steel total, the summary and the notes, on G-ANNO-SCHD;
+  under it details A (support) and B (ridge), not to scale, as the PDF draws them (`RoofTruss.details`). The PDF and
+  the screen are unchanged (the plan's ops are the same; only their CAD tags were added).
 - **Roof mounting grid** (2026-10-22, `RoofMountGrid`): the roof PV DXF carries the mounting's own grid on G-GRID, on
   each face in use: a lower-case letter on every line along the eave that carries L-feet (the rails along the purlins,
   or the purlins under rails up the slope), running on from face to face (a, b … then e, f … on the next face), with a

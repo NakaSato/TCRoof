@@ -117,4 +117,31 @@ final class RoofDXFTests: XCTestCase {
             XCTAssertFalse(f.feet.map { g.ref(f, $0) }.contains(nil))
         }
     }
+
+    /// The structure drawing carries what the PDF prints: the member schedule with its counts and weights, details A / B,
+    /// the plan's T1 marks and labels, and the section's member callouts with their numbers.
+    func testStructureScheduleDetailsAndMarks() throws {
+        var v = roof()
+        v["comp2"] = .text("C100x50x20x3.2")
+        let t = SketchDXFTests(), raw = t.rawEntities(RoofDXF.build(v, parts: [.plan, .section, .table]).data)
+        func texts(_ layer: String) -> [String] {
+            raw.filter { $0.first?.1 == "TEXT" && t.value($0, "8") == layer }.compactMap { t.value($0, "1") }
+        }
+        let s = try XCTUnwrap(RoofTruss.schedule(v))
+        // as written: TIS-620, read back byte for byte
+        func enc(_ x: String) -> String { String(data: SketchDXF.tis620(x), encoding: .isoLatin1)! }
+        let cells = texts("G-ANNO-SCHD")
+        for r in s.rows where r.perFrameCount != nil { XCTAssertTrue(cells.contains(enc(RoofTruss.perFrameText(r))), r.name) }
+        XCTAssertTrue(cells.contains(enc(RoofTruss.steelKgText(s))), "the steel total")
+        XCTAssertTrue(cells.contains { $0.contains("C100x50x20x3.2") })
+        // details A / B: their members on the section layer under the schedule, their labels in words
+        XCTAssertNotNil(RoofTruss.details(v))
+        XCTAssertTrue(texts("G-ANNO-TEXT").contains("T1"), "the plan's truss marks")
+        // the section's callouts ①–⑦: a bubble and its number each, as symbols
+        let symbols = texts("G-ANNO-SYMB")
+        let section = RoofSection(v, trueScale: true)
+        for n in section.callouts.keys { XCTAssertTrue(symbols.contains(String(n)), "callout \(n)") }
+        // and the plan's two section-mark bubbles
+        XCTAssertEqual(raw.filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-ANNO-SYMB" }.count, section.callouts.count + 2)
+    }
 }

@@ -439,14 +439,7 @@ struct DailyReportEditor: View {
 
     private func acknowledge(name: String, at when: Date, signature: Data?) {
         guard let target = log else { return }
-        if job.routineSettings.inspector != name {
-            var s = job.routineSettings; s.inspector = name; job.routineSettings = s
-        }
-        target.inspectorAckAt = when
-        target.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
-        if let built = RoutineReportFiles.daily(job, log: target) { RoutineReportFiles.file(built, job: job, context: context) }
-        if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
-        try? context.save()
+        job.recordInspectorAck(target, name: name, at: when, signature: signature, context: context)
     }
 
     private func exportPDF() {

@@ -48,4 +48,24 @@ final class DailyOnePageUITests: XCTestCase {
         XCTAssertFalse(app.buttons["dailyAck"].exists)
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "ผู้ตรวจงาน")).firstMatch.exists)
     }
+
+    /// The daily list's `รับทราบ` on a signed report not yet acknowledged: the team opens the inspector sheet (cancelled,
+    /// nothing saved); a contractor has no button. Any simulator.
+    func testDailyListAcknowledge() {
+        let team = XCUIApplication()
+        team.launchArguments = ["-screen", "dailies", "-role", "internal", "-jobTeam", "none", "-noNotificationPrompt", "YES"]
+        team.launch()
+        let ack = team.buttons["dailyListAck"].firstMatch
+        XCTAssertTrue(ack.waitForExistence(timeout: slow), "the seeded latest signed days have no acknowledgement yet")
+        ack.tap()
+        XCTAssertTrue(team.navigationBars["Inspector รับทราบ"].waitForExistence(timeout: 10))
+        team.buttons["ยกเลิก"].tap()
+        team.terminate()
+
+        let contractor = XCUIApplication()
+        contractor.launchArguments = ["-screen", "dailies", "-role", "external", "-noNotificationPrompt", "YES"]
+        contractor.launch()
+        XCTAssertTrue(contractor.buttons["dailyListMenu"].firstMatch.waitForExistence(timeout: slow))
+        XCTAssertFalse(contractor.buttons["dailyListAck"].waitForExistence(timeout: 5))
+    }
 }

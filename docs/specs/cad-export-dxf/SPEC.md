@@ -158,10 +158,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   edges (magenta), the 3/4" PPR pipe at 0.656, the rail at 0.687–0.712 (solid, green) and the 6 mm wire-rope lifeline
   at 0.80 with supports every 2.40 m from 0.65 m in (P-LIFE-N, cyan); grating and tray on WIPEOUTs, with the
   band's width and a tag. Open: `Walkway_S1` draws the grating panels about 3.06 m long while its note says
-  0.30 × 2.40; the app follows the note. With any walkway the DXF also carries the team's walkway detail
-  (`Walkway.dxf`: top view, elevations 1–3, detail 1) as one block `TC_DETAIL_WALKWAY` on G-DETL beside the drawing,
-  at the plot scale; it comes from `Resources/walkway-detail.json`, made by `tools/cad-details/convert.py` from the DXF
-  (blocks, dimensions and leaders exploded, XCLIP frames applied); run it again when the detail changes. Under the
+  0.30 × 2.40; the app follows the note. The team's walkway detail sheet (`Walkway.dxf`: top view,
+  elevations 1–3, detail 1) is no longer placed beside the drawing (2026-10-22, at the team's request); it stays
+  converted in `Resources/walkway-detail.json` (`CADDetail.walkway`, `tools/cad-details/convert.py`) should it come
+  back. Under the
   band, a cross rail (hat section 24 mm, P-RAIL-N, grey) at every L-foot. Down the middle (`walkwayCentre`) each
   face's walkway runs on past its top row to the ridge (`RoofWalkway.ridgeEnd`, or where a hip edge crosses the
   band), and on a roof with a ridge a walkway runs along it (`RoofWalkway.ridgeWalkway`: centred on the ridge, 0.50 m

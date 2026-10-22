@@ -128,6 +128,21 @@ directly (`AssistantRouter`: the key on this device, else the function).
   (`isQuestion`, `LIMITS.roundsPerQuestion`; `assistantUsage` keeps `count` of questions and `requests`).
 - `Assistant.OpenAI` builds the request and checks the reply as `functions/src/guard.ts` does (only the app's tools;
   an unknown tool call becomes words); `AssistantOpenAITests`.
+- **Any provider (2026-10-22).** The key can be for any of `Assistant.Provider` (`AssistantProviders.swift`): Qwen,
+  OpenAI, Claude (Anthropic), Gemini, DeepSeek, Groq, OpenRouter, Mistral, Grok (xAI), or another OpenAI-compatible
+  endpoint. Each keeps its own Keychain item (`com.tcroof.assistant.<id>`; Qwen's is the one from before), model and
+  endpoint (`assistant.model.<id>`; Qwen keeps `assistant.model`); the settings page picks a provider, and saving
+  makes it the one in use (`AssistantKey.provider`, `DirectAIClient`). The defaults are starting points the person
+  can change, since providers rename models. All but Claude take the OpenAI-style body (OpenAI itself with
+  `max_completion_tokens` and no `temperature`). Claude goes through `Assistant.Anthropic`: Anthropic's Messages API
+  (`anthropic-version` 2026-10-21, `x-api-key`, `max_tokens` 16,000, no sampling parameters), the system prompt as
+  `system`, tool calls as `tool_use` and results as `tool_result` blocks, adaptive thinking on the models that have
+  it with `block_binding.prefix_mismatch_behavior: "drop_block"` (beta `thinking-binding-controls-2026-08-01`) and
+  `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`) on Fable 5.1 / Opus 5.5 / Opus 5 / Sonnet 5.5. The
+  reply's own blocks ride on `Message.providerBlocks` (never encoded) and go back unchanged within the question
+  they belong to; from earlier questions only text and tool calls go back, since the session shortens old turns (a
+  leading run of thinking blocks may be dropped). A `refusal` stop answers in words. `AssistantProvidersTests`.
+  The Cloud Function stays Qwen-only.
 - Trade-off: a key on a device can be extracted by someone with that device and tools, and the limit is per device,
   not per person. Use a key with a spending cap in the Qwen console, and rotate it if a device is lost. Moving to
   the Cloud Function later only needs the Blaze plan and the deploy; a device without a key then uses it.

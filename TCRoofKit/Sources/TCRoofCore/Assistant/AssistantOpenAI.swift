@@ -2,7 +2,7 @@ import Foundation
 
 public extension Assistant {
 
-    /// Talking to Qwen's OpenAI-compatible endpoint straight from the device (the key kept in its Keychain), the same
+    /// Talking to an OpenAI-compatible endpoint (Qwen, OpenAI, Gemini, DeepSeek … `Provider`) straight from the device (the key kept in its Keychain), the same
     /// checks the Cloud Function makes (functions/src/guard.ts): the reply keeps only the fields the app reads, and a
     /// call to a tool the app doesn't have becomes words.
     enum OpenAI {
@@ -29,8 +29,8 @@ public extension Assistant {
 
             public var errorDescription: String? {
                 switch self {
-                case .noKey: "ยังไม่ได้ใส่คีย์ Qwen ในเครื่องนี้ ให้ผู้จัดการใส่ที่ ตั้งค่า › ผู้ช่วยโครงการ (AI)"
-                case .badKey: "คีย์ Qwen ใช้ไม่ได้หรือหมดอายุ ให้ผู้จัดการตรวจที่ ตั้งค่า › ผู้ช่วยโครงการ (AI)"
+                case .noKey: "ยังไม่ได้ใส่คีย์ AI ในเครื่องนี้ ให้ผู้จัดการใส่ที่ ตั้งค่า › ผู้ช่วยโครงการ (AI)"
+                case .badKey: "คีย์ AI ใช้ไม่ได้หรือหมดอายุ ให้ผู้จัดการตรวจที่ ตั้งค่า › ผู้ช่วยโครงการ (AI)"
                 case .limit(let n): "เครื่องนี้ถามผู้ช่วยครบ \(n) คำถามของวันนี้แล้ว"
                 case .busy: "ผู้ช่วยมีคนใช้มาก ลองอีกครั้งในอีกสักครู่"
                 case .server(let status, let message): "ผู้ช่วยขัดข้อง (\(status))" + (message.isEmpty ? "" : ": \(message)")
@@ -45,15 +45,21 @@ public extension Assistant {
             let messages: [Message]
             let tools: [JSONValue]?
             let tool_choice: String?
-            let max_tokens: Int
-            let temperature: Double
+            let max_tokens: Int?
+            let max_completion_tokens: Int?
+            let temperature: Double?
         }
 
-        /// The chat completion request. A request without tools (the connection test) sends no `tool_choice`.
-        public static func body(_ request: Request, model: String) throws -> Data {
+        /// The chat completion request. A request without tools (the connection test) sends no `tool_choice`. OpenAI's
+        /// own endpoint takes `max_completion_tokens` and its models' default temperature.
+        public static func body(_ request: Request, model: String, provider: Provider = .qwen) throws -> Data {
             let tools = request.tools.isEmpty ? nil : request.tools
+            let completion = provider.usesCompletionTokens
             return try JSONEncoder().encode(Body(model: model, messages: request.messages, tools: tools,
-                                                 tool_choice: tools == nil ? nil : "auto", max_tokens: maxTokens, temperature: 0.2))
+                                                 tool_choice: tools == nil ? nil : "auto",
+                                                 max_tokens: completion ? nil : maxTokens,
+                                                 max_completion_tokens: completion ? maxTokens : nil,
+                                                 temperature: completion ? nil : 0.2))
         }
 
         public static func url(base: String) -> URL? {

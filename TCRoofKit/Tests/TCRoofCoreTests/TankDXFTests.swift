@@ -213,5 +213,10 @@ final class TankDXFTests: XCTestCase {
         XCTAssertGreaterThan(circles, 2 * g.letters.count + pairs)
         let tags = Set(recs.filter { $0.first?.1 == "TEXT" && t.value($0, "8") == "G-ANNO-TEXT" }.compactMap { t.value($0, "1") })
         for r in refs.compactMap({ $0 }) { XCTAssertTrue(tags.contains(r), r) }
+        // the footing schedule: a line per letter line naming its first footing, and the total
+        let cells = recs.filter { $0.first?.1 == "TEXT" && t.value($0, "8") == "G-ANNO-SCHD" }.compactMap { t.value($0, "1") }
+        for line in g.letters { XCTAssertTrue(cells.contains { $0.hasPrefix(line.name + "-1") }, line.name) }
+        XCTAssertTrue(cells.contains("\(refs.count)"), "total")
+        XCTAssertEqual(TankDXF.ranges([1, 2, 3, 5]) { "A-\($0)" }, ["A-1…A-3", "A-5"])
     }
 }

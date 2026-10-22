@@ -201,6 +201,16 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   reference, letter and number (`B-3`, G-ANNO-TEXT). The rows' section carries the first two rows' letters under its
   posts and the front elevation the longest table's numbers, as bubbles under their lowest dimension, so a section
   reads against the plan.
+  Beside the mounting plan, a footing schedule (G-ANNO-SCHD): a line per letter line with its footings' references
+  (`A-1…A-14`), the footing size, the post height (the row's front or back post) and the count, and the total.
+- **Roof mounting grid** (2026-10-22, `RoofMountGrid`): the roof PV DXF carries the mounting's own grid on G-GRID, on
+  each face in use: a lower-case letter on every line along the eave that carries L-feet (the rails along the purlins,
+  or the purlins under rails up the slope), running on from face to face (a, b … then e, f … on the next face), with a
+  bubble past both ends, and a number on every line up the slope through feet (1, 2, 3 … left to right on the plan),
+  from past the eave to past its highest foot with its bubble beyond the eave. Every L-foot is tagged with its
+  reference (`b-3`, G-ANNO-TEXT). Lower case keeps it apart from the building's grid (A, B … and 1, 2 …). The plan's
+  title moves down past the bubbles beyond a bottom eave. The PDF keeps only the panel layout: no grid, no tags, no
+  schedule. Open: whether the team names the mounting grid differently (for example R1, R2 for rails).
 - **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
   (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero

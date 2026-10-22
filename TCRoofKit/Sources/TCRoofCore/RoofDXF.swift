@@ -205,7 +205,11 @@ public enum RoofDXF {
         let mount = parts.contains(.pv) ? RoofMount.layout(v, latitude: latitude, longitude: longitude).layout : nil
         let walkways = mount.map(RoofWalkway.walkways) ?? []
         // a roof access ladder standing out past the plan's bottom edge pushes the title and the section down
-        let drop = walkways.contains { w in w.access && !w.ridge && L.ly - w.plan(0, w.v0 - RoofWalkway.ladderOut).y < -0.1 } ? RoofWalkway.ladderOut + 1.4 : 0
+        let grid = mount.map(RoofMountGrid.init)
+        let ladder = walkways.contains { w in w.access && !w.ridge && L.ly - w.plan(0, w.v0 - RoofWalkway.ladderOut).y < -0.1 } ? RoofWalkway.ladderOut + 1.4 : 0
+        // and so do the mounting grid's bubbles past a bottom eave
+        let low = grid.map { g in g.faces.flatMap { f in f.numbers.map { L.ly - f.face.plan($0.at, -0.8).y } }.min() ?? 0 } ?? 0
+        let drop = max(ladder, low < -0.1 ? 0.9 : 0)
         if parts.contains(.plan) {
             for (op, tag) in zip(plan.sketch.ops, plan.tags) {
                 // the dimension chains are DIMENSIONs, not their lines and texts
@@ -231,6 +235,8 @@ public enum RoofDXF {
             }
             // the walkways in their gaps, as the team's walkway detail draws them
             for w in walkways { walkway(&dxf, w, ly: L.ly, text: th * 0.5) }
+            // the mounting grid: lettered rail (or purlin) lines, numbered foot lines, each L-foot tagged
+            if let grid { mountGrid(&dxf, grid, ly: L.ly) }
         }
         if parts.contains(.section) {
             // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)

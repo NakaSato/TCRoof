@@ -62,4 +62,59 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertEqual(RoofDXF.num(0.25), "0.25")
         XCTAssertEqual(RoofDXF.layerSummary([.plan, .section, .table]), "G-GRID | S-COLS-E | S-ROOF-FRAM-E | S-ROOF-PURL-E | S-ROOF-SECT-E | G-ANNO-DIMS | G-ANNO-TEXT | G-ANNO-SCHD")
     }
+
+    /// The mounting grid: every L-foot on a lettered line and a numbered line, with its own reference, and the plan's
+    /// title moved down past the bubbles beyond the bottom eave.
+    func testMountingGrid() throws {
+        let v = roof(), m = RoofMount.layout(v, latitude: nil).layout, g = RoofMountGrid(m)
+        XCTAssertEqual(g.faces.count, m.faces.filter(\.used).count)
+        let feet = g.faces.flatMap { f in f.feet.map { (f, $0) } }
+        XCTAssertFalse(feet.isEmpty)
+        let refs = feet.map { g.ref($0.0, $0.1) }
+        XCTAssertFalse(refs.contains(nil))
+        XCTAssertEqual(Set(refs.compactMap { $0 }).count, refs.count, "one reference per foot")
+        // letters run on across the faces, lower case
+        let letters = g.faces.flatMap { $0.letters.map(\.name) }
+        XCTAssertEqual(letters.first, "a")
+        XCTAssertEqual(Set(letters).count, letters.count)
+        // numbers read left to right on the plan
+        for f in g.faces {
+            let xs = f.numbers.map { f.face.plan($0.at, 0).x }
+            XCTAssertEqual(xs, xs.sorted(), "face \(f.face.id)")
+        }
+        let raw = SketchDXFTests().rawEntities(RoofDXF.build(v, parts: [.plan, .pv]).data)
+        func texts(_ layer: String) -> Set<String> {
+            Set(raw.filter { $0.first?.1 == "TEXT" && SketchDXFTests().value($0, "8") == layer }.compactMap { SketchDXFTests().value($0, "1") })
+        }
+        let bubbles = texts("G-GRID")
+        for name in letters { XCTAssertTrue(bubbles.contains(name), name) }
+        let tags = texts("G-ANNO-TEXT")
+        for r in refs.compactMap({ $0 }) { XCTAssertTrue(tags.contains(r), r) }
+        // the title sits under every bubble
+        let circles = raw.filter { $0.first?.1 == "CIRCLE" && SketchDXFTests().value($0, "8") == "G-GRID" }
+        let lowest = circles.map { SketchDXFTests().double($0, "20") - SketchDXFTests().double($0, "40") }.min() ?? 0
+        let title = try XCTUnwrap(raw.first { $0.first?.1 == "TEXT" && (SketchDXFTests().value($0, "1") ?? "").contains("Pratt") })
+        XCTAssertLessThan(SketchDXFTests().double(title, "20") + 0.42, lowest)
+    }
+
+    /// Rails up the slope (รางตัดแป): portrait modules packed up the slope with only the module gap between rows, and
+    /// the grid letters the purlins under the feet and numbers the rails.
+    func testMountingGridRailsUpTheSlope() throws {
+        var v = Values()
+        v["spansX"] = .text("1.5,6,6,6,6,1.5"); v["spansY"] = .text("1.5,6,6,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        var c = RoofMount.choice(v); c.railsAcross = true
+        RoofMount.setChoice(&v, c)
+        let m = RoofMount.layout(v, latitude: nil).layout, g = RoofMountGrid(m)
+        XCTAssertTrue(m.options.acrossPurlins)
+        for f in m.faces where f.used {
+            for (a, b) in zip(f.rows, f.rows.dropFirst()) { XCTAssertEqual(b.v - a.v - m.moduleUp, m.standard.moduleGap, accuracy: 1e-6) }
+        }
+        for f in g.faces {
+            let rails = Set(m.faces.first { $0.face.id == f.face.id }!.columnRuns.flatMap(\.railsAt).map { Int(($0 * 1000).rounded()) })
+            XCTAssertEqual(f.numbers.count, rails.count, "a number per rail")
+            for l in f.letters { XCTAssertTrue(m.purlins.contains { abs($0 - l.at) < 0.05 }, "letter \(l.name) on a purlin") }
+            XCTAssertFalse(f.feet.map { g.ref(f, $0) }.contains(nil))
+        }
+    }
 }

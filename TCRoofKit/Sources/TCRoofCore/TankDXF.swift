@@ -178,7 +178,9 @@ public enum TankDXF {
             dxf.dimension(CADLayers.dim, plan(0, w0), plan(0, w1), at: plan(-1.6, 0), vertical: l.turn % 2 == 0,
                           text: String(format: "%.2f", w1 - w0), height: 0.24)
         }
-        mountGrid(&dxf, l, TankMountGrid(l), at: at)
+        let g = TankMountGrid(l)
+        mountGrid(&dxf, l, g, at: at)
+        footingSchedule(&dxf, l, g, at: (dx + l.size.w + 2.5, TH))
         dxf.text(CADLayers.text, at(Pt(0, -2.2)), height: 0.5, "แปลนฐานรากและโครงยึดแผง / Mounting plan")
     }
 

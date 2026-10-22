@@ -102,3 +102,58 @@ extension TankDXF {
         }
     }
 }
+
+extension TankDXF {
+    /// The footing schedule beside the mounting plan, its top-left corner at `o` (metres): a line per letter line with
+    /// the footings' references, the footing, the post height and the count, and the total.
+    static func footingSchedule(_ dxf: inout SketchDXF, _ l: TankLayout, _ g: TankMountGrid, at o: (Double, Double)) {
+        let p = l.params
+        // footings per letter line: their pair numbers and post height (posts alternate front, back)
+        var lines: [String: (numbers: [Int], height: Double)] = [:]
+        for t in l.builtTables {
+            for (i, q) in t.posts.enumerated() {
+                guard let ref = g.ref(q), let dash = ref.lastIndex(of: "-"), let n = Int(ref[ref.index(after: dash)...]) else { continue }
+                let name = String(ref[..<dash])
+                lines[name, default: ([], i % 2 == 0 ? p.hFront : p.hBack)].numbers.append(n)
+            }
+        }
+        let size = String(format: "%.0f × %.0f มม.", p.footing * 1000, p.footing * 1000)
+        let cols: [Double] = [0, 1.6, 5.4, 8.6, 10.8, 12.4], rh = 0.5, th = 0.22
+        let head = ["แนว", "ตำแหน่งฐานราก", "ฐานราก", "สูงเสา (ม.)", "จำนวน"]
+        var rows: [[String]] = []
+        var total = 0
+        for line in g.letters {
+            guard let e = lines[line.name] else { continue }
+            let ns = Array(Set(e.numbers)).sorted()
+            total += e.numbers.count
+            rows.append([line.name, ranges(ns) { "\(line.name)-\($0)" }.joined(separator: ", "), size,
+                         String(format: "%.2f", e.height), "\(e.numbers.count)"])
+        }
+        rows.append(["", "รวม / Total", "", "", "\(total)"])
+        let L = CADLayers.roofTable, w = cols.last!
+        dxf.text(CADLayers.text, (o.0, o.1 + 0.35), height: 0.32, "ตารางฐานราก / Footing schedule")
+        let all = [head] + rows
+        for (r, cells) in all.enumerated() {
+            let y = o.1 - Double(r) * rh
+            dxf.line(L, (o.0, y), (o.0 + w, y))
+            for (c, s) in cells.enumerated() where !s.isEmpty {
+                dxf.text(L, (o.0 + cols[c] + 0.1, y - rh / 2), height: th, s, align: .left, middle: true)
+            }
+        }
+        let bottom = o.1 - Double(all.count) * rh
+        dxf.line(L, (o.0, bottom), (o.0 + w, bottom))
+        for x in cols { dxf.line(L, (o.0 + x, o.1), (o.0 + x, bottom)) }
+    }
+
+    /// Consecutive numbers as ranges, each end named by `name`: [1, 2, 3, 5] → "A-1…A-3", "A-5".
+    static func ranges(_ ns: [Int], _ name: (Int) -> String) -> [String] {
+        var out: [String] = [], i = 0
+        while i < ns.count {
+            var j = i
+            while j + 1 < ns.count, ns[j + 1] == ns[j] + 1 { j += 1 }
+            out.append(j == i ? name(ns[i]) : name(ns[i]) + "…" + name(ns[j]))
+            i = j + 1
+        }
+        return out
+    }
+}

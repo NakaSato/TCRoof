@@ -50,7 +50,10 @@ public enum TankDrawings {
 
     /// The full tank plan with the stored layout over it: panels (dashed when switched off), cut columns in red, the
     /// post footings, and a slope tag towards the wall the panels face. `shaded` panels (a shade snapshot) are orange.
-    public static func layoutPlan(_ v: Values, _ l: TankLayout, width: Double = 690, shaded: Set<String> = []) -> Sketch? {
+    /// `structure` (the printed plan) adds each table's rafters, rails, rail clamps and ground lug, and a legend with
+    /// the counts under the plan.
+    public static func layoutPlan(_ v: Values, _ l: TankLayout, width: Double = 690, shaded: Set<String> = [],
+                                  structure: Bool = false) -> Sketch? {
         guard let plan = TankPlan(v, width: width) else { return nil }
         var o = plan.sketch.ops
         let f = plan.frame
@@ -58,7 +61,9 @@ public enum TankDrawings {
         for t in l.tables {
             for p in t.panels {
                 let b = box(p.x, p.y, p.w, p.h)
-                if p.on { o.append(.rect(b, stroke: .white, fill: shaded.contains(p.key) ? shade : panel.withAlpha(0.88), width: 0.4)) }
+                // the printed plan draws panels light, so the structure over them reads (the prototype's A3 sheet)
+                if p.on && structure { o.append(.rect(b, stroke: panel, fill: panel.withAlpha(0.12), width: 0.5)) }
+                else if p.on { o.append(.rect(b, stroke: .white, fill: shaded.contains(p.key) ? shade : panel.withAlpha(0.88), width: 0.4)) }
                 else { o.append(.polyline([Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY), Pt(b.x, b.y)], width: 0.6,
                                          color: panel.withAlpha(0.6), dash: [2, 1.5])) }
             }
@@ -67,8 +72,19 @@ public enum TankDrawings {
             let b = box(c.x, c.y, c.w, c.h)
             o.append(.polyline([Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY), Pt(b.x, b.y)], width: 0.9, color: cut, dash: [3, 2]))
         }
+        func pt(_ p: Pt) -> Pt { Pt(f.ox + p.x * f.k, f.oy + p.y * f.k) }
+        let parts = structure ? l.builtTables.map(l.structure) : []
+        for s in parts {
+            for (a, b) in s.rafters { o.append(.line(pt(a), pt(b), width: 0.7, color: ink)) }
+            for (a, b) in s.rails { o.append(.line(pt(a), pt(b), width: 0.5, color: navy)) }
+        }
         let r = max(1.2, l.params.footing / 2 * f.k)
         for t in l.builtTables { for p in t.posts { o.append(.rect(Box(f.ox + p.x * f.k - r, f.oy + p.y * f.k - r, 2 * r, 2 * r), stroke: nil, fill: post)) } }
+        let dot = max(1.1, min(2.2, 0.12 * f.k))
+        for s in parts {
+            for c in s.clamps { o.append(.circle(pt(c), r: dot, stroke: nil, fill: ok)) }
+            o.append(.circle(pt(s.lug), r: dot * 1.5, stroke: nil, fill: cut))
+        }
         // the slope tag in the bottom-left corner: an arrow towards the wall the panels face
         let wall = (l.circle == nil ? ["ผนังล่าง", "ผนังขวา", "ผนังบน", "ผนังซ้าย"] : ["ล่างของแปลน", "ขวาของแปลน", "บนของแปลน", "ซ้ายของแปลน"])[l.turn]
         let d = [Pt(0, 1), Pt(1, 0), Pt(0, -1), Pt(-1, 0)][l.turn]
@@ -77,7 +93,45 @@ public enum TankDrawings {
         let tip = Pt(c.x + d.x * 9, c.y + d.y * 9), n = Pt(-d.y * 4, d.x * 4)
         o.append(.polygon([Pt(tip.x + d.x * 5, tip.y + d.y * 5), Pt(tip.x + n.x, tip.y + n.y), Pt(tip.x - n.x, tip.y - n.y)], stroke: nil, fill: navy))
         o.append(.text("แผงลาดลงด้าน" + wall + String(format: " | เอียง %.1f°", l.params.tilt), at: Pt(c.x + 18, c.y), size: 9, bold: true, color: navy))
-        return Sketch(width: plan.sketch.width, height: plan.sketch.height, ops: o)
+        guard structure else { return Sketch(width: plan.sketch.width, height: plan.sketch.height, ops: o) }
+        let legend = structureLegend(l, width: plan.sketch.width, top: plan.sketch.height + 4, dot: dot, footing: r)
+        return Sketch(width: plan.sketch.width, height: legend.bottom, ops: o + legend.ops)
+    }
+
+    /// The printed plan's legend: each symbol with its count, wrapped to the width.
+    static func structureLegend(_ l: TankLayout, width W: Double, top: Double, dot: Double, footing r: Double)
+        -> (ops: [DrawOp], bottom: Double) {
+        let b = l.bom, p = l.params
+        typealias Swatch = (Pt) -> [DrawOp]
+        var items: [(Swatch, String)] = [
+            ({ c in [.rect(Box(c.x - 7, c.y - 4, 14, 8), stroke: panel, fill: panel.withAlpha(0.12), width: 0.5)] }, "แผง (ฉายลงแปลน) \(l.count)"),
+            ({ c in [.rect(Box(c.x - r, c.y - r, 2 * r, 2 * r), stroke: nil, fill: post)] },
+             String(format: "เสา + ฐานคอนกรีต %.0f×%.0f×150 มม. %d", p.footing * 1000, p.footing * 1000, b.posts)),
+            ({ c in [.line(Pt(c.x - 7, c.y), Pt(c.x + 7, c.y), width: 0.7, color: ink)] }, "คานเอียง (rafter) \(b.rafters)"),
+            ({ c in [.line(Pt(c.x - 7, c.y), Pt(c.x + 7, c.y), width: 0.5, color: navy)] }, String(format: "ราง %.1f ม.", b.railLength)),
+            ({ c in [.circle(c, r: dot, stroke: nil, fill: ok)] }, "จุดยึดราง (rail clamp) \(b.railClamps)"),
+            ({ c in [.circle(c, r: dot * 1.5, stroke: nil, fill: cut)] }, "ground lug \(b.groundLugs)"),
+        ]
+        if !l.cuts.isEmpty {
+            items.append(({ c in [.polyline([Pt(c.x - 7, c.y - 4), Pt(c.x + 7, c.y - 4), Pt(c.x + 7, c.y + 4), Pt(c.x - 7, c.y + 4), Pt(c.x - 7, c.y - 4)],
+                                            width: 0.9, color: cut, dash: [3, 2])] }, "ตัดแผงหลบขา \(l.cuts.count) คอลัมน์"))
+        }
+        if l.tables.contains(where: { $0.panels.contains { !$0.on } }) {
+            items.append(({ c in [.polyline([Pt(c.x - 7, c.y - 4), Pt(c.x + 7, c.y - 4), Pt(c.x + 7, c.y + 4), Pt(c.x - 7, c.y + 4), Pt(c.x - 7, c.y - 4)],
+                                            width: 0.6, color: panel.withAlpha(0.6), dash: [2, 1.5])] }, "แผงที่ปิด"))
+        }
+        let size = 8.5, lineH = 15.0, left = 16.0
+        var ops: [DrawOp] = []
+        var x = left, y = top + lineH / 2
+        for (swatch, label) in items {
+            let w = 14 + 6 + ApproxText.width(label, size: size) + 22
+            if x > left && x + w > W - left { x = left; y += lineH }
+            ops += swatch(Pt(x + 7, y))
+            ops.append(.text(label, at: Pt(x + 20, y), size: size, color: ink))
+            x += w
+        }
+        let bottom = y + lineH / 2 + 4
+        return ([.rect(Box(0, top - 4, W, bottom - top + 4), stroke: nil, fill: .white)] + ops, bottom)
     }
 
     // MARK: tank sections

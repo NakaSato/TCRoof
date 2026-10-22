@@ -322,7 +322,7 @@ Read-only; switching view keeps the selection.
 | Sheet | Content | Built |
 |---|---|---|
 | **Plan** | tank outline and bays, openings, panels, cut columns, row guides, posts, slope tag (§4.1) | on screen |
-| **Plan** (A3, prototype) | as above plus rails, rafters, footings, rail clamps (green), ground lug per table (red), north arrow, legend, quantities, notes | no |
+| **Plan** (printed) | as above plus rails, rafters, footings, rail clamps (green), ground lug per table (red), north arrow, legend with the counts | yes, `TankDrawings.layoutPlan(structure: true)` over `TankLayout.structure` (the PDF; the counts are the BOQ's). The flagged posts of the prototype don't occur: a post that would touch an opening cuts its column instead |
 | **DXF** | D1's `ส่งออก DXF` adds the layout: layer `PV` (each panel on), `PV_GROUP` (each table's outline and a footing circle per post) | yes, `TankDXF` |
 | **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, post heights 1.00 / 2.00, braces, the two modules, a vent under the panels with the clearance note | yes, `TankDrawings.tableSection` (B1-C3 sheet, PDF) |
 | **Front elevation** | one table: posts and spacing, X bracing, 4 rails, modules, footing note | yes, `TankDrawings.tableFront` (the longest table; B1-C3 sheet, PDF) |

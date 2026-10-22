@@ -235,5 +235,7 @@ final class TankLayoutPDFTests: XCTestCase {
         XCTAssertTrue(texts.contains("ภาพตัดโต๊ะแผง"))
         XCTAssertTrue(texts.contains("รูปด้านหน้าโต๊ะแผง"))
         XCTAssertTrue(texts.contains { $0.hasPrefix("รูปด้านหน้าโต๊ะแผง แถว ") })
+        // the plan prints with its structure legend
+        XCTAssertTrue(texts.contains { $0.hasPrefix("จุดยึดราง (rail clamp) ") })
     }
 }

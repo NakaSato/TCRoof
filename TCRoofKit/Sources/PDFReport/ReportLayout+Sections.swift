@@ -342,7 +342,7 @@ extension ReportLayout {
     func tankLayoutUnits(_ d: Values) -> [Unit] {
         let W = Self.cw, (lat, lon) = RoofMount.site(job)
         var out: [Unit] = []
-        if let l = TankLayout.current(d), l.count > 0, let plan = TankDrawings.layoutPlan(d, l) {
+        if let l = TankLayout.current(d), l.count > 0, let plan = TankDrawings.layoutPlan(d, l, structure: true) {
             let k = (W - 16) / plan.width, lineH = 11.0
             let assumed = TankLayout.assumptions(d, latitude: lat)
             let h = Self.band + 6 + plan.height * k + 10 + lineH * (assumed.isEmpty ? 4 : 5) + 6

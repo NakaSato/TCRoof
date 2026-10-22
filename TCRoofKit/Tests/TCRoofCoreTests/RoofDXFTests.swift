@@ -25,7 +25,7 @@ final class RoofDXFTests: XCTestCase {
         for layer in ["G-GRID", "S-ROOF-OTLN-E", "S-ROOF-RIDG-E", "S-ROOF-FRAM-E", "S-COLS-E", "S-ROOF-PURL-E", "A-ROOF-SKYL-E", "G-ANNO-SYMB", "G-ANNO-DIMS", "G-ANNO-TEXT", "S-ROOF-SECT-E", "G-ANNO-SCHD"] {
             XCTAssertTrue(out.layers.contains(layer), layer)
         }
-        XCTAssertFalse(out.layers.contains("E-PVMD-N"))
+        XCTAssertFalse(out.layers.contains("P-MODL-N"))
         // every layer is declared once in the LAYER table
         let t = SketchDXFTests()
         // layers 0 and Defpoints, and the drawing's
@@ -50,9 +50,9 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(lines(mm.data).contains("19000"))
         XCTAssertTrue(lines(m.data).contains("19"))
         let pv = RoofDXF.build(roof(), parts: [.pv])
-        XCTAssertEqual(pv.layers.first, "E-PVMD-N")
-        XCTAssertTrue(pv.layers.contains("S-PVRL-N"))
-        XCTAssertTrue(pv.layers.contains("S-PVFT-N"))
+        XCTAssertEqual(pv.layers.first, "P-MODL-N")
+        XCTAssertTrue(pv.layers.contains("P-RAIL-N"))
+        XCTAssertTrue(pv.layers.contains("P-FOOT-N"))
     }
 
     func testThaiIsTIS620() {

@@ -80,11 +80,11 @@ final class TankDXFTests: XCTestCase {
         let v = Self.sample(layout: true)
         let l = try XCTUnwrap(TankLayout.current(v))
         let out = try XCTUnwrap(TankDXF.build(v))
-        XCTAssertTrue(out.layers.contains("E-PVMD-N"))
-        XCTAssertTrue(out.layers.contains("S-PVTB-N"))
+        XCTAssertTrue(out.layers.contains("P-MODL-N"))
+        XCTAssertTrue(out.layers.contains("P-TABL-N"))
         // one INSERT of the module block per panel switched on
-        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "E-PVMD-N" && $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }.count, l.count)
-        XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("E-PVMD-N"))
+        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "P-MODL-N" && $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }.count, l.count)
+        XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("P-MODL-N"))
     }
 
     /// Sections 1–1 and 2–2, the module rows' section and the table's front elevation sit under the plan, to scale in
@@ -131,13 +131,13 @@ final class TankDXFTests: XCTestCase {
         let tables = l.builtTables, posts = tables.map(\.posts.count).reduce(0, +), pairs = tables.map(\.pairs).reduce(0, +)
         let footings = recs.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("TC_FOOTING_") }
         XCTAssertEqual(footings.count, posts)
-        XCTAssertTrue(footings.allSatisfy { t.value($0, "8") == "S-FTNG-N" })
+        XCTAssertTrue(footings.allSatisfy { t.value($0, "8") == "P-FTNG-N" })
         // the mounting plan's members (right of the module plan; the sections under it have their own)
         func members(_ layer: String) -> Int { recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == layer && t.double($0, "10") > 40 }.count }
-        XCTAssertEqual(members("S-PVRF-N"), pairs)
-        XCTAssertEqual(members("S-PVRL-N"), 4 * tables.count)
+        XCTAssertEqual(members("P-RAFT-N"), pairs)
+        XCTAssertEqual(members("P-RAIL-N"), 4 * tables.count)
         let braces = tables.map { 2 * max(0, $0.pairs - 1) }.reduce(0, +)
-        XCTAssertEqual(members("S-PVBR-N"), braces)
+        XCTAssertEqual(members("P-BRAC-N"), braces)
         // each member on its own WIPEOUT
         XCTAssertEqual(recs.filter { $0.first?.1 == "WIPEOUT" }.count, pairs + 4 * tables.count + braces)
         // the footing block: the footing square (300 mm), base plate and post
@@ -182,9 +182,9 @@ final class TankDXFTests: XCTestCase {
         let raw = t.rawEntities(out.data)
         let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }
         XCTAssertEqual(modules.count, l.count)
-        XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "E-PVMD-N" })
+        XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "P-MODL-N" })
         // on the plan (the sections under it draw their posts on the same layer)
-        let tables = raw.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "S-PVTB-N" && t.double($0, "20") >= 0 }
+        let tables = raw.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "P-TABL-N" && t.double($0, "20") >= 0 }
         XCTAssertEqual(tables.count, l.builtTables.count)
         XCTAssertTrue(tables.allSatisfy { t.value($0, "70") == "1" })
     }

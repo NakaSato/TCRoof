@@ -2,9 +2,10 @@ import Foundation
 
 /// The team's CAD layer standard (docs/specs/cad-export-dxf, Layers), in the US National CAD Standard's format (AIA CAD
 /// Layer Guidelines): `Discipline-Major[-Minor]-Status`, fields split by a dash, the discipline one letter (`G` general,
-/// `A` architectural, `S` structural, `E` electrical, `C` civil), the major and minor groups four letters, and the status
+/// `A` architectural, `S` structural, `E` electrical, `C` civil, and the office's own `P` for the PV system: modules,
+/// mounting, walkways, lifeline, access), the major and minor groups four letters, and the status
 /// last: `E` existing (the roof, the tank, what the survey found), `N` new (what we install), `T` temporary (crane access).
-/// So `*-N` filters everything we build and `S-*` the structure, in any CAD program's layer filter. Each layer carries
+/// So `*-N` filters everything we build, `P-*` the PV system and `S-*` the building's structure, in any CAD program's layer filter. Each layer carries
 /// its colour, linetype, lineweight, plot flag and a description in Thai and English (the layer manager's Description
 /// column). Every object is ByLayer: a part drawn in another colour has its own layer. Hatches go on the layer's `HATC`
 /// minor group (`hatch(of:)`), placed by the writer itself. Layer 0 holds only block contents, and Defpoints nothing
@@ -33,24 +34,24 @@ public enum CADLayers {
     public static let roofPurlin = SketchDXF.Layer("S-ROOF-PURL-E", aci: 30, lineweight: 18, description: "แป (เดิม) / Purlins (existing)")
     public static let roofSection = SketchDXF.Layer("S-ROOF-SECT-E", aci: 7, lineweight: 35, description: "รูปตัด A-A (เดิม) / Section A-A (existing)")
 
-    // new PV, on the roof and on the tank
-    public static let pvModule = SketchDXF.Layer("E-PVMD-N", aci: 150, lineweight: 25, description: "แผงโซลาร์ (ใหม่) / PV modules (new)")
-    public static let pvKeepout = SketchDXF.Layer("E-PVMD-KEEP-N", aci: 1, linetype: .hidden, lineweight: 18, description: "ระยะห้ามวางแผง / Keep-out zones")
-    public static let pvCableTray = SketchDXF.Layer("E-CTRY-N", aci: 3, lineweight: 25, description: "รางเคเบิลและท่อ PPR (ใหม่) / Cable tray and PPR pipe (new)")
-    public static let pvRail = SketchDXF.Layer("S-PVRL-N", aci: 2, lineweight: 18, description: "รางยึดแผง (ใหม่) / Mounting rails (new)")
-    public static let pvCut = SketchDXF.Layer("S-PVRL-CUTS-N", aci: 1, lineweight: 18, description: "จุดตัดราง / Rail cuts")
-    public static let pvFoot = SketchDXF.Layer("S-PVFT-N", aci: 250, lineweight: 18, description: "ขายึดราง (ใหม่) / Rail feet (new)")
-    public static let pvTable = SketchDXF.Layer("S-PVTB-N", aci: 170, lineweight: 25, description: "โต๊ะแผงและเสา (ใหม่) / Module tables and posts (new)")
-    public static let pvRafter = SketchDXF.Layer("S-PVRF-N", aci: 1, lineweight: 25, description: "คานเอียงรับราง (ใหม่) / Rafters (new)")
-    public static let pvBrace = SketchDXF.Layer("S-PVBR-N", aci: 4, lineweight: 18, description: "ค้ำยันระหว่างเสา (ใหม่) / Bracing between posts (new)")
-    public static let pvFooting = SketchDXF.Layer("S-FTNG-N", aci: 3, lineweight: 25, description: "ฐานรากและฐานเสา (ใหม่) / Footings and post bases (new)")
-    public static let pvWalkway = SketchDXF.Layer("S-WALK-N", aci: 10, lineweight: 25, description: "ทางเดิน HDG 0.30×2.40 ม. (ใหม่) / Walkway grating (new)")
-    public static let walkRail = SketchDXF.Layer("S-WALK-RAIL-N", aci: 8, lineweight: 18, description: "รางขวางใต้ทางเดิน / Cross rails under the walkway")
-    public static let walkFoot = SketchDXF.Layer("S-WALK-FOOT-N", aci: 6, lineweight: 18, description: "ขาตั้ง L-Feet ของทางเดิน / Walkway L-feet")
-    public static let pvLifeline = SketchDXF.Layer("S-LIFE-N", aci: 130, lineweight: 25, description: "สลิงกันตก 6 มม. (ใหม่) / Lifeline wire rope (new)")
-    public static let lifeRail = SketchDXF.Layer("S-LIFE-RAIL-N", aci: 80, lineweight: 18, description: "รางสลิงกันตก / Lifeline rail")
-    public static let lifeSupport = SketchDXF.Layer("S-LIFE-SUPT-N", aci: 3, lineweight: 18, description: "เสารับสลิงกันตก / Lifeline supports")
-    public static let pvAccess = SketchDXF.Layer("S-LADD-N", aci: 6, lineweight: 35, description: "ทางขึ้นหลังคา บันไดลิง (ด้านเดียว) / Roof access ladder (one side)")
+    // new PV system (discipline P), on the roof and on the tank
+    public static let pvModule = SketchDXF.Layer("P-MODL-N", aci: 150, lineweight: 25, description: "แผงโซลาร์ (ใหม่) / PV modules (new)")
+    public static let pvKeepout = SketchDXF.Layer("P-MODL-KEEP-N", aci: 1, linetype: .hidden, lineweight: 18, description: "ระยะห้ามวางแผง / Keep-out zones")
+    public static let pvCableTray = SketchDXF.Layer("P-CTRY-N", aci: 3, lineweight: 25, description: "รางเคเบิลและท่อ PPR (ใหม่) / Cable tray and PPR pipe (new)")
+    public static let pvRail = SketchDXF.Layer("P-RAIL-N", aci: 2, lineweight: 18, description: "รางยึดแผง (ใหม่) / Mounting rails (new)")
+    public static let pvCut = SketchDXF.Layer("P-RAIL-CUTS-N", aci: 1, lineweight: 18, description: "จุดตัดราง / Rail cuts")
+    public static let pvFoot = SketchDXF.Layer("P-FOOT-N", aci: 250, lineweight: 18, description: "ขายึดราง (ใหม่) / Rail feet (new)")
+    public static let pvTable = SketchDXF.Layer("P-TABL-N", aci: 170, lineweight: 25, description: "โต๊ะแผงและเสา (ใหม่) / Module tables and posts (new)")
+    public static let pvRafter = SketchDXF.Layer("P-RAFT-N", aci: 1, lineweight: 25, description: "คานเอียงรับราง (ใหม่) / Rafters (new)")
+    public static let pvBrace = SketchDXF.Layer("P-BRAC-N", aci: 4, lineweight: 18, description: "ค้ำยันระหว่างเสา (ใหม่) / Bracing between posts (new)")
+    public static let pvFooting = SketchDXF.Layer("P-FTNG-N", aci: 3, lineweight: 25, description: "ฐานรากและฐานเสา (ใหม่) / Footings and post bases (new)")
+    public static let pvWalkway = SketchDXF.Layer("P-WALK-N", aci: 10, lineweight: 25, description: "ทางเดิน HDG 0.30×2.40 ม. (ใหม่) / Walkway grating (new)")
+    public static let walkRail = SketchDXF.Layer("P-WALK-RAIL-N", aci: 8, lineweight: 18, description: "รางขวางใต้ทางเดิน / Cross rails under the walkway")
+    public static let walkFoot = SketchDXF.Layer("P-WALK-FOOT-N", aci: 6, lineweight: 18, description: "ขาตั้ง L-Feet ของทางเดิน / Walkway L-feet")
+    public static let pvLifeline = SketchDXF.Layer("P-LIFE-N", aci: 130, lineweight: 25, description: "สลิงกันตก 6 มม. (ใหม่) / Lifeline wire rope (new)")
+    public static let lifeRail = SketchDXF.Layer("P-LIFE-RAIL-N", aci: 80, lineweight: 18, description: "รางสลิงกันตก / Lifeline rail")
+    public static let lifeSupport = SketchDXF.Layer("P-LIFE-SUPT-N", aci: 3, lineweight: 18, description: "เสารับสลิงกันตก / Lifeline supports")
+    public static let pvAccess = SketchDXF.Layer("P-LADD-N", aci: 6, lineweight: 35, description: "ทางขึ้นหลังคา บันไดลิง (ด้านเดียว) / Roof access ladder (one side)")
 
     // existing tank
     public static let tankOutline = SketchDXF.Layer("S-TANK-OTLN-E", aci: 7, lineweight: 50, description: "ขอบถังน้ำใส (เดิม) / Tank outline (existing)")
@@ -60,8 +61,8 @@ public enum CADLayers {
 
     // A2 site plan
     public static let siteBuilding = SketchDXF.Layer("A-BLDG-E", aci: 4, lineweight: 35, description: "อาคาร (เดิม) / Buildings (existing)")
-    public static let sitePVArea = SketchDXF.Layer("E-PVAR-N", aci: 5, lineweight: 25, description: "พื้นที่ติดตั้งแผงบนอาคาร / PV area on buildings")
-    public static let sitePanelArea = SketchDXF.Layer("E-PVAR-DRAW-N", aci: 1, lineweight: 25, description: "พื้นที่วางแผงที่วาด / Drawn panel areas")
+    public static let sitePVArea = SketchDXF.Layer("P-AREA-N", aci: 5, lineweight: 25, description: "พื้นที่ติดตั้งแผงบนอาคาร / PV area on buildings")
+    public static let sitePanelArea = SketchDXF.Layer("P-AREA-DRAW-N", aci: 1, lineweight: 25, description: "พื้นที่วางแผงที่วาด / Drawn panel areas")
     public static let siteCable = SketchDXF.Layer("E-CABL-N", aci: 5, linetype: .hidden, lineweight: 25, description: "แนวสายไฟ (ใหม่) / Cable routes (new)")
     public static let siteSymbol = SketchDXF.Layer("E-EQPM-E", aci: 7, lineweight: 25, description: "สัญลักษณ์อุปกรณ์ / Equipment symbols")
     public static let siteCrane = SketchDXF.Layer("C-ACCS-T", aci: 30, linetype: .hidden, lineweight: 25, description: "ทางเข้ารถเครน (ชั่วคราว) / Crane access (temporary)")
@@ -95,7 +96,7 @@ public enum CADLayers {
         everyLayer.first { $0.name == name } ?? all.first { hatch(of: $0).name == name }.map(hatch(of:))
     }
 
-    /// The layer a hatch of `l` goes on: its `HATC` minor group before the status (`S-FTNG-N` → `S-FTNG-HATC-N`), in its
+    /// The layer a hatch of `l` goes on: its `HATC` minor group before the status (`P-FTNG-N` → `P-FTNG-HATC-N`), in its
     /// colour, thin (0.13 mm), with "hatch" in its description.
     public static func hatch(of l: SketchDXF.Layer) -> SketchDXF.Layer {
         guard !l.name.contains("-HATC"), l.name != "0", l.name != "Defpoints" else { return l }
@@ -141,9 +142,10 @@ public enum CADLayers {
         "TC-SLD-OTHER": sldOther.name,
     ]
 
-    /// Whether a name follows the format: a discipline letter, four-letter groups, an optional one-letter status.
+    /// Whether a name follows the format: a discipline letter (P the office's PV), four-letter groups, an optional
+    /// one-letter status.
     public static func conforms(_ name: String) -> Bool {
-        name.range(of: #"^[GASEC]-[A-Z]{4}(-[A-Z]{4})*(-[NET])?$"#, options: .regularExpression) != nil
+        name.range(of: #"^[GASECP]-[A-Z]{4}(-[A-Z]{4})*(-[NET])?$"#, options: .regularExpression) != nil
     }
 
     /// The standards file: every layer of the standard (with the hatch layers), a sample line on each with its name and

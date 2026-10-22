@@ -153,23 +153,23 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   (`RoofWalkway.walkways`: one module column up the slope, every n columns or, as most roofs have it, one down the
   middle of each face, `walkwayCentre`, the roof page's `กลางหลังคา`, the default once walkways are on) is drawn as the
   team's top view `Walkway_S1.dxf`, measured: a 0.90 m band with, from its cable-tray side, the 200 mm cable tray at
-  0.053–0.253 (dotted, E-CTRY-N, green), the HDG grating 0.30 × 2.40 × 0.03 m at 0.325–0.625 in panels with a
-  0.03 inner frame, cross-hatched (ANSI37, S-WALK-N, red), with L-feet every 1.20 m from 0.63 m in at both its
+  0.053–0.253 (dotted, P-CTRY-N, green), the HDG grating 0.30 × 2.40 × 0.03 m at 0.325–0.625 in panels with a
+  0.03 inner frame, cross-hatched (ANSI37, P-WALK-N, red), with L-feet every 1.20 m from 0.63 m in at both its
   edges (magenta), the 3/4" PPR pipe at 0.656, the rail at 0.687–0.712 (solid, green) and the 6 mm wire-rope lifeline
-  at 0.80 with supports every 2.40 m from 0.65 m in (S-LIFE-N, cyan); grating and tray on WIPEOUTs, with the
+  at 0.80 with supports every 2.40 m from 0.65 m in (P-LIFE-N, cyan); grating and tray on WIPEOUTs, with the
   band's width and a tag. Open: `Walkway_S1` draws the grating panels about 3.06 m long while its note says
   0.30 × 2.40; the app follows the note. With any walkway the DXF also carries the team's walkway detail
   (`Walkway.dxf`: top view, elevations 1–3, detail 1) as one block `TC_DETAIL_WALKWAY` on G-DETL beside the drawing,
   at the plot scale; it comes from `Resources/walkway-detail.json`, made by `tools/cad-details/convert.py` from the DXF
   (blocks, dimensions and leaders exploded, XCLIP frames applied); run it again when the detail changes. Under the
-  band, a cross rail (hat section 24 mm, S-PVRL-N, grey) at every L-foot. Down the middle (`walkwayCentre`) each
+  band, a cross rail (hat section 24 mm, P-RAIL-N, grey) at every L-foot. Down the middle (`walkwayCentre`) each
   face's walkway runs on past its top row to the ridge (`RoofWalkway.ridgeEnd`, or where a hip edge crosses the
   band), and on a roof with a ridge a walkway runs along it (`RoofWalkway.ridgeWalkway`: centred on the ridge, 0.50 m
   in from each end; the layout then keeps the modules 0.50 m from the ridge, `ridgeClear`), the up-slope walkways
   stopping at its edge. The roof is reached on one side only (`access`). On a gable roof that is one end of the ridge
   walkway, left or right on plan (the roof page's `ทางขึ้นหลังคา (บันไดลิง)`, `Choice.accessRight`, drawing only, not
   in the digest): the team's top view (`reference/Roof access Topview.dxf`) as the block `TC_ROOF_ACCESS` on
-  S-LADD-N (magenta) at the gable wall on the ridge, turned along the walkway: the cat ladder 0.60 m between its
+  P-LADD-N (magenta) at the gable wall on the ridge, turned along the walkway: the cat ladder 0.60 m between its
   stiles, the cage R 0.30 m standing 0.90 m out with its brackets, and the landing grating 0.60 × 0.98 m on the roof,
   framed 0.05 m and cross-hatched, where the ridge walkway starts. Its tag, `ROOF ACCESS: CAT LADDER WITH CAGE +
   LANDING 0.60x1.00 (SEE TOP VIEW)` and `ONE SIDE ONLY (LEFT|RIGHT) - CONFIRM ON SITE`, sits past the plan's grid and
@@ -179,10 +179,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   down. Open: whether the team keeps the eave ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
-  table, the rafters (50 mm members up the slope at every post pair, S-PVRF-N, red), the four rails (S-PVRL-N,
-  yellow) and the bracing between neighbouring posts on the front and back lines (S-PVBR-N, cyan), each on its own
+  table, the rafters (50 mm members up the slope at every post pair, P-RAFT-N, red), the four rails (P-RAIL-N,
+  yellow) and the bracing between neighbouring posts on the front and back lines (P-BRAC-N, cyan), each on its own
   WIPEOUT; the team's footing block at every post (`TC_FOOTING_<mm>`: the footing square at `footing`, the base plate,
-  the C post's flanges and the two 50 mm plates; S-FTNG-N, green); a dimension chain along each table beyond its
+  the C post's flanges and the two 50 mm plates; P-FTNG-N, green); a dimension chain along each table beyond its
   low edge (cantilever, bays, cantilever) and one across the post lines from wall to wall. No modules are drawn there.
 - **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
@@ -216,14 +216,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   `N` new (what we install), `T` temporary (crane access). So a layer filter `*-N` shows everything we build and `S-*`
   the structure. The groups: `G-GRID`, `G-ANNO-DIMS | TEXT | NRTH | SYMB | SCHD | MEAS`, `G-ANNO-NPLT` (the only
   non-plot layer, named so), `G-DETL`; the existing roof `S-ROOF-OTLN | RIDG | FRAM | PURL | SECT-E`, `S-COLS-E`,
-  `A-ROOF-SKYL-E`, `A-OPNG-E`; new PV `E-PVMD-N`, `E-PVMD-KEEP-N`, `E-CTRY-N`, `S-PVRL-N`, `S-PVRL-CUTS-N`, `S-PVFT-N`,
-  `S-PVTB-N`, `S-PVRF-N`, `S-PVBR-N`, `S-FTNG-N`, `S-WALK-N` (`-RAIL-N`, `-FOOT-N`), `S-LIFE-N` (`-RAIL-N`, `-SUPT-N`),
-  `S-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E`, `C-TOPO-E`; the site `A-BLDG-E`, `E-PVAR-N`,
-  `E-PVAR-DRAW-N`, `E-CABL-N`, `E-EQPM-E`, `C-ACCS-T`, `C-SHAD-E`, `C-BNDY-E`; the single line diagram `E-SLDG-E | N`,
+  `A-ROOF-SKYL-E`, `A-OPNG-E`; new PV `P-MODL-N`, `P-MODL-KEEP-N`, `P-CTRY-N`, `P-RAIL-N`, `P-RAIL-CUTS-N`, `P-FOOT-N`,
+  `P-TABL-N`, `P-RAFT-N`, `P-BRAC-N`, `P-FTNG-N`, `P-WALK-N` (`-RAIL-N`, `-FOOT-N`), `P-LIFE-N` (`-RAIL-N`, `-SUPT-N`),
+  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E`, `C-TOPO-E`; the site `A-BLDG-E`, `P-AREA-N`,
+  `P-AREA-DRAW-N`, `E-CABL-N`, `E-EQPM-E`, `C-ACCS-T`, `C-SHAD-E`, `C-BNDY-E`; the single line diagram `E-SLDG-E | N`,
   `E-SLDG-OKAY | WARN | MISS | ASSM | TEXT | OTHR`, `E-SLDG-POLE-E`. Every object is ByLayer (no colour on an entity):
   a part drawn in another colour has its own layer, and a single line text whose colour means something goes on that
   meaning's `TEXT` layer (`E-SLDG-MISS-TEXT`, `CADLayers.annotation(of:)`). Every hatch goes on its layer's `HATC`
-  minor group (`S-FTNG-HATC-N`, `CADLayers.hatch(of:)`, 0.13 mm), placed by `SketchDXF` itself, so hatches freeze
+  minor group (`P-FTNG-HATC-N`, `CADLayers.hatch(of:)`, 0.13 mm), placed by `SketchDXF` itself, so hatches freeze
   apart from the lines they fill. Layer 0 holds only block contents (BYBLOCK, so a block takes its INSERT's layer) and
   Defpoints only what AutoCAD puts there. Each layer has its colour, linetype (grid CENTER; beams, keep-out, cable and
   crane HIDDEN), lineweight and a Thai / English description (XDATA `AcAecLayerStandard`, the layer manager's

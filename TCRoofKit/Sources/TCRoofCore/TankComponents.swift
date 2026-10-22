@@ -42,18 +42,22 @@ public struct TankComponents: Decodable, Sendable {
     public static let modulePlanDrawn = (w: 0.992, h: 1.956)
 
     /// The members drawn as closed polylines (stretched in CAD by their grips): post, rafter and brace widths (m), and
-    /// where the braces meet the rafter (m along it from the front / back post), as the team's section draws them.
-    public static let post = 0.05, rafter = 0.075, brace = 0.045, braceFront = 1.10, braceBack = 1.40
-    /// The rafter past the front post (down the slope) and past the back post (up), along it: 4.00 m for the standard.
-    public static let rafterFront = 0.40, rafterBack = 0.70
+    /// where the braces meet the rafter (m along it from the front / back post), measured on the team's section 1:
+    /// the front brace 0.565 m up from the low post, the back brace 1.40 m down from the high post, and the outer strut
+    /// from the low post's foot to the rafter 0.60 m past the post.
+    public static let post = 0.05, rafter = 0.075, brace = 0.045, braceFront = 0.565, braceBack = 1.40, strutReach = 0.60
+    /// The rafter past the front (low) post and past the back (high) post, along it: 0.82 + 2.90 + 0.28 = 4.00 m on the
+    /// team's section; kept 0.05 m inside the modules where a layout's modules end sooner.
+    public static let rafterFront = 0.82, rafterBack = 0.28
     /// The module drawing's own length: the block is stretched along the slope to the layout's module.
     public static let moduleDrawn = 2.28
 
-    /// Defines every component's block once (an identical body is reused) and returns the names.
+    /// Defines every component's block once (an identical body is reused), or only those of `only`, and returns the
+    /// names.
     @discardableResult
-    public func define(_ dxf: inout SketchDXF) -> [String: String] {
+    public func define(_ dxf: inout SketchDXF, only: Set<String>? = nil) -> [String: String] {
         var out: [String: String] = [:]
-        for (id, c) in components.sorted(by: { $0.key < $1.key }) {
+        for (id, c) in components.sorted(by: { $0.key < $1.key }) where only?.contains(id) ?? true {
             guard let n = Self.names[id] else { continue }
             // once per file: every later call only names them
             if dxf.hasBlock(n.block) { out[id] = n.block; continue }
@@ -109,10 +113,13 @@ public struct TankComponents: Decodable, Sendable {
                 insert(&dxf, "anchor_m12", at: (x, o.1))
                 dxf.polyline(CADLayers.pvTable, [(x - T.post / 2, o.1 + 0.15), (x + T.post / 2, o.1 + 0.15), (x + T.post / 2, o.1 + h), (x - T.post / 2, o.1 + h)], closed: true)
             }
-            let r0 = -T.rafterFront, r1 = along + T.rafterBack
+            let lowEdge = -p.frontOver, highEdge = lowEdge + 2 * p.moduleL + p.moduleGap
+            let r0 = max(-T.rafterFront, lowEdge + 0.05), r1 = min(along + T.rafterBack, highEdge - 0.05)
             dxf.polyline(CADLayers.pvRafter, [under(r0), under(r1), over(r1), over(r0)], closed: true)
             T.member(&dxf, CADLayers.pvBrace, (x0 + T.post, o.1 + 0.15), under(T.braceFront), width: T.brace)
             T.member(&dxf, CADLayers.pvBrace, (x0 + p.postDY - T.post, o.1 + 0.15), under(along - T.braceBack), width: T.brace)
+            // the outer strut, from the low post's foot out to the rafter (inside its end)
+            T.member(&dxf, CADLayers.pvBrace, (x0 - T.post, o.1 + 0.15), under(max(-T.strutReach, r0 + 0.05)), width: T.brace)
             // the two modules up the slope, each stretched to the layout's module length
             for m in 0..<2 {
                 let d = -p.frontOver + Double(m) * (p.moduleL + p.moduleGap)

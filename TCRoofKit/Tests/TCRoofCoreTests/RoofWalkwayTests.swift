@@ -70,6 +70,40 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertTrue(out.layers.contains("P-WALK-N")); XCTAssertTrue(out.layers.contains("G-DETL"))
     }
 
+    /// The page's plan and the PDF draw the walkways and the way up too (simplified), only when there are walkways.
+    func testThePlanDrawsThem() throws {
+        let v = roofCentre(), m = RoofMount.layout(v, latitude: 15).layout
+        let p = RoofPlan(v, mode: .pv, mount: m)
+        XCTAssertEqual(p.tags.filter { $0 == "walkway" }.count, 3 * RoofWalkway.walkways(m).count)
+        XCTAssertTrue(p.tags.contains("access"))
+        // the face labels stay on top of them
+        let lastWalk = try XCTUnwrap(p.tags.lastIndex(of: "walkway")), firstLabel = try XCTUnwrap(p.tags.firstIndex(of: "facelabel"))
+        XCTAssertLessThan(lastWalk, firstLabel)
+        // without walkways: none, and the plan as before
+        let plain = RoofDXFTests(name: "x", testClosure: { _ in }).roof()
+        let q = RoofPlan(plain, mode: .pv, mount: RoofMount.layout(plain, latitude: 15).layout)
+        XCTAssertFalse(q.tags.contains("walkway")); XCTAssertFalse(q.tags.contains("access"))
+        // the CAD export draws its own, so the plan's are left out of it
+        XCTAssertNil(RoofDXF.pvLayers["walkway"]); XCTAssertNil(RoofDXF.pvLayers["access"])
+    }
+
+    /// Each module of the roof's CAD plan is the team's PV panel block, fitted to the module.
+    func testModulesAreThePanelBlock() throws {
+        let v = roofCentre(), out = RoofDXF.build(v, parts: [.pv])
+        let m = RoofMount.layout(v, latitude: 15).layout
+        let inserts = t.records(out.data).filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "TK_MODULE_PLAN" }
+        XCTAssertEqual(inserts.count, m.quantities.modules)
+        XCTAssertTrue(inserts.allSatisfy { t.value($0, "8") == "P-MODL-N" })
+        // stretched from the drawn 0.992 × 1.956 to the module on plan (portrait: the short side along the eave, the
+        // long side up the slope, foreshortened by the tilt)
+        let first = try XCTUnwrap(inserts.first), tilt = try XCTUnwrap(m.faces.first).face.tilt
+        XCTAssertEqual(abs(t.double(first, "41")) * TankComponents.modulePlanDrawn.w, m.moduleAlong, accuracy: 0.002)
+        XCTAssertEqual(abs(t.double(first, "42")) * TankComponents.modulePlanDrawn.h, m.moduleUp * cos(tilt), accuracy: 0.002)
+        // only the panel block of the tank components goes into a roof file
+        let lines = t.lines(out.data)
+        XCTAssertFalse(lines.contains("TK_TOPPING")); XCTAssertFalse(lines.contains("TK_MODULE_SIDE"))
+    }
+
     func testWalkwaysFromTheLayout() throws {
         let m = RoofMount.layout(roof(every: 3), latitude: 15).layout
         let ws = RoofWalkway.walkways(m)

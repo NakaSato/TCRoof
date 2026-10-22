@@ -101,6 +101,23 @@ public enum RoofDXF {
         dxf.text(CADLayers.text, at(side, outward > 0 ? first + 1.6 * h : first - 1.6 * h), height: h, W.accessNote, align: .left, middle: true)
     }
 
+    /// A module on plan (its corners from the eave-side corner, along the eave first) as an INSERT of the team's PV
+    /// panel block (`TK_MODULE_PLAN`, portrait), its long side along the module's long side, stretched to the module;
+    /// false without the components.
+    static func modulePanel(_ dxf: inout SketchDXF, _ l: SketchDXF.Layer, _ q: [(Double, Double)]) -> Bool {
+        guard let comps = TankComponents.shared, let block = TankComponents.names["module_plan"]?.block, q.count == 4 else { return false }
+        comps.define(&dxf, only: ["module_plan"])
+        let a = (q[1].0 - q[0].0, q[1].1 - q[0].1), b = (q[3].0 - q[0].0, q[3].1 - q[0].1)
+        let la = hypot(a.0, a.1), lb = hypot(b.0, b.1)
+        guard la > 1e-6, lb > 1e-6 else { return false }
+        // the block's x (its short side) along the module's short side, its y along the long one, the same hand
+        let (x, y, lx, ly) = la <= lb ? (a, b, la, lb) : (b, a, lb, la)
+        let hand: Double = x.0 * y.1 - x.1 * y.0 >= 0 ? 1 : -1
+        dxf.insert(l, block, at: q[0], rotation: atan2(x.1, x.0) * 180 / .pi,
+                   xScale: lx / TankComponents.modulePlanDrawn.w, yScale: hand * ly / TankComponents.modulePlanDrawn.h)
+        return true
+    }
+
     /// The team's roof access top view as a block, in metres: the gable wall at the origin, the roof up +y. Below the wall
     /// the cat ladder's stiles 0.60 m apart and its cage (two lines each side and a semicircle R 0.30 / 0.31) 0.90 m out
     /// with its brackets; above it the landing grating 0.60 × 0.98 m, framed 0.05 m and cross-hatched, the stile posts at
@@ -204,8 +221,12 @@ public enum RoofDXF {
             let pv = RoofPlan(v, mode: .pv, mount: mount)
             for (op, tag) in zip(pv.sketch.ops, pv.tags) {
                 guard let tag, let l = pvLayers[tag] else { continue }
-                // a module hides the purlins and grid under it
-                if tag == "pv", case let .polygon(pts, _, _, _) = op { dxf.wipeout(layer(l), pts.map(tp)) }
+                // a module hides the purlins and grid under it, and is the team's PV panel block fitted to it
+                if tag == "pv", case let .polygon(pts, _, _, _) = op, pts.count == 4 {
+                    let q = pts.map(tp)
+                    dxf.wipeout(layer(l), q)
+                    if modulePanel(&dxf, layer(l), q) { continue }
+                }
                 write(op, l, tp, L.k, text: th)
             }
             // the walkways in their gaps, as the team's walkway detail draws them

@@ -60,8 +60,8 @@ export const assistant = onCall(
         body: JSON.stringify({
           model: QWEN_MODEL.value(),
           messages: body.messages,
-          tools: body.tools,
-          tool_choice: 'auto',
+          // a request without tools (the feed's daily summary) sends neither
+          ...(body.tools.length ? { tools: body.tools, tool_choice: 'auto' } : {}),
           max_tokens: LIMITS.maxTokens,
           temperature: 0.2,
         }),

@@ -47,6 +47,14 @@ extension Job {
         }
         return s
     }
+
+    /// `feedStation` as the AI digest reads it: named by the project name (or MP number, code), never the customer's
+    /// name that `stationName` falls back to.
+    func digestStation(_ s: FeedBuilder.Station) -> FeedBuilder.Station {
+        var s = s
+        s.name = projectName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return s
+    }
 }
 
 /// Who acknowledged which post, shared by every member: `CloudSync` keeps it in step with the `feedAcks` collection
@@ -119,6 +127,8 @@ struct HomeFeed: View {
     @AppStorage("userTeam") private var userTeam = ""
     @AppStorage("feed.hidden") private var hiddenRaw = ""
     @State private var acks = FeedAcks.shared
+    /// `สรุปโดย AI` of the daily summary, on this device.
+    @State private var digest = FeedDigestStore.shared
     @State private var posts: [FeedPost] = []
     @State private var filter = HomeFeed.initialFilter
     @State private var days = FeedBuilder.windowDays
@@ -290,6 +300,7 @@ struct HomeFeed: View {
                           stats: p.stats.map { .init($0.value, $0.label, $0.tone.ui) },
                           photoCount: p.photos.count, photoChips: p.chips.map { .init($0.text, $0.tone.ui) },
                           issue: issueBox(p),
+                          note: digestNote(p).map { .init("สรุปโดย AI", text: $0.text, detail: $0.detail, busy: $0.busy) },
                           ackLine: FeedBuilder.ackLine(count: ackCount(p), mine: mine), ackFaces: ackCount(p), acknowledged: mine,
                           link: p.kind.link,
                           menu: [.init("ซ่อนโพสต์นี้", symbol: "eye.slash") { hiddenRaw = (hidden.union([p.id])).sorted().joined(separator: "\n") },
@@ -362,9 +373,44 @@ struct HomeFeed: View {
         #if DEBUG
         if Self.isDemo { posts = Self.refreshDemoPosts(now: now, pulls: sync.refreshes + demoArrived) + Self.demoPosts(now: now); markSeen(); return }
         #endif
-        posts = FeedBuilder.posts(jobs.map(\.feedStation), now: now, days: days)
+        let stations = jobs.map(\.feedStation)
+        posts = FeedBuilder.posts(stations, now: now, days: days)
         markSeen()
+        askDigest(stations)
     }
+
+    /// The daily summary on show gets its `สรุปโดย AI` (one question a day on this device, team only).
+    private func askDigest(_ stations: [FeedBuilder.Station]) {
+        guard permissions.can(.assistantUse), let day = summaryDay(posts.first { $0.kind == .summary }) else { return }
+        digest.refresh(zip(jobs, stations).map { $0.digestStation($1) }, day: day, now: now)
+    }
+
+    private func summaryDay(_ p: FeedPost?) -> Date? {
+        guard let p, case .summary(let day) = p.source else { return nil }
+        return day
+    }
+
+    /// The AI box of a summary post: its text and time, or a spinner while it is asked; nothing for a contractor, or
+    /// before any digest was written.
+    private func digestNote(_ p: FeedPost) -> (text: String, detail: String?, busy: Bool)? {
+        #if DEBUG
+        if Self.isDemo, p.id == "demo-summary" {
+            return ("วันนี้ส่งรายงานแล้ว 8 จาก 12 สถานี งานรวมขยับขึ้น 2% ยังมี 4 สถานีที่ไม่ส่ง ควรโทรตามก่อน "
+                    + "ส่วนงานบ้าน TC-0012 ยังมีปัญหาค้าง 1 เรื่อง พรุ่งนี้ให้ปิดเรื่องนี้ก่อนเริ่มงานใหม่", "อัปเดต 18:05", false)
+        }
+        #endif
+        guard permissions.can(.assistantUse), let day = summaryDay(p) else { return nil }
+        let busy = digest.isBusy(day)
+        guard let e = digest.entry(day), !e.text.isEmpty else { return busy ? ("", nil, true) : nil }
+        return (e.text, Self.digestTime.string(from: e.at), busy)
+    }
+
+    private static let digestTime: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "th_TH")
+        f.dateFormat = "อัปเดต HH:mm"
+        return f
+    }()
 
     /// Posts on show while the top is in view, or at the first build, are seen.
     private func markSeen() {

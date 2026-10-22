@@ -146,3 +146,18 @@ directly (`AssistantRouter`: the key on this device, else the function).
    it replaces in `MasterSchedule.Input.baseline` (later re-plans keep that first one; an imported workbook starts
    without one). Planned % stays against the new plan; the MP screen and its PDF add `แผนเดิม x%` and a thin grey bar
    per moved task, and the assistant's brief has `originalInstallEnd` / `originalPlannedPercent`.
+
+## Daily summary on the feed (`สรุปโดย AI`, built 2026-10-22)
+
+- The home feed's `สรุปวันนี้` (`FeedBuilder.summaries`, 18:00) gets a `สรุปโดย AI` box (`TCFeedPost`'s `note`): 3–5
+  plain Thai lines on the day, the stations that need attention and why, open issues and tomorrow's focus.
+- `Assistant.DailyDigest.facts` gives the model every number: reports sent of those due, the mean change, each
+  station due a report (sent or not, its whole % against the plan's, the day's change, crew, rain, stop reason, work
+  lines, new problems), furthest behind first, and up to ten open issues. Stations are named by their project name or
+  MP number (`Job.digestStation`), never the customer's name. One request with no tools (`DailyDigest.request`; the
+  function sends no `tools` / `tool_choice` then).
+- Per device (the person's choice, 2026-10-22): `FeedDigestStore` asks when the feed shows the day's summary, for
+  `assistant.use` only, and keeps the text in the device's defaults for 7 days; it asks again only when the facts'
+  JSON changed (a report signed later), at most once an hour and three times a day. A contractor never asks nor sees
+  it. It counts as one question against the day's limit.
+

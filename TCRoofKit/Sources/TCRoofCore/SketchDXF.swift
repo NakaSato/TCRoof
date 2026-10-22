@@ -110,6 +110,8 @@ public struct SketchDXF: Sendable {
     private var blockBox: [String: (lo: (x: Double, y: Double), hi: (x: Double, y: Double))] = [:]
     /// Drawing a block's body: entities on layer 0, colour BYBLOCK, measured into `blockLo` / `blockHi`.
     private var inBlock = false
+    /// Drawing a block whose entities keep their own layers and colours (a detail sheet), not layer 0 / BYBLOCK.
+    private var blockLayers = false
     /// A WIPEOUT was written: the file declares its class and its frame setting.
     private var wipeouts = false
     /// The dimension styles in use (one per text height, drawing units), in order of first use, and the dimensions written.
@@ -127,6 +129,8 @@ public struct SketchDXF: Sendable {
     // MARK: entities
 
     private mutating func use(_ l: Layer) {
+        // a block's own layers are declared, but its entities aren't counted
+        if inBlock && blockLayers, layerOf[l.name] == nil { order.append(l.name); layerOf[l.name] = l; count[l.name] = 0 }
         if inBlock { return }
         if count[l.name] == nil { order.append(l.name); layerOf[l.name] = l }
         count[l.name, default: 0] += 1
@@ -144,18 +148,30 @@ public struct SketchDXF: Sendable {
         lo = (min(lo.x, x * unit), min(lo.y, y * unit)); hi = (max(hi.x, x * unit), max(hi.y, y * unit))
     }
     /// The layer an entity goes on: 0 inside a block, so the INSERT's layer shows through.
-    private func layerName(_ l: Layer) -> String { inBlock ? "0" : l.name }
+    private func layerName(_ l: Layer) -> String { inBlock && !blockLayers ? "0" : l.name }
     /// Linetype and colour groups after the layer.
     private func style(_ l: Layer, _ color: RGBA?, _ dash: [Double]) -> [String] {
         var g: [String] = []
         if options.dashes, dash.count >= 2 { g += ["6", "DASHED"] }
         // inside a block: BYBLOCK, so the INSERT's layer and colour show through
-        if inBlock { return g + ["62", "0"] }
+        if inBlock && !blockLayers { return g + ["62", "0"] }
         if options.opColours, let color, Self.aci(color) != l.aci { g += ["62", String(Self.aci(color))] }
         return g
     }
 
     public mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double)) { line(l, a, b, extra: []) }
+    /// The entity's own colour (ACI) when it isn't the layer's.
+    private func colourGroup(_ l: Layer, _ aci: Int) -> [String] { inBlock && !blockLayers ? ["62", "0"] : aci == l.aci ? [] : ["62", String(aci)] }
+    /// A LINE in colour `aci`.
+    public mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double), aci: Int) { line(l, a, b, extra: colourGroup(l, aci)) }
+    /// A polyline in colour `aci`.
+    public mutating func polyline(_ l: Layer, _ pts: [(Double, Double)], closed: Bool, aci: Int) { polyline(l, pts, closed: closed, extra: colourGroup(l, aci)) }
+    /// A SOLID HATCH in colour `aci`.
+    public mutating func solid(_ l: Layer, _ pts: [(Double, Double)], aci: Int) { solid(l, pts, extra: colourGroup(l, aci)) }
+    /// A TEXT in colour `aci`, from its baseline.
+    public mutating func text(_ l: Layer, _ p: (Double, Double), height: Double, _ s: String, align: TextAlign, angle: Double, aci: Int) {
+        text(l, p, height: height, s, align: align, middle: false, angle: angle, extra: colourGroup(l, aci))
+    }
     private mutating func line(_ l: Layer, _ a: (Double, Double), _ b: (Double, Double), extra: [String]) {
         guard hypot(b.0 - a.0, b.1 - a.1) > 1e-6 else { return }
         use(l); ents += head("LINE", layerName(l)) + extra + ["100", "AcDbLine", "10", q(a.0), "20", q(a.1), "30", "0", "11", q(b.0), "21", q(b.1), "31", "0"]
@@ -300,7 +316,7 @@ public struct SketchDXF: Sendable {
         guard !s.isEmpty else { return }
         let ts = options.textStyle
         use(l)
-        ents += head("TEXT", layerName(l)) + extra + (inBlock && !extra.contains("62") ? ["62", "0"] : [])
+        ents += head("TEXT", layerName(l)) + extra + (inBlock && !blockLayers && !extra.contains("62") ? ["62", "0"] : [])
             + ["100", "AcDbText", "10", q(p.0), "20", q(p.1), "30", "0", "40", q(height), "1", s]
         // the extents: about 0.6 of the height a letter, along the angle from where the alignment puts the start
         let w = Double(s.count) * height * 0.6 * ts.width, r = angle * .pi / 180
@@ -369,14 +385,15 @@ public struct SketchDXF: Sendable {
 
     /// Defines a block drawn by `draw` (block-relative metres, Y up) and returns its name: `name`, or `name-2`, … when a
     /// block of that name already holds something else. An identical body reuses the existing block.
+    /// `keepLayers` keeps each entity on its own layer and colour (a detail sheet) instead of layer 0 and BYBLOCK.
     @discardableResult
-    public mutating func block(_ name: String, _ draw: (inout SketchDXF) -> Void) -> String {
+    public mutating func block(_ name: String, keepLayers: Bool = false, _ draw: (inout SketchDXF) -> Void) -> String {
         let saved = ents
-        ents = []; inBlock = true
+        ents = []; inBlock = true; blockLayers = keepLayers
         blockLo = (.infinity, .infinity); blockHi = (-.infinity, -.infinity)
         draw(&self)
         let body = ents, box = (lo: blockLo, hi: blockHi)
-        ents = saved; inBlock = false
+        ents = saved; inBlock = false; blockLayers = false
         var n = 1, nm = name
         while let existing = blockBody[nm] {
             if existing == body { return nm }
@@ -388,14 +405,15 @@ public struct SketchDXF: Sendable {
         return nm
     }
 
-    /// An INSERT of the block `name` at `p` (metres), turned `rotation` degrees counter-clockwise.
-    public mutating func insert(_ l: Layer, _ name: String, at p: (Double, Double), rotation: Double = 0, color: RGBA? = nil) {
+    /// An INSERT of the block `name` at `p` (metres), turned `rotation` degrees counter-clockwise and scaled `scale` times.
+    public mutating func insert(_ l: Layer, _ name: String, at p: (Double, Double), rotation: Double = 0, scale: Double = 1, color: RGBA? = nil) {
         use(l)
         ents += head("INSERT", l.name) + style(l, color, []) + ["100", "AcDbBlockReference", "2", name, "10", q(p.0), "20", q(p.1), "30", "0"]
+        if abs(scale - 1) > 1e-12 { let k = Self.num((scale * 1e6).rounded() / 1e6); ents += ["41", k, "42", k, "43", k] }
         if abs(rotation) > 1e-9 { ents += ["50", Self.num((rotation * 1000).rounded() / 1000)] }
         if let b = blockBox[name], b.lo.x <= b.hi.x {
             let r = rotation * .pi / 180
-            for x in [b.lo.x, b.hi.x] { for y in [b.lo.y, b.hi.y] {
+            for x in [b.lo.x * scale, b.hi.x * scale] { for y in [b.lo.y * scale, b.hi.y * scale] {
                 cover(p.0 + (x * cos(r) - y * sin(r)) / unit, p.1 + (x * sin(r) + y * cos(r)) / unit)
             } }
         }

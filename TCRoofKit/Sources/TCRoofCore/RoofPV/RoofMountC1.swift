@@ -91,13 +91,15 @@ public enum RoofMount {
         public var digest = ""
         /// A walkway after every n columns; 0 = none.
         public var walkwayEvery = 0
+        /// One walkway down the middle of each face (most roofs).
+        public var walkwayCentre = false
         /// Modules landscape, the long side along the purlins (ด้านยาวตามแป).
         public var landscape = false
         /// Rails up the slope across the purlins (รางตัดแป); L-feet on purlins only.
         public var railsAcross = false
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross }
+        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross, walkwayCentre }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -111,6 +113,7 @@ public enum RoofMount {
             walkwayEvery = try c.decodeIfPresent(Int.self, forKey: .walkwayEvery) ?? 0
             landscape = try c.decodeIfPresent(Bool.self, forKey: .landscape) ?? false
             railsAcross = try c.decodeIfPresent(Bool.self, forKey: .railsAcross) ?? false
+            walkwayCentre = try c.decodeIfPresent(Bool.self, forKey: .walkwayCentre) ?? false
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -122,12 +125,13 @@ public enum RoofMount {
             if walkwayEvery > 0 { try c.encode(walkwayEvery, forKey: .walkwayEvery) }
             if landscape { try c.encode(landscape, forKey: .landscape) }
             if railsAcross { try c.encode(railsAcross, forKey: .railsAcross) }
+            if walkwayCentre { try c.encode(walkwayCentre, forKey: .walkwayCentre) }
         }
 
         /// The layout's options for a roof (tile hooks on concrete tiles).
         public func options(tile: Bool) -> RoofMountLayout.Options {
             .init(ribClamp: ribClamp && !tile, avoidShade: avoidShade, faceUse: faceUse, removed: Set(removed), tileHooks: tile,
-                  walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross)
+                  walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross, walkwayCentre: walkwayCentre)
         }
         public var standardOrDefault: RoofMountStandard { standard ?? RoofMount.defaultStandard }
     }
@@ -157,6 +161,7 @@ public enum RoofMount {
         if input.tileRoof { parts.append("tile") }
         if input.shedLowAtStart { parts.append("shedStart") }
         if c.walkwayEvery > 0 { parts.append("walk \(c.walkwayEvery)") }
+        if c.walkwayCentre { parts.append("walkCentre") }
         if c.landscape { parts.append("landscape") }
         if c.railsAcross && !c.ribClamp && !input.tileRoof { parts.append("railsAcross") }
         parts += input.obstacles.map { o in

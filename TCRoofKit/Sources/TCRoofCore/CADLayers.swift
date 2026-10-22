@@ -34,6 +34,10 @@ public enum CADLayers {
     public static let pvTable = SketchDXF.Layer("TC-PV-TABLE", aci: 170, lineweight: 25, description: "โต๊ะแผงและฐานราก / Module tables and footings")
     public static let pvRafter = SketchDXF.Layer("TC-PV-RAFTER", aci: 1, lineweight: 25, description: "คานเอียงรับราง / Rafters")
     public static let pvBrace = SketchDXF.Layer("TC-PV-BRACE", aci: 4, lineweight: 18, description: "ค้ำยันระหว่างเสา / Bracing between posts")
+    public static let pvWalkway = SketchDXF.Layer("TC-PV-WALKWAY", aci: 3, lineweight: 25, description: "ทางเดิน HDG 0.30×2.40 ม. ขาตั้ง L-Feet / Walkway grating and L-feet")
+    public static let pvLifeline = SketchDXF.Layer("TC-PV-LIFELINE", aci: 6, lineweight: 25, description: "สลิงกันตก 6 มม. และเสารับ / Lifeline wire rope and supports")
+    public static let pvCableTray = SketchDXF.Layer("TC-PV-CABLETRAY", aci: 1, lineweight: 25, description: "รางเคเบิลและท่อ PPR / Cable tray and PPR pipe")
+    public static let detail = SketchDXF.Layer("TC-DETAIL", aci: 7, lineweight: 18, description: "แบบรายละเอียดของทีม / Team detail sheets")
     public static let pvFooting = SketchDXF.Layer("TC-PV-FOOTING", aci: 3, lineweight: 25, description: "ฐานรากและฐานเสา / Footings and post bases")
 
     // D1 tank
@@ -69,7 +73,7 @@ public enum CADLayers {
     public static let all: [SketchDXF.Layer] = [
         grid, dim, text, north, sectionMark, obstacle,
         roofOutline, roofRidge, roofTruss, roofPost, roofPurlin, roofSkylight, roofSection, roofTable,
-        pvModule, pvRail, pvFoot, pvCut, pvKeepout, pvTable, pvRafter, pvBrace, pvFooting,
+        pvModule, pvRail, pvFoot, pvCut, pvKeepout, pvTable, pvRafter, pvBrace, pvFooting, pvWalkway, pvLifeline, pvCableTray, detail,
         tankOutline, tankBeam, tankSection, tankSoil,
         siteFrame, siteBuilding, sitePVArea, sitePanelArea, siteCable, siteMeasure, siteCrane, siteShade, siteShape, siteSymbol,
         sldLine, sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed, sldText, sldOther,

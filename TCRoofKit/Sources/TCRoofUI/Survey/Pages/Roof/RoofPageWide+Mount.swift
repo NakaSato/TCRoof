@@ -373,14 +373,24 @@ extension RoofPageWide {
         }
     }
 
-    /// A walkway one module wide after every n columns, for cleaning (off by default).
+    /// A walkway one module wide down the middle of each face (most roofs, the default once on) or after every n
+    /// columns, for cleaning (off by default).
     var mountWalkway: some View {
-        let n = mountChoice.walkwayEvery
+        let n = mountChoice.walkwayEvery, centre = mountChoice.walkwayCentre
         return VStack(alignment: .leading, spacing: 2) {
-            Toggle(isOn: Binding(get: { n > 0 }, set: { on in changeChoice { $0.walkwayEvery = on ? 8 : 0 } })) {
+            Toggle(isOn: Binding(get: { n > 0 || centre }, set: { on in changeChoice { $0.walkwayCentre = on; $0.walkwayEvery = 0 } })) {
                 Text("เว้นทางเดินล้างแผง").font(.sarabunFixed(14))
             }
             .tint(Theme.primary).frame(minHeight: 44)
+            if n > 0 || centre {
+                Picker("ตำแหน่งทางเดิน", selection: Binding(get: { centre ? 0 : 1 }, set: { pick in
+                    changeChoice { $0.walkwayCentre = pick == 0; $0.walkwayEvery = pick == 0 ? 0 : max(2, n == 0 ? 8 : n) }
+                })) {
+                    Text("กลางหลังคา").tag(0)
+                    Text("ทุก n แผง").tag(1)
+                }
+                .pickerStyle(.segmented).frame(minHeight: 44)
+            }
             if n > 0 {
                 HStack(spacing: 6) {
                     Text("ทางเดินกว้าง 1 แผง ทุก").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)

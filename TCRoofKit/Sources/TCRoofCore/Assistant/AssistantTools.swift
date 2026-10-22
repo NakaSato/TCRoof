@@ -310,7 +310,7 @@ public extension Assistant {
             case .failure(let e): return e
             case .found(let job):
                 guard let f = facts(job) else { return error("ไม่มีข้อมูลโครงการของ \(job.station)") }
-                return .result(f.json(ProjectFacts.Section.parse(args["sections"])))
+                return .result(f.json(ProjectFacts.Section.parse(args["sections"]), papersPackage: ProjectFacts.package(args["package"])))
             }
         }
 
@@ -415,7 +415,9 @@ public extension Assistant {
                 fn("get_schedule", "One station's MP plan: planned vs actual %, each task's needed and actual pace and projected finish, this week's tasks, recent daily reports",
                    ["job": job], required: ["job"]),
                 fn("get_project", "One station's project besides the MP plan; works without a plan. Sections: survey (NO.224 completion, facts, missing), papers (PWA station papers not ready or expiring), erc (ERC flow waits), iec (IEC 62446 steps, inverters, install photos), weekly (requests R1), icl, devices, logs (install logs), inspections. basics always",
-                   ["job": job, "sections": sections], required: ["job"]),
+                   ["job": job, "sections": sections,
+                    "package": p("string", "papers: list every open paper of this package (default: counts and the 5 due soonest)",
+                                 enum: StationDocs.Package.allCases.map(\.rawValue))], required: ["job"]),
                 fn("get_week_tasks", "Planned and done points of each task in one week",
                    ["job": job, "week": week], required: ["job"]),
                 fn("propose_progress", "Propose a task's cumulative %; the user must confirm",

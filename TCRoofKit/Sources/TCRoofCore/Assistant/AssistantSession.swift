@@ -73,7 +73,7 @@ public extension Assistant {
             case .failure(let e): return e
             case .found(let job):
                 guard let f = project(job) else { return box.error("ไม่มีข้อมูลโครงการของ \(job.station)") }
-                return .result(f.json(ProjectFacts.Section.parse(args["sections"])))
+                return .result(f.json(ProjectFacts.Section.parse(args["sections"]), papersPackage: ProjectFacts.package(args["package"])))
             }
         }
 
@@ -148,7 +148,7 @@ public extension Assistant {
             - A station's expected handover: quote handoverForecast and handoverSlipDays (the tracking page's "คาดส่งมอบ", from SPI). projectedFinish and what_if are task by task: use them to compare options and days gained. If they differ, say the task-by-task one is more detailed and give both.
             - A re-planned station has originalInstallEnd and originalPlannedPercent (every other planned % is against the new plan); quote them when asked about the original plan.
             - When advising how to speed up, rank by impact on the finish date and cite daily reports (crew, rain, problems) when present.
-            - Other project topics (survey, station papers, ERC flow, IEC test, weekly requests, ICL, devices, inspections): call get_project with only the sections needed (a part missing from its answer means there is none). When advising on the plan, check for papers or tests that would block handover.
+            - Other project topics (survey, station papers, ERC flow, IEC test, weekly requests, ICL, devices, inspections): call get_project with only the sections needed (a part missing from its answer means there is none; papers.moreOpen counts open papers not listed: ask again with package to list them). When advising on the plan, check for papers or tests that would block handover.
             - Saving only goes through propose_* tools, which save nothing until the user confirms the card. Never say it is saved before a [ระบบ] message says the user confirmed.
             - Propose only when asked, or when a daily report states a clear %; say where the number came from.
             - Results of earlier questions are dropped from the history; call the tool again when you need them.

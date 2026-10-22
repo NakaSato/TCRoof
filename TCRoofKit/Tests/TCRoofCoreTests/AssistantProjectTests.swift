@@ -70,7 +70,7 @@ final class AssistantProjectTests: XCTestCase {
         let papers = try XCTUnwrap(f.papers)
         XCTAssertFalse(papers.packages.isEmpty)
         XCTAssertGreaterThan(papers.openCount, 0)                   // nothing filed yet
-        XCTAssertEqual(papers.open.count, min(papers.openCount, Assistant.ProjectFacts.listLimit))
+        XCTAssertEqual(papers.open.count, papers.openCount)          // kept whole; trimmed when sent
         XCTAssertEqual(Set(papers.open.map(\.name)).count, papers.open.count)   // a paper of two packages once
         XCTAssertNil(f.erc)                                          // no flow started
 
@@ -106,6 +106,55 @@ final class AssistantProjectTests: XCTestCase {
         let all = box.run("get_project", arguments: #"{"job":"190","sections":["nonsense"]}"#).text
         XCTAssertTrue(all.contains(#""papers""#) && all.contains(#""icl""#))   // an unknown name gives everything
         XCTAssertLessThan(iec.count, all.count)
+    }
+
+    /// By default only each package's count and the 5 open papers due soonest go; `package` lists that package's.
+    func testPapersAreShortUnlessAPackageIsAsked() throws {
+        var station = StationDocs.Station()
+        station.dueDates = ["handover": "2026-03-20", "grid_connection": "2026-04-30"]
+        let ctx = StationDocs.Context(station, inverterKW: 80)
+        let f = Assistant.ProjectFacts(jobID: "job-2", station: "สถานีผลิตน้ำบางพลี", mpNumber: 190, basics: basics(plan: false),
+                                       stationDocs: station, docsContext: ctx, today: today)
+        let full = try XCTUnwrap(f.papers)
+        // the handover papers are due first
+        XCTAssertEqual(full.open.first?.packageIDs.contains("handover"), true)
+        XCTAssertEqual(full.open.first?.due, "2026-03-20")
+
+        let short = full.listed(package: nil)
+        XCTAssertEqual(short.open.count, Assistant.ProjectFacts.Papers.shortList)
+        XCTAssertEqual(short.moreOpen, full.openCount - 5)
+        XCTAssertEqual(short.packages, full.packages)                // every package's count still goes
+
+        let grid = full.listed(package: .gridConnection)
+        let gridKinds = Set(StationDocs.papers(in: .gridConnection, ctx).map(\.name))
+        XCTAssertFalse(grid.open.isEmpty)
+        XCTAssertTrue(grid.open.allSatisfy { gridKinds.contains($0.name) })
+        // a paper shared with another package is found from either
+        let applying = StationDocs.packages(ctx)
+        let pairs = applying.flatMap { a in applying.filter { $0 != a }.map { (a, $0) } }
+        let shared = pairs.lazy.compactMap { a, b in
+            StationDocs.papers(in: a, ctx).first { k in StationDocs.papers(in: b, ctx).contains { $0.id == k.id } }.map { ($0.name, b) }
+        }.first
+        let (name, other) = try XCTUnwrap(shared, "some paper belongs to two packages")
+        XCTAssertTrue(full.listed(package: other).open.contains { $0.name == name })
+
+        let box = Assistant.Toolbox(jobs: [Assistant.Job(id: "job-2", station: "x", mpNumber: 190, input: nil, canEdit: true, project: f)],
+                                    today: today)
+        let sentShort = box.run("get_project", arguments: #"{"job":"190","sections":["papers"]}"#).text
+        let sentGrid = box.run("get_project", arguments: #"{"job":"190","sections":["papers"],"package":"grid_connection"}"#).text
+        XCTAssertTrue(sentShort.contains(#""moreOpen""#))
+        XCTAssertFalse(sentShort.contains("packageIDs"))             // the internal fields aren't sent
+        XCTAssertLessThan(sentShort.count, sentGrid.count)
+    }
+
+    func testOnlyAPersonsMessageCountsAsAQuestion() {
+        let q = Assistant.Request(messages: [.system("s"), .user("q")], tools: [])
+        XCTAssertTrue(q.isNewQuestion)
+        let round = Assistant.Request(messages: [.system("s"), .user("q"),
+                                                 .init(role: .assistant, content: nil, toolCalls: [.init(id: "c", name: "get_schedule", arguments: "{}")]),
+                                                 .tool("c", "{}")], tools: [])
+        XCTAssertFalse(round.isNewQuestion)
+        XCTAssertEqual(Assistant.OpenAI.dailyRequestLimit, Assistant.OpenAI.dailyLimit * 5)
     }
 
     @MainActor

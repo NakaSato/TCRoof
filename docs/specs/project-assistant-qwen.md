@@ -22,7 +22,7 @@ App (team / manager / Maintainer; assistant.use)
   └─ AssistantRouter: Qwen directly with this device's key when it has one (§6), else
      Transport → Firebase callable `assistant` (asia-southeast1)
                    ├─ members/<email>: not external, not suspended
-                   ├─ assistantUsage/<email>_<Bangkok day>: at most ASSISTANT_DAILY_LIMIT (50) a day
+                   ├─ assistantUsage/<email>_<Bangkok day>: at most ASSISTANT_DAILY_LIMIT (50) questions a day
                    ├─ checks every message and tool against functions/src/allowed-tools.json
                    └─ POST {QWEN_BASE_URL}/chat/completions with QWEN_API_KEY (Secret Manager)
 ```
@@ -43,7 +43,8 @@ App (team / manager / Maintainer; assistant.use)
   finish, and it never trades tests, the manufacturer's installation rules, permits or the utility's steps for speed.
 - **Tokens.** The system prompt and the tool descriptions are short English (Thai takes two to three times the
   tokens; the model is told to answer in Thai), `get_project` takes `sections` (survey, papers, erc, iec, weekly, icl,
-  devices, logs, inspections; default all) and leaves out empty parts, and earlier questions' tool results aren't
+  devices, logs, inspections; default all) and leaves out empty parts; its papers are each package's count and the 5
+  open papers due soonest (`moreOpen` counts the rest), and `package` lists every open paper of one package, and earlier questions' tool results aren't
   sent again. A question that reads one station's project costs about 5,000–6,000 tokens over its two rounds.
 - **The whole project, on demand.** `get_project` answers the rest of one station (`Assistant.ProjectFacts`): the job's
   basics, its NO.224 surveys (completion, each section's facts, what is missing; never A1's answers), the station's
@@ -121,7 +122,10 @@ directly (`AssistantRouter`: the key on this device, else the function).
 - A manager enters the key in ตั้งค่า › ผู้ช่วยโครงการ (AI) (`AssistantSettingsPage`), with the model and endpoint
   (https only), and `ทดสอบ` sends one short request. The team sees whether the device has a key and today's use.
 - `AssistantKey`: Keychain, `AfterFirstUnlockThisDeviceOnly` (not synced, not in backups); model and endpoint in
-  defaults; 50 requests a day per device (`Assistant.OpenAI.dailyLimit`), counted before each call.
+  defaults; 50 questions a day per device (`Assistant.OpenAI.dailyLimit`), counted before each call. A question's
+  tool rounds don't count (`Request.isNewQuestion`: the request ends with the person's message); every request still
+  counts against `dailyRequestLimit` (50 × 5 rounds), which stops a runaway loop. The function does the same
+  (`isQuestion`, `LIMITS.roundsPerQuestion`; `assistantUsage` keeps `count` of questions and `requests`).
 - `Assistant.OpenAI` builds the request and checks the reply as `functions/src/guard.ts` does (only the app's tools;
   an unknown tool call becomes words); `AssistantOpenAITests`.
 - Trade-off: a key on a device can be extracted by someone with that device and tools, and the limit is per device,
@@ -142,3 +146,18 @@ directly (`AssistantRouter`: the key on this device, else the function).
    it replaces in `MasterSchedule.Input.baseline` (later re-plans keep that first one; an imported workbook starts
    without one). Planned % stays against the new plan; the MP screen and its PDF add `แผนเดิม x%` and a thin grey bar
    per moved task, and the assistant's brief has `originalInstallEnd` / `originalPlannedPercent`.
+
+## Daily summary on the feed (`สรุปโดย AI`, built 2026-10-22)
+
+- The home feed's `สรุปวันนี้` (`FeedBuilder.summaries`, 18:00) gets a `สรุปโดย AI` box (`TCFeedPost`'s `note`): 3–5
+  plain Thai lines on the day, the stations that need attention and why, open issues and tomorrow's focus.
+- `Assistant.DailyDigest.facts` gives the model every number: reports sent of those due, the mean change, each
+  station due a report (sent or not, its whole % against the plan's, the day's change, crew, rain, stop reason, work
+  lines, new problems), furthest behind first, and up to ten open issues. Stations are named by their project name or
+  MP number (`Job.digestStation`), never the customer's name. One request with no tools (`DailyDigest.request`; the
+  function sends no `tools` / `tool_choice` then).
+- Per device (the person's choice, 2026-10-22): `FeedDigestStore` asks when the feed shows the day's summary, for
+  `assistant.use` only, and keeps the text in the device's defaults for 7 days; it asks again only when the facts'
+  JSON changed (a report signed later), at most once an hour and three times a day. A contractor never asks nor sees
+  it. It counts as one question against the day's limit.
+

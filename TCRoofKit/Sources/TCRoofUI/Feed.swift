@@ -178,6 +178,15 @@ public struct TCFeedPost<Photo: View>: View {
         }
     }
 
+    /// A box under the text, such as `สรุปโดย AI` on the daily summary: its title, its text (empty while `busy`), and
+    /// a short line on the right (`18:05`).
+    public struct Note {
+        let title: String, text: String, detail: String?, busy: Bool
+        public init(_ title: String, text: String, detail: String? = nil, busy: Bool = false) {
+            self.title = title; self.text = text; self.detail = detail; self.busy = busy
+        }
+    }
+
     /// A row of the `⋯` menu.
     public struct MenuItem: Identifiable {
         public let id = UUID()
@@ -196,6 +205,7 @@ public struct TCFeedPost<Photo: View>: View {
     var photoCount: Int
     var photoChips: [PhotoChip]
     var issue: Issue?
+    var note: Note?
     let ackLine: String
     /// iPad: how many acknowledgement faces stand before `ackLine` (up to three).
     var ackFaces: Int
@@ -219,12 +229,12 @@ public struct TCFeedPost<Photo: View>: View {
     /// `detail` is the `where | when` line. `photo` draws photo `n` of `photoCount`; it is cropped to 330 × 170
     /// (iPad: the card's width × 250).
     public init(initials: String, avatar: Color, who: String, badge: String, tone: TCFeedTone, detail: String, text: String,
-                stats: [Stat] = [], photoCount: Int = 0, photoChips: [PhotoChip] = [], issue: Issue? = nil,
+                stats: [Stat] = [], photoCount: Int = 0, photoChips: [PhotoChip] = [], issue: Issue? = nil, note: Note? = nil,
                 ackLine: String, ackFaces: Int = 0, acknowledged: Bool, link: String, menu: [MenuItem] = [], showsBadge: Bool = true,
                 onAck: @escaping () -> Void, onOpen: @escaping () -> Void, @ViewBuilder photo: @escaping (Int) -> Photo) {
         self.initials = initials; self.avatar = avatar; self.who = who; self.badge = badge; self.tone = tone
         self.detail = detail; self.text = text; self.stats = stats; self.photoCount = photoCount; self.photoChips = photoChips
-        self.issue = issue; self.ackLine = ackLine; self.ackFaces = ackFaces; self.acknowledged = acknowledged; self.link = link; self.menu = menu
+        self.issue = issue; self.note = note; self.ackLine = ackLine; self.ackFaces = ackFaces; self.acknowledged = acknowledged; self.link = link; self.menu = menu
         self.showsBadge = showsBadge; self.onAck = onAck; self.onOpen = onOpen; self.photo = photo
     }
 
@@ -236,6 +246,7 @@ public struct TCFeedPost<Photo: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, inset).padding(.bottom, pad ? 12 : 8)
                 .contentShape(Rectangle()).onTapGesture(perform: onOpen)
+            if let note { noteBox(note).padding(.horizontal, inset).padding(.bottom, pad ? 12 : 8) }
             if photoCount > 0 { photos.padding(.horizontal, inset).onTapGesture(perform: onOpen) }
             if !stats.isEmpty {
                 Group { if pad { strip } else { tiles } }
@@ -252,6 +263,27 @@ public struct TCFeedPost<Photo: View>: View {
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: cardRadius, style: .continuous).strokeBorder(Theme.borderSubtle))
         .clipShape(RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
+    }
+
+    private func noteBox(_ n: Note) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.primary)
+                    .accessibilityHidden(true)
+                Text(n.title).font(.sarabun(pad ? 13 : 12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
+                Spacer(minLength: 4)
+                if n.busy { ProgressView().controlSize(.mini) }
+                else if let d = n.detail { Text(d).font(.sarabun(11, relativeTo: .caption2)).foregroundStyle(Theme.inkMuted) }
+            }
+            Text(n.text.isEmpty ? "กำลังสรุป…" : n.text)
+                .font(.sarabun(pad ? 14.5 : 13, relativeTo: .footnote)).foregroundStyle(n.text.isEmpty ? Theme.inkMuted : Theme.navy)
+                .lineSpacing(pad ? 3 : 2).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(pad ? 12 : 10)
+        .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: pad ? 14 : Radius.lg, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("feedDigest")
     }
 
     /// `5 คนรับทราบ`; on iPad after up to three faces, the first `ฉ` once this user has acknowledged.

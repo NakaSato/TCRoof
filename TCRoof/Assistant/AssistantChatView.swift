@@ -164,7 +164,7 @@ struct AssistantChatView: View {
 
     private var prompts: [String] {
         var p = ["สถานีไหนช้ากว่าแผน", "จัดลำดับความสำคัญทุกสถานี", "วางแผนเร่งงานให้ทันกำหนด",
-                 "แผนล่วงหน้า 3 สัปดาห์", "ร่างสรุปประชุมประจำสัปดาห์"]
+                 "แผนล่วงหน้า 3 สัปดาห์", "ร่างสรุปประชุมประจำสัปดาห์", "เอกสารและการทดสอบที่ค้าง"]
         if permissions.can(.mpProgress, on: focus?.access) { p.append("อัปเดตความก้าวหน้าจากรายงานประจำวัน") }
         if permissions.can(.mpSetup, on: focus?.access) { p.append("เสนอแผนใหม่ที่ทำได้จริง") }
         return p
@@ -211,7 +211,7 @@ struct AssistantChatView: View {
                 .accessibilityLabel("ส่ง")
             }
             if let n = session.remainingToday {
-                Text("วันนี้ใช้ได้อีก \(n) ครั้ง").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                Text("วันนี้ใช้ได้อีก \(n) คำถาม").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }

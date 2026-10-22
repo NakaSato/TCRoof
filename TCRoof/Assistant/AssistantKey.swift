@@ -46,17 +46,22 @@ enum AssistantKey {
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "assistant.baseURL") }
     }
 
-    /// Requests this device sent today (Bangkok day); the count is kept per day, so it resets at midnight.
+    /// Questions this device asked today (Bangkok day); kept per day, so it resets at midnight.
     static func used(_ now: Date = .now) -> Int { UserDefaults.standard.integer(forKey: "assistant.used." + Assistant.OpenAI.day(now)) }
-    static func count(_ now: Date = .now) -> Int {
-        let k = "assistant.used." + Assistant.OpenAI.day(now)
-        let n = UserDefaults.standard.integer(forKey: k) + 1
-        UserDefaults.standard.set(n, forKey: k)
+    /// Requests sent today, tool rounds included.
+    static func requests(_ now: Date = .now) -> Int { UserDefaults.standard.integer(forKey: "assistant.requests." + Assistant.OpenAI.day(now)) }
+    /// Counts a request, and a question when it starts one; returns the questions asked today.
+    static func count(question: Bool, _ now: Date = .now) -> Int {
+        let day = Assistant.OpenAI.day(now), d = UserDefaults.standard
+        d.set(requests(now) + 1, forKey: "assistant.requests." + day)
+        let n = used(now) + (question ? 1 : 0)
+        d.set(n, forKey: "assistant.used." + day)
         return n
     }
 }
 
-/// Qwen straight from the device with the key in its Keychain, at most `dailyLimit` requests a day on this device.
+/// Qwen straight from the device with the key in its Keychain, at most `dailyLimit` questions a day on this device
+/// (their tool rounds free, up to `dailyRequestLimit` requests in all).
 struct QwenDirectClient: Assistant.Transport {
     var key: String
     var model: String
@@ -66,9 +71,12 @@ struct QwenDirectClient: Assistant.Transport {
         typealias O = Assistant.OpenAI
         guard let url = O.url(base: baseURL) else { throw O.Failure.server(0, "ที่อยู่ต้องขึ้นต้นด้วย https://") }
         let limit = O.dailyLimit
-        guard AssistantKey.used() < limit else { throw O.Failure.limit(limit) }
+        let question = request.isNewQuestion
+        guard !question || AssistantKey.used() < limit, AssistantKey.requests() < O.dailyRequestLimit else {
+            throw O.Failure.limit(limit)
+        }
         // counted before the call, as the function does, so a failing loop still stops
-        let used = AssistantKey.count()
+        let used = AssistantKey.count(question: question)
         var r = URLRequest(url: url, timeoutInterval: 90)
         r.httpMethod = "POST"
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")

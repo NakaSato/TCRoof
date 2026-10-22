@@ -1,7 +1,7 @@
 // `npm test` in functions/.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { bangkokDay, checkMember, checkRequest, cleanReply, LIMITS } from './guard';
+import { bangkokDay, checkMember, checkRequest, cleanReply, isQuestion, LIMITS } from './guard';
 
 const tool = (name: string) => ({ type: 'function', function: { name, description: 'd', parameters: { type: 'object' } } });
 const ok = (messages: unknown[], tools = [tool('get_schedule')]) => checkRequest({ messages, tools });
@@ -61,4 +61,13 @@ test('the reply keeps only what the app reads', () => {
 test('days are counted in Bangkok time', () => {
   assert.equal(bangkokDay(new Date('2026-10-18T17:30:00Z')), '2026-10-19');
   assert.equal(bangkokDay(new Date('2026-10-18T16:59:00Z')), '2026-10-18');
+});
+
+test('only a person\'s message starts a question; tool rounds don\'t count', () => {
+  const sys = { role: 'system', content: 's' } as const;
+  assert.equal(isQuestion([sys, { role: 'user', content: 'q' }]), true);
+  assert.equal(isQuestion([sys, { role: 'user', content: 'q' },
+    { role: 'assistant', content: null, tool_calls: [{ id: 'c', type: 'function', function: { name: 'get_schedule', arguments: '{}' } }] },
+    { role: 'tool', content: '{}', tool_call_id: 'c' }]), false);
+  assert.ok(LIMITS.roundsPerQuestion >= 5, 'the app takes up to 5 rounds a question');
 });

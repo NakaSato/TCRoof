@@ -183,27 +183,37 @@ enum ProjectDriveUpload {
         if keys.remove(key(job)) != nil { UserDefaults.standard.set(keys.sorted(), forKey: resumeKey) }
     }
 
+    /// A job upload was started and hasn't finished.
+    static var hasRequested: Bool { !(UserDefaults.standard.stringArray(forKey: resumeKey) ?? []).isEmpty }
+
     /// Runs again, quietly, the uploads that were started and didn't finish (left mid-way, offline, the app closed):
     /// when sync starts (`PhotoSync.start`), then a minute after each failure while the app is open. A job gone from
     /// the device is forgotten.
     static func resumeRequested(context: ModelContext, survey: SurveyModel) {
-        let keys = Set(UserDefaults.standard.stringArray(forKey: resumeKey) ?? [])
-        guard !keys.isEmpty, survey.google.isSignedIn else { return }
+        guard hasRequested, survey.google.isSignedIn else { return }
         Task {
-            let jobs = ((try? context.fetch(FetchDescriptor<Job>())) ?? []).filter { keys.contains(key($0)) }
-            let found = Set(jobs.map(key))
-            if found != keys { UserDefaults.standard.set(found.sorted(), forKey: resumeKey) }
-            var failed = false
-            for job in jobs {
-                do { try await run(job, survey: survey) { _, _ in } } catch {
-                    failed = true
-                    print("Drive: resume \(job.code): \(error.localizedDescription)")
-                }
-            }
-            guard failed else { return }
+            let ok = await resumeNow(context: context, survey: survey)
+            guard !ok else { return }
             try? await Task.sleep(for: .seconds(60))
             resumeRequested(context: context, survey: survey)
         }
+    }
+
+    /// One pass over the started uploads; false when one failed. Also iOS's background task's (`DriveBackgroundWork`).
+    static func resumeNow(context: ModelContext, survey: SurveyModel) async -> Bool {
+        let keys = Set(UserDefaults.standard.stringArray(forKey: resumeKey) ?? [])
+        guard !keys.isEmpty, survey.google.isSignedIn else { return true }
+        let jobs = ((try? context.fetch(FetchDescriptor<Job>())) ?? []).filter { keys.contains(key($0)) }
+        let found = Set(jobs.map(key))
+        if found != keys { UserDefaults.standard.set(found.sorted(), forKey: resumeKey) }
+        var ok = true
+        for job in jobs {
+            do { try await run(job, survey: survey) { _, _ in } } catch {
+                ok = false
+                print("Drive: resume \(job.code): \(error.localizedDescription)")
+            }
+        }
+        return ok
     }
 
     static func mimeType(for name: String) -> String {

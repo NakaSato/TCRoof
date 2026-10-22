@@ -10,6 +10,17 @@
 	<!-- ซิงก์นัดอัตโนมัติ (Settings › ปฏิทิน): full access, since the app updates and removes its own events -->
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>ใช้ซิงก์นัดสำรวจลงปฏิทินของเครื่อง และย้ายหรือลบนัดเมื่องานเปลี่ยน</string>
+	<!-- Drive uploads started while the app is closed (DriveBackgroundWork): an app refresh and a processing task -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.tcroof.internal.drive-refresh</string>
+		<string>com.tcroof.internal.drive-processing</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
 	<!-- tcroof://job/<syncID> opens the job, e.g. from a survey appointment in Calendar -->
 	<key>CFBundleURLTypes</key>
 	<array>

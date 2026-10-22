@@ -44,6 +44,21 @@ final class PhotoSync {
         }
     }
 
+    /// One upload pass outside the timer, for iOS's background task while the app is closed (`DriveBackgroundWork`):
+    /// the photos and plan workbooks not on Drive yet, after a pass already running. False when one failed.
+    func uploadNow(context: ModelContext, survey: SurveyModel) async -> Bool {
+        await running?.value
+        guard paused == 0, survey.google.isSignedIn, survey.settings.autoUploadPhotos else { return true }
+        do {
+            try await upload(context, survey)
+            try await workbooks(context, survey)
+            return true
+        } catch {
+            print("PhotoSync: background pass: \(error.localizedDescription)")
+            return false
+        }
+    }
+
     /// Holds the background pass while the job screen's own Drive upload runs (`ProjectDriveUpload.run`).
     func pause() async {
         paused += 1

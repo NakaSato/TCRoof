@@ -435,6 +435,7 @@ extension TankLayout {
         let b = bom
         return String(format: "BOQ: เสา %d | ฐานราก %d | คานรับราง %d | ราง %.1f ม. | ตัวยึดราง %d | ตัวจับกลาง %d | ตัวจับปลาย %d | ค้ำ X %d | กราวด์ %d",
                       b.posts, b.footings, b.rafters, b.railLength, b.railClamps, b.midClamps, b.endClamps, b.braces, b.groundLugs)
+            + String(format: " | ฐานเสา %d | พุก M12 %d | ค้ำโครงข้าง %d | ค้ำยื่น %d", b.bases, b.anchors, b.sideBraces, b.struts)
             + (checks.cutColumns > 0 ? " | ตัดแผง \(checks.cutColumns) คอลัมน์" : "")
     }
 

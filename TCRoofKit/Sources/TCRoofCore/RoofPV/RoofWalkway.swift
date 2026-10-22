@@ -145,3 +145,30 @@ public struct RoofWalkway: Sendable {
         return (top ? vs.max() : vs.min()) ?? (top ? v1 : v0)
     }
 }
+
+/// The walkways' materials (the BOQ's walkway line): the walkways' length, the HDG grating panels (whole 2.40 m panels
+/// and the cut last ones), the cross rails under them with two L-feet each, the lifeline's length and supports, the
+/// cable tray and PPR pipe along them, and the roof access ladders (on a gable roof with its cage and landing).
+public struct RoofWalkwayQuantities: Equatable, Sendable {
+    public var walkways = 0
+    public var length = 0.0
+    public var gratings = 0, crossRails = 0, lFeet = 0
+    public var lifeline = 0.0
+    public var supports = 0
+    public var tray = 0.0
+    public var ladders = 0, cagedLadders = 0
+
+    public init(_ ws: [RoofWalkway]) {
+        walkways = ws.count
+        for w in ws {
+            let l = w.v1 - w.v0
+            length += l; lifeline += l; tray += l
+            gratings += w.panels.count
+            crossRails += w.feet.count
+            supports += w.supports.count
+            if w.access { ladders += 1; if w.ridge { cagedLadders += 1 } }
+        }
+        lFeet = 2 * crossRails
+    }
+}
+

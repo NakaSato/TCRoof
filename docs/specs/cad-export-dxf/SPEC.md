@@ -181,7 +181,11 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   which the CAD export leaves to its own drawing), under the face labels; a roof without walkways draws as before.
   Every module of the roof's CAD plan is the team's PV panel block (`TK_MODULE_PLAN`, `RoofDXF.modulePanel`), its long
   side along the module's, stretched to the module on plan, on its WIPEOUT; a roof file defines only that block of the
-  tank components. Open: whether the team keeps the eave ladder for hip roofs.
+  tank components. The BOQ counts the walkways (`RoofWalkwayQuantities`, `RoofMount.walkwayLine`: length, HDG
+  gratings, cross rails and their L-feet, lifeline and supports, cable tray and PPR, caged or eave ladders) on the roof
+  page, in the PDF and in the Excel's row 39; the tank's BOM adds a base and two M12 bolts per post and two side braces
+  and a strut per post pair (`TableBOM`), on the tank page and in its BOQ line. Open: whether the team keeps the eave
+  ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, P-RAFT-N, red), the four rails (P-RAIL-N,

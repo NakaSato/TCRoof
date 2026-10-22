@@ -20,6 +20,16 @@ final class TankComponentsTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(c["topping"]).hatches.first?.pattern, "AR-CONC")
     }
 
+    /// The BOQ counts what the section draws: a base and two M12 bolts at every post, two side braces and a strut per
+    /// post pair.
+    func testTheBOQCountsTheComponents() throws {
+        let l = try XCTUnwrap(TankLayout.current(TankDXFTests.sample(layout: true))), b = l.bom
+        let pairs = l.builtTables.map(\.pairs).reduce(0, +)
+        XCTAssertEqual(b.bases, b.posts); XCTAssertEqual(b.anchors, 2 * b.posts)
+        XCTAssertEqual(b.sideBraces, 2 * pairs); XCTAssertEqual(b.struts, pairs)
+        XCTAssertTrue(l.boqLine.contains("พุก M12 \(b.anchors)")); XCTAssertTrue(l.boqLine.contains("ค้ำยื่น \(b.struts)"))
+    }
+
     /// In the tank DXF each component is one block, defined once, and the row section, the front elevation, the
     /// footings and the details are built from INSERTs of them.
     func testTheTankDrawingIsBuiltFromThem() throws {

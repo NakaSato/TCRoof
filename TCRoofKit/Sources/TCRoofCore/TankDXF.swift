@@ -35,10 +35,16 @@ public enum TankDXF {
                 for q in t.panels where q.on {
                     let name = String(format: "PV_MODULE_%.0fx%.0f", q.w * 1000, q.h * 1000)
                     // a WIPEOUT under the outline hides the beams and grid the module covers, as on the printed plan
+                    // with the team's PV panel block inside (TK_MODULE_PLAN, its cells), stretched to this module
+                    let panel = TankComponents.shared.flatMap { c -> String? in c.define(&dxf); return TankComponents.names["module_plan"]?.block }
                     dxf.block(name) { d in
                         let r = [(0.0, 0.0), (q.w, 0), (q.w, q.h), (0, q.h)]
                         d.wipeout(pv, r)
-                        d.polyline(pv, r, closed: true)
+                        if let panel {
+                            d.insert(pv, panel, at: (0, 0), xScale: q.w / TankComponents.modulePlanDrawn.w, yScale: q.h / TankComponents.modulePlanDrawn.h)
+                        } else {
+                            d.polyline(pv, r, closed: true)
+                        }
                     }
                     dxf.insert(pv, name, at: p(q.x, q.y + q.h))
                 }
@@ -61,23 +67,41 @@ public enum TankDXF {
             + (TankLayout.current(v).map { [TankDrawings.tableSectionCAD($0.params)] + [TankDrawings.tableFrontCAD($0)].compactMap { $0 } } ?? [])
         let gap = 3.0
         var top = dxf.extents.min.y / (millimetres ? 1000 : 1) - gap
+        // the rows' section and the front elevation take their footings, posts, braces and modules from the team's
+        // components (each one block), the rest from the drawing
+        let comps = TankComponents.shared, params = TankLayout.current(v)?.params
         for d in tables {
             let o = d.origin, k = d.k, h = d.sketch.height
             // the drawing's top edge at `top`; (origin) at (0, top - origin.y / k)
             let base = top - o.y / k
             let tf: (Pt) -> (Double, Double) = { p in ((p.x - o.x) / k, base + (o.y - p.y) / k) }
-            let skip = d.dimensionOps
+            let built = comps != nil && params != nil && d.role != .tank
+            let skip = d.dimensionOps.union(built ? d.structureOps : [])
             dxf.add(d.sketch.ops, layer: { i, op in skip.contains(i) ? nil : sectionLayer(op) }, transform: tf, pointsPerMetre: k)
             dxf.add(d.dimensions, layer: CADLayers.dim, transform: tf, pointsPerMetre: k)
+            if built, let comps, let params {
+                if d.role == .rows { comps.rowSection(&dxf, params, origin: (0, base)) }
+                if d.role == .front { comps.frontElevation(&dxf, params, posts: d.posts, origin: (0, base)) }
+            }
             top = base + (o.y - h) / k - gap
         }
+        // under them, the footing details (plan and DETAIL 1) at 1:10
+        if let comps, let params { comps.details(&dxf, origin: (0, top), footing: params.footing) }
         return dxf.output
     }
 
     /// The post base the team draws at every post (their mounting plan's block): the footing square, the base plate and
     /// the C post's flanges and the two 50 mm plates, centred on the post (metres, rows along x).
     static func footingBlock(_ dxf: inout SketchDXF, footing f: Double) -> String {
-        dxf.block(String(format: "TC_FOOTING_%.0f", f * 1000)) { d in
+        // with the team's components: the topping square and their base plate block (TK_BASE_PLAN) inside it
+        if let comps = TankComponents.shared, let base = TankComponents.names["base_plan"] {
+            comps.define(&dxf)
+            return dxf.block(String(format: "TC_FOOTING_%.0f", f * 1000)) { d in
+                d.polyline(CADLayers.pvFooting, [(-f / 2, -f / 2), (f / 2, -f / 2), (f / 2, f / 2), (-f / 2, f / 2)], closed: true)
+                d.insert(base.layer, base.block, at: (0, 0))
+            }
+        }
+        return dxf.block(String(format: "TC_FOOTING_%.0f", f * 1000)) { d in
             let l = CADLayers.pvFooting
             func rect(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double) { d.polyline(l, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], closed: true) }
             rect(-f / 2, -f / 2, f / 2, f / 2)

@@ -213,7 +213,37 @@ extension ReportLayout {
             s += sec.translated(8, Self.band + 6, scale: ks)
             out.append(Unit(h: sh, ops: s))
         }
+        out.append(roofEnergyUnit(energy))
         return out
+    }
+
+    /// พลังงานไฟฟ้าโดยประมาณ (docs/specs/energy-yield/preliminary-energy-yield.md §11): the P90–P50 range, the lifetime
+    /// total, the monthly bars, the loss chain, the source with its attribution, and the disclaimer in Thai and English.
+    /// The same estimate as C1's energy card.
+    func roofEnergyUnit(_ e: RoofMountYield.Estimate) -> Unit {
+        let W = Self.cw, lineH = 11.0, textW = W - 16
+        var lines: [(String, Double, Bool, RGBA)] = [(RoofMountYield.headline(e), 8.5, true, .black)]
+        if let life = RoofMountYield.lifetimeLine(e) { lines.append((life, 8, false, .black)) }
+        let chart = RoofMountYield.monthlyChart(e, width: 760)
+        var after: [(String, Double, Bool, RGBA)] = []
+        if let loss = RoofMountYield.lossLine(e) {
+            after += ApproxText.wrap(loss, width: textW, size: 7.5).map { ($0, 7.5, false, .black) }
+        }
+        after += ApproxText.wrap(RoofMountYield.sourceReportLine(e), width: textW, size: 7.5).map { ($0, 7.5, false, .black) }
+        after += e.assumptions.isEmpty ? [] : ApproxText.wrap("ค่าสมมติ: " + e.assumptions.joined(separator: " | "), width: textW, size: 7.5).map { ($0, 7.5, false, .tag) }
+        after += ApproxText.wrap(RoofMountYield.disclaimerTH, width: textW, size: 7.5).map { ($0, 7.5, false, .faint) }
+        after += ApproxText.wrap(RoofMountYield.disclaimerEN, width: textW, size: 7).map { ($0, 7, false, .faint) }
+        let kc = chart.map { (W - 16) / $0.width } ?? 0
+        let h = Self.band + 10 + lineH * Double(lines.count + after.count) + (chart.map { $0.height * kc + 6 } ?? 0) + 4
+        var o = box("พลังงานไฟฟ้าโดยประมาณ", height: h)
+        var y = Self.band + 10
+        for (t, size, bold, color) in lines { o.append(.text(t, at: Pt(8, y), size: size, bold: bold, color: color)); y += lineH }
+        if let chart {
+            o += chart.translated(8, y - 4, scale: kc)
+            y += chart.height * kc + 6
+        }
+        for (t, size, bold, color) in after { o.append(.text(t, at: Pt(8, y), size: size, bold: bold, color: color)); y += lineH }
+        return Unit(h: h, ops: o)
     }
 
     func planSection(_ mod: SurveyModule) -> [Unit] {

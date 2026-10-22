@@ -59,5 +59,16 @@ final class TankComponentsTests: XCTestCase {
         let rafters = recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "P-RAFT-N" && t.double($0, "20") < 0 }
         XCTAssertEqual(rafters.count, 2)
         XCTAssertTrue(rafters.allSatisfy { t.value($0, "70") == "1" })
+        // as the team's section 1 measures them: three braces a row (front, back and the outer strut), the rafter
+        // inside the modules, the front brace on the rafter 0.565 m up from the low post
+        let braces = recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "P-BRAC-N" && t.double($0, "20") < 0 }
+        XCTAssertEqual(braces.count, 3 * 2 + 2 * max(0, front - 1))
+        let p = l.params, tilt = p.tilt * .pi / 180
+        func xs(_ r: [(String, String)]) -> [Double] { r.filter { $0.0 == "10" }.map { Double($0.1)! } }
+        let first = try XCTUnwrap(rafters.min { (xs($0).min() ?? 0) < (xs($1).min() ?? 0) })
+        let lo = try XCTUnwrap(xs(first).min()), hi = try XCTUnwrap(xs(first).max())
+        XCTAssertGreaterThanOrEqual(lo, -p.frontOver * cos(tilt) - 0.1)
+        XCTAssertLessThanOrEqual(hi, (-p.frontOver + 2 * p.moduleL + p.moduleGap) * cos(tilt) + 0.1)
+        XCTAssertTrue(braces.contains { b in xs(b).contains { abs($0 - TankComponents.braceFront * cos(tilt)) < 0.04 } })
     }
 }

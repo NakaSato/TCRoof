@@ -394,6 +394,7 @@ private struct Drawer {
                 }
             }
         }
+        let hasWalkways = !RoofWalkway.walkways(m).isEmpty
         for f in m.faces {
             let face = f.face
             for (r, row) in f.rows.enumerated() {
@@ -434,23 +435,64 @@ private struct Drawer {
                     for v in feet { add(.circle(P(face, u, v), r: 1.1, stroke: nil, fill: railInk), "foot") }
                 }
             }
-            // ใต้ | 105 แผง, kept on the plan (the tab lists each face's yield)
-            let c = P(face, face.centre.x, face.centre.y)
-            let label = RoofFace.direction(face.azimuth) + " | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
-            let half = ApproxText.width(label, size: 10.5, bold: true) / 2 + 8
-            let cx = min(max(c.x, L.origin.x + half), L.origin.x + L.lx * k - half)
-            // drawn on the sketch directly (`text` maps design units)
-            let tw = ApproxText.width(label, size: 10.5, bold: true) + 6
-            add(.rect(Box(cx - tw / 2, c.y - 7, tw, 14), stroke: nil, fill: .white), nil)
-            add(.text(label, at: Pt(cx, c.y), size: 10.5, bold: true, color: f.used ? RoofPlan.navy : cutRed, align: .center), "facelabel")
-            if m.roof.faces.count == 1 {
-                let down = P(face, face.centre.x, face.centre.y - 1)
-                shedArrow(from: Pt(cx, c.y), towards: Pt(down.x - c.x, down.y - c.y))
-            }
+            if !hasWalkways { faceLabel(f, m) }
         }
+        // each face's label (over the walkways when there are any)
+        let ws = RoofWalkway.walkways(m)
+        if !ws.isEmpty { walkways(m) }
+        for f in m.faces where !ws.isEmpty { faceLabel(f, m) }
         let q = m.quantities
         pv.count = q.modules
         pv.kWp = q.kWp
+    }
+
+    /// `ใต้ | 105 แผง` at a face's middle, on a white box (and on a single-face roof the arrow to its low eave).
+    mutating func faceLabel(_ f: RoofMountLayout.Face, _ m: RoofMountLayout) {
+        let face = f.face, cutRed = RGBA(hex: 0xE0433A)
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        // ใต้ | 105 แผง, kept on the plan (the tab lists each face's yield)
+        let c = P(face, face.centre.x, face.centre.y)
+        let label = RoofFace.direction(face.azimuth) + " | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
+        let half = ApproxText.width(label, size: 10.5, bold: true) / 2 + 8
+        let cx = min(max(c.x, L.origin.x + half), L.origin.x + L.lx * k - half)
+        // drawn on the sketch directly (`text` maps design units)
+        let tw = ApproxText.width(label, size: 10.5, bold: true) + 6
+        add(.rect(Box(cx - tw / 2, c.y - 7, tw, 14), stroke: nil, fill: .white), nil)
+        add(.text(label, at: Pt(cx, c.y), size: 10.5, bold: true, color: f.used ? RoofPlan.navy : cutRed, align: .center), "facelabel")
+        if m.roof.faces.count == 1 {
+            let down = P(face, face.centre.x, face.centre.y - 1)
+            shedArrow(from: Pt(cx, c.y), towards: Pt(down.x - c.x, down.y - c.y))
+        }
+    }
+
+    /// The walkways and the roof access as the CAD export draws them, simplified for the screen and the PDF: each
+    /// walkway's 0.90 m band with its grating and lifeline, and at the way up the cat ladder (on a gable roof its cage
+    /// and landing at the gable wall on the ridge, else a ladder past the eave), with `ทางขึ้นหลังคา`.
+    mutating func walkways(_ m: RoofMountLayout) {
+        typealias W = RoofWalkway
+        let band = RGBA(hex: 0xFDE68A), ink = RGBA(hex: 0x92400E), life = RGBA(hex: 0x0E7490), access = RGBA(hex: 0xC026D3)
+        for w in W.walkways(m) {
+            func Q(_ a: Double, _ s: Double) -> Pt { let p = w.plan(a, s); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+            func box(_ a0: Double, _ a1: Double, _ s0: Double, _ s1: Double) -> [Pt] { [Q(a0, s0), Q(a1, s0), Q(a1, s1), Q(a0, s1)] }
+            add(.polygon(box(0, W.band, w.v0, w.v1), stroke: ink.withAlpha(0.7), fill: band.withAlpha(0.85), width: 0.5), "walkway")
+            add(.polygon(box(W.grating.0, W.grating.1, w.v0, w.v1), stroke: ink, fill: ink.withAlpha(0.18), width: 0.4), "walkway")
+            add(.line(Q(W.lifeline, w.v0), Q(W.lifeline, w.v1), width: 0.7, color: life, dash: [3, 2]), "walkway")
+            guard w.access else { continue }
+            let c = (W.grating.0 + W.grating.1) / 2
+            if w.ridge {
+                let inward: Double = w.accessAtStart ? 1 : -1, s0 = w.wallS, x = W.gableLadder / 2, r = W.cageRadius
+                let mid = W.band / 2, hub = s0 - inward * (W.cageOut - r)
+                add(.polygon(box(mid - x, mid + x, s0, s0 + inward * W.landing), stroke: access, fill: access.withAlpha(0.2), width: 0.8), "access")
+                let arc = (0...16).map { i -> Pt in let t = Double(i) / 16 * .pi; return Q(mid + r * cos(t), hub - inward * r * sin(t)) }
+                add(.polyline([Q(mid + r, s0)] + arc + [Q(mid - r, s0)], width: 1, color: access, dash: []), "access")
+                let tag = Q(mid, s0 - inward * (W.cageOut + 0.6))
+                add(.text("ทางขึ้นหลังคา", at: tag, size: 8, bold: true, color: access, align: .center), "access")
+            } else {
+                let foot = w.v0 - W.ladderOut
+                add(.polygon(box(c - W.ladderWidth / 2, c + W.ladderWidth / 2, foot, w.v0), stroke: access, fill: access.withAlpha(0.2), width: 0.8), "access")
+                add(.text("ทางขึ้นหลังคา", at: Q(c, foot - 0.6), size: 8, bold: true, color: access, align: .center), "access")
+            }
+        }
     }
 
     /// A shed roof's arrow from its label towards the low eave, `ด้านต่ำ` at its head (a tap turns it).

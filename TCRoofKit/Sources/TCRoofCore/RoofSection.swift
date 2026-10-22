@@ -277,11 +277,11 @@ public struct RoofSection: Sendable {
         func call(_ n: Int, _ bx: Double, _ by: Double, _ tx: Double, _ ty: Double) {
             let dx = tx - bx, dy = ty - by, L = max(hypot(dx, dy), 1), ux = dx / L, uy = dy / L, r = 9.0
             let sx = bx + ux * r, sy = by + uy * r, ex = tx - ux, ey = ty - uy, al = 7.0, aw = 2.6
-            line(sx, sy, ex - ux * al, ey - uy * al, 1, Self.red, "DIM")
+            line(sx, sy, ex - ux * al, ey - uy * al, 1, Self.red, "CALLOUT")
             add(.polygon([pt(ex, ey), pt(ex - ux * al - uy * aw, ey - uy * al + ux * aw), pt(ex - ux * al + uy * aw, ey - uy * al - ux * aw)],
-                         stroke: nil, fill: Self.red), nil)
-            add(.circle(pt(bx, by), r: r, stroke: Self.red, fill: .white, width: 1.4), "DIM")
-            add(.text(String(n), at: pt(bx, by), size: 12, bold: true, color: Self.red, align: .center), nil)
+                         stroke: nil, fill: Self.red), "CALLOUT")
+            add(.circle(pt(bx, by), r: r, stroke: Self.red, fill: .white, width: 1.4), "CALLOUT")
+            add(.text(String(n), at: pt(bx, by), size: 12, bold: true, color: Self.red, align: .center), "CALLOUT")
             bubbles[n] = pt(bx, by)
         }
         let x1 = XL + HW * 0.37, x2 = XR - HW * 0.33

@@ -27,7 +27,8 @@ public enum RoofDXF {
     static let planLayers: [String: String] = ["grid": "GRID", "bub": "GRID", "out": "OUTLINE", "ridge": "RIDGE", "tbd": "TRUSS",
                                                "truss": "TRUSS", "t2": "TRUSS", "raft": "TRUSS", "eave": "TRUSS", "post": "POST",
                                                "purl": "PURLIN", "sky": "SKYLIGHT", "obst": "OBSTACLE", "sec": "SECTION_MARK", "dim": "DIM",
-                                               "txt": "TEXT", "dimtxt": "DIM"]
+                                               "txt": "TEXT", "dimtxt": "DIM",
+                                               "note": "TEXT", "callout": "TEXT"]
     static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
     /// One walkway band on plan (metres, y up from the plan's bottom edge `ly`) as the team's top view draws it: the cross
@@ -244,6 +245,8 @@ public enum RoofDXF {
             let ts: (Pt) -> (Double, Double) = { p in ((p.x - 380) / s.scale + L.lx / 2, top - p.y / s.scale) }
             for (i, (op, tag)) in zip(s.sketch.ops, s.tags).enumerated() {
                 guard let tag, !s.dimensionOps.contains(i) else { continue }
+                // the member callouts ①–⑦ (bubble, number, leader) as symbols, the number fitted to its bubble
+                if tag == "CALLOUT" { write(op, "SECTION_MARK", ts, s.scale, text: 11 / s.scale); continue }
                 write(op, tag, ts, s.scale, text: th)
             }
             dxf.options.fixedTextHeight = th * 0.8
@@ -254,14 +257,21 @@ public enum RoofDXF {
         if parts.contains(.table) {
             let tx = L.lx + 4
             var ty = L.ly
-            TEXT("TABLE", (tx, ty), th * 1.3, "ขนาดชิ้นส่วน 1–7 | " + f.label, mid: false); ty -= 0.8
-            for (i, m) in f.members.enumerated() {
-                let size = Roof.memberSize(v, i + 1)
-                TEXT("TABLE", (tx, ty), th, "\(i + 1)  " + m.name, mid: false)
-                TEXT("TABLE", (tx + 4, ty), th, size.isEmpty ? m.defaultSize : size, mid: false)
-                dxf.line(layer("TABLE"), (tx, ty - 0.2), (tx + 10, ty - 0.2))
-                ty -= 0.6
+            if let sc = RoofTruss.schedule(v) {
+                // the member schedule the PDF prints: per truss and for the whole roof, with the steel's weight
+                ty = memberSchedule(&dxf, sc, rafter: f.isRafter, title: "ตารางชิ้นส่วนโครงหลังคา | " + f.label, at: (tx, ty), text: th * 0.8)
+            } else {
+                TEXT("TABLE", (tx, ty), th * 1.3, "ขนาดชิ้นส่วน 1–7 | " + f.label, mid: false); ty -= 0.8
+                for (i, m) in f.members.enumerated() {
+                    let size = Roof.memberSize(v, i + 1)
+                    TEXT("TABLE", (tx, ty), th, "\(i + 1)  " + m.name, mid: false)
+                    TEXT("TABLE", (tx + 4, ty), th, size.isEmpty ? m.defaultSize : size, mid: false)
+                    dxf.line(layer("TABLE"), (tx, ty - 0.2), (tx + 10, ty - 0.2))
+                    ty -= 0.6
+                }
             }
+            // under it, details A (the support) and B (the ridge) of a truss, not to scale, as the PDF draws them
+            if let det = RoofTruss.details(v) { details(&dxf, det, at: (tx, ty - 1.2), width: 14, text: th) }
         }
 
         // beside the drawing, with walkways: the team's walkway detail (top view, elevations, detail 1) at the plot scale

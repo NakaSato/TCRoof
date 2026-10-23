@@ -65,6 +65,7 @@ struct RoofPageWide: View {
     /// The layout's yearly energy from the hourly engine, or SolarModel's (RoofPageWide+Energy).
     @State var mountYield: RoofMountYield.Estimate?
     @State var mountYieldBusy = false
+    @State var energyOpen = false
     @State var mountYieldFor: RoofMountYield.Inputs?
     /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
     @State var roofDesignSaved: String?
@@ -409,30 +410,36 @@ struct RoofPageWide: View {
 
     // MARK: panels field
 
-    /// จำนวนแผงก่อนเข้าสำรวจ (required, the report's count): typed, or taken from the layout.
+    /// จำนวนแผงก่อนเข้าสำรวจ (required, the report's count): typed, or taken from the layout. The line under the box says
+    /// whether it matches the layout, and offers the layout's count when it doesn't.
     func panelsField(_ count: Int) -> some View {
-        let cur = values.text(Roof.Key.panels)
-        return VStack(alignment: .trailing, spacing: 2) {
-            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            HStack(spacing: 6) {
+        let cur = values.text(Roof.Key.panels).trimmingCharacters(in: .whitespaces)
+        let same = cur == String(count)
+        return VStack(alignment: .leading, spacing: 4) {
+            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            HStack(spacing: 10) {
                 HStack(spacing: 4) {
                     TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
                         .keyboardType(.numberPad).multilineTextAlignment(.trailing)
                     Text("แผง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 8)
-                .frame(width: 100)
+                .frame(width: 120)
                 .accessibilityLabel("จำนวนแผงก่อนเข้าสำรวจ")
-                if count > 0 && cur != String(count) {
+                if count > 0 && !cur.isEmpty && same {
+                    Label("ตรงกับผัง", systemImage: "checkmark.circle.fill").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.okText)
+                } else if count > 0 {
+                    Text("ผังได้ \(count) แผง").font(.sarabunFixed(13)).foregroundStyle(cur.isEmpty ? Theme.inkMuted : Self.amber)
                     Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
                         Text("ใช้ \(count)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                            .padding(.horizontal, 8).frame(minHeight: 44)
+                            .padding(.horizontal, 10).frame(minHeight: 44)
                             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.5)))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("ใช้จำนวนแผงจากการจัดแผง \(count) แผง")
                 }
+                Spacer(minLength: 0)
             }
         }
     }

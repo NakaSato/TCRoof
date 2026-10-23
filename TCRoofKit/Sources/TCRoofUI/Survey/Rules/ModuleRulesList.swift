@@ -9,9 +9,9 @@ public struct ModuleRulesList: View {
     let validation: Validation
     let notes: [String]
     let empty: String
-    let reason: (String) -> Binding<String>
+    let reason: ((String) -> Binding<String>)?
 
-    public init(_ validation: Validation, notes: [String] = [], empty: String, reason: @escaping (String) -> Binding<String>) {
+    public init(_ validation: Validation, notes: [String] = [], empty: String, reason: ((String) -> Binding<String>)? = nil) {
         self.validation = validation; self.notes = notes; self.empty = empty; self.reason = reason
     }
 
@@ -31,7 +31,7 @@ public struct ModuleRulesList: View {
                         Text(r.id).font(.sarabun(13, .bold)).foregroundStyle(Self.color(r.severity))
                         Text(r.messageTH).font(.sarabun(14)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
                     }
-                    if r.severity == .warn {
+                    if r.severity == .warn, let reason {
                         TCTextField("เหตุผลที่ยังติดตั้งได้ (จำเป็น)", text: reason(r.id))
                     }
                 }

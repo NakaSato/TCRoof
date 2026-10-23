@@ -500,15 +500,11 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, false)
             }
             mode = .pv; scrollTarget = "info"
-        // pvrules: the installation checks card (ModuleRules) with a too-long string and a thin cable
+        // pvrules: the installation checks card (ModuleRules) (information only)
         case "pvrules":
             update { v in
                 v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
                 RoofMount.setChoice(&v, RoofMount.Choice())
-            }
-            setLayoutCheck { c in
-                c = ArrayLayoutCheck(); c.method = .clamp; c.tMinC = 15; c.inverterMaxDcV = 1100; c.modulesPerString = 22
-                c.cableMm2 = 2.5; c.cableAmpacityA = 30; c.clampLengthMm = 60; c.clampThicknessMm = 3; c.clampsPerModule = 4
             }
             mode = .pv
             for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }

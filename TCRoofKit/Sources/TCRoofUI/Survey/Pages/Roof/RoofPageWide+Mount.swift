@@ -159,7 +159,6 @@ extension RoofPageWide {
                 .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)
         }
         mountSummary
-        mountEnergy
         if let note = mountNote {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.uturn.backward.circle").foregroundStyle(Theme.primary)
@@ -202,10 +201,14 @@ extension RoofPageWide {
             .accessibilityElement(children: .combine)
         // iPhone: the figures above the panels field
         let layout = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
-        return layout {
-            figures
-            if !narrow { Spacer(minLength: 6) }
-            panelsField(q?.modules ?? 0)
+        // the count, kWp and the yearly energy with its source and faces are one card
+        return VStack(alignment: .leading, spacing: 6) {
+            layout {
+                figures
+                if !narrow { Spacer(minLength: 6) }
+                panelsField(q?.modules ?? 0)
+            }
+            mountEnergy
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .leading)

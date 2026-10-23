@@ -322,50 +322,60 @@ extension RoofPageWide {
 
     // MARK: controls
 
+    /// วิธียึด, แนวแผง and แนวราง in one card. A choice with one option is a line of text, not a control, and the rails'
+    /// control appears only when the rails sit on purlins.
     var mountFixing: some View {
         let c = mountChoice, metal = (values.choice(Roof.Key.material) ?? values.text(Roof.Key.material)).contains("เมทัลชีท")
         let tile = RoofMount.tileRoof(values)
-        return VStack(alignment: .leading, spacing: 6) {
-            A3Label(text: "วิธียึด")
+        let onPurlins = !tile && !c.ribClamp
+        return VStack(alignment: .leading, spacing: 10) {
             if tile {
-                RoofSegments(options: ["ขอเกี่ยวกระเบื้องยึดจันทัน"], selected: 0, minSegment: 90) { _ in }
+                fixingLine("วิธียึด", "ขอเกี่ยวกระเบื้องยึดจันทัน")
                 standardStepper("จันทันห่าง (ม.)", \.rafterSpacing, step: 0.05)
+            } else if metal {
+                fixingChoice("วิธียึด", ["ยึดเข้าแป", "จับสันลอน"], selected: c.ribClamp ? 1 : 0) { i in changeChoice { $0.ribClamp = i == 1 } }
             } else {
-                RoofSegments(options: metal ? ["ยึดเข้าแป", "จับสันลอน"] : ["ยึดเข้าแป"], selected: c.ribClamp && metal ? 1 : 0, minSegment: 90) { i in
-                    changeChoice { $0.ribClamp = i == 1 }
-                }
+                fixingLine("วิธียึด", "ยึดเข้าแป")
             }
-            mountDirection
+            fixingChoice("แนวแผง", ["ด้านยาวตัดแป", "ด้านยาวตามแป"], selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
+            if onPurlins {
+                fixingChoice("แนวราง", ["รางตามแป", "รางตัดแป"], selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
+            }
+            mountDirectionNotes
             Toggle(isOn: Binding(get: { c.avoidShade }, set: { on in changeChoice { $0.avoidShade = on } })) {
                 Text("เว้นเงาสิ่งกีดขวาง 09:00–15:00 ทั้งปี").font(.sarabunFixed(14))
             }
             .tint(Theme.primary).frame(minHeight: 44)
         }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Self.track.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    /// The modules' direction on the purlins (ด้านยาวตัดแป: portrait, or ตามแป: landscape) and, with L-feet on purlins,
-    /// the rails' (ตามแป on the purlins, or ตัดแป up the slope with a foot on each purlin).
-    @ViewBuilder var mountDirection: some View {
+    func fixingChoice(_ title: String, _ options: [String], selected: Int, _ pick: @escaping (Int) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            A3Label(text: title)
+            RoofSegments(options: options, selected: selected, minSegment: 90) { pick($0) }
+        }
+    }
+
+    func fixingLine(_ title: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            A3Label(text: title)
+            Text(value).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+        }
+        .frame(minHeight: 28)
+    }
+
+    /// What the choices mean: a landscape module on rails along the purlins that don't reach, and the clamped side.
+    @ViewBuilder var mountDirectionNotes: some View {
         let c = mountChoice, tile = RoofMount.tileRoof(values)
         let onPurlins = !tile && !c.ribClamp
-        A3Label(text: "แนวแผง")
-        RoofSegments(options: ["ด้านยาวตัดแป", "ด้านยาวตามแป"], selected: c.landscape ? 1 : 0, minSegment: 90) { i in
-            changeChoice { $0.landscape = i == 1 }
-        }
         if onPurlins {
-            A3Label(text: "แนวราง")
-            RoofSegments(options: ["รางตามแป", "รางตัดแป"], selected: c.railsAcross ? 1 : 0, minSegment: 90) { i in
-                changeChoice { $0.railsAcross = i == 1 }
-            }
             let spacing = Roof.purlinSpacing(values)
             if c.landscape && !c.railsAcross && !RoofMountLayout.purlinsHoldLandscape(c.standardOrDefault, purlinSpacing: spacing) {
-                HStack(spacing: 8) {
-                    Text(String(format: "แปห่าง %.2f ม. รางตามแปรับแผงด้านยาวตามแปไม่ได้ (รางทั้ง 2 เส้นต้องตกแปในช่วงจับด้านสั้น)", spacing))
-                        .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)
-                    Spacer(minLength: 4)
-                    Button("ใช้รางตัดแป") { changeChoice { $0.railsAcross = true } }
-                        .font(.sarabunFixed(13, .bold)).frame(minHeight: 44)
-                }
+                Text(String(format: "แปห่าง %.2f ม. รางตามแปรับแผงด้านยาวตามแปไม่ได้ (รางทั้ง 2 เส้นต้องตกแปในช่วงจับด้านสั้น) | เลือก รางตัดแป", spacing))
+                    .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber).fixedSize(horizontal: false, vertical: true)
             }
         } else if c.railsAcross {
             Text(tile ? "ขอเกี่ยวกระเบื้องใช้รางตามแนวชายคา" : "จับสันลอนใช้รางตามแนวชายคา")
@@ -585,21 +595,35 @@ extension RoofPageWide {
             ("ตัวจับกลาง", "\(q?.midClamps ?? 0)"), ("ตัวจับปลาย", "\(q?.endClamps ?? 0)"), ("ชุดราง", "\(q?.runs ?? 0)"),
             ("ตัดแผง", "\(q?.cuts ?? 0)"), ("ขาชนสิ่งกีดขวาง", "0"),
         ] + walkwayCells(q?.walkway)
+        // closed until tapped; an overloaded structure stays in view
         return VStack(alignment: .leading, spacing: 4) {
-            A3Label(text: "ปริมาณวัสดุ (BOQ)")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
-                ForEach(Array(cells.enumerated()), id: \.offset) { _, c in
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(c.1).font(.sarabunFixed(16, .bold)).monospacedDigit()
-                        Text(c.0).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Button { withAnimation(.easeInOut(duration: 0.2)) { boqOpen.toggle() } } label: {
+                HStack(spacing: 6) {
+                    A3Label(text: "ปริมาณวัสดุ (BOQ)")
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                        .rotationEffect(.degrees(boqOpen ? 180 : 0))
+                }
+                .frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ปริมาณวัสดุ BOQ")
+            .accessibilityValue(boqOpen ? "เปิดอยู่" : "ปิดอยู่")
+            if boqOpen {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
+                    ForEach(Array(cells.enumerated()), id: \.offset) { _, c in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(c.1).font(.sarabunFixed(16, .bold)).monospacedDigit()
+                            Text(c.0).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .background(Self.track, in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityElement(children: .combine)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 8).padding(.vertical, 5)
-                    .background(Self.track, in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityElement(children: .combine)
                 }
             }
-            if let q, q.modules > 0 {
+            if let q, q.modules > 0, boqOpen || q.overLoad {
                 let over = q.overLoad
                 Label(RoofMount.loadLine(q), systemImage: over ? "exclamationmark.triangle.fill" : "scalemass")
                     .font(.sarabunFixed(12.5, over ? .bold : .regular)).foregroundStyle(over ? Theme.dangerText : Theme.inkMuted)

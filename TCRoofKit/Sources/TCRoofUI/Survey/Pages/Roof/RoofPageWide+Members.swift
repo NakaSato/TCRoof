@@ -22,30 +22,13 @@ extension RoofPageWide {
     }
 
     func memberRow(_ n: Int) -> some View {
-        let f = Roof.frame(values), m = f.members[n - 1], size = Roof.memberSize(values, n)
-        let spacing = StructureSizes.split(Roof.member(values, n)).spacing
-        let off = Roof.memberOffList(values, n)
+        let m = Roof.frame(values).members[n - 1], size = Roof.memberSize(values, n)
         return Button { member = member == n ? nil : n } label: {
-            HStack(spacing: 10) {
-                Text("\(n)").font(.sarabunFixed(17, .bold)).foregroundStyle(Self.red).frame(width: 14)
-                Image("c1-member-\(f.iconFamily)-\(n)", bundle: .module).resizable().scaledToFit().frame(width: 60, height: 32)
-                Text(m.name).font(.sarabunFixed(16)).lineLimit(1).minimumScaleFactor(0.7).truncationMode(.tail)
-                Spacer(minLength: 6)
-                if off { Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("ขนาดนี้ไม่อยู่ในรายการของชนิดโครงนี้") }
-                if !size.isEmpty {
-                    Image("c1-profile-\(Roof.profile(size))", bundle: .module).resizable().scaledToFit().frame(width: 20, height: 20)
-                }
-                Text(size.isEmpty ? "เลือกขนาด" : size + (spacing.isEmpty ? "" : " " + spacing))
-                    .font(.sarabunFixed(16, !size.isEmpty && size != "-" && size != m.defaultSize ? .bold : .regular))
-                    .foregroundStyle(size.isEmpty ? Theme.primary : size == "-" ? Theme.disabledText : Theme.navy)
-                    .lineLimit(1).minimumScaleFactor(0.8).truncationMode(.middle)
-                    .layoutPriority(1)
-                Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8)).foregroundStyle(Theme.primary)
-            }
-            .padding(.horizontal, 4)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(member == n ? Self.soft : Color.clear)
-            .contentShape(Rectangle())
+            AnyView(narrow ? AnyView(memberRowNarrow(n)) : AnyView(memberRowWide(n)))
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(member == n ? Self.soft : Color.clear)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("เลือกขนาด \(n) \(m.name) " + (size.isEmpty ? "ยังไม่เลือก" : size))
@@ -53,6 +36,60 @@ extension RoofPageWide {
         .popover(isPresented: Binding(get: { member == n }, set: { if !$0 { member = nil } })) {
             AnyView(memberPicker(n).presentationCompactAdaptation(.popover))
         }
+    }
+
+    /// The size as the row shows it: bold when it isn't the frame type's standard, the prompt when none, grey when "-".
+    func memberSizeText(_ n: Int) -> some View {
+        let m = Roof.frame(values).members[n - 1], size = Roof.memberSize(values, n)
+        let spacing = StructureSizes.split(Roof.member(values, n)).spacing
+        return Text(size.isEmpty ? "เลือกขนาด" : size + (spacing.isEmpty ? "" : " " + spacing))
+            .font(.sarabunFixed(16, !size.isEmpty && size != "-" && size != m.defaultSize ? .bold : .regular))
+            .foregroundStyle(size.isEmpty ? Theme.primary : size == "-" ? Theme.disabledText : Theme.navy)
+            .lineLimit(1).minimumScaleFactor(0.8).truncationMode(.middle)
+    }
+
+    /// The warning dot (a size outside the frame type's list) and the profile's icon.
+    @ViewBuilder func memberSizeMarks(_ n: Int) -> some View {
+        let size = Roof.memberSize(values, n)
+        if Roof.memberOffList(values, n) {
+            Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("ขนาดนี้ไม่อยู่ในรายการของชนิดโครงนี้")
+        }
+        if !size.isEmpty {
+            Image("c1-profile-\(Roof.profile(size))", bundle: .module).resizable().scaledToFit().frame(width: 20, height: 20)
+        }
+    }
+
+    /// iPad: one line, the name then the size.
+    func memberRowWide(_ n: Int) -> some View {
+        let f = Roof.frame(values), m = f.members[n - 1]
+        return HStack(spacing: 10) {
+            Text("\(n)").font(.sarabunFixed(17, .bold)).foregroundStyle(Self.red).frame(width: 14)
+            Image("c1-member-\(f.iconFamily)-\(n)", bundle: .module).resizable().scaledToFit().frame(width: 60, height: 32)
+            Text(m.name).font(.sarabunFixed(16)).lineLimit(1).minimumScaleFactor(0.7).truncationMode(.tail)
+            Spacer(minLength: 6)
+            memberSizeMarks(n)
+            memberSizeText(n).layoutPriority(1)
+            Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8)).foregroundStyle(Theme.primary)
+        }
+    }
+
+    /// iPhone: the name over the size, so a long size (C-100x50x20x2.3 @1.00M) no longer takes the name's room.
+    func memberRowNarrow(_ n: Int) -> some View {
+        let f = Roof.frame(values), m = f.members[n - 1]
+        return HStack(spacing: 8) {
+            Text("\(n)").font(.sarabunFixed(17, .bold)).foregroundStyle(Self.red).frame(width: 14)
+            Image("c1-member-\(f.iconFamily)-\(n)", bundle: .module).resizable().scaledToFit().frame(width: 56, height: 30)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(m.name).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                HStack(spacing: 6) {
+                    memberSizeMarks(n)
+                    memberSizeText(n)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8)).foregroundStyle(Theme.primary)
+        }
+        .padding(.vertical, 3)
     }
 
     func memberPicker(_ n: Int) -> some View {

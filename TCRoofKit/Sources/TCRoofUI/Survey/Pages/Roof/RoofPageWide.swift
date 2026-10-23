@@ -66,6 +66,7 @@ struct RoofPageWide: View {
     @State var mountYield: RoofMountYield.Estimate?
     @State var mountYieldBusy = false
     @State var energyOpen = false
+    @State var rowSectionOpen = false
     @State var mountYieldFor: RoofMountYield.Inputs?
     /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
     @State var roofDesignSaved: String?
@@ -171,7 +172,7 @@ struct RoofPageWide: View {
             GeometryReader { geo in
                 VStack(spacing: 12) {
                     AnyView(planCard).frame(maxHeight: .infinity)
-                    AnyView(sectionCard).frame(height: min(297, max(200, geo.size.height * 0.375)))
+                    AnyView(sectionCard).frame(height: sectionHeight(min(297, max(200, geo.size.height * 0.375))))
                 }
             }
             .frame(width: leftWidth)
@@ -217,7 +218,7 @@ struct RoofPageWide: View {
                 // iPhone: the legend and footer sit under the plan, so the plan gets the full width
                 AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
-                AnyView(sectionCard).frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
+                AnyView(sectionCard).frame(height: sectionHeight(min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72)))
                 AnyView(roofCard).id("info")
                 if mode != .pv { AnyView(membersCard).id("members") }
                 AnyView(photosCard).id("photos")

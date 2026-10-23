@@ -74,6 +74,8 @@ struct RoofPageWide: View {
     @State var showStandard = false
     /// Layouts the last search tried, and its best count.
     @State var mountTried: (tried: Int, best: Int)?
+    /// The directions the last `หาผังที่ได้แผงมากที่สุด` tried, with their module counts.
+    @State var mountArrangements: [RoofMount.Arrangement] = []
     /// The row the section card shows (face index, row).
     @State var sectionRow: (face: Int, row: Int) = (0, 0)
 
@@ -469,6 +471,17 @@ extension RoofPageWide {
         case "landscape": mode = .pv
         // แผงบนหลังคา: the tab in view, a module's or an obstacle's details, remove mode, the standard, a hip roof
         case "pvtab": mode = .pv; scrollTarget = "info"
+        // หาผังที่ได้แผงมากที่สุด run on the demo roof (every direction tried), its button and list in view
+        case "pvmost":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v); c.landscape = false; c.railsAcross = false; c.removed = []; RoofMount.setChoice(&v, c)
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            await searchMostModules()
+            scrollTarget = "most"
         // the yearly energy card: A1's GPS in Bangkok (the hourly engine) or in Chiang Mai (no weather: SolarModel)
         case "pvyield", "pvyieldfar":
             job.values["gps"] = .text(state == "pvyield" ? "13.7563, 100.5018" : "18.7883, 98.9853")

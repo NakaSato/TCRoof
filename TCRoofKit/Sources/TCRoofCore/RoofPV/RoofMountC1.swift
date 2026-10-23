@@ -205,6 +205,51 @@ public enum RoofMount {
         return cleared
     }
 
+    /// One module and rail direction the most-modules search tried, and the modules its best layout holds.
+    public struct Arrangement: Sendable, Equatable {
+        public var landscape: Bool, railsAcross: Bool, modules: Int
+        public var label: String {
+            (landscape ? "ด้านยาวตามแป" : "ด้านยาวตัดแป") + (railsAcross ? " | รางตัดแป" : " | รางตามแป")
+        }
+    }
+
+    /// `หาผังที่ได้แผงมากที่สุด`: the best layout of every module direction and, with L-feet on purlins, every rail direction
+    /// (รางตัดแป frees the rows from the purlins), keeping the one with the most modules. A tie keeps the current
+    /// directions. The choice comes back with its placements and digest, the removed slots cleared; `tried` adds up the
+    /// placements every direction's search tried.
+    public static func mostModules(_ v: Values, latitude: Double?, longitude: Double? = nil)
+        -> (choice: Choice, layout: RoofMountLayout, arrangements: [Arrangement], tried: Int) {
+        let input = input(v, latitude: latitude, longitude: longitude), base = choice(v), std = base.standardOrDefault
+        let onPurlins = !input.tileRoof && !base.ribClamp
+        var combos: [(landscape: Bool, railsAcross: Bool)] = onPurlins
+            ? [(false, false), (true, true), (false, true), (true, false)]
+            : [(false, base.railsAcross), (true, base.railsAcross)]
+        // landscape on rails along the purlins needs two purlins in the short side's clamping zone
+        if onPurlins, !RoofMountLayout.purlinsHoldLandscape(std, purlinSpacing: input.purlinSpacing) {
+            combos.removeAll { $0.landscape && !$0.railsAcross }
+        }
+        // the current directions first, so they win a tie
+        let current = (landscape: base.landscape, railsAcross: base.railsAcross)
+        if let i = combos.firstIndex(where: { $0 == current }) { combos.insert(combos.remove(at: i), at: 0) }
+
+        var best: (choice: Choice, layout: RoofMountLayout)?
+        var arrangements: [Arrangement] = [], tried = 0
+        for combo in combos {
+            var c = base
+            c.landscape = combo.landscape; c.railsAcross = combo.railsAcross
+            c.placements = [:]; c.removed = []
+            let layout = RoofMountLayout.best(input, standard: std, options: c.options(tile: input.tileRoof))
+            let n = layout.quantities.modules
+            tried += layout.faces.map(\.tried).reduce(0, +)
+            arrangements.append(Arrangement(landscape: combo.landscape, railsAcross: onPurlins && combo.railsAcross, modules: n))
+            if n > best?.layout.quantities.modules ?? -1 { best = (c, layout) }
+        }
+        var (c, layout) = best!
+        c.placements = layout.placements
+        c.digest = digest(input, choice: c)
+        return (c, layout, arrangements, tried)
+    }
+
     // MARK: - Report lines (docs/specs/roof-pv-layout.md §7)
 
     /// `ผังแผงอัตโนมัติ 216 แผง | 129.6 kWp | 191.1 MWh/ปี | ลาด 15° | แป @1.20 ม. | 4 แถว`. `energy` (MWh) is the

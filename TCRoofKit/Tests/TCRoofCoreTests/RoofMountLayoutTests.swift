@@ -371,3 +371,50 @@ final class RoofMountLayoutTests: XCTestCase {
         XCTAssertGreaterThan(SolarModel.yield(lat: 17, tilt: 15, azimuthFromSouth: 0), SolarModel.yield(lat: 17, tilt: 15, azimuthFromSouth: 180))
     }
 }
+
+/// `หาผังที่ได้แผงมากที่สุด` tries every module and rail direction and keeps the one with the most modules.
+final class RoofMountMostModulesTests: XCTestCase {
+    static func roof(purlins: Double) -> Values {
+        var v = Values()
+        v["spansX"] = .text("1.5,6,6,6,6,1.5"); v["spansY"] = .text("1.5,6,6,1.5")
+        v[Roof.Key.purlin] = .text(String(purlins))
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        return v
+    }
+
+    func testKeepsTheDirectionWithTheMostModules() {
+        var v = Self.roof(purlins: 1.2)
+        let r = RoofMount.mostModules(v, latitude: 15)
+        XCTAssertEqual(r.arrangements.count, Set(r.arrangements.map(\.label)).count)
+        XCTAssertGreaterThanOrEqual(r.arrangements.count, 3)
+        XCTAssertEqual(r.layout.quantities.modules, r.arrangements.map(\.modules).max())
+        XCTAssertEqual(r.arrangements.first, .init(landscape: false, railsAcross: false, modules: r.arrangements[0].modules),
+                       "the current directions are tried first")
+        // the choice comes back ready: the stored layout is the one found, not searched again
+        RoofMount.setChoice(&v, r.choice)
+        let kept = RoofMount.layout(v, latitude: 15)
+        XCTAssertFalse(kept.fresh)
+        XCTAssertEqual(kept.layout.quantities.modules, r.layout.quantities.modules)
+        XCTAssertEqual(kept.layout.options.landscape, r.choice.landscape)
+    }
+
+    /// Rails along the purlins only take rows whose rails land on purlins; rails across them never hold fewer.
+    func testRailsAcrossHoldAtLeastAsMany() {
+        let r = RoofMount.mostModules(Self.roof(purlins: 1.5), latitude: 15)
+        let along = r.arrangements.first { !$0.landscape && !$0.railsAcross }!.modules
+        let across = r.arrangements.first { !$0.landscape && $0.railsAcross }!.modules
+        XCTAssertGreaterThanOrEqual(across, along)
+        XCTAssertGreaterThanOrEqual(r.layout.quantities.modules, across)
+    }
+
+    func testATieKeepsTheCurrentDirections() {
+        var v = Self.roof(purlins: 1.2)
+        var c = RoofMount.choice(v); c.landscape = true; c.railsAcross = true
+        RoofMount.setChoice(&v, c)
+        let r = RoofMount.mostModules(v, latitude: 15)
+        XCTAssertEqual(r.arrangements.first?.landscape, true)
+        XCTAssertEqual(r.arrangements.first?.railsAcross, true)
+        let top = r.arrangements.map(\.modules).max()!
+        if r.arrangements[0].modules == top { XCTAssertTrue(r.choice.landscape && r.choice.railsAcross) }
+    }
+}

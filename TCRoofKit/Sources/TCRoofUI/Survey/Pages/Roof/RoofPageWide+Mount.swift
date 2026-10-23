@@ -35,6 +35,7 @@ extension RoofPageWide {
         guard !Task.isCancelled else { return }
         if result.fresh {
             mountTried = (result.layout.faces.map(\.tried).reduce(0, +), result.layout.quantities.modules)
+            mountArrangements = []
             var cleared = false
             update { cleared = RoofMount.remember(result.layout, in: &$0, latitude: lat) }
             if cleared { mountNote = "ผังเปลี่ยน จึงล้างแผงที่เอาออกเอง" }
@@ -44,6 +45,25 @@ extension RoofPageWide {
         // จำนวนแผงก่อนเข้าสำรวจ starts from the layout; the surveyor may still type another count
         let n = result.layout.quantities.modules
         if n > 0, values.text(Roof.Key.panels).trimmingCharacters(in: .whitespaces).isEmpty { set(Roof.Key.panels, .text(String(n))) }
+    }
+
+    /// `หาผังที่ได้แผงมากที่สุด`: every module and rail direction searched off the main thread, the one with the most
+    /// modules kept (an undo step), so the rows may leave the purlins for rails across them.
+    func searchMostModules() async {
+        let v = values, lat = latitude, lon = longitude, before = mountChoice
+        mountBusy = true
+        let r = await Task.detached(priority: .userInitiated) { RoofMount.mostModules(v, latitude: lat, longitude: lon) }.value
+        mountBusy = false
+        let n = r.layout.quantities.modules, old = mount?.quantities.modules
+        mountTried = (r.tried, n)
+        mountArrangements = r.arrangements
+        changeChoice { $0 = r.choice }
+        mount = r.layout
+        if r.choice.landscape != before.landscape || r.choice.railsAcross != before.railsAcross {
+            mountNote = "เปลี่ยนเป็น" + RoofMount.arrangement(r.layout.options) + " | ได้ \(n) แผง" + (old.map { " (เดิม \($0))" } ?? "")
+        } else {
+            mountNote = nil
+        }
     }
 
     /// Changes the tab's choices, with an undo step.
@@ -483,16 +503,32 @@ extension RoofPageWide {
                 .accessibilityValue(String(format: "%.2f เมตร", off))
             }
             Button {
-                changeChoice { $0.placements = [:]; $0.digest = "" }
-                mountNote = nil
+                Task { await searchMostModules() }
             } label: {
                 Label("หาผังที่ได้แผงมากที่สุด", systemImage: "wand.and.stars").font(.sarabunFixed(15, .bold))
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             .disabled(mountBusy)
+            .id("most")
             if let t = mountTried {
                 Text("ลอง \(t.tried.formatted()) แบบ | ดีที่สุด \(t.best) แผง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
+            if mountArrangements.count > 1 {
+                let c = mountChoice, top = mountArrangements.map(\.modules).max() ?? 0
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(mountArrangements, id: \.label) { a in
+                        let picked = a.landscape == c.landscape && a.railsAcross == (c.railsAcross && !c.ribClamp && !RoofMount.tileRoof(values))
+                        HStack(spacing: 6) {
+                            Image(systemName: picked ? "checkmark.circle.fill" : "circle").foregroundStyle(picked ? Theme.primary : Theme.inkMuted)
+                            Text(a.label).font(.sarabunFixed(12.5, picked ? .bold : .regular))
+                            Spacer(minLength: 4)
+                            Text("\(a.modules) แผง").font(.sarabunFixed(12.5, a.modules == top ? .bold : .regular)).monospacedDigit()
+                        }
+                        .foregroundStyle(picked ? Theme.navy : Theme.inkMuted)
+                    }
+                }
+                .accessibilityElement(children: .combine)
             }
         }
     }

@@ -66,6 +66,7 @@ struct RoofPageWide: View {
     @State var mountYield: RoofMountYield.Estimate?
     @State var mountYieldBusy = false
     @State var energyOpen = false
+    @State var boqOpen = false
     @State var mountYieldFor: RoofMountYield.Inputs?
     /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
     @State var roofDesignSaved: String?

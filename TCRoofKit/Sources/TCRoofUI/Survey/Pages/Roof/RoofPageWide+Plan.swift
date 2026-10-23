@@ -83,9 +83,8 @@ extension RoofPageWide {
             VStack(alignment: .leading, spacing: 8) {
                 planCaption.lineLimit(2)
                 RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
-                if mode == .pv { mountToolSwitch }
                 HStack(spacing: 8) {
-                    if mode == .structure { structureButtons } else { mountActions }
+                    if mode == .structure { structureButtons } else { mountButtons }
                     Spacer(minLength: 0)
                     cadButton
                 }

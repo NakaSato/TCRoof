@@ -71,7 +71,6 @@ struct RoofPageWide: View {
     @Environment(\.permissions) var roofPermissions
     @State var mountNote: String?
     @State var mountFace = "S"
-    @State var showStandard = false
     /// Layouts the last search tried, and its best count.
     @State var mountTried: (tried: Int, best: Int)?
     /// The directions the last `หาผังที่ได้แผงมากที่สุด` tried, with their module counts.
@@ -515,7 +514,7 @@ extension RoofPageWide {
             for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
             try? await Task.sleep(nanoseconds: 500_000_000)
             scrollTarget = "rules"
-        case "pvinfo", "pvobst", "pvremove", "pvstd", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
+        case "pvinfo", "pvobst", "pvremove", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
             // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
             let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"
             update { v in
@@ -546,7 +545,6 @@ extension RoofPageWide {
                 }
             case "pvobst": mountSelection = Roof.areas(values).last.map { .area($0.index) }
             case "pvremove": mountTool = .remove
-            case "pvstd": showStandard = true
             default: break
             }
             // the hip roof and the obstacles keep the plan in view

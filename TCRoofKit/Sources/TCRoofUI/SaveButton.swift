@@ -37,21 +37,33 @@ public struct TCSaveButton: View {
     let save: @MainActor () async -> Date
     /// Changes whenever the job's answers are edited (`Job.editVersion`).
     var version = 0
+    /// Asked before saving; false leaves the button as it is (the page asks something first, as a signed report does).
+    var shouldSave: (@MainActor () -> Bool)?
+    /// Once settled, a second line `ล่าสุด HH:mm น.` under `บันทึกแล้ว` (the daily report's bar).
+    var savedTime = false
     public init(width: CGFloat? = 104, height: CGFloat = 53, font: CGFloat = 15, radius: CGFloat = 10, circle: CGFloat = 18,
                 idle: String = "บันทึก", busy: String = "บันทึก", icon: String? = nil, pulse: Bool = false,
-                save: @escaping @MainActor () async -> Date, version: Int = 0) {
+                save: @escaping @MainActor () async -> Date, version: Int = 0, shouldSave: (@MainActor () -> Bool)? = nil,
+                savedTime: Bool = false, start: Phase? = nil) {
         self.width = width; self.height = height; self.font = font; self.radius = radius; self.circle = circle
         self.idle = idle; self.busy = busy; self.icon = icon; self.pulse = pulse; self.save = save; self.version = version
+        self.shouldSave = shouldSave; self.savedTime = savedTime
+        let phase = start ?? Self.startPhase
+        _phase = State(initialValue: phase)
+        _savedAt = State(initialValue: phase == .clean || phase == .justSaved ? Date() : nil)
     }
 
     /// The iPad step bar's `บันทึกร่างตอนนี้` (docs/ui/survey-bar-ipad): 170 × 53, 16 pt, a 22-pt check with a pulse ring.
     /// `width` / `icon` for narrower bars.
-    public static func pad(width: CGFloat = 170, icon: String? = nil, save: @escaping @MainActor () async -> Date, version: Int) -> TCSaveButton {
+    public static func pad(width: CGFloat = 170, icon: String? = nil, save: @escaping @MainActor () async -> Date, version: Int,
+                           shouldSave: (@MainActor () -> Bool)? = nil, savedTime: Bool = false, start: Phase? = nil) -> TCSaveButton {
         TCSaveButton(width: width, height: 53, font: 16, radius: Radius.md, circle: 22, idle: "บันทึกร่างตอนนี้", busy: "กำลังบันทึก",
-                     icon: icon, pulse: true, save: save, version: version)
+                     icon: icon, pulse: true, save: save, version: version, shouldSave: shouldSave, savedTime: savedTime, start: start)
     }
 
-    @State var phase = TCSaveButton.startPhase
+    @State var phase: Phase
+    /// When the last save finished, for `savedTime`.
+    @State var savedAt: Date?
     /// An edit came in since the page opened or since the last save.
     @State var edited = false
     /// The check circle's pop-in and its tick drawing, run each time `justSaved` begins.
@@ -121,7 +133,14 @@ public struct TCSaveButton: View {
                         .frame(width: 18, height: 18)
                 }
             }
-            if words { Text("บันทึกแล้ว").font(.system(size: font, weight: .semibold)).foregroundStyle(Theme.okTick) }
+            if words {
+                VStack(spacing: 0) {
+                    Text("บันทึกแล้ว").font(.system(size: font, weight: .semibold)).foregroundStyle(Theme.okTick)
+                    if savedTime, !circle, let savedAt {
+                        Text("ล่าสุด " + Self.clock.string(from: savedAt) + " น.").font(.system(size: font - 4)).foregroundStyle(Theme.okTick)
+                    }
+                }
+            }
         }
     }
 
@@ -156,8 +175,15 @@ public struct TCSaveButton: View {
         }
     }
 
+    static let clock: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "HH:mm"
+        return f
+    }()
+
     func run() {
         guard phase == .idle || phase == .clean else { return }
+        if let shouldSave, !shouldSave() { return }
         phase = .busy
         Task { @MainActor in
             // the spinner shows for at least 0.45 s, so a quick save still reads as a save
@@ -170,6 +196,7 @@ public struct TCSaveButton: View {
             await minimum
             slow.cancel()
             edited = false
+            savedAt = when
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { phase = .justSaved }
             AccessibilityNotification.Announcement("บันทึกแล้ว " + when.formatted(.dateTime.hour().minute())).post()
             try? await Task.sleep(nanoseconds: 1_350_000_000)

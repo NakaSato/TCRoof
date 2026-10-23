@@ -592,7 +592,7 @@ final class PhotoAsset {
     var survey: SurveyForm?
     var log: InstallLog?
     var inspection: Inspection?
-    /// The job of an IEC 62446 test photo.
+    /// The job of an IEC 62446 test photo, or of the station's uploaded key plan (tag `Job.keyPlanTag`).
     var iecJob: Job?
     /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).
     var driveFileID: String?

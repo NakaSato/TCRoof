@@ -110,7 +110,7 @@ struct IECTestScreen: View {
             guard !debugApplied else { return }
             debugApplied = true
             // `-iecClear YES`: the station starts with no test, its photos removed (for good)
-            if Debug.clear { for p in job.iecPhotos { context.delete(p) }; job.iecReport = nil; try? context.save() }
+            if Debug.clear { for p in job.iecPhotos where p.tag != Job.keyPlanTag { context.delete(p) }; job.iecReport = nil; try? context.save() }
             if Debug.step2 { job.seedIECStep2Demo(context: context) }
             else if Debug.step4 { job.seedIECStep4Demo(context: context) }
             else if Debug.praek { job.seedIECDemo(replacing: true); job.seedIECStep1Demo(context: context) }

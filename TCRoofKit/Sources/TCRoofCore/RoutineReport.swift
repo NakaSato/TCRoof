@@ -88,8 +88,24 @@ public enum RoutineReport {
         public var closed = false
         /// The day it was first reported; open problems carry to the next day with it.
         public var since: Date
-        public init(description: String = "", solution: String = "", closed: Bool = false, since: Date) {
+        /// The progress line it was raised under (`ProgressLine.key`), on the iPad one-page report; nil for one raised
+        /// elsewhere or before this field. The PDF's problem table doesn't use it.
+        public var lineKey: String?
+        public init(description: String = "", solution: String = "", closed: Bool = false, since: Date, lineKey: String? = nil) {
             self.description = description; self.solution = solution; self.closed = closed; self.since = since
+            self.lineKey = lineKey
+        }
+
+        enum CodingKeys: String, CodingKey { case id, description, solution, closed, since, lineKey }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+            solution = try c.decodeIfPresent(String.self, forKey: .solution) ?? ""
+            closed = try c.decodeIfPresent(Bool.self, forKey: .closed) ?? false
+            since = try c.decode(Date.self, forKey: .since)
+            lineKey = try c.decodeIfPresent(String.self, forKey: .lineKey)
         }
     }
 

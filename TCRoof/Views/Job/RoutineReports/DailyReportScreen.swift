@@ -138,9 +138,9 @@ struct DailyReportEditor: View {
 
     private var onePage: some View {
         DailyOnePage(job: job, date: date, report: $report, photos: $photos, others: others, log: log, dirty: dirty,
-                     actions: .init(saveDraft: requestSaveDraft, sign: requestSign, clearSignature: clearSignature,
-                                    preview: previewPDF, send: exportPDF, day: moveDay, open: openDay,
-                                    settings: { showSettings = true }))
+                     actions: .init(mustAsk: mustAskBeforeSaving, saveDraft: { write() }, sign: requestSign,
+                                    clearSignature: clearSignature, preview: previewPDF, send: exportPDF, day: moveDay, open: openDay,
+                                    settings: { showSettings = true }, toast: { t in withAnimation { toast = t } }))
     }
 
     private var classic: some View {
@@ -396,6 +396,14 @@ struct DailyReportEditor: View {
         try? context.save()
         saved = (report, photos)
         return target
+    }
+
+    /// The one-page bar's save button: a signed report that was edited asks first (or, for someone who can't sign,
+    /// says why), and the button stays as it is.
+    private func mustAskBeforeSaving() -> Bool {
+        guard dirty, log?.engineerSignedAt != nil else { return false }
+        if canSign { askUnsign = true } else { withAnimation { toast = signedForOthers } }
+        return true
     }
 
     /// A signed report that was edited loses its signatures on save, so ask first.

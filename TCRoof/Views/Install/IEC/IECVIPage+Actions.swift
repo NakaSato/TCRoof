@@ -252,7 +252,7 @@ extension Job {
     func seedIECStep2Demo(context: ModelContext) {
         seedIECDemo(replacing: true)
         guard var r = iecReport else { return }
-        for p in iecPhotos { context.delete(p) }
+        for p in iecPhotos where p.tag != Job.keyPlanTag { context.delete(p) }
         func store(_ reading: String) -> String {
             let id = UUID().uuidString, a = PhotoAsset(data: IECCamera.stubPhoto(reading), tag: id)
             context.insert(a); a.iecJob = self

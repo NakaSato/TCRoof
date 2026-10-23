@@ -212,4 +212,36 @@ extension RoutineReport {
             return (s, e)
         }
     }
+
+    // MARK: Task list (docs/ui/daily-report-ipad-v2 §4)
+
+    /// Today's % for a tap on the 10-segment bar's segment `segment` (1…10, each 10 % of the whole task): up to
+    /// `segment × 10`, capped at what is left; nil for a segment already done before today.
+    public static func todayFromSegment(_ segment: Int, before: Double) -> Double? {
+        let target = Double(min(max(segment, 1), 10) * 10)
+        guard target > before + 1e-9 else { return nil }
+        return min(target - before, 100 - before)
+    }
+
+    /// Today's % moved by `step` (the ± buttons, 5 %), kept within 0 … what is left.
+    public static func stepToday(_ today: Double, before: Double, by step: Double) -> Double {
+        min(max(today + step, 0), max(100 - before, 0))
+    }
+
+    /// Today's lines by location, in Thai numeric order (`หลังคา 2` before `หลังคา 10`), lines without a location last;
+    /// each group keeps the report's order.
+    public static func locationGroups(_ lines: [ProgressLine]) -> [(location: String, lines: [ProgressLine])] {
+        var order: [String] = [], groups: [String: [ProgressLine]] = [:]
+        for l in lines {
+            let k = l.location.trimmingCharacters(in: .whitespaces)
+            if groups[k] == nil { order.append(k) }
+            groups[k, default: []].append(l)
+        }
+        let thai = Locale(identifier: "th_TH")
+        order.sort { a, b in
+            if a.isEmpty != b.isEmpty { return b.isEmpty }
+            return a.compare(b, options: [.numeric, .caseInsensitive], locale: thai) == .orderedAscending
+        }
+        return order.map { ($0, groups[$0] ?? []) }
+    }
 }

@@ -585,21 +585,35 @@ extension RoofPageWide {
             ("ตัวจับกลาง", "\(q?.midClamps ?? 0)"), ("ตัวจับปลาย", "\(q?.endClamps ?? 0)"), ("ชุดราง", "\(q?.runs ?? 0)"),
             ("ตัดแผง", "\(q?.cuts ?? 0)"), ("ขาชนสิ่งกีดขวาง", "0"),
         ] + walkwayCells(q?.walkway)
+        // closed until tapped; an overloaded structure stays in view
         return VStack(alignment: .leading, spacing: 4) {
-            A3Label(text: "ปริมาณวัสดุ (BOQ)")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
-                ForEach(Array(cells.enumerated()), id: \.offset) { _, c in
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(c.1).font(.sarabunFixed(16, .bold)).monospacedDigit()
-                        Text(c.0).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Button { withAnimation(.easeInOut(duration: 0.2)) { boqOpen.toggle() } } label: {
+                HStack(spacing: 6) {
+                    A3Label(text: "ปริมาณวัสดุ (BOQ)")
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                        .rotationEffect(.degrees(boqOpen ? 180 : 0))
+                }
+                .frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ปริมาณวัสดุ BOQ")
+            .accessibilityValue(boqOpen ? "เปิดอยู่" : "ปิดอยู่")
+            if boqOpen {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: narrow ? 2 : 4), spacing: 6) {
+                    ForEach(Array(cells.enumerated()), id: \.offset) { _, c in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(c.1).font(.sarabunFixed(16, .bold)).monospacedDigit()
+                            Text(c.0).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .background(Self.track, in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityElement(children: .combine)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 8).padding(.vertical, 5)
-                    .background(Self.track, in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityElement(children: .combine)
                 }
             }
-            if let q, q.modules > 0 {
+            if let q, q.modules > 0, boqOpen || q.overLoad {
                 let over = q.overLoad
                 Label(RoofMount.loadLine(q), systemImage: over ? "exclamationmark.triangle.fill" : "scalemass")
                     .font(.sarabunFixed(12.5, over ? .bold : .regular)).foregroundStyle(over ? Theme.dangerText : Theme.inkMuted)

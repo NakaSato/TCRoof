@@ -12,13 +12,30 @@ extension RoofPageWide {
         if mode == .pv { rowSectionCard } else { frameSectionCard }
     }
 
-    /// แผงบนหลังคา: the selected row along the slope (§5.4).
+    /// The card's height: a row's section is closed until tapped on the panel layout, so it takes one row.
+    func sectionHeight(_ open: CGFloat) -> CGFloat { mode == .pv && !rowSectionOpen ? 70 : open }
+
+    /// แผงบนหลังคา: the selected row along the slope (§5.4), closed until tapped.
     var rowSectionCard: some View {
         card {
-            rowSectionStage.frame(maxWidth: .infinity, maxHeight: .infinity)
-            Divider()
-            (Text("รูปตัดแถวที่เลือก").bold().underline() + Text(" | แตะแผงบนแปลนเพื่อเปลี่ยนแถว | หน่วย ม.").foregroundColor(Theme.inkMuted))
-                .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6)
+            Button { withAnimation(.easeInOut(duration: 0.2)) { rowSectionOpen.toggle() } } label: {
+                HStack(spacing: 6) {
+                    (Text("รูปตัดแถวที่เลือก").bold().underline() + Text(" | หน่วย ม.").foregroundColor(Theme.inkMuted))
+                        .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                        .rotationEffect(.degrees(rowSectionOpen ? 180 : 0))
+                }
+                .frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("รูปตัดแถวที่เลือก")
+            .accessibilityValue(rowSectionOpen ? "เปิดอยู่" : "ปิดอยู่")
+            if rowSectionOpen {
+                Divider()
+                rowSectionStage.frame(maxWidth: .infinity, maxHeight: .infinity)
+                Text("แตะแผงบนแปลนเพื่อเปลี่ยนแถว").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
         }
     }
 

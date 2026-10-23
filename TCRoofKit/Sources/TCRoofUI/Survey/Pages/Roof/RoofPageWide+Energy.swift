@@ -4,7 +4,7 @@ import TCRoofCore
 
 /// The แผงบนหลังคา tab's yearly energy (docs/specs/energy-yield): the hourly engine on the layout's faces, modules,
 /// catalog module and B2's inverters (`RoofMountYield`), with SolarModel when an input is missing, and which of the
-/// two the numbers came from. Worked out off the main thread, 0.6 s after the layout settles.
+/// two the numbers came from. It sits inside the summary card (`mountSummary`), under the panel count. Worked out off the main thread, 0.6 s after the layout settles.
 extension RoofPageWide {
     /// What the estimate depends on; nil until the layout is on screen.
     var mountYieldInputs: RoofMountYield.Inputs? {
@@ -38,6 +38,7 @@ extension RoofPageWide {
     @ViewBuilder var mountEnergy: some View {
         if let y = currentYield {
             VStack(alignment: .leading, spacing: 6) {
+                Divider()
                 HStack(alignment: .firstTextBaseline) {
                     A3Label(text: "พลังงานต่อปี | ประมาณการเบื้องต้น")
                     Spacer(minLength: 4)
@@ -48,9 +49,8 @@ extension RoofPageWide {
                 ForEach(y.faces) { f in energyFaceRow(f) }
                 energyNotes(y)
             }
-            .padding(10)
+            .padding(.bottom, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Self.soft, in: RoundedRectangle(cornerRadius: 10))
             .accessibilityElement(children: .contain)
         } else if mountYieldBusy && mount != nil {
             HStack(spacing: 6) {

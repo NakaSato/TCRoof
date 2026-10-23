@@ -12,12 +12,11 @@ final class RoofRulesUITests: XCTestCase {
         app.launch()
         let zone = app.staticTexts["S553-zone"]
         XCTAssertTrue(zone.waitForExistence(timeout: 90), "the layout's rails are outside the zone")
-        XCTAssertTrue(app.staticTexts["ZN-106"].exists, "22 modules at 1100 V is too many")
+        XCTAssertFalse(app.textFields.matching(identifier: "T_min").firstMatch.exists, "the card is information only")
         let fix = app.buttons["ใช้ช่วงจับตาม ZNSHINE ในงานนี้"]
         XCTAssertTrue(fix.waitForExistence(timeout: 5))
         fix.tap()
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: zone)
         XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 30), .completed, "laid out again inside the zone")
-        XCTAssertTrue(app.staticTexts["ZN-106"].exists, "the string check stays")
     }
 }

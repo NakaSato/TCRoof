@@ -15,7 +15,7 @@ shared with the survey; `img/module-install-layout-ipad.png`. Phase 4 (2026-10-2
 `InstallDailyCheck`, nil on days without module work so other reports encode as before): safety ticks, mounting
 readings (bolt torques typed as a list, washer, clamps, overlap, gap, rear clearance, frame), cable, grounding and
 serials typed in; ตรวจ & ลงนาม stops while a block is open or a warn has no reason, and signing stamps the versions;
-`img/module-install-daily-ipad.png`. Not built: evidence photos per item and the barcode scan of serials (typed for now).
+`img/module-install-daily-ipad.png`. Evidence photos (`DailyModuleEvidence.swift`, tagged `module.<kind>`) and the barcode scan of serials were added after (db636dd).
 Phase 5 (2026-10-21): the string test on IEC step 2 (`StringTest.swift` in `ModuleRules`, `IECReport+StringTest.swift`,
 the app's `IECVIPage+Manual.swift`), with the module's values from its datasheet (decided 2026-10-21: ZNSHINE follows
 the datasheet): the IEC test's module (brand and power) is matched to the catalog, and each string's expected Voc is

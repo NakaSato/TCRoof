@@ -5,7 +5,7 @@ import XCTest
 /// measure a live DIMENSION.
 final class RoofSectionScaleTests: XCTestCase {
     func roof(_ f: RoofFrame, clear: Double = 5.5) -> Values {
-        var v = RoofDXFTests(name: "x", testClosure: { _ in }).roof()
+        var v = RoofDXFTests().roof()
         Roof.setFrame(&v, f); v[Roof.Key.clearHeight] = .text(String(clear))
         return v
     }
@@ -46,7 +46,7 @@ final class RoofSectionScaleTests: XCTestCase {
     }
 
     func testTheDXFWritesTheSectionsDimensions() throws {
-        let t = SketchDXFTests(name: "x", testClosure: { _ in })
+        let t = SketchDXFTests()
         let out = RoofDXF.build(roof(.pratt), parts: [.section])
         let dims = t.rawEntities(out.data).filter { $0.first?.1 == "DIMENSION" }
         XCTAssertEqual(dims.count, RoofSection(roof(.pratt), trueScale: true).dimensions.count)

@@ -7,7 +7,6 @@ import TCRoofCore
 /// selected item's details, the quantities, the standard, and the row section in the section card. The layout runs off
 /// the main thread (`refreshMount`) and its choices live on the job (`RoofMount.Choice`).
 extension RoofPageWide {
-    enum MountTool { case inspect, remove }
     enum MountSelection: Equatable { case slot(RoofMountLayout.SlotRef), area(Int) }
 
     var latitude: Double? { RoofMount.latitude(gps: job.values.text("gps")) }
@@ -103,19 +102,15 @@ extension RoofPageWide {
             .onTapGesture(coordinateSpace: .local) { p in
                 let s = fit.sketch(p)
                 if let arrow = L.shedArrow, arrow.contains(s) { turnShed(); return }
-                if mountTool == .inspect, let a = L.areas.first(where: { $0.box.inset(-4).contains(s) }) {
+                if let a = L.areas.first(where: { $0.box.inset(-4).contains(s) }) {
                     mountSelection = mountSelection == .area(a.area.index) ? nil : .area(a.area.index)
                     return
                 }
                 guard let hit = L.slots.first(where: { Self.inside($0.outline, s) }) else { mountSelection = nil; return }
-                if mountTool == .remove {
-                    toggleRemoved(hit.ref, module: hit.module)
-                } else {
-                    mountSelection = mountSelection == .slot(hit.ref) ? nil : .slot(hit.ref)
-                    if hit.module, let fi = mount?.faces.firstIndex(where: { $0.face.id == hit.ref.face }) { sectionRow = (fi, hit.ref.row) }
-                }
+                mountSelection = mountSelection == .slot(hit.ref) ? nil : .slot(hit.ref)
+                if hit.module, let fi = mount?.faces.firstIndex(where: { $0.face.id == hit.ref.face }) { sectionRow = (fi, hit.ref.row) }
             }
-            .accessibilityLabel(mountTool == .remove ? "แตะแผงเพื่อเอาออกหรือใส่คืน" : "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด")
+            .accessibilityLabel("แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด")
     }
 
     /// Turns a shed roof's low side to the opposite edge.
@@ -123,17 +118,6 @@ extension RoofPageWide {
         let on = RoofMount.shedLowAtStart(values)
         update { RoofMount.setShedLowAtStart(&$0, !on) }
         mountSelection = nil
-    }
-
-    func toggleRemoved(_ ref: RoofMountLayout.SlotRef, module: Bool) {
-        let removed = mountChoice.removed.contains(ref)
-        guard module || removed else {
-            mountSelection = .slot(ref)   // a blocked slot shows its reason instead
-            return
-        }
-        changeChoice { c in
-            if removed { c.removed.removeAll { $0 == ref } } else { c.removed.append(ref) }
-        }
     }
 
     static func inside(_ poly: [Pt], _ p: Pt) -> Bool {
@@ -333,13 +317,13 @@ extension RoofPageWide {
                 fixingLine("วิธียึด", "ขอเกี่ยวกระเบื้องยึดจันทัน")
                 standardStepper("จันทันห่าง (ม.)", \.rafterSpacing, step: 0.05)
             } else if metal {
-                fixingChoice("วิธียึด", ["ยึดเข้าแป", "จับสันลอน"], selected: c.ribClamp ? 1 : 0) { i in changeChoice { $0.ribClamp = i == 1 } }
+                fixingChoice("method", selected: c.ribClamp ? 1 : 0) { i in changeChoice { $0.ribClamp = i == 1 } }
             } else {
                 fixingLine("วิธียึด", "ยึดเข้าแป")
             }
-            fixingChoice("แนวแผง", ["ด้านยาวตัดแป", "ด้านยาวตามแป"], selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
+            fixingChoice("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
             if onPurlins {
-                fixingChoice("แนวราง", ["รางตามแป", "รางตัดแป"], selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
+                fixingChoice("rails", selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
             }
             mountDirectionNotes
             Toggle(isOn: Binding(get: { c.avoidShade }, set: { on in changeChoice { $0.avoidShade = on } })) {
@@ -352,10 +336,13 @@ extension RoofPageWide {
         .background(Self.track.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    func fixingChoice(_ title: String, _ options: [String], selected: Int, _ pick: @escaping (Int) -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            A3Label(text: title)
-            RoofSegments(options: options, selected: selected, minSegment: 90) { pick($0) }
+    /// One choice of `Resources/roof-fixing-options.json` as tiles.
+    @ViewBuilder func fixingChoice(_ id: String, selected: Int, _ pick: @escaping (Int) -> Void) -> some View {
+        if let choice = FixingChoice.all[id] {
+            VStack(alignment: .leading, spacing: 6) {
+                A3Label(text: choice.title)
+                FixingTiles(options: choice.options, selected: selected, pick: pick)
+            }
         }
     }
 
@@ -669,21 +656,15 @@ extension RoofPageWide {
 
     // MARK: plan footer and section
 
-    /// The plan's tool buttons: เอาแผงออก (a tap on a module takes it out or puts it back; off, a tap shows its details),
-    /// ย้อน and the drawing menu.
+    /// The plan's tool buttons: ย้อน and the drawing menu.
     @ViewBuilder var mountButtons: some View {
-        footerButton("เอาแผงออก", icon: "minus.square", on: mountTool == .remove, tint: Theme.primary) {
-            mountTool = mountTool == .remove ? .inspect : .remove; tool = nil
-        }
-        .accessibilityLabel("เอาแผงออก")
-        .accessibilityAddTraits(mountTool == .remove ? .isSelected : [])
         footerButton("ย้อน", icon: "arrow.uturn.backward") { undoMount() }
             .disabled(mountUndo.isEmpty).opacity(mountUndo.isEmpty ? 0.45 : 1)
             .accessibilityLabel("ย้อนกลับ")
         Menu {
-            Button { tool = .keepOut; mountTool = .inspect } label: { Label("เขตห้ามติด", systemImage: "nosign") }
+            Button { tool = .keepOut } label: { Label("เขตห้ามติด", systemImage: "nosign") }
             ForEach([RoofObstacleKind.turbine, .stack, .pipe, .other], id: \.self) { k in
-                Button { tool = .obstacle(k); mountTool = .inspect } label: { Text(k.title) }
+                Button { tool = .obstacle(k) } label: { Text(k.title) }
             }
         } label: {
             Label(tool == nil ? "วาด" : "เสร็จ", systemImage: tool == nil ? "plus.square.dashed" : "checkmark")
@@ -691,7 +672,7 @@ extension RoofPageWide {
                 .padding(.horizontal, 10).frame(minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Self.red.opacity(0.5)))
         } primaryAction: {
-            if tool != nil { tool = nil } else { tool = .keepOut; mountTool = .inspect }
+            if tool != nil { tool = nil } else { tool = .keepOut }
         }
         .accessibilityLabel(tool == nil ? "วาดเขตห้ามติดหรือสิ่งกีดขวาง" : "เสร็จการวาด")
     }

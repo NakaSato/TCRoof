@@ -60,7 +60,6 @@ struct RoofPageWide: View {
     @State var mount: RoofMountLayout?
     @State var mountBusy = false
     @State var mountSelection: MountSelection?
-    @State var mountTool: MountTool = .inspect
     @State var mountUndo: [RoofMount.Choice] = []
     /// The layout's yearly energy from the hourly engine, or SolarModel's (RoofPageWide+Energy).
     @State var mountYield: RoofMountYield.Estimate?
@@ -261,7 +260,7 @@ struct RoofPageWide: View {
     }
 
     func setMode(_ m: RoofPlan.Mode) {
-        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil; mountSelection = nil; mountTool = .inspect
+        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil; mountSelection = nil
     }
 
     @ViewBuilder var roofTab: some View {
@@ -519,7 +518,7 @@ extension RoofPageWide {
             for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
             try? await Task.sleep(nanoseconds: 500_000_000)
             scrollTarget = "rules"
-        case "pvinfo", "pvobst", "pvremove", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
+        case "pvinfo", "pvobst", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
             // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
             let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"
             update { v in
@@ -549,7 +548,6 @@ extension RoofPageWide {
                     mountSelection = .slot(.init(face: f.face.id, row: r, column: c))
                 }
             case "pvobst": mountSelection = Roof.areas(values).last.map { .area($0.index) }
-            case "pvremove": mountTool = .remove
             default: break
             }
             // the hip roof and the obstacles keep the plan in view

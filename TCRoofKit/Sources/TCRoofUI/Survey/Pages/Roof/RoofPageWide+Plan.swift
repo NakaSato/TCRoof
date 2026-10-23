@@ -70,7 +70,7 @@ extension RoofPageWide {
         if tool == .keepOut { return "ลากเพื่อวาดเขตห้ามติด" }
         if tool == .skylight { return "ลากเพื่อวาดแผ่นใส | แตะ × เพื่อลบ" }
         if case .obstacle(let k)? = tool { return "ลากเพื่อวาด" + k.title }
-        if mode == .pv { return mountTool == .remove ? "แตะแผงเพื่อเอาออก / ใส่คืน" : "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด" }
+        if mode == .pv { return "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด" }
         if editPosts { return "แตะจุดตัดกริด เพิ่ม/ลบเสา" }
         if values.photo("planPhoto") != nil { return "รายงานใช้แบบร่างที่ถ่ายไว้" }
         if values.text(Roof.Key.spansX).isEmpty || values.text(Roof.Key.spansY).isEmpty { return "ระยะตัวอย่าง | แตะเลขสีฟ้าเพื่อแก้" }

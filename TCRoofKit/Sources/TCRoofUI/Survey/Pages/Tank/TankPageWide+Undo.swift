@@ -17,7 +17,8 @@ extension TankPageWide {
             if undo.back.count > Self.undoLimit { undo.back.removeFirst() }
         }
         undo.at = now
-        undo.forward = []
+        // a published write draws the page again, so only when there is something to clear
+        if !undo.forward.isEmpty { undo.forward = [] }
     }
 
     func undoStep() {

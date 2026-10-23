@@ -180,39 +180,37 @@ extension RoofPageWide {
         mountFooter
     }
 
+    /// One card for the layout's count, kWp and yearly energy, the count the report takes, and the energy's details.
     var mountSummary: some View {
-        let q = shownMount?.quantities, big: CGFloat = narrow ? 22 : 26
-        let figures = VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(q?.modules ?? 0)").font(.sarabunFixed(big, .bold)).monospacedDigit()
-                    Text("แผง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                    Text(String(format: "%.1f", q?.kWp ?? 0)).font(.sarabunFixed(big, .bold)).monospacedDigit().padding(.leading, 6)
-                    Text("kWp").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                    Text(String(format: "%.1f", shownEnergy ?? q?.energy ?? 0)).font(.sarabunFixed(big, .bold)).monospacedDigit().padding(.leading, 6)
-                    Text("MWh/ปี").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                }
-                .lineLimit(1).minimumScaleFactor(0.7)
-                HStack(spacing: 6) {
-                    if mountBusy { ProgressView().controlSize(.small) }
-                    Text(mountBusy ? "กำลังจัดผัง…" : "แผง \(Int(mountChoice.standardOrDefault.moduleWp)) W | ขาไม่ชนสิ่งกีดขวาง")
-                        .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                }
+        let q = shownMount?.quantities
+        let energy = shownEnergy ?? q?.energy ?? 0
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                summaryTile("\(q?.modules ?? 0)", "แผง", note: mountBusy ? "กำลังจัดผัง…" : "\(Int(mountChoice.standardOrDefault.moduleWp)) W")
+                summaryTile(String(format: "%.1f", q?.kWp ?? 0), "kWp", note: "กำลังติดตั้ง")
+                summaryTile(String(format: "%.1f", energy), "MWh/ปี", note: currentYield?.p90MWh.map { String(format: "P90 %.1f", $0) } ?? "ประมาณการ")
             }
-            .accessibilityElement(children: .combine)
-        // iPhone: the figures above the panels field
-        let layout = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
-        // the count, kWp and the yearly energy with its source and faces are one card
-        return VStack(alignment: .leading, spacing: 6) {
-            layout {
-                figures
-                if !narrow { Spacer(minLength: 6) }
-                panelsField(q?.modules ?? 0)
-            }
+            panelsField(q?.modules ?? 0)
             mountEnergy
         }
-        .padding(.horizontal, 12).padding(.vertical, 6)
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    func summaryTile(_ value: String, _ unit: String, note: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value).font(.sarabunFixed(narrow ? 20 : 24, .bold)).monospacedDigit()
+                Text(unit).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+            }
+            .lineLimit(1).minimumScaleFactor(0.7)
+            Text(note).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: selection

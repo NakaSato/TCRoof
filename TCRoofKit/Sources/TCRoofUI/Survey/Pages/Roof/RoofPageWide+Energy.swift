@@ -38,18 +38,26 @@ extension RoofPageWide {
     @ViewBuilder var mountEnergy: some View {
         if let y = currentYield {
             VStack(alignment: .leading, spacing: 6) {
-                Divider()
-                HStack(alignment: .firstTextBaseline) {
-                    A3Label(text: "พลังงานต่อปี | ประมาณการเบื้องต้น")
-                    Spacer(minLength: 4)
-                    if mountYieldBusy { ProgressView().controlSize(.small) }
+                Button { withAnimation(.easeInOut(duration: 0.2)) { energyOpen.toggle() } } label: {
+                    HStack(spacing: 6) {
+                        Text("พลังงานต่อปี | ประมาณการเบื้องต้น").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                        Spacer(minLength: 4)
+                        if mountYieldBusy { ProgressView().controlSize(.small) }
+                        Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                            .rotationEffect(.degrees(energyOpen ? 180 : 0))
+                    }
+                    .frame(minHeight: 44).contentShape(Rectangle())
                 }
-                energyFigures(y)
-                energySource(y)
-                ForEach(y.faces) { f in energyFaceRow(f) }
-                energyNotes(y)
+                .buttonStyle(.plain)
+                .accessibilityLabel("รายละเอียดพลังงานต่อปี")
+                .accessibilityValue(energyOpen ? "เปิดอยู่" : "ปิดอยู่")
+                if energyOpen {
+                    energyFigures(y)
+                    energySource(y)
+                    ForEach(y.faces) { f in energyFaceRow(f) }
+                    energyNotes(y)
+                }
             }
-            .padding(.bottom, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .contain)
         } else if mountYieldBusy && mount != nil {

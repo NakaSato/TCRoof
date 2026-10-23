@@ -3,305 +3,432 @@ import PhotosUI
 import TCRoofUI
 import TCRoofCore
 
-// Today's work (docs/ui/daily-report-ipad §4): a tab per line, then the selected line's panel with its quick picks,
-// photos and standing against the MP plan, and its materials and problems under it.
+// Today's work (docs/ui/daily-report-ipad-v2 §2, §4–5): the key plan and the task list in one scroll, the lines
+// grouped by location, each with its 10-segment bar; the selected line's detail is pinned under the scroll.
 
 extension DailyOnePage {
-    var workCard: some View {
-        AnyView(
-            VStack(spacing: 0) {
-                AnyView(lineTabs)
-                if let i = report.progress.firstIndex(where: { $0.id == selected }) ?? report.progress.indices.first {
-                    Rectangle().fill(color(report.progress[i])).frame(height: 2).padding(.horizontal, 12)
-                    ScrollView {
-                        DailyLinePanel(page: self, lineID: report.progress[i].id, selection: $selected).padding(12)
-                    }
-                } else {
-                    emptyWork
-                }
-            }
-            .frame(maxHeight: .infinity)
-            .dailyCard()
-        )
+    /// A photo to take for a line, or to retake in place of one.
+    struct Shot: Identifiable {
+        let id = UUID()
+        let line: UUID
+        var replacing: UUID?
     }
 
-    private var lineTabs: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(report.progress) { line in AnyView(tab(line)) }
-                Button { showAdd = true } label: {
-                    Label("งาน", systemImage: "plus").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                        .padding(.horizontal, 14).frame(height: 56)
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
+    /// `narrow` (under 700 pt, an iPad in portrait): each row and the footer take two lines.
+    func leftCard(planHeight: CGFloat, narrow: Bool) -> some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    keyPlanCard.frame(height: planHeight).padding(.top, 10)
+                    AnyView(taskList(narrow: narrow))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("เพิ่มงาน")
+                .padding(.horizontal, 12).padding(.bottom, 12)
             }
-            .padding(12)
+            if let line = report.progress.first(where: { $0.id == selected }) ?? report.progress.first {
+                DailyLineFooter(page: self, lineID: line.id, narrow: narrow)
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .dailyCard()
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    @ViewBuilder private func taskList(narrow: Bool) -> some View {
+        if report.progress.isEmpty {
+            emptyWork
+        } else {
+            ForEach(RoutineReport.locationGroups(report.progress), id: \.location) { group in
+                groupHeader(group.location, group.lines)
+                ForEach(group.lines) { line in DailyTaskRow(page: self, lineID: line.id, narrow: narrow) }
+            }
         }
     }
 
-    private func tab(_ line: RoutineReport.ProgressLine) -> some View {
-        let on = selected == line.id, c = color(line), today = line.percent - before(line)
-        return Button { selected = line.id } label: {
-            HStack(spacing: 8) {
-                Text("\(number(line))").font(.sarabunFixed(13, .heavy)).foregroundStyle(Theme.onPrimary)
-                    .frame(width: 24, height: 24).background(c, in: Circle())
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(Self.what(line)).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    HStack(spacing: 4) {
-                        Text(line.location.isEmpty ? "ไม่ระบุตำแหน่ง" : line.location)
-                        Image(systemName: "camera.fill").font(.system(size: 9))
-                        Text("\(photos(of: line).count)")
-                    }
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                }
-                .frame(width: 150, alignment: .leading)
-                Text((today >= 0 ? "+" : "") + RoutineReport.percent(today)).font(.sarabunFixed(15, .heavy)).foregroundStyle(c)
-                    .monospacedDigit()
-            }
-            .padding(.horizontal, 10).frame(height: 56)
-            .background(on ? c.opacity(0.08) : Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(on ? c : Theme.borderSubtle, lineWidth: on ? 2 : 1))
+    private func groupHeader(_ location: String, _ lines: [RoutineReport.ProgressLine]) -> some View {
+        let gain = lines.reduce(0) { $0 + max($1.percent - before($1), 0) }
+        return HStack(spacing: 6) {
+            Image(systemName: "building.2").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.inkMuted)
+            Text(location.isEmpty ? "ไม่ระบุตำแหน่ง" : location).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+            Text("\(lines.count) งาน | +\(RoutineReport.percent(gain)) วันนี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Rectangle().fill(Theme.borderSubtle).frame(height: 1)
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+        .padding(.top, 6).padding(.horizontal, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 
     private var emptyWork: some View {
         VStack(spacing: 8) {
-            Text("ยังไม่มีงานวันนี้ | แตะ + บนผัง หรือ + งาน").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("ยังไม่มีงานวันนี้ | แตะ + บนผังเพื่อเพิ่มงานตามแผน MP").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
             TextField("ถ้าวันนี้หยุดงาน ระบุเหตุผล เช่น ฝนตกทั้งวัน", text: $report.stopReason)
                 .textFieldStyle(OutlinedFieldStyle()).frame(maxWidth: 480)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(16)
+        .frame(maxWidth: .infinity).padding(16)
     }
 
     /// The line's description, or its MP task's title.
     static func what(_ line: RoutineReport.ProgressLine) -> String {
         line.description.isEmpty ? (line.task?.title ?? "งานอื่น") : line.description
     }
+
+    // MARK: photos
+
+    /// Selects the line and takes a photo for it (in place of `replacing`): the camera, else the photo library.
+    func shoot(_ line: UUID, replacing: UUID? = nil) {
+        selected = line
+        let s = Shot(line: line, replacing: replacing)
+        #if DEBUG
+        // `-routineCameraStub YES`: a drawn photo, for the simulator
+        if UserDefaults.standard.bool(forKey: "routineCameraStub") { return took(s, Self.demoPhoto(photos.count)) }
+        #endif
+        if UIImagePickerController.isSourceTypeAvailable(.camera) { cameraShot = s } else { libraryShot = s; showShotLibrary = true }
+    }
+
+    func took(_ s: Shot, _ data: Data) {
+        let photo = DraftPhoto(data: data, tag: s.line.uuidString)
+        if let r = s.replacing, let i = photos.firstIndex(where: { $0.id == r }) { photos[i] = photo } else { photos.append(photo) }
+    }
 }
 
-/// The selected line's panel. Its own view, so the page's body stays small enough for the type checker.
-struct DailyLinePanel: View {
+/// One line of the task list. Its own view, so the page's body stays small enough for the type checker.
+struct DailyTaskRow: View {
     let page: DailyOnePage
     let lineID: UUID
-    @Binding var selection: UUID?
-    @State private var items: [PhotosPickerItem] = []
-    @State private var showCamera = false
+    var narrow = false
 
-    /// Found by id each time: a removed line leaves the panel empty instead of reading past the list.
     private var index: Int? { page.report.progress.firstIndex { $0.id == lineID } }
     private var line: RoutineReport.ProgressLine { index.map { page.report.progress[$0] } ?? .init(task: nil, description: "", location: "") }
     private var c: Color { page.color(line) }
     private var before: Double { page.before(line) }
+    private var today: Double { max(line.percent - before, 0) }
+    private var left: Double { max(100 - before, 0) }
+    private var on: Bool { page.selected == lineID }
 
     var body: some View {
-        if index != nil { content }
-    }
-
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            AnyView(titleRow)
-            AnyView(picksRow)
-            AnyView(standingRow)
-            AnyView(extras)
-        }
-        .onChange(of: items) { _, picked in
-            guard !picked.isEmpty else { return }
-            Task {
-                for item in picked {
-                    if let data = try? await item.loadTransferable(type: Data.self) { add(ImageUtil.compressed(data)) }
+        if index != nil {
+            Group {
+                if narrow {
+                    VStack(spacing: 2) {
+                        HStack(spacing: 10) { pin; AnyView(title); AnyView(camera) }
+                        HStack(spacing: 10) { AnyView(progress); Spacer(minLength: 0); AnyView(doneToggle) }
+                    }
+                } else {
+                    HStack(spacing: 10) { pin; AnyView(title); AnyView(progress); AnyView(doneToggle); AnyView(camera) }
                 }
-                items = []
             }
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(on ? c : Theme.borderSubtle, lineWidth: on ? 1.5 : 1))
+            .shadow(color: on ? c.opacity(0.18) : .clear, radius: 6, y: 2)
         }
-        .fullScreenCover(isPresented: $showCamera) { StampedCamera { add($0) } }
     }
 
-    private func add(_ data: Data) { page.photos.append(DraftPhoto(data: data, tag: line.id.uuidString)) }
+    private var pin: some View {
+        Text("\(page.number(line))").font(.sarabunFixed(13, .heavy)).foregroundStyle(Theme.onPrimary)
+            .frame(width: 26, height: 26).background(c, in: Circle())
+            .accessibilityHidden(true)
+    }
 
-    // MARK: title
-
-    private var titleRow: some View {
-        HStack(spacing: 10) {
-            Text("\(page.number(line))").font(.sarabunFixed(14, .heavy)).foregroundStyle(Theme.onPrimary)
-                .frame(width: 28, height: 28).background(c, in: Circle())
+    /// Tap = select the line and take a photo for it.
+    private var title: some View {
+        Button { page.shoot(lineID) } label: {
             VStack(alignment: .leading, spacing: 0) {
-                (Text(DailyOnePage.what(line)).bold() + Text(line.location.isEmpty ? "" : " | " + line.location))
-                    .font(.sarabunFixed(16)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text(taskLine).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(DailyOnePage.what(line)).font(.sarabunFixed(14.5, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text((line.task.map { "MP \($0.code)" } ?? "งานอื่น") + " | ก่อนวันนี้ " + RoutineReport.percent(before))
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
-            Spacer(minLength: 8)
-            statusPill
-            iconButton("shippingbox", "เพิ่มวัสดุที่\(line.location)") {
-                page.report.materials.append(.init(location: line.location))
-            }
-            iconButton("exclamationmark.triangle", "เพิ่มปัญหา", tint: Theme.warningText) {
-                page.report.problems.append(.init(since: page.date))
-            }
-            Button { remove() } label: {
-                Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.inkMuted)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel("เอางานนี้ออก")
-        }
-    }
-
-    /// `MP 2.1 | โครงสร้าง… | 20% | ใช้ สว่านไฟฟ้า`
-    private var taskLine: String {
-        guard let task = line.task else { return "งานอื่น | ไม่นับในแผน MP" }
-        let w = page.weight(task)
-        var parts = ["MP \(task.code)", task.title, RoutineReport.percent(w)]
-        let tools = RoutineReport.suggestedTools(task)
-        if !tools.isEmpty { parts.append("ใช้ " + tools.joined(separator: ", ")) }
-        return parts.joined(separator: " | ")
-    }
-
-    private var statusPill: some View {
-        let done = line.percent >= 100 - 1e-9
-        return Text(done ? "✓ งานเสร็จ" : "เหลือ " + RoutineReport.percent(100 - line.percent))
-            .font(.sarabunFixed(12, .bold)).foregroundStyle(done ? Theme.successText : Theme.inkMuted)
-            .padding(.horizontal, 10).padding(.vertical, 3)
-            .background(done ? Theme.successSoft : Theme.segmentTrack, in: Capsule())
-    }
-
-    private func iconButton(_ symbol: String, _ label: String, tint: Color = Theme.primary, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 16, weight: .semibold)).foregroundStyle(tint)
-                .frame(width: 44, height: 44)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderOutdoor))
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(DailyOnePage.what(line) + " | แตะเพื่อถ่ายรูป")
+        .accessibilityIdentifier("dailyLineTitle")
+    }
+
+    private func set(_ t: Double) {
+        guard let i = index else { return }
+        page.selected = lineID
+        page.report.progress[i].percent = min(before + t, 100)
+    }
+
+    private var progress: some View {
+        HStack(spacing: 6) {
+            stepButton("minus", "ลด 5%", -5)
+            bar
+            stepButton("plus", "เพิ่ม 5%", 5)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(RoutineReport.percent(line.percent)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                if today > 1e-9 {
+                    Text("+" + RoutineReport.percent(today) + " วันนี้").font(.sarabunFixed(11.5, .bold)).foregroundStyle(c).monospacedDigit()
+                } else {
+                    Text("ยังไม่กรอก").font(.sarabunFixed(11.5, .bold)).foregroundStyle(Theme.pending)
+                }
+            }
+            .lineLimit(1).frame(width: 74, alignment: .leading)
+        }
+    }
+
+    private func stepButton(_ icon: String, _ label: String, _ step: Double) -> some View {
+        let next = RoutineReport.stepToday(today, before: before, by: step)
+        return Button { set(next) } label: {
+            Image(systemName: icon).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.navy)
+                .frame(width: 36, height: 40)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderOutdoor))
+                .frame(height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(abs(next - today) < 1e-9)
         .accessibilityLabel(label)
+    }
+
+    /// Ten segments of 10 % of the whole task: grey before today, the line's colour to today's end, light after.
+    private var bar: some View {
+        let width: CGFloat = 150
+        return HStack(spacing: 2) {
+            ForEach(1...10, id: \.self) { i in
+                let end = Double(i * 10)
+                Rectangle().fill(end <= before + 1e-9 ? Theme.inkFaint : end <= line.percent + 1e-9 ? c : Theme.segmentTrack)
+            }
+        }
+        .frame(height: 16)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .frame(width: width, height: 44)
+        .contentShape(Rectangle())
+        .gesture(SpatialTapGesture().onEnded { tap in
+            let segment = Int(tap.location.x / width * 10) + 1
+            if let t = RoutineReport.todayFromSegment(segment, before: before) { set(t) }
+        })
+        .accessibilityElement()
+        .accessibilityLabel("ความคืบหน้า " + DailyOnePage.what(line))
+        .accessibilityValue("ถึง " + RoutineReport.percent(line.percent))
+        .accessibilityAdjustableAction { dir in
+            switch dir {
+            case .increment:
+                if let t = RoutineReport.todayFromSegment(Int((line.percent / 10).rounded(.down)) + 1, before: before) { set(t) }
+            case .decrement:
+                set(max((line.percent / 10).rounded(.up) * 10 - 10 - before, 0))
+            @unknown default: break
+            }
+        }
+    }
+
+    private var doneToggle: some View {
+        let done = left > 1e-9 && today >= left - 1e-9
+        return Button { set(done ? 0 : left) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy))
+                Text("เสร็จ").font(.sarabunFixed(14, .bold))
+            }
+                .fixedSize()
+                .foregroundStyle(done ? Theme.onPrimary : Theme.success)
+                .padding(.horizontal, 12).frame(height: 40)
+                .background(done ? Theme.success : Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.success, lineWidth: done ? 0 : 1.2))
+                .frame(height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(left <= 1e-9)
+        .accessibilityLabel(left <= 1e-9 ? "เสร็จก่อนวันนี้แล้ว" : "เสร็จวันนี้")
+        .accessibilityAddTraits(done ? .isSelected : [])
+    }
+
+    private var camera: some View {
+        let count = page.photos(of: line).count
+        return Button { page.shoot(lineID) } label: {
+            Image(systemName: "camera").font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(count > 0 ? Theme.primary : Theme.pending)
+                .frame(width: 44, height: 40)
+                .background(count > 0 ? Theme.primarySoft : Theme.pendingSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    if count == 0 {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Theme.warning, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if count > 0 {
+                        Text("\(count)").font(.sarabunFixed(10, .heavy)).foregroundStyle(Theme.onPrimary)
+                            .frame(minWidth: 16, minHeight: 16).background(c, in: Circle()).offset(x: 5, y: -5)
+                    }
+                }
+                .frame(height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(count > 0 ? "ถ่ายรูปงานนี้ มี \(count) รูป" : "ถ่ายรูปงานนี้ ยังไม่มีรูป")
+    }
+}
+
+/// The selected line's detail, pinned under the scroll: its standing, photos, materials and problems.
+struct DailyLineFooter: View {
+    let page: DailyOnePage
+    let lineID: UUID
+    var narrow = false
+
+    private var index: Int? { page.report.progress.firstIndex { $0.id == lineID } }
+    private var line: RoutineReport.ProgressLine { index.map { page.report.progress[$0] } ?? .init(task: nil, description: "", location: "") }
+    private var c: Color { page.color(line) }
+
+    var body: some View {
+        if index != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                if narrow {
+                    HStack(spacing: 12) { AnyView(summary); Spacer(minLength: 8); AnyView(actionsRow) }
+                    AnyView(photoStrip)
+                } else {
+                    HStack(spacing: 12) {
+                        AnyView(summary)
+                        AnyView(photoStrip)
+                        Spacer(minLength: 8)
+                        AnyView(actionsRow)
+                    }
+                }
+                AnyView(materialRows)
+                AnyView(problemRows)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Theme.surface)
+            .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+        }
+    }
+
+    private var summary: some View {
+        HStack(spacing: 10) {
+            Text("\(page.number(line))").font(.sarabunFixed(15, .heavy)).foregroundStyle(Theme.onPrimary)
+                .frame(width: 32, height: 32).background(c, in: Circle())
+            VStack(alignment: .leading, spacing: 0) {
+                Text(DailyOnePage.what(line)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                standing.font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
+            }
+        }
+        .frame(minWidth: 150, maxWidth: 260, alignment: .leading)
+    }
+
+    /// `หลังคา 1 | 0% → 100% | เร็วกว่า 23.0%`: the variance is the MP task's actual against its plan to date.
+    private var standing: Text {
+        let place = line.location.isEmpty ? "ไม่ระบุตำแหน่ง" : line.location
+        let head = Text(place + " | " + RoutineReport.percent(page.before(line)) + " → " + RoutineReport.percent(line.percent))
+        guard let task = line.task, !page.plan.isEmpty else { return head }
+        let st = RoutineReport.standing(task, on: page.report, previous: page.previous, settings: page.settings, plan: page.plan)
+        let words = abs(st.behind) < 0.05 ? "ตามแผน" : st.behind > 0 ? String(format: "ช้ากว่า %.1f%%", st.behind) : String(format: "เร็วกว่า %.1f%%", -st.behind)
+        return head + Text(" | ") + Text(words).bold().foregroundColor(st.behind > 0.05 ? Theme.dangerText : Theme.successText)
+    }
+
+    private var photoStrip: some View {
+        let shots = page.photos(of: line)
+        return HStack(spacing: 6) {
+            ForEach(shots, id: \.photo.id) { p in
+                Button { page.shoot(lineID, replacing: p.photo.id) } label: {
+                    Thumbnail(data: p.photo.data).frame(width: 48, height: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay(alignment: .topLeading) {
+                            Text("\(p.index)").font(.sarabunFixed(10, .heavy)).foregroundStyle(Theme.onPrimary)
+                                .frame(width: 16, height: 16).background(c, in: Circle()).padding(3)
+                        }
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("ลบรูป", role: .destructive) { page.photos.removeAll { $0.id == p.photo.id } }
+                }
+                .accessibilityLabel("รูปที่ \(p.index) | แตะเพื่อถ่ายใหม่")
+            }
+            Button { page.shoot(lineID) } label: {
+                VStack(spacing: 0) {
+                    Image(systemName: "camera").font(.system(size: 14, weight: .semibold))
+                    Text("ถ่าย").font(.sarabunFixed(10.5))
+                }
+                .foregroundStyle(Theme.inkMuted)
+                .frame(width: 48, height: 48)
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ถ่ายรูปงานนี้เพิ่ม")
+            Text(shots.isEmpty ? "ถ่ายอย่างน้อย 1 รูป" : "\(shots.count) รูป | ใช้ในรายงาน")
+                .font(.sarabunFixed(12)).foregroundStyle(shots.isEmpty ? Theme.pending : Theme.inkMuted).lineLimit(1).fixedSize()
+        }
+    }
+
+    private var actionsRow: some View {
+        HStack(spacing: 8) {
+            pill("+ วัสดุ", ink: Theme.primary, fill: Theme.primarySoft) {
+                page.report.materials.append(.init(location: line.location))
+            }
+            pill("+ ปัญหา", ink: Theme.warningText, fill: Theme.warningSoft) {
+                page.report.problems.append(.init(since: page.date, lineKey: line.key))
+            }
+            Button { remove() } label: {
+                Text("เอาออก").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted).fixedSize().frame(minWidth: 44, minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("เอางานนี้ออกจากวันนี้")
+        }
+    }
+
+    private func pill(_ title: String, ink: Color, fill: Color, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(ink).fixedSize()
+                .padding(.horizontal, 12).frame(height: 40)
+                .background(fill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .frame(height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func remove() {
         let id = line.id
         page.photos.removeAll { $0.tag == id.uuidString }
         page.report.progress.removeAll { $0.id == id }
-        selection = page.report.progress.first?.id
-    }
-
-    // MARK: วันนี้
-
-    private var picksRow: some View {
-        let picks = RoutineReport.quickPicks(before: before), today = line.percent - before
-        return HStack(spacing: 8) {
-            Text("วันนี้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-            if picks.isEmpty {
-                Text("งานนี้เสร็จก่อนวันนี้แล้ว").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
-            }
-            ForEach(Array(picks.enumerated()), id: \.offset) { i, x in
-                let on = abs(today - x) < 1e-6, last = i == picks.count - 1
-                Button { setToday(on ? 0 : x) } label: {
-                    Text(last ? "เสร็จ" : "+" + RoutineReport.percent(x)).font(.sarabunFixed(17, .bold))
-                        .foregroundStyle(Theme.navy)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .background(on ? Theme.dailyPick : Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(on ? Theme.success : Theme.borderOutdoor))
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
-            }
-            AnyView(photoStrip)
-        }
-    }
-
-    private func setToday(_ x: Double) {
-        guard let i = index else { return }
-        page.report.progress[i].percent = min(before + x, 100)
-    }
-
-    private var photoStrip: some View {
-        HStack(spacing: 6) {
-            ForEach(page.photos(of: line), id: \.photo.id) { p in
-                Thumbnail(data: p.photo.data).frame(width: 52, height: 52)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(alignment: .bottomLeading) {
-                        Text("\(p.index)").font(.sarabunFixed(10, .heavy)).foregroundStyle(Theme.navy)
-                            .frame(width: 16, height: 16).background(Theme.paper, in: RoundedRectangle(cornerRadius: 4)).padding(3)
-                    }
-                    .contextMenu {
-                        Button("ลบรูป", role: .destructive) { page.photos.removeAll { $0.id == p.photo.id } }
-                    }
-                    .accessibilityLabel("รูปที่ \(p.index)")
-            }
-            cameraButton
-        }
-    }
-
-    @ViewBuilder private var cameraButton: some View {
-        let label = Image(systemName: "camera").font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(page.photos(of: line).isEmpty ? Theme.warningText : Theme.inkMuted)
-            .frame(width: 52, height: 52)
-            .background(page.photos(of: line).isEmpty ? Theme.pendingSoft : Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.borderOutdoor))
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            Button { showCamera = true } label: { label }.buttonStyle(.plain).accessibilityLabel("ถ่ายรูปงานนี้")
-        } else {
-            PhotosPicker(selection: $items, maxSelectionCount: 10, matching: .images) { label }.accessibilityLabel("เพิ่มรูปงานนี้")
-        }
-    }
-
-    // MARK: standing
-
-    private var standingRow: some View {
-        let gain = RoutineReport.stationGain(line, on: page.report, previous: page.previous, settings: page.settings, weight: page.weight)
-        return HStack(spacing: 10) {
-            (Text(RoutineReport.percent(before) + " → ") + Text(RoutineReport.percent(line.percent)).bold()
-             + Text(" | สถานี " + (gain >= 0 ? "+" : "") + String(format: "%.1f%%", gain)))
-                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().fixedSize()
-            GeometryReader { g in
-                Capsule().fill(Theme.segmentTrack)
-                    .overlay(alignment: .leading) { Capsule().fill(c).frame(width: g.size.width * min(line.percent, 100) / 100) }
-            }
-            .frame(height: 6)
-            if let task = line.task, !page.plan.isEmpty {
-                let st = RoutineReport.standing(task, on: page.report, previous: page.previous, settings: page.settings, plan: page.plan)
-                (Text("MP \(task.code) รวม ") + Text(RoutineReport.percent(st.actual)).bold() + Text(" / แผน " + RoutineReport.percent(st.planned) + " ")
-                 + Text(abs(st.behind) < 0.05 ? "ตามแผน" : st.behind > 0 ? String(format: "ช้ากว่า %.1f%%", st.behind) : String(format: "เร็วกว่า %.1f%%", -st.behind))
-                    .bold().foregroundColor(st.behind > 0.05 ? Theme.dangerText : Theme.successText))
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().fixedSize()
-            }
-        }
+        page.selected = page.report.progress.first?.id
     }
 
     // MARK: materials and problems
 
-    @ViewBuilder private var extras: some View {
+    @ViewBuilder private var materialRows: some View {
         let mats = page.report.materials.indices.filter { page.report.materials[$0].location == line.location }
         ForEach(mats, id: \.self) { i in
             let m = page.$report.materials[i]
             HStack(spacing: 8) {
-                Image(systemName: "shippingbox").foregroundStyle(Theme.primary).frame(width: 24)
+                rowLabel("วัสดุ", Theme.primary)
                 TextField("รายการวัสดุ", text: m.name).textFieldStyle(OutlinedFieldStyle(dense: true))
                 TextField("จำนวน", value: Binding(get: { m.wrappedValue.qty > 0 ? m.wrappedValue.qty : nil }, set: { m.wrappedValue.qty = $0 ?? 0 }),
-                          format: .number).keyboardType(.decimalPad).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 90)
-                TextField("หน่วย", text: m.unit).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 80)
-                Button { page.report.materials.remove(at: i) } label: {
-                    Image(systemName: "trash").foregroundStyle(Theme.danger).frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("ลบวัสดุ")
+                          format: .number).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                    .textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 80)
+                TextField("หน่วย", text: m.unit).textFieldStyle(OutlinedFieldStyle(dense: true)).frame(width: 90)
+                removeButton("ลบวัสดุ") { page.report.materials.remove(at: i) }
             }
         }
-        ForEach(page.report.problems.indices.filter { !page.report.problems[$0].closed }, id: \.self) { i in
+    }
+
+    /// The line's open problems, and open ones raised under no line (carried from earlier days), so they can be closed.
+    @ViewBuilder private var problemRows: some View {
+        let key = line.key
+        let rows = page.report.problems.indices.filter { i in
+            let p = page.report.problems[i]
+            return !p.closed && (p.lineKey == key || p.lineKey == nil)
+        }
+        ForEach(rows, id: \.self) { i in
             let p = page.$report.problems[i]
             HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle").foregroundStyle(Theme.warningText).frame(width: 24)
+                rowLabel("ปัญหา", Theme.pending)
                 TextField("ปัญหา", text: p.description).textFieldStyle(OutlinedFieldStyle(dense: true))
                 TextField("แนวทางแก้ไข", text: p.solution).textFieldStyle(OutlinedFieldStyle(dense: true))
-                Button { page.report.problems[i].closed = true } label: {
-                    Text("ปิดเรื่อง").font(.sarabunFixed(13, .bold)).frame(minWidth: 44, minHeight: 44)
+                // one carried from an earlier day is closed (it stays in that day's report); today's is removed
+                removeButton(p.wrappedValue.since < page.date ? "ปิดเรื่อง" : "ลบปัญหา") {
+                    if page.report.problems[i].since < page.date { page.report.problems[i].closed = true } else { page.report.problems.remove(at: i) }
                 }
-                Button { page.report.problems.remove(at: i) } label: {
-                    Image(systemName: "trash").foregroundStyle(Theme.danger).frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("ลบปัญหา")
             }
         }
+    }
+
+    private func rowLabel(_ text: String, _ ink: Color) -> some View {
+        Text(text).font(.sarabunFixed(12.5, .bold)).foregroundStyle(ink).frame(width: 44, alignment: .leading)
+    }
+
+    private func removeButton(_ label: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }

@@ -40,7 +40,11 @@ enum ProjectDriveUpload {
                 return (p, RoutineReport.photoFolder(date: log.date), "\(day) ลายเซ็น \(role).png")
             }
         }
-        return daily + pendingICLPhotos(job) + pendingIECPhotos(job)
+        // the station's uploaded key plan, beside the daily reports
+        let keyPlan = job.uploadedKeyPlan.flatMap { p -> (PhotoAsset, [String], String)? in
+            p.driveFileID == nil && !p.data.isEmpty ? (p, ["Key Plan"], "Key Plan \(job.stationName).jpg") : nil
+        }
+        return daily + (keyPlan.map { [$0] } ?? []) + pendingICLPhotos(job) + pendingIECPhotos(job)
     }
 
     /// The ICL's step photos (`ICL รูปถ่าย/โครงสร้าง 1.jpg`).

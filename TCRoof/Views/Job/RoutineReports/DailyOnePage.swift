@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import TCRoofUI
 import TCRoofCore
 
@@ -8,6 +9,9 @@ import TCRoofCore
 /// report, the photos, saving and signing; this view lays them out.
 struct DailyOnePage: View {
     struct Actions {
+        /// True when saving now must ask first (a signed report loses its signature), and it has asked.
+        var mustAsk: () -> Bool
+        /// Keeps the day as a draft.
         var saveDraft: () -> Void
         var sign: () -> Void
         var clearSignature: () -> Void
@@ -18,6 +22,7 @@ struct DailyOnePage: View {
         /// Opens a day picked in the calendar, the same way as `day`.
         var open: (Date) -> Void
         var settings: () -> Void
+        var toast: (String) -> Void
     }
 
     @Bindable var job: Job
@@ -38,7 +43,24 @@ struct DailyOnePage: View {
     /// `-routineDailyState signedcard`: a signed card with a drawn example signature, not saved.
     @State var demoSign: (at: Date, drawn: Data)?
     #endif
-    @State var showAdd = false
+    // the key plan (v2 §3): its picture, decoded once per change, and the upload menu's pickers
+    @State var keyPlanImage: UIImage?
+    @State var keyPlanVersion = 0
+    @State var showUpload = false
+    @State var showScan = false
+    @State var showLibrary = false
+    @State var libraryItem: PhotosPickerItem?
+    @State var showFiles = false
+    @State var pdfPick: KeyPlanFile.PDFPick?
+    @State var cropPick: KeyPlanFile.CropPick?
+    // a line's photo: the camera, or the library where there is none
+    @State var cameraShot: Shot?
+    @State var libraryShot: Shot?
+    @State var showShotLibrary = false
+    @State var shotItem: PhotosPickerItem?
+    /// Counts edits, for the save button (it goes back to idle on a change).
+    @State var editVersion = 0
+    @Environment(\.modelContext) var context
     @Environment(\.dismiss) private var dismiss
 
     var settings: RoutineReport.Settings { job.routineSettings }
@@ -53,10 +75,9 @@ struct DailyOnePage: View {
             header
             GeometryReader { g in
                 HStack(alignment: .top, spacing: 16) {
-                    VStack(spacing: 12) {
-                        keyPlanCard.frame(height: max(320, g.size.height * 0.6))
-                        workCard
-                    }
+                    // the plan about as tall as its picture is at the card's width, leaving room for the list
+                    let width = g.size.width - 63 * 2 - 16 - 384
+                    leftCard(planHeight: min(560, max(300, width * 0.66), g.size.height - 280), narrow: width < 700)
                     rightColumn.frame(width: 384)
                 }
                 .padding(.horizontal, 63).padding(.top, 16).padding(.bottom, 12)
@@ -67,15 +88,21 @@ struct DailyOnePage: View {
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $mapFull) { fullPlan }
         .sheet(isPresented: $showWeather) { DailyWeatherSheet(report: $report) }
-        .sheet(isPresented: $showAdd) {
-            AddWorkSheet(locations: settings.locations, plan: plan.isEmpty ? nil : plan) { lines in
-                for var l in lines where !report.progress.contains(where: { $0.key == l.key }) {
-                    l.percent = RoutineReport.previousPercent(l, before: report.date, in: others)
-                    report.progress.append(l)
-                    selected = l.id
-                }
+        .fullScreenCover(item: $cameraShot) { s in StampedCamera { took(s, $0) } }
+        .photosPicker(isPresented: $showShotLibrary, selection: $shotItem, matching: .images)
+        .onChange(of: shotItem) { _, item in
+            guard let item, let s = libraryShot else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) { took(s, ImageUtil.compressed(data)) }
+                shotItem = nil; libraryShot = nil
             }
         }
+        // (a `-routineDailyState saving|saved|clean` screenshot keeps its button through the board's seeded lines)
+        .onChange(of: report) { _, _ in if Debug.savePhase == nil { editVersion += 1 } }
+        .onChange(of: photos.map(\.id)) { _, _ in if Debug.savePhase == nil { editVersion += 1 } }
+        // the uploaded plan arriving from another device
+        .onChange(of: job.uploadedKeyPlan?.needsDownload) { _, _ in keyPlanVersion += 1 }
+        .task(id: keyPlanVersion) { keyPlanImage = job.keyPlanPicture?.image }
         // after the editor has loaded the day
         .task {
             if selected == nil { selected = report.progress.first?.id }
@@ -152,10 +179,8 @@ struct DailyOnePage: View {
             Text(why.map { "ยังส่งไม่ได้ | " + $0 } ?? "ครบทุกส่วนแล้ว | พร้อมส่ง PDF 3 หน้า")
                 .font(.sarabunFixed(14)).foregroundStyle(why == nil ? Theme.successText : Theme.navy).lineLimit(1)
             Spacer(minLength: 12)
-            Button(action: actions.saveDraft) {
-                Text("บันทึกร่างตอนนี้").font(.sarabunFixed(16, .bold)).frame(width: 150, height: 44)
-            }
-            .buttonStyle(TCButtonStyle(.secondary, size: .card))
+            TCSaveButton.pad(width: 190, save: { actions.saveDraft(); return .now }, version: editVersion,
+                             shouldSave: { !actions.mustAsk() }, savedTime: true, start: Debug.savePhase)
             Button(action: actions.preview) {
                 VStack(spacing: 0) {
                     Text("PDF 3 หน้า").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
@@ -187,7 +212,8 @@ struct DailyOnePage: View {
     /// `-routineDailyState task2|tools|dropdown|signed|map|daybefore|material` (with `-screen daily`): states 02–08 of
     /// docs/ui/daily-report-ipad. `daybefore` is the editor's (it opens the day before); `dropdown` can't open a system
     /// menu by itself, so it shows state 01. docs/ui/daily-report-ipad-v3 adds `datepicker`, `worktime`,
-    /// `worktimecustom` (07:00–17:00) and `signedcard`, none saved. Release builds have none.
+    /// `worktimecustom` (07:00–17:00) and `signedcard`, and docs/ui/daily-report-ipad-v2 `upload` (the upload menu)
+    /// and `saving|saved|clean` (the save button), none saved. Release builds have none.
     enum Debug {
         #if DEBUG
         static let state = UserDefaults.standard.string(forKey: "routineDailyState") ?? ""
@@ -195,6 +221,15 @@ struct DailyOnePage: View {
         static let state = ""
         #endif
         static var tools: Bool { state == "tools" }
+        /// `saving`, `saved`, `clean`: the save button in that state (v2 states 04–06).
+        static var savePhase: TCSaveButton.Phase? {
+            switch state {
+            case "saving": .saving
+            case "saved": .justSaved
+            case "clean": .clean
+            default: nil
+            }
+        }
     }
 
     #if DEBUG
@@ -250,6 +285,12 @@ struct DailyOnePage: View {
 
     private func debugState() {
         seedBoard()
+        // `-routineKeyPlanUpload YES`: the station gets a drawn uploaded key plan (for good) when it has none
+        if UserDefaults.standard.bool(forKey: "routineKeyPlanUpload"), job.uploadedKeyPlan == nil,
+           let data = Job.demoPicture.image.jpegData(compressionQuality: 0.7) {
+            job.setKeyPlan(data, context: context)
+            keyPlanVersion += 1
+        }
         switch Debug.state {
         case "task2":
             guard report.progress.count > 1 else { break }
@@ -257,6 +298,7 @@ struct DailyOnePage: View {
             selected = line.id
             report.progress[1].percent = min(before(line) + 50, 100)
         case "map": mapFull = true
+        case "upload": showUpload = true
         case "datepicker": pop = .date
         case "worktime": pop = .time
         case "worktimecustom":
@@ -268,7 +310,7 @@ struct DailyOnePage: View {
         case "material":
             if let line = report.progress.first(where: { $0.id == selected }) {
                 report.materials.append(.init(name: "รางอะลูมิเนียม", location: line.location, qty: 12, unit: "เส้น"))
-                report.problems.append(.init(description: "รางส่งมาไม่ครบ", solution: "แจ้งผู้ขายส่งเพิ่ม", since: date))
+                report.problems.append(.init(description: "รางส่งมาไม่ครบ", solution: "แจ้งผู้ขายส่งเพิ่ม", since: date, lineKey: line.key))
             }
         default: break
         }
@@ -293,12 +335,8 @@ extension DailyOnePage {
     private var teamCard: some View {
         let labour = RoutineReport.labour(report)
         return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("ทีมงานวันนี้").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                Spacer()
-                Text("\(report.crewTotal) คน | เครื่องมือ \(report.tools.reduce(0) { $0 + $1.count }) รายการ")
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            }
+            // the tiles and the tabs carry the counts (v2 §7)
+            Text("ทีมงานวันนี้").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
             HStack(spacing: 8) {
                 labourTile("แรงงานวันนี้", labour.total, "\(labour.people) คน × \(labour.hours) ชม.")
                 labourTile("ทำงานได้จริง", labour.working, labour.rainHours > 0 ? "หักฝน \(labour.rainHours) ชม." : "ไม่มีฝนในเวลางาน")

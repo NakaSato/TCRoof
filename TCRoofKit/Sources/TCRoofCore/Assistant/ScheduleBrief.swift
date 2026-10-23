@@ -163,7 +163,7 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
 
     static func round(_ x: Double) -> Double { (x * 10).rounded() / 10 }
 
-    static func day(_ d: Date, calendar cal: Calendar) -> String {
+    public static func day(_ d: Date, calendar cal: Calendar) -> String {
         let c = cal.dateComponents([.year, .month, .day], from: d)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }

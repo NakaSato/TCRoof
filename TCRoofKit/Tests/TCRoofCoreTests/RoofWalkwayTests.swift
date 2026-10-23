@@ -206,3 +206,50 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertTrue(body.contains("G-DETL"))
     }
 }
+
+/// The walkway along the ridge: on by default for a new layout, alone (no walkways down the faces), with the roof
+/// access at its end; a job kept before it existed keeps its layout.
+final class RoofRidgeWalkwayTests: XCTestCase {
+    func plain() -> Values {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        return v
+    }
+
+    func testANewLayoutHasTheRidgeWalkwayOnly() throws {
+        let v = plain()
+        XCTAssertTrue(RoofMount.choice(v).walkwayRidge)
+        let m = RoofMount.layout(v, latitude: 15).layout
+        XCTAssertTrue(m.options.ridgeWalkway); XCTAssertFalse(m.options.walkwayCentre)
+        let ws = RoofWalkway.walkways(m)
+        XCTAssertEqual(ws.count, 1)
+        let r = try XCTUnwrap(ws.first)
+        XCTAssertTrue(r.ridge); XCTAssertTrue(r.access, "a gable roof is reached up its gable wall at the ridge")
+        // the modules keep clear of the band
+        XCTAssertGreaterThanOrEqual(m.standard.setRidge, RoofWalkway.ridgeClear)
+        XCTAssertEqual(m.quantities.walkway.cagedLadders, 1)
+    }
+
+    func testSwitchedOffAndAnOlderJobHaveNone() {
+        var v = plain()
+        var c = RoofMount.choice(v); c.walkwayRidge = false; RoofMount.setChoice(&v, c)
+        XCTAssertTrue(RoofWalkway.walkways(RoofMount.layout(v, latitude: 15).layout).isEmpty)
+        // a choice kept before the switch existed (no key): off, and the same digest as then
+        let old = #"{"avoidShade":true,"digest":"","faceUse":{},"placements":{},"removed":[],"ribClamp":false}"#
+        let decoded = try! JSONDecoder().decode(RoofMount.Choice.self, from: Data(old.utf8))
+        XCTAssertFalse(decoded.walkwayRidge)
+        let input = RoofMount.input(plain(), latitude: 15)
+        var before = RoofMount.Choice(); before.walkwayRidge = false
+        XCTAssertEqual(RoofMount.digest(input, choice: decoded), RoofMount.digest(input, choice: before))
+        XCTAssertNotEqual(RoofMount.digest(input, choice: RoofMount.Choice()), RoofMount.digest(input, choice: before))
+    }
+
+    /// A shed roof has no ridge: no ridge walkway, and the layout as without it.
+    func testAShedRoofHasNone() {
+        var v = plain()
+        v[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        let m = RoofMount.layout(v, latitude: 15).layout
+        XCTAssertFalse(RoofWalkway.walkways(m).contains { $0.ridge })
+    }
+}

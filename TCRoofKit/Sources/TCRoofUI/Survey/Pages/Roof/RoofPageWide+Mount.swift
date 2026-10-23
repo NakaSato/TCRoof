@@ -393,25 +393,39 @@ extension RoofPageWide {
         }
     }
 
-    /// A walkway one module wide down the middle of each face (most roofs, the default once on) or after every n
-    /// columns, for cleaning (off by default).
+    /// The walkway along the ridge with the roof access (on by default), and one module wide down the middle of each
+    /// face (the default once on) or after every n columns, for cleaning (off by default).
     var mountWalkway: some View {
         let n = mountChoice.walkwayEvery, centre = mountChoice.walkwayCentre
+        let hasRidge = RoofMount.shape(values) != .shed, ridge = hasRidge && (mountChoice.walkwayRidge || centre)
         return VStack(alignment: .leading, spacing: 2) {
-            Toggle(isOn: Binding(get: { n > 0 || centre }, set: { on in changeChoice { $0.walkwayCentre = on; $0.walkwayEvery = 0 } })) {
+            // along the ridge: on by default; the walkways down the middle need it, so switching it off clears them
+            if hasRidge {
+                Toggle(isOn: Binding(get: { ridge }, set: { on in changeChoice { $0.walkwayRidge = on; if !on { $0.walkwayCentre = false } } })) {
+                    Text("ทางเดินตามสันหลังคา").font(.sarabunFixed(14))
+                }
+                .tint(Theme.primary).frame(minHeight: 44)
+                if ridge { mountAccessSide }
+            }
+            Toggle(isOn: Binding(get: { n > 0 || centre }, set: { on in changeChoice { c in
+                c.walkwayCentre = on; c.walkwayEvery = 0
+                if on && hasRidge { c.walkwayRidge = true }
+            } })) {
                 Text("เว้นทางเดินล้างแผง").font(.sarabunFixed(14))
             }
             .tint(Theme.primary).frame(minHeight: 44)
             if n > 0 || centre {
                 Picker("ตำแหน่งทางเดิน", selection: Binding(get: { centre ? 0 : 1 }, set: { pick in
-                    changeChoice { $0.walkwayCentre = pick == 0; $0.walkwayEvery = pick == 0 ? 0 : max(2, n == 0 ? 8 : n) }
+                    changeChoice { c in
+                        c.walkwayCentre = pick == 0; c.walkwayEvery = pick == 0 ? 0 : max(2, n == 0 ? 8 : n)
+                        if pick == 0 { c.walkwayRidge = true }
+                    }
                 })) {
                     Text("กลางหลังคา").tag(0)
                     Text("ทุก n แผง").tag(1)
                 }
                 .pickerStyle(.segmented).frame(minHeight: 44)
             }
-            if centre { mountAccessSide }
             if n > 0 {
                 HStack(spacing: 6) {
                     Text("ทางเดินกว้าง 1 แผง ทุก").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
@@ -422,6 +436,7 @@ extension RoofPageWide {
                 }
             }
         }
+        .id("walkway")
     }
 
     /// Down the middle the roof is reached up the gable wall at one end of the ridge walkway (the CAD file's cat ladder

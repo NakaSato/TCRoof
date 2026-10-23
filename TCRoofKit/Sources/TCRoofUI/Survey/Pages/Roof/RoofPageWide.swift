@@ -159,7 +159,7 @@ struct RoofPageWide: View {
         case Roof.Key.shape, Roof.Key.material: mode = .structure; scrollTarget = "info"; dropdown = key
         case Roof.Key.structure: mode = .structure; scrollTarget = "info"
         default:
-            if key.hasPrefix("comp"), let n = Int(key.dropFirst(4)) { scrollTarget = "members"; member = n }
+            if key.hasPrefix("comp"), let n = Int(key.dropFirst(4)) { mode = .structure; scrollTarget = "members"; member = n }
         }
     }
 
@@ -189,8 +189,13 @@ struct RoofPageWide: View {
 
     func cardsColumn(fill: Bool) -> some View {
         VStack(spacing: 12) {
-            AnyView(roofCard)
-            AnyView(membersCard).frame(maxHeight: fill ? .infinity : nil)
+            // the panel layout doesn't edit the members, so their card stays with the structure
+            if mode == .pv {
+                AnyView(roofCard).frame(maxHeight: fill ? .infinity : nil)
+            } else {
+                AnyView(roofCard)
+                AnyView(membersCard).frame(maxHeight: fill ? .infinity : nil)
+            }
             AnyView(photosCard)
         }
     }
@@ -212,7 +217,7 @@ struct RoofPageWide: View {
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
                 AnyView(sectionCard).frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
                 AnyView(roofCard).id("info")
-                AnyView(membersCard).id("members")
+                if mode != .pv { AnyView(membersCard).id("members") }
                 AnyView(photosCard).id("photos")
             }
             .padding(.bottom, 4)

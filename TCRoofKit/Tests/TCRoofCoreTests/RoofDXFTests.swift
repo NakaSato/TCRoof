@@ -8,6 +8,8 @@ final class RoofDXFTests: XCTestCase {
         v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
         Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
         v["obst"] = .obstacles([Obstacle(x: "6.4", y: "1", w: "0.8", h: "6.6", kind: "sky")])
+        // no walkway at all (a new layout has the ridge walkway), so the golden files keep the plain plan
+        var c = RoofMount.choice(v); c.walkwayRidge = false; RoofMount.setChoice(&v, c)
         return v
     }
     func lines(_ d: Data) -> [String] {

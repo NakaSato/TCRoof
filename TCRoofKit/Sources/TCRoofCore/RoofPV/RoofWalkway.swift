@@ -116,10 +116,10 @@ public struct RoofWalkway: Sendable {
     /// The gable wall's point at the ridge where the ladder stands (s along the ridge), for the ridge access.
     public var wallS: Double { accessAtStart ? v0 - Self.landing : v1 + Self.landing }
 
-    /// Down the middle on a roof with a ridge (not a shed): the walkway along the ridge, centred on it, from 0.50 m in
+    /// Along the ridge, alone or with the walkways down the middle, on a roof with a ridge (not a shed): the walkway along the ridge, centred on it, from 0.50 m in
     /// from one end of the ridge to 0.50 m in from the other; nil when the ridge is shorter than a grating panel.
     public static func ridgeWalkway(_ m: RoofMountLayout) -> RoofWalkway? {
-        guard m.options.walkwayCentre, m.faces.count > 1, m.faces.contains(where: \.used) else { return nil }
+        guard m.options.ridgeWalkway, m.faces.count > 1, m.faces.contains(where: \.used) else { return nil }
         let f = m.faces.map(\.face).first { $0.edges.contains(.ridge) && ($0.span(atV: $0.slopeLength).map { $0.1 - $0.0 } ?? 0) > 2 * ridgeInset + panel }
         guard let f, let (lo, hi) = f.span(atV: f.slopeLength) else { return nil }
         return RoofWalkway(face: f, u: f.slopeLength - band / 2, width: band, v0: lo + ridgeInset, v1: hi - ridgeInset, ridge: true)

@@ -471,6 +471,17 @@ extension RoofPageWide {
         case "landscape": mode = .pv
         // แผงบนหลังคา: the tab in view, a module's or an obstacle's details, remove mode, the standard, a hip roof
         case "pvtab": mode = .pv; scrollTarget = "info"
+        // the walkway along the ridge alone (a new layout's default) on the demo gable, its switch in view
+        case "pvridge":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v); c.walkwayRidge = true; c.walkwayCentre = false; c.walkwayEvery = 0; c.removed = []
+                RoofMount.setChoice(&v, c)
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            scrollTarget = "walkway"
         // หาผังที่ได้แผงมากที่สุด run on the demo roof (every direction tried), its button and list in view
         case "pvmost":
             update { v in

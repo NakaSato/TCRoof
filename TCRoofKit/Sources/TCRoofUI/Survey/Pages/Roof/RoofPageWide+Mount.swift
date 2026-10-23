@@ -178,7 +178,6 @@ extension RoofPageWide {
         mountBearing
         mountQuantities
         mountRules.id("rules")
-        mountStandard
         mountFooter
     }
 
@@ -618,39 +617,6 @@ extension RoofPageWide {
             Text(String(format: f, s[keyPath: kp])).font(.sarabunFixed(14, .bold)).monospacedDigit().frame(minWidth: 48)
             stepButton("plus", enabled: true) { setStandard { $0[keyPath: kp] += step } }
         }
-    }
-
-    var mountStandard: some View {
-        let s = mountChoice.standardOrDefault
-        func field(_ title: String, _ kp: WritableKeyPath<RoofMountStandard, Double>, step: Double, fmt f: String = "%.2f") -> some View {
-            standardStepper(title, kp, step: step, fmt: f)
-        }
-        return DisclosureGroup(isExpanded: $showStandard) {
-            VStack(spacing: 2) {
-                field("แผงยาว (ม.)", \.moduleLength, step: 0.01)
-                field("แผงกว้าง (ม.)", \.moduleWidth, step: 0.01)
-                field("กำลังแผง (W)", \.moduleWp, step: 5, fmt: "%.0f")
-                field("น้ำหนักแผง (กก.)", \.moduleKg, step: 0.5, fmt: "%.1f")
-                field("ช่วงจับจากปลาย ต่ำสุด", \.clampMin, step: 0.01)
-                field("ช่วงจับจากปลาย สูงสุด", \.clampMax, step: 0.01)
-                if s.clampFollowsModule {
-                    Text("ช่วงจับคิดจากความยาวแผง (15–30%) | แก้เองได้").font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                field("L-foot ห่างไม่เกิน", \.footSpacing, step: 0.05)
-                field("ร่นชายคา", \.setEave, step: 0.05)
-                field("ร่นสัน", \.setRidge, step: 0.05)
-                field("ร่นขอบจั่ว / ตะเข้", \.setVerge, step: 0.05)
-                field("เกณฑ์น้ำหนัก (กก./ม²)", \.loadLimit, step: 1, fmt: "%.0f")
-                Button("คืนค่ามาตรฐาน") { changeChoice { $0.standard = nil } }
-                    .font(.sarabunFixed(14, .bold)).frame(maxWidth: .infinity, minHeight: 44)
-                    .disabled(mountChoice.standard == nil)
-            }
-            .padding(.top, 4)
-        } label: {
-            Text("มาตรฐานการยึดแผง" + (mountChoice.standard == nil ? "" : " | แก้ในงานนี้")).font(.sarabunFixed(14, .bold))
-        }
-        .tint(Theme.navy)
     }
 
     /// Edits the job's standard; the clamping zone follows a new module length until it was edited itself.

@@ -2,7 +2,7 @@ import XCTest
 
 /// C1 on the iPhone stays inside the screen: nothing on either tab (the structure and the panel layout, scrolled down
 /// the whole page) starts left of it or ends right of it. A row of buttons wider than the card pushed the whole page out
-/// once. Run on an iPhone simulator.
+/// once. The other survey pages (`testOtherPagesFit`) get the same scroll-and-measure. Run on an iPhone simulator.
 final class PhoneRoofFitUITests: XCTestCase {
     override func setUp() { continueAfterFailure = true }
 
@@ -37,4 +37,22 @@ final class PhoneRoofFitUITests: XCTestCase {
 
     func testStructureTabFits() { check(tab: nil) }
     func testPanelTabFits() { check(tab: "จัดแผง") }
+
+    /// Every other survey page, opened with `-surveyPage`, scrolled the same way.
+    func testOtherPagesFit() {
+        for page in ["site", "electrical", "sld", "inverter", "panels", "flood", "water", "backfeed", "fts", "tank", "final"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES", "-surveyPage", page]
+            app.launch()
+            sleep(page == "site" ? 12 : 6)
+            for pass in 0..<6 {
+                XCTAssertEqual(wide(app), [], "page \(page), pass \(pass)")
+                let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.78))
+                let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.30))
+                from.press(forDuration: 0.05, thenDragTo: to)
+                sleep(1)
+            }
+            app.terminate()
+        }
+    }
 }

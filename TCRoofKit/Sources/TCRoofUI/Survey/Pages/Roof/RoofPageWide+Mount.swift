@@ -679,10 +679,19 @@ extension RoofPageWide {
     // MARK: plan footer and section
 
     @ViewBuilder var mountButtons: some View {
+        mountToolSwitch.frame(minWidth: 150, maxWidth: 210)
+        mountActions
+    }
+
+    /// `ดูรายละเอียด | เอาแผงออก`; on iPhone it has a row of its own, since it and the buttons together are wider than the card.
+    var mountToolSwitch: some View {
         RoofSegments(options: ["ดูรายละเอียด", "เอาแผงออก"], selected: mountTool == .remove ? 1 : 0, minSegment: 92) { i in
             mountTool = i == 1 ? .remove : .inspect; tool = nil
         }
-        .frame(minWidth: 150, maxWidth: 210)
+    }
+
+    /// ย้อน and the drawing menu.
+    @ViewBuilder var mountActions: some View {
         footerButton("ย้อน", icon: "arrow.uturn.backward") { undoMount() }
             .disabled(mountUndo.isEmpty).opacity(mountUndo.isEmpty ? 0.45 : 1)
             .accessibilityLabel("ย้อนกลับ")

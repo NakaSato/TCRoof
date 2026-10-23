@@ -369,8 +369,8 @@ public enum RoutineReport {
 
     // MARK: Rules (§3)
 
-    static func day(_ d: Date) -> Date { calendar.startOfDay(for: d) }
-    static func add(_ d: Date, _ n: Int) -> Date { calendar.date(byAdding: .day, value: n, to: d)! }
+    public static func day(_ d: Date) -> Date { calendar.startOfDay(for: d) }
+    public static func add(_ d: Date, _ n: Int) -> Date { calendar.date(byAdding: .day, value: n, to: d)! }
 
     /// The line's % in the latest report before `date` that has it; 0 when none does.
     public static func previousPercent(_ line: ProgressLine, before date: Date, in reports: [Daily]) -> Double {

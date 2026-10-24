@@ -35,6 +35,10 @@ public struct RoofMountStandard: Codable, Equatable, Sendable {
     /// Rail and fixing weight, for the roof load.
     public var railKgPerM = 0.90
     public var footKg = 0.40
+    /// The gap between two landscape pairs along the row (วางคู่ 2 แผ่น), when the job keeps none (`RoofMount.Choice.pairGap`).
+    /// A static value, not a stored one: the standard's JSON is part of the layout's digest, so a new stored field would
+    /// send every kept layout back to the search.
+    public static let pairGap = 0.40
 
     /// The clamping zone as a share of the module length: 0.34–0.68 m on a 2.28 m module (typical manuals).
     public static let clampShare = (min: 0.34 / 2.28, max: 0.68 / 2.28)

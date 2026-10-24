@@ -337,7 +337,10 @@ extension RoofPageWide {
                 fixingLine("วิธียึด", "ยึดเข้าแป")
             }
             // iPhone has this segment in `02 แผงและการวาง`
-            if !narrow { fixingChoice("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } } }
+            if !narrow {
+                fixingChoice("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
+                landscapeArrangement
+            }
             if onPurlins {
                 fixingChoice("rails", selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
             }
@@ -425,7 +428,7 @@ extension RoofPageWide {
                 Text("ทางเดินตามสันหลังคา").font(.sarabunFixed(14))
             }
             .tint(Theme.primary).frame(minHeight: 44)
-            if ridge { mountAccessSide }
+            if ridge { ridgeWidthStepper; mountAccessSide }
         }
     }
 

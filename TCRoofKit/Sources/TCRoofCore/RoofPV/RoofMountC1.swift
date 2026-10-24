@@ -101,9 +101,15 @@ public enum RoofMount {
         public var landscape = false
         /// Rails up the slope across the purlins (รางตัดแป); L-feet on purlins only.
         public var railsAcross = false
+        /// Landscape modules in pairs along the row (วางคู่ 2 แผ่น); only with `landscape`.
+        public var landscapePairs = false
+        /// The gap between pairs (m); nil = `RoofMountStandard.pairGap`.
+        public var pairGap: Double?
+        /// The ridge walkway's clear width (m); nil = the team's detail band (`RoofWalkway.band`).
+        public var ridgeWalkwayWidth: Double?
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross, walkwayCentre, accessRight, walkwayRidge }
+        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross, walkwayCentre, accessRight, walkwayRidge, landscapePairs, pairGap, ridgeWalkwayWidth }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -120,6 +126,9 @@ public enum RoofMount {
             walkwayCentre = try c.decodeIfPresent(Bool.self, forKey: .walkwayCentre) ?? false
             accessRight = try c.decodeIfPresent(Bool.self, forKey: .accessRight) ?? false
             walkwayRidge = try c.decodeIfPresent(Bool.self, forKey: .walkwayRidge) ?? false
+            landscapePairs = try c.decodeIfPresent(Bool.self, forKey: .landscapePairs) ?? false
+            pairGap = try c.decodeIfPresent(Double.self, forKey: .pairGap)
+            ridgeWalkwayWidth = try c.decodeIfPresent(Double.self, forKey: .ridgeWalkwayWidth)
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -134,14 +143,19 @@ public enum RoofMount {
             if walkwayCentre { try c.encode(walkwayCentre, forKey: .walkwayCentre) }
             if accessRight { try c.encode(accessRight, forKey: .accessRight) }
             if walkwayRidge { try c.encode(walkwayRidge, forKey: .walkwayRidge) }
+            if landscapePairs { try c.encode(landscapePairs, forKey: .landscapePairs) }
+            try c.encodeIfPresent(pairGap, forKey: .pairGap)
+            try c.encodeIfPresent(ridgeWalkwayWidth, forKey: .ridgeWalkwayWidth)
         }
 
         /// The layout's options for a roof (tile hooks on concrete tiles).
         public func options(tile: Bool) -> RoofMountLayout.Options {
             .init(ribClamp: ribClamp && !tile, avoidShade: avoidShade, faceUse: faceUse, removed: Set(removed), tileHooks: tile,
                   walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross, walkwayCentre: walkwayCentre,
-                  walkwayAccessRight: accessRight, walkwayRidge: walkwayRidge)
+                  walkwayAccessRight: accessRight, walkwayRidge: walkwayRidge, landscapePairs: landscapePairs,
+                  pairGap: pairGapOrDefault, ridgeWalkwayWidth: ridgeWalkwayWidth)
         }
+        public var pairGapOrDefault: Double { pairGap ?? RoofMountStandard.pairGap }
         public var standardOrDefault: RoofMountStandard { standard ?? RoofMount.defaultStandard }
     }
 
@@ -174,6 +188,8 @@ public enum RoofMount {
         if c.walkwayRidge && !c.walkwayCentre && input.shape != .shed { parts.append("walkRidge") }
         if c.landscape { parts.append("landscape") }
         if c.railsAcross && !c.ribClamp && !input.tileRoof { parts.append("railsAcross") }
+        if c.landscape && c.landscapePairs { parts.append(String(format: "pairs %.3f", c.pairGapOrDefault)) }
+        if let w = c.ridgeWalkwayWidth, c.walkwayRidge || c.walkwayCentre, input.shape != .shed { parts.append(String(format: "ridgeWidth %.3f", w)) }
         parts += input.obstacles.map { o in
             String(format: "%@ %.2f %.2f %.2f %.2f %.2f %@", o.kind.rawValue, o.x, o.y, o.w, o.h, o.heightOrDefault, o.coverable ? "c" : "")
         }

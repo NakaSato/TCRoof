@@ -62,6 +62,8 @@ public struct RoofPlan: Sendable {
     public static let ink = RGBA(hex: 0x111111), purlC = RGBA(hex: 0x6B7280), postInk = RGBA(hex: 0x111827)
     public static let skyFill = RGBA(hex: 0xCFE8F7), skyLine = RGBA(hex: 0x2E8FDB), pvFill = RGBA(hex: 0x1F4F8F), pvLine = RGBA(hex: 0xDCE6F2)
     static let redText = RGBA(hex: 0xB42318), amber = RGBA(hex: 0xB45309)
+    /// The pair numbers: `Theme.primary`'s value (the core draws without the UI's theme).
+    static let pairInk = RGBA(hex: 0x1F6FB5)
 
     /// The plan's path keys drawn for member row n (1…7) of this frame (the design's `HLK`).
     public static func highlightKeys(_ f: RoofFrame, member n: Int) -> [String] {
@@ -84,8 +86,11 @@ public struct RoofPlan: Sendable {
     ///   - highlight: member row 1…7 whose lines are redrawn in red.
     ///   - mount: the PV layout drawn in the PV mode (`RoofMount.layout`); nil draws none yet.
     ///   - selected: slots drawn highlighted (a run of modules, or one slot).
+    ///   - pairNumbers: number landscape pairs (`Options.pairs`) above the top row, tagged `pairs`; the page only, so the
+    ///     report and the CAD file leave them out.
     public init(_ v: Values, mode: Mode = .structure, chips: Bool = false, dragging: (Double, Double, Double, Double)? = nil,
-                highlight: Int? = nil, mount: RoofMountLayout? = nil, selected: Set<RoofMountLayout.SlotRef> = []) {
+                highlight: Int? = nil, mount: RoofMountLayout? = nil, selected: Set<RoofMountLayout.SlotRef> = [],
+                pairNumbers: Bool = false) {
         var d = Drawer(v, pv: mode == .pv)
         d.background()
         if !d.pvMode { d.purlins() }
@@ -98,7 +103,7 @@ public struct RoofPlan: Sendable {
         if !d.pvMode { d.purlinCallout(); d.slopeArrows() }
         d.areas()
         if d.pvMode {
-            if let mount { d.pvMount(mount, selected: selected) }
+            if let mount { d.pvMount(mount, selected: selected); if pairNumbers { d.pairNumbers(mount) } }
             if let r = dragging { d.dragged(r, fill: RGBA(0.851, 0.271, 0.231, 0.12), line: Self.red, width: 1.4) }
             d.keepOutLabels()
         } else if let r = dragging {
@@ -446,6 +451,37 @@ private struct Drawer {
         pv.kWp = q.kWp
     }
 
+    /// Landscape pairs numbered 1, 2, 3 … along the row, on a white chip just outside the row nearest the plan's top
+    /// (one face's: the one whose row is highest on the plan), as docs/ui/survey-c1-iphone-pv-fix01 states/05.
+    mutating func pairNumbers(_ m: RoofMountLayout) {
+        guard m.options.pairs else { return }
+        let w = m.moduleAlong, l = m.moduleUp, g = m.standard.moduleGap
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        // the row with a module highest on the plan, and the side of it that faces the plan's top
+        var top: (f: RoofMountLayout.Face, row: RoofMountLayout.Row, v: Double, y: Double)?
+        for f in m.faces where f.used {
+            for row in f.rows where row.slots.contains(where: \.isModule) {
+                let u = row.slots.first(where: \.isModule)!.u
+                for v in [row.v, row.v + l] {
+                    let y = P(f.face, u, v).y
+                    if y < top?.y ?? .infinity { top = (f, row, v, y) }
+                }
+            }
+        }
+        guard let top else { return }
+        let outward = top.v == top.row.v ? -0.35 : l + 0.35
+        // numbered as the plan reads, left to right (a face's u can run either way on plan)
+        let points = stride(from: 0, to: top.row.slots.count - 1, by: 2).compactMap { c -> Pt? in
+            let a = top.row.slots[c], b = top.row.slots[c + 1]
+            return a.isModule && b.isModule ? P(top.f.face, a.u + w + g / 2, top.row.v + outward) : nil
+        }.sorted { $0.x < $1.x }
+        for (i, at) in points.enumerated() {
+            let label = "\(i + 1)", tw = ApproxText.width(label, size: 8.5, bold: true) + 6
+            add(.rect(Box(at.x - tw / 2, at.y - 5.5, tw, 11), stroke: nil, fill: .white), "pairs")
+            add(.text(label, at: at, size: 8.5, bold: true, color: RoofPlan.pairInk, align: .center), "pairs")
+        }
+    }
+
     /// `ใต้ | 105 แผง` at a face's middle, on a white box (and on a single-face roof the arrow to its low eave).
     mutating func faceLabel(_ f: RoofMountLayout.Face, _ m: RoofMountLayout) {
         let face = f.face, cutRed = RGBA(hex: 0xE0433A)
@@ -477,6 +513,12 @@ private struct Drawer {
             add(.polygon(box(0, W.band, w.v0, w.v1), stroke: ink.withAlpha(0.7), fill: band.withAlpha(0.85), width: 0.5), "walkway")
             add(.polygon(box(W.grating.0, W.grating.1, w.v0, w.v1), stroke: ink, fill: ink.withAlpha(0.18), width: 0.4), "walkway")
             add(.line(Q(W.lifeline, w.v0), Q(W.lifeline, w.v1), width: 0.7, color: life, dash: [3, 2]), "walkway")
+            // a ridge walkway wider than the detail: its clear width, dashed, the band centred in it
+            if w.width > W.band + 1e-6 {
+                let side = (w.width - W.band) / 2
+                let clear = box(-side, W.band + side, w.v0, w.v1)
+                add(.polyline(clear + [clear[0]], width: 0.5, color: ink.withAlpha(0.6), dash: [3, 2]), "walkclear")
+            }
             guard w.access else { continue }
             let c = (W.grating.0 + W.grating.1) / 2
             if w.ridge {

@@ -31,13 +31,28 @@ public struct RoofMountLayout: Sendable {
         /// Rails up the slope across the purlins (รางตัดแป), an L-foot on each purlin they cross; false = rails along the
         /// eave on the purlins (รางตามแป). Only with L-feet on purlins.
         public var railsAcross = false
+        /// Landscape modules in pairs along the row (วางคู่ 2 แผ่น): the two of a pair `moduleGap` apart, the next pair
+        /// `pairGap` after. Only with `landscape`.
+        public var landscapePairs = false
+        /// The gap between two pairs along the row (m).
+        public var pairGap = RoofMountStandard.pairGap
+        /// The ridge walkway's clear width (m); nil = the team's detail band (`RoofWalkway.band`). Never narrower.
+        public var ridgeWalkwayWidth: Double?
         public init(ribClamp: Bool = false, avoidShade: Bool = true, faceUse: [String: Bool] = [:], removed: Set<SlotRef> = [],
                     tileHooks: Bool = false, walkwayEvery: Int = 0, landscape: Bool = false, railsAcross: Bool = false,
-                    walkwayCentre: Bool = false, walkwayAccessRight: Bool = false, walkwayRidge: Bool = false) {
+                    walkwayCentre: Bool = false, walkwayAccessRight: Bool = false, walkwayRidge: Bool = false,
+                    landscapePairs: Bool = false, pairGap: Double = RoofMountStandard.pairGap, ridgeWalkwayWidth: Double? = nil) {
             self.ribClamp = ribClamp; self.avoidShade = avoidShade; self.faceUse = faceUse; self.removed = removed
             self.tileHooks = tileHooks; self.walkwayEvery = walkwayEvery; self.landscape = landscape; self.railsAcross = railsAcross
             self.walkwayCentre = walkwayCentre; self.walkwayAccessRight = walkwayAccessRight; self.walkwayRidge = walkwayRidge
+            self.landscapePairs = landscapePairs; self.pairGap = pairGap; self.ridgeWalkwayWidth = ridgeWalkwayWidth
         }
+        /// Modules go in pairs along the row.
+        public var pairs: Bool { landscape && landscapePairs }
+        /// The ridge walkway's clear width as laid: the chosen one, never under the detail's band.
+        public var ridgeWidth: Double { max(ridgeWalkwayWidth ?? RoofWalkway.band, RoofWalkway.band) }
+        /// The ridge setback the ridge walkway asks for: half its clear width and 50 mm (`RoofWalkway.ridgeClear` for the band).
+        public var ridgeClear: Double { ridgeWalkwayWidth == nil ? RoofWalkway.ridgeClear : ridgeWidth / 2 + 0.05 }
         /// The walkway along the ridge: on its own or with the walkways down the middle.
         public var ridgeWalkway: Bool { walkwayRidge || walkwayCentre }
         /// Rows don't depend on the purlins: rib clamps or tile hooks hold the rails at ¼ and ¾ of the module, or the rails
@@ -151,6 +166,8 @@ public struct RoofMountLayout: Sendable {
     public static let cutForFeet = "ตัดแผงเพื่อไม่ให้ขาโครงสร้างชนสิ่งกีดขวาง"
     public static let removedByUser = "เอาออกเอง"
     public static let walkway = "ทางเดินสำหรับล้างแผง"
+    /// The other half of a landscape pair is out, so this one is too (a run holds whole pairs).
+    public static let pairBroken = "แผงคู่ขาดอีกแผ่น"
 
     /// Sun positions for the shade: 09:00–15:00 every 30 minutes on 21 Dec, 21 Jun and 21 Mar.
     static let shadeTimes: [(day: Int, time: Double)] = [355, 172, 80].flatMap { d in (18...30).map { (d, Double($0) / 2) } }
@@ -162,7 +179,7 @@ public struct RoofMountLayout: Sendable {
                                placements: [String: Placement] = [:]) -> RoofMountLayout {
         var standard = standard
         // the walkway along the ridge needs half its band clear of modules on each face
-        if options.ridgeWalkway, input.shape != .shed { standard.setRidge = max(standard.setRidge, RoofWalkway.ridgeClear) }
+        if options.ridgeWalkway, input.shape != .shed { standard.setRidge = max(standard.setRidge, options.ridgeClear) }
         let roof = RoofFaces(input, standard: standard)
         let purlins = RoofFaces.purlins(slopeLength: roof.slopeLength, spacing: input.purlinSpacing)
         let contexts = Context.make(roof, input: input, standard: standard, options: options, purlins: purlins)
@@ -418,7 +435,12 @@ public struct RoofMountLayout: Sendable {
             for (r, row) in self.rows(shift: p.rowShift, centred: p.centred).enumerated() {
                 var slots: [Slot] = [], us: [Double] = []
                 var u = umin + standard.setVerge + p.columnOffset
-                while u + w <= umax + 1e-9 { us.append(u); u += pitch }
+                if options.pairs {
+                    // whole pairs only: a module left over at the end of the row is dropped
+                    while u + 2 * w + standard.moduleGap <= umax + 1e-9 { us += [u, u + pitch]; u += pitch + w + options.pairGap }
+                } else {
+                    while u + w <= umax + 1e-9 { us.append(u); u += pitch }
+                }
                 // the centre walkway: the column whose middle is nearest the face's middle along the eave
                 let mid = (umin + umax) / 2
                 let centre = options.walkwayCentre ? us.indices.min { abs(us[$0] + w / 2 - mid) < abs(us[$1] + w / 2 - mid) } : nil
@@ -430,15 +452,23 @@ public struct RoofMountLayout: Sendable {
                 }
                 rows.append(Row(v: row.v, rails: (row.a, row.b), slots: slots))
             }
+            breakPairs(&rows)
             var cuts = 0
             var columnRuns: [Run] = []
             if options.acrossPurlins {
-                (columnRuns, cuts) = acrossRuns(&rows)
+                // a module cut for its feet breaks its pair, which can free a run already placed: place them again
+                for _ in 0..<8 {
+                    let (runs, n) = acrossRuns(&rows)
+                    columnRuns = runs; cuts += n
+                    if !breakPairs(&rows) { break }
+                }
             }
             for r in rows.indices where !options.acrossPurlins {
                 for _ in 0..<200 {
                     var runs: [[Int]] = [], current: [Int] = []
                     for (i, s) in rows[r].slots.enumerated() {
+                        // with pairs each pair is its own run
+                        if s.isModule, options.pairs, let last = current.last, last / 2 != i / 2 { runs.append(current); current = [] }
                         if s.isModule { current.append(i) } else if !current.isEmpty { runs.append(current); current = [] }
                     }
                     if !current.isEmpty { runs.append(current) }
@@ -463,11 +493,30 @@ public struct RoofMountLayout: Sendable {
                     rows[r].slots[i].blocked = RoofMountLayout.cutForFeet
                     rows[r].slots[i].cut = true
                     cuts += 1
+                    breakPairs(&rows)
                 }
             }
             let n = rows.reduce(0) { $0 + $1.slots.filter(\.isModule).count }
             return Face(face: face, rows: rows, placement: p, modules: n, cuts: cuts, yield: 0, used: true,
                         obstacles: obstacles, shade: shade, columnRuns: columnRuns)
+        }
+
+        /// Landscape pairs (`Options.pairs`): a pair is columns 2k and 2k + 1 of a row. When one of them holds no module
+        /// (outside the face, an obstacle or its shade, a walkway, removed by hand, or cut for its feet), the other is
+        /// left out too (`pairBroken`), so every run holds whole pairs; it is not counted as a cut. True when one changed.
+        @discardableResult
+        func breakPairs(_ rows: inout [Row]) -> Bool {
+            guard options.pairs else { return false }
+            var changed = false
+            for r in rows.indices {
+                for c in stride(from: 0, to: rows[r].slots.count - 1, by: 2) {
+                    let a = rows[r].slots[c].isModule, b = rows[r].slots[c + 1].isModule
+                    guard a != b else { continue }
+                    rows[r].slots[a ? c : c + 1].blocked = RoofMountLayout.pairBroken
+                    changed = true
+                }
+            }
+            return changed
         }
 
         /// Rails up the slope across the purlins: each column's stretch of touching modules on two rails at ¼ and ¾ of the
@@ -544,9 +593,11 @@ public struct RoofMountLayout: Sendable {
         /// centred or packed rows; then fewer cut columns, then centred (§3.6).
         func best() -> Face {
             let rowPitch = up + standard.moduleGap + (options.freeRows ? 0 : purlinSpacing)
+            // the column pattern repeats every module, or every pair with its gap
+            let columnPitch = options.pairs ? 2 * along + standard.moduleGap + options.pairGap : along + standard.moduleGap
             var best: Face?, tried = 0
             for j in 0...Int(rowPitch / 0.10) {
-                for k in 0...Int((along + standard.moduleGap) / 0.05) {
+                for k in 0...Int(columnPitch / 0.05) {
                     for centred in [true, false] {
                         let f = layout(Placement(columnOffset: Double(k) * 0.05, rowShift: Double(j) * 0.10, centred: centred))
                         tried += 1

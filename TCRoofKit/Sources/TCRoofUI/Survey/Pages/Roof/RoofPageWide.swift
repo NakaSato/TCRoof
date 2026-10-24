@@ -558,6 +558,24 @@ extension RoofPageWide {
             }
             // the hip roof and the obstacles keep the plan in view
             if !["pvhip", "pvobst", "pvshed", "pvacross", "pvland"].contains(state) { scrollTarget = "info" }
+        // docs/ui/survey-c1-iphone-pv-fix01: landscape pairs with the plan in view (pvland2) or scrolled to the pair gap
+        // (pvpairs); the roof access on the left with the ridge walkway 1.00 m wide (pvaccessleft)
+        case "pvland2", "pvpairs", "pvaccessleft":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v)
+                c.removed = []; c.walkwayEvery = 0; c.walkwayCentre = false; c.walkwayRidge = true
+                let pairs = state != "pvaccessleft"
+                c.landscape = pairs; c.landscapePairs = pairs; c.railsAcross = pairs; c.ribClamp = false
+                c.accessRight = pairs ? c.accessRight : false
+                c.ridgeWalkwayWidth = pairs ? nil : 1.00
+                RoofMount.setChoice(&v, c)
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            if state == "pvpairs" { scrollTarget = "pairs" }
+            if state == "pvaccessleft" { scrollTarget = "walkway" }
         case "design", "designpv", "designlist":
             // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
             update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }

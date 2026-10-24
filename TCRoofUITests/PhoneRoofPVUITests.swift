@@ -1,7 +1,8 @@
 import XCTest
 
 /// C1's `จัดแผง` tab on the iPhone: the switch above the plan, `แก้แผง` taking a module out and `จัดแผงใหม่` bringing it
-/// back, the roof access segment and the closed `ตั้งค่าและรายละเอียดเพิ่มเติม` row. Run on an iPhone simulator.
+/// back, the roof access segment, landscape pairs and the ridge walkway's width (docs/ui/survey-c1-iphone-pv-fix01), and
+/// the closed `ตั้งค่าและรายละเอียดเพิ่มเติม` row. Run on an iPhone simulator.
 final class PhoneRoofPVUITests: XCTestCase {
     func launch(_ extra: [String] = ["-surveyFreshJob", "YES"]) -> XCUIApplication {
         let app = XCUIApplication()
@@ -38,7 +39,8 @@ final class PhoneRoofPVUITests: XCTestCase {
         scrollDown(app, until: left)
         XCTAssertTrue(left.waitForExistence(timeout: 20))
         app.buttons["ด้านขวา"].firstMatch.tap(); left.tap()
-        XCTAssertTrue(left.isSelected || left.value as? String == "1" || left.exists)
+        let picked = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: left)
+        XCTAssertEqual(XCTWaiter.wait(for: [picked], timeout: 5), .completed)
         let more = app.buttons["pvMore"].firstMatch
         scrollDown(app, until: more)
         XCTAssertEqual(more.value as? String, "ปิดอยู่")
@@ -72,5 +74,36 @@ final class PhoneRoofPVUITests: XCTestCase {
         let back = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH %@", "\(before) แผง"), object: tag)
         XCTAssertEqual(XCTWaiter.wait(for: [back], timeout: 15), .completed, tag.label)
         XCTAssertFalse(hint.exists)
+    }
+
+    /// `แนวนอน` → `วางคู่ 2 แผ่น` shows the pair gap at the standard's 0.40 m, and `+` makes it 0.50 m.
+    func testLandscapePairsGap() {
+        let app = launch()
+        let landscape = app.buttons["แนวนอน"].firstMatch
+        scrollDown(app, until: landscape)
+        XCTAssertTrue(landscape.waitForExistence(timeout: 20))
+        landscape.tap()
+        let pairs = app.buttons["วางคู่ 2 แผ่น"].firstMatch
+        scrollDown(app, until: pairs)
+        XCTAssertTrue(pairs.waitForExistence(timeout: 10))
+        pairs.tap()
+        let value = app.staticTexts["pairGapValue"].firstMatch, plus = app.buttons["pairGapPlus"].firstMatch
+        scrollDown(app, until: plus)
+        XCTAssertTrue(value.waitForExistence(timeout: 10))
+        XCTAssertEqual(value.label, "0.40 ม.")
+        plus.tap()
+        let half = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '0.50 ม.'"), object: value)
+        XCTAssertEqual(XCTWaiter.wait(for: [half], timeout: 5), .completed, value.label)
+    }
+
+    /// The ridge walkway's width starts at the team's 0.90 m detail, and `−` is off there.
+    func testRidgeWalkwayWidthStopsAtTheDetail() {
+        let app = launch()
+        let minus = app.buttons["ridgeWidthMinus"].firstMatch
+        scrollDown(app, until: minus)
+        XCTAssertTrue(minus.waitForExistence(timeout: 20))
+        XCTAssertEqual(app.staticTexts["ridgeWidthValue"].firstMatch.label, "0.90 ม.")
+        XCTAssertFalse(minus.isEnabled)
+        XCTAssertTrue(app.buttons["ridgeWidthPlus"].firstMatch.isEnabled)
     }
 }

@@ -83,7 +83,7 @@ public struct RoofWalkway: Sendable {
             var mine = open.keys.sorted().compactMap { open[$0] }
             // down the middle, the walkway goes on past the top row up to the ridge (to the ridge walkway's edge)
             if m.options.walkwayCentre, let i = mine.indices.max(by: { mine[$0].v1 < mine[$1].v1 }) {
-                let top = mine[i].ridgeEnd - (ridgeWalkway(m) == nil ? 0 : Self.band / 2)
+                let top = mine[i].ridgeEnd - (ridgeWalkway(m).map { $0.width / 2 } ?? 0)
                 mine[i].v1 = max(mine[i].v1, top)
             }
             out += mine
@@ -117,12 +117,14 @@ public struct RoofWalkway: Sendable {
     public var wallS: Double { accessAtStart ? v0 - Self.landing : v1 + Self.landing }
 
     /// Along the ridge, alone or with the walkways down the middle, on a roof with a ridge (not a shed): the walkway along the ridge, centred on it, from 0.50 m in
-    /// from one end of the ridge to 0.50 m in from the other; nil when the ridge is shorter than a grating panel.
+    /// from one end of the ridge to 0.50 m in from the other; nil when the ridge is shorter than a grating panel. Its
+    /// width is the clear width chosen (`Options.ridgeWidth`, never under the band); the band stays centred in it.
     public static func ridgeWalkway(_ m: RoofMountLayout) -> RoofWalkway? {
         guard m.options.ridgeWalkway, m.faces.count > 1, m.faces.contains(where: \.used) else { return nil }
         let f = m.faces.map(\.face).first { $0.edges.contains(.ridge) && ($0.span(atV: $0.slopeLength).map { $0.1 - $0.0 } ?? 0) > 2 * ridgeInset + panel }
         guard let f, let (lo, hi) = f.span(atV: f.slopeLength) else { return nil }
-        return RoofWalkway(face: f, u: f.slopeLength - band / 2, width: band, v0: lo + ridgeInset, v1: hi - ridgeInset, ridge: true)
+        let width = m.options.ridgeWidth
+        return RoofWalkway(face: f, u: f.slopeLength - width / 2, width: width, v0: lo + ridgeInset, v1: hi - ridgeInset, ridge: true)
     }
 
     /// The plan y (downwards) of the band's foot at the eave.

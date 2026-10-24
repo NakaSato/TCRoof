@@ -9,7 +9,7 @@ import TCRoofCore
 extension InstallTrackingPage {
     // MARK: คำขอรายสัปดาห์
 
-    private var requestWeekStart: Date {
+    var requestWeekStart: Date {
         let cal = RoutineReport.calendar
         let next = MasterSchedule.weekStart(cal.date(byAdding: .day, value: 7, to: .now) ?? .now)
         return cal.date(byAdding: .day, value: 7 * requestWeek, to: next) ?? next

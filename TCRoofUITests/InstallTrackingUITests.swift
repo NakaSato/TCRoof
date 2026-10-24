@@ -339,4 +339,53 @@ final class InstallTrackingUITests: XCTestCase {
         app.buttons["docsOpen"].tap()
         XCTAssertTrue(app.navigationBars["เอกสาร"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
     }
+
+    /// `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request) is a tab of the page on the board's example: a crew
+    /// day cell switches a role off and the day's total drops, a work day cell adds a day, `ส่งขออนุมัติ (PDF)` waits for
+    /// the signature sheet's `ยืนยันลายเซ็น`, and `ดู PDF` opens its sheet. Nothing is kept.
+    func testRequestTab() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label == %@", "คำขอรายสัปดาห์")).firstMatch.tap()
+        let cell = app.buttons["crewCell0-0"]
+        XCTAssertTrue(cell.waitForExistence(timeout: 8), "คำขอรายสัปดาห์ should open the tab in the page")
+        XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
+        let day = app.staticTexts["crewDay0"]
+        let before = Int(day.label) ?? 0
+        cell.tap()
+        let fewer = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "\(before - 1)"), object: day)
+        XCTAssertEqual(XCTWaiter().wait(for: [fewer], timeout: 5), .completed, "a role off should take its people off the day: \(day.label)")
+        let workDay = app.staticTexts["workDay3"]
+        scrollTo(app.buttons["workCell3.1-3"], in: app)
+        XCTAssertEqual(workDay.label, "–")
+        app.buttons["workCell3.1-3"].tap()
+        let one = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "1 งาน"), object: workDay)
+        XCTAssertEqual(XCTWaiter().wait(for: [one], timeout: 5), .completed, workDay.label)
+        let send = app.buttons["requestSend"]
+        XCTAssertTrue(send.exists)
+        XCTAssertFalse(send.isEnabled, "ส่งขออนุมัติ waits for the signature")
+        app.buttons["requestSign"].tap()
+        let pad = app.descendants(matching: .any).matching(identifier: "signaturePad").firstMatch
+        XCTAssertTrue(pad.waitForExistence(timeout: 8))
+        pad.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).press(forDuration: 0.1, thenDragTo: pad.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.4)))
+        app.buttons["requestSignConfirm"].tap()
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: send)
+        XCTAssertEqual(XCTWaiter().wait(for: [enabled], timeout: 8), .completed, "ยืนยันลายเซ็น should enable the send")
+        app.buttons["requestPDF"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["requestPDFPage"].waitForExistence(timeout: 10), "ดู PDF should open its sheet")
+    }
+
+    /// A contractor on a sent week sees no steppers.
+    func testRequestTabSentIsReadOnlyForAContractor() {
+        let app = launch(["-installTab", "request", "-installRequestState", "sent", "-role", "external"])
+        XCTAssertTrue(app.buttons["crewCell0-0"].waitForExistence(timeout: slow))
+        XCTAssertFalse(app.buttons["crew0Plus"].exists, "a sent request is read only for a contractor")
+        XCTAssertFalse(app.buttons["requestSend"].exists)
+    }
+
+    /// Scrolls the request's form up until the element can be tapped.
+    func scrollTo(_ e: XCUIElement, in app: XCUIApplication) {
+        let form = app.scrollViews["requestForm"]
+        for _ in 0..<8 where !(e.exists && e.isHittable) { form.swipeUp(velocity: .slow) }
+    }
 }

@@ -6,7 +6,7 @@ import TCRoofCore
 /// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
 /// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily, plan, docs }
+    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request }
 
     /// A screen the page pushes.
     enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
@@ -55,7 +55,18 @@ struct InstallTrackingPage: View {
     @State var planDraft: [String: PlanDraft] = [:]
     @State var planReason = ""
     /// `คำขอรายสัปดาห์` and `Weekly Report`: weeks from their default one.
-    @State var requestWeek = 0
+    @State var requestWeek = Debug.requestWeek
+    /// iPad `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request): the week's request as edited, the
+    /// requester's drawn signature and name (kept only until it is sent: `engineerSignedAt` records the signing), the open
+    /// sheet, a short note, and `ดึงจากแผน MP`'s time and spinner.
+    @State var request: RoutineReport.WeeklyRequest?
+    @State var reqSignature: Data?
+    @State var reqSignedAt: Date?
+    @State var reqName = ""
+    @State var reqSheet: RequestSheet?
+    @State var reqToast: String?
+    @State var reqPulledAt: Date?
+    @State var reqPulling = false
     @State var reportWeek = 0
     /// `เอกสาร`'s selected permit stage.
     @State var docsStage: StationDocs.Package? = Debug.docsPackage
@@ -109,6 +120,16 @@ struct InstallTrackingPage: View {
         VStack(spacing: 0) {
             header(data)
             tabBar(data)
+            // คำขอรายสัปดาห์ scrolls its form and keeps its panel still
+            if tab == .request {
+                requestTab()
+                    .task(id: requestWeek) {
+                        loadRequest()
+                        #if DEBUG
+                        applyRequestState()
+                        #endif
+                    }
+            } else {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
@@ -123,6 +144,8 @@ struct InstallTrackingPage: View {
                             planTab(data)
                         case .docs:
                             docsTab()
+                        case .request:
+                            EmptyView()
                         }
                     }
                     // the last cards end above the dock
@@ -139,6 +162,7 @@ struct InstallTrackingPage: View {
                     proxy.scrollTo("end", anchor: .bottom)
                 }
                 #endif
+            }
             }
         }
         .background(Theme.phonePage.ignoresSafeArea())
@@ -285,7 +309,7 @@ struct InstallTrackingPage: View {
     func items(_ data: InstallPageData) -> [Item] {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
-         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", route: .request),
+         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", route: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
@@ -400,7 +424,7 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily|plan|docs`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
+    /// `-installTab overview|daily|plan|docs|request`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
     /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
     /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
@@ -422,6 +446,10 @@ struct InstallTrackingPage: View {
         static let detail = UserDefaults.standard.bool(forKey: "installDetail")
         static let iec = UserDefaults.standard.bool(forKey: "iecOpen")
         static let docsPackage = UserDefaults.standard.string(forKey: "installDocsPackage").flatMap(StationDocs.Package.init)
+        /// `-installRequestWeek 0|1|2`: next week, the week before, the one before that.
+        static let requestWeek = -UserDefaults.standard.integer(forKey: "installRequestWeek")
+        /// `-installRequestState sign|signed|sent|approved|pdf|edited`.
+        static let requestState = UserDefaults.standard.string(forKey: "installRequestState")
         static let docsPaper = UserDefaults.standard.string(forKey: "installDocsPaper")
         /// iPhone: `-installTab request|weekly|iec|docs|settings` too, `-installSettings team|routine|connection` and
         /// `-installPlanEdit YES`.
@@ -443,6 +471,7 @@ struct InstallTrackingPage: View {
         static let site = SiteTab.info
         static let docsPackage: StationDocs.Package? = nil
         static let docsPaper: String? = nil
+        static let requestWeek = 0
         #endif
     }
 }

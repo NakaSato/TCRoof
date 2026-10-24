@@ -25,11 +25,7 @@ struct WeeklyRequestScreen: View {
         _request = State(initialValue: Self.load(job, ws))
     }
 
-    static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest {
-        job.weeklyRequest(for: week) ?? RoutineReport.requestDraft(
-            weekStart: week, plan: job.scheduleInput.map { MasterSchedule.plan($0) }, actual: job.scheduleActual,
-            latest: job.dailyReports.last, settings: job.routineSettings)
-    }
+    static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest { WeeklyRequestStore.load(job, week) }
 
     private var weekEnd: Date { RoutineReport.calendar.date(byAdding: .day, value: 6, to: week)! }
     private var stored: Bool { job.weeklyRequest(for: week) != nil }
@@ -230,6 +226,27 @@ struct WeeklyRequestScreen: View {
     }
 
     private func save(file: Bool) {
+        WeeklyRequestStore.save(request, job: job, external: external, file: file, context: context)
+    }
+
+    private func exportPDF() {
+        if let url = WeeklyRequestStore.pdfURL(job, request) { share = ReportShare(url: url) }
+    }
+}
+
+/// What the request screen and the iPad install page's `คำขอรายสัปดาห์` tab share: the week's request (or its draft
+/// from the MP plan), keeping it, and its R1 PDF.
+@MainActor
+enum WeeklyRequestStore {
+    static func draft(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest {
+        RoutineReport.requestDraft(weekStart: week, plan: job.scheduleInput.map { MasterSchedule.plan($0) }, actual: job.scheduleActual,
+                                   latest: job.dailyReports.last, settings: job.routineSettings)
+    }
+
+    static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest { job.weeklyRequest(for: week) ?? draft(job, week) }
+
+    /// Keeps the request on the job, and with `file` adds its PDF to the job's documents.
+    static func save(_ request: RoutineReport.WeeklyRequest, job: Job, external: Bool, file: Bool, context: ModelContext) {
         job.saveRequest(request)
         // a contractor's device sends the requests with its IEC test only when it changed them (`CloudSync`)
         if external { job.weeklyRequestsUnsent = true }
@@ -237,7 +254,8 @@ struct WeeklyRequestScreen: View {
         try? context.save()
     }
 
-    private func exportPDF() {
-        if let url = try? RoutineReportFiles.temporaryURL(RoutineReportFiles.request(job, request)) { share = ReportShare(url: url) }
+    /// The R1 PDF in a temporary file, to share or preview.
+    static func pdfURL(_ job: Job, _ request: RoutineReport.WeeklyRequest) -> URL? {
+        try? RoutineReportFiles.temporaryURL(RoutineReportFiles.request(job, request))
     }
 }

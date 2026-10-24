@@ -218,6 +218,8 @@ struct RoofPageWide: View {
 
     var stackedColumn: some View {
             VStack(spacing: 12) {
+                // the frame type drives the plan and the section, so it leads the page
+                if mode == .structure { AnyView(frameCard) }
                 // iPhone: the legend and footer sit under the plan, so the plan gets the full width
                 AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + (mode == .pv ? 370 : 290)
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
@@ -273,14 +275,22 @@ struct RoofPageWide: View {
         if narrow { roofTabNarrow } else { roofTabWide }
     }
 
-    /// iPhone: two fields per row.
+    /// iPhone: two fields per row (ชนิดโครงหลังคา is on its own card above the plan).
     var roofTabNarrow: some View {
         Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
             GridRow { standardField; dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes) }
             GridRow { dropdownField("วัสดุมุง", key: Roof.Key.material, list: Roof.materials); purlinField }
             GridRow { ridgeField; structureField }
-            GridRow { frameField.gridCellColumns(2) }
         }
+    }
+
+    /// Stacked (portrait, iPhone): ชนิดโครงหลังคา on its own card above the plan.
+    var frameCard: some View {
+        frameField
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     var frameField: some View {
@@ -294,6 +304,7 @@ struct RoofPageWide: View {
 
     var roofTabWide: some View {
         Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
+            if !stacked { GridRow { frameField.gridCellColumns(6) } }
             GridRow {
                 standardField.gridCellColumns(2)
                 dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes).gridCellColumns(2)
@@ -304,7 +315,6 @@ struct RoofPageWide: View {
                 ridgeField.gridCellColumns(2)
                 structureField.gridCellColumns(2)
             }
-            GridRow { frameField.gridCellColumns(6) }
         }
     }
 

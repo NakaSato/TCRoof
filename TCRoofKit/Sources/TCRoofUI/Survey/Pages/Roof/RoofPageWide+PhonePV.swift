@@ -74,22 +74,17 @@ extension RoofPageWide {
 
     /// `02 แผงและการวาง`: module, orientation, edge distance, ridge walkway and roof access.
     var mountSettingsPhone: some View {
-        let c = mountChoice, s = c.standardOrDefault, has = (shownMount?.quantities.modules ?? 0) > 0
+        let c = mountChoice, has = (shownMount?.quantities.modules ?? 0) > 0
         return VStack(alignment: .leading, spacing: 10) {
             numberedHeader("02", "แผงและการวาง", pill: has ? ("✓ ครบ", true) : ("ยังไม่มีแผง", false))
-            VStack(alignment: .leading, spacing: 2) {
-                A3Label(text: "รุ่นแผง")
-                Text(String(format: "%.0f W | %.2f × %.2f ม.", s.moduleWp, s.moduleLength, s.moduleWidth)).font(.sarabunFixed(14, .bold))
-                Text("จากมาตรฐานโครงการ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
+            moduleRow
             VStack(alignment: .leading, spacing: 6) {
                 A3Label(text: "การวางแผง")
                 RoofSegments(options: ["แนวตั้ง", "แนวนอน"], selected: c.landscape ? 1 : 0, minSegment: 100, height: 44) { i in
                     changeChoice { $0.landscape = i == 1 }
                 }
             }
+            landscapeArrangement.id("pairs")
             edgeStepper
             mountRidgeWalkway.id("walkway")
         }

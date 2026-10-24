@@ -229,7 +229,7 @@ extension RoofPageWide {
     var planStage: some View {
         GeometryReader { geo in
             let plan = RoofPlan(values, mode: mode, chips: true, dragging: drag, highlight: member,
-                                mount: mode == .pv ? shownMount : nil, selected: selectedSlots)
+                                mount: mode == .pv ? shownMount : nil, selected: selectedSlots, pairNumbers: true)
             let fit = SketchFit(RoofPlan.width, RoofPlan.height, in: geo.size)
             ZStack(alignment: .topLeading) {
                 SketchCanvas(ops: plan.sketch.ops, fit: fit)

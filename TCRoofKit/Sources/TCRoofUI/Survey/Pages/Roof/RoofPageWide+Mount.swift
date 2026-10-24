@@ -106,7 +106,16 @@ extension RoofPageWide {
                     mountSelection = mountSelection == .area(a.area.index) ? nil : .area(a.area.index)
                     return
                 }
-                guard let hit = L.slots.first(where: { Self.inside($0.outline, s) }) else { mountSelection = nil; return }
+                guard let hit = L.slots.first(where: { Self.inside($0.outline, s) }) else { if !editModules { mountSelection = nil }; return }
+                if editModules {
+                    // `แก้แผง`: a module goes out, a removed slot comes back; other slots do nothing
+                    guard hit.module || mountChoice.removed.contains(hit.ref) else { return }
+                    mountSelection = nil
+                    changeChoice { c in
+                        if let i = c.removed.firstIndex(of: hit.ref) { c.removed.remove(at: i) } else { c.removed.append(hit.ref) }
+                    }
+                    return
+                }
                 mountSelection = mountSelection == .slot(hit.ref) ? nil : .slot(hit.ref)
                 if hit.module, let fi = mount?.faces.firstIndex(where: { $0.face.id == hit.ref.face }) { sectionRow = (fi, hit.ref.row) }
             }
@@ -142,7 +151,7 @@ extension RoofPageWide {
             Label("วางแผงอัตโนมัติใช้ได้กับหลังคาจั่ว ปั้นหยา และเพิงหมาแหงน | หลังคานี้คิดเป็นทรงจั่ว", systemImage: "info.circle")
                 .font(.sarabunFixed(12.5)).foregroundStyle(Self.amber)
         }
-        mountSummary
+        if !narrow { mountSummary }
         if let note = mountNote {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.uturn.backward.circle").foregroundStyle(Theme.primary)
@@ -153,15 +162,21 @@ extension RoofPageWide {
             }
         }
         mountInfo
-        mountFixing
-        mountShedSide
-        mountWalkway
-        mountFaces
-        mountAlign
-        mountBearing
-        mountQuantities
-        mountRules.id("rules")
-        mountFooter
+        if narrow {
+            mountSettingsPhone
+            mountSummaryPhone
+            mountMorePhone
+        } else {
+            mountFixing
+            mountShedSide
+            mountWalkway
+            mountFaces
+            mountAlign
+            mountBearing
+            mountQuantities
+            mountRules.id("rules")
+            mountFooter
+        }
     }
 
     /// One card for the layout's count, kWp and yearly energy, the count the report takes, and the energy's details.
@@ -321,7 +336,8 @@ extension RoofPageWide {
             } else {
                 fixingLine("วิธียึด", "ยึดเข้าแป")
             }
-            fixingChoice("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
+            // iPhone has this segment in `02 แผงและการวาง`
+            if !narrow { fixingChoice("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } } }
             if onPurlins {
                 fixingChoice("rails", selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
             }
@@ -393,17 +409,30 @@ extension RoofPageWide {
     /// The walkway along the ridge with the roof access (on by default), and one module wide down the middle of each
     /// face (the default once on) or after every n columns, for cleaning (off by default).
     var mountWalkway: some View {
-        let n = mountChoice.walkwayEvery, centre = mountChoice.walkwayCentre
+        VStack(alignment: .leading, spacing: 2) {
+            mountRidgeWalkway
+            mountCleaningWalkway
+        }
+        .id("walkway")
+    }
+
+    /// Along the ridge: on by default; the walkways down the middle need it, so switching it off clears them.
+    @ViewBuilder var mountRidgeWalkway: some View {
+        let centre = mountChoice.walkwayCentre
         let hasRidge = RoofMount.shape(values) != .shed, ridge = hasRidge && (mountChoice.walkwayRidge || centre)
-        return VStack(alignment: .leading, spacing: 2) {
-            // along the ridge: on by default; the walkways down the middle need it, so switching it off clears them
-            if hasRidge {
-                Toggle(isOn: Binding(get: { ridge }, set: { on in changeChoice { $0.walkwayRidge = on; if !on { $0.walkwayCentre = false } } })) {
-                    Text("ทางเดินตามสันหลังคา").font(.sarabunFixed(14))
-                }
-                .tint(Theme.primary).frame(minHeight: 44)
-                if ridge { mountAccessSide }
+        if hasRidge {
+            Toggle(isOn: Binding(get: { ridge }, set: { on in changeChoice { $0.walkwayRidge = on; if !on { $0.walkwayCentre = false } } })) {
+                Text("ทางเดินตามสันหลังคา").font(.sarabunFixed(14))
             }
+            .tint(Theme.primary).frame(minHeight: 44)
+            if ridge { mountAccessSide }
+        }
+    }
+
+    var mountCleaningWalkway: some View {
+        let n = mountChoice.walkwayEvery, centre = mountChoice.walkwayCentre
+        let hasRidge = RoofMount.shape(values) != .shed
+        return VStack(alignment: .leading, spacing: 2) {
             Toggle(isOn: Binding(get: { n > 0 || centre }, set: { on in changeChoice { c in
                 c.walkwayCentre = on; c.walkwayEvery = 0
                 if on && hasRidge { c.walkwayRidge = true }
@@ -433,12 +462,27 @@ extension RoofPageWide {
                 }
             }
         }
-        .id("walkway")
     }
 
     /// Down the middle the roof is reached up the gable wall at one end of the ridge walkway (the CAD file's cat ladder
     /// and landing): which end, as the plan shows it.
-    var mountAccessSide: some View {
+    @ViewBuilder var mountAccessSide: some View {
+        if narrow {
+            VStack(alignment: .leading, spacing: 6) {
+                A3Label(text: "ทางขึ้นหลังคา (Roof access)")
+                RoofSegments(options: ["ด้านซ้าย", "ด้านขวา"], selected: mountChoice.accessRight ? 1 : 0, minSegment: 100, height: 44) { i in
+                    changeChoice { $0.accessRight = i == 1 }
+                }
+                Text("ทางขึ้นอยู่ปลายสันหลังคาด้านซ้ายหรือขวาเท่านั้น และต่อกับทางเดินตามสัน")
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.vertical, 4)
+        } else {
+            mountAccessSideWide
+        }
+    }
+
+    var mountAccessSideWide: some View {
         HStack(spacing: 8) {
             Text("ทางขึ้นหลังคา (บันไดลิง)").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             Spacer(minLength: 4)
@@ -658,9 +702,17 @@ extension RoofPageWide {
 
     /// The plan's tool buttons: ย้อน and the drawing menu.
     @ViewBuilder var mountButtons: some View {
+        undoButton
+        drawMenu
+    }
+
+    var undoButton: some View {
         footerButton("ย้อน", icon: "arrow.uturn.backward") { undoMount() }
             .disabled(mountUndo.isEmpty).opacity(mountUndo.isEmpty ? 0.45 : 1)
             .accessibilityLabel("ย้อนกลับ")
+    }
+
+    var drawMenu: some View {
         Menu {
             Button { tool = .keepOut } label: { Label("เขตห้ามติด", systemImage: "nosign") }
             ForEach([RoofObstacleKind.turbine, .stack, .pipe, .other], id: \.self) { k in

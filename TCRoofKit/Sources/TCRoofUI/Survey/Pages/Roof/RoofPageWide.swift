@@ -67,6 +67,9 @@ struct RoofPageWide: View {
     @State var energyOpen = false
     @State var rowSectionOpen = false
     @State var boqOpen = false
+    /// iPhone จัดแผง: `แก้แผง` is on (a tap on the plan takes a module out or puts it back), and the closed section below `03`.
+    @State var editModules = false
+    @State var moreOpen = false
     @State var mountYieldFor: RoofMountYield.Inputs?
     /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
     @State var roofDesignSaved: String?
@@ -216,12 +219,15 @@ struct RoofPageWide: View {
     var stackedColumn: some View {
             VStack(spacing: 12) {
                 // iPhone: the legend and footer sit under the plan, so the plan gets the full width
-                AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
+                AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + (mode == .pv ? 370 : 290)
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
-                AnyView(sectionCard).frame(height: sectionHeight(min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72)))
+                // iPhone จัดแผง shows the plan and the two cards below it; the section and photos stay with the structure
+                if !(narrow && mode == .pv) {
+                    AnyView(sectionCard).frame(height: sectionHeight(min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72)))
+                }
                 AnyView(roofCard).id("info")
                 if mode != .pv { AnyView(membersCard).id("members") }
-                AnyView(photosCard).id("photos")
+                if !(narrow && mode == .pv) { AnyView(photosCard).id("photos") }
             }
             .padding(.bottom, 4)
     }
@@ -260,7 +266,7 @@ struct RoofPageWide: View {
     }
 
     func setMode(_ m: RoofPlan.Mode) {
-        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil; mountSelection = nil
+        mode = m; editPosts = false; editModules = false; tool = nil; span = nil; member = nil; dropdown = nil; mountSelection = nil
     }
 
     @ViewBuilder var roofTab: some View {

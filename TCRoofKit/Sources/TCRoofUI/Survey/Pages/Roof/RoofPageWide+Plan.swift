@@ -48,6 +48,9 @@ extension RoofPageWide {
     var planCard: some View {
         card {
             if narrow {
+                // iPhone: the caption and the mode switch sit above the plan, so the switch stays put between the tabs
+                planCaption.lineLimit(2)
+                RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in setMode(i == 1 ? .pv : .structure) }
                 planStage.frame(maxWidth: .infinity, maxHeight: .infinity)
                 legendRow
             } else {
@@ -70,6 +73,7 @@ extension RoofPageWide {
         if tool == .keepOut { return "ลากเพื่อวาดเขตห้ามติด" }
         if tool == .skylight { return "ลากเพื่อวาดแผ่นใส | แตะ × เพื่อลบ" }
         if case .obstacle(let k)? = tool { return "ลากเพื่อวาด" + k.title }
+        if mode == .pv && editModules { return "แตะแผงเพื่อเอาออกหรือใส่กลับ" }
         if mode == .pv { return "แตะแผงหรือสิ่งกีดขวางเพื่อดูรายละเอียด" }
         if editPosts { return "แตะจุดตัดกริด เพิ่ม/ลบเสา" }
         if values.photo("planPhoto") != nil { return "รายงานใช้แบบร่างที่ถ่ายไว้" }
@@ -79,12 +83,12 @@ extension RoofPageWide {
 
     @ViewBuilder var planFooter: some View {
         if narrow {
-            // iPhone: the caption, then the mode switch, then the buttons
-            VStack(alignment: .leading, spacing: 8) {
-                planCaption.lineLimit(2)
-                RoofSegments(options: ["โครงสร้าง", "จัดแผง"], selected: mode == .pv ? 1 : 0) { i in setMode(i == 1 ? .pv : .structure) }
+            // iPhone: the buttons (the caption and the switch are above the plan)
+            if mode == .pv {
+                mountPhoneFooter
+            } else {
                 HStack(spacing: 8) {
-                    if mode == .structure { structureButtons } else { mountButtons }
+                    structureButtons
                     Spacer(minLength: 0)
                     cadButton
                 }
@@ -107,8 +111,10 @@ extension RoofPageWide {
             .font(.sarabunFixed(14)).minimumScaleFactor(0.6)
     }
 
-    var cadButton: some View {
-        footerButton("CAD", icon: "doc.badge.arrow.up", on: showCAD) { showCAD.toggle(); span = nil }
+    var cadButton: some View { cadButton(fill: false) }
+
+    func cadButton(fill: Bool) -> some View {
+        footerButton("CAD", icon: "doc.badge.arrow.up", on: showCAD, fill: fill) { showCAD.toggle(); span = nil }
             .accessibilityLabel("ส่งออก CAD")
             .popover(isPresented: $showCAD, arrowEdge: .bottom) { cadSheet.presentationCompactAdaptation(.popover) }
     }
@@ -173,13 +179,14 @@ extension RoofPageWide {
         return [(.post, "เสา")] + two + [(.skyOK, "แผ่นใส | วางทับได้"), (.skyNo, "แผ่นใส | ห้ามวางทับ"), (.ridge, "สันหลังคา"), (.section, "แนวรูปตัด A–A")]
     }
 
-    func footerButton(_ title: String, icon: String? = nil, on: Bool = false, tint: Color = Theme.navy, action: @escaping () -> Void) -> some View {
+    func footerButton(_ title: String, icon: String? = nil, on: Bool = false, tint: Color = Theme.navy, fill: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 5) {
                 if let icon { Image(systemName: icon).font(.system(size: 12, weight: .bold)) }
                 Text(title).font(.sarabunFixed(14, .bold)).lineLimit(1).minimumScaleFactor(0.7)
             }
             .foregroundStyle(on ? Theme.onMedia : tint)
+            .frame(maxWidth: fill ? .infinity : nil)
             .padding(.horizontal, 10).frame(minHeight: 44)
             .background(on ? tint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Color.clear : tint.opacity(0.5)))
@@ -228,6 +235,7 @@ extension RoofPageWide {
                 SketchCanvas(ops: plan.sketch.ops, fit: fit)
                     .accessibilityLabel(String(format: "แปลนโครงหลังคา %.2f คูณ %.2f เมตร", plan.layout.lx, plan.layout.ly))
                 if mode == .pv && tool == nil { mountTap(plan.layout, fit) }
+                if narrow && mode == .pv { planTag.padding(8) }
                 if tool != nil { drawSurface(plan.layout, fit) }
                 areaButtons(plan.layout, fit)
                 spanChips(plan.layout, fit)

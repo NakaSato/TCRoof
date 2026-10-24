@@ -6,7 +6,7 @@ import TCRoofCore
 /// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
 /// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily, plan }
+    enum Tab: String, CaseIterable { case overview, daily, plan, docs }
 
     /// A screen the page pushes.
     enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
@@ -44,7 +44,7 @@ struct InstallTrackingPage: View {
     @State private var survey = SurveyModel.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) var context
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.horizontalSizeClass) var sizeClass
 
     // iPhone (docs/ui/install-tracking-iphone): every tab in place, and the header's gear
     @State var phoneTab = Debug.phoneTab
@@ -58,7 +58,15 @@ struct InstallTrackingPage: View {
     @State var requestWeek = 0
     @State var reportWeek = 0
     /// `เอกสาร`'s selected permit stage.
-    @State var docsStage: StationDocs.Package?
+    @State var docsStage: StationDocs.Package? = Debug.docsPackage
+    /// iPad `เอกสาร`: the selected paper, the paper whose sheet is open, the shared library, the selected file's first
+    /// page, and a note after an export with nothing to put in.
+    @State var docsPaper: String? = Debug.docsPaper
+    @State var docsSheet: StationDocs.Kind?
+    @State var docsLibrary = StationDocsStore.loadLibrary()
+    @State var docsThumbnail: UIImage?
+    @State var docsNote: String?
+    @Environment(PadDock.self) var dock: PadDock?
     /// The phone page's pushed screens that the iPad routes don't cover.
     @State var phoneRoute: PhoneRoute?
     @State var phoneSheet: PhoneSheet?
@@ -72,6 +80,9 @@ struct InstallTrackingPage: View {
         .overlay { if let s = sheet { pageSheet(s, data) } }
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
+        .alert(docsNote ?? "", isPresented: Binding(get: { docsNote != nil }, set: { if !$0 { docsNote = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        }
         .mpWorkbook(workbook, job: job)
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
@@ -110,6 +121,8 @@ struct InstallTrackingPage: View {
                             dailyTab(dailyData, site: data.site)
                         case .plan:
                             planTab(data)
+                        case .docs:
+                            docsTab()
                         }
                     }
                     // the last cards end above the dock
@@ -275,7 +288,7 @@ struct InstallTrackingPage: View {
          Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", route: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", route: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
-         Item(id: "docs", title: "เอกสาร", symbol: "doc.text", route: .docs),
+         Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
          Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan)]
     }
 
@@ -387,7 +400,8 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily|plan`, `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
+    /// `-installTab overview|daily|plan|docs`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
+    /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
     /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
     enum Debug {
@@ -407,6 +421,8 @@ struct InstallTrackingPage: View {
         static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
         static let detail = UserDefaults.standard.bool(forKey: "installDetail")
         static let iec = UserDefaults.standard.bool(forKey: "iecOpen")
+        static let docsPackage = UserDefaults.standard.string(forKey: "installDocsPackage").flatMap(StationDocs.Package.init)
+        static let docsPaper = UserDefaults.standard.string(forKey: "installDocsPaper")
         /// iPhone: `-installTab request|weekly|iec|docs|settings` too, `-installSettings team|routine|connection` and
         /// `-installPlanEdit YES`.
         static let phoneTab = UserDefaults.standard.string(forKey: "installTab").flatMap(PhoneTab.init) ?? .overview
@@ -425,6 +441,8 @@ struct InstallTrackingPage: View {
         static let planCollapsed = false
         static let sheet: Sheet? = nil
         static let site = SiteTab.info
+        static let docsPackage: StationDocs.Package? = nil
+        static let docsPaper: String? = nil
         #endif
     }
 }

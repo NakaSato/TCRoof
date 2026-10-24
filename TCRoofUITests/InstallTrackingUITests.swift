@@ -317,4 +317,26 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
                       "a sample exports at once, named as the sample")
     }
+
+    /// `เอกสาร` (docs/ui/install-tracking-ipad-docs) is a tab of the page: step 2 lists its papers, a row selects and the
+    /// panel's title follows, `เปิดเอกสาร` opens the paper's sheet, and on the example station (under 200 kVA) step 3 reads
+    /// `ไม่ต้องยื่น`.
+    func testDocsTab() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label == %@", "เอกสาร")).firstMatch.tap()
+        let grid = app.buttons["docsStep.grid_connection"]
+        XCTAssertTrue(grid.waitForExistence(timeout: 8), "เอกสาร should open the tab in the page")
+        XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
+        XCTAssertTrue(app.buttons["docsStep.pk2"].label.contains("ไม่ต้องยื่น"), app.buttons["docsStep.pk2"].label)
+        grid.tap()
+        let row = app.buttons["docsPaper.site_map"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "step 2 should list its papers")
+        row.tap()
+        let title = app.staticTexts["docsDetailTitle"]
+        let follows = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS 'Google Map'"), object: title)
+        XCTAssertEqual(XCTWaiter().wait(for: [follows], timeout: 5), .completed, title.label)
+        app.buttons["docsOpen"].tap()
+        XCTAssertTrue(app.staticTexts["ต้นทาง"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
+    }
 }

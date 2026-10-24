@@ -12,6 +12,8 @@ extension InstallTrackingPage {
 
     func go(_ target: InstallPageData.Target) {
         sheet = nil
+        // the iPad's เอกสาร is a tab of the page; the iPhone pushes the station's papers
+        if target == .docs, sizeClass != .compact { tab = .docs; return }
         let today = RoutineReport.calendar.startOfDay(for: .now)
         route = switch target {
         case .daily: .day(today)

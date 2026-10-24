@@ -337,6 +337,6 @@ final class InstallTrackingUITests: XCTestCase {
         let follows = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS 'Google Map'"), object: title)
         XCTAssertEqual(XCTWaiter().wait(for: [follows], timeout: 5), .completed, title.label)
         app.buttons["docsOpen"].tap()
-        XCTAssertTrue(app.staticTexts["ต้นทาง"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
+        XCTAssertTrue(app.navigationBars["เอกสาร"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
     }
 }

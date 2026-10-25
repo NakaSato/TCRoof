@@ -89,7 +89,7 @@ public extension Capability {
     /// test, daily reports, scans and surveys), deleting a job, the customers' contacts, ICLs, signing daily reports,
     /// closing the IEC test and the member list.
     static let enforcedByRules: Set<Capability> = [
-        .jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall,
+        .jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .mpWBSTick, .moveToInstall,
         .surveyEdit, .customerPersonalDocs, .permitPPIM, .ercFlow, .stationDocsDrafts,
         .dailyFill, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .usersManage, .designLibrary, .tankStandard,
     ]

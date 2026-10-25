@@ -157,3 +157,15 @@ public extension MasterSchedule {
         return actual != before
     }
 }
+
+public extension Permissions {
+    /// May tick a WBS row of this job done (`mp.wbs_tick`): the team, and a contractor on their own job.
+    func mayTickWBS(on job: JobAccess?) -> Bool { can(.mpWBSTick, on: job) }
+
+    /// May take this tick back: whoever made it, a manager, or the job's supervising engineer.
+    func mayTakeBack(_ tick: MasterSchedule.WBSTick, on job: JobAccess?) -> Bool {
+        guard mayTickWBS(on: job) else { return false }
+        if Self.normalized(tick.by) == email || role == .manager || role == .maintainer { return true }
+        return role != .external && isSupervisor(job)
+    }
+}

@@ -110,6 +110,23 @@ final class WBSTicksTests: XCTestCase {
         XCTAssertEqual(out["2.1.1"], tick(7, team))
     }
 
+    func testWhoTicksAndWhoTakesBack() {
+        let con = "con@vendor.test", eng = "eng@tcroof.test", other = "other@tcroof.test"
+        let job = JobAccess(externals: [con], supervisor: eng)
+        let contractor = Permissions(role: .external, email: con), team = Permissions(role: .internalTeam, email: other)
+        let supervisor = Permissions(role: .internalTeam, email: eng), manager = Permissions(role: .manager, email: "m@tcroof.test")
+        XCTAssertTrue(contractor.mayTickWBS(on: job))
+        XCTAssertFalse(Permissions(role: .external, email: "else@vendor.test").mayTickWBS(on: job), "not their job")
+        XCTAssertTrue(team.mayTickWBS(on: job))
+        let byContractor = tick(7, con), byTeam = tick(7, other)
+        XCTAssertTrue(contractor.mayTakeBack(byContractor, on: job))
+        XCTAssertFalse(contractor.mayTakeBack(byTeam, on: job))
+        XCTAssertTrue(team.mayTakeBack(byTeam, on: job))
+        XCTAssertFalse(team.mayTakeBack(byContractor, on: job), "a team member takes back only their own")
+        XCTAssertTrue(supervisor.mayTakeBack(byContractor, on: job))
+        XCTAssertTrue(manager.mayTakeBack(byContractor, on: job))
+    }
+
     func testARowMovesWithItsPlan() {
         var item = MasterSchedule.WorkItem(code: "2.1.1", title: "ยึดขาจับ")
         item.baselineStart = day(5); item.forecastEnd = day(9)

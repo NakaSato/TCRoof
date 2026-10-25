@@ -67,6 +67,7 @@ public enum Capability: String, CaseIterable, Sendable {
     case assignTeam = "job.assign_team"
     case mpSetup = "mp.setup"
     case mpProgress = "mp.progress"
+    case mpWBSTick = "mp.wbs_tick"
     case moveToInstall = "survey.move_to_install"
     case installTracking = "install.tracking"
     case overviewReports = "overview.reports"
@@ -140,6 +141,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .assignTeam: (.allow, .allow, .deny),
         .mpSetup: (.allow, .allow, .deny),
         .mpProgress: (.allow, .allow, .deny),
+        .mpWBSTick: (.allow, .allow, .conditional),
         .moveToInstall: (.allow, .allow, .deny),
         .installTracking: (.allow, .allow, .conditional),
         .overviewReports: (.allow, .allow, .deny),

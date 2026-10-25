@@ -205,9 +205,46 @@ struct InstallTrackingPage: View {
             InstallStageSheet(row: row, count: g.rows.count, index: (g.rows.firstIndex { $0.id == row.id } ?? 0) + 1,
                               photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) },
                               confirmation: job.scheduleActual.confirmations.last { $0.task == row.id }, close: { stage = nil },
-                              openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) })
+                              openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) },
+                              wbs: wbsItems(row.id), ticks: job.wbsTicks, canTick: permissions.mayTickWBS(on: job.access),
+                              canTakeBack: { permissions.mayTakeBack($0, on: job.access) },
+                              toggleWBS: toggleWBS, setDocument: setWBSDocument)
         }
         .transition(.opacity)
+    }
+
+    /// The task's WBS sub-tasks, without the other case's rows.
+    private func wbsItems(_ task: String) -> [MasterSchedule.WorkItem] {
+        guard let t = MasterSchedule.Task(rawValue: task) else { return [] }
+        return job.scheduleWBS.items(for: t).filter { !$0.notForThisStation }
+    }
+
+    /// Ticks a WBS row done today, or takes the tick back; the job books it into the plan (`Job.wbsTicks`). A contractor's
+    /// device sends it signed with their email.
+    private func toggleWBS(_ item: MasterSchedule.WorkItem) {
+        var ticks = job.wbsTicks
+        if let tick = ticks[item.code] {
+            guard permissions.mayTakeBack(tick, on: job.access) else { return }
+            ticks[item.code] = nil
+        } else {
+            guard permissions.mayTickWBS(on: job.access) else { return }
+            ticks[item.code] = .init(by: permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now))
+        }
+        saveWBS(ticks)
+    }
+
+    private func setWBSDocument(_ item: MasterSchedule.WorkItem, _ text: String) {
+        var ticks = job.wbsTicks
+        guard let tick = ticks[item.code], permissions.mayTakeBack(tick, on: job.access) else { return }
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        ticks[item.code]?.document = t.isEmpty ? nil : t
+        saveWBS(ticks)
+    }
+
+    private func saveWBS(_ ticks: [String: MasterSchedule.WBSTick]) {
+        job.wbsTicks = ticks
+        if permissions.role == .external { job.wbsTicksUnsent = true }
+        try? context.save()
     }
 
     private func cause(_ task: String) -> MasterSchedule.LateCause? {

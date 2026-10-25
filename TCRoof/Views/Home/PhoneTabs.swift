@@ -33,6 +33,8 @@ enum PhoneTab: String {
     var tab: PhoneTab
     private(set) var opened: Set<PhoneTab>
     var showSettings = false
+    /// Tabs whose root screen is showing (nothing pushed over it): only there a sideways swipe changes tab.
+    var atRoot: Set<PhoneTab> = []
 
     init(_ tab: PhoneTab) {
         self.tab = tab
@@ -42,6 +44,15 @@ enum PhoneTab: String {
     func select(_ t: PhoneTab) {
         opened.insert(t)
         tab = t
+    }
+
+    /// A swipe to the left goes to the next tab of the dock, to the right to the one before.
+    func swipe(dx: CGFloat, dy: CGFloat) {
+        guard atRoot.contains(tab), abs(dx) > 70, abs(dx) > 2.5 * abs(dy),
+              let i = PhoneTab.stacks.firstIndex(of: tab) else { return }
+        let next = i + (dx < 0 ? 1 : -1)
+        guard PhoneTab.stacks.indices.contains(next) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) { select(PhoneTab.stacks[next]) }
     }
 }
 
@@ -69,6 +80,7 @@ struct PhoneTabs<HomeRoot: View>: View {
             }
         }
         .environment(dock)
+        .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { dock.swipe(dx: $0.translation.width, dy: $0.translation.height) })
         .sheet(isPresented: $dock.showSettings) {
             SettingsView(pwa: dock.tab == .pwa).presentationDetents([.large]).environment(\.homeInk, .outdoor)
         }
@@ -93,6 +105,8 @@ struct PhoneTabs<HomeRoot: View>: View {
                 default: if let module = t.module { AnyView(module.destination) } else { AnyView(home()) }
                 }
             }
+            .onAppear { dock.atRoot.insert(t) }
+            .onDisappear { dock.atRoot.remove(t) }
             // the PWA home keeps its own space over the dock, for its add button
             .phoneDock(fade: t.fade, fadeHeight: t.fadeHeight, spacing: t == .pwa ? 0 : PhoneTab.barGap)
         }
